@@ -19,7 +19,7 @@ environment:
 dependencies:
   flutter_ffmpeg: "^0.2.1"
   http: "^0.12.0"
-  cached_network_image: "^0.7.0"
+  cached_network_image: "^2.0.0-rc"
   timeago: "^2.0.14"
   html: "^0.14.0"
   flutter:
