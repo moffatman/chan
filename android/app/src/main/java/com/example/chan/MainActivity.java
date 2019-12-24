@@ -1,4 +1,4 @@
-package com.example.chan;
+package com.moffatman.chan;
 
 import android.os.Bundle;
 import io.flutter.app.FlutterActivity;
