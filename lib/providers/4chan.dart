@@ -37,7 +37,7 @@ class Provider4Chan implements ImageboardProvider {
 					}
 					else if (node.localName == 'span') {
 						if (node.attributes['class'].contains('deadlink')) {
-							elements.add(DeadQuoteLinkElement(num.tryParse(node.innerHtml)));
+							elements.add(DeadQuoteLinkElement(num.tryParse(node.innerHtml.substring(8))));
 						}
 						else if (node.attributes['class'].contains('quote')) {
 							elements.add(QuoteElement(node.text));
