@@ -109,9 +109,10 @@ class Provider4Chan implements ImageboardProvider {
 		final threads = List<Thread>();
 		for (final page in data) {
 			for (final threadData in page['threads']) {
-				List<Post> lastReplies = (threadData['last_replies'] ?? []).map<Post>((postData) {
+				/*List<Post> lastReplies = (threadData['last_replies'] ?? []).map<Post>((postData) {
 					return _makePost(board, postData);
-				}).toList();
+				}).toList();*/
+        List<Post> lastReplies = [];
 				lastReplies.insert(0, _makePost(board, threadData));
 				Thread thread = Thread(
 					board: board,

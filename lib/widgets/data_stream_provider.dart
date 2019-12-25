@@ -34,6 +34,17 @@ class _DataProviderState<T> extends State<DataProvider> {
 		this.update();
 	}
 
+  @override
+  void didUpdateWidget(DataProvider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+	  if (oldWidget.initialValue != widget.initialValue) {
+      setState(() {
+        value = widget.initialValue;
+      });
+      this.update();
+    }
+  }
+
 	Future<void> update() async {
 		try {
 			final newData = await widget.updater();

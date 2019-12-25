@@ -46,7 +46,7 @@ class _MyHomePageState extends State<MyHomePage> {
 			child: ImageboardTab(
 				initialSite: provider,
 				initialBoard: 'tv',
-				isInTabletLayout: true
+				isInTabletLayout: MediaQuery.of(context).size.width > 700
 			)
 		);
 	    /*return ProviderProvider(

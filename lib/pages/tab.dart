@@ -22,6 +22,8 @@ class ImageboardTab extends StatefulWidget {
 	_ImageboardTabState createState() => _ImageboardTabState();
 }
 
+const List<Thread> emptyThreadList = [];
+
 class _ImageboardTabState extends State<ImageboardTab> {
 	ImageboardProvider site;
 	String board;
@@ -45,7 +47,7 @@ class _ImageboardTabState extends State<ImageboardTab> {
 							),
 							body: DataProvider<List<Thread>>(
 								updater: () => site.getCatalog(board),
-								initialValue: List<Thread>(),
+								initialValue: emptyThreadList,
 								builder: (BuildContext context, dynamic catalog, Future<void> Function() requestUpdate) {
 									return RefreshIndicator(
 										onRefresh: requestUpdate,
