@@ -83,16 +83,16 @@ class _ImageboardTabState extends State<ImageboardTab> {
 	Widget _buildPhone(BuildContext context) {
 		return Scaffold(
 			appBar: AppBar(
-				title: Text('xd'),
+				title: Text(site.name + ': ' + board),
 			),
 			body: DataProvider<List<Thread>>(
 				updater: () => site.getCatalog(board),
 				initialValue: emptyThreadList,
-				builder: (BuildContext context, List<Thread> catalog, Future<void> Function() requestUpdate) {
+				builder: (BuildContext context, dynamic catalog, Future<void> Function() requestUpdate) {
 					return RefreshIndicator(
 						onRefresh: requestUpdate,
 						child: ThreadList(
-							list: catalog,
+							list: catalog as List<Thread>,
 							selectedThread: selectedThread,
 							onThreadSelected: (thread) {
 								Navigator.of(context).push(MaterialPageRoute(builder: (ctx) => ThreadPage(thread: selectedThread, provider: site)));

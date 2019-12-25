@@ -38,7 +38,7 @@ class _MyHomePageState extends State<MyHomePage> {
 	@override
 	void initState() {
 		super.initState();
-		provider = Provider4Chan(apiUrl: 'https://a.4cdn.org', imageUrl: 'https://i.4cdn.org', name: '4Chan');
+		provider = Provider4Chan(apiUrl: 'https://a.4cdn.org', imageUrl: 'https://i.4cdn.org', name: '4chan');
 	}
   	@override
   	Widget build(BuildContext context) {
