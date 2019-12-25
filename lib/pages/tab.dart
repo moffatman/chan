@@ -87,7 +87,7 @@ class _ImageboardTabState extends State<ImageboardTab> {
 			),
 			body: DataProvider<List<Thread>>(
 				updater: () => site.getCatalog(board),
-				initialValue: List<Thread>(),
+				initialValue: emptyThreadList,
 				builder: (BuildContext context, List<Thread> catalog, Future<void> Function() requestUpdate) {
 					return RefreshIndicator(
 						onRefresh: requestUpdate,
