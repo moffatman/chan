@@ -7,7 +7,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/widgets/post_list.dart';
 import 'package:chan/widgets/data_stream_provider.dart';
 
-class ThreadPage extends StatelessWidget {
+class ThreadPage extends StatefulWidget {
 	final Thread thread;
 	final ImageboardProvider provider;
 	final GlobalKey<RefreshIndicatorState> refreshKey = GlobalKey();
@@ -18,29 +18,34 @@ class ThreadPage extends StatelessWidget {
 	}) {
 		print('created thread page');
 	}
-	
+
+  @override
+  createState() => _ThreadPageState();
+}
+
+class _ThreadPageState extends State<ThreadPage> {
 	@override
 	Widget build(BuildContext context) {
 		return DataProvider<Thread>(
-			updater: () => provider.getThread(thread.board, thread.id),
-			initialValue: thread,
+			updater: () => widget.provider.getThread(widget.thread.board, widget.thread.id),
+			initialValue: widget.thread,
+      onError: (error) {
+        Scaffold.of(context).showSnackBar(SnackBar(
+          content: Text("Error: " + error.toString())
+        ));
+      },
 			builder: (BuildContext context, dynamic thread, Future<void> Function() requestUpdate) {
-				/*Stream<List<Post>> postsStream = stream.handleError((Error error) {
-					Scaffold.of(context).showSnackBar(SnackBar(
-						content: Text(error.toString())
-					));
-				}).map((t) => t.posts);*/
 				return Scaffold(
 					appBar: AppBar(title: Text(thread.id.toString())),
 					body: RefreshIndicator(
-						key: refreshKey,
+						key: widget.refreshKey,
 						onRefresh: requestUpdate,
 						child: ListView(
 							children: [
 								PostList(list: thread.posts),
 								RaisedButton(
 									onPressed: () {
-										refreshKey.currentState.show();
+										widget.refreshKey.currentState.show();
 									},
 									child: const Text('Refresh')
 								)
