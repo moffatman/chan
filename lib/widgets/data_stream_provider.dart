@@ -53,7 +53,9 @@ class _DataProviderState<T> extends State<DataProvider> {
 			});
 		}
 		catch (error) {
-			widget.onError(error);
+			if (widget.onError != null) {
+        widget.onError(error);
+      }
 		}
 	}
 
