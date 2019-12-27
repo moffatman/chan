@@ -54,6 +54,8 @@ class _DataProviderState<T> extends State<DataProvider> {
 		}
 		catch (error) {
 			if (widget.onError != null) {
+        print('DataStreamProvider update error');
+        print(error);
         widget.onError(error);
       }
 		}
