@@ -93,9 +93,9 @@ class _ImageboardTabState extends State<ImageboardTab> {
 						onRefresh: requestUpdate,
 						child: ThreadList(
 							list: catalog as List<Thread>,
-							selectedThread: selectedThread,
+							selectedThread: null,
 							onThreadSelected: (thread) {
-								Navigator.of(context).push(MaterialPageRoute(builder: (ctx) => ThreadPage(thread: selectedThread, provider: site)));
+								Navigator.of(context).push(MaterialPageRoute(builder: (ctx) => ThreadPage(thread: thread, provider: site)));
 							},
 						)
 					);
