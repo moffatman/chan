@@ -3,6 +3,7 @@ import 'package:chan/providers/provider.dart';
 import 'package:chan/widgets/thread_list.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 import 'package:chan/pages/thread.dart';
 
@@ -95,7 +96,7 @@ class _ImageboardTabState extends State<ImageboardTab> {
 							list: catalog as List<Thread>,
 							selectedThread: null,
 							onThreadSelected: (thread) {
-								Navigator.of(context).push(MaterialPageRoute(builder: (ctx) => ThreadPage(thread: thread, provider: site)));
+								Navigator.of(context).push(CupertinoPageRoute(builder: (ctx) => ThreadPage(thread: thread, provider: site)));
 							},
 						)
 					);
