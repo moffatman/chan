@@ -42,43 +42,12 @@ class _MyHomePageState extends State<MyHomePage> {
 	}
   	@override
   	Widget build(BuildContext context) {
-		return Material(
-			child: ImageboardTab(
-				initialSite: provider,
-				initialBoard: 'tv',
-				isInTabletLayout: MediaQuery.of(context).size.width > 700
-			)
-		);
-	    /*return ProviderProvider(
-			provider: provider,
-			child: WillPopScope(
-				onWillPop: () async {
-					return !(await navigatorKey.currentState.maybePop());
-				},
-				child: Navigator(
-					key: navigatorKey,
-					initialRoute: '',
-					onGenerateRoute: (RouteSettings routeSettings) {
-						return MaterialPageRoute(builder: (BuildContext context) {
-							return Scaffold(
-								appBar: AppBar(
-									title: Text(widget.title),
-								),
-								body: DataStreamProvider<List<Thread>>(
-									updater: () => provider.getCatalog('tv'),
-									initialValue: List<Thread>(),
-									builder: (BuildContext context, Stream<dynamic> stream, Future<void> Function() requestUpdate) {
-										return RefreshIndicator(
-											onRefresh: requestUpdate,
-											child: ThreadList(list: (stream as Stream<List<Thread>>))
-										);
-									}
-								)
-							);
-						});
-					},
-				)
-			)
-		);*/
+      return Material(
+        child: ImageboardTab(
+          initialSite: provider,
+          initialBoard: 'tv',
+          isInTabletLayout: MediaQuery.of(context).size.width > 700
+        )
+      );
   	}
 }
