@@ -14,8 +14,10 @@ class ImageboardTab extends StatefulWidget {
 	final bool isInTabletLayout;
 	final ImageboardProvider initialSite;
 	final String initialBoard;
+  final bool isDesktop;
 	const ImageboardTab({
 		@required this.isInTabletLayout,
+    @required this.isDesktop,
 		this.initialBoard,
 		this.initialSite
 	});
@@ -47,14 +49,21 @@ class _ImageboardTabState extends State<ImageboardTab> {
 								title: Text(site.name + ': ' + board)
 							),
 							body: DataProvider<List<Thread>>(
+                id: site.name + '/' + board,
 								updater: () => site.getCatalog(board),
 								initialValue: emptyThreadList,
+                placeholder: (context, value) {
+                  return Center(
+                    child: CircularProgressIndicator()
+                  );
+                },
 								builder: (BuildContext context, dynamic catalog, Future<void> Function() requestUpdate) {
 									return RefreshIndicator(
 										onRefresh: requestUpdate,
 										child: catalog != null ? ThreadList(
 											list: catalog as List<Thread>,
 											selectedThread: selectedThread,
+                      isDesktop: widget.isDesktop,
 											onThreadSelected: (thread) {
 												setState(() {
 													selectedThread = thread;
@@ -75,7 +84,8 @@ class _ImageboardTabState extends State<ImageboardTab> {
 						flex: 3,
 						child: selectedThread != null ? ThreadPage(
 							thread: selectedThread,
-							provider: site
+							provider: site,
+              isDesktop: widget.isDesktop
 						) : Center(child: Text('Select a thread'))
 					)
 				]
@@ -87,16 +97,27 @@ class _ImageboardTabState extends State<ImageboardTab> {
 				title: Text(site.name + ': ' + board),
 			),
 			body: DataProvider<List<Thread>>(
+        id: site.name + '/' + board,
 				updater: () => site.getCatalog(board),
 				initialValue: emptyThreadList,
+        placeholder: (BuildContext context, value) {
+          return Center(
+            child: CircularProgressIndicator()
+          );
+        },
 				builder: (BuildContext context, dynamic catalog, Future<void> Function() requestUpdate) {
 					return RefreshIndicator(
 						onRefresh: requestUpdate,
 						child: ThreadList(
 							list: catalog as List<Thread>,
 							selectedThread: null,
+              isDesktop: widget.isDesktop,
 							onThreadSelected: (thread) {
-								Navigator.of(context).push(CupertinoPageRoute(builder: (ctx) => ThreadPage(thread: thread, provider: site)));
+								Navigator.of(context).push(CupertinoPageRoute(builder: (ctx) => ThreadPage(
+                  thread: thread,
+                  provider: site,
+                  isDesktop: widget.isDesktop
+                )));
 							},
 						)
 					);

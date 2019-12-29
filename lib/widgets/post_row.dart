@@ -1,3 +1,4 @@
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -8,9 +9,11 @@ import 'package:chan/models/attachment.dart';
 
 class PostRow extends StatelessWidget {
 	final Post post;
+  final bool isDesktop;
 
 	const PostRow({
-		@required this.post
+		@required this.post,
+    @required this.isDesktop
 	});
 
 	@override
@@ -22,15 +25,10 @@ class PostRow extends StatelessWidget {
 				mainAxisAlignment: MainAxisAlignment.start,
 				mainAxisSize: MainAxisSize.max,
 				children: [
-					post.attachment == null ? SizedBox(width: 0, height: 0) : (CachedNetworkImage(
-						width: 75,
-						height: 75,
-						fit: BoxFit.cover,
-						placeholder: (BuildContext context, String url) {
-							return Center(child: CircularProgressIndicator());
-						},
-						imageUrl: post.attachment.thumbnailUrl
-					)),
+					post.attachment == null ? SizedBox(width: 0, height: 0) : AttachmentThumbnail(
+						attachment: post.attachment,
+            isDesktop: isDesktop
+					),
 					Expanded(
 						child: Container(
 							padding: EdgeInsets.all(8),

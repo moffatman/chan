@@ -9,11 +9,13 @@ class ThreadList extends StatelessWidget {
 	final List<Thread> list;
 	final ValueChanged<Thread> onThreadSelected;
 	final Thread selectedThread;
+  final bool isDesktop;
 
 	const ThreadList({
 		@required this.list,
 		@required this.onThreadSelected,
-		@required this.selectedThread
+		@required this.selectedThread,
+    @required this.isDesktop
 	});
 	
 	@override
@@ -28,7 +30,8 @@ class ThreadList extends StatelessWidget {
 						},
 						child: ThreadRow(
 							thread: list[i],
-							isSelected: list[i] == selectedThread
+							isSelected: list[i] == selectedThread,
+              isDesktop: isDesktop
 						)
 					);
 				},

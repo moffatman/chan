@@ -7,6 +7,8 @@ import 'providers/4chan.dart';
 import 'widgets/provider_provider.dart';
 import 'pages/tab.dart';
 
+import 'dart:io';
+
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
@@ -46,7 +48,8 @@ class _MyHomePageState extends State<MyHomePage> {
       child: ImageboardTab(
         initialSite: provider,
         initialBoard: 'tv',
-        isInTabletLayout: MediaQuery.of(context).size.width > 700
+        isInTabletLayout: MediaQuery.of(context).size.width > 700,
+        isDesktop: !Platform.isIOS && !Platform.isAndroid
       )
     );
   }
