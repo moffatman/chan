@@ -46,6 +46,9 @@ class Provider4Chan implements ImageboardProvider {
 							throw 'Unknown span: ' + node.outerHtml;
 						}
 					}
+          else if (node.localName == 'wbr') {
+            // do nothing
+          }
 					else {
 						elements.add(TextElement(node.outerHtml));
 					}
