@@ -1,56 +1,62 @@
+import 'package:chan/services/settings.dart';
+import 'package:chan/widgets/chan_site.dart';
 import 'package:flutter/material.dart';
-import 'widgets/data_stream_provider.dart';
-import 'widgets/thread_list.dart';
-import 'models/thread.dart';
+import 'package:http/io_client.dart';
 import 'providers/provider.dart';
 import 'providers/4chan.dart';
-import 'widgets/provider_provider.dart';
 import 'pages/tab.dart';
-
-import 'dart:io';
 
 void main() => runApp(MyApp());
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-        title: 'Flutter Demo',
-        theme: ThemeData(
-          primarySwatch: Colors.green,
-          textTheme: TextTheme(
-        
-          )
-        ),
-        home: MyHomePage(title: 'Tab 1'),
-    );
-  }
+class MyApp extends StatefulWidget {
+	@override
+	createState() => _MyAppState();
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-  final String title;
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
+class _MyAppState extends State<MyApp> {
 	GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-	ImageboardProvider provider;
+	Provider4Chan provider;
 	@override
 	void initState() {
 		super.initState();
-		provider = Provider4Chan(apiUrl: 'https://a.4cdn.org', imageUrl: 'https://i.4cdn.org', name: '4chan');
+		provider = Provider4Chan(
+			apiUrl: 'https://a.4cdn.org',
+			imageUrl: 'https://i.4cdn.org',
+			name: '4chan',
+			client: IOClient(),
+			archives: Map<String, ImageboardProvider>()
+		);
 	}
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      child: ImageboardTab(
-        initialSite: provider,
-        initialBoard: 'tv',
-        isInTabletLayout: MediaQuery.of(context).size.width > 700,
-        isDesktop: !Platform.isIOS && !Platform.isAndroid
-      )
-    );
-  }
+
+	@override
+	Widget build(BuildContext context) {
+		return SettingsHandler(
+			settings: Settings(
+				autoloadAttachmentsPreference: Setting_AutoloadAttachments.WiFi
+			),
+			child: ChanSite(
+				provider: provider,
+				child: MaterialApp(
+					title: 'Chan',
+					theme: ThemeData(
+						primarySwatch: Colors.green,
+						textTheme: TextTheme(
+
+						)
+					),
+					home: ChanHomePage()
+				)
+			)
+		);
+	}
+}
+
+class ChanHomePage extends StatelessWidget {
+	@override
+	Widget build(BuildContext context) {
+		return ImageboardTab(
+			initialBoard: 'tv',
+			isInTabletLayout: MediaQuery.of(context).size.width > 700
+		);
+	}
 }

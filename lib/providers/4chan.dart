@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 import 'dart:convert';
 import 'package:meta/meta.dart';
 import 'package:html/parser.dart' show parse;
@@ -14,6 +15,8 @@ class Provider4Chan implements ImageboardProvider {
 	final String name;
 	final String apiUrl;
 	final String imageUrl;
+	final http.Client client;
+	final Map<String, ImageboardProvider> archives;
 
 	List<PostElement> _makeElements(String data) {
 		final doc = parse(data);
@@ -46,9 +49,9 @@ class Provider4Chan implements ImageboardProvider {
 							throw 'Unknown span: ' + node.outerHtml;
 						}
 					}
-          else if (node.localName == 'wbr') {
-            // do nothing
-          }
+					else if (node.localName == 'wbr') {
+						// do nothing
+					}
 					else {
 						elements.add(TextElement(node.outerHtml));
 					}
@@ -75,14 +78,35 @@ class Provider4Chan implements ImageboardProvider {
 		return p;
 	}
 	Attachment _makeAttachment(String board, dynamic data) {
-		return ImageAttachment(
-			thumbnailUrl: '$imageUrl/$board/${data['tim']}s.jpg',
-			imageUrl: '$imageUrl/$board/${data['tim']}${data['ext']}',
-			filename: (data['filename'] ?? '') + (data['ext'] ?? '')
+		return Attachment(
+			id: data['tim'],
+			type: data['ext'] == '.webm' ? AttachmentType.WEBM : AttachmentType.Image,
+			filename: (data['filename'] ?? '') + (data['ext'] ?? ''),
+			ext: data['ext'],
+			board: board
 		);
 	}
+	Uri getAttachmentUrl(Attachment attachment) {
+		if (attachment.providerId == null) {
+			return Uri.parse('https://i.4cdn.org/${attachment.board}/${attachment.id}${attachment.ext}');
+		}
+		else {
+			return archives[attachment.providerId].getAttachmentUrl(attachment);
+		}
+	}
+	List<Uri> getArchiveAttachmentUrls(Attachment attachment) {
+		return [];
+	}
+	Uri getAttachmentThumbnailUrl(Attachment attachment) {
+		if (attachment.providerId == null) {
+			return Uri.parse('https://i.4cdn.org/${attachment.board}/${attachment.id}s.jpg');
+		}
+		else {
+			return archives[attachment.providerId].getAttachmentThumbnailUrl(attachment);
+		}
+	}
 	Future<Thread> getThread(String board, int id) async {
-		final response = await http.get(apiUrl + '/' + board + '/thread/' + id.toString() + '.json');
+		final response = await client.get(apiUrl + '/' + board + '/thread/' + id.toString() + '.json');
 		if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode);
 		}
@@ -107,7 +131,7 @@ class Provider4Chan implements ImageboardProvider {
 	}
 
 	Future<List<Thread>> getCatalog(String board) async {
-		final response = await http.get(apiUrl + '/' + board + '/catalog.json');
+		final response = await client.get(apiUrl + '/' + board + '/catalog.json');
 		final data = json.decode(response.body);
 		final threads = List<Thread>();
 		for (final page in data) {
@@ -115,7 +139,7 @@ class Provider4Chan implements ImageboardProvider {
 				/*List<Post> lastReplies = (threadData['last_replies'] ?? []).map<Post>((postData) {
 					return _makePost(board, postData);
 				}).toList();*/
-        List<Post> lastReplies = [];
+				List<Post> lastReplies = [];
 				lastReplies.insert(0, _makePost(board, threadData));
 				Thread thread = Thread(
 					board: board,
@@ -134,9 +158,11 @@ class Provider4Chan implements ImageboardProvider {
 		return threads;
 	}
 
-	const Provider4Chan({
+	Provider4Chan({
 		@required this.apiUrl,
 		@required this.imageUrl,
-		@required this.name
+		@required this.name,
+		@required this.client,
+		@required this.archives
 	});
 }

@@ -9,11 +9,11 @@ import 'package:chan/models/attachment.dart';
 
 class PostRow extends StatelessWidget {
 	final Post post;
-  final bool isDesktop;
+	final ValueChanged<Attachment> onThumbnailTap;
 
 	const PostRow({
 		@required this.post,
-    @required this.isDesktop
+		this.onThumbnailTap
 	});
 
 	@override
@@ -25,9 +25,15 @@ class PostRow extends StatelessWidget {
 				mainAxisAlignment: MainAxisAlignment.start,
 				mainAxisSize: MainAxisSize.max,
 				children: [
-					post.attachment == null ? SizedBox(width: 0, height: 0) : AttachmentThumbnail(
-						attachment: post.attachment,
-            isDesktop: isDesktop
+					post.attachment == null ? SizedBox(width: 0, height: 0) : GestureDetector(
+						child: AttachmentThumbnail(
+							attachment: post.attachment
+						),
+						onTap: () {
+							if (onThumbnailTap != null) {
+								onThumbnailTap(post.attachment);
+							}
+						}
 					),
 					Expanded(
 						child: Container(

@@ -3,6 +3,8 @@ import '../models/attachment.dart';
 import '../models/thread.dart';
 import 'package:meta/meta.dart';
 
+import 'package:http/http.dart' as http;
+
 class PostNotFoundException implements Exception {
 	String board;
 	int id;
@@ -26,51 +28,11 @@ class HTTPStatusException implements Exception {
 }
 
 abstract class ImageboardProvider {
+	final http.Client client = http.Client();
 	final String name = 'Unknownchan';
 	Future<Thread> getThreadContainingPost(String board, int id);
 	Future<Thread> getThread(String board, int id);
 	Future<List<Thread>> getCatalog(String board);
-}
-
-
-class GroupedImageboardProvider implements ImageboardProvider {
-	final String name;
-	List<ImageboardProvider> providers;
-	Future<Thread> getThreadContainingPost(String board, int id) async {
-		for (ImageboardProvider provider in providers) {
-			try {
-				return await provider.getThreadContainingPost(board, id);
-			}
-			catch (error) {
-				
-			}
-		}
-		throw PostNotFoundException(board, id);
-	}
-	Future<Thread> getThread(String board, int id) async {
-		for (ImageboardProvider provider in providers) {
-			try {
-				return await provider.getThread(board, id);
-			}
-			catch (error) {
-				
-			}
-		}
-		throw ThreadNotFoundException(board, id);
-	}
-	Future<List<Thread>> getCatalog(String board) async {
-		for (ImageboardProvider provider in providers) {
-			try {
-				return await provider.getCatalog(board);
-			}
-			catch (error) {
-				
-			}
-		}
-		throw BoardNotFoundException(board);
-	}
-	GroupedImageboardProvider({
-		@required this.providers,
-		@required this.name
-	});
+	Uri getAttachmentUrl(Attachment attachment);
+	Uri getAttachmentThumbnailUrl(Attachment attachment);
 }

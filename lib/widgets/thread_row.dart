@@ -8,11 +8,9 @@ import 'package:chan/models/thread.dart';
 class ThreadRow extends StatelessWidget {
 	final Thread thread;
 	final bool isSelected;
-  final bool isDesktop;
 	const ThreadRow({
 		@required this.thread,
 		@required this.isSelected,
-    @required this.isDesktop
 	});
 	@override
 	Widget build(BuildContext context) {
@@ -23,9 +21,8 @@ class ThreadRow extends StatelessWidget {
 				children: [
 					if (thread.attachment != null)
 						AttachmentThumbnail(
-              attachment: thread.attachment,
-              isDesktop: isDesktop
-            ),
+							attachment: thread.attachment
+						),
 					Expanded(child: Container(
 						padding: EdgeInsets.all(8),
 						child: Column(
