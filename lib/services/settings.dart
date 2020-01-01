@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:chan/services/util.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity/connectivity.dart';
 
@@ -81,6 +82,9 @@ class _SettingsHandlerState extends State<SettingsHandler> with WidgetsBindingOb
 		connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
 			widget.settings.connectivity = result;
 		});
+		if (isDesktop()) {
+			widget.settings.connectivity = ConnectivityResult.wifi;
+		}
 	}
 
 	@override

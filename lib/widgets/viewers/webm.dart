@@ -1,4 +1,5 @@
 import 'package:chan/models/attachment.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/services/webm.dart';
 import 'package:chan/widgets/chan_site.dart';
 import 'package:chewie/chewie.dart';
@@ -38,36 +39,46 @@ class _WEBMViewerState extends State<WEBMViewer> {
 	_WEBMViewerState();
 
 	_initializeWebm() {
-		webm = WEBM(
-			url: widget.url,
-			client: ChanSite.of(context).provider.client
-		);
-		playerStatus = WEBMViewerStatus.Loading;
-		webm.startProcessing();
-		webm.status.listen((status) {
-			print(status);
-			if (status.type == WEBMStatusType.Converted) {
-				setState(() {
-					_videoPlayerController = VideoPlayerController.file(status.file);
-					_chewieController = ChewieController(
-						videoPlayerController:  _videoPlayerController,
-						autoPlay: true
-					);
-					playerStatus = WEBMViewerStatus.Playing;
-				});
-			}
-			else if (status.type == WEBMStatusType.Error) {
-				setState(() {
-					loadingStatus = status;
-					playerStatus = WEBMViewerStatus.Error;
-				});
-			}
-			else {
-				setState(() {
-					loadingStatus = status;
-				});
-			}
-		});
+		if (isDesktop()) {
+			_videoPlayerController = VideoPlayerController.network(widget.url.toString());
+			_chewieController = ChewieController(
+				videoPlayerController: _videoPlayerController,
+				autoPlay: true
+			);
+			playerStatus = WEBMViewerStatus.Playing;
+		}
+		else {
+			webm = WEBM(
+				url: widget.url,
+				client: ChanSite.of(context).provider.client
+			);
+			playerStatus = WEBMViewerStatus.Loading;
+			webm.startProcessing();
+			webm.status.listen((status) {
+				print(status);
+				if (status.type == WEBMStatusType.Converted) {
+					setState(() {
+						_videoPlayerController = VideoPlayerController.file(status.file);
+						_chewieController = ChewieController(
+							videoPlayerController:  _videoPlayerController,
+							autoPlay: true
+						);
+						playerStatus = WEBMViewerStatus.Playing;
+					});
+				}
+				else if (status.type == WEBMStatusType.Error) {
+					setState(() {
+						loadingStatus = status;
+						playerStatus = WEBMViewerStatus.Error;
+					});
+				}
+				else {
+					setState(() {
+						loadingStatus = status;
+					});
+				}
+			});
+		}
 	}
 
 	@override

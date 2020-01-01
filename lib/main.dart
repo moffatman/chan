@@ -1,4 +1,5 @@
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/widgets/chan_site.dart';
 import 'package:flutter/material.dart';
 import 'package:http/io_client.dart';
@@ -41,10 +42,13 @@ class _MyAppState extends State<MyApp> {
 					theme: ThemeData(
 						primarySwatch: Colors.green,
 						textTheme: TextTheme(
-
-						)
+							
+						),
+						platform: isDesktop() ? TargetPlatform.android : null
 					),
-					home: ChanHomePage()
+					home: Material(
+						child: ChanHomePage()
+					)
 				)
 			)
 		);

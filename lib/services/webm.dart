@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:chan/services/util.dart';
@@ -53,7 +54,7 @@ class WEBM {
 		try {
 			// Assuming only 4Chan urls used
 			final filename = url.pathSegments.last;
-			final systemTempDirectory = isDesktop() ? Directory('../tmp') : (await getTemporaryDirectory());
+			final systemTempDirectory = await getTemporaryDirectory();
 			final cacheDirectory = await (new Directory(systemTempDirectory.path + '/webmcache/' + url.host)).create(recursive: true);
 			final convertedFile = File(cacheDirectory.path + '/' + filename.replaceFirst('.webm', '.mp4'));
 			if (await convertedFile.exists()) {
@@ -73,16 +74,25 @@ class WEBM {
 					_statusController.add(WEBMStatus(type: WEBMStatusType.Converting));
 					int ffmpegReturnCode;
 					if (isDesktop()) {
-						final ffmpegResults = await Process.run('ffmpeg', ['-i', webmFile.path, convertedFile.path]);
-						ffmpegReturnCode = ffmpegResults.exitCode;
+						print('Using Process.start');
+						final ffmpeg = await Process.start('ffmpeg', ['-i', webmFile.path, convertedFile.path]);
+						print('Process started');
+						ffmpeg.stdout.transform(Utf8Decoder()).transform(LineSplitter()).listen((line) {
+							print(line);
+						});
+						ffmpeg.stderr.transform(Utf8Decoder()).transform(LineSplitter()).listen((line) {
+							print(line);
+						});
+						ffmpegReturnCode = await ffmpeg.exitCode;
 					}
 					else {
+						print('Using FlutterFFmpeg');
 						final ffmpeg = FlutterFFmpeg();
 						final mediaInfo = await ffmpeg.getMediaInformation(webmFile.path);
 						final duration = mediaInfo['duration'];
 						print('WEBM duration: $duration');
 						ffmpeg.enableStatisticsCallback((int time, int size, double bitrate, double speed, int videoFrameNumber, double videoQuality, double videoFps) {
-     						print('WEBM time: $time');
+		 						print('WEBM time: $time');
 							 _statusController.add(WEBMStatus(type: WEBMStatusType.Converting, progress: time / duration));
  						});
 						ffmpegReturnCode = await ffmpeg.execute('-i ${webmFile.path} ${convertedFile.path}');
@@ -92,6 +102,7 @@ class WEBM {
 						_statusController.add(WEBMStatus(type: WEBMStatusType.Converted, file: convertedFile));
 					}
 					else {
+						await convertedFile.delete();
 						_statusController.add(WEBMStatus(type: WEBMStatusType.Error, message: 'FFmpeg error $ffmpegReturnCode'));
 					}
 				}
@@ -101,7 +112,8 @@ class WEBM {
 			}
 			_statusController.close();
 		}
-		catch (error) {
+		catch (error, stackTrace) {
+			print(stackTrace);
 			_statusController.add(WEBMStatus(type: WEBMStatusType.Error, message: 'Unknown error $error'));
 			_statusController.close();
 		}
