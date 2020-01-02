@@ -40,12 +40,13 @@ class _WEBMViewerState extends State<WEBMViewer> {
 
 	_initializeWebm() {
 		if (isDesktop()) {
-			_videoPlayerController = VideoPlayerController.network(widget.url.toString());
+			/*_videoPlayerController = VideoPlayerController.network(widget.url.toString());
 			_chewieController = ChewieController(
 				videoPlayerController: _videoPlayerController,
 				autoPlay: true
-			);
-			playerStatus = WEBMViewerStatus.Playing;
+			);*/
+			playerStatus = WEBMViewerStatus.Error;
+			loadingStatus = WEBMStatus(type: WEBMStatusType.Error, message: 'WEBM disabled on desktop');
 		}
 		else {
 			webm = WEBM(
