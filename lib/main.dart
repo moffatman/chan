@@ -1,6 +1,8 @@
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/chan_site.dart';
+import 'package:chan/widgets/gallery_manager.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/io_client.dart';
 import 'providers/provider.dart';
@@ -37,18 +39,12 @@ class _MyAppState extends State<MyApp> {
 			),
 			child: ChanSite(
 				provider: provider,
-				child: MaterialApp(
+				child: CupertinoApp(
 					title: 'Chan',
-					theme: ThemeData(
-						primarySwatch: Colors.green,
-						textTheme: TextTheme(
-							
-						),
-						platform: isDesktop() ? TargetPlatform.android : null
+					theme: CupertinoThemeData(
+						primaryColor: Colors.green,
 					),
-					home: Material(
-						child: ChanHomePage()
-					)
+					home: ChanHomePage()
 				)
 			)
 		);

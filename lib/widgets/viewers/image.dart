@@ -18,14 +18,14 @@ class ImageViewer extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		print(url);
+		print(backgroundColor);
 		return PhotoView(
 			backgroundDecoration: BoxDecoration(color: backgroundColor),
 			imageProvider: NetworkImage(url.toString()),
 			minScale: PhotoViewComputedScale.contained,
 			scaleStateChangedCallback: (state) {
 				if (onDeepInteraction != null) {
-					onDeepInteraction(state == PhotoViewScaleState.initial);
+					onDeepInteraction(state != PhotoViewScaleState.initial);
 				}
 			},
 			loadingChild: Stack(

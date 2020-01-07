@@ -15,10 +15,12 @@ enum AttachmentViewerStatus {
 
 class AttachmentViewer extends StatefulWidget {
 	final Attachment attachment;
+	final Color backgroundColor;
 	final ValueChanged<bool> onDeepInteraction;
 
 	AttachmentViewer({
 		@required this.attachment,
+		this.backgroundColor = Colors.black,
 		this.onDeepInteraction
 	});
 
@@ -26,14 +28,23 @@ class AttachmentViewer extends StatefulWidget {
 	createState() => _AttachmentViewerState();
 }
 
-class _AttachmentViewerState extends State<AttachmentViewer> {
-	AttachmentViewerStatus status = AttachmentViewerStatus.LowRes;
+class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepAliveClientMixin {
+	AttachmentViewerStatus status;
 	Uri goodUrl;
+
+	@override
+	void initState() {
+		super.initState();
+		print('attachmentviewer: initstate');
+		status = AttachmentViewerStatus.LowRes;
+	}
 
 	@override
 	void didChangeDependencies() {
 		super.didChangeDependencies();
+		print('attachmentviewer: didchangedependencies');
 		if (Settings.of(context).autoloadAttachments) {
+			print('autoloading');
 			_load();
 		}
 	}
@@ -41,7 +52,9 @@ class _AttachmentViewerState extends State<AttachmentViewer> {
 	@override
 	void didUpdateWidget(AttachmentViewer oldWidget) {
 		super.didUpdateWidget(oldWidget);
+		print('didupdatewidget');
 		if (oldWidget.attachment != widget.attachment) {
+			print('attachmentviewer widget updated attachment');
 			status = AttachmentViewerStatus.LowRes;
 			if (Settings.of(context).autoloadAttachments) {
 				_load();
@@ -57,13 +70,13 @@ class _AttachmentViewerState extends State<AttachmentViewer> {
 			status = AttachmentViewerStatus.Checking;
 		});
 		final result = await site.client.head(url);
-		if (result.statusCode == 200) {
+		if (result.statusCode == 200 && mounted) {
 			setState(() {
 				goodUrl = url;
 				status = AttachmentViewerStatus.RealViewer;
 			});
 		}
-		else {
+		else if (mounted) {
 			setState(() {
 				status = AttachmentViewerStatus.CheckError;
 			});
@@ -93,11 +106,14 @@ class _AttachmentViewerState extends State<AttachmentViewer> {
 
 	@override
 	Widget build(BuildContext context) {
+		super.build(context);
+		print('buildstatus: $status');
 		if (status == AttachmentViewerStatus.RealViewer) {
 			if (widget.attachment.type == AttachmentType.WEBM) {
 				return WEBMViewer(
 					attachment: widget.attachment,
 					url: goodUrl,
+					backgroundColor: widget.backgroundColor,
 					onDeepInteraction: widget.onDeepInteraction
 				);
 			}
@@ -105,6 +121,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> {
 				return ImageViewer(
 					attachment: widget.attachment,
 					url: goodUrl,
+					backgroundColor: widget.backgroundColor,
 					onDeepInteraction: widget.onDeepInteraction
 				);
 			}
@@ -147,5 +164,10 @@ class _AttachmentViewerState extends State<AttachmentViewer> {
 				}
 			);
 		}
+	}
+
+	@override
+	bool get wantKeepAlive {
+		return true;
 	}
 }

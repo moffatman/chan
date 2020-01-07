@@ -15,6 +15,9 @@ class ThreadRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return Container(
+			decoration: BoxDecoration(
+				color: isSelected ? Color(0xFFCCCCCC) : null
+			),
 			child: Row(
 				crossAxisAlignment: CrossAxisAlignment.start,
 				mainAxisSize: MainAxisSize.max,

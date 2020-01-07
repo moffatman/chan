@@ -26,8 +26,11 @@ class PostRow extends StatelessWidget {
 				mainAxisSize: MainAxisSize.max,
 				children: [
 					post.attachment == null ? SizedBox(width: 0, height: 0) : GestureDetector(
-						child: AttachmentThumbnail(
-							attachment: post.attachment
+						child: Hero(
+							tag: post.attachment,
+							child: AttachmentThumbnail(
+								attachment: post.attachment
+							)
 						),
 						onTap: () {
 							if (onThumbnailTap != null) {

@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:chan/widgets/provider_list.dart';
+import 'package:chan/widgets/thread_row.dart';
+import 'package:chan/widgets/util.dart';
+import 'package:flutter/cupertino.dart';
 
 import 'package:chan/models/thread.dart';
 import 'package:chan/widgets/chan_site.dart';
-import 'package:chan/widgets/data_stream_provider.dart';
-import 'package:chan/widgets/thread_list.dart';
+import 'package:flutter/material.dart';
 
 class BoardPage extends StatelessWidget {
 	final void Function(Thread selectedThread) onThreadSelected;
@@ -18,33 +20,19 @@ class BoardPage extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final site = ChanSite.of(context).provider;
-		return Scaffold(
-			appBar: AppBar(
-				title: Text(site.name + ': ' + board),
-			),
-			body: DataProvider<List<Thread>>(
-				id: site.name + '/' + board,
-				updater: () => site.getCatalog(board),
-				initialValue: [],
-				placeholder: (BuildContext context, value) {
-					return Center(
-						child: CircularProgressIndicator()
+		return CupertinoPageScaffold(
+			child: ProviderList<Thread>(
+				listUpdater: () => site.getCatalog(board),
+				title: '/$board/',
+				builder: (context, thread) {
+					return GestureDetector(
+						behavior: HitTestBehavior.opaque,
+						child: ThreadRow(
+							thread: thread,
+							isSelected: thread == selectedThread
+						),
+						onTap: () => onThreadSelected(thread)
 					);
-				},
-				builder: (BuildContext context, List<Thread> catalog, Future<void> Function() requestUpdate) {
-					return RefreshIndicator(
-						onRefresh: requestUpdate,
-						child: ThreadList(
-							list: catalog,
-							selectedThread: null,
-							onThreadSelected: onThreadSelected
-						)
-					);
-				},
-				onError: (_context, error) {
-					Scaffold.of(_context).showSnackBar(SnackBar(
-						content: Text('Error loading: $error')
-					));
 				}
 			)
 		);
