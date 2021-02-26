@@ -102,7 +102,9 @@ class WEBM {
 						_statusController.add(WEBMStatus(type: WEBMStatusType.Converted, file: convertedFile));
 					}
 					else {
-						await convertedFile.delete();
+						if (await convertedFile.exists()) {
+							await convertedFile.delete();
+						}
 						_statusController.add(WEBMStatus(type: WEBMStatusType.Error, message: 'FFmpeg error $ffmpegReturnCode'));
 					}
 				}
