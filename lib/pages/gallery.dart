@@ -5,11 +5,15 @@ import 'package:flutter/material.dart';
 
 class GalleryPage extends StatefulWidget {
 	final List<Attachment> attachments;
-	final Attachment initialAttachment;
+	final Attachment? initialAttachment;
+	final bool initiallyShowChrome;
+	final ValueChanged<Attachment>? onChange;
 
 	GalleryPage({
-		@required this.attachments,
-		@required this.initialAttachment
+		required this.attachments,
+		required this.initialAttachment,
+		this.initiallyShowChrome = false,
+		this.onChange
 	});
 
 	@override
@@ -17,14 +21,14 @@ class GalleryPage extends StatefulWidget {
 }
 
 class _GalleryPageState extends State<GalleryPage> {
-	Attachment lastAttachment;
-	bool showChrome = false;
+	late Attachment? lastAttachment;
+	late bool showChrome;
 
 	@override
 	void initState() {
-		print('gallerypage initstate');
 		super.initState();
 		lastAttachment = widget.initialAttachment;
+		showChrome = widget.initiallyShowChrome;
 	}
 
 	@override
@@ -37,8 +41,10 @@ class _GalleryPageState extends State<GalleryPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		print('build gallerypage');
 		return Dismissible(
+			background: Container(
+				color: Colors.black38
+			),
 			direction: DismissDirection.down,
 			onDismissed: (direction) {
 				Navigator.of(context).pop();
@@ -64,6 +70,7 @@ class _GalleryPageState extends State<GalleryPage> {
 						setState(() {
 							lastAttachment = attachment;
 						});
+						widget.onChange?.call(attachment);
 					}
 				)
 			)

@@ -11,22 +11,20 @@ class ImageboardTab extends StatefulWidget {
 	final bool isInTabletLayout;
 	final String initialBoard;
 	const ImageboardTab({
-		@required this.isInTabletLayout,
-		@required this.initialBoard
+		required this.isInTabletLayout,
+		required this.initialBoard
 	});
 	@override
 	_ImageboardTabState createState() => _ImageboardTabState();
 }
 
 class _ImageboardTabState extends State<ImageboardTab> {
-	String board;
-	Thread selectedThread;
+	late String board;
+	Thread? selectedThread;
 	@override
 	initState() {
 		super.initState();
-		setState(() {
-			board = widget.initialBoard;
-		});
+		board = widget.initialBoard;
 	}
 
 	@override
@@ -47,11 +45,22 @@ class _ImageboardTabState extends State<ImageboardTab> {
 						)
 					),
 					VerticalDivider(
-						width: 0
+						width: 0,
+						color: Theme.of(context).colorScheme.onBackground
 					),
 					Flexible(
 						flex: 3,
-						child: selectedThread != null ? ThreadPage(thread: selectedThread) : Center(child: Text('Select a thread'))
+						child: Navigator(
+							initialRoute: '/',
+							onGenerateRoute: (RouteSettings settings) {
+								return CupertinoPageRoute(
+									builder: (context) {
+										return selectedThread != null ? ThreadPage(board: board, id: selectedThread!.id) : Center(child: Text('Select a thread'));
+									},
+									settings: settings
+								);
+							}
+						)
 					)
 				]
 			);
@@ -59,9 +68,8 @@ class _ImageboardTabState extends State<ImageboardTab> {
 		else {
 			return BoardPage(
 				board: board,
-				selectedThread: null,
 				onThreadSelected: (thread) {
-					Navigator.of(context).push(CupertinoPageRoute(builder: (ctx) => ThreadPage(thread: thread)));
+					Navigator.of(context).push(CupertinoPageRoute(builder: (ctx) => ThreadPage(board: board, id: thread.id)));
 				},
 			);
 		}

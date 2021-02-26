@@ -13,12 +13,12 @@ enum Setting_AutoloadAttachments {
 }
 
 class Settings {
-	String filename;
-	ConnectivityResult connectivity;
-	Setting_AutoloadAttachments autoloadAttachmentsPreference;
+	String? filename;
+	ConnectivityResult? connectivity;
+	late Setting_AutoloadAttachments autoloadAttachmentsPreference;
 
 	Settings({
-		@required this.autoloadAttachmentsPreference
+		required this.autoloadAttachmentsPreference
 	});
 
 	Settings.file(this.filename) {
@@ -39,7 +39,7 @@ class Settings {
 	}
 
 	static Settings of(BuildContext context) {
-		return context.dependOnInheritedWidgetOfExactType<_SettingsData>().settings;
+		return context.dependOnInheritedWidgetOfExactType<_SettingsData>()!.settings;
 	}
 }
 
@@ -47,9 +47,9 @@ class _SettingsData extends InheritedWidget {
 	final Settings settings;
 
 	const _SettingsData({
-		@required this.settings,
-		@required Widget child,
-		Key key
+		required this.settings,
+		required Widget child,
+		Key? key
 	}) : super(child: child, key: key);
 
 	@override
@@ -60,12 +60,12 @@ class _SettingsData extends InheritedWidget {
 
 class SettingsHandler extends StatefulWidget {
 	final Widget child;
-	final Settings settings;
+	final Settings Function() settingsBuilder;
 
 	const SettingsHandler({
-		Key key,
-		@required this.child,
-		@required this.settings
+		Key? key,
+		required this.child,
+		required this.settingsBuilder
 	}) : super(key: key);
 
 	@override
@@ -73,24 +73,26 @@ class SettingsHandler extends StatefulWidget {
 }
 
 class _SettingsHandlerState extends State<SettingsHandler> with WidgetsBindingObserver {
-	StreamSubscription connectivitySubscription;
+	late StreamSubscription connectivitySubscription;
+	late Settings settings;
 
 	@override
 	void initState() {
 		super.initState();
-		WidgetsBinding.instance.addObserver(this);
+		WidgetsBinding.instance!.addObserver(this);
+		settings = widget.settingsBuilder();
 		connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
-			widget.settings.connectivity = result;
+			settings.connectivity = result;
 		});
 		if (isDesktop()) {
-			widget.settings.connectivity = ConnectivityResult.wifi;
+			settings.connectivity = ConnectivityResult.wifi;
 		}
 	}
 
 	@override
 	void dispose() {
 		super.dispose();
-		WidgetsBinding.instance.removeObserver(this);
+		WidgetsBinding.instance!.removeObserver(this);
 		connectivitySubscription.cancel();
 	}
 
@@ -99,7 +101,7 @@ class _SettingsHandlerState extends State<SettingsHandler> with WidgetsBindingOb
 		if (state == AppLifecycleState.resumed) {
 			// recheck WiFi
 			Connectivity().checkConnectivity().then((result) {
-				widget.settings.connectivity = result;
+				settings.connectivity = result;
 			});
 		}
 	}
@@ -108,7 +110,7 @@ class _SettingsHandlerState extends State<SettingsHandler> with WidgetsBindingOb
 	Widget build(BuildContext context) {
 		return _SettingsData(
 			child: widget.child,
-			settings: widget.settings
+			settings: settings
 		);
 	}
 }

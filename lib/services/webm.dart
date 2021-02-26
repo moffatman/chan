@@ -5,8 +5,6 @@ import 'dart:io';
 import 'package:chan/services/util.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:meta/meta.dart';
-
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -21,11 +19,11 @@ enum WEBMStatusType {
 class WEBMStatus {
 	double progress;
 	WEBMStatusType type;
-	File file;
-	String message;
+	File? file;
+	String? message;
 	WEBMStatus({
-		this.progress,
-		@required this.type,
+		this.progress = 0.0,
+		required this.type,
 		this.file,
 		this.message
 	});
@@ -36,15 +34,15 @@ class WEBMStatus {
 }
 
 class WEBM {
-	Stream<WEBMStatus> status;
+	late Stream<WEBMStatus> status;
 	http.Client client;
 	StreamController<WEBMStatus> _statusController = StreamController<WEBMStatus>.broadcast();
 
 	Uri url;
 
 	WEBM({
-		@required this.url,
-		@required this.client
+		required this.url,
+		required this.client
 	}) {
 		status = _statusController.stream;
 		_statusController.add(WEBMStatus(progress: 0, type: WEBMStatusType.Idle));
@@ -87,13 +85,15 @@ class WEBM {
 					}
 					else {
 						print('Using FlutterFFmpeg');
+						final ffconfig = FlutterFFmpegConfig();
+						final ffprobe = FlutterFFprobe();
 						final ffmpeg = FlutterFFmpeg();
-						final mediaInfo = await ffmpeg.getMediaInformation(webmFile.path);
+						final mediaInfo = (await ffprobe.getMediaInformation(webmFile.path)).getAllProperties();
 						final duration = mediaInfo['duration'];
 						print('WEBM duration: $duration');
-						ffmpeg.enableStatisticsCallback((int time, int size, double bitrate, double speed, int videoFrameNumber, double videoQuality, double videoFps) {
-		 						print('WEBM time: $time');
-							 _statusController.add(WEBMStatus(type: WEBMStatusType.Converting, progress: time / duration));
+						ffconfig.enableStatisticsCallback((stats) {
+		 						print('WEBM time: ${stats.time}');
+							 _statusController.add(WEBMStatus(type: WEBMStatusType.Converting, progress: stats.time / duration));
  						});
 						ffmpegReturnCode = await ffmpeg.execute('-i ${webmFile.path} ${convertedFile.path}');
 					}

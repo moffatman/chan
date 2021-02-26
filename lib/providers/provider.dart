@@ -1,7 +1,5 @@
-import '../models/post.dart';
 import '../models/attachment.dart';
 import '../models/thread.dart';
-import 'package:meta/meta.dart';
 
 import 'package:http/http.dart' as http;
 

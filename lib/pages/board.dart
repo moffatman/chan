@@ -1,6 +1,5 @@
 import 'package:chan/widgets/provider_list.dart';
 import 'package:chan/widgets/thread_row.dart';
-import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:chan/models/thread.dart';
@@ -9,12 +8,12 @@ import 'package:flutter/material.dart';
 
 class BoardPage extends StatelessWidget {
 	final void Function(Thread selectedThread) onThreadSelected;
-	final Thread selectedThread;
+	final Thread? selectedThread;
 	final String board;
 	BoardPage({
-		@required this.onThreadSelected,
-		@required this.selectedThread,
-		@required this.board
+		required this.onThreadSelected,
+		this.selectedThread,
+		required this.board
 	});
 
 	@override
@@ -24,6 +23,7 @@ class BoardPage extends StatelessWidget {
 			child: ProviderList<Thread>(
 				listUpdater: () => site.getCatalog(board),
 				title: '/$board/',
+				lazy: true,
 				builder: (context, thread) {
 					return GestureDetector(
 						behavior: HitTestBehavior.opaque,

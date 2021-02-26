@@ -16,35 +16,34 @@ enum AttachmentViewerStatus {
 class AttachmentViewer extends StatefulWidget {
 	final Attachment attachment;
 	final Color backgroundColor;
-	final ValueChanged<bool> onDeepInteraction;
+	final ValueChanged<bool>? onDeepInteraction;
 
 	AttachmentViewer({
-		@required this.attachment,
+		required this.attachment,
 		this.backgroundColor = Colors.black,
-		this.onDeepInteraction
-	});
+		this.onDeepInteraction,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	createState() => _AttachmentViewerState();
 }
 
 class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepAliveClientMixin {
-	AttachmentViewerStatus status;
-	Uri goodUrl;
+	late AttachmentViewerStatus status;
+	Uri? goodUrl;
 
 	@override
 	void initState() {
 		super.initState();
-		print('attachmentviewer: initstate');
 		status = AttachmentViewerStatus.LowRes;
+		updateKeepAlive();
 	}
 
 	@override
 	void didChangeDependencies() {
 		super.didChangeDependencies();
-		print('attachmentviewer: didchangedependencies');
-		if (Settings.of(context).autoloadAttachments) {
-			print('autoloading');
+		if (Settings.of(context).autoloadAttachments && status == AttachmentViewerStatus.LowRes) {
 			_load();
 		}
 	}
@@ -52,9 +51,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 	@override
 	void didUpdateWidget(AttachmentViewer oldWidget) {
 		super.didUpdateWidget(oldWidget);
-		print('didupdatewidget');
 		if (oldWidget.attachment != widget.attachment) {
-			print('attachmentviewer widget updated attachment');
 			status = AttachmentViewerStatus.LowRes;
 			if (Settings.of(context).autoloadAttachments) {
 				_load();
@@ -63,7 +60,6 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 	}
 
 	void _load() async {
-		print('load');
 		final site = ChanSite.of(context).provider;
 		final url = site.getAttachmentUrl(widget.attachment);
 		setState(() {
@@ -107,12 +103,11 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 	@override
 	Widget build(BuildContext context) {
 		super.build(context);
-		print('buildstatus: $status');
 		if (status == AttachmentViewerStatus.RealViewer) {
 			if (widget.attachment.type == AttachmentType.WEBM) {
 				return WEBMViewer(
 					attachment: widget.attachment,
-					url: goodUrl,
+					url: goodUrl!,
 					backgroundColor: widget.backgroundColor,
 					onDeepInteraction: widget.onDeepInteraction
 				);
@@ -120,7 +115,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 			else {
 				return ImageViewer(
 					attachment: widget.attachment,
-					url: goodUrl,
+					url: goodUrl!,
 					backgroundColor: widget.backgroundColor,
 					onDeepInteraction: widget.onDeepInteraction
 				);
@@ -134,15 +129,17 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 							attachment: widget.attachment,
 							width: double.infinity,
 							height: double.infinity,
-							fit: BoxFit.contain
+							fit: BoxFit.contain,
+							hero: false
 						),
 						if (status == AttachmentViewerStatus.CheckError)
 							Center(
 								child: Column(
+									mainAxisAlignment: MainAxisAlignment.center,
 									children: [
 										Icon(Icons.warning),
 										Text('Error getting file'),
-										RaisedButton.icon(
+										ElevatedButton.icon(
 											icon: Icon(Icons.history),
 											label: Text('Try archive'),
 											onPressed: _loadArchive
@@ -157,7 +154,6 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 					]
 				),
 				onTap: () {
-					print(status);
 					if (status == AttachmentViewerStatus.LowRes) {
 						_load();
 					}

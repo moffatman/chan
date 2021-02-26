@@ -1,7 +1,5 @@
 import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
 import 'dart:convert';
-import 'package:meta/meta.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 
@@ -20,7 +18,7 @@ class Provider4Chan implements ImageboardProvider {
 
 	List<PostElement> _makeElements(String data) {
 		final doc = parse(data);
-		final elements = List<PostElement>();
+		final List<PostElement> elements = [];
 		bool passedFirstLinebreak = false;
 		for (final node in doc.body.nodes) {
 			if (node is dom.Element) {
@@ -36,13 +34,21 @@ class Provider4Chan implements ImageboardProvider {
 				else {
 					passedFirstLinebreak = false;
 					if (node.localName == 'a') {
-						elements.add(QuoteLinkElement(num.tryParse(node.attributes['href'].substring(2))));
+						if (node.attributes['href']!.startsWith('#p')) {
+							elements.add(QuoteLinkElement(int.parse(node.attributes['href']!.substring(2))));
+						}
+						else {
+							// href looks like "/tv/thread/123456#123457"
+							final parts = node.attributes['href']!.split('/');
+							final ids = parts[3].split('#p');
+							elements.add(CrossThreadQuoteLinkElement(parts[1], int.parse(ids[0]), int.parse(ids[1])));
+						}
 					}
 					else if (node.localName == 'span') {
-						if (node.attributes['class'].contains('deadlink')) {
-							elements.add(DeadQuoteLinkElement(num.tryParse(node.innerHtml.substring(8))));
+						if (node.attributes['class']!.contains('deadlink')) {
+							elements.add(DeadQuoteLinkElement(int.parse(node.innerHtml.substring(8))));
 						}
-						else if (node.attributes['class'].contains('quote')) {
+						else if (node.attributes['class']!.contains('quote')) {
 							elements.add(QuoteElement(node.text));
 						}
 						else {
@@ -67,6 +73,7 @@ class Provider4Chan implements ImageboardProvider {
 
 	Post _makePost(String board, dynamic data) {
 		Post p = Post(
+			board: board,
 			text: data['com'] ?? '',
 			name: data['name'] ?? '',
 			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
@@ -91,7 +98,7 @@ class Provider4Chan implements ImageboardProvider {
 			return Uri.parse('https://i.4cdn.org/${attachment.board}/${attachment.id}${attachment.ext}');
 		}
 		else {
-			return archives[attachment.providerId].getAttachmentUrl(attachment);
+			return archives[attachment.providerId]!.getAttachmentUrl(attachment);
 		}
 	}
 	List<Uri> getArchiveAttachmentUrls(Attachment attachment) {
@@ -102,13 +109,13 @@ class Provider4Chan implements ImageboardProvider {
 			return Uri.parse('https://i.4cdn.org/${attachment.board}/${attachment.id}s.jpg');
 		}
 		else {
-			return archives[attachment.providerId].getAttachmentThumbnailUrl(attachment);
+			return archives[attachment.providerId]!.getAttachmentThumbnailUrl(attachment);
 		}
 	}
 	Future<Thread> getThread(String board, int id) async {
 		final response = await client.get(apiUrl + '/' + board + '/thread/' + id.toString() + '.json');
 		if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode);
+			return Future.error(HTTPStatusException(response.statusCode));
 		}
 		final data = json.decode(response.body);
 		return Thread(
@@ -127,13 +134,13 @@ class Provider4Chan implements ImageboardProvider {
 	}
 
 	Future<Thread> getThreadContainingPost(String board, int id) async {
-
+		throw Exception("Not implemented");
 	}
 
 	Future<List<Thread>> getCatalog(String board) async {
 		final response = await client.get(apiUrl + '/' + board + '/catalog.json');
 		final data = json.decode(response.body);
-		final threads = List<Thread>();
+		final List<Thread> threads = [];
 		for (final page in data) {
 			for (final threadData in page['threads']) {
 				/*List<Post> lastReplies = (threadData['last_replies'] ?? []).map<Post>((postData) {
@@ -159,10 +166,10 @@ class Provider4Chan implements ImageboardProvider {
 	}
 
 	Provider4Chan({
-		@required this.apiUrl,
-		@required this.imageUrl,
-		@required this.name,
-		@required this.client,
-		@required this.archives
+		required this.apiUrl,
+		required this.imageUrl,
+		required this.name,
+		required this.client,
+		required this.archives
 	});
 }

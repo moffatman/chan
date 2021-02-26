@@ -1,28 +1,26 @@
 import 'package:chan/models/attachment.dart';
-import 'package:chan/pages/gallery.dart';
-import 'package:chan/providers/provider.dart';
-import 'package:chan/widgets/attachment_gallery.dart';
 import 'package:chan/widgets/gallery_manager.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/provider_list.dart';
-import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 
-import 'package:chan/widgets/data_stream_provider.dart';
 import 'package:chan/widgets/chan_site.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 class ThreadPage extends StatefulWidget {
-	final Thread thread;
-	final ValueChanged<Attachment> onThumbnailTap;
-	final GlobalKey<RefreshIndicatorState> refreshKey = GlobalKey();
+	final String board;
+	final int id;
+	final int? initialPostId;
 
 	ThreadPage({
-		@required this.thread,
-		this.onThumbnailTap
+		required this.board,
+		required this.id,
+		this.initialPostId
 	});
 
 	@override
@@ -30,33 +28,62 @@ class ThreadPage extends StatefulWidget {
 }
 
 class _ThreadPageState extends State<ThreadPage> {
-	List<Attachment> attachments;
-	Thread thread;
+	Thread? thread;
+
+	FocusNode _focusNode = FocusNode();
+	ProviderListController<Post> _listController = ProviderListController();
+
+	void _showGallery({bool initiallyShowChrome = false, Attachment? initialAttachment}) {
+		showGallery(
+			context: context,
+			attachments: thread!.posts.where((_) => _.attachment != null).map((_) => _.attachment!).toList(),
+			initiallyShowChrome: initiallyShowChrome,
+			initialAttachment: initialAttachment,
+			onChange: (attachment) {
+				_listController.scrollToFirstMatching((post) {
+					return post.attachment == attachment;
+				});
+			}
+		);
+	}
 
 	@override
 	Widget build(BuildContext context) {
 		return CupertinoPageScaffold(
-			child: ProviderList<Post>(
-				title: '/${widget.thread.board}/${widget.thread.id}',
-				listUpdater: () async {
-					final _thread = await ChanSite.of(context).provider.getThread(widget.thread.board, widget.thread.id);
-					setState(() {
-						thread = _thread;
-					});
-					return _thread.posts;
-				},
-				builder: (context, post) {
-					return PostRow(
-						post: post,
-						onThumbnailTap: (attachment) {
-							showGallery(
-								context: context,
-								attachments: thread.posts.where((_) => _.attachment != null).map((_) => _.attachment).toList(),
-								initialAttachment: attachment
-							);
+			child: RawKeyboardListener(
+				autofocus: true,
+				focusNode: _focusNode,
+				onKey: (event) {
+					if (event is RawKeyDownEvent) {
+						if (event.logicalKey == LogicalKeyboardKey.keyG) {
+							final nextPostWithImage = _listController.findNextMatch((post) => post.attachment != null);
+							if (nextPostWithImage != null) {
+								_showGallery(initialAttachment: nextPostWithImage.attachment);
+							}
 						}
-					);
-				}
+					}
+				},
+				child: ProviderList<Post>(
+					title: '/${widget.board}/${widget.id}',
+					listUpdater: () async {
+						final _thread = await ChanSite.of(context).provider.getThread(widget.board, widget.id);
+						setState(() {
+							thread = _thread;
+						});
+						return _thread.posts;
+					},
+					controller: _listController,
+					builder: (context, post) {
+						return Provider.value(
+							value: post,
+							child: PostRow(
+								onThumbnailTap: (attachment) {
+									_showGallery(initialAttachment: attachment, initiallyShowChrome: true);
+								}
+							)
+						);
+					}
+				)
 			)
 		);
 	}

@@ -15,12 +15,12 @@ enum WEBMViewerStatus {
 class WEBMViewer extends StatefulWidget {
 	final Uri url;
 	final Attachment attachment;
-	final ValueChanged<bool> onDeepInteraction;
+	final ValueChanged<bool>? onDeepInteraction;
 	final Color backgroundColor;
 
 	WEBMViewer({
-		@required this.url,
-		@required this.attachment,
+		required this.url,
+		required this.attachment,
 		this.onDeepInteraction,
 		this.backgroundColor = Colors.black
 	});
@@ -30,13 +30,11 @@ class WEBMViewer extends StatefulWidget {
 }
 
 class _WEBMViewerState extends State<WEBMViewer> {
-	WEBM webm;
-	ChewieController _chewieController;
-	VideoPlayerController _videoPlayerController;
+	late WEBM webm;
+	late ChewieController _chewieController;
+	late VideoPlayerController _videoPlayerController;
 	WEBMViewerStatus playerStatus = WEBMViewerStatus.Loading;
 	WEBMStatus loadingStatus = WEBMStatus(type: WEBMStatusType.Idle);
-
-	_WEBMViewerState();
 
 	_initializeWebm() {
 		if (isDesktop()) {
@@ -105,7 +103,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 	Widget build(BuildContext context) {
 		if (playerStatus == WEBMViewerStatus.Error) {
 			return Center(
-				child: Text("Error: ${loadingStatus.message}")
+				child: Text("Error: ${loadingStatus.message}", style: TextStyle(color: Theme.of(context).colorScheme.onBackground))
 			);
 		}
 		else if (playerStatus == WEBMViewerStatus.Loading) {

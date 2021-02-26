@@ -1,7 +1,6 @@
+// @dart=2.9
 import 'package:chan/services/settings.dart';
-import 'package:chan/services/util.dart';
 import 'package:chan/widgets/chan_site.dart';
-import 'package:chan/widgets/gallery_manager.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/io_client.dart';
@@ -34,9 +33,11 @@ class _MyAppState extends State<MyApp> {
 	@override
 	Widget build(BuildContext context) {
 		return SettingsHandler(
-			settings: Settings(
-				autoloadAttachmentsPreference: Setting_AutoloadAttachments.WiFi
-			),
+			settingsBuilder: () {
+				return Settings(
+					autoloadAttachmentsPreference: Setting_AutoloadAttachments.WiFi
+				);
+			},
 			child: ChanSite(
 				provider: provider,
 				child: CupertinoApp(
