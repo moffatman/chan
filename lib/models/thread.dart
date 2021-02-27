@@ -28,10 +28,8 @@ class Thread {
 			postsById[post.id] = post;
 		}
 		for (final post in this.posts) {
-			for (final element in post.elements) {
-				if (element is QuoteLinkElement) {
-					postsById[element.id]?.replies.add(post);
-				}
+			for (final referencedPostId in post.span.referencedPostIds) {
+				postsById[referencedPostId]?.replyIds.add(post.id);
 			}
 		}
 	}

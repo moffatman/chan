@@ -49,11 +49,15 @@ class _GalleryPageState extends State<GalleryPage> {
 			onDismissed: (direction) {
 				Navigator.of(context).pop();
 			},
-			key: ObjectKey('xd'),
+			resizeDuration: Duration(milliseconds: 1),
+			dismissThresholds: {
+				DismissDirection.down: 0.1
+			},
+			key: ObjectKey('GalleryPage'),
 			child: CupertinoPageScaffold(
 				backgroundColor: Colors.black38,
 				navigationBar: showChrome ? CupertinoNavigationBar(
-					middle: const Text('Gallery'),
+					middle: const Text('Gallery', style: TextStyle(color: Colors.white)),
 					backgroundColor: Colors.black38
 				) : null,
 				child: AttachmentGallery(

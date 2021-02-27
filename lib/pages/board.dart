@@ -1,28 +1,43 @@
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/provider_list.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:chan/models/thread.dart';
-import 'package:chan/widgets/chan_site.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class BoardPage extends StatelessWidget {
-	final void Function(Thread selectedThread) onThreadSelected;
+	final ValueChanged<Thread> onThreadSelected;
 	final Thread? selectedThread;
 	final String board;
+	final VoidCallback? onHeaderTapped;
 	BoardPage({
 		required this.onThreadSelected,
 		this.selectedThread,
-		required this.board
+		required this.board,
+		this.onHeaderTapped
 	});
 
 	@override
 	Widget build(BuildContext context) {
-		final site = ChanSite.of(context).provider;
+		final site = context.watch<ImageboardSite>();
 		return CupertinoPageScaffold(
+			navigationBar: CupertinoNavigationBar(
+				middle: GestureDetector(
+					onTap: onHeaderTapped,
+					child: Row(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							Text('/$board/'),
+							Icon(Icons.arrow_drop_down, color: DefaultTextStyle.of(context).style.color)
+						]
+					)
+				)
+			),
 			child: ProviderList<Thread>(
 				listUpdater: () => site.getCatalog(board),
-				title: '/$board/',
+				id: '/$board/',
 				lazy: true,
 				builder: (context, thread) {
 					return GestureDetector(

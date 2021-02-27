@@ -20,9 +20,9 @@ class PostRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final post = context.watch<Post>();
-		final openedFromPostId = context.watchOrNull<ParentPost>()?.id;
+		final openedFromPostId = context.watchOrNull<ExpandingPostZone>()?.parentId;
 		return Container(
-			decoration: BoxDecoration(border: (openedFromPostId != null) ? Border.all(width: 0, color: Theme.of(context).colorScheme.onBackground) : Border(bottom: BorderSide(width: 0, color: Theme.of(context).colorScheme.onBackground))),
+			decoration: BoxDecoration(border: (openedFromPostId != null) ? Border.all(width: 0) : Border(bottom: BorderSide(width: 0))),
 			child: Row(
 				crossAxisAlignment: CrossAxisAlignment.start,
 				mainAxisAlignment: MainAxisAlignment.start,
@@ -44,29 +44,31 @@ class PostRow extends StatelessWidget {
 								mainAxisSize: MainAxisSize.min,
 								children: [
 									ChangeNotifierProvider<ExpandingPostZone>(
-										create: (_) => ExpandingPostZone(),
-										child: Wrap(
-											spacing: 8,
-											runSpacing: 3,
-											children: [
-												Text(post.id.toString(), style: TextStyle(color: Colors.grey)),
-												Text(timeago.format(post.time), style: TextStyle(color: Theme.of(context).colorScheme.onBackground)),
-												...post.replies.map((reply) => QuoteLinkElement(reply.id)),
-												...post.replies.map((reply) => ExpandingPost(post: reply, parentId: post.id))
-											]
+										create: (_) => ExpandingPostZone(post.id),
+										child: Builder(
+											builder: (ctx) => Text.rich(
+												TextSpan(
+													children: [
+														TextSpan(
+															text: post.id.toString(),
+															style: TextStyle(color: Colors.grey)
+														),
+														TextSpan(
+															text: timeago.format(post.time)
+														),
+														...post.replyIds.map((id) => PostQuoteLinkSpan(id).build(ctx)),
+														...post.replyIds.map((id) => WidgetSpan(
+															child: ExpandingPost(id)
+														))
+													]
+												)
+											)
 										)
 									),
 									ChangeNotifierProvider<ExpandingPostZone>(
-										create: (_) => ExpandingPostZone(),
-										child: Wrap(
-											children: post.elements.expand((element) {
-												if (element is QuoteLinkElement) {
-													return [element, ExpandingPost(post: context.watch<List<Post>>().firstWhere((p) => p.id == element.id), parentId: post.id)];
-												}
-												else {
-													return [element];
-												}
-											}).toList()
+										create: (_) => ExpandingPostZone(post.id),
+										child: Builder(
+											builder: (ctx) => Text.rich(post.span.build(ctx))
 										)
 									)
 								]

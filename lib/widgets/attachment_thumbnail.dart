@@ -1,8 +1,9 @@
 import 'package:chan/models/attachment.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/util.dart';
-import 'package:chan/widgets/chan_site.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
 
 class AttachmentThumbnail extends StatelessWidget {
 	final Attachment attachment;
@@ -70,14 +71,15 @@ class AttachmentThumbnail extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final url = ChanSite.of(context).provider.getAttachmentThumbnailUrl(attachment).toString();
+		final url = context.watch<ImageboardSite>().getAttachmentThumbnailUrl(attachment).toString();
 		Widget child = isDesktop() ? _buildDesktop(url) : _buildMobile(url);
 		return hero ? Hero(
 			tag: attachment,
 			child: child,
-			flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
-				return (direction == HeroFlightDirection.push ? toContext.widget as Hero : fromContext.widget as Hero).child;
-			},
+			/*flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+				print(direction);
+				return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
+			},*/
 		) : child;
 	}
 }

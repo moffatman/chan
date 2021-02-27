@@ -45,22 +45,17 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 	void _generatePageWidgets() {
 		pageWidgets = widget.attachments.map((attachment) {
 			return GestureDetector(
-				child: Hero(
-					tag: attachment,
-					child: AttachmentViewer(
-						key: GlobalObjectKey(attachment),
-						attachment: attachment,
-						backgroundColor: widget.backgroundColor,
-						onDeepInteraction: (currentInteraction) {
-							print('onDeepInteraction: $currentInteraction');
-							setState(() {
-								_lock = currentInteraction;
-							});
-						}
-					)
+				child: AttachmentViewer(
+					attachment: attachment,
+					backgroundColor: widget.backgroundColor,
+					onDeepInteraction: (currentInteraction) {
+						setState(() {
+							_lock = currentInteraction;
+						});
+					}
 				),
 				onTap: () {
-					if (widget.onTap != null) widget.onTap?.call(attachment);
+					widget.onTap?.call(attachment);
 				}
 			);
 		}).toList();
@@ -98,7 +93,7 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 	}
 
 	void _onPageChanged(int index) {
-		if (widget.onChange != null) widget.onChange?.call(widget.attachments[index]);
+		widget.onChange?.call(widget.attachments[index]);
 		double centerPosition = ((widget.thumbnailSize + 8) * (index - 1.5)) - (_scrollController.position.viewportDimension / 2);
 		bool shouldScrollLeft = (centerPosition > _scrollController.position.pixels) && (_scrollController.position.extentAfter > 0);
 		bool shouldScrollRight = (centerPosition < _scrollController.position.pixels) && (_scrollController.position.extentBefore > 0);
@@ -115,7 +110,7 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 	}
 
 	void _selectImage(int index, {int milliseconds = 500}) {
-		if (widget.onChange != null) widget.onChange?.call(widget.attachments[index]);
+		widget.onChange?.call(widget.attachments[index]);
 		setState(() {
 			if (milliseconds == 0) {
 				_pageController.jumpToPage(index);
@@ -170,44 +165,46 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 						Visibility(
 							visible: widget.showThumbnails,
 							maintainState: true,
-							child: Column(
-								crossAxisAlignment: CrossAxisAlignment.center,
-								children: [
-									Expanded(
-										child: Container()
-									),
-									Container(
-										decoration: BoxDecoration(
-											color: Colors.black38
+							child: SafeArea(
+								child: Column(
+									crossAxisAlignment: CrossAxisAlignment.center,
+									children: [
+										Expanded(
+											child: Container()
 										),
-										height: widget.thumbnailSize + 8,
-										child: ListView.builder(
-											controller: _scrollController,
-											itemCount: widget.attachments.length,
-											scrollDirection: Axis.horizontal,
-											itemBuilder: (context, index) {
-												return GestureDetector(
-													onTap: () {
-														_selectImage(index);
-													},
-													child: Container(
-														decoration: BoxDecoration(
-															color: Colors.transparent,
-															border: Border.all(color: index ==  _currentIndex ? Colors.blue : Colors.transparent, width: 2)
-														),
-														margin: const EdgeInsets.only(left: 4, right: 4),
-														child: AttachmentThumbnail(
-															attachment: widget.attachments[index],
-															width: widget.thumbnailSize,
-															height: widget.thumbnailSize,
-															hero: false
+										Container(
+											decoration: BoxDecoration(
+												color: Colors.black38
+											),
+											height: widget.thumbnailSize + 8,
+											child: ListView.builder(
+												controller: _scrollController,
+												itemCount: widget.attachments.length,
+												scrollDirection: Axis.horizontal,
+												itemBuilder: (context, index) {
+													return GestureDetector(
+														onTap: () {
+															_selectImage(index);
+														},
+														child: Container(
+															decoration: BoxDecoration(
+																color: Colors.transparent,
+																border: Border.all(color: index ==  _currentIndex ? Colors.blue : Colors.transparent, width: 2)
+															),
+															margin: const EdgeInsets.only(left: 4, right: 4),
+															child: AttachmentThumbnail(
+																attachment: widget.attachments[index],
+																width: widget.thumbnailSize,
+																height: widget.thumbnailSize,
+																hero: false
+															)
 														)
-													)
-												);
-											}
+													);
+												}
+											)
 										)
-									)
-								]
+									]
+								)
 							)
 						)
 					]

@@ -5,8 +5,9 @@ import 'package:provider/provider.dart';
 
 class ExpandingPostZone extends ChangeNotifier {
 	final Map<int, bool> _shouldExpandPost = Map();
+	final int parentId;
 
-	ExpandingPostZone();
+	ExpandingPostZone(this.parentId);
 
 	bool shouldExpandPost(int id) {
 		return _shouldExpandPost[id] ?? false;
@@ -18,27 +19,15 @@ class ExpandingPostZone extends ChangeNotifier {
 	}
 }
 
-class ParentPost {
-	final int id;
-	ParentPost(this.id);
-}
-
 class ExpandingPost extends StatelessWidget {
-	final ParentPost parent;
-	final Post post;
-	ExpandingPost({
-		required this.post,
-		required int parentId
-	}) : parent = ParentPost(parentId);
+	final int id;
+	ExpandingPost(this.id);
 	
 	@override
 	Widget build(BuildContext context) {
-		return context.watch<ExpandingPostZone>().shouldExpandPost(this.post.id) ? MultiProvider(
-			providers: [
-				Provider.value(value: post),
-				Provider.value(value: parent)
-			],
+		return context.watch<ExpandingPostZone>().shouldExpandPost(this.id) ? Provider.value(
+			value: context.watch<List<Post>>().firstWhere((p) => p.id == this.id),
 			child: PostRow()
-		) : Container();
+		) : Container(width: 0, height: 0);
 	}
 }

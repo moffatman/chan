@@ -1,11 +1,12 @@
 import 'package:chan/models/thread.dart';
+import 'package:chan/widgets/gallery_manager.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
-import 'package:chan/pages/thread.dart';
-
-import 'package:chan/pages/board.dart';
+import 'board.dart';
+import 'board_switcher.dart';
+import 'thread.dart';
 
 class ImageboardTab extends StatefulWidget {
 	final bool isInTabletLayout;
@@ -21,6 +22,7 @@ class ImageboardTab extends StatefulWidget {
 class _ImageboardTabState extends State<ImageboardTab> {
 	late String board;
 	Thread? selectedThread;
+	GlobalKey<NavigatorState> _rightPaneNavigatorKey = GlobalKey<NavigatorState>();
 	@override
 	initState() {
 		super.initState();
@@ -34,28 +36,46 @@ class _ImageboardTabState extends State<ImageboardTab> {
 				children: [
 					Flexible(
 						flex: 1,
-						child: BoardPage(
-							board: board,
-							selectedThread: selectedThread,
-							onThreadSelected: (thread) {
-								setState(() {
-									selectedThread = thread;
-								});
-							},
+						child: Navigator(
+							initialRoute: '/',
+							onGenerateRoute: (RouteSettings settings) {
+								return TransparentRoute(
+									builder: (context) {
+										return BoardPage(
+											board: board,
+											selectedThread: selectedThread,
+											onThreadSelected: (thread) {
+												setState(() {
+													selectedThread = thread;
+												});
+												_rightPaneNavigatorKey.currentState!.popUntil((route) => route.isFirst);
+											},
+											onHeaderTapped: () async {
+												final newBoard = await Navigator.of(context).push<String>(TransparentRoute(builder: (ctx) => BoardSwitcherPage()));
+												if (newBoard != null) {
+													setState(() {
+														board = newBoard;
+													});
+												}
+											}
+										);
+									}
+								);
+							}
 						)
 					),
 					VerticalDivider(
-						width: 0,
-						color: Theme.of(context).colorScheme.onBackground
+						width: 0
 					),
 					Flexible(
 						flex: 3,
 						child: Navigator(
+							key: _rightPaneNavigatorKey,
 							initialRoute: '/',
 							onGenerateRoute: (RouteSettings settings) {
 								return CupertinoPageRoute(
 									builder: (context) {
-										return selectedThread != null ? ThreadPage(board: board, id: selectedThread!.id) : Center(child: Text('Select a thread'));
+										return selectedThread != null ? ThreadPage(board: selectedThread!.board, id: selectedThread!.id) : Center(child: Text('Select a thread'));
 									},
 									settings: settings
 								);
@@ -69,7 +89,15 @@ class _ImageboardTabState extends State<ImageboardTab> {
 			return BoardPage(
 				board: board,
 				onThreadSelected: (thread) {
-					Navigator.of(context).push(CupertinoPageRoute(builder: (ctx) => ThreadPage(board: board, id: thread.id)));
+					Navigator.of(context).push(CupertinoPageRoute(builder: (ctx) => ThreadPage(board: thread.board, id: thread.id)));
+				},
+				onHeaderTapped: () async {
+					final newBoard = await Navigator.of(context).push<String>(TransparentRoute(builder: (ctx) => BoardSwitcherPage()));
+					if (newBoard != null) {
+						setState(() {
+							board = newBoard;
+						});
+					}
 				},
 			);
 		}

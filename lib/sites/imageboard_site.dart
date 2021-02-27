@@ -25,12 +25,26 @@ class HTTPStatusException implements Exception {
 	HTTPStatusException(this.code);
 }
 
-abstract class ImageboardProvider {
+class ImageboardBoard {
+	final String name;
+	final String title;
+	final bool isWorksafe;
+
+	ImageboardBoard({
+		required this.name,
+		required this.title,
+		required this.isWorksafe
+	});
+}
+
+abstract class ImageboardSite {
 	final http.Client client = http.Client();
-	final String name = 'Unknownchan';
+	String get name;
 	Future<Thread> getThreadContainingPost(String board, int id);
 	Future<Thread> getThread(String board, int id);
 	Future<List<Thread>> getCatalog(String board);
 	Uri getAttachmentUrl(Attachment attachment);
 	Uri getAttachmentThumbnailUrl(Attachment attachment);
+	List<Uri> getArchiveAttachmentUrls(Attachment attachment);
+	Future<List<ImageboardBoard>> getBoards();
 }

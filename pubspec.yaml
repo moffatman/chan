@@ -28,6 +28,7 @@ dependencies:
   connectivity: "^3.0.0"
   rxdart: "^0.25.0"
   provider: "^5.0.0-nullsafety.5"
+  shared_preferences: ">=0.5.12+4 <2.0.0"
   flutter:
     sdk: flutter
 

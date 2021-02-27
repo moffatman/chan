@@ -8,15 +8,15 @@ class Post {
 	final DateTime time;
 	final int id;
 	final Attachment? attachment;
-	List<PostElement> elements;
-	final List<Post> replies = [];
+	PostSpan span;
+	List<int> replyIds = [];
 	Post({
 		required this.board,
 		required this.text,
 		required this.name,
 		required this.time,
 		required this.id,
-		required this.elements,
+		required this.span,
 		this.attachment
 	});
 

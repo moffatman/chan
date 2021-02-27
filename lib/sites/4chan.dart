@@ -3,31 +3,32 @@ import 'dart:convert';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 
-import 'package:chan/providers/provider.dart';
+import 'imageboard_site.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/models/post_element.dart';
 
-class Provider4Chan implements ImageboardProvider {
+class Site4Chan implements ImageboardSite {
 	final String name;
 	final String apiUrl;
 	final String imageUrl;
 	final http.Client client;
-	final Map<String, ImageboardProvider> archives;
+	final Map<String, ImageboardSite> archives;
+	List<ImageboardBoard>? _boards;
 
-	List<PostElement> _makeElements(String data) {
+	List<PostSpan> _makeSpans(String data) {
 		final doc = parse(data);
-		final List<PostElement> elements = [];
+		final List<PostSpan> elements = [];
 		bool passedFirstLinebreak = false;
 		for (final node in doc.body.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
 					if (passedFirstLinebreak) {
-						elements.add(LineBreakElement());
+						elements.add(PostLineBreakSpan());
 					}
 					else {
-						elements.add(NewLineElement());
+						elements.add(PostNewLineSpan());
 						passedFirstLinebreak = true;
 					}
 				}
@@ -35,21 +36,25 @@ class Provider4Chan implements ImageboardProvider {
 					passedFirstLinebreak = false;
 					if (node.localName == 'a') {
 						if (node.attributes['href']!.startsWith('#p')) {
-							elements.add(QuoteLinkElement(int.parse(node.attributes['href']!.substring(2))));
+							elements.add(PostExpandingQuoteLinkSpan(int.parse(node.attributes['href']!.substring(2))));
+						}
+						else if (node.attributes['href']!.contains('#p')) {
+							// href looks like "/tv/thread/123456#p123457"
+							final parts = node.attributes['href']!.split('/');
+							final threadIndex = parts.indexOf('thread');
+							final ids = parts[threadIndex + 1].split('#p');
+							elements.add(PostCrossThreadQuoteLinkSpan(parts[threadIndex - 1], int.parse(ids[0]), int.parse(ids[1])));
 						}
 						else {
-							// href looks like "/tv/thread/123456#123457"
-							final parts = node.attributes['href']!.split('/');
-							final ids = parts[3].split('#p');
-							elements.add(CrossThreadQuoteLinkElement(parts[1], int.parse(ids[0]), int.parse(ids[1])));
+							elements.add(PostTextSpan("LINK: " + node.attributes['href']!));
 						}
 					}
 					else if (node.localName == 'span') {
 						if (node.attributes['class']!.contains('deadlink')) {
-							elements.add(DeadQuoteLinkElement(int.parse(node.innerHtml.substring(8))));
+							elements.add(PostDeadQuoteLinkSpan(int.parse(node.innerHtml.substring(8))));
 						}
 						else if (node.attributes['class']!.contains('quote')) {
-							elements.add(QuoteElement(node.text));
+							elements.add(PostQuoteSpan(node.text));
 						}
 						else {
 							throw 'Unknown span: ' + node.outerHtml;
@@ -59,13 +64,13 @@ class Provider4Chan implements ImageboardProvider {
 						// do nothing
 					}
 					else {
-						elements.add(TextElement(node.outerHtml));
+						elements.add(PostTextSpan(node.outerHtml));
 					}
 				}
 			}
 			else {
 				passedFirstLinebreak = false;
-				elements.add(TextElement(node.text));
+				elements.add(PostTextSpan(node.text));
 			}
 		}
 		return elements;
@@ -79,7 +84,7 @@ class Provider4Chan implements ImageboardProvider {
 			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
 			id: data['no'],
 			attachment: (data['filename'] != null) ? _makeAttachment(board, data) : null,
-			elements: _makeElements(data['com'] ?? '')
+			span: PostNodeSpan(_makeSpans(data['com'] ?? ''))
 		);
 
 		return p;
@@ -115,6 +120,9 @@ class Provider4Chan implements ImageboardProvider {
 	Future<Thread> getThread(String board, int id) async {
 		final response = await client.get(apiUrl + '/' + board + '/thread/' + id.toString() + '.json');
 		if (response.statusCode != 200) {
+			if (response.statusCode == 404) {
+				return Future.error(ThreadNotFoundException(board, id));
+			}
 			return Future.error(HTTPStatusException(response.statusCode));
 		}
 		final data = json.decode(response.body);
@@ -164,12 +172,29 @@ class Provider4Chan implements ImageboardProvider {
 		}
 		return threads;
 	}
+	Future<List<ImageboardBoard>> _getBoards() async {
+		final response = await client.get(apiUrl + '/boards.json');
+		final data = json.decode(response.body);
+		return (data['boards'] as List<dynamic>).map((board) {
+			return ImageboardBoard(
+				name: board['board'],
+				title: board['title'],
+				isWorksafe: board['ws_board'] == 1
+			);
+		}).toList();
+	}
+	Future<List<ImageboardBoard>> getBoards() async {
+		if (_boards == null) {
+			_boards = await _getBoards();
+		}
+		return _boards!;
+	}
 
-	Provider4Chan({
+	Site4Chan({
 		required this.apiUrl,
 		required this.imageUrl,
 		required this.name,
 		required this.client,
-		required this.archives
+		this.archives = const {}
 	});
 }

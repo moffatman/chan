@@ -1,4 +1,5 @@
 import 'package:chan/models/attachment.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/gallery_manager.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/provider_list.dart';
@@ -8,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 
-import 'package:chan/widgets/chan_site.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -49,7 +49,11 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		final title = '/${widget.board}/${widget.id}';
 		return CupertinoPageScaffold(
+			navigationBar: CupertinoNavigationBar(
+				middle: Text(title)
+			),
 			child: RawKeyboardListener(
 				autofocus: true,
 				focusNode: _focusNode,
@@ -64,9 +68,9 @@ class _ThreadPageState extends State<ThreadPage> {
 					}
 				},
 				child: ProviderList<Post>(
-					title: '/${widget.board}/${widget.id}',
+					id: title,
 					listUpdater: () async {
-						final _thread = await ChanSite.of(context).provider.getThread(widget.board, widget.id);
+						final _thread = await context.watch<ImageboardSite>().getThread(widget.board, widget.id);
 						setState(() {
 							thread = _thread;
 						});

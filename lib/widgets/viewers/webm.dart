@@ -1,10 +1,11 @@
 import 'package:chan/models/attachment.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/services/webm.dart';
-import 'package:chan/widgets/chan_site.dart';
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:provider/provider.dart';
 
 enum WEBMViewerStatus {
 	Loading,
@@ -49,7 +50,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 		else {
 			webm = WEBM(
 				url: widget.url,
-				client: ChanSite.of(context).provider.client
+				client: context.watch<ImageboardSite>().client
 			);
 			playerStatus = WEBMViewerStatus.Loading;
 			webm.startProcessing();
@@ -58,9 +59,11 @@ class _WEBMViewerState extends State<WEBMViewer> {
 				if (status.type == WEBMStatusType.Converted) {
 					setState(() {
 						_videoPlayerController = VideoPlayerController.file(status.file);
+						_videoPlayerController.initialize();
 						_chewieController = ChewieController(
 							videoPlayerController:  _videoPlayerController,
-							autoPlay: true
+							autoPlay: true,
+							looping: true
 						);
 						playerStatus = WEBMViewerStatus.Playing;
 					});
@@ -103,7 +106,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 	Widget build(BuildContext context) {
 		if (playerStatus == WEBMViewerStatus.Error) {
 			return Center(
-				child: Text("Error: ${loadingStatus.message}", style: TextStyle(color: Theme.of(context).colorScheme.onBackground))
+				child: Text("Error: ${loadingStatus.message}")
 			);
 		}
 		else if (playerStatus == WEBMViewerStatus.Loading) {

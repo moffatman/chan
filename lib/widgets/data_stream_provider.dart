@@ -9,16 +9,16 @@ typedef DataStreamPlaceholderBuilderFunction<T> = Widget Function(BuildContext c
 
 class DataProvider<T> extends StatefulWidget {
 	final DataStreamBuilderFunction<T> builder;
-	final DataStreamPlaceholderBuilderFunction<T> placeholder;
+	final DataStreamPlaceholderBuilderFunction<T> placeholderBuilder;
 	final Future<T> Function() updater;
-	final DataStreamErrorBuilderFunction? onError;
+	final DataStreamErrorBuilderFunction errorBuilder;
 	final T initialValue;
 	final String id;
 
 	DataProvider({
 		required this.builder,
-		required this.placeholder,
-		this.onError,
+		required this.placeholderBuilder,
+		required this.errorBuilder,
 		required this.updater,
 		required this.initialValue,
 		required this.id
@@ -31,6 +31,7 @@ class DataProvider<T> extends StatefulWidget {
 class _DataProviderState<T> extends State<DataProvider<T>> {
 	late T value;
 	bool realValuePresent = false;
+	Exception? exception;
 
 	@override
 	void initState() {
@@ -47,6 +48,7 @@ class _DataProviderState<T> extends State<DataProvider<T>> {
 			setState(() {
 				value = widget.initialValue;
 				realValuePresent = false;
+				exception = null;
 			});
 			this.update();
 		}
@@ -58,23 +60,21 @@ class _DataProviderState<T> extends State<DataProvider<T>> {
 			setState(() {
 				value = newData;
 				realValuePresent = true;
+				exception = null;
 			});
 		}
-		on Exception catch (error, stackTrace) {
-			print('DataStreamProvider update error');
-			print(error);
-			print(stackTrace);
-			if (widget.onError != null) {
-				widget.onError?.call(context, error);
-			}
+		on Exception catch (e) {
+			setState(() {
+				this.exception = e;
+			});
 		}
 	}
 
 	@override
 	Widget build(BuildContext context) {
-		return realValuePresent ? Provider.value(
+		return (exception != null) ? widget.errorBuilder(context, exception!) : (realValuePresent ? Provider.value(
 			value: value,
 			child: widget.builder(context, value, update)
-		) : widget.placeholder(context, value);
+		) : widget.placeholderBuilder(context, value));
 	}
 }

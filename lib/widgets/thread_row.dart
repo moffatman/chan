@@ -1,6 +1,8 @@
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:flutter/cupertino.dart';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:chan/models/thread.dart';
 
@@ -15,8 +17,7 @@ class ThreadRow extends StatelessWidget {
 	Widget build(BuildContext context) {
 		return Container(
 			decoration: BoxDecoration(
-				color: isSelected ? Color(0xFFCCCCCC) : null,
-				border: Border(bottom: BorderSide(width: 0, color: Theme.of(context).colorScheme.onBackground))
+				color: isSelected ? ((MediaQuery.of(context).platformBrightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : null
 			),
 			child: Row(
 				crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,8 +33,13 @@ class ThreadRow extends StatelessWidget {
 							crossAxisAlignment: CrossAxisAlignment.start,
 							mainAxisAlignment: MainAxisAlignment.start,
 							children: [
-								if (thread.title != null) Text(thread.title!, style: TextStyle(color: Theme.of(context).colorScheme.onBackground)),
-								Wrap(children: thread.posts[0].elements)
+								if (thread.title != null) Text(thread.title!, style: TextStyle(fontWeight: FontWeight.bold)),
+								Provider.value(
+									value: thread.posts[0],
+									child: Builder(
+										builder: (ctx) => Text.rich(thread.posts[0].span.build(ctx))
+									)
+								)
 							]
 						)
 					))

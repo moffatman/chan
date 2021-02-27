@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:flutter/material.dart';
@@ -8,25 +9,29 @@ class ImageViewer extends StatelessWidget {
 	final Attachment attachment;
 	final ValueChanged<bool>? onDeepInteraction;
 	final Color backgroundColor;
+	final bool allowZoom;
 
 	ImageViewer({
 		required this.url,
 		required this.attachment,
 		this.onDeepInteraction,
-		this.backgroundColor = Colors.black
+		this.backgroundColor = Colors.black,
+		this.allowZoom = true
 	});
 
 	@override
 	Widget build(BuildContext context) {
 		return PhotoView(
+			gaplessPlayback: true,
+			disableGestures: !allowZoom,
 			backgroundDecoration: BoxDecoration(color: backgroundColor),
 			imageProvider: NetworkImage(url.toString()),
 			minScale: PhotoViewComputedScale.contained,
+			heroAttributes: PhotoViewHeroAttributes(
+				tag: attachment
+			),
 			scaleStateChangedCallback: (state) {
-				print(state);
-				if (onDeepInteraction != null) {
-					onDeepInteraction?.call(state != PhotoViewScaleState.initial);
-				}
+				onDeepInteraction?.call(state != PhotoViewScaleState.initial);
 			},
 			loadingBuilder: (context, imageChunkEvent) {
 				return Stack(
@@ -39,7 +44,9 @@ class ImageViewer extends StatelessWidget {
 							hero: false
 						),
 						Center(
-							child: CircularProgressIndicator()
+							child: CircularProgressIndicator(
+								value: imageChunkEvent.expectedTotalBytes == null ? null : imageChunkEvent.cumulativeBytesLoaded / imageChunkEvent.expectedTotalBytes!
+							)
 						)
 					]
 				);

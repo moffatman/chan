@@ -7,14 +7,14 @@ import 'package:rxdart/rxdart.dart';
 class ProviderList<T> extends StatelessWidget {
 	final Widget Function(BuildContext context, T value) builder;
 	final Future<List<T>> Function() listUpdater;
-	final String title;
+	final String id;
 	final ProviderListController? controller;
 	final bool lazy;
 
 	ProviderList({
 		required this.builder,
 		required this.listUpdater,
-		required this.title,
+		required this.id,
 		this.controller,
 		this.lazy = false
 	}) {
@@ -25,10 +25,10 @@ class ProviderList<T> extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return DataProvider<List<T>>(
-			id: title,
+			id: id,
 			updater: listUpdater,
 			initialValue: [],
-			placeholder: (BuildContext context, value) {
+			placeholderBuilder: (BuildContext context, value) {
 				return Center(
 					child: CupertinoActivityIndicator()
 				);
@@ -39,16 +39,14 @@ class ProviderList<T> extends StatelessWidget {
 					controller: this.controller?.scrollController,
 					physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), 
 					slivers: [
-						CupertinoSliverNavigationBar(
-							largeTitle: Text(title),
-							heroTag: title
-						),
-						CupertinoSliverRefreshControl(
-							onRefresh: requestUpdate,
+						SliverSafeArea(
+							sliver: CupertinoSliverRefreshControl(
+								onRefresh: requestUpdate,
+							),
 						),
 						SliverSafeArea(
 							top: false,
-							sliver:  lazy ? SliverList(
+							sliver: lazy ? SliverList(
 								delegate: SliverChildBuilderDelegate(
 									(context, i) {
 										if (i % 2 == 0) {
@@ -108,7 +106,7 @@ class ProviderList<T> extends StatelessWidget {
 					]
 				);
 			},
-			onError: (context, exception) {
+			errorBuilder: (context, exception) {
 				return Center(
 					child: Text(exception.toString())
 				);

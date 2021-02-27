@@ -4,7 +4,7 @@ import 'package:chan/services/util.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity/connectivity.dart';
 
-import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum Setting_AutoloadAttachments {
 	Never,
@@ -12,25 +12,21 @@ enum Setting_AutoloadAttachments {
 	Always
 }
 
-class Settings {
+class Settings extends ChangeNotifier {
 	String? filename;
 	ConnectivityResult? connectivity;
 	late Setting_AutoloadAttachments autoloadAttachmentsPreference;
+	SharedPreferences? _prefs;
+
+	void _initializePrefs() async {
+		_prefs = await SharedPreferences.getInstance();
+		notifyListeners();
+	}
 
 	Settings({
 		required this.autoloadAttachmentsPreference
-	});
-
-	Settings.file(this.filename) {
-
-	}
-
-	_loadSettingsFromFile() {
-
-	}
-
-	_saveSettingsToFile() {
-		
+	}) {
+		_initializePrefs();
 	}
 
 	bool get autoloadAttachments {

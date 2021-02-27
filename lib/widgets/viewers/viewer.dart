@@ -1,10 +1,11 @@
 import 'package:chan/models/attachment.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
-import 'package:chan/widgets/chan_site.dart';
 import 'package:chan/widgets/viewers/image.dart';
 import 'package:chan/widgets/viewers/webm.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 enum AttachmentViewerStatus {
 	LowRes,
@@ -60,7 +61,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 	}
 
 	void _load() async {
-		final site = ChanSite.of(context).provider;
+		final site = context.watch<ImageboardSite>();
 		final url = site.getAttachmentUrl(widget.attachment);
 		setState(() {
 			status = AttachmentViewerStatus.Checking;
@@ -80,7 +81,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 	}
 
 	void _loadArchive() async {
-		final site = ChanSite.of(context).provider;
+		final site = context.watch<ImageboardSite>();
 		final urls = site.getArchiveAttachmentUrls(widget.attachment);
 		setState(() {
 			status = AttachmentViewerStatus.Checking;
@@ -103,63 +104,51 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 	@override
 	Widget build(BuildContext context) {
 		super.build(context);
-		if (status == AttachmentViewerStatus.RealViewer) {
-			if (widget.attachment.type == AttachmentType.WEBM) {
-				return WEBMViewer(
-					attachment: widget.attachment,
-					url: goodUrl!,
-					backgroundColor: widget.backgroundColor,
-					onDeepInteraction: widget.onDeepInteraction
-				);
-			}
-			else {
-				return ImageViewer(
-					attachment: widget.attachment,
-					url: goodUrl!,
-					backgroundColor: widget.backgroundColor,
-					onDeepInteraction: widget.onDeepInteraction
-				);
-			}
-		}
-		else {
-			return GestureDetector(
-				child: Stack(
-					children: [
-						AttachmentThumbnail(
+		return GestureDetector(
+			child: Stack(
+				children: [
+					if (widget.attachment.type == AttachmentType.WEBM) Material(
+						child: WEBMViewer(
 							attachment: widget.attachment,
-							width: double.infinity,
-							height: double.infinity,
-							fit: BoxFit.contain,
-							hero: false
-						),
-						if (status == AttachmentViewerStatus.CheckError)
-							Center(
-								child: Column(
-									mainAxisAlignment: MainAxisAlignment.center,
-									children: [
-										Icon(Icons.warning),
-										Text('Error getting file'),
-										ElevatedButton.icon(
-											icon: Icon(Icons.history),
-											label: Text('Try archive'),
-											onPressed: _loadArchive
-										)
-									]
-								)
+							url: goodUrl!,
+							backgroundColor: widget.backgroundColor,
+							onDeepInteraction: widget.onDeepInteraction
+						)
+					)
+					else ImageViewer(
+						attachment: widget.attachment,
+						url: (status == AttachmentViewerStatus.RealViewer) ? goodUrl! : context.watch<ImageboardSite>().getAttachmentThumbnailUrl(widget.attachment),
+						allowZoom: false,
+						backgroundColor: widget.backgroundColor,
+						onDeepInteraction: (status == AttachmentViewerStatus.RealViewer) ? widget.onDeepInteraction : null,
+					),
+					if (status == AttachmentViewerStatus.CheckError)
+						Center(
+							child: Column(
+								mainAxisAlignment: MainAxisAlignment.center,
+								children: [
+									Icon(Icons.warning),
+									Text('Error getting file'),
+									ElevatedButton.icon(
+										icon: Icon(Icons.history),
+										label: Text('Try archive'),
+										onPressed: _loadArchive
+									)
+								]
 							)
-						else if (status == AttachmentViewerStatus.Checking)
-							Center(
-								child: CircularProgressIndicator()
-							)
-					]
-				),
-				onTap: () {
-					if (status == AttachmentViewerStatus.LowRes) {
-						_load();
-					}
+						)
+					else if (status == AttachmentViewerStatus.Checking)
+						Center(
+							child: CircularProgressIndicator()
+						)
+				]
+			),
+			onTap: (status == AttachmentViewerStatus.RealViewer) ? null : () {
+				if (status == AttachmentViewerStatus.LowRes) {
+					_load();
 				}
-			);
-		}
+			}
+		);
 	}
 
 	@override
