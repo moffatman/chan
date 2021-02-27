@@ -118,7 +118,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 					else ImageViewer(
 						attachment: widget.attachment,
 						url: (status == AttachmentViewerStatus.RealViewer) ? goodUrl! : context.watch<ImageboardSite>().getAttachmentThumbnailUrl(widget.attachment),
-						allowZoom: false,
+						allowZoom: status == AttachmentViewerStatus.RealViewer,
 						backgroundColor: widget.backgroundColor,
 						onDeepInteraction: (status == AttachmentViewerStatus.RealViewer) ? widget.onDeepInteraction : null,
 					),
