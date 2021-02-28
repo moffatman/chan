@@ -2,6 +2,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/widgets/attachment_gallery.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:extended_image/extended_image.dart';
 
 class GalleryPage extends StatefulWidget {
 	final List<Attachment> attachments;
@@ -41,21 +42,13 @@ class _GalleryPageState extends State<GalleryPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		return Dismissible(
-			background: Container(
-				color: Colors.black38
-			),
-			direction: DismissDirection.down,
-			onDismissed: (direction) {
-				Navigator.of(context).pop();
+		return ExtendedImageSlidePage(
+			resetPageDuration: const Duration(milliseconds: 100),
+			slidePageBackgroundHandler: (offset, size) {
+				return Colors.black.withOpacity((0.38 * (1 - (offset.dx / size.width).abs()) * (1 - (offset.dy / size.height).abs())).clamp(0, 1));
 			},
-			resizeDuration: Duration(milliseconds: 1),
-			dismissThresholds: {
-				DismissDirection.down: 0.1
-			},
-			key: ObjectKey('GalleryPage'),
 			child: CupertinoPageScaffold(
-				backgroundColor: Colors.black38,
+				backgroundColor: Colors.transparent,
 				navigationBar: showChrome ? CupertinoNavigationBar(
 					middle: const Text('Gallery', style: TextStyle(color: Colors.white)),
 					backgroundColor: Colors.black38

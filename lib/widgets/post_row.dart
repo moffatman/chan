@@ -10,8 +10,11 @@ import 'package:chan/models/attachment.dart';
 
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/util.dart';
+
+import 'dart:math';
+
 class PostRow extends StatelessWidget {
-	final ValueChanged<Attachment>? onThumbnailTap;
+	final void Function(Attachment, {Object tag})? onThumbnailTap;
 
 	const PostRow({
 		this.onThumbnailTap
@@ -21,6 +24,7 @@ class PostRow extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final post = context.watch<Post>();
 		final openedFromPostId = context.watchOrNull<ExpandingPostZone>()?.parentId;
+		final randomHeroTag = Random().nextDouble().toString();
 		return Container(
 			decoration: BoxDecoration(border: (openedFromPostId != null) ? Border.all(width: 0) : Border(bottom: BorderSide(width: 0))),
 			child: Row(
@@ -30,10 +34,11 @@ class PostRow extends StatelessWidget {
 				children: [
 					post.attachment == null ? SizedBox(width: 0, height: 0) : GestureDetector(
 						child: AttachmentThumbnail(
-							attachment: post.attachment!
+							attachment: post.attachment!,
+							heroTag: (openedFromPostId == null) ? null : randomHeroTag
 						),
 						onTap: () {
-							onThumbnailTap?.call(post.attachment!);
+							onThumbnailTap?.call(post.attachment!, tag: randomHeroTag);
 						}
 					),
 					Expanded(

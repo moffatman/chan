@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:chan/models/attachment.dart';
 import 'package:flutter/services.dart';
+import 'package:extended_image/extended_image.dart';
 
 class AttachmentGallery extends StatefulWidget {
 	final List<Attachment> attachments;
@@ -39,7 +40,6 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 	late List<Widget> pageWidgets;
 
 	int _currentIndex = 0;
-	bool _lock = false;
 	FocusNode _focusNode = FocusNode();
 
 	void _generatePageWidgets() {
@@ -47,12 +47,7 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 			return GestureDetector(
 				child: AttachmentViewer(
 					attachment: attachment,
-					backgroundColor: widget.backgroundColor,
-					onDeepInteraction: (currentInteraction) {
-						setState(() {
-							_lock = currentInteraction;
-						});
-					}
+					backgroundColor: widget.backgroundColor
 				),
 				onTap: () {
 					widget.onTap?.call(attachment);
@@ -77,7 +72,6 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 	@override void didUpdateWidget(AttachmentGallery old) {
 		super.didUpdateWidget(old);
 		if (widget.attachments != old.attachments) {
-			print('regenerating');
 			_generatePageWidgets();
 		}
 		if (widget.initialAttachment != old.initialAttachment && widget.initialAttachment != null) {
@@ -122,7 +116,6 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 					curve: Curves.ease
 				);
 			}
-			_lock = false;
 		});
 	}
 
@@ -156,8 +149,7 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 				},
 				child: Stack(
 					children: [
-						PageView(
-							physics: _lock ? NeverScrollableScrollPhysics() : null,
+						ExtendedImageGesturePageView(
 							onPageChanged: _onPageChanged,
 							controller: _pageController,
 							children: pageWidgets

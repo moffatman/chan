@@ -17,7 +17,7 @@ enum WEBMStatusType {
 }
 
 class WEBMStatus {
-	double progress;
+	double? progress;
 	WEBMStatusType type;
 	File? file;
 	String? message;
@@ -65,7 +65,7 @@ class WEBM {
 				int received = 0;
 				await response.stream.map((packet) {
 					received += packet.length;
-					_statusController.add(WEBMStatus(type: WEBMStatusType.Downloading, progress: received / response.contentLength));
+					_statusController.add(WEBMStatus(type: WEBMStatusType.Downloading, progress: response.contentLength == null ? null : received / response.contentLength!));
 					return packet;
 				}).pipe(sink);
 				if (response.statusCode == 200) {

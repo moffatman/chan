@@ -3,9 +3,11 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/services/webm.dart';
 import 'package:chewie/chewie.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:provider/provider.dart';
+import 'package:extended_image/extended_image.dart';
 
 enum WEBMViewerStatus {
 	Loading,
@@ -16,13 +18,11 @@ enum WEBMViewerStatus {
 class WEBMViewer extends StatefulWidget {
 	final Uri url;
 	final Attachment attachment;
-	final ValueChanged<bool>? onDeepInteraction;
 	final Color backgroundColor;
 
 	WEBMViewer({
 		required this.url,
 		required this.attachment,
-		this.onDeepInteraction,
 		this.backgroundColor = Colors.black
 	});
 
@@ -102,11 +102,38 @@ class _WEBMViewerState extends State<WEBMViewer> {
 		}
 	}
 
-	@override
 	Widget build(BuildContext context) {
+		return ExtendedImageSlidePageHandler(
+			heroBuilderForSlidingPage: (Widget result) {
+				return Hero(
+					tag: widget.attachment,
+					child: result,
+					flightShuttleBuilder: (ctx, animation, direction, from, to) {
+						return (direction == HeroFlightDirection.pop) ? from.widget : to.widget;
+					}
+				);
+			},
+			child: _build(context)
+		);
+	}
+
+	Widget _build(BuildContext context) {
 		if (playerStatus == WEBMViewerStatus.Error) {
 			return Center(
-				child: Text("Error: ${loadingStatus.message}")
+				child: Container(
+					padding: EdgeInsets.all(16),
+					decoration: BoxDecoration(
+						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+						borderRadius: BorderRadius.all(Radius.circular(8))
+					),
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							Icon(Icons.error, color: DefaultTextStyle.of(context).style.color),
+							Text(loadingStatus.message ?? 'Unknown error')
+						]
+					)
+				)
 			);
 		}
 		else if (playerStatus == WEBMViewerStatus.Loading) {

@@ -81,7 +81,7 @@ class _ThreadPageState extends State<ThreadPage> {
 						return Provider.value(
 							value: post,
 							child: PostRow(
-								onThumbnailTap: (attachment) {
+								onThumbnailTap: (attachment, {Object? tag}) {
 									_showGallery(initialAttachment: attachment, initiallyShowChrome: true);
 								}
 							)

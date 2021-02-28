@@ -17,12 +17,10 @@ enum AttachmentViewerStatus {
 class AttachmentViewer extends StatefulWidget {
 	final Attachment attachment;
 	final Color backgroundColor;
-	final ValueChanged<bool>? onDeepInteraction;
 
 	AttachmentViewer({
 		required this.attachment,
 		this.backgroundColor = Colors.black,
-		this.onDeepInteraction,
 		Key? key
 	}) : super(key: key);
 
@@ -107,20 +105,18 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 		return GestureDetector(
 			child: Stack(
 				children: [
-					if (widget.attachment.type == AttachmentType.WEBM) Material(
+					if (widget.attachment.type == AttachmentType.WEBM && status == AttachmentViewerStatus.RealViewer) Material(
+						color: widget.backgroundColor,
 						child: WEBMViewer(
 							attachment: widget.attachment,
 							url: goodUrl!,
-							backgroundColor: widget.backgroundColor,
-							onDeepInteraction: widget.onDeepInteraction
+							backgroundColor: widget.backgroundColor
 						)
 					)
 					else ImageViewer(
 						attachment: widget.attachment,
 						url: (status == AttachmentViewerStatus.RealViewer) ? goodUrl! : context.watch<ImageboardSite>().getAttachmentThumbnailUrl(widget.attachment),
-						allowZoom: status == AttachmentViewerStatus.RealViewer,
-						backgroundColor: widget.backgroundColor,
-						onDeepInteraction: (status == AttachmentViewerStatus.RealViewer) ? widget.onDeepInteraction : null,
+						allowZoom: status == AttachmentViewerStatus.RealViewer
 					),
 					if (status == AttachmentViewerStatus.CheckError)
 						Center(

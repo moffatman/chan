@@ -17,7 +17,7 @@ class ThreadRow extends StatelessWidget {
 	Widget build(BuildContext context) {
 		return Container(
 			decoration: BoxDecoration(
-				color: isSelected ? ((MediaQuery.of(context).platformBrightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : null
+				color: isSelected ? ((MediaQuery.of(context).platformBrightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
 			),
 			child: Row(
 				crossAxisAlignment: CrossAxisAlignment.start,

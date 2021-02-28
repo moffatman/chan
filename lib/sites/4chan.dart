@@ -118,7 +118,7 @@ class Site4Chan implements ImageboardSite {
 		}
 	}
 	Future<Thread> getThread(String board, int id) async {
-		final response = await client.get(apiUrl + '/' + board + '/thread/' + id.toString() + '.json');
+		final response = await client.get(Uri.parse(apiUrl + '/' + board + '/thread/' + id.toString() + '.json'));
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
 				return Future.error(ThreadNotFoundException(board, id));
@@ -146,7 +146,7 @@ class Site4Chan implements ImageboardSite {
 	}
 
 	Future<List<Thread>> getCatalog(String board) async {
-		final response = await client.get(apiUrl + '/' + board + '/catalog.json');
+		final response = await client.get(Uri.parse(apiUrl + '/' + board + '/catalog.json'));
 		final data = json.decode(response.body);
 		final List<Thread> threads = [];
 		for (final page in data) {
@@ -173,7 +173,7 @@ class Site4Chan implements ImageboardSite {
 		return threads;
 	}
 	Future<List<ImageboardBoard>> _getBoards() async {
-		final response = await client.get(apiUrl + '/boards.json');
+		final response = await client.get(Uri.parse(apiUrl + '/boards.json'));
 		final data = json.decode(response.body);
 		return (data['boards'] as List<dynamic>).map((board) {
 			return ImageboardBoard(
