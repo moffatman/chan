@@ -14,7 +14,14 @@ enum Setting_AutoloadAttachments {
 
 class Settings extends ChangeNotifier {
 	String? filename;
-	ConnectivityResult? connectivity;
+	ConnectivityResult? _connectivity;
+	ConnectivityResult? get connectivity {
+		return _connectivity;
+	}
+	set connectivity(ConnectivityResult? newConnectivity) {
+		_connectivity = newConnectivity;
+		notifyListeners();
+	}
 	late Setting_AutoloadAttachments autoloadAttachmentsPreference;
 	SharedPreferences? _prefs;
 
@@ -77,12 +84,19 @@ class _SettingsHandlerState extends State<SettingsHandler> with WidgetsBindingOb
 		super.initState();
 		WidgetsBinding.instance!.addObserver(this);
 		settings = widget.settingsBuilder();
+		_checkConnectivity();
 		connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
 			settings.connectivity = result;
 		});
 		if (isDesktop()) {
 			settings.connectivity = ConnectivityResult.wifi;
 		}
+	}
+
+	void _checkConnectivity() {
+		Connectivity().checkConnectivity().then((result) {
+			settings.connectivity = result;
+		});
 	}
 
 	@override
@@ -95,10 +109,7 @@ class _SettingsHandlerState extends State<SettingsHandler> with WidgetsBindingOb
 	@override
 	void didChangeAppLifecycleState(AppLifecycleState state) {
 		if (state == AppLifecycleState.resumed) {
-			// recheck WiFi
-			Connectivity().checkConnectivity().then((result) {
-				settings.connectivity = result;
-			});
+			_checkConnectivity();
 		}
 	}
 

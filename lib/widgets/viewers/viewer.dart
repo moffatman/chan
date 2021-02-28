@@ -17,10 +17,12 @@ enum AttachmentViewerStatus {
 class AttachmentViewer extends StatefulWidget {
 	final Attachment attachment;
 	final Color backgroundColor;
+	final bool autoload;
 
 	AttachmentViewer({
 		required this.attachment,
 		this.backgroundColor = Colors.black,
+		this.autoload = false,
 		Key? key
 	}) : super(key: key);
 
@@ -42,8 +44,8 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 	@override
 	void didChangeDependencies() {
 		super.didChangeDependencies();
-		if (Settings.of(context).autoloadAttachments && status == AttachmentViewerStatus.LowRes) {
-			_load();
+		if (status != AttachmentViewerStatus.RealViewer) {
+			_updateAutoload();
 		}
 	}
 
@@ -51,10 +53,14 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 	void didUpdateWidget(AttachmentViewer oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		if (oldWidget.attachment != widget.attachment) {
-			status = AttachmentViewerStatus.LowRes;
-			if (Settings.of(context).autoloadAttachments) {
-				_load();
-			}
+			_updateAutoload();
+		}
+	}
+
+	void _updateAutoload() {
+		status = AttachmentViewerStatus.LowRes;
+		if (Settings.of(context).autoloadAttachments || widget.autoload) {
+			_load();
 		}
 	}
 

@@ -47,7 +47,8 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 			return GestureDetector(
 				child: AttachmentViewer(
 					attachment: attachment,
-					backgroundColor: widget.backgroundColor
+					backgroundColor: widget.backgroundColor,
+					autoload: attachment == widget.initialAttachment
 				),
 				onTap: () {
 					widget.onTap?.call(attachment);
