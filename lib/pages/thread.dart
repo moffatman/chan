@@ -70,7 +70,7 @@ class _ThreadPageState extends State<ThreadPage> {
 				child: ProviderList<Post>(
 					id: title,
 					listUpdater: () async {
-						final _thread = await context.watch<ImageboardSite>().getThread(widget.board, widget.id);
+						final _thread = await context.read<ImageboardSite>().getThread(widget.board, widget.id);
 						setState(() {
 							thread = _thread;
 						});
