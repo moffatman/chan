@@ -16,9 +16,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				middle: LayoutBuilder(
 					builder: (context, box) {
 						return SizedBox(
-							width: box.maxWidth / 2,
+							width: box.maxWidth * 0.75,
 							child: CupertinoTextField(
 								autofocus: true,
+								autocorrect: false,
 								placeholder: "Board...",
 								textAlign: TextAlign.center,
 								onSubmitted: (String board) {
