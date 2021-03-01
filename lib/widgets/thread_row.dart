@@ -45,6 +45,10 @@ class ThreadRow extends StatelessWidget {
 								Row(
 									mainAxisAlignment: MainAxisAlignment.end,
 									children: [
+										if (thread.isSticky) ...[
+											Icon(Icons.push_pin),
+											SizedBox(width: 16)
+										],
 										Container(
 											width: 55,
 											child: Row(

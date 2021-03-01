@@ -140,7 +140,8 @@ class Site4Chan implements ImageboardSite {
 			}).toList(),
 			id: data['posts'][0]['no'],
 			attachment: _makeAttachment(board, data),
-			title: (title == null) ? null : unescape.convert(title)
+			title: (title == null) ? null : unescape.convert(title),
+			isSticky: data['posts'][0]['sticky'] == 1
 		);
 	}
 
@@ -168,7 +169,8 @@ class Site4Chan implements ImageboardSite {
 					isDeleted: false,
 					attachment: _makeAttachment(board, threadData),
 					posts: lastReplies,
-					title: threadData['sub']
+					title: threadData['sub'],
+					isSticky: threadData['sticky'] == 1
 				);
 				threads.add(thread);
 			}

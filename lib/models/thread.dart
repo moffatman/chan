@@ -12,6 +12,7 @@ class Thread {
 	final String board;
 	final Attachment? attachment;
 	final String? title;
+	final bool isSticky;
 	Thread({
 		required this.posts,
 		required this.isArchived,
@@ -21,7 +22,8 @@ class Thread {
 		required this.id,
 		this.attachment,
 		required this.board,
-		required this.title
+		required this.title,
+		required this.isSticky
 	}) {
 		Map<int, Post> postsById = Map();
 		for (final post in this.posts) {
