@@ -43,50 +43,49 @@ class ProviderList<T> extends StatelessWidget {
 							sliver: CupertinoSliverRefreshControl(
 								onRefresh: requestUpdate,
 							),
+							bottom: false
 						),
-						SliverSafeArea(
-							top: false,
-							sliver: lazy ? SliverList(
-								delegate: SliverChildBuilderDelegate(
-									(context, i) {
-										if (i % 2 == 0) {
-											return LayoutBuilder(
-												builder: (context, constraints) {
-													controller?.registerItem(i ~/ 2, context, values[i ~/ 2]);
-													return builder(context, values[i ~/ 2]);
-												}
-											);
-										}
-										else {
-											return Divider(
-												height: 0
-											);
-										}
-									},
-									childCount: (values.length * 2) - 1
-								)
-							) : SliverToBoxAdapter(
-								child: Column(
-									mainAxisSize: MainAxisSize.min,
-									children: List.generate(values.length * 2 - 1, (i) {
-										if (i % 2 == 0) {
-											return LayoutBuilder(
-												builder: (context, constraints) {
-													controller?.registerItem(i ~/ 2, context, values[i ~/ 2]);
-													return builder(context, values[i ~/ 2]);
-												}
-											);
-										}
-										else {
-											return Divider(
-												height: 0
-											);
-										}
-									}),
-								)
+						lazy ? SliverList(
+							delegate: SliverChildBuilderDelegate(
+								(context, i) {
+									if (i % 2 == 0) {
+										return LayoutBuilder(
+											builder: (context, constraints) {
+												controller?.registerItem(i ~/ 2, context, values[i ~/ 2]);
+												return builder(context, values[i ~/ 2]);
+											}
+										);
+									}
+									else {
+										return Divider(
+											height: 0
+										);
+									}
+								},
+								childCount: (values.length * 2) - 1
+							)
+						) : SliverToBoxAdapter(
+							child: Column(
+								mainAxisSize: MainAxisSize.min,
+								children: List.generate(values.length * 2 - 1, (i) {
+									if (i % 2 == 0) {
+										return LayoutBuilder(
+											builder: (context, constraints) {
+												controller?.registerItem(i ~/ 2, context, values[i ~/ 2]);
+												return builder(context, values[i ~/ 2]);
+											}
+										);
+									}
+									else {
+										return Divider(
+											height: 0
+										);
+									}
+								}),
 							)
 						),
 						SliverSafeArea(
+							top: false,
 							sliver: SliverToBoxAdapter(
 								child: Row(
 									mainAxisAlignment: MainAxisAlignment.center,
