@@ -32,7 +32,7 @@ class PostRow extends StatelessWidget {
 				crossAxisAlignment: CrossAxisAlignment.start,
 				children: [
 					ChangeNotifierProvider<ExpandingPostZone>(
-						create: (_) => ExpandingPostZone(post.id),
+						create: (_) => ExpandingPostZone(openedFromPostId),
 						child: Builder(
 							builder: (ctx) => Text.rich(
 								TextSpan(
@@ -75,7 +75,7 @@ class PostRow extends StatelessWidget {
 								child: Container(
 									padding: EdgeInsets.all(8),
 									child: ChangeNotifierProvider<ExpandingPostZone>(
-										create: (_) => ExpandingPostZone(post.id),
+										create: (_) => ExpandingPostZone(openedFromPostId),
 										child: Builder(
 											builder: (ctx) => Text.rich(post.span.build(ctx))
 										)
