@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:flutter/services.dart';
 import 'package:extended_image/extended_image.dart';
+import 'package:provider/provider.dart';
 
 class AttachmentGallery extends StatefulWidget {
 	final List<Attachment> attachments;
@@ -150,10 +151,13 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 				},
 				child: Stack(
 					children: [
-						ExtendedImageGesturePageView(
-							onPageChanged: _onPageChanged,
-							controller: _pageController,
-							children: pageWidgets
+						Provider.value(
+							value: widget.attachments[_currentIndex],
+							child: ExtendedImageGesturePageView(
+								onPageChanged: _onPageChanged,
+								controller: _pageController,
+								children: pageWidgets
+							)
 						),
 						Visibility(
 							visible: widget.showThumbnails,

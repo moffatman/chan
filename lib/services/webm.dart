@@ -22,7 +22,7 @@ class WEBMStatus {
 	File? file;
 	String? message;
 	WEBMStatus({
-		this.progress = 0.0,
+		this.progress,
 		required this.type,
 		this.file,
 		this.message
@@ -89,11 +89,10 @@ class WEBM {
 						final ffprobe = FlutterFFprobe();
 						final ffmpeg = FlutterFFmpeg();
 						final mediaInfo = (await ffprobe.getMediaInformation(webmFile.path)).getAllProperties();
-						final duration = mediaInfo['duration'];
-						print('WEBM duration: $duration');
+						print(mediaInfo);
+						final duration = double.tryParse(mediaInfo['format']['duration']);
 						ffconfig.enableStatisticsCallback((stats) {
-		 						print('WEBM time: ${stats.time}');
-							 _statusController.add(WEBMStatus(type: WEBMStatusType.Converting, progress: stats.time / duration));
+							_statusController.add(WEBMStatus(type: WEBMStatusType.Converting, progress: 0.001 * (stats.time / duration!)));
  						});
 						ffmpegReturnCode = await ffmpeg.execute('-i ${webmFile.path} ${convertedFile.path}');
 					}

@@ -2,6 +2,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/services/webm.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chewie/chewie.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:extended_image/extended_image.dart';
 
 enum WEBMViewerStatus {
+	Initializing,
 	Loading,
 	Playing,
 	Error
@@ -34,7 +36,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 	late WEBM webm;
 	late ChewieController _chewieController;
 	late VideoPlayerController _videoPlayerController;
-	WEBMViewerStatus playerStatus = WEBMViewerStatus.Loading;
+	WEBMViewerStatus playerStatus = WEBMViewerStatus.Initializing;
 	WEBMStatus loadingStatus = WEBMStatus(type: WEBMStatusType.Idle);
 
 	_initializeWebm() {
@@ -54,16 +56,16 @@ class _WEBMViewerState extends State<WEBMViewer> {
 			);
 			playerStatus = WEBMViewerStatus.Loading;
 			webm.startProcessing();
-			webm.status.listen((status) {
-				print(status);
+			webm.status.listen((status) async {
 				if (status.type == WEBMStatusType.Converted) {
+					_videoPlayerController = VideoPlayerController.file(status.file);
+					await _videoPlayerController.initialize();
 					setState(() {
-						_videoPlayerController = VideoPlayerController.file(status.file);
-						_videoPlayerController.initialize();
 						_chewieController = ChewieController(
 							videoPlayerController:  _videoPlayerController,
 							autoPlay: true,
-							looping: true
+							looping: true,
+							allowPlaybackSpeedChanging: false
 						);
 						playerStatus = WEBMViewerStatus.Playing;
 					});
@@ -91,7 +93,9 @@ class _WEBMViewerState extends State<WEBMViewer> {
 	@override
 	void didChangeDependencies() {
 		super.didChangeDependencies();
-		_initializeWebm();
+		if (playerStatus == WEBMViewerStatus.Initializing) {
+			_initializeWebm();
+		}
 	}
 
 	@override
@@ -118,47 +122,60 @@ class _WEBMViewerState extends State<WEBMViewer> {
 	}
 
 	Widget _build(BuildContext context) {
-		if (playerStatus == WEBMViewerStatus.Error) {
+		if (playerStatus == WEBMViewerStatus.Playing) {
+			if (context.watch<Attachment>() != widget.attachment) {
+				_chewieController.pause();
+			}
 			return Center(
-				child: Container(
-					padding: EdgeInsets.all(16),
-					decoration: BoxDecoration(
-						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-						borderRadius: BorderRadius.all(Radius.circular(8))
-					),
-					child: Column(
-						mainAxisSize: MainAxisSize.min,
-						children: [
-							Icon(Icons.error),
-							Text(loadingStatus.message ?? 'Unknown error')
-						]
+				child: AspectRatio(
+					aspectRatio: _videoPlayerController.value.aspectRatio,
+					child: Chewie(
+						controller: _chewieController
 					)
 				)
 			);
 		}
-		else if (playerStatus == WEBMViewerStatus.Loading) {
-			if (loadingStatus.type == WEBMStatusType.Downloading) {
-				return Center(
-					child: CircularProgressIndicator(
-						value: loadingStatus.progress,
-						valueColor: AlwaysStoppedAnimation(Colors.blue)
+		else return Stack(
+			children: [
+				AttachmentThumbnail(attachment: widget.attachment, hero: false, width: double.infinity, height: double.infinity),
+				if (playerStatus == WEBMViewerStatus.Error) Center(
+					child: Container(
+						padding: EdgeInsets.all(16),
+						decoration: BoxDecoration(
+							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+							borderRadius: BorderRadius.all(Radius.circular(8))
+						),
+						child: Column(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								Icon(Icons.error),
+								Text(loadingStatus.message ?? 'Unknown error')
+							]
+						)
 					)
-				);
-			}
-			else {
-				return Center(
-					child: CircularProgressIndicator(
-						value: loadingStatus.progress,
-						valueColor: AlwaysStoppedAnimation(Colors.green),
-						backgroundColor: Colors.blue,
+				)
+				else if (playerStatus == WEBMViewerStatus.Loading)
+					if (loadingStatus.type == WEBMStatusType.Downloading) Center(
+						child: CircularProgressIndicator(
+							value: loadingStatus.progress,
+							valueColor: AlwaysStoppedAnimation(Colors.blue)
+						)
 					)
-				);
-			}
-		}
-		else {
-			return Chewie(
-				controller: _chewieController
-			);
-		}
+					else Center(
+						child: CircularProgressIndicator(
+							value: loadingStatus.progress,
+							valueColor: AlwaysStoppedAnimation(Colors.green),
+							backgroundColor: Colors.blue,
+						)
+					)
+			],
+		);
+	}
+
+	@override
+	void dispose() {
+		_videoPlayerController.dispose();
+		_chewieController.dispose();
+		super.dispose();
 	}
 }
