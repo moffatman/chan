@@ -2,6 +2,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
+import 'package:html_unescape/html_unescape_small.dart';
 
 import 'imageboard_site.dart';
 import 'package:chan/models/attachment.dart';
@@ -16,6 +17,7 @@ class Site4Chan implements ImageboardSite {
 	final http.Client client;
 	final Map<String, ImageboardSite> archives;
 	List<ImageboardBoard>? _boards;
+	final unescape = HtmlUnescape();
 
 	List<PostSpan> _makeSpans(String data) {
 		final doc = parse(data);
@@ -126,6 +128,7 @@ class Site4Chan implements ImageboardSite {
 			return Future.error(HTTPStatusException(response.statusCode));
 		}
 		final data = json.decode(response.body);
+		final title = data['posts'][0]['sub'];
 		return Thread(
 			board: board,
 			isDeleted: false,
@@ -137,7 +140,7 @@ class Site4Chan implements ImageboardSite {
 			}).toList(),
 			id: data['posts'][0]['no'],
 			attachment: _makeAttachment(board, data),
-			title: data['posts'][0]['sub']
+			title: (title == null) ? null : unescape.convert(title)
 		);
 	}
 
