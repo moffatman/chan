@@ -33,6 +33,7 @@ dependencies:
     git:
       url: git://github.com/fluttercandies/extended_image.git
       ref: nnbd-migrate
+  cupertino_back_gesture: "^0.0.4+1"
   flutter:
     sdk: flutter
 

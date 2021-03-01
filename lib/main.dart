@@ -1,5 +1,6 @@
 // @dart=2.9
 import 'package:chan/services/settings.dart';
+import 'package:cupertino_back_gesture/cupertino_back_gesture.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/io_client.dart';
@@ -37,20 +38,23 @@ class _MyAppState extends State<MyApp> {
 					autoloadAttachmentsPreference: Setting_AutoloadAttachments.WiFi
 				);
 			},
-			child: Provider<ImageboardSite>.value(
-				value: provider,
-				child: CupertinoApp(
-					title: 'Chan',
-					theme: CupertinoThemeData(
-						primaryColor: Colors.green,
-					),
-					home: Builder(
-						builder: (BuildContext context) {
-							return DefaultTextStyle(
-								style: CupertinoTheme.of(context).textTheme.textStyle,
-								child: ChanHomePage()
-							);
-						}
+			child: BackGestureWidthTheme(
+				backGestureWidth: BackGestureWidth.fraction(1),
+				child: Provider<ImageboardSite>.value(
+					value: provider,
+					child: CupertinoApp(
+						title: 'Chan',
+						theme: CupertinoThemeData(
+							primaryColor: Colors.green,
+						),
+						home: Builder(
+							builder: (BuildContext context) {
+								return DefaultTextStyle(
+									style: CupertinoTheme.of(context).textTheme.textStyle,
+									child: ChanHomePage()
+								);
+							}
+						)
 					)
 				)
 			)

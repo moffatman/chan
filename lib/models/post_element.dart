@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:provider/provider.dart';
+import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
 
 abstract class PostSpan {
 	List<int> get referencedPostIds {
@@ -127,7 +128,7 @@ class PostCrossThreadQuoteLinkSpan extends PostSpan {
 				decoration: TextDecoration.underline
 			),
 			recognizer: TapGestureRecognizer()..onTap = () {
-				Navigator.of(context).push(CupertinoPageRoute(builder: (ctx) => ThreadPage(board: this.board, id: this.threadId, initialPostId: this.postId)));
+				Navigator.of(context).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: this.board, id: this.threadId, initialPostId: this.postId)));
 			}
 		);
 	}

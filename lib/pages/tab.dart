@@ -3,6 +3,7 @@ import 'package:chan/widgets/gallery_manager.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
 
 import 'board.dart';
 import 'board_switcher.dart';
@@ -73,7 +74,7 @@ class _ImageboardTabState extends State<ImageboardTab> {
 							key: _rightPaneNavigatorKey,
 							initialRoute: '/',
 							onGenerateRoute: (RouteSettings settings) {
-								return CupertinoPageRoute(
+								return cpr.CupertinoPageRoute(
 									builder: (context) {
 										return selectedThread != null ? ThreadPage(board: selectedThread!.board, id: selectedThread!.id) : Center(child: Text('Select a thread'));
 									},
@@ -89,7 +90,7 @@ class _ImageboardTabState extends State<ImageboardTab> {
 			return BoardPage(
 				board: board,
 				onThreadSelected: (thread) {
-					Navigator.of(context).push(CupertinoPageRoute(builder: (ctx) => ThreadPage(board: thread.board, id: thread.id)));
+					Navigator.of(context).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: thread.board, id: thread.id)));
 				},
 				onHeaderTapped: () async {
 					final newBoard = await Navigator.of(context).push<String>(TransparentRoute(builder: (ctx) => BoardSwitcherPage()));
