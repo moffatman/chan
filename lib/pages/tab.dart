@@ -76,7 +76,14 @@ class _ImageboardTabState extends State<ImageboardTab> {
 							onGenerateRoute: (RouteSettings settings) {
 								return cpr.CupertinoPageRoute(
 									builder: (context) {
-										return selectedThread != null ? ThreadPage(board: selectedThread!.board, id: selectedThread!.id) : Center(child: Text('Select a thread'));
+										return selectedThread != null ? ThreadPage(board: selectedThread!.board, id: selectedThread!.id) : Container(
+											decoration: BoxDecoration(
+												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+											),
+											child: Center(
+												child: Text('Select a thread')
+											)
+										);
 									},
 									settings: settings
 								);
