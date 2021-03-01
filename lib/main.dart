@@ -45,7 +45,7 @@ class _MyAppState extends State<MyApp> {
 					child: CupertinoApp(
 						title: 'Chan',
 						theme: CupertinoThemeData(
-							primaryColor: Colors.green,
+							primaryColor: Colors.black,
 						),
 						home: Builder(
 							builder: (BuildContext context) {

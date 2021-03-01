@@ -49,7 +49,7 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final title = '/${widget.board}/${widget.id}';
+		final title = thread?.title ?? '/${widget.board}/${widget.id}';
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
 				middle: Text(title)

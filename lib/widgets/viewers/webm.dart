@@ -129,7 +129,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							Icon(Icons.error, color: DefaultTextStyle.of(context).style.color),
+							Icon(Icons.error),
 							Text(loadingStatus.message ?? 'Unknown error')
 						]
 					)

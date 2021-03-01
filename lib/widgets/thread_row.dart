@@ -16,6 +16,7 @@ class ThreadRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return Container(
+			padding: EdgeInsets.all(8),
 			decoration: BoxDecoration(
 				color: isSelected ? ((MediaQuery.of(context).platformBrightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
 			),
@@ -39,6 +40,35 @@ class ThreadRow extends StatelessWidget {
 									child: Builder(
 										builder: (ctx) => Text.rich(thread.posts[0].span.build(ctx))
 									)
+								),
+								SizedBox(height: 16),
+								Row(
+									mainAxisAlignment: MainAxisAlignment.end,
+									children: [
+										Container(
+											width: 55,
+											child: Row(
+												mainAxisAlignment: MainAxisAlignment.start,
+												children: [
+													Icon(Icons.comment),
+													SizedBox(width: 4),
+													Text(thread.replyCount.toString())
+												]
+											)
+										),
+										SizedBox(width: 8),
+										Container(
+											width: 55,
+											child: Row(
+												mainAxisAlignment: MainAxisAlignment.start,
+												children: [
+													Icon(Icons.image),
+													SizedBox(width: 4),
+													Text(thread.imageCount.toString())
+												]
+											)
+										)
+									]
 								)
 							]
 						)

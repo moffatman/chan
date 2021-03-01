@@ -30,7 +30,7 @@ class BoardPage extends StatelessWidget {
 						mainAxisSize: MainAxisSize.min,
 						children: [
 							Text('/$board/'),
-							Icon(Icons.arrow_drop_down, color: DefaultTextStyle.of(context).style.color)
+							Icon(Icons.arrow_drop_down)
 						]
 					)
 				)

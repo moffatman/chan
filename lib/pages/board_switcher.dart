@@ -39,8 +39,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			child: Container(
 				decoration: BoxDecoration(
 					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-					borderRadius: BorderRadius.circular(8),
-					border: Border.all(color: DefaultTextStyle.of(context).style.color!)
+					border: Border(bottom: BorderSide(width: 0))
 				),
 				child: FutureBuilder<List<ImageboardBoard>>(
 					future: context.watch<ImageboardSite>().getBoards(),
