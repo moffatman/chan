@@ -65,6 +65,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 							videoPlayerController:  _videoPlayerController,
 							autoPlay: true,
 							looping: true,
+							customControls: MaterialControls(),
 							allowPlaybackSpeedChanging: false
 						);
 						playerStatus = WEBMViewerStatus.Playing;
@@ -127,10 +128,13 @@ class _WEBMViewerState extends State<WEBMViewer> {
 				_chewieController.pause();
 			}
 			return Center(
-				child: AspectRatio(
-					aspectRatio: _videoPlayerController.value.aspectRatio,
-					child: Chewie(
-						controller: _chewieController
+				child: SafeArea(
+					top: false,
+					child: AspectRatio(
+						aspectRatio: _videoPlayerController.value.aspectRatio,
+						child: Chewie(
+							controller: _chewieController
+						)
 					)
 				)
 			);
