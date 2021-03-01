@@ -23,16 +23,16 @@ class PostRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final post = context.watch<Post>();
-		final openedFromPostId = context.watchOrNull<ExpandingPostZone>()?.parentId;
+		final parentIds = context.watchOrNull<ExpandingPostZone>()?.parentIds ?? [];
 		final randomHeroTag = Random().nextDouble().toString();
 		return Container(
 			padding: EdgeInsets.all(8),
-			decoration: BoxDecoration(border: (openedFromPostId != null) ? Border.all(width: 0) : Border(bottom: BorderSide(width: 0))),
+			decoration: BoxDecoration(border: parentIds.isNotEmpty ? Border.all(width: 0) : Border(bottom: BorderSide(width: 0))),
 			child: Column(
 				crossAxisAlignment: CrossAxisAlignment.start,
 				children: [
 					ChangeNotifierProvider<ExpandingPostZone>(
-						create: (_) => ExpandingPostZone(openedFromPostId),
+						create: (_) => ExpandingPostZone(parentIds.followedBy([post.id]).toList()),
 						child: Builder(
 							builder: (ctx) => Text.rich(
 								TextSpan(
@@ -65,7 +65,7 @@ class PostRow extends StatelessWidget {
 							post.attachment == null ? SizedBox(width: 0, height: 0) : GestureDetector(
 								child: AttachmentThumbnail(
 									attachment: post.attachment!,
-									heroTag: (openedFromPostId == null) ? null : randomHeroTag
+									heroTag: parentIds.isEmpty ? null : randomHeroTag
 								),
 								onTap: () {
 									onThumbnailTap?.call(post.attachment!, tag: randomHeroTag);
@@ -75,7 +75,7 @@ class PostRow extends StatelessWidget {
 								child: Container(
 									padding: EdgeInsets.all(8),
 									child: ChangeNotifierProvider<ExpandingPostZone>(
-										create: (_) => ExpandingPostZone(openedFromPostId),
+										create: (_) => ExpandingPostZone(parentIds.followedBy([post.id]).toList()),
 										child: Builder(
 											builder: (ctx) => Text.rich(post.span.build(ctx))
 										)

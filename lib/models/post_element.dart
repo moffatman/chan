@@ -72,7 +72,7 @@ class PostQuoteLinkSpan extends PostSpan {
 	}
 	build(context) {
 		final zone = context.watchOrNull<ExpandingPostZone>();
-		final sameAsParent = zone?.parentId == id;
+		final sameAsParent = zone?.parentIds.contains(id) ?? false;
 		return TextSpan(
 			text: '>>' + this.id.toString(),
 			style: TextStyle(

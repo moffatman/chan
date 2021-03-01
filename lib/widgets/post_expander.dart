@@ -9,9 +9,9 @@ import 'package:extended_image/extended_image.dart';
 
 class ExpandingPostZone extends ChangeNotifier {
 	final Map<int, bool> _shouldExpandPost = Map();
-	final int? parentId;
+	final List<int> parentIds;
 
-	ExpandingPostZone(this.parentId);
+	ExpandingPostZone(this.parentIds);
 
 	bool shouldExpandPost(int id) {
 		return _shouldExpandPost[id] ?? false;
