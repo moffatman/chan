@@ -141,7 +141,7 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 								_selectImage(_currentIndex + 1, milliseconds: 0);
 							}
 						}
-						else if (event.logicalKey == LogicalKeyboardKey.escape || event.logicalKey == LogicalKeyboardKey.keyG) {
+						else if (event.logicalKey == LogicalKeyboardKey.keyG) {
 							Navigator.of(context).pop();
 						}
 						else if (event.logicalKey == LogicalKeyboardKey.space) {
