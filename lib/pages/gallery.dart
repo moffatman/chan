@@ -22,13 +22,13 @@ class GalleryPage extends StatefulWidget {
 }
 
 class _GalleryPageState extends State<GalleryPage> {
-	late Attachment? lastAttachment;
+	late Attachment currentAttachment;
 	late bool showChrome;
 
 	@override
 	void initState() {
 		super.initState();
-		lastAttachment = widget.initialAttachment;
+		currentAttachment = widget.initialAttachment ?? widget.attachments[0];
 		showChrome = widget.initiallyShowChrome;
 	}
 
@@ -36,7 +36,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	void didUpdateWidget(GalleryPage old) {
 		super.didUpdateWidget(old);
 		if (widget.initialAttachment != old.initialAttachment) {
-			lastAttachment = widget.initialAttachment;
+			currentAttachment = widget.initialAttachment ?? widget.attachments[0];
 		}
 	}
 
@@ -53,13 +53,13 @@ class _GalleryPageState extends State<GalleryPage> {
 					backgroundColor: Colors.transparent,
 					navigationBar: showChrome ? CupertinoNavigationBar(
 						brightness: Brightness.light,
-						middle: Text('Gallery'),
+						middle: Text(currentAttachment.filename),
 						backgroundColor: Colors.black38
 					) : null,
 					child: AttachmentGallery(
 						key: galleryKey,
 						attachments: widget.attachments,
-						initialAttachment: lastAttachment,
+						currentAttachment: currentAttachment,
 						showThumbnails: showChrome,
 						onTap: (attachment) {
 							setState(() {
@@ -68,7 +68,7 @@ class _GalleryPageState extends State<GalleryPage> {
 						},
 						onChange: (attachment) {
 							setState(() {
-								lastAttachment = attachment;
+								currentAttachment = attachment;
 							});
 							widget.onChange?.call(attachment);
 						}

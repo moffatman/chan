@@ -11,7 +11,7 @@ class AttachmentGallery extends StatefulWidget {
 	final List<Attachment> attachments;
 	final ValueChanged<Attachment>? onChange;
 	final ValueChanged<Attachment>? onTap;
-	final Attachment? initialAttachment;
+	final Attachment currentAttachment;
 	final double thumbnailSize;
 	final double height;
 	final Color backgroundColor;
@@ -21,7 +21,7 @@ class AttachmentGallery extends StatefulWidget {
 		required this.attachments,
 		this.onChange,
 		this.onTap,
-		this.initialAttachment,
+		required this.currentAttachment,
 		this.thumbnailSize = 32,
 		this.height = double.infinity,
 		this.backgroundColor = Colors.transparent,
@@ -49,7 +49,7 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 				child: AttachmentViewer(
 					attachment: attachment,
 					backgroundColor: widget.backgroundColor,
-					autoload: attachment == widget.initialAttachment
+					autoload: attachment == widget.currentAttachment
 				),
 				onTap: () {
 					widget.onTap?.call(attachment);
@@ -61,9 +61,7 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 	@override
 	void initState() {
 		super.initState();
-		if (widget.initialAttachment != null) {
-			_currentIndex = widget.attachments.indexOf(widget.initialAttachment!);
-		}
+		_currentIndex = widget.attachments.indexOf(widget.currentAttachment);
 		_pageController = PageController(
 			initialPage: _currentIndex
 		);
@@ -76,8 +74,8 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 		if (widget.attachments != old.attachments) {
 			_generatePageWidgets();
 		}
-		if (widget.initialAttachment != old.initialAttachment && widget.initialAttachment != null) {
-			_currentIndex = widget.attachments.indexOf(widget.initialAttachment!);
+		if (widget.currentAttachment != old.currentAttachment) {
+			_currentIndex = widget.attachments.indexOf(widget.currentAttachment);
 		}
 	}
 
