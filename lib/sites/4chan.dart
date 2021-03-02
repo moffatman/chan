@@ -155,9 +155,7 @@ class Site4Chan implements ImageboardSite {
 		final List<Thread> threads = [];
 		for (final page in data) {
 			for (final threadData in page['threads']) {
-				/*List<Post> lastReplies = (threadData['last_replies'] ?? []).map<Post>((postData) {
-					return _makePost(board, postData);
-				}).toList();*/
+				final String? title = threadData['sub'];
 				List<Post> lastReplies = [];
 				lastReplies.insert(0, _makePost(board, threadData));
 				Thread thread = Thread(
@@ -169,7 +167,7 @@ class Site4Chan implements ImageboardSite {
 					isDeleted: false,
 					attachment: _makeAttachment(board, threadData),
 					posts: lastReplies,
-					title: threadData['sub'],
+					title: (title == null) ? null : unescape.convert(title),
 					isSticky: threadData['sticky'] == 1
 				);
 				threads.add(thread);
