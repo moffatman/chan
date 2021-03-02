@@ -3,14 +3,26 @@ import 'dart:async';
 import 'package:chan/services/util.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity/connectivity.dart';
+import 'package:flutter/scheduler.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
 enum Setting_AutoloadAttachments {
 	Never,
 	WiFi,
 	Always
 }
+
+const _AUTOLOAD_ATTACHMENTS_KEY = 'SETTING_AUTOLOAD_ATTACHMENTS';
+
+enum Setting_Theme {
+	Light,
+	System,
+	Dark
+}
+
+const _THEME_KEY = 'SETTING_THEME';
 
 class Settings extends ChangeNotifier {
 	String? filename;
@@ -22,17 +34,38 @@ class Settings extends ChangeNotifier {
 		_connectivity = newConnectivity;
 		notifyListeners();
 	}
-	late Setting_AutoloadAttachments autoloadAttachmentsPreference;
+	Brightness? _systemBrightness;
+	Brightness? get systemBrightness {
+		return _systemBrightness;
+	}
+	set systemBrightness(Brightness? newBrightness) {
+		_systemBrightness = newBrightness;
+		notifyListeners();
+	}
 	SharedPreferences? _prefs;
+	Setting_AutoloadAttachments get autoloadAttachmentsPreference {
+		final index = _prefs?.getInt(_AUTOLOAD_ATTACHMENTS_KEY);
+		return (index == null) ? Setting_AutoloadAttachments.WiFi : Setting_AutoloadAttachments.values[index];
+	}
+	set autoloadAttachmentsPreference(Setting_AutoloadAttachments newValue) {
+		_prefs?.setInt(_AUTOLOAD_ATTACHMENTS_KEY, newValue.index);
+		notifyListeners();
+	}
+	Setting_Theme get themePreference {
+		final index = _prefs?.getInt(_THEME_KEY);
+		return (index == null) ? Setting_Theme.System : Setting_Theme.values[index];
+	}
+	set themePreference(Setting_Theme newValue) {
+		_prefs?.setInt(_THEME_KEY, newValue.index);
+		notifyListeners();
+	}
 
 	void _initializePrefs() async {
 		_prefs = await SharedPreferences.getInstance();
 		notifyListeners();
 	}
 
-	Settings({
-		required this.autoloadAttachmentsPreference
-	}) {
+	Settings() {
 		_initializePrefs();
 	}
 
@@ -40,62 +73,48 @@ class Settings extends ChangeNotifier {
 		return (autoloadAttachmentsPreference == Setting_AutoloadAttachments.Always) ||
 			((autoloadAttachmentsPreference == Setting_AutoloadAttachments.WiFi) && (connectivity == ConnectivityResult.wifi));
 	}
-
-	static Settings of(BuildContext context) {
-		return context.dependOnInheritedWidgetOfExactType<_SettingsData>()!.settings;
+	Brightness get theme {
+		if (themePreference == Setting_Theme.Dark) {
+			return Brightness.dark;
+		}
+		else if (themePreference == Setting_Theme.Light) {
+			return Brightness.light;
+		}
+		return systemBrightness ?? Brightness.light;
 	}
 }
 
-class _SettingsData extends InheritedWidget {
-	final Settings settings;
-
-	const _SettingsData({
-		required this.settings,
-		required Widget child,
-		Key? key
-	}) : super(child: child, key: key);
-
-	@override
-	bool updateShouldNotify(_SettingsData old) {
-		return true;
-	}
-}
-
-class SettingsHandler extends StatefulWidget {
+class SettingsSystemListener extends StatefulWidget {
 	final Widget child;
-	final Settings Function() settingsBuilder;
 
-	const SettingsHandler({
+	const SettingsSystemListener({
 		Key? key,
 		required this.child,
-		required this.settingsBuilder
 	}) : super(key: key);
 
 	@override
-	createState() => _SettingsHandlerState();
+	createState() => _SettingsSystemListenerState();
 }
 
-class _SettingsHandlerState extends State<SettingsHandler> with WidgetsBindingObserver {
+class _SettingsSystemListenerState extends State<SettingsSystemListener> with WidgetsBindingObserver {
 	late StreamSubscription connectivitySubscription;
-	late Settings settings;
 
 	@override
 	void initState() {
 		super.initState();
 		WidgetsBinding.instance!.addObserver(this);
-		settings = widget.settingsBuilder();
 		_checkConnectivity();
 		connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
-			settings.connectivity = result;
+			context.read<Settings>().connectivity = result;
 		});
 		if (isDesktop()) {
-			settings.connectivity = ConnectivityResult.wifi;
+			context.read<Settings>().connectivity = ConnectivityResult.wifi;
 		}
 	}
 
 	void _checkConnectivity() {
 		Connectivity().checkConnectivity().then((result) {
-			settings.connectivity = result;
+			context.read<Settings>().connectivity = result;
 		});
 	}
 
@@ -114,10 +133,12 @@ class _SettingsHandlerState extends State<SettingsHandler> with WidgetsBindingOb
 	}
 
 	@override
+	void didChangePlatformBrightness() {
+		context.read<Settings>().systemBrightness = SchedulerBinding.instance!.window.platformBrightness;
+	}
+
+	@override
 	Widget build(BuildContext context) {
-		return _SettingsData(
-			child: widget.child,
-			settings: settings
-		);
+		return widget.child;
 	}
 }

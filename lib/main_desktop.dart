@@ -6,5 +6,5 @@ import './main.dart';
 
 void main() {
 	debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;
-	runApp(MyApp());
+	runApp(ChanApp());
 }

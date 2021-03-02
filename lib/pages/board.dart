@@ -1,3 +1,4 @@
+import 'package:chan/pages/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/provider_list.dart';
 import 'package:chan/widgets/thread_row.dart';
@@ -6,6 +7,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:chan/models/thread.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
+
 
 class BoardPage extends StatelessWidget {
 	final ValueChanged<Thread> onThreadSelected;
@@ -33,6 +36,13 @@ class BoardPage extends StatelessWidget {
 							Icon(Icons.arrow_drop_down)
 						]
 					)
+				),
+				trailing: CupertinoButton(
+					padding: EdgeInsets.zero,
+					child: Icon(Icons.settings),
+					onPressed: () {
+						Navigator.of(context).push(cpr.CupertinoPageRoute(builder: (ctx) => SettingsPage()));
+					}
 				)
 			),
 			child: ProviderList<Thread>(

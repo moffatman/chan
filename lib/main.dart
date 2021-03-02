@@ -9,52 +9,44 @@ import 'sites/4chan.dart';
 import 'pages/tab.dart';
 import 'package:provider/provider.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(ChanApp());
 
-class MyApp extends StatefulWidget {
-	@override
-	createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-	GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-	ImageboardSite provider;
-	@override
-	void initState() {
-		super.initState();
-		provider = Site4Chan(
-			apiUrl: 'https://a.4cdn.org',
-			imageUrl: 'https://i.4cdn.org',
-			name: '4chan',
-			client: IOClient()
-		);
-	}
-
+class ChanApp extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
-		return SettingsHandler(
-			settingsBuilder: () {
-				return Settings(
-					autoloadAttachmentsPreference: Setting_AutoloadAttachments.WiFi
-				);
-			},
-			child: BackGestureWidthTheme(
-				backGestureWidth: BackGestureWidth.fraction(1),
-				child: Provider<ImageboardSite>.value(
-					value: provider,
-					child: CupertinoApp(
-						title: 'Chan',
-						theme: CupertinoThemeData(
-							primaryColor: Colors.black,
-						),
-						home: Builder(
-							builder: (BuildContext context) {
-								return DefaultTextStyle(
-									style: CupertinoTheme.of(context).textTheme.textStyle,
-									child: ChanHomePage()
-								);
+		return BackGestureWidthTheme(
+			backGestureWidth: BackGestureWidth.fraction(1),
+			child: MultiProvider(
+				providers: [
+					ChangeNotifierProvider<Settings>(create: (_) => Settings()),
+					Provider<ImageboardSite>(create: (_) => Site4Chan(
+						apiUrl: 'https://a.4cdn.org',
+						imageUrl: 'https://i.4cdn.org',
+						name: '4chan',
+						client: IOClient()
+					))
+				],
+				child: SettingsSystemListener(
+					child: Builder(
+						builder: (BuildContext context) {
+							final brightness = context.watch<Settings>().theme;
+							CupertinoThemeData theme = CupertinoThemeData(brightness: Brightness.light, primaryColor: Colors.black);
+							if (brightness == Brightness.dark) {
+								theme = CupertinoThemeData(brightness: Brightness.dark, scaffoldBackgroundColor: Color.fromRGBO(20, 20, 20, 1), primaryColor: Colors.white);
 							}
-						)
+							return CupertinoApp(
+								title: 'Chan',
+								theme: theme,
+								home: Builder(
+									builder: (BuildContext context) {
+										return DefaultTextStyle(
+											style: CupertinoTheme.of(context).textTheme.textStyle,
+											child: ChanHomePage()
+										);
+									}
+								)
+							);
+						}
 					)
 				)
 			)

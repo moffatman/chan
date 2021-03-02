@@ -59,13 +59,13 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 
 	void _updateAutoload() {
 		status = AttachmentViewerStatus.LowRes;
-		if (Settings.of(context).autoloadAttachments || widget.autoload) {
+		if (context.read<Settings>().autoloadAttachments || widget.autoload) {
 			_load();
 		}
 	}
 
 	void _load() async {
-		final site = context.watch<ImageboardSite>();
+		final site = context.read<ImageboardSite>();
 		final url = site.getAttachmentUrl(widget.attachment);
 		setState(() {
 			status = AttachmentViewerStatus.Checking;
