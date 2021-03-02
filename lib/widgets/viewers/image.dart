@@ -8,11 +8,13 @@ class ImageViewer extends StatelessWidget {
 	final Uri url;
 	final Attachment attachment;
 	final bool allowZoom;
+	final Object? tag;
 
 	ImageViewer({
 		required this.url,
 		required this.attachment,
-		this.allowZoom = true
+		this.allowZoom = true,
+		this.tag
 	});
 
 	@override
@@ -42,7 +44,7 @@ class ImageViewer extends StatelessWidget {
 			},
 			heroBuilderForSlidingPage: (Widget result) {
 				return Hero(
-					tag: attachment,
+					tag: tag ?? attachment,
 					child: result,
 					flightShuttleBuilder: (ctx, animation, direction, from, to) {
 						return (direction == HeroFlightDirection.pop) ? from.widget : to.widget;

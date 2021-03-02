@@ -35,66 +35,13 @@ class ExpandingPost extends StatelessWidget {
 			value: context.watch<List<Post>>().firstWhere((p) => p.id == this.id),
 			child: PostRow(
 				onThumbnailTap: (attachment, {Object? tag}) {
-					final url = context.read<ImageboardSite>().getAttachmentUrl(attachment).toString();
-					final thumbnailUrl = context.read<ImageboardSite>().getAttachmentThumbnailUrl(attachment).toString();
-					Navigator.of(context).push(TransparentRoute(
-						builder: (BuildContext context) {
-							return ExtendedImageSlidePage(
-								key: slidePageKey,
-								resetPageDuration: const Duration(milliseconds: 100),
-								slidePageBackgroundHandler: (offset, size) {
-									return Colors.black.withOpacity((0.38 * (1 - (offset.dx / size.width).abs()) * (1 - (offset.dy / size.height).abs())).clamp(0, 1));
-								},
-								child: GestureDetector(
-									child: ExtendedImage.network(
-										url,
-										enableSlideOutPage: true,
-										cache: true,
-										enableLoadState: true,
-										loadStateChanged: (loadstate) {
-											if (loadstate.extendedImageLoadState == LoadState.loading) {
-												return Stack(
-													children: [
-														ExtendedImage.network(
-															thumbnailUrl,
-															cache: true,
-															height: double.infinity,
-															width: double.infinity,
-															fit: BoxFit.contain,
-														),
-														Center(
-															child: CircularProgressIndicator()
-														)
-													]
-												);
-											}
-											else if (loadstate.extendedImageLoadState == LoadState.completed) {
-												return null;
-											}
-											else if (loadstate.extendedImageLoadState == LoadState.failed) {
-												return Center(
-													child: Text("Error")
-												);
-											}
-										},
-										heroBuilderForSlidingPage: (Widget result) {
-											return Hero(
-												tag: tag!,
-												child: result,
-												flightShuttleBuilder: (ctx, animation, direction, from, to) {
-													return (direction == HeroFlightDirection.pop) ? from.widget : to.widget;
-												}
-											);
-										}
-									),
-									onTap: () {
-										slidePageKey.currentState!.popPage();
-										Navigator.of(context).pop();
-									}
-								)
-							);
-						}
-					));
+					showGallery(
+						context: context,
+						attachments: [attachment],
+						overrideTags: (tag != null) ? [tag] : null,
+						key: GlobalObjectKey(attachment),
+						initiallyShowChrome: true
+					);
 				}
 			)
 		) : Container(width: 0, height: 0);

@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 class AttachmentGallery extends StatefulWidget {
 	final List<Attachment> attachments;
+	final List<Object>? overrideTags;
 	final ValueChanged<Attachment>? onChange;
 	final ValueChanged<Attachment>? onTap;
 	final Attachment currentAttachment;
@@ -26,7 +27,8 @@ class AttachmentGallery extends StatefulWidget {
 		this.height = double.infinity,
 		this.backgroundColor = Colors.transparent,
 		this.showThumbnails = true,
-		Key? key
+		Key? key,
+		this.overrideTags
 	}) : super(key: key);
 
 	@override
@@ -44,18 +46,22 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 	FocusNode _focusNode = FocusNode();
 
 	void _generatePageWidgets() {
-		pageWidgets = widget.attachments.map((attachment) {
-			return GestureDetector(
+		pageWidgets = [];
+		for (int i = 0; i < widget.attachments.length; i++) {
+			final attachment = widget.attachments[i];
+			final tag = (widget.overrideTags != null) ? widget.overrideTags![i] : null;
+			pageWidgets.add(GestureDetector(
 				child: AttachmentViewer(
 					attachment: attachment,
 					backgroundColor: widget.backgroundColor,
-					autoload: attachment == widget.currentAttachment
+					autoload: attachment == widget.currentAttachment,
+					tag: tag
 				),
 				onTap: () {
 					widget.onTap?.call(attachment);
 				}
-			);
-		}).toList();
+			));
+		}
 	}
 
 	@override

@@ -18,11 +18,13 @@ class AttachmentViewer extends StatefulWidget {
 	final Attachment attachment;
 	final Color backgroundColor;
 	final bool autoload;
+	final Object? tag;
 
 	AttachmentViewer({
 		required this.attachment,
 		this.backgroundColor = Colors.black,
 		this.autoload = false,
+		this.tag,
 		Key? key
 	}) : super(key: key);
 
@@ -116,13 +118,15 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 						child: WEBMViewer(
 							attachment: widget.attachment,
 							url: goodUrl!,
-							backgroundColor: widget.backgroundColor
+							backgroundColor: widget.backgroundColor,
+							tag: widget.tag
 						)
 					)
 					else ImageViewer(
 						attachment: widget.attachment,
 						url: (status == AttachmentViewerStatus.RealViewer) ? goodUrl! : context.watch<ImageboardSite>().getAttachmentThumbnailUrl(widget.attachment),
-						allowZoom: status == AttachmentViewerStatus.RealViewer
+						allowZoom: status == AttachmentViewerStatus.RealViewer,
+						tag: widget.tag
 					),
 					if (status == AttachmentViewerStatus.CheckError)
 						Center(

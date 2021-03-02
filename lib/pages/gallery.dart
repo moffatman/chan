@@ -9,12 +9,16 @@ class GalleryPage extends StatefulWidget {
 	final Attachment? initialAttachment;
 	final bool initiallyShowChrome;
 	final ValueChanged<Attachment>? onChange;
+	final Key galleryKey;
+	final List<Object>? overrideTags;
 
 	GalleryPage({
 		required this.attachments,
 		required this.initialAttachment,
+		required this.galleryKey,
 		this.initiallyShowChrome = false,
-		this.onChange
+		this.onChange,
+		this.overrideTags
 	});
 
 	@override
@@ -57,8 +61,9 @@ class _GalleryPageState extends State<GalleryPage> {
 						backgroundColor: Colors.black38
 					) : null,
 					child: AttachmentGallery(
-						key: galleryKey,
+						key: widget.galleryKey,
 						attachments: widget.attachments,
+						overrideTags: widget.overrideTags,
 						currentAttachment: currentAttachment,
 						showThumbnails: showChrome,
 						onTap: (attachment) {

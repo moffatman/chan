@@ -43,7 +43,8 @@ class _ThreadPageState extends State<ThreadPage> {
 				_listController.scrollToFirstMatching((post) {
 					return post.attachment == attachment;
 				});
-			}
+			},
+			key: GlobalObjectKey(thread!)
 		);
 	}
 

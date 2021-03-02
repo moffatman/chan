@@ -22,11 +22,13 @@ class WEBMViewer extends StatefulWidget {
 	final Uri url;
 	final Attachment attachment;
 	final Color backgroundColor;
+	final Object? tag;
 
 	WEBMViewer({
 		required this.url,
 		required this.attachment,
-		this.backgroundColor = Colors.black
+		this.backgroundColor = Colors.black,
+		this.tag
 	});
 
 	@override
@@ -115,7 +117,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 		return ExtendedImageSlidePageHandler(
 			heroBuilderForSlidingPage: (Widget result) {
 				return Hero(
-					tag: widget.attachment,
+					tag: widget.tag ?? widget.attachment,
 					child: result,
 					flightShuttleBuilder: (ctx, animation, direction, from, to) {
 						return (direction == HeroFlightDirection.pop) ? from.widget : to.widget;
