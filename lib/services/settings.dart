@@ -108,7 +108,9 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 			context.read<Settings>().connectivity = result;
 		});
 		if (isDesktop()) {
-			context.read<Settings>().connectivity = ConnectivityResult.wifi;
+			Future.delayed(Duration(milliseconds: 10), () {
+				context.read<Settings>().connectivity = ConnectivityResult.wifi;
+			});
 		}
 	}
 

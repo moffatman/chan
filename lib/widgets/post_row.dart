@@ -1,6 +1,7 @@
 import 'package:chan/models/post_element.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/post_expander.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:timeago/timeago.dart' as timeago;
@@ -27,7 +28,10 @@ class PostRow extends StatelessWidget {
 		final randomHeroTag = Random().nextDouble().toString();
 		return Container(
 			padding: EdgeInsets.all(8),
-			decoration: BoxDecoration(border: parentIds.isNotEmpty ? Border.all(width: 0) : Border(bottom: BorderSide(width: 0))),
+			decoration: BoxDecoration(
+				border: parentIds.isNotEmpty ? Border.all(width: 0) : Border(bottom: BorderSide(width: 0)),
+				color: CupertinoTheme.of(context).scaffoldBackgroundColor
+			),
 			child: Column(
 				crossAxisAlignment: CrossAxisAlignment.start,
 				children: [

@@ -1,10 +1,12 @@
 import 'package:chan/models/post.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/widgets/post_expander.dart';
+import 'package:chan/widgets/post_row.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
 
@@ -63,6 +65,51 @@ class PostQuoteSpan extends PostSpan {
 	}
 }
 
+class HoverPopup extends StatefulWidget {
+	final Widget child;
+	final Widget popup;
+	HoverPopup({
+		required this.child,
+		required this.popup
+	});
+	createState() => _HoverPopupState();
+}
+
+class _HoverPopupState extends State<HoverPopup> {
+	OverlayEntry? _entry;
+	@override
+	Widget build(BuildContext context) {
+		return MouseRegion(
+			onEnter: (event) {
+				final RenderBox childBox = context.findRenderObject()! as RenderBox;
+				final childTop = childBox.localToGlobal(Offset.zero).dy;
+				final childBottom = childBox.localToGlobal(Offset(0, childBox.size.height)).dy;
+				final childCenterHorizontal = childBox.localToGlobal(Offset(childBox.size.width / 2, 0)).dx;
+				final topOfUsableSpace = MediaQuery.of(context).size.height / 2;
+				final hoverWidth = MediaQuery.of(context).size.width / 2;
+				final showOnRight = childCenterHorizontal > (MediaQuery.of(context).size.width / 2);
+				_entry = OverlayEntry(
+					builder: (context) {
+						return Positioned(
+							right: showOnRight ? (MediaQuery.of(context).size.width - childBox.localToGlobal(Offset(childBox.size.width, 0)).dx) : null,
+							left: showOnRight ? null : childBox.localToGlobal(Offset.zero).dx,
+							bottom: (childTop > topOfUsableSpace) ? MediaQuery.of(context).size.height - childTop : null,
+							top: (childTop > topOfUsableSpace) ? null : childBottom,
+							width: hoverWidth,
+							child: widget.popup
+						);
+					}
+				);
+				Overlay.of(context, rootOverlay: true)!.insert(_entry!);
+			},
+			onExit: (event) {
+				_entry!.remove();
+			},
+			child: widget.child
+		);
+	}
+}
+
 class PostQuoteLinkSpan extends PostSpan {
 	final int id;
 	PostQuoteLinkSpan(this.id);
@@ -73,18 +120,34 @@ class PostQuoteLinkSpan extends PostSpan {
 	build(context) {
 		final zone = context.watchOrNull<ExpandingPostZone>();
 		final sameAsParent = zone?.parentIds.contains(id) ?? false;
-		return TextSpan(
-			text: '>>' + this.id.toString(),
-			style: TextStyle(
-				color: (zone?.shouldExpandPost(id) ?? false || sameAsParent) ? Colors.pink : Colors.red,
-				decoration: TextDecoration.underline,
-				decorationStyle: sameAsParent ? TextDecorationStyle.dashed : null
-			),
-			recognizer: TapGestureRecognizer()..onTap = () {
-				if (!sameAsParent && zone != null) {
-					zone.toggleExpansionOfPost(this.id);
-				}
-			}
+		final postList = context.watch<List<Post>>();
+		final post = postList.firstWhere((p) => p.id == this.id);
+		return WidgetSpan(
+			child: HoverPopup(
+				child: Text.rich(
+					TextSpan(
+						text: '>>' + this.id.toString(),
+						style: TextStyle(
+							color: (zone?.shouldExpandPost(id) ?? false || sameAsParent) ? Colors.pink : Colors.red,
+							decoration: TextDecoration.underline,
+							decorationStyle: sameAsParent ? TextDecorationStyle.dashed : null
+						),
+						recognizer: TapGestureRecognizer()..onTap = () {
+							if (!sameAsParent && zone != null) {
+								zone.toggleExpansionOfPost(this.id);
+							}
+						}
+					)
+				),
+				popup: MultiProvider(
+					providers: [
+						Provider.value(value: post),
+						Provider.value(value: postList),
+						ChangeNotifierProvider(create: (_) => ExpandingPostZone((zone?.parentIds ?? []).followedBy([post.id]).toList()))
+					],
+					child: PostRow()
+				)
+			)
 		);
 	}
 }
