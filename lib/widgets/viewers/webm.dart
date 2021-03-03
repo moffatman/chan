@@ -37,8 +37,8 @@ class WEBMViewer extends StatefulWidget {
 
 class _WEBMViewerState extends State<WEBMViewer> {
 	late WEBM webm;
-	late ChewieController _chewieController;
-	late VideoPlayerController _videoPlayerController;
+	ChewieController? _chewieController;
+	VideoPlayerController? _videoPlayerController;
 	WEBMViewerStatus playerStatus = WEBMViewerStatus.Initializing;
 	WEBMStatus loadingStatus = WEBMStatus(type: WEBMStatusType.Idle);
 
@@ -62,7 +62,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 			webm.status.listen((status) async {
 				if (status.type == WEBMStatusType.Converted) {
 					_videoPlayerController = VideoPlayerController.file(status.file);
-					await _videoPlayerController.initialize();
+					await _videoPlayerController!.initialize();
 					setState(() {
 						_chewieController = ChewieController(
 							videoPlayerController:  _videoPlayerController,
@@ -131,13 +131,13 @@ class _WEBMViewerState extends State<WEBMViewer> {
 	Widget _build(BuildContext context) {
 		if (playerStatus == WEBMViewerStatus.Playing) {
 			if (context.watch<Attachment>() != widget.attachment) {
-				_chewieController.pause();
+				_chewieController!.pause();
 			}
 			return Center(
 				child: SafeArea(
 					top: false,
 					child: AspectRatio(
-						aspectRatio: _videoPlayerController.value.aspectRatio,
+						aspectRatio: _videoPlayerController!.value.aspectRatio,
 						child: Chewie(
 							controller: _chewieController
 						)
@@ -184,8 +184,8 @@ class _WEBMViewerState extends State<WEBMViewer> {
 
 	@override
 	void dispose() {
-		_videoPlayerController.dispose();
-		_chewieController.dispose();
+		_videoPlayerController?.dispose();
+		_chewieController?.dispose();
 		super.dispose();
 	}
 }
