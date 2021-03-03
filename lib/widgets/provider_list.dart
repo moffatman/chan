@@ -181,9 +181,13 @@ class ProviderListController<T> {
 	void scrollToFirstMatching(bool f(T val)) {
 		final match = _findNextMatch(f);
 		if (match != null) {
+			// Need to do some math here to account for the header
+			final screenHeight = MediaQuery.of(match.context).size.height;
+			final height = match.context.findRenderObject()!.semanticBounds.size.height;
+			final safeAreaHeight = MediaQuery.of(match.context).padding.top;
 			Scrollable.ensureVisible(
 				match.context,
-				alignment: MediaQuery.of(match.context).padding.top / MediaQuery.of(match.context).size.height,
+				alignment: safeAreaHeight / (screenHeight - height),
 				duration: const Duration(milliseconds: 200)
 			);
 			/*scrollController.position.animateTo(
