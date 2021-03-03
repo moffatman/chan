@@ -159,7 +159,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 							mainAxisSize: MainAxisSize.min,
 							children: [
 								Icon(Icons.error),
-								Text(loadingStatus.message ?? 'Unknown error')
+								Text(loadingStatus.message ?? 'Unknown error', style: TextStyle(color: CupertinoTheme.of(context).primaryColor))
 							]
 						)
 					)
