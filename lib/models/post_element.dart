@@ -81,7 +81,10 @@ class _HoverPopupState extends State<HoverPopup> {
 	Widget build(BuildContext context) {
 		return MouseRegion(
 			onEnter: (event) {
-				final RenderBox childBox = context.findRenderObject()! as RenderBox;
+				final RenderBox? childBox = context.findRenderObject() as RenderBox;
+				if (childBox == null) {
+					return;
+				}
 				final childTop = childBox.localToGlobal(Offset.zero).dy;
 				final childBottom = childBox.localToGlobal(Offset(0, childBox.size.height)).dy;
 				final childCenterHorizontal = childBox.localToGlobal(Offset(childBox.size.width / 2, 0)).dx;
@@ -103,7 +106,7 @@ class _HoverPopupState extends State<HoverPopup> {
 				Overlay.of(context, rootOverlay: true)!.insert(_entry!);
 			},
 			onExit: (event) {
-				_entry!.remove();
+				_entry?.remove();
 			},
 			child: widget.child
 		);
