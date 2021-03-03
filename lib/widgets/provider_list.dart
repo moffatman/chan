@@ -183,7 +183,7 @@ class ProviderListController<T> {
 		if (match != null) {
 			Scrollable.ensureVisible(
 				match.context,
-				alignment: (kMinInteractiveDimensionCupertino) / MediaQuery.of(match.context).size.height,
+				alignment: MediaQuery.of(match.context).padding.top / MediaQuery.of(match.context).size.height,
 				duration: const Duration(milliseconds: 200)
 			);
 			/*scrollController.position.animateTo(
