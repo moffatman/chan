@@ -147,7 +147,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 		}
 		else return Stack(
 			children: [
-				AttachmentThumbnail(attachment: widget.attachment, hero: false, width: double.infinity, height: double.infinity),
+				AttachmentThumbnail(attachment: widget.attachment, width: double.infinity, height: double.infinity),
 				if (playerStatus == WEBMViewerStatus.Error) Center(
 					child: Container(
 						padding: EdgeInsets.all(16),

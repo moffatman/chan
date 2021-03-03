@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 
 class AttachmentGallery extends StatefulWidget {
 	final List<Attachment> attachments;
-	final List<Object>? overrideTags;
+	final List<int> semanticParentIds;
 	final ValueChanged<Attachment>? onChange;
 	final ValueChanged<Attachment>? onTap;
 	final Attachment currentAttachment;
@@ -28,7 +28,7 @@ class AttachmentGallery extends StatefulWidget {
 		this.backgroundColor = Colors.transparent,
 		this.showThumbnails = true,
 		Key? key,
-		this.overrideTags
+		required this.semanticParentIds
 	}) : super(key: key);
 
 	@override
@@ -46,22 +46,20 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 	FocusNode _focusNode = FocusNode();
 
 	void _generatePageWidgets() {
-		pageWidgets = [];
-		for (int i = 0; i < widget.attachments.length; i++) {
-			final attachment = widget.attachments[i];
-			final tag = (widget.overrideTags != null) ? widget.overrideTags![i] : null;
-			pageWidgets.add(GestureDetector(
-				child: AttachmentViewer(
+		pageWidgets = widget.attachments.map((attachment) => GestureDetector(
+			child: AttachmentViewer(
+				attachment: attachment,
+				backgroundColor: widget.backgroundColor,
+				autoload: attachment == widget.currentAttachment,
+				tag: AttachmentSemanticLocation(
 					attachment: attachment,
-					backgroundColor: widget.backgroundColor,
-					autoload: attachment == widget.currentAttachment,
-					tag: tag
-				),
-				onTap: () {
-					widget.onTap?.call(attachment);
-				}
-			));
-		}
+					semanticParents: widget.semanticParentIds
+				)
+			),
+			onTap: () {
+				widget.onTap?.call(attachment);
+			}
+		)).toList();
 	}
 
 	@override
@@ -196,8 +194,7 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 															child: AttachmentThumbnail(
 																attachment: widget.attachments[index],
 																width: widget.thumbnailSize,
-																height: widget.thumbnailSize,
-																hero: false
+																height: widget.thumbnailSize
 															)
 														)
 													);

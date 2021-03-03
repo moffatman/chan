@@ -7,11 +7,10 @@ import 'package:flutter/cupertino.dart';
 Future<Attachment?> showGallery({
 	required BuildContext context,
 	required List<Attachment> attachments,
-	required Key key,
+	required List<int> semanticParentIds,
 	Attachment? initialAttachment,
 	bool initiallyShowChrome = false,
 	ValueChanged<Attachment>? onChange,
-	List<Object>? overrideTags
 }) {
 	return Navigator.of(context, rootNavigator: true).push(TransparentRoute<Attachment>(
 		builder: (BuildContext _context) {
@@ -20,8 +19,7 @@ Future<Attachment?> showGallery({
 				initialAttachment: initialAttachment,
 				initiallyShowChrome: initiallyShowChrome,
 				onChange: onChange,
-				galleryKey: key,
-				overrideTags: overrideTags
+				semanticParentIds: semanticParentIds
 			);
 		}
 	));

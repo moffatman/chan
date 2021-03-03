@@ -44,7 +44,7 @@ class _ThreadPageState extends State<ThreadPage> {
 					return post.attachment == attachment;
 				});
 			},
-			key: GlobalObjectKey(thread!)
+			semanticParentIds: []
 		);
 	}
 

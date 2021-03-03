@@ -69,7 +69,10 @@ class PostRow extends StatelessWidget {
 							post.attachment == null ? SizedBox(width: 0, height: 0) : GestureDetector(
 								child: AttachmentThumbnail(
 									attachment: post.attachment!,
-									heroTag: parentIds.isEmpty ? null : randomHeroTag
+									hero: AttachmentSemanticLocation(
+										attachment: post.attachment!,
+										semanticParents: parentIds
+									)
 								),
 								onTap: () {
 									onThumbnailTap?.call(post.attachment!, tag: randomHeroTag);

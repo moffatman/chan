@@ -31,15 +31,15 @@ class ExpandingPost extends StatelessWidget {
 	
 	@override
 	Widget build(BuildContext context) {
-		return context.watch<ExpandingPostZone>().shouldExpandPost(this.id) ? Provider.value(
+		final zone = context.watch<ExpandingPostZone>();
+		return zone.shouldExpandPost(this.id) ? Provider.value(
 			value: context.watch<List<Post>>().firstWhere((p) => p.id == this.id),
 			child: PostRow(
 				onThumbnailTap: (attachment, {Object? tag}) {
 					showGallery(
 						context: context,
 						attachments: [attachment],
-						overrideTags: (tag != null) ? [tag] : null,
-						key: GlobalObjectKey(attachment),
+						semanticParentIds: zone.parentIds,
 						initiallyShowChrome: true
 					);
 				}
