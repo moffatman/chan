@@ -27,6 +27,40 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
+# "fork" of method flutter_install_ios_plugin_pods (in fluttertools podhelpers.rb) to get lts version of ffmpeg
+def flutter_install_ios_plugin_pods(ios_application_path = nil)
+    # defined_in_file is set by CocoaPods and is a Pathname to the Podfile.
+    ios_application_path ||= File.dirname(defined_in_file.realpath) if self.respond_to?(:defined_in_file)
+    raise 'Could not find iOS application path' unless ios_application_path
+
+    # Prepare symlinks folder. We use symlinks to avoid having Podfile.lock
+    # referring to absolute paths on developers' machines.
+
+    symlink_dir = File.expand_path('.symlinks', ios_application_path)
+    system('rm', '-rf', symlink_dir) # Avoid the complication of dependencies like FileUtils.
+
+    symlink_plugins_dir = File.expand_path('plugins', symlink_dir)
+    system('mkdir', '-p', symlink_plugins_dir)
+
+    plugins_file = File.join(ios_application_path, '..', '.flutter-plugins-dependencies')
+    plugin_pods = flutter_parse_plugins_file(plugins_file)
+    plugin_pods.each do |plugin_hash|
+      plugin_name = plugin_hash['name']
+      plugin_path = plugin_hash['path']
+
+      if (plugin_name && plugin_path)
+        symlink = File.join(symlink_plugins_dir, plugin_name)
+        File.symlink(plugin_path, symlink)
+
+        if plugin_name == 'flutter_ffmpeg'
+          pod plugin_name+'/full-gpl', :path => File.join('.symlinks', 'plugins', plugin_name, 'ios')
+        else
+          pod plugin_name, :path => File.join('.symlinks', 'plugins', plugin_name, 'ios')
+        end
+      end
+    end
+end
+
 target 'Runner' do
   use_frameworks!
   use_modular_headers!

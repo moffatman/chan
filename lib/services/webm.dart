@@ -73,7 +73,7 @@ class WEBM {
 					int ffmpegReturnCode;
 					if (isDesktop()) {
 						print('Using Process.start');
-						final ffmpeg = await Process.start('ffmpeg', ['-i', webmFile.path, convertedFile.path]);
+						final ffmpeg = await Process.start('ffmpeg', ['-hwaccel', 'auto', '-i', webmFile.path, '-crf', '18', convertedFile.path]);
 						print('Process started');
 						ffmpeg.stdout.transform(Utf8Decoder()).transform(LineSplitter()).listen((line) {
 							print(line);
@@ -94,7 +94,7 @@ class WEBM {
 						ffconfig.enableStatisticsCallback((stats) {
 							_statusController.add(WEBMStatus(type: WEBMStatusType.Converting, progress: 0.001 * (stats.time / duration!)));
  						});
-						ffmpegReturnCode = await ffmpeg.execute('-i ${webmFile.path} ${convertedFile.path}');
+						ffmpegReturnCode = await ffmpeg.execute('-hwaccel auto -i ${webmFile.path} -c:v libx264 -preset ultrafast ${convertedFile.path}');
 					}
 					if (ffmpegReturnCode == 0) {
 						await webmFile.delete();
