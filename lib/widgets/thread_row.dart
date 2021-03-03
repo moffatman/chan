@@ -17,6 +17,9 @@ class ThreadRow extends StatelessWidget {
 	Widget build(BuildContext context) {
 		return Container(
 			padding: EdgeInsets.all(8),
+			constraints: BoxConstraints(
+				maxHeight: 200
+			),
 			decoration: BoxDecoration(
 				color: isSelected ? ((MediaQuery.of(context).platformBrightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
 			),
@@ -28,19 +31,20 @@ class ThreadRow extends StatelessWidget {
 						AttachmentThumbnail(
 							attachment: thread.attachment!
 						),
-					Expanded(child: Container(
+					Flexible(child: Container(
 						padding: EdgeInsets.all(8),
 						child: Column(
+							mainAxisSize: MainAxisSize.min,
 							crossAxisAlignment: CrossAxisAlignment.start,
 							mainAxisAlignment: MainAxisAlignment.start,
 							children: [
 								if (thread.title != null) Text(thread.title!, style: TextStyle(fontWeight: FontWeight.bold)),
-								Provider.value(
+								Flexible(child: Provider.value(
 									value: thread.posts[0],
 									child: Builder(
-										builder: (ctx) => Text.rich(thread.posts[0].span.build(ctx))
+										builder: (ctx) => Text.rich(thread.posts[0].span.build(ctx), overflow: TextOverflow.fade)
 									)
-								),
+								)),
 								SizedBox(height: 16),
 								Row(
 									mainAxisAlignment: MainAxisAlignment.end,
