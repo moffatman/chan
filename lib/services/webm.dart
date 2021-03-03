@@ -94,7 +94,14 @@ class WEBM {
 						ffconfig.enableStatisticsCallback((stats) {
 							_statusController.add(WEBMStatus(type: WEBMStatusType.Converting, progress: 0.001 * (stats.time / duration!)));
  						});
-						ffmpegReturnCode = await ffmpeg.execute('-hwaccel auto -i ${webmFile.path} -c:v libx264 -preset ultrafast ${convertedFile.path}');
+						String options = '';
+						if (Platform.isAndroid) {
+							options = '-c:v libx264 -preset ultrafast';
+						}
+						else if (Platform.isIOS) {
+							options = '-vcodec h264_videotoolbox';
+						}
+						ffmpegReturnCode = await ffmpeg.execute('-hwaccel auto -i ${webmFile.path} $options ${convertedFile.path}');
 					}
 					if (ffmpegReturnCode == 0) {
 						await webmFile.delete();
