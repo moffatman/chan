@@ -23,7 +23,7 @@ class AttachmentGallery extends StatefulWidget {
 		this.onChange,
 		this.onTap,
 		required this.currentAttachment,
-		this.thumbnailSize = 32,
+		this.thumbnailSize = 60,
 		this.height = double.infinity,
 		this.backgroundColor = Colors.transparent,
 		this.showThumbnails = true,
