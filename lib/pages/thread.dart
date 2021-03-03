@@ -83,7 +83,7 @@ class _ThreadPageState extends State<ThreadPage> {
 							value: post,
 							child: PostRow(
 								onThumbnailTap: (attachment, {Object? tag}) {
-									_showGallery(initialAttachment: attachment, initiallyShowChrome: true);
+									_showGallery(initialAttachment: attachment);
 								}
 							)
 						);

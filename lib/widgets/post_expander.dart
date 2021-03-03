@@ -39,8 +39,7 @@ class ExpandingPost extends StatelessWidget {
 					showGallery(
 						context: context,
 						attachments: [attachment],
-						semanticParentIds: zone.parentIds,
-						initiallyShowChrome: true
+						semanticParentIds: zone.parentIds
 					);
 				}
 			)
