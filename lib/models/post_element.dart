@@ -126,7 +126,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			child: HoverPopup(
 				child: Text.rich(
 					TextSpan(
-						text: '>>' + this.id.toString(),
+						text: '>>' + this.id.toString() + ((postList[0].id == this.id) ? ' (OP)' : ''),
 						style: TextStyle(
 							color: (zone?.shouldExpandPost(id) ?? false || sameAsParent) ? Colors.pink : Colors.red,
 							decoration: TextDecoration.underline,
