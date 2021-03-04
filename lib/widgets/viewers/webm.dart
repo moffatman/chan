@@ -11,13 +11,6 @@ import 'package:video_player/video_player.dart';
 import 'package:provider/provider.dart';
 import 'package:extended_image/extended_image.dart';
 
-enum WEBMViewerStatus {
-	Initializing,
-	Loading,
-	Playing,
-	Error
-}
-
 class WEBMViewer extends StatefulWidget {
 	final Uri url;
 	final Attachment attachment;
@@ -39,8 +32,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 	late WEBM webm;
 	ChewieController? _chewieController;
 	VideoPlayerController? _videoPlayerController;
-	WEBMViewerStatus playerStatus = WEBMViewerStatus.Initializing;
-	WEBMStatus loadingStatus = WEBMStatus(type: WEBMStatusType.Idle);
+	WEBMStatus? loadingStatus;
 
 	_initializeWebm() {
 		if (isDesktop()) {
@@ -49,18 +41,16 @@ class _WEBMViewerState extends State<WEBMViewer> {
 				videoPlayerController: _videoPlayerController,
 				autoPlay: true
 			);*/
-			playerStatus = WEBMViewerStatus.Error;
-			loadingStatus = WEBMStatus(type: WEBMStatusType.Error, message: 'WEBM disabled on desktop');
+			loadingStatus = WEBMErrorStatus('WEBM disabled on desktop');
 		}
 		else {
 			webm = WEBM(
 				url: widget.url,
 				client: context.watch<ImageboardSite>().client
 			);
-			playerStatus = WEBMViewerStatus.Loading;
 			webm.startProcessing();
 			webm.status.listen((status) async {
-				if (status.type == WEBMStatusType.Converted) {
+				if (status is WEBMReadyStatus) {
 					_videoPlayerController = VideoPlayerController.file(status.file);
 					await _videoPlayerController!.initialize();
 					setState(() {
@@ -74,13 +64,12 @@ class _WEBMViewerState extends State<WEBMViewer> {
 								DeviceOrientation.portraitUp
 							]
 						);
-						playerStatus = WEBMViewerStatus.Playing;
+						loadingStatus = status;
 					});
 				}
-				else if (status.type == WEBMStatusType.Error) {
+				else if (status is WEBMErrorStatus) {
 					setState(() {
 						loadingStatus = status;
-						playerStatus = WEBMViewerStatus.Error;
 					});
 				}
 				else {
@@ -100,7 +89,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 	@override
 	void didChangeDependencies() {
 		super.didChangeDependencies();
-		if (playerStatus == WEBMViewerStatus.Initializing) {
+		if (loadingStatus == null) {
 			_initializeWebm();
 		}
 	}
@@ -129,7 +118,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 	}
 
 	Widget _build(BuildContext context) {
-		if (playerStatus == WEBMViewerStatus.Playing) {
+		if (loadingStatus is WEBMReadyStatus) {
 			if (context.watch<Attachment>() != widget.attachment) {
 				_chewieController!.pause();
 			}
@@ -148,7 +137,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 		else return Stack(
 			children: [
 				AttachmentThumbnail(attachment: widget.attachment, width: double.infinity, height: double.infinity),
-				if (playerStatus == WEBMViewerStatus.Error) Center(
+				if (loadingStatus is WEBMErrorStatus) Center(
 					child: Container(
 						padding: EdgeInsets.all(16),
 						decoration: BoxDecoration(
@@ -159,25 +148,19 @@ class _WEBMViewerState extends State<WEBMViewer> {
 							mainAxisSize: MainAxisSize.min,
 							children: [
 								Icon(Icons.error),
-								Text(loadingStatus.message ?? 'Unknown error', style: TextStyle(color: CupertinoTheme.of(context).primaryColor))
+								Text((loadingStatus as WEBMErrorStatus).errorMessage, style: TextStyle(color: CupertinoTheme.of(context).primaryColor))
 							]
 						)
 					)
 				)
-				else if (playerStatus == WEBMViewerStatus.Loading)
-					if (loadingStatus.type == WEBMStatusType.Downloading) Center(
-						child: CircularProgressIndicator(
-							value: loadingStatus.progress,
-							valueColor: AlwaysStoppedAnimation(Colors.blue)
-						)
+				else if (loadingStatus is WEBMLoadingStatus) Center(
+					child: CircularProgressIndicator(
+						value: (loadingStatus as WEBMLoadingStatus).progress
 					)
-					else Center(
-						child: CircularProgressIndicator(
-							value: loadingStatus.progress,
-							valueColor: AlwaysStoppedAnimation(Colors.green),
-							backgroundColor: Colors.blue,
-						)
-					)
+				)
+				else Center(
+					child: CircularProgressIndicator()
+				)
 			],
 		);
 	}

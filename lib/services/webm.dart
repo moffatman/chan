@@ -8,28 +8,34 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
 
-enum WEBMStatusType {
-	Idle,
-	Converted,
-	Downloading,
-	Converting,
-	Error
+class WEBMStatus {
+
 }
 
-class WEBMStatus {
-	double? progress;
-	WEBMStatusType type;
-	File? file;
-	String? message;
-	WEBMStatus({
-		this.progress,
-		required this.type,
-		this.file,
-		this.message
-	});
+class WEBMLoadingStatus extends WEBMStatus {
+	final double? progress;
+	WEBMLoadingStatus([this.progress]);
 	@override
 	String toString() {
-		return 'WEBMStatus $type (progress: $progress, message: $message, file: $file)';
+		return 'WEBMLoadingStatus (progress: $progress)';
+	}
+}
+
+class WEBMReadyStatus extends WEBMStatus {
+	final File file;
+	WEBMReadyStatus(this.file);
+	@override
+	String toString() {
+		return 'WEBMReadyStatus (file: ${file.path})';
+	}
+}
+
+class WEBMErrorStatus extends WEBMStatus {
+	String errorMessage;
+	WEBMErrorStatus(this.errorMessage);
+	@override
+	String toString() {
+		return 'WEBMErrorStatus (errorMessage: $errorMessage)';
 	}
 }
 
@@ -45,7 +51,6 @@ class WEBM {
 		required this.client
 	}) {
 		status = _statusController.stream;
-		_statusController.add(WEBMStatus(progress: 0, type: WEBMStatusType.Idle));
 	}
 
 	void startProcessing() async {
@@ -56,73 +61,58 @@ class WEBM {
 			final cacheDirectory = await (new Directory(systemTempDirectory.path + '/webmcache/' + url.host)).create(recursive: true);
 			final convertedFile = File(cacheDirectory.path + '/' + filename.replaceFirst('.webm', '.mp4'));
 			if (await convertedFile.exists()) {
-				_statusController.add(WEBMStatus(type: WEBMStatusType.Converted, file: convertedFile));
+				_statusController.add(WEBMReadyStatus(convertedFile));
 			}
 			else {
-				final webmFile = File(cacheDirectory.path + '/' + filename);
-				final response = await client.send(http.Request('GET', url));
-				final sink = webmFile.openWrite();
-				int received = 0;
-				await response.stream.map((packet) {
-					received += packet.length;
-					_statusController.add(WEBMStatus(type: WEBMStatusType.Downloading, progress: response.contentLength == null ? null : received / response.contentLength!));
-					return packet;
-				}).pipe(sink);
-				if (response.statusCode == 200) {
-					_statusController.add(WEBMStatus(type: WEBMStatusType.Converting));
-					int ffmpegReturnCode;
-					if (isDesktop()) {
-						print('Using Process.start');
-						final ffmpeg = await Process.start('ffmpeg', ['-hwaccel', 'auto', '-i', webmFile.path, '-crf', '18', convertedFile.path]);
-						print('Process started');
-						ffmpeg.stdout.transform(Utf8Decoder()).transform(LineSplitter()).listen((line) {
-							print(line);
-						});
-						ffmpeg.stderr.transform(Utf8Decoder()).transform(LineSplitter()).listen((line) {
-							print(line);
-						});
-						ffmpegReturnCode = await ffmpeg.exitCode;
-					}
-					else {
-						print('Using FlutterFFmpeg');
-						final ffconfig = FlutterFFmpegConfig();
-						final ffprobe = FlutterFFprobe();
-						final ffmpeg = FlutterFFmpeg();
-						final mediaInfo = (await ffprobe.getMediaInformation(webmFile.path)).getAllProperties();
-						print(mediaInfo);
-						final duration = double.tryParse(mediaInfo['format']['duration']);
-						ffconfig.enableStatisticsCallback((stats) {
-							_statusController.add(WEBMStatus(type: WEBMStatusType.Converting, progress: 0.001 * (stats.time / duration!)));
- 						});
-						String options = '';
-						if (Platform.isAndroid) {
-							options = '-c:v libx264 -preset ultrafast';
-						}
-						else if (Platform.isIOS) {
-							options = '-vcodec h264_videotoolbox';
-						}
-						ffmpegReturnCode = await ffmpeg.execute('-hwaccel auto -i ${webmFile.path} $options ${convertedFile.path}');
-					}
-					if (ffmpegReturnCode == 0) {
-						await webmFile.delete();
-						_statusController.add(WEBMStatus(type: WEBMStatusType.Converted, file: convertedFile));
-					}
-					else {
-						if (await convertedFile.exists()) {
-							await convertedFile.delete();
-						}
-						_statusController.add(WEBMStatus(type: WEBMStatusType.Error, message: 'FFmpeg error $ffmpegReturnCode'));
-					}
+				_statusController.add(WEBMLoadingStatus());
+				int ffmpegReturnCode;
+				if (isDesktop()) {
+					print('Using Process.start');
+					final ffmpeg = await Process.start('ffmpeg', ['-hwaccel', 'auto', '-i', url.toString(), '-crf', '18', convertedFile.path]);
+					print('Process started');
+					ffmpeg.stdout.transform(Utf8Decoder()).transform(LineSplitter()).listen((line) {
+						print(line);
+					});
+					ffmpeg.stderr.transform(Utf8Decoder()).transform(LineSplitter()).listen((line) {
+						print(line);
+					});
+					ffmpegReturnCode = await ffmpeg.exitCode;
 				}
 				else {
-					_statusController.add(WEBMStatus(type: WEBMStatusType.Error, message: 'HTTP error ${response.statusCode}'));
+					print('Using FlutterFFmpeg');
+					final ffconfig = FlutterFFmpegConfig();
+					final ffprobe = FlutterFFprobe();
+					final ffmpeg = FlutterFFmpeg();
+					final mediaInfo = (await ffprobe.getMediaInformation(url.toString())).getAllProperties();
+					print(mediaInfo);
+					final duration = double.tryParse(mediaInfo['format']['duration']);
+					ffconfig.enableStatisticsCallback((stats) {
+						_statusController.add(WEBMLoadingStatus(0.001 * (stats.time / duration!)));
+					});
+					String options = '';
+					if (Platform.isAndroid) {
+						options = '-c:v libx264 -preset ultrafast';
+					}
+					else if (Platform.isIOS) {
+						options = '-vcodec h264_videotoolbox';
+					}
+					ffmpegReturnCode = await ffmpeg.execute('-hwaccel auto -i ${url.toString()} $options ${convertedFile.path}');
+				}
+				if (ffmpegReturnCode == 0) {
+					_statusController.add(WEBMReadyStatus(convertedFile));
+				}
+				else {
+					if (await convertedFile.exists()) {
+						await convertedFile.delete();
+					}
+					_statusController.add(WEBMErrorStatus('FFmpeg error $ffmpegReturnCode'));
 				}
 			}
 			_statusController.close();
 		}
 		catch (error, stackTrace) {
 			print(stackTrace);
-			_statusController.add(WEBMStatus(type: WEBMStatusType.Error, message: 'Unknown error $error'));
+			_statusController.add(WEBMErrorStatus('Unknown error $error'));
 			_statusController.close();
 		}
 	}
