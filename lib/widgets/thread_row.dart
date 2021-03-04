@@ -66,7 +66,7 @@ class ThreadRow extends StatelessWidget {
 										),
 										SizedBox(width: 8),
 										Container(
-											width: 55,
+											width: 60,
 											child: Row(
 												mainAxisAlignment: MainAxisAlignment.start,
 												children: [
