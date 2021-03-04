@@ -82,7 +82,7 @@ class _HoverPopupState extends State<HoverPopup> {
 		return MouseRegion(
 			onEnter: (event) {
 				final RenderBox? childBox = context.findRenderObject() as RenderBox;
-				if (childBox == null) {
+				if (childBox == null || !childBox.attached) {
 					return;
 				}
 				final childTop = childBox.localToGlobal(Offset.zero).dy;
