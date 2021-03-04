@@ -84,10 +84,12 @@ class WEBM {
 					final ffprobe = FlutterFFprobe();
 					final ffmpeg = FlutterFFmpeg();
 					final mediaInfo = (await ffprobe.getMediaInformation(url.toString())).getAllProperties();
-					print(mediaInfo);
-					final duration = double.tryParse(mediaInfo['format']['duration']);
+					final duration = double.tryParse(mediaInfo['format']?['duration'] ?? '');
+					final bitrate = int.tryParse(mediaInfo['format']?['bit_rate'] ?? '') ?? (2e6 as int);
 					ffconfig.enableStatisticsCallback((stats) {
-						_statusController.add(WEBMLoadingStatus(0.001 * (stats.time / duration!)));
+						if (duration != null) {
+							_statusController.add(WEBMLoadingStatus(0.001 * (stats.time / duration)));
+						}
 					});
 					String options = '';
 					if (Platform.isAndroid) {
@@ -96,7 +98,7 @@ class WEBM {
 					else if (Platform.isIOS) {
 						options = '-vcodec h264_videotoolbox';
 					}
-					ffmpegReturnCode = await ffmpeg.execute('-hwaccel auto -i ${url.toString()} $options ${convertedFile.path}');
+					ffmpegReturnCode = await ffmpeg.execute('-hwaccel auto -i ${url.toString()} $options -b:v $bitrate ${convertedFile.path}');
 				}
 				if (ffmpegReturnCode == 0) {
 					_statusController.add(WEBMReadyStatus(convertedFile));
