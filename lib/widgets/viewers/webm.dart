@@ -108,10 +108,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 			heroBuilderForSlidingPage: (Widget result) {
 				return Hero(
 					tag: widget.tag ?? widget.attachment,
-					child: result,
-					flightShuttleBuilder: (ctx, animation, direction, from, to) {
-						return (direction == HeroFlightDirection.pop) ? from.widget : to.widget;
-					}
+					child: result
 				);
 			},
 			child: _build(context)
