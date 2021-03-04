@@ -92,7 +92,7 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 
 	void _onPageChanged(int index) {
 		widget.onChange?.call(widget.attachments[index]);
-		double centerPosition = ((widget.thumbnailSize + 8) * (index - 1.5)) - (_scrollController.position.viewportDimension / 2);
+		double centerPosition = ((widget.thumbnailSize + 12) * (index + 0.5)) - (_scrollController.position.viewportDimension / 2);
 		bool shouldScrollLeft = (centerPosition > _scrollController.position.pixels) && (_scrollController.position.extentAfter > 0);
 		bool shouldScrollRight = (centerPosition < _scrollController.position.pixels) && (_scrollController.position.extentBefore > 0);
 		setState(() {
@@ -188,9 +188,10 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 														child: Container(
 															decoration: BoxDecoration(
 																color: Colors.transparent,
+																borderRadius: BorderRadius.all(Radius.circular(4)),
 																border: Border.all(color: index ==  _currentIndex ? Colors.blue : Colors.transparent, width: 2)
 															),
-															margin: const EdgeInsets.only(left: 4, right: 4),
+															margin: const EdgeInsets.all(4),
 															child: AttachmentThumbnail(
 																attachment: widget.attachments[index],
 																width: widget.thumbnailSize,
