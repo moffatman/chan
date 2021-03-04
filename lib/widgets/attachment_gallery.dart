@@ -56,9 +56,17 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 					semanticParents: widget.semanticParentIds
 				)
 			),
-			onTap: () {
-				widget.onTap?.call(attachment);
-			}
+			onTapUp: (details) {
+				if ((details.globalPosition.dx > (MediaQuery.of(context).size.width * 0.75)) && (_currentIndex < (widget.attachments.length - 1))) {
+					_selectImage(_currentIndex + 1, milliseconds: 0);
+				}
+				else if ((details.globalPosition.dx < (MediaQuery.of(context).size.width * 0.25)) && (_currentIndex > 0)) {
+					_selectImage(_currentIndex - 1, milliseconds: 0);
+				}
+				else {
+					widget.onTap?.call(attachment);
+				}
+			},
 		)).toList();
 	}
 
