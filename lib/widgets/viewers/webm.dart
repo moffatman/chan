@@ -60,6 +60,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 							looping: true,
 							customControls: CupertinoTheme(data: CupertinoThemeData(primaryColor: Colors.black), child: MaterialControls()),
 							allowPlaybackSpeedChanging: false,
+							deviceOrientationsOnEnterFullScreen: [ _videoPlayerController!.value.aspectRatio > 1 ? DeviceOrientation.landscapeLeft : DeviceOrientation.portraitUp],
 							deviceOrientationsAfterFullScreen: [
 								DeviceOrientation.portraitUp
 							]
