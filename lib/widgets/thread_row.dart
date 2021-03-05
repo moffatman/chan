@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 import 'package:chan/models/thread.dart';
 
@@ -16,71 +17,100 @@ class ThreadRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return Container(
-			padding: EdgeInsets.all(8),
-			constraints: BoxConstraints(
-				maxHeight: 200
-			),
+			padding: EdgeInsets.only(left: 8, right: 8),
 			decoration: BoxDecoration(
 				color: isSelected ? ((MediaQuery.of(context).platformBrightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
 			),
-			child: Row(
+			child: Column(
 				crossAxisAlignment: CrossAxisAlignment.start,
-				mainAxisSize: MainAxisSize.max,
+				mainAxisSize: MainAxisSize.min,
 				children: [
-					if (thread.attachment != null)
-						AttachmentThumbnail(
-							attachment: thread.attachment!
-						),
-					Flexible(child: Container(
-						padding: EdgeInsets.all(8),
-						child: Column(
-							mainAxisSize: MainAxisSize.min,
-							crossAxisAlignment: CrossAxisAlignment.start,
-							mainAxisAlignment: MainAxisAlignment.start,
+					Text.rich(
+						TextSpan(
 							children: [
-								if (thread.title != null) Text(thread.title!, style: TextStyle(fontWeight: FontWeight.bold)),
-								Flexible(child: Provider.value(
-									value: thread.posts[0],
-									child: Builder(
-										builder: (ctx) => Text.rich(thread.posts[0].span.build(ctx), overflow: TextOverflow.fade)
+								TextSpan(
+									text: thread.posts[0].name,
+									style: TextStyle(fontWeight: FontWeight.w600)
+								),
+								TextSpan(text: ' '),
+								TextSpan(
+									text: thread.id.toString(),
+									style: TextStyle(color: Colors.grey)
+								),
+								TextSpan(text: ' '),
+								TextSpan(
+									text: timeago.format(thread.posts[0].time)
+								)
+							],
+							style: TextStyle(fontSize: 14)
+						)
+					),
+					SizedBox(height: 4),
+					IntrinsicHeight(
+						child: Row(
+							crossAxisAlignment: CrossAxisAlignment.start,
+							mainAxisSize: MainAxisSize.max,
+							mainAxisAlignment: MainAxisAlignment.center,
+							children: [
+								if (thread.attachment != null)
+									AttachmentThumbnail(
+										attachment: thread.attachment!
+									),
+								Expanded(
+									child: Container(
+										constraints: BoxConstraints(maxHeight: 100),
+										padding: EdgeInsets.only(left: 8, right: 8),
+										child: Column(
+											mainAxisSize: MainAxisSize.min,
+											crossAxisAlignment: CrossAxisAlignment.start,
+											mainAxisAlignment: MainAxisAlignment.start,
+											children: [
+												if (thread.title != null) Text(thread.title!, style: TextStyle(fontWeight: FontWeight.bold)),
+												Flexible(child: Provider.value(
+													value: thread.posts[0],
+													child: Builder(
+														builder: (ctx) => Text.rich(thread.posts[0].span.build(ctx), overflow: TextOverflow.fade)
+													)
+												)),
+											]
+										)
 									)
-								)),
-								SizedBox(height: 16),
-								Row(
+								),
+								Column(
+									mainAxisSize: MainAxisSize.max,
 									mainAxisAlignment: MainAxisAlignment.end,
+									crossAxisAlignment: CrossAxisAlignment.end,
 									children: [
 										if (thread.isSticky) ...[
-											Icon(Icons.push_pin),
-											SizedBox(width: 16)
+											Icon(Icons.push_pin, size: 14),
+											SizedBox(height: 4),
 										],
 										Container(
-											width: 60,
+											width: 40,
 											child: Row(
-												mainAxisAlignment: MainAxisAlignment.start,
+												mainAxisAlignment: MainAxisAlignment.spaceBetween,
 												children: [
-													Icon(Icons.comment),
-													SizedBox(width: 4),
-													Text(thread.replyCount.toString())
+													Text(thread.imageCount.toString(), style: TextStyle(fontSize: 14)),
+													Icon(Icons.image, size: 14)
 												]
 											)
 										),
-										SizedBox(width: 8),
+										SizedBox(height: 4),
 										Container(
-											width: 60,
+											width: 40,
 											child: Row(
-												mainAxisAlignment: MainAxisAlignment.start,
+												mainAxisAlignment: MainAxisAlignment.spaceBetween,
 												children: [
-													Icon(Icons.image),
-													SizedBox(width: 4),
-													Text(thread.imageCount.toString())
+													Text(thread.replyCount.toString(), style: TextStyle(fontSize: 14)),
+													Icon(Icons.comment, size: 14)
 												]
 											)
 										)
 									]
-								)
+								),
 							]
 						)
-					))
+					)
 				]
 			)
 		);

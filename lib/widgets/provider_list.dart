@@ -58,7 +58,7 @@ class ProviderList<T> extends StatelessWidget {
 									}
 									else {
 										return Divider(
-											height: 0
+											thickness: 1
 										);
 									}
 								},
@@ -78,7 +78,7 @@ class ProviderList<T> extends StatelessWidget {
 									}
 									else {
 										return Divider(
-											height: 0
+											thickness: 1
 										);
 									}
 								}),

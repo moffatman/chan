@@ -29,7 +29,7 @@ class PostRow extends StatelessWidget {
 		return Container(
 			padding: EdgeInsets.all(8),
 			decoration: BoxDecoration(
-				border: parentIds.isNotEmpty ? Border.all(width: 0) : Border(bottom: BorderSide(width: 0)),
+				border: parentIds.isNotEmpty ? Border.all(width: 0) : null,
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor
 			),
 			child: Column(
