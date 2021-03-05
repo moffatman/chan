@@ -43,6 +43,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 
 	@override
 	void initState() {
+		print('attachmentviewer.initstate');
 		super.initState();
 		status = AttachmentViewerStatus.LowRes;
 		updateKeepAlive();
@@ -50,6 +51,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 
 	@override
 	void didChangeDependencies() {
+		print('attachmentviewer.didchangedependencies');
 		super.didChangeDependencies();
 		if (status != AttachmentViewerStatus.RealViewer) {
 			_updateAutoload();
@@ -58,6 +60,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 
 	@override
 	void didUpdateWidget(AttachmentViewer oldWidget) {
+		print('attachmentviewer.didupdatewidget');
 		super.didUpdateWidget(oldWidget);
 		if (oldWidget.attachment != widget.attachment) {
 			_updateAutoload();
@@ -79,9 +82,11 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 			_showCheckingLoader = false;
 		});
 		Future.delayed(const Duration(milliseconds: 500), () {
-			setState(() {
-				_showCheckingLoader = true;
-			});
+			if (mounted) {
+				setState(() {
+					_showCheckingLoader = true;
+				});
+			}
 		});
 		final result = await site.client.head(url);
 		if (result.statusCode == 200 && mounted) {
