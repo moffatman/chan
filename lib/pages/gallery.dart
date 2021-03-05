@@ -31,12 +31,14 @@ class _GalleryPageState extends State<GalleryPage> {
 	late Attachment currentAttachment;
 	final Map<Attachment, File> _cachedAttachments = Map();
 	late bool showChrome;
+	late Key _galleryKey;
 
 	@override
 	void initState() {
 		super.initState();
 		currentAttachment = widget.initialAttachment ?? widget.attachments[0];
 		showChrome = widget.initiallyShowChrome;
+		_galleryKey = GlobalObjectKey(widget.semanticParentIds.join('/'));
 	}
 
 	@override
@@ -75,7 +77,7 @@ class _GalleryPageState extends State<GalleryPage> {
 						)
 					) : null,
 					child: AttachmentGallery(
-						key: GlobalObjectKey(widget.semanticParentIds.join('/')),
+						key: _galleryKey,
 						attachments: widget.attachments,
 						semanticParentIds: widget.semanticParentIds,
 						currentAttachment: currentAttachment,

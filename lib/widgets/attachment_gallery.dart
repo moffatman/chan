@@ -39,8 +39,6 @@ class AttachmentGallery extends StatefulWidget {
 	createState() => _AttachmentGalleryState();
 }
 
-GlobalKey<_AttachmentGalleryState> galleryKey = GlobalKey();
-
 class _AttachmentGalleryState extends State<AttachmentGallery> {
 	late PageController _pageController;
 	late ScrollController _scrollController;
