@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/util.dart';
@@ -16,12 +18,14 @@ class WEBMViewer extends StatefulWidget {
 	final Attachment attachment;
 	final Color backgroundColor;
 	final Object? tag;
+	final ValueChanged<File>? onCached;
 
 	WEBMViewer({
 		required this.url,
 		required this.attachment,
 		this.backgroundColor = Colors.black,
-		this.tag
+		this.tag,
+		this.onCached
 	});
 
 	@override
@@ -53,6 +57,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 				if (status is WEBMReadyStatus) {
 					_videoPlayerController = VideoPlayerController.file(status.file);
 					await _videoPlayerController!.initialize();
+					widget.onCached?.call(status.file);
 					setState(() {
 						_chewieController = ChewieController(
 							videoPlayerController:  _videoPlayerController,

@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/widgets/attachment_gallery.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
+import 'package:share/share.dart';
 
 class GalleryPage extends StatefulWidget {
 	final List<Attachment> attachments;
@@ -25,6 +28,7 @@ class GalleryPage extends StatefulWidget {
 
 class _GalleryPageState extends State<GalleryPage> {
 	late Attachment currentAttachment;
+	final Map<Attachment, File> _cachedAttachments = Map();
 	late bool showChrome;
 
 	@override
@@ -56,7 +60,14 @@ class _GalleryPageState extends State<GalleryPage> {
 					navigationBar: showChrome ? CupertinoNavigationBar(
 						brightness: Brightness.light,
 						middle: Text(currentAttachment.filename),
-						backgroundColor: Colors.black38
+						backgroundColor: Colors.black38,
+						trailing: CupertinoButton(
+							padding: EdgeInsets.zero,
+							child: Icon(Icons.ios_share),
+							onPressed: (_cachedAttachments[currentAttachment] != null) ? () {
+								Share.shareFiles([_cachedAttachments[currentAttachment]!.path]);
+							} : null
+						)
 					) : null,
 					child: AttachmentGallery(
 						key: GlobalObjectKey(widget.semanticParentIds.join('/')),
@@ -74,6 +85,11 @@ class _GalleryPageState extends State<GalleryPage> {
 								currentAttachment = attachment;
 							});
 							widget.onChange?.call(attachment);
+						},
+						onCached: (attachment, file) {
+							setState(() {
+								_cachedAttachments[attachment] = file;
+							});
 						}
 					)
 				)

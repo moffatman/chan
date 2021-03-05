@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/viewers/viewer.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +14,7 @@ class AttachmentGallery extends StatefulWidget {
 	final List<int> semanticParentIds;
 	final ValueChanged<Attachment>? onChange;
 	final ValueChanged<Attachment>? onTap;
+	final void Function(Attachment, File)? onCached;
 	final Attachment currentAttachment;
 	final double thumbnailSize;
 	final double height;
@@ -27,6 +30,7 @@ class AttachmentGallery extends StatefulWidget {
 		this.height = double.infinity,
 		this.backgroundColor = Colors.transparent,
 		this.showThumbnails = true,
+		this.onCached,
 		Key? key,
 		required this.semanticParentIds
 	}) : super(key: key);
@@ -54,7 +58,10 @@ class _AttachmentGalleryState extends State<AttachmentGallery> {
 				tag: AttachmentSemanticLocation(
 					attachment: attachment,
 					semanticParents: widget.semanticParentIds
-				)
+				),
+				onCached: (file) {
+					widget.onCached?.call(attachment, file);
+				}
 			),
 			onTapUp: (details) {
 				if ((details.globalPosition.dx > (MediaQuery.of(context).size.width * 0.75)) && (_currentIndex < (widget.attachments.length - 1))) {

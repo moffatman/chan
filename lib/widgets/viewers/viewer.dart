@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/settings.dart';
@@ -19,12 +21,14 @@ class AttachmentViewer extends StatefulWidget {
 	final Color backgroundColor;
 	final bool autoload;
 	final Object? tag;
+	final ValueChanged<File>? onCached;
 
 	AttachmentViewer({
 		required this.attachment,
 		this.backgroundColor = Colors.black,
 		this.autoload = false,
 		this.tag,
+		this.onCached,
 		Key? key
 	}) : super(key: key);
 
@@ -35,6 +39,7 @@ class AttachmentViewer extends StatefulWidget {
 class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepAliveClientMixin {
 	late AttachmentViewerStatus status;
 	Uri? goodUrl;
+	bool _showCheckingLoader = false;
 
 	@override
 	void initState() {
@@ -71,6 +76,12 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 		final url = site.getAttachmentUrl(widget.attachment);
 		setState(() {
 			status = AttachmentViewerStatus.Checking;
+			_showCheckingLoader = false;
+		});
+		Future.delayed(const Duration(milliseconds: 500), () {
+			setState(() {
+				_showCheckingLoader = true;
+			});
 		});
 		final result = await site.client.head(url);
 		if (result.statusCode == 200 && mounted) {
@@ -91,6 +102,12 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 		final urls = site.getArchiveAttachmentUrls(widget.attachment);
 		setState(() {
 			status = AttachmentViewerStatus.Checking;
+			_showCheckingLoader = false;
+		});
+		Future.delayed(const Duration(milliseconds: 500), () {
+			setState(() {
+				_showCheckingLoader = true;
+			});
 		});
 		for (final url in urls) {
 			final result = await site.client.head(url);
@@ -119,14 +136,20 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 							attachment: widget.attachment,
 							url: goodUrl!,
 							backgroundColor: widget.backgroundColor,
-							tag: widget.tag
+							tag: widget.tag,
+							onCached: (file) => widget.onCached?.call(file)
 						)
 					)
 					else ImageViewer(
 						attachment: widget.attachment,
 						url: (status == AttachmentViewerStatus.RealViewer) ? goodUrl! : context.watch<ImageboardSite>().getAttachmentThumbnailUrl(widget.attachment),
 						allowZoom: status == AttachmentViewerStatus.RealViewer,
-						tag: widget.tag
+						tag: widget.tag,
+						onCached: (file) {
+							if (status == AttachmentViewerStatus.RealViewer) {
+								widget.onCached?.call(file);
+							}
+						}
 					),
 					if (status == AttachmentViewerStatus.CheckError)
 						Center(
@@ -143,7 +166,7 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 								]
 							)
 						)
-					else if (status == AttachmentViewerStatus.Checking)
+					else if (status == AttachmentViewerStatus.Checking && _showCheckingLoader)
 						Center(
 							child: CircularProgressIndicator()
 						)
