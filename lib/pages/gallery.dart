@@ -70,7 +70,7 @@ class _GalleryPageState extends State<GalleryPage> {
 								final shareDirectory = await (new Directory(systemTempDirectory.path + '/sharecache')).create(recursive: true);
 								final newFilename = currentAttachment.id.toString() + currentAttachment.ext.replaceFirst('webm', 'mp4');
 								final renamedFile = await _cachedAttachments[currentAttachment]!.copy(shareDirectory.path.toString() + '/' + newFilename);
-								Share.shareFiles([renamedFile.path]);
+								Share.shareFiles([renamedFile.path], subject: currentAttachment.filename);
 							} : null
 						)
 					) : null,
