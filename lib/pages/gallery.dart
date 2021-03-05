@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:share/share.dart';
+import 'package:path_provider/path_provider.dart';
 
 class GalleryPage extends StatefulWidget {
 	final List<Attachment> attachments;
@@ -64,8 +65,12 @@ class _GalleryPageState extends State<GalleryPage> {
 						trailing: CupertinoButton(
 							padding: EdgeInsets.zero,
 							child: Icon(Icons.ios_share),
-							onPressed: (_cachedAttachments[currentAttachment] != null) ? () {
-								Share.shareFiles([_cachedAttachments[currentAttachment]!.path]);
+							onPressed: (_cachedAttachments[currentAttachment] != null) ? () async {
+								final systemTempDirectory = await getTemporaryDirectory();
+								final shareDirectory = await (new Directory(systemTempDirectory.path + '/sharecache')).create(recursive: true);
+								final newFilename = currentAttachment.id.toString() + currentAttachment.ext.replaceFirst('webm', 'mp4');
+								final renamedFile = await _cachedAttachments[currentAttachment]!.copy(shareDirectory.path.toString() + '/' + newFilename);
+								Share.shareFiles([renamedFile.path]);
 							} : null
 						)
 					) : null,
