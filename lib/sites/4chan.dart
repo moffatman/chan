@@ -22,21 +22,13 @@ class Site4Chan implements ImageboardSite {
 	List<PostSpan> _makeSpans(String data) {
 		final doc = parse(data);
 		final List<PostSpan> elements = [];
-		bool passedFirstLinebreak = false;
 		int spoilerSpanId = 0;
 		for (final node in doc.body.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
-					if (passedFirstLinebreak) {
-						elements.add(PostLineBreakSpan());
-					}
-					else {
-						elements.add(PostNewLineSpan());
-						passedFirstLinebreak = true;
-					}
+					elements.add(PostTextSpan('\n'));
 				}
 				else {
-					passedFirstLinebreak = false;
 					if (node.localName == 'a') {
 						if (node.attributes['href']!.startsWith('#p')) {
 							elements.add(PostExpandingQuoteLinkSpan(int.parse(node.attributes['href']!.substring(2))));
@@ -67,7 +59,7 @@ class Site4Chan implements ImageboardSite {
 						// do nothing
 					}
 					else if (node.localName == 's') {
-						elements.add(PostSpoilerSpan(node.innerHtml.replaceAll('<br>', '\n'), spoilerSpanId++));
+						elements.add(PostSpoilerSpan(PostNodeSpan(_makeSpans(node.innerHtml)), spoilerSpanId++));
 					}
 					else {
 						elements.add(PostTextSpan(node.outerHtml));
@@ -75,7 +67,6 @@ class Site4Chan implements ImageboardSite {
 				}
 			}
 			else {
-				passedFirstLinebreak = false;
 				elements.add(PostTextSpan(node.text));
 			}
 		}

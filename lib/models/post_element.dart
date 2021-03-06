@@ -210,14 +210,14 @@ class PostNewLineSpan extends PostSpan {
 }
 
 class PostSpoilerSpan extends PostSpan {
-	final String text;
+	final PostSpan child;
 	final int id;
-	PostSpoilerSpan(this.text, this.id);
+	PostSpoilerSpan(this.child, this.id);
 	build(context) {
 		final zone = context.watchOrNull<ExpandingPostZone>();
 		final showSpoiler = zone?.shouldShowSpoiler(id) ?? false;
 		return TextSpan(
-			text: text,
+			children: [child.build(context)],
 			style: TextStyle(
 				backgroundColor: DefaultTextStyle.of(context).style.color,
 				color: showSpoiler ? CupertinoTheme.of(context).scaffoldBackgroundColor : null
