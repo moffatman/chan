@@ -19,7 +19,7 @@ class ThreadRow extends StatelessWidget {
 		return Container(
 			padding: EdgeInsets.only(left: 8, right: 8),
 			decoration: BoxDecoration(
-				color: isSelected ? ((MediaQuery.of(context).platformBrightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
+				color: isSelected ? ((CupertinoTheme.of(context).brightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
 			),
 			child: Column(
 				crossAxisAlignment: CrossAxisAlignment.start,
