@@ -72,6 +72,9 @@ class _ThreadPageState extends State<ThreadPage> {
 					id: '/${widget.board}/${widget.id}',
 					listUpdater: () async {
 						final _thread = await context.read<ImageboardSite>().getThread(widget.board, widget.id);
+						if (thread == null && widget.initialPostId != null) {
+							Future.delayed(Duration(milliseconds: 50), () => _listController.scrollToFirstMatching((post) => post.id == widget.initialPostId));
+						}
 						setState(() {
 							thread = _thread;
 						});
