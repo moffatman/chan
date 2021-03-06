@@ -67,7 +67,7 @@ class Site4Chan implements ImageboardSite {
 						// do nothing
 					}
 					else if (node.localName == 's') {
-						elements.add(PostSpoilerSpan(node.innerHtml, spoilerSpanId++));
+						elements.add(PostSpoilerSpan(node.innerHtml.replaceAll('<br>', '\n'), spoilerSpanId++));
 					}
 					else {
 						elements.add(PostTextSpan(node.outerHtml));
