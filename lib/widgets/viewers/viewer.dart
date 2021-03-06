@@ -43,7 +43,6 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 
 	@override
 	void initState() {
-		print('attachmentviewer.initstate');
 		super.initState();
 		status = AttachmentViewerStatus.LowRes;
 		updateKeepAlive();
@@ -51,7 +50,6 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 
 	@override
 	void didChangeDependencies() {
-		print('attachmentviewer.didchangedependencies');
 		super.didChangeDependencies();
 		if (status != AttachmentViewerStatus.RealViewer) {
 			_updateAutoload();
@@ -60,7 +58,6 @@ class _AttachmentViewerState extends State<AttachmentViewer> with AutomaticKeepA
 
 	@override
 	void didUpdateWidget(AttachmentViewer oldWidget) {
-		print('attachmentviewer.didupdatewidget');
 		super.didUpdateWidget(oldWidget);
 		if (oldWidget.attachment != widget.attachment) {
 			_updateAutoload();
