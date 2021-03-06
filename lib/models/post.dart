@@ -1,7 +1,9 @@
+import 'package:chan/widgets/provider_list.dart';
+
 import 'post_element.dart';
 
 import 'attachment.dart';
-class Post {
+class Post implements Filterable {
 	final String board;
 	final String text;
 	final String name;
@@ -23,5 +25,9 @@ class Post {
 	@override
 	String toString() {
 		return "Post $id";
+	}
+
+	List<String> getSearchableText() {
+		return [text];
 	}
 }

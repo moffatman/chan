@@ -58,7 +58,8 @@ class BoardPage extends StatelessWidget {
 						),
 						onTap: () => onThreadSelected(thread)
 					);
-				}
+				},
+				searchHint: 'Search in board'
 			)
 		);
 	}

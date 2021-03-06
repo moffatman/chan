@@ -4,86 +4,150 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:rxdart/rxdart.dart';
 
-class ProviderList<T> extends StatelessWidget {
+abstract class Filterable {
+	List<String> getSearchableText();
+}
+
+class ProviderList<T extends Filterable> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) builder;
 	final Future<List<T>> Function() listUpdater;
 	final String id;
 	final ProviderListController? controller;
 	final bool lazy;
+	final String? searchHint;
+	final Widget Function(BuildContext context, T value, VoidCallback resetPage)? searchBuilder;
 
 	ProviderList({
 		required this.builder,
 		required this.listUpdater,
 		required this.id,
 		this.controller,
-		this.lazy = false
-	}) {
-		this.controller?.attach(this);
+		this.lazy = false,
+		this.searchHint,
+		this.searchBuilder
+	});
+
+	createState() => ProviderListState<T>();
+}
+
+class ProviderListState<T extends Filterable> extends State<ProviderList<T>> {
+	String _filter = '';
+	TextEditingController _searchController = TextEditingController();
+
+	@override
+	void initState() {
+		super.initState();
+		widget.controller?.attach(this);
 	}
 
+	void _clearSearch() {
+		FocusScope.of(context).unfocus();
+		_searchController.clear();
+		setState(() {
+			_filter = '';
+		});
+	}
+
+	Widget _builder(BuildContext context, T value) {
+		if (_filter.isNotEmpty && widget.searchBuilder != null) {
+			return widget.searchBuilder!(context, value, _clearSearch);
+		}
+		else {
+			return widget.builder(context, value);
+		}
+	}
 
 	@override
 	Widget build(BuildContext context) {
 		return DataProvider<List<T>>(
-			id: id,
-			updater: listUpdater,
+			id: widget.id,
+			updater: widget.listUpdater,
 			initialValue: [],
 			placeholderBuilder: (BuildContext context, value) {
 				return Center(
 					child: CupertinoActivityIndicator()
 				);
 			},
-			builder: (BuildContext context, List<T> values, Future<void> Function() requestUpdate) {
-				this.controller?.resetItems(values.length);
+			builder: (BuildContext context, List<T> unfilteredValues, Future<void> Function() requestUpdate) {
+				final List<T> values = _filter.isEmpty ? unfilteredValues : unfilteredValues.where((val) => val.getSearchableText().any((s) => s.toLowerCase().contains(_filter))).toList();
+				widget.controller?.resetItems(values.length);
 				return CustomScrollView(
-					controller: this.controller?.scrollController,
+					controller: widget.controller?.scrollController,
 					physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), 
 					slivers: [
 						SliverSafeArea(
 							sliver: CupertinoSliverRefreshControl(
-								onRefresh: requestUpdate,
+								onRefresh: requestUpdate
 							),
 							bottom: false
 						),
-						lazy ? SliverList(
-							delegate: SliverChildBuilderDelegate(
-								(context, i) {
-									if (i % 2 == 0) {
-										return LayoutBuilder(
-											builder: (context, constraints) {
-												controller?.registerItem(i ~/ 2, context, values[i ~/ 2]);
-												return builder(context, values[i ~/ 2]);
-											}
-										);
-									}
-									else {
-										return Divider(
-											thickness: 1
-										);
-									}
-								},
-								childCount: (values.length * 2) - 1
-							)
-						) : SliverToBoxAdapter(
-							child: Column(
-								mainAxisSize: MainAxisSize.min,
-								children: List.generate(values.length * 2 - 1, (i) {
-									if (i % 2 == 0) {
-										return LayoutBuilder(
-											builder: (context, constraints) {
-												controller?.registerItem(i ~/ 2, context, values[i ~/ 2]);
-												return builder(context, values[i ~/ 2]);
-											}
-										);
-									}
-									else {
-										return Divider(
-											thickness: 1
-										);
-									}
-								}),
+						SliverToBoxAdapter(
+							child: Container(
+								height: kMinInteractiveDimensionCupertino,
+								padding: EdgeInsets.all(4),
+								child: CupertinoSearchTextField(
+									onChanged: (searchText) {
+										setState(() {
+											_filter = searchText.toLowerCase();
+										});
+									},
+									controller: _searchController,
+									placeholder: widget.searchHint,
+									onSuffixTap: _clearSearch
+								),
 							)
 						),
+						if (values.length > 0)
+							if (widget.lazy) SliverList(
+								delegate: SliverChildBuilderDelegate(
+									(context, i) {
+										if (i % 2 == 0) {
+											return LayoutBuilder(
+												builder: (context, constraints) {
+													widget.controller?.registerItem(i ~/ 2, context, values[i ~/ 2]);
+													return _builder(context, values[i ~/ 2]);
+												}
+											);
+										}
+										else {
+											return Divider(
+												thickness: 1
+											);
+										}
+									},
+									childCount: (values.length * 2) - 1
+								)
+							)
+							else SliverToBoxAdapter(
+								child: Column(
+									mainAxisSize: MainAxisSize.min,
+									children: List.generate(values.length * 2 - 1, (i) {
+										if (i % 2 == 0) {
+											return LayoutBuilder(
+												builder: (context, constraints) {
+													widget.controller?.registerItem(i ~/ 2, context, values[i ~/ 2]);
+													return _builder(context, values[i ~/ 2]);
+												}
+											);
+										}
+										else {
+											return Divider(
+												thickness: 1
+											);
+										}
+									}),
+								)
+							),
+						if (values.length == 0)
+							if (_filter.isNotEmpty)
+								SliverToBoxAdapter(
+									child: Container(
+										height: 100,
+										child: Center(
+											child: Text('No results')
+										)
+									)
+								),
 						SliverSafeArea(
 							top: false,
 							sliver: SliverToBoxAdapter(
@@ -119,7 +183,7 @@ class _ProviderListItem<T> {
 	final T item;
 	_ProviderListItem(this.context, this.item);
 }
-class ProviderListController<T> {
+class ProviderListController<T extends Filterable> {
 	late List<_ProviderListItem<T>?> _items;
 	ScrollController scrollController = ScrollController();
 	BehaviorSubject<Null> _scrollStream = BehaviorSubject();
@@ -130,7 +194,7 @@ class ProviderListController<T> {
 		T? minObject = findNextMatch((item) => true);
 		//print('New top: $minObject');
 	}
-	void attach(ProviderList<T> list) {
+	void attach(ProviderListState<T> list) {
 		scrollController.addListener(() {
 			_scrollStream.add(null);
 		});

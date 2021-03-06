@@ -90,7 +90,24 @@ class _ThreadPageState extends State<ThreadPage> {
 								}
 							)
 						);
-					}
+					},
+					searchBuilder: (context, post, resetPage) {
+						return GestureDetector(
+							child: Provider.value(
+								value: post,
+								child: PostRow(
+									onThumbnailTap: (attachment, {Object? tag}) {
+										_showGallery(initialAttachment: attachment);
+									}
+								)
+							),
+							onTap: () {
+								resetPage();
+								Future.delayed(Duration(milliseconds: 250), () => _listController.scrollToFirstMatching((val) => val == post));
+							}
+						);
+					},
+					searchHint: 'Search in thread'
 				)
 			)
 		);

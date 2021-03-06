@@ -1,8 +1,8 @@
-import 'package:chan/models/post_element.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/widgets/provider_list.dart';
 
-class Thread {
+class Thread implements Filterable {
 	final List<Post> posts;
 	final bool isArchived;
 	final bool isDeleted;
@@ -41,5 +41,14 @@ class Thread {
 
 	String toString() {
 		return 'Thread /$board/$id';
+	}
+
+	List<String> getSearchableText() {
+		if (title != null) {
+			return [title!, posts[0].text];
+		}
+		else {
+			return [posts[0].text];
+		}
 	}
 }
