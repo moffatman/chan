@@ -23,6 +23,7 @@ class Site4Chan implements ImageboardSite {
 		final doc = parse(data);
 		final List<PostSpan> elements = [];
 		bool passedFirstLinebreak = false;
+		int spoilerSpanId = 0;
 		for (final node in doc.body.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
@@ -64,6 +65,9 @@ class Site4Chan implements ImageboardSite {
 					}
 					else if (node.localName == 'wbr') {
 						// do nothing
+					}
+					else if (node.localName == 's') {
+						elements.add(PostSpoilerSpan(node.innerHtml, spoilerSpanId++));
 					}
 					else {
 						elements.add(PostTextSpan(node.outerHtml));

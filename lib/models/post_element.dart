@@ -208,3 +208,23 @@ class PostNewLineSpan extends PostSpan {
 		);
 	}
 }
+
+class PostSpoilerSpan extends PostSpan {
+	final String text;
+	final int id;
+	PostSpoilerSpan(this.text, this.id);
+	build(context) {
+		final zone = context.watchOrNull<ExpandingPostZone>();
+		final showSpoiler = zone?.shouldShowSpoiler(id) ?? false;
+		return TextSpan(
+			text: text,
+			style: TextStyle(
+				backgroundColor: DefaultTextStyle.of(context).style.color,
+				color: showSpoiler ? CupertinoTheme.of(context).scaffoldBackgroundColor : null
+			),
+			recognizer: TapGestureRecognizer()..onTap = () {
+				zone?.toggleShowingOfSpoiler(id);
+			}
+		);
+	}
+}
