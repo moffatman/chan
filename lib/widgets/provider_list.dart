@@ -77,7 +77,8 @@ class ProviderListState<T extends Filterable> extends State<ProviderList<T>> {
 					slivers: [
 						SliverSafeArea(
 							sliver: CupertinoSliverRefreshControl(
-								onRefresh: requestUpdate
+								onRefresh: requestUpdate,
+								refreshTriggerPullDistance: 150,
 							),
 							bottom: false
 						),
