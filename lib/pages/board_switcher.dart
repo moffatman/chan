@@ -1,5 +1,6 @@
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -48,6 +49,15 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							final filteredBoards = boards.data!.where((board) {
 								return board.name.toLowerCase().contains(searchString) || board.title.toLowerCase().contains(searchString);
 							}).toList();
+							mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
+								return a.name.length - b.name.length;
+							});
+							mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
+								return a.name.indexOf(searchString) - b.name.indexOf(searchString);
+							});
+							mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
+								return (b.name.contains(searchString) ? 1 : 0) - (a.name.contains(searchString) ? 1 : 0);
+							});
 							return ListView.builder(
 								shrinkWrap: true,
 								itemBuilder: (context, i) {
