@@ -35,10 +35,9 @@ class ImageViewer extends StatelessWidget {
 			height: double.infinity,
 			onDoubleTap: (state) {
 				final old = state.gestureDetails!;
-				print(old.offset);
 				state.gestureDetails = GestureDetails(
-					offset: old.offset,
-					totalScale: old.totalScale > 1 ? 1 : 2,
+					offset: state.pointerDownPosition!.scale(old.layoutRect!.width / MediaQuery.of(context).size.width, old.layoutRect!.height / MediaQuery.of(context).size.height) * -1,
+					totalScale: (old.totalScale ?? 1) > 1 ? 1 : 2,
 					actionType: ActionType.zoom
 				);
 			},
