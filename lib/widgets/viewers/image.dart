@@ -1,9 +1,7 @@
 import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
-import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:flutter/material.dart';
-import 'package:photo_view/photo_view.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/viewers/image.dart';
 import 'package:chan/widgets/viewers/webm.dart';
 import 'package:flutter/material.dart';

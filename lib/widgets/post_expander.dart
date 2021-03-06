@@ -1,5 +1,4 @@
 import 'package:chan/models/post.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/gallery_manager.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:flutter/material.dart';

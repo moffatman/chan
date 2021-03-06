@@ -1,6 +1,5 @@
 import 'package:chan/models/attachment.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/services/util.dart';
 import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:provider/provider.dart';

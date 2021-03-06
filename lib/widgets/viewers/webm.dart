@@ -60,7 +60,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 					widget.onCached?.call(status.file);
 					setState(() {
 						_chewieController = ChewieController(
-							videoPlayerController:  _videoPlayerController,
+							videoPlayerController:  _videoPlayerController!,
 							autoPlay: true,
 							looping: true,
 							customControls: CupertinoTheme(data: CupertinoThemeData(primaryColor: Colors.black), child: MaterialControls()),
@@ -131,7 +131,7 @@ class _WEBMViewerState extends State<WEBMViewer> {
 					child: AspectRatio(
 						aspectRatio: _videoPlayerController!.value.aspectRatio,
 						child: Chewie(
-							controller: _chewieController
+							controller: _chewieController!
 						)
 					)
 				)

@@ -1,5 +1,4 @@
 import 'package:chan/services/settings.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
