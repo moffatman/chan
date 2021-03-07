@@ -1,9 +1,9 @@
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:timeago/timeago.dart' as timeago;
 
 import 'package:chan/models/thread.dart';
 
@@ -39,7 +39,7 @@ class ThreadRow extends StatelessWidget {
 								),
 								TextSpan(text: ' '),
 								TextSpan(
-									text: timeago.format(thread.posts[0].time)
+									text: formatTime(thread.posts[0].time)
 								)
 							],
 							style: TextStyle(fontSize: 14)

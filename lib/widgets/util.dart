@@ -31,3 +31,14 @@ void alertError(BuildContext context, Error error) {
 		}
 	);
 }
+
+String formatTime(DateTime time) {
+	final now = DateTime.now();
+	final notToday = (now.day != time.day) || (now.month != time.month) || (now.year != time.year);
+	String prefix = '';
+	const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+	if (notToday) {
+		prefix = time.year.toString() + '-' + time.month.toString().padLeft(2, '0') + '-' + time.day.toString().padLeft(2, '0') + ' (' + days[time.weekday] + ') ';
+	}
+	return prefix + time.hour.toString().padLeft(2, '0') + ':' + time.minute.toString().padLeft(2, '0') + ':' + time.second.toString().padLeft(2, '0');
+}

@@ -4,8 +4,6 @@ import 'package:chan/widgets/post_expander.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'package:timeago/timeago.dart' as timeago;
-
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
 
@@ -27,7 +25,7 @@ class PostRow extends StatelessWidget {
 		final parentIds = context.watchOrNull<ExpandingPostZone>()?.parentIds ?? [];
 		final randomHeroTag = Random().nextDouble().toString();
 		return Container(
-			padding: EdgeInsets.all(8),
+			padding: EdgeInsets.only(left: 8, right: 8),
 			decoration: BoxDecoration(
 				border: parentIds.isNotEmpty ? Border.all(width: 0) : null,
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor
@@ -38,26 +36,29 @@ class PostRow extends StatelessWidget {
 					ChangeNotifierProvider<ExpandingPostZone>(
 						create: (_) => ExpandingPostZone(parentIds.followedBy([post.id]).toList()),
 						child: Builder(
-							builder: (ctx) => Text.rich(
-								TextSpan(
-									children: [
-										TextSpan(
-											text: post.name,
-											style: TextStyle(fontWeight: FontWeight.w600)
-										),
-										TextSpan(
-											text: post.id.toString(),
-											style: TextStyle(color: Colors.grey)
-										),
-										TextSpan(
-											text: timeago.format(post.time)
-										),
-										...post.replyIds.map((id) => PostQuoteLinkSpan(id).build(ctx)),
-										...post.replyIds.map((id) => WidgetSpan(
-											child: ExpandingPost(id)
-										))
-									].expand((span) => [TextSpan(text: ' '), span]).skip(1).toList()
-								)
+							builder: (ctx) => DefaultTextStyle(
+								child: Text.rich(
+									TextSpan(
+										children: [
+											TextSpan(
+												text: post.name,
+												style: TextStyle(fontWeight: FontWeight.w600)
+											),
+											TextSpan(
+												text: post.id.toString(),
+												style: TextStyle(color: Colors.grey)
+											),
+											TextSpan(
+												text: formatTime(post.time)
+											),
+											...post.replyIds.map((id) => PostQuoteLinkSpan(id).build(ctx)),
+											...post.replyIds.map((id) => WidgetSpan(
+												child: ExpandingPost(id)
+											))
+										].expand((span) => [TextSpan(text: ' '), span]).skip(1).toList()
+									)
+								),
+								style: TextStyle(fontSize: 14)
 							)
 						)
 					),
