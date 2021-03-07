@@ -45,14 +45,14 @@ class Site4Chan implements ImageboardSite {
 						}
 					}
 					else if (node.localName == 'span') {
-						if (node.attributes['class']!.contains('deadlink')) {
+						if (node.attributes['class']?.contains('deadlink') ?? false) {
 							elements.add(PostDeadQuoteLinkSpan(int.parse(node.innerHtml.substring(8))));
 						}
-						else if (node.attributes['class']!.contains('quote')) {
+						else if (node.attributes['class']?.contains('quote') ?? false) {
 							elements.add(PostQuoteSpan(node.text));
 						}
 						else {
-							throw 'Unknown span: ' + node.outerHtml;
+							elements.add(PostTextSpan(node.text));
 						}
 					}
 					else if (node.localName == 'wbr') {
@@ -62,7 +62,7 @@ class Site4Chan implements ImageboardSite {
 						elements.add(PostSpoilerSpan(PostNodeSpan(_makeSpans(node.innerHtml)), spoilerSpanId++));
 					}
 					else {
-						elements.add(PostTextSpan(node.outerHtml));
+						elements.add(PostTextSpan(node.text));
 					}
 				}
 			}
