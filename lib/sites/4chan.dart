@@ -22,7 +22,6 @@ class Site4Chan implements ImageboardSite {
 
 	List<PostSpan> _parsePlaintext(String text) {
 		return linkify(text, linkifiers: [UrlLinkifier()]).map((elem) {
-			print(elem);
 			if (elem is UrlElement) {
 				return PostLinkSpan(elem.url);
 			}
