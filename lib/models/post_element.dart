@@ -240,7 +240,15 @@ class PostLinkSpan extends PostSpan {
 				decoration: TextDecoration.underline
 			),
 			recognizer: TapGestureRecognizer()..onTap = () {
-				ChromeSafariBrowser().open(url: Uri.parse(url));
+				ChromeSafariBrowser().open(url: Uri.parse(url), options: ChromeSafariBrowserClassOptions(
+					android: AndroidChromeCustomTabsOptions(
+						toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor
+					),
+					ios: IOSSafariOptions(
+						preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
+						preferredControlTintColor: CupertinoTheme.of(context).primaryColor
+					)
+				));
 			}
 		);
 	}
