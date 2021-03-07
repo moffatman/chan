@@ -1,4 +1,5 @@
 import 'package:chan/pages/settings.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/provider_list.dart';
 import 'package:chan/widgets/thread_row.dart';
@@ -46,7 +47,14 @@ class BoardPage extends StatelessWidget {
 				)
 			),
 			child: ProviderList<Thread>(
-				listUpdater: () => site.getCatalog(board),
+				listUpdater: () => site.getCatalog(board).then((list) {
+					if (context.read<Settings>().hideStickiedThreads) {
+						return list.where((thread) => !thread.isSticky).toList();
+					}
+					else {
+						return list;
+					}
+				}),
 				id: '/$board/',
 				lazy: true,
 				builder: (context, thread) {

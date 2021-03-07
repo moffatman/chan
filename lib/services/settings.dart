@@ -24,6 +24,8 @@ enum Setting_Theme {
 
 const _THEME_KEY = 'SETTING_THEME';
 
+const _HIDE_STICKIED_THREADS_KEY = 'HIDE_STICKIED_THREADS';
+
 class Settings extends ChangeNotifier {
 	String? filename;
 	ConnectivityResult? _connectivity;
@@ -81,6 +83,15 @@ class Settings extends ChangeNotifier {
 			return Brightness.light;
 		}
 		return systemBrightness ?? Brightness.light;
+	}
+
+	bool get hideStickiedThreads {
+		return _prefs?.getBool(_HIDE_STICKIED_THREADS_KEY) ?? false;
+	}
+
+	set hideStickiedThreads(bool newValue) {
+		_prefs?.setBool(_HIDE_STICKIED_THREADS_KEY, newValue);
+		notifyListeners();
 	}
 }
 

@@ -30,7 +30,6 @@ class SettingsPage extends StatelessWidget {
 								settings.themePreference = newValue;
 							}
 						),
-						Divider(),
 						Container(
 							padding: EdgeInsets.all(16),
 							child: Text("Automatically load attachments"),
@@ -46,7 +45,20 @@ class SettingsPage extends StatelessWidget {
 								settings.autoloadAttachmentsPreference = newValue;
 							}
 						),
-						Divider(),
+						Container(
+							padding: EdgeInsets.all(16),
+							child: Text("Hide stickied threads"),
+						),
+						CupertinoSegmentedControl<bool>(
+							children: {
+								false: Text('No'),
+								true: Text('Yes')
+							},
+							groupValue: settings.hideStickiedThreads,
+							onValueChanged: (newValue) {
+								settings.hideStickiedThreads = newValue;
+							}
+						),
 					],
 				)
 			)
