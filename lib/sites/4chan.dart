@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 import 'package:html_unescape/html_unescape_small.dart';
+import 'package:linkify/linkify.dart';
 
 import 'imageboard_site.dart';
 import 'package:chan/models/attachment.dart';
@@ -19,8 +20,20 @@ class Site4Chan implements ImageboardSite {
 	List<ImageboardBoard>? _boards;
 	final unescape = HtmlUnescape();
 
+	List<PostSpan> _parsePlaintext(String text) {
+		return linkify(text, linkifiers: [UrlLinkifier()]).map((elem) {
+			print(elem);
+			if (elem is UrlElement) {
+				return PostLinkSpan(elem.url);
+			}
+			else {
+				return PostTextSpan(elem.text);
+			}
+		}).toList();
+	}
+
 	List<PostSpan> _makeSpans(String data) {
-		final doc = parse(data);
+		final doc = parse(data.replaceAll('<wbr>', ''));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
 		for (final node in doc.body!.nodes) {
@@ -55,19 +68,16 @@ class Site4Chan implements ImageboardSite {
 							elements.add(PostTextSpan(node.text));
 						}
 					}
-					else if (node.localName == 'wbr') {
-						// do nothing
-					}
 					else if (node.localName == 's') {
 						elements.add(PostSpoilerSpan(PostNodeSpan(_makeSpans(node.innerHtml)), spoilerSpanId++));
 					}
 					else {
-						elements.add(PostTextSpan(node.text));
+						elements.addAll(_parsePlaintext(node.text));
 					}
 				}
 			}
 			else {
-				elements.add(PostTextSpan(node.text ?? ''));
+				elements.addAll(_parsePlaintext(node.text ?? ''));
 			}
 		}
 		return elements;

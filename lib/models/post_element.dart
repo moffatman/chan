@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:provider/provider.dart';
 import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
 
@@ -224,6 +225,22 @@ class PostSpoilerSpan extends PostSpan {
 			),
 			recognizer: TapGestureRecognizer()..onTap = () {
 				zone?.toggleShowingOfSpoiler(id);
+			}
+		);
+	}
+}
+
+class PostLinkSpan extends PostSpan {
+	final String url;
+	PostLinkSpan(this.url);
+	build(context) {
+		return TextSpan(
+			text: url,
+			style: TextStyle(
+				decoration: TextDecoration.underline
+			),
+			recognizer: TapGestureRecognizer()..onTap = () {
+				ChromeSafariBrowser().open(url: Uri.parse(url));
 			}
 		);
 	}

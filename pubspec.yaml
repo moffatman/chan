@@ -33,6 +33,8 @@ dependencies:
   html_unescape: "^2.0.0-nullsafety.0"
   share: "^2.0.0"
   extended_image_library: "^2.0.1"
+  flutter_inappwebview: "^5.1.0+1"
+  linkify: "^4.0.0"
   flutter:
     sdk: flutter
 
