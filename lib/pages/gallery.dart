@@ -253,7 +253,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				child: CupertinoPageScaffold(
 					backgroundColor: Colors.transparent,
 					navigationBar: showChrome ? CupertinoNavigationBar(
-						brightness: CupertinoTheme.of(context).brightness.inverted,
+						brightness: Platform.isAndroid ? CupertinoTheme.of(context).brightness.inverted : null,
 						middle: Text(currentAttachment.filename),
 						backgroundColor: Colors.black38,
 						trailing: Row(
