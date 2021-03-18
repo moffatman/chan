@@ -85,7 +85,8 @@ class _GalleryPageState extends State<GalleryPage> {
 	final Map<Attachment, BehaviorSubject<AttachmentStatus>> statuses = Map();
 	final Map<Attachment, File> cachedFiles = Map();
 	// View
-	final ScrollController thumbnailScrollController = ScrollController();
+	bool firstControllerMade = false;
+	late final ScrollController thumbnailScrollController;
 	late final PageController pageController;
 	final FocusNode keyboardShortcutFocusNode = FocusNode();
 	late bool showChrome;
@@ -98,6 +99,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		showChrome = widget.initiallyShowChrome;
 		currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
 		pageController = PageController(keepPage: true, initialPage: currentIndex);
+		pageController.addListener(_onPageControllerUpdate);
 		statuses.addEntries(widget.attachments.map((attachment) => MapEntry(attachment, BehaviorSubject()..add(AttachmentUnloadedStatus()))));
 		statuses.entries.forEach((entry) {
 			entry.value.listen((_) {
@@ -108,6 +110,17 @@ class _GalleryPageState extends State<GalleryPage> {
 		});
 		if (context.read<Settings>().autoloadAttachments) {
 			requestRealViewer(widget.attachments[currentIndex]);
+		}
+	}
+
+	@override
+	void didChangeDependencies() {
+		super.didChangeDependencies();
+		if (!firstControllerMade) {
+			final initialOffset = ((_THUMBNAIL_SIZE + 12) * (currentIndex + 0.5)) - (MediaQuery.of(context).size.width / 2);
+			final maxOffset = ((_THUMBNAIL_SIZE + 12) * widget.attachments.length) - MediaQuery.of(context).size.width;
+			thumbnailScrollController = ScrollController(initialScrollOffset: initialOffset.clamp(0, maxOffset));
+			firstControllerMade = true;
 		}
 	}
 
@@ -173,6 +186,12 @@ class _GalleryPageState extends State<GalleryPage> {
 		}
 	}
 
+	void _onPageControllerUpdate() {
+		final factor = pageController.position.pixels / pageController.position.maxScrollExtent;
+		final idealLocation = (thumbnailScrollController.position.maxScrollExtent + thumbnailScrollController.position.viewportDimension) * factor - (thumbnailScrollController.position.viewportDimension / 2);
+		thumbnailScrollController.jumpTo(idealLocation.clamp(0, thumbnailScrollController.position.maxScrollExtent));
+	}
+
 	void _animateToPage(int index, {int milliseconds = 200}) {
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
@@ -199,17 +218,6 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (context.read<Settings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
 			requestRealViewer(widget.attachments[index]);
 		}
-		double centerPosition = ((_THUMBNAIL_SIZE + 12) * (index + 0.5)) - (thumbnailScrollController.position.viewportDimension / 2);
-		bool shouldScrollLeft = (centerPosition > thumbnailScrollController.position.pixels) && (thumbnailScrollController.position.extentAfter > 0);
-		bool shouldScrollRight = (centerPosition < thumbnailScrollController.position.pixels) && (thumbnailScrollController.position.extentBefore > 0);
-		currentIndex = index;
-		if (shouldScrollLeft || shouldScrollRight) {
-			thumbnailScrollController.animateTo(
-				centerPosition.clamp(0.0, thumbnailScrollController.position.maxScrollExtent),
-				duration: const Duration(milliseconds: 200),
-				curve: Curves.ease
-			);
-		}
 		for (final status in statuses.entries) {
 			if (status.value.value is AttachmentVideoAvailableStatus) {
 				if (status.key == currentAttachment) {
@@ -220,7 +228,9 @@ class _GalleryPageState extends State<GalleryPage> {
 				}
 			}
 		}
-		setState(() {});
+		setState(() {
+			currentIndex = index;
+		});
 	}
 
 	bool canShare(Attachment attachment) {
@@ -353,6 +363,8 @@ class _GalleryPageState extends State<GalleryPage> {
 										Visibility(
 											visible: showChrome,
 											maintainState: true,
+											maintainSize: true,
+											maintainAnimation: true,
 											child: SafeArea(
 												child: Column(
 													mainAxisAlignment: MainAxisAlignment.end,
