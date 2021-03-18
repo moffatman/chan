@@ -1,23 +1,19 @@
-import 'dart:io';
-
 import 'package:chan/models/attachment.dart';
 import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 
-class ImageViewer extends StatelessWidget {
+class GalleryImageViewer extends StatelessWidget {
 	final Uri url;
 	final Attachment attachment;
-	final bool allowZoom;
 	final Object? tag;
-	final ValueChanged<File>? onCached;
+	final ValueChanged<File>? onCacheCompleted;
 
-	ImageViewer({
+	GalleryImageViewer({
 		required this.url,
 		required this.attachment,
-		this.allowZoom = true,
 		this.tag,
-		this.onCached
+		this.onCacheCompleted
 	});
 
 	@override
@@ -43,7 +39,7 @@ class ImageViewer extends StatelessWidget {
 				if (loadstate.extendedImageLoadState == LoadState.completed) {
 					getCachedImageFile(url.toString()).then((file) {
 						if (file != null) {
-							onCached?.call(file);
+							onCacheCompleted?.call(file);
 						}
 					});
 					return null;

@@ -33,7 +33,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	FocusNode _focusNode = FocusNode();
 	ProviderListController<Post> _listController = ProviderListController();
 
-	void _showGallery({bool initiallyShowChrome = false, Attachment? initialAttachment}) {
+	void _showGallery({bool initiallyShowChrome = true, Attachment? initialAttachment}) {
 		showGallery(
 			context: context,
 			attachments: thread!.posts.where((_) => _.attachment != null).map((_) => _.attachment!).toList(),

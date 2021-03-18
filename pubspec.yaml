@@ -18,10 +18,9 @@ environment:
 
 publish_to: none
 dependencies:
-  flutter_ffmpeg: "^0.3.1"
+  flutter_ffmpeg: "^0.4.0"
   http: "^0.13.0"
   html: "^0.15.0"
-  chewie: "^1.0.0"
   video_player: "^2.0.0"
   connectivity: "^3.0.0"
   rxdart: "^0.26.0"

@@ -1,12 +1,11 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:chan/services/util.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:rxdart/rxdart.dart';
 
 class WEBMStatus {
 
@@ -40,18 +39,10 @@ class WEBMErrorStatus extends WEBMStatus {
 }
 
 class WEBM {
-	late Stream<WEBMStatus> status;
-	http.Client client;
-	StreamController<WEBMStatus> _statusController = StreamController<WEBMStatus>.broadcast();
+	final BehaviorSubject<WEBMStatus> status = BehaviorSubject();
+	final Uri url;
 
-	Uri url;
-
-	WEBM({
-		required this.url,
-		required this.client
-	}) {
-		status = _statusController.stream;
-	}
+	WEBM(this.url);
 
 	void startProcessing() async {
 		try {
@@ -61,10 +52,10 @@ class WEBM {
 			final cacheDirectory = await (new Directory(systemTempDirectory.path + '/webmcache/' + url.host)).create(recursive: true);
 			final convertedFile = File(cacheDirectory.path + '/' + filename.replaceFirst('.webm', '.mp4'));
 			if (await convertedFile.exists()) {
-				_statusController.add(WEBMReadyStatus(convertedFile));
+				status.add(WEBMReadyStatus(convertedFile));
 			}
 			else {
-				_statusController.add(WEBMLoadingStatus());
+				status.add(WEBMLoadingStatus());
 				int ffmpegReturnCode;
 				if (isDesktop()) {
 					print('Using Process.start');
@@ -88,7 +79,7 @@ class WEBM {
 					final bitrate = int.tryParse(mediaInfo['format']?['bit_rate'] ?? '') ?? (2e6 as int);
 					ffconfig.enableStatisticsCallback((stats) {
 						if (duration != null) {
-							_statusController.add(WEBMLoadingStatus(0.001 * (stats.time / duration)));
+							status.add(WEBMLoadingStatus(0.001 * (stats.time / duration)));
 						}
 					});
 					String options = '';
@@ -101,21 +92,21 @@ class WEBM {
 					ffmpegReturnCode = await ffmpeg.execute('-hwaccel auto -i ${url.toString()} $options -b:v $bitrate ${convertedFile.path}');
 				}
 				if (ffmpegReturnCode == 0) {
-					_statusController.add(WEBMReadyStatus(convertedFile));
+					status.add(WEBMReadyStatus(convertedFile));
 				}
 				else {
 					if (await convertedFile.exists()) {
 						await convertedFile.delete();
 					}
-					_statusController.add(WEBMErrorStatus('FFmpeg error $ffmpegReturnCode'));
+					status.add(WEBMErrorStatus('FFmpeg error $ffmpegReturnCode'));
 				}
 			}
-			_statusController.close();
+			status.close();
 		}
 		catch (error, stackTrace) {
 			print(stackTrace);
-			_statusController.add(WEBMErrorStatus('Unknown error $error'));
-			_statusController.close();
+			status.add(WEBMErrorStatus('Unknown error $error'));
+			status.close();
 		}
 	}
 
