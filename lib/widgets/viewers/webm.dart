@@ -27,12 +27,9 @@ class GalleryWEBMViewer extends StatelessWidget {
 				);
 			},
 			child: Center(
-				child: SafeArea(
-					top: false,
-					child: AspectRatio(
-						aspectRatio: status.controller.value.aspectRatio,
-						child: VideoPlayer(status.controller)
-					)
+				child: AspectRatio(
+					aspectRatio: status.controller.value.aspectRatio,
+					child: VideoPlayer(status.controller)
 				)
 			)
 		);
