@@ -56,11 +56,11 @@ class PostLineBreakSpan extends PostSpan {
 }
 
 class PostQuoteSpan extends PostSpan {
-	final String text;
-	PostQuoteSpan(this.text);
+	final PostSpan child;
+	PostQuoteSpan(this.child);
 	build(context) {
 		return TextSpan(
-			text: this.text,
+			children: [child.build(context)],
 			style: TextStyle(color: Colors.green)
 		);
 	}
