@@ -92,6 +92,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	late bool showChrome;
 	final Key _pageControllerKey = GlobalKey();
 	bool rotatedViewer = false;
+	final BehaviorSubject<Null> _scrollCoalescer = BehaviorSubject();
 
 	@override
 	void initState() {
@@ -100,6 +101,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
 		pageController = PageController(keepPage: true, initialPage: currentIndex);
 		pageController.addListener(_onPageControllerUpdate);
+		_scrollCoalescer.bufferTime(Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
 		statuses.addEntries(widget.attachments.map((attachment) => MapEntry(attachment, BehaviorSubject()..add(AttachmentUnloadedStatus()))));
 		statuses.entries.forEach((entry) {
 			entry.value.listen((_) {
@@ -187,6 +189,10 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	void _onPageControllerUpdate() {
+		_scrollCoalescer.add(null);
+	}
+
+	void __onPageControllerUpdate() {
 		final factor = pageController.position.pixels / pageController.position.maxScrollExtent;
 		final idealLocation = (thumbnailScrollController.position.maxScrollExtent + thumbnailScrollController.position.viewportDimension) * factor - (thumbnailScrollController.position.viewportDimension / 2);
 		thumbnailScrollController.jumpTo(idealLocation.clamp(0, thumbnailScrollController.position.maxScrollExtent));
