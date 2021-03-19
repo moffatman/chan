@@ -194,7 +194,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	void __onPageControllerUpdate() {
 		if (pageController.positions.isNotEmpty) {
 			final factor = pageController.position.pixels / pageController.position.maxScrollExtent;
-			final idealLocation = (thumbnailScrollController.position.maxScrollExtent + thumbnailScrollController.position.viewportDimension) * factor - (thumbnailScrollController.position.viewportDimension / 2);
+			final idealLocation = (thumbnailScrollController.position.maxScrollExtent + thumbnailScrollController.position.viewportDimension - _THUMBNAIL_SIZE - 12) * factor - (thumbnailScrollController.position.viewportDimension / 2) + (_THUMBNAIL_SIZE / 2 + 6);
 			thumbnailScrollController.jumpTo(idealLocation.clamp(0, thumbnailScrollController.position.maxScrollExtent));
 		}
 	}
