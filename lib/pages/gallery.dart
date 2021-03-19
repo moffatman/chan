@@ -113,7 +113,13 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (!firstControllerMade) {
 			final initialOffset = ((_THUMBNAIL_SIZE + 12) * (currentIndex + 0.5)) - (MediaQuery.of(context).size.width / 2);
 			final maxOffset = ((_THUMBNAIL_SIZE + 12) * widget.attachments.length) - MediaQuery.of(context).size.width;
-			thumbnailScrollController = ScrollController(initialScrollOffset: initialOffset.clamp(0, maxOffset));
+			if (maxOffset > 0) {
+				thumbnailScrollController = ScrollController(initialScrollOffset: initialOffset.clamp(0, maxOffset));
+			}
+			else {
+				// Not scrollable (not large enough to need to scroll)
+				thumbnailScrollController = ScrollController();
+			}
 			firstControllerMade = true;
 		}
 	}
@@ -185,9 +191,11 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	void __onPageControllerUpdate() {
-		final factor = pageController.position.pixels / pageController.position.maxScrollExtent;
-		final idealLocation = (thumbnailScrollController.position.maxScrollExtent + thumbnailScrollController.position.viewportDimension) * factor - (thumbnailScrollController.position.viewportDimension / 2);
-		thumbnailScrollController.jumpTo(idealLocation.clamp(0, thumbnailScrollController.position.maxScrollExtent));
+		if (pageController.positions.isNotEmpty) {
+			final factor = pageController.position.pixels / pageController.position.maxScrollExtent;
+			final idealLocation = (thumbnailScrollController.position.maxScrollExtent + thumbnailScrollController.position.viewportDimension) * factor - (thumbnailScrollController.position.viewportDimension / 2);
+			thumbnailScrollController.jumpTo(idealLocation.clamp(0, thumbnailScrollController.position.maxScrollExtent));
+		}
 	}
 
 	void _animateToPage(int index, {int milliseconds = 200}) {
