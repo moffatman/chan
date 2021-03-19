@@ -19,14 +19,6 @@ import 'package:share/share.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
-extension InvertBrightness on Brightness? {
-	Brightness? get inverted {
-		if (this == null) {
-			return null;
-		}
-		return (this == Brightness.dark) ? Brightness.light : Brightness.dark;
-	}
-}
 
 const double _THUMBNAIL_SIZE = 60;
 
@@ -269,7 +261,6 @@ class _GalleryPageState extends State<GalleryPage> {
 				child: CupertinoPageScaffold(
 					backgroundColor: Colors.transparent,
 					navigationBar: showChrome ? CupertinoNavigationBar(
-						brightness: Platform.isAndroid ? CupertinoTheme.of(context).brightness.inverted : null,
 						middle: Text(currentAttachment.filename),
 						backgroundColor: Colors.black38,
 						trailing: Row(
