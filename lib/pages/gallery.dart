@@ -83,6 +83,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	final FocusNode keyboardShortcutFocusNode = FocusNode();
 	late bool showChrome;
 	final Key _pageControllerKey = GlobalKey();
+	final Key _thumbnailsKey = GlobalKey();
 	bool rotatedViewer = false;
 	final BehaviorSubject<Null> _scrollCoalescer = BehaviorSubject();
 
@@ -389,29 +390,32 @@ class _GalleryPageState extends State<GalleryPage> {
 																color: Colors.black38
 															),
 															height: _THUMBNAIL_SIZE + 8,
-															child: ListView.builder(
-																controller: thumbnailScrollController,
-																itemCount: widget.attachments.length,
-																scrollDirection: Axis.horizontal,
-																itemBuilder: (context, index) {
-																	final attachment = widget.attachments[index];
-																	return GestureDetector(
-																		onTap: () => _animateToPage(index),
-																		child: Container(
-																			decoration: BoxDecoration(
-																				color: Colors.transparent,
-																				borderRadius: BorderRadius.all(Radius.circular(4)),
-																				border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
-																			),
-																			margin: const EdgeInsets.all(4),
-																			child: AttachmentThumbnail(
-																				attachment: widget.attachments[index],
-																				width: _THUMBNAIL_SIZE,
-																				height: _THUMBNAIL_SIZE
+															child: KeyedSubtree(
+																key: _thumbnailsKey,
+																child: ListView.builder(
+																	controller: thumbnailScrollController,
+																	itemCount: widget.attachments.length,
+																	scrollDirection: Axis.horizontal,
+																	itemBuilder: (context, index) {
+																		final attachment = widget.attachments[index];
+																		return GestureDetector(
+																			onTap: () => _animateToPage(index),
+																			child: Container(
+																				decoration: BoxDecoration(
+																					color: Colors.transparent,
+																					borderRadius: BorderRadius.all(Radius.circular(4)),
+																					border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
+																				),
+																				margin: const EdgeInsets.all(4),
+																				child: AttachmentThumbnail(
+																					attachment: widget.attachments[index],
+																					width: _THUMBNAIL_SIZE,
+																					height: _THUMBNAIL_SIZE
+																				)
 																			)
-																		)
-																	);
-																}
+																		);
+																	}
+																)
 															)
 														)
 													]
