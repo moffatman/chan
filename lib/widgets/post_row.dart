@@ -37,8 +37,8 @@ class PostRow extends StatelessWidget {
 						create: (_) => ExpandingPostZone(parentIds.followedBy([post.id]).toList()),
 						child: Builder(
 							builder: (ctx) => DefaultTextStyle(
-								child: Text.rich(
-									TextSpan(
+								child: RichText(
+									text: TextSpan(
 										children: [
 											TextSpan(
 												text: post.name,
@@ -85,7 +85,7 @@ class PostRow extends StatelessWidget {
 									child: ChangeNotifierProvider<ExpandingPostZone>(
 										create: (_) => ExpandingPostZone(parentIds.followedBy([post.id]).toList()),
 										child: Builder(
-											builder: (ctx) => Text.rich(post.span.build(ctx))
+											builder: (ctx) => RichText(text: post.span.build(ctx))
 										)
 									)
 								)

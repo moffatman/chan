@@ -25,8 +25,8 @@ class ThreadRow extends StatelessWidget {
 				crossAxisAlignment: CrossAxisAlignment.start,
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					Text.rich(
-						TextSpan(
+					RichText(
+						text: TextSpan(
 							children: [
 								TextSpan(
 									text: thread.posts[0].name,
@@ -69,7 +69,7 @@ class ThreadRow extends StatelessWidget {
 												Flexible(child: Provider.value(
 													value: thread.posts[0],
 													child: Builder(
-														builder: (ctx) => Text.rich(thread.posts[0].span.build(ctx), overflow: TextOverflow.fade)
+														builder: (ctx) => RichText(text: thread.posts[0].span.build(ctx), overflow: TextOverflow.fade)
 													)
 												)),
 											]
