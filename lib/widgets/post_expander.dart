@@ -43,14 +43,17 @@ class ExpandingPost extends StatelessWidget {
 		final zone = context.watch<ExpandingPostZone>();
 		return zone.shouldExpandPost(this.id) ? Provider.value(
 			value: context.watch<List<Post>>().firstWhere((p) => p.id == this.id),
-			child: PostRow(
-				onThumbnailTap: (attachment, {Object? tag}) {
-					showGallery(
-						context: context,
-						attachments: [attachment],
-						semanticParentIds: zone.parentIds
-					);
-				}
+			child: MediaQuery(
+				data: MediaQueryData(textScaleFactor: 1),
+				child: PostRow(
+					onThumbnailTap: (attachment, {Object? tag}) {
+						showGallery(
+							context: context,
+							attachments: [attachment],
+							semanticParentIds: zone.parentIds
+						);
+					}
+				)
 			)
 		) : Container(width: 0, height: 0);
 	}

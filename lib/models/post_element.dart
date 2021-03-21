@@ -143,7 +143,8 @@ class PostQuoteLinkSpan extends PostSpan {
 								zone.toggleExpansionOfPost(this.id);
 							}
 						})
-					)
+					),
+					textScaleFactor: 1
 				),
 				popup: MultiProvider(
 					providers: [
