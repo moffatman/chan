@@ -130,8 +130,8 @@ class PostQuoteLinkSpan extends PostSpan {
 		final post = postList.firstWhere((p) => p.id == this.id);
 		return WidgetSpan(
 			child: HoverPopup(
-				child: RichText(
-					text: TextSpan(
+				child: Text.rich(
+					TextSpan(
 						text: '>>' + this.id.toString() + ((postList[0].id == this.id) ? ' (OP)' : ''),
 						style: TextStyle(
 							color: (zone?.shouldExpandPost(id) ?? false || sameAsParent) ? Colors.pink : Colors.red,
