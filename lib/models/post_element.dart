@@ -96,11 +96,13 @@ class _HoverPopupState extends State<HoverPopup> {
 				final topOfUsableSpace = MediaQuery.of(context).size.height / 2;
 				final hoverWidth = MediaQuery.of(context).size.width / 2;
 				final showOnRight = childCenterHorizontal > (MediaQuery.of(context).size.width / 2);
+				final left = childBox.localToGlobal(Offset.zero).dx;
+				final right = (MediaQuery.of(context).size.width - childBox.localToGlobal(Offset(childBox.size.width, 0)).dx);
 				_entry = OverlayEntry(
 					builder: (context) {
 						return Positioned(
-							right: showOnRight ? (MediaQuery.of(context).size.width - childBox.localToGlobal(Offset(childBox.size.width, 0)).dx) : null,
-							left: showOnRight ? null : childBox.localToGlobal(Offset.zero).dx,
+							right: showOnRight ? right : null,
+							left: showOnRight ? null : left,
 							bottom: (childTop > topOfUsableSpace) ? MediaQuery.of(context).size.height - childTop : null,
 							top: (childTop > topOfUsableSpace) ? null : childBottom,
 							width: hoverWidth,
