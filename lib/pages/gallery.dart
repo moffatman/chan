@@ -349,9 +349,11 @@ class _GalleryPageState extends State<GalleryPage> {
 																			semanticParents: widget.semanticParentIds
 																		),
 																		onCacheCompleted: (file) {
-																			setState(() {
-																				cachedFiles[attachment] = file;
-																			});
+																			if (cachedFiles[attachment]?.path != file.path) {
+																				setState(() {
+																					cachedFiles[attachment] = file;
+																				});
+																			}
 																		}
 																	)
 																),
