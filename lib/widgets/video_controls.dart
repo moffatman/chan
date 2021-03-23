@@ -59,7 +59,7 @@ class _VideoControlsState extends State<VideoControls> {
 			mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 			children: [
 				SizedBox(width: 8),
-				Text(_formatDuration(value.position)),
+				Text(_formatDuration(value.position), style: TextStyle(color: Colors.white)),
 				Expanded(
 					child: CupertinoSlider(
 						value: sliderValue,
@@ -83,7 +83,7 @@ class _VideoControlsState extends State<VideoControls> {
 						},
 					)
 				),
-				Text(_formatDuration(value.duration)),
+				Text(_formatDuration(value.duration), style: TextStyle(color: Colors.white)),
 				CupertinoButton(
 					child: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow),
 					onPressed: () async {
