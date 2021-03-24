@@ -262,12 +262,20 @@ class _GalleryPageState extends State<GalleryPage> {
 		});
 	}
 
+	double _dragPopFactor(Offset offset, Size size) {
+		final threshold = math.sqrt(size.width * size.height) / 15;
+		return (offset.distance - threshold) / threshold;
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
-				return Colors.black.withOpacity((0.38 * (1 - (offset.dx / size.width).abs()) * (1 - (offset.dy / size.height).abs())).clamp(0, 1));
+				return Colors.black.withOpacity(0.38 * (1 - _dragPopFactor(offset, size).clamp(0, 1)));
+			},
+			slideEndHandler: (offset, {ScaleEndDetails? details, ExtendedImageSlidePageState? state}) {
+				return _dragPopFactor(offset, state!.pageSize) > 1;
 			},
 			child: CupertinoTheme(
 				data: CupertinoThemeData(brightness: Brightness.dark, primaryColor: Colors.white),
