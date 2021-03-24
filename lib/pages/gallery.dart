@@ -47,7 +47,8 @@ class AttachmentImageUrlAvailableStatus extends AttachmentStatus {
 
 class AttachmentVideoAvailableStatus extends AttachmentStatus {
 	final VideoPlayerController controller;
-	AttachmentVideoAvailableStatus(this.controller);
+	final bool hasAudio;
+	AttachmentVideoAvailableStatus(this.controller, this.hasAudio);
 }
 
 class GalleryPage extends StatefulWidget {
@@ -85,6 +86,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	final Key _pageControllerKey = GlobalKey();
 	final Key _thumbnailsKey = GlobalKey();
 	bool rotatedViewer = false;
+	AttachmentStatus lastDifferentCurrentStatus = AttachmentStatus();
 	final BehaviorSubject<Null> _scrollCoalescer = BehaviorSubject();
 
 	@override
@@ -97,9 +99,12 @@ class _GalleryPageState extends State<GalleryPage> {
 		_scrollCoalescer.bufferTime(Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
 		statuses.addEntries(widget.attachments.map((attachment) => MapEntry(attachment, BehaviorSubject()..add(AttachmentUnloadedStatus()))));
 		statuses.entries.forEach((entry) {
-			entry.value.listen((_) {
-				if (currentAttachment == entry.key) {
-					setState(() {});
+			entry.value.listen((newStatus) {
+				// Don't need to rebuild layout if its just a status value change (mainly for loading spinner)
+				if (currentAttachment == entry.key && newStatus.runtimeType != lastDifferentCurrentStatus.runtimeType) {
+					setState(() {
+						lastDifferentCurrentStatus = newStatus;
+					});
 				}
 			});
 		});
@@ -171,12 +176,12 @@ class _GalleryPageState extends State<GalleryPage> {
 						statuses[attachment]!.add(AttachmentLoadingStatus(progress: webmStatus.progress));
 					}
 					else if (webmStatus is WEBMReadyStatus) {
-						final controller = VideoPlayerController.file(webmStatus.file);
+						final controller = VideoPlayerController.file(webmStatus.file, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
 						await controller.initialize();
 						await controller.setLooping(true);
 						await controller.play();
 						cachedFiles[attachment] = webmStatus.file;
-						statuses[attachment]!.add(AttachmentVideoAvailableStatus(controller));
+						statuses[attachment]!.add(AttachmentVideoAvailableStatus(controller, webmStatus.hasAudio));
 					}
 				});
 				webm.startProcessing();
@@ -225,6 +230,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (context.read<Settings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
 			requestRealViewer(widget.attachments[index]);
 		}
+		currentIndex = index;
 		for (final status in statuses.entries) {
 			if (status.value.value is AttachmentVideoAvailableStatus) {
 				if (status.key == currentAttachment) {
@@ -235,9 +241,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				}
 			}
 		}
-		setState(() {
-			currentIndex = index;
-		});
+		setState(() {});
 	}
 
 	bool canShare(Attachment attachment) {
@@ -384,6 +388,7 @@ class _GalleryPageState extends State<GalleryPage> {
 															),
 															child: VideoControls(
 																controller: (currentAttachmentStatus as AttachmentVideoAvailableStatus).controller,
+																hasAudio: (currentAttachmentStatus as AttachmentVideoAvailableStatus).hasAudio,
 																onUpdate: () => setState(() {})
 															)
 														),

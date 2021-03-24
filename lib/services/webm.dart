@@ -22,10 +22,11 @@ class WEBMLoadingStatus extends WEBMStatus {
 
 class WEBMReadyStatus extends WEBMStatus {
 	final File file;
-	WEBMReadyStatus(this.file);
+	final bool hasAudio;
+	WEBMReadyStatus(this.file, this.hasAudio);
 	@override
 	String toString() {
-		return 'WEBMReadyStatus (file: ${file.path})';
+		return 'WEBMReadyStatus (file: ${file.path}, hasAudio: $hasAudio)';
 	}
 }
 
@@ -52,11 +53,13 @@ class WEBM {
 			final cacheDirectory = await (new Directory(systemTempDirectory.path + '/webmcache/' + url.host)).create(recursive: true);
 			final convertedFile = File(cacheDirectory.path + '/' + filename.replaceFirst('.webm', '.mp4'));
 			if (await convertedFile.exists()) {
-				status.add(WEBMReadyStatus(convertedFile));
+				final mediaInfo = (await FlutterFFprobe().getMediaInformation(convertedFile.path)).getAllProperties();
+				status.add(WEBMReadyStatus(convertedFile, mediaInfo['streams']?.any((stream) => stream['codec_type'] == 'audio') ?? true));
 			}
 			else {
 				status.add(WEBMLoadingStatus());
 				int ffmpegReturnCode;
+				bool hasAudio = true;
 				if (isDesktop()) {
 					print('Using Process.start');
 					final ffmpeg = await Process.start('ffmpeg', ['-hwaccel', 'auto', '-i', url.toString(), '-crf', '18', convertedFile.path]);
@@ -72,9 +75,9 @@ class WEBM {
 				else {
 					print('Using FlutterFFmpeg');
 					final ffconfig = FlutterFFmpegConfig();
-					final ffprobe = FlutterFFprobe();
 					final ffmpeg = FlutterFFmpeg();
-					final mediaInfo = (await ffprobe.getMediaInformation(url.toString())).getAllProperties();
+					final mediaInfo = (await FlutterFFprobe().getMediaInformation(url.toString())).getAllProperties();
+					hasAudio = mediaInfo['streams']?.any((stream) => stream['codec_type'] == 'audio') ?? true;
 					final duration = double.tryParse(mediaInfo['format']?['duration'] ?? '');
 					final bitrate = int.tryParse(mediaInfo['format']?['bit_rate'] ?? '') ?? (2e6 as int);
 					ffconfig.enableStatisticsCallback((stats) {
@@ -92,7 +95,7 @@ class WEBM {
 					ffmpegReturnCode = await ffmpeg.execute('-hwaccel auto -i ${url.toString()} $options -b:v $bitrate ${convertedFile.path}');
 				}
 				if (ffmpegReturnCode == 0) {
-					status.add(WEBMReadyStatus(convertedFile));
+					status.add(WEBMReadyStatus(convertedFile, hasAudio));
 				}
 				else {
 					if (await convertedFile.exists()) {
