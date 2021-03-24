@@ -8,12 +8,14 @@ class GalleryImageViewer extends StatelessWidget {
 	final Attachment attachment;
 	final Object? tag;
 	final ValueChanged<File>? onCacheCompleted;
+	final bool isThumbnail;
 
 	GalleryImageViewer({
 		required this.url,
 		required this.attachment,
 		this.tag,
-		this.onCacheCompleted
+		this.onCacheCompleted,
+		this.isThumbnail = false
 	});
 
 	@override
@@ -36,7 +38,7 @@ class GalleryImageViewer extends StatelessWidget {
 				);
 			},
 			loadStateChanged: (loadstate) {
-				if (loadstate.extendedImageLoadState == LoadState.completed) {
+				if (loadstate.extendedImageLoadState == LoadState.completed && !isThumbnail) {
 					getCachedImageFile(url.toString()).then((file) {
 						if (file != null) {
 							onCacheCompleted?.call(file);

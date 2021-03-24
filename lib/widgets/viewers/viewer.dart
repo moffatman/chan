@@ -40,6 +40,7 @@ class AttachmentViewer extends StatelessWidget {
 					url: (status is AttachmentImageUrlAvailableStatus) ? (status as AttachmentImageUrlAvailableStatus).url : context.watch<ImageboardSite>().getAttachmentThumbnailUrl(attachment),
 					tag: tag,
 					onCacheCompleted: onCacheCompleted,
+					isThumbnail: !(status is AttachmentImageUrlAvailableStatus)
 				),
 				if (status is AttachmentUnavailableStatus) Center(
 					child: Container(
