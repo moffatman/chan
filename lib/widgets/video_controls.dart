@@ -5,12 +5,10 @@ import 'package:video_player/video_player.dart';
 class VideoControls extends StatefulWidget {
 	final VideoPlayerController controller;
 	final bool hasAudio;
-	final VoidCallback? onUpdate;
 
 	VideoControls({
 		required this.controller,
-		required this.hasAudio,
-		this.onUpdate
+		required this.hasAudio
 	});
 
 	@override
@@ -81,7 +79,6 @@ class _VideoControlsState extends State<VideoControls> {
 							if (!wasAlreadyPlaying) {
 								await widget.controller.pause();
 							}
-							widget.onUpdate?.call();
 						},
 					)
 				),
@@ -96,7 +93,6 @@ class _VideoControlsState extends State<VideoControls> {
 						else {
 							await widget.controller.setVolume(1);
 						}
-						widget.onUpdate?.call();
 					}
 				),
 				CupertinoButton(
@@ -109,7 +105,6 @@ class _VideoControlsState extends State<VideoControls> {
 						else {
 							await widget.controller.play();
 						}
-						widget.onUpdate?.call();
 					},
 				)
 			]

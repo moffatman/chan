@@ -388,8 +388,7 @@ class _GalleryPageState extends State<GalleryPage> {
 															),
 															child: VideoControls(
 																controller: (currentAttachmentStatus as AttachmentVideoAvailableStatus).controller,
-																hasAudio: (currentAttachmentStatus as AttachmentVideoAvailableStatus).hasAudio,
-																onUpdate: () => setState(() {})
+																hasAudio: (currentAttachmentStatus as AttachmentVideoAvailableStatus).hasAudio
 															)
 														),
 														Container(
