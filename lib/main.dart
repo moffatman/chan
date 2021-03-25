@@ -1,4 +1,3 @@
-// @dart=2.9
 import 'package:chan/services/settings.dart';
 import 'package:cupertino_back_gesture/cupertino_back_gesture.dart';
 import 'package:flutter/cupertino.dart';
