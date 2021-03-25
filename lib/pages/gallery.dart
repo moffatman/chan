@@ -7,6 +7,7 @@ import 'package:chan/services/webm.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/rx_stream_builder.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
 import 'package:chan/widgets/viewers/viewer.dart';
 import 'package:flutter/cupertino.dart';
@@ -455,4 +456,25 @@ class _GalleryPageState extends State<GalleryPage> {
 			status.close();
 		}
 	}
+}
+
+Future<Attachment?> showGallery({
+	required BuildContext context,
+	required List<Attachment> attachments,
+	required List<int> semanticParentIds,
+	Attachment? initialAttachment,
+	bool initiallyShowChrome = false,
+	ValueChanged<Attachment>? onChange,
+}) {
+	return Navigator.of(context, rootNavigator: true).push(TransparentRoute<Attachment>(
+		builder: (BuildContext _context) {
+			return GalleryPage(
+				attachments: attachments,
+				initialAttachment: initialAttachment,
+				initiallyShowChrome: initiallyShowChrome,
+				onChange: onChange,
+				semanticParentIds: semanticParentIds
+			);
+		}
+	));
 }

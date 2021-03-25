@@ -1,7 +1,10 @@
 import 'package:chan/models/post_element.dart';
+import 'package:chan/pages/replies.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/post_expander.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'package:chan/models/post.dart';
@@ -22,10 +25,11 @@ class PostRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final post = context.watch<Post>();
+		final threadPosts = context.watch<List<Post>>();
 		final parentIds = context.watchOrNull<ExpandingPostZone>()?.parentIds ?? [];
 		final randomHeroTag = Random().nextDouble().toString();
 		return Container(
-			padding: EdgeInsets.only(left: 8, right: 8),
+			padding: EdgeInsets.all(8),
 			decoration: BoxDecoration(
 				border: parentIds.isNotEmpty ? Border.all(width: 0) : null,
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor
@@ -51,10 +55,26 @@ class PostRow extends StatelessWidget {
 											TextSpan(
 												text: formatTime(post.time)
 											),
-											...post.replyIds.map((id) => PostQuoteLinkSpan(id).build(ctx)),
-											...post.replyIds.map((id) => WidgetSpan(
-												child: ExpandingPost(id)
-											))
+											if (context.watch<Settings>().useTouchLayout && post.replyIds.isNotEmpty) TextSpan(
+												text: post.replyIds.length == 1 ? "1 reply" : "${post.replyIds.length} replies",
+												style: TextStyle(
+													color: Colors.red,
+													fontWeight: FontWeight.bold
+												),
+												recognizer: TapGestureRecognizer()..onTap = () {
+													Navigator.of(context).push(
+														TransparentRoute(
+															builder: (ctx) => RepliesPage(threadPosts: threadPosts, repliedToPost: post, parentIds: parentIds)
+														)
+													);
+												}
+											)
+											else ...[
+												...post.replyIds.map((id) => PostQuoteLinkSpan(id).build(ctx)),
+												...post.replyIds.map((id) => WidgetSpan(
+													child: ExpandingPost(id)
+												))
+											]
 										].expand((span) => [TextSpan(text: ' '), span]).skip(1).toList()
 									)
 								),

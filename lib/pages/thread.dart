@@ -1,6 +1,6 @@
 import 'package:chan/models/attachment.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/widgets/gallery_manager.dart';
+import 'package:chan/pages/gallery.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/provider_list.dart';
 import 'package:flutter/cupertino.dart';

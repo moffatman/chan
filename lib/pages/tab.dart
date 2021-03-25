@@ -1,5 +1,5 @@
 import 'package:chan/models/thread.dart';
-import 'package:chan/widgets/gallery_manager.dart';
+import 'package:chan/widgets/util.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';

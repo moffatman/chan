@@ -112,7 +112,8 @@ class ProviderListState<T extends Filterable> extends State<ProviderList<T>> {
 										}
 										else {
 											return Divider(
-												thickness: 1
+												thickness: 1,
+												height: 0
 											);
 										}
 									},
@@ -133,7 +134,8 @@ class ProviderListState<T extends Filterable> extends State<ProviderList<T>> {
 										}
 										else {
 											return Divider(
-												thickness: 1
+												thickness: 1,
+												height: 0
 											);
 										}
 									}),

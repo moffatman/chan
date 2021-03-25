@@ -17,7 +17,7 @@ class ThreadRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return Container(
-			padding: EdgeInsets.only(left: 8, right: 8),
+			padding: EdgeInsets.all(8),
 			decoration: BoxDecoration(
 				color: isSelected ? ((CupertinoTheme.of(context).brightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
 			),

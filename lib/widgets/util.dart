@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 extension NoThrowingProvider on BuildContext {
@@ -41,4 +42,41 @@ String formatTime(DateTime time) {
 		prefix = time.year.toString() + '-' + time.month.toString().padLeft(2, '0') + '-' + time.day.toString().padLeft(2, '0') + ' (' + days[time.weekday] + ') ';
 	}
 	return prefix + time.hour.toString().padLeft(2, '0') + ':' + time.minute.toString().padLeft(2, '0') + ':' + time.second.toString().padLeft(2, '0');
+}
+
+class TransparentRoute<T> extends PageRoute<T> {
+	TransparentRoute({
+		required this.builder,
+		RouteSettings? settings,
+  	}) : super(settings: settings, fullscreenDialog: false);
+
+	final WidgetBuilder builder;
+
+	@override
+	bool get opaque => false;
+
+	@override
+	Color? get barrierColor => null;
+
+	@override
+	String? get barrierLabel => null;
+
+	@override
+	bool get maintainState => true;
+
+	@override
+	Duration get transitionDuration => Duration(milliseconds: 150);
+
+	@override
+  	Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+		final result = builder(context);
+		return FadeTransition(
+			opacity: Tween<double>(begin: 0, end: 1).animate(animation),
+			child: Semantics(
+				scopesRoute: true,
+				explicitChildNodes: true,
+				child: result,
+			)
+		);
+	}
 }

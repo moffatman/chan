@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:chan/services/util.dart';
 import 'package:flutter/material.dart';
@@ -92,6 +93,10 @@ class Settings extends ChangeNotifier {
 	set hideStickiedThreads(bool newValue) {
 		_prefs?.setBool(_HIDE_STICKIED_THREADS_KEY, newValue);
 		notifyListeners();
+	}
+
+	bool get useTouchLayout {
+		return Platform.isAndroid || Platform.isIOS;
 	}
 }
 
