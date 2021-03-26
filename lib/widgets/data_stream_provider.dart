@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 
 typedef DataStreamBuilderFunction<T> = Widget Function(BuildContext context, T value, Future<void> Function() requestUpdate);
-typedef DataStreamErrorBuilderFunction = Widget Function(BuildContext context, Exception error);
+typedef DataStreamErrorBuilderFunction = Widget Function(BuildContext context, String errorMessage);
 typedef DataStreamPlaceholderBuilderFunction<T> = Widget Function(BuildContext context, T value);
 
 class DataProvider<T> extends StatefulWidget {
@@ -31,7 +31,7 @@ class DataProvider<T> extends StatefulWidget {
 class _DataProviderState<T> extends State<DataProvider<T>> {
 	late T value;
 	bool realValuePresent = false;
-	Exception? exception;
+	String? errorMessage;
 
 	@override
 	void initState() {
@@ -48,7 +48,7 @@ class _DataProviderState<T> extends State<DataProvider<T>> {
 			setState(() {
 				value = widget.initialValue;
 				realValuePresent = false;
-				exception = null;
+				errorMessage = null;
 			});
 			this.update();
 		}
@@ -60,19 +60,19 @@ class _DataProviderState<T> extends State<DataProvider<T>> {
 			setState(() {
 				value = newData;
 				realValuePresent = true;
-				exception = null;
+				errorMessage = null;
 			});
 		}
-		on Exception catch (e) {
+		catch (e) {
 			setState(() {
-				this.exception = e;
+				this.errorMessage = e.toString();
 			});
 		}
 	}
 
 	@override
 	Widget build(BuildContext context) {
-		return (exception != null) ? widget.errorBuilder(context, exception!) : (realValuePresent ? Provider.value(
+		return (errorMessage != null) ? widget.errorBuilder(context, errorMessage!) : (realValuePresent ? Provider.value(
 			value: value,
 			child: widget.builder(context, value, update)
 		) : widget.placeholderBuilder(context, value));
