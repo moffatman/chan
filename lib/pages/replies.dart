@@ -85,4 +85,10 @@ class _RepliesPageState extends State<RepliesPage> {
 			]
 		);
 	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_controller.dispose();
+	}
 }

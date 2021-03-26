@@ -449,6 +449,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	@override
 	void dispose() {
 		super.dispose();
+		thumbnailScrollController.dispose();
 		for (final status in statuses.values) {
 			if (status.value is AttachmentVideoAvailableStatus) {
 				(status.value as AttachmentVideoAvailableStatus).controller.dispose();

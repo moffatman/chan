@@ -112,4 +112,10 @@ class _ThreadPageState extends State<ThreadPage> {
 			)
 		);
 	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_listController.dispose();
+	}
 }

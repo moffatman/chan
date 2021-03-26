@@ -204,6 +204,7 @@ class ProviderListController<T extends Filterable> {
 	}
 	void dispose() {
 		_scrollStream.close();
+		scrollController.dispose();
 	}
 	void resetItems(int length) {
 		_items = List.generate(length, (_) => null);
