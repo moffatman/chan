@@ -132,7 +132,7 @@ class Site4Chan implements ImageboardSite {
 			return Future.error(HTTPStatusException(response.statusCode));
 		}
 		final data = json.decode(response.body);
-		final title = data['posts'][0]['sub'];
+		final String? title = data['posts']?[0]?['sub'];
 		return Thread(
 			board: board,
 			isDeleted: false,
@@ -143,7 +143,7 @@ class Site4Chan implements ImageboardSite {
 				return _makePost(board, postData);
 			}).toList(),
 			id: data['posts'][0]['no'],
-			attachment: _makeAttachment(board, data),
+			attachment: _makeAttachment(board, data['posts'][0]),
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: data['posts'][0]['sticky'] == 1
 		);
