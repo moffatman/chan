@@ -192,10 +192,12 @@ class PostExpandingQuoteLinkSpan extends PostNodeSpan {
 
 class PostDeadQuoteLinkSpan extends PostSpan {
 	final int id;
-	PostDeadQuoteLinkSpan(this.id);
+	final String? board;
+	PostDeadQuoteLinkSpan(this.id, {this.board});
 	build(context, {recognizer, overrideRecognizer = false}) {
+		final showBoard = context.watch<Post>().board != board && board != null;
 		return TextSpan(
-			text: '>>' + this.id.toString(),
+			text: (showBoard ? '>>/$board/' : '>>') + this.id.toString(),
 			style: TextStyle(decoration: TextDecoration.lineThrough, color: Colors.red),
 			recognizer: recognizer
 		);

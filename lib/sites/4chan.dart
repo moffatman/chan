@@ -58,7 +58,8 @@ class Site4Chan implements ImageboardSite {
 					}
 					else if (node.localName == 'span') {
 						if (node.attributes['class']?.contains('deadlink') ?? false) {
-							elements.add(PostDeadQuoteLinkSpan(int.parse(node.innerHtml.substring(8))));
+							final parts = node.innerHtml.replaceAll('&gt;', '').split('/');
+							elements.add(PostDeadQuoteLinkSpan(int.parse(parts.last), board: (parts.length > 2) ? parts[1] : null));
 						}
 						else if (node.attributes['class']?.contains('quote') ?? false) {
 							elements.add(PostQuoteSpan(PostNodeSpan(_makeSpans(node.innerHtml))));
