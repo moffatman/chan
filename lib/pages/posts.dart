@@ -8,34 +8,33 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class RepliesPage extends StatefulWidget {
+class PostsPage extends StatefulWidget {
 	final List<Post> threadPosts;
-	final Post repliedToPost;
+	final List<int> postsIdsToShow;
 	final List<int> parentIds;
 
-	RepliesPage({
+	PostsPage({
 		required this.threadPosts,
-		required this.repliedToPost,
+		required this.postsIdsToShow,
 		required this.parentIds
 	});
 
 	@override
-	createState() => _RepliesPageState();
+	createState() => _PostsPageState();
 }
 
-class _RepliesPageState extends State<RepliesPage> {
+class _PostsPageState extends State<PostsPage> {
 	late final ScrollController _controller;
 
 	@override
 	void initState() {
 		super.initState();
-		_controller = ScrollController(initialScrollOffset: -150.0 - 100.0 * (widget.repliedToPost.replyIds.length - 1));
+		_controller = ScrollController(initialScrollOffset: -150.0 - 100.0 * (widget.postsIdsToShow.length - 1));
 	}
 
 	@override
 	Widget build(BuildContext context) {
-		final replies = widget.threadPosts.where((post) => widget.repliedToPost.replyIds.contains(post.id)).toList();
-		final newParentIds = widget.parentIds.followedBy([widget.repliedToPost.id]).toList();
+		final replies = widget.threadPosts.where((post) => widget.postsIdsToShow.contains(post.id)).toList();
 		return Stack(
 			fit: StackFit.expand,
 			children: [
@@ -54,7 +53,7 @@ class _RepliesPageState extends State<RepliesPage> {
 						child: MultiProvider(
 							providers: [
 								Provider.value(value: widget.threadPosts),
-								ChangeNotifierProvider(create: (_) => ExpandingPostZone(newParentIds))
+								ChangeNotifierProvider(create: (_) => ExpandingPostZone(widget.parentIds))
 							],
 							child: CustomScrollView(
 								controller: _controller,
@@ -73,7 +72,7 @@ class _RepliesPageState extends State<RepliesPage> {
 															showGallery(
 																context: context,
 																attachments: [attachment],
-																semanticParentIds: newParentIds
+																semanticParentIds: widget.parentIds
 															);
 														}
 													)

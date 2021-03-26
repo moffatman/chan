@@ -1,10 +1,9 @@
 import 'package:chan/models/post_element.dart';
-import 'package:chan/pages/replies.dart';
+import 'package:chan/pages/posts.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/post_expander.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'package:chan/models/post.dart';
@@ -142,7 +141,11 @@ class PostRow extends StatelessWidget {
 															onPressed: () {
 																Navigator.of(context).push(
 																	TransparentRoute(
-																		builder: (ctx) => RepliesPage(threadPosts: threadPosts, repliedToPost: post, parentIds: parentIds)
+																		builder: (ctx) => PostsPage(
+																			threadPosts: threadPosts,
+																			postsIdsToShow: post.replyIds,
+																			parentIds: parentIds.followedBy([post.id]).toList()
+																		)
 																	)
 																);
 															}

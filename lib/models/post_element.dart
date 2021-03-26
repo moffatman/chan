@@ -1,5 +1,7 @@
 import 'package:chan/models/post.dart';
+import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/post_expander.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:flutter/cupertino.dart';
@@ -128,6 +130,8 @@ class PostQuoteLinkSpan extends PostSpan {
 		final sameAsParent = zone?.parentIds.contains(id) ?? false;
 		final postList = context.watch<List<Post>>();
 		final post = postList.firstWhere((p) => p.id == this.id);
+		final settings = context.watch<Settings>();
+		final newParentIds = (zone?.parentIds ?? []).followedBy([post.id]).toList();
 		return WidgetSpan(
 			child: HoverPopup(
 				child: Text.rich(
@@ -140,7 +144,20 @@ class PostQuoteLinkSpan extends PostSpan {
 						),
 						recognizer: (recognizer != null && overrideRecognizer) ? recognizer : (TapGestureRecognizer()..onTap = () {
 							if (!sameAsParent && zone != null) {
-								zone.toggleExpansionOfPost(this.id);
+								if (settings.useTouchLayout) {
+									Navigator.of(context).push(
+										TransparentRoute(
+											builder: (ctx) => PostsPage(
+												threadPosts: postList,
+												postsIdsToShow: [post.id],
+												parentIds: newParentIds
+											)
+										)
+									);
+								}
+								else {
+									zone.toggleExpansionOfPost(this.id);
+								}
 							}
 						})
 					),
@@ -150,7 +167,7 @@ class PostQuoteLinkSpan extends PostSpan {
 					providers: [
 						Provider.value(value: post),
 						Provider.value(value: postList),
-						ChangeNotifierProvider(create: (_) => ExpandingPostZone((zone?.parentIds ?? []).followedBy([post.id]).toList()))
+						ChangeNotifierProvider(create: (_) => ExpandingPostZone(newParentIds))
 					],
 					child: PostRow()
 				)
