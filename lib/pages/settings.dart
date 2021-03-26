@@ -17,7 +17,7 @@ class SettingsPage extends StatelessWidget {
 					children: [
 						Container(
 							padding: EdgeInsets.all(16),
-							child: Text("Theme"),
+							child: Text('Theme'),
 						),
 						CupertinoSegmentedControl<Setting_Theme>(
 							children: {
@@ -32,7 +32,7 @@ class SettingsPage extends StatelessWidget {
 						),
 						Container(
 							padding: EdgeInsets.all(16),
-							child: Text("Automatically load attachments"),
+							child: Text('Automatically load attachments'),
 						),
 						CupertinoSegmentedControl<Setting_AutoloadAttachments>(
 							children: {
@@ -47,7 +47,7 @@ class SettingsPage extends StatelessWidget {
 						),
 						Container(
 							padding: EdgeInsets.all(16),
-							child: Text("Hide stickied threads"),
+							child: Text('Hide stickied threads'),
 						),
 						CupertinoSegmentedControl<bool>(
 							children: {

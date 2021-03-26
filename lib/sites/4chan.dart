@@ -46,14 +46,14 @@ class Site4Chan implements ImageboardSite {
 							elements.add(PostExpandingQuoteLinkSpan(int.parse(node.attributes['href']!.substring(2))));
 						}
 						else if (node.attributes['href']!.contains('#p')) {
-							// href looks like "/tv/thread/123456#p123457"
+							// href looks like '/tv/thread/123456#p123457'
 							final parts = node.attributes['href']!.split('/');
 							final threadIndex = parts.indexOf('thread');
 							final ids = parts[threadIndex + 1].split('#p');
 							elements.add(PostCrossThreadQuoteLinkSpan(parts[threadIndex - 1], int.parse(ids[0]), int.parse(ids[1])));
 						}
 						else {
-							elements.add(PostTextSpan("LINK: " + node.attributes['href']!));
+							elements.add(PostTextSpan('LINK: ' + node.attributes['href']!));
 						}
 					}
 					else if (node.localName == 'span') {
@@ -152,7 +152,7 @@ class Site4Chan implements ImageboardSite {
 	}
 
 	Future<Thread> getThreadContainingPost(String board, int id) async {
-		throw Exception("Not implemented");
+		throw Exception('Not implemented');
 	}
 
 	Future<List<Thread>> getCatalog(String board) async {

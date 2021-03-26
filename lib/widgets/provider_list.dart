@@ -161,7 +161,7 @@ class ProviderListState<T extends Filterable> extends State<ProviderList<T>> {
 											padding: EdgeInsets.only(top: 16, bottom: 16),
 											child: ElevatedButton.icon(
 												icon: Icon(Icons.refresh),
-												label: Text("Reload"),
+												label: Text('Reload'),
 												onPressed: requestUpdate
 											)
 										)

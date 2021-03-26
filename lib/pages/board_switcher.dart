@@ -22,7 +22,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							child: CupertinoTextField(
 								autofocus: true,
 								autocorrect: false,
-								placeholder: "Board...",
+								placeholder: 'Board...',
 								textAlign: TextAlign.center,
 								onSubmitted: (String board) {
 									Navigator.of(context).pop(board);

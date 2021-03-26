@@ -24,7 +24,7 @@ class Post implements Filterable {
 
 	@override
 	String toString() {
-		return "Post $id";
+		return 'Post $id';
 	}
 
 	List<String> getSearchableText() {
