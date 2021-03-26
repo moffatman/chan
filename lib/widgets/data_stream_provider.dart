@@ -63,7 +63,9 @@ class _DataProviderState<T> extends State<DataProvider<T>> {
 				errorMessage = null;
 			});
 		}
-		catch (e) {
+		catch (e, st) {
+			print(e);
+			print(st);
 			setState(() {
 				this.errorMessage = e.toString();
 			});
