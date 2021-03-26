@@ -76,7 +76,7 @@ class _PostsPageState extends State<PostsPage> {
 								if ((event.timeStamp - _pointerDownTime!).inMilliseconds < 125) {
 									final RenderBox topBox = _topSpacerKey.currentContext!.findRenderObject()! as RenderBox;
 									final RenderBox bottomBox = _bottomSpacerKey.currentContext!.findRenderObject()! as RenderBox;
-									if (event.position.dy < topBox.semanticBounds.bottom || event.position.dy > bottomBox.semanticBounds.top) {
+									if (event.position.dy < topBox.localToGlobal(topBox.semanticBounds.bottomCenter).dy || event.position.dy > bottomBox.localToGlobal(bottomBox.semanticBounds.topCenter).dy) {
 										Navigator.of(context).pop();
 									}
 								}
