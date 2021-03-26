@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 class BoardSwitcherPage extends StatefulWidget {
 	createState() => _BoardSwitcherPageState();
@@ -58,33 +59,43 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
 								return (b.name.contains(searchString) ? 1 : 0) - (a.name.contains(searchString) ? 1 : 0);
 							});
-							return ListView.builder(
-								shrinkWrap: true,
-								itemBuilder: (context, i) {
-									if (i % 2 == 0) {
-										final board = filteredBoards[i ~/ 2];
+							return SafeArea(
+								child: GridView.count(
+									padding: EdgeInsets.only(top: 4, bottom: 4),
+									crossAxisCount: 3,
+									childAspectRatio: 1.7,
+									mainAxisSpacing: 4,
+									crossAxisSpacing: 4,
+									shrinkWrap: true,
+									children: filteredBoards.map((board) {
 										return GestureDetector(
 											child: Container(
 												padding: EdgeInsets.all(8),
-												child: Center(
-													child: Text(
-														'/${board.name}/ - ${board.title}',
-														textAlign: TextAlign.center
-													)
+												decoration: BoxDecoration(
+													borderRadius: BorderRadius.all(Radius.circular(4)),
+													color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
+												),
+												child: Column(
+													mainAxisAlignment: MainAxisAlignment.center,
+													crossAxisAlignment: CrossAxisAlignment.center,
+													children: [
+														Text(
+															'/${board.name}/',
+															style: TextStyle(
+																fontSize: 24
+															)
+														),
+														SizedBox(height: 8),
+														AutoSizeText('${board.title}', maxLines: 1)
+													]
 												)
 											),
 											onTap: () {
 												Navigator.of(context).pop(board.name);
 											}
 										);
-									}
-									else {
-										return Divider(
-											height: 0
-										);
-									}
-								},
-								itemCount: (filteredBoards.length * 2) - 1
+									}).toList()
+								)
 							);
 						}
 						else if (boards.hasError) {
