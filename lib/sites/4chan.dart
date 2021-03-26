@@ -89,20 +89,22 @@ class Site4Chan implements ImageboardSite {
 			name: data['name'] ?? '',
 			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
 			id: data['no'],
-			attachment: (data['filename'] != null) ? _makeAttachment(board, data) : null,
+			attachment: _makeAttachment(board, data),
 			span: PostNodeSpan(_makeSpans(data['com'] ?? ''))
 		);
 
 		return p;
 	}
-	Attachment _makeAttachment(String board, dynamic data) {
-		return Attachment(
-			id: data['tim'],
-			type: data['ext'] == '.webm' ? AttachmentType.WEBM : AttachmentType.Image,
-			filename: (data['filename'] ?? '') + (data['ext'] ?? ''),
-			ext: data['ext'],
-			board: board
-		);
+	Attachment? _makeAttachment(String board, dynamic data) {
+		if (data['tim'] != null) {
+			return Attachment(
+				id: data['tim'],
+				type: data['ext'] == '.webm' ? AttachmentType.WEBM : AttachmentType.Image,
+				filename: (data['filename'] ?? '') + (data['ext'] ?? ''),
+				ext: data['ext'],
+				board: board
+			);
+		}
 	}
 	Uri getAttachmentUrl(Attachment attachment) {
 		if (attachment.providerId == null) {
