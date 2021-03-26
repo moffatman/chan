@@ -25,11 +25,29 @@ class PostsPage extends StatefulWidget {
 
 class _PostsPageState extends State<PostsPage> {
 	late final ScrollController _controller;
+	final GlobalKey _topSpacerKey = GlobalKey();
+	final GlobalKey _bottomSpacerKey = GlobalKey();
+	late double _scrollStopPosition;
+	Duration? _pointerDownTime;
 
 	@override
 	void initState() {
 		super.initState();
-		_controller = ScrollController(initialScrollOffset: -150.0 - 100.0 * (widget.postsIdsToShow.length - 1));
+		_scrollStopPosition = -150.0 - 100.0 * (widget.postsIdsToShow.length - 1);
+		_controller = ScrollController(initialScrollOffset: _scrollStopPosition);
+		_controller.addListener(_onScrollUpdate);
+	}
+
+	// To fix behavior when stopping the scroll-in with tap event
+	void _onScrollUpdate() {
+		if (_controller.position.pixels > _scrollStopPosition) {
+			_scrollStopPosition = _controller.position.pixels;
+			// Stop when coming to intial rest (since start position is largely negative)
+			if (_scrollStopPosition > -2) {
+				_scrollStopPosition = 0;
+				_controller.removeListener(_onScrollUpdate);
+			}
+		}
 	}
 
 	@override
@@ -43,11 +61,25 @@ class _PostsPageState extends State<PostsPage> {
 				),
 				SafeArea(
 					child: Listener(
+						onPointerDown: (event) {
+							_pointerDownTime = event.timeStamp;
+						},
 						onPointerUp: (event) {
 							final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
 							final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
-							if (max(overscrollTop, overscrollBottom) > 50) {
+							if (max(overscrollTop, overscrollBottom) > 50 - _scrollStopPosition) {
 								Navigator.of(context).pop();
+							}
+							else if (_pointerDownTime != null) {
+								// Simulate onTap for the Spacers which fill the transparent space
+								// It's done here rather than using GestureDetector so it works during scroll-in
+								if ((event.timeStamp - _pointerDownTime!).inMilliseconds < 125) {
+									final RenderBox topBox = _topSpacerKey.currentContext!.findRenderObject()! as RenderBox;
+									final RenderBox bottomBox = _bottomSpacerKey.currentContext!.findRenderObject()! as RenderBox;
+									if (event.position.dy < topBox.semanticBounds.bottom || event.position.dy > bottomBox.semanticBounds.top) {
+										Navigator.of(context).pop();
+									}
+								}
 							}
 						},
 						child: MultiProvider(
@@ -62,22 +94,30 @@ class _PostsPageState extends State<PostsPage> {
 									SliverFillRemaining(
 										hasScrollBody: false,
 										child: Column(
-											mainAxisSize: MainAxisSize.max,
-											mainAxisAlignment: MainAxisAlignment.center,
-											children: replies.map((reply) {
-												return Provider.value(
-													value: reply,
-													child: PostRow(
-														onThumbnailTap: (attachment, {Object? tag}) {
-															showGallery(
-																context: context,
-																attachments: [attachment],
-																semanticParentIds: widget.parentIds
-															);
-														}
-													)
-												);
-											}).toList()
+											children: [
+												Flexible(
+													key: _topSpacerKey,
+													child: Container()
+												),
+												...replies.map((reply) {
+													return Provider.value(
+														value: reply,
+														child: PostRow(
+															onThumbnailTap: (attachment, {Object? tag}) {
+																showGallery(
+																	context: context,
+																	attachments: [attachment],
+																	semanticParentIds: widget.parentIds
+																);
+															}
+														)
+													);
+												}).toList(),
+												Flexible(
+													key: _bottomSpacerKey,
+													child: Container()
+												)
+											]
 										)
 									)
 								]
