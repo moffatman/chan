@@ -28,6 +28,7 @@ class PostRow extends StatelessWidget {
 		final threadPosts = context.watch<List<Post>>();
 		final parentIds = context.watchOrNull<ExpandingPostZone>()?.parentIds ?? [];
 		final randomHeroTag = Random().nextDouble().toString();
+		final settings = context.watch<Settings>();
 		return Container(
 			padding: EdgeInsets.all(8),
 			decoration: BoxDecoration(
@@ -55,21 +56,7 @@ class PostRow extends StatelessWidget {
 											TextSpan(
 												text: formatTime(post.time)
 											),
-											if (context.watch<Settings>().useTouchLayout && post.replyIds.isNotEmpty) TextSpan(
-												text: post.replyIds.length == 1 ? "1 reply" : "${post.replyIds.length} replies",
-												style: TextStyle(
-													color: Colors.red,
-													fontWeight: FontWeight.bold
-												),
-												recognizer: TapGestureRecognizer()..onTap = () {
-													Navigator.of(context).push(
-														TransparentRoute(
-															builder: (ctx) => RepliesPage(threadPosts: threadPosts, repliedToPost: post, parentIds: parentIds)
-														)
-													);
-												}
-											)
-											else ...[
+											if (!settings.useTouchLayout) ...[
 												...post.replyIds.map((id) => PostQuoteLinkSpan(id).build(ctx)),
 												...post.replyIds.map((id) => WidgetSpan(
 													child: ExpandingPost(id)
@@ -82,36 +69,93 @@ class PostRow extends StatelessWidget {
 							)
 						)
 					),
-					Row(
-						crossAxisAlignment: CrossAxisAlignment.start,
-						mainAxisAlignment: MainAxisAlignment.start,
-						mainAxisSize: MainAxisSize.max,
-						children: [
-							post.attachment == null ? SizedBox(width: 0, height: 0) : GestureDetector(
-								child: AttachmentThumbnail(
-									attachment: post.attachment!,
-									hero: AttachmentSemanticLocation(
-										attachment: post.attachment!,
-										semanticParents: parentIds
-									)
+					IntrinsicHeight(
+						child: Row(
+							crossAxisAlignment: CrossAxisAlignment.stretch,
+							mainAxisAlignment: MainAxisAlignment.start,
+							mainAxisSize: MainAxisSize.max,
+							children: [
+								if (post.attachment != null) Column(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										GestureDetector(
+											child: AttachmentThumbnail(
+												attachment: post.attachment!,
+												hero: AttachmentSemanticLocation(
+													attachment: post.attachment!,
+													semanticParents: parentIds
+												)
+											),
+											onTap: () {
+												onThumbnailTap?.call(post.attachment!, tag: randomHeroTag);
+											}
+										),
+									]
 								),
-								onTap: () {
-									onThumbnailTap?.call(post.attachment!, tag: randomHeroTag);
-								}
-							),
-							Expanded(
-								child: Container(
-									padding: EdgeInsets.all(8),
-									child: ChangeNotifierProvider<ExpandingPostZone>(
-										create: (_) => ExpandingPostZone(parentIds.followedBy([post.id]).toList()),
-										child: Builder(
-											builder: (ctx) => Text.rich(post.span.build(ctx))
+								Expanded(
+									child: Container(
+										padding: EdgeInsets.all(8),
+										child: Stack(
+											fit: StackFit.passthrough,
+											children: [
+												ChangeNotifierProvider<ExpandingPostZone>(
+													create: (_) => ExpandingPostZone(parentIds.followedBy([post.id]).toList()),
+													child: Builder(
+														builder: (ctx) => Text.rich(
+															TextSpan(
+																children: [
+																	post.span.build(ctx),
+																	// Placeholder to guarantee the stacked reply button is not on top of text
+																	if (settings.useTouchLayout && post.replyIds.isNotEmpty) TextSpan(
+																		text: List.filled(post.replyIds.length.toString().length + 3, '1').join(),
+																		style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor)
+																	)
+																]
+															)
+														)
+													)
+												),
+												if (settings.useTouchLayout && post.replyIds.isNotEmpty) Positioned.fill(
+													child: Align(
+														alignment: Alignment.bottomRight,
+														child: CupertinoButton(
+															alignment: Alignment.bottomRight,
+															padding: EdgeInsets.zero,
+															child: Row(
+																mainAxisSize: MainAxisSize.min,
+																children: [
+																	Icon(
+																		Icons.reply_rounded,
+																		color: Colors.red,
+																		size: 14
+																	),
+																	SizedBox(width: 4),
+																	Text(
+																		post.replyIds.length.toString(),
+																		style: TextStyle(
+																			color: Colors.red,
+																			fontWeight: FontWeight.bold,
+																		)
+																	)
+																]
+															),
+															onPressed: () {
+																Navigator.of(context).push(
+																	TransparentRoute(
+																		builder: (ctx) => RepliesPage(threadPosts: threadPosts, repliedToPost: post, parentIds: parentIds)
+																	)
+																);
+															}
+														)
+													)
+												)
+											]
 										)
 									)
 								)
-							)
-						]
-					),
+							]
+						)
+					)
 				]
 			)
 		);

@@ -29,7 +29,7 @@ class _RepliesPageState extends State<RepliesPage> {
 	@override
 	void initState() {
 		super.initState();
-		_controller = ScrollController(initialScrollOffset: 150.0 + 100.0 * (widget.repliedToPost.replyIds.length - 1));
+		_controller = ScrollController(initialScrollOffset: -150.0 - 100.0 * (widget.repliedToPost.replyIds.length - 1));
 	}
 
 	@override
@@ -56,28 +56,32 @@ class _RepliesPageState extends State<RepliesPage> {
 								Provider.value(value: widget.threadPosts),
 								ChangeNotifierProvider(create: (_) => ExpandingPostZone(newParentIds))
 							],
-							child: SingleChildScrollView(
+							child: CustomScrollView(
 								controller: _controller,
-								reverse: true,
 								physics: AlwaysScrollableScrollPhysics(),
-								child: Column(
-									mainAxisSize: MainAxisSize.max,
-									mainAxisAlignment: MainAxisAlignment.end,
-									children: replies.map((reply) {
-										return Provider.value(
-											value: reply,
-											child: PostRow(
-												onThumbnailTap: (attachment, {Object? tag}) {
-													showGallery(
-														context: context,
-														attachments: [attachment],
-														semanticParentIds: newParentIds
-													);
-												}
-											)
-										);
-									}).toList()
-								)
+								slivers: [
+									SliverFillRemaining(
+										hasScrollBody: false,
+										child: Column(
+											mainAxisSize: MainAxisSize.max,
+											mainAxisAlignment: MainAxisAlignment.center,
+											children: replies.map((reply) {
+												return Provider.value(
+													value: reply,
+													child: PostRow(
+														onThumbnailTap: (attachment, {Object? tag}) {
+															showGallery(
+																context: context,
+																attachments: [attachment],
+																semanticParentIds: newParentIds
+															);
+														}
+													)
+												);
+											}).toList()
+										)
+									)
+								]
 							)
 						)
 					)
