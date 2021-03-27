@@ -2,7 +2,6 @@ import 'package:chan/services/settings.dart';
 import 'package:cupertino_back_gesture/cupertino_back_gesture.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:http/io_client.dart';
 import 'sites/imageboard_site.dart';
 import 'sites/4chan.dart';
 import 'pages/tab.dart';
@@ -19,10 +18,12 @@ class ChanApp extends StatelessWidget {
 				providers: [
 					ChangeNotifierProvider<Settings>(create: (_) => Settings()),
 					Provider<ImageboardSite>(create: (_) => Site4Chan(
-						apiUrl: 'https://a.4cdn.org',
-						imageUrl: 'https://i.4cdn.org',
+						baseUrl: 'boards.4chan.org',
+						sysUrl: 'sys.4chan.org',
+						apiUrl: 'a.4cdn.org',
+						imageUrl: 'i.4cdn.org',
 						name: '4chan',
-						client: IOClient()
+						captchaKey: '6Ldp2bsSAAAAAAJ5uyx_lx34lJeEpTLVkP5k04qc'
 					))
 				],
 				child: SettingsSystemListener(

@@ -3,7 +3,9 @@ import 'package:chan/pages/posts.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/post_expander.dart';
+import 'package:chan/widgets/reply_box.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'package:chan/models/post.dart';
@@ -50,7 +52,10 @@ class PostRow extends StatelessWidget {
 											),
 											TextSpan(
 												text: post.id.toString(),
-												style: TextStyle(color: Colors.grey)
+												style: TextStyle(color: Colors.grey),
+												recognizer: TapGestureRecognizer()..onTap = () {
+													replyBoxKey.currentState?.onTapPostId(post.id);
+												}
 											),
 											TextSpan(
 												text: formatTime(post.time)

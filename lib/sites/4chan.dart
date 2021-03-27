@@ -1,8 +1,12 @@
+import 'dart:io';
+import 'dart:math';
+
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 import 'package:html_unescape/html_unescape_small.dart';
+import 'package:http/io_client.dart';
 import 'package:linkify/linkify.dart';
 
 import 'imageboard_site.dart';
@@ -13,8 +17,11 @@ import 'package:chan/models/post_element.dart';
 
 class Site4Chan implements ImageboardSite {
 	final String name;
+	final String baseUrl;
+	final String sysUrl;
 	final String apiUrl;
 	final String imageUrl;
+	final String captchaKey;
 	final http.Client client;
 	final Map<String, ImageboardSite> archives;
 	List<ImageboardBoard>? _boards;
@@ -109,7 +116,7 @@ class Site4Chan implements ImageboardSite {
 	}
 	Uri getAttachmentUrl(Attachment attachment) {
 		if (attachment.providerId == null) {
-			return Uri.parse('https://i.4cdn.org/${attachment.board}/${attachment.id}${attachment.ext}');
+			return Uri.https(imageUrl, '/${attachment.board}/${attachment.id}${attachment.ext}');
 		}
 		else {
 			return archives[attachment.providerId]!.getAttachmentUrl(attachment);
@@ -120,14 +127,14 @@ class Site4Chan implements ImageboardSite {
 	}
 	Uri getAttachmentThumbnailUrl(Attachment attachment) {
 		if (attachment.providerId == null) {
-			return Uri.parse('https://i.4cdn.org/${attachment.board}/${attachment.id}s.jpg');
+			return Uri.https(imageUrl, '/${attachment.board}/${attachment.id}s.jpg');
 		}
 		else {
 			return archives[attachment.providerId]!.getAttachmentThumbnailUrl(attachment);
 		}
 	}
 	Future<Thread> getThread(String board, int id) async {
-		final response = await client.get(Uri.parse(apiUrl + '/' + board + '/thread/' + id.toString() + '.json'));
+		final response = await client.get(Uri.https(apiUrl,'/$board/thread/$id.json'));
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
 				return Future.error(ThreadNotFoundException(board, id));
@@ -157,7 +164,7 @@ class Site4Chan implements ImageboardSite {
 	}
 
 	Future<List<Thread>> getCatalog(String board) async {
-		final response = await client.get(Uri.parse(apiUrl + '/' + board + '/catalog.json'));
+		final response = await client.get(Uri.https(apiUrl, '/$board/catalog.json'));
 		final data = json.decode(response.body);
 		final List<Thread> threads = [];
 		for (final page in data) {
@@ -183,7 +190,7 @@ class Site4Chan implements ImageboardSite {
 		return threads;
 	}
 	Future<List<ImageboardBoard>> _getBoards() async {
-		final response = await client.get(Uri.parse(apiUrl + '/boards.json'));
+		final response = await client.get(Uri.https(apiUrl, '/boards.json'));
 		final data = json.decode(response.body);
 		return (data['boards'] as List<dynamic>).map((board) {
 			return ImageboardBoard(
@@ -200,11 +207,59 @@ class Site4Chan implements ImageboardSite {
 		return _boards!;
 	}
 
+	CaptchaRequest getCaptchaRequest() {
+		return CaptchaRequest(key: captchaKey, sourceUrl: 'https://' + baseUrl);
+	}
+
+	Future<PostReceipt> postReply({
+		required String board,
+		required int threadId,
+		String name = '',
+		String options = '',
+		required String text,
+		required String captchaKey,
+		File? file
+	}) async {
+		final random = Random();
+		final password = List.generate(64, (i) => random.nextInt(16).toRadixString(16)).join();
+		final request = http.MultipartRequest('POST', Uri.https(sysUrl, '/$board/post'));
+		request.fields.addAll({
+			'resto': threadId.toString(),
+			'com': text,
+			'mode': 'regist',
+			'pwd': password,
+			'g-recaptcha-response': captchaKey
+		});
+		final response = await client.send(request);
+		final body = await response.stream.bytesToString();
+		final document = parse(body);
+		final metaTag = document.querySelector('meta[http-equiv="refresh"]');
+		if (metaTag != null) {
+			return PostReceipt(
+				password: password,
+				id: int.parse(metaTag.attributes['content']!.split('#p').last)
+			);
+		}
+		else {
+			final errSpan = document.querySelector('#errmsg');
+			if (errSpan != null) {
+				throw PostFailedException(errSpan.text);
+			}
+			else {
+				print(body);
+				throw PostFailedException('Unknown error');
+			}
+		}
+	}
+
 	Site4Chan({
+		required this.baseUrl,
+		required this.sysUrl,
 		required this.apiUrl,
 		required this.imageUrl,
 		required this.name,
-		required this.client,
+		http.Client? client,
+		required this.captchaKey,
 		this.archives = const {}
-	});
+	}) : this.client = client ?? IOClient();
 }

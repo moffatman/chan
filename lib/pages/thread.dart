@@ -3,6 +3,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/provider_list.dart';
+import 'package:chan/widgets/reply_box.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -29,6 +30,7 @@ class ThreadPage extends StatefulWidget {
 
 class _ThreadPageState extends State<ThreadPage> {
 	Thread? thread;
+	bool showReplyBox = false;
 
 	FocusNode _focusNode = FocusNode();
 	ProviderListController<Post> _listController = ProviderListController();
@@ -51,9 +53,24 @@ class _ThreadPageState extends State<ThreadPage> {
 	@override
 	Widget build(BuildContext context) {
 		final title = thread?.title ?? '/${widget.board}/${widget.id}';
+		if (showReplyBox) {
+			_focusNode.unfocus();
+		}
+		else {
+			_focusNode.requestFocus();
+		}
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
-				middle: Text(title)
+				middle: Text(title),
+				trailing: CupertinoButton(
+					padding: EdgeInsets.zero,
+					child: Icon(Icons.reply),
+					onPressed: () {
+						setState(() {
+							showReplyBox = !showReplyBox;
+						});
+					}
+				)
 			),
 			child: RawKeyboardListener(
 				autofocus: true,
@@ -68,46 +85,74 @@ class _ThreadPageState extends State<ThreadPage> {
 						}
 					}
 				},
-				child: ProviderList<Post>(
-					id: '/${widget.board}/${widget.id}',
-					listUpdater: () async {
-						final _thread = await context.read<ImageboardSite>().getThread(widget.board, widget.id);
-						if (thread == null && widget.initialPostId != null) {
-							Future.delayed(Duration(milliseconds: 50), () => _listController.scrollToFirstMatching((post) => post.id == widget.initialPostId));
-						}
-						setState(() {
-							thread = _thread;
-						});
-						return _thread.posts;
-					},
-					controller: _listController,
-					builder: (context, post) {
-						return Provider.value(
-							value: post,
-							child: PostRow(
-								onThumbnailTap: (attachment, {Object? tag}) {
-									_showGallery(initialAttachment: attachment);
+				child: Stack(
+					children: [
+						ProviderList<Post>(
+							id: '/${widget.board}/${widget.id}',
+							listUpdater: () async {
+								final _thread = await context.read<ImageboardSite>().getThread(widget.board, widget.id);
+								if (thread == null && widget.initialPostId != null) {
+									Future.delayed(Duration(milliseconds: 50), () => _listController.scrollToFirstMatching((post) => post.id == widget.initialPostId));
 								}
-							)
-						);
-					},
-					searchBuilder: (context, post, resetPage) {
-						return GestureDetector(
-							child: Provider.value(
-								value: post,
-								child: PostRow(
-									onThumbnailTap: (attachment, {Object? tag}) {
-										_showGallery(initialAttachment: attachment);
+								setState(() {
+									thread = _thread;
+								});
+								return _thread.posts;
+							},
+							controller: _listController,
+							builder: (context, post) {
+								return Provider.value(
+									value: post,
+									child: PostRow(
+										onThumbnailTap: (attachment, {Object? tag}) {
+											_showGallery(initialAttachment: attachment);
+										}
+									)
+								);
+							},
+							searchBuilder: (context, post, resetPage) {
+								return GestureDetector(
+									child: Provider.value(
+										value: post,
+										child: PostRow(
+											onThumbnailTap: (attachment, {Object? tag}) {
+												_showGallery(initialAttachment: attachment);
+											}
+										)
+									),
+									onTap: () {
+										resetPage();
+										Future.delayed(Duration(milliseconds: 250), () => _listController.scrollToFirstMatching((val) => val == post));
 									}
-								)
-							),
-							onTap: () {
-								resetPage();
-								Future.delayed(Duration(milliseconds: 250), () => _listController.scrollToFirstMatching((val) => val == post));
-							}
-						);
-					},
-					searchHint: 'Search in thread'
+								);
+							},
+							searchHint: 'Search in thread'
+						),
+						Visibility(
+							visible: showReplyBox,
+							maintainState: true,
+							child: Column(
+								mainAxisAlignment: MainAxisAlignment.end,
+								children: [
+									ReplyBox(
+										key: replyBoxKey,
+										board: widget.board,
+										threadId: widget.id,
+										onReplyPosted: (receipt) {
+											setState(() {
+												showReplyBox = false;
+											});
+										},
+										onRequestFocus: () {
+											setState(() {
+												showReplyBox = true;
+											});
+										}
+									)
+								]
+							)
+						)
+					]
 				)
 			)
 		);

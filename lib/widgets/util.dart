@@ -13,13 +13,13 @@ extension NoThrowingProvider on BuildContext {
 	}
 }
 
-void alertError(BuildContext context, Error error) {
+void alertError(BuildContext context, String error) {
   	showCupertinoDialog(
 		context: context,
 		builder: (_context) {
 			return CupertinoAlertDialog(
 				title: const Text('Error'),
-				content: Text(error.toString()),
+				content: Text(error),
 				actions: [
 					CupertinoDialogAction(
 						child: const Text('OK'),
