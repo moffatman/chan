@@ -113,7 +113,8 @@ class ProviderListState<T extends Filterable> extends State<ProviderList<T>> {
 										else {
 											return Divider(
 												thickness: 1,
-												height: 0
+												height: 0,
+												color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
 											);
 										}
 									},
@@ -135,7 +136,8 @@ class ProviderListState<T extends Filterable> extends State<ProviderList<T>> {
 										else {
 											return Divider(
 												thickness: 1,
-												height: 0
+												height: 0,
+												color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
 											);
 										}
 									}),

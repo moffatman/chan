@@ -66,7 +66,8 @@ class _ImageboardTabState extends State<ImageboardTab> {
 						)
 					),
 					VerticalDivider(
-						width: 0
+						width: 0,
+						color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
 					),
 					Flexible(
 						flex: 3,
