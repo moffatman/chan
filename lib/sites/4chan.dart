@@ -165,6 +165,14 @@ class Site4Chan implements ImageboardSite {
 
 	Future<List<Thread>> getCatalog(String board) async {
 		final response = await client.get(Uri.https(apiUrl, '/$board/catalog.json'));
+		if (response.statusCode != 200) {
+			if (response.statusCode == 404) {
+				return Future.error(BoardNotFoundException(board));
+			}
+			else {
+				return Future.error(HTTPStatusException(response.statusCode));
+			}
+		}
 		final data = json.decode(response.body);
 		final List<Thread> threads = [];
 		for (final page in data) {
