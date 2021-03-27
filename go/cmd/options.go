@@ -7,7 +7,7 @@ import (
 )
 
 var options = []flutter.Option{
-	flutter.WindowInitialDimensions(640, 640),
+	flutter.WindowInitialDimensions(1024, 768),
 	flutter.AddPlugin(&video_player.VideoPlayerPlugin{}),
 	flutter.AddPlugin(&path_provider.PathProviderPlugin{
 		VendorName:      "moffatman",
