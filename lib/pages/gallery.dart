@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/webm.dart';
@@ -285,7 +286,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				child: CupertinoPageScaffold(
 					backgroundColor: Colors.transparent,
 					navigationBar: showChrome ? CupertinoNavigationBar(
-						middle: Text(currentAttachment.filename),
+						middle: AutoSizeText(currentAttachment.filename),
 						backgroundColor: Colors.black38,
 						trailing: Row(
 							mainAxisSize: MainAxisSize.min,

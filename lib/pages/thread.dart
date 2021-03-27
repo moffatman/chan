@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
@@ -61,7 +62,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
-				middle: Text(title),
+				middle: AutoSizeText(title),
 				trailing: CupertinoButton(
 					padding: EdgeInsets.zero,
 					child: Icon(Icons.reply),
