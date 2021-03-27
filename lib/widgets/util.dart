@@ -80,3 +80,27 @@ class TransparentRoute<T> extends PageRoute<T> {
 		);
 	}
 }
+
+class ErrorMessageCard extends StatelessWidget {
+	final String message;
+	ErrorMessageCard(this.message);
+
+	@override
+	Widget build(BuildContext context) {
+		return Container(
+				padding: EdgeInsets.all(16),
+				decoration: BoxDecoration(
+					color: CupertinoTheme.of(context).primaryColor,
+					borderRadius: BorderRadius.all(Radius.circular(8))
+				),
+				child: Column(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						Icon(Icons.error, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+						SizedBox(height: 8),
+						Text(message, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor))
+					]
+				)
+		);
+	}
+}

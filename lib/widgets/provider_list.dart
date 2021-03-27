@@ -1,4 +1,5 @@
 import 'package:chan/widgets/data_stream_provider.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -174,9 +175,18 @@ class ProviderListState<T extends Filterable> extends State<ProviderList<T>> {
 					]
 				);
 			},
-			errorBuilder: (context, exception) {
+			errorBuilder: (context, exception, requestUpdate) {
 				return Center(
-					child: Text(exception.toString())
+					child: Column(
+						mainAxisAlignment: MainAxisAlignment.center,
+						children: [
+							ErrorMessageCard(exception.toString()),
+							CupertinoButton(
+								child: Text('Retry'),
+								onPressed: requestUpdate
+							)
+						]
+					)
 				);
 			}
 		);

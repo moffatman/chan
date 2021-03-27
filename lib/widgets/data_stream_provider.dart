@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 
 typedef DataStreamBuilderFunction<T> = Widget Function(BuildContext context, T value, Future<void> Function() requestUpdate);
-typedef DataStreamErrorBuilderFunction = Widget Function(BuildContext context, String errorMessage);
+typedef DataStreamErrorBuilderFunction = Widget Function(BuildContext context, String errorMessage, Future<void> Function() requestUpdate);
 typedef DataStreamPlaceholderBuilderFunction<T> = Widget Function(BuildContext context, T value);
 
 class DataProvider<T> extends StatefulWidget {
@@ -74,7 +74,7 @@ class _DataProviderState<T> extends State<DataProvider<T>> {
 
 	@override
 	Widget build(BuildContext context) {
-		return (errorMessage != null) ? widget.errorBuilder(context, errorMessage!) : (realValuePresent ? Provider.value(
+		return (errorMessage != null) ? widget.errorBuilder(context, errorMessage!, update) : (realValuePresent ? Provider.value(
 			value: value,
 			child: widget.builder(context, value, update)
 		) : widget.placeholderBuilder(context, value));

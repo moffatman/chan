@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/viewers/image.dart';
 import 'package:chan/widgets/viewers/webm.dart';
 import 'package:flutter/cupertino.dart';
@@ -43,20 +44,7 @@ class AttachmentViewer extends StatelessWidget {
 					isThumbnail: !(status is AttachmentImageUrlAvailableStatus)
 				),
 				if (status is AttachmentUnavailableStatus) Center(
-					child: Container(
-						padding: EdgeInsets.all(16),
-						decoration: BoxDecoration(
-							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-							borderRadius: BorderRadius.all(Radius.circular(8))
-						),
-						child: Column(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								Icon(Icons.error),
-								Text((status as AttachmentUnavailableStatus).cause, style: TextStyle(color: CupertinoTheme.of(context).primaryColor))
-							]
-						)
-					)
+					child: ErrorMessageCard((status as AttachmentUnavailableStatus).cause)
 				)
 				else if (status is AttachmentLoadingStatus)
 					Center(
