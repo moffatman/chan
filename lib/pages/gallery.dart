@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -89,6 +90,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	bool rotatedViewer = false;
 	AttachmentStatus lastDifferentCurrentStatus = AttachmentStatus();
 	final BehaviorSubject<Null> _scrollCoalescer = BehaviorSubject();
+	StreamSubscription<WEBMStatus>? webmSubscription;
 
 	@override
 	void initState() {
@@ -169,7 +171,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				statuses[attachment]!.add(AttachmentLoadingStatus());
 				final url = await _getGoodUrl(attachment);
 				final webm = WEBM(url);
-				webm.status.listen((webmStatus) async {
+				webmSubscription = webm.status.listen((webmStatus) async {
 					if (webmStatus is WEBMErrorStatus) {
 						statuses[attachment]!.add(AttachmentUnavailableStatus(webmStatus.errorMessage));
 					}
@@ -450,6 +452,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	void dispose() {
 		super.dispose();
 		thumbnailScrollController.dispose();
+		webmSubscription?.cancel();
 		for (final status in statuses.values) {
 			if (status.value is AttachmentVideoAvailableStatus) {
 				(status.value as AttachmentVideoAvailableStatus).controller.dispose();
