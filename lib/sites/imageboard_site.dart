@@ -25,7 +25,7 @@ class BoardNotFoundException implements Exception {
 	String board;
 	BoardNotFoundException(this.board);
 	@override
-	String toString() => 'Board not found: $board';
+	String toString() => 'Board not found: /$board/';
 }
 
 class HTTPStatusException implements Exception {
