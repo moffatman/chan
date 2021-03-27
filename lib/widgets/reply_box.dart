@@ -26,10 +26,12 @@ class ReplyBox extends StatefulWidget {
 
 class _ReplyBoxState extends State<ReplyBox> {
 	final _textFieldController = TextEditingController();
+	final _focusNode = FocusNode();
 	bool loading = false;
 
 	void onTapPostId(int id) {
 		widget.onRequestFocus?.call();
+		_focusNode.requestFocus();
 		int currentPos = _textFieldController.selection.base.offset;
 		if (currentPos < 0) {
 			currentPos = _textFieldController.text.length;
@@ -45,6 +47,10 @@ class _ReplyBoxState extends State<ReplyBox> {
 			),
 			text: _textFieldController.text.substring(0, currentPos) + insertedText + _textFieldController.text.substring(currentPos)
 		);
+	}
+
+	void shouldRequestFocusNow() {
+		_focusNode.requestFocus();
 	}
 
 	@override
@@ -66,6 +72,8 @@ class _ReplyBoxState extends State<ReplyBox> {
 							controller: _textFieldController,
 							maxLines: null,
 							minLines: 4,
+							autofocus: true,
+							focusNode: _focusNode
 						)
 					),
 					Column(

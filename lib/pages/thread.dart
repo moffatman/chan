@@ -33,8 +33,21 @@ class _ThreadPageState extends State<ThreadPage> {
 	Thread? thread;
 	bool showReplyBox = false;
 
-	FocusNode _focusNode = FocusNode();
-	ProviderListController<Post> _listController = ProviderListController();
+	final _focusNode = FocusNode();
+	final _listController = ProviderListController<Post>();
+
+	@override
+	void initState() {
+		super.initState();
+		_focusNode.addListener(() {
+			if (_focusNode.hasFocus) {
+				print('Thread has focus');
+			}
+			else {
+				print('Thread does not have focus');
+			}
+		});
+	}
 
 	void _showGallery({bool initiallyShowChrome = true, Attachment? initialAttachment}) {
 		showGallery(
@@ -54,12 +67,6 @@ class _ThreadPageState extends State<ThreadPage> {
 	@override
 	Widget build(BuildContext context) {
 		final title = thread?.title ?? '/${widget.board}/${widget.id}';
-		if (showReplyBox) {
-			_focusNode.unfocus();
-		}
-		else {
-			_focusNode.requestFocus();
-		}
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
 				middle: AutoSizeText(title),
@@ -69,26 +76,33 @@ class _ThreadPageState extends State<ThreadPage> {
 					onPressed: () {
 						setState(() {
 							showReplyBox = !showReplyBox;
+							if (showReplyBox) {
+								replyBoxKey.currentState!.shouldRequestFocusNow();
+							}
+							else {
+								_focusNode.requestFocus();
+							}
 						});
 					}
 				)
 			),
-			child: RawKeyboardListener(
-				autofocus: true,
-				focusNode: _focusNode,
-				onKey: (event) {
-					if (event is RawKeyDownEvent) {
-						if (event.logicalKey == LogicalKeyboardKey.keyG) {
-							final nextPostWithImage = _listController.findNextMatch((post) => post.attachment != null);
-							if (nextPostWithImage != null) {
-								_showGallery(initialAttachment: nextPostWithImage.attachment);
+			child: Stack(
+				children: [
+					RawKeyboardListener(
+						autofocus: true,
+						focusNode: _focusNode,
+						onKey: (event) {
+							print(event);
+							if (event is RawKeyDownEvent) {
+								if (event.logicalKey == LogicalKeyboardKey.keyG) {
+									final nextPostWithImage = _listController.findNextMatch((post) => post.attachment != null);
+									if (nextPostWithImage != null) {
+										_showGallery(initialAttachment: nextPostWithImage.attachment);
+									}
+								}
 							}
-						}
-					}
-				},
-				child: Stack(
-					children: [
-						ProviderList<Post>(
+						},
+						child: ProviderList<Post>(
 							id: '/${widget.board}/${widget.id}',
 							listUpdater: () async {
 								final _thread = await context.read<ImageboardSite>().getThread(widget.board, widget.id);
@@ -128,33 +142,33 @@ class _ThreadPageState extends State<ThreadPage> {
 								);
 							},
 							searchHint: 'Search in thread'
-						),
-						Visibility(
-							visible: showReplyBox,
-							maintainState: true,
-							child: Column(
-								mainAxisAlignment: MainAxisAlignment.end,
-								children: [
-									ReplyBox(
-										key: replyBoxKey,
-										board: widget.board,
-										threadId: widget.id,
-										onReplyPosted: (receipt) {
-											setState(() {
-												showReplyBox = false;
-											});
-										},
-										onRequestFocus: () {
-											setState(() {
-												showReplyBox = true;
-											});
-										}
-									)
-								]
-							)
 						)
-					]
-				)
+					),
+					Visibility(
+						visible: showReplyBox,
+						maintainState: true,
+						child: Column(
+							mainAxisAlignment: MainAxisAlignment.end,
+							children: [
+								ReplyBox(
+									key: replyBoxKey,
+									board: widget.board,
+									threadId: widget.id,
+									onReplyPosted: (receipt) {
+										setState(() {
+											showReplyBox = false;
+										});
+									},
+									onRequestFocus: () {
+										setState(() {
+											showReplyBox = true;
+										});
+									}
+								)
+							]
+						)
+					)
+				]
 			)
 		);
 	}
