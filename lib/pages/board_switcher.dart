@@ -37,19 +37,19 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 					}
 				)
 			),
-			backgroundColor: Colors.transparent,
-			child: Container(
-				decoration: BoxDecoration(
-					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-					border: Border(bottom: BorderSide(width: 0))
-				),
-				child: FutureBuilder<List<ImageboardBoard>>(
-					future: context.watch<ImageboardSite>().getBoards(),
-					builder: (context, boards) {
-						if (boards.hasData) {
-							final filteredBoards = boards.data!.where((board) {
-								return board.name.toLowerCase().contains(searchString) || board.title.toLowerCase().contains(searchString);
-							}).toList();
+			child: FutureBuilder<List<ImageboardBoard>>(
+				future: context.watch<ImageboardSite>().getBoards(),
+				builder: (context, boards) {
+					if (boards.hasData) {
+						final filteredBoards = boards.data!.where((board) {
+							return board.name.toLowerCase().contains(searchString) || board.title.toLowerCase().contains(searchString);
+						}).toList();
+						if (filteredBoards.isEmpty) {
+							return Center(
+								child: Text('No matching boards')
+							);
+						}
+						else {
 							mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
 								return a.name.length - b.name.length;
 							});
@@ -98,18 +98,18 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								)
 							);
 						}
-						else if (boards.hasError) {
-							return Center(
-								child: Text(boards.error.toString())
-							);
-						}
-						else {
-							return Center(
-								child: CircularProgressIndicator()
-							);
-						}
 					}
-				)
+					else if (boards.hasError) {
+						return Center(
+							child: Text(boards.error.toString())
+						);
+					}
+					else {
+						return Center(
+							child: CircularProgressIndicator()
+						);
+					}
+				}
 			)
 		);
 	}
