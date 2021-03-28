@@ -2,6 +2,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/post_expander.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:flutter/cupertino.dart';
@@ -213,14 +214,16 @@ class PostCrossThreadQuoteLinkSpan extends PostSpan {
 	PostCrossThreadQuoteLinkSpan(this.board, this.threadId, this.postId);
 	build(context, {recognizer, overrideRecognizer = false}) {
 		final showBoard = context.watch<Post>().board != board;
+		final site = context.watch<ImageboardSite>();
 		return TextSpan(
 			text: (showBoard ? '>>/$board/' : '>>') + this.postId.toString() + ' (Cross-thread)',
 			style: TextStyle(
 				color: Colors.red,
 				decoration: TextDecoration.underline
 			),
-			recognizer: (recognizer != null && overrideRecognizer) ? recognizer : (TapGestureRecognizer()..onTap = () {
-				Navigator.of(context).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: this.board, id: this.threadId, initialPostId: this.postId)));
+			recognizer: (recognizer != null && overrideRecognizer) ? recognizer : (TapGestureRecognizer()..onTap = () async {
+				final boards = await site.getBoards();
+				Navigator.of(context).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: boards.firstWhere((b) => b.name == board), id: this.threadId, initialPostId: this.postId)));
 			})
 		);
 	}

@@ -204,7 +204,12 @@ class Site4Chan implements ImageboardSite {
 			return ImageboardBoard(
 				name: board['board'],
 				title: board['title'],
-				isWorksafe: board['ws_board'] == 1
+				isWorksafe: board['ws_board'] == 1,
+				webmAudioAllowed: board['webm_audio'] == 1,
+				maxCommentCharacters: board['max_comment_chars'],
+				maxImageSizeBytes: board['max_filesize'],
+				maxWebmSizeBytes: board['max_webm_filesize'],
+				maxWebmDurationSeconds: board['max_webm_duration']
 			);
 		}).toList();
 	}

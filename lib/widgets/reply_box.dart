@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 final GlobalKey<_ReplyBoxState> replyBoxKey = GlobalKey();
 
 class ReplyBox extends StatefulWidget {
-	final String board;
+	final ImageboardBoard board;
 	final int threadId;
 	final ValueChanged<PostReceipt> onReplyPosted;
 	final VoidCallback? onRequestFocus;
@@ -28,6 +28,14 @@ class _ReplyBoxState extends State<ReplyBox> {
 	final _textFieldController = TextEditingController();
 	final _focusNode = FocusNode();
 	bool loading = false;
+
+	@override
+	void initState() {
+		super.initState();
+		_textFieldController.addListener(() {
+			setState(() {});
+		});
+	}
 
 	void onTapPostId(int id) {
 		widget.onRequestFocus?.call();
@@ -67,15 +75,35 @@ class _ReplyBoxState extends State<ReplyBox> {
 			child: Row(
 				children: [
 					Expanded(
-						child: CupertinoTextField(
-							enabled: !loading,
-							controller: _textFieldController,
-							maxLines: null,
-							minLines: 4,
-							autofocus: true,
-							focusNode: _focusNode,
-							textCapitalization: TextCapitalization.sentences,
-							keyboardAppearance: CupertinoTheme.of(context).brightness
+						child: IntrinsicHeight(
+							child: Stack(
+								children: [
+									CupertinoTextField(
+										enabled: !loading,
+										controller: _textFieldController,
+										maxLines: null,
+										minLines: 4,
+										autofocus: true,
+										focusNode: _focusNode,
+										textCapitalization: TextCapitalization.sentences,
+										keyboardAppearance: CupertinoTheme.of(context).brightness,
+									),
+									if (widget.board.maxCommentCharacters != null && ((_textFieldController.text.length / widget.board.maxCommentCharacters!) > 0.5)) IgnorePointer(
+										child: Align(
+											alignment: Alignment.bottomRight,
+											child: Container(
+												padding: EdgeInsets.only(bottom: 4, right: 8),
+												child: Text(
+													'${_textFieldController.text.length} / ${widget.board.maxCommentCharacters}',
+													style: TextStyle(
+														color: (_textFieldController.text.length > widget.board.maxCommentCharacters!) ? Colors.red : Colors.grey
+													)
+												)
+											)
+										)
+									)
+								]
+							)
 						)
 					),
 					Column(
@@ -105,7 +133,7 @@ class _ReplyBoxState extends State<ReplyBox> {
 									});
 									try {
 										final receipt = await site.postReply(
-											board: widget.board,
+											board: widget.board.name,
 											threadId: widget.threadId,
 											captchaKey: captchaKey,
 											text: _textFieldController.text

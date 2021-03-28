@@ -14,7 +14,7 @@ import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
 class BoardPage extends StatelessWidget {
 	final ValueChanged<Thread> onThreadSelected;
 	final Thread? selectedThread;
-	final String board;
+	final ImageboardBoard board;
 	final VoidCallback? onHeaderTapped;
 	BoardPage({
 		required this.onThreadSelected,
@@ -33,7 +33,7 @@ class BoardPage extends StatelessWidget {
 					child: Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							Text('/$board/'),
+							Text('/${board.name}/'),
 							Icon(Icons.arrow_drop_down)
 						]
 					)
@@ -47,7 +47,7 @@ class BoardPage extends StatelessWidget {
 				)
 			),
 			child: RefreshableList<Thread>(
-				listUpdater: () => site.getCatalog(board).then((list) {
+				listUpdater: () => site.getCatalog(board.name).then((list) {
 					if (context.read<Settings>().hideStickiedThreads) {
 						return list.where((thread) => !thread.isSticky).toList();
 					}
@@ -55,7 +55,7 @@ class BoardPage extends StatelessWidget {
 						return list;
 					}
 				}),
-				id: '/$board/',
+				id: '/${board.name}/',
 				lazy: true,
 				itemBuilder: (context, thread) {
 					return GestureDetector(

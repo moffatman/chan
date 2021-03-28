@@ -16,7 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class ThreadPage extends StatefulWidget {
-	final String board;
+	final ImageboardBoard board;
 	final int id;
 	final int? initialPostId;
 
@@ -59,7 +59,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 
 	@override
 	Widget build(BuildContext context) {
-		final title = thread?.title ?? '/${widget.board}/${widget.id}';
+		final title = thread?.title ?? '/${widget.board.name}/${widget.id}';
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
 				middle: AutoSizeText(title),
@@ -101,10 +101,10 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 										}
 									},
 									child: RefreshableList<Post>(
-										id: '/${widget.board}/${widget.id}',
+										id: '/${widget.board.name}/${widget.id}',
 										autoUpdateDuration: const Duration(seconds: 60),
 										listUpdater: () async {
-											final _thread = await context.read<ImageboardSite>().getThread(widget.board, widget.id);
+											final _thread = await context.read<ImageboardSite>().getThread(widget.board.name, widget.id);
 											if (thread == null && widget.initialPostId != null) {
 												Future.delayed(Duration(milliseconds: 50), () => _listController.scrollToFirstMatching((post) => post.id == widget.initialPostId));
 											}

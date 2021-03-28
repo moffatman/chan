@@ -58,7 +58,7 @@ class ChanHomePage extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return ImageboardTab(
-			initialBoard: 'tv',
+			initialBoardName: 'tv',
 			isInTabletLayout: MediaQuery.of(context).size.width > 700
 		);
 	}
