@@ -91,7 +91,7 @@ class CaptchaNoJSChallenge {
 	}
 }
 
-class _CaptchaNoJSState extends State<CaptchaNoJS> {
+class _CaptchaNoJSState extends State<CaptchaNoJS> with SingleTickerProviderStateMixin {
 	final http.Client client = IOClient();
 	String? errorMessage;
 	CaptchaNoJSChallenge? challenge;
@@ -263,6 +263,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 							}).expand((e) => [SizedBox(width: 12), e]).skip(1).toList()
 						);
 					}).expand((e) => [SizedBox(height: 12), e]).skip(1).toList(),
+					SizedBox(height: 16),
 					Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
@@ -270,6 +271,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 								child: Text('Refresh'),
 								onPressed: _tryRequestChallenge
 							),
+							SizedBox(width: 32),
 							CupertinoButton(
 								child: Text('Submit'),
 								onPressed: _trySubmitChallenge
@@ -291,10 +293,14 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 		return Container(
 			decoration: BoxDecoration(
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-				borderRadius: BorderRadius.all(Radius.circular(4))
 			),
+			width: double.infinity,
 			padding: EdgeInsets.all(16),
-			child: _build(context)
+			child: AnimatedSize(
+				duration: const Duration(milliseconds: 100),
+				vsync: this,
+				child: _build(context)
+			)
 		);
 	}
 }
