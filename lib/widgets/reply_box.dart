@@ -115,6 +115,7 @@ class _ReplyBoxState extends State<ReplyBox> {
 											loading = false;
 										});
 										print(receipt);
+										_focusNode.unfocus();
 										widget.onReplyPosted(receipt);
 									}
 									catch (e, st) {
