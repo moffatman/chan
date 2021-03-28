@@ -3,7 +3,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/widgets/post_row.dart';
-import 'package:chan/widgets/provider_list.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +34,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	bool showReplyBox = false;
 
 	final _focusNode = FocusNode();
-	final _listController = ProviderListController<Post>();
+	final _listController = RefreshableListController<Post>();
 
 	@override
 	void initState() {
@@ -102,8 +102,9 @@ class _ThreadPageState extends State<ThreadPage> {
 								}
 							}
 						},
-						child: ProviderList<Post>(
+						child: RefreshableList<Post>(
 							id: '/${widget.board}/${widget.id}',
+							autoUpdateDuration: const Duration(seconds: 60),
 							listUpdater: () async {
 								final _thread = await context.read<ImageboardSite>().getThread(widget.board, widget.id);
 								if (thread == null && widget.initialPostId != null) {
@@ -115,7 +116,7 @@ class _ThreadPageState extends State<ThreadPage> {
 								return _thread.posts;
 							},
 							controller: _listController,
-							builder: (context, post) {
+							itemBuilder: (context, post) {
 								return Provider.value(
 									value: post,
 									child: PostRow(
@@ -125,7 +126,7 @@ class _ThreadPageState extends State<ThreadPage> {
 									)
 								);
 							},
-							searchBuilder: (context, post, resetPage) {
+							filteredItemBuilder: (context, post, resetPage) {
 								return GestureDetector(
 									child: Provider.value(
 										value: post,
@@ -141,7 +142,7 @@ class _ThreadPageState extends State<ThreadPage> {
 									}
 								);
 							},
-							searchHint: 'Search in thread'
+							filterHint: 'Search in thread'
 						)
 					),
 					Visibility(

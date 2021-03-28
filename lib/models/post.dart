@@ -1,4 +1,4 @@
-import 'package:chan/widgets/provider_list.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 
 import 'post_element.dart';
 

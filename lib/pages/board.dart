@@ -1,7 +1,7 @@
 import 'package:chan/pages/settings.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/widgets/provider_list.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -46,7 +46,7 @@ class BoardPage extends StatelessWidget {
 					}
 				)
 			),
-			child: ProviderList<Thread>(
+			child: RefreshableList<Thread>(
 				listUpdater: () => site.getCatalog(board).then((list) {
 					if (context.read<Settings>().hideStickiedThreads) {
 						return list.where((thread) => !thread.isSticky).toList();
@@ -57,7 +57,7 @@ class BoardPage extends StatelessWidget {
 				}),
 				id: '/$board/',
 				lazy: true,
-				builder: (context, thread) {
+				itemBuilder: (context, thread) {
 					return GestureDetector(
 						behavior: HitTestBehavior.opaque,
 						child: ThreadRow(
@@ -67,7 +67,7 @@ class BoardPage extends StatelessWidget {
 						onTap: () => onThreadSelected(thread)
 					);
 				},
-				searchHint: 'Search in board'
+				filterHint: 'Search in board'
 			)
 		);
 	}

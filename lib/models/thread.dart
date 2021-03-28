@@ -1,6 +1,6 @@
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
-import 'package:chan/widgets/provider_list.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 
 class Thread implements Filterable {
 	final List<Post> posts;
