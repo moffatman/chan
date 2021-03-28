@@ -73,7 +73,9 @@ class _ReplyBoxState extends State<ReplyBox> {
 							maxLines: null,
 							minLines: 4,
 							autofocus: true,
-							focusNode: _focusNode
+							focusNode: _focusNode,
+							textCapitalization: TextCapitalization.sentences,
+							keyboardAppearance: CupertinoTheme.of(context).brightness
 						)
 					),
 					Column(
