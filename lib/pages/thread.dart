@@ -5,6 +5,7 @@ import 'package:chan/pages/gallery.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -29,7 +30,7 @@ class ThreadPage extends StatefulWidget {
 	createState() => _ThreadPageState();
 }
 
-class _ThreadPageState extends State<ThreadPage> {
+class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	Thread? thread;
 	bool showReplyBox = false;
 
@@ -86,87 +87,90 @@ class _ThreadPageState extends State<ThreadPage> {
 					}
 				)
 			),
-			child: Stack(
+			child: Column(
 				children: [
-					RawKeyboardListener(
-						autofocus: true,
-						focusNode: _focusNode,
-						onKey: (event) {
-							print(event);
-							if (event is RawKeyDownEvent) {
-								if (event.logicalKey == LogicalKeyboardKey.keyG) {
-									final nextPostWithImage = _listController.findNextMatch((post) => post.attachment != null);
-									if (nextPostWithImage != null) {
-										_showGallery(initialAttachment: nextPostWithImage.attachment);
-									}
-								}
-							}
-						},
-						child: RefreshableList<Post>(
-							id: '/${widget.board}/${widget.id}',
-							autoUpdateDuration: const Duration(seconds: 60),
-							listUpdater: () async {
-								final _thread = await context.read<ImageboardSite>().getThread(widget.board, widget.id);
-								if (thread == null && widget.initialPostId != null) {
-									Future.delayed(Duration(milliseconds: 50), () => _listController.scrollToFirstMatching((post) => post.id == widget.initialPostId));
-								}
-								setState(() {
-									thread = _thread;
-								});
-								return _thread.posts;
-							},
-							controller: _listController,
-							itemBuilder: (context, post) {
-								return Provider.value(
-									value: post,
-									child: PostRow(
-										onThumbnailTap: (attachment, {Object? tag}) {
-											_showGallery(initialAttachment: attachment);
-										}
-									)
-								);
-							},
-							filteredItemBuilder: (context, post, resetPage) {
-								return GestureDetector(
-									child: Provider.value(
-										value: post,
-										child: PostRow(
-											onThumbnailTap: (attachment, {Object? tag}) {
-												_showGallery(initialAttachment: attachment);
+					Flexible(
+						flex: 1,
+						child: Navigator(
+							initialRoute: '/',
+							onGenerateRoute: (RouteSettings settings) => TransparentRoute(
+								builder: (context) => RawKeyboardListener(
+									autofocus: true,
+									focusNode: _focusNode,
+									onKey: (event) {
+										print(event);
+										if (event is RawKeyDownEvent) {
+											if (event.logicalKey == LogicalKeyboardKey.keyG) {
+												final nextPostWithImage = _listController.findNextMatch((post) => post.attachment != null);
+												if (nextPostWithImage != null) {
+													_showGallery(initialAttachment: nextPostWithImage.attachment);
+												}
 											}
-										)
-									),
-									onTap: () {
-										resetPage();
-										Future.delayed(Duration(milliseconds: 250), () => _listController.scrollToFirstMatching((val) => val == post));
-									}
-								);
-							},
-							filterHint: 'Search in thread'
+										}
+									},
+									child: RefreshableList<Post>(
+										id: '/${widget.board}/${widget.id}',
+										autoUpdateDuration: const Duration(seconds: 60),
+										listUpdater: () async {
+											final _thread = await context.read<ImageboardSite>().getThread(widget.board, widget.id);
+											if (thread == null && widget.initialPostId != null) {
+												Future.delayed(Duration(milliseconds: 50), () => _listController.scrollToFirstMatching((post) => post.id == widget.initialPostId));
+											}
+											setState(() {
+												thread = _thread;
+											});
+											return _thread.posts;
+										},
+										controller: _listController,
+										itemBuilder: (context, post) {
+											return Provider.value(
+												value: post,
+												child: PostRow(
+													onThumbnailTap: (attachment, {Object? tag}) {
+														_showGallery(initialAttachment: attachment);
+													}
+												)
+											);
+										},
+										filteredItemBuilder: (context, post, resetPage) {
+											return GestureDetector(
+												child: Provider.value(
+													value: post,
+													child: PostRow(
+														onThumbnailTap: (attachment, {Object? tag}) {
+															_showGallery(initialAttachment: attachment);
+														}
+													)
+												),
+												onTap: () {
+													resetPage();
+													Future.delayed(Duration(milliseconds: 250), () => _listController.scrollToFirstMatching((val) => val == post));
+												}
+											);
+										},
+										filterHint: 'Search in thread'
+									)
+								)
+							)
 						)
 					),
 					Visibility(
 						visible: showReplyBox,
 						maintainState: true,
-						child: Column(
-							mainAxisAlignment: MainAxisAlignment.end,
-							children: [
-								ReplyBox(
-									key: replyBoxKey,
-									board: widget.board,
-									threadId: widget.id,
-									onReplyPosted: (receipt) {
-										setState(() {
-											showReplyBox = false;
-										});
-									},
-									onRequestFocus: () {
-										setState(() {
-											showReplyBox = true;
-										});
-									}
-								)
-							]
+						child: ReplyBox(
+							key: replyBoxKey,
+							board: widget.board,
+							threadId: widget.id,
+							onReplyPosted: (receipt) {
+								setState(() {
+									showReplyBox = false;
+								});
+							},
+							onRequestFocus: () {
+								setState(() {
+									showReplyBox = true;
+								});
+							}
 						)
 					)
 				]
