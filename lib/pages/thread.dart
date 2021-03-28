@@ -40,14 +40,6 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	@override
 	void initState() {
 		super.initState();
-		_focusNode.addListener(() {
-			if (_focusNode.hasFocus) {
-				print('Thread has focus');
-			}
-			else {
-				print('Thread does not have focus');
-			}
-		});
 	}
 
 	void _showGallery({bool initiallyShowChrome = true, Attachment? initialAttachment}) {
