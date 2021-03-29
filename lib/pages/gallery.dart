@@ -92,6 +92,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	AttachmentStatus lastDifferentCurrentStatus = AttachmentStatus();
 	final BehaviorSubject<Null> _scrollCoalescer = BehaviorSubject();
 	StreamSubscription<WEBMStatus>? webmSubscription;
+	double? _lastpageControllerPixels;
 
 	@override
 	void initState() {
@@ -201,7 +202,8 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	void __onPageControllerUpdate() {
-		if (pageController.positions.isNotEmpty) {
+		if (pageController.positions.isNotEmpty && pageController.position.pixels != _lastpageControllerPixels) {
+			_lastpageControllerPixels = pageController.position.pixels;
 			final factor = pageController.position.pixels / pageController.position.maxScrollExtent;
 			final idealLocation = (thumbnailScrollController.position.maxScrollExtent + thumbnailScrollController.position.viewportDimension - _THUMBNAIL_SIZE - 12) * factor - (thumbnailScrollController.position.viewportDimension / 2) + (_THUMBNAIL_SIZE / 2 + 6);
 			thumbnailScrollController.jumpTo(idealLocation.clamp(0, thumbnailScrollController.position.maxScrollExtent));
