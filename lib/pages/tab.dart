@@ -22,10 +22,11 @@ class ImageboardTab extends StatefulWidget {
 	_ImageboardTabState createState() => _ImageboardTabState();
 }
 
+GlobalKey<NavigatorState> rightPaneNavigatorKey = GlobalKey<NavigatorState>();
+
 class _ImageboardTabState extends State<ImageboardTab> {
 	ImageboardBoard? board;
 	Thread? selectedThread;
-	GlobalKey<NavigatorState> _rightPaneNavigatorKey = GlobalKey<NavigatorState>();
 	@override
 	initState() {
 		super.initState();
@@ -63,7 +64,7 @@ class _ImageboardTabState extends State<ImageboardTab> {
 												setState(() {
 													selectedThread = thread;
 												});
-												_rightPaneNavigatorKey.currentState!.popUntil((route) => route.isFirst);
+												rightPaneNavigatorKey.currentState!.popUntil((route) => route.isFirst);
 											},
 											onHeaderTapped: () async {
 												final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => BoardSwitcherPage()));
@@ -86,7 +87,7 @@ class _ImageboardTabState extends State<ImageboardTab> {
 					Flexible(
 						flex: 3,
 						child: Navigator(
-							key: _rightPaneNavigatorKey,
+							key: rightPaneNavigatorKey,
 							initialRoute: '/',
 							onGenerateRoute: (RouteSettings settings) {
 								return cpr.CupertinoPageRoute(

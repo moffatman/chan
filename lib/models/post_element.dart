@@ -1,5 +1,6 @@
 import 'package:chan/models/post.dart';
 import 'package:chan/pages/posts.dart';
+import 'package:chan/pages/tab.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -223,7 +224,7 @@ class PostCrossThreadQuoteLinkSpan extends PostSpan {
 			),
 			recognizer: (recognizer != null && overrideRecognizer) ? recognizer : (TapGestureRecognizer()..onTap = () async {
 				final boards = await site.getBoards();
-				Navigator.of(context).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: boards.firstWhere((b) => b.name == board), id: this.threadId, initialPostId: this.postId)));
+				(rightPaneNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true)).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: boards.firstWhere((b) => b.name == board), id: this.threadId, initialPostId: this.postId)));
 			})
 		);
 	}
