@@ -41,15 +41,24 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	String? errorMessage;
 	String _filter = '';
 	bool updatingNow = false;
-	final TextEditingController _searchController = TextEditingController();
+	final _searchController = TextEditingController();
+	final _searchFocusNode = FocusNode();
 	DateTime? lastUpdateTime;
 	DateTime? nextUpdateTime;
 	Timer? autoUpdateTimer;
+	bool _searchFocused = false;
 
 	@override
 	void initState() {
 		super.initState();
 		widget.controller?.attach(this);
+		_searchFocusNode.addListener(() {
+			if (mounted && _searchFocusNode.hasFocus != _searchFocused) {
+				setState(() {
+					_searchFocused = _searchFocusNode.hasFocus;
+				});
+			}
+		});
 		update();
 		resetTimer();
 	}
@@ -83,8 +92,8 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		}
 	}
 
-	void _clearSearch() {
-		FocusScope.of(context).unfocus();
+	void _closeSearch() {
+		_searchFocusNode.unfocus();
 		_searchController.clear();
 		setState(() {
 			this._filter = '';
@@ -117,7 +126,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 
 	Widget _itemBuilder(BuildContext context, T value) {
 		if (_filter.isNotEmpty && widget.filteredItemBuilder!= null) {
-			return widget.filteredItemBuilder!(context, value, _clearSearch);
+			return widget.filteredItemBuilder!(context, value, _closeSearch);
 		}
 		else {
 			return widget.itemBuilder(context, value);
@@ -170,16 +179,30 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 								child: Container(
 									height: kMinInteractiveDimensionCupertino,
 									padding: EdgeInsets.all(4),
-									child: CupertinoSearchTextField(
-										onChanged: (searchText) {
-											setState(() {
-												this._filter = searchText.toLowerCase();
-											});
-										},
-										controller: _searchController,
-										placeholder: widget.filterHint,
-										onSuffixTap: _clearSearch
-									),
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											Expanded(
+												child: Container(
+													child: CupertinoSearchTextField(
+														onChanged: (searchText) {
+															setState(() {
+																this._filter = searchText.toLowerCase();
+															});
+														},
+														controller: _searchController,
+														focusNode: _searchFocusNode,
+														placeholder: widget.filterHint,
+													)
+												)
+											),
+											if (_searchFocused) CupertinoButton(
+												padding: EdgeInsets.only(left: 8),
+												child: Text('Cancel'),
+												onPressed: _closeSearch
+											)
+										]
+									)
 								)
 							),
 							if (values.length > 0)
