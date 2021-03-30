@@ -1,4 +1,5 @@
 import 'package:chan/models/post.dart';
+import 'package:chan/pages/board.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:chan/pages/thread.dart';
@@ -225,6 +226,25 @@ class PostCrossThreadQuoteLinkSpan extends PostSpan {
 			recognizer: (recognizer != null && overrideRecognizer) ? recognizer : (TapGestureRecognizer()..onTap = () async {
 				final boards = await site.getBoards();
 				(rightPaneNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true)).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: boards.firstWhere((b) => b.name == board), id: this.threadId, initialPostId: this.postId)));
+			})
+		);
+	}
+}
+
+class PostBoardLink extends PostSpan {
+	final String board;
+	PostBoardLink(this.board);
+	build(context, {recognizer, overrideRecognizer = false}) {
+		final site = context.watch<ImageboardSite>();
+		return TextSpan(
+			text: '>>/$board/',
+			style: TextStyle(
+				color: Colors.red,
+				decoration: TextDecoration.underline
+			),
+			recognizer: (recognizer != null && overrideRecognizer) ? recognizer : (TapGestureRecognizer()..onTap = () async {
+				final boards = await site.getBoards();
+				(rightPaneNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true)).push(cpr.CupertinoPageRoute(builder: (ctx) => BoardPage(board: boards.firstWhere((b) => b.name == board))));
 			})
 		);
 	}

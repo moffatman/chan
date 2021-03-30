@@ -112,9 +112,6 @@ class _ImageboardTabState extends State<ImageboardTab> {
 		else {
 			return BoardPage(
 				board: board!,
-				onThreadSelected: (thread) {
-					Navigator.of(context).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: board!, id: thread.id)));
-				},
 				onHeaderTapped: () async {
 					final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => BoardSwitcherPage()));
 					if (newBoard != null) {

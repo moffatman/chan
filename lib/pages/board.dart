@@ -1,4 +1,5 @@
 import 'package:chan/pages/settings.dart';
+import 'package:chan/pages/thread.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/refreshable_list.dart';
@@ -12,12 +13,12 @@ import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
 
 
 class BoardPage extends StatelessWidget {
-	final ValueChanged<Thread> onThreadSelected;
+	final ValueChanged<Thread>? onThreadSelected;
 	final Thread? selectedThread;
 	final ImageboardBoard board;
 	final VoidCallback? onHeaderTapped;
 	BoardPage({
-		required this.onThreadSelected,
+		this.onThreadSelected,
 		this.selectedThread,
 		required this.board,
 		this.onHeaderTapped
@@ -34,7 +35,7 @@ class BoardPage extends StatelessWidget {
 						mainAxisSize: MainAxisSize.min,
 						children: [
 							Text('/${board.name}/'),
-							Icon(Icons.arrow_drop_down)
+							if (onHeaderTapped != null) Icon(Icons.arrow_drop_down)
 						]
 					)
 				),
@@ -64,7 +65,14 @@ class BoardPage extends StatelessWidget {
 							thread: thread,
 							isSelected: thread == selectedThread
 						),
-						onTap: () => onThreadSelected(thread)
+						onTap: () {
+							if (onThreadSelected != null) {
+								onThreadSelected!(thread);
+							}
+							else {
+								Navigator.of(context).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: board, id: thread.id)));
+							}
+						}
 					);
 				},
 				filterHint: 'Search in board'

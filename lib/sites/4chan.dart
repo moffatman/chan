@@ -48,7 +48,7 @@ class Site4Chan implements ImageboardSite {
 					elements.add(PostTextSpan('\n'));
 				}
 				else {
-					if (node.localName == 'a') {
+					if (node.localName == 'a' && node.classes.contains('quotelink')) {
 						if (node.attributes['href']!.startsWith('#p')) {
 							elements.add(PostExpandingQuoteLinkSpan(int.parse(node.attributes['href']!.substring(2))));
 						}
@@ -60,7 +60,9 @@ class Site4Chan implements ImageboardSite {
 							elements.add(PostCrossThreadQuoteLinkSpan(parts[threadIndex - 1], int.parse(ids[0]), int.parse(ids[1])));
 						}
 						else {
-							elements.add(PostTextSpan('LINK: ' + node.attributes['href']!));
+							// href looks like '//boards.4chan.org/pol/'
+							final parts = node.attributes['href']!.split('/');
+							elements.add(PostBoardLink(parts[parts.length - 2]));
 						}
 					}
 					else if (node.localName == 'span') {
