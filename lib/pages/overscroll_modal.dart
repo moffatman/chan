@@ -23,6 +23,8 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	final GlobalKey _bottomSpacerKey = GlobalKey();
 	late double _scrollStopPosition;
 	Duration? _pointerDownTime;
+	double _opacity = 1;
+	bool _popping = false;
 
 	@override
 	void initState() {
@@ -34,12 +36,21 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 
 	// To fix behavior when stopping the scroll-in with tap event
 	void _onScrollUpdate() {
-		if (_controller.position.pixels > _scrollStopPosition) {
+		if (!_popping) {
+			final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
+			final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
+			final double desiredOpacity = 1 - (((max(overscrollTop, overscrollBottom) + _scrollStopPosition) - 40) / 30).clamp(0, 1);
+			if (desiredOpacity != _opacity) {
+				setState(() {
+					_opacity = desiredOpacity;
+				});
+			}
+		}
+		if (_scrollStopPosition != 0 && _controller.position.pixels > _scrollStopPosition) {
 			_scrollStopPosition = _controller.position.pixels;
 			// Stop when coming to intial rest (since start position is largely negative)
 			if (_scrollStopPosition > -2) {
 				_scrollStopPosition = 0;
-				_controller.removeListener(_onScrollUpdate);
 			}
 		}
 	}
@@ -61,6 +72,9 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 							final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
 							final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
 							if (max(overscrollTop, overscrollBottom) > 50 - _scrollStopPosition) {
+								setState(() {
+									_popping = true;
+								});
 								Navigator.of(context).pop();
 							}
 							else if (_pointerDownTime != null) {
@@ -87,7 +101,10 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 												key: _topSpacerKey,
 												child: Container()
 											),
-											widget.child,
+											Opacity(
+												opacity: _opacity,
+												child: widget.child
+											),
 											Flexible(
 												key: _bottomSpacerKey,
 												child: Container()
