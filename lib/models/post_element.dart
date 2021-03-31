@@ -20,7 +20,7 @@ abstract class PostSpan {
 	List<int> get referencedPostIds {
 		return [];
 	}
-	InlineSpan build(BuildContext context, {GestureRecognizer? recognizer, bool overrideRecognizer = false});
+	InlineSpan build(BuildContext context, {GestureRecognizer? recognizer, bool overrideRecognizer = false, Color? overrideTextColor});
 }
 
 class PostNodeSpan extends PostSpan {
@@ -32,9 +32,9 @@ class PostNodeSpan extends PostSpan {
 		return children.expand((child) => child.referencedPostIds).toList();
 	}
 
-	build(context, {recognizer, overrideRecognizer = false}) {
+	build(context, {recognizer, overrideRecognizer = false, overrideTextColor}) {
 		return TextSpan(
-			children: children.map((child) => child.build(context, recognizer: recognizer, overrideRecognizer: overrideRecognizer)).toList()
+			children: children.map((child) => child.build(context, recognizer: recognizer, overrideRecognizer: overrideRecognizer, overrideTextColor: overrideTextColor)).toList()
 		);
 	}
 }
@@ -42,7 +42,7 @@ class PostNodeSpan extends PostSpan {
 class PostTextSpan extends PostSpan {
 	final String text;
 	PostTextSpan(this.text);
-	build(context, {recognizer, overrideRecognizer = false}) {
+	build(context, {recognizer, overrideRecognizer = false, overrideTextColor}) {
 		return TextSpan(
 			text: this.text,
 			recognizer: recognizer
@@ -52,7 +52,7 @@ class PostTextSpan extends PostSpan {
 
 class PostLineBreakSpan extends PostSpan {
 	PostLineBreakSpan();
-	build(context, {recognizer, overrideRecognizer = false}) {
+	build(context, {recognizer, overrideRecognizer = false, overrideTextColor}) {
 		return WidgetSpan(
 			child: Row(
 				children: [Text('')],
@@ -64,10 +64,10 @@ class PostLineBreakSpan extends PostSpan {
 class PostQuoteSpan extends PostSpan {
 	final PostSpan child;
 	PostQuoteSpan(this.child);
-	build(context, {recognizer, overrideRecognizer = false}) {
+	build(context, {recognizer, overrideRecognizer = false, overrideTextColor}) {
 		return TextSpan(
-			children: [child.build(context)],
-			style: TextStyle(color: Colors.green),
+			children: [child.build(context, recognizer: recognizer, overrideRecognizer: overrideRecognizer)],
+			style: TextStyle(color: overrideTextColor ?? Colors.green),
 			recognizer: recognizer
 		);
 	}
@@ -130,7 +130,7 @@ class PostQuoteLinkSpan extends PostSpan {
 	List<int> get referencedPostIds {
 		return [id];
 	}
-	build(context, {recognizer, overrideRecognizer = false}) {
+	build(context, {recognizer, overrideRecognizer = false, overrideTextColor}) {
 		final zone = context.watchOrNull<ExpandingPostZone>();
 		final sameAsParent = zone?.parentIds.contains(id) ?? false;
 		final postList = context.watch<List<Post>>();
@@ -143,7 +143,7 @@ class PostQuoteLinkSpan extends PostSpan {
 					TextSpan(
 						text: '>>' + this.id.toString() + ((postList[0].id == this.id) ? ' (OP)' : ''),
 						style: TextStyle(
-							color: (zone?.shouldExpandPost(id) ?? false || sameAsParent) ? Colors.pink : Colors.red,
+							color: overrideTextColor ?? ((zone?.shouldExpandPost(id) ?? false || sameAsParent) ? Colors.pink : Colors.red),
 							decoration: TextDecoration.underline,
 							decorationStyle: sameAsParent ? TextDecorationStyle.dashed : null
 						),
@@ -185,7 +185,7 @@ class PostWidgetSpan extends PostSpan {
 	final Widget Function(BuildContext context) builder;
 	PostWidgetSpan(this.builder);
 
-	build(context, {recognizer, overrideRecognizer = false}) => WidgetSpan(child: this.builder(context));
+	build(context, {recognizer, overrideRecognizer = false, overrideTextColor}) => WidgetSpan(child: this.builder(context));
 }
 
 class PostExpandingQuoteLinkSpan extends PostNodeSpan {
@@ -199,11 +199,14 @@ class PostDeadQuoteLinkSpan extends PostSpan {
 	final int id;
 	final String? board;
 	PostDeadQuoteLinkSpan(this.id, {this.board});
-	build(context, {recognizer, overrideRecognizer = false}) {
+	build(context, {recognizer, overrideRecognizer = false, overrideTextColor}) {
 		final showBoard = context.watch<Post>().board != board && board != null;
 		return TextSpan(
 			text: (showBoard ? '>>/$board/' : '>>') + this.id.toString(),
-			style: TextStyle(decoration: TextDecoration.lineThrough, color: Colors.red),
+			style: TextStyle(
+				decoration: TextDecoration.lineThrough,
+				color: overrideTextColor ?? Colors.red
+			),
 			recognizer: recognizer
 		);
 	}
@@ -214,13 +217,13 @@ class PostCrossThreadQuoteLinkSpan extends PostSpan {
 	final int postId;
 	final int threadId;
 	PostCrossThreadQuoteLinkSpan(this.board, this.threadId, this.postId);
-	build(context, {recognizer, overrideRecognizer = false}) {
+	build(context, {recognizer, overrideRecognizer = false, overrideTextColor}) {
 		final showBoard = context.watch<Post>().board != board;
 		final site = context.watch<ImageboardSite>();
 		return TextSpan(
 			text: (showBoard ? '>>/$board/' : '>>') + this.postId.toString() + ' (Cross-thread)',
 			style: TextStyle(
-				color: Colors.red,
+				color: overrideTextColor ?? Colors.red,
 				decoration: TextDecoration.underline
 			),
 			recognizer: (recognizer != null && overrideRecognizer) ? recognizer : (TapGestureRecognizer()..onTap = () async {
@@ -234,12 +237,12 @@ class PostCrossThreadQuoteLinkSpan extends PostSpan {
 class PostBoardLink extends PostSpan {
 	final String board;
 	PostBoardLink(this.board);
-	build(context, {recognizer, overrideRecognizer = false}) {
+	build(context, {recognizer, overrideRecognizer = false, overrideTextColor}) {
 		final site = context.watch<ImageboardSite>();
 		return TextSpan(
 			text: '>>/$board/',
 			style: TextStyle(
-				color: Colors.red,
+				color: overrideTextColor ?? Colors.red,
 				decoration: TextDecoration.underline
 			),
 			recognizer: (recognizer != null && overrideRecognizer) ? recognizer : (TapGestureRecognizer()..onTap = () async {
@@ -252,7 +255,7 @@ class PostBoardLink extends PostSpan {
 
 class PostNewLineSpan extends PostSpan {
 	PostNewLineSpan();
-	build(context, {recognizer, overrideRecognizer = false}) {
+	build(context, {recognizer, overrideRecognizer = false, overrideTextColor}) {
 		return WidgetSpan(
 			child: Row()
 		);
@@ -263,17 +266,19 @@ class PostSpoilerSpan extends PostSpan {
 	final PostSpan child;
 	final int id;
 	PostSpoilerSpan(this.child, this.id);
-	build(context, {recognizer, overrideRecognizer = false}) {
+	build(context, {recognizer, overrideRecognizer = false, overrideTextColor}) {
 		final zone = context.watchOrNull<ExpandingPostZone>();
 		final showSpoiler = zone?.shouldShowSpoiler(id) ?? false;
 		final toggleRecognizer = TapGestureRecognizer()..onTap = () {
 			zone?.toggleShowingOfSpoiler(id);
 		};
+		final hiddenColor = DefaultTextStyle.of(context).style.color;
+		final visibleColor = CupertinoTheme.of(context).scaffoldBackgroundColor;
 		return TextSpan(
-			children: [child.build(context, recognizer: toggleRecognizer, overrideRecognizer: !showSpoiler)],
+			children: [child.build(context, recognizer: toggleRecognizer, overrideRecognizer: !showSpoiler, overrideTextColor: showSpoiler ? visibleColor : hiddenColor)],
 			style: TextStyle(
-				backgroundColor: DefaultTextStyle.of(context).style.color,
-				color: showSpoiler ? CupertinoTheme.of(context).scaffoldBackgroundColor : null
+				backgroundColor: hiddenColor,
+				color: showSpoiler ? visibleColor : null
 			),
 			recognizer: toggleRecognizer
 		);
@@ -283,7 +288,7 @@ class PostSpoilerSpan extends PostSpan {
 class PostLinkSpan extends PostSpan {
 	final String url;
 	PostLinkSpan(this.url);
-	build(context, {recognizer, overrideRecognizer = false}) {
+	build(context, {recognizer, overrideRecognizer = false, overrideTextColor}) {
 		return TextSpan(
 			text: url,
 			style: TextStyle(
