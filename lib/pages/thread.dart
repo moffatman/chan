@@ -114,7 +114,6 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 									autofocus: true,
 									focusNode: _focusNode,
 									onKey: (event) {
-										print(event);
 										if (event is RawKeyDownEvent) {
 											if (event.logicalKey == LogicalKeyboardKey.keyG) {
 												final nextPostWithImage = _listController.findNextMatch((post) => post.attachment != null);
