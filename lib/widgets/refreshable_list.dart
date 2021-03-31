@@ -355,14 +355,13 @@ class RefreshableListController<T extends Filterable> {
 	late List<_RefreshableListItem<T>?> _items;
 	ScrollController scrollController = ScrollController();
 	BehaviorSubject<Null> _scrollStream = BehaviorSubject();
+	BehaviorSubject<Null> slowScrollUpdates = BehaviorSubject();
 	RefreshableListController() {
-		_scrollStream.bufferTime(const Duration(milliseconds: 10)).where((batch) => batch.isNotEmpty).listen(_onScroll);
+		_scrollStream.bufferTime(const Duration(milliseconds: 1000)).where((batch) => batch.isNotEmpty).listen(_onScroll);
 	}
 	void _onScroll(List<Null> notifications) {
-		if (scrollController.position.pixels - scrollController.position.maxScrollExtent > 150) {
-
-		}
-		T? minObject = findNextMatch((item) => true);
+		slowScrollUpdates.add(null);
+		//T? minObject = findNextMatch((item) => true);
 		//print('New top: $minObject');
 	}
 	void attach(RefreshableListState<T> list) {
@@ -372,6 +371,7 @@ class RefreshableListController<T extends Filterable> {
 	}
 	void dispose() {
 		_scrollStream.close();
+		slowScrollUpdates.close();
 		scrollController.dispose();
 	}
 	void resetItems(int length) {

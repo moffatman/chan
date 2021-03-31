@@ -113,7 +113,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				}
 			});
 		});
-		if (context.read<Settings>().autoloadAttachments) {
+		if (context.read<EffectiveSettings>().autoloadAttachments) {
 			requestRealViewer(widget.attachments[currentIndex]);
 		}
 	}
@@ -213,7 +213,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	void _animateToPage(int index, {int milliseconds = 200}) {
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
-		if (context.read<Settings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
+		if (context.read<EffectiveSettings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
 			requestRealViewer(widget.attachments[index]);
 		}
 		setState(() {
@@ -233,7 +233,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	void _onPageChanged(int index) {
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
-		if (context.read<Settings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
+		if (context.read<EffectiveSettings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
 			requestRealViewer(widget.attachments[index]);
 		}
 		currentIndex = index;

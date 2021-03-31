@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:chan/services/persistence.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:html/parser.dart' show parse;
@@ -251,8 +252,8 @@ class Site4Chan implements ImageboardSite {
 		final metaTag = document.querySelector('meta[http-equiv="refresh"]');
 		if (metaTag != null) {
 			return PostReceipt(
-				password: password,
-				id: int.parse(metaTag.attributes['content']!.split('#p').last)
+				id: int.parse(metaTag.attributes['content']!.split('#p').last),
+				password: password
 			);
 		}
 		else {

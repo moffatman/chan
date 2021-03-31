@@ -5,29 +5,52 @@ import 'package:chan/services/util.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/scheduler.dart';
-
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:hive/hive.dart';
+part 'settings.g.dart';
 
-enum Setting_AutoloadAttachments {
+@HiveType(typeId: 1)
+enum AutoloadAttachmentsSetting {
+	@HiveField(0)
 	Never,
+	@HiveField(1)
 	WiFi,
+	@HiveField(2)
 	Always
 }
 
-const _AUTOLOAD_ATTACHMENTS_KEY = 'SETTING_AUTOLOAD_ATTACHMENTS';
-
-enum Setting_Theme {
+@HiveType(typeId: 2)
+enum ThemeSetting {
+	@HiveField(0)
 	Light,
+	@HiveField(1)
 	System,
+	@HiveField(2)
 	Dark
 }
 
-const _THEME_KEY = 'SETTING_THEME';
+@HiveType(typeId: 0)
+class SavedSettings extends HiveObject {
+	@HiveField(0)
+	AutoloadAttachmentsSetting autoloadAttachments;
+	@HiveField(1)
+	ThemeSetting theme;
+	@HiveField(2)
+	bool hideStickiedThreads;
 
-const _HIDE_STICKIED_THREADS_KEY = 'HIDE_STICKIED_THREADS';
+	SavedSettings({
+		required this.autoloadAttachments,
+		required this.theme,
+		required this.hideStickiedThreads
+	});
+}
 
-class Settings extends ChangeNotifier {
+class EffectiveSettings extends ChangeNotifier {
+	SavedSettings _settings = Hive.box<SavedSettings>('settings').get('settings', defaultValue: SavedSettings(
+		autoloadAttachments: AutoloadAttachmentsSetting.WiFi,
+		hideStickiedThreads: false,
+		theme: ThemeSetting.System
+	))!;
 	String? filename;
 	ConnectivityResult? _connectivity;
 	ConnectivityResult? get connectivity {
@@ -38,65 +61,43 @@ class Settings extends ChangeNotifier {
 		notifyListeners();
 	}
 	Brightness? _systemBrightness;
-	Brightness? get systemBrightness {
-		return _systemBrightness;
-	}
 	set systemBrightness(Brightness? newBrightness) {
 		_systemBrightness = newBrightness;
 		notifyListeners();
 	}
-	SharedPreferences? _prefs;
-	Setting_AutoloadAttachments get autoloadAttachmentsPreference {
-		final index = _prefs?.getInt(_AUTOLOAD_ATTACHMENTS_KEY);
-		return (index == null) ? Setting_AutoloadAttachments.WiFi : Setting_AutoloadAttachments.values[index];
-	}
-	set autoloadAttachmentsPreference(Setting_AutoloadAttachments newValue) {
-		_prefs?.setInt(_AUTOLOAD_ATTACHMENTS_KEY, newValue.index);
+	AutoloadAttachmentsSetting get autoloadAttachmentsSetting => _settings.autoloadAttachments;
+	set autoloadAttachmentsSetting(AutoloadAttachmentsSetting setting) {
+		_settings.autoloadAttachments = setting;
+		_settings.save();
 		notifyListeners();
 	}
-	Setting_Theme get themePreference {
-		final index = _prefs?.getInt(_THEME_KEY);
-		return (index == null) ? Setting_Theme.System : Setting_Theme.values[index];
-	}
-	set themePreference(Setting_Theme newValue) {
-		_prefs?.setInt(_THEME_KEY, newValue.index);
-		notifyListeners();
-	}
-
-	void _initializePrefs() async {
-		_prefs = await SharedPreferences.getInstance();
-		notifyListeners();
-	}
-
-	Settings() {
-		_initializePrefs();
-	}
-
 	bool get autoloadAttachments {
-		return (autoloadAttachmentsPreference == Setting_AutoloadAttachments.Always) ||
-			((autoloadAttachmentsPreference == Setting_AutoloadAttachments.WiFi) && (connectivity == ConnectivityResult.wifi));
+		return (_settings.autoloadAttachments == AutoloadAttachmentsSetting.Always) ||
+			((_settings.autoloadAttachments == AutoloadAttachmentsSetting.WiFi) && (connectivity == ConnectivityResult.wifi));
+	}
+	ThemeSetting get themeSetting => _settings.theme;
+	set themeSetting(ThemeSetting setting) {
+		_settings.theme = setting;
+		_settings.save();
+		notifyListeners();
 	}
 	Brightness get theme {
-		if (themePreference == Setting_Theme.Dark) {
+		if (_settings.theme == ThemeSetting.Dark) {
 			return Brightness.dark;
 		}
-		else if (themePreference == Setting_Theme.Light) {
+		else if (_settings.theme == ThemeSetting.Light) {
 			return Brightness.light;
 		}
-		return systemBrightness ?? Brightness.light;
+		return _systemBrightness ?? Brightness.light;
 	}
 
-	bool get hideStickiedThreads {
-		return _prefs?.getBool(_HIDE_STICKIED_THREADS_KEY) ?? false;
-	}
+	bool get useTouchLayout => Platform.isAndroid || Platform.isIOS;
 
-	set hideStickiedThreads(bool newValue) {
-		_prefs?.setBool(_HIDE_STICKIED_THREADS_KEY, newValue);
+	bool get hideStickiedThreads => _settings.hideStickiedThreads;
+	set hideStickiedThreads(bool setting) {
+		_settings.hideStickiedThreads = setting;
+		_settings.save();
 		notifyListeners();
-	}
-
-	bool get useTouchLayout {
-		return Platform.isAndroid || Platform.isIOS;
 	}
 }
 
@@ -121,18 +122,18 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 		WidgetsBinding.instance!.addObserver(this);
 		_checkConnectivity();
 		connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
-			context.read<Settings>().connectivity = result;
+			context.read<EffectiveSettings>().connectivity = result;
 		});
 		if (isDesktop()) {
 			Future.delayed(Duration(milliseconds: 10), () {
-				context.read<Settings>().connectivity = ConnectivityResult.wifi;
+				context.read<EffectiveSettings>().connectivity = ConnectivityResult.wifi;
 			});
 		}
 	}
 
 	void _checkConnectivity() {
 		Connectivity().checkConnectivity().then((result) {
-			context.read<Settings>().connectivity = result;
+			context.read<EffectiveSettings>().connectivity = result;
 		});
 	}
 
@@ -152,7 +153,7 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 
 	@override
 	void didChangePlatformBrightness() {
-		context.read<Settings>().systemBrightness = SchedulerBinding.instance!.window.platformBrightness;
+		context.read<EffectiveSettings>().systemBrightness = SchedulerBinding.instance!.window.platformBrightness;
 	}
 
 	@override

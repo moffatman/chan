@@ -1,5 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -31,6 +32,7 @@ class ThreadPage extends StatefulWidget {
 }
 
 class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
+	PersistentThreadState? persistentState;
 	Thread? thread;
 	bool showReplyBox = false;
 
@@ -40,6 +42,28 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	@override
 	void initState() {
 		super.initState();
+		_getThreadState();
+		_listController.slowScrollUpdates.listen((_) {
+			persistentState?.lastSeenPostId = _listController.findNextMatch((_) => true)?.id;
+			persistentState?.save();
+		});
+	}
+
+	@override
+	void didUpdateWidget(ThreadPage old) {
+		super.didUpdateWidget(old);
+		if (widget.board != old.board || widget.id != old.id) {
+			setState(() {
+				thread = null;
+				persistentState = null;
+			});
+			_getThreadState();
+		}
+	}
+
+	Future<void> _getThreadState() async {
+		persistentState = await Persistence.getThreadState(widget.board.name, widget.id);
+		setState(() {});
 	}
 
 	void _showGallery({bool initiallyShowChrome = true, Attachment? initialAttachment}) {
@@ -105,8 +129,9 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 										autoUpdateDuration: const Duration(seconds: 60),
 										listUpdater: () async {
 											final _thread = await context.read<ImageboardSite>().getThread(widget.board.name, widget.id);
-											if (thread == null && widget.initialPostId != null) {
-												Future.delayed(Duration(milliseconds: 50), () => _listController.scrollToFirstMatching((post) => post.id == widget.initialPostId));
+											final int? scrollToId = widget.initialPostId ?? persistentState?.lastSeenPostId;
+											if (thread == null && scrollToId != null) {
+												Future.delayed(Duration(milliseconds: 50), () => _listController.scrollToFirstMatching((post) => post.id == scrollToId));
 											}
 											setState(() {
 												thread = _thread;
@@ -153,7 +178,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 							key: replyBoxKey,
 							board: widget.board,
 							threadId: widget.id,
-							onReplyPosted: (receipt) {
+							onReplyPosted: () {
 								setState(() {
 									showReplyBox = false;
 								});

@@ -1,9 +1,11 @@
 import 'package:chan/pages/overscroll_modal.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/captcha.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 
 final GlobalKey<_ReplyBoxState> replyBoxKey = GlobalKey();
@@ -11,7 +13,7 @@ final GlobalKey<_ReplyBoxState> replyBoxKey = GlobalKey();
 class ReplyBox extends StatefulWidget {
 	final ImageboardBoard board;
 	final int threadId;
-	final ValueChanged<PostReceipt> onReplyPosted;
+	final VoidCallback onReplyPosted;
 	final VoidCallback? onRequestFocus;
 
 	ReplyBox({
@@ -144,7 +146,10 @@ class _ReplyBoxState extends State<ReplyBox> {
 										});
 										print(receipt);
 										_focusNode.unfocus();
-										widget.onReplyPosted(receipt);
+										final state = await Persistence.getThreadState(widget.board.name, widget.threadId);
+										state.receipts.add(receipt);
+										state.save();
+										widget.onReplyPosted();
 									}
 									catch (e, st) {
 										print(e);

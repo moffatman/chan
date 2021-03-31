@@ -1,3 +1,4 @@
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:cupertino_back_gesture/cupertino_back_gesture.dart';
 import 'package:flutter/cupertino.dart';
@@ -7,7 +8,10 @@ import 'sites/4chan.dart';
 import 'pages/tab.dart';
 import 'package:provider/provider.dart';
 
-void main() => runApp(ChanApp());
+void main() async {
+	await Persistence.initialize();
+	runApp(ChanApp());
+}
 
 class ChanApp extends StatelessWidget {
 	@override
@@ -16,7 +20,7 @@ class ChanApp extends StatelessWidget {
 			backGestureWidth: BackGestureWidth.fraction(1),
 			child: MultiProvider(
 				providers: [
-					ChangeNotifierProvider<Settings>(create: (_) => Settings()),
+					ChangeNotifierProvider<EffectiveSettings>(create: (_) => EffectiveSettings()),
 					Provider<ImageboardSite>(create: (_) => Site4Chan(
 						baseUrl: 'boards.4chan.org',
 						sysUrl: 'sys.4chan.org',
@@ -29,7 +33,7 @@ class ChanApp extends StatelessWidget {
 				child: SettingsSystemListener(
 					child: Builder(
 						builder: (BuildContext context) {
-							final brightness = context.watch<Settings>().theme;
+							final brightness = context.watch<EffectiveSettings>().theme;
 							CupertinoThemeData theme = CupertinoThemeData(brightness: Brightness.light, primaryColor: Colors.black);
 							if (brightness == Brightness.dark) {
 								theme = CupertinoThemeData(brightness: Brightness.dark, scaffoldBackgroundColor: Color.fromRGBO(20, 20, 20, 1), primaryColor: Colors.white);

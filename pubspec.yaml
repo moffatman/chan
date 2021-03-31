@@ -25,7 +25,6 @@ dependencies:
   connectivity: "^3.0.0"
   rxdart: "^0.26.0"
   provider: "^5.0.0"
-  shared_preferences: "^2.0.1"
   extended_image: "^4.0.0"
   cupertino_back_gesture: "^0.1.0"
   html_unescape: "^2.0.0"
@@ -34,6 +33,8 @@ dependencies:
   flutter_inappwebview: "^5.2.1"
   linkify: "^4.0.0"
   auto_size_text: "^3.0.0-nullsafety.0"
+  hive: "^2.0.1"
+  hive_flutter: "^1.0.0"
   flutter:
     sdk: flutter
 
@@ -42,7 +43,8 @@ dependencies:
   cupertino_icons: ^1.0.0
 
 dev_dependencies:
-
+  hive_generator: "^1.0.1"
+  build_runner: "^1.12.2"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec

@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:chan/services/persistence.dart';
+
 import '../models/attachment.dart';
 import '../models/thread.dart';
 
@@ -73,17 +75,6 @@ class CaptchaRequest {
 	});
 	@override
 	String toString() => 'CaptchaRequest(sourceUrl: $sourceUrl, key: $key)';
-}
-
-class PostReceipt {
-	final String password;
-	final int id;
-	PostReceipt({
-		required this.password,
-		required this.id
-	});
-	@override
-	String toString() => 'PostReceipt(id: $id, password: $password)';
 }
 
 abstract class ImageboardSite {

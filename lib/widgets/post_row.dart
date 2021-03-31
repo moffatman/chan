@@ -29,7 +29,7 @@ class PostRow extends StatelessWidget {
 		final threadPosts = context.watch<List<Post>>();
 		final parentIds = context.watchOrNull<ExpandingPostZone>()?.parentIds ?? [];
 		final randomHeroTag = Random().nextDouble().toString();
-		final settings = context.watch<Settings>();
+		final settings = context.watch<EffectiveSettings>();
 		return Container(
 			padding: EdgeInsets.all(8),
 			decoration: BoxDecoration(

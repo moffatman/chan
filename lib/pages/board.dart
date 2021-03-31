@@ -49,7 +49,7 @@ class BoardPage extends StatelessWidget {
 			),
 			child: RefreshableList<Thread>(
 				listUpdater: () => site.getCatalog(board.name).then((list) {
-					if (context.read<Settings>().hideStickiedThreads) {
+					if (context.read<EffectiveSettings>().hideStickiedThreads) {
 						return list.where((thread) => !thread.isSticky).toList();
 					}
 					else {

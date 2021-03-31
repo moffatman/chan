@@ -10,7 +10,7 @@ import 'package:extended_image_library/extended_image_library.dart';
 class SettingsPage extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.read<Settings>();
+		final settings = context.read<EffectiveSettings>();
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
 				middle: Text('Settings')
@@ -23,30 +23,30 @@ class SettingsPage extends StatelessWidget {
 							padding: EdgeInsets.all(16),
 							child: Text('Theme'),
 						),
-						CupertinoSegmentedControl<Setting_Theme>(
+						CupertinoSegmentedControl<ThemeSetting>(
 							children: {
-								Setting_Theme.Light: Text('Light'),
-								Setting_Theme.System: Text('Follow System'),
-								Setting_Theme.Dark: Text('Dark')
+								ThemeSetting.Light: Text('Light'),
+								ThemeSetting.System: Text('Follow System'),
+								ThemeSetting.Dark: Text('Dark')
 							},
-							groupValue: settings.themePreference,
+							groupValue: settings.themeSetting,
 							onValueChanged: (newValue) {
-								settings.themePreference = newValue;
+								settings.themeSetting = newValue;
 							}
 						),
 						Container(
 							padding: EdgeInsets.all(16),
 							child: Text('Automatically load attachments'),
 						),
-						CupertinoSegmentedControl<Setting_AutoloadAttachments>(
+						CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
 							children: {
-								Setting_AutoloadAttachments.Always: Text('Always'),
-								Setting_AutoloadAttachments.WiFi: Text('When on Wi-Fi'),
-								Setting_AutoloadAttachments.Never: Text('Never')
+								AutoloadAttachmentsSetting.Always: Text('Always'),
+								AutoloadAttachmentsSetting.WiFi: Text('When on Wi-Fi'),
+								AutoloadAttachmentsSetting.Never: Text('Never')
 							},
-							groupValue: settings.autoloadAttachmentsPreference,
+							groupValue: settings.autoloadAttachmentsSetting,
 							onValueChanged: (newValue) {
-								settings.autoloadAttachmentsPreference = newValue;
+								settings.autoloadAttachmentsSetting = newValue;
 							}
 						),
 						Container(
@@ -91,7 +91,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 	Future<void> _readFilesystemInfo() async {
 		folderSizes = {};
 		final systemTempDirectory = await getTemporaryDirectory();
-		await for (final directory in systemTempDirectory.list()) {
+		/*await for (final directory in systemTempDirectory.list()) {
 			if (directory is Directory) {
 				int size = 0;
 				await for (final subentry in directory.list(recursive: true)) {
@@ -99,7 +99,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 				}
 				folderSizes![directory.path.split('/').last] = size;
 			}
-		}
+		}*/
 		setState(() {});
 	}
 

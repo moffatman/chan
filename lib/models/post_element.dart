@@ -135,7 +135,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		final sameAsParent = zone?.parentIds.contains(id) ?? false;
 		final postList = context.watch<List<Post>>();
 		final post = postList.firstWhere((p) => p.id == this.id);
-		final settings = context.watch<Settings>();
+		final settings = context.watch<EffectiveSettings>();
 		final newParentIds = (zone?.parentIds ?? []).followedBy([post.id]).toList();
 		return WidgetSpan(
 			child: HoverPopup(
