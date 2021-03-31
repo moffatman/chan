@@ -34,6 +34,7 @@ class ThreadPage extends StatefulWidget {
 class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	PersistentThreadState? persistentState;
 	Thread? thread;
+	bool initialized = false;
 	bool showReplyBox = false;
 
 	final _focusNode = FocusNode();
@@ -103,7 +104,9 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 					}
 				)
 			),
-			child: Column(
+			child: (persistentState == null) ? Center(
+				child: CircularProgressIndicator()
+				): Column(
 				children: [
 					Flexible(
 						flex: 1,
@@ -126,6 +129,9 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 									child: RefreshableList<Post>(
 										id: '/${widget.board.name}/${widget.id}',
 										autoUpdateDuration: const Duration(seconds: 60),
+										additionalProviders: [
+											Provider<PersistentThreadState>.value(value: persistentState!)
+										],
 										listUpdater: () async {
 											final _thread = await context.read<ImageboardSite>().getThread(widget.board.name, widget.id);
 											final int? scrollToId = widget.initialPostId ?? persistentState?.lastSeenPostId;
@@ -177,6 +183,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 							key: replyBoxKey,
 							board: widget.board,
 							threadId: widget.id,
+							threadState: persistentState!,
 							onReplyPosted: () {
 								setState(() {
 									showReplyBox = false;

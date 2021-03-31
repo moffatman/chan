@@ -45,14 +45,16 @@ class PersistentThreadState extends HiveObject {
 	@HiveField(2)
 	bool watched;
 	@HiveField(3)
-	final List<PostReceipt> receipts;
+	List<PostReceipt> receipts;
 
 	PersistentThreadState({
 		this.lastSeenPostId,
 		DateTime? lastOpenedTime,
 		this.watched = false,
-		this.receipts = const []
-	}) : this.lastOpenedTime = lastOpenedTime ?? DateTime.now();
+		List<PostReceipt>? receipts
+	}) : this.lastOpenedTime = lastOpenedTime ?? DateTime.now(), this.receipts = receipts ?? [];
+
+	List<int> get youIds => receipts.map((receipt) => receipt.id).toList();
 
 	@override
 	String toString() => 'PersistentThreadState(lastSeenPostId: $lastSeenPostId, receipts: $receipts';

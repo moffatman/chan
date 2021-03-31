@@ -3,6 +3,7 @@ import 'package:chan/pages/board.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/post_expander.dart';
@@ -137,11 +138,19 @@ class PostQuoteLinkSpan extends PostSpan {
 		final post = postList.firstWhere((p) => p.id == this.id);
 		final settings = context.watch<EffectiveSettings>();
 		final newParentIds = (zone?.parentIds ?? []).followedBy([post.id]).toList();
+		final threadState = context.watchOrNull<PersistentThreadState>();
+		String text = '>>$id';
+		if (postList[0].id == this.id) {
+			text += ' (OP)';
+		}
+		if (threadState?.youIds.contains(id) ?? false) {
+			text += ' (You)';
+		}
 		return WidgetSpan(
 			child: HoverPopup(
 				child: Text.rich(
 					TextSpan(
-						text: '>>' + this.id.toString() + ((postList[0].id == this.id) ? ' (OP)' : ''),
+						text: text,
 						style: TextStyle(
 							color: overrideTextColor ?? ((zone?.shouldExpandPost(id) ?? false || sameAsParent) ? Colors.pink : Colors.red),
 							decoration: TextDecoration.underline,
@@ -172,7 +181,8 @@ class PostQuoteLinkSpan extends PostSpan {
 					providers: [
 						Provider.value(value: post),
 						Provider.value(value: postList),
-						ChangeNotifierProvider(create: (_) => ExpandingPostZone(newParentIds))
+						ChangeNotifierProvider(create: (_) => ExpandingPostZone(newParentIds)),
+						if (threadState != null) Provider.value(value: threadState)
 					],
 					child: PostRow()
 				)

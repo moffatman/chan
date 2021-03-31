@@ -1,5 +1,6 @@
 import 'package:chan/models/post_element.dart';
 import 'package:chan/pages/posts.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/post_expander.dart';
@@ -30,6 +31,7 @@ class PostRow extends StatelessWidget {
 		final parentIds = context.watchOrNull<ExpandingPostZone>()?.parentIds ?? [];
 		final randomHeroTag = Random().nextDouble().toString();
 		final settings = context.watch<EffectiveSettings>();
+		final isYou = context.watchOrNull<PersistentThreadState>()?.youIds.contains(post.id) ?? false;
 		return Container(
 			padding: EdgeInsets.all(8),
 			decoration: BoxDecoration(
@@ -47,8 +49,8 @@ class PostRow extends StatelessWidget {
 									TextSpan(
 										children: [
 											TextSpan(
-												text: post.name,
-												style: TextStyle(fontWeight: FontWeight.w600)
+												text: post.name + (isYou ? ' (You)' : ''),
+												style: TextStyle(fontWeight: FontWeight.w600, color: isYou ? Colors.red : null)
 											),
 											TextSpan(
 												text: post.id.toString(),

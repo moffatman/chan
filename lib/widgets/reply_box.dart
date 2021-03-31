@@ -15,11 +15,13 @@ class ReplyBox extends StatefulWidget {
 	final int threadId;
 	final VoidCallback onReplyPosted;
 	final VoidCallback? onRequestFocus;
+	final PersistentThreadState threadState;
 
 	ReplyBox({
 		required this.board,
 		required this.threadId,
 		required this.onReplyPosted,
+		required this.threadState,
 		this.onRequestFocus,
 		Key? key
 	}) : super(key: key);
@@ -146,9 +148,8 @@ class _ReplyBoxState extends State<ReplyBox> {
 										});
 										print(receipt);
 										_focusNode.unfocus();
-										final state = await Persistence.getThreadState(widget.board.name, widget.threadId);
-										state.receipts.add(receipt);
-										state.save();
+										widget.threadState.receipts = [...widget.threadState.receipts, receipt];
+										widget.threadState.save();
 										widget.onReplyPosted();
 									}
 									catch (e, st) {

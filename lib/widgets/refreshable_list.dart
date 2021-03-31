@@ -21,11 +21,13 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final String? filterHint;
 	final Widget Function(BuildContext context, T value, VoidCallback resetPage)? filteredItemBuilder;
 	final Duration? autoUpdateDuration;
+	final List<Provider> additionalProviders;
 
 	RefreshableList({
 		required this.itemBuilder,
 		required this.listUpdater,
 		required this.id,
+		this.additionalProviders = const [],
 		this.controller,
 		this.lazy = false,
 		this.filterHint,
@@ -152,8 +154,11 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		else if (list != null) {
 			final List<T> values = _filter.isEmpty ? list! : list!.where((val) => val.getSearchableText().any((s) => s.toLowerCase().contains(_filter))).toList();
 			widget.controller?.resetItems(values.length);
-			return Provider<List<T>>.value(
-				value: list!,
+			return MultiProvider(
+				providers: [
+					Provider<List<T>>.value(value: list!),
+					...widget.additionalProviders
+				],
 				child: Listener(
 					onPointerUp: (event) {
 						if (widget.controller != null) {
