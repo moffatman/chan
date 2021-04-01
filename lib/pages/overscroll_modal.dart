@@ -39,7 +39,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		if (!_popping) {
 			final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
 			final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
-			final double desiredOpacity = 1 - (((max(overscrollTop, overscrollBottom) + _scrollStopPosition) - 40) / 30).clamp(0, 1);
+			final double desiredOpacity = 1 - (((max(overscrollTop, overscrollBottom) + _scrollStopPosition) - 40) / 200).clamp(0, 1);
 			if (desiredOpacity != _opacity) {
 				setState(() {
 					_opacity = desiredOpacity;
