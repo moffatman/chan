@@ -1,4 +1,5 @@
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -33,13 +34,24 @@ class ThreadRow extends StatelessWidget {
 									style: TextStyle(fontWeight: FontWeight.w600)
 								),
 								TextSpan(text: ' '),
+								if (thread.flag != null) ...[
+									FlagSpan(thread.flag!),
+									TextSpan(text: ' '),
+									TextSpan(
+										text: thread.flag!.name,
+										style: TextStyle(
+											fontStyle: FontStyle.italic
+										)
+									),
+									TextSpan(text: ' ')
+								],
 								TextSpan(
-									text: thread.id.toString(),
-									style: TextStyle(color: Colors.grey)
+									text: formatTime(thread.time)
 								),
 								TextSpan(text: ' '),
 								TextSpan(
-									text: formatTime(thread.posts[0].time)
+									text: thread.id.toString(),
+									style: TextStyle(color: Colors.grey)
 								)
 							],
 							style: TextStyle(fontSize: 14)

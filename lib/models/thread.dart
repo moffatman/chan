@@ -1,5 +1,6 @@
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 
 class Thread implements Filterable {
@@ -13,6 +14,8 @@ class Thread implements Filterable {
 	final Attachment? attachment;
 	final String? title;
 	final bool isSticky;
+	final DateTime time;
+	final ImageboardFlag? flag;
 	Thread({
 		required this.posts,
 		required this.isArchived,
@@ -23,7 +26,9 @@ class Thread implements Filterable {
 		this.attachment,
 		required this.board,
 		required this.title,
-		required this.isSticky
+		required this.isSticky,
+		required this.time,
+		this.flag
 	}) {
 		Map<int, Post> postsById = Map();
 		for (final post in this.posts) {

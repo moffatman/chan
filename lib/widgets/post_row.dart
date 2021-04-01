@@ -3,6 +3,7 @@ import 'package:chan/pages/posts.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/post_expander.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:flutter/cupertino.dart';
@@ -52,15 +53,36 @@ class PostRow extends StatelessWidget {
 												text: post.name + (isYou ? ' (You)' : ''),
 												style: TextStyle(fontWeight: FontWeight.w600, color: isYou ? Colors.red : null)
 											),
+											if (post.posterId != null) IDSpan(
+												id: post.posterId!,
+												onPressed: () => Navigator.of(context).push(
+													TransparentRoute(
+														builder: (ctx) => PostsPage(
+															threadPosts: threadPosts,
+															postsIdsToShow: threadPosts.where((p) => p.posterId == post.posterId).map((p) => p.id).toList(),
+															parentIds: parentIds.followedBy([post.id]).toList()
+														)
+													)
+												)
+											),
+											if (post.flag != null) ...[
+												FlagSpan(post.flag!),
+												TextSpan(
+													text: post.flag!.name,
+													style: TextStyle(
+														fontStyle: FontStyle.italic
+													)
+												)
+											],
+											TextSpan(
+												text: formatTime(post.time)
+											),
 											TextSpan(
 												text: post.id.toString(),
 												style: TextStyle(color: Colors.grey),
 												recognizer: TapGestureRecognizer()..onTap = () {
 													replyBoxKey.currentState?.onTapPostId(post.id);
 												}
-											),
-											TextSpan(
-												text: formatTime(post.time)
 											),
 											if (!settings.useTouchLayout) ...[
 												...post.replyIds.map((id) => PostQuoteLinkSpan(id).build(ctx)),
@@ -75,6 +97,7 @@ class PostRow extends StatelessWidget {
 							)
 						)
 					),
+					SizedBox(height: 2),
 					IntrinsicHeight(
 						child: Row(
 							crossAxisAlignment: CrossAxisAlignment.stretch,

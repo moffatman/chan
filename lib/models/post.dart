@@ -1,3 +1,4 @@
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 
 import 'post_element.dart';
@@ -10,6 +11,8 @@ class Post implements Filterable {
 	final DateTime time;
 	final int id;
 	final Attachment? attachment;
+	final ImageboardFlag? flag;
+	final String? posterId;
 	PostSpan span;
 	List<int> replyIds = [];
 	Post({
@@ -19,7 +22,9 @@ class Post implements Filterable {
 		required this.time,
 		required this.id,
 		required this.span,
-		this.attachment
+		this.flag,
+		this.attachment,
+		this.posterId
 	});
 
 	@override

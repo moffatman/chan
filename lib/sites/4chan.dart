@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:chan/services/persistence.dart';
+import 'package:flutter/rendering.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:html/parser.dart' show parse;
@@ -16,9 +17,23 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/models/post_element.dart';
 
+class _Site4ChanFlagStructure {
+	final int width;
+	final int height;
+	final Uri spritesheet;
+	final Map<String, Offset> offsets;
+	_Site4ChanFlagStructure({
+		required this.width,
+		required this.height,
+		required this.spritesheet,
+		required this.offsets
+	});
+}
+
 class Site4Chan implements ImageboardSite {
 	final String name;
 	final String baseUrl;
+	final String staticUrl;
 	final String sysUrl;
 	final String apiUrl;
 	final String imageUrl;
@@ -93,18 +108,37 @@ class Site4Chan implements ImageboardSite {
 		return elements;
 	}
 
+	ImageboardFlag? _makeFlag(dynamic data) {
+		if (data['country'] != null) {
+			return ImageboardFlag(
+				name: data['country_name'],
+				imageUrl: Uri.https(staticUrl, '/image/country/${data['country'].toLowerCase()}.gif').toString(),
+				imageWidth: 16,
+				imageHeight: 11
+			);
+		}
+		else if (data['troll_country'] != null) {
+			return ImageboardFlag(
+				name: data['country_name'],
+				imageUrl: Uri.https(staticUrl, '/image/country/troll/${data['troll_country'].toLowerCase()}.gif').toString(),
+				imageWidth: 16,
+				imageHeight: 11
+			);
+		}
+	}
+
 	Post _makePost(String board, dynamic data) {
-		Post p = Post(
+		return Post(
 			board: board,
 			text: data['com'] ?? '',
 			name: data['name'] ?? '',
 			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
 			id: data['no'],
 			attachment: _makeAttachment(board, data),
-			span: PostNodeSpan(_makeSpans(data['com'] ?? ''))
+			span: PostNodeSpan(_makeSpans(data['com'] ?? '')),
+			flag: _makeFlag(data),
+			posterId: data['id']
 		);
-
-		return p;
 	}
 	Attachment? _makeAttachment(String board, dynamic data) {
 		if (data['tim'] != null) {
@@ -158,7 +192,9 @@ class Site4Chan implements ImageboardSite {
 			id: data['posts'][0]['no'],
 			attachment: _makeAttachment(board, data['posts'][0]),
 			title: (title == null) ? null : unescape.convert(title),
-			isSticky: data['posts'][0]['sticky'] == 1
+			isSticky: data['posts'][0]['sticky'] == 1,
+			time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
+			flag: _makeFlag(data['posts'][0])
 		);
 	}
 
@@ -193,7 +229,9 @@ class Site4Chan implements ImageboardSite {
 					attachment: _makeAttachment(board, threadData),
 					posts: lastReplies,
 					title: (title == null) ? null : unescape.convert(title),
-					isSticky: threadData['sticky'] == 1
+					isSticky: threadData['sticky'] == 1,
+					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
+					flag: _makeFlag(threadData)
 				);
 				threads.add(thread);
 			}
@@ -270,6 +308,7 @@ class Site4Chan implements ImageboardSite {
 
 	Site4Chan({
 		required this.baseUrl,
+		required this.staticUrl,
 		required this.sysUrl,
 		required this.apiUrl,
 		required this.imageUrl,

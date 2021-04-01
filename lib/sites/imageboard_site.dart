@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chan/services/persistence.dart';
+import 'package:flutter/widgets.dart';
 
 import '../models/attachment.dart';
 import '../models/thread.dart';
@@ -42,6 +43,20 @@ class PostFailedException implements Exception {
 	PostFailedException(this.reason);
 	@override
 	String toString() => 'Posting failed: $reason';
+}
+
+class ImageboardFlag {
+	final String name;
+	final String imageUrl;
+	final double imageWidth;
+	final double imageHeight;
+
+	ImageboardFlag({
+		required this.name,
+		required this.imageUrl,
+		required this.imageWidth,
+		required this.imageHeight
+	});
 }
 
 class ImageboardBoard {

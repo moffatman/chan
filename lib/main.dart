@@ -23,6 +23,7 @@ class ChanApp extends StatelessWidget {
 					ChangeNotifierProvider<EffectiveSettings>(create: (_) => EffectiveSettings()),
 					Provider<ImageboardSite>(create: (_) => Site4Chan(
 						baseUrl: 'boards.4chan.org',
+						staticUrl: 's.4cdn.org',
 						sysUrl: 'sys.4chan.org',
 						apiUrl: 'a.4cdn.org',
 						imageUrl: 'i.4cdn.org',
