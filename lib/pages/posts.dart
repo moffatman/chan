@@ -11,11 +11,13 @@ class PostsPage extends StatelessWidget {
 	final List<Post> threadPosts;
 	final List<int> postsIdsToShow;
 	final List<int> parentIds;
+	final void Function(Post post)? onTapPost;
 
 	PostsPage({
 		required this.threadPosts,
 		required this.postsIdsToShow,
-		required this.parentIds
+		required this.parentIds,
+		this.onTapPost
 	});
 
 	@override
@@ -29,7 +31,8 @@ class PostsPage extends StatelessWidget {
 				],
 				child: Column(
 					children: replies.map((reply) {
-							return Provider.value(
+						return GestureDetector(
+							child: Provider.value(
 								value: reply,
 								child: PostRow(
 									onThumbnailTap: (attachment, {Object? tag}) {
@@ -38,10 +41,21 @@ class PostsPage extends StatelessWidget {
 											attachments: [attachment],
 											semanticParentIds: parentIds
 										);
-									}
+									},
+									onNeedScrollToAnotherPost: (post) {
+										Navigator.of(context).pop();
+										onTapPost!(reply);
+									},
 								)
-							);
-						}).toList()
+							),
+							onTap: () {
+								if (onTapPost != null) {
+									Navigator.of(context).pop();
+									onTapPost!(reply);
+								}
+							}
+						);
+					}).toList()
 				)
 			),
 			heightEstimate: 100.0 * (postsIdsToShow.length - 1)

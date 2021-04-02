@@ -150,7 +150,8 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 												child: PostRow(
 													onThumbnailTap: (attachment, {Object? tag}) {
 														_showGallery(initialAttachment: attachment);
-													}
+													},
+													onNeedScrollToAnotherPost: (post) => _listController.scrollToFirstMatching((val) => val == post)
 												)
 											);
 										},

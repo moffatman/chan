@@ -20,9 +20,11 @@ import 'dart:math';
 
 class PostRow extends StatelessWidget {
 	final void Function(Attachment, {Object tag})? onThumbnailTap;
+	final void Function(Post post)? onNeedScrollToAnotherPost;
 
 	const PostRow({
-		this.onThumbnailTap
+		this.onThumbnailTap,
+		this.onNeedScrollToAnotherPost
 	});
 
 	@override
@@ -60,7 +62,8 @@ class PostRow extends StatelessWidget {
 														builder: (ctx) => PostsPage(
 															threadPosts: threadPosts,
 															postsIdsToShow: threadPosts.where((p) => p.posterId == post.posterId).map((p) => p.id).toList(),
-															parentIds: parentIds.followedBy([post.id]).toList()
+															parentIds: parentIds.followedBy([post.id]).toList(),
+															onTapPost: onNeedScrollToAnotherPost
 														)
 													)
 												)
@@ -133,7 +136,7 @@ class PostRow extends StatelessWidget {
 														builder: (ctx) => Text.rich(
 															TextSpan(
 																children: [
-																	post.span.build(ctx),
+																	post.span.build(ctx, onNeedScrollToAnotherPost: onNeedScrollToAnotherPost),
 																	// Placeholder to guarantee the stacked reply button is not on top of text
 																	if (settings.useTouchLayout && post.replyIds.isNotEmpty) TextSpan(
 																		text: List.filled(post.replyIds.length.toString().length + 3, '1').join(),
@@ -174,7 +177,8 @@ class PostRow extends StatelessWidget {
 																		builder: (ctx) => PostsPage(
 																			threadPosts: threadPosts,
 																			postsIdsToShow: post.replyIds,
-																			parentIds: parentIds.followedBy([post.id]).toList()
+																			parentIds: parentIds.followedBy([post.id]).toList(),
+																			onTapPost: onNeedScrollToAnotherPost
 																		)
 																	)
 																);
