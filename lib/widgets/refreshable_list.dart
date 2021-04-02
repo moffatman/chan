@@ -71,6 +71,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		if (oldWidget.id != widget.id) {
 			this.autoUpdateTimer?.cancel();
 			this.autoUpdateTimer = null;
+			_closeSearch();
 			setState(() {
 				this.list = null;
 				this.errorMessage = null;
