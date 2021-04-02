@@ -116,7 +116,7 @@ class ThreadRow extends StatelessWidget {
 												mainAxisAlignment: MainAxisAlignment.spaceBetween,
 												children: [
 													Text(thread.replyCount.toString(), style: TextStyle(fontSize: 14)),
-													Icon(Icons.comment, size: 14)
+													Icon(Icons.reply_rounded, size: 14)
 												]
 											)
 										)
