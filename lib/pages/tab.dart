@@ -31,7 +31,7 @@ class _ImageboardTabState extends State<ImageboardTab> {
 	initState() {
 		super.initState();
 		context.read<ImageboardSite>().getBoards().then((list) {
-			final matches =list.where((b) => b.name == widget.initialBoardName);
+			final matches = list.where((b) => b.name == widget.initialBoardName);
 			if (matches.isNotEmpty) {
 				setState(() {
 					this.board = matches.first;
@@ -71,6 +71,7 @@ class _ImageboardTabState extends State<ImageboardTab> {
 												if (newBoard != null) {
 													setState(() {
 														board = newBoard;
+														this.selectedThread = null;
 													});
 												}
 											}
