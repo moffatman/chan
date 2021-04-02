@@ -44,7 +44,7 @@ class PostsPage extends StatelessWidget {
 									},
 									onNeedScrollToAnotherPost: (post) {
 										Navigator.of(context).pop();
-										onTapPost!(reply);
+										onTapPost!(post);
 									},
 								)
 							),
