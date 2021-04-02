@@ -1,3 +1,4 @@
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -53,8 +54,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				return SafeArea(
 					child: GridView.count(
 						padding: EdgeInsets.only(top: 4, bottom: 4),
-						crossAxisCount: 3,
-						childAspectRatio: 1.7,
+						crossAxisCount: context.watch<EffectiveSettings>().useTouchLayout ? 3 : 1,
+						childAspectRatio: context.watch<EffectiveSettings>().useTouchLayout ? 1.7 : 2.5,
 						mainAxisSpacing: 4,
 						crossAxisSpacing: 4,
 						shrinkWrap: true,
