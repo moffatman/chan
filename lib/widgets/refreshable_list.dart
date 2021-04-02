@@ -146,7 +146,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 						ErrorMessageCard(errorMessage.toString()),
 						CupertinoButton(
 							child: Text('Retry'),
-							onPressed: widget.listUpdater
+							onPressed: update
 						)
 					]
 				)
