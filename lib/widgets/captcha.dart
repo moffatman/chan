@@ -4,6 +4,7 @@ import 'dart:ui' as ui show Image;
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:html/dom.dart' show Document;
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:html/parser.dart' show parse;
@@ -109,18 +110,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> with SingleTickerProviderStat
 		});
 	}
 
-	Future<CaptchaNoJSChallenge> _requestChallenge() async {
-		final challengeResponse = await client.get(Uri.https('www.google.com', '/recaptcha/api/fallback', {
-			'k': widget.request.key
-		}), headers: {
-			'Referer': widget.request.sourceUrl,
-			..._HEADERS
-		});
-		if (challengeResponse.statusCode != 200) {
-			print(challengeResponse.request!.url);
-			throw CaptchaNoJSException('Got status code ${challengeResponse.statusCode}');
-		}
-		final document = parse(challengeResponse.body);
+	Future<CaptchaNoJSChallenge> _gotChallengePage(Document document) async {
 		final img = document.querySelector('img.fbc-imageselect-payload');
 		if (img == null) {
 			throw CaptchaNoJSException('Image missing from challenge');
@@ -154,6 +144,21 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> with SingleTickerProviderStat
 			image: challengeImage,
 			subimages: subimages
 		);
+	}
+
+	Future<CaptchaNoJSChallenge> _requestChallenge() async {
+		final challengeResponse = await client.get(Uri.https('www.google.com', '/recaptcha/api/fallback', {
+			'k': widget.request.key
+		}), headers: {
+			'Referer': widget.request.sourceUrl,
+			..._HEADERS
+		});
+		if (challengeResponse.statusCode != 200) {
+			print(challengeResponse.request!.url);
+			throw CaptchaNoJSException('Got status code ${challengeResponse.statusCode}');
+		}
+		final document = parse(challengeResponse.body);
+		return _gotChallengePage(document);
 	}
 
 	void _tryRequestChallenge() async {
@@ -196,7 +201,14 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> with SingleTickerProviderStat
 			throw CaptchaNoJSException('Got status code ${submissionResponse.statusCode}');
 		}
 		final document = parse(submissionResponse.body);
-		widget.onCaptchaSolved(document.querySelector('.fbc-verification-token textarea')!.text);
+		final tokenElement = document.querySelector('.fbc-verification-token textarea');
+		if (tokenElement != null) {
+			widget.onCaptchaSolved(tokenElement.text);
+		}
+		else {
+			this.challenge = await _gotChallengePage(document);
+			setState(() {});
+		}
 	}
 
 	void _trySubmitChallenge() async {
