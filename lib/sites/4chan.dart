@@ -30,6 +30,15 @@ class _Site4ChanFlagStructure {
 	});
 }
 
+class _ThreadCacheEntry {
+	final Thread thread;
+	final String lastModified;
+	_ThreadCacheEntry({
+		required this.thread,
+		required this.lastModified
+	});
+}
+
 class Site4Chan implements ImageboardSite {
 	final String name;
 	final String baseUrl;
@@ -42,6 +51,7 @@ class Site4Chan implements ImageboardSite {
 	final Map<String, ImageboardSite> archives;
 	List<ImageboardBoard>? _boards;
 	final unescape = HtmlUnescape();
+	final Map<String, _ThreadCacheEntry> _threadCache = Map();
 
 	List<PostSpan> _parsePlaintext(String text) {
 		return linkify(text, linkifiers: [UrlLinkifier()]).map((elem) {
@@ -151,28 +161,18 @@ class Site4Chan implements ImageboardSite {
 			);
 		}
 	}
-	Uri getAttachmentUrl(Attachment attachment) {
-		if (attachment.providerId == null) {
-			return Uri.https(imageUrl, '/${attachment.board}/${attachment.id}${attachment.ext}');
-		}
-		else {
-			return archives[attachment.providerId]!.getAttachmentUrl(attachment);
-		}
-	}
-	List<Uri> getArchiveAttachmentUrls(Attachment attachment) {
-		return [];
-	}
-	Uri getAttachmentThumbnailUrl(Attachment attachment) {
-		if (attachment.providerId == null) {
-			return Uri.https(imageUrl, '/${attachment.board}/${attachment.id}s.jpg');
-		}
-		else {
-			return archives[attachment.providerId]!.getAttachmentThumbnailUrl(attachment);
-		}
-	}
 	Future<Thread> getThread(String board, int id) async {
-		final response = await client.get(Uri.https(apiUrl,'/$board/thread/$id.json'));
-		if (response.statusCode != 200) {
+		Map<String, String>? headers;
+		if (_threadCache['$board/$id'] != null) {
+			headers = {
+				'If-Modified-Since': _threadCache['$board/$id']!.lastModified
+			};
+		}
+		final response = await client.get(Uri.https(apiUrl,'/$board/thread/$id.json'), headers: headers);
+		if (response.statusCode == 304 && headers != null) {
+			return _threadCache['$board/$id']!.thread;
+		}
+		else if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
 				return Future.error(ThreadNotFoundException(board, id));
 			}
@@ -180,7 +180,7 @@ class Site4Chan implements ImageboardSite {
 		}
 		final data = json.decode(response.body);
 		final String? title = data['posts']?[0]?['sub'];
-		return Thread(
+		final thread = Thread(
 			board: board,
 			isDeleted: false,
 			replyCount: data['posts'][0]['replies'],
@@ -196,6 +196,11 @@ class Site4Chan implements ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
 			flag: _makeFlag(data['posts'][0])
 		);
+		_threadCache['$board/$id'] = _ThreadCacheEntry(
+			thread: thread,
+			lastModified: response.headers['last-modified']!
+		);
+		return thread;
 	}
 
 	Future<Thread> getThreadContainingPost(String board, int id) async {
