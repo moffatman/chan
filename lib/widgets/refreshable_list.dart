@@ -176,7 +176,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 							SliverSafeArea(
 								sliver: CupertinoSliverRefreshControl(
 									onRefresh: update,
-									refreshTriggerPullDistance: 150,
+									refreshTriggerPullDistance: 125
 								),
 								bottom: false
 							),
