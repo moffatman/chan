@@ -1,5 +1,6 @@
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/sites/foolfuuka.dart';
 import 'package:cupertino_back_gesture/cupertino_back_gesture.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +29,14 @@ class ChanApp extends StatelessWidget {
 						apiUrl: 'a.4cdn.org',
 						imageUrl: 'i.4cdn.org',
 						name: '4chan',
-						captchaKey: '6Ldp2bsSAAAAAAJ5uyx_lx34lJeEpTLVkP5k04qc'
+						captchaKey: '6Ldp2bsSAAAAAAJ5uyx_lx34lJeEpTLVkP5k04qc',
+						archives: [
+							FoolFuukaArchive(baseUrl: 'archive.4plebs.org', staticUrl: 's.4cdn.org', name: '4plebs'),
+							FoolFuukaArchive(baseUrl: 'archive.rebeccablacktech.com', staticUrl: 's.4cdn.org', name: 'RebeccaBlackTech'),
+							FoolFuukaArchive(baseUrl: 'archive.nyafuu.org', staticUrl: 's.4cdn.org', name: 'Nyafuu'),
+							FoolFuukaArchive(baseUrl: 'desuarchive.org', staticUrl: 's.4cdn.org', name: 'Desuarchive'),
+							FoolFuukaArchive(baseUrl: 'archived.moe', staticUrl: 's.4cdn.org', name: 'Archived.Moe')
+						]
 					))
 				],
 				child: SettingsSystemListener(

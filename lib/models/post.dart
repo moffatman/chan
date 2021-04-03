@@ -25,7 +25,9 @@ class Post implements Filterable {
 		this.flag,
 		this.attachment,
 		this.posterId
-	});
+	}) {
+		this.attachment?.post = this;
+	}
 
 	@override
 	String toString() {

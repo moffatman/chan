@@ -48,12 +48,12 @@ class Site4Chan implements ImageboardSite {
 	final String imageUrl;
 	final String captchaKey;
 	final http.Client client;
-	final Map<String, ImageboardSite> archives;
+	final List<ImageboardSiteArchive> archives;
 	List<ImageboardBoard>? _boards;
 	final unescape = HtmlUnescape();
 	final Map<String, _ThreadCacheEntry> _threadCache = Map();
 
-	List<PostSpan> _parsePlaintext(String text) {
+	static List<PostSpan> parsePlaintext(String text) {
 		return linkify(text, linkifiers: [UrlLinkifier()]).map((elem) {
 			if (elem is UrlElement) {
 				return PostLinkSpan(elem.url);
@@ -64,7 +64,7 @@ class Site4Chan implements ImageboardSite {
 		}).toList();
 	}
 
-	List<PostSpan> _makeSpans(String data) {
+	static List<PostSpan> makeSpans(String data) {
 		final doc = parse(data.replaceAll('<wbr>', ''));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
@@ -97,22 +97,22 @@ class Site4Chan implements ImageboardSite {
 							elements.add(PostDeadQuoteLinkSpan(int.parse(parts.last), board: (parts.length > 2) ? parts[1] : null));
 						}
 						else if (node.attributes['class']?.contains('quote') ?? false) {
-							elements.add(PostQuoteSpan(PostNodeSpan(_makeSpans(node.innerHtml))));
+							elements.add(PostQuoteSpan(PostNodeSpan(makeSpans(node.innerHtml))));
 						}
 						else {
 							elements.add(PostTextSpan(node.text));
 						}
 					}
 					else if (node.localName == 's') {
-						elements.add(PostSpoilerSpan(PostNodeSpan(_makeSpans(node.innerHtml)), spoilerSpanId++));
+						elements.add(PostSpoilerSpan(PostNodeSpan(makeSpans(node.innerHtml)), spoilerSpanId++));
 					}
 					else {
-						elements.addAll(_parsePlaintext(node.text));
+						elements.addAll(parsePlaintext(node.text));
 					}
 				}
 			}
 			else {
-				elements.addAll(_parsePlaintext(node.text ?? ''));
+				elements.addAll(parsePlaintext(node.text ?? ''));
 			}
 		}
 		return elements;
@@ -145,19 +145,23 @@ class Site4Chan implements ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
 			id: data['no'],
 			attachment: _makeAttachment(board, data),
-			span: PostNodeSpan(_makeSpans(data['com'] ?? '')),
+			span: PostNodeSpan(makeSpans(data['com'] ?? '')),
 			flag: _makeFlag(data),
 			posterId: data['id']
 		);
 	}
 	Attachment? _makeAttachment(String board, dynamic data) {
 		if (data['tim'] != null) {
+			final int id = data['tim'];
+			final String ext = data['ext'];
 			return Attachment(
-				id: data['tim'],
+				id: id,
 				type: data['ext'] == '.webm' ? AttachmentType.WEBM : AttachmentType.Image,
 				filename: (data['filename'] ?? '') + (data['ext'] ?? ''),
-				ext: data['ext'],
-				board: board
+				ext: ext,
+				board: board,
+				url: Uri.https(imageUrl, '/$board/$id$ext'),
+				thumbnailUrl: Uri.https(imageUrl, '/$board/${id}s.jpg')
 			);
 		}
 	}
@@ -202,9 +206,31 @@ class Site4Chan implements ImageboardSite {
 		);
 		return thread;
 	}
+	Future<Thread> getThreadFromArchive(String board, int id) async {
+		for (final archive in archives) {
+			try {
+				return archive.getThread(board, id);
+			}
+			catch(e) {
 
-	Future<Thread> getThreadContainingPost(String board, int id) async {
+			}
+		}
+		throw PostNotFoundException(board, id);
+	}
+
+	Future<Post> getPost(String board, int id) async {
 		throw Exception('Not implemented');
+	}
+	Future<Post> getPostFromArchive(String board, int id) async {
+		for (final archive in archives) {
+			try {
+				return archive.getPost(board, id);
+			}
+			catch(e) {
+
+			}
+		}
+		throw PostNotFoundException(board, id);
 	}
 
 	Future<List<Thread>> getCatalog(String board) async {
@@ -320,6 +346,6 @@ class Site4Chan implements ImageboardSite {
 		required this.name,
 		http.Client? client,
 		required this.captchaKey,
-		this.archives = const {}
+		this.archives = const []
 	}) : this.client = client ?? IOClient();
 }

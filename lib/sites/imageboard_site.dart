@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:chan/models/post.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:flutter/widgets.dart';
 
 import '../models/attachment.dart';
 import '../models/thread.dart';
@@ -92,16 +92,16 @@ class CaptchaRequest {
 	String toString() => 'CaptchaRequest(sourceUrl: $sourceUrl, key: $key)';
 }
 
-abstract class ImageboardSite {
+abstract class ImageboardSiteArchive {
 	final http.Client client = http.Client();
 	String get name;
-	Future<Thread> getThreadContainingPost(String board, int id);
+	Future<Post> getPost(String board, int id);
 	Future<Thread> getThread(String board, int id);
 	Future<List<Thread>> getCatalog(String board);
-	Uri getAttachmentUrl(Attachment attachment);
-	Uri getAttachmentThumbnailUrl(Attachment attachment);
-	List<Uri> getArchiveAttachmentUrls(Attachment attachment);
 	Future<List<ImageboardBoard>> getBoards();
+}
+
+abstract class ImageboardSite extends ImageboardSiteArchive {
 	CaptchaRequest getCaptchaRequest();
 	Future<PostReceipt> postReply({
 		required String board,
@@ -112,4 +112,6 @@ abstract class ImageboardSite {
 		required String captchaKey,
 		File? file
 	});
+	Future<Post> getPostFromArchive(String board, int id);
+	Future<Thread> getThreadFromArchive(String board, int id);
 }

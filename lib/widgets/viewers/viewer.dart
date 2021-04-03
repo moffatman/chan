@@ -2,13 +2,11 @@ import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/gallery.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/viewers/image.dart';
 import 'package:chan/widgets/viewers/webm.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class AttachmentViewer extends StatelessWidget {
 	final Attachment attachment;
@@ -38,7 +36,7 @@ class AttachmentViewer extends StatelessWidget {
 				)
 				else GalleryImageViewer(
 					attachment: attachment,
-					url: (status is AttachmentImageUrlAvailableStatus) ? (status as AttachmentImageUrlAvailableStatus).url : context.watch<ImageboardSite>().getAttachmentThumbnailUrl(attachment),
+					url: (status is AttachmentImageUrlAvailableStatus) ? (status as AttachmentImageUrlAvailableStatus).url : attachment.thumbnailUrl,
 					tag: tag,
 					onCacheCompleted: onCacheCompleted,
 					isThumbnail: !(status is AttachmentImageUrlAvailableStatus)

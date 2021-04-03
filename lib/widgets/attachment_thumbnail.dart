@@ -42,9 +42,8 @@ class AttachmentThumbnail extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final url = context.watch<ImageboardSite>().getAttachmentThumbnailUrl(attachment).toString();
 		Widget child = ExtendedImage.network(
-			url,
+			attachment.thumbnailUrl.toString(),
 			width: width,
 			height: height,
 			fit: fit,

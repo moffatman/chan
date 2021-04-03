@@ -146,10 +146,9 @@ class _GalleryPageState extends State<GalleryPage> {
 	Future<Uri> _getGoodUrl(Attachment attachment) async {
 		// Should check archives and send scaffold messages here
 		final site = context.read<ImageboardSite>();
-		final url = site.getAttachmentUrl(attachment);	
-		final result = await site.client.head(url);
+		final result = await site.client.head(attachment.url);
 		if (result.statusCode == 200) {
-			return url;
+			return attachment.url;
 		}
 		else {
 			throw HTTPStatusException(result.statusCode);
