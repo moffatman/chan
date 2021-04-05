@@ -175,9 +175,11 @@ class _SearchPageState extends State<SearchPage> {
 					]
 				)
 			),
-			child: ListView(
-				children: [
-					if (_searchFocused) ...[
+			child: AnimatedSwitcher(
+				duration: const Duration(milliseconds: 300),
+				child: _searchFocused ? ListView(
+					key: ValueKey(true),
+					children: [
 						SizedBox(height: 16),
 						CupertinoSegmentedControl<PostTypeFilter>(
 							children: {
@@ -246,7 +248,9 @@ class _SearchPageState extends State<SearchPage> {
 							]
 						)
 					]
-					else ...Persistence.recentSearches.entries.map((q) {
+				) : ListView(
+					key: ValueKey(false),
+					children: Persistence.recentSearches.entries.map((q) {
 						return GestureDetector(
 							behavior: HitTestBehavior.opaque,
 							onTap: () {
@@ -283,8 +287,8 @@ class _SearchPageState extends State<SearchPage> {
 								)
 							)
 						);
-					})
-				]
+					}).toList()
+				)
 			)
 		);
 	}
