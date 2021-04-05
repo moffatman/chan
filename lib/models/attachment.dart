@@ -14,6 +14,7 @@ class Attachment {
 	final Uri url;
 	final Uri thumbnailUrl;
 	late Post post;
+	final String md5;
 	Attachment({
 		required this.type,
 		required this.board,
@@ -21,6 +22,7 @@ class Attachment {
 		required this.ext,
 		required this.filename,
 		required this.url,
-		required this.thumbnailUrl
+		required this.thumbnailUrl,
+		required this.md5
 	});
 }

@@ -1,3 +1,4 @@
+import 'package:chan/models/post_element.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/util.dart';
@@ -82,7 +83,7 @@ class ThreadRow extends StatelessWidget {
 													value: thread.posts[0],
 													child: Builder(
 														builder: (ctx) => IgnorePointer(
-															child: Text.rich(thread.posts[0].span.build(ctx), overflow: TextOverflow.fade)
+															child: Text.rich(thread.posts[0].span.build(ctx, PostSpanRenderOptions()), overflow: TextOverflow.fade)
 														)
 													)
 												)),

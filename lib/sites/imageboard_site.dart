@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:chan/models/post.dart';
+import 'package:chan/models/search.dart';
 import 'package:chan/services/persistence.dart';
 
-import '../models/attachment.dart';
 import '../models/thread.dart';
 
 import 'package:http/http.dart' as http;
@@ -92,6 +92,17 @@ class CaptchaRequest {
 	String toString() => 'CaptchaRequest(sourceUrl: $sourceUrl, key: $key)';
 }
 
+class ImageboardArchiveSearchResult {
+	final List<Post> posts;
+	final int page;
+	final int maxPage;
+	ImageboardArchiveSearchResult({
+		required this.posts,
+		required this.page,
+		required this.maxPage
+	});
+}
+
 abstract class ImageboardSiteArchive {
 	final http.Client client = http.Client();
 	String get name;
@@ -99,6 +110,8 @@ abstract class ImageboardSiteArchive {
 	Future<Thread> getThread(String board, int id);
 	Future<List<Thread>> getCatalog(String board);
 	Future<List<ImageboardBoard>> getBoards();
+	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page});
+	String getWebUrl(String board, int threadId, [int? postId]);
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {

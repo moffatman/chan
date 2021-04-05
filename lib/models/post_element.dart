@@ -17,11 +17,26 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:provider/provider.dart';
 import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
 
+class PostSpanRenderOptions {
+	final GestureRecognizer? recognizer;
+	final bool overrideRecognizer;
+	final Color? overrideTextColor;
+	final void Function(Post post)? onNeedScrollToAnotherPost;
+	final bool showCrossThreadLabel;
+	PostSpanRenderOptions({
+		this.recognizer,
+		this.overrideRecognizer = false,
+		this.overrideTextColor,
+		this.onNeedScrollToAnotherPost,
+		this.showCrossThreadLabel = true
+	});
+}
+
 abstract class PostSpan {
 	List<int> get referencedPostIds {
 		return [];
 	}
-	InlineSpan build(BuildContext context, {GestureRecognizer? recognizer, bool overrideRecognizer = false, Color? overrideTextColor, void Function(Post post)? onNeedScrollToAnotherPost});
+	InlineSpan build(BuildContext context, PostSpanRenderOptions options);
 }
 
 class PostNodeSpan extends PostSpan {
@@ -33,15 +48,9 @@ class PostNodeSpan extends PostSpan {
 		return children.expand((child) => child.referencedPostIds).toList();
 	}
 
-	build(context, {recognizer, overrideRecognizer = false, overrideTextColor, onNeedScrollToAnotherPost}) {
+	build(context, options) {
 		return TextSpan(
-			children: children.map((child) => child.build(
-				context,
-				recognizer: recognizer,
-				overrideRecognizer: overrideRecognizer,
-				overrideTextColor: overrideTextColor,
-				onNeedScrollToAnotherPost: onNeedScrollToAnotherPost
-			)).toList()
+			children: children.map((child) => child.build(context, options)).toList()
 		);
 	}
 }
@@ -49,17 +58,17 @@ class PostNodeSpan extends PostSpan {
 class PostTextSpan extends PostSpan {
 	final String text;
 	PostTextSpan(this.text);
-	build(context, {recognizer, overrideRecognizer = false, overrideTextColor, onNeedScrollToAnotherPost}) {
+	build(context, options) {
 		return TextSpan(
 			text: this.text,
-			recognizer: recognizer
+			recognizer: options.recognizer
 		);
 	}
 }
 
 class PostLineBreakSpan extends PostSpan {
 	PostLineBreakSpan();
-	build(context, {recognizer, overrideRecognizer = false, overrideTextColor, onNeedScrollToAnotherPost}) {
+	build(context, options) {
 		return WidgetSpan(
 			child: Row(
 				children: [Text('')],
@@ -71,11 +80,11 @@ class PostLineBreakSpan extends PostSpan {
 class PostQuoteSpan extends PostSpan {
 	final PostSpan child;
 	PostQuoteSpan(this.child);
-	build(context, {recognizer, overrideRecognizer = false, overrideTextColor, onNeedScrollToAnotherPost}) {
+	build(context, options) {
 		return TextSpan(
-			children: [child.build(context, recognizer: recognizer, overrideRecognizer: overrideRecognizer)],
-			style: TextStyle(color: overrideTextColor ?? Colors.green),
-			recognizer: recognizer
+			children: [child.build(context, options)],
+			style: TextStyle(color: options.overrideTextColor ?? Colors.green),
+			recognizer: options.recognizer
 		);
 	}
 }
@@ -137,16 +146,16 @@ class PostQuoteLinkSpan extends PostSpan {
 	List<int> get referencedPostIds {
 		return [id];
 	}
-	build(context, {recognizer, overrideRecognizer = false, overrideTextColor, onNeedScrollToAnotherPost}) {
+	build(context, options) {
 		final zone = context.watchOrNull<ExpandingPostZone>();
 		final sameAsParent = zone?.parentIds.contains(id) ?? false;
-		final postList = context.watch<List<Post>>();
-		final post = postList.firstWhere((p) => p.id == this.id);
+		final postList = context.watchOrNull<List<Post>>();
+		final post = postList?.firstWhere((p) => p.id == this.id);
 		final settings = context.watch<EffectiveSettings>();
-		final newParentIds = (zone?.parentIds ?? []).followedBy([post.id]).toList();
+		final newParentIds = (zone?.parentIds ?? []).followedBy([this.id]).toList();
 		final threadState = context.watchOrNull<PersistentThreadState>();
 		String text = '>>$id';
-		if (postList[0].id == this.id) {
+		if (context.watch<Post>().threadId == this.id) {
 			text += ' (OP)';
 		}
 		if (threadState?.youIds.contains(id) ?? false) {
@@ -158,12 +167,12 @@ class PostQuoteLinkSpan extends PostSpan {
 					TextSpan(
 						text: text,
 						style: TextStyle(
-							color: overrideTextColor ?? ((zone?.shouldExpandPost(id) ?? false || sameAsParent) ? Colors.pink : Colors.red),
+							color: options.overrideTextColor ?? ((zone?.shouldExpandPost(id) ?? false || sameAsParent) ? Colors.pink : Colors.red),
 							decoration: TextDecoration.underline,
 							decorationStyle: sameAsParent ? TextDecorationStyle.dashed : null
 						),
-						recognizer: (recognizer != null && overrideRecognizer) ? recognizer : (TapGestureRecognizer()..onTap = () {
-							if (!sameAsParent && zone != null) {
+						recognizer: (options.recognizer != null && options.overrideRecognizer) ? options.recognizer : (TapGestureRecognizer()..onTap = () {
+							if (!sameAsParent && zone != null && postList != null && post != null) {
 								if (settings.useTouchLayout) {
 									Navigator.of(context).push(
 										TransparentRoute(
@@ -171,7 +180,7 @@ class PostQuoteLinkSpan extends PostSpan {
 												threadPosts: postList,
 												postsIdsToShow: [post.id],
 												parentIds: newParentIds,
-												onTapPost: onNeedScrollToAnotherPost
+												onTapPost: options.onNeedScrollToAnotherPost
 											)
 										)
 									);
@@ -202,7 +211,7 @@ class PostWidgetSpan extends PostSpan {
 	final Widget Function(BuildContext context) builder;
 	PostWidgetSpan(this.builder);
 
-	build(context, {recognizer, overrideRecognizer = false, overrideTextColor, onNeedScrollToAnotherPost}) => WidgetSpan(child: this.builder(context));
+	build(context, options) => WidgetSpan(child: this.builder(context));
 }
 
 class PostExpandingQuoteLinkSpan extends PostNodeSpan {
@@ -216,15 +225,15 @@ class PostDeadQuoteLinkSpan extends PostSpan {
 	final int id;
 	final String? board;
 	PostDeadQuoteLinkSpan(this.id, {this.board});
-	build(context, {recognizer, overrideRecognizer = false, overrideTextColor, onNeedScrollToAnotherPost}) {
+	build(context, options) {
 		final showBoard = context.watch<Post>().board != board && board != null;
 		return TextSpan(
 			text: (showBoard ? '>>/$board/' : '>>') + this.id.toString(),
 			style: TextStyle(
 				decoration: TextDecoration.lineThrough,
-				color: overrideTextColor ?? Colors.red
+				color: options.overrideTextColor ?? Colors.red
 			),
-			recognizer: recognizer
+			recognizer: options.recognizer
 		);
 	}
 }
@@ -234,16 +243,16 @@ class PostCrossThreadQuoteLinkSpan extends PostSpan {
 	final int postId;
 	final int threadId;
 	PostCrossThreadQuoteLinkSpan(this.board, this.threadId, this.postId);
-	build(context, {recognizer, overrideRecognizer = false, overrideTextColor, onNeedScrollToAnotherPost}) {
+	build(context, options) {
 		final showBoard = context.watch<Post>().board != board;
 		final site = context.watch<ImageboardSite>();
 		return TextSpan(
-			text: (showBoard ? '>>/$board/' : '>>') + this.postId.toString() + ' (Cross-thread)',
+			text: (showBoard ? '>>/$board/' : '>>') + this.postId.toString() + (options.showCrossThreadLabel ? ' (Cross-thread)' : ''),
 			style: TextStyle(
-				color: overrideTextColor ?? Colors.red,
+				color: options.overrideTextColor ?? Colors.red,
 				decoration: TextDecoration.underline
 			),
-			recognizer: (recognizer != null && overrideRecognizer) ? recognizer : (TapGestureRecognizer()..onTap = () async {
+			recognizer: (options.recognizer != null && options.overrideRecognizer) ? options.recognizer : (TapGestureRecognizer()..onTap = () async {
 				final boards = await site.getBoards();
 				(rightPaneNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true)).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: boards.firstWhere((b) => b.name == board), id: this.threadId, initialPostId: this.postId)));
 			})
@@ -254,15 +263,15 @@ class PostCrossThreadQuoteLinkSpan extends PostSpan {
 class PostBoardLink extends PostSpan {
 	final String board;
 	PostBoardLink(this.board);
-	build(context, {recognizer, overrideRecognizer = false, overrideTextColor, onNeedScrollToAnotherPost}) {
+	build(context, options) {
 		final site = context.watch<ImageboardSite>();
 		return TextSpan(
 			text: '>>/$board/',
 			style: TextStyle(
-				color: overrideTextColor ?? Colors.red,
+				color: options.overrideTextColor ?? Colors.red,
 				decoration: TextDecoration.underline
 			),
-			recognizer: (recognizer != null && overrideRecognizer) ? recognizer : (TapGestureRecognizer()..onTap = () async {
+			recognizer: (options.recognizer != null && options.overrideRecognizer) ? options.recognizer : (TapGestureRecognizer()..onTap = () async {
 				final boards = await site.getBoards();
 				(rightPaneNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true)).push(cpr.CupertinoPageRoute(builder: (ctx) => BoardPage(board: boards.firstWhere((b) => b.name == board))));
 			})
@@ -272,7 +281,7 @@ class PostBoardLink extends PostSpan {
 
 class PostNewLineSpan extends PostSpan {
 	PostNewLineSpan();
-	build(context, {recognizer, overrideRecognizer = false, overrideTextColor, onNeedScrollToAnotherPost}) {
+	build(context, options) {
 		return WidgetSpan(
 			child: Row()
 		);
@@ -283,7 +292,7 @@ class PostSpoilerSpan extends PostSpan {
 	final PostSpan child;
 	final int id;
 	PostSpoilerSpan(this.child, this.id);
-	build(context, {recognizer, overrideRecognizer = false, overrideTextColor, onNeedScrollToAnotherPost}) {
+	build(context, options) {
 		final zone = context.watchOrNull<ExpandingPostZone>();
 		final showSpoiler = zone?.shouldShowSpoiler(id) ?? false;
 		final toggleRecognizer = TapGestureRecognizer()..onTap = () {
@@ -292,7 +301,13 @@ class PostSpoilerSpan extends PostSpan {
 		final hiddenColor = DefaultTextStyle.of(context).style.color;
 		final visibleColor = CupertinoTheme.of(context).scaffoldBackgroundColor;
 		return TextSpan(
-			children: [child.build(context, recognizer: toggleRecognizer, overrideRecognizer: !showSpoiler, overrideTextColor: showSpoiler ? visibleColor : hiddenColor)],
+			children: [child.build(context, PostSpanRenderOptions(
+				recognizer: toggleRecognizer,
+				overrideRecognizer: !showSpoiler,
+				overrideTextColor: showSpoiler ? visibleColor : hiddenColor,
+				onNeedScrollToAnotherPost: options.onNeedScrollToAnotherPost,
+				showCrossThreadLabel: options.showCrossThreadLabel
+			))],
 			style: TextStyle(
 				backgroundColor: hiddenColor,
 				color: showSpoiler ? visibleColor : null
@@ -305,7 +320,7 @@ class PostSpoilerSpan extends PostSpan {
 class PostLinkSpan extends PostSpan {
 	final String url;
 	PostLinkSpan(this.url);
-	build(context, {recognizer, overrideRecognizer = false, overrideTextColor, onNeedScrollToAnotherPost}) {
+	build(context, options) {
 		return TextSpan(
 			text: url,
 			style: TextStyle(

@@ -22,6 +22,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value, VoidCallback resetPage)? filteredItemBuilder;
 	final Duration? autoUpdateDuration;
 	final List<Provider> additionalProviders;
+	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
 
 	RefreshableList({
 		required this.itemBuilder,
@@ -32,7 +33,8 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.lazy = false,
 		this.filterHint,
 		this.filteredItemBuilder,
-		this.autoUpdateDuration
+		this.autoUpdateDuration,
+		this.remedies = const {}
 	});
 
 	createState() => RefreshableListState<T>();
@@ -41,6 +43,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 class RefreshableListState<T extends Filterable> extends State<RefreshableList<T>> {
 	List<T>? list;
 	String? errorMessage;
+	Type? errorType;
 	String _filter = '';
 	bool updatingNow = false;
 	final _searchController = TextEditingController();
@@ -75,6 +78,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			setState(() {
 				this.list = null;
 				this.errorMessage = null;
+				this.errorType = null;
 				this.lastUpdateTime = null;
 			});
 			update();
@@ -107,6 +111,8 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		try {
 			setState(() {
 				this.updatingNow = true;
+				this.errorMessage = null;
+				this.errorType = null;
 			});
 			final newData = await widget.listUpdater();
 			resetTimer();
@@ -114,7 +120,6 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				this.updatingNow = false;
 				this.list = newData;
 				this.lastUpdateTime = DateTime.now();
-				this.errorMessage = null;
 			});
 		}
 		catch (e, st) {
@@ -122,6 +127,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			print(st);
 			setState(() {
 				this.errorMessage = e.toString();
+				this.errorType = e.runtimeType;
 				this.updatingNow = false;
 			});
 		}
@@ -147,7 +153,8 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 						CupertinoButton(
 							child: Text('Retry'),
 							onPressed: update
-						)
+						),
+						if (widget.remedies[errorType] != null) widget.remedies[errorType]!(context, update)
 					]
 				)
 			);
@@ -362,8 +369,9 @@ class RefreshableListController<T extends Filterable> {
 	ScrollController scrollController = ScrollController();
 	BehaviorSubject<Null> _scrollStream = BehaviorSubject();
 	BehaviorSubject<Null> slowScrollUpdates = BehaviorSubject();
+	late StreamSubscription<List<Null>> _slowScrollSubscription;
 	RefreshableListController() {
-		_scrollStream.bufferTime(const Duration(milliseconds: 1000)).where((batch) => batch.isNotEmpty).listen(_onScroll);
+		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 1000)).where((batch) => batch.isNotEmpty).listen(_onScroll);
 	}
 	void _onScroll(List<Null> notifications) {
 		slowScrollUpdates.add(null);
@@ -377,6 +385,7 @@ class RefreshableListController<T extends Filterable> {
 	}
 	void dispose() {
 		_scrollStream.close();
+		_slowScrollSubscription.cancel();
 		slowScrollUpdates.close();
 		scrollController.dispose();
 	}

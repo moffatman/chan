@@ -9,6 +9,7 @@ class Post implements Filterable {
 	final String text;
 	final String name;
 	final DateTime time;
+	final int threadId;
 	final int id;
 	final Attachment? attachment;
 	final ImageboardFlag? flag;
@@ -20,6 +21,7 @@ class Post implements Filterable {
 		required this.text,
 		required this.name,
 		required this.time,
+		required this.threadId,
 		required this.id,
 		required this.span,
 		this.flag,

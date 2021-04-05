@@ -20,11 +20,13 @@ class ThreadPage extends StatefulWidget {
 	final ImageboardBoard board;
 	final int id;
 	final int? initialPostId;
+	final bool initiallyUseArchive;
 
 	ThreadPage({
 		required this.board,
 		required this.id,
-		this.initialPostId
+		this.initialPostId,
+		this.initiallyUseArchive = false
 	});
 
 	@override
@@ -36,6 +38,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	Thread? thread;
 	bool initialized = false;
 	bool showReplyBox = false;
+	late bool useArchive;
 
 	final _focusNode = FocusNode();
 	final _listController = RefreshableListController<Post>();
@@ -43,7 +46,8 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	@override
 	void initState() {
 		super.initState();
-		_getThreadState();
+		useArchive = widget.initiallyUseArchive;
+		persistentState = Persistence.getThreadState(widget.board.name, widget.id);
 		_listController.slowScrollUpdates.listen((_) {
 			persistentState?.lastSeenPostId = _listController.findNextMatch((_) => true)?.id;
 			persistentState?.save();
@@ -56,15 +60,9 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 		if (widget.board != old.board || widget.id != old.id) {
 			setState(() {
 				thread = null;
-				persistentState = null;
+				persistentState = Persistence.getThreadState(widget.board.name, widget.id);
 			});
-			_getThreadState();
 		}
-	}
-
-	Future<void> _getThreadState() async {
-		persistentState = await Persistence.getThreadState(widget.board.name, widget.id);
-		setState(() {});
 	}
 
 	void _showGallery({bool initiallyShowChrome = true, Attachment? initialAttachment}) {
@@ -132,8 +130,21 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 										additionalProviders: [
 											Provider<PersistentThreadState>.value(value: persistentState!)
 										],
+										remedies: {
+											ThreadNotFoundException: (context, updater) => CupertinoButton(
+												child: Text('Try archive'),
+												onPressed: () {
+													setState(() {
+														useArchive = true;
+													});
+													updater();
+												}
+											)
+										},
 										listUpdater: () async {
-											final _thread = await context.read<ImageboardSite>().getThread(widget.board.name, widget.id);
+											final _thread = useArchive ? 
+												await context.read<ImageboardSite>().getThreadFromArchive(widget.board.name, widget.id) :
+												await context.read<ImageboardSite>().getThread(widget.board.name, widget.id);
 											final int? scrollToId = widget.initialPostId ?? persistentState?.lastSeenPostId;
 											if (thread == null && scrollToId != null) {
 												Future.delayed(Duration(milliseconds: 50), () => _listController.scrollToFirstMatching((post) => post.id == scrollToId));

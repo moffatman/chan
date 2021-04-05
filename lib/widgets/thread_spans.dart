@@ -42,7 +42,7 @@ _IDColor _calculateIdColor(String id) {
 class IDSpan extends WidgetSpan {
 	IDSpan({
 		required String id,
-		required VoidCallback onPressed
+		required VoidCallback? onPressed
 	}) : super(
 		child: CupertinoButton(
 			child: Container(

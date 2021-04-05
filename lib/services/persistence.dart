@@ -1,10 +1,12 @@
+import 'package:chan/models/search.dart';
 import 'package:chan/services/settings.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 part 'persistence.g.dart';
 
 class Persistence {
-	static final threadStateBox = Hive.lazyBox<PersistentThreadState>('threadStates');
+	static final threadStateBox = Hive.box<PersistentThreadState>('threadStates');
+	static late final PersistentRecentSearches recentSearches;
 
 	static Future<void> initialize() async {
 		await Hive.initFlutter();
@@ -14,15 +16,28 @@ class Persistence {
 		await Hive.openBox<SavedSettings>('settings');
 		Hive.registerAdapter(PostReceiptAdapter());
 		Hive.registerAdapter(PersistentThreadStateAdapter());
-		await Hive.openLazyBox<PersistentThreadState>('threadStates');
+		await Hive.openBox<PersistentThreadState>('threadStates');
+		Hive.registerAdapter(ImageboardArchiveSearchQueryAdapter());
+		Hive.registerAdapter(PostTypeFilterAdapter());
+		Hive.registerAdapter(MediaFilterAdapter());
+		Hive.registerAdapter(PersistentRecentSearchesAdapter());
+		final searchesBox = await Hive.openBox<PersistentRecentSearches>('recentSearches');
+		final existingRecentSearches = searchesBox.get('recentSearches');
+		if (existingRecentSearches != null) {
+			recentSearches = existingRecentSearches;
+		}
+		else {
+			recentSearches = PersistentRecentSearches();
+			searchesBox.put('recentSearches', recentSearches);
+		}
 	}
 
-	static Future<PersistentThreadState> getThreadState(String board, int id, {bool updateOpenedTime = false}) async {
-		final existingState = await threadStateBox.get('$board/$id');
+	static PersistentThreadState getThreadState(String board, int id, {bool updateOpenedTime = false}) {
+		final existingState = threadStateBox.get('$board/$id');
 		if (existingState != null) {
 			if (updateOpenedTime) {
 				existingState.lastOpenedTime = DateTime.now();
-				await existingState.save();
+				existingState.save();
 			}
 			return existingState;
 		}
@@ -34,6 +49,27 @@ class Persistence {
 			return newState;
 		}
 	}
+}
+
+const _MAX_RECENT_ITEMS = 50;
+@HiveType(typeId: 8)
+class PersistentRecentSearches extends HiveObject {
+	@HiveField(0)
+	List<ImageboardArchiveSearchQuery> entries = [];
+
+	void add(ImageboardArchiveSearchQuery entry) {
+		entries = [entry, ...entries.take(_MAX_RECENT_ITEMS)];
+	}
+
+	void bump(ImageboardArchiveSearchQuery entry) {
+		entries = [entry, ...entries.where((e) => e != entry)];
+	}
+
+	void remove(ImageboardArchiveSearchQuery entry) {
+		entries = [...entries.where((e) => e != entry)];
+	}
+
+	PersistentRecentSearches();
 }
 
 @HiveType(typeId: 3)

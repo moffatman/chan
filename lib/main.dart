@@ -1,3 +1,7 @@
+import 'package:chan/pages/history.dart';
+import 'package:chan/pages/search.dart';
+import 'package:chan/pages/settings.dart';
+import 'package:chan/pages/saved.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/foolfuuka.dart';
@@ -70,9 +74,61 @@ class ChanApp extends StatelessWidget {
 class ChanHomePage extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
-		return ImageboardTab(
-			initialBoardName: 'tv',
-			isInTabletLayout: MediaQuery.of(context).size.width > 700
+		return CupertinoTabScaffold(
+			tabBar: CupertinoTabBar(
+				items: [
+					BottomNavigationBarItem(
+						icon: Icon(Icons.list),
+						label: 'Browse'
+					),
+					BottomNavigationBarItem(
+						icon: Icon(Icons.save_alt),
+						label: 'Saved'
+					),
+					BottomNavigationBarItem(
+						icon: Icon(Icons.history),
+						label: 'History'
+					),
+					BottomNavigationBarItem(
+						icon: Icon(Icons.search),
+						label: 'Search'
+					),
+					BottomNavigationBarItem(
+						icon: Icon(Icons.settings),
+						label: 'Settings'
+					)
+				]
+			),
+			tabBuilder: (context, index) {
+				if (index == 0) {
+					return CupertinoTabView(
+						builder: (context) => ImageboardTab(
+							initialBoardName: 'tv',
+							isInTabletLayout: MediaQuery.of(context).size.width > 700
+						)
+					);
+				}
+				else if (index == 1) {
+					return CupertinoTabView(
+						builder: (context) => SavedPage()
+					);
+				}
+				else if (index == 2) {
+					return CupertinoTabView(
+						builder: (context) => HistoryPage()
+					);
+				}
+				else if (index == 3) {
+					return CupertinoTabView(
+						builder: (context) => SearchPage()
+					);
+				}
+				else {
+					return CupertinoTabView(
+						builder: (context) => SettingsPage()
+					);
+				}
+			}
 		);
 	}
 }

@@ -5,7 +5,6 @@ import 'package:chan/widgets/captcha.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 
 final GlobalKey<_ReplyBoxState> replyBoxKey = GlobalKey();

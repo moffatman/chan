@@ -1,4 +1,3 @@
-import 'package:chan/pages/settings.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -38,13 +37,6 @@ class BoardPage extends StatelessWidget {
 							if (onHeaderTapped != null) Icon(Icons.arrow_drop_down)
 						]
 					)
-				),
-				trailing: CupertinoButton(
-					padding: EdgeInsets.zero,
-					child: Icon(Icons.settings),
-					onPressed: () {
-						Navigator.of(context).push(cpr.CupertinoPageRoute(builder: (ctx) => SettingsPage()));
-					}
 				)
 			),
 			child: RefreshableList<Thread>(
