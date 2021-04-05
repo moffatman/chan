@@ -31,29 +31,27 @@ class PostsPage extends StatelessWidget {
 				],
 				child: Column(
 					children: replies.map((reply) {
-						return GestureDetector(
-							child: Provider.value(
-								value: reply,
-								child: PostRow(
-									onThumbnailTap: (attachment, {Object? tag}) {
-										showGallery(
-											context: context,
-											attachments: [attachment],
-											semanticParentIds: parentIds
-										);
-									},
-									onNeedScrollToAnotherPost: (post) {
-										Navigator.of(context).pop();
-										onTapPost!(post);
-									},
-								)
-							),
-							onTap: () {
-								if (onTapPost != null) {
+						return Provider.value(
+							value: reply,
+							child: PostRow(
+								onThumbnailTap: (attachment, {Object? tag}) {
+									showGallery(
+										context: context,
+										attachments: [attachment],
+										semanticParentIds: parentIds
+									);
+								},
+								onNeedScrollToAnotherPost: (post) {
 									Navigator.of(context).pop();
-									onTapPost!(reply);
-								}
-							}
+									onTapPost!(post);
+								},
+								onTap: () {
+									if (onTapPost != null) {
+										Navigator.of(context).pop();
+										onTapPost!(reply);
+									}
+								}	
+							)
 						);
 					}).toList()
 				)

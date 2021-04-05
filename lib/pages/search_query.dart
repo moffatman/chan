@@ -96,16 +96,14 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					final post = result!.posts[i - 1];
 					return Provider.value(
 						value: post,
-						child: GestureDetector(
-							child: PostRow(
-								onThumbnailTap: (attachment, {Object? tag}) => showGallery(
-									context: context,
-									attachments: [attachment],
-									semanticParentIds: []
-								),
-								showCrossThreadLabel: false,
-								allowTappingLinks: false
+						child: PostRow(
+							onThumbnailTap: (attachment, {Object? tag}) => showGallery(
+								context: context,
+								attachments: [attachment],
+								semanticParentIds: []
 							),
+							showCrossThreadLabel: false,
+							allowTappingLinks: false,
 							onTap: () async {
 								final board = (await context.read<ImageboardSite>().getBoards()).firstWhere((b) => b.name == result!.posts[i].board);
 								Navigator.of(context).push(cpr.CupertinoPageRoute(

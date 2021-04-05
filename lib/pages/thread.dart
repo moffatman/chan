@@ -167,19 +167,17 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 											);
 										},
 										filteredItemBuilder: (context, post, resetPage) {
-											return GestureDetector(
-												child: Provider.value(
-													value: post,
-													child: PostRow(
-														onThumbnailTap: (attachment, {Object? tag}) {
-															_showGallery(initialAttachment: attachment);
-														}
-													)
-												),
-												onTap: () {
-													resetPage();
-													Future.delayed(Duration(milliseconds: 250), () => _listController.scrollToFirstMatching((val) => val == post));
-												}
+											return Provider.value(
+												value: post,
+												child: PostRow(
+													onThumbnailTap: (attachment, {Object? tag}) {
+														_showGallery(initialAttachment: attachment);
+													},
+													onTap: () {
+														resetPage();
+														Future.delayed(Duration(milliseconds: 250), () => _listController.scrollToFirstMatching((val) => val == post));
+													}
+												)
 											);
 										},
 										filterHint: 'Search in thread'
