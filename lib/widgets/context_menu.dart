@@ -5,13 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ContextMenuAction {
-	Widget child;
-	IconData trailingIcon;
-	VoidCallback onPressed;
+	final Widget child;
+	final IconData trailingIcon;
+	final VoidCallback onPressed;
+	final bool isDestructiveAction;
 	ContextMenuAction({
 		required this.child,
 		required this.trailingIcon,
-		required this.onPressed
+		required this.onPressed,
+		this.isDestructiveAction = false
 	});
 }
 
@@ -36,7 +38,11 @@ class _ContextMenuState extends State<ContextMenu> {
 				actions: widget.actions.map((action) => CupertinoContextMenuAction(
 					child: action.child,
 					trailingIcon: action.trailingIcon,
-					onPressed: action.onPressed
+					onPressed: () {
+						action.onPressed();
+						Navigator.of(context, rootNavigator: true).pop();
+					},
+					isDestructiveAction: action.isDestructiveAction
 				)).toList(),
 				previewBuilder: (context, animation, child) {
 					return IgnorePointer(
