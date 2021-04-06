@@ -195,21 +195,24 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 							Visibility(
 								visible: showReplyBox,
 								maintainState: true,
-								child: ReplyBox(
-									key: context.read<GlobalKey<ReplyBoxState>>(),
-									board: widget.board,
-									threadId: widget.id,
-									threadState: persistentState,
-									onReplyPosted: () {
-										setState(() {
-											showReplyBox = false;
-										});
-									},
-									onRequestFocus: () {
-										setState(() {
-											showReplyBox = true;
-										});
-									}
+								child: SafeArea(
+									top: false,
+									child: ReplyBox(
+										key: context.read<GlobalKey<ReplyBoxState>>(),
+										board: widget.board,
+										threadId: widget.id,
+										threadState: persistentState,
+										onReplyPosted: () {
+											setState(() {
+												showReplyBox = false;
+											});
+										},
+										onRequestFocus: () {
+											setState(() {
+												showReplyBox = true;
+											});
+										}
+									)
 								)
 							)
 						]
