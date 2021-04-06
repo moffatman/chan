@@ -24,6 +24,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Duration? autoUpdateDuration;
 	final List<Provider> additionalProviders;
 	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
+	final String? updateDisabledText;
 
 	RefreshableList({
 		required this.itemBuilder,
@@ -36,7 +37,8 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.filteredItemBuilder,
 		this.autoUpdateDuration,
 		this.remedies = const {},
-		this.initialList
+		this.initialList,
+		this.updateDisabledText
 	});
 
 	createState() => RefreshableListState<T>();
@@ -47,7 +49,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	String? errorMessage;
 	Type? errorType;
 	String _filter = '';
-	bool get updatingNow => (errorMessage == null && list == null);
+	bool updatingNow = false;
 	final _searchController = TextEditingController();
 	final _searchFocusNode = FocusNode();
 	DateTime? lastUpdateTime;
@@ -67,8 +69,10 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			}
 		});
 		list = widget.initialList;
-		update();
-		resetTimer();
+		if (widget.updateDisabledText == null) {
+			update();
+			resetTimer();
+		}
 	}
 
 	@override
@@ -85,6 +89,14 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				this.lastUpdateTime = null;
 			});
 			update();
+		}
+		else if (oldWidget.updateDisabledText != widget.updateDisabledText) {
+			this.autoUpdateTimer?.cancel();
+			this.autoUpdateTimer = null;
+			if (widget.updateDisabledText == null) {
+				update();
+				resetTimer();
+			}
 		}
 	}
 
@@ -113,12 +125,14 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	Future<void> update() async {
 		try {
 			setState(() {
-				this.errorMessage = null;
-				this.errorType = null;
+				this.updatingNow = true;
 			});
 			final newData = await widget.listUpdater();
 			resetTimer();
 			setState(() {
+				this.errorMessage = null;
+				this.errorType = null;
+				this.updatingNow = false;
 				this.list = newData;
 				this.lastUpdateTime = DateTime.now();
 			});
@@ -129,6 +143,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			setState(() {
 				this.errorMessage = e.toString();
 				this.errorType = e.runtimeType;
+				this.updatingNow = false;
 			});
 			resetTimer();
 		}
@@ -262,14 +277,22 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 							SliverSafeArea(
 								top: false,
 								sliver: SliverToBoxAdapter(
-									child: TimedRebuilder(
+									child: (widget.updateDisabledText != null) ? Container(
+										padding: EdgeInsets.all(16),
+										child: Center(
+											child: Text(widget.updateDisabledText!, style: TextStyle(
+												color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
+											))
+										)
+									) : TimedRebuilder(
 										interval: const Duration(seconds: 1),
 										builder: (context) => RefreshableListFooter(
 											updater: update,
 											updatingNow: updatingNow,
 											lastUpdateTime: lastUpdateTime,
 											nextUpdateTime: nextUpdateTime,
-											errorMessage: errorMessage
+											errorMessage: errorMessage,
+											remedy: widget.remedies[errorType]?.call(context, update)
 										)
 									)
 								)
@@ -308,12 +331,14 @@ class RefreshableListFooter extends StatelessWidget {
 	final bool updatingNow;
 	final DateTime? lastUpdateTime;
 	final DateTime? nextUpdateTime;
+	final Widget? remedy;
 	RefreshableListFooter({
 		required this.updater,
 		required this.updatingNow,
 		this.lastUpdateTime,
 		this.nextUpdateTime,
-		this.errorMessage
+		this.errorMessage,
+		this.remedy
 	});
 
 	String _timeDiff(DateTime value) {
@@ -358,7 +383,20 @@ class RefreshableListFooter extends StatelessWidget {
 				child: Center(
 					child: AnimatedSwitcher(
 						duration: const Duration(milliseconds: 200),
-						child: Text(updatingNow ? 'Updating now...' : timeLines.join('\n'), key: ValueKey<bool>(updatingNow), textAlign: TextAlign.center)
+						child: Column(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								Text(
+									updatingNow ? 'Updating now...' : timeLines.join('\n'),
+									key: ValueKey<bool>(updatingNow),
+									textAlign: TextAlign.center
+								),
+								if (!updatingNow && remedy != null) ...[
+									SizedBox(height: 16),
+									remedy!
+								]
+							]
+						)
 					)
 				)
 			)

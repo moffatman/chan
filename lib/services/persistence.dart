@@ -124,6 +124,8 @@ class PersistentThreadState extends HiveObject {
 	List<PostReceipt> receipts = [];
 	@HiveField(4)
 	Thread? thread;
+	@HiveField(5)
+	bool useArchive = false;
 
 	PersistentThreadState() : this.lastOpenedTime = DateTime.now();
 

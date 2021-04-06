@@ -198,33 +198,46 @@ class Site4Chan implements ImageboardSite {
 		return thread;
 	}
 	Future<Thread> getThreadFromArchive(String board, int id) async {
+		final errorMessages = Map<String, String>();
 		for (final archive in archives) {
 			try {
-				return await archive.getThread(board, id);
+				return archive.getThread(board, id);
 			}
-			catch(e, st) {
+			catch(e) {
 				if (!(e is BoardNotFoundException)) {
-					print(e);
-					print(st);
+					errorMessages[archive.name] = e.toString();
 				}
 			}
 		}
-		throw PostNotFoundException(board, id);
+		if (errorMessages.isNotEmpty) {
+			throw ImageboardArchiveException(errorMessages);
+		}
+		else {
+			throw BoardNotFoundException(board);
+		}
 	}
 
 	Future<Post> getPost(String board, int id) async {
 		throw Exception('Not implemented');
 	}
 	Future<Post> getPostFromArchive(String board, int id) async {
+		final errorMessages = Map<String, String>();
 		for (final archive in archives) {
 			try {
 				return archive.getPost(board, id);
 			}
 			catch(e) {
-
+				if (!(e is BoardNotFoundException)) {
+					errorMessages[archive.name] = e.toString();
+				}
 			}
 		}
-		throw PostNotFoundException(board, id);
+		if (errorMessages.isNotEmpty) {
+			throw ImageboardArchiveException(errorMessages);
+		}
+		else {
+			throw BoardNotFoundException(board);
+		}
 	}
 
 	Future<List<Thread>> getCatalog(String board) async {

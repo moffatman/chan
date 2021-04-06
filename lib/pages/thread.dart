@@ -37,7 +37,6 @@ class ThreadPage extends StatefulWidget {
 class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	late PersistentThreadState persistentState;
 	bool showReplyBox = false;
-	late bool useArchive;
 
 	final _focusNode = FocusNode();
 	final _listController = RefreshableListController<Post>();
@@ -45,8 +44,9 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	@override
 	void initState() {
 		super.initState();
-		useArchive = widget.initiallyUseArchive;
 		persistentState = Persistence.getThreadState(widget.board.name, widget.id);
+		persistentState.useArchive |= widget.initiallyUseArchive;
+		persistentState.save();
 		_listController.slowScrollUpdates.listen((_) {
 			persistentState.lastSeenPostId = _listController.findNextMatch((_) => true)?.id;
 			persistentState.save();
@@ -61,10 +61,10 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	void didUpdateWidget(ThreadPage old) {
 		super.didUpdateWidget(old);
 		if (widget.board != old.board || widget.id != old.id) {
-			setState(() {
-				useArchive = widget.initiallyUseArchive;
-				persistentState = Persistence.getThreadState(widget.board.name, widget.id);
-			});
+			persistentState = Persistence.getThreadState(widget.board.name, widget.id);
+			persistentState.useArchive |= widget.initiallyUseArchive;
+			persistentState.save();
+			setState(() {});
 		}
 	}
 
@@ -96,7 +96,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 						trailing: CupertinoButton(
 							padding: EdgeInsets.zero,
 							child: Icon(Icons.reply),
-							onPressed: () {
+							onPressed: persistentState.thread?.isArchived == true ? null : () {
 								setState(() {
 									showReplyBox = !showReplyBox;
 									if (showReplyBox) {
@@ -131,24 +131,24 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 											},
 											child: RefreshableList<Post>(
 												id: '/${widget.board.name}/${widget.id}',
+												updateDisabledText: persistentState.thread?.isArchived == true ? 'Archived' : null,
 												autoUpdateDuration: const Duration(seconds: 60),
 												initialList: persistentState.thread?.posts,
 												additionalProviders: [
 													Provider<PersistentThreadState>.value(value: persistentState)
 												],
 												remedies: {
-													ThreadNotFoundException: (context, updater) => CupertinoButton(
+													ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
 														child: Text('Try archive'),
 														onPressed: () {
-															setState(() {
-																useArchive = true;
-															});
+															persistentState.useArchive = true;
+															persistentState.save();
 															updater();
 														}
 													)
 												},
 												listUpdater: () async {
-													final _thread = useArchive ? 
+													final _thread = persistentState.useArchive ? 
 														await context.read<ImageboardSite>().getThreadFromArchive(widget.board.name, widget.id) :
 														await context.read<ImageboardSite>().getThread(widget.board.name, widget.id);
 													final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;

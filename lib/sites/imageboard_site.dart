@@ -46,6 +46,13 @@ class PostFailedException implements Exception {
 	String toString() => 'Posting failed: $reason';
 }
 
+class ImageboardArchiveException implements Exception {
+	Map<String, String> archiveErrors;
+	ImageboardArchiveException(this.archiveErrors);
+	@override
+	String toString() => archiveErrors.entries.map((e) => '${e.key}: ${e.value}').join(', ');
+}
+
 class CaptchaRequest {
 	final String key;
 	final String sourceUrl;
