@@ -145,26 +145,21 @@ class PostRow extends StatelessWidget {
 							Flexible(
 								child: IntrinsicHeight(
 									child: Row(
-										crossAxisAlignment: CrossAxisAlignment.stretch,
+										crossAxisAlignment: CrossAxisAlignment.start,
 										mainAxisAlignment: MainAxisAlignment.start,
 										mainAxisSize: MainAxisSize.max,
 										children: [
-											if (post.attachment != null) Column(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													GestureDetector(
-														child: AttachmentThumbnail(
-															attachment: post.attachment!,
-															hero: AttachmentSemanticLocation(
-																attachment: post.attachment!,
-																semanticParents: parentIds
-															)
-														),
-														onTap: () {
-															onThumbnailTap?.call(post.attachment!, tag: randomHeroTag);
-														}
-													),
-												]
+											if (post.attachment != null) GestureDetector(
+												child: AttachmentThumbnail(
+													attachment: post.attachment!,
+													hero: AttachmentSemanticLocation(
+														attachment: post.attachment!,
+														semanticParents: parentIds
+													)
+												),
+												onTap: () {
+													onThumbnailTap?.call(post.attachment!, tag: randomHeroTag);
+												}
 											),
 											Expanded(
 												child: Container(
