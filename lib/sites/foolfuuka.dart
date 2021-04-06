@@ -98,7 +98,7 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 				filename: data['media']['media_filename'],
 				ext: '.' + serverFilenameParts.last,
 				type: serverFilenameParts.last == 'webm' ? AttachmentType.WEBM : AttachmentType.Image,
-				url: Uri.parse(data['media']['media_link']),
+				url: Uri.parse(data['media']['media_link'] ?? data['media']['remote_media_link']),
 				thumbnailUrl: Uri.parse(data['media']['thumb_link']),
 				md5: data['media']['safe_media_hash']
 			);
