@@ -1,4 +1,4 @@
-import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/models/flag.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';

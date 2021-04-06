@@ -7,6 +7,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/post_expander.dart';
 import 'package:chan/widgets/reply_box.dart';
@@ -48,30 +49,18 @@ class PostRow extends StatelessWidget {
 		final randomHeroTag = Random().nextDouble().toString();
 		final settings = context.watch<EffectiveSettings>();
 		final isYou = context.watchOrNull<PersistentThreadState>()?.youIds.contains(post.id) ?? false;
-		return CupertinoContextMenu(
+		return ContextMenu(
 			actions: [
-				CupertinoContextMenuAction(
-					child: Row(
-						mainAxisSize: MainAxisSize.min,
-						children: [
-							Icon(Icons.ios_share, color: Colors.black),
-							SizedBox(width: 8),
-							Text('Share link')
-						]
-					),
+				ContextMenuAction(
+					child: Text('Share link'),
+					trailingIcon: Icons.ios_share,
 					onPressed: () {
 						Share.share(site.getWebUrl(post.board, post.threadId, post.id));
 					}
 				),
-				if (post.attachment != null) CupertinoContextMenuAction(
-					child: Row(
-						mainAxisSize: MainAxisSize.min,
-						children: [
-							Icon(Icons.image, color: Colors.black),
-							SizedBox(width: 8),
-							Text('Search archive')
-						]
-					),
+				if (post.attachment != null) ContextMenuAction(
+					child: Text('Search archive'),
+					trailingIcon: Icons.image,
 					onPressed: () {
 						(rightPaneNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true)).push(cpr.CupertinoPageRoute(
 							builder: (context) => SearchQueryPage(ImageboardArchiveSearchQuery(boards: [post.board], md5: post.attachment!.md5))
@@ -79,11 +68,6 @@ class PostRow extends StatelessWidget {
 					}
 				)
 			],
-			previewBuilder: (context, animation, child) {
-				return IgnorePointer(
-					child: child
-				);
-			},
 			child: GestureDetector(
 				onTap: onTap,
 				child: Container(
@@ -96,8 +80,11 @@ class PostRow extends StatelessWidget {
 						mainAxisSize: MainAxisSize.min,
 						crossAxisAlignment: CrossAxisAlignment.start,
 						children: [
-							ChangeNotifierProvider<ExpandingPostZone>(
-								create: (_) => ExpandingPostZone(parentIds.followedBy([post.id]).toList()),
+							MultiProvider(
+								providers: [
+									ChangeNotifierProvider<ExpandingPostZone>(create: (_) => ExpandingPostZone(parentIds.followedBy([post.id]).toList())),
+									Provider.value(value: post)
+								],
 								child: Builder(
 									builder: (ctx) => DefaultTextStyle(
 										child: Text.rich(
@@ -136,7 +123,7 @@ class PostRow extends StatelessWidget {
 														text: post.id.toString(),
 														style: TextStyle(color: Colors.grey),
 														recognizer: TapGestureRecognizer()..onTap = () {
-															replyBoxKey.currentState?.onTapPostId(post.id);
+															context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.id);
 														}
 													),
 													if (!settings.useTouchLayout) ...[

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/services/persistence.dart';
@@ -43,42 +44,6 @@ class PostFailedException implements Exception {
 	PostFailedException(this.reason);
 	@override
 	String toString() => 'Posting failed: $reason';
-}
-
-class ImageboardFlag {
-	final String name;
-	final String imageUrl;
-	final double imageWidth;
-	final double imageHeight;
-
-	ImageboardFlag({
-		required this.name,
-		required this.imageUrl,
-		required this.imageWidth,
-		required this.imageHeight
-	});
-}
-
-class ImageboardBoard {
-	final String name;
-	final String title;
-	final bool isWorksafe;
-	final bool webmAudioAllowed;
-	final int? maxImageSizeBytes;
-	final int? maxWebmSizeBytes;
-	final int? maxWebmDurationSeconds;
-	final int? maxCommentCharacters;
-
-	ImageboardBoard({
-		required this.name,
-		required this.title,
-		required this.isWorksafe,
-		required this.webmAudioAllowed,
-		this.maxImageSizeBytes,
-		this.maxWebmSizeBytes,
-		this.maxWebmDurationSeconds,
-		this.maxCommentCharacters
-	});
 }
 
 class CaptchaRequest {

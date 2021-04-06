@@ -1,11 +1,34 @@
+import 'package:chan/models/attachment.dart';
+import 'package:chan/models/board.dart';
+import 'package:chan/models/flag.dart';
+import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
+import 'package:chan/models/thread.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 part 'persistence.g.dart';
 
+class UriAdapter extends TypeAdapter<Uri> {
+	@override
+	final typeId = 12;
+
+	@override
+	Uri read(BinaryReader reader) {
+		var str = reader.readString();
+		return Uri.parse(str);
+	}
+
+	@override
+	void write(BinaryWriter writer, Uri obj) {
+		writer.writeString(obj.toString());
+	}
+}
+
 class Persistence {
 	static final threadStateBox = Hive.box<PersistentThreadState>('threadStates');
+	static final boardBox = Hive.box<ImageboardBoard>('boards');
 	static late final PersistentRecentSearches recentSearches;
 
 	static Future<void> initialize() async {
@@ -13,14 +36,22 @@ class Persistence {
 		Hive.registerAdapter(ThemeSettingAdapter());
 		Hive.registerAdapter(AutoloadAttachmentsSettingAdapter());
 		Hive.registerAdapter(SavedSettingsAdapter());
-		await Hive.openBox<SavedSettings>('settings');
+		Hive.registerAdapter(UriAdapter());
+		Hive.registerAdapter(AttachmentTypeAdapter());
+		Hive.registerAdapter(AttachmentAdapter());
+		Hive.registerAdapter(ImageboardFlagAdapter());
+		Hive.registerAdapter(PostSpanFormatAdapter());
+		Hive.registerAdapter(PostAdapter());
+		Hive.registerAdapter(ThreadAdapter());
+		Hive.registerAdapter(ImageboardBoardAdapter());
 		Hive.registerAdapter(PostReceiptAdapter());
 		Hive.registerAdapter(PersistentThreadStateAdapter());
-		await Hive.openBox<PersistentThreadState>('threadStates');
 		Hive.registerAdapter(ImageboardArchiveSearchQueryAdapter());
 		Hive.registerAdapter(PostTypeFilterAdapter());
 		Hive.registerAdapter(MediaFilterAdapter());
 		Hive.registerAdapter(PersistentRecentSearchesAdapter());
+		await Hive.openBox<SavedSettings>('settings');
+		await Hive.openBox<PersistentThreadState>('threadStates');
 		final searchesBox = await Hive.openBox<PersistentRecentSearches>('recentSearches');
 		final existingRecentSearches = searchesBox.get('recentSearches');
 		if (existingRecentSearches != null) {
@@ -30,6 +61,7 @@ class Persistence {
 			recentSearches = PersistentRecentSearches();
 			searchesBox.put('recentSearches', recentSearches);
 		}
+		await Hive.openBox<ImageboardBoard>('boards');
 	}
 
 	static PersistentThreadState getThreadState(String board, int id, {bool updateOpenedTime = false}) {
@@ -42,11 +74,19 @@ class Persistence {
 			return existingState;
 		}
 		else {
-			final newState = PersistentThreadState(
-				lastOpenedTime: updateOpenedTime ? DateTime.now() : null
-			);
+			final newState = PersistentThreadState();
 			threadStateBox.put('$board/$id', newState);
 			return newState;
+		}
+	}
+
+	static ImageboardBoard getBoard(String boardName) {
+		final board = boardBox.get(boardName);
+		if (board != null) {
+			return board;
+		}
+		else {
+			throw BoardNotFoundException(boardName);
 		}
 	}
 }
@@ -79,18 +119,17 @@ class PersistentThreadState extends HiveObject {
 	@HiveField(1)
 	DateTime lastOpenedTime;
 	@HiveField(2)
-	bool watched;
+	bool saved = false;
 	@HiveField(3)
-	List<PostReceipt> receipts;
+	List<PostReceipt> receipts = [];
+	@HiveField(4)
+	Thread? thread;
 
-	PersistentThreadState({
-		this.lastSeenPostId,
-		DateTime? lastOpenedTime,
-		this.watched = false,
-		List<PostReceipt>? receipts
-	}) : this.lastOpenedTime = lastOpenedTime ?? DateTime.now(), this.receipts = receipts ?? [];
+	PersistentThreadState() : this.lastOpenedTime = DateTime.now();
 
 	List<int> get youIds => receipts.map((receipt) => receipt.id).toList();
+	List<Post>? get repliesToYou => thread?.posts.where((p) => p.span.referencedPostIds.any((id) => youIds.contains(id))).toList();
+	List<Post>? get unseenReplies => repliesToYou?.where((p) => p.id > lastSeenPostId!).toList();
 
 	@override
 	String toString() => 'PersistentThreadState(lastSeenPostId: $lastSeenPostId, receipts: $receipts';

@@ -13,6 +13,7 @@ class SettingsPage extends StatelessWidget {
 		final settings = context.read<EffectiveSettings>();
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
 				middle: Text('Settings')
 			),
 			child: SafeArea(

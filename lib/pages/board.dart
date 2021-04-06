@@ -1,3 +1,4 @@
+import 'package:chan/models/board.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -28,6 +29,7 @@ class BoardPage extends StatelessWidget {
 		final site = context.watch<ImageboardSite>();
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
 				middle: GestureDetector(
 					onTap: onHeaderTapped,
 					child: Row(

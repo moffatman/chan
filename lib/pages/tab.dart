@@ -1,4 +1,6 @@
+import 'package:chan/models/board.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/util.dart';
 
@@ -25,28 +27,16 @@ class ImageboardTab extends StatefulWidget {
 GlobalKey<NavigatorState> rightPaneNavigatorKey = GlobalKey<NavigatorState>();
 
 class _ImageboardTabState extends State<ImageboardTab> {
-	ImageboardBoard? board;
+	late ImageboardBoard board;
 	Thread? selectedThread;
 	@override
 	initState() {
 		super.initState();
-		context.read<ImageboardSite>().getBoards().then((list) {
-			final matches = list.where((b) => b.name == widget.initialBoardName);
-			if (matches.isNotEmpty) {
-				setState(() {
-					this.board = matches.first;
-				});
-			}
-		});
+		board = Persistence.getBoard(widget.initialBoardName);
 	}
 
 	@override
 	Widget build(BuildContext context) {
-		if (board == null) {
-			return Center(
-				child: CircularProgressIndicator()
-			);
-		}
 		if (widget.isInTabletLayout) {
 			return Row(
 				children: [
@@ -58,7 +48,7 @@ class _ImageboardTabState extends State<ImageboardTab> {
 								return TransparentRoute(
 									builder: (context) {
 										return BoardPage(
-											board: board!,
+											board: board,
 											selectedThread: selectedThread,
 											onThreadSelected: (thread) {
 												setState(() {
@@ -93,7 +83,7 @@ class _ImageboardTabState extends State<ImageboardTab> {
 							onGenerateRoute: (RouteSettings settings) {
 								return cpr.CupertinoPageRoute(
 									builder: (context) {
-										return selectedThread != null ? ThreadPage(board: board!, id: selectedThread!.id) : Container(
+										return selectedThread != null ? ThreadPage(board: board, id: selectedThread!.id) : Container(
 											decoration: BoxDecoration(
 												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 											),
@@ -112,7 +102,7 @@ class _ImageboardTabState extends State<ImageboardTab> {
 		}
 		else {
 			return BoardPage(
-				board: board!,
+				board: board,
 				onHeaderTapped: () async {
 					final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => BoardSwitcherPage()));
 					if (newBoard != null) {

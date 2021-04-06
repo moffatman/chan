@@ -1,20 +1,36 @@
+import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/refreshable_list.dart';
+import 'package:hive/hive.dart';
 
+part 'thread.g.dart';
+
+@HiveType(typeId: 15)
 class Thread implements Filterable {
+	@HiveField(0)
 	final List<Post> posts;
+	@HiveField(1)
 	final bool isArchived;
+	@HiveField(2)
 	final bool isDeleted;
+	@HiveField(3)
 	final int replyCount;
+	@HiveField(4)
 	final int imageCount;
+	@HiveField(5)
 	final int id;
+	@HiveField(6)
 	final String board;
+	@HiveField(7)
 	final Attachment? attachment;
+	@HiveField(8)
 	final String? title;
+	@HiveField(9)
 	final bool isSticky;
+	@HiveField(10)
 	final DateTime time;
+	@HiveField(11)
 	final ImageboardFlag? flag;
 	Thread({
 		required this.posts,
@@ -36,7 +52,7 @@ class Thread implements Filterable {
 		}
 		for (final post in this.posts) {
 			for (final referencedPostId in post.span.referencedPostIds) {
-				postsById[referencedPostId]?.replyIds.add(post.id);
+				postsById[referencedPostId]?.replyIds = [...?postsById[referencedPostId]?.replyIds, post.id];
 			}
 		}
 	}

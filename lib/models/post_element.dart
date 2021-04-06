@@ -195,8 +195,8 @@ class PostQuoteLinkSpan extends PostSpan {
 				),
 				popup: MultiProvider(
 					providers: [
-						Provider.value(value: post),
-						Provider.value(value: postList),
+						if (post != null) Provider.value(value: post),
+						if (postList != null) Provider.value(value: postList),
 						ChangeNotifierProvider(create: (_) => ExpandingPostZone(newParentIds)),
 						if (threadState != null) Provider.value(value: threadState)
 					],
@@ -253,8 +253,7 @@ class PostCrossThreadQuoteLinkSpan extends PostSpan {
 				decoration: TextDecoration.underline
 			),
 			recognizer: (options.recognizer != null && options.overrideRecognizer) ? options.recognizer : (TapGestureRecognizer()..onTap = () async {
-				final boards = await site.getBoards();
-				(rightPaneNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true)).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: boards.firstWhere((b) => b.name == board), id: this.threadId, initialPostId: this.postId)));
+				(rightPaneNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true)).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: Persistence.getBoard(board), id: this.threadId, initialPostId: this.postId)));
 			})
 		);
 	}
@@ -272,8 +271,7 @@ class PostBoardLink extends PostSpan {
 				decoration: TextDecoration.underline
 			),
 			recognizer: (options.recognizer != null && options.overrideRecognizer) ? options.recognizer : (TapGestureRecognizer()..onTap = () async {
-				final boards = await site.getBoards();
-				(rightPaneNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true)).push(cpr.CupertinoPageRoute(builder: (ctx) => BoardPage(board: boards.firstWhere((b) => b.name == board))));
+				(rightPaneNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true)).push(cpr.CupertinoPageRoute(builder: (ctx) => BoardPage(board: Persistence.getBoard(board))));
 			})
 		);
 	}

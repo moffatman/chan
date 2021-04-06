@@ -5,6 +5,7 @@ import 'package:chan/pages/saved.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/foolfuuka.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:cupertino_back_gesture/cupertino_back_gesture.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -61,7 +62,11 @@ class ChanApp extends StatelessWidget {
 											child: ChanHomePage()
 										);
 									}
-								)
+								),
+								localizationsDelegates: [
+									DefaultCupertinoLocalizations.delegate,
+									DefaultMaterialLocalizations.delegate
+								],
 							);
 						}
 					)
@@ -71,64 +76,177 @@ class ChanApp extends StatelessWidget {
 	}
 }
 
-class ChanHomePage extends StatelessWidget {
+class ChanHomePage extends StatefulWidget {
+	createState() => _ChanHomePageState();
+}
+class _ChanHomePageState extends State<ChanHomePage> {
+	late bool initialized;
+	String? boardFetchErrorMessage;
+	late bool isInTabletLayout;
+	int tabletIndex = 0;
+
+	void _setupBoards() async {
+		try {
+			setState(() {
+				boardFetchErrorMessage = null;
+			});
+			final freshBoards = await context.read<ImageboardSite>().getBoards();
+			Persistence.boardBox.putAll({
+				for (final board in freshBoards) board.name: board
+			});
+			setState(() {
+				initialized = true;
+			});
+		}
+		catch (error) {
+			if (!initialized) {
+				setState(() {
+					boardFetchErrorMessage = error.toString();
+				});
+			}
+		}
+	}
+
+	@override
+	void initState() {
+		super.initState();
+		initialized = Persistence.boardBox.length > 0;
+		_setupBoards();
+	}
+
+	Widget _buildTab(BuildContext context, int index) {
+		if (index == 0) {
+			return ImageboardTab(
+				initialBoardName: 'tv',
+				isInTabletLayout: isInTabletLayout
+			);
+		}
+		else if (index == 1) {
+			return SavedPage();
+		}
+		else if (index == 2) {
+			return HistoryPage();
+		}
+		else if (index == 3) {
+			return SearchPage();
+		}
+		else {
+			return SettingsPage();
+		}
+	}
+
 	@override
 	Widget build(BuildContext context) {
-		return CupertinoTabScaffold(
-			tabBar: CupertinoTabBar(
-				items: [
-					BottomNavigationBarItem(
-						icon: Icon(Icons.list),
-						label: 'Browse'
-					),
-					BottomNavigationBarItem(
-						icon: Icon(Icons.save_alt),
-						label: 'Saved'
-					),
-					BottomNavigationBarItem(
-						icon: Icon(Icons.history),
-						label: 'History'
-					),
-					BottomNavigationBarItem(
-						icon: Icon(Icons.search),
-						label: 'Search'
-					),
-					BottomNavigationBarItem(
-						icon: Icon(Icons.settings),
-						label: 'Settings'
+		isInTabletLayout = MediaQuery.of(context).size.width > 700;
+		if (!initialized) {
+			if (boardFetchErrorMessage != null) {
+				return Center(
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							ErrorMessageCard(this.boardFetchErrorMessage!),
+							CupertinoButton(
+								child: Text('Retry'),
+								onPressed: _setupBoards
+							)
+						]
 					)
-				]
-			),
-			tabBuilder: (context, index) {
-				if (index == 0) {
-					return CupertinoTabView(
-						builder: (context) => ImageboardTab(
-							initialBoardName: 'tv',
-							isInTabletLayout: MediaQuery.of(context).size.width > 700
-						)
-					);
-				}
-				else if (index == 1) {
-					return CupertinoTabView(
-						builder: (context) => SavedPage()
-					);
-				}
-				else if (index == 2) {
-					return CupertinoTabView(
-						builder: (context) => HistoryPage()
-					);
-				}
-				else if (index == 3) {
-					return CupertinoTabView(
-						builder: (context) => SearchPage()
-					);
-				}
-				else {
-					return CupertinoTabView(
-						builder: (context) => SettingsPage()
-					);
-				}
+				);
 			}
-		);
+			else {
+				return Center(
+					child: CircularProgressIndicator()
+				);
+			}
+		}
+		else if (isInTabletLayout) {
+			return CupertinoPageScaffold(
+				child: Row(
+					children: [
+						NavigationRail(
+							backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
+							unselectedIconTheme: IconThemeData(
+								color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
+							),
+							selectedIconTheme: IconThemeData(
+								color: CupertinoTheme.of(context).primaryColor
+							),
+							unselectedLabelTextStyle: TextStyle(
+								color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
+							),
+							selectedLabelTextStyle: TextStyle(
+								color: CupertinoTheme.of(context).primaryColor
+							),
+							selectedIndex: tabletIndex,
+							onDestinationSelected: (index) {
+								setState(() {
+									tabletIndex = index;
+								});
+							},
+							labelType: NavigationRailLabelType.all,
+							destinations: [
+								NavigationRailDestination(
+									icon: Icon(Icons.list),
+									label: Text('Browse')
+								),
+								NavigationRailDestination(
+									icon: Icon(Icons.save_alt),
+									label: Text('Saved')
+								),
+								NavigationRailDestination(
+									icon: Icon(Icons.history),
+									label: Text('History')
+								),
+								NavigationRailDestination(
+									icon: Icon(Icons.search),
+									label: Text('Search')
+								),
+								NavigationRailDestination(
+									icon: Icon(Icons.settings),
+									label: Text('Settings')
+								)
+							]
+						),
+						Expanded(
+							child: IndexedStack(
+								index: tabletIndex,
+								children: List.generate(5, (i) => _buildTab(context, i))
+							)
+						)
+					]
+				)
+			);
+		}
+		else {
+			return CupertinoTabScaffold(
+				tabBar: CupertinoTabBar(
+					items: [
+						BottomNavigationBarItem(
+							icon: Icon(Icons.list),
+							label: 'Browse'
+						),
+						BottomNavigationBarItem(
+							icon: Icon(Icons.save_alt),
+							label: 'Saved'
+						),
+						BottomNavigationBarItem(
+							icon: Icon(Icons.history),
+							label: 'History'
+						),
+						BottomNavigationBarItem(
+							icon: Icon(Icons.search),
+							label: 'Search'
+						),
+						BottomNavigationBarItem(
+							icon: Icon(Icons.settings),
+							label: 'Settings'
+						)
+					]
+				),
+				tabBuilder: (context, index) => CupertinoTabView(
+					builder: (context) => _buildTab(context, index)
+				)
+			);
+		}
 	}
 }

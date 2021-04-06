@@ -1,3 +1,4 @@
+import 'package:chan/models/board.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -6,8 +7,6 @@ import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-final GlobalKey<_ReplyBoxState> replyBoxKey = GlobalKey();
 
 class ReplyBox extends StatefulWidget {
 	final ImageboardBoard board;
@@ -24,10 +23,10 @@ class ReplyBox extends StatefulWidget {
 		this.onRequestFocus,
 		Key? key
 	}) : super(key: key);
-	createState() => _ReplyBoxState();
+	createState() => ReplyBoxState();
 }
 
-class _ReplyBoxState extends State<ReplyBox> {
+class ReplyBoxState extends State<ReplyBox> {
 	final _textFieldController = TextEditingController();
 	final _focusNode = FocusNode();
 	bool loading = false;

@@ -14,6 +14,7 @@ abstract class Filterable {
 
 class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
+	final List<T>? initialList;
 	final Future<List<T>> Function() listUpdater;
 	final String id;
 	final RefreshableListController? controller;
@@ -34,7 +35,8 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.filterHint,
 		this.filteredItemBuilder,
 		this.autoUpdateDuration,
-		this.remedies = const {}
+		this.remedies = const {},
+		this.initialList
 	});
 
 	createState() => RefreshableListState<T>();
@@ -45,7 +47,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	String? errorMessage;
 	Type? errorType;
 	String _filter = '';
-	bool updatingNow = false;
+	bool get updatingNow => (errorMessage == null && list == null);
 	final _searchController = TextEditingController();
 	final _searchFocusNode = FocusNode();
 	DateTime? lastUpdateTime;
@@ -64,6 +66,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				});
 			}
 		});
+		list = widget.initialList;
 		update();
 		resetTimer();
 	}
@@ -110,14 +113,12 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	Future<void> update() async {
 		try {
 			setState(() {
-				this.updatingNow = true;
 				this.errorMessage = null;
 				this.errorType = null;
 			});
 			final newData = await widget.listUpdater();
 			resetTimer();
 			setState(() {
-				this.updatingNow = false;
 				this.list = newData;
 				this.lastUpdateTime = DateTime.now();
 			});
@@ -128,8 +129,8 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			setState(() {
 				this.errorMessage = e.toString();
 				this.errorType = e.runtimeType;
-				this.updatingNow = false;
 			});
+			resetTimer();
 		}
 	}
 
@@ -144,22 +145,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 
 	@override
 	Widget build(BuildContext context) {
-		if (errorMessage != null) {
-			return Center(
-				child: Column(
-					mainAxisAlignment: MainAxisAlignment.center,
-					children: [
-						ErrorMessageCard(errorMessage.toString()),
-						CupertinoButton(
-							child: Text('Retry'),
-							onPressed: update
-						),
-						if (widget.remedies[errorType] != null) widget.remedies[errorType]!(context, update)
-					]
-				)
-			);
-		}
-		else if (list != null) {
+		if (list != null) {
 			final List<T> values = _filter.isEmpty ? list! : list!.where((val) => val.getSearchableText().any((s) => s.toLowerCase().contains(_filter))).toList();
 			widget.controller?.resetItems(values.length);
 			return MultiProvider(
@@ -282,13 +268,29 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 											updater: update,
 											updatingNow: updatingNow,
 											lastUpdateTime: lastUpdateTime,
-											nextUpdateTime: nextUpdateTime
+											nextUpdateTime: nextUpdateTime,
+											errorMessage: errorMessage
 										)
 									)
 								)
 							)
 						]
 					)
+				)
+			);
+		}
+		else if (errorMessage != null) {
+			return Center(
+				child: Column(
+					mainAxisAlignment: MainAxisAlignment.center,
+					children: [
+						ErrorMessageCard(errorMessage.toString()),
+						CupertinoButton(
+							child: Text('Retry'),
+							onPressed: update
+						),
+						if (widget.remedies[errorType] != null) widget.remedies[errorType]!(context, update)
+					]
 				)
 			);
 		}
@@ -301,6 +303,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 }
 
 class RefreshableListFooter extends StatelessWidget {
+	final String? errorMessage;
 	final VoidCallback updater;
 	final bool updatingNow;
 	final DateTime? lastUpdateTime;
@@ -309,7 +312,8 @@ class RefreshableListFooter extends StatelessWidget {
 		required this.updater,
 		required this.updatingNow,
 		this.lastUpdateTime,
-		this.nextUpdateTime
+		this.nextUpdateTime,
+		this.errorMessage
 	});
 
 	String _timeDiff(DateTime value) {
@@ -336,6 +340,9 @@ class RefreshableListFooter extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final timeLines = [];
+		if (errorMessage != null) {
+			timeLines.add(errorMessage);
+		}
 		if (nextUpdateTime != null) {
 			timeLines.add('Updating ${_timeDiff(nextUpdateTime!)}');
 		}
@@ -346,7 +353,7 @@ class RefreshableListFooter extends StatelessWidget {
 			behavior: HitTestBehavior.opaque,
 			onTap: updatingNow ? null : updater,
 			child: Container(
-				height: 75,
+				color: errorMessage != null ? Colors.orange.withOpacity(0.5) : null,
 				padding: EdgeInsets.all(16),
 				child: Center(
 					child: AnimatedSwitcher(

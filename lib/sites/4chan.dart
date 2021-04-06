@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:chan/models/board.dart';
+import 'package:chan/models/flag.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:http/http.dart' as http;
@@ -51,7 +53,7 @@ class Site4Chan implements ImageboardSite {
 		}).toList();
 	}
 
-	List<PostSpan> _makeSpans(String data) {
+	static PostSpan makeSpan(String data) {
 		final doc = parse(data.replaceAll('<wbr>', ''));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
@@ -84,14 +86,14 @@ class Site4Chan implements ImageboardSite {
 							elements.add(PostDeadQuoteLinkSpan(int.parse(parts.last), board: (parts.length > 2) ? parts[1] : null));
 						}
 						else if (node.attributes['class']?.contains('quote') ?? false) {
-							elements.add(PostQuoteSpan(PostNodeSpan(_makeSpans(node.innerHtml))));
+							elements.add(PostQuoteSpan(makeSpan(node.innerHtml)));
 						}
 						else {
 							elements.add(PostTextSpan(node.text));
 						}
 					}
 					else if (node.localName == 's') {
-						elements.add(PostSpoilerSpan(PostNodeSpan(_makeSpans(node.innerHtml)), spoilerSpanId++));
+						elements.add(PostSpoilerSpan(makeSpan(node.innerHtml), spoilerSpanId++));
 					}
 					else {
 						elements.addAll(parsePlaintext(node.text));
@@ -102,7 +104,7 @@ class Site4Chan implements ImageboardSite {
 				elements.addAll(parsePlaintext(node.text ?? ''));
 			}
 		}
-		return elements;
+		return PostNodeSpan(elements);
 	}
 
 	ImageboardFlag? _makeFlag(dynamic data) {
@@ -133,7 +135,7 @@ class Site4Chan implements ImageboardSite {
 			id: data['no'],
 			threadId: threadId,
 			attachment: _makeAttachment(board, data),
-			span: PostNodeSpan(_makeSpans(data['com'] ?? '')),
+			spanFormat: PostSpanFormat.Chan4,
 			flag: _makeFlag(data),
 			posterId: data['id']
 		);

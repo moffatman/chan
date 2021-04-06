@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/board.dart';
+import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/post_element.dart';
 import 'package:chan/models/search.dart';
@@ -37,7 +39,7 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 			);
 		}
 	}
-	List<PostSpan> _makeSpans(String board, int threadId, String data) {
+	static PostSpan makeSpan(String board, int threadId, String data) {
 		final doc = parse(data.replaceAll('<wbr>', ''));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
@@ -70,11 +72,11 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 							}
 						}
 						else {
-							elements.add(PostQuoteSpan(PostNodeSpan(_makeSpans(board, threadId, node.innerHtml))));
+							elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
 						}
 					}
 					else if (node.classes.contains('spoiler')) {
-						elements.add(PostSpoilerSpan(PostNodeSpan(_makeSpans(board, threadId, node.innerHtml)), spoilerSpanId++));
+						elements.add(PostSpoilerSpan(makeSpan(board, threadId, node.innerHtml), spoilerSpanId++));
 					}
 					else {
 						elements.addAll(Site4Chan.parsePlaintext(node.text));
@@ -85,7 +87,7 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 				elements.addAll(Site4Chan.parsePlaintext(node.text ?? ''));
 			}
 		}
-		return elements;
+		return PostNodeSpan(elements);
 	}
 	Attachment? _makeAttachment(dynamic data) {
 		if (data['media'] != null) {
@@ -113,7 +115,7 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 			id: int.parse(data['num']),
 			threadId: threadId,
 			attachment: _makeAttachment(data),
-			span: PostNodeSpan(_makeSpans(board, threadId, data['comment_processed'] ?? '')),
+			spanFormat: PostSpanFormat.FoolFuuka,
 			flag: _makeFlag(data),
 			posterId: data['id']
 		);

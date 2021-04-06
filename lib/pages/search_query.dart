@@ -2,6 +2,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/util.dart';
@@ -105,10 +106,9 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 							showCrossThreadLabel: false,
 							allowTappingLinks: false,
 							onTap: () async {
-								final board = (await context.read<ImageboardSite>().getBoards()).firstWhere((b) => b.name == result!.posts[i].board);
 								Navigator.of(context).push(cpr.CupertinoPageRoute(
 									builder: (context) => ThreadPage(
-										board: board,
+										board: Persistence.getBoard(post.board),
 										id: post.threadId,
 										initialPostId: post.id,
 										initiallyUseArchive: true
@@ -145,6 +145,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	Widget build(BuildContext context) {
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
 				middle: Row(
 					children: [
 						Text('Results:'),

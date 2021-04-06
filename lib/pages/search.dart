@@ -1,7 +1,7 @@
+import 'package:chan/models/board.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/pages/search_query.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +17,6 @@ final _clearedDate = DateTime.fromMillisecondsSinceEpoch(0);
 
 class _SearchPageState extends State<SearchPage> {
 	final _controller = TextEditingController();
-	bool initialized = false;
 	ImageboardArchiveSearchQuery query = ImageboardArchiveSearchQuery(boards: ['tv']);
 	DateTime? _chosenDate;
 	bool _searchFocused = false;
@@ -81,6 +80,7 @@ class _SearchPageState extends State<SearchPage> {
 	Widget build(BuildContext context) {
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
 				middle: Stack(
 					fit: StackFit.expand,
 					children: [

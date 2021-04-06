@@ -5,6 +5,7 @@ class SavedPage extends StatelessWidget {
 	Widget build(BuildContext context) {
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
 				middle: Text('Saved')
 			),
 			child: Center(
