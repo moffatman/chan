@@ -51,7 +51,6 @@ class BoardPage extends StatelessWidget {
 					}
 				}),
 				id: '/${board.name}/',
-				lazy: true,
 				itemBuilder: (context, thread) {
 					return GestureDetector(
 						behavior: HitTestBehavior.opaque,

@@ -131,7 +131,8 @@ class PersistentThreadState extends HiveObject {
 
 	List<int> get youIds => receipts.map((receipt) => receipt.id).toList();
 	List<Post>? get repliesToYou => thread?.posts.where((p) => p.span.referencedPostIds.any((id) => youIds.contains(id))).toList();
-	List<Post>? get unseenReplies => repliesToYou?.where((p) => p.id > lastSeenPostId!).toList();
+	List<Post>? get unseenRepliesToYou => repliesToYou?.where((p) => p.id > lastSeenPostId!).toList();
+	int? get unseenReplyCount => thread?.posts.where((p) => p.id > (lastSeenPostId ?? 0)).length;
 
 	@override
 	String toString() => 'PersistentThreadState(lastSeenPostId: $lastSeenPostId, receipts: $receipts';

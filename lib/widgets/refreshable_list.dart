@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -18,7 +20,6 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Future<List<T>> Function() listUpdater;
 	final String id;
 	final RefreshableListController? controller;
-	final bool lazy;
 	final String? filterHint;
 	final Widget Function(BuildContext context, T value, VoidCallback resetPage)? filteredItemBuilder;
 	final Duration? autoUpdateDuration;
@@ -32,7 +33,6 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		required this.id,
 		this.additionalProviders = const [],
 		this.controller,
-		this.lazy = false,
 		this.filterHint,
 		this.filteredItemBuilder,
 		this.autoUpdateDuration,
@@ -69,6 +69,9 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			}
 		});
 		list = widget.initialList;
+		if (list != null) {
+			widget.controller?.setItems(list!);
+		}
 		if (widget.updateDisabledText == null) {
 			update();
 			resetTimer();
@@ -81,9 +84,13 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		if (oldWidget.id != widget.id) {
 			this.autoUpdateTimer?.cancel();
 			this.autoUpdateTimer = null;
+			widget.controller?.invalidate();
 			_closeSearch();
 			setState(() {
-				this.list = null;
+				if (widget.initialList != null) {
+					widget.controller?.setItems(widget.initialList!);
+				}
+				this.list = widget.initialList;
 				this.errorMessage = null;
 				this.errorType = null;
 				this.lastUpdateTime = null;
@@ -128,6 +135,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				this.updatingNow = true;
 			});
 			final newData = await widget.listUpdater();
+			widget.controller?.setItems(newData);
 			resetTimer();
 			setState(() {
 				this.errorMessage = null;
@@ -138,14 +146,16 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			});
 		}
 		catch (e, st) {
-			print(e);
-			print(st);
-			setState(() {
-				this.errorMessage = e.toString();
-				this.errorType = e.runtimeType;
-				this.updatingNow = false;
-			});
-			resetTimer();
+			if (mounted) {
+				print(e);
+				print(st);
+				setState(() {
+					this.errorMessage = e.toString();
+					this.errorType = e.runtimeType;
+					this.updatingNow = false;
+				});
+				resetTimer();
+			}
 		}
 	}
 
@@ -162,8 +172,8 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	Widget build(BuildContext context) {
 		if (list != null) {
 			final List<T> values = _filter.isEmpty ? list! : list!.where((val) => val.getSearchableText().any((s) => s.toLowerCase().contains(_filter))).toList();
-			widget.controller?.resetItems(values.length);
 			return MultiProvider(
+				key: ValueKey(widget.id),
 				providers: [
 					Provider<List<T>>.value(value: list!),
 					...widget.additionalProviders
@@ -220,13 +230,13 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 								)
 							),
 							if (values.length > 0)
-								if (widget.lazy) SliverList(
+								SliverList(
 									delegate: SliverChildBuilderDelegate(
 										(context, i) {
 											if (i % 2 == 0) {
 												return LayoutBuilder(
 													builder: (context, constraints) {
-														widget.controller?.registerItem(i ~/ 2, context, values[i ~/ 2]);
+														widget.controller?.registerItem(i ~/ 2, values[i ~/ 2], context);
 														return _itemBuilder(context, values[i ~/ 2]);
 													}
 												);
@@ -240,28 +250,6 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 											}
 										},
 										childCount: (values.length * 2)
-									)
-								)
-								else SliverToBoxAdapter(
-									child: Column(
-										mainAxisSize: MainAxisSize.min,
-										children: List.generate(values.length * 2, (i) {
-											if (i % 2 == 0) {
-												return LayoutBuilder(
-													builder: (context, constraints) {
-														widget.controller?.registerItem(i ~/ 2, context, values[i ~/ 2]);
-														return _itemBuilder(context, values[i ~/ 2]);
-													}
-												);
-											}
-											else {
-												return Divider(
-													thickness: 1,
-													height: 0,
-													color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
-												);
-											}
-										}),
 									)
 								),
 							if (values.length == 0)
@@ -405,23 +393,52 @@ class RefreshableListFooter extends StatelessWidget {
 }
 
 class _RefreshableListItem<T> {
-	final BuildContext context;
-	final T item;
-	_RefreshableListItem(this.context, this.item);
+	BuildContext? context;
+	T item;
+	double? cachedOffset;
+	double? cachedHeight;
+	bool get hasGoodState => (context?.findRenderObject()?.attached ?? false) && ((context?.findRenderObject() as RenderBox).hasSize);
+	_RefreshableListItem(this.item);
 }
 class RefreshableListController<T extends Filterable> {
-	late List<_RefreshableListItem<T>?> _items;
+	List<_RefreshableListItem<T>> _items = [];
 	ScrollController scrollController = ScrollController();
 	BehaviorSubject<Null> _scrollStream = BehaviorSubject();
 	BehaviorSubject<Null> slowScrollUpdates = BehaviorSubject();
 	late StreamSubscription<List<Null>> _slowScrollSubscription;
+	int currentIndex = 0;
+	double? topOffset;
 	RefreshableListController() {
-		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 1000)).where((batch) => batch.isNotEmpty).listen(_onScroll);
+		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onScroll);
+		slowScrollUpdates.listen(_onSlowScroll);
+		SchedulerBinding.instance!.endOfFrame.then((_) => _onScroll([]));
+	}
+	Future<void> _tryCachingItem(_RefreshableListItem<T> item) async {
+		await SchedulerBinding.instance!.endOfFrame;
+		if (item.hasGoodState) {
+			final RenderObject object = item.context!.findRenderObject()!;
+			item.cachedHeight = object.semanticBounds.height;
+			item.cachedOffset = _getOffset(object);
+		}
+	}
+	void _onSlowScroll(Null update) {
+		for (final item in _items) {
+			if (item.cachedOffset == null) {
+				_tryCachingItem(item);
+			}
+		}
+		double? scrollableViewportHeight;
+		for (final item in _items) {
+			if (item.hasGoodState) {
+				scrollableViewportHeight ??= Scrollable.of(item.context!)!.position.pixels;
+				if (item.cachedOffset! - scrollableViewportHeight > 0) {
+					currentIndex = _items.indexOf(item);
+				}
+			}
+		}
 	}
 	void _onScroll(List<Null> notifications) {
 		slowScrollUpdates.add(null);
-		//T? minObject = findNextMatch((item) => true);
-		//print('New top: $minObject');
 	}
 	void attach(RefreshableListState<T> list) {
 		scrollController.addListener(() {
@@ -434,66 +451,80 @@ class RefreshableListController<T extends Filterable> {
 		slowScrollUpdates.close();
 		scrollController.dispose();
 	}
-	void resetItems(int length) {
-		_items = List.generate(length, (_) => null);
+	void invalidate() {
+		_items = [];
+		currentIndex = 0;
 	}
-	void registerItem(int id, BuildContext context, T item) {
-		this._items[id] = _RefreshableListItem(context, item);
+	void setItems(List<T> items) {
+		_items.addAll(items.skip(_items.length).map((item) => _RefreshableListItem(item)));
+	}
+	void registerItem(int index, T item, BuildContext context) {
+		topOffset ??= MediaQuery.of(context).padding.top;
+		this._items[index].item = item;
+		this._items[index].context = context;
+		_tryCachingItem(this._items[index]);
 	}
 	double _getOffset(RenderObject object) {
 		return RenderAbstractViewport.of(object)!.getOffsetToReveal(object, 0.0).offset;
 	}
-	_RefreshableListItem<T>? _findNextMatch(bool f(T val)) {
-		_RefreshableListItem<T>? lastMatch;
-		for (_RefreshableListItem<T>? item in _items) {
-			final RenderObject? object = item!.context.findRenderObject();
-
-			if (object == null || !object.attached) {
-				continue;
-			}
-
-			final double vpHeight = RenderAbstractViewport.of(object)!.paintBounds.height;
-
-			final Size size = object.semanticBounds.size;
-
-			final double deltaTop = _getOffset(object) - Scrollable.of(item.context)!.position.pixels;
-			final double deltaBottom = deltaTop + size.height;
-
-			bool isBelowTopOfViewport = deltaTop >= 0.0 && deltaTop < vpHeight;
-			bool isAboveBottomOfViewport = deltaBottom > 0.0 && deltaBottom < vpHeight;
-
-			if (f(item.item)) {
-				lastMatch = item;
-				if (isBelowTopOfViewport) {
-					return item;
+	double _estimateOffset(int targetIndex) {
+		final heightedItems = _items.map((i) => i.cachedHeight).where((i) => i != null);
+		final averageItemHeight = heightedItems.reduce((a, b) => a! + b!)! / heightedItems.length;
+		int nearestDistance = _items.length + 1;
+		double? estimate;
+		for (int i = 0; i < _items.length; i++) {
+			if (_items[i].cachedOffset != null) {
+				final distance = (targetIndex - i).abs();
+				if (distance < nearestDistance) {
+					estimate = _items[i].cachedOffset! + (averageItemHeight * (targetIndex - i));
+					nearestDistance = distance;
 				}
 			}
 		}
-		return lastMatch;
+		return estimate!;
 	}
-	T? findNextMatch(bool f(T val)) {
-		return _findNextMatch(f)?.item;
-	}
-	void scrollToFirstMatching(bool f(T val)) {
-		final match = _findNextMatch(f);
-		if (match != null) {
-			// Need to do some math here to account for the header
-			final screenHeight = MediaQuery.of(match.context).size.height;
-			final height = match.context.findRenderObject()!.semanticBounds.size.height;
-			final safeAreaHeight = MediaQuery.of(match.context).padding.top;
-			Scrollable.ensureVisible(
-				match.context,
-				alignment: safeAreaHeight / (screenHeight - height),
-				duration: const Duration(milliseconds: 200)
-			);
-			/*scrollController.position.animateTo(
-				_getOffset(match.context.findRenderObject()),
-				duration: const Duration(milliseconds: 200),
-				curve: Curves.ease
-			);*/
+	void animateTo(bool f(T val), {double alignment = 0.0, Duration duration = const Duration(milliseconds: 200)}) async {
+		_RefreshableListItem<T> targetItem = _items.firstWhere((i) => f(i.item));
+		Duration d = duration;
+		Curve c = Curves.ease;
+		if (targetItem.cachedOffset == null) {
+			int targetIndex = _items.indexOf(targetItem);
+			double? previousOffset;
+			DateTime scrollStartTime = DateTime.now();
+			c = Curves.easeIn;
+			while (previousOffset != scrollController.position.pixels) {
+				previousOffset = scrollController.position.pixels;
+				await SchedulerBinding.instance!.endOfFrame;
+				scrollController.animateTo(
+					_estimateOffset(targetIndex) - topOffset!,
+					duration: duration,
+					curve: c
+				);
+				await Future.delayed(duration ~/ 4);
+				c = Curves.linear;
+				await SchedulerBinding.instance!.endOfFrame;
+				if (_items[targetIndex].hasGoodState) {
+					break;
+				}
+			}
+			await _tryCachingItem(_items[targetIndex]);
+			Duration timeLeft = duration - DateTime.now().difference(scrollStartTime);
+			if (timeLeft.inMilliseconds.isNegative) {
+				d = duration ~/ 4;
+			}
+			else {
+				d = Duration(milliseconds: min(timeLeft.inMilliseconds, duration.inMilliseconds ~/ 4));
+			}
+			c = Curves.easeOut;
 		}
-		else {
-			print('No match found');
-		}
+		final atAlignment0 = targetItem.cachedOffset! - topOffset!;
+		final alignmentSlidingWindow = scrollController.position.viewportDimension - targetItem.context!.findRenderObject()!.semanticBounds.size.height - topOffset!;
+		scrollController.animateTo(
+			(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController.position.maxScrollExtent),
+			duration: d,
+			curve: c
+		);
 	}
+	int get firstVisibleIndex => _items.indexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! > scrollController.position.pixels));
+	int get lastVisibleIndex => _items.lastIndexWhere((i) => (i.cachedOffset != null) && ((i.cachedOffset! + i.cachedHeight!) < (scrollController.position.pixels + scrollController.position.viewportDimension)));
 }
