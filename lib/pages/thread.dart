@@ -233,16 +233,18 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 								stream: _listController.slowScrollUpdates,
 								builder: (context, a) {
 									if ((persistentState.unseenReplyCount ?? 0) > 0) {
-										return Align(
-											alignment: Alignment.bottomRight,
-											child: Container(
-												decoration: BoxDecoration(
-													borderRadius: BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
-													color: Colors.red
-												),
-												padding: EdgeInsets.all(4),
-												margin: EdgeInsets.only(right: 16),
-												child: Text(persistentState.unseenReplyCount.toString())
+										return SafeArea(
+											child: Align(
+												alignment: Alignment.bottomRight,
+												child: Container(
+													decoration: BoxDecoration(
+														borderRadius: BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
+														color: Colors.red
+													),
+													padding: EdgeInsets.all(4),
+													margin: EdgeInsets.only(right: 16),
+													child: Text(persistentState.unseenReplyCount.toString())
+												)
 											)
 										);
 									}
