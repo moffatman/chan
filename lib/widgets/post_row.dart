@@ -58,15 +58,33 @@ class PostRow extends StatelessWidget {
 						Share.share(site.getWebUrl(post.board, post.threadId, post.id));
 					}
 				),
-				if (post.attachment != null) ContextMenuAction(
-					child: Text('Search archive'),
-					trailingIcon: Icons.image,
-					onPressed: () {
-						(rightPaneNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true)).push(cpr.CupertinoPageRoute(
-							builder: (context) => SearchQueryPage(ImageboardArchiveSearchQuery(boards: [post.board], md5: post.attachment!.md5))
-						));
-					}
-				)
+				if (post.attachment != null) ...[
+					ContextMenuAction(
+						child: Text('Search archive'),
+						trailingIcon: Icons.image,
+						onPressed: () {
+							(rightPaneNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true)).push(cpr.CupertinoPageRoute(
+								builder: (context) => SearchQueryPage(ImageboardArchiveSearchQuery(boards: [post.board], md5: post.attachment!.md5))
+							));
+						}
+					),
+					ContextMenuAction(
+						child: Text('Search Google'),
+						trailingIcon: Icons.image,
+						onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
+							'image_url': post.attachment!.url.toString(),
+							'safe': 'off'
+						}))
+					),
+					ContextMenuAction(
+						child: Text('Search Yandex'),
+						trailingIcon: Icons.image,
+						onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
+							'rpt': 'imageview',
+							'url': post.attachment!.url.toString()
+						}))
+					)
+				]
 			],
 			child: GestureDetector(
 				onTap: onTap,

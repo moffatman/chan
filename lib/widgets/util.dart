@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:provider/provider.dart';
 
 extension NoThrowingProvider on BuildContext {
@@ -103,4 +104,16 @@ class ErrorMessageCard extends StatelessWidget {
 			)
 		);
 	}
+}
+
+Future<void> openBrowser(BuildContext context, Uri url) {
+	return ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
+		android: AndroidChromeCustomTabsOptions(
+			toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor
+		),
+		ios: IOSSafariOptions(
+			preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
+			preferredControlTintColor: CupertinoTheme.of(context).primaryColor
+		)
+	));
 }

@@ -13,7 +13,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:provider/provider.dart';
 import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
 
@@ -328,17 +327,7 @@ class PostLinkSpan extends PostSpan {
 			style: TextStyle(
 				decoration: TextDecoration.underline
 			),
-			recognizer: TapGestureRecognizer()..onTap = () {
-				ChromeSafariBrowser().open(url: Uri.parse(url), options: ChromeSafariBrowserClassOptions(
-					android: AndroidChromeCustomTabsOptions(
-						toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor
-					),
-					ios: IOSSafariOptions(
-						preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
-						preferredControlTintColor: CupertinoTheme.of(context).primaryColor
-					)
-				));
-			}
+			recognizer: TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(url))
 		);
 	}
 }
