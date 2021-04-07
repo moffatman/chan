@@ -372,11 +372,11 @@ class RefreshableListFooter extends StatelessWidget {
 					child: AnimatedSwitcher(
 						duration: const Duration(milliseconds: 200),
 						child: Column(
+							key: ValueKey<bool>(updatingNow),
 							mainAxisSize: MainAxisSize.min,
 							children: [
 								Text(
-									updatingNow ? 'Updating now...' : timeLines.join('\n'),
-									key: ValueKey<bool>(updatingNow),
+									updatingNow ? 'Updating now...\n' : timeLines.join('\n'),
 									textAlign: TextAlign.center
 								),
 								if (!updatingNow && remedy != null) ...[
