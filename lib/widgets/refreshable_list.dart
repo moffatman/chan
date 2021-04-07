@@ -408,6 +408,7 @@ class RefreshableListController<T extends Filterable> {
 	late StreamSubscription<List<Null>> _slowScrollSubscription;
 	int currentIndex = 0;
 	double? topOffset;
+	double? bottomOffset;
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onScroll);
 		slowScrollUpdates.listen(_onSlowScroll);
@@ -460,6 +461,7 @@ class RefreshableListController<T extends Filterable> {
 	}
 	void registerItem(int index, T item, BuildContext context) {
 		topOffset ??= MediaQuery.of(context).padding.top;
+		bottomOffset ??= MediaQuery.of(context).padding.bottom;
 		this._items[index].item = item;
 		this._items[index].context = context;
 		_tryCachingItem(this._items[index]);
@@ -518,7 +520,7 @@ class RefreshableListController<T extends Filterable> {
 			c = Curves.easeOut;
 		}
 		final atAlignment0 = targetItem.cachedOffset! - topOffset!;
-		final alignmentSlidingWindow = scrollController.position.viewportDimension - targetItem.context!.findRenderObject()!.semanticBounds.size.height - topOffset!;
+		final alignmentSlidingWindow = scrollController.position.viewportDimension - targetItem.context!.findRenderObject()!.semanticBounds.size.height - topOffset! - bottomOffset!;
 		scrollController.animateTo(
 			(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController.position.maxScrollExtent),
 			duration: d,
