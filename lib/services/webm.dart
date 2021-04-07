@@ -61,16 +61,7 @@ class WEBM {
 				int ffmpegReturnCode;
 				bool hasAudio = true;
 				if (isDesktop()) {
-					print('Using Process.start');
-					final ffmpeg = await Process.start('ffmpeg', ['-hwaccel', 'auto', '-i', url.toString(), '-crf', '18', convertedFile.path]);
-					print('Process started');
-					ffmpeg.stdout.transform(Utf8Decoder()).transform(LineSplitter()).listen((line) {
-						print(line);
-					});
-					ffmpeg.stderr.transform(Utf8Decoder()).transform(LineSplitter()).listen((line) {
-						print(line);
-					});
-					ffmpegReturnCode = await ffmpeg.exitCode;
+					throw Exception('WEBM disabled on desktop');
 				}
 				else {
 					print('Using FlutterFFmpeg');
