@@ -76,21 +76,24 @@ class ThreadRow extends StatelessWidget {
 										child: Container(
 											constraints: BoxConstraints(maxHeight: 100),
 											padding: EdgeInsets.only(left: 8, right: 8),
-											child: Column(
-												mainAxisSize: MainAxisSize.min,
-												crossAxisAlignment: CrossAxisAlignment.start,
-												mainAxisAlignment: MainAxisAlignment.start,
-												children: [
-													if (thread.title != null) Text(thread.title!, style: TextStyle(fontWeight: FontWeight.bold)),
-													Flexible(child: Provider.value(
-														value: thread.posts[0],
-														child: Builder(
-															builder: (ctx) => IgnorePointer(
-																child: Text.rich(thread.posts[0].span.build(ctx, PostSpanRenderOptions()), overflow: TextOverflow.fade)
-															)
+											child: Provider.value(
+												value: thread.posts[0],
+												child: Builder(
+													builder: (ctx) => IgnorePointer(
+														child: Text.rich(
+															TextSpan(
+																children: [
+																	if (thread.title != null) TextSpan(
+																		text: thread.title! + '\n',
+																		style: TextStyle(fontWeight: FontWeight.bold)
+																	),
+																	thread.posts[0].span.build(ctx, PostSpanRenderOptions())
+																]
+															),
+															overflow: TextOverflow.fade
 														)
-													)),
-												]
+													)
+												)
 											)
 										)
 									),
