@@ -105,6 +105,9 @@ class _HoverPopupState extends State<HoverPopup> {
 	Widget build(BuildContext context) {
 		return MouseRegion(
 			onEnter: (event) {
+				if (_entry != null) {
+					return;
+				}
 				final RenderBox? childBox = context.findRenderObject() as RenderBox;
 				if (childBox == null || !childBox.attached) {
 					return;
@@ -133,6 +136,7 @@ class _HoverPopupState extends State<HoverPopup> {
 			},
 			onExit: (event) {
 				_entry?.remove();
+				_entry = null;
 			},
 			child: widget.child
 		);
