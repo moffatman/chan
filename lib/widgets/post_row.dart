@@ -36,7 +36,7 @@ class PostRow extends StatelessWidget {
 		this.onTap,
 		this.onThumbnailTap,
 		this.onNeedScrollToAnotherPost,
-		this.showCrossThreadLabel = false,
+		this.showCrossThreadLabel = true,
 		this.allowTappingLinks = true
 	});
 
