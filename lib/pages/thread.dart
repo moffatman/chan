@@ -116,31 +116,31 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 							}
 						)
 					),
-					child: Stack(
+					child: Column(
 						children: [
-							Column(
-								children: [
-									Flexible(
-										flex: 1,
-										child: Navigator(
-											initialRoute: '/',
-											onGenerateRoute: (RouteSettings settings) => TransparentRoute(
-												builder: (context) => RawKeyboardListener(
-													autofocus: true,
-													focusNode: _focusNode,
-													onKey: (event) {
-														if (event is RawKeyDownEvent) {
-															if (event.logicalKey == LogicalKeyboardKey.keyG) {
-																final nextPostWithImage = persistentState.thread?.posts.skip(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null, orElse: () {
-																	return persistentState.thread!.posts.take(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null);
-																});
-																if (nextPostWithImage != null) {
-																	_showGallery(initialAttachment: nextPostWithImage.attachment);
-																}
-															}
+							Flexible(
+								flex: 1,
+								child: Navigator(
+									initialRoute: '/',
+									onGenerateRoute: (RouteSettings settings) => TransparentRoute(
+										builder: (context) => RawKeyboardListener(
+											autofocus: true,
+											focusNode: _focusNode,
+											onKey: (event) {
+												if (event is RawKeyDownEvent) {
+													if (event.logicalKey == LogicalKeyboardKey.keyG) {
+														final nextPostWithImage = persistentState.thread?.posts.skip(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null, orElse: () {
+															return persistentState.thread!.posts.take(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null);
+														});
+														if (nextPostWithImage != null) {
+															_showGallery(initialAttachment: nextPostWithImage.attachment);
 														}
-													},
-													child: RefreshableList<Post>(
+													}
+												}
+											},
+											child: Stack(
+												children: [
+													RefreshableList<Post>(
 														id: '/${widget.board.name}/${widget.id}',
 														updateDisabledText: persistentState.thread?.isArchived == true ? 'Archived' : null,
 														autoUpdateDuration: const Duration(seconds: 60),
@@ -199,59 +199,59 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 															);
 														},
 														filterHint: 'Search in thread'
+													),
+													StreamBuilder(
+														stream: _listController.slowScrollUpdates,
+														builder: (context, a) {
+															if ((persistentState.unseenReplyCount ?? 0) > 0) {
+																return SafeArea(
+																	child: Align(
+																		alignment: Alignment.bottomRight,
+																		child: Container(
+																			decoration: BoxDecoration(
+																				borderRadius: BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
+																				color: Colors.red
+																			),
+																			padding: EdgeInsets.all(4),
+																			margin: EdgeInsets.only(right: 16),
+																			child: Text(persistentState.unseenReplyCount.toString())
+																		)
+																	)
+																);
+															}
+															else {
+																return Container();
+															}
+														}
 													)
-												)
-											)
-										)
-									),
-									Visibility(
-										visible: showReplyBox,
-										maintainState: true,
-										child: SafeArea(
-											top: false,
-											child: ReplyBox(
-												key: context.read<GlobalKey<ReplyBoxState>>(),
-												board: widget.board,
-												threadId: widget.id,
-												threadState: persistentState,
-												onReplyPosted: () {
-													setState(() {
-														showReplyBox = false;
-													});
-												},
-												onRequestFocus: () {
-													setState(() {
-														showReplyBox = true;
-													});
-												}
+												]
 											)
 										)
 									)
-								]
+								)
 							),
-							StreamBuilder(
-								stream: _listController.slowScrollUpdates,
-								builder: (context, a) {
-									if ((persistentState.unseenReplyCount ?? 0) > 0) {
-										return SafeArea(
-											child: Align(
-												alignment: Alignment.bottomRight,
-												child: Container(
-													decoration: BoxDecoration(
-														borderRadius: BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
-														color: Colors.red
-													),
-													padding: EdgeInsets.all(4),
-													margin: EdgeInsets.only(right: 16),
-													child: Text(persistentState.unseenReplyCount.toString())
-												)
-											)
-										);
-									}
-									else {
-										return Container();
-									}
-								}
+							Visibility(
+								visible: showReplyBox,
+								maintainState: true,
+								child: SafeArea(
+									top: false,
+									child: ReplyBox(
+										key: context.read<GlobalKey<ReplyBoxState>>(),
+										board: widget.board,
+										threadId: widget.id,
+										threadState: persistentState,
+										onReplyPosted: () {
+											setState(() {
+												showReplyBox = false;
+											});
+										},
+										onRequestFocus: () {
+											setState(() {
+												showReplyBox = true;
+											});
+										}
+									)
+								)
 							)
 						]
 					)
