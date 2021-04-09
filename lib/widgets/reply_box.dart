@@ -74,93 +74,106 @@ class ReplyBoxState extends State<ReplyBox> {
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor
 			),
 			padding: EdgeInsets.all(4),
-			child: Row(
+			child: Stack(
 				children: [
-					Expanded(
-						child: IntrinsicHeight(
-							child: Stack(
-								children: [
-									CupertinoTextField(
-										enabled: !loading,
-										controller: _textFieldController,
-										maxLines: null,
-										minLines: 4,
-										autofocus: true,
-										focusNode: _focusNode,
-										textCapitalization: TextCapitalization.sentences,
-										keyboardAppearance: CupertinoTheme.of(context).brightness,
-									),
-									if (widget.board.maxCommentCharacters != null && ((_textFieldController.text.length / widget.board.maxCommentCharacters!) > 0.5)) IgnorePointer(
-										child: Align(
-											alignment: Alignment.bottomRight,
-											child: Container(
-												padding: EdgeInsets.only(bottom: 4, right: 8),
-												child: Text(
-													'${_textFieldController.text.length} / ${widget.board.maxCommentCharacters}',
-													style: TextStyle(
-														color: (_textFieldController.text.length > widget.board.maxCommentCharacters!) ? Colors.red : Colors.grey
+					Row(
+						children: [
+							Expanded(
+								child: IntrinsicHeight(
+									child: Stack(
+										children: [
+											CupertinoTextField(
+												enabled: !loading,
+												controller: _textFieldController,
+												maxLines: null,
+												minLines: 4,
+												autofocus: true,
+												focusNode: _focusNode,
+												textCapitalization: TextCapitalization.sentences,
+												keyboardAppearance: CupertinoTheme.of(context).brightness,
+											),
+											if (widget.board.maxCommentCharacters != null && ((_textFieldController.text.length / widget.board.maxCommentCharacters!) > 0.5)) IgnorePointer(
+												child: Align(
+													alignment: Alignment.bottomRight,
+													child: Container(
+														padding: EdgeInsets.only(bottom: 4, right: 8),
+														child: Text(
+															'${_textFieldController.text.length} / ${widget.board.maxCommentCharacters}',
+															style: TextStyle(
+																color: (_textFieldController.text.length > widget.board.maxCommentCharacters!) ? Colors.red : Colors.grey
+															)
+														)
 													)
 												)
 											)
-										)
+										]
+									)
+								)
+							),
+							Column(
+								mainAxisSize: MainAxisSize.min,
+								mainAxisAlignment: MainAxisAlignment.end,
+								children: [
+									CupertinoButton(
+										child: Text('Attach file'),
+										onPressed: null
+									),
+									CupertinoButton(
+										child: Text('Submit'),
+										onPressed: loading ? null : () async {
+											final captchaKey = await Navigator.of(context).push<String>(TransparentRoute(builder: (context) {
+												return OverscrollModalPage(
+													child: CaptchaNoJS(
+														request: site.getCaptchaRequest(),
+														onCaptchaSolved: (key) => Navigator.of(context).pop(key)
+													)
+												);
+											}));
+											if (captchaKey == null) {
+												return;
+											}
+											setState(() {
+												loading = true;
+											});
+											try {
+												final receipt = await site.postReply(
+													board: widget.board.name,
+													threadId: widget.threadId,
+													captchaKey: captchaKey,
+													text: _textFieldController.text
+												);
+												_textFieldController.clear();
+												setState(() {
+													loading = false;
+												});
+												print(receipt);
+												_focusNode.unfocus();
+												widget.threadState.receipts = [...widget.threadState.receipts, receipt];
+												widget.threadState.save();
+												widget.onReplyPosted();
+											}
+											catch (e, st) {
+												print(e);
+												print(st);
+												setState(() {
+													loading = false;
+												});
+												alertError(context, e.toString());
+											}
+										}
 									)
 								]
 							)
-						)
-					),
-					Column(
-						mainAxisSize: MainAxisSize.min,
-						mainAxisAlignment: MainAxisAlignment.end,
-						children: [
-							CupertinoButton(
-								child: Text('Attach file'),
-								onPressed: null
-							),
-							CupertinoButton(
-								child: loading ? CircularProgressIndicator() : Text('Submit'),
-								onPressed: loading ? null : () async {
-									final captchaKey = await Navigator.of(context).push<String>(TransparentRoute(builder: (context) {
-										return OverscrollModalPage(
-											child: CaptchaNoJS(
-												request: site.getCaptchaRequest(),
-												onCaptchaSolved: (key) => Navigator.of(context).pop(key)
-											)
-										);
-									}));
-									if (captchaKey == null) {
-										return;
-									}
-									setState(() {
-										loading = true;
-									});
-									try {
-										final receipt = await site.postReply(
-											board: widget.board.name,
-											threadId: widget.threadId,
-											captchaKey: captchaKey,
-											text: _textFieldController.text
-										);
-										_textFieldController.clear();
-										setState(() {
-											loading = false;
-										});
-										print(receipt);
-										_focusNode.unfocus();
-										widget.threadState.receipts = [...widget.threadState.receipts, receipt];
-										widget.threadState.save();
-										widget.onReplyPosted();
-									}
-									catch (e, st) {
-										print(e);
-										print(st);
-										setState(() {
-											loading = false;
-										});
-										alertError(context, e.toString());
-									}
-								}
-							)
 						]
+					),
+					if (loading) Positioned.fill(
+							child: Container(
+							alignment: Alignment.bottomCenter,
+							child: LinearProgressIndicator(
+								valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
+								backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.7)
+							)
+						)
 					)
 				]
 			)
