@@ -201,7 +201,7 @@ class Site4Chan implements ImageboardSite {
 		final errorMessages = Map<String, String>();
 		for (final archive in archives) {
 			try {
-				return archive.getThread(board, id);
+				return await archive.getThread(board, id);
 			}
 			catch(e) {
 				if (!(e is BoardNotFoundException)) {
@@ -224,7 +224,7 @@ class Site4Chan implements ImageboardSite {
 		final errorMessages = Map<String, String>();
 		for (final archive in archives) {
 			try {
-				return archive.getPost(board, id);
+				return await archive.getPost(board, id);
 			}
 			catch(e) {
 				if (!(e is BoardNotFoundException)) {
