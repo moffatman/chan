@@ -307,7 +307,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		}
 		else {
 			return Center(
-				child: CircularProgressIndicator()
+				child: CupertinoActivityIndicator()
 			);
 		}
 	}

@@ -136,7 +136,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		}
 		else {
 			return Center(
-				child: CircularProgressIndicator()
+				child: CupertinoActivityIndicator()
 			);
 		}
 	}

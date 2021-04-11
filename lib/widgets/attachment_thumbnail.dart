@@ -1,4 +1,5 @@
 import 'package:chan/models/attachment.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
 
@@ -52,9 +53,7 @@ class AttachmentThumbnail extends StatelessWidget {
 						width: width,
 						height: height,
 						child: Center(
-							child: CircularProgressIndicator(
-								value: (loadstate.loadingProgress != null) ? loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes! : null
-							)
+							child: CupertinoActivityIndicator()
 						)
 					);
 				}

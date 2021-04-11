@@ -155,7 +155,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			}
 			else {
 				return Center(
-					child: CircularProgressIndicator()
+					child: CupertinoActivityIndicator()
 				);
 			}
 		}

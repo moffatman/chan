@@ -71,10 +71,12 @@ class WEBM {
 					hasAudio = mediaInfo['streams']?.any((stream) => stream['codec_type'] == 'audio') ?? true;
 					final duration = double.tryParse(mediaInfo['format']?['duration'] ?? '');
 					final bitrate = int.tryParse(mediaInfo['format']?['bit_rate'] ?? '') ?? (2e6 as int);
+					bool passedFirstEvent = false;
 					ffconfig.enableStatisticsCallback((stats) {
-						if (duration != null) {
+						if (duration != null && passedFirstEvent) {
 							status.add(WEBMLoadingStatus(0.001 * (stats.time / duration)));
 						}
+						passedFirstEvent = true;
 					});
 					String options = '';
 					if (Platform.isAndroid) {
