@@ -179,7 +179,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				key: ValueKey(widget.id),
 				onPointerUp: (event) {
 					if (widget.controller != null) {
-						double overscroll = widget.controller!.scrollController.position.pixels - widget.controller!.scrollController.position.maxScrollExtent;
+						double overscroll = widget.controller!.scrollController!.position.pixels - widget.controller!.scrollController!.position.maxScrollExtent;
 						if (overscroll > 150) {
 							update();
 						}
@@ -399,7 +399,7 @@ class _RefreshableListItem<T> {
 }
 class RefreshableListController<T extends Filterable> {
 	List<_RefreshableListItem<T>> _items = [];
-	ScrollController scrollController = ScrollController();
+	ScrollController? scrollController;
 	BehaviorSubject<Null> _scrollStream = BehaviorSubject();
 	BehaviorSubject<Null> slowScrollUpdates = BehaviorSubject();
 	late StreamSubscription<List<Null>> _slowScrollSubscription;
@@ -439,15 +439,18 @@ class RefreshableListController<T extends Filterable> {
 		slowScrollUpdates.add(null);
 	}
 	void attach(RefreshableListState<T> list) {
-		scrollController.addListener(() {
-			_scrollStream.add(null);
+		WidgetsBinding.instance!.addPostFrameCallback((_) {
+			scrollController = PrimaryScrollController.of(list.context);
+			scrollController!.addListener(() {
+				_scrollStream.add(null);
+			});
 		});
 	}
 	void dispose() {
 		_scrollStream.close();
 		_slowScrollSubscription.cancel();
 		slowScrollUpdates.close();
-		scrollController.dispose();
+		scrollController?.dispose();
 	}
 	void invalidate() {
 		_items = [];
@@ -491,10 +494,10 @@ class RefreshableListController<T extends Filterable> {
 			double? previousOffset;
 			DateTime scrollStartTime = DateTime.now();
 			c = Curves.easeIn;
-			while (previousOffset != scrollController.position.pixels) {
-				previousOffset = scrollController.position.pixels;
+			while (previousOffset != scrollController!.position.pixels) {
+				previousOffset = scrollController!.position.pixels;
 				await SchedulerBinding.instance!.endOfFrame;
-				scrollController.animateTo(
+				scrollController!.animateTo(
 					_estimateOffset(targetIndex) - topOffset!,
 					duration: duration,
 					curve: c
@@ -517,13 +520,13 @@ class RefreshableListController<T extends Filterable> {
 			c = Curves.easeOut;
 		}
 		final atAlignment0 = targetItem.cachedOffset! - topOffset!;
-		final alignmentSlidingWindow = scrollController.position.viewportDimension - targetItem.context!.findRenderObject()!.semanticBounds.size.height - topOffset! - bottomOffset!;
-		scrollController.animateTo(
-			(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController.position.maxScrollExtent),
+		final alignmentSlidingWindow = scrollController!.position.viewportDimension - targetItem.context!.findRenderObject()!.semanticBounds.size.height - topOffset! - bottomOffset!;
+		scrollController!.animateTo(
+			(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent),
 			duration: d,
 			curve: c
 		);
 	}
-	int get firstVisibleIndex => _items.indexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! > scrollController.position.pixels));
-	int get lastVisibleIndex => _items.lastIndexWhere((i) => (i.cachedOffset != null) && ((i.cachedOffset! + i.cachedHeight!) < (scrollController.position.pixels + scrollController.position.viewportDimension)));
+	int get firstVisibleIndex => _items.indexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! > scrollController!.position.pixels));
+	int get lastVisibleIndex => _items.lastIndexWhere((i) => (i.cachedOffset != null) && ((i.cachedOffset! + i.cachedHeight!) < (scrollController!.position.pixels + scrollController!.position.viewportDimension)));
 }
