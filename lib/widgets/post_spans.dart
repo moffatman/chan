@@ -177,7 +177,7 @@ class PostQuoteLinkSpan extends PostSpan {
 						Navigator.of(context).push(
 							TransparentRoute(
 								builder: (ctx) => PostsPage(
-									zone: zone,
+									zone: zone.childZoneFor(postId),
 									postsIdsToShow: [postId],
 									onTapPost: options.onNeedScrollToAnotherPost
 								)

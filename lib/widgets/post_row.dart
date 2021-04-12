@@ -234,7 +234,7 @@ class PostRow extends StatelessWidget {
 																				TransparentRoute(
 																					builder: (ctx) => PostsPage(
 																						postsIdsToShow: post.replyIds,
-																						zone: zone,
+																						zone: zone.childZoneFor(post.id),
 																						onTapPost: onNeedScrollToAnotherPost
 																					)
 																				)
