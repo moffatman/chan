@@ -6,10 +6,10 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/circular_loading_indicator.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/viewers/image.dart';
-import 'package:chan/widgets/viewers/webm.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 class AttachmentViewer extends StatelessWidget {
 	final Attachment attachment;
@@ -29,14 +29,7 @@ class AttachmentViewer extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		if (status is AttachmentVideoAvailableStatus) {
-			return GalleryWEBMViewer(
-				attachment: attachment,
-				status: status as AttachmentVideoAvailableStatus,
-				tag: tag
-			);
-		}
-		else if (status is AttachmentImageUrlAvailableStatus) {
+		if (attachment.type == AttachmentType.Image) {
 			return GalleryImageViewer(
 				attachment: attachment,
 				url: (status is AttachmentImageUrlAvailableStatus) ? (status as AttachmentImageUrlAvailableStatus).url : attachment.thumbnailUrl,
@@ -65,6 +58,12 @@ class AttachmentViewer extends StatelessWidget {
 						)
 						else if (status is AttachmentLoadingStatus) Center(
 							child: CircularLoadingIndicator(value: (status as AttachmentLoadingStatus).progress)
+						)
+						else if (status is AttachmentVideoAvailableStatus) Center(
+							child: AspectRatio(
+								aspectRatio: (status as AttachmentVideoAvailableStatus).controller.value.aspectRatio,
+								child: VideoPlayer((status as AttachmentVideoAvailableStatus).controller)
+							)
 						)
 					]
 				)
