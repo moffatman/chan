@@ -190,7 +190,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 															itemBuilder: (context, post) {
 																return PostRow(
 																	post: post,
-																	onThumbnailTap: (attachment, {Object? tag}) {
+																	onThumbnailTap: (attachment) {
 																		_showGallery(initialAttachment: attachment);
 																	},
 																	onNeedScrollToAnotherPost: (post) => _listController.animateTo((val) => val.id == post.id)
@@ -199,7 +199,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 															filteredItemBuilder: (context, post, resetPage) {
 																return PostRow(
 																	post: post,
-																	onThumbnailTap: (attachment, {Object? tag}) {
+																	onThumbnailTap: (attachment) {
 																		_showGallery(initialAttachment: attachment);
 																	},
 																	onTap: () {

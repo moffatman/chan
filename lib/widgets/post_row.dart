@@ -20,11 +20,9 @@ import 'package:chan/models/attachment.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/util.dart';
 
-import 'dart:math';
-
 class PostRow extends StatelessWidget {
 	final Post post;
-	final void Function(Attachment, {Object tag})? onThumbnailTap;
+	final ValueChanged<Attachment>? onThumbnailTap;
 	final void Function(Post post)? onNeedScrollToAnotherPost;
 	final VoidCallback? onTap;
 	final bool showCrossThreadLabel;
@@ -48,7 +46,6 @@ class PostRow extends StatelessWidget {
 			site: site,
 			threadPosts: [post]
 		);
-		final randomHeroTag = Random().nextDouble().toString();
 		final settings = context.watch<EffectiveSettings>();
 		final isYou = zone.threadState?.youIds.contains(post.id) ?? false;
 		final child = ContextMenu(
@@ -178,7 +175,7 @@ class PostRow extends StatelessWidget {
 														)
 													),
 													onTap: () {
-														onThumbnailTap?.call(post.attachment!, tag: randomHeroTag);
+														onThumbnailTap?.call(post.attachment!);
 													}
 												)
 											),

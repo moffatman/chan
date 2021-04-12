@@ -96,7 +96,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					final post = result!.posts[i - 1];
 					return PostRow(
 						post: post,
-						onThumbnailTap: (attachment, {Object? tag}) => showGallery(
+						onThumbnailTap: (attachment) => showGallery(
 							context: context,
 							attachments: [attachment],
 							semanticParentIds: []

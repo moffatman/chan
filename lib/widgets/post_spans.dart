@@ -104,7 +104,7 @@ class PostQuoteLinkSpan extends PostSpan {
 	}
 	InlineSpan _buildCrossThreadLink(BuildContext context, PostSpanRenderOptions options) {
 		String text = '>>';
-		if (PostSpanZone.of(context).board != board) {
+		if (context.watch<PostSpanZoneData>().board != board) {
 			text += '/$board/';
 		}
 		text += '$postId';
@@ -132,7 +132,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		);
 	}
 	InlineSpan _buildDeadLink(BuildContext context, PostSpanRenderOptions options) {
-		final zone = PostSpanZone.of(context);
+		final zone = context.watch<PostSpanZoneData>();
 		String text = '>>$postId';
 		if (zone.postFromArchiveError(postId) != null) {
 			text += ' (Error: ${zone.postFromArchiveError(postId)}';
@@ -155,7 +155,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		);
 	}
 	InlineSpan _buildNormalLink(BuildContext context, PostSpanRenderOptions options) {
-		final zone = PostSpanZone.of(context);
+		final zone = context.watch<PostSpanZoneData>();
 		String text = '>>$postId';
 		if (postId == threadId) {
 			text += ' (OP)';
@@ -192,7 +192,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		);
 	}
 	_build(BuildContext context, PostSpanRenderOptions options) {
-		final zone = PostSpanZone.of(context);
+		final zone = context.watch<PostSpanZoneData>();
 		if (dead && threadId == null) {
 			// Dead links do not know their thread
 			final thisPostLoaded = zone.postFromArchive(postId);
@@ -233,7 +233,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 	}
 	build(context, options) {
-		final zone = PostSpanZone.of(context);
+		final zone = context.watch<PostSpanZoneData>();
 		if (options.addExpandingPosts && (threadId == zone.threadId && board == zone.board)) {
 			return TextSpan(
 				children: [
@@ -269,7 +269,7 @@ class PostSpoilerSpan extends PostSpan {
 	final int id;
 	PostSpoilerSpan(this.child, this.id);
 	build(context, options) {
-		final zone = PostSpanZone.of(context);
+		final zone = context.watch<PostSpanZoneData>();
 		final showSpoiler = zone.shouldShowSpoiler(id);
 		final toggleRecognizer = TapGestureRecognizer()..onTap = () {
 			zone.toggleShowingOfSpoiler(id);
@@ -315,10 +315,6 @@ class PostSpanZone extends StatelessWidget {
 		required this.postId,
 		required this.builder
 	});
-
-	static PostSpanZoneData of(BuildContext context) {
-		return context.watch<PostSpanZoneData>();
-	}
 
 	@override
 	Widget build(BuildContext context) {
@@ -469,7 +465,7 @@ class ExpandingPost extends StatelessWidget {
 	
 	@override
 	Widget build(BuildContext context) {
-		final zone = PostSpanZone.of(context);
+		final zone = context.watch<PostSpanZoneData>();
 		Post? post;
 		if (zone.threadPosts.where((p) => p.id == id).isNotEmpty) {
 			post = zone.threadPosts.firstWhere((p) => p.id == id);
@@ -488,7 +484,7 @@ class ExpandingPost extends StatelessWidget {
 					child: Text('Could not find /${zone.board}/$id')
 				) : PostRow(
 					post: post,
-					onThumbnailTap: (attachment, {Object? tag}) {
+					onThumbnailTap: (attachment) {
 						showGallery(
 							context: context,
 							attachments: [attachment],

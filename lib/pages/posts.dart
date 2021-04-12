@@ -29,11 +29,11 @@ class PostsPage extends StatelessWidget {
 						children: replies.map((reply) {
 							return PostRow(
 								post: reply,
-								onThumbnailTap: (attachment, {Object? tag}) {
+								onThumbnailTap: (attachment) {
 									showGallery(
 										context: context,
 										attachments: [attachment],
-										semanticParentIds: PostSpanZone.of(ctx).stackIds
+										semanticParentIds: ctx.read<PostSpanZoneData>().stackIds
 									);
 								},
 								onNeedScrollToAnotherPost: (post) {
