@@ -24,7 +24,7 @@ class _CircularLoadingIndicatorPainter extends CustomPainter {
 		final center = Offset(size.width / 2, size.height / 2);
 		final rect = Rect.fromCenter(center: center, width: size.height, height: size.height);
 		canvas.drawCircle(center, size.height / 2, paint);
-		canvas.drawCircle(center, size.height / 2 - 4, Paint()..color = Color.fromRGBO(0, 0, 0, 0)..blendMode = BlendMode.src);
+		canvas.drawCircle(center, size.height / 2 - 4, Paint()..color = Color.fromRGBO(0, 0, 0, 0.25)..blendMode = BlendMode.src);
 		if (value == null) {
 			if (initialAnimation.isCompleted) {
 				canvas.drawArc(rect, -pi / 2 + (2 * pi * (continuousAnimation.value - animationRatio)), pi / 3, true, paint..blendMode = BlendMode.src);
