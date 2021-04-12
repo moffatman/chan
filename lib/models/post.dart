@@ -50,7 +50,7 @@ class Post implements Filterable {
 				_span = Site4Chan.makeSpan(board, threadId, text);
 			}
 			else if (spanFormat == PostSpanFormat.FoolFuuka) {
-				_span = FoolFuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds!, text);
+				_span = FoolFuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
 			}
 		}
 		return _span!;
