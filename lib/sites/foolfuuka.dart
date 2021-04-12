@@ -4,7 +4,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
-import 'package:chan/models/post_element.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/sites/4chan.dart';
@@ -39,7 +39,7 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 			);
 		}
 	}
-	static PostSpan makeSpan(String board, int threadId, String data) {
+	static PostSpan makeSpan(String board, int threadId, Map<String, int> linkedPostThreadIds, String data) {
 		final doc = parse(data.replaceAll('<wbr>', ''));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
@@ -53,18 +53,24 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 							final linkedBoard = parts[3];
 							if (parts.length > 4) {
 								final linkType = parts[4];
-								final linkedThread = int.parse(parts[5]);
+								final linkedId = int.parse(parts[5]);
 								if (linkType == 'post') {
-									elements.add(PostCrossThreadQuoteLinkSpan(linkedBoard, linkedThread, linkedThread));
+									final linkedPostThreadId = linkedPostThreadIds['$linkedBoard/$linkedId']!;
+									elements.add(PostQuoteLinkSpan(
+										board: linkedBoard,
+										threadId: linkedPostThreadId,
+										postId: linkedId,
+										dead: false
+									));
 								}
 								else if (linkType == 'thread') {
-									final linkedPost = int.parse(parts[6].substring(1));
-									if (linkedBoard == board && linkedThread == threadId) {
-										elements.add(PostQuoteLinkSpan(linkedPost));
-									}
-									else {
-										elements.add(PostCrossThreadQuoteLinkSpan(linkedBoard, linkedThread, linkedPost));
-									}
+									final linkedPostId = int.parse(parts[6].substring(1));
+									elements.add(PostQuoteLinkSpan(
+										board: linkedBoard,
+										threadId: linkedId,
+										postId: linkedPostId,
+										dead: false
+									));
 								}
 							}
 							else {
@@ -72,11 +78,11 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 							}
 						}
 						else {
-							elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
+							elements.add(PostQuoteSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml)));
 						}
 					}
 					else if (node.classes.contains('spoiler')) {
-						elements.add(PostSpoilerSpan(makeSpan(board, threadId, node.innerHtml), spoilerSpanId++));
+						elements.add(PostSpoilerSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml), spoilerSpanId++));
 					}
 					else {
 						elements.addAll(Site4Chan.parsePlaintext(node.text));
@@ -104,9 +110,16 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 			);
 		}	
 	}
-	Post _makePost(dynamic data) {
+	Future<Post> _makePost(dynamic data) async {
 		final String board = data['board']['shortname'];
 		final int threadId = int.parse(data['thread_num']);
+		final postLinkMatcher = RegExp('https?://$baseUrl/([^/]+)/post/([0-9]+)/');
+		final linkedPostThreadIds = Map<String, int>();
+		for (final match in postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
+			final board = match.group(1)!;
+			final postId = int.parse(match.group(2)!);
+			linkedPostThreadIds['$board/$postId'] = await _getPostThreadId(board, postId);
+		}
 		return Post(
 			board: board,
 			text: data['comment_processed'] ?? '',
@@ -117,10 +130,11 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 			attachment: _makeAttachment(data),
 			spanFormat: PostSpanFormat.FoolFuuka,
 			flag: _makeFlag(data),
-			posterId: data['id']
+			posterId: data['id'],
+			foolfuukaLinkedPostThreadIds: linkedPostThreadIds
 		);
 	}
-	Future<Post> getPost(String board, int id) async {
+	Future<dynamic> _getPostJson(String board, int id) async {
 		if (!(await getBoards()).any((b) => b.name == board)) {
 			throw BoardNotFoundException(board);
 		}
@@ -130,27 +144,32 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 		}));
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
-				return Future.error(ThreadNotFoundException(board, id));
+				return Future.error(PostNotFoundException(board, id));
 			}
 			return Future.error(HTTPStatusException(response.statusCode));
 		}
-		final data = json.decode(response.body);
-		return _makePost(data);
+		return json.decode(response.body);
+	}
+	Future<int> _getPostThreadId(String board, int postId) async {
+		return int.parse((await _getPostJson(board, postId))['thread_num']);
+	}
+	Future<Post> getPost(String board, int id) async {		
+		return _makePost(await _getPostJson(board, id));
 	}
 	Future<Thread> getThreadContainingPost(String board, int id) async {
 		throw Exception('Unimplemented');
 	}
-	Future<Thread> getThread(String board, int id) async {
-		if (!(await getBoards()).any((b) => b.name == board)) {
-			throw BoardNotFoundException(board);
+	Future<Thread> getThread(ThreadIdentifier thread) async {
+		if (!(await getBoards()).any((b) => b.name == thread.board)) {
+			throw BoardNotFoundException(thread.board);
 		}
 		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/thread', {
-			'board': board,
-			'num': id.toString()
+			'board': thread.board,
+			'num': thread.id.toString()
 		}));
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
-				return Future.error(ThreadNotFoundException(board, id));
+				return Future.error(ThreadNotFoundException(thread));
 			}
 			return Future.error(HTTPStatusException(response.statusCode));
 		}
@@ -158,17 +177,17 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 		if (data['error'] != null) {
 			throw Exception(data['error']);
 		}
-		final postObjects = [data[id.toString()]['op'], ...data[id.toString()]['posts'].values];
-		final posts = postObjects.map<Post>(_makePost).toList();
+		final postObjects = [data[thread.id.toString()]['op'], ...data[thread.id.toString()]['posts'].values];
+		final posts = (await Future.wait(postObjects.map(_makePost))).toList();
 		final String? title = postObjects.first['title'];
 		return Thread(
-			board: board,
+			board: thread.board,
 			isDeleted: false,
 			replyCount: posts.length - 1,
 			imageCount: posts.where((post) => post.attachment != null).length,
 			isArchived: true,
 			posts: posts,
-			id: id,
+			id: thread.id,
 			attachment: _makeAttachment(postObjects.first),
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: postObjects.first['sticky'] == 1,
@@ -223,14 +242,14 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 		}
 		final data = json.decode(response.body);
 		return ImageboardArchiveSearchResult(
-			posts: (data['0']['posts'] as Iterable<dynamic>).map(_makePost).toList(),
+			posts: (await Future.wait((data['0']['posts'] as Iterable<dynamic>).map(_makePost))).toList(),
 			page: page,
 			maxPage: (data['meta']['total_found'] / 25).ceil()
 		);
 	}
 
-	String getWebUrl(String board, int threadId, [int? postId]) {
-		return 'https://$baseUrl/$board/thread/$threadId' + (postId != null ? '#$postId' : '');
+	String getWebUrl(ThreadIdentifier thread, [int? postId]) {
+		return 'https://$baseUrl/${thread.board}/thread/${thread.id}' + (postId != null ? '#$postId' : '');
 	}
 
 	FoolFuukaArchive({

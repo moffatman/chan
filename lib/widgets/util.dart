@@ -12,6 +12,14 @@ extension NoThrowingProvider on BuildContext {
 			return null;
 		}
 	}
+	T? readOrNull<T>() {
+		try {
+			return Provider.of<T>(this, listen: false);
+		}
+		on ProviderNotFoundException {
+			return null;
+		}
+	}
 }
 
 void alertError(BuildContext context, String error) {

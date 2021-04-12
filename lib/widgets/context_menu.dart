@@ -1,4 +1,6 @@
 import 'package:chan/services/settings.dart';
+import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +36,7 @@ class _ContextMenuState extends State<ContextMenu> {
 	@override
 	Widget build(BuildContext context) {
 		if (context.watch<EffectiveSettings>().useTouchLayout) {
+			final zone = context.watchOrNull<PostSpanZoneData>();
 			return CupertinoContextMenu(
 				actions: widget.actions.map((action) => CupertinoContextMenuAction(
 					child: action.child,
@@ -44,12 +47,15 @@ class _ContextMenuState extends State<ContextMenu> {
 					},
 					isDestructiveAction: action.isDestructiveAction
 				)).toList(),
-				previewBuilder: (context, animation, child) {
+				previewBuilder: (ctx, animation, child) {
 					return IgnorePointer(
 						child: child
 					);
 				},
-				child: widget.child
+				child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
+					value: zone,
+					child: widget.child
+				)
 			);
 		}
 		else {

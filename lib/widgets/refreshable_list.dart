@@ -7,7 +7,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 
 abstract class Filterable {
@@ -23,7 +22,6 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final String? filterHint;
 	final Widget Function(BuildContext context, T value, VoidCallback resetPage)? filteredItemBuilder;
 	final Duration? autoUpdateDuration;
-	final List<Provider> additionalProviders;
 	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
 	final String? updateDisabledText;
 
@@ -31,7 +29,6 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		required this.itemBuilder,
 		required this.listUpdater,
 		required this.id,
-		this.additionalProviders = const [],
 		this.controller,
 		this.filterHint,
 		this.filteredItemBuilder,
@@ -132,6 +129,8 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	Future<void> update() async {
 		try {
 			setState(() {
+				this.errorMessage = null;
+				this.errorType = null;
 				this.updatingNow = true;
 			});
 			final newData = await widget.listUpdater();
@@ -145,16 +144,20 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				this.lastUpdateTime = DateTime.now();
 			});
 		}
-		catch (e, st) {
+		catch (e) {
 			if (mounted) {
-				print(e);
-				print(st);
 				setState(() {
 					this.errorMessage = e.toString();
 					this.errorType = e.runtimeType;
 					this.updatingNow = false;
 				});
-				resetTimer();
+				if (widget.remedies[errorType] == null) {
+					print('Error refreshing list: $e');
+					resetTimer();
+				}
+				else {
+					nextUpdateTime = null;
+				}
 			}
 		}
 	}
@@ -172,121 +175,115 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	Widget build(BuildContext context) {
 		if (list != null) {
 			final List<T> values = _filter.isEmpty ? list! : list!.where((val) => val.getSearchableText().any((s) => s.toLowerCase().contains(_filter))).toList();
-			return MultiProvider(
+			return Listener(
 				key: ValueKey(widget.id),
-				providers: [
-					Provider<List<T>>.value(value: list!),
-					...widget.additionalProviders
-				],
-				child: Listener(
-					onPointerUp: (event) {
-						if (widget.controller != null) {
-							double overscroll = widget.controller!.scrollController.position.pixels - widget.controller!.scrollController.position.maxScrollExtent;
-							if (overscroll > 150) {
-								update();
-							}
+				onPointerUp: (event) {
+					if (widget.controller != null) {
+						double overscroll = widget.controller!.scrollController.position.pixels - widget.controller!.scrollController.position.maxScrollExtent;
+						if (overscroll > 150) {
+							update();
 						}
-						// Auto update here
-					},
-					child: CustomScrollView(
-						controller: widget.controller?.scrollController,
-						physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), 
-						slivers: [
-							SliverSafeArea(
-								sliver: CupertinoSliverRefreshControl(
-									onRefresh: update,
-									refreshTriggerPullDistance: 125
-								),
-								bottom: false
+					}
+					// Auto update here
+				},
+				child: CustomScrollView(
+					controller: widget.controller?.scrollController,
+					physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), 
+					slivers: [
+						SliverSafeArea(
+							sliver: CupertinoSliverRefreshControl(
+								onRefresh: update,
+								refreshTriggerPullDistance: 125
 							),
-							SliverToBoxAdapter(
-								child: Container(
-									height: kMinInteractiveDimensionCupertino,
-									padding: EdgeInsets.all(4),
-									child: Row(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											Expanded(
-												child: Container(
-													child: CupertinoSearchTextField(
-														onChanged: (searchText) {
-															setState(() {
-																this._filter = searchText.toLowerCase();
-															});
-														},
-														controller: _searchController,
-														focusNode: _searchFocusNode,
-														placeholder: widget.filterHint,
-													)
+							bottom: false
+						),
+						SliverToBoxAdapter(
+							child: Container(
+								height: kMinInteractiveDimensionCupertino,
+								padding: EdgeInsets.all(4),
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										Expanded(
+											child: Container(
+												child: CupertinoSearchTextField(
+													onChanged: (searchText) {
+														setState(() {
+															this._filter = searchText.toLowerCase();
+														});
+													},
+													controller: _searchController,
+													focusNode: _searchFocusNode,
+													placeholder: widget.filterHint,
 												)
-											),
-											if (_searchFocused) CupertinoButton(
-												padding: EdgeInsets.only(left: 8),
-												child: Text('Cancel'),
-												onPressed: _closeSearch
 											)
-										]
-									)
+										),
+										if (_searchFocused) CupertinoButton(
+											padding: EdgeInsets.only(left: 8),
+											child: Text('Cancel'),
+											onPressed: _closeSearch
+										)
+									]
+								)
+							)
+						),
+						if (values.length > 0)
+							SliverList(
+								delegate: SliverChildBuilderDelegate(
+									(context, i) {
+										if (i % 2 == 0) {
+											return LayoutBuilder(
+												builder: (context, constraints) {
+													widget.controller?.registerItem(i ~/ 2, values[i ~/ 2], context);
+													return _itemBuilder(context, values[i ~/ 2]);
+												}
+											);
+										}
+										else {
+											return Divider(
+												thickness: 1,
+												height: 0,
+												color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+											);
+										}
+									},
+									childCount: (values.length * 2)
 								)
 							),
-							if (values.length > 0)
-								SliverList(
-									delegate: SliverChildBuilderDelegate(
-										(context, i) {
-											if (i % 2 == 0) {
-												return LayoutBuilder(
-													builder: (context, constraints) {
-														widget.controller?.registerItem(i ~/ 2, values[i ~/ 2], context);
-														return _itemBuilder(context, values[i ~/ 2]);
-													}
-												);
-											}
-											else {
-												return Divider(
-													thickness: 1,
-													height: 0,
-													color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
-												);
-											}
-										},
-										childCount: (values.length * 2)
+						if (values.length == 0)
+							if (_filter.isNotEmpty)
+								SliverToBoxAdapter(
+									child: Container(
+										height: 100,
+										child: Center(
+											child: Text('No results')
+										)
 									)
 								),
-							if (values.length == 0)
-								if (_filter.isNotEmpty)
-									SliverToBoxAdapter(
-										child: Container(
-											height: 100,
-											child: Center(
-												child: Text('No results')
-											)
-										)
-									),
-							SliverSafeArea(
-								top: false,
-								sliver: SliverToBoxAdapter(
-									child: (widget.updateDisabledText != null) ? Container(
-										padding: EdgeInsets.all(16),
-										child: Center(
-											child: Text(widget.updateDisabledText!, style: TextStyle(
-												color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
-											))
-										)
-									) : TimedRebuilder(
-										interval: const Duration(seconds: 1),
-										builder: (context) => RefreshableListFooter(
-											updater: update,
-											updatingNow: updatingNow,
-											lastUpdateTime: lastUpdateTime,
-											nextUpdateTime: nextUpdateTime,
-											errorMessage: errorMessage,
-											remedy: widget.remedies[errorType]?.call(context, update)
-										)
+						SliverSafeArea(
+							top: false,
+							sliver: SliverToBoxAdapter(
+								child: (widget.updateDisabledText != null) ? Container(
+									padding: EdgeInsets.all(16),
+									child: Center(
+										child: Text(widget.updateDisabledText!, style: TextStyle(
+											color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
+										))
+									)
+								) : TimedRebuilder(
+									interval: const Duration(seconds: 1),
+									builder: (context) => RefreshableListFooter(
+										updater: update,
+										updatingNow: updatingNow,
+										lastUpdateTime: lastUpdateTime,
+										nextUpdateTime: nextUpdateTime,
+										errorMessage: errorMessage,
+										remedy: widget.remedies[errorType]?.call(context, update)
 									)
 								)
 							)
-						]
-					)
+						)
+					]
 				)
 			);
 		}

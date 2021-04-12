@@ -1,4 +1,5 @@
-import 'package:chan/models/post_element.dart';
+import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/util.dart';
@@ -76,8 +77,14 @@ class ThreadRow extends StatelessWidget {
 										child: Container(
 											constraints: BoxConstraints(maxHeight: 100),
 											padding: EdgeInsets.only(left: 8, right: 8),
-											child: Provider.value(
-												value: thread.posts[0],
+											child: ChangeNotifierProvider<PostSpanZoneData>(
+												create: (ctx) => PostSpanRootZoneData(
+													board: thread.board,
+													threadId: thread.id,
+													threadState: null,
+													site: context.watch<ImageboardSite>(),
+													threadPosts: []
+												),
 												child: Builder(
 													builder: (ctx) => IgnorePointer(
 														child: Text.rich(

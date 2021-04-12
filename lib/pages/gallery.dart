@@ -59,7 +59,7 @@ class GalleryPage extends StatefulWidget {
 	final Attachment? initialAttachment;
 	final bool initiallyShowChrome;
 	final ValueChanged<Attachment>? onChange;
-	final List<int> semanticParentIds;
+	final Iterable<int> semanticParentIds;
 
 	GalleryPage({
 		required this.attachments,
@@ -361,7 +361,6 @@ class _GalleryPageState extends State<GalleryPage> {
 																		attachment: attachment,
 																		status: status,
 																		backgroundColor: Colors.transparent,
-																		autoload: attachment == currentAttachment,
 																		tag: AttachmentSemanticLocation(
 																			attachment: attachment,
 																			semanticParents: widget.semanticParentIds
@@ -468,7 +467,7 @@ class _GalleryPageState extends State<GalleryPage> {
 Future<Attachment?> showGallery({
 	required BuildContext context,
 	required List<Attachment> attachments,
-	required List<int> semanticParentIds,
+	required Iterable<int> semanticParentIds,
 	Attachment? initialAttachment,
 	bool initiallyShowChrome = false,
 	ValueChanged<Attachment>? onChange,

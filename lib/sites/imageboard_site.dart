@@ -18,11 +18,10 @@ class PostNotFoundException implements Exception {
 }
 
 class ThreadNotFoundException implements Exception {
-	String board;
-	int id;
-	ThreadNotFoundException(this.board, this.id);
+	ThreadIdentifier thread;
+	ThreadNotFoundException(this.thread);
 	@override
-	String toString() => 'Thread not found: /$board/$id';
+	String toString() => 'Thread not found: /${thread.board}/${thread.id}';
 }
 
 class BoardNotFoundException implements Exception {
@@ -79,18 +78,17 @@ abstract class ImageboardSiteArchive {
 	final http.Client client = http.Client();
 	String get name;
 	Future<Post> getPost(String board, int id);
-	Future<Thread> getThread(String board, int id);
+	Future<Thread> getThread(ThreadIdentifier thread);
 	Future<List<Thread>> getCatalog(String board);
 	Future<List<ImageboardBoard>> getBoards();
 	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page});
-	String getWebUrl(String board, int threadId, [int? postId]);
+	String getWebUrl(ThreadIdentifier thread, [int? postId]);
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
 	CaptchaRequest getCaptchaRequest();
 	Future<PostReceipt> postReply({
-		required String board,
-		required int threadId,
+		required ThreadIdentifier thread,
 		String name = '',
 		String options = '',
 		required String text,
@@ -98,5 +96,5 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		File? file
 	});
 	Future<Post> getPostFromArchive(String board, int id);
-	Future<Thread> getThreadFromArchive(String board, int id);
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread);
 }

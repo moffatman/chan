@@ -2,31 +2,28 @@ import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
-import 'package:chan/models/board.dart';
+import 'package:chan/models/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/widgets/post_row.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
 import 'package:chan/models/post.dart';
-
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 class ThreadPage extends StatefulWidget {
-	final ImageboardBoard board;
-	final int id;
+	final ThreadIdentifier thread;
 	final int? initialPostId;
 	final bool initiallyUseArchive;
 
 	ThreadPage({
-		required this.board,
-		required this.id,
+		required this.thread,
 		this.initialPostId,
 		this.initiallyUseArchive = false
 	});
@@ -41,13 +38,21 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 
 	final _focusNode = FocusNode();
 	final _listController = RefreshableListController<Post>();
+	late PostSpanRootZoneData zone;
 
 	@override
 	void initState() {
 		super.initState();
-		persistentState = Persistence.getThreadState(widget.board.name, widget.id);
+		persistentState = Persistence.getThreadState(widget.thread, updateOpenedTime: true);
 		persistentState.useArchive |= widget.initiallyUseArchive;
 		persistentState.save();
+		zone = PostSpanRootZoneData(
+			board: widget.thread.board,
+			threadPosts: persistentState.thread?.posts ?? [],
+			site: context.read<ImageboardSite>(),
+			threadId: widget.thread.id,
+			threadState: persistentState
+		);
 		_listController.slowScrollUpdates.listen((_) {
 			if (persistentState.thread != null) {
 				persistentState.lastSeenPostId = max(persistentState.lastSeenPostId ?? 0, persistentState.thread!.posts[_listController.lastVisibleIndex].id);	
@@ -65,9 +70,18 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	@override
 	void didUpdateWidget(ThreadPage old) {
 		super.didUpdateWidget(old);
-		if (widget.board != old.board || widget.id != old.id) {
-			persistentState = Persistence.getThreadState(widget.board.name, widget.id);
+		if (widget.thread.board != old.thread.board || widget.thread.id != old.thread.id) {
+			persistentState = Persistence.getThreadState(widget.thread, updateOpenedTime: true);
 			persistentState.useArchive |= widget.initiallyUseArchive;
+			final oldZone = zone;
+			Future.delayed(Duration(milliseconds: 100), () => oldZone.dispose());
+			zone = PostSpanRootZoneData(
+				board: widget.thread.board,
+				threadPosts: persistentState.thread?.posts ?? [],
+				site: context.read<ImageboardSite>(),
+				threadId: widget.thread.id,
+				threadState: persistentState
+			);
 			persistentState.save();
 			final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;
 			if (persistentState.thread != null && scrollToId != null) {
@@ -92,7 +106,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 
 	@override
 	Widget build(BuildContext context) {
-		final title = persistentState.thread?.title ?? '/${widget.board.name}/${widget.id}';
+		final title = persistentState.thread?.title ?? '/${widget.thread.board}/${widget.thread.id}';
 		return Provider(
 			create: (context) => GlobalKey<ReplyBoxState>(),
 			child: Builder(
@@ -140,54 +154,51 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 											},
 											child: Stack(
 												children: [
-													RefreshableList<Post>(
-														id: '/${widget.board.name}/${widget.id}',
-														updateDisabledText: persistentState.thread?.isArchived == true ? 'Archived' : null,
-														autoUpdateDuration: const Duration(seconds: 60),
-														initialList: persistentState.thread?.posts,
-														additionalProviders: [
-															Provider<PersistentThreadState>.value(value: persistentState)
-														],
-														remedies: {
-															ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
-																child: Text('Try archive'),
-																onPressed: () {
-																	persistentState.useArchive = true;
-																	persistentState.save();
-																	updater();
+													ChangeNotifierProvider<PostSpanZoneData>.value(
+														value: zone,
+														child: RefreshableList<Post>(
+															id: '/${widget.thread.board}/${widget.thread.id}',
+															updateDisabledText: persistentState.thread?.isArchived == true ? 'Archived' : null,
+															autoUpdateDuration: const Duration(seconds: 60),
+															initialList: persistentState.thread?.posts,
+															remedies: {
+																ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
+																	child: Text('Try archive'),
+																	onPressed: () {
+																		persistentState.useArchive = true;
+																		persistentState.save();
+																		updater();
+																	}
+																)
+															},
+															listUpdater: () async {
+																final _thread = persistentState.useArchive ? 
+																	await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
+																	await context.read<ImageboardSite>().getThread(widget.thread);
+																final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;
+																if (persistentState.thread == null && scrollToId != null) {
+																	// This should only run on first load
+																	Future.delayed(Duration(milliseconds: 50), () => _listController.animateTo((post) => post.id == scrollToId, alignment: 1.0));
 																}
-															)
-														},
-														listUpdater: () async {
-															final _thread = persistentState.useArchive ? 
-																await context.read<ImageboardSite>().getThreadFromArchive(widget.board.name, widget.id) :
-																await context.read<ImageboardSite>().getThread(widget.board.name, widget.id);
-															final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;
-															if (persistentState.thread == null && scrollToId != null) {
-																// This should only run on first load
-																Future.delayed(Duration(milliseconds: 50), () => _listController.animateTo((post) => post.id == scrollToId, alignment: 1.0));
-															}
-															persistentState.thread = _thread;
-															await persistentState.save();
-															setState(() {});
-															return _thread.posts;
-														},
-														controller: _listController,
-														itemBuilder: (context, post) {
-															return Provider.value(
-																value: post,
-																child: PostRow(
+																persistentState.thread = _thread;
+																zone.threadPosts = _thread.posts;
+																await persistentState.save();
+																setState(() {});
+																return _thread.posts;
+															},
+															controller: _listController,
+															itemBuilder: (context, post) {
+																return PostRow(
+																	post: post,
 																	onThumbnailTap: (attachment, {Object? tag}) {
 																		_showGallery(initialAttachment: attachment);
 																	},
 																	onNeedScrollToAnotherPost: (post) => _listController.animateTo((val) => val.id == post.id)
-																)
-															);
-														},
-														filteredItemBuilder: (context, post, resetPage) {
-															return Provider.value(
-																value: post,
-																child: PostRow(
+																);
+															},
+															filteredItemBuilder: (context, post, resetPage) {
+																return PostRow(
+																	post: post,
 																	onThumbnailTap: (attachment, {Object? tag}) {
 																		_showGallery(initialAttachment: attachment);
 																	},
@@ -195,10 +206,10 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																		resetPage();
 																		Future.delayed(Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
 																	}
-																)
-															);
-														},
-														filterHint: 'Search in thread'
+																);
+															},
+															filterHint: 'Search in thread'
+														)
 													),
 													StreamBuilder(
 														stream: _listController.slowScrollUpdates,
@@ -237,8 +248,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 									top: false,
 									child: ReplyBox(
 										key: context.read<GlobalKey<ReplyBoxState>>(),
-										board: widget.board,
-										threadId: widget.id,
+										thread: widget.thread,
 										threadState: persistentState,
 										onReplyPosted: () {
 											setState(() {

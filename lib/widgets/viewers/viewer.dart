@@ -15,7 +15,6 @@ class AttachmentViewer extends StatelessWidget {
 	final Attachment attachment;
 	final AttachmentStatus status;
 	final Color backgroundColor;
-	final bool autoload;
 	final Object? tag;
 	final ValueChanged<File>? onCacheCompleted;
 
@@ -23,7 +22,6 @@ class AttachmentViewer extends StatelessWidget {
 		required this.attachment,
 		required this.status,
 		this.backgroundColor = Colors.black,
-		this.autoload = false,
 		this.tag,
 		this.onCacheCompleted,
 		Key? key

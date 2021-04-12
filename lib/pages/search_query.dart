@@ -2,7 +2,6 @@ import 'package:chan/models/search.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/thread.dart';
-import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/util.dart';
@@ -95,27 +94,24 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						return _buildPagination();
 					}
 					final post = result!.posts[i - 1];
-					return Provider.value(
-						value: post,
-						child: PostRow(
-							onThumbnailTap: (attachment, {Object? tag}) => showGallery(
-								context: context,
-								attachments: [attachment],
-								semanticParentIds: []
-							),
-							showCrossThreadLabel: false,
-							allowTappingLinks: false,
-							onTap: () async {
-								Navigator.of(context).push(cpr.CupertinoPageRoute(
-									builder: (context) => ThreadPage(
-										board: Persistence.getBoard(post.board),
-										id: post.threadId,
-										initialPostId: post.id,
-										initiallyUseArchive: true
-									)
-								));
-							}
-						)
+					return PostRow(
+						post: post,
+						onThumbnailTap: (attachment, {Object? tag}) => showGallery(
+							context: context,
+							attachments: [attachment],
+							semanticParentIds: []
+						),
+						showCrossThreadLabel: false,
+						allowTappingLinks: false,
+						onTap: () async {
+							Navigator.of(context).push(cpr.CupertinoPageRoute(
+								builder: (context) => ThreadPage(
+									thread: post.threadIdentifier,
+									initialPostId: post.id,
+									initiallyUseArchive: true
+								)
+							));
+						}
 					);
 				}
 			);

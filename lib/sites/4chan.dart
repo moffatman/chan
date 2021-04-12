@@ -17,7 +17,7 @@ import 'imageboard_site.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
-import 'package:chan/models/post_element.dart';
+import 'package:chan/widgets/post_spans.dart';
 
 class _ThreadCacheEntry {
 	final Thread thread;
@@ -53,7 +53,7 @@ class Site4Chan implements ImageboardSite {
 		}).toList();
 	}
 
-	static PostSpan makeSpan(String data) {
+	static PostSpan makeSpan(String board, int threadId, String data) {
 		final doc = parse(data.replaceAll('<wbr>', ''));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
@@ -65,14 +65,24 @@ class Site4Chan implements ImageboardSite {
 				else {
 					if (node.localName == 'a' && node.classes.contains('quotelink')) {
 						if (node.attributes['href']!.startsWith('#p')) {
-							elements.add(PostExpandingQuoteLinkSpan(int.parse(node.attributes['href']!.substring(2))));
+							elements.add(PostQuoteLinkSpan(
+								board: board,
+								threadId: threadId,
+								postId: int.parse(node.attributes['href']!.substring(2)),
+								dead: false
+							));
 						}
 						else if (node.attributes['href']!.contains('#p')) {
 							// href looks like '/tv/thread/123456#p123457'
 							final parts = node.attributes['href']!.split('/');
 							final threadIndex = parts.indexOf('thread');
 							final ids = parts[threadIndex + 1].split('#p');
-							elements.add(PostCrossThreadQuoteLinkSpan(parts[threadIndex - 1], int.parse(ids[0]), int.parse(ids[1])));
+							elements.add(PostQuoteLinkSpan(
+								board: parts[threadIndex - 1],
+								threadId: int.parse(ids[0]),
+								postId: int.parse(ids[1]),
+								dead: false
+							));
 						}
 						else {
 							// href looks like '//boards.4chan.org/pol/'
@@ -83,17 +93,21 @@ class Site4Chan implements ImageboardSite {
 					else if (node.localName == 'span') {
 						if (node.attributes['class']?.contains('deadlink') ?? false) {
 							final parts = node.innerHtml.replaceAll('&gt;', '').split('/');
-							elements.add(PostDeadQuoteLinkSpan(int.parse(parts.last), board: (parts.length > 2) ? parts[1] : null));
+							elements.add(PostQuoteLinkSpan(
+								board: (parts.length > 2) ? parts[1] : board,
+								postId: int.parse(parts.last),
+								dead: true
+							));
 						}
 						else if (node.attributes['class']?.contains('quote') ?? false) {
-							elements.add(PostQuoteSpan(makeSpan(node.innerHtml)));
+							elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
 						}
 						else {
 							elements.add(PostTextSpan(node.text));
 						}
 					}
 					else if (node.localName == 's') {
-						elements.add(PostSpoilerSpan(makeSpan(node.innerHtml), spoilerSpanId++));
+						elements.add(PostSpoilerSpan(makeSpan(board, threadId, node.innerHtml), spoilerSpanId++));
 					}
 					else {
 						elements.addAll(parsePlaintext(node.text));
@@ -156,52 +170,52 @@ class Site4Chan implements ImageboardSite {
 			);
 		}
 	}
-	Future<Thread> getThread(String board, int id) async {
+	Future<Thread> getThread(ThreadIdentifier thread) async {
 		Map<String, String>? headers;
-		if (_threadCache['$board/$id'] != null) {
+		if (_threadCache['${thread.board}/${thread.id}'] != null) {
 			headers = {
-				'If-Modified-Since': _threadCache['$board/$id']!.lastModified
+				'If-Modified-Since': _threadCache['${thread.board}/${thread.id}']!.lastModified
 			};
 		}
-		final response = await client.get(Uri.https(apiUrl,'/$board/thread/$id.json'), headers: headers);
+		final response = await client.get(Uri.https(apiUrl,'/${thread.board}/thread/${thread.id}.json'), headers: headers);
 		if (response.statusCode == 304 && headers != null) {
-			return _threadCache['$board/$id']!.thread;
+			return _threadCache['${thread.board}/${thread.id}']!.thread;
 		}
 		else if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
-				return Future.error(ThreadNotFoundException(board, id));
+				return Future.error(ThreadNotFoundException(thread));
 			}
 			return Future.error(HTTPStatusException(response.statusCode));
 		}
 		final data = json.decode(response.body);
 		final String? title = data['posts']?[0]?['sub'];
-		final thread = Thread(
-			board: board,
+		final output = Thread(
+			board: thread.board,
 			isDeleted: false,
 			replyCount: data['posts'][0]['replies'],
 			imageCount: data['posts'][0]['images'],
 			isArchived: (data['posts'][0]['archived'] ?? 0) == 1,
 			posts: (data['posts'] ?? []).map<Post>((postData) {
-				return _makePost(board, id, postData);
+				return _makePost(thread.board, thread.id, postData);
 			}).toList(),
 			id: data['posts'][0]['no'],
-			attachment: _makeAttachment(board, data['posts'][0]),
+			attachment: _makeAttachment(thread.board, data['posts'][0]),
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: data['posts'][0]['sticky'] == 1,
 			time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
 			flag: _makeFlag(data['posts'][0])
 		);
-		_threadCache['$board/$id'] = _ThreadCacheEntry(
-			thread: thread,
+		_threadCache['${thread.board}/${thread.id}'] = _ThreadCacheEntry(
+			thread: output,
 			lastModified: response.headers['last-modified']!
 		);
-		return thread;
+		return output;
 	}
-	Future<Thread> getThreadFromArchive(String board, int id) async {
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread) async {
 		final errorMessages = Map<String, String>();
 		for (final archive in archives) {
 			try {
-				return await archive.getThread(board, id);
+				return await archive.getThread(thread);
 			}
 			catch(e) {
 				if (!(e is BoardNotFoundException)) {
@@ -213,7 +227,7 @@ class Site4Chan implements ImageboardSite {
 			throw ImageboardArchiveException(errorMessages);
 		}
 		else {
-			throw BoardNotFoundException(board);
+			throw BoardNotFoundException(thread.board);
 		}
 	}
 
@@ -305,8 +319,7 @@ class Site4Chan implements ImageboardSite {
 	}
 
 	Future<PostReceipt> postReply({
-		required String board,
-		required int threadId,
+		required ThreadIdentifier thread,
 		String name = '',
 		String options = '',
 		required String text,
@@ -315,9 +328,9 @@ class Site4Chan implements ImageboardSite {
 	}) async {
 		final random = Random();
 		final password = List.generate(64, (i) => random.nextInt(16).toRadixString(16)).join();
-		final request = http.MultipartRequest('POST', Uri.https(sysUrl, '/$board/post'));
+		final request = http.MultipartRequest('POST', Uri.https(sysUrl, '/${thread.board}/post'));
 		request.fields.addAll({
-			'resto': threadId.toString(),
+			'resto': thread.id.toString(),
 			'com': text,
 			'mode': 'regist',
 			'pwd': password,
@@ -360,8 +373,8 @@ class Site4Chan implements ImageboardSite {
 		throw Exception('Search failed - exhausted all archives');
 	}
 
-	String getWebUrl(String board, int threadId, [int? postId]) {
-		return 'https://$baseUrl/$board/thread/$threadId' + (postId != null ? '#p$postId' : '');
+	String getWebUrl(ThreadIdentifier thread, [int? postId]) {
+		return 'https://$baseUrl/${thread.board}/thread/${thread.id}' + (postId != null ? '#p$postId' : '');
 	}
 
 	Site4Chan({

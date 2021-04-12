@@ -49,9 +49,10 @@ class Thread implements Filterable {
 		Map<int, Post> postsById = Map();
 		for (final post in this.posts) {
 			postsById[post.id] = post;
+			post.replyIds = [];
 		}
 		for (final post in this.posts) {
-			for (final referencedPostId in post.span.referencedPostIds) {
+			for (final referencedPostId in post.span.referencedPostIds(board)) {
 				postsById[referencedPostId]?.replyIds = [...?postsById[referencedPostId]?.replyIds, post.id];
 			}
 		}
@@ -72,4 +73,20 @@ class Thread implements Filterable {
 			return [posts[0].text];
 		}
 	}
+
+	ThreadIdentifier get identifier => ThreadIdentifier(board: board, id: id);
+}
+
+class ThreadIdentifier {
+	final String board;
+	final int id;
+	ThreadIdentifier({
+		required this.board,
+		required this.id
+	});
+
+	String toString() => 'ThreadIdentifier: /$board/$id';
+
+	bool operator == (dynamic d) => (d is ThreadIdentifier) && (d.board == board) && (d.id == id);
+	int get hashCode => board.hashCode * 31 + id.hashCode;
 }

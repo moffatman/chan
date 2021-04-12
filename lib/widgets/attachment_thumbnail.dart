@@ -6,7 +6,7 @@ import 'package:extended_image/extended_image.dart';
 class AttachmentSemanticLocation {
 	String _tag;
 	AttachmentSemanticLocation({
-		required List<int> semanticParents,
+		required Iterable<int> semanticParents,
 		required Attachment attachment
 	}) : _tag = semanticParents.join('/') + '/' + attachment.id.toString();
 

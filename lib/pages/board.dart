@@ -1,11 +1,13 @@
 import 'dart:math';
 
 import 'package:chan/models/board.dart';
+import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/thread_row.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:chan/models/thread.dart';
@@ -20,23 +22,30 @@ enum BoardSortMethod {
 }
 
 class BoardPage extends StatefulWidget {
-	final ValueChanged<Thread>? onThreadSelected;
-	final Thread? selectedThread;
-	final ImageboardBoard board;
-	final VoidCallback? onHeaderTapped;
+	final ImageboardBoard initialBoard;
+	final bool allowChangingBoard;
+	final ValueChanged<ThreadIdentifier>? onThreadSelected;
+	final ThreadIdentifier? selectedThread;
 	BoardPage({
+		required this.initialBoard,
+		this.allowChangingBoard = true,
 		this.onThreadSelected,
-		this.selectedThread,
-		required this.board,
-		this.onHeaderTapped
+		this.selectedThread
 	});
 
 	createState() => _BoardPageState();
 }
 
 class _BoardPageState extends State<BoardPage> {
+	late ImageboardBoard board;
 	BoardSortMethod sorting = BoardSortMethod.BumpOrder;
 	bool descending = true;
+
+	@override
+	void initState() {
+		super.initState();
+		board = widget.initialBoard;
+	}
 
 	@override
 	void didUpdateWidget(BoardPage oldWidget) {
@@ -51,12 +60,19 @@ class _BoardPageState extends State<BoardPage> {
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
 				middle: GestureDetector(
-					onTap: widget.onHeaderTapped,
+					onTap: widget.allowChangingBoard ? () async {
+						final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => BoardSwitcherPage()));
+						if (newBoard != null) {
+							setState(() {
+								board = newBoard;
+							});
+						}
+					} : null,
 					child: Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							Text('/${widget.board.name}/'),
-							if (widget.onHeaderTapped != null) Icon(Icons.arrow_drop_down)
+							Text('/${board.name}/'),
+							if (widget.allowChangingBoard) Icon(Icons.arrow_drop_down)
 						]
 					)
 				),
@@ -102,7 +118,7 @@ class _BoardPageState extends State<BoardPage> {
 				)
 			),
 			child: RefreshableList<Thread>(
-				listUpdater: () => site.getCatalog(widget.board.name).then((list) {
+				listUpdater: () => site.getCatalog(board.name).then((list) {
 					if (context.read<EffectiveSettings>().hideStickiedThreads) {
 						list = list.where((thread) => !thread.isSticky).toList();
 					}
@@ -114,20 +130,20 @@ class _BoardPageState extends State<BoardPage> {
 					}
 					return descending ? list : list.reversed.toList();
 				}),
-				id: '/${widget.board.name}/ $sorting $descending',
+				id: '/${board.name}/ $sorting $descending',
 				itemBuilder: (context, thread) {
 					return GestureDetector(
 						behavior: HitTestBehavior.opaque,
 						child: ThreadRow(
 							thread: thread,
-							isSelected: thread == widget.selectedThread
+							isSelected: thread.identifier == widget.selectedThread
 						),
 						onTap: () {
 							if (widget.onThreadSelected != null) {
-								widget.onThreadSelected!(thread);
+								widget.onThreadSelected!(thread.identifier);
 							}
 							else {
-								Navigator.of(context).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(board: widget.board, id: thread.id)));
+								Navigator.of(context).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(thread: thread.identifier)));
 							}
 						}
 					);

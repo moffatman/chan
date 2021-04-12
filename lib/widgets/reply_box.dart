@@ -1,4 +1,4 @@
-import 'package:chan/models/board.dart';
+import 'package:chan/models/thread.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -9,15 +9,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ReplyBox extends StatefulWidget {
-	final ImageboardBoard board;
-	final int threadId;
+	final ThreadIdentifier thread;
 	final VoidCallback onReplyPosted;
 	final VoidCallback? onRequestFocus;
 	final PersistentThreadState threadState;
 
 	ReplyBox({
-		required this.board,
-		required this.threadId,
+		required this.thread,
 		required this.onReplyPosted,
 		required this.threadState,
 		this.onRequestFocus,
@@ -66,6 +64,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	@override
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
+		final board = Persistence.getBoard(widget.thread.board);
 		return Container(
 			constraints: BoxConstraints(
 				maxHeight: 200
@@ -92,15 +91,15 @@ class ReplyBoxState extends State<ReplyBox> {
 												textCapitalization: TextCapitalization.sentences,
 												keyboardAppearance: CupertinoTheme.of(context).brightness,
 											),
-											if (widget.board.maxCommentCharacters != null && ((_textFieldController.text.length / widget.board.maxCommentCharacters!) > 0.5)) IgnorePointer(
+											if (board.maxCommentCharacters != null && ((_textFieldController.text.length / board.maxCommentCharacters!) > 0.5)) IgnorePointer(
 												child: Align(
 													alignment: Alignment.bottomRight,
 													child: Container(
 														padding: EdgeInsets.only(bottom: 4, right: 8),
 														child: Text(
-															'${_textFieldController.text.length} / ${widget.board.maxCommentCharacters}',
+															'${_textFieldController.text.length} / ${board.maxCommentCharacters}',
 															style: TextStyle(
-																color: (_textFieldController.text.length > widget.board.maxCommentCharacters!) ? Colors.red : Colors.grey
+																color: (_textFieldController.text.length > board.maxCommentCharacters!) ? Colors.red : Colors.grey
 															)
 														)
 													)
@@ -137,8 +136,7 @@ class ReplyBoxState extends State<ReplyBox> {
 											});
 											try {
 												final receipt = await site.postReply(
-													board: widget.board.name,
-													threadId: widget.threadId,
+													thread: widget.thread,
 													captchaKey: captchaKey,
 													text: _textFieldController.text
 												);

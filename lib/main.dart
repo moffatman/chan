@@ -11,7 +11,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'sites/imageboard_site.dart';
 import 'sites/4chan.dart';
-import 'pages/tab.dart';
+import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
@@ -117,8 +117,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Widget _buildTab(BuildContext context, int index) {
 		if (index == 0) {
 			return ImageboardTab(
-				initialBoardName: 'tv',
-				isInTabletLayout: isInTabletLayout
+				initialBoardName: 'tv'
 			);
 		}
 		else if (index == 1) {

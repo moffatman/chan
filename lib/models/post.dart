@@ -1,10 +1,11 @@
 import 'package:chan/models/flag.dart';
+import 'package:chan/models/thread.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:hive/hive.dart';
 
-import 'post_element.dart';
+import '../widgets/post_spans.dart';
 
 import 'attachment.dart';
 
@@ -41,13 +42,15 @@ class Post implements Filterable {
 	@HiveField(9)
 	PostSpanFormat spanFormat;
 	PostSpan? _span;
+	@HiveField(12)
+	Map<String, int>? foolfuukaLinkedPostThreadIds;
 	PostSpan get span {
 		if (_span == null) {
 			if (spanFormat == PostSpanFormat.Chan4) {
-				_span = Site4Chan.makeSpan(text);
+				_span = Site4Chan.makeSpan(board, threadId, text);
 			}
 			else if (spanFormat == PostSpanFormat.FoolFuuka) {
-				_span = FoolFuukaArchive.makeSpan(board, threadId, text);
+				_span = FoolFuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds!, text);
 			}
 		}
 		return _span!;
@@ -64,7 +67,8 @@ class Post implements Filterable {
 		required this.spanFormat,
 		this.flag,
 		this.attachment,
-		this.posterId
+		this.posterId,
+		this.foolfuukaLinkedPostThreadIds
 	}) {
 		this.attachment?.post = this;
 	}
@@ -77,4 +81,6 @@ class Post implements Filterable {
 	List<String> getSearchableText() {
 		return [text];
 	}
+
+	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board: board, id: threadId);
 }
