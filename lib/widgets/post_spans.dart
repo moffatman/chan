@@ -341,7 +341,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	bool isLoadingPostFromArchive(int id) => false;
 	Future<void> loadPostFromArchive(int id) => throw UnimplementedError();
 	Post? postFromArchive(int id) => null;
-	String? postFromArchiveError(int id) => throw UnimplementedError();
+	String? postFromArchiveError(int id) => null;
 	bool shouldShowSpoiler(int id) => false;
 	void toggleShowingOfSpoiler(int id) => throw UnimplementedError();
 	PostSpanZoneData childZoneFor(int postId) {
