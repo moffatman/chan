@@ -1,3 +1,6 @@
+import 'package:chan/models/attachment.dart';
+import 'package:chan/pages/gallery.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -115,13 +118,37 @@ class ErrorMessageCard extends StatelessWidget {
 }
 
 Future<void> openBrowser(BuildContext context, Uri url) {
-	return ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
-		android: AndroidChromeCustomTabsOptions(
-			toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor
-		),
-		ios: IOSSafariOptions(
-			preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
-			preferredControlTintColor: CupertinoTheme.of(context).primaryColor
-		)
-	));
+	final webmMatcher = RegExp('https?://${context.read<ImageboardSite>().imageUrl}/([^/]+)/([0-9]+).webm');
+	final match = webmMatcher.firstMatch(url.toString());
+	if (match != null) {
+		final String board = match.group(1)!;
+		final int id = int.parse(match.group(2)!);
+		return showGallery(
+			context: context,
+			attachments: [
+				Attachment(
+					type: AttachmentType.WEBM,
+					board: board,
+					id: id,
+					ext: '.webm',
+					filename: '$id.webm',
+					url: url,
+					thumbnailUrl: Uri.https(context.read<ImageboardSite>().imageUrl, '/$board/${id}s.jpg'),
+					md5: ''
+				)
+			],
+			semanticParentIds: []
+		);
+	}
+	else {
+		return ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
+			android: AndroidChromeCustomTabsOptions(
+				toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor
+			),
+			ios: IOSSafariOptions(
+				preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
+				preferredControlTintColor: CupertinoTheme.of(context).primaryColor
+			)
+		));
+	}
 }

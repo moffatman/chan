@@ -86,6 +86,7 @@ abstract class ImageboardSiteArchive {
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
+	String get imageUrl;
 	CaptchaRequest getCaptchaRequest();
 	Future<PostReceipt> postReply({
 		required ThreadIdentifier thread,
