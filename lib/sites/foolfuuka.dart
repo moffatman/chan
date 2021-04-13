@@ -88,6 +88,9 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 						elements.addAll(Site4Chan.parsePlaintext(node.text));
 					}
 				}
+				else {
+					elements.addAll(Site4Chan.parsePlaintext(node.text));
+				}
 			}
 			else {
 				elements.addAll(Site4Chan.parsePlaintext(node.text ?? ''));
