@@ -55,7 +55,7 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 								final linkType = parts[4];
 								final linkedId = int.parse(parts[5]);
 								if (linkType == 'post') {
-									final linkedPostThreadId = linkedPostThreadIds['$linkedBoard/$linkedId']!;
+									final linkedPostThreadId = linkedPostThreadIds['$linkedBoard/$linkedId'] ?? -1;
 									elements.add(PostQuoteLinkSpan(
 										board: linkedBoard,
 										threadId: linkedPostThreadId,
