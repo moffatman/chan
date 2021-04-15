@@ -20,7 +20,19 @@ class PostsPage extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final replies = zone.threadPosts.where((post) => postsIdsToShow.contains(post.id)).toList();
+		final replies = [];
+		for (final id in postsIdsToShow) {
+			final matchingPost = zone.threadPosts.where((p) => p.id == id);
+			if (matchingPost.isNotEmpty) {
+				replies.add(matchingPost.first);
+			}
+			else {
+				final archivedPost = zone.postFromArchive(id);
+				if (archivedPost != null) {
+					replies.add(archivedPost);
+				}
+			}
+		}
 		return OverscrollModalPage(
 			child: ChangeNotifierProvider.value(
 				value: zone,

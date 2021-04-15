@@ -367,9 +367,6 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	final Map<int, bool> _shouldExpandPost = Map();
 	final PostSpanZoneData parent;
 	final Map<int, bool> _shouldShowSpoiler = Map();
-	final Map<int, bool> _isLoadingPostFromArchive = Map();
-	final Map<int, Post> _postsFromArchive = Map();
-	final Map<int, String> _postFromArchiveErrors = Map();
 
 	PostSpanChildZoneData({
 		required this.parent,
@@ -398,6 +395,42 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 		_shouldExpandPost[id] = !shouldExpandPost(id);
 		notifyListeners();
 	}
+
+	bool shouldShowSpoiler(int id) {
+		return _shouldShowSpoiler[id] ?? false;
+	}
+
+	void toggleShowingOfSpoiler(int id) {
+		_shouldShowSpoiler[id] = !shouldShowSpoiler(id);
+		notifyListeners();
+	}
+
+	bool isLoadingPostFromArchive(int id) => parent.isLoadingPostFromArchive(id);
+	Future<void> loadPostFromArchive(int id) => parent.loadPostFromArchive(id);
+	Post? postFromArchive(int id) => parent.postFromArchive(id);
+	String? postFromArchiveError(int id) => parent.postFromArchiveError(id);
+}
+
+class PostSpanRootZoneData extends PostSpanZoneData {
+	final String board;
+	List<Post> threadPosts;
+	final ImageboardSite site;
+	final PersistentThreadState? threadState;
+	final int threadId;
+	final Map<int, bool> _isLoadingPostFromArchive = Map();
+	final Map<int, Post> _postsFromArchive = Map();
+	final Map<int, String> _postFromArchiveErrors = Map();
+
+	PostSpanRootZoneData({
+		required this.board,
+		required this.threadPosts,
+		required this.site,
+		this.threadState,
+		required this.threadId
+	});
+
+	@override
+	Iterable<int> get stackIds => [];
 
 	bool isLoadingPostFromArchive(int id) {
 		return _isLoadingPostFromArchive[id] ?? false;
@@ -429,34 +462,6 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	String? postFromArchiveError(int id) {
 		return _postFromArchiveErrors[id];
 	}
-
-	bool shouldShowSpoiler(int id) {
-		return _shouldShowSpoiler[id] ?? false;
-	}
-
-	void toggleShowingOfSpoiler(int id) {
-		_shouldShowSpoiler[id] = !shouldShowSpoiler(id);
-		notifyListeners();
-	}
-}
-
-class PostSpanRootZoneData extends PostSpanZoneData {
-	final String board;
-	List<Post> threadPosts;
-	final ImageboardSite site;
-	final PersistentThreadState? threadState;
-	final int threadId;
-
-	PostSpanRootZoneData({
-		required this.board,
-		required this.threadPosts,
-		required this.site,
-		this.threadState,
-		required this.threadId
-	});
-
-	@override
-	Iterable<int> get stackIds => [];
 }
 
 class ExpandingPost extends StatelessWidget {
