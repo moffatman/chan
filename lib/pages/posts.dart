@@ -10,12 +10,10 @@ import 'package:chan/pages/overscroll_modal.dart';
 class PostsPage extends StatelessWidget {
 	final PostSpanZoneData zone;
 	final List<int> postsIdsToShow;
-	final void Function(Post post)? onTapPost;
 
 	PostsPage({
 		required this.postsIdsToShow,
-		required this.zone,
-		this.onTapPost,
+		required this.zone
 	});
 
 	@override
@@ -47,17 +45,7 @@ class PostsPage extends StatelessWidget {
 										attachments: [attachment],
 										semanticParentIds: ctx.read<PostSpanZoneData>().stackIds
 									);
-								},
-								onNeedScrollToAnotherPost: (post) {
-									Navigator.of(context).pop();
-									onTapPost!(post);
-								},
-								onTap: () {
-									if (onTapPost != null) {
-										Navigator.of(context).pop();
-										onTapPost!(reply);
-									}
-								}	
+								}
 							);
 						}).toList()
 					)

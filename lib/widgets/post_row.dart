@@ -23,7 +23,6 @@ import 'package:chan/widgets/util.dart';
 class PostRow extends StatelessWidget {
 	final Post post;
 	final ValueChanged<Attachment>? onThumbnailTap;
-	final void Function(Post post)? onNeedScrollToAnotherPost;
 	final VoidCallback? onTap;
 	final bool showCrossThreadLabel;
 	final bool allowTappingLinks;
@@ -32,7 +31,6 @@ class PostRow extends StatelessWidget {
 		required this.post,
 		this.onTap,
 		this.onThumbnailTap,
-		this.onNeedScrollToAnotherPost,
 		this.showCrossThreadLabel = true,
 		this.allowTappingLinks = true
 	});
@@ -50,6 +48,11 @@ class PostRow extends StatelessWidget {
 		final isYou = zone.threadState?.youIds.contains(post.id) ?? false;
 		final child = ContextMenu(
 			actions: [
+				if (zone.stackIds.isNotEmpty && zone.onNeedScrollToPost != null) ContextMenuAction(
+					child: Text('Scroll to post'),
+					trailingIcon: Icons.subdirectory_arrow_right,
+					onPressed: () => zone.onNeedScrollToPost!(post)
+				),
 				ContextMenuAction(
 					child: Text('Share link'),
 					trailingIcon: Icons.ios_share,
@@ -112,9 +115,7 @@ class PostRow extends StatelessWidget {
 													onPressed: () => Navigator.of(context).push(TransparentRoute(
 														builder: (ctx) => PostsPage(
 															postsIdsToShow: zone.threadPosts.where((p) => p.posterId == post.posterId).map((p) => p.id).toList(),
-															zone: zone,
-															onTapPost: onNeedScrollToAnotherPost
-														)
+															zone: zone														)
 													))
 												),
 												if (post.flag != null) ...[
@@ -193,7 +194,6 @@ class PostRow extends StatelessWidget {
 																		TextSpan(
 																			children: [
 																				post.span.build(ctx, PostSpanRenderOptions(
-																					onNeedScrollToAnotherPost: onNeedScrollToAnotherPost,
 																					showCrossThreadLabel: showCrossThreadLabel
 																				)),
 																				// Placeholder to guarantee the stacked reply button is not on top of text
@@ -234,9 +234,7 @@ class PostRow extends StatelessWidget {
 																				TransparentRoute(
 																					builder: (ctx) => PostsPage(
 																						postsIdsToShow: post.replyIds,
-																						zone: zone.childZoneFor(post.id),
-																						onTapPost: onNeedScrollToAnotherPost
-																					)
+																						zone: zone.childZoneFor(post.id)																					)
 																				)
 																			)
 																		)

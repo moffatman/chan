@@ -35,6 +35,7 @@ class ThreadPage extends StatefulWidget {
 class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	late PersistentThreadState persistentState;
 	bool showReplyBox = false;
+	final _subNavigatorKey = GlobalKey<NavigatorState>();
 
 	final _focusNode = FocusNode();
 	final _listController = RefreshableListController<Post>();
@@ -51,7 +52,11 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 			threadPosts: persistentState.thread?.posts ?? [],
 			site: context.read<ImageboardSite>(),
 			threadId: widget.thread.id,
-			threadState: persistentState
+			threadState: persistentState,
+			onNeedScrollToPost: (post) {
+				_subNavigatorKey.currentState!.popUntil((route) => route.isFirst);
+				Future.delayed(Duration(milliseconds: 150), () => _listController.animateTo((val) => val.id == post.id));
+			}
 		);
 		_listController.slowScrollUpdates.listen((_) {
 			if (persistentState.thread != null) {
@@ -135,6 +140,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 							Flexible(
 								flex: 1,
 								child: Navigator(
+									key: _subNavigatorKey,
 									initialRoute: '/',
 									onGenerateRoute: (RouteSettings settings) => TransparentRoute(
 										builder: (context) => RawKeyboardListener(
@@ -192,8 +198,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																	post: post,
 																	onThumbnailTap: (attachment) {
 																		_showGallery(initialAttachment: attachment);
-																	},
-																	onNeedScrollToAnotherPost: (post) => _listController.animateTo((val) => val.id == post.id)
+																	}
 																);
 															},
 															filteredItemBuilder: (context, post, resetPage) {

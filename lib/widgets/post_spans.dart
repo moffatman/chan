@@ -21,14 +21,12 @@ class PostSpanRenderOptions {
 	final GestureRecognizer? recognizer;
 	final bool overrideRecognizer;
 	final Color? overrideTextColor;
-	final void Function(Post post)? onNeedScrollToAnotherPost;
 	final bool showCrossThreadLabel;
 	final bool addExpandingPosts;
 	PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
 		this.overrideTextColor,
-		this.onNeedScrollToAnotherPost,
 		this.showCrossThreadLabel = true,
 		this.addExpandingPosts = true
 	});
@@ -178,8 +176,7 @@ class PostQuoteLinkSpan extends PostSpan {
 							TransparentRoute(
 								builder: (ctx) => PostsPage(
 									zone: zone.childZoneFor(postId),
-									postsIdsToShow: [postId],
-									onTapPost: options.onNeedScrollToAnotherPost
+									postsIdsToShow: [postId]								
 								)
 							)
 						);
@@ -281,7 +278,6 @@ class PostSpoilerSpan extends PostSpan {
 				recognizer: toggleRecognizer,
 				overrideRecognizer: !showSpoiler,
 				overrideTextColor: showSpoiler ? visibleColor : hiddenColor,
-				onNeedScrollToAnotherPost: options.onNeedScrollToAnotherPost,
 				showCrossThreadLabel: options.showCrossThreadLabel
 			))],
 			style: TextStyle(
@@ -335,6 +331,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	ImageboardSite get site;
 	Iterable<int> get stackIds;
 	PersistentThreadState? get threadState;
+	ValueChanged<Post>? get onNeedScrollToPost;
 
 	bool shouldExpandPost(int id) => false;
 	void toggleExpansionOfPost(int id) => throw UnimplementedError();
@@ -383,6 +380,8 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 
 	PersistentThreadState? get threadState => parent.threadState;
 
+	ValueChanged<Post>? get onNeedScrollToPost => parent.onNeedScrollToPost;
+
 	Iterable<int> get stackIds {
 		return parent.stackIds.followedBy([postId]);
 	}
@@ -416,6 +415,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	List<Post> threadPosts;
 	final ImageboardSite site;
 	final PersistentThreadState? threadState;
+	final ValueChanged<Post>? onNeedScrollToPost;
 	final int threadId;
 	final Map<int, bool> _isLoadingPostFromArchive = Map();
 	final Map<int, Post> _postsFromArchive = Map();
@@ -426,7 +426,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		required this.threadPosts,
 		required this.site,
 		this.threadState,
-		required this.threadId
+		required this.threadId,
+		this.onNeedScrollToPost
 	});
 
 	@override
