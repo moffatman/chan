@@ -25,8 +25,13 @@ class HistoryPage extends StatelessWidget {
 							builder: (context, Box<PersistentThreadState> box, child) {
 								final states = box.toMap().entries.where((e) => e.value.thread != null).toList();
 								states.sort((a, b) => b.value.lastOpenedTime.compareTo(a.value.lastOpenedTime));
-								return ListView.builder(
+								return ListView.separated(
 									itemCount: states.length,
+									separatorBuilder: (context, i) => Divider(
+										thickness: 1,
+										height: 0,
+										color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+									),
 									itemBuilder: (context, i) => ContextMenu(
 										child: GestureDetector(
 											behavior: HitTestBehavior.opaque,
