@@ -19,40 +19,38 @@ class HistoryPage extends StatelessWidget {
 						transitionBetweenRoutes: false,
 						middle: Text('History')
 					),
-					child: Center(
-						child: ValueListenableBuilder(
-							valueListenable: Persistence.threadStateBox.listenable(),
-							builder: (context, Box<PersistentThreadState> box, child) {
-								final states = box.toMap().entries.where((e) => e.value.thread != null).toList();
-								states.sort((a, b) => b.value.lastOpenedTime.compareTo(a.value.lastOpenedTime));
-								return ListView.separated(
-									itemCount: states.length,
-									separatorBuilder: (context, i) => Divider(
-										thickness: 1,
-										height: 0,
-										color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
-									),
-									itemBuilder: (context, i) => ContextMenu(
-										child: GestureDetector(
-											behavior: HitTestBehavior.opaque,
-											child: ThreadRow(
-												thread: states[i].value.thread!,
-												isSelected: states[i].value.thread!.identifier == selectedThread
-											),
-											onTap: () => threadSetter(states[i].value.thread!.identifier)
+					child: ValueListenableBuilder(
+						valueListenable: Persistence.threadStateBox.listenable(),
+						builder: (context, Box<PersistentThreadState> box, child) {
+							final states = box.toMap().entries.where((e) => e.value.thread != null).toList();
+							states.sort((a, b) => b.value.lastOpenedTime.compareTo(a.value.lastOpenedTime));
+							return ListView.separated(
+								itemCount: states.length,
+								separatorBuilder: (context, i) => Divider(
+									thickness: 1,
+									height: 0,
+									color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+								),
+								itemBuilder: (context, i) => ContextMenu(
+									child: GestureDetector(
+										behavior: HitTestBehavior.opaque,
+										child: ThreadRow(
+											thread: states[i].value.thread!,
+											isSelected: states[i].value.thread!.identifier == selectedThread
 										),
-										actions: [
-											ContextMenuAction(
-												child: Text('Remove'),
-												onPressed: states[i].value.delete,
-												trailingIcon: Icons.delete,
-												isDestructiveAction: true
-											)
-										]
-									)
-								);
-							}
-						)
+										onTap: () => threadSetter(states[i].value.thread!.identifier)
+									),
+									actions: [
+										ContextMenuAction(
+											child: Text('Remove'),
+											onPressed: states[i].value.delete,
+											trailingIcon: Icons.delete,
+											isDestructiveAction: true
+										)
+									]
+								)
+							);
+						}
 					)
 				);
 			},
