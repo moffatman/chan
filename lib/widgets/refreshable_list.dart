@@ -81,7 +81,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		if (oldWidget.id != widget.id) {
 			this.autoUpdateTimer?.cancel();
 			this.autoUpdateTimer = null;
-			widget.controller?.invalidate();
+			widget.controller?.newContentId(widget.id);
 			_closeSearch();
 			setState(() {
 				if (widget.initialList != null) {
@@ -406,6 +406,7 @@ class RefreshableListController<T extends Filterable> {
 	int currentIndex = 0;
 	double? topOffset;
 	double? bottomOffset;
+	String? contentId;
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onScroll);
 		slowScrollUpdates.listen(_onSlowScroll);
@@ -452,7 +453,8 @@ class RefreshableListController<T extends Filterable> {
 		slowScrollUpdates.close();
 		scrollController?.dispose();
 	}
-	void invalidate() {
+	void newContentId(String contentId) {
+		this.contentId = contentId;
 		_items = [];
 		currentIndex = 0;
 	}
@@ -489,6 +491,7 @@ class RefreshableListController<T extends Filterable> {
 		_RefreshableListItem<T> targetItem = _items.firstWhere((i) => f(i.item));
 		Duration d = duration;
 		Curve c = Curves.ease;
+		final initialContentId = contentId;
 		if (targetItem.cachedOffset == null) {
 			int targetIndex = _items.indexOf(targetItem);
 			double? previousOffset;
@@ -497,19 +500,23 @@ class RefreshableListController<T extends Filterable> {
 			while (previousOffset != scrollController!.position.pixels) {
 				previousOffset = scrollController!.position.pixels;
 				await SchedulerBinding.instance!.endOfFrame;
+				if (initialContentId != contentId) return;
 				scrollController!.animateTo(
 					_estimateOffset(targetIndex) - topOffset!,
 					duration: duration,
 					curve: c
 				);
 				await Future.delayed(duration ~/ 4);
+				if (initialContentId != contentId) return;
 				c = Curves.linear;
 				await SchedulerBinding.instance!.endOfFrame;
+				if (initialContentId != contentId) return;
 				if (_items[targetIndex].hasGoodState) {
 					break;
 				}
 			}
 			await _tryCachingItem(_items[targetIndex]);
+			if (initialContentId != contentId) return;
 			Duration timeLeft = duration - DateTime.now().difference(scrollStartTime);
 			if (timeLeft.inMilliseconds.isNegative) {
 				d = duration ~/ 4;

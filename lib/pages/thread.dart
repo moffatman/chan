@@ -59,7 +59,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 			}
 		);
 		_listController.slowScrollUpdates.listen((_) {
-			if (persistentState.thread != null) {
+			if (persistentState.thread != null && !_listController.scrollController!.position.isScrollingNotifier.value) {
 				persistentState.lastSeenPostId = max(persistentState.lastSeenPostId ?? 0, persistentState.thread!.posts[_listController.lastVisibleIndex].id);	
 			}
 		});
@@ -76,6 +76,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	void didUpdateWidget(ThreadPage old) {
 		super.didUpdateWidget(old);
 		if (widget.thread.board != old.thread.board || widget.thread.id != old.thread.id) {
+			persistentState.save(); // Save old state in case it had pending scroll update to save
 			persistentState = Persistence.getThreadState(widget.thread, updateOpenedTime: true);
 			persistentState.useArchive |= widget.initiallyUseArchive;
 			final oldZone = zone;
