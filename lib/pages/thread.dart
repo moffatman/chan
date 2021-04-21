@@ -112,7 +112,10 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 
 	@override
 	Widget build(BuildContext context) {
-		final title = persistentState.thread?.title ?? '/${widget.thread.board}/${widget.thread.id}';
+		String title = persistentState.thread?.title ?? '/${widget.thread.board}/${widget.thread.id}';
+		if (persistentState.thread?.isArchived ?? false) {
+			title += ' (Archived)';
+		}
 		return Provider(
 			create: (context) => GlobalKey<ReplyBoxState>(),
 			child: Builder(

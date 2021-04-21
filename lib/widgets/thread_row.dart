@@ -113,6 +113,10 @@ class ThreadRow extends StatelessWidget {
 												Icon(Icons.push_pin, size: 14),
 												SizedBox(height: 4),
 											],
+											if (thread.isArchived) ...[
+												Icon(Icons.archive, size: 14, color: Colors.grey),
+												SizedBox(height: 4),
+											],
 											Container(
 												width: 40,
 												child: Row(
