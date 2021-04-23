@@ -99,9 +99,8 @@ class WEBM {
 			}
 			status.close();
 		}
-		catch (error, stackTrace) {
-			print(stackTrace);
-			status.add(WEBMErrorStatus('Unknown error $error'));
+		catch (error) {
+			status.add(WEBMErrorStatus(error.toString()));
 			status.close();
 		}
 	}
