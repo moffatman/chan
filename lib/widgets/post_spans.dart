@@ -161,13 +161,14 @@ class PostQuoteLinkSpan extends PostSpan {
 		if (zone.threadState?.youIds.contains(postId) ?? false) {
 			text += ' (You)';
 		}
-		final bool alreadyExpandedAbove = zone.stackIds.contains(postId) || zone.shouldExpandPost(postId);
+		final bool expandedImmediatelyAbove = zone.shouldExpandPost(postId) || zone.stackIds.length > 1 && zone.stackIds.elementAt(zone.stackIds.length - 2) == postId;
+		final bool expandedSomewhereAbove = expandedImmediatelyAbove || zone.stackIds.contains(postId);
 		return TextSpan(
 			text: text,
 			style: TextStyle(
-				color: options.overrideTextColor ?? (alreadyExpandedAbove ? Colors.pink : Colors.red),
+				color: options.overrideTextColor ?? (expandedImmediatelyAbove ? Colors.pink : Colors.red),
 				decoration: TextDecoration.underline,
-				decorationStyle: alreadyExpandedAbove ? TextDecorationStyle.dashed : null
+				decorationStyle: expandedSomewhereAbove ? TextDecorationStyle.dashed : null
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
 				if (!zone.stackIds.contains(postId)) {
