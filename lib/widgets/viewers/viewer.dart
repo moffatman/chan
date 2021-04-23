@@ -29,7 +29,7 @@ class AttachmentViewer extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		if (attachment.type == AttachmentType.Image) {
+		if (attachment.type == AttachmentType.Image && (status is AttachmentImageUrlAvailableStatus || status is AttachmentLoadingStatus)) {
 			return GalleryImageViewer(
 				attachment: attachment,
 				url: (status is AttachmentImageUrlAvailableStatus) ? (status as AttachmentImageUrlAvailableStatus).url : attachment.thumbnailUrl,
