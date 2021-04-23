@@ -16,7 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:chan/models/post.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:rxdart/rxdart.dart';
+
 class ThreadPage extends StatefulWidget {
 	final ThreadIdentifier thread;
 	final int? initialPostId;
@@ -60,11 +60,12 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 		);
 		_listController.slowScrollUpdates.listen((_) {
 			if (persistentState.thread != null && !_listController.scrollController!.position.isScrollingNotifier.value) {
-				persistentState.lastSeenPostId = max(persistentState.lastSeenPostId ?? 0, persistentState.thread!.posts[_listController.lastVisibleIndex].id);	
+				final newLastSeen = persistentState.thread!.posts[_listController.lastVisibleIndex].id;	
+				if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
+					persistentState.lastSeenPostId = newLastSeen;
+					persistentState.save();
+				}
 			}
-		});
-		_listController.slowScrollUpdates.bufferTime(const Duration(seconds: 5)).listen((_) {
-			persistentState.save();
 		});
 		final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;
 		if (persistentState.thread != null && scrollToId != null) {
@@ -124,20 +125,39 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 					navigationBar: CupertinoNavigationBar(
 						transitionBetweenRoutes: false,
 						middle: AutoSizeText(title),
-						trailing: CupertinoButton(
-							padding: EdgeInsets.zero,
-							child: Icon(Icons.reply),
-							onPressed: persistentState.thread?.isArchived == true ? null : () {
-								setState(() {
-									showReplyBox = !showReplyBox;
-									if (showReplyBox) {
-										context.read<GlobalKey<ReplyBoxState>>().currentState!.shouldRequestFocusNow();
+						trailing: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								CupertinoButton(
+									padding: EdgeInsets.zero,
+									child: Icon(persistentState.savedTime == null ? Icons.bookmark_outline : Icons.bookmark),
+									onPressed: () {
+										if (persistentState.savedTime != null) {
+											persistentState.savedTime = null;
+										}
+										else {
+											persistentState.savedTime = DateTime.now();
+										}
+										persistentState.save();
+										setState(() {});
 									}
-									else {
-										_focusNode.requestFocus();
+								),
+								CupertinoButton(
+									padding: EdgeInsets.zero,
+									child: Icon(Icons.reply),
+									onPressed: persistentState.thread?.isArchived == true ? null : () {
+										setState(() {
+											showReplyBox = !showReplyBox;
+											if (showReplyBox) {
+												context.read<GlobalKey<ReplyBoxState>>().currentState!.shouldRequestFocusNow();
+											}
+											else {
+												_focusNode.requestFocus();
+											}
+										});
 									}
-								});
-							}
+								)
+							]
 						)
 					),
 					child: Column(
@@ -191,10 +211,19 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																	// This should only run on first load
 																	Future.delayed(Duration(milliseconds: 50), () => _listController.animateTo((post) => post.id == scrollToId, alignment: 1.0));
 																}
-																persistentState.thread = _thread;
-																zone.threadPosts = _thread.posts;
-																await persistentState.save();
-																setState(() {});
+																if (_thread.posts.length != (persistentState.thread?.posts.length ?? 0)) {
+																	persistentState.thread = _thread;
+																	zone.threadPosts = _thread.posts;
+																	await persistentState.save();
+																	setState(() {});
+																	Future.delayed(Duration(milliseconds: 100), () {
+																		if (persistentState.thread != null && !_listController.scrollController!.position.isScrollingNotifier.value) {
+																			persistentState.lastSeenPostId = max(persistentState.lastSeenPostId ?? 0, persistentState.thread!.posts[_listController.lastVisibleIndex].id);	
+																			persistentState.save();
+																			setState(() {});
+																		}
+																	});
+																}
 																return _thread.posts;
 															},
 															controller: _listController,
@@ -261,6 +290,8 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 										thread: widget.thread,
 										threadState: persistentState,
 										onReplyPosted: () {
+											persistentState.savedTime = DateTime.now();
+											persistentState.save();
 											setState(() {
 												showReplyBox = false;
 											});

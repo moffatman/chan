@@ -4,7 +4,9 @@ import 'package:chan/pages/settings.dart';
 import 'package:chan/pages/saved.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/foolfuuka.dart';
+import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:cupertino_back_gesture/cupertino_back_gesture.dart';
 import 'package:flutter/cupertino.dart';
@@ -52,21 +54,24 @@ class ChanApp extends StatelessWidget {
 							if (brightness == Brightness.dark) {
 								theme = CupertinoThemeData(brightness: Brightness.dark, scaffoldBackgroundColor: Color.fromRGBO(20, 20, 20, 1), primaryColor: Colors.white);
 							}
-							return CupertinoApp(
-								title: 'Chan',
-								theme: theme,
-								home: Builder(
-									builder: (BuildContext context) {
-										return DefaultTextStyle(
-											style: CupertinoTheme.of(context).textTheme.textStyle,
-											child: ChanHomePage()
-										);
-									}
-								),
-								localizationsDelegates: [
-									DefaultCupertinoLocalizations.delegate,
-									DefaultMaterialLocalizations.delegate
-								],
+							return ChangeNotifierProvider(
+								create: (ctx) => ThreadWatcher(site: ctx.read<ImageboardSite>()),
+								child: CupertinoApp(
+									title: 'Chan',
+									theme: theme,
+									home: Builder(
+										builder: (BuildContext context) {
+											return DefaultTextStyle(
+												style: CupertinoTheme.of(context).textTheme.textStyle,
+												child: ChanHomePage()
+											);
+										}
+									),
+									localizationsDelegates: [
+										DefaultCupertinoLocalizations.delegate,
+										DefaultMaterialLocalizations.delegate
+									],
+								)
 							);
 						}
 					)
@@ -189,7 +194,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									label: Text('Browse')
 								),
 								NavigationRailDestination(
-									icon: Icon(Icons.save_alt),
+									icon: NotifyingIcon(
+										icon: Icons.bookmark,
+										notificationCount: context.watch<ThreadWatcher>().unseenCount
+									),
 									label: Text('Saved')
 								),
 								NavigationRailDestination(
@@ -225,7 +233,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							label: 'Browse'
 						),
 						BottomNavigationBarItem(
-							icon: Icon(Icons.save_alt),
+							icon: NotifyingIcon(
+								icon: Icons.bookmark,
+								notificationCount: context.watch<ThreadWatcher>().unseenCount,
+								topOffset: 10
+							),
 							label: 'Saved'
 						),
 						BottomNavigationBarItem(

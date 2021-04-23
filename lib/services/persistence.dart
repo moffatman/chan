@@ -64,6 +64,10 @@ class Persistence {
 		await Hive.openBox<ImageboardBoard>('boards');
 	}
 
+	static PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
+		return threadStateBox.get('${thread.board}/${thread.id}');
+	}
+
 	static PersistentThreadState getThreadState(ThreadIdentifier thread, {bool updateOpenedTime = false}) {
 		final existingState = threadStateBox.get('${thread.board}/${thread.id}');
 		if (existingState != null) {
@@ -118,8 +122,8 @@ class PersistentThreadState extends HiveObject {
 	int? lastSeenPostId;
 	@HiveField(1)
 	DateTime lastOpenedTime;
-	@HiveField(2)
-	bool saved = false;
+	@HiveField(6)
+	DateTime? savedTime;
 	@HiveField(3)
 	List<PostReceipt> receipts = [];
 	@HiveField(4)
@@ -132,10 +136,10 @@ class PersistentThreadState extends HiveObject {
 	List<int> get youIds => receipts.map((receipt) => receipt.id).toList();
 	List<Post>? get repliesToYou => thread?.posts.where((p) => p.span.referencedPostIds(thread!.board).any((id) => youIds.contains(id))).toList();
 	List<Post>? get unseenRepliesToYou => repliesToYou?.where((p) => p.id > lastSeenPostId!).toList();
-	int? get unseenReplyCount => thread?.posts.where((p) => p.id > (lastSeenPostId ?? 0)).length;
+	int? get unseenReplyCount => thread?.posts.where((p) => p.id > (lastSeenPostId ?? thread!.id)).length;
 
 	@override
-	String toString() => 'PersistentThreadState(lastSeenPostId: $lastSeenPostId, receipts: $receipts';
+	String toString() => 'PersistentThreadState(lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime)';
 }
 
 @HiveType(typeId: 4)
