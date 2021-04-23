@@ -98,11 +98,12 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	}
 
 	void _showGallery({bool initiallyShowChrome = true, Attachment? initialAttachment}) {
+		final attachments = persistentState.thread!.posts.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
 		showGallery(
 			context: context,
-			attachments: persistentState.thread!.posts.where((_) => _.attachment != null).map((_) => _.attachment!).toList(),
+			attachments: attachments,
 			initiallyShowChrome: initiallyShowChrome,
-			initialAttachment: initialAttachment,
+			initialAttachment: (initialAttachment == null) ? null : attachments.firstWhere((a) => a.id == initialAttachment.id),
 			onChange: (attachment) {
 				_listController.animateTo((p) => p.attachment?.id == attachment.id);
 			},
