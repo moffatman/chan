@@ -40,6 +40,29 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	final _focusNode = FocusNode();
 	final _listController = RefreshableListController<Post>();
 	late PostSpanRootZoneData zone;
+	bool blocked = false;
+
+	Future<void> _blockAndScrollToPostIfNeeded() async {
+		final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;
+		if (persistentState.thread != null && scrollToId != null) {
+			setState(() {
+				blocked = true;
+			});
+			try {
+				await WidgetsBinding.instance!.endOfFrame;
+				await _listController.animateTo((post) => post.id == scrollToId, alignment: 1.0, duration: Duration(milliseconds: 1));
+				await WidgetsBinding.instance!.endOfFrame;
+			}
+			catch (e, st) {
+				print('Error scrolling');
+				print(e);
+				print(st);
+			}
+			setState(() {
+				blocked = false;
+			});
+		}
+	}
 
 	@override
 	void initState() {
@@ -67,10 +90,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 				}
 			}
 		});
-		final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;
-		if (persistentState.thread != null && scrollToId != null) {
-			Future.delayed(Duration(milliseconds: 50), () => _listController.animateTo((post) => post.id == scrollToId, alignment: 1.0));
-		}
+		_blockAndScrollToPostIfNeeded();
 	}
 
 	@override
@@ -90,10 +110,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 				threadState: persistentState
 			);
 			persistentState.save();
-			final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;
-			if (persistentState.thread != null && scrollToId != null) {
-				Future.delayed(Duration(milliseconds: 50), () => _listController.animateTo((post) => post.id == scrollToId, alignment: 1.0));
-			}
+			_blockAndScrollToPostIfNeeded();
 			setState(() {});
 		}
 	}
@@ -184,6 +201,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 												}
 											},
 											child: Stack(
+												fit: StackFit.expand,
 												children: [
 													ChangeNotifierProvider<PostSpanZoneData>.value(
 														value: zone,
@@ -206,14 +224,11 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																final _thread = persistentState.useArchive ? 
 																	await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
 																	await context.read<ImageboardSite>().getThread(widget.thread);
-																final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;
-																if (persistentState.thread == null && scrollToId != null) {
-																	// This should only run on first load
-																	Future.delayed(Duration(milliseconds: 50), () => _listController.animateTo((post) => post.id == scrollToId, alignment: 1.0));
-																}
+																final bool firstLoad = persistentState.thread == null;
 																if (_thread.posts.length != (persistentState.thread?.posts.length ?? 0)) {
 																	persistentState.thread = _thread;
 																	zone.threadPosts = _thread.posts;
+																	if (firstLoad) _blockAndScrollToPostIfNeeded();
 																	await persistentState.save();
 																	setState(() {});
 																	Future.delayed(Duration(milliseconds: 100), () {
@@ -273,6 +288,12 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																return Container();
 															}
 														}
+													),
+													if (blocked) Container(
+														color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+														child: Center(
+															child: CupertinoActivityIndicator()
+														)
 													)
 												]
 											)

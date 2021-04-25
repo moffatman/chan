@@ -144,7 +144,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				this.lastUpdateTime = DateTime.now();
 			});
 		}
-		catch (e) {
+		catch (e, st) {
 			if (mounted) {
 				setState(() {
 					this.errorMessage = e.toString();
@@ -153,6 +153,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				});
 				if (widget.remedies[errorType] == null) {
 					print('Error refreshing list: $e');
+					print(st);
 					resetTimer();
 				}
 				else {
@@ -487,18 +488,16 @@ class RefreshableListController<T extends Filterable> {
 		}
 		return estimate!;
 	}
-	void animateTo(bool f(T val), {double alignment = 0.0, Duration duration = const Duration(milliseconds: 200)}) async {
+	Future<void> animateTo(bool f(T val), {double alignment = 0.0, Duration duration = const Duration(milliseconds: 200)}) async {
 		_RefreshableListItem<T> targetItem = _items.firstWhere((i) => f(i.item));
 		Duration d = duration;
 		Curve c = Curves.ease;
 		final initialContentId = contentId;
 		if (targetItem.cachedOffset == null) {
 			int targetIndex = _items.indexOf(targetItem);
-			double? previousOffset;
 			DateTime scrollStartTime = DateTime.now();
 			c = Curves.easeIn;
-			while (previousOffset != scrollController!.position.pixels) {
-				previousOffset = scrollController!.position.pixels;
+			while (DateTime.now().difference(scrollStartTime).compareTo(Duration(seconds: 5)).isNegative) {
 				await SchedulerBinding.instance!.endOfFrame;
 				if (initialContentId != contentId) return;
 				scrollController!.animateTo(
@@ -528,11 +527,20 @@ class RefreshableListController<T extends Filterable> {
 		}
 		final atAlignment0 = targetItem.cachedOffset! - topOffset!;
 		final alignmentSlidingWindow = scrollController!.position.viewportDimension - targetItem.context!.findRenderObject()!.semanticBounds.size.height - topOffset! - bottomOffset!;
-		scrollController!.animateTo(
-			(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent),
-			duration: d,
-			curve: c
-		);
+		if (targetItem == _items.last) {
+			scrollController!.animateTo(
+				scrollController!.position.maxScrollExtent,
+				duration: d,
+				curve: c
+			);
+		}
+		else {
+			scrollController!.animateTo(
+				(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent),
+				duration: d,
+				curve: c
+			);
+		}
 	}
 	int get firstVisibleIndex => _items.indexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! > scrollController!.position.pixels));
 	int get lastVisibleIndex => _items.lastIndexWhere((i) => (i.cachedOffset != null) && ((i.cachedOffset! + i.cachedHeight!) < (scrollController!.position.pixels + scrollController!.position.viewportDimension)));
