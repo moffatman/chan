@@ -41,12 +41,14 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	final _listController = RefreshableListController<Post>();
 	late PostSpanRootZoneData zone;
 	bool blocked = false;
+	bool _unnaturallyScrolling = false;
 
 	Future<void> _blockAndScrollToPostIfNeeded() async {
 		final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;
 		if (persistentState.thread != null && scrollToId != null) {
 			setState(() {
 				blocked = true;
+				_unnaturallyScrolling = true;
 			});
 			try {
 				await WidgetsBinding.instance!.endOfFrame;
@@ -61,6 +63,8 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 			setState(() {
 				blocked = false;
 			});
+			await Future.delayed(Duration(milliseconds: 200));
+			_unnaturallyScrolling = false;
 		}
 	}
 
@@ -82,7 +86,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 			}
 		);
 		_listController.slowScrollUpdates.listen((_) {
-			if (persistentState.thread != null && !_listController.scrollController!.position.isScrollingNotifier.value) {
+			if (persistentState.thread != null && !_unnaturallyScrolling) {
 				final newLastSeen = persistentState.thread!.posts[_listController.lastVisibleIndex].id;	
 				if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
 					persistentState.lastSeenPostId = newLastSeen;
@@ -228,11 +232,11 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																if (_thread.posts.length != (persistentState.thread?.posts.length ?? 0)) {
 																	persistentState.thread = _thread;
 																	zone.threadPosts = _thread.posts;
-																	if (firstLoad) _blockAndScrollToPostIfNeeded();
+																	if (firstLoad) await _blockAndScrollToPostIfNeeded();
 																	await persistentState.save();
 																	setState(() {});
 																	Future.delayed(Duration(milliseconds: 100), () {
-																		if (persistentState.thread != null && !_listController.scrollController!.position.isScrollingNotifier.value) {
+																		if (persistentState.thread != null && !_unnaturallyScrolling) {
 																			persistentState.lastSeenPostId = max(persistentState.lastSeenPostId ?? 0, persistentState.thread!.posts[_listController.lastVisibleIndex].id);	
 																			persistentState.save();
 																			setState(() {});
