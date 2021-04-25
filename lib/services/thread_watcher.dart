@@ -27,7 +27,7 @@ class ThreadWatcher extends ChangeNotifier {
 		required this.site
 	}) {
 		_boxSubscription = Persistence.threadStateBox.watch().listen(_threadUpdated);
-		final liveSavedThreads = Persistence.threadStateBox.values.where((s) => s.thread != null && !s.thread!.isArchived && s.savedTime != null);
+		final liveSavedThreads = Persistence.threadStateBox.values.where((s) => s.thread != null && s.savedTime != null);
 		for (final liveSavedThread in liveSavedThreads) {
 			cachedUnseen[liveSavedThread.thread!.identifier] = liveSavedThread.unseenReplyCount!;
 			cachedUnseenYous[liveSavedThread.thread!.identifier] = liveSavedThread.unseenRepliesToYou!.length;
