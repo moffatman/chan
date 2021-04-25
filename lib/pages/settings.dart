@@ -77,7 +77,11 @@ class SettingsCachePanel extends StatefulWidget {
 	createState() => _SettingsCachePanelState();
 }
 
-const _KNOWN_CACHE_DIRS = ['sharecache', 'webmcache'];
+const _KNOWN_CACHE_DIRS = {
+	'sharecache': 'Sharing',
+	'webmcache': 'WEBM Cache',
+	cacheImageFolderName: 'Image Cache'
+};
 
 class _SettingsCachePanelState extends State<SettingsCachePanel> {
 	Map<String, int>? folderSizes;
@@ -92,15 +96,16 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 	Future<void> _readFilesystemInfo() async {
 		folderSizes = {};
 		final systemTempDirectory = await getTemporaryDirectory();
-		/*await for (final directory in systemTempDirectory.list()) {
-			if (directory is Directory) {
+		for (final dirName in _KNOWN_CACHE_DIRS.keys) {
+			final directory = Directory(systemTempDirectory.path + '/' + dirName);
+			if (await directory.exists()) {
 				int size = 0;
 				await for (final subentry in directory.list(recursive: true)) {
 					size += (await subentry.stat()).size;
 				}
 				folderSizes![directory.path.split('/').last] = size;
 			}
-		}*/
+		}
 		setState(() {});
 	}
 
@@ -110,8 +115,9 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 		});
 		await clearDiskCachedImages();
 		final systemTempDirectory = await getTemporaryDirectory();
-		await for (final directory in systemTempDirectory.list()) {
-			if (directory is Directory && _KNOWN_CACHE_DIRS.contains(directory.path.split('/').last)) {
+		for (final dirName in _KNOWN_CACHE_DIRS.keys) {
+			final directory = Directory(systemTempDirectory.path + '/' + dirName);
+			if (await directory.exists()) {
 				await directory.delete(recursive: true);
 			}
 		}
@@ -131,20 +137,30 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 					width: double.infinity,
 					child: Text('Cached media'),
 				),
+				if (folderSizes?.isEmpty ?? true) Text('No cached media'),
 				Table(
 					children: (folderSizes ?? {}).entries.map((entry) {
 						double megabytes = entry.value / 1000000;
 						return TableRow(
 							children: [
-								Text(entry.key, textAlign: TextAlign.center),
+								Text(_KNOWN_CACHE_DIRS[entry.key]!, textAlign: TextAlign.center),
 								Text(megabytes.toStringAsFixed(1) + ' MB', textAlign: TextAlign.center)
 							]
 						);
 					}).toList()
 				),
-				CupertinoButton(
-					child: Text(clearing ? 'Clearing...' : 'Clear cached media'),
-					onPressed: clearing ? null : _clearCaches
+				Row(
+					mainAxisAlignment: MainAxisAlignment.center,
+					children: [
+						CupertinoButton(
+							child: Text('Recalculate'),
+							onPressed: _readFilesystemInfo
+						),
+						CupertinoButton(
+							child: Text(clearing ? 'Clearing...' : 'Clear cached media'),
+							onPressed: clearing ? null : _clearCaches
+						)
+					]
 				)
 			]
 		);
