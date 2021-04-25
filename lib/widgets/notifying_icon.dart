@@ -14,27 +14,27 @@ class NotifyingIcon extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return Stack(
-			clipBehavior: Clip.none,
-			children: [
-				Icon(icon),
-				if (notificationCount.value > 0) Positioned(
-					right: -10,
-					top: -10 + topOffset,
-					child: Container(
-						decoration: BoxDecoration(
-							color: Colors.red,
-							borderRadius: BorderRadius.all(Radius.circular(10))
-						),
-						constraints: BoxConstraints(
-							minWidth: 20
-						),
-						height: 20,
-						alignment: Alignment.center,
-						padding: EdgeInsets.all(2),
-						child: ValueListenableBuilder(
-							valueListenable: notificationCount,
-							builder: (context, count, child) => AutoSizeText(
+		return  ValueListenableBuilder(
+			valueListenable: notificationCount,
+			builder: (BuildContext context, int count, Widget? child) => Stack(
+				clipBehavior: Clip.none,
+				children: [
+					Icon(icon),
+					if (count > 0) Positioned(
+						right: -10,
+						top: -10 + topOffset,
+						child: Container(
+							decoration: BoxDecoration(
+								color: Colors.red,
+								borderRadius: BorderRadius.all(Radius.circular(10))
+							),
+							constraints: BoxConstraints(
+								minWidth: 20
+							),
+							height: 20,
+							alignment: Alignment.center,
+							padding: EdgeInsets.all(2),
+							child:AutoSizeText(
 								count.toString(),
 								maxLines: 1,
 								minFontSize: 0,
@@ -45,8 +45,8 @@ class NotifyingIcon extends StatelessWidget {
 							)
 						)
 					)
-				)
-			]
+				]
+			)
 		);
 	}
 }
