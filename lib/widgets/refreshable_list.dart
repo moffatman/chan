@@ -528,24 +528,20 @@ class RefreshableListController<T extends Filterable> {
 		final atAlignment0 = targetItem.cachedOffset! - topOffset!;
 		final alignmentSlidingWindow = scrollController!.position.viewportDimension - targetItem.context!.findRenderObject()!.semanticBounds.size.height - topOffset! - bottomOffset!;
 		if (targetItem == _items.last) {
-			print('animating to ${scrollController!.position.maxScrollExtent}');
 			await scrollController!.animateTo(
 				scrollController!.position.maxScrollExtent,
 				duration: d,
 				curve: c
 			);
 			await SchedulerBinding.instance!.endOfFrame;
-			print(scrollController!.position.pixels);
 		}
 		else {
-			print('animating to ${(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent)}');
 			await scrollController!.animateTo(
 				(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent),
 				duration: d,
 				curve: c
 			);
 			await SchedulerBinding.instance!.endOfFrame;
-			print(scrollController!.position.pixels);
 		}
 	}
 	int get firstVisibleIndex => _items.indexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! > scrollController!.position.pixels));
