@@ -161,7 +161,7 @@ class Site4Chan implements ImageboardSite {
 			return Attachment(
 				id: id,
 				type: data['ext'] == '.webm' ? AttachmentType.WEBM : AttachmentType.Image,
-				filename: (data['filename'] ?? '') + (data['ext'] ?? ''),
+				filename: unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
 				ext: ext,
 				board: board,
 				url: Uri.https(imageUrl, '/$board/$id$ext'),
