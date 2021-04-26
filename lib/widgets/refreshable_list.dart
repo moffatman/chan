@@ -230,11 +230,12 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 						),
 						if (values.length > 0)
 							SliverList(
+								key: PageStorageKey('list for ${widget.id}'),
 								delegate: SliverChildBuilderDelegate(
 									(context, i) {
 										if (i % 2 == 0) {
-											return LayoutBuilder(
-												builder: (context, constraints) {
+											return Builder(
+												builder: (context) {
 													widget.controller?.registerItem(i ~/ 2, values[i ~/ 2], context);
 													return _itemBuilder(context, values[i ~/ 2]);
 												}
@@ -500,12 +501,11 @@ class RefreshableListController<T extends Filterable> {
 			while (DateTime.now().difference(scrollStartTime).compareTo(Duration(seconds: 5)).isNegative) {
 				await SchedulerBinding.instance!.endOfFrame;
 				if (initialContentId != contentId) return;
-				scrollController!.animateTo(
+				await scrollController!.animateTo(
 					_estimateOffset(targetIndex) - topOffset!,
-					duration: duration,
+					duration: duration ~/ 4,
 					curve: c
 				);
-				await Future.delayed(duration ~/ 4);
 				if (initialContentId != contentId) return;
 				c = Curves.linear;
 				await SchedulerBinding.instance!.endOfFrame;
@@ -528,18 +528,24 @@ class RefreshableListController<T extends Filterable> {
 		final atAlignment0 = targetItem.cachedOffset! - topOffset!;
 		final alignmentSlidingWindow = scrollController!.position.viewportDimension - targetItem.context!.findRenderObject()!.semanticBounds.size.height - topOffset! - bottomOffset!;
 		if (targetItem == _items.last) {
-			scrollController!.animateTo(
+			print('animating to ${scrollController!.position.maxScrollExtent}');
+			await scrollController!.animateTo(
 				scrollController!.position.maxScrollExtent,
 				duration: d,
 				curve: c
 			);
+			await SchedulerBinding.instance!.endOfFrame;
+			print(scrollController!.position.pixels);
 		}
 		else {
-			scrollController!.animateTo(
+			print('animating to ${(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent)}');
+			await scrollController!.animateTo(
 				(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent),
 				duration: d,
 				curve: c
 			);
+			await SchedulerBinding.instance!.endOfFrame;
+			print(scrollController!.position.pixels);
 		}
 	}
 	int get firstVisibleIndex => _items.indexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! > scrollController!.position.pixels));
