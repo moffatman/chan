@@ -72,7 +72,7 @@ class PostQuoteSpan extends PostSpan {
 	build(context, options) {
 		return TextSpan(
 			children: [child.build(context, options)],
-			style: TextStyle(color: options.overrideTextColor ?? Colors.green),
+			style: TextStyle(color: options.overrideTextColor ?? Color.fromRGBO(120, 153, 34, 1)),
 			recognizer: options.recognizer
 		);
 	}
