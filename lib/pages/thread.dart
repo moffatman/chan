@@ -276,14 +276,17 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																return SafeArea(
 																	child: Align(
 																		alignment: Alignment.bottomRight,
-																		child: Container(
-																			decoration: BoxDecoration(
-																				borderRadius: BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
-																				color: Colors.red
+																		child: GestureDetector(
+																			child: Container(
+																				decoration: BoxDecoration(
+																					borderRadius: BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
+																					color: Colors.red
+																				),
+																				padding: EdgeInsets.all(4),
+																				margin: EdgeInsets.only(right: 16),
+																				child: Text(persistentState.unseenReplyCount.toString())
 																			),
-																			padding: EdgeInsets.all(4),
-																			margin: EdgeInsets.only(right: 16),
-																			child: Text(persistentState.unseenReplyCount.toString())
+																			onTap: () => _listController.animateTo((post) => post.id == persistentState.lastSeenPostId, alignment: 1.0)
 																		)
 																	)
 																);
