@@ -64,7 +64,10 @@ class SettingsPage extends StatelessWidget {
 								settings.hideStickiedThreads = newValue;
 							}
 						),
-						SizedBox(height: 16),
+						Container(
+							padding: EdgeInsets.only(top: 16, left: 16),
+							child: Text('Cached media')
+						),
 						SettingsCachePanel()
 					],
 				)
@@ -78,9 +81,9 @@ class SettingsCachePanel extends StatefulWidget {
 }
 
 const _KNOWN_CACHE_DIRS = {
-	'sharecache': 'Sharing',
-	'webmcache': 'WEBM Cache',
-	cacheImageFolderName: 'Image Cache'
+	cacheImageFolderName: 'Images',
+	'webmcache': 'Converted WEBM files',
+	'sharecache': 'Exported for sharing'
 };
 
 class _SettingsCachePanelState extends State<SettingsCachePanel> {
@@ -129,40 +132,49 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 
 	@override
 	Widget build(BuildContext context) {
-		return Column(
-			mainAxisSize: MainAxisSize.min,
-			children: [
-				Container(
-					padding: EdgeInsets.all(16),
-					width: double.infinity,
-					child: Text('Cached media'),
-				),
-				if (folderSizes?.isEmpty ?? true) Text('No cached media'),
-				Table(
-					children: (folderSizes ?? {}).entries.map((entry) {
-						double megabytes = entry.value / 1000000;
-						return TableRow(
-							children: [
-								Text(_KNOWN_CACHE_DIRS[entry.key]!, textAlign: TextAlign.center),
-								Text(megabytes.toStringAsFixed(1) + ' MB', textAlign: TextAlign.center)
-							]
-						);
-					}).toList()
-				),
-				Row(
-					mainAxisAlignment: MainAxisAlignment.center,
-					children: [
-						CupertinoButton(
-							child: Text('Recalculate'),
-							onPressed: _readFilesystemInfo
-						),
-						CupertinoButton(
-							child: Text(clearing ? 'Clearing...' : 'Clear cached media'),
-							onPressed: clearing ? null : _clearCaches
-						)
-					]
-				)
-			]
+		return Container(
+			decoration: BoxDecoration(
+				borderRadius: BorderRadius.all(Radius.circular(8)),
+				color: CupertinoTheme.of(context).primaryColor.withOpacity(0.2)
+			),
+			margin: EdgeInsets.all(16),
+			padding: EdgeInsets.all(16),
+			child: Column(
+				mainAxisSize: MainAxisSize.min,
+				children: [
+					if (folderSizes?.isEmpty ?? true) Text('No cached media'),
+					Table(
+						children: (folderSizes ?? {}).entries.map((entry) {
+							double megabytes = entry.value / 1000000;
+							return TableRow(
+								children: [
+									Padding(
+										padding: EdgeInsets.only(bottom: 8),
+										child: Text(_KNOWN_CACHE_DIRS[entry.key]!, textAlign: TextAlign.left)
+									),
+									Text(megabytes.toStringAsFixed(1) + ' MB', textAlign: TextAlign.right)
+								]
+							);
+						}).toList()
+					),
+					SizedBox(height: 8),
+					Row(
+						mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+						children: [
+							CupertinoButton(
+								padding: EdgeInsets.zero,
+								child: Text('Recalculate'),
+								onPressed: _readFilesystemInfo
+							),
+							CupertinoButton(
+								padding: EdgeInsets.zero,
+								child: Text(clearing ? 'Deleting...' : 'Delete all'),
+								onPressed: (folderSizes?.isEmpty ?? true) ? null : (clearing ? null : _clearCaches)
+							)
+						]
+					)
+				]
+			)
 		);
 	}
 }
