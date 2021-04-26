@@ -39,8 +39,10 @@ class ThreadWatcher extends ChangeNotifier {
 	}
 
 	void _updateCounts() {
-		unseenCount.value = cachedUnseen.values.reduce((a, b) => a + b);
-		unseenYouCount.value = cachedUnseenYous.values.reduce((a, b) => a + b);
+		if (cachedUnseen.isNotEmpty) {
+			unseenCount.value = cachedUnseen.values.reduce((a, b) => a + b);
+			unseenYouCount.value = cachedUnseenYous.values.reduce((a, b) => a + b);
+		}
 	}
 
 	void _threadUpdated(BoxEvent event) {
