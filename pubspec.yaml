@@ -44,7 +44,7 @@ dependencies:
 
 dev_dependencies:
   hive_generator: "^1.0.1"
-  build_runner: "^1.12.2"
+  build_runner: ^2.0.1
   flutter_launcher_icons: "^0.9.0"
   flutter_native_splash: "^1.1.8+4"
 
