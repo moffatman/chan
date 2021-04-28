@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class OverscrollModalPage extends StatefulWidget {
@@ -22,7 +23,8 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	final GlobalKey _topSpacerKey = GlobalKey();
 	final GlobalKey _bottomSpacerKey = GlobalKey();
 	late double _scrollStopPosition;
-	Duration? _pointerDownTime;
+	Offset? _pointerDownPosition;
+	bool _pointerInSpacer = false;
 	double _opacity = 1;
 	bool _popping = false;
 
@@ -66,7 +68,17 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 				SafeArea(
 					child: Listener(
 						onPointerDown: (event) {
-							_pointerDownTime = event.timeStamp;
+							final RenderBox topBox = _topSpacerKey.currentContext!.findRenderObject()! as RenderBox;
+							final RenderBox bottomBox = _bottomSpacerKey.currentContext!.findRenderObject()! as RenderBox;
+							_pointerDownPosition = event.position;
+							_pointerInSpacer = event.position.dy < topBox.localToGlobal(topBox.semanticBounds.bottomCenter).dy || event.position.dy > bottomBox.localToGlobal(bottomBox.semanticBounds.topCenter).dy;
+						},
+						onPointerMove: (event) {
+							if (_pointerInSpacer) {
+								if ((event.position - _pointerDownPosition!).distance > kTouchSlop) {
+									_pointerInSpacer = false;
+								}
+							}
 						},
 						onPointerUp: (event) {
 							final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
@@ -77,16 +89,10 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 								});
 								Navigator.of(context).pop();
 							}
-							else if (_pointerDownTime != null) {
+							else if (_pointerInSpacer) {
 								// Simulate onTap for the Spacers which fill the transparent space
 								// It's done here rather than using GestureDetector so it works during scroll-in
-								if ((event.timeStamp - _pointerDownTime!).inMilliseconds < 125) {
-									final RenderBox topBox = _topSpacerKey.currentContext!.findRenderObject()! as RenderBox;
-									final RenderBox bottomBox = _bottomSpacerKey.currentContext!.findRenderObject()! as RenderBox;
-									if (event.position.dy < topBox.localToGlobal(topBox.semanticBounds.bottomCenter).dy || event.position.dy > bottomBox.localToGlobal(bottomBox.semanticBounds.topCenter).dy) {
-										Navigator.of(context).pop();
-									}
-								}
+								Navigator.of(context).pop();
 							}
 						},
 						child: CustomScrollView(
