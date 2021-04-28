@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -12,6 +13,8 @@ import 'package:rxdart/rxdart.dart';
 abstract class Filterable {
 	List<String> getSearchableText();
 }
+
+const double _OVERSCROLL_TRIGGER_THRESHOLD = 150;
 
 class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
@@ -24,6 +27,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Duration? autoUpdateDuration;
 	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
 	final String? updateDisabledText;
+	final String? footerText;
 
 	RefreshableList({
 		required this.itemBuilder,
@@ -35,7 +39,8 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.autoUpdateDuration,
 		this.remedies = const {},
 		this.initialList,
-		this.updateDisabledText
+		this.updateDisabledText,
+		this.footerText
 	});
 
 	createState() => RefreshableListState<T>();
@@ -181,7 +186,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				onPointerUp: (event) {
 					if (widget.controller != null) {
 						double overscroll = widget.controller!.scrollController!.position.pixels - widget.controller!.scrollController!.position.maxScrollExtent;
-						if (overscroll > 150) {
+						if (overscroll > _OVERSCROLL_TRIGGER_THRESHOLD) {
 							update();
 						}
 					}
@@ -245,7 +250,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 											return Divider(
 												thickness: 1,
 												height: 0,
-												color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+												color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
 											);
 										}
 									},
@@ -272,16 +277,15 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 											color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
 										))
 									)
-								) : TimedRebuilder(
-									interval: const Duration(seconds: 1),
-									builder: (context) => RefreshableListFooter(
-										updater: update,
-										updatingNow: updatingNow,
-										lastUpdateTime: lastUpdateTime,
-										nextUpdateTime: nextUpdateTime,
-										errorMessage: errorMessage,
-										remedy: widget.remedies[errorType]?.call(context, update)
-									)
+								) : RefreshableListFooter(
+									updater: update,
+									updatingNow: updatingNow,
+									lastUpdateTime: lastUpdateTime,
+									nextUpdateTime: nextUpdateTime,
+									errorMessage: errorMessage,
+									remedy: widget.remedies[errorType]?.call(context, update),
+									text: widget.footerText,
+									overscrollFactor: widget.controller?.overscrollFactor
 								)
 							)
 						)
@@ -319,13 +323,17 @@ class RefreshableListFooter extends StatelessWidget {
 	final DateTime? lastUpdateTime;
 	final DateTime? nextUpdateTime;
 	final Widget? remedy;
+	final String? text;
+	final ValueListenable<double>? overscrollFactor;
 	RefreshableListFooter({
 		required this.updater,
 		required this.updatingNow,
 		this.lastUpdateTime,
 		this.nextUpdateTime,
 		this.errorMessage,
-		this.remedy
+		this.remedy,
+		this.text,
+		this.overscrollFactor
 	});
 
 	String _timeDiff(DateTime value) {
@@ -351,16 +359,6 @@ class RefreshableListFooter extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final timeLines = [];
-		if (errorMessage != null) {
-			timeLines.add(errorMessage);
-		}
-		if (nextUpdateTime != null) {
-			timeLines.add('Updating ${_timeDiff(nextUpdateTime!)}');
-		}
-		if (lastUpdateTime != null) {
-			timeLines.add('Last updated ${_timeDiff(lastUpdateTime!)}');
-		}
 		return GestureDetector(
 			behavior: HitTestBehavior.opaque,
 			onTap: updatingNow ? null : updater,
@@ -368,22 +366,56 @@ class RefreshableListFooter extends StatelessWidget {
 				color: errorMessage != null ? Colors.orange.withOpacity(0.5) : null,
 				padding: EdgeInsets.all(16),
 				child: Center(
-					child: AnimatedSwitcher(
-						duration: const Duration(milliseconds: 200),
-						child: Column(
-							key: ValueKey<bool>(updatingNow),
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								Text(
-									updatingNow ? 'Updating now...\n' : timeLines.join('\n'),
-									textAlign: TextAlign.center
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							if (text != null) Text(
+								text!,
+								textAlign: TextAlign.center
+							),
+							if (errorMessage != null) Text(
+								errorMessage!,
+								textAlign: TextAlign.center
+							),
+							if (!updatingNow && remedy != null) ...[
+								SizedBox(height: 16),
+								remedy!
+							],
+							if (overscrollFactor != null) Container(
+								padding: EdgeInsets.only(top: 16),
+								constraints: BoxConstraints(
+									maxWidth: 100
 								),
-								if (!updatingNow && remedy != null) ...[
-									SizedBox(height: 16),
-									remedy!
-								]
-							]
-						)
+								child: ClipRRect(
+									borderRadius: BorderRadius.all(Radius.circular(8)),
+									child: Stack(
+										children: [
+											if (nextUpdateTime != null && lastUpdateTime != null) TimedRebuilder(
+												interval: const Duration(seconds: 1),
+												builder: (context) {
+													final now = DateTime.now();
+													return LinearProgressIndicator(
+														value: updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds,
+														color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
+														backgroundColor: CupertinoTheme.of(context).primaryColor.withBrightness(0.2),
+														minHeight: 8
+													);
+												}
+											),
+											ValueListenableBuilder(
+												valueListenable: overscrollFactor!,
+												builder: (context, double value, child) => LinearProgressIndicator(
+													value: updatingNow ? null : value,
+													backgroundColor: Colors.transparent,
+													color: CupertinoTheme.of(context).primaryColor,
+													minHeight: 8
+												)
+											)
+										]
+									)
+								)
+							)
+						]
 					)
 				)
 			)
@@ -402,6 +434,7 @@ class _RefreshableListItem<T> {
 class RefreshableListController<T extends Filterable> {
 	List<_RefreshableListItem<T>> _items = [];
 	ScrollController? scrollController;
+	final overscrollFactor = ValueNotifier<double>(0);
 	BehaviorSubject<Null> _scrollStream = BehaviorSubject();
 	BehaviorSubject<Null> slowScrollUpdates = BehaviorSubject();
 	late StreamSubscription<List<Null>> _slowScrollSubscription;
@@ -439,6 +472,10 @@ class RefreshableListController<T extends Filterable> {
 		}
 	}
 	void _onScroll(List<Null> notifications) {
+		if ((scrollController?.hasClients ?? false)) {
+			final overscrollAmount = scrollController!.position.pixels - scrollController!.position.maxScrollExtent;
+			overscrollFactor.value = ((overscrollAmount - (_OVERSCROLL_TRIGGER_THRESHOLD * 0.2)) / (_OVERSCROLL_TRIGGER_THRESHOLD * 0.8)).clamp(0, 1);
+		}
 		slowScrollUpdates.add(null);
 	}
 	void attach(RefreshableListState<T> list) {
@@ -454,6 +491,7 @@ class RefreshableListController<T extends Filterable> {
 		_slowScrollSubscription.cancel();
 		slowScrollUpdates.close();
 		scrollController?.dispose();
+		overscrollFactor.dispose();
 	}
 	void newContentId(String contentId) {
 		this.contentId = contentId;

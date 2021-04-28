@@ -32,6 +32,7 @@ class Thread implements Filterable {
 	final DateTime time;
 	@HiveField(11)
 	final ImageboardFlag? flag;
+	int? currentPage;
 	Thread({
 		required this.posts,
 		required this.isArchived,
@@ -44,7 +45,8 @@ class Thread implements Filterable {
 		required this.title,
 		required this.isSticky,
 		required this.time,
-		this.flag
+		this.flag,
+		this.currentPage
 	}) {
 		Map<int, Post> postsById = Map();
 		for (final post in this.posts) {
@@ -58,7 +60,15 @@ class Thread implements Filterable {
 		}
 	}
 
-	bool operator == (dynamic d) => (d is Thread) && (d.id == id);
+	bool operator == (dynamic d) {
+		return (d is Thread)
+			&& (d.id == id)
+			&& (this.posts.length != d.posts.length)
+			&& this.currentPage != d.currentPage
+			&& this.isArchived != d.isArchived
+			&& this.isDeleted != d.isDeleted
+			&& this.isSticky != d.isSticky;
+	}
 	int get hashCode => id;
 
 	String toString() {

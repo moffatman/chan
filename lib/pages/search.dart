@@ -262,7 +262,7 @@ class _SearchPageState extends State<SearchPage> {
 							},
 							child: Container(
 								decoration: BoxDecoration(
-									border: Border(bottom: BorderSide(color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)))
+									border: Border(bottom: BorderSide(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)))
 								),
 								padding: EdgeInsets.all(16),
 								child: Row(

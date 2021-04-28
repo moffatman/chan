@@ -214,6 +214,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 															updateDisabledText: persistentState.thread?.isArchived == true ? 'Archived' : null,
 															autoUpdateDuration: const Duration(seconds: 60),
 															initialList: persistentState.thread?.posts,
+															footerText: persistentState.thread?.currentPage != null ? 'Page ${persistentState.thread?.currentPage}' : null,
 															remedies: {
 																ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
 																	child: Text('Try archive'),
@@ -229,7 +230,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																	await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
 																	await context.read<ImageboardSite>().getThread(widget.thread);
 																final bool firstLoad = persistentState.thread == null;
-																if (_thread.posts.length != (persistentState.thread?.posts.length ?? 0)) {
+																if (_thread != persistentState.thread) {
 																	persistentState.thread = _thread;
 																	zone.threadPosts = _thread.posts;
 																	if (firstLoad) await _blockAndScrollToPostIfNeeded();

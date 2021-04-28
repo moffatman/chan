@@ -51,7 +51,12 @@ String formatTime(DateTime time) {
 	String prefix = '';
 	const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 	if (notToday) {
-		prefix = time.year.toString() + '-' + time.month.toString().padLeft(2, '0') + '-' + time.day.toString().padLeft(2, '0') + ' (' + days[time.weekday] + ') ';
+		if (now.difference(time).inDays > 7) {
+			prefix = time.year.toString() + '-' + time.month.toString().padLeft(2, '0') + '-' + time.day.toString().padLeft(2, '0') + ' ';
+		}
+		else {
+			prefix = days[time.weekday] + ' ';
+		}
 	}
 	return prefix + time.hour.toString().padLeft(2, '0') + ':' + time.minute.toString().padLeft(2, '0') + ':' + time.second.toString().padLeft(2, '0');
 }
@@ -150,5 +155,16 @@ Future<void> openBrowser(BuildContext context, Uri url) {
 				preferredControlTintColor: CupertinoTheme.of(context).primaryColor
 			)
 		));
+	}
+}
+
+extension ReduceBrightness on Color {
+	Color withBrightness(double factor) {
+		return Color.fromRGBO(
+			((this.red * factor) + ((255 - this.red) * (1 - factor))).round(),
+			((this.green * factor) + ((255 - this.green) * (1 - factor))).round(),
+			((this.blue * factor) + ((255 - this.blue) * (1 - factor))).round(),
+			this.opacity
+		);
 	}
 }

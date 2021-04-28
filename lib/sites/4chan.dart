@@ -28,6 +28,30 @@ class _ThreadCacheEntry {
 	});
 }
 
+const _CATALOG_CACHE_LIFETIME = const Duration(seconds: 10);
+
+class _CatalogCacheEntry {
+	final int page;
+	final DateTime lastModified;
+	final int replyCount;
+
+	_CatalogCacheEntry({
+		required this.page,
+		required this.lastModified,
+		required this.replyCount
+	});
+}
+
+class _CatalogCache {
+	final DateTime lastUpdated;
+	final Map<int, _CatalogCacheEntry> entries;
+
+	_CatalogCache({
+		required this.lastUpdated,
+		required this.entries
+	});
+}
+
 class Site4Chan implements ImageboardSite {
 	final String name;
 	final String baseUrl;
@@ -41,6 +65,7 @@ class Site4Chan implements ImageboardSite {
 	List<ImageboardBoard>? _boards;
 	final unescape = HtmlUnescape();
 	final Map<String, _ThreadCacheEntry> _threadCache = Map();
+	final Map<String, _CatalogCache> _catalogCaches = Map();
 
 	static List<PostSpan> parsePlaintext(String text) {
 		return linkify(text, linkifiers: [UrlLinkifier()]).map((elem) {
@@ -170,6 +195,38 @@ class Site4Chan implements ImageboardSite {
 			);
 		}
 	}
+
+	Future<int?> _getThreadPage(ThreadIdentifier thread) async {
+		final now = DateTime.now();
+		if (_catalogCaches[thread.board] == null || now.difference(_catalogCaches[thread.board]!.lastUpdated).compareTo(_CATALOG_CACHE_LIFETIME) > 0) {
+			final response = await client.get(Uri.https(apiUrl, '/${thread.board}/catalog.json'));
+			if (response.statusCode != 200) {
+				if (response.statusCode == 404) {
+					return Future.error(BoardNotFoundException(thread.board));
+				}
+				else {
+					return Future.error(HTTPStatusException(response.statusCode));
+				}
+			}
+			final entries = Map<int, _CatalogCacheEntry>();
+			final data = json.decode(response.body);
+			for (final page in data) {
+				for (final threadData in page['threads']) {
+					entries[threadData['no']] = _CatalogCacheEntry(
+						page: page['page'],
+						replyCount: threadData['replies'],
+						lastModified: DateTime.fromMillisecondsSinceEpoch(threadData['last_modified'] * 1000)
+					);
+				}
+			}
+			_catalogCaches[thread.board] = _CatalogCache(
+				lastUpdated: now,
+				entries: entries
+			);
+		}
+		return _catalogCaches[thread.board]!.entries[thread.id]?.page;
+	}
+
 	Future<Thread> getThread(ThreadIdentifier thread) async {
 		Map<String, String>? headers;
 		if (_threadCache['${thread.board}/${thread.id}'] != null) {
@@ -178,38 +235,39 @@ class Site4Chan implements ImageboardSite {
 			};
 		}
 		final response = await client.get(Uri.https(apiUrl,'/${thread.board}/thread/${thread.id}.json'), headers: headers);
-		if (response.statusCode == 304 && headers != null) {
-			return _threadCache['${thread.board}/${thread.id}']!.thread;
+		if (response.statusCode == 200) {
+			final data = json.decode(response.body);
+			final String? title = data['posts']?[0]?['sub'];
+			final output = Thread(
+				board: thread.board,
+				isDeleted: false,
+				replyCount: data['posts'][0]['replies'],
+				imageCount: data['posts'][0]['images'],
+				isArchived: (data['posts'][0]['archived'] ?? 0) == 1,
+				posts: (data['posts'] ?? []).map<Post>((postData) {
+					return _makePost(thread.board, thread.id, postData);
+				}).toList(),
+				id: data['posts'][0]['no'],
+				attachment: _makeAttachment(thread.board, data['posts'][0]),
+				title: (title == null) ? null : unescape.convert(title),
+				isSticky: data['posts'][0]['sticky'] == 1,
+				time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
+				flag: _makeFlag(data['posts'][0]),
+				currentPage: await _getThreadPage(thread)
+			);
+			_threadCache['${thread.board}/${thread.id}'] = _ThreadCacheEntry(
+				thread: output,
+				lastModified: response.headers['last-modified']!
+			);
 		}
-		else if (response.statusCode != 200) {
+		else if (!(response.statusCode == 304 && headers != null)) {
 			if (response.statusCode == 404) {
 				return Future.error(ThreadNotFoundException(thread));
 			}
 			return Future.error(HTTPStatusException(response.statusCode));
 		}
-		final data = json.decode(response.body);
-		final String? title = data['posts']?[0]?['sub'];
-		final output = Thread(
-			board: thread.board,
-			isDeleted: false,
-			replyCount: data['posts'][0]['replies'],
-			imageCount: data['posts'][0]['images'],
-			isArchived: (data['posts'][0]['archived'] ?? 0) == 1,
-			posts: (data['posts'] ?? []).map<Post>((postData) {
-				return _makePost(thread.board, thread.id, postData);
-			}).toList(),
-			id: data['posts'][0]['no'],
-			attachment: _makeAttachment(thread.board, data['posts'][0]),
-			title: (title == null) ? null : unescape.convert(title),
-			isSticky: data['posts'][0]['sticky'] == 1,
-			time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
-			flag: _makeFlag(data['posts'][0])
-		);
-		_threadCache['${thread.board}/${thread.id}'] = _ThreadCacheEntry(
-			thread: output,
-			lastModified: response.headers['last-modified']!
-		);
-		return output;
+		_threadCache['${thread.board}/${thread.id}']!.thread.currentPage = await _getThreadPage(thread);
+		return _threadCache['${thread.board}/${thread.id}']!.thread;
 	}
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread) async {
 		final errorMessages = Map<String, String>();
@@ -284,7 +342,8 @@ class Site4Chan implements ImageboardSite {
 					title: (title == null) ? null : unescape.convert(title),
 					isSticky: threadData['sticky'] == 1,
 					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
-					flag: _makeFlag(threadData)
+					flag: _makeFlag(threadData),
+					currentPage: page['page']
 				);
 				threads.add(thread);
 			}

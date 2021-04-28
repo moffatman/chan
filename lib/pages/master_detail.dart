@@ -78,7 +78,7 @@ class _MasterDetailPageState<T> extends State<MasterDetailPage<T>> {
 					),
 					VerticalDivider(
 						width: 0,
-						color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+						color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
 					),
 					Flexible(
 						flex: 3,

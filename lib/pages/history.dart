@@ -4,6 +4,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/thread_row.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
@@ -29,7 +30,7 @@ class HistoryPage extends StatelessWidget {
 								separatorBuilder: (context, i) => Divider(
 									thickness: 1,
 									height: 0,
-									color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+									color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
 								),
 								itemBuilder: (context, i) => ContextMenu(
 									child: GestureDetector(

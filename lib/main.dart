@@ -196,7 +196,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								NavigationRailDestination(
 									icon: NotifyingIcon(
 										icon: Icons.bookmark,
-										notificationCount: context.watch<ThreadWatcher>().unseenCount
+										primaryCount: context.watch<ThreadWatcher>().unseenYouCount,
+										secondaryCount: context.watch<ThreadWatcher>().unseenCount
 									),
 									label: Text('Saved')
 								),
@@ -235,7 +236,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						BottomNavigationBarItem(
 							icon: NotifyingIcon(
 								icon: Icons.bookmark,
-								notificationCount: context.watch<ThreadWatcher>().unseenCount,
+								primaryCount: context.watch<ThreadWatcher>().unseenYouCount,
+								secondaryCount: context.watch<ThreadWatcher>().unseenCount,
 								topOffset: 10
 							),
 							label: 'Saved'
