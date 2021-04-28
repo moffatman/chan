@@ -404,11 +404,15 @@ class RefreshableListFooter extends StatelessWidget {
 											),
 											ValueListenableBuilder(
 												valueListenable: overscrollFactor!,
-												builder: (context, double value, child) => LinearProgressIndicator(
-													value: updatingNow ? null : value,
-													backgroundColor: Colors.transparent,
-													color: CupertinoTheme.of(context).primaryColor,
-													minHeight: 8
+												builder: (context, double value, child) => TweenAnimationBuilder(
+													tween: Tween<double>(begin: 0, end: value),
+													duration: const Duration(milliseconds: 25),
+													builder: (context, double smoothedValue, child) => LinearProgressIndicator(
+													value: updatingNow ? null : smoothedValue,
+														backgroundColor: Colors.transparent,
+														color: CupertinoTheme.of(context).primaryColor,
+														minHeight: 8
+													)
 												)
 											)
 										]
