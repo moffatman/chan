@@ -2,6 +2,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
@@ -11,19 +12,10 @@ import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
-enum _SavedPostSortMethod {
-	SavedOrder,
-	BumpOrder
-}
-
-class SavedPage extends StatefulWidget {
-	createState() => _SavedPageState();
-}
-
-class _SavedPageState extends State<SavedPage> {
-	_SavedPostSortMethod _savedPostSortMethod = _SavedPostSortMethod.SavedOrder;
+class SavedPage extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
 		return MasterDetailPage<ThreadIdentifier>(
 			masterBuilder: (context, selectedThread, threadSetter) {
 				return CupertinoPageScaffold(
@@ -39,14 +31,14 @@ class _SavedPageState extends State<SavedPage> {
 									builder: (context) => CupertinoActionSheet(
 										title: const Text('Sort by...'),
 										actions: {
-											_SavedPostSortMethod.SavedOrder: 'Saved Order',
-											_SavedPostSortMethod.BumpOrder: 'Bump Order',
+											ThreadSortingMethod.SavedTime: 'Saved Order',
+											ThreadSortingMethod.LastPostTime: 'Bump Order',
 										}.entries.map((entry) => CupertinoActionSheetAction(
-											child: Text(entry.value),
+											child: Text(entry.value, style: TextStyle(
+												fontWeight: entry.key == settings.savedThreadsSortingMethod ? FontWeight.bold : null
+											)),
 											onPressed: () {
-												setState(() {
-													_savedPostSortMethod = entry.key;
-												});
+												settings.savedThreadsSortingMethod = entry.key;
 												Navigator.of(context, rootNavigator: true).pop();
 											}
 										)).toList(),
@@ -73,11 +65,12 @@ class _SavedPageState extends State<SavedPage> {
 										valueListenable: Persistence.threadStateBox.listenable(),
 										builder: (context, Box<PersistentThreadState> box, child) {
 											final states = box.toMap().entries.where((e) => e.value.savedTime != null).toList();
-											if (_savedPostSortMethod == _SavedPostSortMethod.SavedOrder) {
+											if (settings.savedThreadsSortingMethod == ThreadSortingMethod.SavedTime) {
 												states.sort((a, b) => b.value.savedTime!.compareTo(a.value.savedTime!));
 											}
-											else if (_savedPostSortMethod == _SavedPostSortMethod.BumpOrder) {
-												states.sort((a, b) => (b.value.thread?.posts.last.id ?? 0).compareTo(a.value.thread?.posts.last.id ?? 0));
+											else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.LastPostTime) {
+												final noDate = DateTime.fromMillisecondsSinceEpoch(0);
+												states.sort((a, b) => (b.value.thread?.posts.last.time ?? noDate).compareTo(a.value.thread?.posts.last.time ?? noDate));
 											}
 											return ListView.separated(
 												itemCount: states.length,

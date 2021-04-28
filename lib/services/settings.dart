@@ -29,6 +29,20 @@ enum ThemeSetting {
 	Dark
 }
 
+@HiveType(typeId: 17)
+enum ThreadSortingMethod {
+	@HiveField(0)
+	Unsorted,
+	@HiveField(1)
+	LastPostTime,
+	@HiveField(2)
+	ReplyCount,
+	@HiveField(3)
+	OPTime,
+	@HiveField(4)
+	SavedTime
+}
+
 @HiveType(typeId: 0)
 class SavedSettings extends HiveObject {
 	@HiveField(0)
@@ -37,20 +51,30 @@ class SavedSettings extends HiveObject {
 	ThemeSetting theme;
 	@HiveField(2)
 	bool hideStickiedThreads;
+	@HiveField(3)
+	ThreadSortingMethod catalogSortingMethod;
+	@HiveField(4)
+	bool reverseCatalogSorting;
+	@HiveField(5)
+	ThreadSortingMethod savedThreadsSortingMethod;
 
 	SavedSettings({
-		required this.autoloadAttachments,
-		required this.theme,
-		required this.hideStickiedThreads
-	});
+		AutoloadAttachmentsSetting? autoloadAttachments,
+		ThemeSetting? theme = ThemeSetting.System,
+		bool? hideStickiedThreads,
+		ThreadSortingMethod? catalogSortingMethod,
+		bool? reverseCatalogSorting,
+		ThreadSortingMethod? savedThreadsSortingMethod
+	}): this.autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.WiFi,
+		this.theme = theme ?? ThemeSetting.System,
+		this.hideStickiedThreads = hideStickiedThreads ?? false,
+		this.catalogSortingMethod = catalogSortingMethod ?? ThreadSortingMethod.Unsorted,
+		this.reverseCatalogSorting = reverseCatalogSorting ?? false,
+		this.savedThreadsSortingMethod = savedThreadsSortingMethod ?? ThreadSortingMethod.SavedTime;
 }
 
 class EffectiveSettings extends ChangeNotifier {
-	SavedSettings _settings = Hive.box<SavedSettings>('settings').get('settings', defaultValue: SavedSettings(
-		autoloadAttachments: AutoloadAttachmentsSetting.WiFi,
-		hideStickiedThreads: false,
-		theme: ThemeSetting.System
-	))!;
+	SavedSettings _settings = Hive.box<SavedSettings>('settings').get('settings', defaultValue: SavedSettings())!;
 	String? filename;
 	ConnectivityResult? _connectivity;
 	ConnectivityResult? get connectivity {
@@ -96,6 +120,26 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get hideStickiedThreads => _settings.hideStickiedThreads;
 	set hideStickiedThreads(bool setting) {
 		_settings.hideStickiedThreads = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	ThreadSortingMethod get catalogSortingMethod => _settings.catalogSortingMethod;
+	set catalogSortingMethod(ThreadSortingMethod setting) {
+		_settings.catalogSortingMethod = setting;
+		_settings.save();
+		notifyListeners();
+	}
+	bool get reverseCatalogSorting => _settings.reverseCatalogSorting;
+	set reverseCatalogSorting(bool setting) {
+		_settings.reverseCatalogSorting = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	ThreadSortingMethod get savedThreadsSortingMethod => _settings.savedThreadsSortingMethod;
+	set savedThreadsSortingMethod(ThreadSortingMethod setting) {
+		_settings.savedThreadsSortingMethod = setting;
 		_settings.save();
 		notifyListeners();
 	}

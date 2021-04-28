@@ -15,12 +15,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
 
-enum BoardSortMethod {
-	BumpOrder,
-	ReplyCount,
-	CreationDate
-}
-
 class BoardPage extends StatefulWidget {
 	final ImageboardBoard initialBoard;
 	final bool allowChangingBoard;
@@ -38,8 +32,6 @@ class BoardPage extends StatefulWidget {
 
 class _BoardPageState extends State<BoardPage> {
 	late ImageboardBoard board;
-	BoardSortMethod sorting = BoardSortMethod.BumpOrder;
-	bool descending = true;
 
 	@override
 	void initState() {
@@ -56,6 +48,7 @@ class _BoardPageState extends State<BoardPage> {
 	@override
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
+		final settings = context.watch<EffectiveSettings>();
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
@@ -80,7 +73,7 @@ class _BoardPageState extends State<BoardPage> {
 					padding: EdgeInsets.zero,
 					child: Transform(
 						alignment: Alignment.center,
-						transform: descending ? Matrix4.identity() : Matrix4.rotationX(pi),
+						transform: settings.reverseCatalogSorting ? Matrix4.rotationX(pi) : Matrix4.identity(),
 						child: Icon(Icons.sort)
 					),
 					onPressed: () {
@@ -89,21 +82,19 @@ class _BoardPageState extends State<BoardPage> {
 							builder: (context) => CupertinoActionSheet(
 								title: const Text('Sort by...'),
 								actions: {
-									BoardSortMethod.BumpOrder: 'Bump Order',
-									BoardSortMethod.ReplyCount: 'Reply Count',
-									BoardSortMethod.CreationDate: 'Creation Date'
+									ThreadSortingMethod.Unsorted: 'Bump Order',
+									ThreadSortingMethod.ReplyCount: 'Reply Count',
+									ThreadSortingMethod.OPTime: 'Creation Date'
 								}.entries.map((entry) => CupertinoActionSheetAction(
-									child: Text(entry.value),
+									child: Text(entry.value, style: TextStyle(
+										fontWeight: entry.key == settings.catalogSortingMethod ? FontWeight.bold : null
+									)),
 									onPressed: () {
-										if (sorting == entry.key) {
-											setState(() {
-												descending = !descending;
-											});
+										if (settings.catalogSortingMethod == entry.key) {
+											settings.reverseCatalogSorting = !settings.reverseCatalogSorting;
 										}
 										else {
-											setState(() {
-												sorting = entry.key;
-											});
+											settings.catalogSortingMethod = entry.key;
 										}
 										Navigator.of(context, rootNavigator: true).pop();
 									}
@@ -119,18 +110,18 @@ class _BoardPageState extends State<BoardPage> {
 			),
 			child: RefreshableList<Thread>(
 				listUpdater: () => site.getCatalog(board.name).then((list) {
-					if (context.read<EffectiveSettings>().hideStickiedThreads) {
+					if (settings.hideStickiedThreads) {
 						list = list.where((thread) => !thread.isSticky).toList();
 					}
-					if (sorting == BoardSortMethod.ReplyCount) {
+					if (settings.catalogSortingMethod == ThreadSortingMethod.ReplyCount) {
 						list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
 					}
-					else if (sorting == BoardSortMethod.CreationDate) {
+					else if (settings.catalogSortingMethod == ThreadSortingMethod.OPTime) {
 						list.sort((a, b) => b.id.compareTo(a.id));
 					}
-					return descending ? list : list.reversed.toList();
+					return settings.reverseCatalogSorting ? list.reversed.toList() : list;
 				}),
-				id: '/${board.name}/ $sorting $descending',
+				id: '/${board.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
 				itemBuilder: (context, thread) {
 					return GestureDetector(
 						behavior: HitTestBehavior.opaque,

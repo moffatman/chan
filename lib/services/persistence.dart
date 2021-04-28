@@ -35,6 +35,7 @@ class Persistence {
 		await Hive.initFlutter();
 		Hive.registerAdapter(ThemeSettingAdapter());
 		Hive.registerAdapter(AutoloadAttachmentsSettingAdapter());
+		Hive.registerAdapter(ThreadSortingMethodAdapter());
 		Hive.registerAdapter(SavedSettingsAdapter());
 		Hive.registerAdapter(UriAdapter());
 		Hive.registerAdapter(AttachmentTypeAdapter());
