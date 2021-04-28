@@ -94,6 +94,7 @@ class _BoardPageState extends State<BoardPage> {
 											settings.reverseCatalogSorting = !settings.reverseCatalogSorting;
 										}
 										else {
+											settings.reverseCatalogSorting = false;
 											settings.catalogSortingMethod = entry.key;
 										}
 										Navigator.of(context, rootNavigator: true).pop();
