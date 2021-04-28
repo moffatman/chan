@@ -32,132 +32,119 @@ class ThreadRow extends StatelessWidget {
 					decoration: BoxDecoration(
 						color: isSelected ? ((CupertinoTheme.of(context).brightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
 					),
-					child: Column(
-						crossAxisAlignment: CrossAxisAlignment.start,
-						mainAxisSize: MainAxisSize.min,
+					padding: EdgeInsets.only(left: 8, top: 8),
+					child: Stack(
+						fit: StackFit.passthrough,
 						children: [
-							Container(
-								padding: EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 4),
-								child: Text.rich(
-									TextSpan(
-										children: [
-											TextSpan(
-												text: _thread.posts[0].name,
-												style: TextStyle(fontWeight: FontWeight.w600)
-											),
-											TextSpan(text: ' '),
-											if (_thread.flag != null) ...[
-												FlagSpan(_thread.flag!),
-												TextSpan(text: ' '),
-												TextSpan(
-													text: _thread.flag!.name,
-													style: TextStyle(
-														fontStyle: FontStyle.italic
-													)
+							Row(
+								crossAxisAlignment: CrossAxisAlignment.start,
+								mainAxisSize: MainAxisSize.max,
+								children: [
+									if (_thread.attachment != null) Container(
+										alignment: Alignment.topCenter,
+										padding: EdgeInsets.only(bottom: 8),
+										child: AttachmentThumbnail(
+											attachment: _thread.attachment!
+										)
+									),
+									Expanded(
+										child: Container(
+											constraints: BoxConstraints(maxHeight: 125),
+											padding: EdgeInsets.only(left: 8, right: 8),
+											child: ChangeNotifierProvider<PostSpanZoneData>(
+												create: (ctx) => PostSpanRootZoneData(
+													board: _thread.board,
+													threadId: _thread.id,
+													threadState: null,
+													site: context.watch<ImageboardSite>(),
+													threadPosts: []
 												),
-												TextSpan(text: ' ')
-											],
-											TextSpan(
-												text: formatTime(_thread.time)
-											),
-											TextSpan(text: ' '),
-											TextSpan(
-												text: _thread.id.toString(),
-												style: TextStyle(color: Colors.grey)
-											)
-										],
-										style: TextStyle(fontSize: 14)
-									)
-								)
-							),
-							Flexible(
-								child: Stack(
-									fit: StackFit.passthrough,
-									children: [
-										IntrinsicHeight(
-											child: Row(
-												crossAxisAlignment: CrossAxisAlignment.stretch,
-												mainAxisSize: MainAxisSize.max,
-												mainAxisAlignment: MainAxisAlignment.center,
-												children: [
-													if (_thread.attachment != null) Align(
-														alignment: Alignment.topCenter,
-														child: AttachmentThumbnail(
-															attachment: _thread.attachment!
-														)
-													),
-													Expanded(
-														child: Container(
-															constraints: BoxConstraints(maxHeight: 100),
-															padding: EdgeInsets.only(left: 8, right: 8),
-															child: ChangeNotifierProvider<PostSpanZoneData>(
-																create: (ctx) => PostSpanRootZoneData(
-																	board: _thread.board,
-																	threadId: _thread.id,
-																	threadState: null,
-																	site: context.watch<ImageboardSite>(),
-																	threadPosts: []
-																),
-																child: Builder(
-																	builder: (ctx) => IgnorePointer(
-																		child: Text.rich(
+												child: Builder(
+													builder: (ctx) => IgnorePointer(
+														child: Text.rich(
+															TextSpan(
+																children: [
+																	TextSpan(
+																		children: [
 																			TextSpan(
-																				children: [
-																					if (_thread.title != null) TextSpan(
-																						text: _thread.title! + '\n',
-																						style: TextStyle(fontWeight: FontWeight.bold)
-																					),
-																					_thread.posts[0].span.build(ctx, PostSpanRenderOptions())
-																				]
+																				text: _thread.posts[0].name,
+																				style: TextStyle(fontWeight: FontWeight.w600)
 																			),
-																			overflow: TextOverflow.fade
-																		)
-																	)
-																)
-															)
+																			TextSpan(text: ' '),
+																			if (_thread.flag != null) ...[
+																				FlagSpan(_thread.flag!),
+																				TextSpan(text: ' '),
+																				TextSpan(
+																					text: _thread.flag!.name,
+																					style: TextStyle(
+																						fontStyle: FontStyle.italic
+																					)
+																				),
+																				TextSpan(text: ' ')
+																			],
+																			TextSpan(
+																				text: formatTime(_thread.time)
+																			),
+																			TextSpan(text: ' '),
+																			TextSpan(
+																				text: _thread.id.toString(),
+																				style: TextStyle(color: Colors.grey)
+																			),
+																			TextSpan(text: '\n')
+																		],
+																		style: TextStyle(fontSize: 14)
+																	),
+																	if (_thread.title != null) TextSpan(
+																		text: _thread.title! + '\n',
+																		style: TextStyle(fontWeight: FontWeight.bold)
+																	),
+																	_thread.posts[0].span.build(ctx, PostSpanRenderOptions())
+																]
+															),
+															overflow: TextOverflow.fade
 														)
-													)
-												]
-											)
-										),
-										Positioned.fill(
-											child: Align(
-												alignment: Alignment.bottomRight,
-												child: Container(
-													decoration: BoxDecoration(
-														borderRadius: BorderRadius.only(topLeft: Radius.circular(8)),
-														color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-														border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
-													),
-													child: Row(
-														mainAxisSize: MainAxisSize.min,
-														crossAxisAlignment: CrossAxisAlignment.center,
-														children: [
-															SizedBox(width: 4),
-															if (_thread.isSticky) ...[
-																Icon(Icons.push_pin, size: 14),
-																SizedBox(width: 4),
-															],
-															if (_thread.isArchived) ...[
-																Icon(Icons.archive, size: 14, color: Colors.grey),
-																SizedBox(width: 4),
-															],
-															Text(_thread.replyCount.toString(), style: TextStyle(fontSize: 14)),
-															if (unseenReplyCount > 0) Text(' (+$unseenReplyCount)', style: TextStyle(fontSize: 14)),
-															if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(fontSize: 14, color: Colors.red)),
-															SizedBox(width: 4),
-															Icon(Icons.reply_rounded, size: 14),
-															SizedBox(width: 8),
-															Text(_thread.imageCount.toString(), style: TextStyle(fontSize: 14)),
-															SizedBox(width: 4),
-															Icon(Icons.image, size: 14),
-															SizedBox(width: 2)
-														]
 													)
 												)
 											)
 										)
-									]
+									)
+								]
+							),
+							Positioned.fill(
+								child: Align(
+									alignment: Alignment.bottomRight,
+									child: Container(
+										decoration: BoxDecoration(
+											borderRadius: BorderRadius.only(topLeft: Radius.circular(8)),
+											color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+											border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
+										),
+										child: Row(
+											mainAxisSize: MainAxisSize.min,
+											crossAxisAlignment: CrossAxisAlignment.center,
+											children: [
+												SizedBox(width: 4),
+												if (_thread.isSticky) ...[
+													Icon(Icons.push_pin, size: 14),
+													SizedBox(width: 4),
+												],
+												if (_thread.isArchived) ...[
+													Icon(Icons.archive, size: 14, color: Colors.grey),
+													SizedBox(width: 4),
+												],
+												Text(_thread.replyCount.toString(), style: TextStyle(fontSize: 14)),
+												if (unseenReplyCount > 0) Text(' (+$unseenReplyCount)', style: TextStyle(fontSize: 14)),
+												if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(fontSize: 14, color: Colors.red)),
+												SizedBox(width: 4),
+												Icon(Icons.reply_rounded, size: 14),
+												SizedBox(width: 8),
+												Text(_thread.imageCount.toString(), style: TextStyle(fontSize: 14)),
+												SizedBox(width: 4),
+												Icon(Icons.image, size: 14),
+												SizedBox(width: 2)
+											]
+										)
+									)
 								)
 							)
 						]
