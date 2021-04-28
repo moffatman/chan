@@ -402,7 +402,7 @@ class RefreshableListFooter extends StatelessWidget {
 												valueListenable: overscrollFactor!,
 												builder: (context, double value, child) => TweenAnimationBuilder(
 													tween: Tween<double>(begin: 0, end: value),
-													duration: const Duration(milliseconds: 25),
+													duration: const Duration(milliseconds: 50),
 													builder: (context, double smoothedValue, child) => LinearProgressIndicator(
 													value: updatingNow ? null : smoothedValue,
 														backgroundColor: Colors.transparent,
@@ -475,7 +475,7 @@ class RefreshableListController<T extends Filterable> {
 	void _onScroll(List<Null> notifications) {
 		if ((scrollController?.hasClients ?? false)) {
 			final overscrollAmount = scrollController!.position.pixels - scrollController!.position.maxScrollExtent;
-			overscrollFactor.value = ((overscrollAmount - (_OVERSCROLL_TRIGGER_THRESHOLD * 0.2)) / (_OVERSCROLL_TRIGGER_THRESHOLD * 0.8)).clamp(0, 1);
+			overscrollFactor.value = (overscrollAmount / _OVERSCROLL_TRIGGER_THRESHOLD).clamp(0, 1);
 		}
 		slowScrollUpdates.add(null);
 	}
