@@ -32,7 +32,10 @@ class Thread implements Filterable {
 	final DateTime time;
 	@HiveField(11)
 	final ImageboardFlag? flag;
+	@HiveField(12)
 	int? currentPage;
+	@HiveField(13)
+	int? uniqueIPCount;
 	Thread({
 		required this.posts,
 		required this.isArchived,
@@ -46,7 +49,8 @@ class Thread implements Filterable {
 		required this.isSticky,
 		required this.time,
 		this.flag,
-		this.currentPage
+		this.currentPage,
+		this.uniqueIPCount
 	}) {
 		Map<int, Post> postsById = Map();
 		for (final post in this.posts) {

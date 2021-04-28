@@ -133,6 +133,17 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 		);
 	}
 
+	Widget _limitCounter(int value, int? maximum) {
+		if (maximum != null && (value >= maximum * 0.8)) {
+			return Text('$value / $maximum ', style: TextStyle(
+				color: value >= maximum ? Colors.red : null
+			));
+		}
+		else {
+			return Text('$value ');
+		}
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		String title = persistentState.thread?.title ?? '/${widget.thread.board}/${widget.thread.id}';
@@ -214,7 +225,30 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 															updateDisabledText: persistentState.thread?.isArchived == true ? 'Archived' : null,
 															autoUpdateDuration: const Duration(seconds: 60),
 															initialList: persistentState.thread?.posts,
-															footerText: persistentState.thread?.currentPage != null ? 'Page ${persistentState.thread?.currentPage}' : null,
+															footer: Container(
+																padding: EdgeInsets.only(top: 16, left: 16, right: 16),
+																child: (persistentState.thread == null) ? null : Row(
+																	children: [
+																		Spacer(),
+																		_limitCounter(persistentState.thread!.replyCount, Persistence.getBoard(widget.thread.board).threadCommentLimit),
+																		Icon(Icons.reply_rounded),
+																		Spacer(),
+																		_limitCounter(persistentState.thread!.imageCount, Persistence.getBoard(widget.thread.board).threadImageLimit),
+																		Icon(Icons.image),
+																		Spacer(),
+																		if (persistentState.thread!.uniqueIPCount != null) ...[
+																			Text('${persistentState.thread!.uniqueIPCount} '),
+																			Icon(Icons.person),
+																			Spacer(),
+																		],
+																		if (persistentState.thread!.currentPage != null) ...[
+																			_limitCounter(persistentState.thread!.currentPage!, Persistence.getBoard(widget.thread.board).pageCount),
+																			Icon(Icons.insert_drive_file_rounded),
+																			Spacer()
+																		]
+																	]
+																)
+															),
 															remedies: {
 																ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
 																	child: Text('Try archive'),

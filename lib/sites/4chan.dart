@@ -253,7 +253,8 @@ class Site4Chan implements ImageboardSite {
 				isSticky: data['posts'][0]['sticky'] == 1,
 				time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
 				flag: _makeFlag(data['posts'][0]),
-				currentPage: await _getThreadPage(thread)
+				currentPage: await _getThreadPage(thread),
+				uniqueIPCount: data['posts'][0]['unique_ips']
 			);
 			_threadCache['${thread.board}/${thread.id}'] = _ThreadCacheEntry(
 				thread: output,
@@ -362,7 +363,10 @@ class Site4Chan implements ImageboardSite {
 				maxCommentCharacters: board['max_comment_chars'],
 				maxImageSizeBytes: board['max_filesize'],
 				maxWebmSizeBytes: board['max_webm_filesize'],
-				maxWebmDurationSeconds: board['max_webm_duration']
+				maxWebmDurationSeconds: board['max_webm_duration'],
+				threadCommentLimit: board['bump_limit'],
+				threadImageLimit: board['image_limit'],
+				pageCount: board['pages']
 			);
 		}).toList();
 	}

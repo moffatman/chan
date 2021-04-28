@@ -195,7 +195,8 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: postObjects.first['sticky'] == 1,
 			time: posts.first.time,
-			flag: _makeFlag(postObjects.first)
+			flag: _makeFlag(postObjects.first),
+			uniqueIPCount: int.tryParse(postObjects.first['unique_ips'] ?? '')
 		);
 	}
 	Future<List<Thread>> getCatalog(String board) async {

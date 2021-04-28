@@ -20,6 +20,12 @@ class ImageboardBoard {
 	final int? maxWebmDurationSeconds;
 	@HiveField(7)
 	final int? maxCommentCharacters;
+	@HiveField(8)
+	final int? threadCommentLimit;
+	@HiveField(9)
+	final int? threadImageLimit;
+	@HiveField(10)
+	final int? pageCount;
 
 	ImageboardBoard({
 		required this.name,
@@ -29,6 +35,9 @@ class ImageboardBoard {
 		this.maxImageSizeBytes,
 		this.maxWebmSizeBytes,
 		this.maxWebmDurationSeconds,
-		this.maxCommentCharacters
+		this.maxCommentCharacters,
+		this.threadCommentLimit,
+		this.threadImageLimit,
+		this.pageCount
 	});
 }

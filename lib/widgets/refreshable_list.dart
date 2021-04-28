@@ -27,7 +27,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Duration? autoUpdateDuration;
 	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
 	final String? updateDisabledText;
-	final String? footerText;
+	final Widget? footer;
 
 	RefreshableList({
 		required this.itemBuilder,
@@ -40,7 +40,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.remedies = const {},
 		this.initialList,
 		this.updateDisabledText,
-		this.footerText
+		this.footer
 	});
 
 	createState() => RefreshableListState<T>();
@@ -267,6 +267,9 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 										)
 									)
 								),
+						if (widget.footer != null) SliverToBoxAdapter(
+							child: widget.footer
+						),
 						SliverSafeArea(
 							top: false,
 							sliver: SliverToBoxAdapter(
@@ -284,7 +287,6 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 									nextUpdateTime: nextUpdateTime,
 									errorMessage: errorMessage,
 									remedy: widget.remedies[errorType]?.call(context, update),
-									text: widget.footerText,
 									overscrollFactor: widget.controller?.overscrollFactor
 								)
 							)
@@ -323,7 +325,6 @@ class RefreshableListFooter extends StatelessWidget {
 	final DateTime? lastUpdateTime;
 	final DateTime? nextUpdateTime;
 	final Widget? remedy;
-	final String? text;
 	final ValueListenable<double>? overscrollFactor;
 	RefreshableListFooter({
 		required this.updater,
@@ -332,7 +333,6 @@ class RefreshableListFooter extends StatelessWidget {
 		this.nextUpdateTime,
 		this.errorMessage,
 		this.remedy,
-		this.text,
 		this.overscrollFactor
 	});
 
@@ -369,10 +369,6 @@ class RefreshableListFooter extends StatelessWidget {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							if (text != null) Text(
-								text!,
-								textAlign: TextAlign.center
-							),
 							if (errorMessage != null) Text(
 								errorMessage!,
 								textAlign: TextAlign.center
@@ -418,7 +414,8 @@ class RefreshableListFooter extends StatelessWidget {
 										]
 									)
 								)
-							)
+							),
+							SizedBox(height: 4)
 						]
 					)
 				)
