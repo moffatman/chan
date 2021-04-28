@@ -116,7 +116,7 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 	Future<Post> _makePost(dynamic data) async {
 		final String board = data['board']['shortname'];
 		final int threadId = int.parse(data['thread_num']);
-		final postLinkMatcher = RegExp('https?://$baseUrl/([^/]+)/post/([0-9]+)/');
+		final postLinkMatcher = RegExp('https?://[^ ]+/([^/]+)/post/([0-9]+)/');
 		final linkedPostThreadIds = Map<String, int>();
 		for (final match in postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
 			final board = match.group(1)!;
