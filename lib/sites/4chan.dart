@@ -421,6 +421,19 @@ class Site4Chan implements ImageboardSite {
 		}
 	}
 
+	Future<void> deletePost(String board, PostReceipt receipt) async {
+		final request = http.MultipartRequest('POST', Uri.https(sysUrl, '/$board/imgboard.php'));
+		request.fields.addAll({
+			receipt.id.toString(): 'delete',
+			'mode': 'usrdel',
+			'pwd': receipt.password
+		});
+		final response = await client.send(request);
+		if (response.statusCode != 200) {
+			throw HTTPStatusException(response.statusCode);
+		}
+	}
+
 	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page}) async {
 		for (final archive in archives) {
 			try {

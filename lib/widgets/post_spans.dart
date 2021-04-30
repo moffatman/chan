@@ -9,6 +9,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/hover_popup.dart';
 import 'package:chan/widgets/post_row.dart';
+import 'package:chan/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -473,13 +474,7 @@ class ExpandingPost extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final zone = context.watch<PostSpanZoneData>();
-		Post? post;
-		if (zone.threadPosts.where((p) => p.id == id).isNotEmpty) {
-			post = zone.threadPosts.firstWhere((p) => p.id == id);
-		}
-		else {
-			post = zone.postFromArchive(id);
-		}
+		final post = zone.threadPosts.tryFirstWhere((p) => p.id == id) ?? zone.postFromArchive(id);
 		if (post == null) {
 			print('Could not find post with ID $id in zone for ${zone.threadId}');
 		}

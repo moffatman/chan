@@ -500,7 +500,7 @@ class RefreshableListController<T extends Filterable> {
 		currentIndex = 0;
 	}
 	void setItems(List<T> items) {
-		_items.addAll(items.skip(_items.length).map((item) => _RefreshableListItem(item)));
+		_items = items.map((item) => _RefreshableListItem(item)).toList();
 	}
 	void registerItem(int index, T item, BuildContext context) {
 		topOffset ??= MediaQuery.of(context).padding.top;
@@ -528,8 +528,8 @@ class RefreshableListController<T extends Filterable> {
 		}
 		return estimate!;
 	}
-	Future<void> animateTo(bool f(T val), {double alignment = 0.0, Duration duration = const Duration(milliseconds: 200)}) async {
-		_RefreshableListItem<T> targetItem = _items.firstWhere((i) => f(i.item));
+	Future<void> animateTo(bool f(T val), {double alignment = 0.0, bool orElseLast(T val)?, Duration duration = const Duration(milliseconds: 200)}) async {
+		_RefreshableListItem<T> targetItem = _items.firstWhere((i) => f(i.item), orElse: orElseLast == null ? null : () => _items.lastWhere((j) => orElseLast(j.item)));
 		Duration d = duration;
 		Curve c = Curves.ease;
 		final initialContentId = contentId;

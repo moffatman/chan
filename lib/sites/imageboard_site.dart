@@ -96,6 +96,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		required String captchaKey,
 		File? file
 	});
+	Future<void> deletePost(String board, PostReceipt receipt);
 	Future<Post> getPostFromArchive(String board, int id);
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread);
 }

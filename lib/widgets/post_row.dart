@@ -19,6 +19,7 @@ import 'package:chan/models/attachment.dart';
 
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:chan/util.dart';
 
 class PostRow extends StatelessWidget {
 	final Post post;
@@ -45,7 +46,7 @@ class PostRow extends StatelessWidget {
 			threadPosts: [post]
 		);
 		final settings = context.watch<EffectiveSettings>();
-		final isYou = zone.threadState?.youIds.contains(post.id) ?? false;
+		final receipt = zone.threadState?.receipts.tryFirstWhere((r) => r.id == post.id);
 		final child = ContextMenu(
 			actions: [
 				if (zone.stackIds.isNotEmpty && zone.onNeedScrollToPost != null) ContextMenuAction(
@@ -59,6 +60,11 @@ class PostRow extends StatelessWidget {
 					onPressed: () {
 						Share.share(site.getWebUrl(post.threadIdentifier, post.id));
 					}
+				),
+				if (receipt != null) ContextMenuAction(
+					child: Text('Delete post'),
+					trailingIcon: Icons.delete,
+					onPressed: () => site.deletePost(post.board, receipt)
 				),
 				if (post.attachment != null) ...[
 					ContextMenuAction(
@@ -107,8 +113,8 @@ class PostRow extends StatelessWidget {
 										TextSpan(
 											children: [
 												TextSpan(
-													text: post.name + (isYou ? ' (You)' : ''),
-													style: TextStyle(fontWeight: FontWeight.w600, color: isYou ? Colors.red : null)
+													text: post.name + ((receipt != null) ? ' (You)' : ''),
+													style: TextStyle(fontWeight: FontWeight.w600, color: (receipt != null) ? Colors.red : null)
 												),
 												if (post.posterId != null) IDSpan(
 													id: post.posterId!,

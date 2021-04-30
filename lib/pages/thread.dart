@@ -52,7 +52,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 			});
 			try {
 				await WidgetsBinding.instance!.endOfFrame;
-				await _listController.animateTo((post) => post.id == scrollToId, alignment: 1.0, duration: Duration(milliseconds: 1));
+				await _listController.animateTo((post) => post.id == scrollToId, orElseLast: (post) => post.id <= scrollToId, alignment: 1.0, duration: Duration(milliseconds: 1));
 				await WidgetsBinding.instance!.endOfFrame;
 			}
 			catch (e, st) {
