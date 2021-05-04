@@ -307,21 +307,48 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 													StreamBuilder(
 														stream: _listController.slowScrollUpdates,
 														builder: (context, a) {
-															if ((persistentState.unseenReplyCount ?? 0) > 0) {
+															final redCount = persistentState.unseenRepliesToYou?.length ?? 0;
+															final whiteCount = persistentState.unseenReplyCount ?? 0;
+															if (redCount > 0 || whiteCount > 0) {
+																final radiusAlone = BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8));
 																return SafeArea(
 																	child: Align(
 																		alignment: Alignment.bottomRight,
 																		child: GestureDetector(
-																			child: Container(
-																				decoration: BoxDecoration(
-																					borderRadius: BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
-																					color: Colors.red
-																				),
-																				padding: EdgeInsets.all(4),
-																				margin: EdgeInsets.only(right: 16),
-																				child: Text(persistentState.unseenReplyCount.toString())
+																			child: Row(
+																				mainAxisSize: MainAxisSize.min,
+																				children: [
+																					if (redCount > 0) Container(
+																						decoration: BoxDecoration(
+																							borderRadius: (whiteCount > 0) ? BorderRadius.only(topLeft: Radius.circular(8)) : radiusAlone,
+																							color: Colors.red
+																						),
+																						padding: EdgeInsets.all(8),
+																						margin: (whiteCount > 0) ? null : EdgeInsets.only(right: 16),
+																						child: Text(
+																							redCount.toString(),
+																							textAlign: TextAlign.center
+																						)
+																					),
+																					if (whiteCount > 0) Container(
+																						decoration: BoxDecoration(
+																							borderRadius: (redCount > 0) ? BorderRadius.only(topRight: Radius.circular(8)) : radiusAlone,
+																							color: CupertinoTheme.of(context).primaryColor
+																						),
+																						padding: EdgeInsets.all(8),
+																						margin: EdgeInsets.only(right: 16),
+																						child: Text(
+																							whiteCount.toString(),
+																							style: TextStyle(
+																								color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																							),
+																							textAlign: TextAlign.center
+																						)
+																					)
+																				]
 																			),
-																			onTap: () => _listController.animateTo((post) => post.id == persistentState.lastSeenPostId, alignment: 1.0)
+																			onTap: () => _listController.animateTo((post) => post.id == persistentState.lastSeenPostId, alignment: 1.0),
+																			onLongPress: () => _listController.animateTo((post) => post.id == persistentState.thread!.posts.last.id, alignment: 1.0)
 																		)
 																	)
 																);
