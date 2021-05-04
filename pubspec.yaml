@@ -26,7 +26,6 @@ dependencies:
   rxdart: "^0.26.0"
   provider: "^5.0.0"
   extended_image: "^4.0.0"
-  cupertino_back_gesture: "^0.1.0"
   html_unescape: "^2.0.0"
   share: "^2.0.0"
   extended_image_library: "^3.0.0"

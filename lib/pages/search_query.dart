@@ -8,7 +8,7 @@ import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
+import 'package:chan/widgets/cupertino_page_route.dart';
 
 
 class SearchQueryPage extends StatefulWidget {
@@ -104,7 +104,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						showCrossThreadLabel: false,
 						allowTappingLinks: false,
 						onTap: () async {
-							Navigator.of(context).push(cpr.CupertinoPageRoute(
+							Navigator.of(context).push(FullWidthCupertinoPageRoute(
 								builder: (context) => ThreadPage(
 									thread: post.threadIdentifier,
 									initialPostId: post.id,

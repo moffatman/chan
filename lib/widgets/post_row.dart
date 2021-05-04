@@ -12,7 +12,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:share/share.dart';
-import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
+import 'package:chan/widgets/cupertino_page_route.dart';
 
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
@@ -71,7 +71,7 @@ class PostRow extends StatelessWidget {
 						child: Text('Search archive'),
 						trailingIcon: Icons.image,
 						onPressed: () {
-							context.read<GlobalKey<NavigatorState>>().currentState!.push(cpr.CupertinoPageRoute(
+							context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(
 								builder: (context) => SearchQueryPage(ImageboardArchiveSearchQuery(boards: [post.board], md5: post.attachment!.md5))
 							));
 						}

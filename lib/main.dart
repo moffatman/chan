@@ -8,7 +8,6 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:cupertino_back_gesture/cupertino_back_gesture.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'sites/imageboard_site.dart';
@@ -24,57 +23,54 @@ void main() async {
 class ChanApp extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
-		return BackGestureWidthTheme(
-			backGestureWidth: BackGestureWidth.fraction(1),
-			child: MultiProvider(
-				providers: [
-					ChangeNotifierProvider<EffectiveSettings>(create: (_) => EffectiveSettings()),
-					Provider<ImageboardSite>(create: (_) => Site4Chan(
-						baseUrl: 'boards.4chan.org',
-						staticUrl: 's.4cdn.org',
-						sysUrl: 'sys.4chan.org',
-						apiUrl: 'a.4cdn.org',
-						imageUrl: 'i.4cdn.org',
-						name: '4chan',
-						captchaKey: '6Ldp2bsSAAAAAAJ5uyx_lx34lJeEpTLVkP5k04qc',
-						archives: [
-							FoolFuukaArchive(baseUrl: 'archive.4plebs.org', staticUrl: 's.4cdn.org', name: '4plebs'),
-							FoolFuukaArchive(baseUrl: 'archive.rebeccablacktech.com', staticUrl: 's.4cdn.org', name: 'RebeccaBlackTech'),
-							FoolFuukaArchive(baseUrl: 'archive.nyafuu.org', staticUrl: 's.4cdn.org', name: 'Nyafuu'),
-							FoolFuukaArchive(baseUrl: 'desuarchive.org', staticUrl: 's.4cdn.org', name: 'Desuarchive'),
-							FoolFuukaArchive(baseUrl: 'archived.moe', staticUrl: 's.4cdn.org', name: 'Archived.Moe')
-						]
-					))
-				],
-				child: SettingsSystemListener(
-					child: Builder(
-						builder: (BuildContext context) {
-							final brightness = context.watch<EffectiveSettings>().theme;
-							CupertinoThemeData theme = CupertinoThemeData(brightness: Brightness.light, primaryColor: Colors.black);
-							if (brightness == Brightness.dark) {
-								theme = CupertinoThemeData(brightness: Brightness.dark, scaffoldBackgroundColor: Color.fromRGBO(20, 20, 20, 1), primaryColor: Colors.white);
-							}
-							return ChangeNotifierProvider(
-								create: (ctx) => ThreadWatcher(site: ctx.read<ImageboardSite>()),
-								child: CupertinoApp(
-									title: 'Chan',
-									theme: theme,
-									home: Builder(
-										builder: (BuildContext context) {
-											return DefaultTextStyle(
-												style: CupertinoTheme.of(context).textTheme.textStyle,
-												child: ChanHomePage()
-											);
-										}
-									),
-									localizationsDelegates: [
-										DefaultCupertinoLocalizations.delegate,
-										DefaultMaterialLocalizations.delegate
-									],
-								)
-							);
+		return MultiProvider(
+			providers: [
+				ChangeNotifierProvider<EffectiveSettings>(create: (_) => EffectiveSettings()),
+				Provider<ImageboardSite>(create: (_) => Site4Chan(
+					baseUrl: 'boards.4chan.org',
+					staticUrl: 's.4cdn.org',
+					sysUrl: 'sys.4chan.org',
+					apiUrl: 'a.4cdn.org',
+					imageUrl: 'i.4cdn.org',
+					name: '4chan',
+					captchaKey: '6Ldp2bsSAAAAAAJ5uyx_lx34lJeEpTLVkP5k04qc',
+					archives: [
+						FoolFuukaArchive(baseUrl: 'archive.4plebs.org', staticUrl: 's.4cdn.org', name: '4plebs'),
+						FoolFuukaArchive(baseUrl: 'archive.rebeccablacktech.com', staticUrl: 's.4cdn.org', name: 'RebeccaBlackTech'),
+						FoolFuukaArchive(baseUrl: 'archive.nyafuu.org', staticUrl: 's.4cdn.org', name: 'Nyafuu'),
+						FoolFuukaArchive(baseUrl: 'desuarchive.org', staticUrl: 's.4cdn.org', name: 'Desuarchive'),
+						FoolFuukaArchive(baseUrl: 'archived.moe', staticUrl: 's.4cdn.org', name: 'Archived.Moe')
+					]
+				))
+			],
+			child: SettingsSystemListener(
+				child: Builder(
+					builder: (BuildContext context) {
+						final brightness = context.watch<EffectiveSettings>().theme;
+						CupertinoThemeData theme = CupertinoThemeData(brightness: Brightness.light, primaryColor: Colors.black);
+						if (brightness == Brightness.dark) {
+							theme = CupertinoThemeData(brightness: Brightness.dark, scaffoldBackgroundColor: Color.fromRGBO(20, 20, 20, 1), primaryColor: Colors.white);
 						}
-					)
+						return ChangeNotifierProvider(
+							create: (ctx) => ThreadWatcher(site: ctx.read<ImageboardSite>()),
+							child: CupertinoApp(
+								title: 'Chan',
+								theme: theme,
+								home: Builder(
+									builder: (BuildContext context) {
+										return DefaultTextStyle(
+											style: CupertinoTheme.of(context).textTheme.textStyle,
+											child: ChanHomePage()
+										);
+									}
+								),
+								localizationsDelegates: [
+									DefaultCupertinoLocalizations.delegate,
+									DefaultMaterialLocalizations.delegate
+								],
+							)
+						);
+					}
 				)
 			)
 		);

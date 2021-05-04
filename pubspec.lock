@@ -204,13 +204,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.17.0"
-  cupertino_back_gesture:
-    dependency: "direct main"
-    description:
-      name: cupertino_back_gesture
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.1.0"
   cupertino_icons:
     dependency: "direct main"
     description:

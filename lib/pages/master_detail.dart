@@ -2,7 +2,7 @@ import 'package:chan/widgets/util.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
+import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:provider/provider.dart';
 
 class MasterDetailPage<T> extends StatefulWidget {
@@ -27,7 +27,7 @@ class _MasterDetailPageState<T> extends State<MasterDetailPage<T>> {
 	void _valueSetter(T value) {
 		setState(() {
 			if (onePane) {
-				_masterKey.currentState!.push(cpr.CupertinoPageRoute(
+				_masterKey.currentState!.push(FullWidthCupertinoPageRoute(
 					builder: (ctx) => widget.detailBuilder(ctx, value)
 				));
 			}
@@ -59,7 +59,7 @@ class _MasterDetailPageState<T> extends State<MasterDetailPage<T>> {
 				key: _detailKey,
 				initialRoute: '/',
 				onGenerateRoute: (RouteSettings settings) {
-					return cpr.CupertinoPageRoute(
+					return FullWidthCupertinoPageRoute(
 						builder: (context) => widget.detailBuilder(context, selectedValue),
 						settings: settings
 					);

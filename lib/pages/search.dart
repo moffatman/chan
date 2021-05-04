@@ -5,7 +5,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
+import 'package:chan/widgets/cupertino_page_route.dart';
 
 import 'board_switcher.dart';
 
@@ -143,7 +143,7 @@ class _SearchPageState extends State<SearchPage> {
 														FocusManager.instance.primaryFocus!.unfocus();
 														Persistence.recentSearches.add(query.clone());
 														Persistence.recentSearches.save();
-														Navigator.of(context).push(cpr.CupertinoPageRoute(
+														Navigator.of(context).push(FullWidthCupertinoPageRoute(
 															builder: (context) => SearchQueryPage(query)
 														));
 													},
@@ -256,7 +256,7 @@ class _SearchPageState extends State<SearchPage> {
 							onTap: () {
 								Persistence.recentSearches.bump(q);
 								Persistence.recentSearches.save();
-								Navigator.of(context).push(cpr.CupertinoPageRoute(
+								Navigator.of(context).push(FullWidthCupertinoPageRoute(
 									builder: (context) => SearchQueryPage(q)
 								));
 							},

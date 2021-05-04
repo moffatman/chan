@@ -13,7 +13,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:chan/models/thread.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
+import 'package:chan/widgets/cupertino_page_route.dart';
 
 class BoardPage extends StatefulWidget {
 	final ImageboardBoard initialBoard;
@@ -135,7 +135,7 @@ class _BoardPageState extends State<BoardPage> {
 								widget.onThreadSelected!(thread.identifier);
 							}
 							else {
-								Navigator.of(context).push(cpr.CupertinoPageRoute(builder: (ctx) => ThreadPage(thread: thread.identifier)));
+								Navigator.of(context).push(FullWidthCupertinoPageRoute(builder: (ctx) => ThreadPage(thread: thread.identifier)));
 							}
 						}
 					);

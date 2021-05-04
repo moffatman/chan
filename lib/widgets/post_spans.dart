@@ -7,6 +7,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/hover_popup.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/util.dart';
@@ -16,7 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
-import 'package:cupertino_back_gesture/src/cupertino_page_route.dart' as cpr;
 
 class PostSpanRenderOptions {
 	final GestureRecognizer? recognizer;
@@ -117,7 +117,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				decoration: TextDecoration.underline
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
-				context.read<GlobalKey<NavigatorState>>().currentState!.push(cpr.CupertinoPageRoute(
+				context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(
 					builder: (ctx) => ThreadPage(
 						thread: ThreadIdentifier(
 							board: board,
@@ -257,7 +257,7 @@ class PostBoardLink extends PostSpan {
 				decoration: TextDecoration.underline
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
-				context.read<GlobalKey<NavigatorState>>().currentState!.push(cpr.CupertinoPageRoute(builder: (ctx) => BoardPage(initialBoard: Persistence.getBoard(board))));
+				context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(builder: (ctx) => BoardPage(initialBoard: Persistence.getBoard(board))));
 			})
 		);
 	}
