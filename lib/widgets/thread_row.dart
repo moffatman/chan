@@ -40,12 +40,18 @@ class ThreadRow extends StatelessWidget {
 								crossAxisAlignment: CrossAxisAlignment.start,
 								mainAxisSize: MainAxisSize.max,
 								children: [
-									if (_thread.attachment != null) Container(
-										alignment: Alignment.topCenter,
-										padding: EdgeInsets.only(bottom: 8),
-										child: AttachmentThumbnail(
-											attachment: _thread.attachment!
-										)
+									if (_thread.attachment != null) Column(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											Flexible(
+												child: Container(
+													padding: EdgeInsets.only(bottom: 8),
+													child: AttachmentThumbnail(
+														attachment: _thread.attachment!
+													)
+												)
+											)
+										]
 									),
 									Expanded(
 										child: Container(
