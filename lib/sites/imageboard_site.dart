@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
@@ -99,4 +100,5 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<void> deletePost(String board, PostReceipt receipt);
 	Future<Post> getPostFromArchive(String board, int id);
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread);
+	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
 }

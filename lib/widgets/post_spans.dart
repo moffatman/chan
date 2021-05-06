@@ -329,6 +329,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	final _children = Map<int, PostSpanZoneData>();
 	List<Post> get threadPosts;
 	int get threadId;
+	ThreadIdentifier get threadIdentifier;
 	String get board;
 	ImageboardSite get site;
 	Iterable<int> get stackIds;
@@ -374,7 +375,8 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 
 	List<Post> get threadPosts => parent.threadPosts;
 
-	int get threadId => threadPosts.first.threadId;
+	int get threadId => parent.threadId;
+	ThreadIdentifier get threadIdentifier => parent.threadIdentifier;
 
 	String get board => parent.board;
 
@@ -422,6 +424,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	final Map<int, bool> _isLoadingPostFromArchive = Map();
 	final Map<int, Post> _postsFromArchive = Map();
 	final Map<int, String> _postFromArchiveErrors = Map();
+	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board: board, id: threadId);
 
 	PostSpanRootZoneData({
 		required this.board,

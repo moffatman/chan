@@ -36,6 +36,8 @@ class Thread implements Filterable {
 	int? currentPage;
 	@HiveField(13)
 	int? uniqueIPCount;
+	@HiveField(14)
+	int? customSpoilerId;
 	Thread({
 		required this.posts,
 		required this.isArchived,
@@ -50,7 +52,8 @@ class Thread implements Filterable {
 		required this.time,
 		this.flag,
 		this.currentPage,
-		this.uniqueIPCount
+		this.uniqueIPCount,
+		this.customSpoilerId
 	}) {
 		Map<int, Post> postsById = Map();
 		for (final post in this.posts) {

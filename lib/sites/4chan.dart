@@ -191,7 +191,8 @@ class Site4Chan implements ImageboardSite {
 				board: board,
 				url: Uri.https(imageUrl, '/$board/$id$ext'),
 				thumbnailUrl: Uri.https(imageUrl, '/$board/${id}s.jpg'),
-				md5: data['md5']
+				md5: data['md5'],
+				spoiler: data['spoiler'] == 1
 			);
 		}
 	}
@@ -254,7 +255,8 @@ class Site4Chan implements ImageboardSite {
 				time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
 				flag: _makeFlag(data['posts'][0]),
 				currentPage: await _getThreadPage(thread),
-				uniqueIPCount: data['posts'][0]['unique_ips']
+				uniqueIPCount: data['posts'][0]['unique_ips'],
+				customSpoilerId: data['posts'][0]['custom_spoiler']
 			);
 			_threadCache['${thread.board}/${thread.id}'] = _ThreadCacheEntry(
 				thread: output,
@@ -329,8 +331,7 @@ class Site4Chan implements ImageboardSite {
 			for (final threadData in page['threads']) {
 				final String? title = threadData['sub'];
 				final int threadId = threadData['no'];
-				List<Post> lastReplies = [];
-				lastReplies.insert(0, _makePost(board, threadId, threadData));
+				final Post threadAsPost = _makePost(board, threadId, threadData);
 				Thread thread = Thread(
 					board: board,
 					id: threadId,
@@ -339,7 +340,7 @@ class Site4Chan implements ImageboardSite {
 					isArchived: false,
 					isDeleted: false,
 					attachment: _makeAttachment(board, threadData),
-					posts: lastReplies,
+					posts: [threadAsPost],
 					title: (title == null) ? null : unescape.convert(title),
 					isSticky: threadData['sticky'] == 1,
 					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
@@ -451,6 +452,16 @@ class Site4Chan implements ImageboardSite {
 
 	String getWebUrl(ThreadIdentifier thread, [int? postId]) {
 		return 'https://$baseUrl/${thread.board}/thread/${thread.id}' + (postId != null ? '#p$postId' : '');
+	}
+
+	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
+		final customSpoilerId = (thread == null) ? null : _threadCache['${thread.board}/${thread.id}']?.thread.customSpoilerId;
+		if (customSpoilerId != null) {
+			return Uri.https(staticUrl, '/image/spoiler-${attachment.board}$customSpoilerId.png');
+		}
+		else {
+			return Uri.https(staticUrl, '/image/spoiler.png');
+		}
 	}
 
 	Site4Chan({

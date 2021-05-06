@@ -47,7 +47,8 @@ class ThreadRow extends StatelessWidget {
 												child: Container(
 													padding: EdgeInsets.only(bottom: 8),
 													child: AttachmentThumbnail(
-														attachment: _thread.attachment!
+														attachment: _thread.attachment!,
+														thread: _thread.identifier
 													)
 												)
 											)

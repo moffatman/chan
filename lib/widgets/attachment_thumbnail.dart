@@ -1,7 +1,10 @@
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/thread.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
+import 'package:provider/provider.dart';
 
 class AttachmentSemanticLocation {
 	String _tag;
@@ -25,6 +28,7 @@ class AttachmentSemanticLocation {
 }
 
 class AttachmentThumbnail extends StatelessWidget {
+	final ThreadIdentifier? thread;
 	final Attachment attachment;
 	final double width;
 	final double height;
@@ -33,6 +37,7 @@ class AttachmentThumbnail extends StatelessWidget {
 
 	AttachmentThumbnail({
 		required this.attachment,
+		this.thread,
 		this.width = 75,
 		this.height = 75,
 		this.fit = BoxFit.contain,
@@ -42,7 +47,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		Widget child = ExtendedImage.network(
-			attachment.thumbnailUrl.toString(),
+			attachment.spoiler ? context.watch<ImageboardSite>().getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString(),
 			width: width,
 			height: height,
 			fit: fit,

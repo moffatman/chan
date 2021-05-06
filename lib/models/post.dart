@@ -69,9 +69,7 @@ class Post implements Filterable {
 		this.attachment,
 		this.posterId,
 		this.foolfuukaLinkedPostThreadIds
-	}) {
-		this.attachment?.post = this;
-	}
+	});
 
 	@override
 	String toString() {

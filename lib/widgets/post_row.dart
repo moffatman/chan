@@ -176,6 +176,7 @@ class PostRow extends StatelessWidget {
 												child: GestureDetector(
 													child: AttachmentThumbnail(
 														attachment: post.attachment!,
+														thread: post.threadIdentifier,
 														hero: AttachmentSemanticLocation(
 															attachment: post.attachment!,
 															semanticParents: zone.stackIds

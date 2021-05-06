@@ -1,4 +1,3 @@
-import 'package:chan/models/post.dart';
 import 'package:hive/hive.dart';
 
 part 'attachment.g.dart';
@@ -27,9 +26,10 @@ class Attachment {
 	final Uri url;
 	@HiveField(6)
 	final Uri thumbnailUrl;
-	late Post post;
 	@HiveField(7)
 	final String md5;
+	@HiveField(8)
+	final bool spoiler;
 	Attachment({
 		required this.type,
 		required this.board,
@@ -38,6 +38,7 @@ class Attachment {
 		required this.filename,
 		required this.url,
 		required this.thumbnailUrl,
-		required this.md5
-	});
+		required this.md5,
+		bool? spoiler
+	}) : this.spoiler = spoiler ?? false;
 }
