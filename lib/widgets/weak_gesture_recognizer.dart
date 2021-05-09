@@ -15,14 +15,10 @@ enum _DragState {
 	accepted,
 }
 
-typedef GestureDragEndCallback = void Function(DragEndDetails details);
 
-typedef GestureDragCancelCallback = void Function();
-
-typedef GestureVelocityTrackerBuilder = VelocityTracker Function(PointerEvent event);
-
-abstract class DragGestureRecognizer extends OneSequenceGestureRecognizer {
-	DragGestureRecognizer({
+const _WEAK_SLOW_ACCEPT_TIME = Duration(milliseconds: 50);
+abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
+	WeakDragGestureRecognizer({
 		Object? debugOwner,
 		PointerDeviceKind? kind,
 		this.dragStartBehavior = DragStartBehavior.start,
@@ -64,9 +60,17 @@ abstract class DragGestureRecognizer extends OneSequenceGestureRecognizer {
 
 	Offset _getDeltaForDetails(Offset delta);
 	double? _getPrimaryValueFromOffset(Offset value);
-	bool _hasSufficientGlobalDistanceToAccept(PointerDeviceKind pointerDeviceKind);
+	bool _hasSufficientGlobalDistanceToAccept(PointerEvent pointerEvent);
 
 	final Map<int, VelocityTracker> _velocityTrackers = <int, VelocityTracker>{};
+	final Map<int, Duration> _pointerDownTimes = <int, Duration>{};
+
+	bool _hasSufficientDurationToAccept(PointerEvent event) {
+		if (_pointerDownTimes[event.pointer] != null) {
+			return _WEAK_SLOW_ACCEPT_TIME.compareTo(event.timeStamp - _pointerDownTimes[event.pointer]!).isNegative;
+		}
+		return false;
+	}
 
 	@override
 	bool isPointerAllowed(PointerEvent event) {
@@ -119,6 +123,9 @@ abstract class DragGestureRecognizer extends OneSequenceGestureRecognizer {
 			tracker.addPosition(event.timeStamp, event.localPosition);
 		}
 
+		if (event is PointerDownEvent) {
+			_pointerDownTimes[event.pointer] = event.timeStamp;
+		}
 		if (event is PointerMoveEvent) {
 			if (event.buttons != _initialButtons) {
 				_giveUpPointer(event.pointer);
@@ -143,7 +150,7 @@ abstract class DragGestureRecognizer extends OneSequenceGestureRecognizer {
 					untransformedDelta: movedLocally,
 					untransformedEndPosition: event.localPosition,
 				).distance * (_getPrimaryValueFromOffset(movedLocally) ?? 1).sign;
-				if (_hasSufficientGlobalDistanceToAccept(event.kind))
+				if (_hasSufficientGlobalDistanceToAccept(event))
 					resolve(GestureDisposition.accepted);
 			}
 		}
@@ -329,7 +336,7 @@ abstract class DragGestureRecognizer extends OneSequenceGestureRecognizer {
 	}
 }
 
-class WeakVerticalDragGestureRecognizer extends DragGestureRecognizer {
+class WeakVerticalDragGestureRecognizer extends WeakDragGestureRecognizer {
 	final double weakness;
 
 	WeakVerticalDragGestureRecognizer({
@@ -346,8 +353,11 @@ class WeakVerticalDragGestureRecognizer extends DragGestureRecognizer {
 	}
 
 	@override
-	bool _hasSufficientGlobalDistanceToAccept(PointerDeviceKind pointerDeviceKind) {
-		return _globalDistanceMoved.abs() > (weakness * computeHitSlop(pointerDeviceKind));
+	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event) {
+		return _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind)) || (
+			(_globalDistanceMoved.abs() > computeHitSlop(event.kind)) &&
+			_hasSufficientDurationToAccept(event)
+		);
 	}
 
 	@override
@@ -360,7 +370,7 @@ class WeakVerticalDragGestureRecognizer extends DragGestureRecognizer {
 	String get debugDescription => 'vertical drag';
 }
 
-class WeakHorizontalDragGestureRecognizer extends DragGestureRecognizer {
+class WeakHorizontalDragGestureRecognizer extends WeakDragGestureRecognizer {
 	final double weakness;
 
 	WeakHorizontalDragGestureRecognizer({
@@ -377,8 +387,11 @@ class WeakHorizontalDragGestureRecognizer extends DragGestureRecognizer {
 	}
 
 	@override
-	bool _hasSufficientGlobalDistanceToAccept(PointerDeviceKind pointerDeviceKind) {
-		return _globalDistanceMoved.abs() > (weakness * computeHitSlop(pointerDeviceKind));
+	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event) {
+		return _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind)) || (
+			(_globalDistanceMoved.abs() > computeHitSlop(event.kind)) &&
+			_hasSufficientDurationToAccept(event)
+		);
 	}
 
 	@override
@@ -391,7 +404,7 @@ class WeakHorizontalDragGestureRecognizer extends DragGestureRecognizer {
 	String get debugDescription => 'horizontal drag';
 }
 
-class WeakPanGestureRecognizer extends DragGestureRecognizer {
+class WeakPanGestureRecognizer extends WeakDragGestureRecognizer {
 	final double weakness;
 
 	WeakPanGestureRecognizer({
@@ -408,8 +421,11 @@ class WeakPanGestureRecognizer extends DragGestureRecognizer {
 	}
 
 	@override
-	bool _hasSufficientGlobalDistanceToAccept(PointerDeviceKind pointerDeviceKind) {
-		return _globalDistanceMoved.abs() > (weakness * computePanSlop(pointerDeviceKind));
+	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event) {
+		return _globalDistanceMoved.abs() > (weakness * computePanSlop(event.kind)) || (
+			(_globalDistanceMoved.abs() > computePanSlop(event.kind)) &&
+			_hasSufficientDurationToAccept(event)
+		);
 	}
 
 	@override
