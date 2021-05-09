@@ -26,7 +26,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value, VoidCallback resetPage)? filteredItemBuilder;
 	final Duration? autoUpdateDuration;
 	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
-	final String? updateDisabledText;
+	final bool disableUpdates;
 	final Widget? footer;
 
 	RefreshableList({
@@ -39,7 +39,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.autoUpdateDuration,
 		this.remedies = const {},
 		this.initialList,
-		this.updateDisabledText,
+		this.disableUpdates = false,
 		this.footer
 	});
 
@@ -74,7 +74,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		if (list != null) {
 			widget.controller?.setItems(list!);
 		}
-		if (widget.updateDisabledText == null) {
+		if (!widget.disableUpdates) {
 			update();
 			resetTimer();
 		}
@@ -99,10 +99,10 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			});
 			update();
 		}
-		else if (oldWidget.updateDisabledText != widget.updateDisabledText) {
+		else if (oldWidget.disableUpdates != widget.disableUpdates) {
 			this.autoUpdateTimer?.cancel();
 			this.autoUpdateTimer = null;
-			if (widget.updateDisabledText == null) {
+			if (!widget.disableUpdates) {
 				update();
 				resetTimer();
 			}
@@ -186,7 +186,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				onPointerUp: (event) {
 					if (widget.controller != null) {
 						double overscroll = widget.controller!.scrollController!.position.pixels - widget.controller!.scrollController!.position.maxScrollExtent;
-						if (overscroll > _OVERSCROLL_TRIGGER_THRESHOLD) {
+						if (overscroll > _OVERSCROLL_TRIGGER_THRESHOLD && !widget.disableUpdates) {
 							update();
 						}
 					}
@@ -270,17 +270,10 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 						if (widget.footer != null) SliverToBoxAdapter(
 							child: widget.footer
 						),
-						SliverSafeArea(
+						if (!widget.disableUpdates) SliverSafeArea(
 							top: false,
 							sliver: SliverToBoxAdapter(
-								child: (widget.updateDisabledText != null) ? Container(
-									padding: EdgeInsets.all(16),
-									child: Center(
-										child: Text(widget.updateDisabledText!, style: TextStyle(
-											color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
-										))
-									)
-								) : RefreshableListFooter(
+								child: RefreshableListFooter(
 									updater: update,
 									updatingNow: updatingNow,
 									lastUpdateTime: lastUpdateTime,

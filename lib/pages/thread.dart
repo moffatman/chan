@@ -222,11 +222,11 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 														value: zone,
 														child: RefreshableList<Post>(
 															id: '/${widget.thread.board}/${widget.thread.id}',
-															updateDisabledText: persistentState.thread?.isArchived == true ? 'Archived' : null,
+															disableUpdates: persistentState.thread?.isArchived ?? false,
 															autoUpdateDuration: const Duration(seconds: 60),
 															initialList: persistentState.thread?.posts,
 															footer: Container(
-																padding: EdgeInsets.only(top: 16, left: 16, right: 16),
+																padding: EdgeInsets.all(16),
 																child: (persistentState.thread == null) ? null : Row(
 																	children: [
 																		Spacer(),
@@ -244,6 +244,11 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																		if (persistentState.thread!.currentPage != null) ...[
 																			_limitCounter(persistentState.thread!.currentPage!, Persistence.getBoard(widget.thread.board).pageCount),
 																			Icon(Icons.insert_drive_file_rounded),
+																			Spacer()
+																		],
+																		if (persistentState.thread!.isArchived) ...[
+																			Text('Archived '),
+																			Icon(Icons.archive, color: Colors.grey),
 																			Spacer()
 																		]
 																	]
