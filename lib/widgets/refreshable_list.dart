@@ -267,7 +267,13 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 										)
 									)
 								),
-						if (widget.footer != null) SliverToBoxAdapter(
+						if (widget.footer != null && widget.disableUpdates) SliverSafeArea(
+							top: false,
+							sliver: SliverToBoxAdapter(
+								child: widget.footer
+							)
+						)
+						else if (widget.footer != null && !widget.disableUpdates) SliverToBoxAdapter(
 							child: widget.footer
 						),
 						if (!widget.disableUpdates) SliverSafeArea(
