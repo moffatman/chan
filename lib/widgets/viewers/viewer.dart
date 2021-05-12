@@ -17,6 +17,7 @@ class AttachmentViewer extends StatelessWidget {
 	final Color backgroundColor;
 	final Object? tag;
 	final ValueChanged<File>? onCacheCompleted;
+	final bool autoRotate;
 
 	AttachmentViewer({
 		required this.attachment,
@@ -24,14 +25,21 @@ class AttachmentViewer extends StatelessWidget {
 		this.backgroundColor = Colors.black,
 		this.tag,
 		this.onCacheCompleted,
+		this.autoRotate = false,
 		Key? key
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
+		int quarterTurns = 0;
+		final displayIsLandscape = MediaQuery.of(context).size.width > MediaQuery.of(context).size.height;
+		if (autoRotate && (((attachment.isLandscape ?? false) && !displayIsLandscape) || (!(attachment.isLandscape ?? true) && displayIsLandscape))) {
+			quarterTurns = 1;
+		}
 		if (attachment.type == AttachmentType.Image && (status is AttachmentImageUrlAvailableStatus || status is AttachmentLoadingStatus)) {
 			return GalleryImageViewer(
 				attachment: attachment,
+				quarterTurns: quarterTurns,
 				url: (status is AttachmentImageUrlAvailableStatus) ? (status as AttachmentImageUrlAvailableStatus).url : attachment.thumbnailUrl,
 				onCacheCompleted: onCacheCompleted,
 				isThumbnail: !(status is AttachmentImageUrlAvailableStatus),
@@ -51,7 +59,8 @@ class AttachmentViewer extends StatelessWidget {
 						AttachmentThumbnail(
 							attachment: attachment,
 							width: double.infinity,
-							height: double.infinity
+							height: double.infinity,
+							quarterTurns: quarterTurns
 						),
 						if (status is AttachmentUnavailableStatus) Center(
 							child: ErrorMessageCard((status as AttachmentUnavailableStatus).cause)
@@ -60,9 +69,12 @@ class AttachmentViewer extends StatelessWidget {
 							child: CircularLoadingIndicator(value: (status as AttachmentLoadingStatus).progress)
 						)
 						else if (status is AttachmentVideoAvailableStatus) Center(
-							child: AspectRatio(
-								aspectRatio: (status as AttachmentVideoAvailableStatus).controller.value.aspectRatio,
-								child: VideoPlayer((status as AttachmentVideoAvailableStatus).controller)
+							child: RotatedBox(
+								quarterTurns: quarterTurns,
+								child: AspectRatio(
+									aspectRatio: (status as AttachmentVideoAvailableStatus).controller.value.aspectRatio,
+									child: VideoPlayer((status as AttachmentVideoAvailableStatus).controller)
+								)
 							)
 						)
 					]

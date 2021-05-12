@@ -57,6 +57,8 @@ class SavedSettings extends HiveObject {
 	bool reverseCatalogSorting;
 	@HiveField(5)
 	ThreadSortingMethod savedThreadsSortingMethod;
+	@HiveField(6)
+	bool autoRotateInGallery;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -64,13 +66,15 @@ class SavedSettings extends HiveObject {
 		bool? hideStickiedThreads,
 		ThreadSortingMethod? catalogSortingMethod,
 		bool? reverseCatalogSorting,
-		ThreadSortingMethod? savedThreadsSortingMethod
+		ThreadSortingMethod? savedThreadsSortingMethod,
+		bool? autoRotateInGallery
 	}): this.autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.WiFi,
 		this.theme = theme ?? ThemeSetting.System,
 		this.hideStickiedThreads = hideStickiedThreads ?? false,
 		this.catalogSortingMethod = catalogSortingMethod ?? ThreadSortingMethod.Unsorted,
 		this.reverseCatalogSorting = reverseCatalogSorting ?? false,
-		this.savedThreadsSortingMethod = savedThreadsSortingMethod ?? ThreadSortingMethod.SavedTime;
+		this.savedThreadsSortingMethod = savedThreadsSortingMethod ?? ThreadSortingMethod.SavedTime,
+		this.autoRotateInGallery = autoRotateInGallery ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -140,6 +144,13 @@ class EffectiveSettings extends ChangeNotifier {
 	ThreadSortingMethod get savedThreadsSortingMethod => _settings.savedThreadsSortingMethod;
 	set savedThreadsSortingMethod(ThreadSortingMethod setting) {
 		_settings.savedThreadsSortingMethod = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get autoRotateInGallery => _settings.autoRotateInGallery;
+	set autoRotateInGallery(bool setting) {
+		_settings.autoRotateInGallery = setting;
 		_settings.save();
 		notifyListeners();
 	}

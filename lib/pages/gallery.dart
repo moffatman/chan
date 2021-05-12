@@ -54,6 +54,10 @@ class AttachmentVideoAvailableStatus extends AttachmentStatus {
 	AttachmentVideoAvailableStatus(this.controller, this.hasAudio);
 }
 
+enum _GalleryMenuSelection {
+	ToggleAutorotate
+}
+
 class GalleryPage extends StatefulWidget {
 	final List<Attachment> attachments;
 	final Attachment? initialAttachment;
@@ -88,7 +92,6 @@ class _GalleryPageState extends State<GalleryPage> {
 	late bool showChrome;
 	final Key _pageControllerKey = GlobalKey();
 	final Key _thumbnailsKey = GlobalKey();
-	bool rotatedViewer = false;
 	AttachmentStatus lastDifferentCurrentStatus = AttachmentStatus();
 	final BehaviorSubject<Null> _scrollCoalescer = BehaviorSubject();
 	StreamSubscription<WEBMStatus>? webmSubscription;
@@ -274,6 +277,7 @@ class _GalleryPageState extends State<GalleryPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
@@ -295,21 +299,26 @@ class _GalleryPageState extends State<GalleryPage> {
 							children: [
 								CupertinoButton(
 									padding: EdgeInsets.zero,
-									child: Transform(
-										alignment: Alignment.center,
-										transform: rotatedViewer ? Matrix4.identity() : Matrix4.rotationY(math.pi),
-										child: Icon(Icons.rotate_90_degrees_ccw)
-									),
-									onPressed: () {
-										setState(() {
-											rotatedViewer = !rotatedViewer;
-										});
-									}
-								),
-								CupertinoButton(
-									padding: EdgeInsets.zero,
 									child: Icon(Icons.ios_share),
 									onPressed: canShare(currentAttachment) ? () => share(currentAttachment) : null
+								),
+								Material(
+									type: MaterialType.transparency,
+									color: Colors.transparent,
+									child: PopupMenuButton<_GalleryMenuSelection>(
+										onSelected: (selected) {
+											if (selected == _GalleryMenuSelection.ToggleAutorotate) {
+												settings.autoRotateInGallery = !settings.autoRotateInGallery;
+											}
+										},
+										itemBuilder: (context) => [
+											CheckedPopupMenuItem(
+												checked: settings.autoRotateInGallery,
+												value: _GalleryMenuSelection.ToggleAutorotate,
+												child: Text('Autorotate')
+											)
+										]
+									)
 								)
 							]
 						)
@@ -355,24 +364,22 @@ class _GalleryPageState extends State<GalleryPage> {
 														builder: (context, snapshot) {
 															final status = snapshot.data!;
 															return GestureDetector(
-																child: RotatedBox(
-																	quarterTurns: rotatedViewer ? 1 : 0,
-																	child: AttachmentViewer(
+																child: AttachmentViewer(
+																	autoRotate: settings.autoRotateInGallery,
+																	attachment: attachment,
+																	status: status,
+																	backgroundColor: Colors.transparent,
+																	tag: AttachmentSemanticLocation(
 																		attachment: attachment,
-																		status: status,
-																		backgroundColor: Colors.transparent,
-																		tag: AttachmentSemanticLocation(
-																			attachment: attachment,
-																			semanticParents: widget.semanticParentIds
-																		),
-																		onCacheCompleted: (file) {
-																			if (cachedFiles[attachment]?.path != file.path) {
-																				setState(() {
-																					cachedFiles[attachment] = file;
-																				});
-																			}
+																		semanticParents: widget.semanticParentIds
+																	),
+																	onCacheCompleted: (file) {
+																		if (cachedFiles[attachment]?.path != file.path) {
+																			setState(() {
+																				cachedFiles[attachment] = file;
+																			});
 																		}
-																	)
+																	}
 																),
 																onTap: (status is AttachmentUnloadedStatus) ? () {
 																	if (status is AttachmentUnloadedStatus) {

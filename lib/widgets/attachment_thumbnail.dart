@@ -1,6 +1,7 @@
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/services/rotating_image_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
@@ -34,6 +35,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final double height;
 	final BoxFit fit;
 	final Object? hero;
+	final int quarterTurns;
 
 	AttachmentThumbnail({
 		required this.attachment,
@@ -41,17 +43,24 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.width = 75,
 		this.height = 75,
 		this.fit = BoxFit.contain,
-		this.hero
+		this.hero,
+		this.quarterTurns = 0
 	});
 
 	@override
 	Widget build(BuildContext context) {
-		Widget child = ExtendedImage.network(
+		ImageProvider image = ExtendedNetworkImageProvider(
 			attachment.spoiler ? context.watch<ImageboardSite>().getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString(),
+			cache: true
+		);
+		if (quarterTurns != 0) {
+			image = RotatingImageProvider(parent: image, quarterTurns: quarterTurns);
+		}
+		Widget child = ExtendedImage(
+			image: image,
 			width: width,
 			height: height,
 			fit: fit,
-			cache: true,
 			loadStateChanged: (loadstate) {
 				if (loadstate.extendedImageLoadState == LoadState.loading) {
 					return SizedBox(

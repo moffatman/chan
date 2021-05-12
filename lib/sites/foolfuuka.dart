@@ -110,7 +110,9 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 				url: Uri.parse(data['media']['media_link'] ?? data['media']['remote_media_link']),
 				thumbnailUrl: Uri.parse(data['media']['thumb_link']),
 				md5: data['media']['safe_media_hash'],
-				spoiler: data['media']['spoiler'] == '1'
+				spoiler: data['media']['spoiler'] == '1',
+				width: int.parse(data['media']['media_w']),
+				height: int.parse(data['media']['media_h'])
 			);
 		}	
 	}

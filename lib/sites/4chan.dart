@@ -192,7 +192,9 @@ class Site4Chan implements ImageboardSite {
 				url: Uri.https(imageUrl, '/$board/$id$ext'),
 				thumbnailUrl: Uri.https(imageUrl, '/$board/${id}s.jpg'),
 				md5: data['md5'],
-				spoiler: data['spoiler'] == 1
+				spoiler: data['spoiler'] == 1,
+				width: data['w'],
+				height: data['h']
 			);
 		}
 	}
@@ -278,8 +280,11 @@ class Site4Chan implements ImageboardSite {
 			try {
 				return await archive.getThread(thread);
 			}
-			catch(e) {
+			catch(e, st) {
 				if (!(e is BoardNotFoundException)) {
+					print('Error from ${archive.name}');
+					print(e);
+					print(st);
 					errorMessages[archive.name] = e.toString();
 				}
 			}

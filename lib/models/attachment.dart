@@ -30,6 +30,10 @@ class Attachment {
 	final String md5;
 	@HiveField(8)
 	final bool spoiler;
+	@HiveField(9)
+	final int? width;
+	@HiveField(10)
+	final int? height;
 	Attachment({
 		required this.type,
 		required this.board,
@@ -39,6 +43,10 @@ class Attachment {
 		required this.url,
 		required this.thumbnailUrl,
 		required this.md5,
-		bool? spoiler
+		bool? spoiler,
+		this.width,
+		this.height
 	}) : this.spoiler = spoiler ?? false;
+
+	bool? get isLandscape => (width == null || height == null) ? null : width! > height!;
 }
