@@ -275,11 +275,18 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																	if (firstLoad) await _blockAndScrollToPostIfNeeded();
 																	await persistentState.save();
 																	setState(() {});
+																	// The thread might switch in this interval
+																	final thisThreadId = _thread.identifier;
 																	Future.delayed(Duration(milliseconds: 100), () {
-																		if (persistentState.thread != null && !_unnaturallyScrolling) {
-																			persistentState.lastSeenPostId = max(persistentState.lastSeenPostId ?? 0, persistentState.thread!.posts[_listController.lastVisibleIndex].id);	
-																			persistentState.save();
-																			setState(() {});
+																		if (persistentState.thread?.identifier == thisThreadId && !_unnaturallyScrolling) {
+																			if (_listController.lastVisibleIndex != -1) {
+																				persistentState.lastSeenPostId = max(persistentState.lastSeenPostId ?? 0, persistentState.thread!.posts[_listController.lastVisibleIndex].id);	
+																				persistentState.save();
+																				setState(() {});
+																			}
+																			else {
+																				print('Failed to find last visible post after an update in $thisThreadId');
+																			}
 																		}
 																	});
 																}
