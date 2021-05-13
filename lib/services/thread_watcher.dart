@@ -67,15 +67,30 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 	}
 
+	Future<void> _updateThread(PersistentThreadState threadState) async {
+		Thread? newThread;
+		try {
+			newThread = await site.getThread(threadState.thread!.identifier);
+		}
+		on ThreadNotFoundException {
+			try {
+				newThread = await site.getThreadFromArchive(threadState.thread!.identifier);
+			}
+			on ThreadNotFoundException {
+				return;
+			}
+		}
+		if (newThread != threadState.thread) {
+			threadState.thread = newThread;
+			threadState.save();
+		}
+	}
+
 	Future<void> update() async {
 		try {
 			final liveThreadStates = Persistence.threadStateBox.values.where((s) => s.thread != null && !s.thread!.isArchived && s.savedTime != null);
 			for (final threadState in liveThreadStates) {
-				final newThread = await site.getThread(threadState.thread!.identifier);
-				if (newThread != threadState.thread) {
-					threadState.thread = newThread;
-					threadState.save();
-				}
+				await _updateThread(threadState);
 			}
 			_updateCounts();
 			lastUpdate = DateTime.now();
@@ -94,6 +109,13 @@ class ThreadWatcher extends ChangeNotifier {
 	void cancel() {
 		nextUpdateTimer?.cancel();
 		notifyListeners();
+	}
+
+	void fixBrokenThread(ThreadIdentifier thread) {
+		final state = Persistence.getThreadStateIfExists(thread);
+		if (state != null) {
+			_updateThread(state);
+		}
 	}
 
 	@override

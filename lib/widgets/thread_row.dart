@@ -15,9 +15,11 @@ import 'package:chan/models/thread.dart';
 class ThreadRow extends StatelessWidget {
 	final Thread thread;
 	final bool isSelected;
+	final ValueChanged<Object?>? onThumbnailLoadError;
 	const ThreadRow({
 		required this.thread,
 		required this.isSelected,
+		this.onThumbnailLoadError
 	});
 	@override
 	Widget build(BuildContext context) {
@@ -48,7 +50,8 @@ class ThreadRow extends StatelessWidget {
 													padding: EdgeInsets.only(bottom: 8),
 													child: AttachmentThumbnail(
 														attachment: _thread.attachment!,
-														thread: _thread.identifier
+														thread: _thread.identifier,
+														onLoadError: onThumbnailLoadError
 													)
 												)
 											)

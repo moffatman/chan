@@ -83,7 +83,10 @@ class SavedPage extends StatelessWidget {
 													behavior: HitTestBehavior.opaque,
 													child: ThreadRow(
 														thread: states[i].value.thread!,
-														isSelected: states[i].value.thread!.identifier == selectedThread
+														isSelected: states[i].value.thread!.identifier == selectedThread,
+														onThumbnailLoadError: (error) {
+															context.read<ThreadWatcher>().fixBrokenThread(states[i].value.thread!.identifier);
+														},
 													),
 													onTap: () => threadSetter(states[i].value.thread!.identifier)
 												)

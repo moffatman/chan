@@ -36,6 +36,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final BoxFit fit;
 	final Object? hero;
 	final int quarterTurns;
+	final ValueChanged<Object?>? onLoadError;
 
 	AttachmentThumbnail({
 		required this.attachment,
@@ -44,7 +45,8 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.height = 75,
 		this.fit = BoxFit.contain,
 		this.hero,
-		this.quarterTurns = 0
+		this.quarterTurns = 0,
+		this.onLoadError
 	});
 
 	@override
@@ -72,6 +74,7 @@ class AttachmentThumbnail extends StatelessWidget {
 					);
 				}
 				else if (loadstate.extendedImageLoadState == LoadState.failed) {
+					onLoadError?.call(loadstate.lastException);
 					return SizedBox(
 						width: width,
 						height: height,
