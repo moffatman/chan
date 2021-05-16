@@ -20,7 +20,7 @@ class SavedAttachmentThumbnail extends StatefulWidget {
 class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 	MediaScan? scan;
 
-	String get ext => widget.file.path.split('.').last;
+	String get ext => widget.file.path.split('.').last.toLowerCase();
 
 	Future<void> _scan() async {
 		if (ext == 'webm' || ext == 'mp4' || ext == 'mov') {

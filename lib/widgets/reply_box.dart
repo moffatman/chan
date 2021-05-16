@@ -87,7 +87,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		int? maximumDurationInSeconds,
 		required MediaConversion transcode
 	}) async {
-		final ext = source.path.split('.').last;
+		final ext = source.path.split('.').last.toLowerCase();
 		bool loading = false;
 		ValueNotifier<double?> progress = ValueNotifier<double?>(null);
 		final problems = [
@@ -166,7 +166,7 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	Future<void> _showAttachmentWindow() async {
 		if (attachment != null) {
-			final ext = attachment!.path.split('.').last;
+			final ext = attachment!.path.split('.').last.toLowerCase();
 			final _controller = TextEditingController()..text = overrideAttachmentFilename?.replaceAll(RegExp('.$ext\$'), '') ?? '';
 			await Navigator.of(context).push(TransparentRoute(
 				builder: (context) => OverscrollModalPage(
@@ -293,7 +293,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				final board = Persistence.getBoard(widget.thread.board);
 				print(file);
 				print(file.path);
-				String ext = file.path.split('.').last;
+				String ext = file.path.split('.').last.toLowerCase();
 				if (ext == 'heic') {
 					final heicPath = await HeicToJpg.convert(file.path);
 					if (heicPath == null) {
