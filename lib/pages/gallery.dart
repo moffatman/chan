@@ -4,14 +4,15 @@ import 'dart:math' as math;
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/services/webm.dart';
+import 'package:chan/services/media.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/rx_stream_builder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
-import 'package:chan/widgets/viewers/viewer.dart';
+import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
@@ -19,8 +20,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:share/share.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 
 const double _THUMBNAIL_SIZE = 60;
@@ -60,6 +61,7 @@ enum _GalleryMenuSelection {
 
 class GalleryPage extends StatefulWidget {
 	final List<Attachment> attachments;
+	final Map<Attachment, Uri> overrideSources;
 	final Attachment? initialAttachment;
 	final bool initiallyShowChrome;
 	final ValueChanged<Attachment>? onChange;
@@ -67,6 +69,7 @@ class GalleryPage extends StatefulWidget {
 
 	GalleryPage({
 		required this.attachments,
+		this.overrideSources = const {},
 		required this.initialAttachment,
 		required this.semanticParentIds,
 		this.initiallyShowChrome = false,
@@ -94,7 +97,6 @@ class _GalleryPageState extends State<GalleryPage> {
 	final Key _thumbnailsKey = GlobalKey();
 	AttachmentStatus lastDifferentCurrentStatus = AttachmentStatus();
 	final BehaviorSubject<Null> _scrollCoalescer = BehaviorSubject();
-	StreamSubscription<WEBMStatus>? webmSubscription;
 	double? _lastpageControllerPixels;
 
 	@override
@@ -147,6 +149,9 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	Future<Uri> _getGoodUrl(Attachment attachment) async {
+		if (widget.overrideSources[attachment] != null) {
+			return widget.overrideSources[attachment]!;
+		}
 		// Should check archives and send scaffold messages here
 		final site = context.read<ImageboardSite>();
 		final result = await site.client.head(attachment.url);
@@ -174,24 +179,23 @@ class _GalleryPageState extends State<GalleryPage> {
 			else if (attachment.type == AttachmentType.WEBM) {
 				statuses[attachment]!.add(AttachmentLoadingStatus());
 				final url = await _getGoodUrl(attachment);
-				final webm = WEBM(url);
-				webmSubscription = webm.status.listen((webmStatus) async {
-					if (webmStatus is WEBMErrorStatus) {
-						statuses[attachment]!.add(AttachmentUnavailableStatus(webmStatus.errorMessage));
-					}
-					else if (webmStatus is WEBMLoadingStatus) {
-						statuses[attachment]!.add(AttachmentLoadingStatus(progress: webmStatus.progress));
-					}
-					else if (webmStatus is WEBMReadyStatus) {
-						final controller = VideoPlayerController.file(webmStatus.file, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
-						await controller.initialize();
-						await controller.setLooping(true);
-						await controller.play();
-						cachedFiles[attachment] = webmStatus.file;
-						statuses[attachment]!.add(AttachmentVideoAvailableStatus(controller, webmStatus.hasAudio));
-					}
+				final webm = MediaConversion.toMp4(url);
+				webm.progress.addListener(() {
+					statuses[attachment]!.add(AttachmentLoadingStatus(progress: webm.progress.value));
 				});
-				webm.startProcessing();
+				webm.start();
+				try {
+					final result = await webm.result;
+					final controller = VideoPlayerController.file(result.file, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+					await controller.initialize();
+					await controller.setLooping(true);
+					await controller.play();
+					cachedFiles[attachment] = result.file;
+					statuses[attachment]!.add(AttachmentVideoAvailableStatus(controller, result.hasAudio));
+				}
+				catch (e) {
+					statuses[attachment]!.add(AttachmentUnavailableStatus(e.toString()));
+				}
 			}
 		}
 		catch (e) {
@@ -253,14 +257,18 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	bool canShare(Attachment attachment) {
-		return cachedFiles[attachment] != null;
+		return (widget.overrideSources[attachment] ?? cachedFiles[attachment]) != null;
 	}
 
 	Future<void> share(Attachment attachment) async {
-		final systemTempDirectory = await getTemporaryDirectory();
-		final shareDirectory = await (new Directory(systemTempDirectory.path + '/sharecache')).create(recursive: true);
+		final systemTempDirectory = Persistence.temporaryDirectory;
+		final shareDirectory = await (Directory(systemTempDirectory.path + '/sharecache')).create(recursive: true);
 		final newFilename = currentAttachment.id.toString() + currentAttachment.ext.replaceFirst('webm', 'mp4');
-		final renamedFile = await cachedFiles[currentAttachment]!.copy(shareDirectory.path.toString() + '/' + newFilename);
+		File? originalFile = cachedFiles[currentAttachment];
+		if (widget.overrideSources[attachment] != null) {
+			originalFile = File(widget.overrideSources[attachment]!.path);
+		}
+		final renamedFile = await originalFile!.copy(shareDirectory.path.toString() + '/' + newFilename);
 		await Share.shareFiles([renamedFile.path], subject: currentAttachment.filename);
 	}
 
@@ -297,6 +305,24 @@ class _GalleryPageState extends State<GalleryPage> {
 						trailing: Row(
 							mainAxisSize: MainAxisSize.min,
 							children: [
+								ValueListenableBuilder(
+									valueListenable: Persistence.savedAttachmentBox.listenable(keys: [currentAttachment.globalId]),
+									builder: (context, box, child) {
+										final currentlySaved = Persistence.getSavedAttachment(currentAttachment) != null;
+										return CupertinoButton(
+											padding: EdgeInsets.zero,
+											child: Icon(currentlySaved ? Icons.bookmark : Icons.bookmark_outline),
+											onPressed: canShare(currentAttachment) ? () {
+												if (currentlySaved) {
+													Persistence.getSavedAttachment(currentAttachment)?.delete();
+												}
+												else {
+													Persistence.saveAttachment(currentAttachment, cachedFiles[currentAttachment]!);
+												}
+											} : null
+										);
+									}
+								),
 								CupertinoButton(
 									padding: EdgeInsets.zero,
 									child: Icon(Icons.ios_share),
@@ -461,7 +487,6 @@ class _GalleryPageState extends State<GalleryPage> {
 	void dispose() {
 		super.dispose();
 		thumbnailScrollController.dispose();
-		webmSubscription?.cancel();
 		for (final status in statuses.values) {
 			if (status.value is AttachmentVideoAvailableStatus) {
 				(status.value as AttachmentVideoAvailableStatus).controller.dispose();
@@ -474,6 +499,7 @@ class _GalleryPageState extends State<GalleryPage> {
 Future<Attachment?> showGallery({
 	required BuildContext context,
 	required List<Attachment> attachments,
+	Map<Attachment, Uri> overrideSources = const {},
 	required Iterable<int> semanticParentIds,
 	Attachment? initialAttachment,
 	bool initiallyShowChrome = false,
@@ -483,6 +509,7 @@ Future<Attachment?> showGallery({
 		builder: (BuildContext _context) {
 			return GalleryPage(
 				attachments: attachments,
+				overrideSources: overrideSources,
 				initialAttachment: initialAttachment,
 				initiallyShowChrome: initiallyShowChrome,
 				onChange: onChange,

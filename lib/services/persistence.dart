@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
@@ -6,8 +8,10 @@ import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:extended_image_library/extended_image_library.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 part 'persistence.g.dart';
 
 class UriAdapter extends TypeAdapter<Uri> {
@@ -26,10 +30,16 @@ class UriAdapter extends TypeAdapter<Uri> {
 	}
 }
 
+const _SAVED_ATTACHMENTS_THUMBS_DIR = 'saved_attachments_thumbs';
+const _SAVED_ATTACHMENTS_DIR = 'saved_attachments';
+
 class Persistence {
 	static final threadStateBox = Hive.box<PersistentThreadState>('threadStates');
 	static final boardBox = Hive.box<ImageboardBoard>('boards');
+	static final savedAttachmentBox = Hive.box<SavedAttachment>('savedAttachments');
 	static late final PersistentRecentSearches recentSearches;
+	static late final Directory temporaryDirectory;
+	static late final Directory documentsDirectory;
 
 	static Future<void> initialize() async {
 		await Hive.initFlutter();
@@ -51,6 +61,11 @@ class Persistence {
 		Hive.registerAdapter(PostTypeFilterAdapter());
 		Hive.registerAdapter(MediaFilterAdapter());
 		Hive.registerAdapter(PersistentRecentSearchesAdapter());
+		Hive.registerAdapter(SavedAttachmentAdapter());
+		temporaryDirectory = await getTemporaryDirectory();
+		documentsDirectory = await getApplicationDocumentsDirectory();
+		await Directory('${documentsDirectory.path}/$_SAVED_ATTACHMENTS_DIR').create(recursive: true);
+		await Directory('${documentsDirectory.path}/$_SAVED_ATTACHMENTS_THUMBS_DIR').create(recursive: true);
 		await Hive.openBox<SavedSettings>('settings');
 		await Hive.openBox<PersistentThreadState>('threadStates');
 		final searchesBox = await Hive.openBox<PersistentRecentSearches>('recentSearches');
@@ -63,6 +78,7 @@ class Persistence {
 			searchesBox.put('recentSearches', recentSearches);
 		}
 		await Hive.openBox<ImageboardBoard>('boards');
+		await Hive.openBox<SavedAttachment>('savedAttachments');
 	}
 
 	static PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
@@ -93,6 +109,24 @@ class Persistence {
 		else {
 			throw BoardNotFoundException(boardName);
 		}
+	}
+
+	static SavedAttachment? getSavedAttachment(Attachment attachment) {
+		return savedAttachmentBox.get(attachment.globalId);
+	}
+
+	static void saveAttachment(Attachment attachment, File fullResolutionFile) {
+		final newSavedAttachment = SavedAttachment(attachment: attachment, savedTime: DateTime.now());
+		savedAttachmentBox.put(attachment.globalId, newSavedAttachment);
+		fullResolutionFile.copy(newSavedAttachment.file.path);
+		getCachedImageFile(attachment.thumbnailUrl.toString()).then((file) {
+			if (file != null) {
+				file.copy(newSavedAttachment.thumbnailFile.path);
+			}
+			else {
+				print('Failed to find cached copy of ${attachment.thumbnailUrl.toString()}');
+			}
+		});
 	}
 }
 
@@ -155,4 +189,29 @@ class PostReceipt extends HiveObject {
 	});
 	@override
 	String toString() => 'PostReceipt(id: $id, password: $password)';
+}
+
+@HiveType(typeId: 18)
+class SavedAttachment extends HiveObject {
+	@HiveField(0)
+	final Attachment attachment;
+	@HiveField(1)
+	final DateTime savedTime;
+	@HiveField(2)
+	final List<int> tags;
+	SavedAttachment({
+		required this.attachment,
+		required this.savedTime,
+		List<int>? tags
+	}) : this.tags = tags ?? [];
+
+	@override
+	Future<void> delete() async {
+		super.delete();
+		await thumbnailFile.delete();
+		await file.delete();
+	}
+
+	File get thumbnailFile => File('${Persistence.documentsDirectory.path}/$_SAVED_ATTACHMENTS_THUMBS_DIR/${attachment.globalId}.jpg');
+	File get file => File('${Persistence.documentsDirectory.path}/$_SAVED_ATTACHMENTS_DIR/${attachment.globalId}${attachment.ext == '.webm' ? '.mp4' : attachment.ext}');
 }

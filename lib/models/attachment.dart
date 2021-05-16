@@ -49,4 +49,6 @@ class Attachment {
 	}) : this.spoiler = spoiler ?? false;
 
 	bool? get isLandscape => (width == null || height == null) ? null : width! > height!;
+
+	String get globalId => '${board}_$id';
 }

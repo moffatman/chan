@@ -45,5 +45,11 @@
 		<false/>
 		<key>UIStatusBarStyle</key>
 		<string>UIStatusBarStyleLightContent</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Photo library permissions are necessary to select images</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Camera permissions are necessary to capture images</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Microphone permissions are necessary to capture videos</string>
 	</dict>
 </plist>

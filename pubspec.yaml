@@ -35,6 +35,9 @@ dependencies:
   hive: "^2.0.1"
   hive_flutter: "^1.0.0"
   image: "^3.0.2"
+  image_picker: "^0.7.4"
+  heic_to_jpg: "^0.2.0"
+  mutex: "^3.0.0"
   flutter:
     sdk: flutter
 

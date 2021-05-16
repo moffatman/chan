@@ -85,17 +85,26 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		super.dispose();
 	}
 
+	Widget _build(double? value) {
+		return CustomPaint(
+			size: Size(50, 50),
+			painter: _CircularLoadingIndicatorPainter(
+				value: value,
+				initialAnimation: _initialController,
+				continuousAnimation: _continuousController,
+				animationRatio: 1 / 6,
+				color: widget.color ?? CupertinoTheme.of(context).primaryColor
+			)
+		);
+	}
+
 	@override Widget build(BuildContext context) {
 		return Container(
-			child: CustomPaint(
-				size: Size(50, 50),
-				painter: _CircularLoadingIndicatorPainter(
-					value: widget.value,
-					initialAnimation: _initialController,
-					continuousAnimation: _continuousController,
-					animationRatio: 1 / 6,
-					color: widget.color ?? CupertinoTheme.of(context).primaryColor
-				)
+			child: (widget.value == null) ? _build(widget.value) : TweenAnimationBuilder(
+				tween: Tween<double>(begin: 0, end: widget.value),
+				curve: Curves.linear,
+				duration: const Duration(milliseconds: 150),
+				builder: (context, double? smoothedValue, child) => _build(smoothedValue)
 			)
 		);
 	}

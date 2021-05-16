@@ -1,9 +1,11 @@
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/master_detail.dart';
+import 'package:chan/pages/saved_attachments.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -54,6 +56,30 @@ class SavedPage extends StatelessWidget {
 					child: SafeArea(
 						child: Column(
 							children: [
+								GestureDetector(
+									behavior: HitTestBehavior.translucent,
+									child: Container(
+										height: 75,
+										padding: EdgeInsets.all(8),
+										child: Row(
+											children: [
+												Icon(Icons.image),
+												SizedBox(width: 8),
+												Text('Saved Attachments'),
+												Spacer(),
+												Icon(Icons.chevron_right)
+											]
+										)
+									),
+									onTap: () {
+										Navigator.of(context).push(FullWidthCupertinoPageRoute(builder: (ctx) => SavedAttachmentsPage()));
+									}
+								),
+								Divider(
+									thickness: 1,
+									height: 0,
+									color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
+								),
 								ThreadWatcherControls(),
 								Divider(
 									thickness: 1,

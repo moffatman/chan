@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/services/rotating_image_provider.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/circular_loading_indicator.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:chan/widgets/viewers/image.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -37,13 +37,57 @@ class AttachmentViewer extends StatelessWidget {
 			quarterTurns = 1;
 		}
 		if (attachment.type == AttachmentType.Image && (status is AttachmentImageUrlAvailableStatus || status is AttachmentLoadingStatus)) {
-			return GalleryImageViewer(
-				attachment: attachment,
-				quarterTurns: quarterTurns,
-				url: (status is AttachmentImageUrlAvailableStatus) ? (status as AttachmentImageUrlAvailableStatus).url : attachment.thumbnailUrl,
-				onCacheCompleted: onCacheCompleted,
-				isThumbnail: !(status is AttachmentImageUrlAvailableStatus),
-				tag: tag
+			final url = (status is AttachmentImageUrlAvailableStatus) ? (status as AttachmentImageUrlAvailableStatus).url : attachment.thumbnailUrl;
+			ImageProvider image = ExtendedNetworkImageProvider(
+				url.toString(),
+				cache: true
+			);
+			if (url.scheme == 'file') {
+				image = ExtendedFileImageProvider(
+					File(url.path),
+					imageCacheName: 'asdf'
+				);
+			}
+			if (quarterTurns != 0) {
+				image = RotatingImageProvider(parent: image, quarterTurns: quarterTurns);
+			}
+			return ExtendedImage(
+				image: image,
+				enableSlideOutPage: true,
+				gaplessPlayback: true,
+				fit: BoxFit.contain,
+				mode: ExtendedImageMode.gesture,
+				width: double.infinity,
+				height: double.infinity,
+				onDoubleTap: (state) {
+					final old = state.gestureDetails!;
+					state.gestureDetails = GestureDetails(
+						offset: state.pointerDownPosition!.scale(old.layoutRect!.width / MediaQuery.of(context).size.width, old.layoutRect!.height / MediaQuery.of(context).size.height) * -1,
+						totalScale: (old.totalScale ?? 1) > 1 ? 1 : 2,
+						actionType: ActionType.zoom
+					);
+				},
+				loadStateChanged: (loadstate) {
+					if ((loadstate.extendedImageLoadState == LoadState.completed) && (status is AttachmentImageUrlAvailableStatus)) {
+						getCachedImageFile(url.toString()).then((file) {
+							if (file != null) {
+								onCacheCompleted?.call(file);
+							}
+						});
+					}
+				},
+				initGestureConfigHandler: (state) {
+					return GestureConfig(
+						inPageView: true
+					);
+				},
+				heroBuilderForSlidingPage: (Widget result) {
+					return Hero(
+						tag: tag ?? attachment,
+						child: result,
+						flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
+					);
+				}
 			);
 		}
 		else {
@@ -51,7 +95,8 @@ class AttachmentViewer extends StatelessWidget {
 				heroBuilderForSlidingPage: (Widget result) {
 					return Hero(
 						tag: tag ?? attachment,
-						child: result
+						child: result,
+						flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
 					);
 				},
 				child: Stack(

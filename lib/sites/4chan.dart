@@ -393,7 +393,8 @@ class Site4Chan implements ImageboardSite {
 		String options = '',
 		required String text,
 		required String captchaKey,
-		File? file
+		File? file,
+		String? overrideFilename
 	}) async {
 		final random = Random();
 		final password = List.generate(64, (i) => random.nextInt(16).toRadixString(16)).join();
@@ -405,6 +406,9 @@ class Site4Chan implements ImageboardSite {
 			'pwd': password,
 			'g-recaptcha-response': captchaKey
 		});
+		if (file != null) {
+			request.files.add(await http.MultipartFile.fromPath('upfile', file.path, filename: overrideFilename));
+		}
 		final response = await client.send(request);
 		final body = await response.stream.bytesToString();
 		final document = parse(body);

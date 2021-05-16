@@ -1,10 +1,10 @@
 import 'dart:io';
 
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -98,7 +98,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 
 	Future<void> _readFilesystemInfo() async {
 		folderSizes = {};
-		final systemTempDirectory = await getTemporaryDirectory();
+		final systemTempDirectory = Persistence.temporaryDirectory;
 		for (final dirName in _KNOWN_CACHE_DIRS.keys) {
 			final directory = Directory(systemTempDirectory.path + '/' + dirName);
 			if (await directory.exists()) {
@@ -117,7 +117,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 			clearing = true;
 		});
 		await clearDiskCachedImages();
-		final systemTempDirectory = await getTemporaryDirectory();
+		final systemTempDirectory = Persistence.temporaryDirectory;
 		for (final dirName in _KNOWN_CACHE_DIRS.keys) {
 			final directory = Directory(systemTempDirectory.path + '/' + dirName);
 			if (await directory.exists()) {
