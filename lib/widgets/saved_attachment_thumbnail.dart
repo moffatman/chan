@@ -23,7 +23,7 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 	String get ext => widget.file.path.split('.').last;
 
 	Future<void> _scan() async {
-		if (ext == 'webm' || ext == 'mp4') {
+		if (ext == 'webm' || ext == 'mp4' || ext == 'mov') {
 			scan = await MediaScan.scan(widget.file.uri);
 			setState(() {});
 		}
@@ -56,7 +56,7 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 				label = Text('${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}', style: TextStyle(fontSize: widget.fontSize));
 			}
 		}
-		if (ext == 'webm' || ext == 'mp4') {
+		if (ext == 'webm' || ext == 'mp4' || ext == 'mov') {
 			return IntrinsicWidth(
 				child: Stack(
 					alignment: Alignment.center,
