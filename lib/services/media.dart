@@ -104,7 +104,7 @@ class MediaConversion {
 	static MediaConversion toMp4(Uri inputFile) {
 		List<String> extraOptions = [];
 		if (Platform.isAndroid) {
-			extraOptions = ['-c:v', 'libx264', '-preset', 'ultrafast'];
+			extraOptions = ['-c:v', 'libx264', '-preset', 'ultrafast', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'];
 		}
 		else if (Platform.isIOS) {
 			extraOptions = ['-vcodec', 'h264_videotoolbox'];
