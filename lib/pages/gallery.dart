@@ -98,6 +98,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	AttachmentStatus lastDifferentCurrentStatus = AttachmentStatus();
 	final BehaviorSubject<Null> _scrollCoalescer = BehaviorSubject();
 	double? _lastpageControllerPixels;
+	bool _animatingNow = false;
 
 	@override
 	void initState() {
@@ -216,30 +217,30 @@ class _GalleryPageState extends State<GalleryPage> {
 		}
 	}
 
-	void _animateToPage(int index, {int milliseconds = 200}) {
+	Future<void> _animateToPage(int index, {int milliseconds = 200}) async {
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
 		if (context.read<EffectiveSettings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
 			requestRealViewer(widget.attachments[index]);
 		}
-		setState(() {
-			if (milliseconds == 0) {
-				pageController.jumpToPage(index);
-			}
-			else {
-				pageController.animateToPage(
-					index,
-					duration: Duration(milliseconds: milliseconds),
-					curve: Curves.ease
-				);
-			}
-		});
+		_animatingNow = true;
+		if (milliseconds == 0) {
+			pageController.jumpToPage(index);
+		}
+		else {
+			await pageController.animateToPage(
+				index,
+				duration: Duration(milliseconds: milliseconds),
+				curve: Curves.ease
+			);
+		}
+		_animatingNow = false;
 	}
 
 	void _onPageChanged(int index) {
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
-		if (context.read<EffectiveSettings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
+		if (!_animatingNow && context.read<EffectiveSettings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
 			requestRealViewer(widget.attachments[index]);
 		}
 		currentIndex = index;
