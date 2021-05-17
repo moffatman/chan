@@ -55,4 +55,10 @@ class RotatingImageProvider extends ImageProvider<RotatedImageKey> {
 			quarterTurns: quarterTurns
 		);
 	}
+
+	@override
+	bool operator == (dynamic o) => (o is RotatingImageProvider) && (o.parent == parent) && (o.quarterTurns == quarterTurns);
+
+	@override
+	int get hashCode => hashValues(parent, quarterTurns);
 }

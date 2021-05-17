@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:chan/services/media.dart';
 import 'package:flutter/foundation.dart';
