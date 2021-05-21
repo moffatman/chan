@@ -3,9 +3,11 @@ import 'dart:math';
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/refreshable_list.dart';
+import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -32,6 +34,7 @@ class BoardPage extends StatefulWidget {
 
 class _BoardPageState extends State<BoardPage> {
 	late ImageboardBoard board;
+	bool showReplyBox = false;
 
 	@override
 	void initState() {
@@ -69,78 +72,116 @@ class _BoardPageState extends State<BoardPage> {
 						]
 					)
 				),
-				trailing: CupertinoButton(
-					padding: EdgeInsets.zero,
-					child: Transform(
-						alignment: Alignment.center,
-						transform: settings.reverseCatalogSorting ? Matrix4.rotationX(pi) : Matrix4.identity(),
-						child: Icon(Icons.sort)
-					),
-					onPressed: () {
-						showCupertinoModalPopup<DateTime>(
-							context: context,
-							builder: (context) => CupertinoActionSheet(
-								title: const Text('Sort by...'),
-								actions: {
-									ThreadSortingMethod.Unsorted: 'Bump Order',
-									ThreadSortingMethod.ReplyCount: 'Reply Count',
-									ThreadSortingMethod.OPTime: 'Creation Date'
-								}.entries.map((entry) => CupertinoActionSheetAction(
-									child: Text(entry.value, style: TextStyle(
-										fontWeight: entry.key == settings.catalogSortingMethod ? FontWeight.bold : null
-									)),
-									onPressed: () {
-										if (settings.catalogSortingMethod == entry.key) {
-											settings.reverseCatalogSorting = !settings.reverseCatalogSorting;
-										}
-										else {
-											settings.reverseCatalogSorting = false;
-											settings.catalogSortingMethod = entry.key;
-										}
-										Navigator.of(context, rootNavigator: true).pop();
-									}
-								)).toList(),
-								cancelButton: CupertinoActionSheetAction(
-									child: const Text('Cancel'),
-									onPressed: () => Navigator.of(context, rootNavigator: true).pop()
-								)
-							)
-						);
-					}
+				trailing: Row(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						CupertinoButton(
+							padding: EdgeInsets.zero,
+							child: Transform(
+								alignment: Alignment.center,
+								transform: settings.reverseCatalogSorting ? Matrix4.rotationX(pi) : Matrix4.identity(),
+								child: Icon(Icons.sort)
+							),
+							onPressed: () {
+								showCupertinoModalPopup<DateTime>(
+									context: context,
+									builder: (context) => CupertinoActionSheet(
+										title: const Text('Sort by...'),
+										actions: {
+											ThreadSortingMethod.Unsorted: 'Bump Order',
+											ThreadSortingMethod.ReplyCount: 'Reply Count',
+											ThreadSortingMethod.OPTime: 'Creation Date'
+										}.entries.map((entry) => CupertinoActionSheetAction(
+											child: Text(entry.value, style: TextStyle(
+												fontWeight: entry.key == settings.catalogSortingMethod ? FontWeight.bold : null
+											)),
+											onPressed: () {
+												if (settings.catalogSortingMethod == entry.key) {
+													settings.reverseCatalogSorting = !settings.reverseCatalogSorting;
+												}
+												else {
+													settings.reverseCatalogSorting = false;
+													settings.catalogSortingMethod = entry.key;
+												}
+												Navigator.of(context, rootNavigator: true).pop();
+											}
+										)).toList(),
+										cancelButton: CupertinoActionSheetAction(
+											child: const Text('Cancel'),
+											onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+										)
+									)
+								);
+							}
+						),
+						CupertinoButton(
+							padding: EdgeInsets.zero,
+							child: Icon(Icons.create),
+							onPressed: () {
+								setState(() {
+									showReplyBox = !showReplyBox;
+								});
+							}
+						)
+					]
 				)
 			),
-			child: RefreshableList<Thread>(
-				listUpdater: () => site.getCatalog(board.name).then((list) {
-					if (settings.hideStickiedThreads) {
-						list = list.where((thread) => !thread.isSticky).toList();
-					}
-					if (settings.catalogSortingMethod == ThreadSortingMethod.ReplyCount) {
-						list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
-					}
-					else if (settings.catalogSortingMethod == ThreadSortingMethod.OPTime) {
-						list.sort((a, b) => b.id.compareTo(a.id));
-					}
-					return settings.reverseCatalogSorting ? list.reversed.toList() : list;
-				}),
-				id: '/${board.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
-				itemBuilder: (context, thread) {
-					return GestureDetector(
-						behavior: HitTestBehavior.opaque,
-						child: ThreadRow(
-							thread: thread,
-							isSelected: thread.identifier == widget.selectedThread
-						),
-						onTap: () {
-							if (widget.onThreadSelected != null) {
-								widget.onThreadSelected!(thread.identifier);
-							}
-							else {
-								Navigator.of(context).push(FullWidthCupertinoPageRoute(builder: (ctx) => ThreadPage(thread: thread.identifier)));
-							}
+			child: Column(
+				children: [
+					Flexible(
+						child: RefreshableList<Thread>(
+							listUpdater: () => site.getCatalog(board.name).then((list) {
+								if (settings.hideStickiedThreads) {
+									list = list.where((thread) => !thread.isSticky).toList();
+								}
+								if (settings.catalogSortingMethod == ThreadSortingMethod.ReplyCount) {
+									list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
+								}
+								else if (settings.catalogSortingMethod == ThreadSortingMethod.OPTime) {
+									list.sort((a, b) => b.id.compareTo(a.id));
+								}
+								return settings.reverseCatalogSorting ? list.reversed.toList() : list;
+							}),
+							id: '/${board.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
+							itemBuilder: (context, thread) {
+								return GestureDetector(
+									behavior: HitTestBehavior.opaque,
+									child: ThreadRow(
+										thread: thread,
+										isSelected: thread.identifier == widget.selectedThread
+									),
+									onTap: () {
+										if (widget.onThreadSelected != null) {
+											widget.onThreadSelected!(thread.identifier);
+										}
+										else {
+											Navigator.of(context).push(FullWidthCupertinoPageRoute(builder: (ctx) => ThreadPage(thread: thread.identifier)));
+										}
+									}
+								);
+							},
+							filterHint: 'Search in board'
+						)
+					),
+					ReplyBox(
+						board: board.name,
+						visible: showReplyBox,
+						onReplyPosted: (receipt) {
+							final persistentState = Persistence.getThreadState(ThreadIdentifier(board: board.name, id: receipt.id));
+							persistentState.savedTime = DateTime.now();
+							persistentState.save();
+							setState(() {
+								showReplyBox = false;
+							});
+							widget.onThreadSelected?.call(ThreadIdentifier(board: board.name, id: receipt.id));
+						},
+						onRequestFocus: () {
+							setState(() {
+								showReplyBox = true;
+							});
 						}
-					);
-				},
-				filterHint: 'Search in board'
+					)
+				]
 			)
 		);
 	}

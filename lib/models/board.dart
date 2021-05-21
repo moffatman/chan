@@ -26,6 +26,12 @@ class ImageboardBoard {
 	final int? threadImageLimit;
 	@HiveField(10)
 	final int? pageCount;
+	@HiveField(11)
+	final int? threadCooldown;
+	@HiveField(12)
+	final int? replyCooldown;
+	@HiveField(13)
+	final int? imageCooldown;
 
 	ImageboardBoard({
 		required this.name,
@@ -38,6 +44,9 @@ class ImageboardBoard {
 		this.maxCommentCharacters,
 		this.threadCommentLimit,
 		this.threadImageLimit,
-		this.pageCount
+		this.pageCount,
+		this.threadCooldown,
+		this.replyCooldown,
+		this.imageCooldown
 	});
 }

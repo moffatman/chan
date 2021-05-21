@@ -53,6 +53,12 @@ class ImageboardArchiveException implements Exception {
 	String toString() => archiveErrors.entries.map((e) => '${e.key}: ${e.value}').join(', ');
 }
 
+enum ImageboardAction {
+	PostThread,
+	PostReply,
+	PostReplyWithImage
+}
+
 class CaptchaRequest {
 	final String key;
 	final String sourceUrl;
@@ -89,6 +95,16 @@ abstract class ImageboardSiteArchive {
 abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get imageUrl;
 	CaptchaRequest getCaptchaRequest();
+	Future<PostReceipt> createThread({
+		required String board,
+		String name = '',
+		String options = '',
+		String subject = '',
+		required String text,
+		required String captchaKey,
+		File? file,
+		String? overrideFilename
+	});
 	Future<PostReceipt> postReply({
 		required ThreadIdentifier thread,
 		String name = '',
@@ -98,6 +114,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		File? file,
 		String? overrideFilename
 	});
+	DateTime? getActionAllowedTime(String board, ImageboardAction action);
 	Future<void> deletePost(String board, PostReceipt receipt);
 	Future<Post> getPostFromArchive(String board, int id);
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread);

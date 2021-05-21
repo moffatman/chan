@@ -66,6 +66,11 @@ class Site4Chan implements ImageboardSite {
 	final unescape = HtmlUnescape();
 	final Map<String, _ThreadCacheEntry> _threadCache = Map();
 	final Map<String, _CatalogCache> _catalogCaches = Map();
+	final _lastActionTime = {
+		ImageboardAction.PostReply: Map<String, DateTime>(),
+		ImageboardAction.PostReplyWithImage: Map<String, DateTime>(),
+		ImageboardAction.PostThread: Map<String, DateTime>(),
+	};
 
 	static List<PostSpan> parsePlaintext(String text) {
 		return linkify(text, linkifiers: [UrlLinkifier()]).map((elem) {
@@ -372,7 +377,10 @@ class Site4Chan implements ImageboardSite {
 				maxWebmDurationSeconds: board['max_webm_duration'],
 				threadCommentLimit: board['bump_limit'],
 				threadImageLimit: board['image_limit'],
-				pageCount: board['pages']
+				pageCount: board['pages'],
+				threadCooldown: board['cooldowns']?['threads'],
+				replyCooldown: board['cooldowns']?['replies'],
+				imageCooldown: board['cooldowns']?['images']
 			);
 		}).toList();
 	}
@@ -387,9 +395,12 @@ class Site4Chan implements ImageboardSite {
 		return CaptchaRequest(key: captchaKey, sourceUrl: 'https://' + baseUrl);
 	}
 
-	Future<PostReceipt> postReply({
-		required ThreadIdentifier thread,
+	
+	Future<PostReceipt> _post({
+		required String board,
+		int? threadId,
 		String name = '',
+		String? subject,
 		String options = '',
 		required String text,
 		required String captchaKey,
@@ -398,9 +409,10 @@ class Site4Chan implements ImageboardSite {
 	}) async {
 		final random = Random();
 		final password = List.generate(64, (i) => random.nextInt(16).toRadixString(16)).join();
-		final request = http.MultipartRequest('POST', Uri.https(sysUrl, '/${thread.board}/post'));
+		final request = http.MultipartRequest('POST', Uri.https(sysUrl, '/$board/post'));
 		request.fields.addAll({
-			'resto': thread.id.toString(),
+			if (threadId != null) 'resto': threadId.toString(),
+			if (subject != null) 'sub': subject,
 			'com': text,
 			'mode': 'regist',
 			'pwd': password,
@@ -414,8 +426,17 @@ class Site4Chan implements ImageboardSite {
 		final document = parse(body);
 		final metaTag = document.querySelector('meta[http-equiv="refresh"]');
 		if (metaTag != null) {
+			if (threadId == null) {
+				_lastActionTime[ImageboardAction.PostThread]![board] = DateTime.now();
+			}
+			else {
+				_lastActionTime[ImageboardAction.PostReply]![board] = DateTime.now();
+				if (file != null) {
+					_lastActionTime[ImageboardAction.PostReplyWithImage]![board] = DateTime.now();
+				}
+			}
 			return PostReceipt(
-				id: int.parse(metaTag.attributes['content']!.split('#p').last),
+				id: int.parse(metaTag.attributes['content']!.split(RegExp(r'\/|(#p)')).last),
 				password: password
 			);
 		}
@@ -428,6 +449,58 @@ class Site4Chan implements ImageboardSite {
 				print(body);
 				throw PostFailedException('Unknown error');
 			}
+		}
+	}
+
+	Future<PostReceipt> createThread({
+		required String board,
+		String name = '',
+		String options = '',
+		String subject = '',
+		required String text,
+		required String captchaKey,
+		File? file,
+		String? overrideFilename
+	}) => _post(
+		board: board,
+		name: name,
+		options: options,
+		subject: subject,
+		text: text,
+		captchaKey: captchaKey,
+		file: file,
+		overrideFilename: overrideFilename
+	);
+
+	Future<PostReceipt> postReply({
+		required ThreadIdentifier thread,
+		String name = '',
+		String options = '',
+		required String text,
+		required String captchaKey,
+		File? file,
+		String? overrideFilename
+	}) => _post(
+		board: thread.board,
+		threadId: thread.id,
+		name: name,
+		options: options,
+		text: text,
+		captchaKey: captchaKey,
+		file: file,
+		overrideFilename: overrideFilename
+	);
+
+	DateTime? getActionAllowedTime(String board, ImageboardAction action) {
+		final lastActionTime = _lastActionTime[action]![board];
+		final b = Persistence.getBoard(board);
+		switch (action) {
+			case ImageboardAction.PostReply:
+				return lastActionTime?.add(Duration(seconds: b.replyCooldown ?? 0));
+			case ImageboardAction.PostReplyWithImage:
+				return lastActionTime?.add(Duration(seconds: b.imageCooldown ?? 0));
+			case ImageboardAction.PostThread:
+				return lastActionTime?.add(Duration(seconds: b.threadCooldown ?? 0));
 		}
 	}
 
