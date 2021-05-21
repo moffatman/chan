@@ -37,6 +37,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final Object? hero;
 	final int quarterTurns;
 	final ValueChanged<Object?>? onLoadError;
+	final bool gaplessPlayback;
 
 	AttachmentThumbnail({
 		required this.attachment,
@@ -46,7 +47,8 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.fit = BoxFit.contain,
 		this.hero,
 		this.quarterTurns = 0,
-		this.onLoadError
+		this.onLoadError,
+		this.gaplessPlayback = false
 	});
 
 	@override
@@ -63,7 +65,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			width: width,
 			height: height,
 			fit: fit,
-			gaplessPlayback: true,
+			gaplessPlayback: gaplessPlayback,
 			loadStateChanged: (loadstate) {
 				if (loadstate.extendedImageLoadState == LoadState.loading) {
 					return SizedBox(

@@ -105,7 +105,8 @@ class AttachmentViewer extends StatelessWidget {
 							attachment: attachment,
 							width: double.infinity,
 							height: double.infinity,
-							quarterTurns: quarterTurns
+							quarterTurns: quarterTurns,
+							gaplessPlayback: true
 						),
 						if (status is AttachmentUnavailableStatus) Center(
 							child: ErrorMessageCard((status as AttachmentUnavailableStatus).cause)
