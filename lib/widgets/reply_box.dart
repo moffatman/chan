@@ -89,7 +89,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	final _nameFieldController = TextEditingController();
 	final _subjectFieldController = TextEditingController();
 	final _optionsFieldController = TextEditingController();
-	final _focusNode = FocusNode();
+	final _textFocusNode = FocusNode();
 	bool loading = false;
 	File? attachment;
 	String? overrideAttachmentFilename;
@@ -103,9 +103,20 @@ class ReplyBoxState extends State<ReplyBox> {
 		});
 	}
 
+	@override
+	void didUpdateWidget(ReplyBox old) {
+		super.didUpdateWidget(old);
+		if (old.visible && !widget.visible) {
+			_textFocusNode.unfocus();
+		}
+		else if (!old.visible && widget.visible) {
+			_textFocusNode.requestFocus();
+		}
+	}
+
 	void onTapPostId(int id) {
 		widget.onRequestFocus?.call();
-		_focusNode.requestFocus();
+		_textFocusNode.requestFocus();
 		int currentPos = _textFieldController.selection.base.offset;
 		if (currentPos < 0) {
 			currentPos = _textFieldController.text.length;
@@ -121,10 +132,6 @@ class ReplyBoxState extends State<ReplyBox> {
 			),
 			text: _textFieldController.text.substring(0, currentPos) + insertedText + _textFieldController.text.substring(currentPos)
 		);
-	}
-
-	void shouldRequestFocusNow() {
-		_focusNode.requestFocus();
 	}
 
 	Future<File?> _showTranscodeWindow({
@@ -406,7 +413,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				overrideAttachmentFilename = null;
 			});
 			print(receipt);
-			_focusNode.unfocus();
+			_textFocusNode.unfocus();
 			final threadState = Persistence.getThreadState((widget.threadId != null) ?
 				ThreadIdentifier(board: widget.board, id: widget.threadId!) :
 				ThreadIdentifier(board: widget.board, id: receipt.id));
@@ -556,8 +563,7 @@ class ReplyBoxState extends State<ReplyBox> {
 									placeholder: 'Comment',
 									maxLines: null,
 									minLines: 10,
-									autofocus: true,
-									focusNode: _focusNode,
+									focusNode: _textFocusNode,
 									textCapitalization: TextCapitalization.sentences,
 									keyboardAppearance: CupertinoTheme.of(context).brightness,
 								),

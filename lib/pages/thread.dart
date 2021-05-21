@@ -41,7 +41,6 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 	bool showReplyBox = false;
 	final _subNavigatorKey = GlobalKey<NavigatorState>();
 
-	final _focusNode = FocusNode();
 	final _listController = RefreshableListController<Post>();
 	late PostSpanRootZoneData zone;
 	bool blocked = false;
@@ -184,12 +183,6 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 									onPressed: persistentState.thread?.isArchived == true ? null : () {
 										setState(() {
 											showReplyBox = !showReplyBox;
-											if (showReplyBox) {
-												context.read<GlobalKey<ReplyBoxState>>().currentState!.shouldRequestFocusNow();
-											}
-											else {
-												_focusNode.requestFocus();
-											}
 										});
 									}
 								)
@@ -223,7 +216,6 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 												},
 												child: Focus(
 													autofocus: true,
-													focusNode: _focusNode,
 													child: Stack(
 														fit: StackFit.expand,
 														children: [
