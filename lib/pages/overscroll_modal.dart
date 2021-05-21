@@ -20,8 +20,7 @@ class OverscrollModalPage extends StatefulWidget {
 
 class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	late final ScrollController _controller;
-	final GlobalKey _topSpacerKey = GlobalKey();
-	final GlobalKey _bottomSpacerKey = GlobalKey();
+	final GlobalKey _childKey = GlobalKey();
 	late double _scrollStopPosition;
 	Offset? _pointerDownPosition;
 	bool _pointerInSpacer = false;
@@ -68,10 +67,9 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 				SafeArea(
 					child: Listener(
 						onPointerDown: (event) {
-							final RenderBox topBox = _topSpacerKey.currentContext!.findRenderObject()! as RenderBox;
-							final RenderBox bottomBox = _bottomSpacerKey.currentContext!.findRenderObject()! as RenderBox;
+							final RenderBox childBox = _childKey.currentContext!.findRenderObject()! as RenderBox;
 							_pointerDownPosition = event.position;
-							_pointerInSpacer = event.position.dy < topBox.localToGlobal(topBox.semanticBounds.bottomCenter).dy || event.position.dy > bottomBox.localToGlobal(bottomBox.semanticBounds.topCenter).dy;
+							_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter).dy;
 						},
 						onPointerMove: (event) {
 							if (_pointerInSpacer) {
@@ -100,22 +98,18 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 							physics: AlwaysScrollableScrollPhysics(),
 							slivers: [
 								SliverFillRemaining(
-									hasScrollBody: false,
-									child: Column(
-										children: [
-											Flexible(
-												key: _topSpacerKey,
-												child: Container()
-											),
-											Opacity(
+									hasScrollBody: true,
+									child: ConstrainedBox(
+										constraints: BoxConstraints(
+											minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.vertical
+										),
+										child: Center(
+											child: Opacity(
+												key: _childKey,
 												opacity: _opacity,
 												child: widget.child
-											),
-											Flexible(
-												key: _bottomSpacerKey,
-												child: Container()
 											)
-										]
+										)
 									)
 								)
 							]

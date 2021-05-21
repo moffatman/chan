@@ -37,6 +37,7 @@ class PostsPage extends StatelessWidget {
 				value: zone,
 				child: Builder(
 					builder: (ctx) => Column(
+						mainAxisSize: MainAxisSize.min,
 						children: replies.map((reply) {
 							return PostRow(
 								post: reply,
