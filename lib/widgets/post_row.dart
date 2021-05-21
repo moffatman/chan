@@ -169,7 +169,7 @@ class PostRow extends StatelessWidget {
 									child: Row(
 										crossAxisAlignment: CrossAxisAlignment.stretch,
 										mainAxisAlignment: MainAxisAlignment.start,
-										mainAxisSize: MainAxisSize.max,
+										mainAxisSize: MainAxisSize.min,
 										children: [
 											if (post.attachment != null) Align(
 												alignment: Alignment.topCenter,
@@ -187,7 +187,7 @@ class PostRow extends StatelessWidget {
 													}
 												)
 											),
-											Expanded(
+											Flexible(
 												child: PostSpanZone(
 													postId: post.id,
 													builder: (ctx) => Container(

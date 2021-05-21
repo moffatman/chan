@@ -487,15 +487,21 @@ class ExpandingPost extends StatelessWidget {
 				data: MediaQueryData(textScaleFactor: 1),
 				child: (post == null) ? Container(
 					child: Text('Could not find /${zone.board}/$id')
-				) : PostRow(
-					post: post,
-					onThumbnailTap: (attachment) {
-						showGallery(
-							context: context,
-							attachments: [attachment],
-							semanticParentIds: zone.stackIds
-						);
-					}
+				) : Row(
+					children: [
+						Flexible(
+							child: PostRow(
+								post: post,
+								onThumbnailTap: (attachment) {
+									showGallery(
+										context: context,
+										attachments: [attachment],
+										semanticParentIds: zone.stackIds
+									);
+								}
+							)
+						)
+					]
 				)
 			)
 		);

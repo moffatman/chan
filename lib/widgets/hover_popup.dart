@@ -37,8 +37,12 @@ class _HoverPopupState extends State<HoverPopup> {
 							left: showOnRight ? null : left,
 							bottom: (childTop > topOfUsableSpace) ? MediaQuery.of(context).size.height - childTop : null,
 							top: (childTop > topOfUsableSpace) ? null : childBottom,
-							width: MediaQuery.of(context).size.width / 2,
-							child: widget.popup
+							child: ConstrainedBox(
+								constraints: BoxConstraints(
+									maxWidth: MediaQuery.of(context).size.width / 2
+								),
+								child: widget.popup
+							)
 						);
 					}
 				);
