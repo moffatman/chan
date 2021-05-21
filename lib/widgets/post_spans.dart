@@ -223,7 +223,8 @@ class PostQuoteLinkSpan extends PostSpan {
 						popup: ChangeNotifierProvider.value(
 							value: zone,
 							child: PostRow(
-								post: thisPostInThread.first
+								post: thisPostInThread.first,
+								shrinkWrap: true
 							)
 						)
 					)
@@ -498,7 +499,8 @@ class ExpandingPost extends StatelessWidget {
 										attachments: [attachment],
 										semanticParentIds: zone.stackIds
 									);
-								}
+								},
+								shrinkWrap: true
 							)
 						)
 					]

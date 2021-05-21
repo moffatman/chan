@@ -27,13 +27,15 @@ class PostRow extends StatelessWidget {
 	final VoidCallback? onTap;
 	final bool showCrossThreadLabel;
 	final bool allowTappingLinks;
+	final bool shrinkWrap;
 
 	const PostRow({
 		required this.post,
 		this.onTap,
 		this.onThumbnailTap,
 		this.showCrossThreadLabel = true,
-		this.allowTappingLinks = true
+		this.allowTappingLinks = true,
+		this.shrinkWrap = false
 	});
 
 	@override
@@ -47,6 +49,69 @@ class PostRow extends StatelessWidget {
 		);
 		final settings = context.watch<EffectiveSettings>();
 		final receipt = zone.threadState?.receipts.tryFirstWhere((r) => r.id == post.id);
+		final content = PostSpanZone(
+			postId: post.id,
+			builder: (ctx) => Container(
+				padding: EdgeInsets.all(8),
+				child: Stack(
+					fit: StackFit.passthrough,
+					children: [
+						IgnorePointer(
+							ignoring: !allowTappingLinks,
+							child: Text.rich(
+								TextSpan(
+									children: [
+										post.span.build(ctx, PostSpanRenderOptions(
+											showCrossThreadLabel: showCrossThreadLabel
+										)),
+										// Placeholder to guarantee the stacked reply button is not on top of text
+										if (settings.useTouchLayout && post.replyIds.isNotEmpty) TextSpan(
+											text: List.filled(post.replyIds.length.toString().length + 3, '1').join(),
+											style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor)
+										)
+									]
+								),
+								overflow: TextOverflow.fade
+							)
+						),
+						if (settings.useTouchLayout && post.replyIds.isNotEmpty) Positioned.fill(
+							child: Align(
+								alignment: Alignment.bottomRight,
+								child: CupertinoButton(
+									alignment: Alignment.bottomRight,
+									padding: EdgeInsets.zero,
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											Icon(
+												Icons.reply_rounded,
+												color: Colors.red,
+												size: 14
+											),
+											SizedBox(width: 4),
+											Text(
+												post.replyIds.length.toString(),
+												style: TextStyle(
+													color: Colors.red,
+													fontWeight: FontWeight.bold,
+												)
+											)
+										]
+									),
+									onPressed: () => Navigator.of(context).push(
+										TransparentRoute(
+											builder: (ctx) => PostsPage(
+												postsIdsToShow: post.replyIds,
+												zone: zone.childZoneFor(post.id)																					)
+										)
+									)
+								)
+							)
+						)
+					]
+				)
+			)
+		);
 		final child = ContextMenu(
 			actions: [
 				if (zone.stackIds.isNotEmpty && zone.onNeedScrollToPost != null) ContextMenuAction(
@@ -194,70 +259,11 @@ class PostRow extends StatelessWidget {
 													}
 												)
 											),
-											Flexible(
-												child: PostSpanZone(
-													postId: post.id,
-													builder: (ctx) => Container(
-														padding: EdgeInsets.all(8),
-														child: Stack(
-															fit: StackFit.passthrough,
-															children: [
-																IgnorePointer(
-																	ignoring: !allowTappingLinks,
-																	child: Text.rich(
-																		TextSpan(
-																			children: [
-																				post.span.build(ctx, PostSpanRenderOptions(
-																					showCrossThreadLabel: showCrossThreadLabel
-																				)),
-																				// Placeholder to guarantee the stacked reply button is not on top of text
-																				if (settings.useTouchLayout && post.replyIds.isNotEmpty) TextSpan(
-																					text: List.filled(post.replyIds.length.toString().length + 3, '1').join(),
-																					style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor)
-																				)
-																			]
-																		),
-																		overflow: TextOverflow.fade
-																	)
-																),
-																if (settings.useTouchLayout && post.replyIds.isNotEmpty) Positioned.fill(
-																	child: Align(
-																		alignment: Alignment.bottomRight,
-																		child: CupertinoButton(
-																			alignment: Alignment.bottomRight,
-																			padding: EdgeInsets.zero,
-																			child: Row(
-																				mainAxisSize: MainAxisSize.min,
-																				children: [
-																					Icon(
-																						Icons.reply_rounded,
-																						color: Colors.red,
-																						size: 14
-																					),
-																					SizedBox(width: 4),
-																					Text(
-																						post.replyIds.length.toString(),
-																						style: TextStyle(
-																							color: Colors.red,
-																							fontWeight: FontWeight.bold,
-																						)
-																					)
-																				]
-																			),
-																			onPressed: () => Navigator.of(context).push(
-																				TransparentRoute(
-																					builder: (ctx) => PostsPage(
-																						postsIdsToShow: post.replyIds,
-																						zone: zone.childZoneFor(post.id)																					)
-																				)
-																			)
-																		)
-																	)
-																)
-															]
-														)
-													)
-												)
+											if (shrinkWrap) Flexible(
+												child: content
+											)
+											else Expanded(
+												child: content
 											)
 										]
 									)
