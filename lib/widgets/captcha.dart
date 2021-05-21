@@ -294,7 +294,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> with SingleTickerProviderStat
 			);
 		}
 		else {
-			return Center(
+			return Container(
 				child: CupertinoActivityIndicator()
 			);
 		}
