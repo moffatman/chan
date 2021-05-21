@@ -244,7 +244,6 @@ class ReplyBoxState extends State<ReplyBox> {
 							childAspectRatio: 1
 						),
 						shrinkWrap: true,
-						physics: NeverScrollableScrollPhysics(),
 						itemCount: sources.length + savedAttachments.length,
 						itemBuilder: (context, i) {
 							if (i < sources.length) {

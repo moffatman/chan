@@ -36,8 +36,8 @@ class PostsPage extends StatelessWidget {
 			child: ChangeNotifierProvider.value(
 				value: zone,
 				child: Builder(
-					builder: (ctx) => Column(
-						mainAxisSize: MainAxisSize.min,
+					builder: (ctx) => ListView(
+						shrinkWrap: true,
 						children: replies.map((reply) {
 							return PostRow(
 								post: reply,
