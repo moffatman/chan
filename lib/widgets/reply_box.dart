@@ -29,13 +29,15 @@ class Expander extends StatelessWidget {
 	final Curve curve;
 	final double height;
 	final bool expanded;
+	final bool bottomSafe;
 
 	Expander({
 		required this.child,
 		this.duration = const Duration(milliseconds: 300),
 		this.curve = Curves.ease,
 		required this.height,
-		required this.expanded
+		required this.expanded,
+		this.bottomSafe = false
 	});
 
 	@override
@@ -44,7 +46,7 @@ class Expander extends StatelessWidget {
 			curve: Curves.ease,
 			alignment: Alignment.topCenter,
 			duration: const Duration(milliseconds: 300),
-			height: expanded ? height : 0,
+			height: (bottomSafe ? 0 : MediaQuery.of(context).padding.bottom) + (expanded ? height : 0),
 			child: Stack(
 				clipBehavior: Clip.hardEdge,
 				children: [
@@ -52,14 +54,11 @@ class Expander extends StatelessWidget {
 						top: 0,
 						left: 0,
 						right: 0,
-						child: SafeArea(
-							top: false,
 							child: Container(
 								height: height,
 								child: child
 							)
 						)
-					)
 				]
 			)
 		);
@@ -655,6 +654,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			children: [
 				Expander(
 					expanded: showOptions && widget.visible && !loading,
+					bottomSafe: true,
 					height: 100,
 					child: Focus(
 						descendantsAreFocusable: showOptions,
