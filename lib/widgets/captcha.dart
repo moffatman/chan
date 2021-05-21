@@ -250,10 +250,15 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> with SingleTickerProviderStat
 				children: [
 					Text(challenge!.title),
 					SizedBox(height: 16),
-					...challenge!.subimages.map((row) {
-						return Row(
-							mainAxisSize: MainAxisSize.min,
-							children: row.map((subimage) {
+					Flexible(
+						child: GridView(
+							shrinkWrap: true,
+							gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+								crossAxisCount: 3,
+								crossAxisSpacing: 12,
+								mainAxisSpacing: 12
+							),
+							children: challenge!.subimages.expand((i) => i).map((subimage) {
 								return GestureDetector(
 									child: Container(
 										decoration: BoxDecoration(
@@ -272,9 +277,9 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> with SingleTickerProviderStat
 										setState(() {});
 									}
 								);
-							}).expand((e) => [SizedBox(width: 12), e]).skip(1).toList()
-						);
-					}).expand((e) => [SizedBox(height: 12), e]).skip(1).toList(),
+							}).toList()
+						)
+					),
 					SizedBox(height: 16),
 					Row(
 						mainAxisSize: MainAxisSize.min,
