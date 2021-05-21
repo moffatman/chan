@@ -64,7 +64,14 @@ class PostRow extends StatelessWidget {
 				if (receipt != null) ContextMenuAction(
 					child: Text('Delete post'),
 					trailingIcon: Icons.delete,
-					onPressed: () => site.deletePost(post.board, receipt)
+					onPressed: () {
+						try {
+							site.deletePost(post.board, receipt);
+						}
+						catch (error) {
+							alertError(context, error.toString());
+						}
+					}
 				),
 				if (post.attachment != null) ...[
 					ContextMenuAction(
