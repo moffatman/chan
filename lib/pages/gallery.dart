@@ -59,6 +59,18 @@ enum _GalleryMenuSelection {
 	ToggleAutorotate
 }
 
+class GalleryLeftIntent extends Intent {
+	const GalleryLeftIntent();
+}
+
+class GalleryRightIntent extends Intent {
+	const GalleryRightIntent();
+}
+
+class GalleryToggleChromeIntent extends Intent {
+	const GalleryToggleChromeIntent();
+}
+
 class GalleryPage extends StatefulWidget {
 	final List<Attachment> attachments;
 	final Map<Attachment, Uri> overrideSources;
@@ -91,7 +103,6 @@ class _GalleryPageState extends State<GalleryPage> {
 	bool firstControllerMade = false;
 	late final ScrollController thumbnailScrollController;
 	late final PageController pageController;
-	final FocusNode keyboardShortcutFocusNode = FocusNode();
 	late bool showChrome;
 	final Key _pageControllerKey = GlobalKey();
 	final Key _thumbnailsKey = GlobalKey();
@@ -353,129 +364,141 @@ class _GalleryPageState extends State<GalleryPage> {
 					child: Container(
 							height: double.infinity,
 							color: Colors.transparent,
-							child: RawKeyboardListener(
-								autofocus: true,
-								focusNode: keyboardShortcutFocusNode,
-								onKey: (event) {
-									if (event is RawKeyDownEvent) {
-										if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-											if (currentIndex > 0) {
-												_animateToPage(currentIndex - 1, milliseconds: 0);
-											}
-										}
-										else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-											if (currentIndex < widget.attachments.length - 1) {
-												_animateToPage(currentIndex + 1, milliseconds: 0);
-											}
-										}
-										else if (event.logicalKey == LogicalKeyboardKey.keyG) {
-											Navigator.of(context).pop();
-										}
-										else if (event.logicalKey == LogicalKeyboardKey.space) {
-											_toggleChrome();
-										}
-									}
+							child: Shortcuts(
+								shortcuts: {
+									LogicalKeySet(LogicalKeyboardKey.arrowLeft): const GalleryLeftIntent(),
+									LogicalKeySet(LogicalKeyboardKey.arrowRight): const GalleryRightIntent(),
+									LogicalKeySet(LogicalKeyboardKey.space): const GalleryToggleChromeIntent(),
+									LogicalKeySet(LogicalKeyboardKey.keyG): const DismissIntent(),
+									LogicalKeySet(LogicalKeyboardKey.tab): Intent.doNothing
 								},
-								child: Stack(
-									children: [
-										KeyedSubtree(
-											key: _pageControllerKey,
-											child: ExtendedImageGesturePageView.builder(
-												onPageChanged: _onPageChanged,
-												controller: pageController,
-												itemCount: widget.attachments.length,
-												itemBuilder: (context, index) {
-													final attachment = widget.attachments[index];
-													return RxStreamBuilder<AttachmentStatus>(
-														stream: statuses[attachment]!,
-														builder: (context, snapshot) {
-															final status = snapshot.data!;
-															return GestureDetector(
-																child: AttachmentViewer(
-																	autoRotate: settings.autoRotateInGallery,
-																	attachment: attachment,
-																	status: status,
-																	backgroundColor: Colors.transparent,
-																	tag: AttachmentSemanticLocation(
-																		attachment: attachment,
-																		semanticParents: widget.semanticParentIds
-																	),
-																	onCacheCompleted: (file) {
-																		if (cachedFiles[attachment]?.path != file.path) {
-																			setState(() {
-																				cachedFiles[attachment] = file;
-																			});
-																		}
-																	}
-																),
-																onTap: (status is AttachmentUnloadedStatus) ? () {
-																	if (status is AttachmentUnloadedStatus) {
-																		requestRealViewer(attachment);
-																	}
-																} : _toggleChrome
+								child: Actions(
+									actions: {
+										GalleryLeftIntent: CallbackAction<GalleryLeftIntent>(
+											onInvoke: (i) {
+												if (currentIndex > 0) {
+													_animateToPage(currentIndex - 1, milliseconds: 0);
+												}
+											}
+										),
+										GalleryRightIntent: CallbackAction<GalleryRightIntent>(
+											onInvoke: (i) {
+												if (currentIndex < widget.attachments.length - 1) {
+													_animateToPage(currentIndex + 1, milliseconds: 0);
+												}
+											}
+										),
+										GalleryToggleChromeIntent: CallbackAction<GalleryToggleChromeIntent>(
+											onInvoke: (i) => _toggleChrome()
+										),
+										DismissIntent: CallbackAction<DismissIntent>(
+											onInvoke: (i) => Navigator.of(context).pop()
+										)
+									},
+									child: Focus(
+										autofocus: true,
+										child: Stack(
+											children: [
+												KeyedSubtree(
+													key: _pageControllerKey,
+													child: ExtendedImageGesturePageView.builder(
+														onPageChanged: _onPageChanged,
+														controller: pageController,
+														itemCount: widget.attachments.length,
+														itemBuilder: (context, index) {
+															final attachment = widget.attachments[index];
+															return RxStreamBuilder<AttachmentStatus>(
+																stream: statuses[attachment]!,
+																builder: (context, snapshot) {
+																	final status = snapshot.data!;
+																	return GestureDetector(
+																		child: AttachmentViewer(
+																			autoRotate: settings.autoRotateInGallery,
+																			attachment: attachment,
+																			status: status,
+																			backgroundColor: Colors.transparent,
+																			tag: AttachmentSemanticLocation(
+																				attachment: attachment,
+																				semanticParents: widget.semanticParentIds
+																			),
+																			onCacheCompleted: (file) {
+																				if (cachedFiles[attachment]?.path != file.path) {
+																					setState(() {
+																						cachedFiles[attachment] = file;
+																					});
+																				}
+																			}
+																		),
+																		onTap: (status is AttachmentUnloadedStatus) ? () {
+																			if (status is AttachmentUnloadedStatus) {
+																				requestRealViewer(attachment);
+																			}
+																		} : _toggleChrome
+																	);
+																}
 															);
 														}
-													);
-												}
-											)
-										),
-										Visibility(
-											visible: showChrome,
-											maintainState: true,
-											maintainSize: true,
-											maintainAnimation: true,
-											child: SafeArea(
-												child: Column(
-													mainAxisAlignment: MainAxisAlignment.end,
-													crossAxisAlignment: CrossAxisAlignment.center,
-													children: [
-														if (currentAttachmentStatus is AttachmentVideoAvailableStatus) Container(
-															decoration: BoxDecoration(
-																color: Colors.black38
-															),
-															child: VideoControls(
-																controller: (currentAttachmentStatus as AttachmentVideoAvailableStatus).controller,
-																hasAudio: (currentAttachmentStatus as AttachmentVideoAvailableStatus).hasAudio
-															)
-														),
-														Container(
-															decoration: BoxDecoration(
-																color: Colors.black38
-															),
-															height: _THUMBNAIL_SIZE + 8,
-															child: KeyedSubtree(
-																key: _thumbnailsKey,
-																child: ListView.builder(
-																	controller: thumbnailScrollController,
-																	itemCount: widget.attachments.length,
-																	scrollDirection: Axis.horizontal,
-																	itemBuilder: (context, index) {
-																		final attachment = widget.attachments[index];
-																		return GestureDetector(
-																			onTap: () => _animateToPage(index),
-																			child: Container(
-																				decoration: BoxDecoration(
-																					color: Colors.transparent,
-																					borderRadius: BorderRadius.all(Radius.circular(4)),
-																					border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
-																				),
-																				margin: const EdgeInsets.all(4),
-																				child: AttachmentThumbnail(
-																					attachment: widget.attachments[index],
-																					width: _THUMBNAIL_SIZE,
-																					height: _THUMBNAIL_SIZE
-																				)
-																			)
-																		);
-																	}
+													)
+												),
+												Visibility(
+													visible: showChrome,
+													maintainState: true,
+													maintainSize: true,
+													maintainAnimation: true,
+													child: SafeArea(
+														child: Column(
+															mainAxisAlignment: MainAxisAlignment.end,
+															crossAxisAlignment: CrossAxisAlignment.center,
+															children: [
+																if (currentAttachmentStatus is AttachmentVideoAvailableStatus) Container(
+																	decoration: BoxDecoration(
+																		color: Colors.black38
+																	),
+																	child: VideoControls(
+																		controller: (currentAttachmentStatus as AttachmentVideoAvailableStatus).controller,
+																		hasAudio: (currentAttachmentStatus as AttachmentVideoAvailableStatus).hasAudio
+																	)
+																),
+																Container(
+																	decoration: BoxDecoration(
+																		color: Colors.black38
+																	),
+																	height: _THUMBNAIL_SIZE + 8,
+																	child: KeyedSubtree(
+																		key: _thumbnailsKey,
+																		child: ListView.builder(
+																			controller: thumbnailScrollController,
+																			itemCount: widget.attachments.length,
+																			scrollDirection: Axis.horizontal,
+																			itemBuilder: (context, index) {
+																				final attachment = widget.attachments[index];
+																				return GestureDetector(
+																					onTap: () => _animateToPage(index),
+																					child: Container(
+																						decoration: BoxDecoration(
+																							color: Colors.transparent,
+																							borderRadius: BorderRadius.all(Radius.circular(4)),
+																							border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
+																						),
+																						margin: const EdgeInsets.all(4),
+																						child: AttachmentThumbnail(
+																							attachment: widget.attachments[index],
+																							width: _THUMBNAIL_SIZE,
+																							height: _THUMBNAIL_SIZE
+																						)
+																					)
+																				);
+																			}
+																		)
+																	)
 																)
-															)
+															]
 														)
-													]
+													)
 												)
-											)
+											]
 										)
-									]
+									)
 								)
 							)
 						)
