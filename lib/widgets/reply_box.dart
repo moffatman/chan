@@ -54,11 +54,11 @@ class Expander extends StatelessWidget {
 						top: 0,
 						left: 0,
 						right: 0,
-							child: Container(
-								height: height,
-								child: child
-							)
+						child: Container(
+							height: height,
+							child: child
 						)
+					)
 				]
 			)
 		);
@@ -234,11 +234,14 @@ class ReplyBoxState extends State<ReplyBox> {
 			builder: (context) => OverscrollModalPage(
 				child: Container(
 					width: double.infinity,
-					padding: EdgeInsets.only(top: 16, bottom: 16),
+					padding: EdgeInsets.all(16),
 					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 					child: GridView.builder(
 						gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-							maxCrossAxisExtent: 150
+							maxCrossAxisExtent: 100,
+							mainAxisSpacing: 16,
+							crossAxisSpacing: 16,
+							childAspectRatio: 1
 						),
 						shrinkWrap: true,
 						physics: NeverScrollableScrollPhysics(),
@@ -258,7 +261,6 @@ class ReplyBoxState extends State<ReplyBox> {
 											color: CupertinoTheme.of(context).primaryColor,
 											borderRadius: BorderRadius.circular(8)
 										),
-										margin: EdgeInsets.only(left: 8, right: 8),
 										child: Icon(entry.value, size: 40, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
 									)
 								);
@@ -269,12 +271,9 @@ class ReplyBoxState extends State<ReplyBox> {
 									onTap: () {
 										Navigator.of(context).pop(attachment.file);
 									},
-									child: Container(
-										margin: EdgeInsets.only(left: 8, right: 8),
-										child: ClipRRect(
-											borderRadius: BorderRadius.circular(8),
-											child: SavedAttachmentThumbnail(file: attachment.file, fit: BoxFit.cover)
-										)
+									child: ClipRRect(
+										borderRadius: BorderRadius.circular(8),
+										child: SavedAttachmentThumbnail(file: attachment.file, fit: BoxFit.cover)
 									)
 								);
 							}
