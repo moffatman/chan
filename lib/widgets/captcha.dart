@@ -251,33 +251,38 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> with SingleTickerProviderStat
 					Text(challenge!.title),
 					SizedBox(height: 16),
 					Flexible(
-						child: GridView(
-							shrinkWrap: true,
-							gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-								crossAxisCount: 3,
-								crossAxisSpacing: 12,
-								mainAxisSpacing: 12
+						child: ConstrainedBox(
+							constraints: BoxConstraints(
+								maxWidth: 500
 							),
-							children: challenge!.subimages.expand((i) => i).map((subimage) {
-								return GestureDetector(
-									child: Container(
-										decoration: BoxDecoration(
-											border: Border.all(
-												color: subimage.selected ? Colors.blue : Colors.transparent,
-												width: 4
+							child: GridView(
+								shrinkWrap: true,
+								gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+									crossAxisCount: 3,
+									crossAxisSpacing: 12,
+									mainAxisSpacing: 12
+								),
+								children: challenge!.subimages.expand((i) => i).map((subimage) {
+									return GestureDetector(
+										child: Container(
+											decoration: BoxDecoration(
+												border: Border.all(
+													color: subimage.selected ? Colors.blue : Colors.transparent,
+													width: 4
+												)
+											),
+											child: CustomPaint(
+												size: subimage.rect.size,
+												painter: _CaptchaNoJSSubimagePainter(challenge!.image, subimage)
 											)
 										),
-										child: CustomPaint(
-											size: subimage.rect.size,
-											painter: _CaptchaNoJSSubimagePainter(challenge!.image, subimage)
-										)
-									),
-									onTap: () {
-										subimage.selected = !subimage.selected;
-										setState(() {});
-									}
-								);
-							}).toList()
+										onTap: () {
+											subimage.selected = !subimage.selected;
+											setState(() {});
+										}
+									);
+								}).toList()
+							)
 						)
 					),
 					SizedBox(height: 16),
