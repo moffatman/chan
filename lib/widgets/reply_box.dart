@@ -42,24 +42,28 @@ class Expander extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return AnimatedContainer(
-			curve: Curves.ease,
-			alignment: Alignment.topCenter,
-			duration: const Duration(milliseconds: 300),
-			height: (bottomSafe ? 0 : MediaQuery.of(context).padding.bottom) + (expanded ? height : 0),
-			child: Stack(
-				clipBehavior: Clip.hardEdge,
-				children: [
-					Positioned(
-						top: 0,
-						left: 0,
-						right: 0,
-						child: Container(
-							height: height,
-							child: child
+		return SafeArea(
+			top: false,
+			bottom: !bottomSafe,
+			child: AnimatedContainer(
+				curve: Curves.ease,
+				alignment: Alignment.topCenter,
+				duration: const Duration(milliseconds: 300),
+				height: expanded ? height : 0,
+				child: Stack(
+					clipBehavior: Clip.hardEdge,
+					children: [
+						Positioned(
+							top: 0,
+							left: 0,
+							right: 0,
+							child: Container(
+								height: height,
+								child: child
+							)
 						)
-					)
-				]
+					]
+				)
 			)
 		);
 	}
