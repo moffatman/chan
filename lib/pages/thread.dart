@@ -149,6 +149,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 
 	@override
 	Widget build(BuildContext context) {
+		final properScrollController = PrimaryScrollController.of(context)!;
 		String title = persistentState.thread?.title ?? '/${widget.thread.board}/${widget.thread.id}';
 		if (persistentState.thread?.isArchived ?? false) {
 			title += ' (Archived)';
@@ -221,100 +222,103 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 														children: [
 															ChangeNotifierProvider<PostSpanZoneData>.value(
 																value: zone,
-																child: RefreshableList<Post>(
-																	id: '/${widget.thread.board}/${widget.thread.id}',
-																	disableUpdates: persistentState.thread?.isArchived ?? false,
-																	autoUpdateDuration: const Duration(seconds: 60),
-																	initialList: persistentState.thread?.posts,
-																	footer: Container(
-																		padding: EdgeInsets.all(16),
-																		child: (persistentState.thread == null) ? null : Row(
-																			children: [
-																				Spacer(),
-																				_limitCounter(persistentState.thread!.replyCount, Persistence.getBoard(widget.thread.board).threadCommentLimit),
-																				Icon(Icons.reply_rounded),
-																				Spacer(),
-																				_limitCounter(persistentState.thread!.imageCount, Persistence.getBoard(widget.thread.board).threadImageLimit),
-																				Icon(Icons.image),
-																				Spacer(),
-																				if (persistentState.thread!.uniqueIPCount != null) ...[
-																					Text('${persistentState.thread!.uniqueIPCount} '),
-																					Icon(Icons.person),
+																child: PrimaryScrollController(
+																	controller: properScrollController,
+																	child: RefreshableList<Post>(
+																		id: '/${widget.thread.board}/${widget.thread.id}',
+																		disableUpdates: persistentState.thread?.isArchived ?? false,
+																		autoUpdateDuration: const Duration(seconds: 60),
+																		initialList: persistentState.thread?.posts,
+																		footer: Container(
+																			padding: EdgeInsets.all(16),
+																			child: (persistentState.thread == null) ? null : Row(
+																				children: [
 																					Spacer(),
-																				],
-																				if (persistentState.thread!.currentPage != null) ...[
-																					_limitCounter(persistentState.thread!.currentPage!, Persistence.getBoard(widget.thread.board).pageCount),
-																					Icon(Icons.insert_drive_file_rounded),
-																					Spacer()
-																				],
-																				if (persistentState.thread!.isArchived) ...[
-																					Text('Archived '),
-																					Icon(Icons.archive, color: Colors.grey),
-																					Spacer()
+																					_limitCounter(persistentState.thread!.replyCount, Persistence.getBoard(widget.thread.board).threadCommentLimit),
+																					Icon(Icons.reply_rounded),
+																					Spacer(),
+																					_limitCounter(persistentState.thread!.imageCount, Persistence.getBoard(widget.thread.board).threadImageLimit),
+																					Icon(Icons.image),
+																					Spacer(),
+																					if (persistentState.thread!.uniqueIPCount != null) ...[
+																						Text('${persistentState.thread!.uniqueIPCount} '),
+																						Icon(Icons.person),
+																						Spacer(),
+																					],
+																					if (persistentState.thread!.currentPage != null) ...[
+																						_limitCounter(persistentState.thread!.currentPage!, Persistence.getBoard(widget.thread.board).pageCount),
+																						Icon(Icons.insert_drive_file_rounded),
+																						Spacer()
+																					],
+																					if (persistentState.thread!.isArchived) ...[
+																						Text('Archived '),
+																						Icon(Icons.archive, color: Colors.grey),
+																						Spacer()
+																					]
 																				]
-																			]
-																		)
-																	),
-																	remedies: {
-																		ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
-																			child: Text('Try archive'),
-																			onPressed: () {
-																				persistentState.useArchive = true;
-																				persistentState.save();
-																				updater();
-																			}
-																		)
-																	},
-																	listUpdater: () async {
-																		final _thread = persistentState.useArchive ? 
-																			await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
-																			await context.read<ImageboardSite>().getThread(widget.thread);
-																		final bool firstLoad = persistentState.thread == null;
-																		if (_thread != persistentState.thread) {
-																			persistentState.thread = _thread;
-																			zone.threadPosts = _thread.posts;
-																			if (firstLoad) await _blockAndScrollToPostIfNeeded();
-																			await persistentState.save();
-																			setState(() {});
-																			// The thread might switch in this interval
-																			final thisThreadId = _thread.identifier;
-																			Future.delayed(Duration(milliseconds: 100), () {
-																				if (persistentState.thread?.identifier == thisThreadId && !_unnaturallyScrolling) {
-																					if (_listController.lastVisibleIndex != -1) {
-																						persistentState.lastSeenPostId = max(persistentState.lastSeenPostId ?? 0, persistentState.thread!.posts[_listController.lastVisibleIndex].id);	
-																						persistentState.save();
-																						setState(() {});
-																					}
-																					else {
-																						print('Failed to find last visible post after an update in $thisThreadId');
-																					}
+																			)
+																		),
+																		remedies: {
+																			ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
+																				child: Text('Try archive'),
+																				onPressed: () {
+																					persistentState.useArchive = true;
+																					persistentState.save();
+																					updater();
 																				}
-																			});
-																		}
-																		return _thread.posts;
-																	},
-																	controller: _listController,
-																	itemBuilder: (context, post) {
-																		return PostRow(
-																			post: post,
-																			onThumbnailTap: (attachment) {
-																				_showGallery(initialAttachment: attachment);
+																			)
+																		},
+																		listUpdater: () async {
+																			final _thread = persistentState.useArchive ? 
+																				await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
+																				await context.read<ImageboardSite>().getThread(widget.thread);
+																			final bool firstLoad = persistentState.thread == null;
+																			if (_thread != persistentState.thread) {
+																				persistentState.thread = _thread;
+																				zone.threadPosts = _thread.posts;
+																				if (firstLoad) await _blockAndScrollToPostIfNeeded();
+																				await persistentState.save();
+																				setState(() {});
+																				// The thread might switch in this interval
+																				final thisThreadId = _thread.identifier;
+																				Future.delayed(Duration(milliseconds: 100), () {
+																					if (persistentState.thread?.identifier == thisThreadId && !_unnaturallyScrolling) {
+																						if (_listController.lastVisibleIndex != -1) {
+																							persistentState.lastSeenPostId = max(persistentState.lastSeenPostId ?? 0, persistentState.thread!.posts[_listController.lastVisibleIndex].id);  
+																							persistentState.save();
+																							setState(() {});
+																						}
+																						else {
+																							print('Failed to find last visible post after an update in $thisThreadId');
+																						}
+																					}
+																				});
 																			}
-																		);
-																	},
-																	filteredItemBuilder: (context, post, resetPage) {
-																		return PostRow(
-																			post: post,
-																			onThumbnailTap: (attachment) {
-																				_showGallery(initialAttachment: attachment);
-																			},
-																			onTap: () {
-																				resetPage();
-																				Future.delayed(Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
-																			}
-																		);
-																	},
-																	filterHint: 'Search in thread'
+																			return _thread.posts;
+																		},
+																		controller: _listController,
+																		itemBuilder: (context, post) {
+																			return PostRow(
+																				post: post,
+																				onThumbnailTap: (attachment) {
+																					_showGallery(initialAttachment: attachment);
+																				}
+																			);
+																		},
+																		filteredItemBuilder: (context, post, resetPage) {
+																			return PostRow(
+																				post: post,
+																				onThumbnailTap: (attachment) {
+																					_showGallery(initialAttachment: attachment);
+																				},
+																				onTap: () {
+																					resetPage();
+																					Future.delayed(Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
+																				}
+																			);
+																		},
+																		filterHint: 'Search in thread'
+																	)
 																)
 															),
 															StreamBuilder(
