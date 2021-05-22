@@ -96,7 +96,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool loading = false;
 	File? attachment;
 	String? overrideAttachmentFilename;
-	bool showOptions = false;
+	bool _showOptions = false;
+	bool get showOptions => _showOptions && !loading;
 
 	@override
 	void initState() {
@@ -592,36 +593,35 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	Widget _buildButtons(BuildContext context) {
-		final expandButton = CupertinoButton(
-			child: Icon(showOptions ? Icons.arrow_drop_down : Icons.arrow_drop_up),
-			padding: EdgeInsets.zero,
-			onPressed: () {
-				setState(() {
-					showOptions = !showOptions;
-				});
-			}
-		);
+		final expandAction = loading ? null : () {
+			setState(() {
+				_showOptions = !_showOptions;
+			});
+		};
 		return Column(
 			mainAxisSize: MainAxisSize.min,
 			mainAxisAlignment: MainAxisAlignment.spaceAround,
 			children: [
-				if (!showOptions && attachment != null) Stack(
+				if (!showOptions && attachment != null) CupertinoButton(
 					alignment: Alignment.center,
-					children: [
-						ClipRRect(
-							borderRadius: BorderRadius.circular(4),
-							child: ConstrainedBox(
-								constraints: BoxConstraints(
-									maxWidth: 32,
-									maxHeight: 32
-								),
-								child: SavedAttachmentThumbnail(file: attachment!, fontSize: 12)
-							)
-						),
-						expandButton
-					]
+					padding: EdgeInsets.zero,
+					child: ClipRRect(
+						borderRadius: BorderRadius.circular(4),
+						child: ConstrainedBox(
+							constraints: BoxConstraints(
+								maxWidth: 32,
+								maxHeight: 32
+							),
+							child: SavedAttachmentThumbnail(file: attachment!, fontSize: 12)
+						)
+					),
+					onPressed: expandAction
 				)
-				else expandButton,
+				else CupertinoButton(
+					child: Icon(showOptions ? Icons.arrow_drop_down : Icons.arrow_drop_up),
+					padding: EdgeInsets.zero,
+					onPressed: expandAction
+				),
 				TimedRebuilder(
 					interval: Duration(seconds: 1),
 					builder: (context) {
@@ -656,7 +656,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			mainAxisSize: MainAxisSize.min,
 			children: [
 				Expander(
-					expanded: showOptions && widget.visible && !loading,
+					expanded: showOptions && widget.visible,
 					bottomSafe: true,
 					height: 100,
 					child: Focus(
