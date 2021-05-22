@@ -58,14 +58,14 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		return Stack(
-			fit: StackFit.expand,
-			children: [
-				Container(
-					color: widget.backgroundColor
-				),
-				SafeArea(
-					child: Listener(
+		return LayoutBuilder(
+			builder: (context, constraints) => Stack(
+				fit: StackFit.expand,
+				children: [
+					Container(
+						color: widget.backgroundColor
+					),
+					Listener(
 						onPointerDown: (event) {
 							final RenderBox childBox = _childKey.currentContext!.findRenderObject()! as RenderBox;
 							_pointerDownPosition = event.position;
@@ -93,30 +93,41 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 								Navigator.of(context).pop();
 							}
 						},
-						child: CustomScrollView(
-							controller: _controller,
-							physics: AlwaysScrollableScrollPhysics(),
-							slivers: [
-								SliverFillRemaining(
-									hasScrollBody: true,
-									child: ConstrainedBox(
-										constraints: BoxConstraints(
-											minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.vertical
-										),
-										child: Center(
-											child: Opacity(
-												key: _childKey,
-												opacity: _opacity,
-												child: widget.child
+						child: Actions(
+							actions: {
+								DismissIntent: CallbackAction<DismissIntent>(
+									onInvoke: (i) => Navigator.of(context).pop()
+								)
+							},
+							child: Focus(
+								autofocus: true,
+								child: CustomScrollView(
+									controller: _controller,
+									physics: AlwaysScrollableScrollPhysics(),
+									slivers: [
+										SliverToBoxAdapter(
+											child: ConstrainedBox(
+												constraints: BoxConstraints(
+													minHeight: constraints.maxHeight
+												),
+												child: Center(
+													child: SafeArea(
+														child: Opacity(
+															key: _childKey,
+															opacity: _opacity,
+															child: widget.child
+														)
+													)
+												)
 											)
 										)
-									)
+									]
 								)
-							]
+							)
 						)
 					)
-				)
-			]
+				]
+			)
 		);
 	}
 

@@ -38,6 +38,7 @@ class PostsPage extends StatelessWidget {
 				child: Builder(
 					builder: (ctx) => ListView(
 						shrinkWrap: true,
+						physics: NeverScrollableScrollPhysics(),
 						children: replies.map((reply) {
 							return PostRow(
 								post: reply,

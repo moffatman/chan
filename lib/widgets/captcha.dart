@@ -257,6 +257,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> with SingleTickerProviderStat
 							),
 							child: GridView(
 								shrinkWrap: true,
+								physics: NeverScrollableScrollPhysics(),
 								gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
 									crossAxisCount: 3,
 									crossAxisSpacing: 12,
