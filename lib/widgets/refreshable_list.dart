@@ -587,6 +587,21 @@ class RefreshableListController<T extends Filterable> {
 			await SchedulerBinding.instance!.endOfFrame;
 		}
 	}
-	int get firstVisibleIndex => _items.indexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! > scrollController!.position.pixels));
-	int get lastVisibleIndex => _items.lastIndexWhere((i) => (i.cachedOffset != null) && ((i.cachedOffset! + i.cachedHeight!) < (scrollController!.position.pixels + scrollController!.position.viewportDimension)));
+	int get firstVisibleIndex {
+		if (scrollController?.hasOnePosition ?? false) {
+			return _items.indexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! > scrollController!.position.pixels));
+		}
+		return -1;
+	}
+	int get lastVisibleIndex {
+		if (scrollController?.hasOnePosition ?? false) {
+			return _items.lastIndexWhere((i) => (i.cachedOffset != null) && ((i.cachedOffset! + i.cachedHeight!) < (scrollController!.position.pixels + scrollController!.position.viewportDimension)));
+		}
+		return -1;
+	}
+}
+
+extension HasOnePosition on ScrollController {
+	// ignore: INVALID_USE_OF_PROTECTED_MEMBER
+	bool get hasOnePosition => positions.length == 1;
 }

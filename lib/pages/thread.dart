@@ -371,7 +371,7 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																				)
 																			);
 																		}
-																		else if ((persistentState.thread != null) && (_listController.lastVisibleIndex != persistentState.thread!.posts.length - 1)) {
+																		else if ((persistentState.thread != null) && (_listController.lastVisibleIndex != -1) && (_listController.lastVisibleIndex != persistentState.thread!.posts.length - 1)) {
 																			return Align(
 																				alignment: Alignment.bottomRight,
 																				child: GestureDetector(
