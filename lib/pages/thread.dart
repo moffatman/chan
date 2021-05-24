@@ -328,8 +328,9 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																	builder: (context, a) {
 																		final redCount = persistentState.unseenRepliesToYou?.length ?? 0;
 																		final whiteCount = persistentState.unseenReplyCount ?? 0;
+																		final radiusAlone = BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8));
+																		final scrollToBottom = () => _listController.animateTo((post) => post.id == persistentState.thread!.posts.last.id, alignment: 1.0);
 																		if (redCount > 0 || whiteCount > 0) {
-																			final radiusAlone = BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8));
 																			return Align(
 																				alignment: Alignment.bottomRight,
 																				child: GestureDetector(
@@ -366,7 +367,24 @@ class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
 																						]
 																					),
 																					onTap: () => _listController.animateTo((post) => post.id == persistentState.lastSeenPostId, alignment: 1.0),
-																					onLongPress: () => _listController.animateTo((post) => post.id == persistentState.thread!.posts.last.id, alignment: 1.0)
+																					onLongPress: scrollToBottom
+																				)
+																			);
+																		}
+																		else if (_listController.lastVisibleIndex != persistentState.thread!.posts.length - 1) {
+																			return Align(
+																				alignment: Alignment.bottomRight,
+																				child: GestureDetector(
+																					child: Container(
+																						decoration: BoxDecoration(
+																							borderRadius: radiusAlone,
+																							color: CupertinoTheme.of(context).primaryColor
+																						),
+																						padding: EdgeInsets.all(8),
+																						margin: EdgeInsets.only(right: 16),
+																						child: Icon(Icons.vertical_align_bottom, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
+																					),
+																					onTap: scrollToBottom
 																				)
 																			);
 																		}
