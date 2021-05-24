@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
@@ -445,54 +446,63 @@ class _GalleryPageState extends State<GalleryPage> {
 													maintainState: true,
 													maintainSize: true,
 													maintainAnimation: true,
-													child: SafeArea(
-														child: Column(
-															mainAxisAlignment: MainAxisAlignment.end,
-															crossAxisAlignment: CrossAxisAlignment.center,
-															children: [
-																if (currentAttachmentStatus is AttachmentVideoAvailableStatus) Container(
-																	decoration: BoxDecoration(
-																		color: Colors.black38
-																	),
-																	child: VideoControls(
-																		controller: (currentAttachmentStatus as AttachmentVideoAvailableStatus).controller,
-																		hasAudio: (currentAttachmentStatus as AttachmentVideoAvailableStatus).hasAudio
-																	)
-																),
-																Container(
-																	decoration: BoxDecoration(
-																		color: Colors.black38
-																	),
-																	height: _THUMBNAIL_SIZE + 8,
-																	child: KeyedSubtree(
-																		key: _thumbnailsKey,
-																		child: ListView.builder(
-																			controller: thumbnailScrollController,
-																			itemCount: widget.attachments.length,
-																			scrollDirection: Axis.horizontal,
-																			itemBuilder: (context, index) {
-																				final attachment = widget.attachments[index];
-																				return GestureDetector(
-																					onTap: () => _animateToPage(index),
-																					child: Container(
-																						decoration: BoxDecoration(
-																							color: Colors.transparent,
-																							borderRadius: BorderRadius.all(Radius.circular(4)),
-																							border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
-																						),
-																						margin: const EdgeInsets.all(4),
-																						child: AttachmentThumbnail(
-																							attachment: widget.attachments[index],
-																							width: _THUMBNAIL_SIZE,
-																							height: _THUMBNAIL_SIZE
-																						)
+													child: Align(
+														alignment: Alignment.bottomCenter,
+														child: ClipRect(
+															child: BackdropFilter(
+																filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+																child: SafeArea(
+																	top: false,
+																	child: Column(
+																		mainAxisSize: MainAxisSize.min,
+																		crossAxisAlignment: CrossAxisAlignment.center,
+																		children: [
+																			if (currentAttachmentStatus is AttachmentVideoAvailableStatus) Container(
+																				decoration: BoxDecoration(
+																					color: Colors.black38
+																				),
+																				child: VideoControls(
+																					controller: (currentAttachmentStatus as AttachmentVideoAvailableStatus).controller,
+																					hasAudio: (currentAttachmentStatus as AttachmentVideoAvailableStatus).hasAudio
+																				)
+																			),
+																			Container(
+																				decoration: BoxDecoration(
+																					color: Colors.black38
+																				),
+																				height: _THUMBNAIL_SIZE + 8,
+																				child: KeyedSubtree(
+																					key: _thumbnailsKey,
+																					child: ListView.builder(
+																						controller: thumbnailScrollController,
+																						itemCount: widget.attachments.length,
+																						scrollDirection: Axis.horizontal,
+																						itemBuilder: (context, index) {
+																							final attachment = widget.attachments[index];
+																							return GestureDetector(
+																								onTap: () => _animateToPage(index),
+																								child: Container(
+																									decoration: BoxDecoration(
+																										color: Colors.transparent,
+																										borderRadius: BorderRadius.all(Radius.circular(4)),
+																										border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
+																									),
+																									margin: const EdgeInsets.all(4),
+																									child: AttachmentThumbnail(
+																										attachment: widget.attachments[index],
+																										width: _THUMBNAIL_SIZE,
+																										height: _THUMBNAIL_SIZE
+																									)
+																								)
+																							);
+																						}
 																					)
-																				);
-																			}
-																		)
+																				)
+																			)
+																		]
 																	)
 																)
-															]
+															)
 														)
 													)
 												)
