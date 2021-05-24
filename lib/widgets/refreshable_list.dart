@@ -58,11 +58,14 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	DateTime? nextUpdateTime;
 	Timer? autoUpdateTimer;
 	bool _searchFocused = false;
+	late PageStorageKey _scrollViewKey;
 
 	@override
 	void initState() {
 		super.initState();
+		_scrollViewKey = PageStorageKey(widget.id);
 		widget.controller?.attach(this);
+		widget.controller?.newContentId(widget.id);
 		_searchFocusNode.addListener(() {
 			if (mounted && _searchFocusNode.hasFocus != _searchFocused) {
 				setState(() {
@@ -87,6 +90,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			this.autoUpdateTimer?.cancel();
 			this.autoUpdateTimer = null;
 			widget.controller?.newContentId(widget.id);
+			_scrollViewKey = PageStorageKey(widget.id);
 			_closeSearch();
 			setState(() {
 				if (widget.initialList != null) {
@@ -193,6 +197,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 					// Auto update here
 				},
 				child: CustomScrollView(
+					key: _scrollViewKey,
 					controller: widget.controller?.scrollController,
 					physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), 
 					slivers: [
