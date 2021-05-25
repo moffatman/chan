@@ -6,6 +6,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -90,32 +91,31 @@ class SavedPage extends StatelessWidget {
 									child: ValueListenableBuilder(
 										valueListenable: Persistence.threadStateBox.listenable(),
 										builder: (context, Box<PersistentThreadState> box, child) {
-											final states = box.toMap().entries.where((e) => e.value.savedTime != null).toList();
+											final states = box.toMap().values.where((s) => s.savedTime != null).toList();
 											if (settings.savedThreadsSortingMethod == ThreadSortingMethod.SavedTime) {
-												states.sort((a, b) => b.value.savedTime!.compareTo(a.value.savedTime!));
+												states.sort((a, b) => b.savedTime!.compareTo(a.savedTime!));
 											}
 											else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.LastPostTime) {
 												final noDate = DateTime.fromMillisecondsSinceEpoch(0);
-												states.sort((a, b) => (b.value.thread?.posts.last.time ?? noDate).compareTo(a.value.thread?.posts.last.time ?? noDate));
+												states.sort((a, b) => (b.thread?.posts.last.time ?? noDate).compareTo(a.thread?.posts.last.time ?? noDate));
 											}
-											return ListView.separated(
-												itemCount: states.length,
-												separatorBuilder: (context, i) => Divider(
-													thickness: 1,
-													height: 0,
-													color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
-												),
-												itemBuilder: (context, i) => GestureDetector(
+											return RefreshableList<PersistentThreadState>(
+												listUpdater: () => throw UnimplementedError(),
+												id: 'saved',
+												disableUpdates: true,
+												initialList: states,
+												itemBuilder: (context, state) => GestureDetector(
 													behavior: HitTestBehavior.opaque,
 													child: ThreadRow(
-														thread: states[i].value.thread!,
-														isSelected: states[i].value.thread!.identifier == selectedThread,
+														thread: state.thread!,
+														isSelected: state.thread!.identifier == selectedThread,
 														onThumbnailLoadError: (error) {
-															context.read<ThreadWatcher>().fixBrokenThread(states[i].value.thread!.identifier);
+															context.read<ThreadWatcher>().fixBrokenThread(state.thread!.identifier);
 														},
 													),
-													onTap: () => threadSetter(states[i].value.thread!.identifier)
-												)
+													onTap: () => threadSetter(state.thread!.identifier)
+												),
+												filterHint: 'Search saved threads'
 											);
 										}
 									)

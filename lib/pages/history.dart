@@ -3,6 +3,7 @@ import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -23,33 +24,22 @@ class HistoryPage extends StatelessWidget {
 					child: ValueListenableBuilder(
 						valueListenable: Persistence.threadStateBox.listenable(),
 						builder: (context, Box<PersistentThreadState> box, child) {
-							final states = box.toMap().entries.where((e) => e.value.thread != null).toList();
-							states.sort((a, b) => b.value.lastOpenedTime.compareTo(a.value.lastOpenedTime));
-							return ListView.separated(
-								itemCount: states.length,
-								separatorBuilder: (context, i) => Divider(
-									thickness: 1,
-									height: 0,
-									color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
-								),
-								itemBuilder: (context, i) => ContextMenu(
-									child: GestureDetector(
-										behavior: HitTestBehavior.opaque,
-										child: ThreadRow(
-											thread: states[i].value.thread!,
-											isSelected: states[i].value.thread!.identifier == selectedThread
-										),
-										onTap: () => threadSetter(states[i].value.thread!.identifier)
+							final states = box.toMap().values.where((s) => s.thread != null).toList();
+							states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
+							return RefreshableList<PersistentThreadState>(
+								listUpdater: () => throw UnimplementedError(),
+								id: 'history',
+								disableUpdates: true,
+								initialList: states,
+								itemBuilder: (context, state) => GestureDetector(
+									behavior: HitTestBehavior.opaque,
+									child: ThreadRow(
+										thread: state.thread!,
+										isSelected: state.thread!.identifier == selectedThread
 									),
-									actions: [
-										ContextMenuAction(
-											child: Text('Remove'),
-											onPressed: states[i].value.delete,
-											trailingIcon: Icons.delete,
-											isDestructiveAction: true
-										)
-									]
-								)
+									onTap: () => threadSetter(state.thread!.identifier)
+								),
+								filterHint: 'Search history'
 							);
 						}
 					)

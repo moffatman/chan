@@ -8,6 +8,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -152,7 +153,7 @@ class PersistentRecentSearches extends HiveObject {
 }
 
 @HiveType(typeId: 3)
-class PersistentThreadState extends HiveObject {
+class PersistentThreadState extends HiveObject implements Filterable {
 	@HiveField(0)
 	int? lastSeenPostId;
 	@HiveField(1)
@@ -175,6 +176,8 @@ class PersistentThreadState extends HiveObject {
 
 	@override
 	String toString() => 'PersistentThreadState(lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime)';
+
+	List<String> getSearchableText() => thread?.getSearchableText() ?? [];
 }
 
 @HiveType(typeId: 4)

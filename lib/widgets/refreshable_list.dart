@@ -111,6 +111,13 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				resetTimer();
 			}
 		}
+		else if (oldWidget.initialList != widget.initialList) {
+			list = widget.initialList;
+			if (list != null) {
+				widget.controller?.setItems(list!);
+			}
+			setState(() {});
+		}
 	}
 
 	@override
@@ -202,7 +209,9 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 					physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), 
 					slivers: [
 						SliverSafeArea(
-							sliver: CupertinoSliverRefreshControl(
+							sliver: widget.disableUpdates ? SliverToBoxAdapter(
+								child: Container()
+							) : CupertinoSliverRefreshControl(
 								onRefresh: update,
 								refreshTriggerPullDistance: 125
 							),
