@@ -31,13 +31,23 @@ class HistoryPage extends StatelessWidget {
 								id: 'history',
 								disableUpdates: true,
 								initialList: states,
-								itemBuilder: (context, state) => GestureDetector(
-									behavior: HitTestBehavior.opaque,
-									child: ThreadRow(
-										thread: state.thread!,
-										isSelected: state.thread!.identifier == selectedThread
+								itemBuilder: (context, state) => ContextMenu(
+									child: GestureDetector(
+										behavior: HitTestBehavior.opaque,
+										child: ThreadRow(
+											thread: state.thread!,
+											isSelected: state.thread!.identifier == selectedThread
+										),
+										onTap: () => threadSetter(state.thread!.identifier)
 									),
-									onTap: () => threadSetter(state.thread!.identifier)
+									actions: [
+										ContextMenuAction(
+											child: Text('Remove'),
+											onPressed: state.delete,
+											trailingIcon: Icons.delete,
+											isDestructiveAction: true
+										)
+									]
 								),
 								filterHint: 'Search history'
 							);
