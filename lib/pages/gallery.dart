@@ -97,7 +97,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	// Data
 	late int currentIndex;
 	Attachment get currentAttachment => widget.attachments[currentIndex];
-	AttachmentStatus get currentAttachmentStatus => statuses[currentAttachment]!.value!;
+	AttachmentStatus get currentAttachmentStatus => statuses[currentAttachment]!.value;
 	final Map<Attachment, BehaviorSubject<AttachmentStatus>> statuses = Map();
 	final Map<Attachment, File> cachedFiles = Map();
 	// View
@@ -259,10 +259,10 @@ class _GalleryPageState extends State<GalleryPage> {
 		for (final status in statuses.entries) {
 			if (status.value.value is AttachmentVideoAvailableStatus) {
 				if (status.key == currentAttachment) {
-					(status.value.value! as AttachmentVideoAvailableStatus).controller.play();
+					(status.value.value as AttachmentVideoAvailableStatus).controller.play();
 				}
 				else {
-					(status.value.value! as AttachmentVideoAvailableStatus).controller.pause();
+					(status.value.value as AttachmentVideoAvailableStatus).controller.pause();
 				}
 			}
 		}
