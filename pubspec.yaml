@@ -23,7 +23,7 @@ dependencies:
   html: "^0.15.0"
   video_player: "^2.0.0"
   connectivity: "^3.0.0"
-  rxdart: ^0.27.0
+  rxdart: "^0.26.0"
   provider: "^5.0.0"
   extended_image: "^4.0.0"
   html_unescape: "^2.0.0"
