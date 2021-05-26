@@ -43,39 +43,42 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 		final doc = parse(data.replaceAll('<wbr>', ''));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
+		final processQuotelink = (dom.Element quoteLink) {
+			final parts = quoteLink.attributes['href']!.split('/');
+			final linkedBoard = parts[3];
+			if (parts.length > 4) {
+				final linkType = parts[4];
+				final linkedId = int.parse(parts[5]);
+				if (linkType == 'post') {
+					final linkedPostThreadId = linkedPostThreadIds['$linkedBoard/$linkedId'] ?? -1;
+					elements.add(PostQuoteLinkSpan(
+						board: linkedBoard,
+						threadId: linkedPostThreadId,
+						postId: linkedId,
+						dead: false
+					));
+				}
+				else if (linkType == 'thread') {
+					final linkedPostId = int.parse(parts[6].substring(1));
+					elements.add(PostQuoteLinkSpan(
+						board: linkedBoard,
+						threadId: linkedId,
+						postId: linkedPostId,
+						dead: false
+					));
+				}
+			}
+			else {
+				elements.add(PostBoardLink(linkedBoard));
+			}
+		};
 		for (final node in doc.body!.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'span') {
 					if (node.classes.contains('greentext')) {
 						final quoteLink = node.querySelector('a.backlink');
 						if (quoteLink != null) {
-							final parts = quoteLink.attributes['href']!.split('/');
-							final linkedBoard = parts[3];
-							if (parts.length > 4) {
-								final linkType = parts[4];
-								final linkedId = int.parse(parts[5]);
-								if (linkType == 'post') {
-									final linkedPostThreadId = linkedPostThreadIds['$linkedBoard/$linkedId'] ?? -1;
-									elements.add(PostQuoteLinkSpan(
-										board: linkedBoard,
-										threadId: linkedPostThreadId,
-										postId: linkedId,
-										dead: false
-									));
-								}
-								else if (linkType == 'thread') {
-									final linkedPostId = int.parse(parts[6].substring(1));
-									elements.add(PostQuoteLinkSpan(
-										board: linkedBoard,
-										threadId: linkedId,
-										postId: linkedPostId,
-										dead: false
-									));
-								}
-							}
-							else {
-								elements.add(PostBoardLink(linkedBoard));
-							}
+							processQuotelink(quoteLink);
 						}
 						else {
 							elements.add(PostQuoteSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml)));
@@ -87,6 +90,9 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 					else {
 						elements.addAll(Site4Chan.parsePlaintext(node.text));
 					}
+				}
+				else if (node.localName == 'a' && node.classes.contains('backlink')) {
+					processQuotelink(node);
 				}
 				else {
 					elements.addAll(Site4Chan.parsePlaintext(node.text));
