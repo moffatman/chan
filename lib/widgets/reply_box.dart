@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/overscroll_modal.dart';
+import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -255,7 +256,7 @@ class ReplyBoxState extends State<ReplyBox> {
 							if (i < sources.length) {
 								final entry = sources[i];
 								return GestureDetector(
-									onTap: () async{
+									onTap: () async {
 										final file = await ((entry.key.type == AttachmentType.Image) ? picker.getImage(source: entry.key.source) : picker.getVideo(source: entry.key.source));
 										if (file != null) {
 											Navigator.of(context).pop<File>(File(file.path));
@@ -269,6 +270,25 @@ class ReplyBoxState extends State<ReplyBox> {
 										child: Icon(entry.value, size: 40, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
 									)
 								);
+							}
+							else if (i == sources.length) {
+								return GestureDetector(
+									onTap: () async {
+										final file = await Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
+											builder: (context) => WebImagePickerPage()
+										));
+										if (file != null) {
+											Navigator.of(context).pop<File>(file);
+										}
+									},
+									child: Container(
+										decoration: BoxDecoration(
+											color: CupertinoTheme.of(context).primaryColor,
+											borderRadius: BorderRadius.circular(8)
+										),
+										child: Icon(Icons.image_search, size: 40, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
+									)
+								)
 							}
 							else {
 								final attachment = savedAttachments[i - sources.length];

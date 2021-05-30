@@ -83,7 +83,8 @@ class SettingsCachePanel extends StatefulWidget {
 const _KNOWN_CACHE_DIRS = {
 	cacheImageFolderName: 'Images',
 	'webmcache': 'Converted WEBM files',
-	'sharecache': 'Exported for sharing'
+	'sharecache': 'Media exported for sharing',
+	'webpickercache': 'Images picked from web'
 };
 
 class _SettingsCachePanelState extends State<SettingsCachePanel> {
