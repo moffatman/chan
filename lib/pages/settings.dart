@@ -4,6 +4,9 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:tuple/tuple.dart';
 import 'package:provider/provider.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 
@@ -68,7 +71,12 @@ class SettingsPage extends StatelessWidget {
 							padding: EdgeInsets.only(top: 16, left: 16),
 							child: Text('Cached media')
 						),
-						SettingsCachePanel()
+						SettingsCachePanel(),
+						Container(
+							padding: EdgeInsets.only(top: 16, left: 16),
+							child: Text('Cached threads and history')
+						),
+						SettingsThreadsPanel()
 					],
 				)
 			)
@@ -176,6 +184,91 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 					)
 				]
 			)
+		);
+	}
+}
+
+class SettingsThreadsPanel extends StatelessWidget {
+	@override
+	Widget build(BuildContext context) {
+		return ValueListenableBuilder(
+			valueListenable: Persistence.threadStateBox.listenable(),
+			builder: (context, Box<PersistentThreadState> threadStateBox, child) {
+				final oldThreadRows =[7, 14, 30, 60, 90, 180].map((days) {
+					final cutoff = DateTime.now().subtract(Duration(days: days));
+					final oldThreads = threadStateBox.values.where((state) {
+						return (state.savedTime == null) && state.lastOpenedTime.compareTo(cutoff).isNegative;
+					}).toList();
+					return Tuple2(days, oldThreads);
+				}).toList();
+				oldThreadRows.removeRange(oldThreadRows.lastIndexWhere((r) => r.item2.isNotEmpty) + 1, oldThreadRows.length);
+				final confirmDelete = (List<PersistentThreadState> toDelete) async {
+					final confirmed = await showCupertinoDialog<bool>(
+						context: context,
+						builder: (_context) => CupertinoAlertDialog(
+							title: const Text('Confirm deletion'),
+							content: Text('${toDelete.length} threads will be deleted'),
+							actions: [
+								CupertinoDialogAction(
+									child: const Text('Cancel'),
+									onPressed: () {
+										Navigator.of(_context).pop();
+									}
+								),
+								CupertinoDialogAction(
+									child: const Text('Confirm'),
+									isDestructiveAction: true,
+									onPressed: () {
+										Navigator.of(_context).pop(true);
+									}
+								)
+							]
+						)
+					);
+					if (confirmed == true) {
+						for (final thread in toDelete) {
+							thread.delete();
+						}
+					}
+				};
+				return Container(
+					decoration: BoxDecoration(
+						borderRadius: BorderRadius.all(Radius.circular(8)),
+						color: CupertinoTheme.of(context).primaryColor.withOpacity(0.2)
+					),
+					margin: EdgeInsets.all(16),
+					padding: EdgeInsets.only(left: 16, top: 8, bottom: 8),
+					child: Table(
+						defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+						children: [
+							TableRow(
+								children: [
+									Text('Saved threads', textAlign: TextAlign.left),
+									Text(threadStateBox.values.where((t) => t.savedTime != null).length.toString(), textAlign: TextAlign.right),
+									CupertinoButton(
+										padding: EdgeInsets.zero,
+										child: const Text('Delete'),
+										onPressed: null
+									)
+								]
+							),
+							...oldThreadRows.map((entry) {
+								return TableRow(
+									children: [
+										Text('Over ${entry.item1} days old', textAlign: TextAlign.left),
+										Text(entry.item2.length.toString(), textAlign: TextAlign.right),
+										CupertinoButton(
+											padding: EdgeInsets.zero,
+											child: const Text('Delete'),
+											onPressed: entry.item2.isEmpty ? null : () => confirmDelete(entry.item2)
+										)
+									]
+								);
+							})
+						]
+					),
+				);
+			}
 		);
 	}
 }
