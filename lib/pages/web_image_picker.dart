@@ -152,7 +152,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 								ElevatedButton(
 									child: Icon(Icons.image),
 									onPressed: () async {
-										final List<dynamic> results = await webViewController?.evaluateJavascript(
+										final List<dynamic> returnedResults = await webViewController?.evaluateJavascript(
 											source: '''[...document.querySelectorAll('img')].map(img => {
 												var rect = img.getBoundingClientRect()
 												return {
@@ -165,6 +165,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												}
 											})'''
 										);
+										final results = [...returnedResults];
 										results.removeWhere((r) => r['src'].endsWith('.svg'));
 										results.removeWhere((r) => r['src'].isEmpty);
 										results.sort((a, b) => a['left'].compareTo(b['left']));
