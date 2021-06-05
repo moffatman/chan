@@ -21,6 +21,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	ImageboardArchiveSearchResult? result;
 	String? errorMessage;
 	int? page;
+	bool loading = true;
 
 	@override
 	void initState() {
@@ -30,18 +31,20 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 
 	void _runQuery() async {
 		setState(() {
-			this.result = null;
 			this.errorMessage = null;
+			this.loading = true;
 		});
 		try {
 			this.result = await context.read<ImageboardSite>().search(widget.query, page: page ?? 1);
 			page = result!.page;
+			loading = false;
 			if (mounted) setState(() {});
 		}
 		catch (e, st) {
 			print(e);
 			print(st);
 			this.errorMessage = e.toString();
+			loading = false;
 			if (mounted) setState(() {});
 		}
 	}
@@ -52,7 +55,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			children: [
 				CupertinoButton(
 					child: Text('1'),
-					onPressed: (result!.page == 1) ? null : () {
+					onPressed: (loading || result!.page == 1) ? null : () {
 						page = 1;
 						_runQuery();
 					}
@@ -60,15 +63,15 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				Spacer(),
 				CupertinoButton(
 					child: Icon(Icons.navigate_before),
-					onPressed: (result!.page == 1) ? null : () {
+					onPressed: (loading || result!.page == 1) ? null : () {
 						page = page! - 1;
 						_runQuery();
 					}
 				),
-				Text('Page ${result!.page}'),
+				Text('Page $page'),
 				CupertinoButton(
 					child: Icon(Icons.navigate_next),
-					onPressed: (result!.page == result!.maxPage) ? null : () {
+					onPressed: (loading || result!.page == result!.maxPage) ? null : () {
 						page = page! + 1;
 						_runQuery();
 					}
@@ -76,7 +79,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				Spacer(),
 				CupertinoButton(
 					child: Text('${result!.maxPage}'),
-					onPressed: (result!.page == result!.maxPage) ? null : () {
+					onPressed: (loading || result!.page == result!.maxPage) ? null : () {
 						page = result!.maxPage;
 						_runQuery();
 					}
@@ -86,7 +89,21 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	}
 
 	Widget _build(BuildContext context) {
-		if (this.result != null) {
+		if (this.errorMessage != null) {
+			return Center(
+				child: Column(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						ErrorMessageCard(this.errorMessage!),
+						CupertinoButton(
+							child: Text('Retry'),
+							onPressed: _runQuery
+						)
+					]
+				)
+			);
+		}
+		else if (!loading && this.result != null) {
 			return ListView.builder(
 				itemCount: result!.posts.length + 2,
 				itemBuilder: (context, i) {
@@ -116,25 +133,19 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				}
 			);
 		}
-		else if (this.errorMessage != null) {
-			return Center(
-				child: Column(
-					mainAxisSize: MainAxisSize.min,
-					children: [
-						ErrorMessageCard(this.errorMessage!),
-						CupertinoButton(
-							child: Text('Retry'),
-							onPressed: _runQuery
-						)
-					]
+		return Column(
+			children: [
+				if (result != null) SafeArea(
+					bottom: false,
+					child: _buildPagination()
+				),
+				Expanded(
+					child: Center(
+						child: CupertinoActivityIndicator()
+					)
 				)
-			);
-		}
-		else {
-			return Center(
-				child: CupertinoActivityIndicator()
-			);
-		}
+			]
+		);
 	}
 
 	@override
