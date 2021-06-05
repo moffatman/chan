@@ -208,7 +208,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																child: imageWidget
 															),
 															SizedBox(height: 4),
-															Text(image['width'].toString() + 'x' + image['height'].toString(), style: TextStyle(
+															Text(image['width'].round().toString() + 'x' + image['height'].round().toString(), style: TextStyle(
 																fontSize: 16
 															))
 														]
