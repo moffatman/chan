@@ -59,6 +59,8 @@ class SavedSettings extends HiveObject {
 	ThreadSortingMethod savedThreadsSortingMethod;
 	@HiveField(6)
 	bool autoRotateInGallery;
+	@HiveField(7)
+	String currentBoardName;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -67,14 +69,16 @@ class SavedSettings extends HiveObject {
 		ThreadSortingMethod? catalogSortingMethod,
 		bool? reverseCatalogSorting,
 		ThreadSortingMethod? savedThreadsSortingMethod,
-		bool? autoRotateInGallery
+		bool? autoRotateInGallery,
+		String? currentBoardName
 	}): this.autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.WiFi,
 		this.theme = theme ?? ThemeSetting.System,
 		this.hideStickiedThreads = hideStickiedThreads ?? false,
 		this.catalogSortingMethod = catalogSortingMethod ?? ThreadSortingMethod.Unsorted,
 		this.reverseCatalogSorting = reverseCatalogSorting ?? false,
 		this.savedThreadsSortingMethod = savedThreadsSortingMethod ?? ThreadSortingMethod.SavedTime,
-		this.autoRotateInGallery = autoRotateInGallery ?? false;
+		this.autoRotateInGallery = autoRotateInGallery ?? false,
+		this.currentBoardName = currentBoardName ?? 'tv';
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -151,6 +155,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get autoRotateInGallery => _settings.autoRotateInGallery;
 	set autoRotateInGallery(bool setting) {
 		_settings.autoRotateInGallery = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	String get currentBoardName => _settings.currentBoardName;
+	set currentBoardName(String setting) {
+		_settings.currentBoardName = setting;
 		_settings.save();
 		notifyListeners();
 	}

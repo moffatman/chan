@@ -118,7 +118,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Widget _buildTab(BuildContext context, int index) {
 		if (index == 0) {
 			return ImageboardTab(
-				initialBoardName: 'tv'
+				initialBoardName: context.read<EffectiveSettings>().currentBoardName,
+				onBoardChanged: (newBoard) {
+					context.read<EffectiveSettings>().currentBoardName = newBoard.name;
+				}
 			);
 		}
 		else if (index == 1) {

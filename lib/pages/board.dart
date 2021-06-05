@@ -20,11 +20,13 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 class BoardPage extends StatefulWidget {
 	final ImageboardBoard initialBoard;
 	final bool allowChangingBoard;
+	final ValueChanged<ImageboardBoard>? onBoardChanged;
 	final ValueChanged<ThreadIdentifier>? onThreadSelected;
 	final ThreadIdentifier? selectedThread;
 	BoardPage({
 		required this.initialBoard,
 		this.allowChangingBoard = true,
+		this.onBoardChanged,
 		this.onThreadSelected,
 		this.selectedThread
 	});
@@ -59,6 +61,7 @@ class _BoardPageState extends State<BoardPage> {
 					onTap: widget.allowChangingBoard ? () async {
 						final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => BoardSwitcherPage()));
 						if (newBoard != null) {
+							widget.onBoardChanged?.call(newBoard);
 							setState(() {
 								board = newBoard;
 							});

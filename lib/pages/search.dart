@@ -2,11 +2,12 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/pages/search_query.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
-
+import 'package:provider/provider.dart';
 import 'board_switcher.dart';
 
 class SearchPage extends StatefulWidget {
@@ -17,13 +18,16 @@ final _clearedDate = DateTime.fromMillisecondsSinceEpoch(0);
 
 class _SearchPageState extends State<SearchPage> {
 	final _controller = TextEditingController();
-	ImageboardArchiveSearchQuery query = ImageboardArchiveSearchQuery(boards: ['tv']);
+	late ImageboardArchiveSearchQuery query;
 	DateTime? _chosenDate;
 	bool _searchFocused = false;
+	late String _lastBoardName;
 
 	@override
 	void initState() {
 		super.initState();
+		_lastBoardName = context.read<EffectiveSettings>().currentBoardName;
+		query = ImageboardArchiveSearchQuery(boards: [_lastBoardName]);
 		_controller.addListener(() {
 			final bool isFocused = _controller.value.selection.baseOffset >= 0;
 			if (mounted && (isFocused != _searchFocused)) {
@@ -78,6 +82,13 @@ class _SearchPageState extends State<SearchPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		final currentBoardName = context.watch<EffectiveSettings>().currentBoardName;
+		if (currentBoardName != _lastBoardName) {
+			if (query.boards.first == _lastBoardName) {
+				query.boards = [currentBoardName];
+			}
+			_lastBoardName = currentBoardName;
+		}
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
