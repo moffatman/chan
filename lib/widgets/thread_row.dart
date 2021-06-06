@@ -1,3 +1,4 @@
+import 'package:chan/models/attachment.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -16,10 +17,14 @@ class ThreadRow extends StatelessWidget {
 	final Thread thread;
 	final bool isSelected;
 	final ValueChanged<Object?>? onThumbnailLoadError;
+	final ValueChanged<Attachment>? onThumbnailTap;
+	final Iterable<int> semanticParentIds;
 	const ThreadRow({
 		required this.thread,
 		required this.isSelected,
-		this.onThumbnailLoadError
+		this.onThumbnailLoadError,
+		this.onThumbnailTap,
+		this.semanticParentIds = const []
 	});
 	@override
 	Widget build(BuildContext context) {
@@ -48,10 +53,17 @@ class ThreadRow extends StatelessWidget {
 											Flexible(
 												child: Container(
 													padding: EdgeInsets.only(bottom: 8),
-													child: AttachmentThumbnail(
-														attachment: _thread.attachment!,
-														thread: _thread.identifier,
-														onLoadError: onThumbnailLoadError
+													child: GestureDetector(
+														child: AttachmentThumbnail(
+															attachment: _thread.attachment!,
+															thread: _thread.identifier,
+															onLoadError: onThumbnailLoadError,
+															hero: AttachmentSemanticLocation(
+																attachment: _thread.attachment!,
+																semanticParents: semanticParentIds
+															)
+														),
+														onTap: () => onThumbnailTap?.call(_thread.attachment!)
 													)
 												)
 											)

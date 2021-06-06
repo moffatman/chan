@@ -17,6 +17,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 
+import 'package:chan/pages/gallery.dart';
+
 class BoardPage extends StatefulWidget {
 	final ImageboardBoard initialBoard;
 	final bool allowChangingBoard;
@@ -37,6 +39,7 @@ class BoardPage extends StatefulWidget {
 class _BoardPageState extends State<BoardPage> {
 	late ImageboardBoard board;
 	bool showReplyBox = false;
+	final _listController = RefreshableListController<Thread>();
 
 	@override
 	void initState() {
@@ -133,6 +136,7 @@ class _BoardPageState extends State<BoardPage> {
 				children: [
 					Flexible(
 						child: RefreshableList<Thread>(
+							controller: _listController,
 							listUpdater: () => site.getCatalog(board.name).then((list) {
 								if (settings.hideStickiedThreads) {
 									list = list.where((thread) => !thread.isSticky).toList();
@@ -148,10 +152,23 @@ class _BoardPageState extends State<BoardPage> {
 							id: '/${board.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
 							itemBuilder: (context, thread) {
 								return GestureDetector(
-									behavior: HitTestBehavior.opaque,
 									child: ThreadRow(
 										thread: thread,
-										isSelected: thread.identifier == widget.selectedThread
+										isSelected: thread.identifier == widget.selectedThread,
+										semanticParentIds: [-1],
+										onThumbnailTap: (initialAttachment) {
+											final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
+											showGallery(
+												context: context,
+												attachments: attachments,
+												initiallyShowChrome: true,
+												initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+												onChange: (attachment) {
+													_listController.animateTo((p) => p.attachment?.id == attachment.id);
+												},
+												semanticParentIds: [-1]
+											);
+										}
 									),
 									onTap: () {
 										if (widget.onThreadSelected != null) {

@@ -26,6 +26,9 @@ class AttachmentSemanticLocation {
 	int get hashCode {
 		return _tag.hashCode;
 	}
+
+	@override
+	String toString() => 'AttachmentSemanticLocation($_tag)';
 }
 
 class AttachmentThumbnail extends StatelessWidget {

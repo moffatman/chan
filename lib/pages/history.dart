@@ -1,17 +1,24 @@
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/thread_row.dart';
-import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-class HistoryPage extends StatelessWidget {
+class HistoryPage extends StatefulWidget {
+	@override
+	createState() => _HistoryPageState();
+}
+
+class _HistoryPageState extends State<HistoryPage> {
+	final _listController = RefreshableListController<PersistentThreadState>();
+
 	@override
 	Widget build(BuildContext context) {
 		return MasterDetailPage<ThreadIdentifier>(
@@ -27,6 +34,7 @@ class HistoryPage extends StatelessWidget {
 							final states = box.toMap().values.where((s) => s.thread != null).toList();
 							states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
 							return RefreshableList<PersistentThreadState>(
+								controller: _listController,
 								listUpdater: () => throw UnimplementedError(),
 								id: 'history',
 								disableUpdates: true,
@@ -36,7 +44,21 @@ class HistoryPage extends StatelessWidget {
 										behavior: HitTestBehavior.opaque,
 										child: ThreadRow(
 											thread: state.thread!,
-											isSelected: state.thread!.identifier == selectedThread
+											isSelected: state.thread!.identifier == selectedThread,
+											semanticParentIds: [-3],
+											onThumbnailTap: (initialAttachment) {
+												final attachments = _listController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
+												showGallery(
+													context: context,
+													attachments: attachments,
+													initiallyShowChrome: true,
+													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+													onChange: (attachment) {
+														_listController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
+													},
+													semanticParentIds: [-3]
+												);
+											}
 										),
 										onTap: () => threadSetter(state.thread!.identifier)
 									),

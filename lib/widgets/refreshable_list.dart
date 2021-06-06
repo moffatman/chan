@@ -453,6 +453,7 @@ class _RefreshableListItem<T> {
 }
 class RefreshableListController<T extends Filterable> {
 	List<_RefreshableListItem<T>> _items = [];
+	List<T> get items => _items.map((i) => i.item).toList();
 	ScrollController? scrollController;
 	final overscrollFactor = ValueNotifier<double>(0);
 	BehaviorSubject<Null> _scrollStream = BehaviorSubject();

@@ -1,4 +1,5 @@
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/saved_attachments.dart';
 import 'package:chan/pages/thread.dart';
@@ -15,7 +16,14 @@ import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
-class SavedPage extends StatelessWidget {
+class SavedPage extends StatefulWidget {
+	@override
+	createState() => _SavedPageState();
+}
+
+class _SavedPageState extends State<SavedPage> {
+	final _listController = RefreshableListController<PersistentThreadState>();
+
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
@@ -100,6 +108,7 @@ class SavedPage extends StatelessWidget {
 												states.sort((a, b) => (b.thread?.posts.last.time ?? noDate).compareTo(a.thread?.posts.last.time ?? noDate));
 											}
 											return RefreshableList<PersistentThreadState>(
+												controller: _listController,
 												listUpdater: () => throw UnimplementedError(),
 												id: 'saved',
 												disableUpdates: true,
@@ -112,6 +121,20 @@ class SavedPage extends StatelessWidget {
 														onThumbnailLoadError: (error) {
 															context.read<ThreadWatcher>().fixBrokenThread(state.thread!.identifier);
 														},
+														semanticParentIds: [-2],
+														onThumbnailTap: (initialAttachment) {
+															final attachments = _listController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
+															showGallery(
+																context: context,
+																attachments: attachments,
+																initiallyShowChrome: true,
+																initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+																onChange: (attachment) {
+																	_listController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
+																},
+																semanticParentIds: [-2]
+															);
+														}
 													),
 													onTap: () => threadSetter(state.thread!.identifier)
 												),
