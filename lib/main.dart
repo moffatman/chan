@@ -9,6 +9,7 @@ import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'sites/imageboard_site.dart';
 import 'sites/4chan.dart';
@@ -68,6 +69,7 @@ class ChanApp extends StatelessWidget {
 									DefaultCupertinoLocalizations.delegate,
 									DefaultMaterialLocalizations.delegate
 								],
+								scrollBehavior: CupertinoScrollBehavior().copyWith(dragDevices: {...PointerDeviceKind.values})
 							)
 						);
 					}
