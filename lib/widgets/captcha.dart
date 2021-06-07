@@ -92,7 +92,7 @@ class CaptchaNoJSChallenge {
 	}
 }
 
-class _CaptchaNoJSState extends State<CaptchaNoJS> with SingleTickerProviderStateMixin {
+class _CaptchaNoJSState extends State<CaptchaNoJS> {
 	final http.Client client = IOClient();
 	String? errorMessage;
 	CaptchaNoJSChallenge? challenge;
@@ -321,7 +321,6 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> with SingleTickerProviderStat
 			padding: EdgeInsets.all(16),
 			child: AnimatedSize(
 				duration: const Duration(milliseconds: 100),
-				vsync: this,
 				child: _build(context)
 			)
 		);

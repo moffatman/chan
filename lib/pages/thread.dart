@@ -36,7 +36,7 @@ class ThreadPage extends StatefulWidget {
 	createState() => _ThreadPageState();
 }
 
-class _ThreadPageState extends State<ThreadPage> with TickerProviderStateMixin {
+class _ThreadPageState extends State<ThreadPage> {
 	late PersistentThreadState persistentState;
 	bool showReplyBox = false;
 	final _subNavigatorKey = GlobalKey<NavigatorState>();

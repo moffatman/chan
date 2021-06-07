@@ -165,13 +165,12 @@ class _SavedPageState extends State<SavedPage> {
 class ThreadWatcherControls extends StatefulWidget {
 	createState() => _ThreadWatcherControls();
 }
-class _ThreadWatcherControls extends State<ThreadWatcherControls> with SingleTickerProviderStateMixin {
+class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 	@override
 	Widget build(BuildContext context) {
 		final watcher = context.watch<ThreadWatcher>();
 		return AnimatedSize(
 			duration: Duration(milliseconds: 300),
-			vsync: this,
 			child: Container(
 				padding: EdgeInsets.all(8),
 				child: Column(
