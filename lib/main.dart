@@ -168,53 +168,57 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			return CupertinoPageScaffold(
 				child: Row(
 					children: [
-						NavigationRail(
-							backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
-							unselectedIconTheme: IconThemeData(
-								color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
-							),
-							selectedIconTheme: IconThemeData(
-								color: CupertinoTheme.of(context).primaryColor
-							),
-							unselectedLabelTextStyle: TextStyle(
-								color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
-							),
-							selectedLabelTextStyle: TextStyle(
-								color: CupertinoTheme.of(context).primaryColor
-							),
-							selectedIndex: tabletIndex,
-							onDestinationSelected: (index) {
-								setState(() {
-									tabletIndex = index;
-								});
-							},
-							labelType: NavigationRailLabelType.all,
-							destinations: [
-								NavigationRailDestination(
-									icon: Icon(Icons.topic),
-									label: Text('Browse')
+						Container(
+							padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+							color: CupertinoTheme.of(context).barBackgroundColor,
+							child: NavigationRail(
+								backgroundColor: CupertinoTheme.of(context).barBackgroundColor,
+								unselectedIconTheme: IconThemeData(
+									color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
 								),
-								NavigationRailDestination(
-									icon: NotifyingIcon(
-										icon: Icons.bookmark,
-										primaryCount: context.watch<ThreadWatcher>().unseenYouCount,
-										secondaryCount: context.watch<ThreadWatcher>().unseenCount
+								selectedIconTheme: IconThemeData(
+									color: CupertinoTheme.of(context).primaryColor
+								),
+								unselectedLabelTextStyle: TextStyle(
+									color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
+								),
+								selectedLabelTextStyle: TextStyle(
+									color: CupertinoTheme.of(context).primaryColor
+								),
+								selectedIndex: tabletIndex,
+								onDestinationSelected: (index) {
+									setState(() {
+										tabletIndex = index;
+									});
+								},
+								labelType: NavigationRailLabelType.all,
+								destinations: [
+									NavigationRailDestination(
+										icon: Icon(Icons.topic),
+										label: Text('Browse')
 									),
-									label: Text('Saved')
-								),
-								NavigationRailDestination(
-									icon: Icon(Icons.history),
-									label: Text('History')
-								),
-								NavigationRailDestination(
-									icon: Icon(Icons.search),
-									label: Text('Search')
-								),
-								NavigationRailDestination(
-									icon: Icon(Icons.settings),
-									label: Text('Settings')
-								)
-							]
+									NavigationRailDestination(
+										icon: NotifyingIcon(
+											icon: Icons.bookmark,
+											primaryCount: context.watch<ThreadWatcher>().unseenYouCount,
+											secondaryCount: context.watch<ThreadWatcher>().unseenCount
+										),
+										label: Text('Saved')
+									),
+									NavigationRailDestination(
+										icon: Icon(Icons.history),
+										label: Text('History')
+									),
+									NavigationRailDestination(
+										icon: Icon(Icons.search),
+										label: Text('Search')
+									),
+									NavigationRailDestination(
+										icon: Icon(Icons.settings),
+										label: Text('Settings')
+									)
+								]
+							)
 						),
 						Expanded(
 							child: IndexedStack(
