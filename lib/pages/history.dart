@@ -22,6 +22,7 @@ class _HistoryPageState extends State<HistoryPage> {
 	@override
 	Widget build(BuildContext context) {
 		return MasterDetailPage<ThreadIdentifier>(
+			id: 'history',
 			masterBuilder: (context, selectedThread, threadSetter) {
 				return CupertinoPageScaffold(
 					navigationBar: CupertinoNavigationBar(
@@ -77,14 +78,19 @@ class _HistoryPageState extends State<HistoryPage> {
 					)
 				);
 			},
-			detailBuilder: (context, selectedThread) {
-				return selectedThread != null ? ThreadPage(thread: selectedThread) : Container(
-					decoration: BoxDecoration(
-						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+			detailBuilder: (selectedThread) {
+				return BuiltDetailPane(
+					widget: selectedThread != null ? ThreadPage(thread: selectedThread) : Builder(
+						builder: (context) => Container(
+							decoration: BoxDecoration(
+								color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+							),
+							child: Center(
+								child: Text('Select a thread')
+							)
+						)
 					),
-					child: Center(
-						child: Text('Select a thread')
-					)
+					pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
 				);
 			}
 		);

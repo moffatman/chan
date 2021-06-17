@@ -38,6 +38,7 @@ class Persistence {
 	static final threadStateBox = Hive.box<PersistentThreadState>('threadStates');
 	static final boardBox = Hive.box<ImageboardBoard>('boards');
 	static final savedAttachmentBox = Hive.box<SavedAttachment>('savedAttachments');
+	static final savedPostsBox = Hive.box<SavedPost>('savedPosts');
 	static late final PersistentRecentSearches recentSearches;
 	static late final Directory temporaryDirectory;
 	static late final Directory documentsDirectory;
@@ -63,6 +64,7 @@ class Persistence {
 		Hive.registerAdapter(MediaFilterAdapter());
 		Hive.registerAdapter(PersistentRecentSearchesAdapter());
 		Hive.registerAdapter(SavedAttachmentAdapter());
+		Hive.registerAdapter(SavedPostAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
 		await Directory('${documentsDirectory.path}/$_SAVED_ATTACHMENTS_DIR').create(recursive: true);
@@ -80,6 +82,7 @@ class Persistence {
 		}
 		await Hive.openBox<ImageboardBoard>('boards');
 		await Hive.openBox<SavedAttachment>('savedAttachments');
+		await Hive.openBox<SavedPost>('savedPosts');
 	}
 
 	static PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
@@ -128,6 +131,15 @@ class Persistence {
 				print('Failed to find cached copy of ${attachment.thumbnailUrl.toString()}');
 			}
 		});
+	}
+
+	static SavedPost? getSavedPost(Post post) {
+		return savedPostsBox.get(post.globalId);
+	}
+
+	static void savePost(Post post, Thread thread) {
+		final newSavedPost = SavedPost(post: post, savedTime: DateTime.now(), thread: thread);
+		savedPostsBox.put(post.globalId, newSavedPost);
 	}
 }
 
@@ -217,4 +229,22 @@ class SavedAttachment extends HiveObject {
 
 	File get thumbnailFile => File('${Persistence.documentsDirectory.path}/$_SAVED_ATTACHMENTS_THUMBS_DIR/${attachment.globalId}.jpg');
 	File get file => File('${Persistence.documentsDirectory.path}/$_SAVED_ATTACHMENTS_DIR/${attachment.globalId}${attachment.ext == '.webm' ? '.mp4' : attachment.ext}');
+}
+
+@HiveType(typeId: 19)
+class SavedPost extends HiveObject implements Filterable {
+	@HiveField(0)
+	final Post post;
+	@HiveField(1)
+	final DateTime savedTime;
+	@HiveField(2)
+	final Thread thread;
+
+	SavedPost({
+		required this.post,
+		required this.savedTime,
+		required this.thread
+	});
+
+	List<String> getSearchableText() => [post.text];
 }

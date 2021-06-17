@@ -103,7 +103,7 @@ class PostQuoteLinkSpan extends PostSpan {
 	}
 	InlineSpan _buildCrossThreadLink(BuildContext context, PostSpanRenderOptions options) {
 		String text = '>>';
-		if (context.watch<PostSpanZoneData>().board != board) {
+		if (context.watch<PostSpanZoneData>().thread.board != board) {
 			text += '/$board/';
 		}
 		text += '$postId';
@@ -203,13 +203,13 @@ class PostQuoteLinkSpan extends PostSpan {
 			}
 		}
 
-		if (threadId != null && (board != zone.board || threadId != zone.threadId)) {
+		if (threadId != null && (board != zone.thread.board || threadId != zone.thread.id)) {
 			return _buildCrossThreadLink(context, options);
 		}
 		else {
 			// Normal link
 			final span = _buildNormalLink(context, options);
-			final thisPostInThread = zone.threadPosts.where((p) => p.id == postId);
+			final thisPostInThread = zone.thread.posts.where((p) => p.id == postId);
 			if (thisPostInThread.isEmpty || context.read<EffectiveSettings>().useTouchLayout || zone.stackIds.contains(postId) || zone.shouldExpandPost(postId)) {
 				return span;
 			}
@@ -234,7 +234,7 @@ class PostQuoteLinkSpan extends PostSpan {
 	}
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
-		if (options.addExpandingPosts && (threadId == zone.threadId && board == zone.board)) {
+		if (options.addExpandingPosts && (threadId == zone.thread.id && board == zone.thread.board)) {
 			return TextSpan(
 				children: [
 					_build(context, options),
@@ -328,10 +328,7 @@ class PostSpanZone extends StatelessWidget {
 
 abstract class PostSpanZoneData extends ChangeNotifier {
 	final _children = Map<int, PostSpanZoneData>();
-	List<Post> get threadPosts;
-	int get threadId;
-	ThreadIdentifier get threadIdentifier;
-	String get board;
+	Thread get thread;
 	ImageboardSite get site;
 	Iterable<int> get stackIds;
 	PersistentThreadState? get threadState;
@@ -374,12 +371,7 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 		required this.postId
 	});
 
-	List<Post> get threadPosts => parent.threadPosts;
-
-	int get threadId => parent.threadId;
-	ThreadIdentifier get threadIdentifier => parent.threadIdentifier;
-
-	String get board => parent.board;
+	Thread get thread => parent.thread;
 
 	ImageboardSite get site => parent.site;
 
@@ -415,29 +407,29 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	String? postFromArchiveError(int id) => parent.postFromArchiveError(id);
 }
 
+
 class PostSpanRootZoneData extends PostSpanZoneData {
-	final String board;
-	List<Post> threadPosts;
+	Thread thread;
 	final ImageboardSite site;
 	final PersistentThreadState? threadState;
 	final ValueChanged<Post>? onNeedScrollToPost;
-	final int threadId;
 	final Map<int, bool> _isLoadingPostFromArchive = Map();
 	final Map<int, Post> _postsFromArchive = Map();
 	final Map<int, String> _postFromArchiveErrors = Map();
-	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board: board, id: threadId);
+	final int? semanticRootId;
 
 	PostSpanRootZoneData({
-		required this.board,
-		required this.threadPosts,
+		required this.thread,
 		required this.site,
 		this.threadState,
-		required this.threadId,
-		this.onNeedScrollToPost
+		this.onNeedScrollToPost,
+		this.semanticRootId
 	});
 
 	@override
-	Iterable<int> get stackIds => [];
+	Iterable<int> get stackIds => [
+		if (semanticRootId != null) semanticRootId!
+	];
 
 	bool isLoadingPostFromArchive(int id) {
 		return _isLoadingPostFromArchive[id] ?? false;
@@ -448,8 +440,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 			_postFromArchiveErrors.remove(id);
 			_isLoadingPostFromArchive[id] = true;
 			notifyListeners();
-			_postsFromArchive[id] = await site.getPostFromArchive(board, id);
-			_postsFromArchive[id]!.replyIds = threadPosts.where((p) => p.span.referencedPostIds(board).contains(id)).map((p) => p.id).toList();
+			_postsFromArchive[id] = await site.getPostFromArchive(thread.board, id);
+			_postsFromArchive[id]!.replyIds = thread.posts.where((p) => p.span.referencedPostIds(thread.board).contains(id)).map((p) => p.id).toList();
 			notifyListeners();
 		}
 		catch (e, st) {
@@ -478,16 +470,16 @@ class ExpandingPost extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final zone = context.watch<PostSpanZoneData>();
-		final post = zone.threadPosts.tryFirstWhere((p) => p.id == id) ?? zone.postFromArchive(id);
+		final post = zone.thread.posts.tryFirstWhere((p) => p.id == id) ?? zone.postFromArchive(id);
 		if (post == null) {
-			print('Could not find post with ID $id in zone for ${zone.threadId}');
+			print('Could not find post with ID $id in zone for ${zone.thread.id}');
 		}
 		return Visibility(
 			visible: zone.shouldExpandPost(this.id),
 			child: MediaQuery(
 				data: MediaQueryData(textScaleFactor: 1),
 				child: (post == null) ? Container(
-					child: Text('Could not find /${zone.board}/$id')
+					child: Text('Could not find /${zone.thread.board}/$id')
 				) : Row(
 					children: [
 						Flexible(

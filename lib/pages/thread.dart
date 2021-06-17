@@ -46,6 +46,19 @@ class _ThreadPageState extends State<ThreadPage> {
 	bool blocked = false;
 	bool _unnaturallyScrolling = false;
 
+	Thread get _nullThread => Thread(
+		board: widget.thread.board,
+		id: widget.thread.id,
+		isDeleted: false,
+		isArchived: false,
+		title: '',
+		isSticky: false,
+		replyCount: -1,
+		imageCount: -1,
+		time: DateTime.fromMicrosecondsSinceEpoch(0),
+		posts: [],
+	);
+
 	Future<void> _blockAndScrollToPostIfNeeded() async {
 		final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;
 		if (persistentState.thread != null && scrollToId != null) {
@@ -78,10 +91,8 @@ class _ThreadPageState extends State<ThreadPage> {
 		persistentState.useArchive |= widget.initiallyUseArchive;
 		persistentState.save();
 		zone = PostSpanRootZoneData(
-			board: widget.thread.board,
-			threadPosts: persistentState.thread?.posts ?? [],
+			thread: persistentState.thread ?? _nullThread,
 			site: context.read<ImageboardSite>(),
-			threadId: widget.thread.id,
 			threadState: persistentState,
 			onNeedScrollToPost: (post) {
 				_subNavigatorKey.currentState!.popUntil((route) => route.isFirst);
@@ -110,11 +121,10 @@ class _ThreadPageState extends State<ThreadPage> {
 			final oldZone = zone;
 			Future.delayed(Duration(milliseconds: 100), () => oldZone.dispose());
 			zone = PostSpanRootZoneData(
-				board: widget.thread.board,
-				threadPosts: persistentState.thread?.posts ?? [],
+				thread: persistentState.thread ?? _nullThread,
 				site: context.read<ImageboardSite>(),
-				threadId: widget.thread.id,
-				threadState: persistentState
+				threadState: persistentState,
+				onNeedScrollToPost: oldZone.onNeedScrollToPost
 			);
 			persistentState.save();
 			_blockAndScrollToPostIfNeeded();
@@ -277,7 +287,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																				final bool firstLoad = persistentState.thread == null;
 																				if (_thread != persistentState.thread) {
 																					persistentState.thread = _thread;
-																					zone.threadPosts = _thread.posts;
+																					zone.thread = _thread;
 																					if (firstLoad) await _blockAndScrollToPostIfNeeded();
 																					await persistentState.save();
 																					setState(() {});

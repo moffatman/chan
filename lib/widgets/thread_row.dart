@@ -75,11 +75,8 @@ class ThreadRow extends StatelessWidget {
 											padding: EdgeInsets.only(left: 8, right: 8),
 											child: ChangeNotifierProvider<PostSpanZoneData>(
 												create: (ctx) => PostSpanRootZoneData(
-													board: _thread.board,
-													threadId: _thread.id,
-													threadState: null,
-													site: context.watch<ImageboardSite>(),
-													threadPosts: []
+													thread: _thread,
+													site: context.watch<ImageboardSite>()
 												),
 												child: Builder(
 													builder: (ctx) => IgnorePointer(

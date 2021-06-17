@@ -393,7 +393,11 @@ class _GalleryPageState extends State<GalleryPage> {
 											onInvoke: (i) => _toggleChrome()
 										),
 										DismissIntent: CallbackAction<DismissIntent>(
-											onInvoke: (i) => Navigator.of(context).pop()
+											onInvoke: (i) {
+												if (Navigator.of(context).canPop()) {
+													Navigator.of(context).pop();
+												}
+											}
 										)
 									},
 									child: Focus(

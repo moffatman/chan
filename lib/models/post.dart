@@ -81,4 +81,6 @@ class Post implements Filterable {
 	}
 
 	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board: board, id: threadId);
+
+	String get globalId => '${board}_${threadId}_$id';
 }

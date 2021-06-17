@@ -37,7 +37,7 @@ class _PostsPageState extends State<PostsPage> {
 	Widget build(BuildContext context) {
 		final List<Post> replies = [];
 		for (final id in widget.postsIdsToShow) {
-			final matchingPost = widget.zone.threadPosts.tryFirstWhere((p) => p.id == id);
+			final matchingPost = widget.zone.thread.posts.tryFirstWhere((p) => p.id == id);
 			if (matchingPost != null) {
 				replies.add(matchingPost);
 			}

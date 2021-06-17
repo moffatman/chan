@@ -191,7 +191,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							labelType: NavigationRailLabelType.all,
 							destinations: [
 								NavigationRailDestination(
-									icon: Icon(Icons.list),
+									icon: Icon(Icons.topic),
 									label: Text('Browse')
 								),
 								NavigationRailDestination(
@@ -231,7 +231,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				tabBar: CupertinoTabBar(
 					items: [
 						BottomNavigationBarItem(
-							icon: Icon(Icons.list),
+							icon: Icon(Icons.topic),
 							label: 'Browse'
 						),
 						BottomNavigationBarItem(

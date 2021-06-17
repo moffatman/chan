@@ -51,4 +51,6 @@ class Attachment {
 	bool? get isLandscape => (width == null || height == null) ? null : width! > height!;
 
 	String get globalId => '${board}_$id';
+
+	String toString() => 'Attachment(board: $board, id: $id, ext: $ext, filename: $filename, type: $type, url: $url, thumbnailUrl: $thumbnailUrl, md5: $md5, spoiler: $spoiler, width: $width, height: $height)';
 }

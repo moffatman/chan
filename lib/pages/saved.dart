@@ -1,15 +1,18 @@
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/master_detail.dart';
-import 'package:chan/pages/saved_attachments.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/post_row.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
+import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
@@ -22,142 +25,248 @@ class SavedPage extends StatefulWidget {
 }
 
 class _SavedPageState extends State<SavedPage> {
-	final _listController = RefreshableListController<PersistentThreadState>();
+	final _threadListController = RefreshableListController<PersistentThreadState>();
+	final _postListController = RefreshableListController<SavedPost>();
+
+	Widget _placeholder(String message) {
+		return Container(
+			decoration: BoxDecoration(
+				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+			),
+			child: Center(
+				child: Text(message)
+			)
+		);
+	}
+
+	ObstructingPreferredSizeWidget _navigationBar(String title) {
+		final settings = context.watch<EffectiveSettings>();
+		return CupertinoNavigationBar(
+			transitionBetweenRoutes: false,
+			middle: Text(title),
+			trailing: CupertinoButton(
+				padding: EdgeInsets.zero,
+				child: Icon(Icons.sort),
+				onPressed: () {
+					showCupertinoModalPopup<DateTime>(
+						context: context,
+						builder: (context) => CupertinoActionSheet(
+							title: const Text('Sort by...'),
+							actions: {
+								ThreadSortingMethod.SavedTime: 'Saved Date',
+								ThreadSortingMethod.LastPostTime: 'Posted Date',
+							}.entries.map((entry) => CupertinoActionSheetAction(
+								child: Text(entry.value, style: TextStyle(
+									fontWeight: entry.key == settings.savedThreadsSortingMethod ? FontWeight.bold : null
+								)),
+								onPressed: () {
+									settings.savedThreadsSortingMethod = entry.key;
+									Navigator.of(context, rootNavigator: true).pop();
+								}
+							)).toList(),
+							cancelButton: CupertinoActionSheetAction(
+								child: const Text('Cancel'),
+								onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+							)
+						)
+					);
+				}
+			)
+		);
+	}
 
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		return MasterDetailPage<ThreadIdentifier>(
-			masterBuilder: (context, selectedThread, threadSetter) {
-				return CupertinoPageScaffold(
-					navigationBar: CupertinoNavigationBar(
-						transitionBetweenRoutes: false,
-						middle: Text('Saved'),
-						trailing: CupertinoButton(
-							padding: EdgeInsets.zero,
-							child: Icon(Icons.sort),
-							onPressed: () {
-								showCupertinoModalPopup<DateTime>(
-									context: context,
-									builder: (context) => CupertinoActionSheet(
-										title: const Text('Sort by...'),
-										actions: {
-											ThreadSortingMethod.SavedTime: 'Saved Order',
-											ThreadSortingMethod.LastPostTime: 'Bump Order',
-										}.entries.map((entry) => CupertinoActionSheetAction(
-											child: Text(entry.value, style: TextStyle(
-												fontWeight: entry.key == settings.savedThreadsSortingMethod ? FontWeight.bold : null
-											)),
-											onPressed: () {
-												settings.savedThreadsSortingMethod = entry.key;
-												Navigator.of(context, rootNavigator: true).pop();
+		return MultiMasterDetailPage(
+			panes: [
+				MultiMasterPane<ThreadIdentifier>(
+					id: 'savedThreads',
+					navigationBar: _navigationBar('Saved Threads'),
+					icon: Icons.topic,
+					masterBuilder: (context, selectedThread, threadSetter) {
+						return SafeArea(
+							child: Column(
+								children: [
+									ThreadWatcherControls(),
+									Divider(
+										thickness: 1,
+										height: 0,
+										color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
+									),
+									Expanded(
+										child: ValueListenableBuilder(
+											valueListenable: Persistence.threadStateBox.listenable(),
+											builder: (context, Box<PersistentThreadState> box, child) {
+												final states = box.toMap().values.where((s) => s.savedTime != null).toList();
+												if (settings.savedThreadsSortingMethod == ThreadSortingMethod.SavedTime) {
+													states.sort((a, b) => b.savedTime!.compareTo(a.savedTime!));
+												}
+												else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.LastPostTime) {
+													final noDate = DateTime.fromMillisecondsSinceEpoch(0);
+													states.sort((a, b) => (b.thread?.posts.last.time ?? noDate).compareTo(a.thread?.posts.last.time ?? noDate));
+												}
+												return RefreshableList<PersistentThreadState>(
+													controller: _threadListController,
+													listUpdater: () => throw UnimplementedError(),
+													id: 'saved',
+													disableUpdates: true,
+													initialList: states,
+													itemBuilder: (context, state) => GestureDetector(
+														behavior: HitTestBehavior.opaque,
+														child: ThreadRow(
+															thread: state.thread!,
+															isSelected: state.thread!.identifier == selectedThread,
+															onThumbnailLoadError: (error) {
+																context.read<ThreadWatcher>().fixBrokenThread(state.thread!.identifier);
+															},
+															semanticParentIds: [-4],
+															onThumbnailTap: (initialAttachment) {
+																final attachments = _threadListController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
+																showGallery(
+																	context: context,
+																	attachments: attachments,
+																	initiallyShowChrome: true,
+																	initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+																	onChange: (attachment) {
+																		_threadListController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
+																	},
+																	semanticParentIds: [-4]
+																);
+															}
+														),
+														onTap: () => threadSetter(state.thread!.identifier)
+													),
+													filterHint: 'Search saved threads'
+												);
 											}
-										)).toList(),
-										cancelButton: CupertinoActionSheetAction(
-											child: const Text('Cancel'),
-											onPressed: () => Navigator.of(context, rootNavigator: true).pop()
 										)
 									)
+								]
+							)
+						);
+					},
+					detailBuilder: (selectedThread) {
+						return BuiltDetailPane(
+							widget: selectedThread != null ? ThreadPage(thread: selectedThread) : _placeholder('Select a thread'),
+							pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
+						);
+					}
+				),
+				MultiMasterPane<SavedPost>(
+					id: 'savedPosts',
+					navigationBar: _navigationBar('Saved Posts'),
+					icon: Icons.reply,
+					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
+						valueListenable: Persistence.savedPostsBox.listenable(),
+						builder: (context, Box<SavedPost> box, child) {
+							final savedPosts = box.values.toList();
+							if (settings.savedThreadsSortingMethod == ThreadSortingMethod.SavedTime) {
+								savedPosts.sort((a, b) => b.savedTime.compareTo(a.savedTime));
+							}
+							else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.LastPostTime) {
+								savedPosts.sort((a, b) => b.post.time.compareTo(a.post.time));
+							}
+							return RefreshableList<SavedPost>(
+								controller: _postListController,
+								listUpdater: () => throw UnimplementedError(),
+								id: 'saved',
+								disableUpdates: true,
+								initialList: savedPosts,
+								itemBuilder: (context, savedPost) => ChangeNotifierProvider<PostSpanZoneData>(
+									create: (context) => PostSpanRootZoneData(
+										site: context.read<ImageboardSite>(),
+										thread: savedPost.thread,
+										semanticRootId: -2
+									),
+									child: GestureDetector(
+										behavior: HitTestBehavior.opaque,
+										child: PostRow(
+											post: savedPost.post,
+											isSelected: savedPost == selected,
+											onThumbnailTap: (initialAttachment) {
+												final attachments = _postListController.items.where((_) => _.thread.attachment != null).map((_) => _.thread.attachment!).toList();
+												showGallery(
+													context: context,
+													attachments: attachments,
+													initiallyShowChrome: true,
+													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+													onChange: (attachment) {
+														_postListController.animateTo((p) => p.thread.attachment?.id == attachment.id);
+													},
+													semanticParentIds: [-2]
+												);
+											}
+										),
+										onTap: () => setter(savedPost)
+									)
+								),
+								filterHint: 'Search saved threads'
+							);
+						}
+					),
+					detailBuilder: (selected) => BuiltDetailPane(
+						widget: selected == null ? _placeholder('Select a post') : ThreadPage(
+							thread: selected.post.threadIdentifier,
+							initialPostId: selected.post.id,
+						),
+						pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
+					)
+				),
+				MultiMasterPane<SavedAttachment>(
+					id: 'savedAttachments',
+					title: Text('Saved Attachments'),
+					icon: Icons.image,
+					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
+						valueListenable: Persistence.savedAttachmentBox.listenable(),
+						builder: (context, box, child) {
+							final list = Persistence.savedAttachmentBox.values.toList();
+							list.sort((a, b) => b.savedTime.compareTo(a.savedTime));
+							return GridView.builder(
+								itemCount: list.length,
+								itemBuilder: (context, i) {
+									return GestureDetector(
+										child: Container(
+											decoration: BoxDecoration(
+												color: Colors.transparent,
+												borderRadius: BorderRadius.all(Radius.circular(4)),
+												border: Border.all(color: list[i] == selected ? Colors.blue : Colors.transparent, width: 2)
+											),
+											margin: const EdgeInsets.all(4),
+											child: SavedAttachmentThumbnail(
+												file: list[i].file,
+												fit: BoxFit.cover
+											)
+										),
+										onTap: () => setter(list[i])
+									);
+								},
+								gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+									crossAxisCount: 4
+								)
+							);
+						}
+					),
+					detailBuilder: (selectedValue) => BuiltDetailPane(
+						widget: selectedValue == null ? _placeholder('Select an attachment') : ExtendedImage.file(
+							selectedValue.file,
+							mode: ExtendedImageMode.gesture,
+							fit: BoxFit.contain,
+							width: double.infinity,
+							height: double.infinity,
+							onDoubleTap: (state) {
+								final old = state.gestureDetails!;
+								state.gestureDetails = GestureDetails(
+									offset: state.pointerDownPosition!.scale(old.layoutRect!.width / MediaQuery.of(context).size.width, old.layoutRect!.height / MediaQuery.of(context).size.height) * -1,
+									totalScale: (old.totalScale ?? 1) > 1 ? 1 : 2,
+									actionType: ActionType.zoom
 								);
 							}
-						)
-					),
-					child: SafeArea(
-						child: Column(
-							children: [
-								GestureDetector(
-									behavior: HitTestBehavior.translucent,
-									child: Container(
-										height: 75,
-										padding: EdgeInsets.all(8),
-										child: Row(
-											children: [
-												Icon(Icons.image),
-												SizedBox(width: 8),
-												Text('Saved Attachments'),
-												Spacer(),
-												Icon(Icons.chevron_right)
-											]
-										)
-									),
-									onTap: () {
-										Navigator.of(context).push(FullWidthCupertinoPageRoute(builder: (ctx) => SavedAttachmentsPage()));
-									}
-								),
-								Divider(
-									thickness: 1,
-									height: 0,
-									color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
-								),
-								ThreadWatcherControls(),
-								Divider(
-									thickness: 1,
-									height: 0,
-									color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
-								),
-								Expanded(
-									child: ValueListenableBuilder(
-										valueListenable: Persistence.threadStateBox.listenable(),
-										builder: (context, Box<PersistentThreadState> box, child) {
-											final states = box.toMap().values.where((s) => s.savedTime != null).toList();
-											if (settings.savedThreadsSortingMethod == ThreadSortingMethod.SavedTime) {
-												states.sort((a, b) => b.savedTime!.compareTo(a.savedTime!));
-											}
-											else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.LastPostTime) {
-												final noDate = DateTime.fromMillisecondsSinceEpoch(0);
-												states.sort((a, b) => (b.thread?.posts.last.time ?? noDate).compareTo(a.thread?.posts.last.time ?? noDate));
-											}
-											return RefreshableList<PersistentThreadState>(
-												controller: _listController,
-												listUpdater: () => throw UnimplementedError(),
-												id: 'saved',
-												disableUpdates: true,
-												initialList: states,
-												itemBuilder: (context, state) => GestureDetector(
-													behavior: HitTestBehavior.opaque,
-													child: ThreadRow(
-														thread: state.thread!,
-														isSelected: state.thread!.identifier == selectedThread,
-														onThumbnailLoadError: (error) {
-															context.read<ThreadWatcher>().fixBrokenThread(state.thread!.identifier);
-														},
-														semanticParentIds: [-2],
-														onThumbnailTap: (initialAttachment) {
-															final attachments = _listController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
-															showGallery(
-																context: context,
-																attachments: attachments,
-																initiallyShowChrome: true,
-																initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-																onChange: (attachment) {
-																	_listController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
-																},
-																semanticParentIds: [-2]
-															);
-														}
-													),
-													onTap: () => threadSetter(state.thread!.identifier)
-												),
-												filterHint: 'Search saved threads'
-											);
-										}
-									)
-								)
-							]
-						)
+						),
+						pageRouteBuilder: transparentPageRouteBuilder
 					)
-				);
-			},
-			detailBuilder: (context, selectedThread) {
-				return selectedThread != null ? ThreadPage(thread: selectedThread) : Container(
-					decoration: BoxDecoration(
-						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-					),
-					child: Center(
-						child: Text('Select a thread')
-					)
-				);
-			}
+				)
+			]
 		);
 	}
 }
