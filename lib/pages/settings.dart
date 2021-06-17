@@ -25,6 +25,20 @@ class SettingsPage extends StatelessWidget {
 					children: [
 						Container(
 							padding: EdgeInsets.all(16),
+							child: Text('Use touchscreen layout'),
+						),
+						CupertinoSegmentedControl<bool>(
+							children: {
+								false: Text('No'),
+								true: Text('Yes')
+							},
+							groupValue: settings.useTouchLayout,
+							onValueChanged: (newValue) {
+								settings.useTouchLayout = newValue;
+							}
+						),
+						Container(
+							padding: EdgeInsets.all(16),
 							child: Text('Theme'),
 						),
 						CupertinoSegmentedControl<ThemeSetting>(
