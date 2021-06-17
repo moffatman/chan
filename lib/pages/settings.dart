@@ -20,92 +20,100 @@ class SettingsPage extends StatelessWidget {
 				middle: Text('Settings')
 			),
 			child: SafeArea(
-				child: ListView(
-					physics: ClampingScrollPhysics(),
-					children: [
-						Container(
-							padding: EdgeInsets.all(16),
-							child: Text('Use touchscreen layout'),
+				child: Align(
+					alignment: Alignment.center,
+					child: ConstrainedBox(
+						constraints: BoxConstraints(
+							maxWidth: 500
 						),
-						CupertinoSegmentedControl<bool>(
-							children: {
-								false: Text('No'),
-								true: Text('Yes')
-							},
-							groupValue: settings.useTouchLayout,
-							onValueChanged: (newValue) {
-								settings.useTouchLayout = newValue;
-							}
-						),
-						Container(
-							padding: EdgeInsets.all(16),
-							child: Text('Theme'),
-						),
-						CupertinoSegmentedControl<ThemeSetting>(
-							children: {
-								ThemeSetting.Light: Text('Light'),
-								ThemeSetting.System: Text('Follow System'),
-								ThemeSetting.Dark: Text('Dark')
-							},
-							groupValue: settings.themeSetting,
-							onValueChanged: (newValue) {
-								settings.themeSetting = newValue;
-							}
-						),
-						Container(
-							padding: EdgeInsets.all(16),
-							child: Text('Automatically load attachments'),
-						),
-						CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
-							children: {
-								AutoloadAttachmentsSetting.Always: Text('Always'),
-								AutoloadAttachmentsSetting.WiFi: Text('When on Wi-Fi'),
-								AutoloadAttachmentsSetting.Never: Text('Never')
-							},
-							groupValue: settings.autoloadAttachmentsSetting,
-							onValueChanged: (newValue) {
-								settings.autoloadAttachmentsSetting = newValue;
-							}
-						),
-						Container(
-							padding: EdgeInsets.all(16),
-							child: Text('Darker dark theme (for OLED)'),
-						),
-						CupertinoSegmentedControl<bool>(
-							children: {
-								false: Text('No'),
-								true: Text('Yes')
-							},
-							groupValue: settings.darkThemeIsPureBlack,
-							onValueChanged: (newValue) {
-								settings.darkThemeIsPureBlack = newValue;
-							}
-						),
-						Container(
-							padding: EdgeInsets.all(16),
-							child: Text('Hide stickied threads'),
-						),
-						CupertinoSegmentedControl<bool>(
-							children: {
-								false: Text('No'),
-								true: Text('Yes')
-							},
-							groupValue: settings.hideStickiedThreads,
-							onValueChanged: (newValue) {
-								settings.hideStickiedThreads = newValue;
-							}
-						),
-						Container(
-							padding: EdgeInsets.only(top: 16, left: 16),
-							child: Text('Cached media')
-						),
-						SettingsCachePanel(),
-						Container(
-							padding: EdgeInsets.only(top: 16, left: 16),
-							child: Text('Cached threads and history')
-						),
-						SettingsThreadsPanel()
-					],
+						child: ListView(
+							physics: ClampingScrollPhysics(),
+							children: [
+								Container(
+									padding: EdgeInsets.all(16),
+									child: Text('Use touchscreen layout'),
+								),
+								CupertinoSegmentedControl<bool>(
+									children: {
+										false: Text('No'),
+										true: Text('Yes')
+									},
+									groupValue: settings.useTouchLayout,
+									onValueChanged: (newValue) {
+										settings.useTouchLayout = newValue;
+									}
+								),
+								Container(
+									padding: EdgeInsets.all(16),
+									child: Text('Theme'),
+								),
+								CupertinoSegmentedControl<ThemeSetting>(
+									children: {
+										ThemeSetting.Light: Text('Light'),
+										ThemeSetting.System: Text('Follow System'),
+										ThemeSetting.Dark: Text('Dark')
+									},
+									groupValue: settings.themeSetting,
+									onValueChanged: (newValue) {
+										settings.themeSetting = newValue;
+									}
+								),
+								Container(
+									padding: EdgeInsets.all(16),
+									child: Text('Automatically load attachments'),
+								),
+								CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
+									children: {
+										AutoloadAttachmentsSetting.Always: Text('Always'),
+										AutoloadAttachmentsSetting.WiFi: Text('When on Wi-Fi'),
+										AutoloadAttachmentsSetting.Never: Text('Never')
+									},
+									groupValue: settings.autoloadAttachmentsSetting,
+									onValueChanged: (newValue) {
+										settings.autoloadAttachmentsSetting = newValue;
+									}
+								),
+								Container(
+									padding: EdgeInsets.all(16),
+									child: Text('Darker dark theme (for OLED)'),
+								),
+								CupertinoSegmentedControl<bool>(
+									children: {
+										false: Text('No'),
+										true: Text('Yes')
+									},
+									groupValue: settings.darkThemeIsPureBlack,
+									onValueChanged: (newValue) {
+										settings.darkThemeIsPureBlack = newValue;
+									}
+								),
+								Container(
+									padding: EdgeInsets.all(16),
+									child: Text('Hide stickied threads'),
+								),
+								CupertinoSegmentedControl<bool>(
+									children: {
+										false: Text('No'),
+										true: Text('Yes')
+									},
+									groupValue: settings.hideStickiedThreads,
+									onValueChanged: (newValue) {
+										settings.hideStickiedThreads = newValue;
+									}
+								),
+								Container(
+									padding: EdgeInsets.only(top: 16, left: 16),
+									child: Text('Cached media')
+								),
+								SettingsCachePanel(),
+								Container(
+									padding: EdgeInsets.only(top: 16, left: 16),
+									child: Text('Cached threads and history')
+								),
+								SettingsThreadsPanel()
+							],
+						)
+					)
 				)
 			)
 		);
