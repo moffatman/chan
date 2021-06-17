@@ -61,6 +61,8 @@ class SavedSettings extends HiveObject {
 	bool autoRotateInGallery;
 	@HiveField(7)
 	String currentBoardName;
+	@HiveField(8)
+	bool darkThemeIsPureBlack;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -70,7 +72,8 @@ class SavedSettings extends HiveObject {
 		bool? reverseCatalogSorting,
 		ThreadSortingMethod? savedThreadsSortingMethod,
 		bool? autoRotateInGallery,
-		String? currentBoardName
+		String? currentBoardName,
+		bool? darkThemeIsPureBlack
 	}): this.autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.WiFi,
 		this.theme = theme ?? ThemeSetting.System,
 		this.hideStickiedThreads = hideStickiedThreads ?? false,
@@ -78,7 +81,8 @@ class SavedSettings extends HiveObject {
 		this.reverseCatalogSorting = reverseCatalogSorting ?? false,
 		this.savedThreadsSortingMethod = savedThreadsSortingMethod ?? ThreadSortingMethod.SavedTime,
 		this.autoRotateInGallery = autoRotateInGallery ?? false,
-		this.currentBoardName = currentBoardName ?? 'tv';
+		this.currentBoardName = currentBoardName ?? 'tv',
+		this.darkThemeIsPureBlack = darkThemeIsPureBlack ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -121,6 +125,13 @@ class EffectiveSettings extends ChangeNotifier {
 			return Brightness.light;
 		}
 		return _systemBrightness ?? Brightness.light;
+	}
+
+	bool get darkThemeIsPureBlack => _settings.darkThemeIsPureBlack;
+	set darkThemeIsPureBlack(bool setting) {
+		_settings.darkThemeIsPureBlack = setting;
+		_settings.save();
+		notifyListeners();
 	}
 
 	bool get useTouchLayout => Platform.isAndroid || Platform.isIOS;

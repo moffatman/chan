@@ -47,10 +47,15 @@ class ChanApp extends StatelessWidget {
 			child: SettingsSystemListener(
 				child: Builder(
 					builder: (BuildContext context) {
-						final brightness = context.watch<EffectiveSettings>().theme;
+						final settings = context.watch<EffectiveSettings>();
 						CupertinoThemeData theme = CupertinoThemeData(brightness: Brightness.light, primaryColor: Colors.black);
-						if (brightness == Brightness.dark) {
-							theme = CupertinoThemeData(brightness: Brightness.dark, scaffoldBackgroundColor: Color.fromRGBO(20, 20, 20, 1), primaryColor: Colors.white);
+						if (settings.theme == Brightness.dark) {
+							theme = CupertinoThemeData(
+								brightness: Brightness.dark,
+								scaffoldBackgroundColor: settings.darkThemeIsPureBlack ? Colors.black : Color.fromRGBO(20, 20, 20, 1),
+								barBackgroundColor: settings.darkThemeIsPureBlack ? Color.fromRGBO(20, 20, 20, 1) : null,
+								primaryColor: Colors.white
+							);
 						}
 						return ChangeNotifierProvider(
 							create: (ctx) => ThreadWatcher(site: ctx.read<ImageboardSite>()),

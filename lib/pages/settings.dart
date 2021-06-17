@@ -55,6 +55,20 @@ class SettingsPage extends StatelessWidget {
 						),
 						Container(
 							padding: EdgeInsets.all(16),
+							child: Text('Darker dark theme (for OLED)'),
+						),
+						CupertinoSegmentedControl<bool>(
+							children: {
+								false: Text('No'),
+								true: Text('Yes')
+							},
+							groupValue: settings.darkThemeIsPureBlack,
+							onValueChanged: (newValue) {
+								settings.darkThemeIsPureBlack = newValue;
+							}
+						),
+						Container(
+							padding: EdgeInsets.all(16),
 							child: Text('Hide stickied threads'),
 						),
 						CupertinoSegmentedControl<bool>(
