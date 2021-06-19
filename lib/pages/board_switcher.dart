@@ -1,10 +1,8 @@
 import 'package:chan/models/board.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/services/settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
 class BoardSwitcherPage extends StatefulWidget {
@@ -73,31 +71,37 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			) : SafeArea(
 				child: GridView.count(
 					padding: EdgeInsets.only(top: 4, bottom: 4),
-					crossAxisCount: context.watch<EffectiveSettings>().useTouchLayout ? 3 : 1,
-					childAspectRatio: context.watch<EffectiveSettings>().useTouchLayout ? 1.7 : 2.5,
+					crossAxisCount: 3,
 					mainAxisSpacing: 4,
 					crossAxisSpacing: 4,
 					shrinkWrap: true,
 					children: _filteredBoards.map((board) {
 						return GestureDetector(
 							child: Container(
-								padding: EdgeInsets.all(8),
+								padding: EdgeInsets.only(top: 8, bottom: 8, left: 4, right: 4),
 								decoration: BoxDecoration(
 									borderRadius: BorderRadius.all(Radius.circular(4)),
 									color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
 								),
 								child: Column(
-									mainAxisAlignment: MainAxisAlignment.center,
+									mainAxisAlignment: MainAxisAlignment.start,
 									crossAxisAlignment: CrossAxisAlignment.center,
 									children: [
-										Text(
-											'/${board.name}/',
-											style: TextStyle(
-												fontSize: 24
+										Flexible(
+											child: Center(
+												child: Text(
+													'/${board.name}/',
+													style: TextStyle(
+														fontSize: 24
+													)
+												)
 											)
 										),
-										SizedBox(height: 8),
-										AutoSizeText('${board.title}', maxLines: 1)
+										Flexible(
+											child: Center(
+												child: AutoSizeText('${board.title}', maxFontSize: 14, maxLines: 2, textAlign: TextAlign.center)
+											)
+										)
 									]
 								)
 							),
