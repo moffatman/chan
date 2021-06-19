@@ -158,7 +158,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 						builder: (context) {
 							final child = TabBarView(
 								controller: _tabController,
-								physics: AlwaysScrollableScrollPhysics(),
+								physics: widget.panes.length > 1 ? AlwaysScrollableScrollPhysics() : NeverScrollableScrollPhysics(),
 								children: widget.panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane))).toList()
 							);
 							if (widget.showChrome) {
