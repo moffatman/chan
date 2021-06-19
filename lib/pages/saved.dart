@@ -6,19 +6,18 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-
 class SavedPage extends StatefulWidget {
 	@override
 	createState() => _SavedPageState();
@@ -146,7 +145,7 @@ class _SavedPageState extends State<SavedPage> {
 							)
 						);
 					},
-					detailBuilder: (selectedThread) {
+					detailBuilder: (selectedThread, poppedOut) {
 						return BuiltDetailPane(
 							widget: selectedThread != null ? ThreadPage(thread: selectedThread) : _placeholder('Select a thread'),
 							pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
@@ -205,7 +204,7 @@ class _SavedPageState extends State<SavedPage> {
 							);
 						}
 					),
-					detailBuilder: (selected) => BuiltDetailPane(
+					detailBuilder: (selected, poppedOut) => BuiltDetailPane(
 						widget: selected == null ? _placeholder('Select a post') : ThreadPage(
 							thread: selected.post.threadIdentifier,
 							initialPostId: selected.post.id,
@@ -233,9 +232,15 @@ class _SavedPageState extends State<SavedPage> {
 												border: Border.all(color: list[i] == selected ? Colors.blue : Colors.transparent, width: 2)
 											),
 											margin: const EdgeInsets.all(4),
-											child: SavedAttachmentThumbnail(
-												file: list[i].file,
-												fit: BoxFit.cover
+											child: Hero(
+												tag: AttachmentSemanticLocation(
+													attachment: list[i].attachment,
+													semanticParents: [-5]
+												),
+												child: SavedAttachmentThumbnail(
+													file: list[i].file,
+													fit: BoxFit.cover
+												)
 											)
 										),
 										onTap: () => setter(list[i])
@@ -247,21 +252,16 @@ class _SavedPageState extends State<SavedPage> {
 							);
 						}
 					),
-					detailBuilder: (selectedValue) => BuiltDetailPane(
-						widget: selectedValue == null ? _placeholder('Select an attachment') : ExtendedImage.file(
-							selectedValue.file,
-							mode: ExtendedImageMode.gesture,
-							fit: BoxFit.contain,
-							width: double.infinity,
-							height: double.infinity,
-							onDoubleTap: (state) {
-								final old = state.gestureDetails!;
-								state.gestureDetails = GestureDetails(
-									offset: state.pointerDownPosition!.scale(old.layoutRect!.width / MediaQuery.of(context).size.width, old.layoutRect!.height / MediaQuery.of(context).size.height) * -1,
-									totalScale: (old.totalScale ?? 1) > 1 ? 1 : 2,
-									actionType: ActionType.zoom
-								);
-							}
+					detailBuilder: (selectedValue, poppedOut) => BuiltDetailPane(
+						widget: selectedValue == null ? _placeholder('Select an attachment') : GalleryPage(
+							initialAttachment: selectedValue.attachment,
+							attachments: [selectedValue.attachment],
+							overrideSources: {
+								selectedValue.attachment: selectedValue.file.uri
+							},
+							semanticParentIds: poppedOut ? [-5] : [-6],
+							initiallyShowChrome: true,
+							allowScroll: poppedOut
 						),
 						pageRouteBuilder: transparentPageRouteBuilder
 					)

@@ -27,7 +27,7 @@ class MasterDetailPage<T> extends StatelessWidget {
 	final String id;
 	final double? twoPaneBreakpoint;
 	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T> valueSetter) masterBuilder;
-	final BuiltDetailPane Function(T? selectedValue) detailBuilder;
+	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
 	MasterDetailPage({
 		required this.id,
 		required this.masterBuilder,
@@ -55,7 +55,7 @@ class MultiMasterPane<T> {
 	final ObstructingPreferredSizeWidget? navigationBar;
 	final IconData? icon;
 	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T> valueSetter) masterBuilder;
-	final BuiltDetailPane Function(T? selectedValue) detailBuilder;
+	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
 	T? currentValue;
 
 	MultiMasterPane({
@@ -74,8 +74,12 @@ class MultiMasterPane<T> {
 		});
 	}
 
-	BuiltDetailPane buildDetail() {
-		return detailBuilder(currentValue);
+	Widget buildDetail() {
+		return detailBuilder(currentValue, false).widget;
+	}
+
+	PageRoute buildDetailRoute() {
+		return detailBuilder(currentValue, true).pageRoute;
 	}
 }
 
@@ -137,7 +141,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 
 	void _onNewValue<T> (MultiMasterPane<T> pane) {
 		if (onePane) {
-			_masterKey.currentState!.push(pane.buildDetail().pageRoute);
+			_masterKey.currentState!.push(pane.buildDetailRoute());
 		}
 		else {
 			_detailKey.currentState!.popUntil((route) => route.isFirst);
@@ -153,6 +157,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 			child: Navigator(
 				key: _masterKey,
 				initialRoute: '/',
+				observers: [HeroController()],
 				onGenerateRoute: (RouteSettings settings) {
 					return TransparentRoute(
 						builder: (context) {
@@ -206,7 +211,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 						builder: (context) {
 							return IndexedStack(
 								index: _tabController.index,
-								children: widget.panes.map((p) => p.buildDetail().widget).toList()
+								children: widget.panes.map((p) => p.buildDetail()).toList()
 							);
 						},
 						settings: settings

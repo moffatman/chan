@@ -26,7 +26,7 @@ class ImageboardTab extends StatelessWidget {
 					onBoardChanged: onBoardChanged,
 				);
 			},
-			detailBuilder: (selectedThread) {
+			detailBuilder: (selectedThread, poppedOut) {
 				return BuiltDetailPane(
 					widget: selectedThread != null ? ThreadPage(thread: selectedThread) : Builder(
 						builder: (context) => Container(

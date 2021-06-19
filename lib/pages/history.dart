@@ -79,7 +79,7 @@ class _HistoryPageState extends State<HistoryPage> {
 					)
 				);
 			},
-			detailBuilder: (selectedThread) {
+			detailBuilder: (selectedThread, poppedOut) {
 				return BuiltDetailPane(
 					widget: selectedThread != null ? ThreadPage(thread: selectedThread) : Builder(
 						builder: (context) => Container(

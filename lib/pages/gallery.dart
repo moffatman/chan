@@ -79,6 +79,7 @@ class GalleryPage extends StatefulWidget {
 	final bool initiallyShowChrome;
 	final ValueChanged<Attachment>? onChange;
 	final Iterable<int> semanticParentIds;
+	final bool allowScroll;
 
 	GalleryPage({
 		required this.attachments,
@@ -87,6 +88,7 @@ class GalleryPage extends StatefulWidget {
 		required this.semanticParentIds,
 		this.initiallyShowChrome = false,
 		this.onChange,
+		this.allowScroll = true
 	});
 
 	@override
@@ -112,6 +114,15 @@ class _GalleryPageState extends State<GalleryPage> {
 	double? _lastpageControllerPixels;
 	bool _animatingNow = false;
 
+	void _newStatusEntry(Attachment attachment, AttachmentStatus newStatus) {
+		// Don't need to rebuild layout if its just a status value change (mainly for loading spinner)
+		if (currentAttachment == attachment && newStatus.runtimeType != lastDifferentCurrentStatus.runtimeType) {
+			setState(() {
+				lastDifferentCurrentStatus = newStatus;
+			});
+		}
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -122,14 +133,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		_scrollCoalescer.bufferTime(Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
 		statuses.addEntries(widget.attachments.map((attachment) => MapEntry(attachment, BehaviorSubject()..add(AttachmentUnloadedStatus()))));
 		statuses.entries.forEach((entry) {
-			entry.value.listen((newStatus) {
-				// Don't need to rebuild layout if its just a status value change (mainly for loading spinner)
-				if (currentAttachment == entry.key && newStatus.runtimeType != lastDifferentCurrentStatus.runtimeType) {
-					setState(() {
-						lastDifferentCurrentStatus = newStatus;
-					});
-				}
-			});
+			entry.value.listen((n) => _newStatusEntry(entry.key, n));
 		});
 		if (context.read<EffectiveSettings>().autoloadAttachments) {
 			requestRealViewer(widget.attachments[currentIndex]);
@@ -156,8 +160,14 @@ class _GalleryPageState extends State<GalleryPage> {
 	@override
 	void didUpdateWidget(GalleryPage old) {
 		super.didUpdateWidget(old);
+		widget.attachments.where((a) => !statuses.containsKey(a)).forEach((attachment) {
+			statuses[attachment] = BehaviorSubject()..add(AttachmentUnloadedStatus())..listen((n) => _newStatusEntry(attachment, n));
+		});
 		if (widget.initialAttachment != old.initialAttachment) {
 			currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
+			if (context.read<EffectiveSettings>().autoloadAttachments) {
+				requestRealViewer(widget.attachments[currentIndex]);
+			}
 		}
 	}
 
@@ -305,7 +315,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				return Colors.black.withOpacity(0.38 * (1 - _dragPopFactor(offset, size).clamp(0, 1)));
 			},
 			slideEndHandler: (offset, {ScaleEndDetails? details, ExtendedImageSlidePageState? state}) {
-				return _dragPopFactor(offset, state!.pageSize) > 1;
+				return widget.allowScroll && (_dragPopFactor(offset, state!.pageSize) > 1);
 			},
 			child: CupertinoTheme(
 				data: CupertinoThemeData(brightness: Brightness.dark, primaryColor: Colors.white),
@@ -407,6 +417,8 @@ class _GalleryPageState extends State<GalleryPage> {
 												KeyedSubtree(
 													key: _pageControllerKey,
 													child: ExtendedImageGesturePageView.builder(
+														canScrollPage: (x) => widget.allowScroll,
+														canMovePage: (x) => widget.allowScroll,
 														onPageChanged: _onPageChanged,
 														controller: pageController,
 														itemCount: widget.attachments.length,
