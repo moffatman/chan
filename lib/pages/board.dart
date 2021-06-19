@@ -58,6 +58,7 @@ class _BoardPageState extends State<BoardPage> {
 		final site = context.watch<ImageboardSite>();
 		final settings = context.watch<EffectiveSettings>();
 		return CupertinoPageScaffold(
+			resizeToAvoidBottomInset: false,
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
 				middle: GestureDetector(

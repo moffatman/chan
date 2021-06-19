@@ -167,6 +167,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		return Provider(
 			create: (context) => GlobalKey<ReplyBoxState>(),
 			child: CupertinoPageScaffold(
+				resizeToAvoidBottomInset: false,
 				navigationBar: CupertinoNavigationBar(
 					transitionBetweenRoutes: false,
 					middle: AutoSizeText(title),

@@ -27,6 +27,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	@override
 	Widget build(BuildContext context) {
 		return CupertinoPageScaffold(
+			resizeToAvoidBottomInset: false,
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
 				middle: LayoutBuilder(

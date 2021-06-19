@@ -163,6 +163,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 							);
 							if (widget.showChrome) {
 								return CupertinoPageScaffold(
+									resizeToAvoidBottomInset: false,
 									navigationBar: widget.panes[_tabController.index].navigationBar ?? CupertinoNavigationBar(
 										transitionBetweenRoutes: false,
 										middle: widget.panes[_tabController.index].title

@@ -25,6 +25,7 @@ class _HistoryPageState extends State<HistoryPage> {
 			id: 'history',
 			masterBuilder: (context, selectedThread, threadSetter) {
 				return CupertinoPageScaffold(
+					resizeToAvoidBottomInset: false,
 					navigationBar: CupertinoNavigationBar(
 						transitionBetweenRoutes: false,
 						middle: Text('History')

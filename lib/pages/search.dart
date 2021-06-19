@@ -90,6 +90,7 @@ class _SearchPageState extends State<SearchPage> {
 			_lastBoardName = currentBoardName;
 		}
 		return CupertinoPageScaffold(
+			resizeToAvoidBottomInset: false,
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
 				middle: Stack(

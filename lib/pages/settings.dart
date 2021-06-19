@@ -15,6 +15,7 @@ class SettingsPage extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final settings = context.read<EffectiveSettings>();
 		return CupertinoPageScaffold(
+			resizeToAvoidBottomInset: false,
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
 				middle: Text('Settings')
