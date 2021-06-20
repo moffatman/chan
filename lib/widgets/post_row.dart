@@ -197,59 +197,56 @@ class PostRow extends StatelessWidget {
 								children: [
 									PostSpanZone(
 										postId: _post.id,
-										builder: (ctx) => DefaultTextStyle(
-											child: Text.rich(
-												TextSpan(
-													children: [
+										builder: (ctx) => Text.rich(
+											TextSpan(
+												children: [
+													TextSpan(
+														text: _post.name + ((receipt != null) ? ' (You)' : ''),
+														style: TextStyle(fontWeight: FontWeight.w600, color: (receipt != null) ? Colors.red : null)
+													),
+													if (_post.posterId != null) IDSpan(
+														id: _post.posterId!,
+														onPressed: () => Navigator.of(context).push(TransparentRoute(
+															builder: (ctx) => PostsPage(
+																postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
+																zone: zone														)
+														))
+													),
+													if (_post.flag != null) ...[
+														FlagSpan(_post.flag!),
 														TextSpan(
-															text: _post.name + ((receipt != null) ? ' (You)' : ''),
-															style: TextStyle(fontWeight: FontWeight.w600, color: (receipt != null) ? Colors.red : null)
-														),
-														if (_post.posterId != null) IDSpan(
-															id: _post.posterId!,
-															onPressed: () => Navigator.of(context).push(TransparentRoute(
-																builder: (ctx) => PostsPage(
-																	postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
-																	zone: zone														)
-															))
-														),
-														if (_post.flag != null) ...[
-															FlagSpan(_post.flag!),
-															TextSpan(
-																text: _post.flag!.name,
-																style: TextStyle(
-																	fontStyle: FontStyle.italic
-																)
+															text: _post.flag!.name,
+															style: TextStyle(
+																fontStyle: FontStyle.italic
 															)
-														],
-														TextSpan(
-															text: formatTime(_post.time)
-														),
-														TextSpan(
-															text: _post.id.toString(),
-															style: TextStyle(color: Colors.grey),
-															recognizer: TapGestureRecognizer()..onTap = () {
-																context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
-															}
-														),
-														if (!settings.useTouchLayout) ...[
-															..._post.replyIds.map((id) => PostQuoteLinkSpan(
-																board: _post.board,
-																threadId: _post.threadId,
-																postId: id,
-																dead: false
-															).build(ctx, PostSpanRenderOptions(
-																showCrossThreadLabel: showCrossThreadLabel,
-																addExpandingPosts: false
-															))),
-															..._post.replyIds.map((id) => WidgetSpan(
-																child: ExpandingPost(id)
-															))
-														]
-													].expand((span) => [TextSpan(text: ' '), span]).skip(1).toList()
-												)
-											),
-											style: DefaultTextStyle.of(context).style.copyWith(fontSize: 14)
+														)
+													],
+													TextSpan(
+														text: formatTime(_post.time)
+													),
+													TextSpan(
+														text: _post.id.toString(),
+														style: TextStyle(color: Colors.grey),
+														recognizer: TapGestureRecognizer()..onTap = () {
+															context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
+														}
+													),
+													if (!settings.useTouchLayout) ...[
+														..._post.replyIds.map((id) => PostQuoteLinkSpan(
+															board: _post.board,
+															threadId: _post.threadId,
+															postId: id,
+															dead: false
+														).build(ctx, PostSpanRenderOptions(
+															showCrossThreadLabel: showCrossThreadLabel,
+															addExpandingPosts: false
+														))),
+														..._post.replyIds.map((id) => WidgetSpan(
+															child: ExpandingPost(id),
+														))
+													]
+												].expand((span) => [TextSpan(text: ' '), span]).skip(1).toList()
+											)
 										)
 									),
 									SizedBox(height: 2),

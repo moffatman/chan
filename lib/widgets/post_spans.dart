@@ -477,7 +477,7 @@ class ExpandingPost extends StatelessWidget {
 		return Visibility(
 			visible: zone.shouldExpandPost(this.id),
 			child: MediaQuery(
-				data: MediaQueryData(textScaleFactor: 1),
+				data: MediaQuery.of(context).copyWith(textScaleFactor: 1),
 				child: (post == null) ? Container(
 					child: Text('Could not find /${zone.thread.board}/$id')
 				) : Row(

@@ -110,8 +110,7 @@ class ThreadRow extends StatelessWidget {
 																				style: TextStyle(color: Colors.grey)
 																			),
 																			TextSpan(text: '\n')
-																		],
-																		style: TextStyle(fontSize: 14)
+																		]
 																	),
 																	if (_thread.title != null) TextSpan(
 																		text: _thread.title! + '\n',
@@ -138,28 +137,29 @@ class ThreadRow extends StatelessWidget {
 											color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 											border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
 										),
+										padding: EdgeInsets.all(2),
 										child: Row(
 											mainAxisSize: MainAxisSize.min,
 											crossAxisAlignment: CrossAxisAlignment.center,
 											children: [
 												SizedBox(width: 4),
 												if (_thread.isSticky) ...[
-													Icon(Icons.push_pin, size: 14),
+													Icon(Icons.push_pin, size: 18),
 													SizedBox(width: 4),
 												],
 												if (_thread.isArchived) ...[
-													Icon(Icons.archive, size: 14, color: Colors.grey),
+													Icon(Icons.archive, color: Colors.grey, size: 18),
 													SizedBox(width: 4),
 												],
-												Text(_thread.replyCount.toString(), style: TextStyle(fontSize: 14)),
-												if (unseenReplyCount > 0) Text(' (+$unseenReplyCount)', style: TextStyle(fontSize: 14)),
-												if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(fontSize: 14, color: Colors.red)),
+												Text(_thread.replyCount.toString()),
+												if (unseenReplyCount > 0) Text(' (+$unseenReplyCount)'),
+												if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: Colors.red)),
 												SizedBox(width: 4),
-												Icon(Icons.reply_rounded, size: 14),
+												Icon(Icons.reply_rounded, size: 18),
 												SizedBox(width: 8),
-												Text(_thread.imageCount.toString(), style: TextStyle(fontSize: 14)),
+												Text(_thread.imageCount.toString()),
 												SizedBox(width: 4),
-												Icon(Icons.image, size: 14),
+												Icon(Icons.image, size: 18),
 												SizedBox(width: 2)
 											]
 										)
