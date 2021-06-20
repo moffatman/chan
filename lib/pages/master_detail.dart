@@ -67,8 +67,8 @@ class MultiMasterPane<T> {
 		this.icon
 	});
 
-	Widget buildMaster(BuildContext context, VoidCallback onNewValue) {
-		return masterBuilder(context, currentValue, (newValue) {
+	Widget buildMaster(BuildContext context, VoidCallback onNewValue, bool provideCurrentValue) {
+		return masterBuilder(context, provideCurrentValue ? currentValue : null, (newValue) {
 			currentValue = newValue;
 			onNewValue();
 		});
@@ -164,7 +164,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 							final child = TabBarView(
 								controller: _tabController,
 								physics: widget.panes.length > 1 ? AlwaysScrollableScrollPhysics() : NeverScrollableScrollPhysics(),
-								children: widget.panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane))).toList()
+								children: widget.panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)).toList()
 							);
 							if (widget.showChrome) {
 								return CupertinoPageScaffold(
