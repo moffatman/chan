@@ -228,7 +228,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						Expanded(
 							child: IndexedStack(
 								index: tabletIndex,
-								children: List.generate(5, (i) => _buildTab(context, i))
+								children: List.generate(5, (i) => ExcludeFocus(
+									excluding: i != tabletIndex,
+									child: _buildTab(context, i)
+								))
 							)
 						)
 					]

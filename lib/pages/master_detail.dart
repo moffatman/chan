@@ -211,7 +211,10 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 						builder: (context) {
 							return IndexedStack(
 								index: _tabController.index,
-								children: widget.panes.map((p) => p.buildDetail()).toList()
+								children: widget.panes.map((p) => ExcludeFocus(
+									child: p.buildDetail(),
+									excluding: widget.panes.indexOf(p) != _tabController.index
+								)).toList()
 							);
 						},
 						settings: settings
