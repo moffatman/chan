@@ -14,6 +14,13 @@ import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 import 'package:html_unescape/html_unescape_small.dart';
 
+class FoolFuukaException implements Exception {
+	String error;
+	FoolFuukaException(this.error);
+	@override
+	String toString() => 'FoolFuuka Error: $error';
+}
+
 class FoolFuukaArchive implements ImageboardSiteArchive {
 	final http.Client client = http.Client();
 	List<ImageboardBoard>? _boards;
@@ -135,7 +142,7 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 		return Post(
 			board: board,
 			text: data['comment_processed'] ?? '',
-			name: data['name'],
+			name: (data['name'] ?? '') + (data['trip'] ?? ''),
 			time: DateTime.fromMillisecondsSinceEpoch(data['timestamp'] * 1000),
 			id: int.parse(data['num']),
 			threadId: threadId,
@@ -243,7 +250,8 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/search', {
 			'text': query.query,
 			'page': page.toString(),
-			if (query.boards.isNotEmpty) 'boards': query.boards.join('.'),
+			if (query.boards.length > 1) 'boards': query.boards.join('.')
+			else if (query.boards.length == 1) 'board': query.boards.first,
 			if (query.mediaFilter != MediaFilter.None) 'filter': query.mediaFilter == MediaFilter.OnlyWithMedia ? 'text' : 'image',
 			if (query.postTypeFilter != PostTypeFilter.None) 'type': query.postTypeFilter == PostTypeFilter.OnlyOPs ? 'op' : 'posts',
 			if (query.startDate != null) 'start': '${query.startDate!.year}-${query.startDate!.month}-${query.startDate!.day}',
@@ -254,6 +262,9 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 			throw HTTPStatusException(response.statusCode);
 		}
 		final data = json.decode(response.body);
+		if (data['error'] != null) {
+			throw FoolFuukaException(data['error']);
+		}
 		return ImageboardArchiveSearchResult(
 			posts: (await Future.wait((data['0']['posts'] as Iterable<dynamic>).map(_makePost))).toList(),
 			page: page,

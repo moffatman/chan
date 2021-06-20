@@ -115,7 +115,7 @@ class ErrorMessageCard extends StatelessWidget {
 				children: [
 					Icon(Icons.error, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
 					SizedBox(height: 8),
-					Text(message, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor))
+					Text(message, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor), textAlign: TextAlign.center),
 				]
 			)
 		);

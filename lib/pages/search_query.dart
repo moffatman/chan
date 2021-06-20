@@ -1,9 +1,11 @@
 import 'package:chan/models/search.dart';
+import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/post_row.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -111,24 +113,42 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						return _buildPagination();
 					}
 					final post = result!.posts[i - 1];
-					return PostRow(
-						post: post,
-						onThumbnailTap: (attachment) => showGallery(
-							context: context,
-							attachments: [attachment],
-							semanticParentIds: []
+					return ChangeNotifierProvider<PostSpanZoneData>(
+						create: (context) => PostSpanRootZoneData(
+							site: context.read<ImageboardSite>(),
+							thread: Thread(
+								board: post.threadIdentifier.board,
+								id: post.threadIdentifier.id,
+								isDeleted: false,
+								isArchived: false,
+								title: '',
+								isSticky: false,
+								replyCount: -1,
+								imageCount: -1,
+								time: DateTime.fromMicrosecondsSinceEpoch(0),
+								posts: [],
+							),
+							semanticRootId: -7
 						),
-						showCrossThreadLabel: false,
-						allowTappingLinks: false,
-						onTap: () async {
-							Navigator.of(context).push(FullWidthCupertinoPageRoute(
-								builder: (context) => ThreadPage(
-									thread: post.threadIdentifier,
-									initialPostId: post.id,
-									initiallyUseArchive: true
-								)
-							));
-						}
+						child: PostRow(
+							post: post,
+							onThumbnailTap: (attachment) => showGallery(
+								context: context,
+								attachments: [attachment],
+								semanticParentIds: []
+							),
+							showCrossThreadLabel: false,
+							allowTappingLinks: false,
+							onTap: () async {
+								Navigator.of(context).push(FullWidthCupertinoPageRoute(
+									builder: (context) => ThreadPage(
+										thread: post.threadIdentifier,
+										initialPostId: post.id,
+										initiallyUseArchive: true
+									)
+								));
+							}
+						)
 					);
 				}
 			);

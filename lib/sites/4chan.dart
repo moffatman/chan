@@ -518,18 +518,21 @@ class Site4Chan implements ImageboardSite {
 	}
 
 	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page}) async {
+		String s = '';
 		for (final archive in archives) {
 			try {
 				return await archive.search(query, page: page);
 			}
 			catch(e, st) {
 				if (!(e is BoardNotFoundException)) {
+					print('Error from ${archive.name}');
 					print(e);
 					print(st);
+					s += '\n${archive.name}: $e';
 				}
 			}
 		}
-		throw Exception('Search failed - exhausted all archives');
+		throw Exception('Search failed - exhausted all archives$s');
 	}
 
 	String getWebUrl(ThreadIdentifier thread, [int? postId]) {
