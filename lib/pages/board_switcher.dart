@@ -69,16 +69,17 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			child: (_filteredBoards.isEmpty) ? Center(
 				child: Text('No matching boards')
 			) : SafeArea(
-				child: GridView.count(
+				child: GridView.extent(
 					padding: EdgeInsets.only(top: 4, bottom: 4),
-					crossAxisCount: 3,
+					maxCrossAxisExtent: 100,
 					mainAxisSpacing: 4,
+					childAspectRatio: 1.3,
 					crossAxisSpacing: 4,
 					shrinkWrap: true,
 					children: _filteredBoards.map((board) {
 						return GestureDetector(
 							child: Container(
-								padding: EdgeInsets.only(top: 8, bottom: 8, left: 4, right: 4),
+								padding: EdgeInsets.all(4),
 								decoration: BoxDecoration(
 									borderRadius: BorderRadius.all(Radius.circular(4)),
 									color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
@@ -97,6 +98,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 												)
 											)
 										),
+										SizedBox(height: 8),
 										Flexible(
 											child: Center(
 												child: AutoSizeText('${board.title}', maxFontSize: 14, maxLines: 2, textAlign: TextAlign.center)
