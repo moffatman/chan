@@ -250,8 +250,7 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/search', {
 			'text': query.query,
 			'page': page.toString(),
-			if (query.boards.length > 1) 'boards': query.boards.join('.')
-			else if (query.boards.length == 1) 'board': query.boards.first,
+			if (query.boards.isNotEmpty) 'boards': query.boards.join('.'),
 			if (query.mediaFilter != MediaFilter.None) 'filter': query.mediaFilter == MediaFilter.OnlyWithMedia ? 'text' : 'image',
 			if (query.postTypeFilter != PostTypeFilter.None) 'type': query.postTypeFilter == PostTypeFilter.OnlyOPs ? 'op' : 'posts',
 			if (query.startDate != null) 'start': '${query.startDate!.year}-${query.startDate!.month}-${query.startDate!.day}',
