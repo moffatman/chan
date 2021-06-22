@@ -71,9 +71,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			) : SafeArea(
 				child: GridView.extent(
 					padding: EdgeInsets.only(top: 4, bottom: 4),
-					maxCrossAxisExtent: 100,
+					maxCrossAxisExtent: 125,
 					mainAxisSpacing: 4,
-					childAspectRatio: 1.3,
+					childAspectRatio: 1.2,
 					crossAxisSpacing: 4,
 					shrinkWrap: true,
 					children: _filteredBoards.map((board) {
