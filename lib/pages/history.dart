@@ -53,7 +53,6 @@ class _HistoryPageState extends State<HistoryPage> {
 												showGallery(
 													context: context,
 													attachments: attachments,
-													initiallyShowChrome: true,
 													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 													onChange: (attachment) {
 														_listController.animateTo((p) => p.thread?.attachment?.id == attachment.id);

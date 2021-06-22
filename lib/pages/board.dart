@@ -162,7 +162,6 @@ class _BoardPageState extends State<BoardPage> {
 											showGallery(
 												context: context,
 												attachments: attachments,
-												initiallyShowChrome: true,
 												initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 												onChange: (attachment) {
 													_listController.animateTo((p) => p.attachment?.id == attachment.id);

@@ -132,7 +132,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
-	void _showGallery({bool initiallyShowChrome = true, Attachment? initialAttachment}) {
+	void _showGallery({bool initiallyShowChrome = false, Attachment? initialAttachment}) {
 		final attachments = persistentState.thread!.posts.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
 		showGallery(
 			context: context,

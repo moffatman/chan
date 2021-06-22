@@ -125,7 +125,6 @@ class _SavedPageState extends State<SavedPage> {
 																showGallery(
 																	context: context,
 																	attachments: attachments,
-																	initiallyShowChrome: true,
 																	initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 																	onChange: (attachment) {
 																		_threadListController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
@@ -188,7 +187,6 @@ class _SavedPageState extends State<SavedPage> {
 												showGallery(
 													context: context,
 													attachments: attachments,
-													initiallyShowChrome: true,
 													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 													onChange: (attachment) {
 														_postListController.animateTo((p) => p.thread.attachment?.id == attachment.id);
@@ -260,7 +258,6 @@ class _SavedPageState extends State<SavedPage> {
 								selectedValue.attachment: selectedValue.file.uri
 							},
 							semanticParentIds: poppedOut ? [-5] : [-6],
-							initiallyShowChrome: true,
 							allowScroll: poppedOut
 						),
 						pageRouteBuilder: transparentPageRouteBuilder

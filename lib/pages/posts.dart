@@ -68,7 +68,6 @@ class _PostsPageState extends State<PostsPage> {
 												attachments: attachments,
 												initialAttachment: attachment,
 												semanticParentIds: ctx.read<PostSpanZoneData>().stackIds,
-												initiallyShowChrome: true,
 												onChange: (attachment) {
 													final match = postContexts.entries.tryFirstWhere((p) =>  p.key.attachment == attachment);
 													if (match != null) {
