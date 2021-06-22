@@ -92,6 +92,8 @@ class MediaConversion {
 	int? maximumDurationInSeconds;
 	bool stripAudio;
 
+	int? _executionId;
+
 	MediaConversion({
 		required this.inputFile,
 		required this.outputFileExtension,
@@ -177,6 +179,7 @@ class MediaConversion {
 
 	void start() async {
 		try {
+			cancel();
 			_completer = Completer<MediaConversionResult>();
 			progress.value = null;
 			final existingResult = await getDestinationIfSatisfiesConstraints();
@@ -207,9 +210,8 @@ class MediaConversion {
 						}
 					}
 					bool passedFirstEvent = false;
-					int? executionId;
 					ffconfig.enableStatisticsCallback((stats) {
-						if (stats.executionId == executionId) {
+						if (stats.executionId == _executionId) {
 							if (scan.duration != null && passedFirstEvent && outputDurationInMilliseconds != null) {
 								progress.value = stats.time / outputDurationInMilliseconds;
 							}
@@ -217,7 +219,7 @@ class MediaConversion {
 						}
 					});
 					final ffmpegCompleter = Completer<CompletedFFmpegExecution>();
-					executionId = await ffmpeg.executeAsyncWithArguments([
+					_executionId = await ffmpeg.executeAsyncWithArguments([
 						'-hwaccel', 'auto',
 						'-i', inputFile.toString(),
 						...extraOptions,
@@ -244,5 +246,11 @@ class MediaConversion {
 			_completer!.completeError(error, st);
 		}
 		progress.dispose();
+	}
+
+	Future<void> cancel() async {
+		if (_executionId != null) {
+			FlutterFFmpeg().cancelExecution(_executionId!);
+		}
 	}
 }

@@ -102,6 +102,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	AttachmentStatus get currentAttachmentStatus => statuses[currentAttachment]!.value;
 	final Map<Attachment, BehaviorSubject<AttachmentStatus>> statuses = Map();
 	final Map<Attachment, File> cachedFiles = Map();
+	final Set<MediaConversion> _ongoingConversions = Set();
 	// View
 	bool firstControllerMade = false;
 	late final ScrollController thumbnailScrollController;
@@ -203,6 +204,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				statuses[attachment]!.add(AttachmentLoadingStatus());
 				final url = await _getGoodUrl(attachment);
 				final webm = MediaConversion.toMp4(url);
+				_ongoingConversions.add(webm);
 				webm.progress.addListener(() {
 					statuses[attachment]!.add(AttachmentLoadingStatus(progress: webm.progress.value));
 				});
@@ -212,13 +214,16 @@ class _GalleryPageState extends State<GalleryPage> {
 					final controller = VideoPlayerController.file(result.file, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
 					await controller.initialize();
 					await controller.setLooping(true);
-					await controller.play();
+					if (attachment == currentAttachment) {
+						await controller.play();
+					}
 					cachedFiles[attachment] = result.file;
 					statuses[attachment]!.add(AttachmentVideoAvailableStatus(controller, result.hasAudio));
 				}
 				catch (e) {
 					statuses[attachment]!.add(AttachmentUnavailableStatus(e.toString()));
 				}
+				_ongoingConversions.remove(webm);
 			}
 		}
 		catch (e) {
@@ -533,16 +538,23 @@ class _GalleryPageState extends State<GalleryPage> {
 		);
 	}
 
+	Future<void> _disposeAsync() async {
+		for (final conversion in _ongoingConversions) {
+			await conversion.cancel();
+		}
+		for (final status in statuses.values) {
+			if (status.value is AttachmentVideoAvailableStatus) {
+				await (status.value as AttachmentVideoAvailableStatus).controller.dispose();
+			}
+			await status.close();
+		}
+	}
+
 	@override
 	void dispose() {
 		super.dispose();
 		thumbnailScrollController.dispose();
-		for (final status in statuses.values) {
-			if (status.value is AttachmentVideoAvailableStatus) {
-				(status.value as AttachmentVideoAvailableStatus).controller.dispose();
-			}
-			status.close();
-		}
+		_disposeAsync();
 	}
 }
 
