@@ -7,7 +7,8 @@ import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/widgets/captcha.dart';
+import 'package:chan/widgets/captcha_4chan.dart';
+import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
@@ -393,15 +394,29 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	Future<void> _submit() async {
 		final site = context.read<ImageboardSite>();
-		final captchaKey = await Navigator.of(context).push<String>(TransparentRoute(builder: (context) {
-			return OverscrollModalPage(
-				child: CaptchaNoJS(
-					request: site.getCaptchaRequest(),
-					onCaptchaSolved: (key) => Navigator.of(context).pop(key)
-				)
-			);
-		}));
-		if (captchaKey == null) {
+		final captchaRequest = site.getCaptchaRequest(widget.board, widget.threadId);
+		CaptchaSolution? captchaSolution;
+		if (captchaRequest is RecaptchaRequest) {
+			captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(builder: (context) {
+				return OverscrollModalPage(
+					child: CaptchaNoJS(
+						request: captchaRequest,
+						onCaptchaSolved: (solution) => Navigator.of(context).pop(solution)
+					)
+				);
+			}));
+		}
+		else if (captchaRequest is Chan4CustomCaptchaRequest) {
+			captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(builder: (context) {
+				return OverscrollModalPage(
+					child: Captcha4ChanCustom(
+						request: captchaRequest,
+						onCaptchaSolved: (key) => Navigator.of(context).pop(key)
+					)
+				);
+			}));
+		}
+		if (captchaSolution == null) {
 			return;
 		}
 		setState(() {
@@ -412,7 +427,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				thread: ThreadIdentifier(board: widget.board, id: widget.threadId!),
 				name: _nameFieldController.text,
 				options: _optionsFieldController.text,
-				captchaKey: captchaKey,
+				captchaSolution: captchaSolution,
 				text: _textFieldController.text,
 				file: attachment,
 				overrideFilename: overrideAttachmentFilename
@@ -420,7 +435,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				board: widget.board,
 				name: _nameFieldController.text,
 				options: _optionsFieldController.text,
-				captchaKey: captchaKey,
+				captchaSolution: captchaSolution,
 				text: _textFieldController.text,
 				file: attachment,
 				overrideFilename: overrideAttachmentFilename,

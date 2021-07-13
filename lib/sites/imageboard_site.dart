@@ -60,14 +60,51 @@ enum ImageboardAction {
 }
 
 class CaptchaRequest {
+
+}
+
+class RecaptchaRequest extends CaptchaRequest {
 	final String key;
 	final String sourceUrl;
-	CaptchaRequest({
+	RecaptchaRequest({
 		required this.key,
 		required this.sourceUrl
 	});
 	@override
-	String toString() => 'CaptchaRequest(sourceUrl: $sourceUrl, key: $key)';
+	String toString() => 'RecaptchaRequest(sourceUrl: $sourceUrl, key: $key)';
+}
+
+class Chan4CustomCaptchaRequest extends CaptchaRequest {
+	final Uri challengeUrl;
+	Chan4CustomCaptchaRequest({
+		required this.challengeUrl
+	});
+	@override
+	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl)';
+}
+
+class CaptchaSolution {
+
+}
+
+class RecaptchaSolution extends CaptchaSolution {
+	final String response;
+	RecaptchaSolution({
+		required this.response
+	});
+	@override
+	String toString() => 'RecaptchaSolution(response: $response)';
+}
+
+class Chan4CustomCaptchaSolution extends CaptchaSolution {
+	final String challenge;
+	final String response;
+	Chan4CustomCaptchaSolution({
+		required this.challenge,
+		required this.response
+	});
+	@override
+	String toString() => 'Chan4CustomCaptchaSolution(challenge: $challenge, response: $response)';
 }
 
 class ImageboardArchiveSearchResult {
@@ -94,14 +131,14 @@ abstract class ImageboardSiteArchive {
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get imageUrl;
-	CaptchaRequest getCaptchaRequest();
+	CaptchaRequest getCaptchaRequest(String board, [int? threadId]);
 	Future<PostReceipt> createThread({
 		required String board,
 		String name = '',
 		String options = '',
 		String subject = '',
 		required String text,
-		required String captchaKey,
+		required CaptchaSolution captchaSolution,
 		File? file,
 		String? overrideFilename
 	});
@@ -110,7 +147,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		String name = '',
 		String options = '',
 		required String text,
-		required String captchaKey,
+		required CaptchaSolution captchaSolution,
 		File? file,
 		String? overrideFilename
 	});

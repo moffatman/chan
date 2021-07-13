@@ -10,8 +10,8 @@ import 'package:http/io_client.dart';
 import 'package:html/parser.dart' show parse;
 
 class CaptchaNoJS extends StatefulWidget {
-	final CaptchaRequest request;
-	final ValueChanged<String> onCaptchaSolved;
+	final RecaptchaRequest request;
+	final ValueChanged<RecaptchaSolution> onCaptchaSolved;
 
 	CaptchaNoJS({
 		required this.request,
@@ -35,7 +35,7 @@ class CaptchaNoJSException implements Exception {
 	String message;
 	CaptchaNoJSException(this.message);
 
-	String toString() => 'Captcha error: $message';
+	String toString() => 'Recaptcha (no JS) error: $message';
 }
 
 class _CaptchaNoJSSubimagePainter extends CustomPainter{
@@ -203,7 +203,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 		final document = parse(submissionResponse.body);
 		final tokenElement = document.querySelector('.fbc-verification-token textarea');
 		if (tokenElement != null) {
-			widget.onCaptchaSolved(tokenElement.text);
+			widget.onCaptchaSolved(RecaptchaSolution(response: tokenElement.text));
 		}
 		else {
 			this.challenge = await _gotChallengePage(document);

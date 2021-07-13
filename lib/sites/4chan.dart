@@ -391,8 +391,11 @@ class Site4Chan implements ImageboardSite {
 		return _boards!;
 	}
 
-	CaptchaRequest getCaptchaRequest() {
-		return CaptchaRequest(key: captchaKey, sourceUrl: 'https://' + baseUrl);
+	CaptchaRequest getCaptchaRequest(String board, [int? threadId]) {
+		return Chan4CustomCaptchaRequest(challengeUrl: Uri.https(sysUrl, '/captcha', {
+			'board': board,
+			if (threadId != null) 'thread_id': threadId.toString()
+		}));
 	}
 
 	
@@ -403,7 +406,7 @@ class Site4Chan implements ImageboardSite {
 		String? subject,
 		String options = '',
 		required String text,
-		required String captchaKey,
+		required CaptchaSolution captchaSolution,
 		File? file,
 		String? overrideFilename
 	}) async {
@@ -416,7 +419,11 @@ class Site4Chan implements ImageboardSite {
 			'com': text,
 			'mode': 'regist',
 			'pwd': password,
-			'g-recaptcha-response': captchaKey
+			if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
+			else if (captchaSolution is Chan4CustomCaptchaSolution) ...{
+				't-challenge': captchaSolution.challenge,
+				't-response': captchaSolution.response
+			}
 		});
 		if (file != null) {
 			request.files.add(await http.MultipartFile.fromPath('upfile', file.path, filename: overrideFilename));
@@ -458,7 +465,7 @@ class Site4Chan implements ImageboardSite {
 		String options = '',
 		String subject = '',
 		required String text,
-		required String captchaKey,
+		required CaptchaSolution captchaSolution,
 		File? file,
 		String? overrideFilename
 	}) => _post(
@@ -467,7 +474,7 @@ class Site4Chan implements ImageboardSite {
 		options: options,
 		subject: subject,
 		text: text,
-		captchaKey: captchaKey,
+		captchaSolution: captchaSolution,
 		file: file,
 		overrideFilename: overrideFilename
 	);
@@ -477,7 +484,7 @@ class Site4Chan implements ImageboardSite {
 		String name = '',
 		String options = '',
 		required String text,
-		required String captchaKey,
+		required CaptchaSolution captchaSolution,
 		File? file,
 		String? overrideFilename
 	}) => _post(
@@ -486,7 +493,7 @@ class Site4Chan implements ImageboardSite {
 		name: name,
 		options: options,
 		text: text,
-		captchaKey: captchaKey,
+		captchaSolution: captchaSolution,
 		file: file,
 		overrideFilename: overrideFilename
 	);
