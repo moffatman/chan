@@ -448,7 +448,14 @@ class _RefreshableListItem<T> {
 	T item;
 	double? cachedOffset;
 	double? cachedHeight;
-	bool get hasGoodState => (context?.findRenderObject()?.attached ?? false) && ((context?.findRenderObject() as RenderBox).hasSize);
+	bool get hasGoodState {
+		try {
+			return (context?.findRenderObject()?.attached ?? false) && ((context?.findRenderObject() as RenderBox).hasSize);
+		}
+		on FlutterError {
+			return false;
+		}
+	}
 	_RefreshableListItem(this.item);
 }
 class RefreshableListController<T extends Filterable> {
