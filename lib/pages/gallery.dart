@@ -45,9 +45,9 @@ class AttachmentUnavailableStatus extends AttachmentStatus {
 	AttachmentUnavailableStatus(this.cause);
 }
 
-class AttachmentImageUrlAvailableStatus extends AttachmentStatus {
+class AttachmentImageAvailableStatus extends AttachmentStatus {
 	final Uri url;
-	AttachmentImageUrlAvailableStatus(this.url);
+	AttachmentImageAvailableStatus(this.url);
 }
 
 class AttachmentVideoAvailableStatus extends AttachmentStatus {
@@ -198,7 +198,11 @@ class _GalleryPageState extends State<GalleryPage> {
 					}
 				});
 				final url = await _getGoodUrl(attachment);
-				statuses[attachment]!.add(AttachmentImageUrlAvailableStatus(url));
+				await ExtendedNetworkImageProvider(
+					url.toString(),
+					cache: true
+				).getNetworkImageData();
+				statuses[attachment]!.add(AttachmentImageAvailableStatus(url));
 			}
 			else if (attachment.type == AttachmentType.WEBM) {
 				statuses[attachment]!.add(AttachmentLoadingStatus());
@@ -267,8 +271,16 @@ class _GalleryPageState extends State<GalleryPage> {
 	void _onPageChanged(int index) {
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
-		if (!_animatingNow && context.read<EffectiveSettings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
-			requestRealViewer(widget.attachments[index]);
+		if (!_animatingNow && context.read<EffectiveSettings>().autoloadAttachments) {
+			if (statuses[attachment]!.value is AttachmentUnloadedStatus) {
+				requestRealViewer(widget.attachments[index]);
+			}
+		}
+		if (index > 0 && statuses[widget.attachments[index - 1]]!.value is AttachmentUnloadedStatus) {
+			requestRealViewer(widget.attachments[index - 1]);
+		}
+		if (index < (widget.attachments.length - 1) && statuses[widget.attachments[index + 1]]!.value is AttachmentUnloadedStatus) {
+			requestRealViewer(widget.attachments[index + 1]);
 		}
 		currentIndex = index;
 		for (final status in statuses.entries) {

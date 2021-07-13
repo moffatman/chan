@@ -36,8 +36,8 @@ class AttachmentViewer extends StatelessWidget {
 		if (autoRotate && (((attachment.isLandscape ?? false) && !displayIsLandscape) || (!(attachment.isLandscape ?? true) && displayIsLandscape))) {
 			quarterTurns = 1;
 		}
-		if (attachment.type == AttachmentType.Image && (status is AttachmentImageUrlAvailableStatus || status is AttachmentLoadingStatus)) {
-			final url = (status is AttachmentImageUrlAvailableStatus) ? (status as AttachmentImageUrlAvailableStatus).url : attachment.thumbnailUrl;
+		if (attachment.type == AttachmentType.Image && (status is AttachmentImageAvailableStatus || status is AttachmentLoadingStatus)) {
+			final url = (status is AttachmentImageAvailableStatus) ? (status as AttachmentImageAvailableStatus).url : attachment.thumbnailUrl;
 			ImageProvider image = ExtendedNetworkImageProvider(
 				url.toString(),
 				cache: true
@@ -59,6 +59,7 @@ class AttachmentViewer extends StatelessWidget {
 				mode: ExtendedImageMode.gesture,
 				width: double.infinity,
 				height: double.infinity,
+				enableLoadState: true,
 				onDoubleTap: (state) {
 					final old = state.gestureDetails!;
 					state.gestureDetails = GestureDetails(
@@ -68,12 +69,20 @@ class AttachmentViewer extends StatelessWidget {
 					);
 				},
 				loadStateChanged: (loadstate) {
-					if ((loadstate.extendedImageLoadState == LoadState.completed) && (status is AttachmentImageUrlAvailableStatus)) {
+					if ((loadstate.extendedImageLoadState == LoadState.completed) && (status is AttachmentImageAvailableStatus)) {
 						getCachedImageFile(url.toString()).then((file) {
 							if (file != null) {
 								onCacheCompleted?.call(file);
 							}
 						});
+					}
+					else {
+						return ExtendedImage.network(
+							attachment.thumbnailUrl.toString(),
+							fit: BoxFit.contain,
+							width: double.infinity,
+							height: double.infinity
+						);
 					}
 				},
 				initGestureConfigHandler: (state) {
