@@ -114,6 +114,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	final BehaviorSubject<Null> _scrollCoalescer = BehaviorSubject();
 	double? _lastpageControllerPixels;
 	bool _animatingNow = false;
+	final _shareButtonKey = GlobalKey();
 
 	void _newStatusEntry(Attachment attachment, AttachmentStatus newStatus) {
 		// Don't need to rebuild layout if its just a status value change (mainly for loading spinner)
@@ -309,7 +310,9 @@ class _GalleryPageState extends State<GalleryPage> {
 			originalFile = File(widget.overrideSources[attachment]!.path);
 		}
 		final renamedFile = await originalFile!.copy(shareDirectory.path.toString() + '/' + newFilename);
-		await Share.shareFiles([renamedFile.path], subject: currentAttachment.filename);
+		final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+		final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+		await Share.shareFiles([renamedFile.path], subject: currentAttachment.filename, sharePositionOrigin: (offset != null && size != null) ? offset & size : null);
 	}
 
 	void _toggleChrome() {
@@ -364,6 +367,7 @@ class _GalleryPageState extends State<GalleryPage> {
 									}
 								),
 								CupertinoButton(
+									key: _shareButtonKey,
 									padding: EdgeInsets.zero,
 									child: Icon(Icons.ios_share),
 									onPressed: canShare(currentAttachment) ? () => share(currentAttachment) : null

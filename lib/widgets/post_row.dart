@@ -140,7 +140,9 @@ class PostRow extends StatelessWidget {
 							child: Text('Share link'),
 							trailingIcon: Icons.ios_share,
 							onPressed: () {
-								Share.share(site.getWebUrl(_post.threadIdentifier, _post.id));
+								final offset = (context.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+								final size = context.findRenderObject()?.semanticBounds.size;
+								Share.share(site.getWebUrl(_post.threadIdentifier, _post.id), sharePositionOrigin: (offset != null && size != null) ? offset & size : null);
 							}
 						),
 						if (receipt != null) ContextMenuAction(
