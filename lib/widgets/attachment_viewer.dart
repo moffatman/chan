@@ -15,7 +15,7 @@ class AttachmentViewer extends StatelessWidget {
 	final Attachment attachment;
 	final AttachmentStatus status;
 	final Color backgroundColor;
-	final Object? tag;
+	final Object tag;
 	final ValueChanged<File>? onCacheCompleted;
 	final bool autoRotate;
 
@@ -23,7 +23,7 @@ class AttachmentViewer extends StatelessWidget {
 		required this.attachment,
 		required this.status,
 		this.backgroundColor = Colors.black,
-		this.tag,
+		required this.tag,
 		this.onCacheCompleted,
 		this.autoRotate = false,
 		Key? key
@@ -31,110 +31,126 @@ class AttachmentViewer extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		int quarterTurns = 0;
-		final displayIsLandscape = MediaQuery.of(context).size.width > MediaQuery.of(context).size.height;
-		if (autoRotate && (((attachment.isLandscape ?? false) && !displayIsLandscape) || (!(attachment.isLandscape ?? true) && displayIsLandscape))) {
-			quarterTurns = 1;
-		}
-		if (attachment.type == AttachmentType.Image && (status is AttachmentImageAvailableStatus || status is AttachmentLoadingStatus)) {
-			final url = (status is AttachmentImageAvailableStatus) ? (status as AttachmentImageAvailableStatus).url : attachment.thumbnailUrl;
-			ImageProvider image = ExtendedNetworkImageProvider(
-				url.toString(),
-				cache: true
-			);
-			if (url.scheme == 'file') {
-				image = ExtendedFileImageProvider(
-					File(url.path),
-					imageCacheName: 'asdf'
-				);
-			}
-			if (quarterTurns != 0) {
-				image = RotatingImageProvider(parent: image, quarterTurns: quarterTurns);
-			}
-			return ExtendedImage(
-				image: image,
-				enableSlideOutPage: true,
-				gaplessPlayback: true,
-				fit: BoxFit.contain,
-				mode: ExtendedImageMode.gesture,
-				width: double.infinity,
-				height: double.infinity,
-				enableLoadState: true,
-				onDoubleTap: (state) {
-					final old = state.gestureDetails!;
-					state.gestureDetails = GestureDetails(
-						offset: state.pointerDownPosition!.scale(old.layoutRect!.width / MediaQuery.of(context).size.width, old.layoutRect!.height / MediaQuery.of(context).size.height) * -1,
-						totalScale: (old.totalScale ?? 1) > 1 ? 1 : 2,
-						actionType: ActionType.zoom
-					);
-				},
-				loadStateChanged: (loadstate) {
-					if ((loadstate.extendedImageLoadState == LoadState.completed) && (status is AttachmentImageAvailableStatus)) {
-						getCachedImageFile(url.toString()).then((file) {
-							if (file != null) {
-								onCacheCompleted?.call(file);
-							}
-						});
+		return FirstBuildDetector(
+			identifier: tag,
+			builder: (context, passedFirstBuild) {
+				int quarterTurns = 0;
+				final displayIsLandscape = MediaQuery.of(context).size.width > MediaQuery.of(context).size.height;
+				if (autoRotate && (((attachment.isLandscape ?? false) && !displayIsLandscape) || (!(attachment.isLandscape ?? true) && displayIsLandscape))) {
+					quarterTurns = 1;
+				}
+				if (attachment.type == AttachmentType.Image) {
+					Uri url = attachment.thumbnailUrl;
+					bool cacheCompleted = false;
+					if (status is AttachmentImageUrlAvailableStatus) {
+						cacheCompleted = (status as AttachmentImageUrlAvailableStatus).cacheCompleted;
+						if (passedFirstBuild) {
+							url = (status as AttachmentImageUrlAvailableStatus).url;
+						}
 					}
-					else {
-						return ExtendedImage.network(
-							attachment.thumbnailUrl.toString(),
-							fit: BoxFit.contain,
-							width: double.infinity,
-							height: double.infinity
+					ImageProvider image = ExtendedNetworkImageProvider(
+						url.toString(),
+						cache: true
+					);
+					if (url.scheme == 'file') {
+						image = ExtendedFileImageProvider(
+							File(url.path),
+							imageCacheName: 'asdf'
 						);
 					}
-				},
-				initGestureConfigHandler: (state) {
-					return GestureConfig(
-						inPageView: true
-					);
-				},
-				heroBuilderForSlidingPage: (Widget result) {
-					return Hero(
-						tag: tag ?? attachment,
-						child: result,
-						flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
+					if (quarterTurns != 0) {
+						image = RotatingImageProvider(parent: image, quarterTurns: quarterTurns);
+					}
+					return ExtendedImage(
+						image: image,
+						enableSlideOutPage: true,
+						gaplessPlayback: true,
+						fit: BoxFit.contain,
+						mode: ExtendedImageMode.gesture,
+						width: double.infinity,
+						height: double.infinity,
+						enableLoadState: true,
+						onDoubleTap: (state) {
+							final old = state.gestureDetails!;
+							state.gestureDetails = GestureDetails(
+								offset: state.pointerDownPosition!.scale(old.layoutRect!.width / MediaQuery.of(context).size.width, old.layoutRect!.height / MediaQuery.of(context).size.height) * -1,
+								totalScale: (old.totalScale ?? 1) > 1 ? 1 : 2,
+								actionType: ActionType.zoom
+							);
+						},
+						loadStateChanged: (loadstate) {
+							if ((loadstate.extendedImageLoadState == LoadState.completed) && (status is AttachmentImageUrlAvailableStatus) && !cacheCompleted) {
+								getCachedImageFile(url.toString()).then((file) {
+									if (file != null) {
+										onCacheCompleted?.call(file);
+									}
+								});
+							}
+							if (!cacheCompleted) {
+								return Stack(
+									children: [
+										loadstate.completedWidget,
+										Column(
+											children: [
+												LinearProgressIndicator()
+											]
+										)
+									]
+								);
+							}
+						},
+						initGestureConfigHandler: (state) {
+							return GestureConfig(
+								inPageView: true
+							);
+						},
+						heroBuilderForSlidingPage: (Widget result) {
+							return Hero(
+								tag: tag,
+								child: result,
+								flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
+							);
+						}
 					);
 				}
-			);
-		}
-		else {
-			return ExtendedImageSlidePageHandler(
-				heroBuilderForSlidingPage: (Widget result) {
-					return Hero(
-						tag: tag ?? attachment,
-						child: result,
-						flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
-					);
-				},
-				child: Stack(
-					children: [
-						AttachmentThumbnail(
-							attachment: attachment,
-							width: double.infinity,
-							height: double.infinity,
-							quarterTurns: quarterTurns,
-							gaplessPlayback: true
-						),
-						if (status is AttachmentUnavailableStatus) Center(
-							child: ErrorMessageCard((status as AttachmentUnavailableStatus).cause)
-						)
-						else if (status is AttachmentLoadingStatus) Center(
-							child: CircularLoadingIndicator(value: (status as AttachmentLoadingStatus).progress)
-						)
-						else if (status is AttachmentVideoAvailableStatus) Center(
-							child: RotatedBox(
-								quarterTurns: quarterTurns,
-								child: AspectRatio(
-									aspectRatio: (status as AttachmentVideoAvailableStatus).controller.value.aspectRatio,
-									child: VideoPlayer((status as AttachmentVideoAvailableStatus).controller)
+				else {
+					return ExtendedImageSlidePageHandler(
+						heroBuilderForSlidingPage: (Widget result) {
+							return Hero(
+								tag: tag,
+								child: result,
+								flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
+							);
+						},
+						child: Stack(
+							children: [
+								AttachmentThumbnail(
+									attachment: attachment,
+									width: double.infinity,
+									height: double.infinity,
+									quarterTurns: quarterTurns,
+									gaplessPlayback: true
+								),
+								if (status is AttachmentUnavailableStatus) Center(
+									child: ErrorMessageCard((status as AttachmentUnavailableStatus).cause)
 								)
-							)
+								else if (status is AttachmentLoadingStatus) Center(
+									child: CircularLoadingIndicator(value: (status as AttachmentLoadingStatus).progress)
+								)
+								else if (status is AttachmentVideoAvailableStatus) Center(
+									child: RotatedBox(
+										quarterTurns: quarterTurns,
+										child: AspectRatio(
+											aspectRatio: (status as AttachmentVideoAvailableStatus).controller.value.aspectRatio,
+											child: VideoPlayer((status as AttachmentVideoAvailableStatus).controller)
+										)
+									)
+								)
+							]
 						)
-					]
-				)
-			);
-		}
+					);
+				}
+			}
+		);
 	}
 }

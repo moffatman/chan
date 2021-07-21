@@ -168,3 +168,37 @@ extension ReduceBrightness on Color {
 		);
 	}
 }
+
+class FirstBuildDetector extends StatefulWidget {
+	final Object identifier;
+	final Widget Function(BuildContext, bool) builder;
+
+	FirstBuildDetector({
+		required this.identifier,
+		required this.builder
+	});
+
+	createState() => _FirstBuildDetectorState();
+}
+
+class _FirstBuildDetectorState extends State<FirstBuildDetector> {
+	bool passedFirstBuild = false;
+
+	@override
+	void didUpdateWidget(FirstBuildDetector old) {
+		super.didUpdateWidget(old);
+		if (widget.identifier != old.identifier) {
+			passedFirstBuild = true;
+		}
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		Widget child = widget.builder(context, passedFirstBuild);
+		if (!passedFirstBuild) {
+			passedFirstBuild = true;
+			Future.delayed(Duration.zero, () => setState(() {}));
+		}
+		return child;
+	}
+}

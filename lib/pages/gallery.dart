@@ -38,16 +38,26 @@ class AttachmentUnloadedStatus extends AttachmentStatus {
 class AttachmentLoadingStatus extends AttachmentStatus {
 	final double? progress;
 	AttachmentLoadingStatus({this.progress});
+
+	@override
+	String toString() => 'AttachmentLoadingStatus(progress: $progress)';
 }
 
 class AttachmentUnavailableStatus extends AttachmentStatus {
 	String cause;
 	AttachmentUnavailableStatus(this.cause);
+
+	@override
+	String toString() => 'AttachmentUnavailableStatus(cause: $cause)';
 }
 
-class AttachmentImageAvailableStatus extends AttachmentStatus {
+class AttachmentImageUrlAvailableStatus extends AttachmentStatus {
 	final Uri url;
-	AttachmentImageAvailableStatus(this.url);
+	final bool cacheCompleted;
+	AttachmentImageUrlAvailableStatus(this.url, this.cacheCompleted);
+
+	@override
+	String toString() => 'AttachmentImageUrlAvailableStatus(url: $url, cacheCompleted: $cacheCompleted)';
 }
 
 class AttachmentVideoAvailableStatus extends AttachmentStatus {
@@ -199,11 +209,7 @@ class _GalleryPageState extends State<GalleryPage> {
 					}
 				});
 				final url = await _getGoodUrl(attachment);
-				await ExtendedNetworkImageProvider(
-					url.toString(),
-					cache: true
-				).getNetworkImageData();
-				statuses[attachment]!.add(AttachmentImageAvailableStatus(url));
+				statuses[attachment]!.add(AttachmentImageUrlAvailableStatus(url, false));
 			}
 			else if (attachment.type == AttachmentType.WEBM) {
 				statuses[attachment]!.add(AttachmentLoadingStatus());
@@ -460,6 +466,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																				semanticParents: widget.semanticParentIds
 																			),
 																			onCacheCompleted: (file) {
+																				statuses[attachment]!.add(AttachmentImageUrlAvailableStatus((statuses[attachment]!.value as AttachmentImageUrlAvailableStatus).url, true));
 																				if (cachedFiles[attachment]?.path != file.path) {
 																					setState(() {
 																						cachedFiles[attachment] = file;
