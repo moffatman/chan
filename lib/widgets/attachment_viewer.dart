@@ -5,10 +5,12 @@ import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/rotating_image_provider.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/circular_loading_indicator.dart';
+import 'package:chan/widgets/rx_stream_builder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:video_player/video_player.dart';
 
 class AttachmentViewer extends StatelessWidget {
@@ -18,10 +20,14 @@ class AttachmentViewer extends StatelessWidget {
 	final Object tag;
 	final ValueChanged<File>? onCacheCompleted;
 	final bool autoRotate;
+	final GlobalKey<ExtendedImageGestureState> gestureKey;
+	final BehaviorSubject<Null> slideStream;
 
 	AttachmentViewer({
 		required this.attachment,
+		required this.gestureKey,
 		required this.status,
+		required this.slideStream,
 		this.backgroundColor = Colors.black,
 		required this.tag,
 		this.onCacheCompleted,
@@ -63,6 +69,7 @@ class AttachmentViewer extends StatelessWidget {
 					}
 					return ExtendedImage(
 						image: image,
+						extendedImageGestureKey: gestureKey,
 						enableSlideOutPage: true,
 						gaplessPlayback: true,
 						fit: BoxFit.contain,
@@ -70,6 +77,7 @@ class AttachmentViewer extends StatelessWidget {
 						width: double.infinity,
 						height: double.infinity,
 						enableLoadState: true,
+						handleLoadingProgress: true,
 						onDoubleTap: (state) {
 							final old = state.gestureDetails!;
 							state.gestureDetails = GestureDetails(
@@ -87,13 +95,26 @@ class AttachmentViewer extends StatelessWidget {
 								});
 							}
 							if (!cacheCompleted) {
+								double? loadingValue;
+								if (loadstate.loadingProgress?.cumulativeBytesLoaded != null && loadstate.loadingProgress?.expectedTotalBytes != null) {
+									loadingValue = loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes!;
+								}
 								return Stack(
 									children: [
 										loadstate.completedWidget,
-										Column(
-											children: [
-												LinearProgressIndicator()
-											]
+										RxStreamBuilder(
+											stream: slideStream,
+											builder: (context, _) => Transform.translate(
+												offset: gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero,
+												child: Transform.scale(
+													scale: (gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
+													child: Center(
+														child: CircularLoadingIndicator(
+															value: loadingValue
+														)
+													)
+												)
+											)
 										)
 									]
 								);

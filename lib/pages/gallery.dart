@@ -125,6 +125,8 @@ class _GalleryPageState extends State<GalleryPage> {
 	double? _lastpageControllerPixels;
 	bool _animatingNow = false;
 	final _shareButtonKey = GlobalKey();
+	final Map<Attachment, GlobalKey<ExtendedImageGestureState>> _gestureKeys = Map();
+	final BehaviorSubject<Null> _slideStream = BehaviorSubject();
 
 	void _newStatusEntry(Attachment attachment, AttachmentStatus newStatus) {
 		// Don't need to rebuild layout if its just a status value change (mainly for loading spinner)
@@ -338,6 +340,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
+				_slideStream.add(null);
 				return Colors.black.withOpacity((1 - _dragPopFactor(offset, size).clamp(0, 1)));
 			},
 			slideEndHandler: (offset, {ScaleEndDetails? details, ExtendedImageSlidePageState? state}) {
@@ -457,6 +460,8 @@ class _GalleryPageState extends State<GalleryPage> {
 																	final status = snapshot.data!;
 																	return GestureDetector(
 																		child: AttachmentViewer(
+																			gestureKey: _gestureKeys.putIfAbsent(attachment, () => GlobalKey<ExtendedImageGestureState>()),
+																			slideStream: _slideStream,
 																			autoRotate: settings.autoRotateInGallery,
 																			attachment: attachment,
 																			status: status,
@@ -577,6 +582,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	void dispose() {
 		super.dispose();
 		thumbnailScrollController.dispose();
+		_slideStream.close();
 		_disposeAsync();
 	}
 }
