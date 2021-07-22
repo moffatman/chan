@@ -15,7 +15,7 @@ class RxStreamBuilder<T> extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return StreamBuilder(
-			initialData: initialData ?? (stream is ValueStream<T> ? (stream as ValueStream<T>).value : null),
+			initialData: initialData ?? (stream is ValueStream<T> ? (stream as ValueStream<T>).valueOrNull : null),
 			stream: stream,
 			builder: builder
 		);
