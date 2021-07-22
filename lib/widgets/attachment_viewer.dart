@@ -87,17 +87,27 @@ class AttachmentViewer extends StatelessWidget {
 							);
 						},
 						loadStateChanged: (loadstate) {
-							if ((loadstate.extendedImageLoadState == LoadState.completed) && (status is AttachmentImageUrlAvailableStatus) && !cacheCompleted) {
-								getCachedImageFile(url.toString()).then((file) {
-									if (file != null) {
-										onCacheCompleted?.call(file);
-									}
-								});
-							}
+							// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback
 							if (!cacheCompleted) {
 								double? loadingValue;
 								if (loadstate.loadingProgress?.cumulativeBytesLoaded != null && loadstate.loadingProgress?.expectedTotalBytes != null) {
+									// If we got image download completion, we can check if it's cached
 									loadingValue = loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes!;
+									if ((url != attachment.thumbnailUrl) && loadingValue == 1) {
+										getCachedImageFile(url.toString()).then((file) {
+											if (file != null) {
+												onCacheCompleted?.call(file);
+											}
+										});
+									}
+								}
+								else if (loadstate.extendedImageInfo?.image.width == attachment.width) {
+									// If the displayed image looks like the full image, we can check cache
+									getCachedImageFile(url.toString()).then((file) {
+										if (file != null) {
+											onCacheCompleted?.call(file);
+										}
+									});
 								}
 								return Stack(
 									children: [

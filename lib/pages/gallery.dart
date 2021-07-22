@@ -150,7 +150,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			entry.value.listen((n) => _newStatusEntry(entry.key, n));
 		});
 		if (context.read<EffectiveSettings>().autoloadAttachments) {
-			requestRealViewer(widget.attachments[currentIndex]);
+			requestRealViewer(widget.attachments[currentIndex], false);
 		}
 	}
 
@@ -180,7 +180,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (widget.initialAttachment != old.initialAttachment) {
 			currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
 			if (context.read<EffectiveSettings>().autoloadAttachments) {
-				requestRealViewer(widget.attachments[currentIndex]);
+				requestRealViewer(widget.attachments[currentIndex], false);
 			}
 		}
 	}
@@ -200,7 +200,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		}
 	}
 
-	Future<void> requestRealViewer(Attachment attachment) async {
+	Future<void> requestRealViewer(Attachment attachment, bool startImageDownload) async {
 		try {
 			if (attachment.type == AttachmentType.Image) {
 				final provisionalStatus = AttachmentLoadingStatus(progress: 0);
@@ -212,6 +212,22 @@ class _GalleryPageState extends State<GalleryPage> {
 				});
 				final url = await _getGoodUrl(attachment);
 				statuses[attachment]!.add(AttachmentImageUrlAvailableStatus(url, false));
+				if (startImageDownload) {
+					await ExtendedNetworkImageProvider(
+						url.toString(),
+						cache: true
+					).getNetworkImageData();
+					getCachedImageFile(url.toString()).then((file) {
+						if (mounted && file != null) {
+							statuses[attachment]!.add(AttachmentImageUrlAvailableStatus(url, true));
+							if (cachedFiles[attachment]?.path != file.path) {
+								setState(() {
+									cachedFiles[attachment] = file;
+								});
+							}
+						}
+					});
+				}
 			}
 			else if (attachment.type == AttachmentType.WEBM) {
 				statuses[attachment]!.add(AttachmentLoadingStatus());
@@ -261,7 +277,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
 		if (context.read<EffectiveSettings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
-			requestRealViewer(widget.attachments[index]);
+			requestRealViewer(widget.attachments[index], false);
 		}
 		_animatingNow = true;
 		if (milliseconds == 0) {
@@ -282,14 +298,14 @@ class _GalleryPageState extends State<GalleryPage> {
 		widget.onChange?.call(attachment);
 		if (!_animatingNow && context.read<EffectiveSettings>().autoloadAttachments) {
 			if (statuses[attachment]!.value is AttachmentUnloadedStatus) {
-				requestRealViewer(widget.attachments[index]);
+				requestRealViewer(widget.attachments[index], false);
 			}
 		}
 		if (index > 0 && statuses[widget.attachments[index - 1]]!.value is AttachmentUnloadedStatus) {
-			requestRealViewer(widget.attachments[index - 1]);
+			requestRealViewer(widget.attachments[index - 1], true);
 		}
 		if (index < (widget.attachments.length - 1) && statuses[widget.attachments[index + 1]]!.value is AttachmentUnloadedStatus) {
-			requestRealViewer(widget.attachments[index + 1]);
+			requestRealViewer(widget.attachments[index + 1], true);
 		}
 		currentIndex = index;
 		for (final status in statuses.entries) {
@@ -481,7 +497,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																		),
 																		onTap: (status is AttachmentUnloadedStatus) ? () {
 																			if (status is AttachmentUnloadedStatus) {
-																				requestRealViewer(attachment);
+																				requestRealViewer(attachment, false);
 																			}
 																		} : _toggleChrome
 																	);
