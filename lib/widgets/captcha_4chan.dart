@@ -287,6 +287,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 							SizedBox(
 								width: 150,
 								child: CupertinoTextField(
+									autofocus: true,
 									autocorrect: false,
 									placeholder: 'Captcha text',
 									onSubmitted: (response) => widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
