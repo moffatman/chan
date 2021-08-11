@@ -105,11 +105,8 @@ class MediaConversion {
 
 	static MediaConversion toMp4(Uri inputFile) {
 		List<String> extraOptions = [];
-		if (Platform.isAndroid) {
+		if (Platform.isAndroid || Platform.isIOS) {
 			extraOptions = ['-c:v', 'libx264', '-preset', 'ultrafast', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'];
-		}
-		else if (Platform.isIOS) {
-			extraOptions = ['-vcodec', 'h264_videotoolbox'];
 		}
 		return MediaConversion(
 			inputFile: inputFile,
@@ -222,6 +219,7 @@ class MediaConversion {
 					_executionId = await ffmpeg.executeAsyncWithArguments([
 						'-hwaccel', 'auto',
 						'-i', inputFile.toString(),
+						'-max_muxing_queue_size', '9999',
 						...extraOptions,
 						if (stripAudio) '-an',
 						if (outputFileExtension == 'jpg') ...['-qscale:v', '5']
