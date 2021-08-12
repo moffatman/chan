@@ -109,25 +109,27 @@ class AttachmentViewer extends StatelessWidget {
 										}
 									});
 								}
-								return Stack(
-									children: [
-										loadstate.completedWidget,
-										RxStreamBuilder(
-											stream: slideStream,
-											builder: (context, _) => Transform.translate(
-												offset: gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero,
-												child: Transform.scale(
-													scale: (gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
-													child: Center(
-														child: CircularLoadingIndicator(
-															value: loadingValue
+								if (status is! AttachmentUnloadedStatus) {
+									return Stack(
+										children: [
+											loadstate.completedWidget,
+											RxStreamBuilder(
+												stream: slideStream,
+												builder: (context, _) => Transform.translate(
+													offset: gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero,
+													child: Transform.scale(
+														scale: (gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
+														child: Center(
+															child: CircularLoadingIndicator(
+																value: loadingValue
+															)
 														)
 													)
 												)
 											)
-										)
-									]
-								);
+										]
+									);
+								}
 							}
 						},
 						initGestureConfigHandler: (state) {
