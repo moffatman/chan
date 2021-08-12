@@ -8,6 +8,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/media.dart';
+import 'package:chan/services/status_bar.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/rx_stream_builder.dart';
@@ -23,7 +24,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:share/share.dart';
 import 'package:video_player/video_player.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
+import 'package:home_indicator/home_indicator.dart';
 
 const double _THUMBNAIL_SIZE = 60;
 
@@ -118,6 +119,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	late final ScrollController thumbnailScrollController;
 	late final PageController pageController;
 	late bool showChrome;
+	bool showingOverlays = true;
 	final Key _pageControllerKey = GlobalKey();
 	final Key _thumbnailsKey = GlobalKey();
 	AttachmentStatus lastDifferentCurrentStatus = AttachmentStatus();
@@ -141,6 +143,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	void initState() {
 		super.initState();
 		showChrome = widget.initiallyShowChrome;
+		_updateOverlays(showChrome);
 		currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
 		pageController = PageController(keepPage: true, initialPage: currentIndex);
 		pageController.addListener(_onPageControllerUpdate);
@@ -180,6 +183,19 @@ class _GalleryPageState extends State<GalleryPage> {
 			if (context.read<EffectiveSettings>().autoloadAttachments) {
 				requestRealViewer(widget.attachments[currentIndex], false);
 			}
+		}
+	}
+
+	void _updateOverlays(bool show) async {
+		if (show && !showingOverlays) {
+			await HomeIndicator.show();
+			await showStatusBar();
+			showingOverlays = true;
+		}
+		else if (!show && showingOverlays) {
+			await HomeIndicator.hide();
+			await hideStatusBar();
+			showingOverlays = false;
 		}
 	}
 
@@ -338,9 +354,9 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	void _toggleChrome() {
-		setState(() {
-			showChrome = !showChrome;
-		});
+		showChrome = !showChrome;
+		_updateOverlays(showChrome);
+		setState(() {});
 	}
 
 	double _dragPopFactor(Offset offset, Size size) {
@@ -355,7 +371,9 @@ class _GalleryPageState extends State<GalleryPage> {
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
 				_slideStream.add(null);
-				return Colors.black.withOpacity((1 - _dragPopFactor(offset, size).clamp(0, 1)));
+				final factor = _dragPopFactor(offset, size);
+				_updateOverlays(factor > 1);
+				return Colors.black.withOpacity((1 - factor.clamp(0, 1)));
 			},
 			slideEndHandler: (offset, {ScaleEndDetails? details, ExtendedImageSlidePageState? state}) {
 				return widget.allowScroll && (_dragPopFactor(offset, state!.pageSize) > 1);
@@ -609,8 +627,8 @@ Future<Attachment?> showGallery({
 	Attachment? initialAttachment,
 	bool initiallyShowChrome = false,
 	ValueChanged<Attachment>? onChange,
-}) {
-	return Navigator.of(context, rootNavigator: true).push(TransparentRoute<Attachment>(
+}) async {
+	final lastSelected = await Navigator.of(context, rootNavigator: true).push(TransparentRoute<Attachment>(
 		builder: (BuildContext _context) {
 			return GalleryPage(
 				attachments: attachments,
@@ -622,4 +640,7 @@ Future<Attachment?> showGallery({
 			);
 		}
 	));
+	HomeIndicator.show();
+	showStatusBar();
+	return lastSelected;
 }

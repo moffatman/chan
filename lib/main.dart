@@ -15,6 +15,7 @@ import 'sites/imageboard_site.dart';
 import 'sites/4chan.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
+import 'package:chan/widgets/sticky_media_query.dart';
 
 void main() async {
 	await Persistence.initialize();
@@ -66,7 +67,10 @@ class ChanApp extends StatelessWidget {
 									builder: (BuildContext context) {
 										return DefaultTextStyle(
 											style: CupertinoTheme.of(context).textTheme.textStyle,
-											child: ChanHomePage()
+											child: StickyMediaQuery(
+												top: true,
+												child: ChanHomePage()
+											)
 										);
 									}
 								),
