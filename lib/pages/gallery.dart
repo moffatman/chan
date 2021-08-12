@@ -293,18 +293,18 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (context.read<EffectiveSettings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
 			requestRealViewer(widget.attachments[index], false);
 		}
-		_animatingNow = true;
 		if (milliseconds == 0) {
 			pageController.jumpToPage(index);
 		}
 		else {
+			_animatingNow = true;
 			await pageController.animateToPage(
 				index,
 				duration: Duration(milliseconds: milliseconds),
 				curve: Curves.ease
 			);
+			_animatingNow = false;
 		}
-		_animatingNow = false;
 	}
 
 	void _onPageChanged(int index) {
@@ -314,12 +314,12 @@ class _GalleryPageState extends State<GalleryPage> {
 			if (statuses[attachment]!.value is AttachmentUnloadedStatus) {
 				requestRealViewer(widget.attachments[index], false);
 			}
-		}
-		if (index > 0 && statuses[widget.attachments[index - 1]]!.value is AttachmentUnloadedStatus) {
-			requestRealViewer(widget.attachments[index - 1], true);
-		}
-		if (index < (widget.attachments.length - 1) && statuses[widget.attachments[index + 1]]!.value is AttachmentUnloadedStatus) {
-			requestRealViewer(widget.attachments[index + 1], true);
+			if (index > 0 && statuses[widget.attachments[index - 1]]!.value is AttachmentUnloadedStatus) {
+				requestRealViewer(widget.attachments[index - 1], true);
+			}
+			if (index < (widget.attachments.length - 1) && statuses[widget.attachments[index + 1]]!.value is AttachmentUnloadedStatus) {
+				requestRealViewer(widget.attachments[index + 1], true);
+			}
 		}
 		currentIndex = index;
 		for (final status in statuses.entries) {

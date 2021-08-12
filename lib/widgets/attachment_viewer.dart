@@ -35,6 +35,24 @@ class AttachmentViewer extends StatelessWidget {
 		Key? key
 	}) : super(key: key);
 
+	Widget _centeredLoader({
+		required bool active,
+		required double? value
+	}) => Builder(
+		builder: (context) => Center(
+			child: AnimatedSwitcher(
+				duration: const Duration(milliseconds: 300),
+				child: active ? CircularLoadingIndicator(
+					value: value
+				) : Icon(
+					Icons.download_for_offline,
+					size: 60,
+					color: CupertinoTheme.of(context).primaryColor
+				)
+			)
+		)
+	);
+
 	@override
 	Widget build(BuildContext context) {
 		return FirstBuildDetector(
@@ -109,27 +127,24 @@ class AttachmentViewer extends StatelessWidget {
 										}
 									});
 								}
-								if (status is! AttachmentUnloadedStatus) {
-									return Stack(
-										children: [
-											loadstate.completedWidget,
-											RxStreamBuilder(
-												stream: slideStream,
-												builder: (context, _) => Transform.translate(
-													offset: gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero,
-													child: Transform.scale(
-														scale: (gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
-														child: Center(
-															child: CircularLoadingIndicator(
-																value: loadingValue
-															)
-														)
+								return Stack(
+									children: [
+										loadstate.completedWidget,
+										RxStreamBuilder(
+											stream: slideStream,
+											builder: (context, _) => Transform.translate(
+												offset: gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero,
+												child: Transform.scale(
+													scale: (gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
+													child: _centeredLoader(
+														active: status is! AttachmentUnloadedStatus,
+														value: loadingValue
 													)
 												)
 											)
-										]
-									);
-								}
+										)
+									]
+								);
 							}
 						},
 						initGestureConfigHandler: (state) {
@@ -167,9 +182,6 @@ class AttachmentViewer extends StatelessWidget {
 								if (status is AttachmentUnavailableStatus) Center(
 									child: ErrorMessageCard((status as AttachmentUnavailableStatus).cause)
 								)
-								else if (status is AttachmentLoadingStatus) Center(
-									child: CircularLoadingIndicator(value: (status as AttachmentLoadingStatus).progress)
-								)
 								else if (status is AttachmentVideoAvailableStatus) Center(
 									child: RotatedBox(
 										quarterTurns: quarterTurns,
@@ -178,6 +190,10 @@ class AttachmentViewer extends StatelessWidget {
 											child: VideoPlayer((status as AttachmentVideoAvailableStatus).controller)
 										)
 									)
+								)
+								else _centeredLoader(
+									active: status is! AttachmentUnloadedStatus,
+									value: status is AttachmentLoadingStatus ? (status as AttachmentLoadingStatus).progress : null
 								)
 							]
 						)
