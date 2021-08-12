@@ -14,7 +14,7 @@ abstract class Filterable {
 	List<String> getSearchableText();
 }
 
-const double _OVERSCROLL_TRIGGER_THRESHOLD = 150;
+const double _OVERSCROLL_TRIGGER_THRESHOLD = 100;
 
 class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
@@ -192,21 +192,23 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	Widget build(BuildContext context) {
 		if (list != null) {
 			final List<T> values = _filter.isEmpty ? list! : list!.where((val) => val.getSearchableText().any((s) => s.toLowerCase().contains(_filter))).toList();
-			return Listener(
+			return NotificationListener<ScrollNotification>(
 				key: ValueKey(widget.id),
-				onPointerUp: (event) {
-					if (widget.controller != null) {
+				onNotification: (notification) {
+					final bool isScrollEnd = (notification is ScrollEndNotification) || (notification is ScrollUpdateNotification && notification.dragDetails == null);
+					if (widget.controller != null && isScrollEnd) {
 						double overscroll = widget.controller!.scrollController!.position.pixels - widget.controller!.scrollController!.position.maxScrollExtent;
 						if (overscroll > _OVERSCROLL_TRIGGER_THRESHOLD && !widget.disableUpdates) {
 							update();
 						}
 					}
+					return false;
 					// Auto update here
 				},
 				child: CustomScrollView(
 					key: _scrollViewKey,
 					controller: widget.controller?.scrollController,
-					physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), 
+					physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
 					slivers: [
 						SliverSafeArea(
 							sliver: widget.disableUpdates ? SliverToBoxAdapter(
