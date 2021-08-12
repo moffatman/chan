@@ -164,7 +164,7 @@ class _BoardPageState extends State<BoardPage> {
 												attachments: attachments,
 												initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 												onChange: (attachment) {
-													_listController.animateTo((p) => p.attachment?.id == attachment.id);
+													_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
 												},
 												semanticParentIds: [-1]
 											);
