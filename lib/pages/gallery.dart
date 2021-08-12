@@ -149,9 +149,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		statuses.entries.forEach((entry) {
 			entry.value.listen((n) => _newStatusEntry(entry.key, n));
 		});
-		if (context.read<EffectiveSettings>().autoloadAttachments) {
-			requestRealViewer(widget.attachments[currentIndex], false);
-		}
+		requestRealViewer(widget.attachments[currentIndex], false);
 	}
 
 	@override
