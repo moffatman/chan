@@ -188,7 +188,7 @@ class _FirstBuildDetectorState extends State<FirstBuildDetector> {
 	void didUpdateWidget(FirstBuildDetector old) {
 		super.didUpdateWidget(old);
 		if (widget.identifier != old.identifier) {
-			passedFirstBuild = true;
+			passedFirstBuild = false;
 		}
 	}
 
