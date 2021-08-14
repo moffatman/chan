@@ -129,6 +129,8 @@ class _GalleryPageState extends State<GalleryPage> {
 	final _shareButtonKey = GlobalKey();
 	final Map<Attachment, GlobalKey<ExtendedImageGestureState>> _gestureKeys = Map();
 	final BehaviorSubject<Null> _slideStream = BehaviorSubject();
+	final Set<Attachment> _shouldRotate = Set();
+	bool _hideRotateButton = false;
 
 	void _newStatusEntry(Attachment attachment, AttachmentStatus newStatus) {
 		// Don't need to rebuild layout if its just a status value change (mainly for loading spinner)
@@ -188,12 +190,22 @@ class _GalleryPageState extends State<GalleryPage> {
 
 	void _updateOverlays(bool show) async {
 		if (show && !showingOverlays) {
-			await HomeIndicator.show();
+			try {
+				await HomeIndicator.show();
+			}
+			on MissingPluginException {
+
+			}
 			await showStatusBar();
 			showingOverlays = true;
 		}
 		else if (!show && showingOverlays) {
-			await HomeIndicator.hide();
+			try {
+				await HomeIndicator.hide();
+			}
+			on MissingPluginException {
+
+			}
 			await hideStatusBar();
 			showingOverlays = false;
 		}
@@ -307,6 +319,11 @@ class _GalleryPageState extends State<GalleryPage> {
 		}
 	}
 
+	bool _rotationAppropriate(Attachment attachment) {
+		final displayIsLandscape = MediaQuery.of(context).size.width > MediaQuery.of(context).size.height;
+		return attachment.isLandscape != null && displayIsLandscape != attachment.isLandscape;
+	}
+
 	void _onPageChanged(int index) {
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
@@ -321,6 +338,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				requestRealViewer(widget.attachments[index + 1], true);
 			}
 		}
+		_hideRotateButton = false;
 		currentIndex = index;
 		for (final status in statuses.entries) {
 			if (status.value.value is AttachmentVideoAvailableStatus) {
@@ -490,11 +508,27 @@ class _GalleryPageState extends State<GalleryPage> {
 																stream: statuses[attachment]!,
 																builder: (context, snapshot) {
 																	final status = snapshot.data!;
+																	int quarterTurns = 0;
+																	if (_rotationAppropriate(attachment) && (settings.autoRotateInGallery || _shouldRotate.contains(attachment))) {
+																		quarterTurns = 1;
+																	}
 																	return GestureDetector(
 																		child: AttachmentViewer(
 																			gestureKey: _gestureKeys.putIfAbsent(attachment, () => GlobalKey<ExtendedImageGestureState>()),
 																			slideStream: _slideStream,
-																			autoRotate: settings.autoRotateInGallery,
+																			quarterTurns: quarterTurns,
+																			onScaleChanged: (scale) {
+																				if (scale > 1 && !_hideRotateButton) {
+																					setState(() {
+																						_hideRotateButton = true;
+																					});
+																				}
+																				else if (scale <= 1 && _hideRotateButton) {
+																					setState(() {
+																						_hideRotateButton = false;
+																					});
+																				}
+																			},
 																			attachment: attachment,
 																			status: status,
 																			backgroundColor: Colors.transparent,
@@ -521,6 +555,28 @@ class _GalleryPageState extends State<GalleryPage> {
 															);
 														}
 													)
+												),
+												AnimatedSwitcher(
+													duration: const Duration(milliseconds: 300),
+													child: (_rotationAppropriate(currentAttachment) && !_hideRotateButton) ? Align(
+														alignment: Alignment.bottomRight,
+														child: CupertinoButton(
+															child: Transform(
+																alignment: Alignment.center,
+																transform: _shouldRotate.contains(currentAttachment) ? Matrix4.identity() : Matrix4.rotationY(math.pi),
+																child: Icon(Icons.rotate_90_degrees_ccw)
+															),
+															onPressed: () {
+																if (_shouldRotate.contains(currentAttachment)) {
+																	_shouldRotate.remove(currentAttachment);
+																}
+																else {
+																	_shouldRotate.add(currentAttachment);
+																}
+																setState(() {});
+															}
+														)
+													) : Container()
 												),
 												Visibility(
 													visible: showChrome,
@@ -640,7 +696,12 @@ Future<Attachment?> showGallery({
 			);
 		}
 	));
-	HomeIndicator.show();
-	showStatusBar();
+	try {
+		await HomeIndicator.show();
+	}
+	on MissingPluginException {
+
+	}
+	await showStatusBar();
 	return lastSelected;
 }

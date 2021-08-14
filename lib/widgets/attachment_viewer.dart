@@ -19,9 +19,10 @@ class AttachmentViewer extends StatelessWidget {
 	final Color backgroundColor;
 	final Object tag;
 	final ValueChanged<File>? onCacheCompleted;
-	final bool autoRotate;
+	final int quarterTurns;
 	final GlobalKey<ExtendedImageGestureState> gestureKey;
 	final BehaviorSubject<Null> slideStream;
+	final ValueChanged<double>? onScaleChanged;
 
 	AttachmentViewer({
 		required this.attachment,
@@ -31,7 +32,8 @@ class AttachmentViewer extends StatelessWidget {
 		this.backgroundColor = Colors.black,
 		required this.tag,
 		this.onCacheCompleted,
-		this.autoRotate = false,
+		this.quarterTurns = 0,
+		this.onScaleChanged,
 		Key? key
 	}) : super(key: key);
 
@@ -58,11 +60,6 @@ class AttachmentViewer extends StatelessWidget {
 		return FirstBuildDetector(
 			identifier: tag,
 			builder: (context, passedFirstBuild) {
-				int quarterTurns = 0;
-				final displayIsLandscape = MediaQuery.of(context).size.width > MediaQuery.of(context).size.height;
-				if (autoRotate && (((attachment.isLandscape ?? false) && !displayIsLandscape) || (!(attachment.isLandscape ?? true) && displayIsLandscape))) {
-					quarterTurns = 1;
-				}
 				if (attachment.type == AttachmentType.Image) {
 					Uri url = attachment.thumbnailUrl;
 					bool cacheCompleted = false;
@@ -149,7 +146,12 @@ class AttachmentViewer extends StatelessWidget {
 						},
 						initGestureConfigHandler: (state) {
 							return GestureConfig(
-								inPageView: true
+								inPageView: true,
+								gestureDetailsIsChanged: (details) {
+									if (details?.totalScale != null) {
+										onScaleChanged?.call(details!.totalScale!);
+									}
+								}
 							);
 						},
 						heroBuilderForSlidingPage: (Widget result) {
