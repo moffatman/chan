@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:auto_size_text/auto_size_text.dart';
@@ -106,7 +107,7 @@ class GalleryPage extends StatefulWidget {
 	createState() => _GalleryPageState();
 }
 
-class _GalleryPageState extends State<GalleryPage> {
+class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin {
 	// Data
 	late int currentIndex;
 	Attachment get currentAttachment => widget.attachments[currentIndex];
@@ -131,6 +132,8 @@ class _GalleryPageState extends State<GalleryPage> {
 	final BehaviorSubject<Null> _slideStream = BehaviorSubject();
 	final Set<Attachment> _shouldRotate = Set();
 	bool _hideRotateButton = false;
+	final Set<Attachment> _rotationComputed = Set();
+	late final AnimationController _rotateButtonAnimationController;
 
 	void _newStatusEntry(Attachment attachment, AttachmentStatus newStatus) {
 		// Don't need to rebuild layout if its just a status value change (mainly for loading spinner)
@@ -144,6 +147,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	@override
 	void initState() {
 		super.initState();
+		_rotateButtonAnimationController = AnimationController(duration: Duration(milliseconds: 5000), vsync: this, upperBound: pi * 2);
 		showChrome = widget.initiallyShowChrome;
 		_updateOverlays(showChrome);
 		currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
@@ -325,6 +329,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	void _onPageChanged(int index) {
+		_rotateButtonAnimationController.reset();
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
 		if (!_animatingNow && context.read<EffectiveSettings>().autoloadAttachments) {
@@ -517,6 +522,14 @@ class _GalleryPageState extends State<GalleryPage> {
 																			gestureKey: _gestureKeys.putIfAbsent(attachment, () => GlobalKey<ExtendedImageGestureState>()),
 																			slideStream: _slideStream,
 																			quarterTurns: quarterTurns,
+																			onRotationComputed: () {
+																				if (attachment == currentAttachment) {
+																					_rotateButtonAnimationController.reset();
+																				}
+																				setState(() {
+																					_rotationComputed.add(attachment);
+																				});
+																			},
 																			onScaleChanged: (scale) {
 																				if (scale > 1 && !_hideRotateButton) {
 																					setState(() {
@@ -560,21 +573,25 @@ class _GalleryPageState extends State<GalleryPage> {
 													duration: const Duration(milliseconds: 300),
 													child: (_rotationAppropriate(currentAttachment) && !_hideRotateButton) ? Align(
 														alignment: Alignment.bottomRight,
-														child: CupertinoButton(
-															child: Transform(
-																alignment: Alignment.center,
-																transform: _shouldRotate.contains(currentAttachment) ? Matrix4.identity() : Matrix4.rotationY(math.pi),
-																child: Icon(Icons.rotate_90_degrees_ccw)
-															),
-															onPressed: () {
-																if (_shouldRotate.contains(currentAttachment)) {
-																	_shouldRotate.remove(currentAttachment);
+														child: RotationTransition(
+															turns: _rotationComputed.contains(currentAttachment) ? AlwaysStoppedAnimation(0.0) : Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController),
+															child: CupertinoButton(
+																child: Transform(
+																	alignment: Alignment.center,
+																	transform: _rotationComputed.contains(currentAttachment) && _shouldRotate.contains(currentAttachment) ? Matrix4.identity() : Matrix4.rotationY(math.pi),
+																	child: Icon(Icons.rotate_90_degrees_ccw)
+																),
+																onPressed: () {
+																	if (_shouldRotate.contains(currentAttachment)) {
+																		_shouldRotate.remove(currentAttachment);
+																	}
+																	else {
+																		_shouldRotate.add(currentAttachment);
+																		_rotateButtonAnimationController.repeat();
+																	}
+																	setState(() {});
 																}
-																else {
-																	_shouldRotate.add(currentAttachment);
-																}
-																setState(() {});
-															}
+															)
 														)
 													) : Container()
 												),

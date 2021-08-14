@@ -23,6 +23,7 @@ class AttachmentViewer extends StatelessWidget {
 	final GlobalKey<ExtendedImageGestureState> gestureKey;
 	final BehaviorSubject<Null> slideStream;
 	final ValueChanged<double>? onScaleChanged;
+	final VoidCallback? onRotationComputed;
 
 	AttachmentViewer({
 		required this.attachment,
@@ -34,6 +35,7 @@ class AttachmentViewer extends StatelessWidget {
 		this.onCacheCompleted,
 		this.quarterTurns = 0,
 		this.onScaleChanged,
+		this.onRotationComputed,
 		Key? key
 	}) : super(key: key);
 
@@ -80,7 +82,7 @@ class AttachmentViewer extends StatelessWidget {
 						);
 					}
 					if (quarterTurns != 0) {
-						image = RotatingImageProvider(parent: image, quarterTurns: quarterTurns);
+						image = RotatingImageProvider(parent: image, quarterTurns: quarterTurns, onLoaded: onRotationComputed);
 					}
 					return ExtendedImage(
 						image: image,
@@ -164,6 +166,10 @@ class AttachmentViewer extends StatelessWidget {
 					);
 				}
 				else {
+					if (quarterTurns != 0) {
+						// Video does not take time to rotate
+						onRotationComputed?.call();
+					}
 					return ExtendedImageSlidePageHandler(
 						heroBuilderForSlidingPage: (Widget result) {
 							return Hero(

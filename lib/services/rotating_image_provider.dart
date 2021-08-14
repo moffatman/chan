@@ -53,9 +53,11 @@ void _rotateImageIsolate(_RotateIsolateParam param) {
 class RotatingImageProvider extends ImageProvider<RotatedImageKey> {
 	final ImageProvider parent;
 	final int quarterTurns;
+	final VoidCallback? onLoaded;
 	RotatingImageProvider({
 		required this.parent,
-		required this.quarterTurns
+		required this.quarterTurns,
+		this.onLoaded
 	});
 
 	@override
@@ -64,7 +66,9 @@ class RotatingImageProvider extends ImageProvider<RotatedImageKey> {
 			final receivePort = ReceivePort();
 			await Isolate.spawn(_rotateImageIsolate, _RotateIsolateParam(data, quarterTurns, receivePort.sendPort));
 			final outData = await receivePort.first as Uint8List;
-			return await decode(outData, allowUpscaling: allowUpscaling, cacheHeight: cacheHeight, cacheWidth: cacheWidth);
+			final result = await decode(outData, allowUpscaling: allowUpscaling, cacheHeight: cacheHeight, cacheWidth: cacheWidth);
+			onLoaded?.call();
+			return result;
 		});
 	}
 
