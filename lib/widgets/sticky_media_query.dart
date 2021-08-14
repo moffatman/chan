@@ -15,26 +15,21 @@ class StickyMediaQuery extends StatefulWidget {
 		required this.child
 	});
 
+	@override
 	createState() => _StickyMediaQueryState();
 }
 
 class _StickyMediaQueryState extends State<StickyMediaQuery> {
-	late EdgeInsets _insets;
-
-	void initState() {
-		super.initState();
-		_insets = MediaQuery.of(context).padding;
-	}
+	EdgeInsets? _insets;
 
 	Widget build(BuildContext context) {
-		print('MediaQuery top padding is ${MediaQuery.of(context).padding.top}');
+		_insets ??= MediaQuery.of(context).padding;
 		_insets = MediaQuery.of(context).padding.clamp(EdgeInsets.only(
-			left: widget.left ? _insets.left : 0,
-			top: widget.top ? _insets.top : 0,
-			right: widget.right ? _insets.right : 0,
-			bottom: widget.bottom ? _insets.bottom : 0
+			left: widget.left ? _insets!.left : 0,
+			top: widget.top ? _insets!.top : 0,
+			right: widget.right ? _insets!.right : 0,
+			bottom: widget.bottom ? _insets!.bottom : 0
 		), EdgeInsets.all(double.nan)).resolve(Directionality.of(context));
-		print('_insets top padding is ${_insets.top}');
 		return MediaQuery(
 			data: MediaQuery.of(context).copyWith(padding: _insets),
 			child: widget.child
