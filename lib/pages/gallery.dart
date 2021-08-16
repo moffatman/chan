@@ -431,6 +431,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														child: RotationTransition(
 															turns: _rotationsInProgress.contains(currentAttachment) ? Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController) : AlwaysStoppedAnimation(0.0),
 															child: CupertinoButton(
+																padding: EdgeInsets.all(24),
 																child: Transform(
 																	alignment: Alignment.center,
 																	transform: _rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0 ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
