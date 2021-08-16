@@ -125,7 +125,8 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 				md5: data['media']['safe_media_hash'],
 				spoiler: data['media']['spoiler'] == '1',
 				width: int.parse(data['media']['media_w']),
-				height: int.parse(data['media']['media_h'])
+				height: int.parse(data['media']['media_h']),
+				threadId: int.tryParse(data['thread_num'])
 			);
 		}	
 	}

@@ -178,13 +178,13 @@ class Site4Chan implements ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
 			id: data['no'],
 			threadId: threadId,
-			attachment: _makeAttachment(board, data),
+			attachment: _makeAttachment(board, threadId, data),
 			spanFormat: PostSpanFormat.Chan4,
 			flag: _makeFlag(data),
 			posterId: data['id']
 		);
 	}
-	Attachment? _makeAttachment(String board, dynamic data) {
+	Attachment? _makeAttachment(String board, int threadId, dynamic data) {
 		if (data['tim'] != null) {
 			final int id = data['tim'];
 			final String ext = data['ext'];
@@ -199,7 +199,8 @@ class Site4Chan implements ImageboardSite {
 				md5: data['md5'],
 				spoiler: data['spoiler'] == 1,
 				width: data['w'],
-				height: data['h']
+				height: data['h'],
+				threadId: threadId
 			);
 		}
 	}
@@ -256,7 +257,7 @@ class Site4Chan implements ImageboardSite {
 					return _makePost(thread.board, thread.id, postData);
 				}).toList(),
 				id: data['posts'][0]['no'],
-				attachment: _makeAttachment(thread.board, data['posts'][0]),
+				attachment: _makeAttachment(thread.board, thread.id, data['posts'][0]),
 				title: (title == null) ? null : unescape.convert(title),
 				isSticky: data['posts'][0]['sticky'] == 1,
 				time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
@@ -349,7 +350,7 @@ class Site4Chan implements ImageboardSite {
 					imageCount: threadData['images'],
 					isArchived: false,
 					isDeleted: false,
-					attachment: _makeAttachment(board, threadData),
+					attachment: _makeAttachment(board, threadId, threadData),
 					posts: [threadAsPost],
 					title: (title == null) ? null : unescape.convert(title),
 					isSticky: threadData['sticky'] == 1,

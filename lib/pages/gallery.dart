@@ -8,11 +8,9 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/services/media.dart';
 import 'package:chan/services/status_bar.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
-import 'package:chan/widgets/rx_stream_builder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
@@ -23,50 +21,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:share/share.dart';
-import 'package:video_player/video_player.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:home_indicator/home_indicator.dart';
 
 const double _THUMBNAIL_SIZE = 60;
-
-class AttachmentStatus {
-
-}
-
-class AttachmentUnloadedStatus extends AttachmentStatus {
-	
-}
-
-class AttachmentLoadingStatus extends AttachmentStatus {
-	final double? progress;
-	AttachmentLoadingStatus({this.progress});
-
-	@override
-	String toString() => 'AttachmentLoadingStatus(progress: $progress)';
-}
-
-class AttachmentUnavailableStatus extends AttachmentStatus {
-	String cause;
-	AttachmentUnavailableStatus(this.cause);
-
-	@override
-	String toString() => 'AttachmentUnavailableStatus(cause: $cause)';
-}
-
-class AttachmentImageUrlAvailableStatus extends AttachmentStatus {
-	final Uri url;
-	final bool cacheCompleted;
-	AttachmentImageUrlAvailableStatus(this.url, this.cacheCompleted);
-
-	@override
-	String toString() => 'AttachmentImageUrlAvailableStatus(url: $url, cacheCompleted: $cacheCompleted)';
-}
-
-class AttachmentVideoAvailableStatus extends AttachmentStatus {
-	final VideoPlayerController controller;
-	final bool hasAudio;
-	AttachmentVideoAvailableStatus(this.controller, this.hasAudio);
-}
 
 enum _GalleryMenuSelection {
 	ToggleAutorotate
@@ -108,14 +66,9 @@ class GalleryPage extends StatefulWidget {
 }
 
 class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin {
-	// Data
 	late int currentIndex;
 	Attachment get currentAttachment => widget.attachments[currentIndex];
-	AttachmentStatus get currentAttachmentStatus => statuses[currentAttachment]!.value;
-	final Map<Attachment, BehaviorSubject<AttachmentStatus>> statuses = Map();
-	final Map<Attachment, File> cachedFiles = Map();
-	final Set<MediaConversion> _ongoingConversions = Set();
-	// View
+	AttachmentViewerController get currentController => _getController(currentAttachment);
 	bool firstControllerMade = false;
 	late final ScrollController thumbnailScrollController;
 	late final PageController pageController;
@@ -123,26 +76,15 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	bool showingOverlays = true;
 	final Key _pageControllerKey = GlobalKey();
 	final Key _thumbnailsKey = GlobalKey();
-	AttachmentStatus lastDifferentCurrentStatus = AttachmentStatus();
 	final BehaviorSubject<Null> _scrollCoalescer = BehaviorSubject();
 	double? _lastpageControllerPixels;
 	bool _animatingNow = false;
 	final _shareButtonKey = GlobalKey();
-	final Map<Attachment, GlobalKey<ExtendedImageGestureState>> _gestureKeys = Map();
-	final BehaviorSubject<Null> _slideStream = BehaviorSubject();
-	final Set<Attachment> _shouldRotate = Set();
+	final _slideStream = BehaviorSubject<void>();
 	bool _hideRotateButton = false;
-	final Set<Attachment> _rotationComputed = Set();
+	final _rotationsInProgress = Set<Attachment>();
 	late final AnimationController _rotateButtonAnimationController;
-
-	void _newStatusEntry(Attachment attachment, AttachmentStatus newStatus) {
-		// Don't need to rebuild layout if its just a status value change (mainly for loading spinner)
-		if (currentAttachment == attachment && newStatus.runtimeType != lastDifferentCurrentStatus.runtimeType) {
-			setState(() {
-				lastDifferentCurrentStatus = newStatus;
-			});
-		}
-	}
+	final Map<Attachment, AttachmentViewerController> _controllers = {};
 
 	@override
 	void initState() {
@@ -154,11 +96,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		pageController = PageController(keepPage: true, initialPage: currentIndex);
 		pageController.addListener(_onPageControllerUpdate);
 		_scrollCoalescer.bufferTime(Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
-		statuses.addEntries(widget.attachments.map((attachment) => MapEntry(attachment, BehaviorSubject()..add(AttachmentUnloadedStatus()))));
-		statuses.entries.forEach((entry) {
-			entry.value.listen((n) => _newStatusEntry(entry.key, n));
-		});
-		requestRealViewer(widget.attachments[currentIndex], false);
+		_getController(widget.attachments[currentIndex]).loadFullAttachment();
 	}
 
 	@override
@@ -181,15 +119,26 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	@override
 	void didUpdateWidget(GalleryPage old) {
 		super.didUpdateWidget(old);
-		widget.attachments.where((a) => !statuses.containsKey(a)).forEach((attachment) {
-			statuses[attachment] = BehaviorSubject()..add(AttachmentUnloadedStatus())..listen((n) => _newStatusEntry(attachment, n));
-		});
 		if (widget.initialAttachment != old.initialAttachment) {
 			currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
 			if (context.read<EffectiveSettings>().autoloadAttachments) {
-				requestRealViewer(widget.attachments[currentIndex], false);
+				_getController(widget.attachments[currentIndex]).loadFullAttachment();
 			}
 		}
+	}
+
+	AttachmentViewerController _getController(Attachment attachment) {
+		if (_controllers[attachment] == null) {
+			_controllers[attachment] = AttachmentViewerController(
+				attachment: attachment,
+				redrawGestureStream: _slideStream,
+				site: context.read<ImageboardSite>(),
+				isPrimary: attachment == currentAttachment,
+				overrideSource: widget.overrideSources[attachment]
+			);
+			_controllers[attachment]!.addListener(() => setState(() => {}));
+		}
+		return _controllers[attachment]!;
 	}
 
 	void _updateOverlays(bool show) async {
@@ -215,81 +164,6 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		}
 	}
 
-	Future<Uri> _getGoodUrl(Attachment attachment) async {
-		if (widget.overrideSources[attachment] != null) {
-			return widget.overrideSources[attachment]!;
-		}
-		// Should check archives and send scaffold messages here
-		final site = context.read<ImageboardSite>();
-		final result = await site.client.head(attachment.url);
-		if (result.statusCode == 200) {
-			return attachment.url;
-		}
-		else {
-			throw HTTPStatusException(result.statusCode);
-		}
-	}
-
-	Future<void> requestRealViewer(Attachment attachment, bool startImageDownload) async {
-		try {
-			if (attachment.type == AttachmentType.Image) {
-				final provisionalStatus = AttachmentLoadingStatus(progress: 0);
-				statuses[attachment]!.add(provisionalStatus);
-				Future.delayed(const Duration(milliseconds: 500), () {
-					if (statuses[attachment]!.value == provisionalStatus && mounted) {
-						statuses[attachment]!.add(AttachmentLoadingStatus());
-					}
-				});
-				final url = await _getGoodUrl(attachment);
-				statuses[attachment]!.add(AttachmentImageUrlAvailableStatus(url, false));
-				if (startImageDownload) {
-					await ExtendedNetworkImageProvider(
-						url.toString(),
-						cache: true
-					).getNetworkImageData();
-					getCachedImageFile(url.toString()).then((file) {
-						if (mounted && file != null) {
-							statuses[attachment]!.add(AttachmentImageUrlAvailableStatus(url, true));
-							if (cachedFiles[attachment]?.path != file.path) {
-								setState(() {
-									cachedFiles[attachment] = file;
-								});
-							}
-						}
-					});
-				}
-			}
-			else if (attachment.type == AttachmentType.WEBM) {
-				statuses[attachment]!.add(AttachmentLoadingStatus());
-				final url = await _getGoodUrl(attachment);
-				final webm = MediaConversion.toMp4(url);
-				_ongoingConversions.add(webm);
-				webm.progress.addListener(() {
-					statuses[attachment]!.add(AttachmentLoadingStatus(progress: webm.progress.value));
-				});
-				webm.start();
-				try {
-					final result = await webm.result;
-					final controller = VideoPlayerController.file(result.file, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
-					await controller.initialize();
-					await controller.setLooping(true);
-					if (attachment == currentAttachment) {
-						await controller.play();
-					}
-					cachedFiles[attachment] = result.file;
-					statuses[attachment]!.add(AttachmentVideoAvailableStatus(controller, result.hasAudio));
-				}
-				catch (e) {
-					statuses[attachment]!.add(AttachmentUnavailableStatus(e.toString()));
-				}
-				_ongoingConversions.remove(webm);
-			}
-		}
-		catch (e) {
-			statuses[attachment]!.add(AttachmentUnavailableStatus(e.toString()));
-		}
-	}
-
 	void _onPageControllerUpdate() {
 		_scrollCoalescer.add(null);
 	}
@@ -306,8 +180,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	Future<void> _animateToPage(int index, {int milliseconds = 200}) async {
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
-		if (context.read<EffectiveSettings>().autoloadAttachments && statuses[attachment]!.value is AttachmentUnloadedStatus) {
-			requestRealViewer(widget.attachments[index], false);
+		if (context.read<EffectiveSettings>().autoloadAttachments) {
+			_getController(attachment).loadFullAttachment();
 		}
 		if (milliseconds == 0) {
 			pageController.jumpToPage(index);
@@ -320,6 +194,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				curve: Curves.ease
 			);
 			_animatingNow = false;
+			_onPageChanged(index);
 		}
 	}
 
@@ -328,45 +203,59 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		return attachment.isLandscape != null && displayIsLandscape != attachment.isLandscape;
 	}
 
+	void _rotate(Attachment attachment) async {
+		if (attachment == currentAttachment) {
+			_rotateButtonAnimationController.repeat();
+		}
+		_rotationsInProgress.add(attachment);
+		setState(() {});
+		await _getController(attachment).rotate();
+		_rotationsInProgress.remove(attachment);
+		setState(() {});
+		if (attachment == currentAttachment) {
+			_rotateButtonAnimationController.reset();
+		}
+	}
+
 	void _onPageChanged(int index) {
 		_rotateButtonAnimationController.reset();
+		if (_rotationsInProgress.contains(index)) {
+			_rotateButtonAnimationController.repeat();
+		}
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
-		if (!_animatingNow && context.read<EffectiveSettings>().autoloadAttachments) {
-			if (statuses[attachment]!.value is AttachmentUnloadedStatus) {
-				requestRealViewer(widget.attachments[index], false);
+		if (!_animatingNow) {
+			final settings = context.read<EffectiveSettings>();
+			if (settings.autoloadAttachments) {
+				_getController(attachment).loadFullAttachment();
+				if (index > 0 ) {
+					_getController(widget.attachments[index - 1]).preloadFullAttachment();
+				}
+				if (index < (widget.attachments.length - 1)) {
+					_getController(widget.attachments[index + 1]).preloadFullAttachment();
+				}
 			}
-			if (index > 0 && statuses[widget.attachments[index - 1]]!.value is AttachmentUnloadedStatus) {
-				requestRealViewer(widget.attachments[index - 1], true);
+			if (settings.autoRotateInGallery && _rotationAppropriate(attachment) && _getController(attachment).quarterTurns == 0) {
+				_getController(attachment).rotate();
 			}
-			if (index < (widget.attachments.length - 1) && statuses[widget.attachments[index + 1]]!.value is AttachmentUnloadedStatus) {
-				requestRealViewer(widget.attachments[index + 1], true);
+			for (final c in _controllers.entries) {
+				c.value.isPrimary = c.key == currentAttachment;
 			}
 		}
 		_hideRotateButton = false;
 		currentIndex = index;
-		for (final status in statuses.entries) {
-			if (status.value.value is AttachmentVideoAvailableStatus) {
-				if (status.key == currentAttachment) {
-					(status.value.value as AttachmentVideoAvailableStatus).controller.play();
-				}
-				else {
-					(status.value.value as AttachmentVideoAvailableStatus).controller.pause();
-				}
-			}
-		}
 		setState(() {});
 	}
 
 	bool canShare(Attachment attachment) {
-		return (widget.overrideSources[attachment] ?? cachedFiles[attachment]) != null;
+		return (widget.overrideSources[attachment] ?? _getController(attachment).cachedFile) != null;
 	}
 
 	Future<void> share(Attachment attachment) async {
 		final systemTempDirectory = Persistence.temporaryDirectory;
 		final shareDirectory = await (Directory(systemTempDirectory.path + '/sharecache')).create(recursive: true);
 		final newFilename = currentAttachment.id.toString() + currentAttachment.ext.replaceFirst('webm', 'mp4');
-		File? originalFile = cachedFiles[currentAttachment];
+		File? originalFile = _getController(attachment).cachedFile;
 		if (widget.overrideSources[attachment] != null) {
 			originalFile = File(widget.overrideSources[attachment]!.path);
 		}
@@ -424,7 +313,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													Persistence.getSavedAttachment(currentAttachment)?.delete();
 												}
 												else {
-													Persistence.saveAttachment(currentAttachment, cachedFiles[currentAttachment]!);
+													Persistence.saveAttachment(currentAttachment, currentController.cachedFile!);
 												}
 											} : null
 										);
@@ -509,61 +398,26 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														itemCount: widget.attachments.length,
 														itemBuilder: (context, index) {
 															final attachment = widget.attachments[index];
-															return RxStreamBuilder<AttachmentStatus>(
-																stream: statuses[attachment]!,
-																builder: (context, snapshot) {
-																	final status = snapshot.data!;
-																	int quarterTurns = 0;
-																	if (_rotationAppropriate(attachment) && (settings.autoRotateInGallery || _shouldRotate.contains(attachment))) {
-																		quarterTurns = 1;
-																	}
-																	return GestureDetector(
-																		child: AttachmentViewer(
-																			gestureKey: _gestureKeys.putIfAbsent(attachment, () => GlobalKey<ExtendedImageGestureState>()),
-																			slideStream: _slideStream,
-																			quarterTurns: quarterTurns,
-																			onRotationComputed: () {
-																				if (attachment == currentAttachment) {
-																					_rotateButtonAnimationController.reset();
-																				}
-																				setState(() {
-																					_rotationComputed.add(attachment);
-																				});
-																			},
-																			onScaleChanged: (scale) {
-																				if (scale > 1 && !_hideRotateButton) {
-																					setState(() {
-																						_hideRotateButton = true;
-																					});
-																				}
-																				else if (scale <= 1 && _hideRotateButton) {
-																					setState(() {
-																						_hideRotateButton = false;
-																					});
-																				}
-																			},
-																			attachment: attachment,
-																			status: status,
-																			backgroundColor: Colors.transparent,
-																			tag: AttachmentSemanticLocation(
-																				attachment: attachment,
-																				semanticParents: widget.semanticParentIds
-																			),
-																			onCacheCompleted: (file) {
-																				statuses[attachment]!.add(AttachmentImageUrlAvailableStatus((statuses[attachment]!.value as AttachmentImageUrlAvailableStatus).url, true));
-																				if (cachedFiles[attachment]?.path != file.path) {
-																					setState(() {
-																						cachedFiles[attachment] = file;
-																					});
-																				}
-																			}
-																		),
-																		onTap: (status is AttachmentUnloadedStatus) ? () {
-																			if (status is AttachmentUnloadedStatus) {
-																				requestRealViewer(attachment, false);
-																			}
-																		} : _toggleChrome
-																	);
+															return GestureDetector(
+																child: AttachmentViewer(
+																	controller: _getController(attachment),
+																	onScaleChanged: (scale) {
+																		if (scale > 1 && !_hideRotateButton) {
+																			setState(() {
+																				_hideRotateButton = true;
+																			});
+																		}
+																		else if (scale <= 1 && _hideRotateButton) {
+																			setState(() {
+																				_hideRotateButton = false;
+																			});
+																		}
+																	},
+																	attachment: attachment,
+																	semanticParentIds: widget.semanticParentIds
+																),
+																onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
+																	_getController(attachment).loadFullAttachment();
 																}
 															);
 														}
@@ -572,22 +426,22 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												AnimatedSwitcher(
 													duration: const Duration(milliseconds: 300),
 													child: (_rotationAppropriate(currentAttachment) && !_hideRotateButton) ? Align(
+														key: ValueKey<bool>(_rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0),
 														alignment: Alignment.bottomRight,
 														child: RotationTransition(
-															turns: _rotationComputed.contains(currentAttachment) ? AlwaysStoppedAnimation(0.0) : Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController),
+															turns: _rotationsInProgress.contains(currentAttachment) ? Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController) : AlwaysStoppedAnimation(0.0),
 															child: CupertinoButton(
 																child: Transform(
 																	alignment: Alignment.center,
-																	transform: _rotationComputed.contains(currentAttachment) && _shouldRotate.contains(currentAttachment) ? Matrix4.identity() : Matrix4.rotationY(math.pi),
+																	transform: _rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0 ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
 																	child: Icon(Icons.rotate_90_degrees_ccw)
 																),
 																onPressed: () {
-																	if (_shouldRotate.contains(currentAttachment)) {
-																		_shouldRotate.remove(currentAttachment);
+																	if (currentController.quarterTurns == 1) {
+																		currentController.unrotate();
 																	}
 																	else {
-																		_shouldRotate.add(currentAttachment);
-																		_rotateButtonAnimationController.repeat();
+																		_rotate(currentAttachment);
 																	}
 																	setState(() {});
 																}
@@ -611,13 +465,13 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																		mainAxisSize: MainAxisSize.min,
 																		crossAxisAlignment: CrossAxisAlignment.center,
 																		children: [
-																			if (currentAttachmentStatus is AttachmentVideoAvailableStatus) Container(
+																			if (currentController.videoPlayerController != null) Container(
 																				decoration: BoxDecoration(
 																					color: Colors.black38
 																				),
 																				child: VideoControls(
-																					controller: (currentAttachmentStatus as AttachmentVideoAvailableStatus).controller,
-																					hasAudio: (currentAttachmentStatus as AttachmentVideoAvailableStatus).hasAudio
+																					controller: currentController.videoPlayerController!,
+																					hasAudio: currentController.hasAudio
 																				)
 																			),
 																			Container(
@@ -671,24 +525,14 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		);
 	}
 
-	Future<void> _disposeAsync() async {
-		for (final conversion in _ongoingConversions) {
-			await conversion.cancel();
-		}
-		for (final status in statuses.values) {
-			if (status.value is AttachmentVideoAvailableStatus) {
-				await (status.value as AttachmentVideoAvailableStatus).controller.dispose();
-			}
-			await status.close();
-		}
-	}
-
 	@override
 	void dispose() {
 		super.dispose();
 		thumbnailScrollController.dispose();
 		_slideStream.close();
-		_disposeAsync();
+		for (final controller in _controllers.values) {
+			controller.dispose();
+		}
 	}
 }
 

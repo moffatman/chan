@@ -34,6 +34,8 @@ class Attachment {
 	final int? width;
 	@HiveField(10)
 	final int? height;
+	@HiveField(11)
+	final int? threadId;
 	Attachment({
 		required this.type,
 		required this.board,
@@ -45,12 +47,13 @@ class Attachment {
 		required this.md5,
 		bool? spoiler,
 		this.width,
-		this.height
+		this.height,
+		this.threadId
 	}) : this.spoiler = spoiler ?? false;
 
 	bool? get isLandscape => (width == null || height == null) ? null : width! > height!;
 
 	String get globalId => '${board}_$id';
 
-	String toString() => 'Attachment(board: $board, id: $id, ext: $ext, filename: $filename, type: $type, url: $url, thumbnailUrl: $thumbnailUrl, md5: $md5, spoiler: $spoiler, width: $width, height: $height)';
+	String toString() => 'Attachment(board: $board, id: $id, ext: $ext, filename: $filename, type: $type, url: $url, thumbnailUrl: $thumbnailUrl, md5: $md5, spoiler: $spoiler, width: $width, height: $height, threadId: $threadId)';
 }
