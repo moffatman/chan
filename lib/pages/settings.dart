@@ -111,7 +111,13 @@ class SettingsPage extends StatelessWidget {
 									padding: EdgeInsets.only(top: 16, left: 16),
 									child: Text('Cached threads and history')
 								),
-								SettingsThreadsPanel()
+								SettingsThreadsPanel(),
+								CupertinoButton(
+									child: Text('Clear API cookies'),
+									onPressed: () {
+										Persistence.cookies.deleteAll();
+									}
+								)
 							],
 						)
 					)

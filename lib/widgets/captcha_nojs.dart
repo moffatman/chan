@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:ui' as ui show Image;
 
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:html/dom.dart' show Document;
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
+import 'package:provider/provider.dart';
 import 'package:html/parser.dart' show parse;
 
 class CaptchaNoJS extends StatefulWidget {
@@ -93,7 +93,6 @@ class CaptchaNoJSChallenge {
 }
 
 class _CaptchaNoJSState extends State<CaptchaNoJS> {
-	final http.Client client = IOClient();
 	String? errorMessage;
 	CaptchaNoJSChallenge? challenge;
 
@@ -147,17 +146,23 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 	}
 
 	Future<CaptchaNoJSChallenge> _requestChallenge() async {
-		final challengeResponse = await client.get(Uri.https('www.google.com', '/recaptcha/api/fallback', {
-			'k': widget.request.key
-		}), headers: {
-			'Referer': widget.request.sourceUrl,
-			..._HEADERS
-		});
+		final challengeResponse = await context.read<ImageboardSite>().client.get(
+			Uri.https('www.google.com', '/recaptcha/api/fallback').toString(),
+			queryParameters: {
+				'k': widget.request.key
+			},
+			options: Options(
+				headers: {
+					'Referer': widget.request.sourceUrl,
+					..._HEADERS
+				},
+				responseType: ResponseType.plain
+			)
+		);
 		if (challengeResponse.statusCode != 200) {
-			print(challengeResponse.request!.url);
 			throw CaptchaNoJSException('Got status code ${challengeResponse.statusCode}');
 		}
-		final document = parse(challengeResponse.body);
+		final document = parse(challengeResponse.data);
 		return _gotChallengePage(document);
 	}
 
@@ -190,17 +195,24 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			errorMessage = null;
 			challenge = null;
 		});
-		final submissionResponse = await client.post(Uri.https('www.google.com', '/recaptcha/api/fallback', {
-			'k': widget.request.key
-		}), headers: {
-			'Referer': 'https://www.google.com/recaptcha/api/fallback?k=${widget.request.key}',
-			'Content-Type': 'application/x-www-form-urlencoded',
-			..._HEADERS
-		}, body: 'c=${chal.responseKey}' + chal.subimages.expand((r) => r).where((s) => s.selected).map((s) => '&response=${s.id}').join());
+		final submissionResponse = await context.read<ImageboardSite>().client.post(
+			Uri.https('www.google.com', '/recaptcha/api/fallback').toString(),
+			queryParameters: {
+				'k': widget.request.key
+			},
+			data: 'c=${chal.responseKey}' + chal.subimages.expand((r) => r).where((s) => s.selected).map((s) => '&response=${s.id}').join(),
+			options: Options(
+				contentType: Headers.formUrlEncodedContentType,
+				headers: {
+					'Referer': 'https://www.google.com/recaptcha/api/fallback?k=${widget.request.key}',
+					..._HEADERS
+				}
+			)
+		);
 		if (submissionResponse.statusCode != 200) {
 			throw CaptchaNoJSException('Got status code ${submissionResponse.statusCode}');
 		}
-		final document = parse(submissionResponse.body);
+		final document = parse(submissionResponse.data);
 		final tokenElement = document.querySelector('.fbc-verification-token textarea');
 		if (tokenElement != null) {
 			widget.onCaptchaSolved(RecaptchaSolution(response: tokenElement.text));

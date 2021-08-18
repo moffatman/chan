@@ -94,7 +94,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (overrideSource != null) {
 			return overrideSource!;
 		}
-		var result = await site.client.head(attachment.url);
+		var result = await site.client.head(attachment.url.toString());
 		if (result.statusCode == 200) {
 			return attachment.url;
 		}
@@ -106,7 +106,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				));
 				for (final reply in archivedThread.posts) {
 					if (reply.attachment?.id == attachment.id) {
-						result = await site.client.head(reply.attachment!.url);
+						result = await site.client.head(reply.attachment!.url.toString());
 						if (result.statusCode == 200) {
 							return reply.attachment!.url;
 						}
@@ -117,7 +117,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (result.statusCode == 404) {
 			throw AttachmentNotFoundException(attachment);
 		}
-		throw HTTPStatusException(result.statusCode);
+		throw HTTPStatusException(result.statusCode!);
 	}
 
 	Future<void> _loadFullAttachment(bool startImageDownload) async {

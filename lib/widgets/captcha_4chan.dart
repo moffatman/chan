@@ -6,8 +6,8 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:provider/provider.dart';
 
 class Captcha4ChanCustom extends StatefulWidget {
 	final Chan4CustomCaptchaRequest request;
@@ -24,8 +24,7 @@ class Captcha4ChanCustom extends StatefulWidget {
 
 class Captcha4ChanCustomException implements Exception {
 	String message;
-	DateTime? tryAgainAt;
-	Captcha4ChanCustomException(this.message, {this.tryAgainAt});
+	Captcha4ChanCustomException(this.message);
 
 	String toString() => '4chan captcha error: $message';
 }
@@ -33,14 +32,12 @@ class Captcha4ChanCustomException implements Exception {
 class Captcha4ChanCustomChallenge {
 	String challenge;
 	DateTime expiresAt;
-	Duration cooldown;
 	ui.Image foregroundImage;
 	ui.Image backgroundImage;
 
 	Captcha4ChanCustomChallenge({
 		required this.challenge,
 		required this.expiresAt,
-		required this.cooldown,
 		required this.foregroundImage,
 		required this.backgroundImage
 	});
@@ -86,24 +83,23 @@ class _Captcha4ChanCustomPainter extends CustomPainter{
 }
 
 class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
-	final http.Client client = IOClient();
 	String? errorMessage;
 	DateTime? tryAgainAt;
 	Captcha4ChanCustomChallenge? challenge;
 	int backgroundSlide = 0;
+	final _solutionNode = FocusNode();
 
 	Future<Captcha4ChanCustomChallenge> _requestChallenge() async {
-		final challengeResponse = await client.get(widget.request.challengeUrl);
+		final challengeResponse = await context.read<ImageboardSite>().client.get(widget.request.challengeUrl.toString());
 		if (challengeResponse.statusCode != 200) {
 			throw Captcha4ChanCustomException('Got status code ${challengeResponse.statusCode}');
 		}
-		final data = json.decode(challengeResponse.body);
+		final data = challengeResponse.data;
+		if (data['cd'] != null) {
+			tryAgainAt = DateTime.now().add(Duration(seconds: data['cd']));
+		}
 		if (data['error'] != null) {
-			DateTime? tryAgainAt;
-			if (data['cd'] != null) {
-				tryAgainAt = DateTime.now().add(Duration(seconds: data['cd']));
-			}
-			throw Captcha4ChanCustomException(data['error'], tryAgainAt: tryAgainAt);
+			throw Captcha4ChanCustomException(data['error']);
 		}
 		final foregroundImageCompleter = Completer<ui.Image>();
 		MemoryImage(base64Decode(data['img'])).resolve(ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
@@ -122,7 +118,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		return Captcha4ChanCustomChallenge(
 			challenge: data['challenge'],
 			expiresAt: DateTime.now().add(Duration(seconds: data['ttl'])),
-			cooldown: Duration(seconds: data['cd']),
 			foregroundImage: foregroundImage,
 			backgroundImage: backgroundImage
 		);
@@ -140,13 +135,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			this.backgroundSlide = 0;
 			await _alignImage();
 			setState(() {});
+			_solutionNode.requestFocus();
 		}
 		catch(e, st) {
 			print(e);
 			print(st);
-			if (e is Captcha4ChanCustomException) {
-				tryAgainAt = e.tryAgainAt;
-			}
 			setState(() {
 				this.errorMessage = e.toString();
 			});
@@ -213,31 +206,42 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		_tryRequestChallenge();
 	}
 
+	Widget _cooldownedRetryButton(BuildContext context) {
+		if (tryAgainAt != null) {
+			return TimedRebuilder(
+				interval: Duration(seconds: 1),
+				builder: (context) {
+					final seconds = tryAgainAt!.difference(DateTime.now()).inSeconds;
+					return CupertinoButton(
+						child: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								Icon(Icons.refresh),
+								SizedBox(width: 16),
+								SizedBox(
+									width: 24,
+									child: seconds > 0 ? Text('$seconds') : Container()
+								)
+							]
+						),
+						onPressed: seconds > 0 ? null : _tryRequestChallenge
+					);
+				}
+			);
+		}
+		return CupertinoButton(
+			child: Icon(Icons.refresh),
+			onPressed: _tryRequestChallenge
+		);
+	}
+
 	Widget _build(BuildContext context) {
 		if (errorMessage != null) {
 			return Center(
 				child: Column(
 					children: [
 						Text(errorMessage!),
-						if (tryAgainAt != null) TimedRebuilder(
-							interval: Duration(seconds: 1),
-							builder: (context) {
-								final seconds = tryAgainAt!.difference(DateTime.now()).inSeconds;
-								if (seconds > 0) {
-									return Container(
-										padding: EdgeInsets.only(top: 16),
-										child: Text('Try again in $seconds seconds')
-									);
-								}
-								else {
-									return Container();
-								}
-							}
-						),
-						CupertinoButton(
-							child: Text('Retry'),
-							onPressed: _tryRequestChallenge
-						)
+						_cooldownedRetryButton(context)
 					]
 				)
 			);
@@ -246,11 +250,13 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			return Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					Flexible(
-						child: ConstrainedBox(
-							constraints: BoxConstraints(
-								maxWidth: 500
-							),
+					Text('Enter the text in the image below'),
+					SizedBox(height: 16),
+					ConstrainedBox(
+						constraints: BoxConstraints(
+							maxWidth: 500
+						),
+						child: Flexible(
 							child: AspectRatio(
 								aspectRatio: challenge!.foregroundImage.width / challenge!.foregroundImage.height,
 								child: CustomPaint(
@@ -265,38 +271,57 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 						)
 					),
 					SizedBox(height: 16),
-					CupertinoSlider(
-						value: backgroundSlide.toDouble(),
-						divisions: challenge!.backgroundImage.width - challenge!.foregroundImage.width,
-						max: (challenge!.backgroundImage.width - challenge!.foregroundImage.width).toDouble(),
-						onChanged: (newOffset) {
-							setState(() {
-								backgroundSlide = newOffset.floor();
-							});
-						}
+					ConstrainedBox(
+						constraints: BoxConstraints(
+							maxWidth: 500
+						),
+						child: Row(
+							mainAxisAlignment: MainAxisAlignment.spaceBetween,
+							children: [
+								_cooldownedRetryButton(context),
+								CupertinoSlider(
+									value: backgroundSlide.toDouble(),
+									divisions: challenge!.backgroundImage.width - challenge!.foregroundImage.width,
+									max: (challenge!.backgroundImage.width - challenge!.foregroundImage.width).toDouble(),
+									onChanged: (newOffset) {
+										setState(() {
+											backgroundSlide = newOffset.floor();
+										});
+									}
+								),
+								Row(
+									children: [
+										Icon(Icons.timer),
+										SizedBox(width: 16),
+										SizedBox(
+											width: 60,
+											child: TimedRebuilder(
+												interval: const Duration(seconds: 1),
+												builder: (context) {
+													final seconds = challenge!.expiresAt.difference(DateTime.now()).inSeconds;
+													return Text(
+														seconds > 0 ? '$seconds' : 'Expired'
+													);
+												}
+											)
+										)
+									]
+								)
+							]
+						)
 					),
 					SizedBox(height: 16),
-					Row(
-						mainAxisSize: MainAxisSize.min,
-						children: [
-							CupertinoButton(
-								child: Text('Refresh'),
-								onPressed: _tryRequestChallenge
-							),
-							SizedBox(width: 32),
-							SizedBox(
-								width: 150,
-								child: CupertinoTextField(
-									autofocus: true,
-									autocorrect: false,
-									placeholder: 'Captcha text',
-									onSubmitted: (response) => widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
-										challenge: challenge!.challenge,
-										response: response
-									)),
-								)
-							)
-						]
+					SizedBox(
+						width: 150,
+						child: CupertinoTextField(
+							focusNode: _solutionNode,
+							autocorrect: false,
+							placeholder: 'Captcha text',
+							onSubmitted: (response) => widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
+								challenge: challenge!.challenge,
+								response: response
+							)),
+						)
 					)
 				]
 			);

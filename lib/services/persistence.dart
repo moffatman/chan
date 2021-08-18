@@ -9,6 +9,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/refreshable_list.dart';
+import 'package:cookie_jar/cookie_jar.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -42,6 +43,9 @@ class Persistence {
 	static late final PersistentRecentSearches recentSearches;
 	static late final Directory temporaryDirectory;
 	static late final Directory documentsDirectory;
+	static final cookies = PersistCookieJar(
+		storage: FileStorage(temporaryDirectory.path)
+	);
 
 	static Future<void> initialize() async {
 		await Hive.initFlutter();

@@ -5,10 +5,11 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
 import '../models/thread.dart';
 
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 class PostNotFoundException implements Exception {
 	String board;
@@ -119,7 +120,10 @@ class ImageboardArchiveSearchResult {
 }
 
 abstract class ImageboardSiteArchive {
-	final http.Client client = http.Client();
+	final Dio client = Dio();
+	ImageboardSiteArchive() {
+		client.interceptors.add(CookieManager(Persistence.cookies));
+	}
 	String get name;
 	Future<Post> getPost(String board, int id);
 	Future<Thread> getThread(ThreadIdentifier thread);

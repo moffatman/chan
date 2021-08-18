@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
@@ -9,7 +7,6 @@ import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 import 'package:html_unescape/html_unescape_small.dart';
@@ -21,8 +18,7 @@ class FoolFuukaException implements Exception {
 	String toString() => 'FoolFuuka Error: $error';
 }
 
-class FoolFuukaArchive implements ImageboardSiteArchive {
-	final http.Client client = http.Client();
+class FoolFuukaArchive extends ImageboardSiteArchive {
 	List<ImageboardBoard>? _boards;
 	final unescape = HtmlUnescape();
 	final String baseUrl;
@@ -158,17 +154,20 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 		if (!(await getBoards()).any((b) => b.name == board)) {
 			throw BoardNotFoundException(board);
 		}
-		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/post', {
-			'board': board,
-			'num': id.toString()
-		}));
+		final response = await client.get(
+			Uri.https(baseUrl, '/_/api/chan/post').toString(),
+			queryParameters: {
+				'board': board,
+				'num': id.toString()
+			}
+		);
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
 				return Future.error(PostNotFoundException(board, id));
 			}
-			return Future.error(HTTPStatusException(response.statusCode));
+			return Future.error(HTTPStatusException(response.statusCode!));
 		}
-		return json.decode(response.body);
+		return response.data;
 	}
 	Future<int> _getPostThreadId(String board, int postId) async {
 		return int.parse((await _getPostJson(board, postId))['thread_num']);
@@ -183,17 +182,20 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 		if (!(await getBoards()).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}
-		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/thread', {
-			'board': thread.board,
-			'num': thread.id.toString()
-		}));
+		final response = await client.get(
+			Uri.https(baseUrl, '/_/api/chan/thread').toString(),
+			queryParameters: {
+				'board': thread.board,
+				'num': thread.id.toString()
+			}
+		);
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
 				return Future.error(ThreadNotFoundException(thread));
 			}
-			return Future.error(HTTPStatusException(response.statusCode));
+			return Future.error(HTTPStatusException(response.statusCode!));
 		}
-		final data = json.decode(response.body);
+		final data = response.data;
 		if (data['error'] != null) {
 			throw Exception(data['error']);
 		}
@@ -220,12 +222,11 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 		throw Exception('Catalog not supported on $name');
 	}
 	Future<List<ImageboardBoard>> _getBoards() async {
-		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/archives'));
+		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/archives').toString());
 		if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode);
+			throw HTTPStatusException(response.statusCode!);
 		}
-		final data = json.decode(response.body);
-		final Iterable<dynamic> boardData = data['archives'].values;
+		final Iterable<dynamic> boardData = response.data['archives'].values;
 		return boardData.map((archive) {
 			return ImageboardBoard(
 				name: archive['shortname'],
@@ -248,20 +249,22 @@ class FoolFuukaArchive implements ImageboardSiteArchive {
 		if (unknownBoards.isNotEmpty) {
 			throw BoardNotFoundException(unknownBoards.first);
 		}
-		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/search', {
-			'text': query.query,
-			'page': page.toString(),
-			if (query.boards.isNotEmpty) 'boards': query.boards.join('.'),
-			if (query.mediaFilter != MediaFilter.None) 'filter': query.mediaFilter == MediaFilter.OnlyWithMedia ? 'text' : 'image',
-			if (query.postTypeFilter != PostTypeFilter.None) 'type': query.postTypeFilter == PostTypeFilter.OnlyOPs ? 'op' : 'posts',
-			if (query.startDate != null) 'start': '${query.startDate!.year}-${query.startDate!.month}-${query.startDate!.day}',
-			if (query.endDate != null) 'end': '${query.endDate!.year}-${query.endDate!.month}-${query.endDate!.day}',
-			if (query.md5 != null) 'image': query.md5
-		}));
+		final response = await client.get(
+			Uri.https(baseUrl, '/_/api/chan/search').toString(),
+			queryParameters: {
+				'text': query.query,
+				'page': page.toString(),
+				if (query.boards.isNotEmpty) 'boards': query.boards.join('.'),
+				if (query.mediaFilter != MediaFilter.None) 'filter': query.mediaFilter == MediaFilter.OnlyWithMedia ? 'text' : 'image',
+				if (query.postTypeFilter != PostTypeFilter.None) 'type': query.postTypeFilter == PostTypeFilter.OnlyOPs ? 'op' : 'posts',
+				if (query.startDate != null) 'start': '${query.startDate!.year}-${query.startDate!.month}-${query.startDate!.day}',
+				if (query.endDate != null) 'end': '${query.endDate!.year}-${query.endDate!.month}-${query.endDate!.day}',
+				if (query.md5 != null) 'image': query.md5
+		});
 		if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode);
+			throw HTTPStatusException(response.statusCode!);
 		}
-		final data = json.decode(response.body);
+		final data = response.data;
 		if (data['error'] != null) {
 			throw FoolFuukaException(data['error']);
 		}

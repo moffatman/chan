@@ -19,7 +19,9 @@ environment:
 publish_to: none
 dependencies:
   flutter_ffmpeg: "^0.4.0"
-  http: "^0.13.0"
+  dio: "^4.0.0"
+  dio_cookie_manager: "^2.0.0"
+  cookie_jar: "^3.0.1"
   html: "^0.15.0"
   video_player: "^2.0.0"
   connectivity: "^3.0.0"

@@ -5,14 +5,11 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 import 'package:html_unescape/html_unescape_small.dart';
-import 'package:http/io_client.dart';
 import 'package:linkify/linkify.dart';
-
 import 'imageboard_site.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
@@ -52,7 +49,7 @@ class _CatalogCache {
 	});
 }
 
-class Site4Chan implements ImageboardSite {
+class Site4Chan extends ImageboardSite {
 	final String name;
 	final String baseUrl;
 	final String staticUrl;
@@ -60,7 +57,6 @@ class Site4Chan implements ImageboardSite {
 	final String apiUrl;
 	final String imageUrl;
 	final String captchaKey;
-	final http.Client client;
 	final List<ImageboardSiteArchive> archives;
 	List<ImageboardBoard>? _boards;
 	final unescape = HtmlUnescape();
@@ -208,18 +204,17 @@ class Site4Chan implements ImageboardSite {
 	Future<int?> _getThreadPage(ThreadIdentifier thread) async {
 		final now = DateTime.now();
 		if (_catalogCaches[thread.board] == null || now.difference(_catalogCaches[thread.board]!.lastUpdated).compareTo(_CATALOG_CACHE_LIFETIME) > 0) {
-			final response = await client.get(Uri.https(apiUrl, '/${thread.board}/catalog.json'));
+			final response = await client.get(Uri.https(apiUrl, '/${thread.board}/catalog.json').toString());
 			if (response.statusCode != 200) {
 				if (response.statusCode == 404) {
 					return Future.error(BoardNotFoundException(thread.board));
 				}
 				else {
-					return Future.error(HTTPStatusException(response.statusCode));
+					return Future.error(HTTPStatusException(response.statusCode!));
 				}
 			}
 			final entries = Map<int, _CatalogCacheEntry>();
-			final data = json.decode(response.body);
-			for (final page in data) {
+			for (final page in response.data) {
 				for (final threadData in page['threads']) {
 					entries[threadData['no']] = _CatalogCacheEntry(
 						page: page['page'],
@@ -243,9 +238,15 @@ class Site4Chan implements ImageboardSite {
 				'If-Modified-Since': _threadCache['${thread.board}/${thread.id}']!.lastModified
 			};
 		}
-		final response = await client.get(Uri.https(apiUrl,'/${thread.board}/thread/${thread.id}.json'), headers: headers);
+		final response = await client.get(
+			Uri.https(apiUrl,'/${thread.board}/thread/${thread.id}.json').toString(),
+			options: Options(
+				headers: headers,
+				validateStatus: (x) => true
+			)
+		);
 		if (response.statusCode == 200) {
-			final data = json.decode(response.body);
+			final data = response.data;
 			final String? title = data['posts']?[0]?['sub'];
 			final output = Thread(
 				board: thread.board,
@@ -268,14 +269,14 @@ class Site4Chan implements ImageboardSite {
 			);
 			_threadCache['${thread.board}/${thread.id}'] = _ThreadCacheEntry(
 				thread: output,
-				lastModified: response.headers['last-modified']!
+				lastModified: response.headers.value('last-modified')!
 			);
 		}
 		else if (!(response.statusCode == 304 && headers != null)) {
 			if (response.statusCode == 404) {
 				return Future.error(ThreadNotFoundException(thread));
 			}
-			return Future.error(HTTPStatusException(response.statusCode));
+			return Future.error(HTTPStatusException(response.statusCode!));
 		}
 		_threadCache['${thread.board}/${thread.id}']!.thread.currentPage = await _getThreadPage(thread);
 		return _threadCache['${thread.board}/${thread.id}']!.thread;
@@ -327,18 +328,17 @@ class Site4Chan implements ImageboardSite {
 	}
 
 	Future<List<Thread>> getCatalog(String board) async {
-		final response = await client.get(Uri.https(apiUrl, '/$board/catalog.json'));
+		final response = await client.get(Uri.https(apiUrl, '/$board/catalog.json').toString());
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
 				return Future.error(BoardNotFoundException(board));
 			}
 			else {
-				return Future.error(HTTPStatusException(response.statusCode));
+				return Future.error(HTTPStatusException(response.statusCode!));
 			}
 		}
-		final data = json.decode(response.body);
 		final List<Thread> threads = [];
-		for (final page in data) {
+		for (final page in response.data) {
 			for (final threadData in page['threads']) {
 				final String? title = threadData['sub'];
 				final int threadId = threadData['no'];
@@ -364,9 +364,8 @@ class Site4Chan implements ImageboardSite {
 		return threads;
 	}
 	Future<List<ImageboardBoard>> _getBoards() async {
-		final response = await client.get(Uri.https(apiUrl, '/boards.json'));
-		final data = json.decode(response.body);
-		return (data['boards'] as List<dynamic>).map((board) {
+		final response = await client.get(Uri.https(apiUrl, '/boards.json').toString());
+		return (response.data['boards'] as List<dynamic>).map((board) {
 			return ImageboardBoard(
 				name: board['board'],
 				title: board['title'],
@@ -393,10 +392,12 @@ class Site4Chan implements ImageboardSite {
 	}
 
 	CaptchaRequest getCaptchaRequest(String board, [int? threadId]) {
-		return Chan4CustomCaptchaRequest(challengeUrl: Uri.https(sysUrl, '/captcha', {
-			'board': board,
-			if (threadId != null) 'thread_id': threadId.toString()
-		}));
+		return Chan4CustomCaptchaRequest(
+			challengeUrl: Uri.https(sysUrl, '/captcha', {
+				'board': board,
+				if (threadId != null) 'thread_id': threadId.toString()
+			})
+		);
 	}
 
 	
@@ -413,25 +414,26 @@ class Site4Chan implements ImageboardSite {
 	}) async {
 		final random = Random();
 		final password = List.generate(64, (i) => random.nextInt(16).toRadixString(16)).join();
-		final request = http.MultipartRequest('POST', Uri.https(sysUrl, '/$board/post'));
-		request.fields.addAll({
-			if (threadId != null) 'resto': threadId.toString(),
-			if (subject != null) 'sub': subject,
-			'com': text,
-			'mode': 'regist',
-			'pwd': password,
-			if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
-			else if (captchaSolution is Chan4CustomCaptchaSolution) ...{
-				't-challenge': captchaSolution.challenge,
-				't-response': captchaSolution.response
-			}
-		});
-		if (file != null) {
-			request.files.add(await http.MultipartFile.fromPath('upfile', file.path, filename: overrideFilename));
-		}
-		final response = await client.send(request);
-		final body = await response.stream.bytesToString();
-		final document = parse(body);
+		final response = await client.post(
+			Uri.https(sysUrl, '/$board/post').toString(),
+			data: FormData.fromMap({
+				if (threadId != null) 'resto': threadId.toString(),
+				if (subject != null) 'sub': subject,
+				'com': text,
+				'mode': 'regist',
+				'pwd': password,
+				if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
+				else if (captchaSolution is Chan4CustomCaptchaSolution) ...{
+					't-challenge': captchaSolution.challenge,
+					't-response': captchaSolution.response
+				},
+				if (file != null) 'upfile': await MultipartFile.fromFile(file.path, filename: overrideFilename)
+			}),
+			options: Options(
+				responseType: ResponseType.plain
+			)
+		);
+		final document = parse(response.data);
 		final metaTag = document.querySelector('meta[http-equiv="refresh"]');
 		if (metaTag != null) {
 			if (threadId == null) {
@@ -454,7 +456,7 @@ class Site4Chan implements ImageboardSite {
 				throw PostFailedException(errSpan.text);
 			}
 			else {
-				print(body);
+				print(response.data);
 				throw PostFailedException('Unknown error');
 			}
 		}
@@ -513,15 +515,16 @@ class Site4Chan implements ImageboardSite {
 	}
 
 	Future<void> deletePost(String board, PostReceipt receipt) async {
-		final request = http.MultipartRequest('POST', Uri.https(sysUrl, '/$board/imgboard.php'));
-		request.fields.addAll({
-			receipt.id.toString(): 'delete',
-			'mode': 'usrdel',
-			'pwd': receipt.password
-		});
-		final response = await client.send(request);
+		final response = await client.post(
+			Uri.https(sysUrl, '/$board/imgboard.php').toString(),
+			data: FormData.fromMap({
+				receipt.id.toString(): 'delete',
+				'mode': 'usrdel',
+				'pwd': receipt.password
+			})
+		);
 		if (response.statusCode != 200) {
-			throw HTTPStatusException(response.statusCode);
+			throw HTTPStatusException(response.statusCode!);
 		}
 	}
 
@@ -564,8 +567,7 @@ class Site4Chan implements ImageboardSite {
 		required this.apiUrl,
 		required this.imageUrl,
 		required this.name,
-		http.Client? client,
 		required this.captchaKey,
 		this.archives = const []
-	}) : this.client = client ?? IOClient();
+	});
 }
