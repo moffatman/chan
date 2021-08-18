@@ -252,11 +252,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				children: [
 					Text('Enter the text in the image below'),
 					SizedBox(height: 16),
-					ConstrainedBox(
-						constraints: BoxConstraints(
-							maxWidth: 500
-						),
-						child: Flexible(
+					Flexible(
+						child: ConstrainedBox(
+							constraints: BoxConstraints(
+								maxWidth: 500
+							),
 							child: AspectRatio(
 								aspectRatio: challenge!.foregroundImage.width / challenge!.foregroundImage.height,
 								child: CustomPaint(
