@@ -56,6 +56,24 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		}
 	}
 
+	void _onPointerUp() {
+		if (_popping) {
+			return;
+		}
+		final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
+		final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
+		if (max(overscrollTop, overscrollBottom) > 50 - _scrollStopPosition) {
+			_popping = true;
+			Navigator.of(context).pop();
+		}
+		else if (_pointerInSpacer) {
+			_popping = true;
+			// Simulate onTap for the Spacers which fill the transparent space
+			// It's done here rather than using GestureDetector so it works during scroll-in
+			Navigator.of(context).pop();
+		}
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		return LayoutBuilder(
@@ -65,63 +83,57 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 					Container(
 						color: widget.backgroundColor
 					),
-					Listener(
-						onPointerDown: (event) {
-							final RenderBox childBox = _childKey.currentContext!.findRenderObject()! as RenderBox;
-							_pointerDownPosition = event.position;
-							_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter).dy;
-						},
-						onPointerMove: (event) {
-							if (_pointerInSpacer) {
-								if ((event.position - _pointerDownPosition!).distance > kTouchSlop) {
-									_pointerInSpacer = false;
-								}
+					NotificationListener<ScrollNotification>(
+						onNotification: (notification) {
+							if ((notification is ScrollEndNotification) || (notification is ScrollUpdateNotification && notification.dragDetails == null)) {
+								_onPointerUp();
 							}
+							return false;
 						},
-						onPointerUp: (event) {
-							final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
-							final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
-							if (max(overscrollTop, overscrollBottom) > 50 - _scrollStopPosition) {
-								setState(() {
-									_popping = true;
-								});
-								Navigator.of(context).pop();
-							}
-							else if (_pointerInSpacer) {
-								// Simulate onTap for the Spacers which fill the transparent space
-								// It's done here rather than using GestureDetector so it works during scroll-in
-								Navigator.of(context).pop();
-							}
-						},
-						child: Actions(
-							actions: {
-								DismissIntent: CallbackAction<DismissIntent>(
-									onInvoke: (i) => Navigator.of(context).pop()
-								)
+						child: Listener(
+							onPointerDown: (event) {
+								final RenderBox childBox = _childKey.currentContext!.findRenderObject()! as RenderBox;
+								_pointerDownPosition = event.position;
+								_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter).dy;
 							},
-							child: Focus(
-								autofocus: true,
-								child: CustomScrollView(
-									controller: _controller,
-									physics: AlwaysScrollableScrollPhysics(),
-									slivers: [
-										SliverToBoxAdapter(
-											child: ConstrainedBox(
-												constraints: BoxConstraints(
-													minHeight: constraints.maxHeight
-												),
-												child: Center(
-													child: SafeArea(
-														child: Opacity(
-															key: _childKey,
-															opacity: _opacity,
-															child: widget.child
+							onPointerMove: (event) {
+								if (_pointerInSpacer) {
+									if ((event.position - _pointerDownPosition!).distance > kTouchSlop) {
+										_pointerInSpacer = false;
+									}
+								}
+							},
+							onPointerUp: (event) => _onPointerUp(),
+							child: Actions(
+								actions: {
+									DismissIntent: CallbackAction<DismissIntent>(
+										onInvoke: (i) => Navigator.of(context).pop()
+									)
+								},
+								child: Focus(
+									autofocus: true,
+									child: CustomScrollView(
+										controller: _controller,
+										physics: AlwaysScrollableScrollPhysics(),
+										slivers: [
+											SliverToBoxAdapter(
+												child: ConstrainedBox(
+													constraints: BoxConstraints(
+														minHeight: constraints.maxHeight
+													),
+													child: Center(
+														child: SafeArea(
+															child: Opacity(
+																key: _childKey,
+																opacity: _opacity,
+																child: widget.child
+															)
 														)
 													)
 												)
 											)
-										)
-									]
+										]
+									)
 								)
 							)
 						)
