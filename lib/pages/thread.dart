@@ -100,7 +100,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			}
 		);
 		_listController.slowScrollUpdates.listen((_) {
-			if (persistentState.thread != null && !_unnaturallyScrolling) {
+			if (persistentState.thread != null && !_unnaturallyScrolling && _listController.lastVisibleIndex >= 0) {
 				final newLastSeen = persistentState.thread!.posts[_listController.lastVisibleIndex].id;	
 				if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
 					persistentState.lastSeenPostId = newLastSeen;
