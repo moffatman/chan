@@ -10,6 +10,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/circular_loading_indicator.dart';
 import 'package:chan/widgets/rx_stream_builder.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -94,7 +95,9 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (overrideSource != null) {
 			return overrideSource!;
 		}
-		var result = await site.client.head(attachment.url.toString());
+		Response result = await site.client.head(attachment.url.toString(), options: Options(
+			validateStatus: (_) => true
+		));
 		if (result.statusCode == 200) {
 			return attachment.url;
 		}
@@ -106,7 +109,9 @@ class AttachmentViewerController extends ChangeNotifier {
 				));
 				for (final reply in archivedThread.posts) {
 					if (reply.attachment?.id == attachment.id) {
-						result = await site.client.head(reply.attachment!.url.toString());
+						result = await site.client.head(reply.attachment!.url.toString(), options: Options(
+							validateStatus: (_) => true
+						));
 						if (result.statusCode == 200) {
 							return reply.attachment!.url;
 						}
@@ -329,6 +334,7 @@ class AttachmentViewer extends StatelessWidget {
 							}
 						});
 					}
+					loadstate.returnLoadStateChangedWidget = true;
 					return Stack(
 						children: [
 							loadstate.completedWidget,
@@ -341,7 +347,9 @@ class AttachmentViewer extends StatelessWidget {
 											child: Column(
 												mainAxisSize: MainAxisSize.min,
 												children: [
-													ErrorMessageCard(controller.errorMessage!),
+													IgnorePointer(
+														child: ErrorMessageCard(controller.errorMessage!)
+													),
 													CupertinoButton(
 														child: Text('Retry'),
 														onPressed: controller.loadFullAttachment
