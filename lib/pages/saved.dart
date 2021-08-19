@@ -1,3 +1,4 @@
+import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/master_detail.dart';
@@ -6,6 +7,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -18,6 +20,23 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+
+class _PostThreadCombo implements Filterable {
+	final Post post;
+	final Thread thread;
+	_PostThreadCombo({
+		required this.post,
+		required this.thread
+	});
+
+	@override
+	bool operator == (dynamic o) => (o is _PostThreadCombo) && (o.post.id == post.id) && (o.thread.identifier == thread.identifier);
+	@override
+	int get hashCode => post.hashCode * 31 + thread.hashCode;
+
+	@override
+	List<String> getSearchableText() => post.getSearchableText();
+}
 class SavedPage extends StatefulWidget {
 	@override
 	createState() => _SavedPageState();
@@ -151,6 +170,58 @@ class _SavedPageState extends State<SavedPage> {
 						);
 					}
 				),
+				MultiMasterPane<_PostThreadCombo>(
+					id: 'yourPosts',
+					navigationBar: CupertinoNavigationBar(
+						transitionBetweenRoutes: false,
+						middle: Text('Your Posts')
+					),
+					icon: Icons.person,
+					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
+						valueListenable: Persistence.threadStateBox.listenable(),
+						builder: (context, Box<PersistentThreadState> box, child) {
+							final replies = <_PostThreadCombo>[];
+							for (final s in box.values) {
+								if (s.thread != null) {
+									for (final r in s.receipts) {
+										final reply = s.thread!.posts.tryFirstWhere((p) => p.id == r.id);
+										if (reply != null) {
+											replies.add(_PostThreadCombo(
+												post: reply,
+												thread: s.thread!
+											));
+										}
+									}
+								}
+							}
+							return RefreshableList<_PostThreadCombo>(
+								listUpdater: () => throw UnimplementedError(),
+								id: 'yourPosts',
+								disableUpdates: true,
+								initialList: replies,
+								itemBuilder: (context, item) => ChangeNotifierProvider<PostSpanZoneData>(
+									create: (context) => PostSpanRootZoneData(
+										site: context.read<ImageboardSite>(),
+										thread: item.thread,
+										semanticRootId: -8
+									),
+									child: PostRow(
+										post: item.post,
+										isSelected: item == selected,
+										onTap: () => setter(item)
+									)
+								)
+							);
+						}
+					),
+					detailBuilder: (selected, poppedOut) => BuiltDetailPane(
+						widget: selected == null ? _placeholder('Select a post') : ThreadPage(
+							thread: selected.post.threadIdentifier,
+							initialPostId: selected.post.id,
+						),
+						pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
+					)
+				),
 				MultiMasterPane<SavedPost>(
 					id: 'savedPosts',
 					navigationBar: _navigationBar('Saved Posts'),
@@ -177,25 +248,22 @@ class _SavedPageState extends State<SavedPage> {
 										thread: savedPost.thread,
 										semanticRootId: -2
 									),
-									child: GestureDetector(
-										behavior: HitTestBehavior.opaque,
-										child: PostRow(
-											post: savedPost.post,
-											isSelected: savedPost == selected,
-											onThumbnailTap: (initialAttachment) {
-												final attachments = _postListController.items.where((_) => _.thread.attachment != null).map((_) => _.thread.attachment!).toList();
-												showGallery(
-													context: context,
-													attachments: attachments,
-													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-													onChange: (attachment) {
-														_postListController.animateTo((p) => p.thread.attachment?.id == attachment.id);
-													},
-													semanticParentIds: [-2]
-												);
-											}
-										),
-										onTap: () => setter(savedPost)
+									child: PostRow(
+										post: savedPost.post,
+										isSelected: savedPost == selected,
+										onTap: () => setter(savedPost),
+										onThumbnailTap: (initialAttachment) {
+											final attachments = _postListController.items.where((_) => _.thread.attachment != null).map((_) => _.thread.attachment!).toList();
+											showGallery(
+												context: context,
+												attachments: attachments,
+												initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+												onChange: (attachment) {
+													_postListController.animateTo((p) => p.thread.attachment?.id == attachment.id);
+												},
+												semanticParentIds: [-2]
+											);
+										}
 									)
 								),
 								filterHint: 'Search saved threads'
