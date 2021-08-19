@@ -6,7 +6,6 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 
 class Captcha4ChanCustom extends StatefulWidget {
