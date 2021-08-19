@@ -209,13 +209,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 				onGenerateRoute: (RouteSettings settings) {
 					return FullWidthCupertinoPageRoute(
 						builder: (context) {
-							return IndexedStack(
-								index: _tabController.index,
-								children: widget.panes.map((p) => ExcludeFocus(
-									child: p.buildDetail(),
-									excluding: widget.panes.indexOf(p) != _tabController.index
-								)).toList()
-							);
+							return widget.panes[_tabController.index].buildDetail();
 						},
 						settings: settings
 					);

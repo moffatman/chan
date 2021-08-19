@@ -19,7 +19,7 @@ const double _OVERSCROLL_TRIGGER_THRESHOLD = 100;
 class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
 	final List<T>? initialList;
-	final Future<List<T>> Function() listUpdater;
+	final Future<List<T>?> Function() listUpdater;
 	final String id;
 	final RefreshableListController? controller;
 	final String? filterHint;
@@ -150,15 +150,17 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				this.updatingNow = true;
 			});
 			final newData = await widget.listUpdater();
-			widget.controller?.setItems(newData);
 			resetTimer();
-			setState(() {
-				this.errorMessage = null;
-				this.errorType = null;
-				this.updatingNow = false;
-				this.list = newData;
-				this.lastUpdateTime = DateTime.now();
-			});
+			if (newData != null) {
+				widget.controller?.setItems(newData);
+				setState(() {
+					this.errorMessage = null;
+					this.errorType = null;
+					this.updatingNow = false;
+					this.list = newData;
+					this.lastUpdateTime = DateTime.now();
+				});
+			}
 		}
 		catch (e, st) {
 			if (mounted) {
@@ -508,19 +510,20 @@ class RefreshableListController<T extends Filterable> {
 		}
 		slowScrollUpdates.add(null);
 	}
+	void _onScrollControllerNotification() {
+		_scrollStream.add(null);
+	}
 	void attach(RefreshableListState<T> list) {
 		WidgetsBinding.instance!.addPostFrameCallback((_) {
 			scrollController = PrimaryScrollController.of(list.context);
-			scrollController!.addListener(() {
-				_scrollStream.add(null);
-			});
+			scrollController!.addListener(_onScrollControllerNotification);
 		});
 	}
 	void dispose() {
 		_scrollStream.close();
 		_slowScrollSubscription.cancel();
+		scrollController?.removeListener(_onScrollControllerNotification);
 		slowScrollUpdates.close();
-		scrollController?.dispose();
 		overscrollFactor.dispose();
 	}
 	void newContentId(String contentId) {

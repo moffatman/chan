@@ -282,32 +282,37 @@ class _ThreadPageState extends State<ThreadPage> {
 																				)
 																			},
 																			listUpdater: () async {
-																				final _thread = persistentState.useArchive ? 
+																				final _persistentState = persistentState;
+																				// The thread might switch in this interval
+																				final _thread = _persistentState.useArchive ? 
 																					await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
 																					await context.read<ImageboardSite>().getThread(widget.thread);
-																				final bool firstLoad = persistentState.thread == null;
-																				if (_thread != persistentState.thread) {
-																					persistentState.thread = _thread;
-																					zone.thread = _thread;
-																					if (firstLoad) await _blockAndScrollToPostIfNeeded();
-																					await persistentState.save();
+																				final bool firstLoad = _persistentState.thread == null;
+																				if (_thread != _persistentState.thread) {
+																					_persistentState.thread = _thread;
+																					if (persistentState == _persistentState) {
+																						zone.thread = _thread;
+																						if (firstLoad) await _blockAndScrollToPostIfNeeded();
+																					}
+																					await _persistentState.save();
 																					setState(() {});
-																					// The thread might switch in this interval
-																					final thisThreadId = _thread.identifier;
 																					Future.delayed(Duration(milliseconds: 100), () {
-																						if (persistentState.thread?.identifier == thisThreadId && !_unnaturallyScrolling) {
+																						if (persistentState == _persistentState && !_unnaturallyScrolling) {
 																							if (_listController.lastVisibleIndex != -1) {
-																								persistentState.lastSeenPostId = max(persistentState.lastSeenPostId ?? 0, persistentState.thread!.posts[_listController.lastVisibleIndex].id);  
-																								persistentState.save();
+																								_persistentState.lastSeenPostId = max(_persistentState.lastSeenPostId ?? 0, _persistentState.thread!.posts[_listController.lastVisibleIndex].id);  
+																								_persistentState.save();
 																								setState(() {});
 																							}
 																							else {
-																								print('Failed to find last visible post after an update in $thisThreadId');
+																								print('Failed to find last visible post after an update in $_persistentState');
 																							}
 																						}
 																					});
 																				}
-																				return _thread.posts;
+																				// Don't show data if the thread switched
+																				if (persistentState == _persistentState) {
+																					return _thread.posts;
+																				}
 																			},
 																			controller: _listController,
 																			itemBuilder: (context, post) {
