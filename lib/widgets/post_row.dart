@@ -70,7 +70,7 @@ class PostRow extends StatelessWidget {
 												// Placeholder to guarantee the stacked reply button is not on top of text
 												if (settings.useTouchLayout && _post.replyIds.isNotEmpty) TextSpan(
 													text: List.filled(_post.replyIds.length.toString().length + 3, '1').join(),
-													style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor)
+													style: TextStyle(color: Colors.transparent)
 												)
 											]
 										),
