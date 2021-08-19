@@ -66,9 +66,10 @@ class _ThreadPageState extends State<ThreadPage> {
 				blocked = true;
 				_unnaturallyScrolling = true;
 			});
+			final alignment = (scrollToId == widget.initialPostId) ? 0.0 : 1.0;
 			try {
 				await WidgetsBinding.instance!.endOfFrame;
-				await _listController.animateTo((post) => post.id == scrollToId, orElseLast: (post) => post.id <= scrollToId, alignment: 1.0, duration: Duration(milliseconds: 1));
+				await _listController.animateTo((post) => post.id == scrollToId, orElseLast: (post) => post.id <= scrollToId, alignment: alignment, duration: Duration(milliseconds: 1));
 				await WidgetsBinding.instance!.endOfFrame;
 			}
 			catch (e, st) {
@@ -129,6 +130,9 @@ class _ThreadPageState extends State<ThreadPage> {
 			persistentState.save();
 			_blockAndScrollToPostIfNeeded();
 			setState(() {});
+		}
+		else if (widget.initialPostId != old.initialPostId && widget.initialPostId != null) {
+			_listController.animateTo((post) => post.id == widget.initialPostId!, orElseLast: (post) => post.id <= widget.initialPostId!, alignment: 0.0, duration: Duration(milliseconds: 500));
 		}
 	}
 

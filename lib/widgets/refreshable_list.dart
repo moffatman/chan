@@ -597,7 +597,7 @@ class RefreshableListController<T extends Filterable> {
 			c = Curves.easeOut;
 		}
 		final atAlignment0 = targetItem.cachedOffset! - topOffset!;
-		final alignmentSlidingWindow = scrollController!.position.viewportDimension - targetItem.context!.findRenderObject()!.semanticBounds.size.height - topOffset! - bottomOffset!;
+		final alignmentSlidingWindow = scrollController!.position.viewportDimension - targetItem.cachedHeight! - topOffset! - bottomOffset!;
 		if (targetItem == _items.last) {
 			await scrollController!.animateTo(
 				scrollController!.position.maxScrollExtent,
