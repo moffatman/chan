@@ -60,7 +60,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 
 	Offset _getDeltaForDetails(Offset delta);
 	double? _getPrimaryValueFromOffset(Offset value);
-	bool _hasSufficientGlobalDistanceToAccept(PointerEvent pointerEvent);
+	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop);
 
 	final Map<int, VelocityTracker> _velocityTrackers = <int, VelocityTracker>{};
 	final Map<int, Duration> _pointerDownTimes = <int, Duration>{};
@@ -150,7 +150,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 					untransformedDelta: movedLocally,
 					untransformedEndPosition: event.localPosition,
 				).distance * (_getPrimaryValueFromOffset(movedLocally) ?? 1).sign;
-				if (_hasSufficientGlobalDistanceToAccept(event))
+				if (_hasSufficientGlobalDistanceToAccept(event, gestureSettings?.touchSlop))
 					resolve(GestureDisposition.accepted);
 			}
 		}
@@ -348,14 +348,14 @@ class WeakVerticalDragGestureRecognizer extends WeakDragGestureRecognizer {
 	@override
 	bool isFlingGesture(VelocityEstimate estimate, PointerDeviceKind kind) {
 		final double minVelocity = minFlingVelocity ?? kMinFlingVelocity;
-		final double minDistance = minFlingDistance ?? computeHitSlop(kind);
+		final double minDistance = minFlingDistance ?? computeHitSlop(kind, gestureSettings);
 		return estimate.pixelsPerSecond.dy.abs() > minVelocity && estimate.offset.dy.abs() > minDistance;
 	}
 
 	@override
-	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event) {
-		return _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind)) || (
-			(_globalDistanceMoved.abs() > computeHitSlop(event.kind)) &&
+	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop) {
+		return _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind, gestureSettings)) || (
+			(_globalDistanceMoved.abs() > computeHitSlop(event.kind, gestureSettings)) &&
 			_hasSufficientDurationToAccept(event)
 		);
 	}
@@ -382,14 +382,14 @@ class WeakHorizontalDragGestureRecognizer extends WeakDragGestureRecognizer {
 	@override
 	bool isFlingGesture(VelocityEstimate estimate, PointerDeviceKind kind) {
 		final double minVelocity = minFlingVelocity ?? kMinFlingVelocity;
-		final double minDistance = minFlingDistance ?? computeHitSlop(kind);
+		final double minDistance = minFlingDistance ?? computeHitSlop(kind, gestureSettings);
 		return estimate.pixelsPerSecond.dx.abs() > minVelocity && estimate.offset.dx.abs() > minDistance;
 	}
 
 	@override
-	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event) {
-		return _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind)) || (
-			(_globalDistanceMoved.abs() > computeHitSlop(event.kind)) &&
+	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop) {
+		return _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind, gestureSettings)) || (
+			(_globalDistanceMoved.abs() > computeHitSlop(event.kind, gestureSettings)) &&
 			_hasSufficientDurationToAccept(event)
 		);
 	}
@@ -415,15 +415,15 @@ class WeakPanGestureRecognizer extends WeakDragGestureRecognizer {
 	@override
 	bool isFlingGesture(VelocityEstimate estimate, PointerDeviceKind kind) {
 		final double minVelocity = minFlingVelocity ?? kMinFlingVelocity;
-		final double minDistance = minFlingDistance ?? computeHitSlop(kind);
+		final double minDistance = minFlingDistance ?? computeHitSlop(kind, gestureSettings);
 		return estimate.pixelsPerSecond.distanceSquared > minVelocity * minVelocity
 				&& estimate.offset.distanceSquared > minDistance * minDistance;
 	}
 
 	@override
-	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event) {
-		return _globalDistanceMoved.abs() > (weakness * computePanSlop(event.kind)) || (
-			(_globalDistanceMoved.abs() > computePanSlop(event.kind)) &&
+	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop) {
+		return _globalDistanceMoved.abs() > (weakness * computePanSlop(event.kind, gestureSettings)) || (
+			(_globalDistanceMoved.abs() > computePanSlop(event.kind, gestureSettings)) &&
 			_hasSufficientDurationToAccept(event)
 		);
 	}
