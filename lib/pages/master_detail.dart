@@ -181,7 +181,12 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 													child: TabBar(
 														controller: _tabController,
-														tabs: widget.panes.map((pane) => Tab(icon: Icon(pane.icon))).toList()
+														tabs: widget.panes.map((pane) => Tab(
+															icon: Icon(
+																pane.icon,
+																color: CupertinoTheme.of(context).primaryColor
+															)
+														)).toList()
 													)
 												)
 											),
