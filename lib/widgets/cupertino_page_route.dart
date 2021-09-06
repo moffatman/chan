@@ -387,7 +387,7 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 	void initState() {
 		super.initState();
 		// This value was estimated from some iOS behaviours
-		_recognizer = WeakHorizontalDragGestureRecognizer(weakness: 2.5, debugOwner: this)
+		_recognizer = WeakHorizontalDragGestureRecognizer(weakness: 2.5, sign: 1, debugOwner: this)
 		..onStart = _handleDragStart
 		..onUpdate = _handleDragUpdate
 		..onEnd = _handleDragEnd

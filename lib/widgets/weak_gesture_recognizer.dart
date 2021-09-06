@@ -338,9 +338,11 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 
 class WeakVerticalDragGestureRecognizer extends WeakDragGestureRecognizer {
 	final double weakness;
+	final double? sign;
 
 	WeakVerticalDragGestureRecognizer({
 		required this.weakness,
+		this.sign,
 		Object? debugOwner,
 		Set<PointerDeviceKind>? supportedDevices
 	}) : super(debugOwner: debugOwner, supportedDevices: supportedDevices);
@@ -354,7 +356,7 @@ class WeakVerticalDragGestureRecognizer extends WeakDragGestureRecognizer {
 
 	@override
 	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop) {
-		return _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind, gestureSettings)) || (
+		return (sign != null && _globalDistanceMoved.sign == sign!.sign) &&  _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind, gestureSettings)) || (
 			(_globalDistanceMoved.abs() > computeHitSlop(event.kind, gestureSettings)) &&
 			_hasSufficientDurationToAccept(event)
 		);
@@ -372,9 +374,11 @@ class WeakVerticalDragGestureRecognizer extends WeakDragGestureRecognizer {
 
 class WeakHorizontalDragGestureRecognizer extends WeakDragGestureRecognizer {
 	final double weakness;
+	final double? sign;
 
 	WeakHorizontalDragGestureRecognizer({
 		required this.weakness,
+		this.sign,
 		Object? debugOwner,
 		Set<PointerDeviceKind>? supportedDevices
 	}) : super(debugOwner: debugOwner, supportedDevices: supportedDevices);
@@ -388,7 +392,7 @@ class WeakHorizontalDragGestureRecognizer extends WeakDragGestureRecognizer {
 
 	@override
 	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop) {
-		return _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind, gestureSettings)) || (
+		return (sign != null && _globalDistanceMoved.sign == sign!.sign) &&  _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind, gestureSettings)) || (
 			(_globalDistanceMoved.abs() > computeHitSlop(event.kind, gestureSettings)) &&
 			_hasSufficientDurationToAccept(event)
 		);
@@ -406,9 +410,11 @@ class WeakHorizontalDragGestureRecognizer extends WeakDragGestureRecognizer {
 
 class WeakPanGestureRecognizer extends WeakDragGestureRecognizer {
 	final double weakness;
+	final double? sign;
 
 	WeakPanGestureRecognizer({
 		required this.weakness,
+		this.sign,
 		Object? debugOwner
 	}) : super(debugOwner: debugOwner);
 
@@ -422,7 +428,7 @@ class WeakPanGestureRecognizer extends WeakDragGestureRecognizer {
 
 	@override
 	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop) {
-		return _globalDistanceMoved.abs() > (weakness * computePanSlop(event.kind, gestureSettings)) || (
+		return (sign != null && _globalDistanceMoved.sign == sign!.sign) && _globalDistanceMoved.abs() > (weakness * computePanSlop(event.kind, gestureSettings)) || (
 			(_globalDistanceMoved.abs() > computePanSlop(event.kind, gestureSettings)) &&
 			_hasSufficientDurationToAccept(event)
 		);

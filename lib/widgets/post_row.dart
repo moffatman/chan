@@ -7,6 +7,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/slider_builder.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:flutter/cupertino.dart';
@@ -52,7 +53,19 @@ class PostRow extends StatelessWidget {
 				final zone = context.watch<PostSpanZoneData>();
 				final settings = context.watch<EffectiveSettings>();
 				final receipt = zone.threadState?.receipts.tryFirstWhere((r) => r.id == _post.id);
-				final content = PostSpanZone(
+				final openReplies = () {
+					if (_post.replyIds.isNotEmpty) {
+						Navigator.of(context).push(
+							TransparentRoute(
+								builder: (ctx) => PostsPage(
+									postsIdsToShow: _post.replyIds,
+									zone: zone.childZoneFor(_post.id)
+								)
+							)
+						);
+					}
+				};
+				final content = (double factor) => PostSpanZone(
 					postId: _post.id,
 					builder: (ctx) => Container(
 						padding: EdgeInsets.all(8),
@@ -83,31 +96,30 @@ class PostRow extends StatelessWidget {
 										child: CupertinoButton(
 											alignment: Alignment.bottomRight,
 											padding: EdgeInsets.zero,
-											child: Row(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													Icon(
-														Icons.reply_rounded,
-														color: Colors.red,
-														size: 14
-													),
-													SizedBox(width: 4),
-													Text(
-														_post.replyIds.length.toString(),
-														style: TextStyle(
+											child: Transform.scale(
+												alignment: Alignment.bottomRight,
+												scale: 1 + factor.clamp(0, 1),
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Icon(
+															Icons.reply_rounded,
 															color: Colors.red,
-															fontWeight: FontWeight.bold,
+															size: 14
+														),
+														SizedBox(width: 4),
+														Text(
+															_post.replyIds.length.toString(),
+															style: TextStyle(
+																color: Colors.red,
+																fontWeight: FontWeight.bold,
+																fontSize: 14
+															)
 														)
-													)
-												]
-											),
-											onPressed: () => Navigator.of(context).push(
-												TransparentRoute(
-													builder: (ctx) => PostsPage(
-														postsIdsToShow: _post.replyIds,
-														zone: zone.childZoneFor(_post.id)																					)
+													]
 												)
-											)
+											),
+											onPressed: openReplies
 										)
 									)
 								)
@@ -185,107 +197,111 @@ class PostRow extends StatelessWidget {
 							)
 						]
 					],
-					child: GestureDetector(
-						onTap: onTap,
-						child: Container(
-							padding: EdgeInsets.all(8),
-							decoration: BoxDecoration(
-								border: zone.stackIds.isNotEmpty ? Border.all(width: 0) : null,
-								color: isSelected ? ((CupertinoTheme.of(context).brightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
-							),
-							child: Column(
-								mainAxisSize: MainAxisSize.min,
-								crossAxisAlignment: CrossAxisAlignment.start,
-								children: [
-									PostSpanZone(
-										postId: _post.id,
-										builder: (ctx) => Text.rich(
-											TextSpan(
-												children: [
-													TextSpan(
-														text: _post.name + ((receipt != null) ? ' (You)' : ''),
-														style: TextStyle(fontWeight: FontWeight.w600, color: (receipt != null) ? Colors.red : null)
-													),
-													if (_post.posterId != null) IDSpan(
-														id: _post.posterId!,
-														onPressed: () => Navigator.of(context).push(TransparentRoute(
-															builder: (ctx) => PostsPage(
-																postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
-																zone: zone														)
-														))
-													),
-													if (_post.flag != null) ...[
-														FlagSpan(_post.flag!),
+					child: SliderBuilder(
+						onActivation: openReplies,
+						builder: (context, slideFactor) => GestureDetector(
+							onTap: onTap,
+							child: Container(
+								padding: EdgeInsets.all(8),
+								decoration: BoxDecoration(
+									border: zone.stackIds.isNotEmpty ? Border.all(width: 0) : null,
+									color: isSelected ? ((CupertinoTheme.of(context).brightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
+								),
+								child: Column(
+									mainAxisSize: MainAxisSize.min,
+									crossAxisAlignment: CrossAxisAlignment.start,
+									children: [
+										PostSpanZone(
+											postId: _post.id,
+											builder: (ctx) => Text.rich(
+												TextSpan(
+													children: [
 														TextSpan(
-															text: _post.flag!.name,
-															style: TextStyle(
-																fontStyle: FontStyle.italic
-															)
-														)
-													],
-													TextSpan(
-														text: formatTime(_post.time)
-													),
-													TextSpan(
-														text: _post.id.toString(),
-														style: TextStyle(color: Colors.grey),
-														recognizer: TapGestureRecognizer()..onTap = () {
-															context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
-														}
-													),
-													if (!settings.useTouchLayout) ...[
-														..._post.replyIds.map((id) => PostQuoteLinkSpan(
-															board: _post.board,
-															threadId: _post.threadId,
-															postId: id,
-															dead: false
-														).build(ctx, PostSpanRenderOptions(
-															showCrossThreadLabel: showCrossThreadLabel,
-															addExpandingPosts: false
-														))),
-														..._post.replyIds.map((id) => WidgetSpan(
-															child: ExpandingPost(id),
-														))
-													]
-												].expand((span) => [TextSpan(text: ' '), span]).skip(1).toList()
-											)
-										)
-									),
-									SizedBox(height: 2),
-									Flexible(
-										child: IntrinsicHeight(
-											child: Row(
-												crossAxisAlignment: CrossAxisAlignment.stretch,
-												mainAxisAlignment: MainAxisAlignment.start,
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													if (_post.attachment != null) Align(
-														alignment: Alignment.topCenter,
-														child: GestureDetector(
-															child: AttachmentThumbnail(
-																attachment: _post.attachment!,
-																thread: _post.threadIdentifier,
-																hero: AttachmentSemanticLocation(
-																	attachment: _post.attachment!,
-																	semanticParents: zone.stackIds
+															text: _post.name + ((receipt != null) ? ' (You)' : ''),
+															style: TextStyle(fontWeight: FontWeight.w600, color: (receipt != null) ? Colors.red : null)
+														),
+														if (_post.posterId != null) IDSpan(
+															id: _post.posterId!,
+															onPressed: () => Navigator.of(context).push(TransparentRoute(
+																builder: (ctx) => PostsPage(
+																	postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
+																	zone: zone
 																)
-															),
-															onTap: () {
-																onThumbnailTap?.call(_post.attachment!);
+															))
+														),
+														if (_post.flag != null) ...[
+															FlagSpan(_post.flag!),
+															TextSpan(
+																text: _post.flag!.name,
+																style: TextStyle(
+																	fontStyle: FontStyle.italic
+																)
+															)
+														],
+														TextSpan(
+															text: formatTime(_post.time)
+														),
+														TextSpan(
+															text: _post.id.toString(),
+															style: TextStyle(color: Colors.grey),
+															recognizer: TapGestureRecognizer()..onTap = () {
+																context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
 															}
+														),
+														if (!settings.useTouchLayout) ...[
+															..._post.replyIds.map((id) => PostQuoteLinkSpan(
+																board: _post.board,
+																threadId: _post.threadId,
+																postId: id,
+																dead: false
+															).build(ctx, PostSpanRenderOptions(
+																showCrossThreadLabel: showCrossThreadLabel,
+																addExpandingPosts: false
+															))),
+															..._post.replyIds.map((id) => WidgetSpan(
+																child: ExpandingPost(id),
+															))
+														]
+													].expand((span) => [TextSpan(text: ' '), span]).skip(1).toList()
+												)
+											)
+										),
+										SizedBox(height: 2),
+										Flexible(
+											child: IntrinsicHeight(
+												child: Row(
+													crossAxisAlignment: CrossAxisAlignment.stretch,
+													mainAxisAlignment: MainAxisAlignment.start,
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														if (_post.attachment != null) Align(
+															alignment: Alignment.topCenter,
+															child: GestureDetector(
+																child: AttachmentThumbnail(
+																	attachment: _post.attachment!,
+																	thread: _post.threadIdentifier,
+																	hero: AttachmentSemanticLocation(
+																		attachment: _post.attachment!,
+																		semanticParents: zone.stackIds
+																	)
+																),
+																onTap: () {
+																	onThumbnailTap?.call(_post.attachment!);
+																}
+															)
+														),
+														if (shrinkWrap) Flexible(
+															child: content(slideFactor)
 														)
-													),
-													if (shrinkWrap) Flexible(
-														child: content
-													)
-													else Expanded(
-														child: content
-													)
-												]
+														else Expanded(
+															child: content(slideFactor)
+														)
+													]
+												)
 											)
 										)
-									)
-								]
+									]
+								)
 							)
 						)
 					)
