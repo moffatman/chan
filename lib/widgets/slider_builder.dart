@@ -89,6 +89,10 @@ class _SliderBuilderState extends State<SliderBuilder> {
 			onPointerDown: (e) {
 				_recognizingRecognizer.addPointer(e);
 				_claimingRecognizer.addPointer(e);
+			},
+			onPointerGestureDown: (e) {
+				_recognizingRecognizer.addPointerGesture(e);
+				_claimingRecognizer.addPointerGesture(e);
 			}
 		);
 	}
