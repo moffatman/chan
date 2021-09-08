@@ -114,50 +114,47 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 		}
 	}
 
-	@override
-	void handleEvent(PointerEvent event) {
-		assert(_state != _DragState.ready);
-		if (!event.synthesized
-				&& (event is PointerDownEvent || event is PointerMoveEvent)) {
-			final VelocityTracker tracker = _velocityTrackers[event.pointer]!;
-			tracker.addPosition(event.timeStamp, event.localPosition);
-		}
+  @override
+  void handleEvent(PointerEvent event) {
+    assert(_state != _DragState.ready);
+    if (!event.synthesized
+        && (event is PointerDownEvent || event is PointerMoveEvent)) {
+      final VelocityTracker tracker = _velocityTrackers[event.pointer]!;
+      tracker.addPosition(event.timeStamp, event.localPosition);
+    }
 
-		if (event is PointerDownEvent) {
-			_pointerDownTimes[event.pointer] = event.timeStamp;
-		}
-		if (event is PointerMoveEvent) {
-			if (event.buttons != _initialButtons) {
-				_giveUpPointer(event.pointer);
-				return;
-			}
-			if (_state == _DragState.accepted) {
-				_checkUpdate(
-					sourceTimeStamp: event.timeStamp,
-					delta: _getDeltaForDetails(event.localDelta),
-					primaryDelta: _getPrimaryValueFromOffset(event.localDelta),
-					globalPosition: event.position,
-					localPosition: event.localPosition,
-				);
-			} else {
-				_pendingDragOffset += OffsetPair(local: event.localDelta, global: event.delta);
-				_lastPendingEventTimestamp = event.timeStamp;
-				_lastTransform = event.transform;
-				final Offset movedLocally = _getDeltaForDetails(event.localDelta);
-				final Matrix4? localToGlobalTransform = event.transform == null ? null : Matrix4.tryInvert(event.transform!);
-				_globalDistanceMoved += PointerEvent.transformDeltaViaPositions(
-					transform: localToGlobalTransform,
-					untransformedDelta: movedLocally,
-					untransformedEndPosition: event.localPosition,
-				).distance * (_getPrimaryValueFromOffset(movedLocally) ?? 1).sign;
-				if (_hasSufficientGlobalDistanceToAccept(event, gestureSettings?.touchSlop))
-					resolve(GestureDisposition.accepted);
-			}
-		}
-		if (event is PointerUpEvent || event is PointerCancelEvent) {
-			_giveUpPointer(event.pointer);
-		}
-	}
+    if (event is PointerMoveEvent) {
+      if (event.buttons != _initialButtons) {
+        _giveUpPointer(event.pointer);
+        return;
+      }
+      if (_state == _DragState.accepted) {
+        _checkUpdate(
+          sourceTimeStamp: event.timeStamp,
+          delta: _getDeltaForDetails(event.localDelta),
+          primaryDelta: _getPrimaryValueFromOffset(event.localDelta),
+          globalPosition: event.position,
+          localPosition: event.localPosition,
+        );
+      } else {
+        _pendingDragOffset += OffsetPair(local: event.localDelta, global: event.delta);
+        _lastPendingEventTimestamp = event.timeStamp;
+        _lastTransform = event.transform;
+        final Offset movedLocally = _getDeltaForDetails(event.localDelta);
+        final Matrix4? localToGlobalTransform = event.transform == null ? null : Matrix4.tryInvert(event.transform!);
+        _globalDistanceMoved += PointerEvent.transformDeltaViaPositions(
+          transform: localToGlobalTransform,
+          untransformedDelta: movedLocally,
+          untransformedEndPosition: event.localPosition,
+        ).distance * (_getPrimaryValueFromOffset(movedLocally) ?? 1).sign;
+        if (_hasSufficientGlobalDistanceToAccept(event, gestureSettings?.touchSlop))
+          resolve(GestureDisposition.accepted);
+      }
+    }
+    if (event is PointerUpEvent || event is PointerCancelEvent) {
+      _giveUpPointer(event.pointer);
+    }
+  }
 
 	final Set<int> _acceptedActivePointers = <int>{};
 
