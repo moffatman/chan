@@ -161,6 +161,20 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
+	Future<void> _switchToArchive() async {
+		persistentState.useArchive = true;
+		await persistentState.save();
+		setState(() {});
+		await _listController.blockAndUpdate();
+	}
+
+	Future<void> _switchToLive() async {
+		persistentState.useArchive = false;
+		await persistentState.save();
+		setState(() {});
+		await _listController.blockAndUpdate();
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final properScrollController = PrimaryScrollController.of(context)!;
@@ -268,8 +282,16 @@ class _ThreadPageState extends State<ThreadPage> {
 																							Spacer()
 																						],
 																						if (persistentState.thread!.isArchived) ...[
-																							Text('Archived '),
-																							Icon(Icons.archive, color: Colors.grey),
+																							GestureDetector(
+																								behavior: HitTestBehavior.opaque,
+																								child: Row(
+																									children: [
+																										Text('Archived '),
+																										Icon(Icons.archive, color: Colors.grey),
+																									]
+																								),
+																								onTap: _switchToLive
+																							),
 																							Spacer()
 																						]
 																					]
@@ -324,7 +346,8 @@ class _ThreadPageState extends State<ThreadPage> {
 																					post: post,
 																					onThumbnailTap: (attachment) {
 																						_showGallery(initialAttachment: attachment);
-																					}
+																					},
+																					onRequestArchive: _switchToArchive
 																				);
 																			},
 																			filteredItemBuilder: (context, post, resetPage) {
@@ -333,6 +356,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																					onThumbnailTap: (attachment) {
 																						_showGallery(initialAttachment: attachment);
 																					},
+																					onRequestArchive: _switchToArchive,
 																					onTap: () {
 																						resetPage();
 																						Future.delayed(Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));

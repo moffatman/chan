@@ -474,6 +474,7 @@ class RefreshableListController<T extends Filterable> {
 	double? topOffset;
 	double? bottomOffset;
 	String? contentId;
+	RefreshableListState<T>? state;
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onScroll);
 		slowScrollUpdates.listen(_onSlowScroll);
@@ -514,6 +515,7 @@ class RefreshableListController<T extends Filterable> {
 		_scrollStream.add(null);
 	}
 	void attach(RefreshableListState<T> list) {
+		state = list;
 		WidgetsBinding.instance!.addPostFrameCallback((_) {
 			scrollController = PrimaryScrollController.of(list.context);
 			scrollController!.addListener(_onScrollControllerNotification);
@@ -626,6 +628,11 @@ class RefreshableListController<T extends Filterable> {
 			return _items.lastIndexWhere((i) => (i.cachedOffset != null) && ((i.cachedOffset! + i.cachedHeight!) < (scrollController!.position.pixels + scrollController!.position.viewportDimension)));
 		}
 		return -1;
+	}
+	Future<void> blockAndUpdate() async {
+		state?.list = null;
+		setItems([]);
+		await state?.update();
 	}
 }
 

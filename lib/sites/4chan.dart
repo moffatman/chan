@@ -175,6 +175,7 @@ class Site4Chan extends ImageboardSite {
 			id: data['no'],
 			threadId: threadId,
 			attachment: _makeAttachment(board, threadId, data),
+			attachmentDeleted: data['filedeleted'] == 1,
 			spanFormat: PostSpanFormat.Chan4,
 			flag: _makeFlag(data),
 			posterId: data['id']
@@ -259,6 +260,7 @@ class Site4Chan extends ImageboardSite {
 				}).toList(),
 				id: data['posts'][0]['no'],
 				attachment: _makeAttachment(thread.board, thread.id, data['posts'][0]),
+				attachmentDeleted: data['posts'][0]['filedeleted'] == 1,
 				title: (title == null) ? null : unescape.convert(title),
 				isSticky: data['posts'][0]['sticky'] == 1,
 				time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),

@@ -57,6 +57,8 @@ class Post implements Filterable {
 	}
 	@HiveField(10)
 	List<int> replyIds = [];
+	@HiveField(11, defaultValue: false)
+	bool attachmentDeleted;
 	Post({
 		required this.board,
 		required this.text,
@@ -67,6 +69,7 @@ class Post implements Filterable {
 		required this.spanFormat,
 		this.flag,
 		this.attachment,
+		this.attachmentDeleted = false,
 		this.posterId,
 		this.foolfuukaLinkedPostThreadIds
 	});

@@ -68,6 +68,13 @@ class ThreadRow extends StatelessWidget {
 												)
 											)
 										]
+									)
+									else if (_thread.attachmentDeleted) Center(
+										child: SizedBox(
+											width: 75,
+											height: 75,
+											child: Icon(Icons.broken_image, size: 36)
+										)
 									),
 									Expanded(
 										child: Container(

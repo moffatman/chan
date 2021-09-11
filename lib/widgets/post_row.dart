@@ -1,3 +1,4 @@
+import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
@@ -28,6 +29,7 @@ class PostRow extends StatelessWidget {
 	final Post post;
 	final ValueChanged<Attachment>? onThumbnailTap;
 	final VoidCallback? onTap;
+	final VoidCallback? onRequestArchive;
 	final bool showCrossThreadLabel;
 	final bool allowTappingLinks;
 	final bool shrinkWrap;
@@ -37,6 +39,7 @@ class PostRow extends StatelessWidget {
 		required this.post,
 		this.onTap,
 		this.onThumbnailTap,
+		this.onRequestArchive,
 		this.showCrossThreadLabel = true,
 		this.allowTappingLinks = true,
 		this.shrinkWrap = false,
@@ -288,6 +291,17 @@ class PostRow extends StatelessWidget {
 																onTap: () {
 																	onThumbnailTap?.call(_post.attachment!);
 																}
+															)
+														)
+														else if (_post.attachmentDeleted) Center(
+															child: SizedBox(
+																width: 75,
+																height: 75,
+																child: GestureDetector(
+																	behavior: HitTestBehavior.opaque,
+																	child: Icon(Icons.broken_image, size: 36),
+																	onTap: onRequestArchive
+																)
 															)
 														),
 														if (shrinkWrap) Flexible(

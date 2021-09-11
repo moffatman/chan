@@ -38,6 +38,8 @@ class Thread implements Filterable {
 	int? uniqueIPCount;
 	@HiveField(14)
 	int? customSpoilerId;
+	@HiveField(15, defaultValue: false)
+	bool attachmentDeleted;
 	Thread({
 		required this.posts,
 		required this.isArchived,
@@ -46,6 +48,7 @@ class Thread implements Filterable {
 		required this.imageCount,
 		required this.id,
 		this.attachment,
+		this.attachmentDeleted = false,
 		required this.board,
 		required this.title,
 		required this.isSticky,
