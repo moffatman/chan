@@ -368,13 +368,22 @@ class AttachmentViewer extends StatelessWidget {
 											value: loadingValue
 										);
 									}
-									return Transform.translate(
-										offset: controller.gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero,
-										child: Transform.scale(
-											scale: (controller.gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (controller.gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
-											child: _child
-										)
+									final Rect? rect = controller.gestureKey.currentState?.gestureDetails?.destinationRect?.shift(controller.gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero);
+									final Widget __child = Transform.scale(
+										scale: (controller.gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (controller.gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
+										child: _child
 									);
+								  if (rect == null) {
+										return Positioned.fill(
+											child: __child
+										);
+									}
+									else {
+										return Positioned.fromRect(
+											rect: rect,
+											child: __child
+										);
+									}
 								}
 							)
 						]
