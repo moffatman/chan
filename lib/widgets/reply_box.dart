@@ -258,7 +258,7 @@ class ReplyBoxState extends State<ReplyBox> {
 								final entry = sources[i];
 								return GestureDetector(
 									onTap: () async {
-										final file = await ((entry.key.type == AttachmentType.Image) ? picker.getImage(source: entry.key.source) : picker.getVideo(source: entry.key.source));
+										final file = await ((entry.key.type == AttachmentType.Image) ? picker.pickImage(source: entry.key.source) : picker.pickVideo(source: entry.key.source));
 										if (file != null) {
 											Navigator.of(context).pop<File>(File(file.path));
 										}

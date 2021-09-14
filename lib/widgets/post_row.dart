@@ -1,4 +1,3 @@
-import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
@@ -320,7 +319,7 @@ class PostRow extends StatelessWidget {
 						)
 					)
 				);
-				if (context.watchOrNull<PostSpanZoneData>() == null) {
+				if (context.watch<PostSpanZoneData?>() == null) {
 					return ChangeNotifierProvider.value(
 						value: zone,
 						child: child

@@ -6,25 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:provider/provider.dart';
 
-extension NoThrowingProvider on BuildContext {
-	T? watchOrNull<T>() {
-		try {
-			return Provider.of<T>(this);
-		}
-		on ProviderNotFoundException {
-			return null;
-		}
-	}
-	T? readOrNull<T>() {
-		try {
-			return Provider.of<T>(this, listen: false);
-		}
-		on ProviderNotFoundException {
-			return null;
-		}
-	}
-}
-
 void alertError(BuildContext context, String error) {
   	showCupertinoDialog(
 		context: context,
