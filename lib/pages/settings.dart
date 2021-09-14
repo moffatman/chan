@@ -90,16 +90,16 @@ class SettingsPage extends StatelessWidget {
 								),
 								Container(
 									padding: EdgeInsets.all(16),
-									child: Text('Hide stickied threads'),
+									child: Text('Hide old stickied threads'),
 								),
 								CupertinoSegmentedControl<bool>(
 									children: {
 										false: Text('No'),
 										true: Text('Yes')
 									},
-									groupValue: settings.hideStickiedThreads,
+									groupValue: settings.hideOldStickiedThreads,
 									onValueChanged: (newValue) {
-										settings.hideStickiedThreads = newValue;
+										settings.hideOldStickiedThreads = newValue;
 									}
 								),
 								Container(

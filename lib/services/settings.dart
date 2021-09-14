@@ -50,7 +50,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(1)
 	ThemeSetting theme;
 	@HiveField(2)
-	bool hideStickiedThreads;
+	bool hideOldStickiedThreads;
 	@HiveField(3)
 	ThreadSortingMethod catalogSortingMethod;
 	@HiveField(4)
@@ -69,7 +69,7 @@ class SavedSettings extends HiveObject {
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
 		ThemeSetting? theme = ThemeSetting.System,
-		bool? hideStickiedThreads,
+		bool? hideOldStickiedThreads,
 		ThreadSortingMethod? catalogSortingMethod,
 		bool? reverseCatalogSorting,
 		ThreadSortingMethod? savedThreadsSortingMethod,
@@ -79,7 +79,7 @@ class SavedSettings extends HiveObject {
 		bool? useTouchLayout
 	}): this.autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.WiFi,
 		this.theme = theme ?? ThemeSetting.System,
-		this.hideStickiedThreads = hideStickiedThreads ?? false,
+		this.hideOldStickiedThreads = hideOldStickiedThreads ?? false,
 		this.catalogSortingMethod = catalogSortingMethod ?? ThreadSortingMethod.Unsorted,
 		this.reverseCatalogSorting = reverseCatalogSorting ?? false,
 		this.savedThreadsSortingMethod = savedThreadsSortingMethod ?? ThreadSortingMethod.SavedTime,
@@ -145,9 +145,9 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	bool get hideStickiedThreads => _settings.hideStickiedThreads;
-	set hideStickiedThreads(bool setting) {
-		_settings.hideStickiedThreads = setting;
+	bool get hideOldStickiedThreads => _settings.hideOldStickiedThreads;
+	set hideOldStickiedThreads(bool setting) {
+		_settings.hideOldStickiedThreads = setting;
 		_settings.save();
 		notifyListeners();
 	}

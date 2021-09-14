@@ -19,6 +19,8 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 
 import 'package:chan/pages/gallery.dart';
 
+const _OLD_THREAD_THRESHOLD = const Duration(days: 7);
+
 class BoardPage extends StatefulWidget {
 	final ImageboardBoard initialBoard;
 	final bool allowChangingBoard;
@@ -139,8 +141,11 @@ class _BoardPageState extends State<BoardPage> {
 						child: RefreshableList<Thread>(
 							controller: _listController,
 							listUpdater: () => site.getCatalog(board.name).then((list) {
-								if (settings.hideStickiedThreads) {
-									list = list.where((thread) => !thread.isSticky).toList();
+								final now = DateTime.now();
+								if (settings.hideOldStickiedThreads) {
+									list = list.where((thread) {
+										return !thread.isSticky || now.difference(thread.time).compareTo(_OLD_THREAD_THRESHOLD).isNegative;
+									}).toList();
 								}
 								if (settings.catalogSortingMethod == ThreadSortingMethod.ReplyCount) {
 									list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
