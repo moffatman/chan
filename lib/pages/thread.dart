@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:chan/models/post.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class OpenGalleryIntent extends Intent {
 	const OpenGalleryIntent();
@@ -40,6 +41,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	late PersistentThreadState persistentState;
 	bool showReplyBox = false;
 	final _subNavigatorKey = GlobalKey<NavigatorState>();
+	final _shareButtonKey = GlobalKey();
 
 	final _listController = RefreshableListController<Post>();
 	late PostSpanRootZoneData zone;
@@ -204,6 +206,16 @@ class _ThreadPageState extends State<ThreadPage> {
 									}
 									persistentState.save();
 									setState(() {});
+								}
+							),
+							CupertinoButton(
+								key: _shareButtonKey,
+								padding: EdgeInsets.zero,
+								child: Icon(Icons.ios_share),
+								onPressed: () {
+									final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+									final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+									Share.share(context.read<ImageboardSite>().getWebUrl(widget.thread), sharePositionOrigin: (offset != null && size != null) ? offset & size : null);
 								}
 							),
 							CupertinoButton(

@@ -29,7 +29,7 @@ dependencies:
   provider: "^5.0.0"
   extended_image: "^4.0.0"
   html_unescape: "^2.0.0"
-  share: "^2.0.0"
+  share_plus: "^2.1.4"
   extended_image_library: "^3.0.0"
   flutter_inappwebview: "^5.2.1"
   home_indicator: "^2.0.0"
