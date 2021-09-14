@@ -194,6 +194,7 @@ class _SavedPageState extends State<SavedPage> {
 									}
 								}
 							}
+							replies.sort((a, b) => b.post.time.compareTo(a.post.time));
 							return RefreshableList<_PostThreadCombo>(
 								listUpdater: () => throw UnimplementedError(),
 								id: 'yourPosts',
