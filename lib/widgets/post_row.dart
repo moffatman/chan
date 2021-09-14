@@ -114,8 +114,7 @@ class PostRow extends StatelessWidget {
 															_post.replyIds.length.toString(),
 															style: TextStyle(
 																color: Colors.red,
-																fontWeight: FontWeight.bold,
-																fontSize: 14
+																fontWeight: FontWeight.bold
 															)
 														)
 													]
