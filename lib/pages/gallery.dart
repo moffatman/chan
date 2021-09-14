@@ -272,7 +272,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	}
 
 	double _dragPopFactor(Offset offset, Size size) {
-		final threshold = math.sqrt(size.width * size.height) / 7.5;
+		final threshold = size.bottomRight(Offset.zero).distance / 6;
 		return offset.distance / threshold;
 	}
 
