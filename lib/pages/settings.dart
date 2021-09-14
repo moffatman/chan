@@ -28,7 +28,7 @@ class SettingsPage extends StatelessWidget {
 							maxWidth: 500
 						),
 						child: ListView(
-							physics: ClampingScrollPhysics(),
+							physics: BouncingScrollPhysics(),
 							children: [
 								Container(
 									padding: EdgeInsets.all(16),
