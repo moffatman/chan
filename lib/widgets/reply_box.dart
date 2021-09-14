@@ -701,6 +701,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				),
 				Expander(
 					expanded: widget.visible,
+					bottomSafe: !widget.visible,
 					height: (widget.threadId == null) ? 150 : 100,
 					child: Container(
 						decoration: BoxDecoration(

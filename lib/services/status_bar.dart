@@ -9,7 +9,7 @@ Future<void> showStatusBar() async {
 		await _platform.invokeMethod('showStatusBar');
 	}
 	else {
-		await SystemChrome.setEnabledSystemUIOverlays([SystemUiOverlay.top, SystemUiOverlay.bottom]);
+		await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 	}
 }
 
@@ -18,6 +18,6 @@ Future<void> hideStatusBar() async {
 		await _platform.invokeMethod('hideStatusBar');
 	}
 	else {
-		await SystemChrome.setEnabledSystemUIOverlays([]);
+		await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
 	}
 }

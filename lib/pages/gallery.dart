@@ -284,7 +284,9 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 			slidePageBackgroundHandler: (offset, size) {
 				_slideStream.add(null);
 				final factor = _dragPopFactor(offset, size);
-				_updateOverlays(factor > 1);
+				if (!showChrome) {
+					_updateOverlays(factor > 1);
+				}
 				return Colors.black.withOpacity((1 - factor.clamp(0, 1)));
 			},
 			slideEndHandler: (offset, {ScaleEndDetails? details, ExtendedImageSlidePageState? state}) {
@@ -457,11 +459,11 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													maintainAnimation: true,
 													child: Align(
 														alignment: Alignment.bottomCenter,
-														child: ClipRect(
-															child: BackdropFilter(
-																filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-																child: SafeArea(
-																	top: false,
+														child: SafeArea(
+															top: false,
+															child: ClipRect(
+																child: BackdropFilter(
+																	filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
 																	child: Column(
 																		mainAxisSize: MainAxisSize.min,
 																		crossAxisAlignment: CrossAxisAlignment.center,

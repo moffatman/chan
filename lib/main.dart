@@ -11,6 +11,7 @@ import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'sites/imageboard_site.dart';
 import 'sites/4chan.dart';
 import 'package:chan/pages/tab.dart';
@@ -25,6 +26,11 @@ void main() async {
 class ChanApp extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
+		SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+		SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+			systemNavigationBarColor: Colors.transparent,
+			systemNavigationBarDividerColor: Colors.transparent
+		));
 		return MultiProvider(
 			providers: [
 				ChangeNotifierProvider<EffectiveSettings>(create: (_) => EffectiveSettings()),
