@@ -272,7 +272,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	}
 
 	double _dragPopFactor(Offset offset, Size size) {
-		final threshold = size.bottomRight(Offset.zero).distance / 6;
+		final threshold = size.bottomRight(Offset.zero).distance / 3;
 		return offset.distance / threshold;
 	}
 
@@ -290,7 +290,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				return Colors.black.withOpacity((1 - factor.clamp(0, 1)));
 			},
 			slideEndHandler: (offset, {ScaleEndDetails? details, ExtendedImageSlidePageState? state}) {
-				return widget.allowScroll && (_dragPopFactor(offset, state!.pageSize) > 1);
+				return widget.allowScroll && ((details?.velocity ?? Velocity.zero) != Velocity.zero);
 			},
 			child: CupertinoTheme(
 				data: CupertinoThemeData(brightness: Brightness.dark, primaryColor: Colors.white),
