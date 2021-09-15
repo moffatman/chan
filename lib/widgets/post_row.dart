@@ -212,7 +212,7 @@ class PostRow extends StatelessWidget {
 									mainAxisSize: MainAxisSize.min,
 									crossAxisAlignment: CrossAxisAlignment.start,
 									children: [
-										Flexible(
+										ClipRect(
 											child: PostSpanZone(
 												postId: _post.id,
 												builder: (ctx) => Text.rich(
