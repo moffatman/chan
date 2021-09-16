@@ -39,7 +39,7 @@ class _SliderBuilderState extends State<SliderBuilder> {
 	}
 
 	void _handleDragEnd(DragEndDetails details) {
-		if (factor > 1) {
+		if (factor > 1 || details.velocity != Velocity.zero) {
 			widget.onActivation();
 		}
 		setState(() {
@@ -56,7 +56,11 @@ class _SliderBuilderState extends State<SliderBuilder> {
 	@override
 	Widget build(BuildContext context) {
 		return Listener(
-			child: widget.builder(context, factor),
+			child: TweenAnimationBuilder<double>(
+				tween: Tween<double>(begin: 0, end: factor),
+				duration: const Duration(milliseconds: 50),
+				builder: (context, _factor, child) => widget.builder(context, _factor)
+			),
 			onPointerDown: (e) => _recognizer.addPointer(e)
 		);
 	}
