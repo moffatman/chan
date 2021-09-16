@@ -437,6 +437,11 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 		}
 	}
 
+	void _handlePointerFlowStart(PointerFlowStartEvent event) {
+		if (widget.enabledCallback())
+			_recognizer.addPointerFlow(event);
+	}
+
 	double _convertToLogical(double value) {
 		switch (Directionality.of(context)) {
 			case TextDirection.rtl:
@@ -460,6 +465,7 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 					bottom: 0.0,
 					child: Listener(
 						onPointerDown: _handlePointerDown,
+						onPointerFlowStart: _handlePointerFlowStart,
 						behavior: HitTestBehavior.translucent,
 					),
 				),
