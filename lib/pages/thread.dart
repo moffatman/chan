@@ -382,7 +382,8 @@ class _ThreadPageState extends State<ThreadPage> {
 																builder: (context, a) {
 																	final redCount = persistentState.unseenRepliesToYou?.length ?? 0;
 																	final whiteCount = persistentState.unseenReplyCount ?? 0;
-																	final radiusAlone = BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8));
+																	const radius = const Radius.circular(8);
+																	const radiusAlone = const BorderRadius.all(radius);
 																	final scrollToBottom = () => _listController.animateTo((post) => post.id == persistentState.thread!.posts.last.id, alignment: 1.0);
 																	if (redCount > 0 || whiteCount > 0) {
 																		return SafeArea(
@@ -394,11 +395,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																						children: [
 																							if (redCount > 0) Container(
 																								decoration: BoxDecoration(
-																									borderRadius: (whiteCount > 0) ? BorderRadius.only(topLeft: Radius.circular(8)) : radiusAlone,
+																									borderRadius: (whiteCount > 0) ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
 																									color: Colors.red
 																								),
 																								padding: EdgeInsets.all(8),
-																								margin: (whiteCount > 0) ? null : EdgeInsets.only(right: 16),
+																								margin: EdgeInsets.only(bottom: 16, right: whiteCount == 0 ? 16 : 0),
 																								child: Text(
 																									redCount.toString(),
 																									textAlign: TextAlign.center
@@ -406,11 +407,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																							),
 																							if (whiteCount > 0) Container(
 																								decoration: BoxDecoration(
-																									borderRadius: (redCount > 0) ? BorderRadius.only(topRight: Radius.circular(8)) : radiusAlone,
+																									borderRadius: (redCount > 0) ? BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
 																									color: CupertinoTheme.of(context).primaryColor
 																								),
 																								padding: EdgeInsets.all(8),
-																								margin: EdgeInsets.only(right: 16),
+																								margin: EdgeInsets.only(right: 16, bottom: 16),
 																								child: Text(
 																									whiteCount.toString(),
 																									style: TextStyle(
