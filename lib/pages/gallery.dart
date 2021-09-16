@@ -326,24 +326,6 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 									padding: EdgeInsets.zero,
 									child: Icon(Icons.ios_share),
 									onPressed: canShare(currentAttachment) ? () => share(currentAttachment) : null
-								),
-								Material(
-									type: MaterialType.transparency,
-									color: Colors.transparent,
-									child: PopupMenuButton<_GalleryMenuSelection>(
-										onSelected: (selected) {
-											if (selected == _GalleryMenuSelection.ToggleAutorotate) {
-												settings.autoRotateInGallery = !settings.autoRotateInGallery;
-											}
-										},
-										itemBuilder: (context) => [
-											CheckedPopupMenuItem(
-												checked: settings.autoRotateInGallery,
-												value: _GalleryMenuSelection.ToggleAutorotate,
-												child: Text('Autorotate')
-											)
-										]
-									)
 								)
 							]
 						)
