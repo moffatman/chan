@@ -11,6 +11,7 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/hover_popup.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -174,12 +175,9 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
 				if (!zone.stackIds.contains(postId)) {
 					if (context.read<EffectiveSettings>().useTouchLayout) {
-						Navigator.of(context).push(
-							TransparentRoute(
-								builder: (ctx) => PostsPage(
-									zone: zone.childZoneFor(postId),
-									postsIdsToShow: [postId]								
-								)
+						WeakNavigator.push(context, PostsPage(
+								zone: zone.childZoneFor(postId),
+								postsIdsToShow: [postId]
 							)
 						);
 					}

@@ -10,6 +10,7 @@ import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/slider_builder.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/reply_box.dart';
+import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -57,12 +58,9 @@ class PostRow extends StatelessWidget {
 				final receipt = zone.threadState?.receipts.tryFirstWhere((r) => r.id == _post.id);
 				final openReplies = () {
 					if (_post.replyIds.isNotEmpty) {
-						Navigator.of(context).push(
-							TransparentRoute(
-								builder: (ctx) => PostsPage(
-									postsIdsToShow: _post.replyIds,
-									zone: zone.childZoneFor(_post.id)
-								)
+						WeakNavigator.push(context, PostsPage(
+								postsIdsToShow: _post.replyIds,
+								zone: zone.childZoneFor(_post.id)
 							)
 						);
 					}
@@ -121,6 +119,122 @@ class PostRow extends StatelessWidget {
 												)
 											),
 											onPressed: openReplies
+										)
+									)
+								)
+							]
+						)
+					)
+				);
+				final innerChild = (context, slideFactor) => GestureDetector(
+					onTap: onTap,
+					child: Container(
+						padding: EdgeInsets.all(8),
+						decoration: BoxDecoration(
+							border: zone.stackIds.isNotEmpty ? Border.all(width: 0) : null,
+							color: isSelected ? ((CupertinoTheme.of(context).brightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
+						),
+						child: Column(
+							mainAxisSize: MainAxisSize.min,
+							crossAxisAlignment: CrossAxisAlignment.start,
+							children: [
+								ClipRect(
+									child: PostSpanZone(
+										postId: _post.id,
+										builder: (ctx) => Text.rich(
+											TextSpan(
+												children: [
+													TextSpan(
+														text: _post.name + ((receipt != null) ? ' (You)' : ''),
+														style: TextStyle(fontWeight: FontWeight.w600, color: (receipt != null) ? Colors.red : null)
+													),
+													if (_post.posterId != null) IDSpan(
+														id: _post.posterId!,
+														onPressed: () => WeakNavigator.push(context, PostsPage(
+															postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
+															zone: zone
+														))
+													),
+													if (_post.flag != null) ...[
+														FlagSpan(_post.flag!),
+														TextSpan(
+															text: _post.flag!.name,
+															style: TextStyle(
+																fontStyle: FontStyle.italic
+															)
+														)
+													],
+													TextSpan(
+														text: formatTime(_post.time)
+													),
+													TextSpan(
+														text: _post.id.toString(),
+														style: TextStyle(color: Colors.grey),
+														recognizer: TapGestureRecognizer()..onTap = () {
+															context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
+														}
+													),
+													if (!settings.useTouchLayout) ...[
+														..._post.replyIds.map((id) => PostQuoteLinkSpan(
+															board: _post.board,
+															threadId: _post.threadId,
+															postId: id,
+															dead: false
+														).build(ctx, PostSpanRenderOptions(
+															showCrossThreadLabel: showCrossThreadLabel,
+															addExpandingPosts: false
+														))),
+														..._post.replyIds.map((id) => WidgetSpan(
+															child: ExpandingPost(id),
+														))
+													]
+												].expand((span) => [TextSpan(text: ' '), span]).skip(1).toList()
+											)
+										)
+									)
+								),
+								SizedBox(height: 2),
+								Flexible(
+									child: IntrinsicHeight(
+										child: Row(
+											crossAxisAlignment: CrossAxisAlignment.stretch,
+											mainAxisAlignment: MainAxisAlignment.start,
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												if (_post.attachment != null) Align(
+													alignment: Alignment.topCenter,
+													child: GestureDetector(
+														child: AttachmentThumbnail(
+															attachment: _post.attachment!,
+															thread: _post.threadIdentifier,
+															hero: AttachmentSemanticLocation(
+																attachment: _post.attachment!,
+																semanticParents: zone.stackIds
+															)
+														),
+														onTap: () {
+															onThumbnailTap?.call(_post.attachment!);
+														}
+													)
+												)
+												else if (_post.attachmentDeleted) Center(
+													child: SizedBox(
+														width: 75,
+														height: 75,
+														child: GestureDetector(
+															behavior: HitTestBehavior.opaque,
+															child: Icon(Icons.broken_image, size: 36),
+															onTap: onRequestArchive
+														)
+													)
+												),
+												if (shrinkWrap) Flexible(
+													child: content(slideFactor)
+												)
+												else Expanded(
+													child: content(slideFactor)
+												)
+											]
 										)
 									)
 								)
@@ -198,127 +312,13 @@ class PostRow extends StatelessWidget {
 							)
 						]
 					],
-					child: SliderBuilder(
-						onActivation: openReplies,
-						builder: (context, slideFactor) => GestureDetector(
-							onTap: onTap,
-							child: Container(
-								padding: EdgeInsets.all(8),
-								decoration: BoxDecoration(
-									border: zone.stackIds.isNotEmpty ? Border.all(width: 0) : null,
-									color: isSelected ? ((CupertinoTheme.of(context).brightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
-								),
-								child: Column(
-									mainAxisSize: MainAxisSize.min,
-									crossAxisAlignment: CrossAxisAlignment.start,
-									children: [
-										ClipRect(
-											child: PostSpanZone(
-												postId: _post.id,
-												builder: (ctx) => Text.rich(
-													TextSpan(
-														children: [
-															TextSpan(
-																text: _post.name + ((receipt != null) ? ' (You)' : ''),
-																style: TextStyle(fontWeight: FontWeight.w600, color: (receipt != null) ? Colors.red : null)
-															),
-															if (_post.posterId != null) IDSpan(
-																id: _post.posterId!,
-																onPressed: () => Navigator.of(context).push(TransparentRoute(
-																	builder: (ctx) => PostsPage(
-																		postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
-																		zone: zone
-																	)
-																))
-															),
-															if (_post.flag != null) ...[
-																FlagSpan(_post.flag!),
-																TextSpan(
-																	text: _post.flag!.name,
-																	style: TextStyle(
-																		fontStyle: FontStyle.italic
-																	)
-																)
-															],
-															TextSpan(
-																text: formatTime(_post.time)
-															),
-															TextSpan(
-																text: _post.id.toString(),
-																style: TextStyle(color: Colors.grey),
-																recognizer: TapGestureRecognizer()..onTap = () {
-																	context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
-																}
-															),
-															if (!settings.useTouchLayout) ...[
-																..._post.replyIds.map((id) => PostQuoteLinkSpan(
-																	board: _post.board,
-																	threadId: _post.threadId,
-																	postId: id,
-																	dead: false
-																).build(ctx, PostSpanRenderOptions(
-																	showCrossThreadLabel: showCrossThreadLabel,
-																	addExpandingPosts: false
-																))),
-																..._post.replyIds.map((id) => WidgetSpan(
-																	child: ExpandingPost(id),
-																))
-															]
-														].expand((span) => [TextSpan(text: ' '), span]).skip(1).toList()
-													)
-												)
-											)
-										),
-										SizedBox(height: 2),
-										Flexible(
-											child: IntrinsicHeight(
-												child: Row(
-													crossAxisAlignment: CrossAxisAlignment.stretch,
-													mainAxisAlignment: MainAxisAlignment.start,
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														if (_post.attachment != null) Align(
-															alignment: Alignment.topCenter,
-															child: GestureDetector(
-																child: AttachmentThumbnail(
-																	attachment: _post.attachment!,
-																	thread: _post.threadIdentifier,
-																	hero: AttachmentSemanticLocation(
-																		attachment: _post.attachment!,
-																		semanticParents: zone.stackIds
-																	)
-																),
-																onTap: () {
-																	onThumbnailTap?.call(_post.attachment!);
-																}
-															)
-														)
-														else if (_post.attachmentDeleted) Center(
-															child: SizedBox(
-																width: 75,
-																height: 75,
-																child: GestureDetector(
-																	behavior: HitTestBehavior.opaque,
-																	child: Icon(Icons.broken_image, size: 36),
-																	onTap: onRequestArchive
-																)
-															)
-														),
-														if (shrinkWrap) Flexible(
-															child: content(slideFactor)
-														)
-														else Expanded(
-															child: content(slideFactor)
-														)
-													]
-												)
-											)
-										)
-									]
-								)
-							)
-						)
-					)
+					child: (_post.replyIds.isNotEmpty) ? SliderBuilder(
+						popup: PostsPage(
+							postsIdsToShow: _post.replyIds,
+							zone: zone.childZoneFor(_post.id)
+						),
+						builder: innerChild
+					) : innerChild(context, 0.0)
 				);
 				if (context.watch<PostSpanZoneData?>() == null) {
 					return ChangeNotifierProvider.value(

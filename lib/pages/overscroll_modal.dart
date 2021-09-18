@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -64,13 +65,13 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
 		if (max(overscrollTop, overscrollBottom) > 50 - _scrollStopPosition) {
 			_popping = true;
-			Navigator.of(context).pop();
+			WeakNavigator.pop(context);
 		}
 		else if (_pointerInSpacer) {
 			_popping = true;
 			// Simulate onTap for the Spacers which fill the transparent space
 			// It's done here rather than using GestureDetector so it works during scroll-in
-			Navigator.of(context).pop();
+			WeakNavigator.pop(context);
 		}
 	}
 
@@ -107,7 +108,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 							child: Actions(
 								actions: {
 									DismissIntent: CallbackAction<DismissIntent>(
-										onInvoke: (i) => Navigator.of(context).pop()
+										onInvoke: (i) => WeakNavigator.pop(context)
 									)
 								},
 								child: Focus(

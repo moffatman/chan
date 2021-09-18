@@ -11,6 +11,7 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/models/post.dart';
@@ -258,205 +259,207 @@ class _ThreadPageState extends State<ThreadPage> {
 												},
 												child: Focus(
 													autofocus: true,
-													child: Stack(
-														fit: StackFit.expand,
-														children: [
-															ChangeNotifierProvider<PostSpanZoneData>.value(
-																value: zone,
-																child: PrimaryScrollController(
-																	controller: properScrollController,
-																	child: RefreshableList<Post>(
-																		id: '/${widget.thread.board}/${widget.thread.id}',
-																		disableUpdates: persistentState.thread?.isArchived ?? false,
-																		autoUpdateDuration: const Duration(seconds: 60),
-																		initialList: persistentState.thread?.posts,
-																		footer: Container(
-																			padding: EdgeInsets.all(16),
-																			child: (persistentState.thread == null) ? null : Row(
-																				children: [
-																					Spacer(),
-																					_limitCounter(persistentState.thread!.replyCount, Persistence.getBoard(widget.thread.board).threadCommentLimit),
-																					Icon(Icons.reply_rounded),
-																					Spacer(),
-																					_limitCounter(persistentState.thread!.imageCount, Persistence.getBoard(widget.thread.board).threadImageLimit),
-																					Icon(Icons.image),
-																					Spacer(),
-																					if (persistentState.thread!.uniqueIPCount != null) ...[
-																						Text('${persistentState.thread!.uniqueIPCount} '),
-																						Icon(Icons.person),
+													child: WeakNavigator(
+														child: Stack(
+															fit: StackFit.expand,
+															children: [
+																ChangeNotifierProvider<PostSpanZoneData>.value(
+																	value: zone,
+																	child: PrimaryScrollController(
+																		controller: properScrollController,
+																		child: RefreshableList<Post>(
+																			id: '/${widget.thread.board}/${widget.thread.id}',
+																			disableUpdates: persistentState.thread?.isArchived ?? false,
+																			autoUpdateDuration: const Duration(seconds: 60),
+																			initialList: persistentState.thread?.posts,
+																			footer: Container(
+																				padding: EdgeInsets.all(16),
+																				child: (persistentState.thread == null) ? null : Row(
+																					children: [
 																						Spacer(),
-																					],
-																					if (persistentState.thread!.currentPage != null) ...[
-																						_limitCounter(persistentState.thread!.currentPage!, Persistence.getBoard(widget.thread.board).pageCount),
-																						Icon(Icons.insert_drive_file_rounded),
-																						Spacer()
-																					],
-																					if (persistentState.thread!.isArchived) ...[
-																						GestureDetector(
-																							behavior: HitTestBehavior.opaque,
-																							child: Row(
-																								children: [
-																									Text('Archived '),
-																									Icon(Icons.archive, color: Colors.grey),
-																								]
+																						_limitCounter(persistentState.thread!.replyCount, Persistence.getBoard(widget.thread.board).threadCommentLimit),
+																						Icon(Icons.reply_rounded),
+																						Spacer(),
+																						_limitCounter(persistentState.thread!.imageCount, Persistence.getBoard(widget.thread.board).threadImageLimit),
+																						Icon(Icons.image),
+																						Spacer(),
+																						if (persistentState.thread!.uniqueIPCount != null) ...[
+																							Text('${persistentState.thread!.uniqueIPCount} '),
+																							Icon(Icons.person),
+																							Spacer(),
+																						],
+																						if (persistentState.thread!.currentPage != null) ...[
+																							_limitCounter(persistentState.thread!.currentPage!, Persistence.getBoard(widget.thread.board).pageCount),
+																							Icon(Icons.insert_drive_file_rounded),
+																							Spacer()
+																						],
+																						if (persistentState.thread!.isArchived) ...[
+																							GestureDetector(
+																								behavior: HitTestBehavior.opaque,
+																								child: Row(
+																									children: [
+																										Text('Archived '),
+																										Icon(Icons.archive, color: Colors.grey),
+																									]
+																								),
+																								onTap: _switchToLive
 																							),
-																							onTap: _switchToLive
-																						),
-																						Spacer()
+																							Spacer()
+																						]
 																					]
-																				]
-																			)
-																		),
-																		remedies: {
-																			ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
-																				child: Text('Try archive'),
-																				onPressed: () {
-																					persistentState.useArchive = true;
-																					persistentState.save();
-																					updater();
-																				}
-																			)
-																		},
-																		listUpdater: () async {
-																			final _persistentState = persistentState;
-																			// The thread might switch in this interval
-																			final _thread = _persistentState.useArchive ? 
-																				await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
-																				await context.read<ImageboardSite>().getThread(widget.thread);
-																			final bool firstLoad = _persistentState.thread == null;
-																			if (_thread != _persistentState.thread) {
-																				_persistentState.thread = _thread;
-																				if (persistentState == _persistentState) {
-																					zone.thread = _thread;
-																					if (firstLoad) await _blockAndScrollToPostIfNeeded();
-																				}
-																				await _persistentState.save();
-																				setState(() {});
-																				Future.delayed(Duration(milliseconds: 100), () {
-																					if (persistentState == _persistentState && !_unnaturallyScrolling) {
-																						if (_listController.lastVisibleIndex != -1) {
-																							_persistentState.lastSeenPostId = max(_persistentState.lastSeenPostId ?? 0, _persistentState.thread!.posts[_listController.lastVisibleIndex].id);  
-																							_persistentState.save();
-																							setState(() {});
-																						}
-																						else {
-																							print('Failed to find last visible post after an update in $_persistentState');
-																						}
+																				)
+																			),
+																			remedies: {
+																				ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
+																					child: Text('Try archive'),
+																					onPressed: () {
+																						persistentState.useArchive = true;
+																						persistentState.save();
+																						updater();
 																					}
-																				});
-																			}
-																			// Don't show data if the thread switched
-																			if (persistentState == _persistentState) {
-																				return _thread.posts;
-																			}
-																		},
-																		controller: _listController,
-																		itemBuilder: (context, post) {
-																			return PostRow(
-																				post: post,
-																				onThumbnailTap: (attachment) {
-																					_showGallery(initialAttachment: attachment);
-																				},
-																				onRequestArchive: _switchToArchive
-																			);
-																		},
-																		filteredItemBuilder: (context, post, resetPage) {
-																			return PostRow(
-																				post: post,
-																				onThumbnailTap: (attachment) {
-																					_showGallery(initialAttachment: attachment);
-																				},
-																				onRequestArchive: _switchToArchive,
-																				onTap: () {
-																					resetPage();
-																					Future.delayed(Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
+																				)
+																			},
+																			listUpdater: () async {
+																				final _persistentState = persistentState;
+																				// The thread might switch in this interval
+																				final _thread = _persistentState.useArchive ?
+																					await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
+																					await context.read<ImageboardSite>().getThread(widget.thread);
+																				final bool firstLoad = _persistentState.thread == null;
+																				if (_thread != _persistentState.thread) {
+																					_persistentState.thread = _thread;
+																					if (persistentState == _persistentState) {
+																						zone.thread = _thread;
+																						if (firstLoad) await _blockAndScrollToPostIfNeeded();
+																					}
+																					await _persistentState.save();
+																					setState(() {});
+																					Future.delayed(Duration(milliseconds: 100), () {
+																						if (persistentState == _persistentState && !_unnaturallyScrolling) {
+																							if (_listController.lastVisibleIndex != -1) {
+																								_persistentState.lastSeenPostId = max(_persistentState.lastSeenPostId ?? 0, _persistentState.thread!.posts[_listController.lastVisibleIndex].id);
+																								_persistentState.save();
+																								setState(() {});
+																							}
+																							else {
+																								print('Failed to find last visible post after an update in $_persistentState');
+																							}
+																						}
+																					});
 																				}
-																			);
-																		},
-																		filterHint: 'Search in thread'
+																				// Don't show data if the thread switched
+																				if (persistentState == _persistentState) {
+																					return _thread.posts;
+																				}
+																			},
+																			controller: _listController,
+																			itemBuilder: (context, post) {
+																				return PostRow(
+																					post: post,
+																					onThumbnailTap: (attachment) {
+																						_showGallery(initialAttachment: attachment);
+																					},
+																					onRequestArchive: _switchToArchive
+																				);
+																			},
+																			filteredItemBuilder: (context, post, resetPage) {
+																				return PostRow(
+																					post: post,
+																					onThumbnailTap: (attachment) {
+																						_showGallery(initialAttachment: attachment);
+																					},
+																					onRequestArchive: _switchToArchive,
+																					onTap: () {
+																						resetPage();
+																						Future.delayed(Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
+																					}
+																				);
+																			},
+																			filterHint: 'Search in thread'
+																		)
 																	)
-																)
-															),
-															StreamBuilder(
-																stream: _listController.slowScrollUpdates,
-																builder: (context, a) {
-																	final redCount = persistentState.unseenRepliesToYou?.length ?? 0;
-																	final whiteCount = persistentState.unseenReplyCount ?? 0;
-																	const radius = const Radius.circular(8);
-																	const radiusAlone = const BorderRadius.all(radius);
-																	final scrollToBottom = () => _listController.animateTo((post) => post.id == persistentState.thread!.posts.last.id, alignment: 1.0);
-																	if (redCount > 0 || whiteCount > 0) {
-																		return SafeArea(
-																			child: Align(
+																),
+																StreamBuilder(
+																	stream: _listController.slowScrollUpdates,
+																	builder: (context, a) {
+																		final redCount = persistentState.unseenRepliesToYou?.length ?? 0;
+																		final whiteCount = persistentState.unseenReplyCount ?? 0;
+																		const radius = const Radius.circular(8);
+																		const radiusAlone = const BorderRadius.all(radius);
+																		final scrollToBottom = () => _listController.animateTo((post) => post.id == persistentState.thread!.posts.last.id, alignment: 1.0);
+																		if (redCount > 0 || whiteCount > 0) {
+																			return SafeArea(
+																				child: Align(
+																					alignment: Alignment.bottomRight,
+																					child: GestureDetector(
+																						child: Row(
+																							mainAxisSize: MainAxisSize.min,
+																							children: [
+																								if (redCount > 0) Container(
+																									decoration: BoxDecoration(
+																										borderRadius: (whiteCount > 0) ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
+																										color: Colors.red
+																									),
+																									padding: EdgeInsets.all(8),
+																									margin: EdgeInsets.only(bottom: 16, right: whiteCount == 0 ? 16 : 0),
+																									child: Text(
+																										redCount.toString(),
+																										textAlign: TextAlign.center
+																									)
+																								),
+																								if (whiteCount > 0) Container(
+																									decoration: BoxDecoration(
+																										borderRadius: (redCount > 0) ? BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
+																										color: CupertinoTheme.of(context).primaryColor
+																									),
+																									padding: EdgeInsets.all(8),
+																									margin: EdgeInsets.only(right: 16, bottom: 16),
+																									child: Text(
+																										whiteCount.toString(),
+																										style: TextStyle(
+																											color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																										),
+																										textAlign: TextAlign.center
+																									)
+																								)
+																							]
+																						),
+																						onTap: () => _listController.animateTo((post) => post.id == persistentState.lastSeenPostId, alignment: 1.0),
+																						onLongPress: scrollToBottom
+																					)
+																				)
+																			);
+																		}
+																		else if ((persistentState.thread != null) && (_listController.lastVisibleIndex != -1) && (_listController.lastVisibleIndex != persistentState.thread!.posts.length - 1)) {
+																			return Align(
 																				alignment: Alignment.bottomRight,
 																				child: GestureDetector(
-																					child: Row(
-																						mainAxisSize: MainAxisSize.min,
-																						children: [
-																							if (redCount > 0) Container(
-																								decoration: BoxDecoration(
-																									borderRadius: (whiteCount > 0) ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
-																									color: Colors.red
-																								),
-																								padding: EdgeInsets.all(8),
-																								margin: EdgeInsets.only(bottom: 16, right: whiteCount == 0 ? 16 : 0),
-																								child: Text(
-																									redCount.toString(),
-																									textAlign: TextAlign.center
-																								)
-																							),
-																							if (whiteCount > 0) Container(
-																								decoration: BoxDecoration(
-																									borderRadius: (redCount > 0) ? BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
-																									color: CupertinoTheme.of(context).primaryColor
-																								),
-																								padding: EdgeInsets.all(8),
-																								margin: EdgeInsets.only(right: 16, bottom: 16),
-																								child: Text(
-																									whiteCount.toString(),
-																									style: TextStyle(
-																										color: CupertinoTheme.of(context).scaffoldBackgroundColor
-																									),
-																									textAlign: TextAlign.center
-																								)
-																							)
-																						]
+																					child: Container(
+																						decoration: BoxDecoration(
+																							borderRadius: radiusAlone,
+																							color: CupertinoTheme.of(context).primaryColor
+																						),
+																						padding: EdgeInsets.all(8),
+																						margin: EdgeInsets.only(right: 16),
+																						child: Icon(Icons.vertical_align_bottom, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
 																					),
-																					onTap: () => _listController.animateTo((post) => post.id == persistentState.lastSeenPostId, alignment: 1.0),
-																					onLongPress: scrollToBottom
+																					onTap: scrollToBottom
 																				)
-																			)
-																		);
+																			);
+																		}
+																		else {
+																			return Container();
+																		}
 																	}
-																	else if ((persistentState.thread != null) && (_listController.lastVisibleIndex != -1) && (_listController.lastVisibleIndex != persistentState.thread!.posts.length - 1)) {
-																		return Align(
-																			alignment: Alignment.bottomRight,
-																			child: GestureDetector(
-																				child: Container(
-																					decoration: BoxDecoration(
-																						borderRadius: radiusAlone,
-																						color: CupertinoTheme.of(context).primaryColor
-																					),
-																					padding: EdgeInsets.all(8),
-																					margin: EdgeInsets.only(right: 16),
-																					child: Icon(Icons.vertical_align_bottom, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
-																				),
-																				onTap: scrollToBottom
-																			)
-																		);
-																	}
-																	else {
-																		return Container();
-																	}
-																}
-															),
-															if (blocked) Container(
-																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																child: Center(
-																	child: CupertinoActivityIndicator()
+																),
+																if (blocked) Container(
+																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																	child: Center(
+																		child: CupertinoActivityIndicator()
+																	)
 																)
-															)
-														]
+															]
+														)
 													)
 												)
 											)
