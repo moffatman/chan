@@ -154,71 +154,75 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 		onePane = MediaQuery.of(context).size.width < widget.twoPaneBreakpoint;
 		final masterNavigator = Provider.value(
 			value: _masterKey,
-			child: Navigator(
-				key: _masterKey,
-				initialRoute: '/',
-				observers: [HeroController()],
-				onGenerateRoute: (RouteSettings settings) {
-					return TransparentRoute(
-						builder: (context) {
-							final child = TabBarView(
-								controller: _tabController,
-								physics: widget.panes.length > 1 ? AlwaysScrollableScrollPhysics() : NeverScrollableScrollPhysics(),
-								children: widget.panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)).toList()
-							);
-							if (widget.showChrome) {
-								return CupertinoPageScaffold(
-									resizeToAvoidBottomInset: false,
-									navigationBar: widget.panes[_tabController.index].navigationBar ?? CupertinoNavigationBar(
-										transitionBetweenRoutes: false,
-										middle: widget.panes[_tabController.index].title
-									),
-									child: Column(
-										children: [
-											SafeArea(
-												bottom: false,
-												child: Material(
-													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-													child: TabBar(
-														controller: _tabController,
-														tabs: widget.panes.map((pane) => Tab(
-															icon: Icon(
-																pane.icon,
-																color: CupertinoTheme.of(context).primaryColor
-															)
-														)).toList()
+			child: ClipRect(
+				child: Navigator(
+					key: _masterKey,
+					initialRoute: '/',
+					observers: [HeroController()],
+					onGenerateRoute: (RouteSettings settings) {
+						return TransparentRoute(
+							builder: (context) {
+								final child = TabBarView(
+									controller: _tabController,
+									physics: widget.panes.length > 1 ? AlwaysScrollableScrollPhysics() : NeverScrollableScrollPhysics(),
+									children: widget.panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)).toList()
+								);
+								if (widget.showChrome) {
+									return CupertinoPageScaffold(
+										resizeToAvoidBottomInset: false,
+										navigationBar: widget.panes[_tabController.index].navigationBar ?? CupertinoNavigationBar(
+											transitionBetweenRoutes: false,
+											middle: widget.panes[_tabController.index].title
+										),
+										child: Column(
+											children: [
+												SafeArea(
+													bottom: false,
+													child: Material(
+														color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+														child: TabBar(
+															controller: _tabController,
+															tabs: widget.panes.map((pane) => Tab(
+																icon: Icon(
+																	pane.icon,
+																	color: CupertinoTheme.of(context).primaryColor
+																)
+															)).toList()
+														)
+													)
+												),
+												MediaQuery(
+													data: MediaQuery.of(context).removePadding(removeTop: true),
+													child: Expanded(
+														child: child
 													)
 												)
-											),
-											MediaQuery(
-												data: MediaQuery.of(context).removePadding(removeTop: true),
-												child: Expanded(
-													child: child
-												)
-											)
-										]
-									)
-								);
+											]
+										)
+									);
+								}
+								return child;
 							}
-							return child;
-						}
-					);
-				}
+						);
+					}
+				)
 			)
 		);
 		final detailNavigator = Provider.value(
 			value: _detailKey,
-			child: Navigator(
-				key: _detailKey,
-				initialRoute: '/',
-				onGenerateRoute: (RouteSettings settings) {
-					return FullWidthCupertinoPageRoute(
-						builder: (context) {
-							return widget.panes[_tabController.index].buildDetail();
-						},
-						settings: settings
-					);
-				}
+			child: ClipRect(
+				child: Navigator(
+					key: _detailKey,
+					initialRoute: '/',
+					onGenerateRoute: (RouteSettings settings) {
+						return FullWidthCupertinoPageRoute(
+							builder: (context) {
+								return widget.panes[_tabController.index].buildDetail();
+							},
+							settings: settings
+						);
+					}
+				)
 			)
 		);
 		if (onePane) {
