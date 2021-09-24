@@ -4,7 +4,6 @@ import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
-import 'package:provider/provider.dart';
 
 class SliderBuilder extends StatefulWidget {
 	final Widget Function(BuildContext context, double factor) builder;

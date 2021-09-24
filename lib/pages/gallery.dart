@@ -26,10 +26,6 @@ import 'package:home_indicator/home_indicator.dart';
 
 const double _THUMBNAIL_SIZE = 60;
 
-enum _GalleryMenuSelection {
-	ToggleAutorotate
-}
-
 class GalleryLeftIntent extends Intent {
 	const GalleryLeftIntent();
 }
@@ -278,7 +274,6 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.watch<EffectiveSettings>();
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
