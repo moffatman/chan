@@ -31,29 +31,39 @@ class ContextMenu extends StatefulWidget {
 
 class _ContextMenuState extends State<ContextMenu> {
 	OverlayEntry? _overlayEntry;
+
 	@override
 	Widget build(BuildContext context) {
 		if (context.watch<EffectiveSettings>().useTouchLayout) {
 			final zone = context.watch<PostSpanZoneData?>();
-			return CupertinoContextMenu(
-				actions: widget.actions.map((action) => CupertinoContextMenuAction(
-					child: action.child,
-					trailingIcon: action.trailingIcon,
-					onPressed: () {
-						action.onPressed();
-						Navigator.of(context, rootNavigator: true).pop();
-					},
-					isDestructiveAction: action.isDestructiveAction
-				)).toList(),
-				previewBuilder: (ctx, animation, child) {
-					return IgnorePointer(
-						child: child
+			return LayoutBuilder(
+				builder: (context, constraints) {
+					return CupertinoContextMenu(
+						actions: widget.actions.map((action) => CupertinoContextMenuAction(
+							child: action.child,
+							trailingIcon: action.trailingIcon,
+							onPressed: () {
+								action.onPressed();
+								Navigator.of(context, rootNavigator: true).pop();
+							},
+							isDestructiveAction: action.isDestructiveAction
+						)).toList(),
+						previewBuilder: (ctx, animation, child) {
+							return IgnorePointer(
+								child: child
+							);
+						},
+						child: FittedBox(
+							child: ConstrainedBox(
+								constraints: constraints,
+								child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
+									value: zone,
+									child: widget.child
+								)
+							)
+						)
 					);
-				},
-				child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
-					value: zone,
-					child: widget.child
-				)
+				}
 			);
 		}
 		else {
