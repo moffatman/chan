@@ -171,7 +171,7 @@ class PostRow extends StatelessWidget {
 														text: _post.id.toString(),
 														style: TextStyle(color: Colors.grey),
 														recognizer: TapGestureRecognizer()..onTap = () {
-															context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
+															ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
 														}
 													),
 													if (!settings.useTouchLayout) ...[
