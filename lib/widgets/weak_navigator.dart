@@ -8,8 +8,9 @@ class WeakNavigator extends StatefulWidget {
   final Widget child;
 
   WeakNavigator({
-    required this.child
-  });
+    required this.child,
+    Key? key
+  }) : super(key: key);
 
   @override
   createState() => WeakNavigatorState();
@@ -57,6 +58,7 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
   void didUpdateWidget(WeakNavigator old) {
     super.didUpdateWidget(old);
     if (widget.child != old.child) {
+      popAllExceptFirst();
       rootEntry = OverlayEntry(
         builder: (context) => widget.child,
         maintainState: true
@@ -95,5 +97,13 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
     await entry.item2.reverse(from: 1).orCancel;
     entry.item1.remove();
     entry.item3.complete(result);
+  }
+
+  void popAllExceptFirst() {
+      stack.forEach((x) {
+        if (x.item1.mounted) {
+          x.item1.remove();
+        }
+      });
   }
 }

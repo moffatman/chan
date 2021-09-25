@@ -43,6 +43,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	bool showReplyBox = false;
 	final _subNavigatorKey = GlobalKey<NavigatorState>();
 	final _shareButtonKey = GlobalKey();
+	final _weakNavigatorKey = GlobalKey<WeakNavigatorState>();
 
 	final _listController = RefreshableListController<Post>();
 	late PostSpanRootZoneData zone;
@@ -100,6 +101,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			threadState: persistentState,
 			onNeedScrollToPost: (post) {
 				_subNavigatorKey.currentState!.popUntil((route) => route.isFirst);
+				_weakNavigatorKey.currentState!.popAllExceptFirst();
 				Future.delayed(Duration(milliseconds: 150), () => _listController.animateTo((val) => val.id == post.id));
 			}
 		);
@@ -260,6 +262,7 @@ class _ThreadPageState extends State<ThreadPage> {
 												child: Focus(
 													autofocus: true,
 													child: WeakNavigator(
+														key: _weakNavigatorKey,
 														child: Stack(
 															fit: StackFit.expand,
 															children: [
