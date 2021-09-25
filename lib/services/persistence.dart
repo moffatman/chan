@@ -189,6 +189,7 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	List<Post>? get repliesToYou => thread?.posts.where((p) => p.span.referencedPostIds(thread!.board).any((id) => youIds.contains(id))).toList();
 	List<Post>? get unseenRepliesToYou => repliesToYou?.where((p) => p.id > lastSeenPostId!).toList();
 	int? get unseenReplyCount => (lastSeenPostId == null) ? null : thread?.posts.where((p) => p.id > lastSeenPostId!).length;
+	int? get unseenImageCount => (lastSeenPostId == null) ? null : thread?.posts.where((p) => (p.id > lastSeenPostId!) && (p.attachment != null)).length;
 
 	@override
 	String toString() => 'PersistentThreadState(lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime)';

@@ -33,8 +33,18 @@ class ThreadRow extends StatelessWidget {
 			builder: (context, box, child) {
 				final threadState = Persistence.getThreadStateIfExists(thread.identifier);
 				final _thread = threadState?.thread ?? thread;
-				final unseenReplyCount = threadState?.unseenReplyCount ?? 0;
-				final unseenYouCount = threadState?.unseenRepliesToYou?.length ?? 0;
+				int unseenReplyCount = 0;
+				int unseenYouCount = 0;
+				int unseenImageCount = 0;
+				Color? replyCountColor;
+				Color? imageCountColor;
+				if (threadState?.lastSeenPostId != null) {
+					unseenReplyCount = threadState?.unseenReplyCount ?? 0;
+					unseenYouCount = threadState?.unseenRepliesToYou?.length ?? 0;
+					unseenImageCount = threadState?.unseenImageCount ?? 0;
+					replyCountColor = unseenReplyCount == 0 ? Colors.grey : null;
+					imageCountColor = unseenImageCount == 0 ? Colors.grey : null;
+				}
 				return Container(
 					decoration: BoxDecoration(
 						color: isSelected ? ((CupertinoTheme.of(context).brightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
@@ -158,15 +168,16 @@ class ThreadRow extends StatelessWidget {
 													Icon(Icons.archive, color: Colors.grey, size: 18),
 													SizedBox(width: 4),
 												],
-												Text(_thread.replyCount.toString()),
+												Text(_thread.replyCount.toString(), style: TextStyle(color: replyCountColor)),
 												if (unseenReplyCount > 0) Text(' (+$unseenReplyCount)'),
 												if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: Colors.red)),
 												SizedBox(width: 4),
-												Icon(Icons.reply_rounded, size: 18),
+												Icon(Icons.reply_rounded, size: 18, color: replyCountColor),
 												SizedBox(width: 8),
-												Text(_thread.imageCount.toString()),
+												Text(_thread.imageCount.toString(), style: TextStyle(color: imageCountColor)),
+												if (unseenImageCount > 0) Text(' (+$unseenImageCount)'),
 												SizedBox(width: 4),
-												Icon(Icons.image, size: 18),
+												Icon(Icons.image, size: 18, color: imageCountColor),
 												SizedBox(width: 2)
 											]
 										)
