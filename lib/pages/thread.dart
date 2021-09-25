@@ -419,7 +419,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																									margin: EdgeInsets.only(right: 16, bottom: 16),
 																									child: Container(
 																										constraints: BoxConstraints(
-																											minWidth: 24
+																											minWidth: 24 * MediaQuery.of(context).textScaleFactor
 																										),
 																										child: Text(
 																											whiteCount.toString(),
@@ -439,19 +439,21 @@ class _ThreadPageState extends State<ThreadPage> {
 																			);
 																		}
 																		else if ((persistentState.thread != null) && (_listController.lastVisibleIndex != -1) && (_listController.lastVisibleIndex != persistentState.thread!.posts.length - 1)) {
-																			return Align(
-																				alignment: Alignment.bottomRight,
-																				child: GestureDetector(
-																					child: Container(
-																						decoration: BoxDecoration(
-																							borderRadius: radiusAlone,
-																							color: CupertinoTheme.of(context).primaryColor
+																			return SafeArea(
+																				child: Align(
+																					alignment: Alignment.bottomRight,
+																					child: GestureDetector(
+																						child: Container(
+																							decoration: BoxDecoration(
+																								borderRadius: radiusAlone,
+																								color: CupertinoTheme.of(context).primaryColor
+																							),
+																							padding: EdgeInsets.all(8),
+																							margin: EdgeInsets.only(right: 16, bottom: 16),
+																							child: Icon(Icons.vertical_align_bottom, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
 																						),
-																						padding: EdgeInsets.all(8),
-																						margin: EdgeInsets.only(right: 16, bottom: 16),
-																						child: Icon(Icons.vertical_align_bottom, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
-																					),
-																					onTap: scrollToBottom
+																						onTap: scrollToBottom
+																					)
 																				)
 																			);
 																		}
