@@ -414,12 +414,17 @@ class _ThreadPageState extends State<ThreadPage> {
 																									),
 																									padding: EdgeInsets.all(8),
 																									margin: EdgeInsets.only(right: 16, bottom: 16),
-																									child: Text(
-																										whiteCount.toString(),
-																										style: TextStyle(
-																											color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																									child: Container(
+																										constraints: BoxConstraints(
+																											minWidth: 24
 																										),
-																										textAlign: TextAlign.center
+																										child: Text(
+																											whiteCount.toString(),
+																											style: TextStyle(
+																												color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																											),
+																											textAlign: TextAlign.center
+																										)
 																									)
 																								)
 																							]
@@ -440,7 +445,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																							color: CupertinoTheme.of(context).primaryColor
 																						),
 																						padding: EdgeInsets.all(8),
-																						margin: EdgeInsets.only(right: 16),
+																						margin: EdgeInsets.only(right: 16, bottom: 16),
 																						child: Icon(Icons.vertical_align_bottom, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
 																					),
 																					onTap: scrollToBottom
