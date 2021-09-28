@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/gestures.dart';
@@ -8,9 +9,11 @@ class OverscrollModalPage extends StatefulWidget {
 	final Widget child;
 	final double heightEstimate;
 	final Color backgroundColor;
+	final Widget? background;
 
 	OverscrollModalPage({
 		required this.child,
+		this.background,
 		this.heightEstimate = 0,
 		this.backgroundColor = Colors.black38
 	});
@@ -21,12 +24,14 @@ class OverscrollModalPage extends StatefulWidget {
 
 class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	late final ScrollController _controller;
+	final GlobalKey _scrollKey = GlobalKey();
 	final GlobalKey _childKey = GlobalKey();
 	late double _scrollStopPosition;
 	Offset? _pointerDownPosition;
 	bool _pointerInSpacer = false;
 	double _opacity = 1;
 	bool _popping = false;
+	bool _finishedPopIn = false;
 
 	@override
 	void initState() {
@@ -41,7 +46,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		if (!_popping) {
 			final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
 			final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
-			final double desiredOpacity = 1 - (((max(overscrollTop, overscrollBottom) + _scrollStopPosition) - 40) / 200).clamp(0, 1);
+			final double desiredOpacity = 1 - (((max(overscrollTop, overscrollBottom) + _scrollStopPosition) - 40) / 100).clamp(0, 1);
 			if (desiredOpacity != _opacity) {
 				setState(() {
 					_opacity = desiredOpacity;
@@ -53,12 +58,15 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 			// Stop when coming to intial rest (since start position is largely negative)
 			if (_scrollStopPosition > -2) {
 				_scrollStopPosition = 0;
+				setState(() {
+					_finishedPopIn = true;
+				});
 			}
 		}
 	}
 
 	void _onPointerUp() {
-		if (_popping) {
+		if (_popping || _controller.positions.isEmpty) {
 			return;
 		}
 		final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
@@ -82,7 +90,38 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 				fit: StackFit.expand,
 				children: [
 					Container(
-						color: widget.backgroundColor
+						color: widget.backgroundColor,
+						child: SafeArea(
+							child: AnimatedBuilder(
+								animation: _controller,
+								child: widget.background,
+								builder: (context, child) {
+									final RenderBox? scrollBox = _scrollKey.currentContext?.findRenderObject() as RenderBox?;
+									final RenderBox? childBox = _childKey.currentContext?.findRenderObject() as RenderBox?;
+									final double scrollBoxTop = scrollBox?.localToGlobal(scrollBox.semanticBounds.topCenter).dy ?? 0;
+									final double scrollBoxBottom = scrollBox?.localToGlobal(scrollBox.semanticBounds.bottomCenter).dy ?? 0;
+									final double childBoxTopDiff = (childBox?.localToGlobal(childBox.semanticBounds.topCenter).dy ?? scrollBoxTop) - scrollBoxTop;
+									final double childBoxBottomDiff = scrollBoxBottom - (childBox?.localToGlobal(childBox.semanticBounds.bottomCenter).dy ?? scrollBoxBottom);
+									if (_finishedPopIn && _pointerDownPosition != null && _controller.positions.isNotEmpty && _controller.position.pixels != 0) {
+										return Stack(
+											fit: StackFit.expand,
+											children: [
+												Positioned(
+													top: childBoxTopDiff + (0.5 * max(0, _controller.position.pixels -	_controller.position.maxScrollExtent)) - (-1 * min(0, _controller.position.pixels)),
+													bottom: childBoxBottomDiff + (-0.5 * min(0, _controller.position.pixels)) - max(0, _controller.position.pixels -	_controller.position.maxScrollExtent),
+													left: 0,
+													right: 0,
+													child: Center(
+														child: child!
+													)
+												)
+											]
+										);
+									}
+									return Container();
+								}
+							)
+						)
 					),
 					NotificationListener<ScrollNotification>(
 						onNotification: (notification) {
@@ -122,8 +161,9 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 													constraints: BoxConstraints(
 														minHeight: constraints.maxHeight
 													),
-													child: Center(
-														child: SafeArea(
+													child: SafeArea(
+														child: Center(
+															key: _scrollKey,
 															child: Opacity(
 																key: _childKey,
 																opacity: _opacity,

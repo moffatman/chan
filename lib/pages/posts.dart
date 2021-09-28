@@ -11,10 +11,12 @@ import 'package:chan/util.dart';
 
 class PostsPage extends StatefulWidget {
 	final PostSpanZoneData zone;
+	final int? postIdForBackground;
 	final List<int> postsIdsToShow;
 
 	PostsPage({
 		required this.postsIdsToShow,
+		this.postIdForBackground,
 		required this.zone
 	});
 
@@ -49,10 +51,14 @@ class _PostsPageState extends State<PostsPage> {
 			}
 		}
 		final attachments = replies.expand<Attachment>((a) => a.attachment == null ? [] : [a.attachment!]).toList();
-		return OverscrollModalPage(
-			child: ChangeNotifierProvider.value(
+		return ChangeNotifierProvider.value(
 				value: widget.zone,
-				child: Builder(
+				child: OverscrollModalPage(
+					background: widget.postIdForBackground == null ? null : PostRow(
+						post: widget.zone.thread.posts.firstWhere((p) => p.id == widget.postIdForBackground),
+						isSelected: true
+					),
+					child: Builder(
 					builder: (ctx) => ListView(
 						shrinkWrap: true,
 						physics: NeverScrollableScrollPhysics(),
@@ -81,9 +87,9 @@ class _PostsPageState extends State<PostsPage> {
 							);
 						}).toList()
 					)
-				)
-			),
-			heightEstimate: 100.0 * (widget.postsIdsToShow.length - 1)
+				),
+				heightEstimate: 100.0 * (widget.postsIdsToShow.length - 1)
+			)
 		);
 	}
 }
