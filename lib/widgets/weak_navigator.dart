@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/widgets.dart';
@@ -80,8 +81,15 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
       duration: const Duration(milliseconds: 150)
     );
     final entry = Tuple3(OverlayEntry(
-      builder: (context) => FadeTransition(
-        opacity: controller,
+      builder: (context) => AnimatedBuilder(
+        animation: controller,
+        builder: (context, child) => BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: controller.value * 10, sigmaY: controller.value * 10),
+          child: Opacity(
+            opacity: controller.value,
+            child: child
+          )
+        ),
         child: widget
       ),
       maintainState: true
