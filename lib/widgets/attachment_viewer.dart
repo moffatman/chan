@@ -14,6 +14,7 @@ import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:video_player/video_player.dart';
 
 class AttachmentNotFoundException {
@@ -43,6 +44,10 @@ class AttachmentViewerController extends ChangeNotifier {
 	int _quarterTurns = 0;
 	bool _checkArchives = false;
 	bool _showLoadingProgress = false;
+	final _longPressFactorStream = BehaviorSubject<double>();
+	int _millisecondsBeforeLongPress = 0;
+	bool _playingBeforeLongPress = false;
+	bool _seeking = false;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -79,7 +84,13 @@ class AttachmentViewerController extends ChangeNotifier {
 		required this.site,
 		this.overrideSource,
 		bool isPrimary = false
-	}) : _isPrimary = isPrimary;
+	}) : _isPrimary = isPrimary {
+		_longPressFactorStream.bufferTime(Duration(milliseconds: 50)).listen((x) {
+			if (x.isNotEmpty) {
+				_onCoalescedLongPressUpdate(x.last);
+			}
+		});
+	}
 
 	set isPrimary(bool val) {
 		if (val) {
@@ -225,11 +236,41 @@ class AttachmentViewerController extends ChangeNotifier {
 		loadFullAttachment();
 	}
 
+	void _onLongPressStart() {
+		_playingBeforeLongPress = videoPlayerController!.value.isPlaying;
+		_millisecondsBeforeLongPress = videoPlayerController!.value.position.inMilliseconds;
+		videoPlayerController!.pause();
+	}
+
+	void _onLongPressUpdate(double factor) {
+		_longPressFactorStream.add(factor);
+	}
+
+	void _onCoalescedLongPressUpdate(double factor) async {
+		if (!_seeking) {
+			_seeking = true;
+			final duration = videoPlayerController!.value.duration.inMilliseconds;
+			final now = DateTime.now();
+			await videoPlayerController!.seekTo(Duration(milliseconds: ((_millisecondsBeforeLongPress + (duration * factor)) % duration).round()));
+			await videoPlayerController!.play();
+			await videoPlayerController!.pause();
+			print(DateTime.now().difference(now).inMilliseconds);
+			_seeking = false;
+		}
+	}
+
+	void _onLongPressEnd() {
+		if (_playingBeforeLongPress) {
+			videoPlayerController!.play();
+		}
+	}
+
 	@override
 	void dispose() {
 		super.dispose();
 		_ongoingConversion?.cancel();
 		videoPlayerController?.dispose();
+		_longPressFactorStream.close();
 	}
 }
 
@@ -436,7 +477,12 @@ class AttachmentViewer extends StatelessWidget {
 							quarterTurns: controller.quarterTurns,
 							child: AspectRatio(
 								aspectRatio: controller.videoPlayerController!.value.aspectRatio,
-								child: VideoPlayer(controller.videoPlayerController!)
+								child: GestureDetector(
+									child: VideoPlayer(controller.videoPlayerController!),
+									onLongPressStart: (x) => controller._onLongPressStart(),
+									onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / 400),
+									onLongPressEnd: (x) => controller._onLongPressEnd()
+								)
 							)
 						)
 					)
