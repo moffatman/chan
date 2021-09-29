@@ -94,7 +94,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 			builder: (context, constraints) => Stack(
 				fit: StackFit.expand,
 				children: [
-					Container(
+					if (widget.background != null) Container(
 						color: widget.backgroundColor,
 						child: SafeArea(
 							child: AnimatedBuilder(
