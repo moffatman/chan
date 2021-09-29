@@ -37,7 +37,7 @@ class _ContextMenuState extends State<ContextMenu> {
 		if (context.watch<EffectiveSettings>().useTouchLayout) {
 			final zone = context.watch<PostSpanZoneData?>();
 			return LayoutBuilder(
-				builder: (context, constraints) {
+				builder: (context, originalConstraints) {
 					return CupertinoContextMenu(
 						actions: widget.actions.map((action) => CupertinoContextMenuAction(
 							child: action.child,
@@ -53,14 +53,23 @@ class _ContextMenuState extends State<ContextMenu> {
 								child: child
 							);
 						},
-						child: FittedBox(
-							child: ConstrainedBox(
-								constraints: constraints,
-								child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
-									value: zone,
-									child: widget.child
-								)
-							)
+						child: LayoutBuilder(
+							builder: (context, newConstraints) {
+								return FittedBox(
+									child: ConstrainedBox(
+										constraints: BoxConstraints(
+											maxWidth: newConstraints.maxWidth,
+											minWidth: newConstraints.minWidth,
+											maxHeight: originalConstraints.maxHeight,
+											minHeight: originalConstraints.minHeight
+										),
+										child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
+											value: zone,
+											child: widget.child
+										)
+									)
+								);
+							}
 						)
 					);
 				}
