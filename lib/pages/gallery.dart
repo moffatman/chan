@@ -220,6 +220,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		}
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
+		currentIndex = index;
 		if (!_animatingNow) {
 			final settings = context.read<EffectiveSettings>();
 			if (settings.autoloadAttachments) {
@@ -239,7 +240,6 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 			}
 		}
 		_hideRotateButton = false;
-		currentIndex = index;
 		setState(() {});
 	}
 
