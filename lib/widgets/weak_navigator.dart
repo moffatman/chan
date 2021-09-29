@@ -107,11 +107,15 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
     entry.item3.complete(result);
   }
 
-  void popAllExceptFirst() {
-      stack.forEach((x) {
-        if (x.item1.mounted) {
-          x.item1.remove();
+  void popAllExceptFirst({animated: false}) {
+    stack.forEach((x) async {
+      if (x.item1.mounted) {
+        if (animated) {
+          await x.item2.reverse(from: 1);
         }
-      });
+        x.item1.remove();
+        x.item3.complete();
+      }
+    });
   }
 }

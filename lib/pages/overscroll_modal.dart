@@ -56,7 +56,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		if (_scrollStopPosition != 0 && _controller.position.pixels > _scrollStopPosition) {
 			_scrollStopPosition = _controller.position.pixels;
 			// Stop when coming to intial rest (since start position is largely negative)
-			if (_scrollStopPosition > -2) {
+			if (_scrollStopPosition > -0.2) {
 				_scrollStopPosition = 0;
 				setState(() {
 					_finishedPopIn = true;
@@ -79,7 +79,12 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 			_popping = true;
 			// Simulate onTap for the Spacers which fill the transparent space
 			// It's done here rather than using GestureDetector so it works during scroll-in
-			WeakNavigator.pop(context);
+			if (WeakNavigator.of(context) != null) {
+				WeakNavigator.of(context)!.popAllExceptFirst(animated: true);
+			}
+			else {
+				Navigator.of(context).pop();
+			}
 		}
 	}
 
@@ -102,13 +107,13 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 									final double scrollBoxBottom = scrollBox?.localToGlobal(scrollBox.semanticBounds.bottomCenter).dy ?? 0;
 									final double childBoxTopDiff = (childBox?.localToGlobal(childBox.semanticBounds.topCenter).dy ?? scrollBoxTop) - scrollBoxTop;
 									final double childBoxBottomDiff = scrollBoxBottom - (childBox?.localToGlobal(childBox.semanticBounds.bottomCenter).dy ?? scrollBoxBottom);
-									if (_finishedPopIn && _pointerDownPosition != null && _controller.positions.isNotEmpty && _controller.position.pixels != 0) {
+									if (_finishedPopIn && _controller.positions.isNotEmpty && _controller.position.isScrollingNotifier.value) {
 										return Stack(
 											fit: StackFit.expand,
 											children: [
 												Positioned(
-													top: childBoxTopDiff + (0.5 * max(0, _controller.position.pixels -	_controller.position.maxScrollExtent)) - (-1 * min(0, _controller.position.pixels)),
-													bottom: childBoxBottomDiff + (-0.5 * min(0, _controller.position.pixels)) - max(0, _controller.position.pixels -	_controller.position.maxScrollExtent),
+													top: childBoxTopDiff + (0 * max(0, _controller.position.pixels -	_controller.position.maxScrollExtent)) - (-1 * min(0, _controller.position.pixels)),
+													bottom: childBoxBottomDiff + (-0 * min(0, _controller.position.pixels)) - max(0, _controller.position.pixels -	_controller.position.maxScrollExtent),
 													left: 0,
 													right: 0,
 													child: Center(
