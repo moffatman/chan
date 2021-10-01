@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -33,15 +35,17 @@ class ThreadRow extends StatelessWidget {
 			builder: (context, box, child) {
 				final threadState = Persistence.getThreadStateIfExists(thread.identifier);
 				final _thread = threadState?.thread ?? thread;
+				final int latestReplyCount = max(thread.replyCount, _thread.replyCount);
+				final int latestImageCount = max(thread.imageCount, _thread.imageCount);
 				int unseenReplyCount = 0;
 				int unseenYouCount = 0;
 				int unseenImageCount = 0;
 				Color? replyCountColor;
 				Color? imageCountColor;
 				if (threadState?.lastSeenPostId != null) {
-					unseenReplyCount = threadState?.unseenReplyCount ?? 0;
+					unseenReplyCount = (threadState?.unseenReplyCount ?? 0) + ((latestReplyCount + 1) - _thread.posts.length);
 					unseenYouCount = threadState?.unseenRepliesToYou?.length ?? 0;
-					unseenImageCount = threadState?.unseenImageCount ?? 0;
+					unseenImageCount = (threadState?.unseenImageCount ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.where((x) => x.attachment != null).length ?? 0));
 					replyCountColor = unseenReplyCount == 0 ? Colors.grey : null;
 					imageCountColor = unseenImageCount == 0 ? Colors.grey : null;
 				}
@@ -168,16 +172,16 @@ class ThreadRow extends StatelessWidget {
 													Icon(Icons.archive, color: Colors.grey, size: 18),
 													SizedBox(width: 4),
 												],
-												Text(_thread.replyCount.toString(), style: TextStyle(color: replyCountColor)),
+												Icon(Icons.reply_rounded, size: 18, color: replyCountColor),
+												SizedBox(width: 4),
+												Text(latestReplyCount.toString(), style: TextStyle(color: replyCountColor)),
 												if (unseenReplyCount > 0) Text(' (+$unseenReplyCount)'),
 												if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: Colors.red)),
-												SizedBox(width: 4),
-												Icon(Icons.reply_rounded, size: 18, color: replyCountColor),
 												SizedBox(width: 8),
-												Text(_thread.imageCount.toString(), style: TextStyle(color: imageCountColor)),
-												if (unseenImageCount > 0) Text(' (+$unseenImageCount)'),
-												SizedBox(width: 4),
 												Icon(Icons.image, size: 18, color: imageCountColor),
+												SizedBox(width: 4),
+												Text(latestImageCount.toString(), style: TextStyle(color: imageCountColor)),
+												if (unseenImageCount > 0) Text(' (+$unseenImageCount)'),
 												SizedBox(width: 2)
 											]
 										)

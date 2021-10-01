@@ -157,7 +157,7 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	Widget _limitCounter(int value, int? maximum) {
 		if (maximum != null && (value >= maximum * 0.8)) {
-			return Text('$value / $maximum ', style: TextStyle(
+			return Text('$value / $maximum', style: TextStyle(
 				color: value >= maximum ? Colors.red : null
 			));
 		}
@@ -280,20 +280,24 @@ class _ThreadPageState extends State<ThreadPage> {
 																				child: (persistentState.thread == null) ? null : Row(
 																					children: [
 																						Spacer(),
-																						_limitCounter(persistentState.thread!.replyCount, Persistence.getBoard(widget.thread.board).threadCommentLimit),
 																						Icon(Icons.reply_rounded),
+																						SizedBox(width: 4),
+																						_limitCounter(persistentState.thread!.replyCount, Persistence.getBoard(widget.thread.board).threadCommentLimit),
 																						Spacer(),
-																						_limitCounter(persistentState.thread!.imageCount, Persistence.getBoard(widget.thread.board).threadImageLimit),
 																						Icon(Icons.image),
+																						SizedBox(width: 4),
+																						_limitCounter(persistentState.thread!.imageCount, Persistence.getBoard(widget.thread.board).threadImageLimit),
 																						Spacer(),
 																						if (persistentState.thread!.uniqueIPCount != null) ...[
-																							Text('${persistentState.thread!.uniqueIPCount} '),
 																							Icon(Icons.person),
+																							SizedBox(width: 4),
+																							Text('${persistentState.thread!.uniqueIPCount}'),
 																							Spacer(),
 																						],
 																						if (persistentState.thread!.currentPage != null) ...[
-																							_limitCounter(persistentState.thread!.currentPage!, Persistence.getBoard(widget.thread.board).pageCount),
 																							Icon(Icons.insert_drive_file_rounded),
+																							SizedBox(width: 4),
+																							_limitCounter(persistentState.thread!.currentPage!, Persistence.getBoard(widget.thread.board).pageCount),
 																							Spacer()
 																						],
 																						if (persistentState.thread!.isArchived) ...[
@@ -301,8 +305,9 @@ class _ThreadPageState extends State<ThreadPage> {
 																								behavior: HitTestBehavior.opaque,
 																								child: Row(
 																									children: [
-																										Text('Archived '),
 																										Icon(Icons.archive, color: Colors.grey),
+																										SizedBox(width: 4),
+																										Text('Archived'),
 																									]
 																								),
 																								onTap: _switchToLive
