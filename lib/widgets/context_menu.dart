@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:flutter/cupertino.dart';
@@ -64,9 +66,20 @@ class _ContextMenuState extends State<ContextMenu> {
 						child: LayoutBuilder(
 							builder: (context, newConstraints) {
 								final useNewConstraints = context.read<_ContextMenuUseNewConstraints?>() == _ContextMenuUseNewConstraints.Yes;
+								double newMaxWidth = originalConstraints.maxWidth;
+								double newMaxHeight = originalConstraints.maxHeight;
+								newMaxHeight = max(newMaxHeight, newConstraints.maxHeight - 50);
+								newMaxHeight = min(newMaxHeight, newConstraints.maxHeight + 50);
+								newMaxWidth = max(newMaxWidth, newConstraints.maxWidth - 50);
+								newMaxWidth = min(newMaxWidth, newConstraints.maxWidth + 50);
 								return FittedBox(
 									child: ConstrainedBox(
-										constraints: useNewConstraints ? newConstraints : originalConstraints,
+										constraints: useNewConstraints ? BoxConstraints(
+											maxWidth: newMaxWidth,
+											maxHeight: newMaxHeight,
+											minWidth: 0,
+											minHeight: 0
+										) : originalConstraints,
 										child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
 											value: zone,
 											child: widget.child
