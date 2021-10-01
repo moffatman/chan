@@ -29,6 +29,11 @@ class ContextMenu extends StatefulWidget {
 	createState() => _ContextMenuState();
 }
 
+enum _ContextMenuUseNewConstraints {
+	No,
+	Yes
+}
+
 class _ContextMenuState extends State<ContextMenu> {
 	OverlayEntry? _overlayEntry;
 
@@ -50,19 +55,18 @@ class _ContextMenuState extends State<ContextMenu> {
 						)).toList(),
 						previewBuilder: (ctx, animation, child) {
 							return IgnorePointer(
-								child: child
+								child: Provider<_ContextMenuUseNewConstraints>.value(
+									value: _ContextMenuUseNewConstraints.Yes,
+									child: child
+								)
 							);
 						},
 						child: LayoutBuilder(
 							builder: (context, newConstraints) {
+								final useNewConstraints = context.read<_ContextMenuUseNewConstraints?>() == _ContextMenuUseNewConstraints.Yes;
 								return FittedBox(
 									child: ConstrainedBox(
-										constraints: BoxConstraints(
-											maxWidth: newConstraints.maxWidth,
-											minWidth: newConstraints.minWidth,
-											maxHeight: originalConstraints.maxHeight,
-											minHeight: originalConstraints.minHeight
-										),
+										constraints: useNewConstraints ? newConstraints : originalConstraints,
 										child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
 											value: zone,
 											child: widget.child
