@@ -287,8 +287,8 @@ class PostRow extends StatelessWidget {
 						),
 						if (_post.attachment != null) ...[
 							ContextMenuAction(
-								child: Text('Search archive'),
-								trailingIcon: Icons.image,
+								child: Text('Archive'),
+								trailingIcon: Icons.image_search,
 								onPressed: () {
 									context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(
 										builder: (context) => SearchQueryPage(ImageboardArchiveSearchQuery(boards: [_post.board], md5: _post.attachment!.md5))
@@ -296,16 +296,16 @@ class PostRow extends StatelessWidget {
 								}
 							),
 							ContextMenuAction(
-								child: Text('Search Google'),
-								trailingIcon: Icons.image,
+								child: Text('Google'),
+								trailingIcon: Icons.image_search,
 								onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
 									'image_url': _post.attachment!.url.toString(),
 									'safe': 'off'
 								}))
 							),
 							ContextMenuAction(
-								child: Text('Search Yandex'),
-								trailingIcon: Icons.image,
+								child: Text('Yandex'),
+								trailingIcon: Icons.image_search,
 								onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
 									'rpt': 'imageview',
 									'url': _post.attachment!.url.toString()
