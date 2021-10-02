@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/media.dart';
@@ -46,8 +47,10 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _showLoadingProgress = false;
 	final _longPressFactorStream = BehaviorSubject<double>();
 	int _millisecondsBeforeLongPress = 0;
+	bool _currentlyWithinLongPress = false;
 	bool _playingBeforeLongPress = false;
 	bool _seeking = false;
+	String? _overlayText;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -76,6 +79,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	final gestureKey = GlobalKey<ExtendedImageGestureState>();
 	/// Whether archive checking for this attachment is enabled
 	bool get checkArchives => _checkArchives;
+	/// Modal text which should be overlayed on the attachment
+	String? get overlayText => _overlayText;
 
 
 	AttachmentViewerController({
@@ -236,9 +241,16 @@ class AttachmentViewerController extends ChangeNotifier {
 		loadFullAttachment();
 	}
 
+	String _formatPosition(Duration position, Duration duration) {
+		return '${position.inMinutes.toString()}:${(position.inSeconds % 60).toString().padLeft(2, '0')} / ${duration.inMinutes.toString()}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}';
+	}
+
 	void _onLongPressStart() {
 		_playingBeforeLongPress = videoPlayerController!.value.isPlaying;
 		_millisecondsBeforeLongPress = videoPlayerController!.value.position.inMilliseconds;
+		_currentlyWithinLongPress = true;
+		_overlayText = _formatPosition(videoPlayerController!.value.position, videoPlayerController!.value.duration);
+		notifyListeners();
 		videoPlayerController!.pause();
 	}
 
@@ -247,15 +259,18 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	void _onCoalescedLongPressUpdate(double factor) async {
-		if (!_seeking) {
-			_seeking = true;
+		if (_currentlyWithinLongPress) {
 			final duration = videoPlayerController!.value.duration.inMilliseconds;
-			final now = DateTime.now();
-			await videoPlayerController!.seekTo(Duration(milliseconds: ((_millisecondsBeforeLongPress + (duration * factor)) % duration).round()));
-			await videoPlayerController!.play();
-			await videoPlayerController!.pause();
-			print(DateTime.now().difference(now).inMilliseconds);
-			_seeking = false;
+			final newPosition = Duration(milliseconds: ((_millisecondsBeforeLongPress + (duration * factor)) % duration).round());
+			_overlayText = _formatPosition(newPosition, videoPlayerController!.value.duration);
+			notifyListeners();
+			if (!_seeking) {
+				_seeking = true;
+				await videoPlayerController!.seekTo(newPosition);
+				await videoPlayerController!.play();
+				await videoPlayerController!.pause();
+				_seeking = false;
+			}
 		}
 	}
 
@@ -263,6 +278,9 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (_playingBeforeLongPress) {
 			videoPlayerController!.play();
 		}
+		_currentlyWithinLongPress = false;
+		_overlayText = null;
+		notifyListeners();
 	}
 
 	@override
@@ -492,6 +510,28 @@ class AttachmentViewer extends StatelessWidget {
 							active: controller.isFullResolution,
 							value: loadingProgress
 						)
+					),
+					AnimatedSwitcher(
+						duration: const Duration(milliseconds: 250),
+						child: (controller.overlayText != null) ? Center(
+							child: RotatedBox(
+								quarterTurns: controller.quarterTurns,
+								child: Container(
+									padding: EdgeInsets.all(8),
+									decoration: BoxDecoration(
+										color: Colors.black54,
+										borderRadius: BorderRadius.all(Radius.circular(8))
+									),
+									child: Text(
+										controller.overlayText!,
+										style: TextStyle(
+											fontSize: 32,
+											color: Colors.white
+										)
+									)
+								)
+							)
+						) : Container()
 					)
 				]
 			)
