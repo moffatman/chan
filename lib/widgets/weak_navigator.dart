@@ -54,18 +54,6 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
       maintainState: true
     );
   }
-  
-  @override
-  void didUpdateWidget(WeakNavigator old) {
-    super.didUpdateWidget(old);
-    if (widget.child != old.child) {
-      popAllExceptFirst();
-      rootEntry = OverlayEntry(
-        builder: (context) => widget.child,
-        maintainState: true
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

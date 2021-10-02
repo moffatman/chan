@@ -121,6 +121,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	void didUpdateWidget(ThreadPage old) {
 		super.didUpdateWidget(old);
 		if (widget.thread.board != old.thread.board || widget.thread.id != old.thread.id) {
+			_weakNavigatorKey.currentState!.popAllExceptFirst();
 			persistentState.save(); // Save old state in case it had pending scroll update to save
 			persistentState = Persistence.getThreadState(widget.thread, updateOpenedTime: true);
 			persistentState.useArchive |= widget.initiallyUseArchive;
