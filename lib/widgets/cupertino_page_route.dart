@@ -436,9 +436,9 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 		}
 	}
 
-	void _handlePointerFlowStart(PointerFlowStartEvent event) {
+	void _handlePointerPanZoomStart(PointerPanZoomStartEvent event) {
 		if (widget.enabledCallback())
-			_recognizer.addPointerFlow(event);
+			_recognizer.addPointerPanZoom(event);
 	}
 
 	double _convertToLogical(double value) {
@@ -464,7 +464,7 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 					bottom: 0.0,
 					child: Listener(
 						onPointerDown: _handlePointerDown,
-						onPointerFlowStart: _handlePointerFlowStart,
+						onPointerPanZoomStart: _handlePointerPanZoomStart,
 						behavior: HitTestBehavior.translucent,
 					),
 				),
