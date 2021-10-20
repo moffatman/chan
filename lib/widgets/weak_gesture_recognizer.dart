@@ -116,11 +116,11 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 	}
 
   @override
-  bool isPointerFlowAllowed(PointerFlowStartEvent event) => true;
+  bool isPointerPanZoomAllowed(PointerPanZoomStartEvent event) => true;
 
   @override
-  void addAllowedPointerFlow(PointerFlowStartEvent event) {
-    super.addAllowedPointerFlow(event);
+  void addAllowedPointerPanZoom(PointerPanZoomStartEvent event) {
+    super.addAllowedPointerPanZoom(event);
     _velocityTrackers[event.pointer] = velocityTrackerBuilder(event);
     if (_state == _DragState.ready) {
       _state = _DragState.possible;
@@ -140,9 +140,9 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
   void handleEvent(PointerEvent event) {
     assert(_state != _DragState.ready);
     if (!event.synthesized
-        && (event is PointerDownEvent || event is PointerMoveEvent || event is PointerFlowUpdateEvent)) {
+        && (event is PointerDownEvent || event is PointerMoveEvent || event is PointerPanZoomUpdateEvent)) {
       final VelocityTracker tracker = _velocityTrackers[event.pointer]!;
-      if (event is PointerFlowUpdateEvent) {
+      if (event is PointerPanZoomUpdateEvent) {
         tracker.addPosition(event.timeStamp, event.pan);
       }
       else {
@@ -179,7 +179,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 				}
       }
     }
-    if (event is PointerFlowUpdateEvent) {
+    if (event is PointerPanZoomUpdateEvent) {
       if (_state == _DragState.accepted) {
         _checkUpdate(
           sourceTimeStamp: event.timeStamp,
@@ -204,7 +204,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
           resolve(GestureDisposition.accepted);
       }
     }
-    if (event is PointerUpEvent || event is PointerCancelEvent || event is PointerFlowEndEvent) {
+    if (event is PointerUpEvent || event is PointerCancelEvent || event is PointerPanZoomEndEvent) {
       _giveUpPointer(event.pointer);
     }
   }
