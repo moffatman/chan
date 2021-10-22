@@ -429,6 +429,28 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														)
 													) : Container()
 												),
+												AnimatedBuilder(
+													animation: pageController,
+													builder: (context, child) => (pageController.positions.length != 1 ) ? Container() : AnimatedBuilder(
+														animation: pageController.position.isScrollingNotifier,
+														child: Align(
+															alignment: Alignment.bottomLeft,
+															child: Container(
+																margin: EdgeInsets.all(16),
+																padding: EdgeInsets.all(8),
+																decoration: BoxDecoration(
+																	borderRadius: BorderRadius.all(Radius.circular(8)),
+																	color: Colors.black54
+																),
+																child: Text("${currentIndex + 1} / ${widget.attachments.length}")
+															)
+														),
+														builder: (context, child) => AnimatedSwitcher(
+															duration: const Duration(milliseconds: 300),
+															child: pageController.position.isScrollingNotifier.value ? child : Container()
+														)
+													)
+												),
 												Visibility(
 													visible: showChrome,
 													maintainState: true,
