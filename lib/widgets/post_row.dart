@@ -273,6 +273,13 @@ class PostRow extends StatelessWidget {
 								Share.share(site.getWebUrl(_post.threadIdentifier, _post.id), sharePositionOrigin: (offset != null && size != null) ? offset & size : null);
 							}
 						),
+						ContextMenuAction(
+							child: Text('Report Post'),
+							trailingIcon: Icons.report_rounded,
+							onPressed: () {
+								openBrowser(context, context.read<ImageboardSite>().getPostReportUrl(_post.board, _post.id));
+							}
+						),
 						if (receipt != null) ContextMenuAction(
 							child: Text('Delete Post'),
 							trailingIcon: Icons.delete,

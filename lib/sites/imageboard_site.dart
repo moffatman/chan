@@ -160,4 +160,5 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<Post> getPostFromArchive(String board, int id);
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread);
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
+	Uri getPostReportUrl(String board, int id);
 }

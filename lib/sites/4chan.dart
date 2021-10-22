@@ -562,6 +562,13 @@ class Site4Chan extends ImageboardSite {
 		}
 	}
 
+	Uri getPostReportUrl(String board, int id) {
+		return Uri.https(sysUrl, '/$board/imgboard.php', {
+			'mode': 'report',
+			'no': id.toString()
+		});
+	}
+
 	Site4Chan({
 		required this.baseUrl,
 		required this.staticUrl,
