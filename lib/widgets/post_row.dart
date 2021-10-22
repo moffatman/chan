@@ -274,7 +274,7 @@ class PostRow extends StatelessWidget {
 							}
 						),
 						if (receipt != null) ContextMenuAction(
-							child: Text('Delete post'),
+							child: Text('Delete Post'),
 							trailingIcon: Icons.delete,
 							onPressed: () {
 								try {
