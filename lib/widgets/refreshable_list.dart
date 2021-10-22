@@ -207,114 +207,121 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 					return false;
 					// Auto update here
 				},
-				child: CustomScrollView(
-					key: _scrollViewKey,
-					controller: widget.controller?.scrollController,
-					physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-					slivers: [
-						SliverSafeArea(
-							sliver: widget.disableUpdates ? SliverToBoxAdapter(
-								child: Container()
-							) : CupertinoSliverRefreshControl(
-								onRefresh: update,
-								refreshTriggerPullDistance: 125
+				child: Listener(
+					onPointerHover: (e) {
+						if (widget.controller?.scrollController != null) {
+							widget.controller!.scrollController!.jumpTo(widget.controller!.scrollController!.position.pixels);
+						}
+					},
+					child: CustomScrollView(
+						key: _scrollViewKey,
+						controller: widget.controller?.scrollController,
+						physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+						slivers: [
+							SliverSafeArea(
+								sliver: widget.disableUpdates ? SliverToBoxAdapter(
+									child: Container()
+								) : CupertinoSliverRefreshControl(
+									onRefresh: update,
+									refreshTriggerPullDistance: 125
+								),
+								bottom: false
 							),
-							bottom: false
-						),
-						SliverToBoxAdapter(
-							child: Container(
-								height: kMinInteractiveDimensionCupertino,
-								padding: EdgeInsets.all(4),
-								child: Row(
-									mainAxisSize: MainAxisSize.min,
-									children: [
-										Expanded(
-											child: Container(
-												child: CupertinoSearchTextField(
-													onChanged: (searchText) {
-														setState(() {
-															this._filter = searchText.toLowerCase();
-														});
-													},
-													controller: _searchController,
-													focusNode: _searchFocusNode,
-													placeholder: widget.filterHint,
+							SliverToBoxAdapter(
+								child: Container(
+									height: kMinInteractiveDimensionCupertino,
+									padding: EdgeInsets.all(4),
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											Expanded(
+												child: Container(
+													child: CupertinoSearchTextField(
+														onChanged: (searchText) {
+															setState(() {
+																this._filter = searchText.toLowerCase();
+															});
+														},
+														controller: _searchController,
+														focusNode: _searchFocusNode,
+														placeholder: widget.filterHint,
+													)
 												)
+											),
+											if (_searchFocused) CupertinoButton(
+												padding: EdgeInsets.only(left: 8),
+												child: Text('Cancel'),
+												onPressed: _closeSearch
 											)
-										),
-										if (_searchFocused) CupertinoButton(
-											padding: EdgeInsets.only(left: 8),
-											child: Text('Cancel'),
-											onPressed: _closeSearch
-										)
-									]
-								)
-							)
-						),
-						if (values.length > 0)
-							SliverList(
-								key: PageStorageKey('list for ${widget.id}'),
-								delegate: SliverChildBuilderDelegate(
-									(context, i) {
-										if (i % 2 == 0) {
-											return Builder(
-												builder: (context) {
-													widget.controller?.registerItem(i ~/ 2, values[i ~/ 2], context);
-													return _itemBuilder(context, values[i ~/ 2]);
-												}
-											);
-										}
-										else {
-											return Divider(
-												thickness: 1,
-												height: 0,
-												color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
-											);
-										}
-									},
-									childCount: (values.length * 2)
+										]
+									)
 								)
 							),
-						if (values.length == 0)
-							if (_filter.isNotEmpty)
-								SliverToBoxAdapter(
-									child: Container(
-										height: 100,
-										child: Center(
-											child: Text('No results')
-										)
+							if (values.length > 0)
+								SliverList(
+									key: PageStorageKey('list for ${widget.id}'),
+									delegate: SliverChildBuilderDelegate(
+										(context, i) {
+											if (i % 2 == 0) {
+												return Builder(
+													builder: (context) {
+														widget.controller?.registerItem(i ~/ 2, values[i ~/ 2], context);
+														return _itemBuilder(context, values[i ~/ 2]);
+													}
+												);
+											}
+											else {
+												return Divider(
+													thickness: 1,
+													height: 0,
+													color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
+												);
+											}
+										},
+										childCount: (values.length * 2)
 									)
 								),
-						if (widget.footer != null && widget.disableUpdates) SliverSafeArea(
-							top: false,
-							sliver: SliverToBoxAdapter(
-								child: widget.footer
-							)
-						)
-						else if (widget.footer != null && !widget.disableUpdates) SliverToBoxAdapter(
-							child: widget.footer
-						)
-						else if (widget.disableUpdates) SliverSafeArea(
-							top: false,
-							sliver: SliverToBoxAdapter(
-								child: Container()
-							)
-						),
-						if (!widget.disableUpdates) SliverSafeArea(
-							top: false,
-							sliver: SliverToBoxAdapter(
-								child: RefreshableListFooter(
-									updater: update,
-									updatingNow: updatingNow,
-									lastUpdateTime: lastUpdateTime,
-									nextUpdateTime: nextUpdateTime,
-									errorMessage: errorMessage,
-									remedy: widget.remedies[errorType]?.call(context, update),
-									overscrollFactor: widget.controller?.overscrollFactor
+							if (values.length == 0)
+								if (_filter.isNotEmpty)
+									SliverToBoxAdapter(
+										child: Container(
+											height: 100,
+											child: Center(
+												child: Text('No results')
+											)
+										)
+									),
+							if (widget.footer != null && widget.disableUpdates) SliverSafeArea(
+								top: false,
+								sliver: SliverToBoxAdapter(
+									child: widget.footer
 								)
 							)
-						)
-					]
+							else if (widget.footer != null && !widget.disableUpdates) SliverToBoxAdapter(
+								child: widget.footer
+							)
+							else if (widget.disableUpdates) SliverSafeArea(
+								top: false,
+								sliver: SliverToBoxAdapter(
+									child: Container()
+								)
+							),
+							if (!widget.disableUpdates) SliverSafeArea(
+								top: false,
+								sliver: SliverToBoxAdapter(
+									child: RefreshableListFooter(
+										updater: update,
+										updatingNow: updatingNow,
+										lastUpdateTime: lastUpdateTime,
+										nextUpdateTime: nextUpdateTime,
+										errorMessage: errorMessage,
+										remedy: widget.remedies[errorType]?.call(context, update),
+										overscrollFactor: widget.controller?.overscrollFactor
+									)
+								)
+							)
+						]
+					)
 				)
 			);
 		}
