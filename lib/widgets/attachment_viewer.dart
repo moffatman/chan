@@ -354,6 +354,8 @@ class AttachmentViewer extends StatelessWidget {
 		return ExtendedImage(
 			image: image,
 			extendedImageGestureKey: controller.gestureKey,
+			color: const Color.fromRGBO(238, 242, 255, 1),
+			colorBlendMode: BlendMode.dstOver,
 			enableSlideOutPage: true,
 			gaplessPlayback: true,
 			fit: BoxFit.contain,
