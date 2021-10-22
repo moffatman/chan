@@ -293,7 +293,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 					backgroundColor: Colors.transparent,
 					navigationBar: showChrome ? CupertinoNavigationBar(
 						transitionBetweenRoutes: false,
-						middle: AutoSizeText(currentAttachment.filename),
+						middle: AutoSizeText("${currentAttachment.filename} (${currentAttachment.width}x${currentAttachment.height})"),
 						backgroundColor: Colors.black38,
 						trailing: Row(
 							mainAxisSize: MainAxisSize.min,
