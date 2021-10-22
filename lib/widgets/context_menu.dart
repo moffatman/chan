@@ -32,7 +32,6 @@ class ContextMenu extends StatefulWidget {
 }
 
 enum _ContextMenuUseNewConstraints {
-	No,
 	Yes
 }
 

@@ -16,7 +16,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 class PostSpanRenderOptions {

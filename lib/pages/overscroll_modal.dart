@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/gestures.dart';
