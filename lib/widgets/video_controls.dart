@@ -16,7 +16,7 @@ class VideoControls extends StatefulWidget {
 }
 
 class _VideoControlsState extends State<VideoControls> {
-	late double sliderValue;
+	double sliderValue = 0;
 	late VideoPlayerValue value;
 	late bool wasAlreadyPlaying;
 
