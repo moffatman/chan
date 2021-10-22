@@ -177,7 +177,8 @@ class PostQuoteLinkSpan extends PostSpan {
 					if (context.read<EffectiveSettings>().useTouchLayout) {
 						WeakNavigator.push(context, PostsPage(
 								zone: zone.childZoneFor(postId),
-								postsIdsToShow: [postId]
+								postsIdsToShow: [postId],
+								postIdForBackground: zone.stackIds.last,
 							)
 						);
 					}
