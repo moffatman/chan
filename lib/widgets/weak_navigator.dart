@@ -72,7 +72,7 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
       builder: (context) => AnimatedBuilder(
         animation: controller,
         builder: (context, child) => BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: controller.value * 10, sigmaY: controller.value * 10),
+          filter: ImageFilter.blur(sigmaX: controller.value * 5, sigmaY: controller.value * 5),
           child: Opacity(
             opacity: controller.value,
             child: child
