@@ -70,6 +70,7 @@ class _BoardPageState extends State<BoardPage> {
 							widget.onBoardChanged?.call(newBoard);
 							setState(() {
 								board = newBoard;
+								_listController.scrollController?.jumpTo(0);
 							});
 						}
 					} : null,
