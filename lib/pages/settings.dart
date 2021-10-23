@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tuple/tuple.dart';
 import 'package:provider/provider.dart';
 import 'package:extended_image_library/extended_image_library.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatelessWidget {
 	@override
@@ -28,6 +30,56 @@ class SettingsPage extends StatelessWidget {
 						child: ListView(
 							physics: BouncingScrollPhysics(),
 							children: [
+								Container(
+									padding: EdgeInsets.all(16),
+									child: Text('Content Filtering')
+								),
+								Container(
+									padding: EdgeInsets.only(left: 16, right: 16),
+									child: Table(
+										children: {
+											'Images': settings.contentSettings.images,
+											'NSFW Boards': settings.contentSettings.nsfwBoards,
+											'NSFW Images': settings.contentSettings.nsfwImages,
+											'NSFW Text': settings.contentSettings.nsfwText
+										}.entries.map((x) => TableRow(
+											children: [
+												Text(x.key),
+												Text(x.value ? 'Allowed' : 'Blocked', textAlign: TextAlign.right)
+											]
+										)).toList()
+									)
+								),
+								Container(
+									padding: EdgeInsets.only(left: 16, right: 16),
+									alignment: Alignment.center,
+									child: Wrap(
+										children: [
+											CupertinoButton(
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Text('Synchronize '),
+														Icon(Icons.sync_rounded, size: 16)
+													]
+												),
+												onPressed: () {
+													settings.updateContentSettings();
+												}
+											),
+											CupertinoButton(
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Text('Edit preferences '),
+														Icon(Icons.launch_rounded, size: 16)
+													]
+												),
+												onPressed: () => launch(settings.contentSettingsUrl)
+											)
+										]
+									)
+								),
 								Container(
 									padding: EdgeInsets.all(16),
 									child: Text('Use touchscreen layout'),

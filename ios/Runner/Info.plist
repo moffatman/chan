@@ -51,5 +51,10 @@
 		<string>Camera permissions are necessary to capture images</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>Microphone permissions are necessary to capture videos</string>
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>https</string>
+			<string>http</string>
+		</array>
 	</dict>
 </plist>

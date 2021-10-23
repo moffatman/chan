@@ -1,13 +1,21 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:profanity_filter/profanity_filter.dart';
 import 'package:provider/provider.dart';
 import 'package:hive/hive.dart';
+import 'package:uuid/uuid.dart';
 part 'settings.g.dart';
+
+const CONTENT_SETTINGS_API_ROOT = 'https://us-central1-chan-329813.cloudfunctions.net/preferences';
+final _punctuationRegex = RegExp('(\\W+|s\\W)');
+final _badWords = Set.from(ProfanityFilter().wordsToFilterOutList);
 
 @HiveType(typeId: 1)
 enum AutoloadAttachmentsSetting {
@@ -43,6 +51,25 @@ enum ThreadSortingMethod {
 	SavedTime
 }
 
+@HiveType(typeId: 20)
+class ContentSettings {
+	@HiveField(0)
+	bool images;
+	@HiveField(1)
+	bool nsfwBoards;
+	@HiveField(2)
+	bool nsfwImages;
+	@HiveField(3)
+	bool nsfwText;
+
+	ContentSettings({
+		this.images = false,
+		this.nsfwBoards = false,
+		this.nsfwImages = false,
+		this.nsfwText = false
+	});
+}
+
 @HiveType(typeId: 0)
 class SavedSettings extends HiveObject {
 	@HiveField(0)
@@ -65,6 +92,10 @@ class SavedSettings extends HiveObject {
 	bool darkThemeIsPureBlack;
 	@HiveField(9)
 	bool useTouchLayout;
+	@HiveField(10)
+	String userId;
+  @HiveField(11)
+	ContentSettings contentSettings;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -76,7 +107,9 @@ class SavedSettings extends HiveObject {
 		bool? autoRotateInGallery,
 		String? currentBoardName,
 		bool? darkThemeIsPureBlack,
-		bool? useTouchLayout
+		bool? useTouchLayout,
+		String? userId,
+		ContentSettings? contentSettings
 	}): this.autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.WiFi,
 		this.theme = theme ?? ThemeSetting.System,
 		this.hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -86,7 +119,9 @@ class SavedSettings extends HiveObject {
 		this.autoRotateInGallery = autoRotateInGallery ?? false,
 		this.currentBoardName = currentBoardName ?? 'tv',
 		this.darkThemeIsPureBlack = darkThemeIsPureBlack ?? false,
-		this.useTouchLayout = useTouchLayout ?? (Platform.isAndroid || Platform.isIOS);
+		this.useTouchLayout = useTouchLayout ?? (Platform.isAndroid || Platform.isIOS),
+		this.userId = userId ?? Uuid().v4(),
+		this.contentSettings = contentSettings ?? ContentSettings();
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -184,6 +219,52 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.currentBoardName = setting;
 		_settings.save();
 		notifyListeners();
+	}
+
+	ContentSettings get contentSettings => _settings.contentSettings;
+	String get contentSettingsUrl => '$CONTENT_SETTINGS_API_ROOT/user/${_settings.userId}/edit';
+
+	void updateContentSettings() async {
+		try {
+			final response = await Dio().get('$CONTENT_SETTINGS_API_ROOT/user/${_settings.userId}');
+			_settings.contentSettings.images = response.data['images'];
+			_settings.contentSettings.nsfwBoards = response.data['nsfwBoards'];
+			_settings.contentSettings.nsfwImages = response.data['nsfwImages'];
+			_settings.contentSettings.nsfwText = response.data['nsfwText'];
+			await _settings.save();
+			notifyListeners();
+		}
+		catch (e) {
+			print('Error updating content settings: $e');
+		}
+	}
+
+	bool showBoard(String board) {
+		return Persistence.getBoard(board).isWorksafe || _settings.contentSettings.nsfwBoards;
+	}
+
+	bool showImages(String board) {
+		return _settings.contentSettings.images && (Persistence.getBoard(board).isWorksafe || _settings.contentSettings.nsfwImages);
+	}
+
+	String filterProfanity(String input) {
+		if (_settings.contentSettings.nsfwText) {
+			return input;
+		}
+		else {
+			String output = input;
+			final words = input.split(_punctuationRegex);
+			for (final word in words) {
+				if (_badWords.contains(word)) {
+					output = input.replaceAll(word, '*' * word.length);
+				}
+			}
+			return output;
+		}
+	}
+
+	EffectiveSettings() {
+		updateContentSettings();
 	}
 }
 

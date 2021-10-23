@@ -51,6 +51,7 @@ class Persistence {
 		Hive.registerAdapter(ThemeSettingAdapter());
 		Hive.registerAdapter(AutoloadAttachmentsSettingAdapter());
 		Hive.registerAdapter(ThreadSortingMethodAdapter());
+		Hive.registerAdapter(ContentSettingsAdapter());
 		Hive.registerAdapter(SavedSettingsAdapter());
 		Hive.registerAdapter(UriAdapter());
 		Hive.registerAdapter(AttachmentTypeAdapter());

@@ -127,7 +127,7 @@ class PostRow extends StatelessWidget {
 						)
 					)
 				);
-				final innerChild = (context, slideFactor) => GestureDetector(
+				final innerChild = (BuildContext context, double slideFactor) => GestureDetector(
 					onTap: onTap,
 					child: Container(
 						padding: EdgeInsets.all(8),
@@ -146,7 +146,7 @@ class PostRow extends StatelessWidget {
 											TextSpan(
 												children: [
 													TextSpan(
-														text: _post.name + ((receipt != null) ? ' (You)' : ''),
+														text: context.read<EffectiveSettings>().filterProfanity(_post.name) + ((receipt != null) ? ' (You)' : ''),
 														style: TextStyle(fontWeight: FontWeight.w600, color: (receipt != null) ? Colors.red : null)
 													),
 													if (_post.posterId != null) IDSpan(
@@ -202,7 +202,7 @@ class PostRow extends StatelessWidget {
 											mainAxisAlignment: MainAxisAlignment.start,
 											mainAxisSize: MainAxisSize.min,
 											children: [
-												if (_post.attachment != null) Align(
+												if (_post.attachment != null && settings.showImages(_post.board)) Align(
 													alignment: Alignment.topCenter,
 													child: GestureDetector(
 														child: AttachmentThumbnail(

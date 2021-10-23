@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -61,7 +62,7 @@ class ThreadRow extends StatelessWidget {
 								crossAxisAlignment: CrossAxisAlignment.start,
 								mainAxisSize: MainAxisSize.max,
 								children: [
-									if (_thread.attachment != null) Column(
+									if (_thread.attachment != null && context.watch<EffectiveSettings>().showImages(_thread.board)) Column(
 										mainAxisSize: MainAxisSize.min,
 										children: [
 											Flexible(
@@ -92,7 +93,7 @@ class ThreadRow extends StatelessWidget {
 									),
 									Expanded(
 										child: Container(
-											constraints: BoxConstraints(maxHeight: 125),
+											constraints: BoxConstraints(maxHeight: 125, minHeight: 75),
 											padding: EdgeInsets.only(left: 8, right: 8),
 											child: ChangeNotifierProvider<PostSpanZoneData>(
 												create: (ctx) => PostSpanRootZoneData(
@@ -107,7 +108,7 @@ class ThreadRow extends StatelessWidget {
 																	TextSpan(
 																		children: [
 																			TextSpan(
-																				text: _thread.posts[0].name,
+																				text: context.read<EffectiveSettings>().filterProfanity(_thread.posts[0].name),
 																				style: TextStyle(fontWeight: FontWeight.w600)
 																			),
 																			TextSpan(text: ' '),
@@ -134,7 +135,7 @@ class ThreadRow extends StatelessWidget {
 																		]
 																	),
 																	if (_thread.title != null) TextSpan(
-																		text: _thread.title! + '\n',
+																		text: context.read<EffectiveSettings>().filterProfanity(_thread.title!) + '\n',
 																		style: TextStyle(fontWeight: FontWeight.bold)
 																	),
 																	_thread.posts[0].span.build(ctx, PostSpanRenderOptions())

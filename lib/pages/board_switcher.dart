@@ -1,9 +1,11 @@
 import 'package:chan/models/board.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:provider/provider.dart';
 
 class BoardSwitcherPage extends StatefulWidget {
 	createState() => _BoardSwitcherPageState();
@@ -19,7 +21,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	void initState() {
 		super.initState();
 		boards = Persistence.boardBox.toMap().values.toList();
-		_filteredBoards = boards;
+		final settings = context.read<EffectiveSettings>();
+		_filteredBoards = boards.where((b) => settings.showBoard(b.name)).toList();
 	}
 
 	@override
@@ -59,6 +62,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
 										return (b.name.contains(searchString) ? 1 : 0) - (a.name.contains(searchString) ? 1 : 0);
 									});
+									final settings = context.read<EffectiveSettings>();
+									_filteredBoards = _filteredBoards.where((b) => settings.showBoard(b.name)).toList();
 									setState(() {});
 								}
 							)

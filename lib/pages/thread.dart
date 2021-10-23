@@ -4,6 +4,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -184,7 +185,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	@override
 	Widget build(BuildContext context) {
 		final properScrollController = PrimaryScrollController.of(context)!;
-		String title = persistentState.thread?.title ?? '/${widget.thread.board}/${widget.thread.id}';
+		String title = context.read<EffectiveSettings>().filterProfanity(persistentState.thread?.title ?? '/${widget.thread.board}/${widget.thread.id}');
 		if (persistentState.thread?.isArchived ?? false) {
 			title += ' (Archived)';
 		}
@@ -251,11 +252,13 @@ class _ThreadPageState extends State<ThreadPage> {
 												actions: {
 													OpenGalleryIntent: CallbackAction<OpenGalleryIntent>(
 														onInvoke: (i) {
-															final nextPostWithImage = persistentState.thread?.posts.skip(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null, orElse: () {
-																return persistentState.thread!.posts.take(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null);
-															});
-															if (nextPostWithImage != null) {
-																_showGallery(initialAttachment: nextPostWithImage.attachment);
+															if (context.read<EffectiveSettings>().showImages(widget.thread.board)) {
+																final nextPostWithImage = persistentState.thread?.posts.skip(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null, orElse: () {
+																	return persistentState.thread!.posts.take(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null);
+																});
+																if (nextPostWithImage != null) {
+																	_showGallery(initialAttachment: nextPostWithImage.attachment);
+																}
 															}
 														}
 													)

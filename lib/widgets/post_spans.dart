@@ -62,7 +62,7 @@ class PostTextSpan extends PostSpan {
 	PostTextSpan(this.text);
 	build(context, options) {
 		return TextSpan(
-			text: this.text,
+			text: context.read<EffectiveSettings>().filterProfanity(text),
 			recognizer: options.recognizer
 		);
 	}
