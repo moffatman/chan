@@ -287,7 +287,7 @@ class SettingsThreadsPanel extends StatelessWidget {
 		return ValueListenableBuilder(
 			valueListenable: Persistence.threadStateBox.listenable(),
 			builder: (context, Box<PersistentThreadState> threadStateBox, child) {
-				final oldThreadRows =[7, 14, 30, 60, 90, 180].map((days) {
+				final oldThreadRows =[0, 7, 14, 30, 60, 90, 180].map((days) {
 					final cutoff = DateTime.now().subtract(Duration(days: days));
 					final oldThreads = threadStateBox.values.where((state) {
 						return (state.savedTime == null) && state.lastOpenedTime.compareTo(cutoff).isNegative;
