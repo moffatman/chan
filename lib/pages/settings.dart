@@ -75,7 +75,7 @@ class SettingsPage extends StatelessWidget {
 														Icon(Icons.launch_rounded, size: 16)
 													]
 												),
-												onPressed: () => launch(settings.contentSettingsUrl)
+												onPressed: () => launch(settings.contentSettingsUrl, forceSafariVC: false)
 											)
 										]
 									)
