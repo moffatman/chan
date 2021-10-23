@@ -16,7 +16,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:flutter_highlight/themes/atom-one-light.dart';
 import 'package:provider/provider.dart';
+import 'package:highlight/highlight.dart';
+import 'package:flutter_highlight/themes/atom-one-dark-reasonable.dart';
 
 class PostSpanRenderOptions {
 	final GestureRecognizer? recognizer;
@@ -258,6 +261,62 @@ class PostBoardLink extends PostSpan {
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
 				context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(builder: (ctx) => BoardPage(initialBoard: Persistence.getBoard(board))));
 			})
+		);
+	}
+}
+
+class PostCodeSpan extends PostSpan {
+	final String text;
+	final Map<Brightness, List<TextSpan>> _spans = {};
+	
+	List<TextSpan> _buildSpans(Brightness brightness) {
+		final theme = brightness == Brightness.light ? atomOneLightTheme : atomOneDarkReasonableTheme;
+		final nodes = highlight.parse(text.replaceAll('\t', ' ' * 4), autoDetection: true).nodes!;
+
+		List<TextSpan> spans = [];
+		List<TextSpan> currentSpans = spans;
+		List<List<TextSpan>> stack = [];
+
+		_traverse(Node node) {
+			if (node.value != null) {
+				currentSpans.add(node.className == null
+						? TextSpan(text: node.value)
+						: TextSpan(text: node.value, style: theme[node.className!]));
+			} else if (node.children != null) {
+				List<TextSpan> tmp = [];
+				currentSpans.add(TextSpan(children: tmp, style: theme[node.className!]));
+				stack.add(currentSpans);
+				currentSpans = tmp;
+
+				node.children!.forEach((n) {
+					_traverse(n);
+					if (n == node.children!.last) {
+						currentSpans = stack.isEmpty ? spans : stack.removeLast();
+					}
+				});
+			}
+		}
+
+		for (var node in nodes) {
+			_traverse(node);
+		}
+
+		return spans;
+	}
+
+	PostCodeSpan(this.text) {
+		for (final brightness in Brightness.values) {
+			_spans[brightness] = _buildSpans(brightness);
+		}
+	}
+
+	build(context, options) {
+		return TextSpan(
+			style: DefaultTextStyle.of(context).style.copyWith(
+				fontFamily: 'monospace',
+				fontSize: (DefaultTextStyle.of(context).style.fontSize ?? 16) - 2
+			),
+			children: _spans[CupertinoTheme.brightnessOf(context)]
 		);
 	}
 }

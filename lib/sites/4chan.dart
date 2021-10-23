@@ -88,56 +88,57 @@ class Site4Chan extends ImageboardSite {
 				if (node.localName == 'br') {
 					elements.add(PostTextSpan('\n'));
 				}
-				else {
-					if (node.localName == 'a' && node.classes.contains('quotelink')) {
-						if (node.attributes['href']!.startsWith('#p')) {
-							elements.add(PostQuoteLinkSpan(
-								board: board,
-								threadId: threadId,
-								postId: int.parse(node.attributes['href']!.substring(2)),
-								dead: false
-							));
-						}
-						else if (node.attributes['href']!.contains('#p')) {
-							// href looks like '/tv/thread/123456#p123457'
-							final parts = node.attributes['href']!.split('/');
-							final threadIndex = parts.indexOf('thread');
-							final ids = parts[threadIndex + 1].split('#p');
-							elements.add(PostQuoteLinkSpan(
-								board: parts[threadIndex - 1],
-								threadId: int.parse(ids[0]),
-								postId: int.parse(ids[1]),
-								dead: false
-							));
-						}
-						else {
-							// href looks like '//boards.4chan.org/pol/'
-							final parts = node.attributes['href']!.split('/');
-							elements.add(PostBoardLink(parts[parts.length - 2]));
-						}
+				else if (node.localName == 'a' && node.classes.contains('quotelink')) {
+					if (node.attributes['href']!.startsWith('#p')) {
+						elements.add(PostQuoteLinkSpan(
+							board: board,
+							threadId: threadId,
+							postId: int.parse(node.attributes['href']!.substring(2)),
+							dead: false
+						));
 					}
-					else if (node.localName == 'span') {
-						if (node.attributes['class']?.contains('deadlink') ?? false) {
-							final parts = node.innerHtml.replaceAll('&gt;', '').split('/');
-							elements.add(PostQuoteLinkSpan(
-								board: (parts.length > 2) ? parts[1] : board,
-								postId: int.parse(parts.last),
-								dead: true
-							));
-						}
-						else if (node.attributes['class']?.contains('quote') ?? false) {
-							elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
-						}
-						else {
-							elements.add(PostTextSpan(node.text));
-						}
-					}
-					else if (node.localName == 's') {
-						elements.add(PostSpoilerSpan(makeSpan(board, threadId, node.innerHtml), spoilerSpanId++));
+					else if (node.attributes['href']!.contains('#p')) {
+						// href looks like '/tv/thread/123456#p123457'
+						final parts = node.attributes['href']!.split('/');
+						final threadIndex = parts.indexOf('thread');
+						final ids = parts[threadIndex + 1].split('#p');
+						elements.add(PostQuoteLinkSpan(
+							board: parts[threadIndex - 1],
+							threadId: int.parse(ids[0]),
+							postId: int.parse(ids[1]),
+							dead: false
+						));
 					}
 					else {
-						elements.addAll(parsePlaintext(node.text));
+						// href looks like '//boards.4chan.org/pol/'
+						final parts = node.attributes['href']!.split('/');
+						elements.add(PostBoardLink(parts[parts.length - 2]));
 					}
+				}
+				else if (node.localName == 'span') {
+					if (node.attributes['class']?.contains('deadlink') ?? false) {
+						final parts = node.innerHtml.replaceAll('&gt;', '').split('/');
+						elements.add(PostQuoteLinkSpan(
+							board: (parts.length > 2) ? parts[1] : board,
+							postId: int.parse(parts.last),
+							dead: true
+						));
+					}
+					else if (node.attributes['class']?.contains('quote') ?? false) {
+						elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
+					}
+					else {
+						elements.add(PostTextSpan(node.text));
+					}
+				}
+				else if (node.localName == 's') {
+					elements.add(PostSpoilerSpan(makeSpan(board, threadId, node.innerHtml), spoilerSpanId++));
+				}
+				else if (node.localName == 'pre') {
+					elements.add(PostCodeSpan(node.innerHtml.replaceFirst(RegExp(r'<br>$'), '').replaceAll('<br>', '\n')));
+				}
+				else {
+					elements.addAll(parsePlaintext(node.text));
 				}
 			}
 			else {
