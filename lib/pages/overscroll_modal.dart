@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 class OverscrollModalPage extends StatefulWidget {
 	final Widget child;
@@ -149,7 +150,9 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 							},
 							onPointerUp: (event) => _onPointerUp(),
 							onPointerHover: (event) {
-								_controller.jumpTo(_controller.position.pixels);
+								if (_controller.position.userScrollDirection != ScrollDirection.idle) {
+									_controller.jumpTo(_controller.position.pixels);
+								}
 							},
 							child: Actions(
 								actions: {

@@ -209,7 +209,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				},
 				child: Listener(
 					onPointerHover: (e) {
-						if (widget.controller?.scrollController != null) {
+						if (widget.controller?.scrollController != null && (widget.controller!.scrollController!.position.userScrollDirection != ScrollDirection.idle)) {
 							widget.controller!.scrollController!.jumpTo(widget.controller!.scrollController!.position.pixels);
 						}
 					},
