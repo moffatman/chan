@@ -20,6 +20,7 @@ import 'package:flutter_highlight/themes/atom-one-light.dart';
 import 'package:provider/provider.dart';
 import 'package:highlight/highlight.dart';
 import 'package:flutter_highlight/themes/atom-one-dark-reasonable.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PostSpanRenderOptions {
 	final GestureRecognizer? recognizer;
@@ -267,14 +268,13 @@ class PostBoardLink extends PostSpan {
 
 class PostCodeSpan extends PostSpan {
 	final String text;
-	final Map<Brightness, List<TextSpan>> _spans = {};
-	
-	List<TextSpan> _buildSpans(Brightness brightness) {
-		final theme = brightness == Brightness.light ? atomOneLightTheme : atomOneDarkReasonableTheme;
+	final List<TextSpan> _spans = [];
+
+	PostCodeSpan(this.text) {
+		final theme = atomOneDarkReasonableTheme;
 		final nodes = highlight.parse(text.replaceAll('\t', ' ' * 4), autoDetection: true).nodes!;
 
-		List<TextSpan> spans = [];
-		List<TextSpan> currentSpans = spans;
+		List<TextSpan> currentSpans = _spans;
 		List<List<TextSpan>> stack = [];
 
 		_traverse(Node node) {
@@ -291,7 +291,7 @@ class PostCodeSpan extends PostSpan {
 				node.children!.forEach((n) {
 					_traverse(n);
 					if (n == node.children!.last) {
-						currentSpans = stack.isEmpty ? spans : stack.removeLast();
+						currentSpans = stack.isEmpty ? _spans : stack.removeLast();
 					}
 				});
 			}
@@ -300,23 +300,23 @@ class PostCodeSpan extends PostSpan {
 		for (var node in nodes) {
 			_traverse(node);
 		}
-
-		return spans;
-	}
-
-	PostCodeSpan(this.text) {
-		for (final brightness in Brightness.values) {
-			_spans[brightness] = _buildSpans(brightness);
-		}
 	}
 
 	build(context, options) {
-		return TextSpan(
-			style: DefaultTextStyle.of(context).style.copyWith(
-				fontFamily: 'monospace',
-				fontSize: (DefaultTextStyle.of(context).style.fontSize ?? 16) - 2
-			),
-			children: _spans[CupertinoTheme.brightnessOf(context)]
+		return WidgetSpan(
+			child: Container(
+				padding: EdgeInsets.all(8),
+				decoration: BoxDecoration(
+					color: Colors.black,
+					borderRadius: BorderRadius.all(Radius.circular(8))
+				),
+				child: RichText(
+					text: TextSpan(
+						style: GoogleFonts.ibmPlexMono(),
+						children: _spans
+					)
+				)
+			)
 		);
 	}
 }
