@@ -9,7 +9,7 @@
          FlutterApplication and put your custom class here. -->
     <application
 		tools:replace="android:label"
-        android:label="chan"
+        android:label="Chance"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

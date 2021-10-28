@@ -67,7 +67,7 @@ class ChanApp extends StatelessWidget {
 						return ChangeNotifierProvider(
 							create: (ctx) => ThreadWatcher(site: ctx.read<ImageboardSite>()),
 							child: CupertinoApp(
-								title: 'Chan',
+								title: 'Chance',
 								theme: theme,
 								home: Builder(
 									builder: (BuildContext context) {
