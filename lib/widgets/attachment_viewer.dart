@@ -139,11 +139,11 @@ class AttachmentViewerController extends ChangeNotifier {
 		throw HTTPStatusException(result.statusCode!);
 	}
 
-	Future<void> _loadFullAttachment(bool startImageDownload) async {
-		if (attachment.type == AttachmentType.Image && goodImageSource != null) {
+	Future<void> _loadFullAttachment(bool startImageDownload, {bool force = false}) async {
+		if (attachment.type == AttachmentType.Image && goodImageSource != null && !force) {
 			return;
 		}
-		if (attachment.type == AttachmentType.WEBM && videoPlayerController != null) {
+		if (attachment.type == AttachmentType.WEBM && ((videoPlayerController != null && !force) || _ongoingConversion != null)) {
 			return;
 		}
 		_errorMessage = null;
@@ -186,6 +186,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				});
 				_ongoingConversion!.start();
 				final result = await _ongoingConversion!.result;
+				_ongoingConversion = null;
 				_videoPlayerController = VideoPlayerController.file(result.file, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
 				await _videoPlayerController!.initialize();
 				await _videoPlayerController!.setLooping(true);
@@ -208,6 +209,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	Future<void> loadFullAttachment() => _loadFullAttachment(false);
+
+	Future<void> reloadFullAttachment() => _loadFullAttachment(false, force: true);
 
 	void preloadFullAttachment() => _loadFullAttachment(true);
 
@@ -488,7 +491,7 @@ class AttachmentViewer extends StatelessWidget {
 						gaplessPlayback: true
 					),
 					if (controller.errorMessage != null) Center(
-						child: ErrorMessageCard(controller.errorMessage!)
+						child: ErrorMessageCard(controller.errorMessage!, retry: controller.reloadFullAttachment)
 					)
 					else if (controller.videoPlayerController != null) Center(
 						child: RotatedBox(

@@ -81,7 +81,10 @@ class TransparentRoute<T> extends PageRoute<T> {
 
 class ErrorMessageCard extends StatelessWidget {
 	final String message;
-	ErrorMessageCard(this.message);
+	final VoidCallback? retry;
+	ErrorMessageCard(this.message, {
+		this.retry
+	});
 
 	@override
 	Widget build(BuildContext context) {
@@ -97,6 +100,16 @@ class ErrorMessageCard extends StatelessWidget {
 					Icon(Icons.error, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
 					SizedBox(height: 8),
 					Text(message, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor), textAlign: TextAlign.center),
+					if (retry != null) ...[
+						SizedBox(height: 8),
+						CupertinoButton(
+							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+							child: Text('Retry', style: TextStyle(
+								color: CupertinoTheme.of(context).primaryColor
+							)),
+							onPressed: retry
+						)
+					]
 				]
 			)
 		);
