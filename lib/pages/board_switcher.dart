@@ -20,9 +20,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	@override
 	void initState() {
 		super.initState();
-		boards = Persistence.boardBox.toMap().values.toList();
+		boards = context.read<Persistence>().boardBox.toMap().values.toList();
 		final settings = context.read<EffectiveSettings>();
-		_filteredBoards = boards.where((b) => settings.showBoard(b.name)).toList();
+		_filteredBoards = boards.where((b) => settings.showBoard(context, b.name)).toList();
 	}
 
 	@override
@@ -63,7 +63,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										return (b.name.contains(searchString) ? 1 : 0) - (a.name.contains(searchString) ? 1 : 0);
 									});
 									final settings = context.read<EffectiveSettings>();
-									_filteredBoards = _filteredBoards.where((b) => settings.showBoard(b.name)).toList();
+									_filteredBoards = _filteredBoards.where((b) => settings.showBoard(context, b.name)).toList();
 									setState(() {});
 								}
 							)

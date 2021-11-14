@@ -153,8 +153,8 @@ class _SearchPageState extends State<SearchPage> {
 													onSubmitted: (String q) {
 														_controller.clear();
 														FocusManager.instance.primaryFocus!.unfocus();
-														Persistence.recentSearches.add(query.clone());
-														Persistence.recentSearches.save();
+														context.read<Persistence>().recentSearches.add(query.clone());
+														context.read<Persistence>().recentSearches.save();
 														Navigator.of(context).push(FullWidthCupertinoPageRoute(
 															builder: (context) => SearchQueryPage(query)
 														));
@@ -262,12 +262,12 @@ class _SearchPageState extends State<SearchPage> {
 					]
 				) : ListView(
 					key: ValueKey(false),
-					children: Persistence.recentSearches.entries.map((q) {
+					children: context.watch<Persistence>().recentSearches.entries.map((q) {
 						return GestureDetector(
 							behavior: HitTestBehavior.opaque,
 							onTap: () {
-								Persistence.recentSearches.bump(q);
-								Persistence.recentSearches.save();
+								context.read<Persistence>().recentSearches.bump(q);
+								context.read<Persistence>().recentSearches.save();
 								Navigator.of(context).push(FullWidthCupertinoPageRoute(
 									builder: (context) => SearchQueryPage(q)
 								));
@@ -290,8 +290,8 @@ class _SearchPageState extends State<SearchPage> {
 											padding: EdgeInsets.zero,
 											child: Icon(Icons.close),
 											onPressed: () {
-												Persistence.recentSearches.remove(q);
-												Persistence.recentSearches.save();
+												context.read<Persistence>().recentSearches.remove(q);
+												context.read<Persistence>().recentSearches.save();
 												setState(() {});
 											}
 										)

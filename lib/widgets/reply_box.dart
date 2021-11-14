@@ -229,7 +229,7 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	Future<void> _selectAttachment() async {
 		final picker = ImagePicker();
-		final savedAttachments = Persistence.savedAttachmentBox.values.toList();
+		final savedAttachments = context.read<Persistence>().savedAttachmentsBox.values.toList();
 		savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
 		final sources = {
 			_AttachmentSource(ImageSource.gallery, AttachmentType.Image): Icons.photo_library,
@@ -310,7 +310,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		));
 		if (file != null) {
 			try {
-				final board = Persistence.getBoard(widget.board);
+				final board = context.read<Persistence>().getBoard(widget.board);
 				print(file);
 				print(file.path);
 				String ext = file.path.split('.').last.toLowerCase();
@@ -416,6 +416,9 @@ class ReplyBoxState extends State<ReplyBox> {
 				);
 			}));
 		}
+		else if (captchaRequest is NoCaptchaRequest) {
+			captchaSolution = NoCaptchaSolution();
+		}
 		if (captchaSolution == null) {
 			return;
 		}
@@ -452,7 +455,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			});
 			print(receipt);
 			_textFocusNode.unfocus();
-			final threadState = Persistence.getThreadState((widget.threadId != null) ?
+			final threadState = context.read<Persistence>().getThreadState((widget.threadId != null) ?
 				ThreadIdentifier(board: widget.board, id: widget.threadId!) :
 				ThreadIdentifier(board: widget.board, id: receipt.id));
 			threadState.receipts = [...threadState.receipts, receipt];
@@ -576,7 +579,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	Widget _buildTextField(BuildContext context) {
-		final board = Persistence.getBoard(widget.board);
+		final board = context.watch<Persistence>().getBoard(widget.board);
 		return Container(
 			padding: EdgeInsets.all(8),
 			child: Column(

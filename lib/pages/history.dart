@@ -9,6 +9,7 @@ import 'package:chan/widgets/thread_row.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/src/provider.dart';
 
 class HistoryPage extends StatefulWidget {
 	@override
@@ -30,7 +31,7 @@ class _HistoryPageState extends State<HistoryPage> {
 						middle: Text('History')
 					),
 					child: ValueListenableBuilder(
-						valueListenable: Persistence.threadStateBox.listenable(),
+						valueListenable: context.watch<Persistence>().threadStateBox.listenable(),
 						builder: (context, Box<PersistentThreadState> box, child) {
 							final states = box.toMap().values.where((s) => s.thread != null).toList();
 							states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));

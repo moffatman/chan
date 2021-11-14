@@ -64,6 +64,10 @@ class CaptchaRequest {
 
 }
 
+class NoCaptchaRequest extends CaptchaRequest {
+  
+}
+
 class RecaptchaRequest extends CaptchaRequest {
 	final String key;
 	final String sourceUrl;
@@ -86,6 +90,10 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 
 class CaptchaSolution {
 
+}
+
+class NoCaptchaSolution extends CaptchaSolution {
+  
 }
 
 class RecaptchaSolution extends CaptchaSolution {
@@ -161,4 +169,5 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread);
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
 	Uri getPostReportUrl(String board, int id);
+	Persistence? persistence;
 }

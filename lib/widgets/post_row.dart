@@ -49,10 +49,10 @@ class PostRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return ValueListenableBuilder(
-			valueListenable: Persistence.savedPostsBox.listenable(keys: [post.globalId]),
+			valueListenable: context.watch<Persistence>().savedPostsBox.listenable(keys: [post.globalId]),
 			builder: (context, box, child) {
 				final site = context.watch<ImageboardSite>();
-				Post _post = Persistence.getSavedPost(post)?.post ?? post;
+				Post _post = context.watch<Persistence>().getSavedPost(post)?.post ?? post;
 				final zone = context.watch<PostSpanZoneData>();
 				final settings = context.watch<EffectiveSettings>();
 				final receipt = zone.threadState?.receipts.tryFirstWhere((r) => r.id == _post.id);
@@ -202,7 +202,7 @@ class PostRow extends StatelessWidget {
 											mainAxisAlignment: MainAxisAlignment.start,
 											mainAxisSize: MainAxisSize.min,
 											children: [
-												if (_post.attachment != null && settings.showImages(_post.board)) Align(
+												if (_post.attachment != null && settings.showImages(context, _post.board)) Align(
 													alignment: Alignment.topCenter,
 													child: GestureDetector(
 														child: AttachmentThumbnail(
@@ -250,18 +250,18 @@ class PostRow extends StatelessWidget {
 							trailingIcon: Icons.subdirectory_arrow_right,
 							onPressed: () => zone.onNeedScrollToPost!(_post)
 						),
-						if (Persistence.getSavedPost(post) == null) ContextMenuAction(
+						if (context.watch<Persistence>().getSavedPost(post) == null) ContextMenuAction(
 							child: Text('Save Post'),
 							trailingIcon: Icons.bookmark_add,
 							onPressed: () {
-								Persistence.savePost(_post, zone.thread);
+								context.read<Persistence>().savePost(_post, zone.thread);
 							}
 						)
 						else ContextMenuAction(
 							child: Text('Unsave Post'),
 							trailingIcon: Icons.bookmark_remove,
 							onPressed: () {
-								Persistence.getSavedPost(post)?.delete();
+								context.read<Persistence>().getSavedPost(post)?.delete();
 							}
 						),
 						ContextMenuAction(

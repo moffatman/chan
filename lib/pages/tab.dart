@@ -5,6 +5,7 @@ import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
 
 class ImageboardTab extends StatelessWidget {
 	final String initialBoardName;
@@ -16,11 +17,18 @@ class ImageboardTab extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		ImageboardBoard board = context.watch<Persistence>().boardBox.values.first;
+		try {
+			board = context.watch<Persistence>().getBoard(initialBoardName);
+		}
+		catch (e, st) {
+			
+		}
 		return MasterDetailPage<ThreadIdentifier>(
 			id: 'tab',
 			masterBuilder: (context, selectedThread, threadSetter) {
 				return BoardPage(
-					initialBoard: Persistence.getBoard(initialBoardName),
+					initialBoard: board,
 					selectedThread: selectedThread,
 					onThreadSelected: threadSetter,
 					onBoardChanged: onBoardChanged,

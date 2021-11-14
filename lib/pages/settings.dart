@@ -285,7 +285,7 @@ class SettingsThreadsPanel extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return ValueListenableBuilder(
-			valueListenable: Persistence.threadStateBox.listenable(),
+			valueListenable: context.watch<Persistence>().threadStateBox.listenable(),
 			builder: (context, Box<PersistentThreadState> threadStateBox, child) {
 				final oldThreadRows =[0, 7, 14, 30, 60, 90, 180].map((days) {
 					final cutoff = DateTime.now().subtract(Duration(days: days));

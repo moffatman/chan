@@ -93,7 +93,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	@override
 	void initState() {
 		super.initState();
-		persistentState = Persistence.getThreadState(widget.thread, updateOpenedTime: true);
+		persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
 		persistentState.useArchive |= widget.initiallyUseArchive;
 		persistentState.save();
 		zone = PostSpanRootZoneData(
@@ -124,7 +124,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (widget.thread.board != old.thread.board || widget.thread.id != old.thread.id) {
 			_weakNavigatorKey.currentState!.popAllExceptFirst();
 			persistentState.save(); // Save old state in case it had pending scroll update to save
-			persistentState = Persistence.getThreadState(widget.thread, updateOpenedTime: true);
+			persistentState = context.watch<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
 			persistentState.useArchive |= widget.initiallyUseArchive;
 			final oldZone = zone;
 			Future.delayed(Duration(milliseconds: 100), () => oldZone.dispose());
@@ -252,7 +252,7 @@ class _ThreadPageState extends State<ThreadPage> {
 												actions: {
 													OpenGalleryIntent: CallbackAction<OpenGalleryIntent>(
 														onInvoke: (i) {
-															if (context.read<EffectiveSettings>().showImages(widget.thread.board)) {
+															if (context.read<EffectiveSettings>().showImages(context, widget.thread.board)) {
 																final nextPostWithImage = persistentState.thread?.posts.skip(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null, orElse: () {
 																	return persistentState.thread!.posts.take(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null);
 																});
@@ -286,11 +286,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																						Spacer(),
 																						Icon(Icons.reply_rounded),
 																						SizedBox(width: 4),
-																						_limitCounter(persistentState.thread!.replyCount, Persistence.getBoard(widget.thread.board).threadCommentLimit),
+																						_limitCounter(persistentState.thread!.replyCount, context.watch<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
 																						Spacer(),
 																						Icon(Icons.image),
 																						SizedBox(width: 4),
-																						_limitCounter(persistentState.thread!.imageCount, Persistence.getBoard(widget.thread.board).threadImageLimit),
+																						_limitCounter(persistentState.thread!.imageCount, context.watch<Persistence>().getBoard(widget.thread.board).threadImageLimit),
 																						Spacer(),
 																						if (persistentState.thread!.uniqueIPCount != null) ...[
 																							Icon(Icons.person),
@@ -301,7 +301,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																						if (persistentState.thread!.currentPage != null) ...[
 																							Icon(Icons.insert_drive_file_rounded),
 																							SizedBox(width: 4),
-																							_limitCounter(persistentState.thread!.currentPage!, Persistence.getBoard(widget.thread.board).pageCount),
+																							_limitCounter(persistentState.thread!.currentPage!, context.watch<Persistence>().getBoard(widget.thread.board).pageCount),
 																							Spacer()
 																						],
 																						if (persistentState.thread!.isArchived) ...[

@@ -35,18 +35,18 @@ const _SAVED_ATTACHMENTS_THUMBS_DIR = 'saved_attachments_thumbs';
 const _SAVED_ATTACHMENTS_DIR = 'saved_attachments';
 
 class Persistence {
-	static final threadStateBox = Hive.box<PersistentThreadState>('threadStates');
-	static final boardBox = Hive.box<ImageboardBoard>('boards');
-	static final savedAttachmentBox = Hive.box<SavedAttachment>('savedAttachments');
-	static final savedPostsBox = Hive.box<SavedPost>('savedPosts');
-	static late final PersistentRecentSearches recentSearches;
+	final String id;
+	Persistence(this.id);
+	late final Box<PersistentThreadState> threadStateBox;
+	late final Box<ImageboardBoard> boardBox;
+	late final Box<SavedAttachment> savedAttachmentsBox;
+	late final Box<SavedPost> savedPostsBox;
+	late final PersistentRecentSearches recentSearches;
 	static late final Directory temporaryDirectory;
 	static late final Directory documentsDirectory;
-	static final cookies = PersistCookieJar(
-		storage: FileStorage(temporaryDirectory.path)
-	);
+	static late final PersistCookieJar cookies;
 
-	static Future<void> initialize() async {
+	static Future<void> initializeStatic() async {
 		await Hive.initFlutter();
 		Hive.registerAdapter(ThemeSettingAdapter());
 		Hive.registerAdapter(AutoloadAttachmentsSettingAdapter());
@@ -71,11 +71,17 @@ class Persistence {
 		Hive.registerAdapter(SavedPostAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
+		cookies = PersistCookieJar(
+			storage: FileStorage(temporaryDirectory.path)
+		);
 		await Directory('${documentsDirectory.path}/$_SAVED_ATTACHMENTS_DIR').create(recursive: true);
 		await Directory('${documentsDirectory.path}/$_SAVED_ATTACHMENTS_THUMBS_DIR').create(recursive: true);
 		await Hive.openBox<SavedSettings>('settings');
-		await Hive.openBox<PersistentThreadState>('threadStates');
-		final searchesBox = await Hive.openBox<PersistentRecentSearches>('recentSearches');
+	}
+
+	Future<void> initialize() async {
+		threadStateBox = await Hive.openBox<PersistentThreadState>('threadStates_$id');
+		final searchesBox = await Hive.openBox<PersistentRecentSearches>('searches_$id');
 		final existingRecentSearches = searchesBox.get('recentSearches');
 		if (existingRecentSearches != null) {
 			recentSearches = existingRecentSearches;
@@ -84,16 +90,16 @@ class Persistence {
 			recentSearches = PersistentRecentSearches();
 			searchesBox.put('recentSearches', recentSearches);
 		}
-		await Hive.openBox<ImageboardBoard>('boards');
-		await Hive.openBox<SavedAttachment>('savedAttachments');
-		await Hive.openBox<SavedPost>('savedPosts');
+		boardBox = await Hive.openBox<ImageboardBoard>('boards_$id');
+		savedAttachmentsBox = await Hive.openBox<SavedAttachment>('savedAttachments_$id');
+		savedPostsBox = await Hive.openBox<SavedPost>('savedPosts_$id');
 	}
 
-	static PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
+	PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
 		return threadStateBox.get('${thread.board}/${thread.id}');
 	}
 
-	static PersistentThreadState getThreadState(ThreadIdentifier thread, {bool updateOpenedTime = false}) {
+	PersistentThreadState getThreadState(ThreadIdentifier thread, {bool updateOpenedTime = false}) {
 		final existingState = threadStateBox.get('${thread.board}/${thread.id}');
 		if (existingState != null) {
 			if (updateOpenedTime) {
@@ -109,7 +115,7 @@ class Persistence {
 		}
 	}
 
-	static ImageboardBoard getBoard(String boardName) {
+	ImageboardBoard getBoard(String boardName) {
 		final board = boardBox.get(boardName);
 		if (board != null) {
 			return board;
@@ -119,13 +125,13 @@ class Persistence {
 		}
 	}
 
-	static SavedAttachment? getSavedAttachment(Attachment attachment) {
-		return savedAttachmentBox.get(attachment.globalId);
+	SavedAttachment? getSavedAttachment(Attachment attachment) {
+		return savedAttachmentsBox.get(attachment.globalId);
 	}
 
-	static void saveAttachment(Attachment attachment, File fullResolutionFile) {
+	void saveAttachment(Attachment attachment, File fullResolutionFile) {
 		final newSavedAttachment = SavedAttachment(attachment: attachment, savedTime: DateTime.now());
-		savedAttachmentBox.put(attachment.globalId, newSavedAttachment);
+		savedAttachmentsBox.put(attachment.globalId, newSavedAttachment);
 		fullResolutionFile.copy(newSavedAttachment.file.path);
 		getCachedImageFile(attachment.thumbnailUrl.toString()).then((file) {
 			if (file != null) {
@@ -137,11 +143,11 @@ class Persistence {
 		});
 	}
 
-	static SavedPost? getSavedPost(Post post) {
+	SavedPost? getSavedPost(Post post) {
 		return savedPostsBox.get(post.globalId);
 	}
 
-	static void savePost(Post post, Thread thread) {
+	void savePost(Post post, Thread thread) {
 		final newSavedPost = SavedPost(post: post, savedTime: DateTime.now(), thread: thread);
 		savedPostsBox.put(post.globalId, newSavedPost);
 	}

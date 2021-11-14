@@ -42,8 +42,8 @@ class Thread implements Filterable {
 	bool attachmentDeleted;
 	Thread({
 		required this.posts,
-		required this.isArchived,
-		required this.isDeleted,
+		this.isArchived = false,
+		this.isDeleted = false,
 		required this.replyCount,
 		required this.imageCount,
 		required this.id,

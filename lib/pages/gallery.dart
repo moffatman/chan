@@ -299,18 +299,18 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 							mainAxisSize: MainAxisSize.min,
 							children: [
 								ValueListenableBuilder(
-									valueListenable: Persistence.savedAttachmentBox.listenable(keys: [currentAttachment.globalId]),
+									valueListenable: context.watch<Persistence>().savedAttachmentsBox.listenable(keys: [currentAttachment.globalId]),
 									builder: (context, box, child) {
-										final currentlySaved = Persistence.getSavedAttachment(currentAttachment) != null;
+										final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment) != null;
 										return CupertinoButton(
 											padding: EdgeInsets.zero,
 											child: Icon(currentlySaved ? Icons.bookmark : Icons.bookmark_outline),
 											onPressed: canShare(currentAttachment) ? () {
 												if (currentlySaved) {
-													Persistence.getSavedAttachment(currentAttachment)?.delete();
+													context.read<Persistence>().getSavedAttachment(currentAttachment)?.delete();
 												}
 												else {
-													Persistence.saveAttachment(currentAttachment, currentController.cachedFile!);
+													context.read<Persistence>().saveAttachment(currentAttachment, currentController.cachedFile!);
 												}
 											} : null
 										);

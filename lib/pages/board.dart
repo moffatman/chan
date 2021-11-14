@@ -193,7 +193,7 @@ class _BoardPageState extends State<BoardPage> {
 						board: board.name,
 						visible: showReplyBox,
 						onReplyPosted: (receipt) {
-							final persistentState = Persistence.getThreadState(ThreadIdentifier(board: board.name, id: receipt.id));
+							final persistentState = context.read<Persistence>().getThreadState(ThreadIdentifier(board: board.name, id: receipt.id));
 							persistentState.savedTime = DateTime.now();
 							persistentState.save();
 							setState(() {

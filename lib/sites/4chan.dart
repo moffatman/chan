@@ -331,7 +331,9 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	Future<List<Thread>> getCatalog(String board) async {
-		final response = await client.get(Uri.https(apiUrl, '/$board/catalog.json').toString());
+		final response = await client.get(Uri.https(apiUrl, '/$board/catalog.json').toString(), options: Options(
+			validateStatus: (x) => true
+		));
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
 				return Future.error(BoardNotFoundException(board));
@@ -351,8 +353,6 @@ class Site4Chan extends ImageboardSite {
 					id: threadId,
 					replyCount: threadData['replies'],
 					imageCount: threadData['images'],
-					isArchived: false,
-					isDeleted: false,
 					attachment: _makeAttachment(board, threadId, threadData),
 					posts: [threadAsPost],
 					title: (title == null) ? null : unescape.convert(title),
@@ -506,7 +506,7 @@ class Site4Chan extends ImageboardSite {
 
 	DateTime? getActionAllowedTime(String board, ImageboardAction action) {
 		final lastActionTime = _lastActionTime[action]![board];
-		final b = Persistence.getBoard(board);
+		final b = persistence!.getBoard(board);
 		switch (action) {
 			case ImageboardAction.PostReply:
 				return lastActionTime?.add(Duration(seconds: b.replyCooldown ?? 0));

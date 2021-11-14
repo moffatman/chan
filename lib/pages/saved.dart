@@ -113,7 +113,7 @@ class _SavedPageState extends State<SavedPage> {
 									),
 									Expanded(
 										child: ValueListenableBuilder(
-											valueListenable: Persistence.threadStateBox.listenable(),
+											valueListenable: context.watch<Persistence>().threadStateBox.listenable(),
 											builder: (context, Box<PersistentThreadState> box, child) {
 												final states = box.toMap().values.where((s) => s.savedTime != null).toList();
 												if (settings.savedThreadsSortingMethod == ThreadSortingMethod.SavedTime) {
@@ -177,7 +177,7 @@ class _SavedPageState extends State<SavedPage> {
 					),
 					icon: Icons.person,
 					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
-						valueListenable: Persistence.threadStateBox.listenable(),
+						valueListenable: context.watch<Persistence>().threadStateBox.listenable(),
 						builder: (context, Box<PersistentThreadState> box, child) {
 							final replies = <_PostThreadCombo>[];
 							for (final s in box.values) {
@@ -227,7 +227,7 @@ class _SavedPageState extends State<SavedPage> {
 					navigationBar: _navigationBar('Saved Posts'),
 					icon: Icons.reply,
 					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
-						valueListenable: Persistence.savedPostsBox.listenable(),
+						valueListenable: context.watch<Persistence>().savedPostsBox.listenable(),
 						builder: (context, Box<SavedPost> box, child) {
 							final savedPosts = box.values.toList();
 							if (settings.savedThreadsSortingMethod == ThreadSortingMethod.SavedTime) {
@@ -283,9 +283,9 @@ class _SavedPageState extends State<SavedPage> {
 					title: Text('Saved Attachments'),
 					icon: Icons.image,
 					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
-						valueListenable: Persistence.savedAttachmentBox.listenable(),
+						valueListenable: context.watch<Persistence>().savedAttachmentsBox.listenable(),
 						builder: (context, box, child) {
-							final list = Persistence.savedAttachmentBox.values.toList();
+							final list = context.watch<Persistence>().savedAttachmentsBox.values.toList();
 							list.sort((a, b) => b.savedTime.compareTo(a.savedTime));
 							return GridView.builder(
 								itemCount: list.length,

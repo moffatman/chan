@@ -6,6 +6,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/foolfuuka.dart';
+import 'package:chan/sites/lainchan.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -19,11 +20,84 @@ import 'package:provider/provider.dart';
 import 'package:chan/widgets/sticky_media_query.dart';
 
 void main() async {
-	await Persistence.initialize();
+	await Persistence.initializeStatic();
 	runApp(ChanApp());
 }
 
-class ChanApp extends StatelessWidget {
+class ChanApp extends StatefulWidget {
+	createState() => _ChanAppState();
+}
+
+class _ChanAppState extends State<ChanApp> {
+	ImageboardSite? site;
+	Persistence? persistence;
+	ThreadWatcher? threadWatcher;
+	final settings = EffectiveSettings();
+	late dynamic _lastSite;
+
+	@override
+	void initState() {
+		super.initState();
+		_lastSite = settings.contentSettings.site;
+		setSite(_lastSite);
+		settings.addListener(_onSettingsUpdate);
+	}
+
+	void _onSettingsUpdate() {
+		if (settings.contentSettings.site != _lastSite) {
+			_lastSite = settings.contentSettings.site;
+			setSite(_lastSite);
+		}
+	}
+
+	Future<void> setSite(dynamic data) async {
+		ImageboardSite? _site;
+		if (data['type'] == 'lainchan') {
+			_site = SiteLainchan(
+				name: data['name'],
+				baseUrl: data['baseUrl']
+			);
+		}
+		else if (data['type'] == '4chan') {
+			_site = Site4Chan(
+				name: data['name'],
+				imageUrl: data['imageUrl'],
+				captchaKey: data['captchaKey'],
+				apiUrl: data['apiUrl'],
+				sysUrl: data['sysUrl'],
+				baseUrl: data['baseUrl'],
+				staticUrl: data['staticUrl'],
+				archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
+					if (archive['type'] == 'foolfuuka') {
+						return FoolFuukaArchive(
+							name: archive['name'],
+							baseUrl: archive['baseUrl'],
+							staticUrl: archive['staticUrl']
+						);
+					}
+					else {
+						print(archive);
+						throw UnsupportedError('Unknown archive type "${archive['type']}"');
+					}
+				}).toList()
+			);
+		}
+		else {
+			print(data);
+			throw UnsupportedError('Unknown site type "${data['type']}"');
+		}
+		Persistence _persistence = Persistence(_site.name);
+		await _persistence.initialize();
+		_site.persistence = _persistence;
+		site = _site;
+		persistence = _persistence;
+		final oldThreadWatcher = threadWatcher;
+		threadWatcher = ThreadWatcher(site: _site, persistence: _persistence);
+		setState(() {});
+		await Future.delayed(const Duration(seconds: 5));
+		oldThreadWatcher?.dispose();
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -33,23 +107,12 @@ class ChanApp extends StatelessWidget {
 		));
 		return MultiProvider(
 			providers: [
-				ChangeNotifierProvider<EffectiveSettings>(create: (_) => EffectiveSettings()),
-				Provider<ImageboardSite>(create: (_) => Site4Chan(
-					baseUrl: 'boards.4chan.org',
-					staticUrl: 's.4cdn.org',
-					sysUrl: 'sys.4chan.org',
-					apiUrl: 'a.4cdn.org',
-					imageUrl: 'i.4cdn.org',
-					name: '4chan',
-					captchaKey: '6Ldp2bsSAAAAAAJ5uyx_lx34lJeEpTLVkP5k04qc',
-					archives: [
-						FoolFuukaArchive(baseUrl: 'archive.4plebs.org', staticUrl: 's.4cdn.org', name: '4plebs'),
-						FoolFuukaArchive(baseUrl: 'archive.rebeccablacktech.com', staticUrl: 's.4cdn.org', name: 'RebeccaBlackTech'),
-						FoolFuukaArchive(baseUrl: 'archive.nyafuu.org', staticUrl: 's.4cdn.org', name: 'Nyafuu'),
-						FoolFuukaArchive(baseUrl: 'desuarchive.org', staticUrl: 's.4cdn.org', name: 'Desuarchive'),
-						FoolFuukaArchive(baseUrl: 'archived.moe', staticUrl: 's.4cdn.org', name: 'Archived.Moe')
-					]
-				))
+				ChangeNotifierProvider.value(value: settings),
+				if (threadWatcher != null) ...[
+					Provider<ImageboardSite>.value(value: site!),
+					Provider<Persistence>.value(value: persistence!),
+					ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher!)
+				]
 			],
 			child: SettingsSystemListener(
 				child: Builder(
@@ -64,28 +127,27 @@ class ChanApp extends StatelessWidget {
 								primaryColor: Colors.white
 							);
 						}
-						return ChangeNotifierProvider(
-							create: (ctx) => ThreadWatcher(site: ctx.read<ImageboardSite>()),
-							child: CupertinoApp(
-								title: 'Chance',
-								theme: theme,
-								home: Builder(
-									builder: (BuildContext context) {
-										return DefaultTextStyle(
-											style: CupertinoTheme.of(context).textTheme.textStyle,
-											child: StickyMediaQuery(
-												top: true,
-												child: ChanHomePage()
+						return CupertinoApp(
+							title: 'Chance',
+							theme: theme,
+							home: Builder(
+								builder: (BuildContext context) {
+									return DefaultTextStyle(
+										style: CupertinoTheme.of(context).textTheme.textStyle,
+										child: StickyMediaQuery(
+											top: true,
+											child: threadWatcher != null ? ChanHomePage(key: ValueKey(site!.name)) : Center(
+												child: CupertinoActivityIndicator()
 											)
-										);
-									}
-								),
-								localizationsDelegates: [
-									DefaultCupertinoLocalizations.delegate,
-									DefaultMaterialLocalizations.delegate
-								],
-								scrollBehavior: CupertinoScrollBehavior().copyWith(dragDevices: {...PointerDeviceKind.values})
-							)
+										)
+									);
+								}
+							),
+							localizationsDelegates: [
+								DefaultCupertinoLocalizations.delegate,
+								DefaultMaterialLocalizations.delegate
+							],
+							scrollBehavior: CupertinoScrollBehavior().copyWith(dragDevices: {...PointerDeviceKind.values})
 						);
 					}
 				)
@@ -95,6 +157,8 @@ class ChanApp extends StatelessWidget {
 }
 
 class ChanHomePage extends StatefulWidget {
+	ChanHomePage({Key? key}) : super(key: key);
+
 	createState() => _ChanHomePageState();
 }
 class _ChanHomePageState extends State<ChanHomePage> {
@@ -109,7 +173,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				boardFetchErrorMessage = null;
 			});
 			final freshBoards = await context.read<ImageboardSite>().getBoards();
-			Persistence.boardBox.putAll({
+			await context.read<Persistence>().boardBox.clear();
+			await context.read<Persistence>().boardBox.putAll({
 				for (final board in freshBoards) board.name: board
 			});
 			setState(() {
@@ -117,6 +182,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			});
 		}
 		catch (error) {
+			print(error);
 			if (!initialized) {
 				setState(() {
 					boardFetchErrorMessage = error.toString();
@@ -128,8 +194,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	@override
 	void initState() {
 		super.initState();
-		initialized = Persistence.boardBox.length > 0;
 		_setupBoards();
+	}
+
+	@override
+	void didChangeDependencies() {
+		super.didChangeDependencies();
+		initialized = context.read<Persistence>().boardBox.length > 0;
 	}
 
 	Widget _buildTab(BuildContext context, int index) {

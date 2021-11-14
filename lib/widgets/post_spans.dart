@@ -16,7 +16,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:flutter_highlight/themes/atom-one-light.dart';
 import 'package:provider/provider.dart';
 import 'package:highlight/highlight.dart';
 import 'package:flutter_highlight/themes/atom-one-dark-reasonable.dart';
@@ -260,7 +259,7 @@ class PostBoardLink extends PostSpan {
 				decoration: TextDecoration.underline
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
-				context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(builder: (ctx) => BoardPage(initialBoard: Persistence.getBoard(board))));
+				context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(builder: (ctx) => BoardPage(initialBoard: context.read<Persistence>().getBoard(board))));
 			})
 		);
 	}

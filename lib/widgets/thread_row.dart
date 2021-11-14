@@ -32,9 +32,9 @@ class ThreadRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return ValueListenableBuilder(
-			valueListenable: Persistence.threadStateBox.listenable(keys: ['${thread.board}/${thread.id}']),
+			valueListenable: context.watch<Persistence>().threadStateBox.listenable(keys: ['${thread.board}/${thread.id}']),
 			builder: (context, box, child) {
-				final threadState = Persistence.getThreadStateIfExists(thread.identifier);
+				final threadState = context.watch<Persistence>().getThreadStateIfExists(thread.identifier);
 				final _thread = threadState?.thread ?? thread;
 				final int latestReplyCount = max(thread.replyCount, _thread.replyCount);
 				final int latestImageCount = max(thread.imageCount, _thread.imageCount);
@@ -62,7 +62,7 @@ class ThreadRow extends StatelessWidget {
 								crossAxisAlignment: CrossAxisAlignment.start,
 								mainAxisSize: MainAxisSize.max,
 								children: [
-									if (_thread.attachment != null && context.watch<EffectiveSettings>().showImages(_thread.board)) Column(
+									if (_thread.attachment != null && context.watch<EffectiveSettings>().showImages(context, _thread.board)) Column(
 										mainAxisSize: MainAxisSize.min,
 										children: [
 											Flexible(

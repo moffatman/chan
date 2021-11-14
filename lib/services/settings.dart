@@ -16,6 +16,11 @@ part 'settings.g.dart';
 const CONTENT_SETTINGS_API_ROOT = 'https://us-central1-chan-329813.cloudfunctions.net/preferences';
 final _punctuationRegex = RegExp('(\\W+|s\\W)');
 final _badWords = Set.from(ProfanityFilter().wordsToFilterOutList);
+const _DEFAULT_SITE = {
+	'type': 'lainchan',
+	'name': 'testchan',
+	'baseUrl': 'callum.crabdance.com'
+};
 
 @HiveType(typeId: 1)
 enum AutoloadAttachmentsSetting {
@@ -61,13 +66,16 @@ class ContentSettings {
 	bool nsfwImages;
 	@HiveField(3)
 	bool nsfwText;
+	@HiveField(4)
+	dynamic? site;
 
 	ContentSettings({
 		this.images = false,
 		this.nsfwBoards = false,
 		this.nsfwImages = false,
-		this.nsfwText = false
-	});
+		this.nsfwText = false,
+		dynamic site
+	}) : this.site = site ?? _DEFAULT_SITE;
 }
 
 @HiveType(typeId: 0)
@@ -231,6 +239,7 @@ class EffectiveSettings extends ChangeNotifier {
 			_settings.contentSettings.nsfwBoards = response.data['nsfwBoards'];
 			_settings.contentSettings.nsfwImages = response.data['nsfwImages'];
 			_settings.contentSettings.nsfwText = response.data['nsfwText'];
+			_settings.contentSettings.site = response.data['site'] ?? _DEFAULT_SITE;
 			await _settings.save();
 			notifyListeners();
 		}
@@ -239,12 +248,12 @@ class EffectiveSettings extends ChangeNotifier {
 		}
 	}
 
-	bool showBoard(String board) {
-		return Persistence.getBoard(board).isWorksafe || _settings.contentSettings.nsfwBoards;
+	bool showBoard(BuildContext context, String board) {
+		return context.read<Persistence>().getBoard(board).isWorksafe || _settings.contentSettings.nsfwBoards;
 	}
 
-	bool showImages(String board) {
-		return _settings.contentSettings.images && (Persistence.getBoard(board).isWorksafe || _settings.contentSettings.nsfwImages);
+	bool showImages(BuildContext context, String board) {
+		return _settings.contentSettings.images && (context.read<Persistence>().getBoard(board).isWorksafe || _settings.contentSettings.nsfwImages);
 	}
 
 	String filterProfanity(String input) {

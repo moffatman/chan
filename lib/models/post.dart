@@ -2,6 +2,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/foolfuuka.dart';
+import 'package:chan/sites/lainchan.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:hive/hive.dart';
 
@@ -16,7 +17,9 @@ enum PostSpanFormat {
 	@HiveField(0)
 	Chan4,
 	@HiveField(1)
-	FoolFuuka
+	FoolFuuka,
+	@HiveField(2)
+	Lainchan
 }
 
 @HiveType(typeId: 11)
@@ -51,6 +54,9 @@ class Post implements Filterable {
 			}
 			else if (spanFormat == PostSpanFormat.FoolFuuka) {
 				_span = FoolFuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
+			}
+			else if (spanFormat == PostSpanFormat.Lainchan) {
+				_span = SiteLainchan.makeSpan(board, threadId, text);
 			}
 		}
 		return _span!;

@@ -11,6 +11,7 @@ const _ERROR_INTERVAL = const Duration(seconds: 180);
 
 class ThreadWatcher extends ChangeNotifier {
 	final ImageboardSite site;
+	final Persistence persistence;
 	final cachedUnseen = Map<ThreadIdentifier, int>();
 	final cachedUnseenYous = Map<ThreadIdentifier, int>();
 	StreamSubscription<BoxEvent>? _boxSubscription;
@@ -24,10 +25,11 @@ class ThreadWatcher extends ChangeNotifier {
 	final unseenYouCount = ValueNotifier<int>(0);
 	
 	ThreadWatcher({
-		required this.site
+		required this.site,
+		required this.persistence
 	}) {
-		_boxSubscription = Persistence.threadStateBox.watch().listen(_threadUpdated);
-		final liveSavedThreads = Persistence.threadStateBox.values.where((s) => s.thread != null && s.savedTime != null);
+		_boxSubscription = persistence.threadStateBox.watch().listen(_threadUpdated);
+		final liveSavedThreads = persistence.threadStateBox.values.where((s) => s.thread != null && s.savedTime != null);
 		for (final liveSavedThread in liveSavedThreads) {
 			cachedUnseen[liveSavedThread.thread!.identifier] = liveSavedThread.unseenReplyCount ?? 0;
 			cachedUnseenYous[liveSavedThread.thread!.identifier] = (liveSavedThread.unseenRepliesToYou ?? []).length;
@@ -88,7 +90,7 @@ class ThreadWatcher extends ChangeNotifier {
 
 	Future<void> update() async {
 		try {
-			final liveThreadStates = Persistence.threadStateBox.values.where((s) => s.thread != null && !s.thread!.isArchived && s.savedTime != null);
+			final liveThreadStates = persistence.threadStateBox.values.where((s) => s.thread != null && !s.thread!.isArchived && s.savedTime != null);
 			for (final threadState in liveThreadStates) {
 				await _updateThread(threadState);
 			}
@@ -112,7 +114,7 @@ class ThreadWatcher extends ChangeNotifier {
 	}
 
 	void fixBrokenThread(ThreadIdentifier thread) {
-		final state = Persistence.getThreadStateIfExists(thread);
+		final state = persistence.getThreadStateIfExists(thread);
 		if (state != null) {
 			_updateThread(state);
 		}
