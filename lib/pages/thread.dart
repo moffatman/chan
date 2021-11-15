@@ -396,10 +396,14 @@ class _ThreadPageState extends State<ThreadPage> {
 																	builder: (context, a) {
 																		final redCount = persistentState.unseenRepliesToYou?.length ?? 0;
 																		final whiteCount = persistentState.unseenReplyCount ?? 0;
+																		int greyCount = 0;
+																		if (persistentState.thread != null && persistentState.lastSeenPostId != -1 && _listController.lastVisibleIndex != -1) {
+																			greyCount = persistentState.thread!.posts.length - whiteCount - (_listController.lastVisibleIndex + 1);
+																		}
 																		const radius = const Radius.circular(8);
 																		const radiusAlone = const BorderRadius.all(radius);
 																		final scrollToBottom = () => _listController.animateTo((post) => post.id == persistentState.thread!.posts.last.id, alignment: 1.0);
-																		if (redCount > 0 || whiteCount > 0) {
+																		if (redCount > 0 || whiteCount > 0 || greyCount > 0) {
 																			return SafeArea(
 																				child: Align(
 																					alignment: Alignment.bottomRight,
@@ -409,11 +413,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																							children: [
 																								if (redCount > 0) Container(
 																									decoration: BoxDecoration(
-																										borderRadius: (whiteCount > 0) ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
+																										borderRadius: (whiteCount > 0 || greyCount > 0) ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
 																										color: Colors.red
 																									),
 																									padding: EdgeInsets.all(8),
-																									margin: EdgeInsets.only(bottom: 16, right: whiteCount == 0 ? 16 : 0),
+																									margin: EdgeInsets.only(bottom: 16, right: (whiteCount == 0 && greyCount == 0) ? 16 : 0),
 																									child: Text(
 																										redCount.toString(),
 																										textAlign: TextAlign.center
@@ -421,11 +425,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																								),
 																								if (whiteCount > 0) Container(
 																									decoration: BoxDecoration(
-																										borderRadius: (redCount > 0) ? BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
+																										borderRadius: (redCount > 0) ? (greyCount > 0 ? null : BorderRadius.only(topRight: radius, bottomRight: radius)) : (greyCount > 0 ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
 																										color: CupertinoTheme.of(context).primaryColor
 																									),
 																									padding: EdgeInsets.all(8),
-																									margin: EdgeInsets.only(right: 16, bottom: 16),
+																									margin: EdgeInsets.only(bottom: 16, right: greyCount > 0 ? 0 : 16),
 																									child: Container(
 																										constraints: BoxConstraints(
 																											minWidth: 24 * MediaQuery.of(context).textScaleFactor
@@ -438,30 +442,31 @@ class _ThreadPageState extends State<ThreadPage> {
 																											textAlign: TextAlign.center
 																										)
 																									)
+																								),
+																								if (greyCount > 0) Container(
+																									decoration: BoxDecoration(
+																										borderRadius: (whiteCount > 0 || redCount > 0) ? BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
+																										color: CupertinoTheme.of(context).primaryColor.withBrightness(0.6)
+																									),
+																									padding: EdgeInsets.all(8),
+																									margin: EdgeInsets.only(bottom: 16, right: 16),
+																									child: Container(
+																										constraints: BoxConstraints(
+																											minWidth: 24 * MediaQuery.of(context).textScaleFactor
+																										),
+																										child: Text(
+																											greyCount.toString(),
+																											style: TextStyle(
+																												color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																											),
+																											textAlign: TextAlign.center
+																										)
+																									)
 																								)
 																							]
 																						),
 																						onTap: () => _listController.animateTo((post) => post.id == persistentState.lastSeenPostId, alignment: 1.0),
 																						onLongPress: scrollToBottom
-																					)
-																				)
-																			);
-																		}
-																		else if ((persistentState.thread != null) && (_listController.lastVisibleIndex != -1) && (_listController.lastVisibleIndex != persistentState.thread!.posts.length - 1)) {
-																			return SafeArea(
-																				child: Align(
-																					alignment: Alignment.bottomRight,
-																					child: GestureDetector(
-																						child: Container(
-																							decoration: BoxDecoration(
-																								borderRadius: radiusAlone,
-																								color: CupertinoTheme.of(context).primaryColor
-																							),
-																							padding: EdgeInsets.all(8),
-																							margin: EdgeInsets.only(right: 16, bottom: 16),
-																							child: Icon(Icons.vertical_align_bottom, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
-																						),
-																						onTap: scrollToBottom
 																					)
 																				)
 																			);

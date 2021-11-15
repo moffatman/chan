@@ -139,54 +139,88 @@ class _BoardPageState extends State<BoardPage> {
 			child: Column(
 				children: [
 					Flexible(
-						child: RefreshableList<Thread>(
-							controller: _listController,
-							listUpdater: () => site.getCatalog(board.name).then((list) {
-								final now = DateTime.now();
-								if (settings.hideOldStickiedThreads) {
-									list = list.where((thread) {
-										return !thread.isSticky || now.difference(thread.time).compareTo(_OLD_THREAD_THRESHOLD).isNegative;
-									}).toList();
-								}
-								if (settings.catalogSortingMethod == ThreadSortingMethod.ReplyCount) {
-									list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
-								}
-								else if (settings.catalogSortingMethod == ThreadSortingMethod.OPTime) {
-									list.sort((a, b) => b.id.compareTo(a.id));
-								}
-								return settings.reverseCatalogSorting ? list.reversed.toList() : list;
-							}),
-							id: '/${board.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
-							itemBuilder: (context, thread) {
-								return GestureDetector(
-									child: ThreadRow(
-										thread: thread,
-										isSelected: thread.identifier == widget.selectedThread,
-										semanticParentIds: [-1],
-										onThumbnailTap: (initialAttachment) {
-											final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
-											showGallery(
-												context: context,
-												attachments: attachments,
-												initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-												onChange: (attachment) {
-													_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
-												},
-												semanticParentIds: [-1]
-											);
+						child: Stack(
+							fit: StackFit.expand,
+							children: [
+								RefreshableList<Thread>(
+									controller: _listController,
+									listUpdater: () => site.getCatalog(board.name).then((list) {
+										final now = DateTime.now();
+										if (settings.hideOldStickiedThreads) {
+											list = list.where((thread) {
+												return !thread.isSticky || now.difference(thread.time).compareTo(_OLD_THREAD_THRESHOLD).isNegative;
+											}).toList();
 										}
-									),
-									onTap: () {
-										if (widget.onThreadSelected != null) {
-											widget.onThreadSelected!(thread.identifier);
+										if (settings.catalogSortingMethod == ThreadSortingMethod.ReplyCount) {
+											list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
 										}
-										else {
-											Navigator.of(context).push(FullWidthCupertinoPageRoute(builder: (ctx) => ThreadPage(thread: thread.identifier)));
+										else if (settings.catalogSortingMethod == ThreadSortingMethod.OPTime) {
+											list.sort((a, b) => b.id.compareTo(a.id));
 										}
-									}
-								);
-							},
-							filterHint: 'Search in board'
+										return settings.reverseCatalogSorting ? list.reversed.toList() : list;
+									}),
+									id: '/${board.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
+									itemBuilder: (context, thread) {
+										return GestureDetector(
+											child: ThreadRow(
+												thread: thread,
+												isSelected: thread.identifier == widget.selectedThread,
+												semanticParentIds: [-1],
+												onThumbnailTap: (initialAttachment) {
+													final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
+													showGallery(
+														context: context,
+														attachments: attachments,
+														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+														onChange: (attachment) {
+															_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
+														},
+														semanticParentIds: [-1]
+													);
+												}
+											),
+											onTap: () {
+												if (widget.onThreadSelected != null) {
+													widget.onThreadSelected!(thread.identifier);
+												}
+												else {
+													Navigator.of(context).push(FullWidthCupertinoPageRoute(builder: (ctx) => ThreadPage(thread: thread.identifier)));
+												}
+											}
+										);
+									},
+									filterHint: 'Search in board'
+								),
+								StreamBuilder(
+									stream: _listController.slowScrollUpdates,
+									builder: (context, _) => (_listController.firstVisibleIndex <= 0) ? Container() : SafeArea(
+										child: Align(
+											alignment: Alignment.bottomRight,
+											child: GestureDetector(
+												child: Container(
+													decoration: BoxDecoration(
+														color: CupertinoTheme.of(context).primaryColor.withBrightness(0.6),
+														borderRadius: const BorderRadius.all(Radius.circular(8))
+													),
+													constraints: BoxConstraints(
+														minWidth: 36 * MediaQuery.of(context).textScaleFactor
+													),
+													padding: const EdgeInsets.all(8),
+													margin: const EdgeInsets.only(bottom: 16, right: 16),
+													child: Text(
+														_listController.firstVisibleIndex.toString(),
+														textAlign: TextAlign.center,
+														style: TextStyle(
+															color: CupertinoTheme.of(context).scaffoldBackgroundColor
+														)
+													)
+												),
+												onTap: () => _listController.animateTo((f) => true, alignment: 0.0)
+											)
+										)
+									)
+								)
+							]
 						)
 					),
 					ReplyBox(
