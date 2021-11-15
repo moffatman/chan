@@ -162,7 +162,7 @@ class ChanHomePage extends StatefulWidget {
 	createState() => _ChanHomePageState();
 }
 class _ChanHomePageState extends State<ChanHomePage> {
-	late bool initialized;
+	bool initialized = false;
 	String? boardFetchErrorMessage;
 	late bool isInTabletLayout;
 	int tabletIndex = 0;
@@ -194,13 +194,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	@override
 	void initState() {
 		super.initState();
-		_setupBoards();
-	}
-
-	@override
-	void didChangeDependencies() {
-		super.didChangeDependencies();
 		initialized = context.read<Persistence>().boardBox.length > 0;
+		_setupBoards();
 	}
 
 	Widget _buildTab(BuildContext context, int index) {
@@ -235,11 +230,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							ErrorMessageCard(this.boardFetchErrorMessage!),
-							CupertinoButton(
-								child: Text('Retry'),
-								onPressed: _setupBoards
-							)
+							ErrorMessageCard(this.boardFetchErrorMessage!, retry: _setupBoards)
 						]
 					)
 				);
