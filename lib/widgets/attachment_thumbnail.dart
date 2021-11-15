@@ -91,6 +91,34 @@ class AttachmentThumbnail extends StatelessWidget {
 				}
 			}
 		);
+		child = Stack(
+			fit: StackFit.passthrough,
+			children: [
+				child,
+				Container(
+					width: width,
+					height: height,
+					alignment: Alignment.bottomRight,
+					child: LayoutBuilder(
+						builder: (context, constraints) {
+							return Opacity(
+								opacity: (75 / constraints.maxWidth).clamp(0, 1),
+								child: Container(
+									decoration: const BoxDecoration(
+										borderRadius: BorderRadius.all(Radius.circular(8)),
+										color: Colors.black54
+									),
+									padding: const EdgeInsets.all(4),
+									child: Text(attachment.ext.substring(1), style: TextStyle(
+										fontSize: 12
+									))
+								)
+							);
+						}
+					)
+				)
+			]
+		);
 		return (hero != null) ? Hero(
 			tag: hero!,
 			child: child,
