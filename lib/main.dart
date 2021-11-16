@@ -166,6 +166,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	String? boardFetchErrorMessage;
 	late bool isInTabletLayout;
 	int tabletIndex = 0;
+	final _keys = [GlobalKey(), GlobalKey(), GlobalKey(), GlobalKey(), GlobalKey()];
+	final _tabController = CupertinoTabController();
 
 	void _setupBoards() async {
 		try {
@@ -199,8 +201,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	Widget _buildTab(BuildContext context, int index) {
+		Widget child;
 		if (index == 0) {
-			return ImageboardTab(
+			child = ImageboardTab(
 				initialBoardName: context.read<EffectiveSettings>().currentBoardName,
 				onBoardChanged: (newBoard) {
 					context.read<EffectiveSettings>().currentBoardName = newBoard.name;
@@ -208,17 +211,21 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			);
 		}
 		else if (index == 1) {
-			return SavedPage();
+			child = SavedPage();
 		}
 		else if (index == 2) {
-			return HistoryPage();
+			child = HistoryPage();
 		}
 		else if (index == 3) {
-			return SearchPage();
+			child = SearchPage();
 		}
 		else {
-			return SettingsPage();
+			child = SettingsPage();
 		}
+		return KeyedSubtree(
+			key: _keys[index],
+			child: child
+		);
 	}
 
 	@override
@@ -264,6 +271,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								),
 								selectedIndex: tabletIndex,
 								onDestinationSelected: (index) {
+									_tabController.index = index;
 									setState(() {
 										tabletIndex = index;
 									});
@@ -312,6 +320,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 		else {
 			return CupertinoTabScaffold(
+				controller: _tabController,
 				tabBar: CupertinoTabBar(
 					items: [
 						BottomNavigationBarItem(

@@ -102,6 +102,8 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 	late TabController _tabController;
 	final _masterKey = GlobalKey<NavigatorState>();
 	final _detailKey = GlobalKey<NavigatorState>();
+	final _masterContentKey = GlobalKey();
+ 	bool? lastOnePane;
 	late bool onePane;
 
 	void _onPaneChanged() {
@@ -144,7 +146,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 			_masterKey.currentState!.push(pane.buildDetailRoute());
 		}
 		else {
-			_detailKey.currentState!.popUntil((route) => route.isFirst);
+			_detailKey.currentState?.popUntil((route) => route.isFirst);
 		}
 		setState(() {});
 	}
@@ -162,13 +164,13 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 					onGenerateRoute: (RouteSettings settings) {
 						return TransparentRoute(
 							builder: (context) {
-								final child = TabBarView(
+								Widget child = TabBarView(
 									controller: _tabController,
 									physics: widget.panes.length > 1 ? AlwaysScrollableScrollPhysics() : NeverScrollableScrollPhysics(),
 									children: widget.panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)).toList()
 								);
 								if (widget.showChrome) {
-									return CupertinoPageScaffold(
+									child = CupertinoPageScaffold(
 										resizeToAvoidBottomInset: false,
 										navigationBar: widget.panes[_tabController.index].navigationBar ?? CupertinoNavigationBar(
 											transitionBetweenRoutes: false,
@@ -201,6 +203,10 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 										)
 									);
 								}
+								child = KeyedSubtree(
+									key: _masterContentKey,
+									child: child
+								);
 								return child;
 							}
 						);
@@ -225,6 +231,16 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 				)
 			)
 		);
+		if (lastOnePane != null && lastOnePane != onePane) {
+			if (onePane && widget.panes[_tabController.index].currentValue != null) {
+				_masterKey.currentState!.push(widget.panes[_tabController.index].buildDetailRoute());
+			}
+			else {
+				_masterKey.currentState?.popUntil((route) => route.isFirst);
+				_detailKey.currentState?.popUntil((route) => route.isFirst);
+			}
+		}
+		lastOnePane = onePane;
 		if (onePane) {
 			return masterNavigator;
 		}
