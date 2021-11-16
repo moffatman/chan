@@ -4,10 +4,13 @@ import 'dart:math';
 
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
+import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_kit_config.dart';
+import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_session.dart';
+import 'package:ffmpeg_kit_flutter_full_gpl/ffprobe_kit.dart';
+import 'package:ffmpeg_kit_flutter_full_gpl/session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_ffmpeg/completed_ffmpeg_execution.dart';
-import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:mutex/mutex.dart';
 
 class MediaConversionFFMpegException implements Exception {
@@ -56,12 +59,12 @@ class MediaScan {
 
 	static Future<MediaScan> _scan(Uri file) async {
 		return await _ffprobeLock.protect<MediaScan>(() async {
-			final mediaInfo = (await FlutterFFprobe().getMediaInformation(file.toString())).getAllProperties();
-			final seconds = double.tryParse(mediaInfo['format']?['duration'] ?? '');
+			final mediaInfo = (await FFprobeKit.getMediaInformationAsync(file.toString())).getMediaInformation();
+			final seconds = double.tryParse(mediaInfo?.getDuration() ?? '');
 			return MediaScan(
-				hasAudio: mediaInfo['streams']?.any((stream) => stream['codec_type'] == 'audio') ?? true,
+				hasAudio: mediaInfo?.getStreams().any((stream) => stream.getType() == 'audio') ?? true,
 				duration: seconds == null ? null : Duration(milliseconds: (seconds * 1000).round()),
-				bitrate: int.tryParse(mediaInfo['format']?['bit_rate'] ?? '')
+				bitrate: int.tryParse(mediaInfo?.getBitrate() ?? '')
 			);
 		});
 	}
@@ -92,7 +95,7 @@ class MediaConversion {
 	int? maximumDurationInSeconds;
 	bool stripAudio;
 
-	int? _executionId;
+	FFmpegSession? _session;
 
 	MediaConversion({
 		required this.inputFile,
@@ -193,8 +196,6 @@ class MediaConversion {
 					throw Exception('Media conversions disabled on desktop');
 				}
 				else {
-					final ffconfig = FlutterFFmpegConfig();
-					final ffmpeg = FlutterFFmpeg();
 					final scan = await MediaScan.scan(inputFile);
 					int outputBitrate = scan.bitrate ?? 2000000;
 					int? outputDurationInMilliseconds = scan.duration?.inMilliseconds;
@@ -207,16 +208,16 @@ class MediaConversion {
 						}
 					}
 					bool passedFirstEvent = false;
-					ffconfig.enableStatisticsCallback((stats) {
-						if (stats.executionId == _executionId) {
+					FFmpegKitConfig.enableStatisticsCallback((stats) {
+						if (stats.getSessionId() == _session?.getSessionId()) {
 							if (scan.duration != null && passedFirstEvent && outputDurationInMilliseconds != null) {
-								progress.value = stats.time / outputDurationInMilliseconds;
+								progress.value = stats.getTime() / outputDurationInMilliseconds;
 							}
 							passedFirstEvent = true;
 						}
 					});
-					final ffmpegCompleter = Completer<CompletedFFmpegExecution>();
-					_executionId = await ffmpeg.executeAsyncWithArguments([
+					final ffmpegCompleter = Completer<Session>();
+					 _session = await FFmpegKit.executeWithArgumentsAsync([
 						'-hwaccel', 'auto',
 						'-i', inputFile.toString(),
 						'-max_muxing_queue_size', '9999',
@@ -228,11 +229,12 @@ class MediaConversion {
 						convertedFile.path
 					], (c) => ffmpegCompleter.complete(c));
 					final results = await ffmpegCompleter.future;
-					if (results.returnCode != 0) {
+					final returnCode = await results.getReturnCode();
+					if (!(returnCode?.isValueSuccess() ?? false)) {
 						if (await convertedFile.exists()) {
 							await convertedFile.delete();
 						}
-						throw MediaConversionFFMpegException(results.returnCode);
+						throw MediaConversionFFMpegException(returnCode?.getValue() ?? -1);
 					}
 					else {
 						_completer!.complete(MediaConversionResult(convertedFile, scan.hasAudio));
@@ -246,9 +248,5 @@ class MediaConversion {
 		progress.dispose();
 	}
 
-	Future<void> cancel() async {
-		if (_executionId != null) {
-			FlutterFFmpeg().cancelExecution(_executionId!);
-		}
-	}
+	void cancel() => _session?.cancel();
 }

@@ -18,7 +18,7 @@ environment:
 
 publish_to: none
 dependencies:
-  flutter_ffmpeg: ^0.4.2
+  ffmpeg_kit_flutter_full_gpl: ^4.5.0
   dio: ^4.0.0
   dio_cookie_manager: ^2.0.0
   cookie_jar: ^3.0.1
