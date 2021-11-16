@@ -14,6 +14,7 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/thread_row.dart';
+import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -352,8 +353,33 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 					children: [
 						Row(
 							children: [
-								Text('Thread Watcher'),
-								Spacer(),
+								SizedBox(width: 16),
+								Expanded(
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
+										crossAxisAlignment: CrossAxisAlignment.center,
+										children: [
+											Text('Thread Watcher'),
+											SizedBox(height: 8),
+											if (watcher.nextUpdate != null && watcher.lastUpdate != null) ClipRRect(
+												borderRadius: BorderRadius.all(Radius.circular(8)),
+												child: TimedRebuilder(
+													interval: const Duration(seconds: 1),
+													builder: (context) {
+														final now = DateTime.now();
+														return LinearProgressIndicator(
+															value: now.difference(watcher.lastUpdate!).inSeconds / watcher.nextUpdate!.difference(watcher.lastUpdate!).inSeconds,
+															color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
+															backgroundColor: CupertinoTheme.of(context).primaryColor.withBrightness(0.2),
+															minHeight: 8
+														);
+													}
+												)
+											)
+										]
+									)
+								),
+								SizedBox(width: 16),
 								CupertinoButton(
 									child: Icon(Icons.refresh),
 									onPressed: watcher.update

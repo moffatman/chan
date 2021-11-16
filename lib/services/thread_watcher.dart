@@ -110,6 +110,7 @@ class ThreadWatcher extends ChangeNotifier {
 
 	void cancel() {
 		nextUpdateTimer?.cancel();
+		nextUpdate = null;
 		notifyListeners();
 	}
 
