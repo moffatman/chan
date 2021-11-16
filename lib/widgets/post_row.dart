@@ -270,7 +270,7 @@ class PostRow extends StatelessWidget {
 							onPressed: () {
 								final offset = (context.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 								final size = context.findRenderObject()?.semanticBounds.size;
-								Share.share(site.getWebUrl(_post.threadIdentifier, _post.id), sharePositionOrigin: (offset != null && size != null) ? offset & size : null);
+								Share.share(site.getWebUrl(_post.board, _post.threadId, _post.id), sharePositionOrigin: (offset != null && size != null) ? offset & size : null);
 							}
 						),
 						ContextMenuAction(

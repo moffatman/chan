@@ -275,8 +275,15 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		);
 	}
 
-	String getWebUrl(ThreadIdentifier thread, [int? postId]) {
-		return 'https://$baseUrl/${thread.board}/thread/${thread.id}' + (postId != null ? '#$postId' : '');
+	String getWebUrl(String board, [int? threadId, int? postId]) {
+		String webUrl = 'https://$baseUrl/$board/';
+		if (threadId != null) {
+			webUrl += 'thread/$threadId';
+			if (postId != null) {
+				webUrl += '#$postId';
+			}
+		 }
+		 return webUrl;
 	}
 
 	FoolFuukaArchive({

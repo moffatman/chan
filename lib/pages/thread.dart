@@ -220,7 +220,7 @@ class _ThreadPageState extends State<ThreadPage> {
 								onPressed: () {
 									final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 									final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-									Share.share(context.read<ImageboardSite>().getWebUrl(widget.thread), sharePositionOrigin: (offset != null && size != null) ? offset & size : null);
+									Share.share(context.read<ImageboardSite>().getWebUrl(widget.thread.board, widget.thread.id), sharePositionOrigin: (offset != null && size != null) ? offset & size : null);
 								}
 							),
 							CupertinoButton(

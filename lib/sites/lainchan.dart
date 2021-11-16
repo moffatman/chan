@@ -201,22 +201,39 @@ class SiteLainchan extends ImageboardSite {
 		File? file,
 		String? overrideFilename
 	}) async {
-		final now = DateTime.now();
+		final now = DateTime.now().subtract(const Duration(seconds: 5));
 		final random = Random();
-		final password = List.generate(64, (i) => random.nextInt(16).toRadixString(16)).join();
+		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
+		final page = await client.get(getWebUrl(board, threadId));
+		final Map<String, dynamic> fields = {
+			for (final field in parse(page.data).querySelector('form[name="post"]')!.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea'))
+				field.attributes['name']!: field.attributes['value'] ?? field.text
+		};
+		fields['body'] = text;
+		fields['password'] = password;
+		if (threadId != null) {
+			fields['thread'] = threadId.toString();
+		}
+		if (subject != null) {
+			fields['subject'] = subject;
+		}
+		if (file != null) {
+			fields['attachment'] = await MultipartFile.fromFile(file.path, filename: overrideFilename);
+		}
 		final response = await client.post(
 			Uri.https(baseUrl, '/post.php').toString(),
-			data: FormData.fromMap({
-				if (threadId != null) 'thread': threadId.toString(),
-				if (subject != null) 'subject': subject,
-				'body': text,
-				'password': password,
-				if (file != null) 'file': await MultipartFile.fromFile(file.path, filename: overrideFilename)
-			}),
+			data: FormData.fromMap(fields),
 			options: Options(
-				responseType: ResponseType.plain
+				responseType: ResponseType.plain,
+				validateStatus: (x) => true,
+				headers: {
+					'Referer': getWebUrl(board, threadId)
+				}
 			)
 		);
+		if (response.statusCode == 500) {
+			throw PostFailedException(parse(response.data).querySelector('h2')?.text ?? 'Unknown error');
+		}
 		if (response.isRedirect ?? false) {
 			int? newPostId;
 			while (newPostId == null) {
@@ -311,7 +328,7 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	DateTime? getActionAllowedTime(String board, ImageboardAction action) {
-		return DateTime.now();
+		return DateTime.now().subtract(const Duration(days: 1));
 	}
 
 	@override
@@ -340,14 +357,15 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	String getWebUrl(ThreadIdentifier thread, [int? postId]) {
-		final threadUrl = Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html').toString();
-		if (postId == null) {
-			return threadUrl;
+	String getWebUrl(String board, [int? threadId, int? postId]) {
+		String threadUrl = Uri.https(baseUrl, '/$board/').toString();
+		if (threadId != null) {
+			threadUrl += 'res/$threadId.html';
+			if (postId != null) {
+				threadUrl + '#q$postId';
+			}
 		}
-		else {
-			return threadUrl + '#q$postId';
-		}
+		return threadUrl;
 	}
 
 	@override

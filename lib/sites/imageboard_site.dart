@@ -138,7 +138,7 @@ abstract class ImageboardSiteArchive {
 	Future<List<Thread>> getCatalog(String board);
 	Future<List<ImageboardBoard>> getBoards();
 	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page});
-	String getWebUrl(ThreadIdentifier thread, [int? postId]);
+	String getWebUrl(String board, [int? thread, int? postId]);
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {

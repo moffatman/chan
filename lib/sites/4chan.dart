@@ -549,8 +549,15 @@ class Site4Chan extends ImageboardSite {
 		throw Exception('Search failed - exhausted all archives$s');
 	}
 
-	String getWebUrl(ThreadIdentifier thread, [int? postId]) {
-		return 'https://$baseUrl/${thread.board}/thread/${thread.id}' + (postId != null ? '#p$postId' : '');
+	String getWebUrl(String board, [int? threadId, int? postId]) {
+		String webUrl = 'https://$baseUrl/$board/';
+		if (threadId != null) {
+			webUrl += 'thread/$threadId';
+			if (postId != null) {
+				webUrl += '#p$postId';
+			}
+		}
+		return webUrl;
 	}
 
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
