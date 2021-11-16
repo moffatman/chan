@@ -423,19 +423,19 @@ class _ThreadPageState extends State<ThreadPage> {
 																										textAlign: TextAlign.center
 																									)
 																								),
-																								if (whiteCount > 0) Container(
+																								if (greyCount > 0) Container(
 																									decoration: BoxDecoration(
-																										borderRadius: (redCount > 0) ? (greyCount > 0 ? null : BorderRadius.only(topRight: radius, bottomRight: radius)) : (greyCount > 0 ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
-																										color: CupertinoTheme.of(context).primaryColor
+																										borderRadius: (redCount > 0) ? (whiteCount > 0 ? null : BorderRadius.only(topRight: radius, bottomRight: radius)) : (whiteCount > 0 ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
+																										color: CupertinoTheme.of(context).primaryColor.withBrightness(0.6)
 																									),
 																									padding: EdgeInsets.all(8),
-																									margin: EdgeInsets.only(bottom: 16, right: greyCount > 0 ? 0 : 16),
+																									margin: EdgeInsets.only(bottom: 16, right: whiteCount > 0 ? 0 : 16),
 																									child: Container(
 																										constraints: BoxConstraints(
 																											minWidth: 24 * MediaQuery.of(context).textScaleFactor
 																										),
 																										child: Text(
-																											whiteCount.toString(),
+																											greyCount.toString(),
 																											style: TextStyle(
 																												color: CupertinoTheme.of(context).scaffoldBackgroundColor
 																											),
@@ -443,10 +443,10 @@ class _ThreadPageState extends State<ThreadPage> {
 																										)
 																									)
 																								),
-																								if (greyCount > 0) Container(
+																								if (whiteCount > 0) Container(
 																									decoration: BoxDecoration(
-																										borderRadius: (whiteCount > 0 || redCount > 0) ? BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
-																										color: CupertinoTheme.of(context).primaryColor.withBrightness(0.6)
+																										borderRadius: (greyCount > 0 || redCount > 0) ? BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
+																										color: CupertinoTheme.of(context).primaryColor
 																									),
 																									padding: EdgeInsets.all(8),
 																									margin: EdgeInsets.only(bottom: 16, right: 16),
@@ -455,7 +455,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																											minWidth: 24 * MediaQuery.of(context).textScaleFactor
 																										),
 																										child: Text(
-																											greyCount.toString(),
+																											whiteCount.toString(),
 																											style: TextStyle(
 																												color: CupertinoTheme.of(context).scaffoldBackgroundColor
 																											),
