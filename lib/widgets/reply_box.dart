@@ -562,11 +562,14 @@ class ReplyBoxState extends State<ReplyBox> {
 							]
 						) : Center(
 							child: CupertinoButton(
-								child: Row(
-									mainAxisSize: MainAxisSize.min,
+								child: Wrap(
+									alignment: WrapAlignment.center,
+									crossAxisAlignment: WrapCrossAlignment.center,
+									spacing: 8.0,
+									runSpacing: 4.0,
 									children: [
 										Icon(Icons.image),
-										Text(' Select file'),
+										Text('Select file', textAlign: TextAlign.center),
 									]
 								),
 								onPressed: _selectAttachment
