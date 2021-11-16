@@ -253,7 +253,7 @@ class EffectiveSettings extends ChangeNotifier {
 	}
 
 	bool showImages(BuildContext context, String board) {
-		return _settings.contentSettings.images && (context.read<Persistence>().getBoard(board).isWorksafe || _settings.contentSettings.nsfwImages);
+		return _settings.contentSettings.images && ((context.read<Persistence>().boardBox.get(board)?.isWorksafe ?? false) || _settings.contentSettings.nsfwImages);
 	}
 
 	String filterProfanity(String input) {
