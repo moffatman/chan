@@ -235,6 +235,13 @@ class SiteLainchan extends ImageboardSite {
 			throw PostFailedException(parse(response.data).querySelector('h2')?.text ?? 'Unknown error');
 		}
 		if (response.isRedirect ?? false) {
+			return PostReceipt(
+				id: int.parse(RegExp(r'\d+').allMatches(response.redirects.last.location.toString()).last.group(0)!),
+				password: password
+			);
+		}
+		else {
+			// This doesn't work if user has quoted someone, but it shouldn't be needed
 			int? newPostId;
 			while (newPostId == null) {
 				await Future.delayed(const Duration(seconds: 2));
@@ -257,17 +264,6 @@ class SiteLainchan extends ImageboardSite {
 				id: newPostId!,
 				password: password
 			);
-		}
-		else {
-			final document = parse(response.data);
-			final errSpan = document.querySelector('h2');
-			if (errSpan != null) {
-				throw PostFailedException(errSpan.text);
-			}
-			else {
-				print(response.data);
-				throw PostFailedException('Unknown error');
-			}
 		}
 	}
 
