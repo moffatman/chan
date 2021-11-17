@@ -502,6 +502,7 @@ class _ThreadPageState extends State<ThreadPage> {
 									setState(() {
 										showReplyBox = false;
 									});
+									_listController.update();
 								},
 								onRequestFocus: () {
 									setState(() {

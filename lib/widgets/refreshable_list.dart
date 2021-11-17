@@ -641,6 +641,9 @@ class RefreshableListController<T extends Filterable> {
 		setItems([]);
 		await state?.update();
 	}
+	Future<void> update() async {
+		await state?.update();
+	}
 }
 
 extension HasOnePosition on ScrollController {
