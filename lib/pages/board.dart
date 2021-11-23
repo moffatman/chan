@@ -233,6 +233,7 @@ class _BoardPageState extends State<BoardPage> {
 							setState(() {
 								showReplyBox = false;
 							});
+							_listController.update();
 							widget.onThreadSelected?.call(ThreadIdentifier(board: board.name, id: receipt.id));
 						},
 						onRequestFocus: () {
