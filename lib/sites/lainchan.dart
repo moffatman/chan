@@ -151,7 +151,7 @@ class SiteLainchan extends ImageboardSite {
 		}
 		final List<Thread> threads = [];
 		for (final page in response.data) {
-			for (final threadData in page['threads']) {
+			for (final threadData in (page['threads'] ?? [])) {
 				final threadAsPost = _makePost(board, threadData['no'], threadData);
 				final thread = Thread(
 					board: board,
