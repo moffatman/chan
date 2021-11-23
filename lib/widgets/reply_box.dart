@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/web_image_picker.dart';
@@ -12,18 +11,14 @@ import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
-import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
-
-class _AttachmentSource {
-	final ImageSource source;
-	final AttachmentType type;
-	_AttachmentSource(this.source, this.type);
-}
+import 'package:file_picker/file_picker.dart';
+import 'package:tuple/tuple.dart';
 
 class Expander extends StatelessWidget {
 	final Widget child;
@@ -231,12 +226,17 @@ class ReplyBoxState extends State<ReplyBox> {
 		final picker = ImagePicker();
 		final savedAttachments = context.read<Persistence>().savedAttachmentsBox.values.toList();
 		savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
-		final sources = {
-			_AttachmentSource(ImageSource.gallery, AttachmentType.Image): Icons.photo_library,
-			_AttachmentSource(ImageSource.gallery, AttachmentType.WEBM): Icons.video_library,
-			_AttachmentSource(ImageSource.camera, AttachmentType.Image): Icons.camera_alt,
-			_AttachmentSource(ImageSource.camera, AttachmentType.WEBM): Icons.videocam
-		}.entries.toList();
+		final sources = (Platform.isIOS || Platform.isAndroid || kIsWeb) ? [
+			Tuple2(Icons.photo_library, () => picker.pickImage(source: ImageSource.gallery).then((x) => x?.path)),
+			Tuple2(Icons.video_library, () => picker.pickVideo(source: ImageSource.gallery).then((x) => x?.path)),
+			Tuple2(Icons.camera_alt, () => picker.pickImage(source: ImageSource.camera).then((x) => x?.path)),
+			Tuple2(Icons.videocam, () => picker.pickImage(source: ImageSource.camera).then((x) => x?.path)),
+			Tuple2(Icons.image_search, () => Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
+				builder: (context) => WebImagePickerPage()
+			)).then((x) => x?.path))
+		] : [
+			Tuple2(Icons.attachment, () => FilePicker.platform.pickFiles().then((x) => x?.files.single.path))
+		];
 		File? file = await Navigator.of(context).push<File>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
 				child: Container(
@@ -252,15 +252,15 @@ class ReplyBoxState extends State<ReplyBox> {
 						),
 						shrinkWrap: true,
 						physics: NeverScrollableScrollPhysics(),
-						itemCount: sources.length + 1 + savedAttachments.length,
+						itemCount: sources.length + savedAttachments.length,
 						itemBuilder: (context, i) {
 							if (i < sources.length) {
 								final entry = sources[i];
 								return GestureDetector(
 									onTap: () async {
-										final file = await ((entry.key.type == AttachmentType.Image) ? picker.pickImage(source: entry.key.source) : picker.pickVideo(source: entry.key.source));
-										if (file != null) {
-											Navigator.of(context).pop<File>(File(file.path));
+										final path = await entry.item2();
+										if (path != null) {
+											Navigator.of(context).pop<File>(File(path));
 										}
 									},
 									child: Container(
@@ -268,28 +268,9 @@ class ReplyBoxState extends State<ReplyBox> {
 											color: CupertinoTheme.of(context).primaryColor,
 											borderRadius: BorderRadius.circular(8)
 										),
-										child: Icon(entry.value, size: 40, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
+										child: Icon(entry.item1, size: 40, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
 									)
 								);
-							}
-							else if (i == sources.length) {
-								return GestureDetector(
-									onTap: () async {
-										final file = await Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
-											builder: (context) => WebImagePickerPage()
-										));
-										if (file != null) {
-											Navigator.of(context).pop<File>(file);
-										}
-									},
-									child: Container(
-										decoration: BoxDecoration(
-											color: CupertinoTheme.of(context).primaryColor,
-											borderRadius: BorderRadius.circular(8)
-										),
-										child: Icon(Icons.image_search, size: 40, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
-									)
-								)
 							}
 							else {
 								final attachment = savedAttachments[i - sources.length];

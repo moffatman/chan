@@ -48,6 +48,7 @@ dependencies:
   highlight: ^0.7.0
   flutter_highlight: ^0.7.0
   google_fonts: ^2.1.0
+  file_picker: ^4.2.3
   flutter:
     sdk: flutter
 
