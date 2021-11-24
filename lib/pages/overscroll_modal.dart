@@ -128,63 +128,55 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 							)
 						)
 					),
-					NotificationListener<ScrollNotification>(
-						onNotification: (notification) {
-							if ((notification is ScrollEndNotification) || (notification is ScrollUpdateNotification && notification.dragDetails == null)) {
-								_onPointerUp();
-							}
-							return false;
+					Listener(
+						onPointerDown: (event) {
+							final RenderBox childBox = _childKey.currentContext!.findRenderObject()! as RenderBox;
+							_pointerDownPosition = event.position;
+							_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter).dy;
 						},
-						child: Listener(
-							onPointerDown: (event) {
-								final RenderBox childBox = _childKey.currentContext!.findRenderObject()! as RenderBox;
-								_pointerDownPosition = event.position;
-								_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter).dy;
-							},
-							onPointerMove: (event) {
-								if (_pointerInSpacer) {
-									if ((event.position - _pointerDownPosition!).distance > kTouchSlop) {
-										_pointerInSpacer = false;
-									}
+						onPointerMove: (event) {
+							if (_pointerInSpacer) {
+								if ((event.position - _pointerDownPosition!).distance > kTouchSlop) {
+									_pointerInSpacer = false;
 								}
+							}
+						},
+						onPointerUp: (event) => _onPointerUp(),
+						onPointerHover: (event) {
+							if (_controller.position.userScrollDirection != ScrollDirection.idle) {
+								_controller.jumpTo(_controller.position.pixels);
+							}
+						},
+						child: Actions(
+							actions: {
+								DismissIntent: CallbackAction<DismissIntent>(
+									onInvoke: (i) => WeakNavigator.pop(context)
+								)
 							},
-							onPointerUp: (event) => _onPointerUp(),
-							onPointerHover: (event) {
-								if (_controller.position.userScrollDirection != ScrollDirection.idle) {
-									_controller.jumpTo(_controller.position.pixels);
-								}
-							},
-							child: Actions(
-								actions: {
-									DismissIntent: CallbackAction<DismissIntent>(
-										onInvoke: (i) => WeakNavigator.pop(context)
-									)
-								},
-								child: Focus(
-									autofocus: true,
-									child: CustomScrollView(
-										controller: _controller,
-										physics: AlwaysScrollableScrollPhysics(),
-										slivers: [
-											SliverToBoxAdapter(
-												child: ConstrainedBox(
-													constraints: BoxConstraints(
-														minHeight: constraints.maxHeight
-													),
-													child: SafeArea(
-														child: Center(
-															key: _scrollKey,
-															child: Opacity(
-																key: _childKey,
-																opacity: _opacity,
-																child: widget.child
-															)
+							child: Focus(
+								autofocus: true,
+								child: CustomScrollView(
+									controller: _controller,
+									physics: AlwaysScrollableScrollPhysics(),
+									slivers: [
+										SliverToBoxAdapter(
+											child: ConstrainedBox(
+												constraints: BoxConstraints(
+													minHeight: constraints.maxHeight
+												),
+												child: SafeArea(
+													child: Center(
+														key: _scrollKey,
+														child: Opacity(
+															key: _childKey,
+															opacity: _opacity,
+															child: widget.child
 														)
 													)
 												)
 											)
-										]
-									)
+										)
+									]
 								)
 							)
 						)
