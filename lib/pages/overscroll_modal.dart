@@ -168,6 +168,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 								_controller.jumpTo(_controller.position.pixels);
 							}
 						},
+						onPointerPanZoomEnd: (event) => _onPointerUp(),
 						child: Actions(
 							actions: {
 								DismissIntent: CallbackAction<DismissIntent>(
