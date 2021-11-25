@@ -67,7 +67,7 @@ class ContentSettings {
 	@HiveField(3)
 	bool nsfwText;
 	@HiveField(4)
-	dynamic? site;
+	dynamic site;
 
 	ContentSettings({
 		this.images = false,

@@ -21,7 +21,7 @@ class ImageboardTab extends StatelessWidget {
 		try {
 			board = context.watch<Persistence>().getBoard(initialBoardName);
 		}
-		catch (e, st) {
+		catch (e) {
 			
 		}
 		return MasterDetailPage<ThreadIdentifier>(
