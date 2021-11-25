@@ -70,15 +70,11 @@ class ReplyBox extends StatefulWidget {
 	final String board;
 	final int? threadId;
 	final ValueChanged<PostReceipt> onReplyPosted;
-	final VoidCallback? onRequestFocus;
-	final bool visible;
 
 	ReplyBox({
 		required this.board,
 		this.threadId,
 		required this.onReplyPosted,
-		this.onRequestFocus,
-		this.visible = true,
 		Key? key
 	}) : super(key: key);
 	createState() => ReplyBoxState();
@@ -95,6 +91,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	String? overrideAttachmentFilename;
 	bool _showOptions = false;
 	bool get showOptions => _showOptions && !loading;
+	bool show = false;
 
 	@override
 	void initState() {
@@ -104,20 +101,8 @@ class ReplyBoxState extends State<ReplyBox> {
 		});
 	}
 
-	@override
-	void didUpdateWidget(ReplyBox old) {
-		super.didUpdateWidget(old);
-		if (old.visible && !widget.visible) {
-			_textFocusNode.unfocus();
-		}
-		else if (!old.visible && widget.visible) {
-			_textFocusNode.requestFocus();
-		}
-	}
-
 	void onTapPostId(int id) {
-		widget.onRequestFocus?.call();
-		_textFocusNode.requestFocus();
+		showReplyBox();
 		int currentPos = _textFieldController.selection.base.offset;
 		if (currentPos < 0) {
 			currentPos = _textFieldController.text.length;
@@ -133,6 +118,29 @@ class ReplyBoxState extends State<ReplyBox> {
 			),
 			text: _textFieldController.text.substring(0, currentPos) + insertedText + _textFieldController.text.substring(currentPos)
 		);
+	}
+
+	void showReplyBox() {
+		setState(() {
+			show = true;
+		});
+		_textFocusNode.requestFocus();
+	}
+
+	void hideReplyBox() {
+		setState(() {
+			show = false;
+		});
+		_textFocusNode.unfocus();
+	}
+
+	void toggleReplyBox() {
+		if (show) {
+			hideReplyBox();
+		}
+		else {
+			showReplyBox();
+		}
 	}
 
 	Future<File?> _showTranscodeWindow({
@@ -378,6 +386,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		final captchaRequest = site.getCaptchaRequest(widget.board, widget.threadId);
 		CaptchaSolution? captchaSolution;
 		if (captchaRequest is RecaptchaRequest) {
+			hideReplyBox();
 			captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(builder: (context) {
 				return OverscrollModalPage(
 					child: CaptchaNoJS(
@@ -386,8 +395,10 @@ class ReplyBoxState extends State<ReplyBox> {
 					)
 				);
 			}));
+			showReplyBox();
 		}
 		else if (captchaRequest is Chan4CustomCaptchaRequest) {
+			hideReplyBox();
 			captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(builder: (context) {
 				return OverscrollModalPage(
 					child: Captcha4ChanCustom(
@@ -396,6 +407,7 @@ class ReplyBoxState extends State<ReplyBox> {
 					)
 				);
 			}));
+			showReplyBox();
 		}
 		else if (captchaRequest is NoCaptchaRequest) {
 			captchaSolution = NoCaptchaSolution();
@@ -430,6 +442,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_optionsFieldController.clear();
 			_subjectFieldController.clear();
 			setState(() {
+				show = false;
 				loading = false;
 				attachment = null;
 				overrideAttachmentFilename = null;
@@ -678,7 +691,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			mainAxisSize: MainAxisSize.min,
 			children: [
 				Expander(
-					expanded: showOptions && widget.visible,
+					expanded: showOptions && show,
 					bottomSafe: true,
 					height: 100,
 					child: Focus(
@@ -687,8 +700,8 @@ class ReplyBoxState extends State<ReplyBox> {
 					)
 				),
 				Expander(
-					expanded: widget.visible,
-					bottomSafe: !widget.visible,
+					expanded: show,
+					bottomSafe: !show,
 					height: (widget.threadId == null) ? 150 : 100,
 					child: Container(
 						decoration: BoxDecoration(

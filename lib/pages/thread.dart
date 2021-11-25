@@ -41,10 +41,10 @@ class ThreadPage extends StatefulWidget {
 
 class _ThreadPageState extends State<ThreadPage> {
 	late PersistentThreadState persistentState;
-	bool showReplyBox = false;
 	final _subNavigatorKey = GlobalKey<NavigatorState>();
 	final _shareButtonKey = GlobalKey();
 	final _weakNavigatorKey = GlobalKey<WeakNavigatorState>();
+	final _replyBoxKey = GlobalKey<ReplyBoxState>();
 
 	final _listController = RefreshableListController<Post>();
 	late PostSpanRootZoneData zone;
@@ -189,8 +189,8 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread?.isArchived ?? false) {
 			title += ' (Archived)';
 		}
-		return Provider(
-			create: (context) => GlobalKey<ReplyBoxState>(),
+		return Provider.value(
+			value: _replyBoxKey,
 			child: CupertinoPageScaffold(
 				resizeToAvoidBottomInset: false,
 				navigationBar: CupertinoNavigationBar(
@@ -226,11 +226,7 @@ class _ThreadPageState extends State<ThreadPage> {
 							CupertinoButton(
 								padding: EdgeInsets.zero,
 								child: Icon(Icons.reply),
-								onPressed: persistentState.thread?.isArchived == true ? null : () {
-									setState(() {
-										showReplyBox = !showReplyBox;
-									});
-								}
+								onPressed: persistentState.thread?.isArchived == true ? null : _replyBoxKey.currentState?.toggleReplyBox
 							)
 						]
 					)
@@ -492,22 +488,13 @@ class _ThreadPageState extends State<ThreadPage> {
 								)
 							),
 							ReplyBox(
-								key: context.read<GlobalKey<ReplyBoxState>>(),
+								key: _replyBoxKey,
 								board: widget.thread.board,
 								threadId: widget.thread.id,
-								visible: showReplyBox,
 								onReplyPosted: (receipt) {
 									persistentState.savedTime = DateTime.now();
 									persistentState.save();
-									setState(() {
-										showReplyBox = false;
-									});
 									_listController.update();
-								},
-								onRequestFocus: () {
-									setState(() {
-										showReplyBox = true;
-									});
 								}
 							)
 						]

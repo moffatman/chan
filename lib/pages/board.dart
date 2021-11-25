@@ -40,8 +40,8 @@ class BoardPage extends StatefulWidget {
 
 class _BoardPageState extends State<BoardPage> {
 	late ImageboardBoard board;
-	bool showReplyBox = false;
 	final _listController = RefreshableListController<Thread>();
+	final _replyBoxKey = GlobalKey<ReplyBoxState>();
 
 	@override
 	void initState() {
@@ -127,11 +127,7 @@ class _BoardPageState extends State<BoardPage> {
 						CupertinoButton(
 							padding: EdgeInsets.zero,
 							child: Icon(Icons.create),
-							onPressed: () {
-								setState(() {
-									showReplyBox = !showReplyBox;
-								});
-							}
+							onPressed: _replyBoxKey.currentState?.toggleReplyBox
 						)
 					]
 				)
@@ -224,22 +220,14 @@ class _BoardPageState extends State<BoardPage> {
 						)
 					),
 					ReplyBox(
+						key: _replyBoxKey,
 						board: board.name,
-						visible: showReplyBox,
 						onReplyPosted: (receipt) {
 							final persistentState = context.read<Persistence>().getThreadState(ThreadIdentifier(board: board.name, id: receipt.id));
 							persistentState.savedTime = DateTime.now();
 							persistentState.save();
-							setState(() {
-								showReplyBox = false;
-							});
 							_listController.update();
 							widget.onThreadSelected?.call(ThreadIdentifier(board: board.name, id: receipt.id));
-						},
-						onRequestFocus: () {
-							setState(() {
-								showReplyBox = true;
-							});
 						}
 					)
 				]
