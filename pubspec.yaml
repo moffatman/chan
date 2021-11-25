@@ -139,3 +139,5 @@ dependency_overrides:
       url: https://github.com/moffatman/ffmpeg-kit.git
       ref: full_gpl_temp
       path: flutter/flutter/
+  sky_engine:
+    path: ../engine/src/out/host_debug_unopt/gen/dart-pkg/sky_engine
