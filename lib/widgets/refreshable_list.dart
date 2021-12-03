@@ -264,31 +264,29 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 									key: PageStorageKey('list for ${widget.id}'),
 									delegate: SliverChildBuilderDelegate(
 										(context, i) {
-											if (i % 2 == 0) {
-												if (widget.gridColumns > 1) {
-													return IntrinsicHeight(
-														child: Row(
-															children: [
-																for (int j = ((i ~/ 2) * widget.gridColumns).floor(); j < (((i ~/ 2) + 1) * widget.gridColumns).floor(); j++) Flexible(
-																	child: Builder(
-																		builder: (context) {
-																			widget.controller?.registerItem(j, values[j], context);
-																			return _itemBuilder(context, values[j]);
-																		}
-																	)
-																)
-															]
-														)
-													);
-												}
-												else {
-													return Builder(
-														builder: (context) {
-															widget.controller?.registerItem(i ~/ 2, values[i ~/ 2], context);
-															return _itemBuilder(context, values[i ~/ 2]);
-														}
-													);
-												}
+											if (widget.gridColumns > 1) {
+												return IntrinsicHeight(
+													child: Row(
+														children: [
+															for (int j = (i * widget.gridColumns).floor(); j < ((i + 1) * widget.gridColumns).floor(); j++) Flexible(
+																child: j < values.length ? Builder(
+																	builder: (context) {
+																		widget.controller?.registerItem(j, values[j], context);
+																		return _itemBuilder(context, values[j]);
+																	}
+																) : Container()
+															)
+														]
+													)
+												);
+											}
+											else if (i % 2 == 0) {
+												return Builder(
+													builder: (context) {
+														widget.controller?.registerItem(i ~/ 2, values[i ~/ 2], context);
+														return _itemBuilder(context, values[i ~/ 2]);
+													}
+												);
 											}
 											else {
 												return Divider(
@@ -298,7 +296,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 												);
 											}
 										},
-										childCount: ((values.length / widget.gridColumns).ceil() * 2)
+										childCount: widget.gridColumns > 1 ? (values.length / widget.gridColumns).ceil() : values.length * 2
 									)
 								),
 							if (values.length == 0)
