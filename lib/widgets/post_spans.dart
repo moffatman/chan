@@ -27,12 +27,14 @@ class PostSpanRenderOptions {
 	final Color? overrideTextColor;
 	final bool showCrossThreadLabel;
 	final bool addExpandingPosts;
+	final TextStyle baseTextStyle;
 	PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
 		this.overrideTextColor,
 		this.showCrossThreadLabel = true,
-		this.addExpandingPosts = true
+		this.addExpandingPosts = true,
+		this.baseTextStyle = const TextStyle()
 	});
 	GestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 }
@@ -66,6 +68,7 @@ class PostTextSpan extends PostSpan {
 	build(context, options) {
 		return TextSpan(
 			text: context.read<EffectiveSettings>().filterProfanity(text),
+			style: options.baseTextStyle,
 			recognizer: options.recognizer
 		);
 	}
@@ -76,7 +79,7 @@ class PostQuoteSpan extends PostSpan {
 	build(context, options) {
 		return TextSpan(
 			children: [child.build(context, options)],
-			style: TextStyle(color: options.overrideTextColor ?? Color.fromRGBO(120, 153, 34, 1)),
+			style: options.baseTextStyle.copyWith(color: options.overrideTextColor ?? Color.fromRGBO(120, 153, 34, 1)),
 			recognizer: options.recognizer
 		);
 	}
@@ -115,7 +118,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		return TextSpan(
 			text: text,
-			style: TextStyle(
+			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? Colors.red,
 				decoration: TextDecoration.underline
 			),
@@ -147,7 +150,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		return TextSpan(
 			text: text,
-			style: TextStyle(
+			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? Colors.red,
 				decoration: TextDecoration.underline
 			),
@@ -169,7 +172,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		final bool expandedSomewhereAbove = expandedImmediatelyAbove || zone.stackIds.contains(postId);
 		return TextSpan(
 			text: text,
-			style: TextStyle(
+			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? (expandedImmediatelyAbove ? Colors.pink : Colors.red),
 				decoration: TextDecoration.underline,
 				decorationStyle: expandedSomewhereAbove ? TextDecorationStyle.dashed : null
@@ -254,7 +257,7 @@ class PostBoardLink extends PostSpan {
 	build(context, options) {
 		return TextSpan(
 			text: '>>/$board/',
-			style: TextStyle(
+			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? Colors.red,
 				decoration: TextDecoration.underline
 			),
@@ -311,7 +314,7 @@ class PostCodeSpan extends PostSpan {
 				),
 				child: RichText(
 					text: TextSpan(
-						style: GoogleFonts.ibmPlexMono(),
+						style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
 						children: _spans
 					)
 				)
@@ -339,7 +342,7 @@ class PostSpoilerSpan extends PostSpan {
 				overrideTextColor: showSpoiler ? visibleColor : hiddenColor,
 				showCrossThreadLabel: options.showCrossThreadLabel
 			))],
-			style: TextStyle(
+			style: options.baseTextStyle.copyWith(
 				backgroundColor: hiddenColor,
 				color: showSpoiler ? visibleColor : null
 			),
@@ -354,7 +357,7 @@ class PostLinkSpan extends PostSpan {
 	build(context, options) {
 		return TextSpan(
 			text: url,
-			style: TextStyle(
+			style: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline
 			),
 			recognizer: TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(url))
