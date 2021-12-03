@@ -205,13 +205,40 @@ class PostRow extends StatelessWidget {
 												if (_post.attachment != null && settings.showImages(context, _post.board)) Align(
 													alignment: Alignment.topCenter,
 													child: GestureDetector(
-														child: AttachmentThumbnail(
-															attachment: _post.attachment!,
-															thread: _post.threadIdentifier,
-															hero: AttachmentSemanticLocation(
-																attachment: _post.attachment!,
-																semanticParents: zone.stackIds
-															)
+														child: Stack(
+															alignment: Alignment.center,
+															fit: StackFit.loose,
+															children: [
+																AttachmentThumbnail(
+																	attachment: _post.attachment!,
+																	thread: _post.threadIdentifier,
+																	hero: AttachmentSemanticLocation(
+																		attachment: _post.attachment!,
+																		semanticParents: zone.stackIds
+																	)
+																),
+																if (_post.attachment?.type == AttachmentType.WEBM) SizedBox(
+																	width: 75,
+																	height: 75,
+																	child: Center(
+																		child: AspectRatio(
+																			aspectRatio: (_post.attachment!.width ?? 1) / (_post.attachment!.height ?? 1),
+																			child: Align(
+																				alignment: Alignment.bottomRight,
+																				child: Container(
+																					decoration: BoxDecoration(
+																						borderRadius: BorderRadius.only(topLeft: Radius.circular(6)),
+																						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																						border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
+																					),
+																					padding: EdgeInsets.all(1),
+																					child: Icon(Icons.play_arrow, size: 18)
+																				)
+																			)
+																		)
+																	)
+																)
+															]
 														),
 														onTap: () {
 															onThumbnailTap?.call(_post.attachment!);

@@ -166,21 +166,38 @@ class ThreadRow extends StatelessWidget {
 										children: [
 											if (thread.attachment != null) AspectRatio(
 												aspectRatio: 4/3,
-												child: FittedBox(
-													fit: BoxFit.cover,
-													clipBehavior: Clip.hardEdge,
-													child: AttachmentThumbnail(
-														fit: BoxFit.cover,
-														width: 1000,
-														height: 1000,
-														attachment: _thread.attachment!,
-														thread: _thread.identifier,
-														onLoadError: onThumbnailLoadError,
-														hero: AttachmentSemanticLocation(
-															attachment: _thread.attachment!,
-															semanticParents: semanticParentIds
-														)
-													)
+												child: LayoutBuilder(
+													builder: (context, constraints) {
+														return Stack(
+															children: [
+																AttachmentThumbnail(
+																	width: constraints.maxWidth,
+																	height: constraints.maxHeight,
+																	fit: BoxFit.cover,
+																	attachment: _thread.attachment!,
+																	thread: _thread.identifier,
+																	onLoadError: onThumbnailLoadError,
+																	hero: AttachmentSemanticLocation(
+																		attachment: _thread.attachment!,
+																		semanticParents: semanticParentIds
+																	)
+																),
+																if (_thread.attachment?.type == AttachmentType.WEBM) Positioned(
+																	bottom: 0,
+																	right: 0,
+																	child: Container(
+																		decoration: BoxDecoration(
+																			borderRadius: BorderRadius.only(topLeft: Radius.circular(6)),
+																			color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																			border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
+																		),
+																		padding: EdgeInsets.all(2),
+																		child: Icon(Icons.play_arrow)
+																)
+																)
+															]
+														);
+													}
 												)
 											),
 											Expanded(
@@ -234,14 +251,40 @@ class ThreadRow extends StatelessWidget {
 													child: Container(
 														padding: EdgeInsets.only(bottom: 8),
 														child: GestureDetector(
-															child: AttachmentThumbnail(
-																attachment: _thread.attachment!,
-																thread: _thread.identifier,
-																onLoadError: onThumbnailLoadError,
-																hero: AttachmentSemanticLocation(
-																	attachment: _thread.attachment!,
-																	semanticParents: semanticParentIds
-																)
+															child: Stack(
+																alignment: Alignment.center,
+																fit: StackFit.loose,
+																children: [
+																	AttachmentThumbnail(
+																		attachment: _thread.attachment!,
+																		thread: _thread.identifier,
+																		hero: AttachmentSemanticLocation(
+																			attachment: _thread.attachment!,
+																			semanticParents: semanticParentIds
+																		)
+																	),
+																	if (_thread.attachment?.type == AttachmentType.WEBM) SizedBox(
+																		width: 75,
+																		height: 75,
+																		child: Center(
+																			child: AspectRatio(
+																				aspectRatio: (_thread.attachment!.width ?? 1) / (_thread.attachment!.height ?? 1),
+																				child: Align(
+																					alignment: Alignment.bottomRight,
+																					child: Container(
+																						decoration: BoxDecoration(
+																							borderRadius: BorderRadius.only(topLeft: Radius.circular(6)),
+																							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																							border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
+																						),
+																						padding: EdgeInsets.all(1),
+																						child: Icon(Icons.play_arrow, size: 18)
+																					)
+																				)
+																			)
+																		)
+																	)
+																]
 															),
 															onTap: () => onThumbnailTap?.call(_thread.attachment!)
 														)
