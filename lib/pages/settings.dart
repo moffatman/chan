@@ -153,6 +153,22 @@ class SettingsPage extends StatelessWidget {
 									}
 								),
 								Container(
+									padding: EdgeInsets.all(16),
+									child: Text('Number of columns in catalog'),
+								),
+								CupertinoSegmentedControl<int>(
+									children: {
+										1: Text('Rows'),
+										2: Text('2'),
+										3: Text('3'),
+										4: Text('4')
+									},
+									groupValue: settings.boardCatalogColumns,
+									onValueChanged: (newValue) {
+										settings.boardCatalogColumns = newValue;
+									}
+								),
+								Container(
 									padding: EdgeInsets.only(top: 16, left: 16),
 									child: Text('Cached media')
 								),

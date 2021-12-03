@@ -104,6 +104,8 @@ class SavedSettings extends HiveObject {
 	String userId;
   @HiveField(11)
 	ContentSettings contentSettings;
+	@HiveField(12)
+	int boardCatalogColumns;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -117,7 +119,8 @@ class SavedSettings extends HiveObject {
 		bool? darkThemeIsPureBlack,
 		bool? useTouchLayout,
 		String? userId,
-		ContentSettings? contentSettings
+		ContentSettings? contentSettings,
+		int? boardCatalogColumns
 	}): this.autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.WiFi,
 		this.theme = theme ?? ThemeSetting.System,
 		this.hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -129,7 +132,8 @@ class SavedSettings extends HiveObject {
 		this.darkThemeIsPureBlack = darkThemeIsPureBlack ?? false,
 		this.useTouchLayout = useTouchLayout ?? (Platform.isAndroid || Platform.isIOS),
 		this.userId = userId ?? Uuid().v4(),
-		this.contentSettings = contentSettings ?? ContentSettings();
+		this.contentSettings = contentSettings ?? ContentSettings(),
+		this.boardCatalogColumns = boardCatalogColumns ?? 1;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -270,6 +274,13 @@ class EffectiveSettings extends ChangeNotifier {
 			}
 			return output;
 		}
+	}
+
+	int get boardCatalogColumns => _settings.boardCatalogColumns;
+	set boardCatalogColumns(int setting) {
+		_settings.boardCatalogColumns = setting;
+		_settings.save();
+		notifyListeners();
 	}
 
 	EffectiveSettings() {

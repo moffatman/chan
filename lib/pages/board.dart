@@ -139,6 +139,7 @@ class _BoardPageState extends State<BoardPage> {
 							fit: StackFit.expand,
 							children: [
 								RefreshableList<Thread>(
+									gridColumns: settings.boardCatalogColumns,
 									controller: _listController,
 									listUpdater: () => site.getCatalog(board.name).then((list) {
 										final now = DateTime.now();
@@ -159,6 +160,7 @@ class _BoardPageState extends State<BoardPage> {
 									itemBuilder: (context, thread) {
 										return GestureDetector(
 											child: ThreadRow(
+												contentFocus: settings.boardCatalogColumns > 1,
 												thread: thread,
 												isSelected: thread.identifier == widget.selectedThread,
 												semanticParentIds: [-1],

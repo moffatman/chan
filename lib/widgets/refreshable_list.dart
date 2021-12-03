@@ -28,6 +28,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
 	final bool disableUpdates;
 	final Widget? footer;
+	final int gridColumns;
 
 	RefreshableList({
 		required this.itemBuilder,
@@ -40,6 +41,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.remedies = const {},
 		this.initialList,
 		this.disableUpdates = false,
+		this.gridColumns = 1,
 		this.footer
 	});
 
@@ -263,12 +265,30 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 									delegate: SliverChildBuilderDelegate(
 										(context, i) {
 											if (i % 2 == 0) {
-												return Builder(
-													builder: (context) {
-														widget.controller?.registerItem(i ~/ 2, values[i ~/ 2], context);
-														return _itemBuilder(context, values[i ~/ 2]);
-													}
-												);
+												if (widget.gridColumns > 1) {
+													return IntrinsicHeight(
+														child: Row(
+															children: [
+																for (int j = ((i ~/ 2) * widget.gridColumns).floor(); j < (((i ~/ 2) + 1) * widget.gridColumns).floor(); j++) Flexible(
+																	child: Builder(
+																		builder: (context) {
+																			widget.controller?.registerItem(j, values[j], context);
+																			return _itemBuilder(context, values[j]);
+																		}
+																	)
+																)
+															]
+														)
+													);
+												}
+												else {
+													return Builder(
+														builder: (context) {
+															widget.controller?.registerItem(i ~/ 2, values[i ~/ 2], context);
+															return _itemBuilder(context, values[i ~/ 2]);
+														}
+													);
+												}
 											}
 											else {
 												return Divider(
@@ -278,7 +298,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 												);
 											}
 										},
-										childCount: (values.length * 2)
+										childCount: ((values.length / widget.gridColumns).ceil() * 2)
 									)
 								),
 							if (values.length == 0)
@@ -365,27 +385,6 @@ class RefreshableListFooter extends StatelessWidget {
 		this.remedy,
 		this.overscrollFactor
 	});
-
-	String _timeDiff(DateTime value) {
-		final diff = value.difference(DateTime.now()).abs();
-		String timeDiff = '';
-		if (diff.inHours > 0) {
-			timeDiff = '${diff.inHours}h';
-		}
-		else if (diff.inMinutes > 0) {
-			timeDiff = '${diff.inMinutes}m';
-		}
-		else {
-			timeDiff = '${(diff.inMilliseconds / 1000).round()}s';
-		}
-		if (value.isAfter(DateTime.now())) {
-			timeDiff = 'in $timeDiff';
-		}
-		else {
-			timeDiff = '$timeDiff ago';
-		}
-		return timeDiff;
-	}
 
 	@override
 	Widget build(BuildContext context) {
