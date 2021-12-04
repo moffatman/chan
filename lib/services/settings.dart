@@ -175,7 +175,7 @@ class EffectiveSettings extends ChangeNotifier {
 		else if (_settings.theme == ThemeSetting.Light) {
 			return Brightness.light;
 		}
-		return _systemBrightness ?? Brightness.light;
+		return _systemBrightness ?? SchedulerBinding.instance!.window.platformBrightness;
 	}
 
 	bool get darkThemeIsPureBlack => _settings.darkThemeIsPureBlack;
