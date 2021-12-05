@@ -97,8 +97,11 @@ class Thread implements Filterable {
 	ThreadIdentifier get identifier => ThreadIdentifier(board: board, id: id);
 }
 
+@HiveType(typeId: 23)
 class ThreadIdentifier {
+	@HiveField(0)
 	final String board;
+	@HiveField(1)
 	final int id;
 	ThreadIdentifier({
 		required this.board,

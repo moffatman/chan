@@ -22,7 +22,7 @@ import 'package:chan/pages/gallery.dart';
 const _OLD_THREAD_THRESHOLD = const Duration(days: 7);
 
 class BoardPage extends StatefulWidget {
-	final ImageboardBoard initialBoard;
+	final ImageboardBoard? initialBoard;
 	final bool allowChangingBoard;
 	final ValueChanged<ImageboardBoard>? onBoardChanged;
 	final ValueChanged<ThreadIdentifier>? onThreadSelected;
@@ -39,7 +39,7 @@ class BoardPage extends StatefulWidget {
 }
 
 class _BoardPageState extends State<BoardPage> {
-	late ImageboardBoard board;
+	late ImageboardBoard? board;
 	final _listController = RefreshableListController<Thread>();
 	final _replyBoxKey = GlobalKey<ReplyBoxState>();
 
@@ -47,12 +47,26 @@ class _BoardPageState extends State<BoardPage> {
 	void initState() {
 		super.initState();
 		board = widget.initialBoard;
+		if (board == null) {
+			Future.delayed(const Duration(milliseconds: 100), _selectBoard);
+		}
 	}
 
 	@override
 	void didUpdateWidget(BoardPage oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		setState(() {});
+	}
+
+	void _selectBoard() async {
+		final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => BoardSwitcherPage()));
+		if (newBoard != null) {
+			widget.onBoardChanged?.call(newBoard);
+			setState(() {
+				board = newBoard;
+				_listController.scrollController?.jumpTo(0);
+			});
+		}
 	}
 
 	@override
@@ -64,20 +78,12 @@ class _BoardPageState extends State<BoardPage> {
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
 				middle: GestureDetector(
-					onTap: widget.allowChangingBoard ? () async {
-						final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => BoardSwitcherPage()));
-						if (newBoard != null) {
-							widget.onBoardChanged?.call(newBoard);
-							setState(() {
-								board = newBoard;
-								_listController.scrollController?.jumpTo(0);
-							});
-						}
-					} : null,
+					onTap: widget.allowChangingBoard ? _selectBoard : null,
 					child: Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							Text('/${board.name}/'),
+							if (board != null) Text('/${board!.name}/')
+							else Text('Select Board'),
 							if (widget.allowChangingBoard) Icon(Icons.arrow_drop_down)
 						]
 					)
@@ -132,7 +138,9 @@ class _BoardPageState extends State<BoardPage> {
 					]
 				)
 			),
-			child: Column(
+			child: board == null ? Center(
+				child: Text('No Board Selected')
+			) : Column(
 				children: [
 					Flexible(
 						child: Stack(
@@ -141,7 +149,7 @@ class _BoardPageState extends State<BoardPage> {
 								RefreshableList<Thread>(
 									gridColumns: settings.boardCatalogColumns,
 									controller: _listController,
-									listUpdater: () => site.getCatalog(board.name).then((list) {
+									listUpdater: () => site.getCatalog(board!.name).then((list) {
 										final now = DateTime.now();
 										if (settings.hideOldStickiedThreads) {
 											list = list.where((thread) {
@@ -156,7 +164,7 @@ class _BoardPageState extends State<BoardPage> {
 										}
 										return settings.reverseCatalogSorting ? list.reversed.toList() : list;
 									}),
-									id: '/${board.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
+									id: '/${board!.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
 									itemBuilder: (context, thread) {
 										return GestureDetector(
 											child: ThreadRow(
@@ -223,13 +231,13 @@ class _BoardPageState extends State<BoardPage> {
 					),
 					ReplyBox(
 						key: _replyBoxKey,
-						board: board.name,
+						board: board!.name,
 						onReplyPosted: (receipt) {
-							final persistentState = context.read<Persistence>().getThreadState(ThreadIdentifier(board: board.name, id: receipt.id));
+							final persistentState = context.read<Persistence>().getThreadState(ThreadIdentifier(board: board!.name, id: receipt.id));
 							persistentState.savedTime = DateTime.now();
 							persistentState.save();
 							_listController.update();
-							widget.onThreadSelected?.call(ThreadIdentifier(board: board.name, id: receipt.id));
+							widget.onThreadSelected?.call(ThreadIdentifier(board: board!.name, id: receipt.id));
 						}
 					)
 				]

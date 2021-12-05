@@ -28,11 +28,15 @@ class MasterDetailPage<T> extends StatelessWidget {
 	final double? twoPaneBreakpoint;
 	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T> valueSetter) masterBuilder;
 	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
+	final T? initialValue;
+	final ValueChanged<T?>? onValueChanged;
 	MasterDetailPage({
 		required this.id,
 		required this.masterBuilder,
 		required this.detailBuilder,
-		this.twoPaneBreakpoint
+		this.twoPaneBreakpoint,
+		this.initialValue,
+		this.onValueChanged
 	});
 	@override
 	Widget build(BuildContext context) {
@@ -42,7 +46,9 @@ class MasterDetailPage<T> extends StatelessWidget {
 				MultiMasterPane<T>(
 					id: id,
 					masterBuilder: masterBuilder,
-					detailBuilder: detailBuilder
+					detailBuilder: detailBuilder,
+					initialValue: initialValue,
+					onValueChanged: onValueChanged
 				)
 			]
 		);
@@ -57,6 +63,7 @@ class MultiMasterPane<T> {
 	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T> valueSetter) masterBuilder;
 	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
 	T? currentValue;
+	final ValueChanged<T?>? onValueChanged;
 
 	MultiMasterPane({
 		required this.id,
@@ -64,12 +71,15 @@ class MultiMasterPane<T> {
 		required this.detailBuilder,
 		this.title,
 		this.navigationBar,
-		this.icon
-	});
+		this.icon,
+		T? initialValue,
+		this.onValueChanged
+	}) : currentValue = initialValue;
 
 	Widget buildMaster(BuildContext context, VoidCallback onNewValue, bool provideCurrentValue) {
 		return masterBuilder(context, provideCurrentValue ? currentValue : null, (newValue) {
 			currentValue = newValue;
+			onValueChanged?.call(newValue);
 			onNewValue();
 		});
 	}
@@ -115,6 +125,11 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 		super.initState();
 		_tabController = TabController(length: widget.panes.length, vsync: this);
 		_tabController.addListener(_onPaneChanged);
+		Future.delayed(const Duration(milliseconds: 100), () {
+			if (widget.panes[_tabController.index].currentValue != null) {
+				_onNewValue(widget.panes[_tabController.index]);
+			}
+		});
 	}
 
 	@override

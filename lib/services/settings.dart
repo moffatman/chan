@@ -94,8 +94,6 @@ class SavedSettings extends HiveObject {
 	ThreadSortingMethod savedThreadsSortingMethod;
 	@HiveField(6)
 	bool autoRotateInGallery;
-	@HiveField(7)
-	String currentBoardName;
 	@HiveField(8)
 	bool darkThemeIsPureBlack;
 	@HiveField(9)
@@ -128,7 +126,6 @@ class SavedSettings extends HiveObject {
 		this.reverseCatalogSorting = reverseCatalogSorting ?? false,
 		this.savedThreadsSortingMethod = savedThreadsSortingMethod ?? ThreadSortingMethod.SavedTime,
 		this.autoRotateInGallery = autoRotateInGallery ?? false,
-		this.currentBoardName = currentBoardName ?? 'tv',
 		this.darkThemeIsPureBlack = darkThemeIsPureBlack ?? false,
 		this.useTouchLayout = useTouchLayout ?? (Platform.isAndroid || Platform.isIOS),
 		this.userId = userId ?? Uuid().v4(),
@@ -222,13 +219,6 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get autoRotateInGallery => _settings.autoRotateInGallery;
 	set autoRotateInGallery(bool setting) {
 		_settings.autoRotateInGallery = setting;
-		_settings.save();
-		notifyListeners();
-	}
-
-	String get currentBoardName => _settings.currentBoardName;
-	set currentBoardName(String setting) {
-		_settings.currentBoardName = setting;
 		_settings.save();
 		notifyListeners();
 	}

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:chan/pages/history.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/settings.dart';
@@ -13,6 +15,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tuple/tuple.dart';
 import 'sites/imageboard_site.dart';
 import 'sites/4chan.dart';
 import 'package:chan/pages/tab.dart';
@@ -169,8 +172,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	String? boardFetchErrorMessage;
 	late bool isInTabletLayout;
 	int tabletIndex = 0;
-	final _keys = [GlobalKey(), GlobalKey(), GlobalKey(), GlobalKey(), GlobalKey()];
+	final _keys = <int, GlobalKey>{};
 	final _tabController = CupertinoTabController();
+	bool showTabPopup = false;
+	late final PersistentBrowserState browserState;
+	final tabs = <Tuple2<PersistentBrowserTab, Key>>[];
+	final activeBrowserTab = ValueNotifier<int>(0);
+	final _tabListController = ScrollController();
 
 	void _setupBoards() async {
 		try {
@@ -200,16 +208,38 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	void initState() {
 		super.initState();
 		initialized = context.read<Persistence>().boardBox.length > 0;
+		browserState = context.read<Persistence>().browserState;
+		tabs.addAll(browserState.tabs.map((tab) => Tuple2(tab, GlobalKey())));
+		activeBrowserTab.value = browserState.currentTab;
 		_setupBoards();
 	}
 
 	Widget _buildTab(BuildContext context, int index) {
 		Widget child;
-		if (index == 0) {
-			child = ImageboardTab(
-				initialBoardName: context.read<EffectiveSettings>().currentBoardName,
-				onBoardChanged: (newBoard) {
-					context.read<EffectiveSettings>().currentBoardName = newBoard.name;
+		if (index <= 0) {
+			child = ValueListenableBuilder(
+				valueListenable: activeBrowserTab,
+				builder: (context, int index, child) {
+					return IndexedStack(
+						index: index,
+						children: List.generate(tabs.length, (i) => ExcludeFocus(
+							excluding: i != activeBrowserTab.value,
+							child: ImageboardTab(
+								key: tabs[i].item2,
+								initialBoard: tabs[i].item1.board,
+								initialThread: tabs[i].item1.thread,
+								onBoardChanged: (newBoard) {
+									tabs[i].item1.board = newBoard;
+									browserState.save();
+								},
+								onThreadChanged: (newThread) {
+									tabs[i].item1.thread = newThread;
+									browserState.save();
+								},
+								id: 'tab${tabs[index].item2.hashCode}'
+							)
+						))
+					);
 				}
 			);
 		}
@@ -226,8 +256,106 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			child = SettingsPage();
 		}
 		return KeyedSubtree(
-			key: _keys[index],
+			key: _keys.putIfAbsent(index, () => GlobalKey()),
 			child: child
+		);
+	}
+
+	Widget _buildTabletIcon(int index, Widget icon, String label, {bool reorderable = false}) {
+		final child = CupertinoButton(
+			child: Opacity(
+				opacity: (index <= 0 ? (tabletIndex == 0 && index == -1*activeBrowserTab.value) : index == tabletIndex) ? 1.0 : 0.5,
+				child: Column(
+					children: [
+						icon,
+						SizedBox(height: 4),
+						Text(label, style: TextStyle(fontSize: 15))
+					]
+				)
+			),
+			onPressed: () async {
+				if (index <= 0) {
+					if (activeBrowserTab.value == -1 * index && _tabController.index == 0) {
+						if (tabs.length > 1) {
+							final shouldClose = await showCupertinoDialog<bool>(
+								context: context,
+								barrierDismissible: true,
+								builder: (context) => CupertinoAlertDialog(
+									title: Text('Close tab?'),
+									actions: [
+										CupertinoDialogAction(
+											child: Text('No'),
+											onPressed: () {
+												Navigator.of(context).pop(false);
+											}
+										),
+										CupertinoDialogAction(
+											child: Text('Yes'),
+											isDestructiveAction: true,
+											onPressed: () {
+												Navigator.of(context).pop(true);
+											}
+										)
+									]
+								)
+							);
+							if (shouldClose == true) {
+								tabs.removeAt(-1 * index);
+								browserState.tabs.removeAt(-1 * index);
+								final newActiveTabIndex = min(activeBrowserTab.value, tabs.length - 1);
+								activeBrowserTab.value = newActiveTabIndex;
+								browserState.currentTab = newActiveTabIndex;
+								browserState.save();
+								setState(() {});
+							}
+						}
+					}
+					else {
+						activeBrowserTab.value = -1 * index;
+						browserState.currentTab = -1 * index;
+						browserState.save();
+					}
+				}
+				_tabController.index = max(0, index);
+				setState(() {
+					tabletIndex = _tabController.index;
+				});
+			}
+		);
+		if (reorderable) {
+			return ReorderableDelayedDragStartListener(
+				index: index.abs(),
+				key: ValueKey(index),
+				child: child
+			);
+		}
+		else {
+			return child;
+		}
+	}
+
+	Widget _buildNewTabIcon() {
+		return CupertinoButton(
+			child: Opacity(
+				opacity: 0.5,
+				child: Column(
+					children: [
+						Icon(Icons.add),
+						SizedBox(height: 4),
+						Text("New", style: TextStyle(fontSize: 15))
+					]
+				)
+			),
+			onPressed: () {
+				final tab = PersistentBrowserTab();
+				browserState.tabs.add(tab);
+				tabs.add(Tuple2(tab, GlobalKey()));
+				activeBrowserTab.value = tabs.length - 1;
+				browserState.currentTab = browserState.tabs.length - 1;
+				browserState.save();
+				setState(() {});
+				Future.delayed(Duration(milliseconds: 100), () => _tabListController.animateTo(_tabListController.position.maxScrollExtent, duration: const Duration(milliseconds: 500), curve: Curves.ease));
+			}
 		);
 	}
 
@@ -258,59 +386,54 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						Container(
 							padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
 							color: CupertinoTheme.of(context).barBackgroundColor,
-							child: NavigationRail(
-								backgroundColor: CupertinoTheme.of(context).barBackgroundColor,
-								unselectedIconTheme: IconThemeData(
-									color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
-								),
-								selectedIconTheme: IconThemeData(
-									color: CupertinoTheme.of(context).primaryColor
-								),
-								unselectedLabelTextStyle: TextStyle(
-									color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)
-								),
-								selectedLabelTextStyle: TextStyle(
-									color: CupertinoTheme.of(context).primaryColor
-								),
-								selectedIndex: tabletIndex,
-								onDestinationSelected: (index) {
-									_tabController.index = index;
-									setState(() {
-										tabletIndex = index;
-									});
-								},
-								labelType: NavigationRailLabelType.all,
-								destinations: [
-									NavigationRailDestination(
-										icon: Icon(Icons.topic),
-										label: Text('Browse')
+							width: 85,
+							child: Column(
+								children: [
+									Expanded(
+										child: Column(
+											children: [
+												Expanded(
+													child: ReorderableList(
+														controller: _tabListController,
+														physics: BouncingScrollPhysics(),
+														onReorder: (oldIndex, newIndex) {
+															final currentTab = tabs[activeBrowserTab.value];
+															if (oldIndex < newIndex) {
+																newIndex -= 1;
+															}
+															final tab = tabs.removeAt(oldIndex);
+															tabs.insert(newIndex, tab);
+															browserState.tabs.removeAt(oldIndex);
+															browserState.tabs.insert(newIndex, tab.item1);
+															activeBrowserTab.value = tabs.indexOf(currentTab);
+															browserState.currentTab = activeBrowserTab.value;
+															browserState.save();
+															setState(() {});
+														},
+														itemCount: tabs.length,
+														itemBuilder: (context, i) {
+															return _buildTabletIcon(i * -1, Icon(Icons.topic), tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'Browse', reorderable: true);
+														}
+													)
+												),
+												_buildNewTabIcon()
+											]
+										)
 									),
-									NavigationRailDestination(
-										icon: NotifyingIcon(
+									_buildTabletIcon(1, NotifyingIcon(
 											icon: Icons.bookmark,
 											primaryCount: context.watch<ThreadWatcher>().unseenYouCount,
 											secondaryCount: context.watch<ThreadWatcher>().unseenCount
-										),
-										label: Text('Saved')
-									),
-									NavigationRailDestination(
-										icon: Icon(Icons.history),
-										label: Text('History')
-									),
-									NavigationRailDestination(
-										icon: Icon(Icons.search),
-										label: Text('Search')
-									),
-									NavigationRailDestination(
-										icon: Icon(Icons.settings),
-										label: Text('Settings')
-									)
+										), 'Saved'),
+									_buildTabletIcon(2, Icon(Icons.history), 'History'),
+									_buildTabletIcon(3, Icon(Icons.search), 'Search'),
+									_buildTabletIcon(4, Icon(Icons.settings), 'Settings')
 								]
 							)
 						),
 						Expanded(
 							child: IndexedStack(
-								index: tabletIndex,
+								index: max(0, tabletIndex),
 								children: List.generate(5, (i) => ExcludeFocus(
 									excluding: i != tabletIndex,
 									child: _buildTab(context, i)
@@ -322,40 +445,104 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			);
 		}
 		else {
-			return CupertinoTabScaffold(
-				controller: _tabController,
-				tabBar: CupertinoTabBar(
-					items: [
-						BottomNavigationBarItem(
-							icon: Icon(Icons.topic),
-							label: 'Browse'
+			return Stack(
+				children: [
+					CupertinoTabScaffold(
+						controller: _tabController,
+						tabBar: CupertinoTabBar(
+							items: [
+								BottomNavigationBarItem(
+									icon: Icon(Icons.topic),
+									label: 'Browse'
+								),
+								BottomNavigationBarItem(
+									icon: NotifyingIcon(
+										icon: Icons.bookmark,
+										primaryCount: context.watch<ThreadWatcher>().unseenYouCount,
+										secondaryCount: context.watch<ThreadWatcher>().unseenCount,
+										topOffset: 10
+									),
+									label: 'Saved'
+								),
+								BottomNavigationBarItem(
+									icon: Icon(Icons.history),
+									label: 'History'
+								),
+								BottomNavigationBarItem(
+									icon: Icon(Icons.search),
+									label: 'Search'
+								),
+								BottomNavigationBarItem(
+									icon: Icon(Icons.settings),
+									label: 'Settings'
+								)
+							],
+							onTap: (index) {
+								if (index == tabletIndex && index == 0) {
+									setState(() {
+										showTabPopup = !showTabPopup;
+									});
+								}
+								else {
+									setState(() {
+										tabletIndex = index;
+										showTabPopup = false;
+									});
+								}
+							}
 						),
-						BottomNavigationBarItem(
-							icon: NotifyingIcon(
-								icon: Icons.bookmark,
-								primaryCount: context.watch<ThreadWatcher>().unseenYouCount,
-								secondaryCount: context.watch<ThreadWatcher>().unseenCount,
-								topOffset: 10
-							),
-							label: 'Saved'
-						),
-						BottomNavigationBarItem(
-							icon: Icon(Icons.history),
-							label: 'History'
-						),
-						BottomNavigationBarItem(
-							icon: Icon(Icons.search),
-							label: 'Search'
-						),
-						BottomNavigationBarItem(
-							icon: Icon(Icons.settings),
-							label: 'Settings'
+						tabBuilder: (context, index) => CupertinoTabView(
+							builder: (context) => _buildTab(context, index)
 						)
-					]
-				),
-				tabBuilder: (context, index) => CupertinoTabView(
-					builder: (context) => _buildTab(context, index)
-				)
+					),
+					Column(
+							mainAxisAlignment: MainAxisAlignment.end,
+							children: [
+								Expander(
+									duration: const Duration(milliseconds: 2000),
+									height: 80,
+									bottomSafe: false,
+									expanded: showTabPopup,
+									child: Container(
+										color: CupertinoTheme.of(context).barBackgroundColor,
+										child: Row(
+											children: [
+												Expanded(
+													child: ReorderableList(
+														controller: _tabListController,
+														scrollDirection: Axis.horizontal,
+														physics: BouncingScrollPhysics(),
+														onReorder: (oldIndex, newIndex) {
+															final currentTab = tabs[activeBrowserTab.value];
+															if (oldIndex < newIndex) {
+																newIndex -= 1;
+															}
+															final tab = tabs.removeAt(oldIndex);
+															tabs.insert(newIndex, tab);
+															browserState.tabs.removeAt(oldIndex);
+															browserState.tabs.insert(newIndex, tab.item1);
+															activeBrowserTab.value = tabs.indexOf(currentTab);
+															browserState.currentTab = activeBrowserTab.value;
+															browserState.save();
+															setState(() {});
+														},
+														itemCount: tabs.length,
+														itemBuilder: (context, i) {
+															return _buildTabletIcon(i * -1, Icon(Icons.topic), tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'Browse', reorderable: true);
+														}
+													)
+												),
+												_buildNewTabIcon()
+											]
+										)
+									)
+								),
+								SizedBox(
+									height: 50.0
+								)
+							]
+						)
+				]
 			);
 		}
 	}

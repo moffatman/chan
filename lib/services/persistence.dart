@@ -42,6 +42,7 @@ class Persistence {
 	late final Box<SavedAttachment> savedAttachmentsBox;
 	late final Box<SavedPost> savedPostsBox;
 	late final PersistentRecentSearches recentSearches;
+	late final PersistentBrowserState browserState;
 	static late final Directory temporaryDirectory;
 	static late final Directory documentsDirectory;
 	static late final PersistCookieJar cookies;
@@ -69,6 +70,9 @@ class Persistence {
 		Hive.registerAdapter(PersistentRecentSearchesAdapter());
 		Hive.registerAdapter(SavedAttachmentAdapter());
 		Hive.registerAdapter(SavedPostAdapter());
+		Hive.registerAdapter(ThreadIdentifierAdapter());
+		Hive.registerAdapter(PersistentBrowserTabAdapter());
+		Hive.registerAdapter(PersistentBrowserStateAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
 		cookies = PersistCookieJar(
@@ -89,6 +93,18 @@ class Persistence {
 		else {
 			recentSearches = PersistentRecentSearches();
 			searchesBox.put('recentSearches', recentSearches);
+		}
+		//Hive.deleteBoxFromDisk('browserStates_$id');
+		final browserStateBox = await Hive.openBox<PersistentBrowserState>('browserStates_$id');
+		final existingBrowserState = browserStateBox.get('browserState');
+		if (existingBrowserState != null) {
+			browserState = existingBrowserState;
+		}
+		else {
+			browserState = PersistentBrowserState(
+				tabs: [PersistentBrowserTab(board: null)]
+			);
+			browserStateBox.put('browserState', browserState);
 		}
 		boardBox = await Hive.openBox<ImageboardBoard>('boards_$id');
 		savedAttachmentsBox = await Hive.openBox<SavedAttachment>('savedAttachments_$id');
@@ -151,6 +167,8 @@ class Persistence {
 		final newSavedPost = SavedPost(post: post, savedTime: DateTime.now(), thread: thread);
 		savedPostsBox.put(post.globalId, newSavedPost);
 	}
+
+	String get currentBoardName => browserState.tabs[browserState.currentTab].board?.name ?? 'tv';
 }
 
 const _MAX_RECENT_ITEMS = 50;
@@ -258,4 +276,28 @@ class SavedPost extends HiveObject implements Filterable {
 	});
 
 	List<String> getSearchableText() => [post.text];
+}
+
+@HiveType(typeId: 21)
+class PersistentBrowserTab extends HiveObject {
+	@HiveField(0)
+	ImageboardBoard? board;
+	@HiveField(1)
+	ThreadIdentifier? thread;
+	PersistentBrowserTab({
+		this.board,
+		this.thread
+	});
+}
+
+@HiveType(typeId: 22)
+class PersistentBrowserState extends HiveObject {
+	@HiveField(0)
+	List<PersistentBrowserTab> tabs;
+	@HiveField(1)
+	int currentTab;
+	PersistentBrowserState({
+		required this.tabs,
+		this.currentTab = 0
+	});
 }

@@ -3,32 +3,32 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
-import 'package:chan/services/persistence.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:provider/provider.dart';
 
 class ImageboardTab extends StatelessWidget {
-	final String initialBoardName;
+	final ImageboardBoard? initialBoard;
 	final ValueChanged<ImageboardBoard>? onBoardChanged;
+	final ThreadIdentifier? initialThread;
+	final ValueChanged<ThreadIdentifier?>? onThreadChanged;
+	final String id;
 	ImageboardTab({
-		required this.initialBoardName,
-		this.onBoardChanged
-	});
+		required this.initialBoard,
+		this.onBoardChanged,
+		this.initialThread,
+		this.onThreadChanged,
+		this.id = 'tab',
+		Key? key
+	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
-		ImageboardBoard board = context.watch<Persistence>().boardBox.values.first;
-		try {
-			board = context.watch<Persistence>().getBoard(initialBoardName);
-		}
-		catch (e) {
-			
-		}
 		return MasterDetailPage<ThreadIdentifier>(
-			id: 'tab',
+			id: id,
+			initialValue: initialThread,
+			onValueChanged: onThreadChanged,
 			masterBuilder: (context, selectedThread, threadSetter) {
 				return BoardPage(
-					initialBoard: board,
+					initialBoard: initialBoard,
 					selectedThread: selectedThread,
 					onThreadSelected: threadSetter,
 					onBoardChanged: onBoardChanged,

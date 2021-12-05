@@ -196,3 +196,49 @@ class _FirstBuildDetectorState extends State<FirstBuildDetector> {
 		return child;
 	}
 }
+
+class Expander extends StatelessWidget {
+	final Widget child;
+	final Duration duration;
+	final Curve curve;
+	final double height;
+	final bool expanded;
+	final bool bottomSafe;
+
+	Expander({
+		required this.child,
+		this.duration = const Duration(milliseconds: 300),
+		this.curve = Curves.ease,
+		required this.height,
+		required this.expanded,
+		this.bottomSafe = false
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		return SafeArea(
+			top: false,
+			bottom: !bottomSafe,
+			child: AnimatedContainer(
+				curve: Curves.ease,
+				alignment: Alignment.topCenter,
+				duration: const Duration(milliseconds: 300),
+				height: expanded ? height : 0,
+				child: Stack(
+					clipBehavior: Clip.hardEdge,
+					children: [
+						Positioned(
+							top: 0,
+							left: 0,
+							right: 0,
+							child: Container(
+								height: height,
+								child: child
+							)
+						)
+					]
+				)
+			)
+		);
+	}
+}
