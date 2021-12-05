@@ -206,7 +206,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			board: thread.board,
 			isDeleted: false,
 			replyCount: posts.length - 1,
-			imageCount: posts.where((post) => post.attachment != null).length,
+			imageCount: posts.skip(1).where((post) => post.attachment != null).length,
 			isArchived: true,
 			posts: posts,
 			id: thread.id,
