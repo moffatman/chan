@@ -127,9 +127,10 @@ class TrulyTransparentRoute<T> extends PageRoute<T> {
 
 class ErrorMessageCard extends StatelessWidget {
 	final String message;
-	final VoidCallback? retry;
+	final Map<String, VoidCallback> remedies;
+
 	const ErrorMessageCard(this.message, {
-		this.retry,
+		this.remedies = const {},
 		Key? key
 	}) : super(key: key);
 
@@ -147,14 +148,14 @@ class ErrorMessageCard extends StatelessWidget {
 					Icon(Icons.error, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
 					const SizedBox(height: 8),
 					Text(message, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor), textAlign: TextAlign.center),
-					if (retry != null) ...[
+					for (final remedy in remedies.entries) ...[
 						const SizedBox(height: 8),
 						CupertinoButton(
 							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-							child: Text('Retry', style: TextStyle(
+							child: Text(remedy.key, style: TextStyle(
 								color: CupertinoTheme.of(context).primaryColor
 							)),
-							onPressed: retry
+							onPressed: remedy.value
 						)
 					]
 				]

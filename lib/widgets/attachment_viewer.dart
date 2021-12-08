@@ -406,21 +406,10 @@ class AttachmentViewer extends StatelessWidget {
 									Widget _child = Container();
 									if (controller.errorMessage != null) {
 										_child = Center(
-											child: Column(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													IgnorePointer(
-														child: ErrorMessageCard(controller.errorMessage!)
-													),
-													CupertinoButton(
-														child: const Text('Retry'),
-														onPressed: controller.loadFullAttachment
-													),
-													if (!controller.checkArchives) CupertinoButton(
-														child: const Text('Try archives'),
-														onPressed: controller.tryArchives
-													)
-												]
+											child: ErrorMessageCard(controller.errorMessage!, remedies: {
+													'Retry': controller.loadFullAttachment,
+													if (!controller.checkArchives) 'Try archives': controller.tryArchives
+												}
 											)
 										);
 									}
@@ -491,7 +480,9 @@ class AttachmentViewer extends StatelessWidget {
 						gaplessPlayback: true
 					),
 					if (controller.errorMessage != null) Center(
-						child: ErrorMessageCard(controller.errorMessage!, retry: controller.reloadFullAttachment)
+						child: ErrorMessageCard(controller.errorMessage!, remedies: {
+							'Retry': controller.reloadFullAttachment
+						})
 					)
 					else if (controller.videoPlayerController != null) GestureDetector(
 						behavior: HitTestBehavior.translucent,

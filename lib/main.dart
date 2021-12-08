@@ -431,7 +431,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							ErrorMessageCard(boardFetchErrorMessage!, retry: _setupBoards)
+							ErrorMessageCard(boardFetchErrorMessage!, remedies: {
+								'Retry': _setupBoards
+							})
 						]
 					)
 				);
