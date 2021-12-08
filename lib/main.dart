@@ -267,6 +267,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	Widget _buildTabletIcon(int index, Widget icon, String label, {bool reorderable = false}) {
 		final child = CupertinoButton(
+			padding: const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8),
 			child: Opacity(
 				opacity: (index <= 0 ? (tabletIndex == 0 && index == -1*activeBrowserTab.value) : index == tabletIndex) ? 1.0 : 0.5,
 				child: Column(
@@ -340,6 +341,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	Widget _buildNewTabIcon() {
 		return CupertinoButton(
+			padding: const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8),
 			child: Opacity(
 				opacity: 0.5,
 				child: Column(
