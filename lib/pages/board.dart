@@ -19,7 +19,7 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 
 import 'package:chan/pages/gallery.dart';
 
-const _OLD_THREAD_THRESHOLD = const Duration(days: 7);
+const _oldThreadThreshold = Duration(days: 7);
 
 class BoardPage extends StatefulWidget {
 	final ImageboardBoard? initialBoard;
@@ -27,14 +27,16 @@ class BoardPage extends StatefulWidget {
 	final ValueChanged<ImageboardBoard>? onBoardChanged;
 	final ValueChanged<ThreadIdentifier>? onThreadSelected;
 	final ThreadIdentifier? selectedThread;
-	BoardPage({
+	const BoardPage({
 		required this.initialBoard,
 		this.allowChangingBoard = true,
 		this.onBoardChanged,
 		this.onThreadSelected,
-		this.selectedThread
-	});
+		this.selectedThread,
+		Key? key
+	}) : super(key: key);
 
+	@override
 	createState() => _BoardPageState();
 }
 
@@ -59,7 +61,7 @@ class _BoardPageState extends State<BoardPage> {
 	}
 
 	void _selectBoard() async {
-		final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => BoardSwitcherPage()));
+		final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => const BoardSwitcherPage()));
 		if (newBoard != null) {
 			widget.onBoardChanged?.call(newBoard);
 			setState(() {
@@ -83,8 +85,8 @@ class _BoardPageState extends State<BoardPage> {
 						mainAxisSize: MainAxisSize.min,
 						children: [
 							if (board != null) Text('/${board!.name}/')
-							else Text('Select Board'),
-							if (widget.allowChangingBoard) Icon(Icons.arrow_drop_down)
+							else const Text('Select Board'),
+							if (widget.allowChangingBoard) const Icon(Icons.arrow_drop_down)
 						]
 					)
 				),
@@ -96,7 +98,7 @@ class _BoardPageState extends State<BoardPage> {
 							child: Transform(
 								alignment: Alignment.center,
 								transform: settings.reverseCatalogSorting ? Matrix4.rotationX(pi) : Matrix4.identity(),
-								child: Icon(Icons.sort)
+								child: const Icon(Icons.sort)
 							),
 							onPressed: () {
 								showCupertinoModalPopup<DateTime>(
@@ -104,9 +106,9 @@ class _BoardPageState extends State<BoardPage> {
 									builder: (context) => CupertinoActionSheet(
 										title: const Text('Sort by...'),
 										actions: {
-											ThreadSortingMethod.Unsorted: 'Bump Order',
-											ThreadSortingMethod.ReplyCount: 'Reply Count',
-											ThreadSortingMethod.OPTime: 'Creation Date'
+											ThreadSortingMethod.unsorted: 'Bump Order',
+											ThreadSortingMethod.replyCount: 'Reply Count',
+											ThreadSortingMethod.threadPostTime: 'Creation Date'
 										}.entries.map((entry) => CupertinoActionSheetAction(
 											child: Text(entry.value, style: TextStyle(
 												fontWeight: entry.key == settings.catalogSortingMethod ? FontWeight.bold : null
@@ -132,13 +134,13 @@ class _BoardPageState extends State<BoardPage> {
 						),
 						CupertinoButton(
 							padding: EdgeInsets.zero,
-							child: Icon(Icons.create),
+							child: const Icon(Icons.create),
 							onPressed: _replyBoxKey.currentState?.toggleReplyBox
 						)
 					]
 				)
 			),
-			child: board == null ? Center(
+			child: board == null ? const Center(
 				child: Text('No Board Selected')
 			) : Column(
 				children: [
@@ -153,13 +155,13 @@ class _BoardPageState extends State<BoardPage> {
 										final now = DateTime.now();
 										if (settings.hideOldStickiedThreads) {
 											list = list.where((thread) {
-												return !thread.isSticky || now.difference(thread.time).compareTo(_OLD_THREAD_THRESHOLD).isNegative;
+												return !thread.isSticky || now.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
 											}).toList();
 										}
-										if (settings.catalogSortingMethod == ThreadSortingMethod.ReplyCount) {
+										if (settings.catalogSortingMethod == ThreadSortingMethod.replyCount) {
 											list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
 										}
-										else if (settings.catalogSortingMethod == ThreadSortingMethod.OPTime) {
+										else if (settings.catalogSortingMethod == ThreadSortingMethod.threadPostTime) {
 											list.sort((a, b) => b.id.compareTo(a.id));
 										}
 										return settings.reverseCatalogSorting ? list.reversed.toList() : list;
@@ -171,7 +173,7 @@ class _BoardPageState extends State<BoardPage> {
 												contentFocus: settings.boardCatalogColumns > 1,
 												thread: thread,
 												isSelected: thread.identifier == widget.selectedThread,
-												semanticParentIds: [-1],
+												semanticParentIds: const [-1],
 												onThumbnailTap: (initialAttachment) {
 													final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
 													showGallery(

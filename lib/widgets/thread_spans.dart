@@ -48,9 +48,9 @@ class IDSpan extends WidgetSpan {
 			child: Container(
 				decoration: BoxDecoration(
 					color: _calculateIdColor(id).background,
-					borderRadius: BorderRadius.all(Radius.circular(3))
+					borderRadius: const BorderRadius.all(Radius.circular(3))
 				),
-				padding: EdgeInsets.only(left: 4, right: 4),
+				padding: const EdgeInsets.only(left: 4, right: 4),
 				child: Text(
 					id,
 					style: TextStyle(

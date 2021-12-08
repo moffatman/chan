@@ -29,8 +29,9 @@ class ThreadRow extends StatelessWidget {
 		this.onThumbnailLoadError,
 		this.onThumbnailTap,
 		this.contentFocus = false,
-		this.semanticParentIds = const []
-	});
+		this.semanticParentIds = const [],
+		Key? key
+	}) : super(key: key);
 
 	String _timeDiff(DateTime value) {
 		final diff = value.difference(DateTime.now()).abs();
@@ -82,23 +83,23 @@ class ThreadRow extends StatelessWidget {
 				}
 				Widget _makeCounters() => Container(
 					decoration: BoxDecoration(
-						borderRadius: BorderRadius.only(topLeft: Radius.circular(8)),
+						borderRadius: const BorderRadius.only(topLeft: Radius.circular(8)),
 						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 						border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
 					),
-					padding: EdgeInsets.all(2),
+					padding: const EdgeInsets.all(2),
 					child: Wrap(
 						verticalDirection: VerticalDirection.up,
 						alignment: WrapAlignment.end,
 						runSpacing: 4,
 						crossAxisAlignment: WrapCrossAlignment.center,
 						children: [
-							SizedBox(width: 4),
-							if (_thread.isSticky) ...[
+							const SizedBox(width: 4),
+							if (_thread.isSticky) ... const [
 								Icon(Icons.push_pin, size: 18),
 								SizedBox(width: 4),
 							],
-							if (_thread.isArchived) ...[
+							if (_thread.isArchived) ... const [
 								Icon(Icons.archive, color: Colors.grey, size: 18),
 								SizedBox(width: 4),
 							],
@@ -107,10 +108,10 @@ class ThreadRow extends StatelessWidget {
 									child: Row(
 									mainAxisSize: MainAxisSize.min,
 									children: [
-										Icon(Icons.access_time_filled, size: 18),
-										SizedBox(width: 4),
+										const Icon(Icons.access_time_filled, size: 18),
+										const SizedBox(width: 4),
 										Text(_timeDiff(thread.time)),
-										SizedBox(width: 2),
+										const SizedBox(width: 2),
 									]
 								)
 							),
@@ -119,13 +120,13 @@ class ThreadRow extends StatelessWidget {
 								child: Row(
 									mainAxisSize: MainAxisSize.min,
 									children: [
-										SizedBox(width: 6),
+										const SizedBox(width: 6),
 										Icon(Icons.reply_rounded, size: 18, color: replyCountColor),
-										SizedBox(width: 4),
+										const SizedBox(width: 4),
 										Text(latestReplyCount.toString(), style: TextStyle(color: replyCountColor)),
 										if (unseenReplyCount > 0) Text(' (+$unseenReplyCount)'),
-										if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: Colors.red)),
-										SizedBox(width: 2),
+										if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: const TextStyle(color: Colors.red)),
+										const SizedBox(width: 2),
 									]
 								)
 							),
@@ -134,27 +135,27 @@ class ThreadRow extends StatelessWidget {
 								child: Row(
 									mainAxisSize: MainAxisSize.min,
 									children: [
-										SizedBox(width: 6),
+										const SizedBox(width: 6),
 										Icon(Icons.image, size: 18, color: imageCountColor),
-										SizedBox(width: 4),
+										const SizedBox(width: 4),
 										Text(latestImageCount.toString(), style: TextStyle(color: imageCountColor)),
 										if (unseenImageCount > 0) Text(' (+$unseenImageCount)'),
-										SizedBox(width: 2)
+										const SizedBox(width: 2)
 									]
 								)
 							)
 						]
 					)
 				);
-				final borderRadius = contentFocus ? BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
+				final borderRadius = contentFocus ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
 				return Container(
 					decoration: BoxDecoration(
 						color: isSelected ? ((CupertinoTheme.of(context).brightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor,
 						border: contentFocus ? Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)) : null,
 						borderRadius: borderRadius
 					),
-					padding: contentFocus ? null : EdgeInsets.only(left: 8, top: 8),
-					margin: contentFocus ? EdgeInsets.all(4) : null,
+					padding: contentFocus ? null : const EdgeInsets.only(left: 8, top: 8),
+					margin: contentFocus ? const EdgeInsets.all(4) : null,
 					child: ClipRRect(
 						borderRadius: borderRadius,
 						child: Stack(
@@ -182,17 +183,17 @@ class ThreadRow extends StatelessWidget {
 																		semanticParents: semanticParentIds
 																	)
 																),
-																if (_thread.attachment?.type == AttachmentType.WEBM) Positioned(
+																if (_thread.attachment?.type == AttachmentType.webm) Positioned(
 																	bottom: 0,
 																	right: 0,
 																	child: Container(
 																		decoration: BoxDecoration(
-																			borderRadius: BorderRadius.only(topLeft: Radius.circular(6)),
+																			borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
 																			color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 																			border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
 																		),
-																		padding: EdgeInsets.all(2),
-																		child: Icon(Icons.play_arrow)
+																		padding: const EdgeInsets.all(2),
+																		child: const Icon(Icons.play_arrow)
 																)
 																)
 															]
@@ -202,8 +203,8 @@ class ThreadRow extends StatelessWidget {
 											),
 											Expanded(
 												child: Container(
-													constraints: BoxConstraints(maxHeight: 125, minHeight: 25),
-													padding: EdgeInsets.all(8),
+													constraints: const BoxConstraints(maxHeight: 125, minHeight: 25),
+													padding: const EdgeInsets.all(8),
 													child: ChangeNotifierProvider<PostSpanZoneData>(
 														create: (ctx) => PostSpanRootZoneData(
 															thread: _thread,
@@ -216,7 +217,7 @@ class ThreadRow extends StatelessWidget {
 																		children: [
 																			if (_thread.title != null) TextSpan(
 																				text: context.read<EffectiveSettings>().filterProfanity(_thread.title!) + '\n',
-																				style: TextStyle(fontWeight: FontWeight.bold)
+																				style: const TextStyle(fontWeight: FontWeight.bold)
 																			),
 																			_thread.posts[0].span.build(ctx, PostSpanRenderOptions()),
 																			WidgetSpan(
@@ -249,7 +250,7 @@ class ThreadRow extends StatelessWidget {
 											children: [
 												Flexible(
 													child: Container(
-														padding: EdgeInsets.only(bottom: 8),
+														padding: const EdgeInsets.only(bottom: 8),
 														child: GestureDetector(
 															child: Stack(
 																alignment: Alignment.center,
@@ -263,7 +264,7 @@ class ThreadRow extends StatelessWidget {
 																			semanticParents: semanticParentIds
 																		)
 																	),
-																	if (_thread.attachment?.type == AttachmentType.WEBM) SizedBox(
+																	if (_thread.attachment?.type == AttachmentType.webm) SizedBox(
 																		width: 75,
 																		height: 75,
 																		child: Center(
@@ -273,12 +274,12 @@ class ThreadRow extends StatelessWidget {
 																					alignment: Alignment.bottomRight,
 																					child: Container(
 																						decoration: BoxDecoration(
-																							borderRadius: BorderRadius.only(topLeft: Radius.circular(6)),
+																							borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
 																							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 																							border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
 																						),
-																						padding: EdgeInsets.all(1),
-																						child: Icon(Icons.play_arrow, size: 18)
+																						padding: const EdgeInsets.all(1),
+																						child: const Icon(Icons.play_arrow, size: 18)
 																					)
 																				)
 																			)
@@ -292,7 +293,7 @@ class ThreadRow extends StatelessWidget {
 												)
 											]
 										)
-										else if (_thread.attachmentDeleted) Center(
+										else if (_thread.attachmentDeleted) const Center(
 											child: SizedBox(
 												width: 75,
 												height: 75,
@@ -301,8 +302,8 @@ class ThreadRow extends StatelessWidget {
 										),
 										Expanded(
 											child: Container(
-												constraints: BoxConstraints(maxHeight: 125, minHeight: 75),
-												padding: EdgeInsets.only(left: 8, right: 8),
+												constraints: const BoxConstraints(maxHeight: 125, minHeight: 75),
+												padding: const EdgeInsets.only(left: 8, right: 8),
 												child: ChangeNotifierProvider<PostSpanZoneData>(
 													create: (ctx) => PostSpanRootZoneData(
 														thread: _thread,
@@ -317,34 +318,34 @@ class ThreadRow extends StatelessWidget {
 																			children: [
 																				TextSpan(
 																					text: context.read<EffectiveSettings>().filterProfanity(_thread.posts[0].name),
-																					style: TextStyle(fontWeight: FontWeight.w600)
+																					style: const TextStyle(fontWeight: FontWeight.w600)
 																				),
-																				TextSpan(text: ' '),
+																				const TextSpan(text: ' '),
 																				if (_thread.flag != null) ...[
 																					FlagSpan(_thread.flag!),
-																					TextSpan(text: ' '),
+																					const TextSpan(text: ' '),
 																					TextSpan(
 																						text: _thread.flag!.name,
-																						style: TextStyle(
+																						style: const TextStyle(
 																							fontStyle: FontStyle.italic
 																						)
 																					),
-																					TextSpan(text: ' ')
+																					const TextSpan(text: ' ')
 																				],
 																				TextSpan(
 																					text: formatTime(_thread.time)
 																				),
-																				TextSpan(text: ' '),
+																				const TextSpan(text: ' '),
 																				TextSpan(
 																					text: _thread.id.toString(),
-																					style: TextStyle(color: Colors.grey)
+																					style: const TextStyle(color: Colors.grey)
 																				),
-																				TextSpan(text: '\n')
+																				const TextSpan(text: '\n')
 																			]
 																		),
 																		if (_thread.title != null) TextSpan(
 																			text: context.read<EffectiveSettings>().filterProfanity(_thread.title!) + '\n',
-																			style: TextStyle(fontWeight: FontWeight.bold)
+																			style: const TextStyle(fontWeight: FontWeight.bold)
 																		),
 																		_thread.posts[0].span.build(ctx, PostSpanRenderOptions()),
 																	]

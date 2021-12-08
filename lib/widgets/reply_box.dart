@@ -25,12 +25,14 @@ class ReplyBox extends StatefulWidget {
 	final int? threadId;
 	final ValueChanged<PostReceipt> onReplyPosted;
 
-	ReplyBox({
+	const ReplyBox({
 		required this.board,
 		this.threadId,
 		required this.onReplyPosted,
 		Key? key
 	}) : super(key: key);
+
+	@override
 	createState() => ReplyBoxState();
 }
 
@@ -133,24 +135,24 @@ class ReplyBoxState extends State<ReplyBox> {
 				child: Container(
 					width: MediaQuery.of(context).size.width,
 					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-					padding: EdgeInsets.all(16),
+					padding: const EdgeInsets.all(16),
 					child: StatefulBuilder(
 						builder: (context, _setState) => Column(
 							mainAxisSize: MainAxisSize.min,
 							crossAxisAlignment: CrossAxisAlignment.center,
 							children: [
-								Text('Transcoding required'),
-								SizedBox(height: 16),
+								const Text('Transcoding required'),
+								const SizedBox(height: 16),
 								ConstrainedBox(
-									constraints: BoxConstraints(
+									constraints: const BoxConstraints(
 										maxHeight: 150,
 									),
 									child: SavedAttachmentThumbnail(file: source)
 								),
-								SizedBox(height: 32),
-								...problems.expand((p) => [Text(p), SizedBox(height: 16)]),
+								const SizedBox(height: 32),
+								...problems.expand((p) => [Text(p), const SizedBox(height: 16)]),
 								CupertinoButton(
-									child: loading ? Text('Transcoding...') : Text('Start'),
+									child: loading ? const Text('Transcoding...') : const Text('Start'),
 									onPressed: loading ? null : () async {
 										_setState(() {
 											loading = true;
@@ -194,7 +196,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			Tuple2(Icons.camera_alt, () => picker.pickImage(source: ImageSource.camera).then((x) => x?.path)),
 			Tuple2(Icons.videocam, () => picker.pickImage(source: ImageSource.camera).then((x) => x?.path)),
 			Tuple2(Icons.image_search, () => Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
-				builder: (context) => WebImagePickerPage()
+				builder: (context) => const WebImagePickerPage()
 			)).then((x) => x?.path))
 		] : [
 			Tuple2(Icons.attachment, () => FilePicker.platform.pickFiles().then((x) => x?.files.single.path))
@@ -203,17 +205,17 @@ class ReplyBoxState extends State<ReplyBox> {
 			builder: (context) => OverscrollModalPage(
 				child: Container(
 					width: double.infinity,
-					padding: EdgeInsets.all(16),
+					padding: const EdgeInsets.all(16),
 					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 					child: GridView.builder(
-						gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+						gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
 							maxCrossAxisExtent: 100,
 							mainAxisSpacing: 16,
 							crossAxisSpacing: 16,
 							childAspectRatio: 1
 						),
 						shrinkWrap: true,
-						physics: NeverScrollableScrollPhysics(),
+						physics: const NeverScrollableScrollPhysics(),
 						itemCount: sources.length + savedAttachments.length,
 						itemBuilder: (context, i) {
 							if (i < sources.length) {
@@ -428,7 +430,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))),
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor
 			),
-			padding: EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 8),
+			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 8),
 			child: Row(
 				children: [
 					Flexible(
@@ -442,7 +444,7 @@ class ReplyBoxState extends State<ReplyBox> {
 									keyboardAppearance: CupertinoTheme.of(context).brightness,
 									controller: _nameFieldController
 								),
-								SizedBox(height: 8),
+								const SizedBox(height: 8),
 								CupertinoTextField(
 									maxLines: 1,
 									placeholder: 'Options',
@@ -452,7 +454,7 @@ class ReplyBoxState extends State<ReplyBox> {
 							]
 						)
 					),
-					SizedBox(width: 8),
+					const SizedBox(width: 8),
 					Flexible(
 						child: (attachment != null) ? Column(
 							children: [
@@ -465,7 +467,7 @@ class ReplyBoxState extends State<ReplyBox> {
 											SavedAttachmentThumbnail(file: attachment!),
 											CupertinoButton(
 												padding: EdgeInsets.zero,
-												child: Icon(Icons.close),
+												child: const Icon(Icons.close),
 												onPressed: () {
 													setState(() {
 														attachment = null;
@@ -476,7 +478,7 @@ class ReplyBoxState extends State<ReplyBox> {
 										]
 									)
 								),
-								SizedBox(height: 4),
+								const SizedBox(height: 4),
 								Flexible(
 									child: Column(
 										crossAxisAlignment: CrossAxisAlignment.start,
@@ -500,7 +502,7 @@ class ReplyBoxState extends State<ReplyBox> {
 															}
 														)
 													),
-													SizedBox(width: 8),
+													const SizedBox(width: 8),
 													Text('.$ext')
 												]
 											)
@@ -515,7 +517,7 @@ class ReplyBoxState extends State<ReplyBox> {
 									crossAxisAlignment: WrapCrossAlignment.center,
 									spacing: 8.0,
 									runSpacing: 4.0,
-									children: [
+									children: const [
 										Icon(Icons.image),
 										Text('Select file', textAlign: TextAlign.center),
 									]
@@ -532,7 +534,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	Widget _buildTextField(BuildContext context) {
 		final board = context.watch<Persistence>().getBoard(widget.board);
 		return Container(
-			padding: EdgeInsets.all(8),
+			padding: const EdgeInsets.all(8),
 			child: Column(
 				children: [
 					if (widget.threadId == null) ...[
@@ -544,7 +546,7 @@ class ReplyBoxState extends State<ReplyBox> {
 							textCapitalization: TextCapitalization.sentences,
 							keyboardAppearance: CupertinoTheme.of(context).brightness
 						),
-						SizedBox(height: 8),
+						const SizedBox(height: 8),
 					],
 					Flexible(
 						child: Stack(
@@ -563,7 +565,7 @@ class ReplyBoxState extends State<ReplyBox> {
 									child: Align(
 										alignment: Alignment.bottomRight,
 										child: Container(
-											padding: EdgeInsets.only(bottom: 4, right: 8),
+											padding: const EdgeInsets.only(bottom: 4, right: 8),
 											child: Text(
 												'${_textFieldController.text.length} / ${board.maxCommentCharacters}',
 												style: TextStyle(
@@ -597,7 +599,7 @@ class ReplyBoxState extends State<ReplyBox> {
 					child: ClipRRect(
 						borderRadius: BorderRadius.circular(4),
 						child: ConstrainedBox(
-							constraints: BoxConstraints(
+							constraints: const BoxConstraints(
 								maxWidth: 32,
 								maxHeight: 32
 							),
@@ -612,11 +614,11 @@ class ReplyBoxState extends State<ReplyBox> {
 					onPressed: expandAction
 				),
 				TimedRebuilder(
-					interval: Duration(seconds: 1),
+					interval: const Duration(seconds: 1),
 					builder: (context) {
 						final timeout = context.read<ImageboardSite>().getActionAllowedTime(widget.board, widget.threadId == null ? 
-							ImageboardAction.PostThread :
-							(attachment != null) ? ImageboardAction.PostReplyWithImage : ImageboardAction.PostReply);
+							ImageboardAction.postThread :
+							(attachment != null) ? ImageboardAction.postReplyWithImage : ImageboardAction.postReply);
 						if (timeout != null) {
 							final now = DateTime.now();
 							final diff = timeout.difference(now);
@@ -629,7 +631,7 @@ class ReplyBoxState extends State<ReplyBox> {
 							}
 						}
 						return CupertinoButton(
-							child: Icon(Icons.send),
+							child: const Icon(Icons.send),
 							padding: EdgeInsets.zero,
 							onPressed: loading ? null : _submit
 						);
@@ -662,7 +664,7 @@ class ReplyBoxState extends State<ReplyBox> {
 							border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))),
 							color: CupertinoTheme.of(context).scaffoldBackgroundColor
 						),
-						padding: EdgeInsets.only(top: 1),
+						padding: const EdgeInsets.only(top: 1),
 						child: Stack(
 							children: [
 								Row(

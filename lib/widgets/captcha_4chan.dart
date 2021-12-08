@@ -12,10 +12,11 @@ class Captcha4ChanCustom extends StatefulWidget {
 	final Chan4CustomCaptchaRequest request;
 	final ValueChanged<Chan4CustomCaptchaSolution> onCaptchaSolved;
 
-	Captcha4ChanCustom({
+	const Captcha4ChanCustom({
 		required this.request,
-		required this.onCaptchaSolved
-	});
+		required this.onCaptchaSolved,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	createState() => _Captcha4ChanCustomState();
@@ -25,6 +26,7 @@ class Captcha4ChanCustomException implements Exception {
 	String message;
 	Captcha4ChanCustomException(this.message);
 
+	@override
 	String toString() => '4chan captcha error: $message';
 }
 
@@ -101,13 +103,13 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			throw Captcha4ChanCustomException(data['error']);
 		}
 		final foregroundImageCompleter = Completer<ui.Image>();
-		MemoryImage(base64Decode(data['img'])).resolve(ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+		MemoryImage(base64Decode(data['img'])).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
 			foregroundImageCompleter.complete(info.image);
 		}, onError: (e, st) {
 			foregroundImageCompleter.completeError(e);
 		}));
 		final backgroundImageCompleter = Completer<ui.Image>();
-		MemoryImage(base64Decode(data['bg'])).resolve(ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+		MemoryImage(base64Decode(data['bg'])).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
 			backgroundImageCompleter.complete(info.image);
 		}, onError: (e, st) {
 			backgroundImageCompleter.completeError(e);
@@ -130,8 +132,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				challenge?.dispose();
 				challenge = null;
 			});
-			this.challenge = await _requestChallenge();
-			this.backgroundSlide = 0;
+			challenge = await _requestChallenge();
+			backgroundSlide = 0;
 			await _alignImage();
 			setState(() {});
 			_solutionNode.requestFocus();
@@ -140,7 +142,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			print(e);
 			print(st);
 			setState(() {
-				this.errorMessage = e.toString();
+				errorMessage = e.toString();
 			});
 		}
 	}
@@ -208,15 +210,15 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	Widget _cooldownedRetryButton(BuildContext context) {
 		if (tryAgainAt != null) {
 			return TimedRebuilder(
-				interval: Duration(seconds: 1),
+				interval: const Duration(seconds: 1),
 				builder: (context) {
 					final seconds = tryAgainAt!.difference(DateTime.now()).inSeconds;
 					return CupertinoButton(
 						child: Row(
 							mainAxisSize: MainAxisSize.min,
 							children: [
-								Icon(Icons.refresh),
-								SizedBox(width: 16),
+								const Icon(Icons.refresh),
+								const SizedBox(width: 16),
 								SizedBox(
 									width: 24,
 									child: seconds > 0 ? Text('$seconds') : Container()
@@ -229,7 +231,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			);
 		}
 		return CupertinoButton(
-			child: Icon(Icons.refresh),
+			child: const Icon(Icons.refresh),
 			onPressed: _tryRequestChallenge
 		);
 	}
@@ -249,11 +251,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			return Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					Text('Enter the text in the image below'),
-					SizedBox(height: 16),
+					const Text('Enter the text in the image below'),
+					const SizedBox(height: 16),
 					Flexible(
 						child: ConstrainedBox(
-							constraints: BoxConstraints(
+							constraints: const BoxConstraints(
 								maxWidth: 500
 							),
 							child: AspectRatio(
@@ -269,9 +271,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 							)
 						)
 					),
-					SizedBox(height: 16),
+					const SizedBox(height: 16),
 					ConstrainedBox(
-						constraints: BoxConstraints(
+						constraints: const BoxConstraints(
 							maxWidth: 500
 						),
 						child: Row(
@@ -290,8 +292,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 								),
 								Row(
 									children: [
-										Icon(Icons.timer),
-										SizedBox(width: 16),
+										const Icon(Icons.timer),
+										const SizedBox(width: 16),
 										SizedBox(
 											width: 60,
 											child: TimedRebuilder(
@@ -309,7 +311,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 							]
 						)
 					),
-					SizedBox(height: 16),
+					const SizedBox(height: 16),
 					SizedBox(
 						width: 150,
 						child: CupertinoTextField(
@@ -326,7 +328,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			);
 		}
 		else {
-			return Container(
+			return const Center(
 				child: CupertinoActivityIndicator()
 			);
 		}
@@ -339,7 +341,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 			),
 			width: double.infinity,
-			padding: EdgeInsets.all(16),
+			padding: const EdgeInsets.all(16),
 			child: AnimatedSize(
 				duration: const Duration(milliseconds: 100),
 				child: _build(context)

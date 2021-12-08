@@ -15,11 +15,11 @@ part 'post.g.dart';
 @HiveType(typeId: 13)
 enum PostSpanFormat {
 	@HiveField(0)
-	Chan4,
+	chan4,
 	@HiveField(1)
-	FoolFuuka,
+	foolFuuka,
 	@HiveField(2)
-	Lainchan
+	lainchan
 }
 
 @HiveType(typeId: 11)
@@ -49,13 +49,13 @@ class Post implements Filterable {
 	Map<String, int>? foolfuukaLinkedPostThreadIds;
 	PostSpan get span {
 		if (_span == null) {
-			if (spanFormat == PostSpanFormat.Chan4) {
+			if (spanFormat == PostSpanFormat.chan4) {
 				_span = Site4Chan.makeSpan(board, threadId, text);
 			}
-			else if (spanFormat == PostSpanFormat.FoolFuuka) {
+			else if (spanFormat == PostSpanFormat.foolFuuka) {
 				_span = FoolFuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
 			}
-			else if (spanFormat == PostSpanFormat.Lainchan) {
+			else if (spanFormat == PostSpanFormat.lainchan) {
 				_span = SiteLainchan.makeSpan(board, threadId, text);
 			}
 		}
@@ -85,6 +85,7 @@ class Post implements Filterable {
 		return 'Post $id';
 	}
 
+	@override
 	List<String> getSearchableText() {
 		return [text];
 	}

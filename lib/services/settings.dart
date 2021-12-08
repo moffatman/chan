@@ -13,10 +13,10 @@ import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 part 'settings.g.dart';
 
-const CONTENT_SETTINGS_API_ROOT = 'https://us-central1-chan-329813.cloudfunctions.net/preferences';
+const contentSettingsApiRoot = 'https://us-central1-chan-329813.cloudfunctions.net/preferences';
 final _punctuationRegex = RegExp('(\\W+|s\\W)');
 final _badWords = Set.from(ProfanityFilter().wordsToFilterOutList);
-const _DEFAULT_SITE = {
+const defaultSite = {
 	'type': 'lainchan',
 	'name': 'testchan',
 	'baseUrl': 'callum.crabdance.com'
@@ -25,35 +25,35 @@ const _DEFAULT_SITE = {
 @HiveType(typeId: 1)
 enum AutoloadAttachmentsSetting {
 	@HiveField(0)
-	Never,
+	never,
 	@HiveField(1)
-	WiFi,
+	wifi,
 	@HiveField(2)
-	Always
+	always
 }
 
 @HiveType(typeId: 2)
 enum ThemeSetting {
 	@HiveField(0)
-	Light,
+	light,
 	@HiveField(1)
-	System,
+	system,
 	@HiveField(2)
-	Dark
+	dark
 }
 
 @HiveType(typeId: 17)
 enum ThreadSortingMethod {
 	@HiveField(0)
-	Unsorted,
+	unsorted,
 	@HiveField(1)
-	LastPostTime,
+	lastPostTime,
 	@HiveField(2)
-	ReplyCount,
+	replyCount,
 	@HiveField(3)
-	OPTime,
+	threadPostTime,
 	@HiveField(4)
-	SavedTime
+	savedTime
 }
 
 @HiveType(typeId: 20)
@@ -75,7 +75,7 @@ class ContentSettings {
 		this.nsfwImages = false,
 		this.nsfwText = false,
 		dynamic site
-	}) : this.site = site ?? _DEFAULT_SITE;
+	}) : site = site ?? defaultSite;
 }
 
 @HiveType(typeId: 0)
@@ -107,7 +107,7 @@ class SavedSettings extends HiveObject {
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
-		ThemeSetting? theme = ThemeSetting.System,
+		ThemeSetting? theme = ThemeSetting.system,
 		bool? hideOldStickiedThreads,
 		ThreadSortingMethod? catalogSortingMethod,
 		bool? reverseCatalogSorting,
@@ -119,22 +119,22 @@ class SavedSettings extends HiveObject {
 		String? userId,
 		ContentSettings? contentSettings,
 		int? boardCatalogColumns
-	}): this.autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.WiFi,
-		this.theme = theme ?? ThemeSetting.System,
-		this.hideOldStickiedThreads = hideOldStickiedThreads ?? false,
-		this.catalogSortingMethod = catalogSortingMethod ?? ThreadSortingMethod.Unsorted,
-		this.reverseCatalogSorting = reverseCatalogSorting ?? false,
-		this.savedThreadsSortingMethod = savedThreadsSortingMethod ?? ThreadSortingMethod.SavedTime,
-		this.autoRotateInGallery = autoRotateInGallery ?? false,
-		this.darkThemeIsPureBlack = darkThemeIsPureBlack ?? false,
-		this.useTouchLayout = useTouchLayout ?? (Platform.isAndroid || Platform.isIOS),
-		this.userId = userId ?? Uuid().v4(),
-		this.contentSettings = contentSettings ?? ContentSettings(),
-		this.boardCatalogColumns = boardCatalogColumns ?? 1;
+	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
+		theme = theme ?? ThemeSetting.system,
+		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
+		catalogSortingMethod = catalogSortingMethod ?? ThreadSortingMethod.unsorted,
+		reverseCatalogSorting = reverseCatalogSorting ?? false,
+		savedThreadsSortingMethod = savedThreadsSortingMethod ?? ThreadSortingMethod.savedTime,
+		autoRotateInGallery = autoRotateInGallery ?? false,
+		darkThemeIsPureBlack = darkThemeIsPureBlack ?? false,
+		useTouchLayout = useTouchLayout ?? (Platform.isAndroid || Platform.isIOS),
+		userId = userId ?? (const Uuid()).v4(),
+		contentSettings = contentSettings ?? ContentSettings(),
+		boardCatalogColumns = boardCatalogColumns ?? 1;
 }
 
 class EffectiveSettings extends ChangeNotifier {
-	SavedSettings _settings = Hive.box<SavedSettings>('settings').get('settings', defaultValue: SavedSettings())!;
+	final SavedSettings _settings = Hive.box<SavedSettings>('settings').get('settings', defaultValue: SavedSettings())!;
 	String? filename;
 	ConnectivityResult? _connectivity;
 	ConnectivityResult? get connectivity {
@@ -156,8 +156,8 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 	bool get autoloadAttachments {
-		return (_settings.autoloadAttachments == AutoloadAttachmentsSetting.Always) ||
-			((_settings.autoloadAttachments == AutoloadAttachmentsSetting.WiFi) && (connectivity == ConnectivityResult.wifi));
+		return (_settings.autoloadAttachments == AutoloadAttachmentsSetting.always) ||
+			((_settings.autoloadAttachments == AutoloadAttachmentsSetting.wifi) && (connectivity == ConnectivityResult.wifi));
 	}
 	ThemeSetting get themeSetting => _settings.theme;
 	set themeSetting(ThemeSetting setting) {
@@ -166,10 +166,10 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 	Brightness get theme {
-		if (_settings.theme == ThemeSetting.Dark) {
+		if (_settings.theme == ThemeSetting.dark) {
 			return Brightness.dark;
 		}
-		else if (_settings.theme == ThemeSetting.Light) {
+		else if (_settings.theme == ThemeSetting.light) {
 			return Brightness.light;
 		}
 		return _systemBrightness ?? SchedulerBinding.instance!.window.platformBrightness;
@@ -224,16 +224,16 @@ class EffectiveSettings extends ChangeNotifier {
 	}
 
 	ContentSettings get contentSettings => _settings.contentSettings;
-	String get contentSettingsUrl => '$CONTENT_SETTINGS_API_ROOT/user/${_settings.userId}/edit';
+	String get contentSettingsUrl => '$contentSettingsApiRoot/user/${_settings.userId}/edit';
 
 	void updateContentSettings() async {
 		try {
-			final response = await Dio().get('$CONTENT_SETTINGS_API_ROOT/user/${_settings.userId}');
+			final response = await Dio().get('$contentSettingsApiRoot/user/${_settings.userId}');
 			_settings.contentSettings.images = response.data['images'];
 			_settings.contentSettings.nsfwBoards = response.data['nsfwBoards'];
 			_settings.contentSettings.nsfwImages = response.data['nsfwImages'];
 			_settings.contentSettings.nsfwText = response.data['nsfwText'];
-			_settings.contentSettings.site = response.data['site'] ?? _DEFAULT_SITE;
+			_settings.contentSettings.site = response.data['site'] ?? defaultSite;
 			await _settings.save();
 			notifyListeners();
 		}
@@ -302,7 +302,7 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 			context.read<EffectiveSettings>().connectivity = result;
 		});
 		if (isDesktop()) {
-			Future.delayed(Duration(milliseconds: 10), () {
+			Future.delayed(const Duration(milliseconds: 10), () {
 				context.read<EffectiveSettings>().connectivity = ConnectivityResult.wifi;
 			});
 		}

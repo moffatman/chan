@@ -51,10 +51,12 @@ class PostNodeSpan extends PostSpan {
 
 	PostNodeSpan(this.children);
 
+	@override
 	List<int> referencedPostIds(String forBoard) {
 		return children.expand((child) => child.referencedPostIds(forBoard)).toList();
 	}
 
+	@override
 	build(context, options) {
 		return TextSpan(
 			children: children.map((child) => child.build(context, options)).toList()
@@ -65,6 +67,7 @@ class PostNodeSpan extends PostSpan {
 class PostTextSpan extends PostSpan {
 	final String text;
 	PostTextSpan(this.text);
+	@override
 	build(context, options) {
 		return TextSpan(
 			text: context.read<EffectiveSettings>().filterProfanity(text),
@@ -76,10 +79,11 @@ class PostTextSpan extends PostSpan {
 class PostQuoteSpan extends PostSpan {
 	final PostSpan child;
 	PostQuoteSpan(this.child);
+	@override
 	build(context, options) {
 		return TextSpan(
 			children: [child.build(context, options)],
-			style: options.baseTextStyle.copyWith(color: options.overrideTextColor ?? Color.fromRGBO(120, 153, 34, 1)),
+			style: options.baseTextStyle.copyWith(color: options.overrideTextColor ?? const Color.fromRGBO(120, 153, 34, 1)),
 			recognizer: options.recognizer
 		);
 	}
@@ -127,10 +131,10 @@ class PostQuoteLinkSpan extends PostSpan {
 					builder: (ctx) => ThreadPage(
 						thread: ThreadIdentifier(
 							board: board,
-							id: this.threadId!
+							id: threadId!
 						),
-						initialPostId: this.postId,
-						initiallyUseArchive: this.dead
+						initialPostId: postId,
+						initiallyUseArchive: dead
 					)
 				));
 			})
@@ -236,13 +240,14 @@ class PostQuoteLinkSpan extends PostSpan {
 			}
 		}
 	}
+	@override
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
 		if (options.addExpandingPosts && (threadId == zone.thread.id && board == zone.thread.board)) {
 			return TextSpan(
 				children: [
 					_build(context, options),
-					WidgetSpan(child: ExpandingPost(postId))
+					WidgetSpan(child: ExpandingPost(id: postId))
 			]);
 		}
 		else {
@@ -254,6 +259,7 @@ class PostQuoteLinkSpan extends PostSpan {
 class PostBoardLink extends PostSpan {
 	final String board;
 	PostBoardLink(this.board);
+	@override
 	build(context, options) {
 		return TextSpan(
 			text: '>>/$board/',
@@ -273,7 +279,7 @@ class PostCodeSpan extends PostSpan {
 	final List<TextSpan> _spans = [];
 
 	PostCodeSpan(this.text) {
-		final theme = atomOneDarkReasonableTheme;
+		const theme = atomOneDarkReasonableTheme;
 		final nodes = highlight.parse(text.replaceAll('\t', ' ' * 4), autoDetection: true).nodes!;
 
 		List<TextSpan> currentSpans = _spans;
@@ -290,12 +296,12 @@ class PostCodeSpan extends PostSpan {
 				stack.add(currentSpans);
 				currentSpans = tmp;
 
-				node.children!.forEach((n) {
+				for (final n in node.children!) {
 					_traverse(n);
 					if (n == node.children!.last) {
 						currentSpans = stack.isEmpty ? _spans : stack.removeLast();
 					}
-				});
+				}
 			}
 		}
 
@@ -304,11 +310,12 @@ class PostCodeSpan extends PostSpan {
 		}
 	}
 
+	@override
 	build(context, options) {
 		return WidgetSpan(
 			child: Container(
-				padding: EdgeInsets.all(8),
-				decoration: BoxDecoration(
+				padding: const EdgeInsets.all(8),
+				decoration: const BoxDecoration(
 					color: Colors.black,
 					borderRadius: BorderRadius.all(Radius.circular(8))
 				),
@@ -327,6 +334,7 @@ class PostSpoilerSpan extends PostSpan {
 	final PostSpan child;
 	final int id;
 	PostSpoilerSpan(this.child, this.id);
+	@override
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
 		final showSpoiler = zone.shouldShowSpoiler(id);
@@ -354,6 +362,7 @@ class PostSpoilerSpan extends PostSpan {
 class PostLinkSpan extends PostSpan {
 	final String url;
 	PostLinkSpan(this.url);
+	@override
 	build(context, options) {
 		return TextSpan(
 			text: url,
@@ -369,10 +378,11 @@ class PostSpanZone extends StatelessWidget {
 	final int postId;
 	final WidgetBuilder builder;
 
-	PostSpanZone({
+	const PostSpanZone({
 		required this.postId,
-		required this.builder
-	});
+		required this.builder,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
@@ -386,7 +396,7 @@ class PostSpanZone extends StatelessWidget {
 }
 
 abstract class PostSpanZoneData extends ChangeNotifier {
-	final _children = Map<int, PostSpanZoneData>();
+	final Map<int, PostSpanZoneData> _children = {};
 	Thread get thread;
 	ImageboardSite get site;
 	Iterable<int> get stackIds;
@@ -414,67 +424,86 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 
 	@override
 	void dispose() {
-		_children.values.forEach((zone) => zone.dispose());
+		for (final zone in _children.values) {
+			zone.dispose();	
+		}
 		super.dispose();
 	}
 }
 
 class PostSpanChildZoneData extends PostSpanZoneData {
 	final int postId;
-	final Map<int, bool> _shouldExpandPost = Map();
+	final Map<int, bool> _shouldExpandPost = {};
 	final PostSpanZoneData parent;
-	final Map<int, bool> _shouldShowSpoiler = Map();
+	final Map<int, bool> _shouldShowSpoiler = {};
 
 	PostSpanChildZoneData({
 		required this.parent,
 		required this.postId
 	});
 
+	@override
 	Thread get thread => parent.thread;
 
+	@override
 	ImageboardSite get site => parent.site;
 
+	@override
 	PersistentThreadState? get threadState => parent.threadState;
 
+	@override
 	ValueChanged<Post>? get onNeedScrollToPost => parent.onNeedScrollToPost;
 
+	@override
 	Iterable<int> get stackIds {
 		return parent.stackIds.followedBy([postId]);
 	}
 
+	@override
 	bool shouldExpandPost(int id) {
 		return _shouldExpandPost[id] ?? false;
 	}
 
+	@override
 	void toggleExpansionOfPost(int id) {
 		_shouldExpandPost[id] = !shouldExpandPost(id);
 		notifyListeners();
 	}
 
+	@override
 	bool shouldShowSpoiler(int id) {
 		return _shouldShowSpoiler[id] ?? false;
 	}
 
+	@override
 	void toggleShowingOfSpoiler(int id) {
 		_shouldShowSpoiler[id] = !shouldShowSpoiler(id);
 		notifyListeners();
 	}
 
+	@override
 	bool isLoadingPostFromArchive(int id) => parent.isLoadingPostFromArchive(id);
+	@override
 	Future<void> loadPostFromArchive(int id) => parent.loadPostFromArchive(id);
+	@override
 	Post? postFromArchive(int id) => parent.postFromArchive(id);
+	@override
 	String? postFromArchiveError(int id) => parent.postFromArchiveError(id);
 }
 
 
 class PostSpanRootZoneData extends PostSpanZoneData {
+	@override
 	Thread thread;
+	@override
 	final ImageboardSite site;
+	@override
 	final PersistentThreadState? threadState;
+	@override
 	final ValueChanged<Post>? onNeedScrollToPost;
-	final Map<int, bool> _isLoadingPostFromArchive = Map();
-	final Map<int, Post> _postsFromArchive = Map();
-	final Map<int, String> _postFromArchiveErrors = Map();
+	final Map<int, bool> _isLoadingPostFromArchive = {};
+	final Map<int, Post> _postsFromArchive = {};
+	final Map<int, String> _postFromArchiveErrors = {};
 	final int? semanticRootId;
 
 	PostSpanRootZoneData({
@@ -490,10 +519,12 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		if (semanticRootId != null) semanticRootId!
 	];
 
+	@override
 	bool isLoadingPostFromArchive(int id) {
 		return _isLoadingPostFromArchive[id] ?? false;
 	}
 
+	@override
 	Future<void> loadPostFromArchive(int id) async {
 		try {
 			_postFromArchiveErrors.remove(id);
@@ -513,10 +544,12 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		notifyListeners();
 	}
 
+	@override
 	Post? postFromArchive(int id) {
 		return _postsFromArchive[id];
 	}
 
+	@override
 	String? postFromArchiveError(int id) {
 		return _postFromArchiveErrors[id];
 	}
@@ -524,7 +557,10 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 
 class ExpandingPost extends StatelessWidget {
 	final int id;
-	ExpandingPost(this.id);
+	const ExpandingPost({
+		required this.id,
+		Key? key
+	}) : super(key: key);
 	
 	@override
 	Widget build(BuildContext context) {
@@ -534,10 +570,10 @@ class ExpandingPost extends StatelessWidget {
 			print('Could not find post with ID $id in zone for ${zone.thread.id}');
 		}
 		return Visibility(
-			visible: zone.shouldExpandPost(this.id),
+			visible: zone.shouldExpandPost(id),
 			child: MediaQuery(
 				data: MediaQuery.of(context).copyWith(textScaleFactor: 1),
-				child: (post == null) ? Container(
+				child: (post == null) ? Center(
 					child: Text('Could not find /${zone.thread.board}/$id')
 				) : Row(
 					children: [

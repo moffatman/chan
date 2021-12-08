@@ -14,18 +14,19 @@ class PostsPage extends StatefulWidget {
 	final int? postIdForBackground;
 	final List<int> postsIdsToShow;
 
-	PostsPage({
+	const PostsPage({
 		required this.postsIdsToShow,
 		this.postIdForBackground,
-		required this.zone
-	});
+		required this.zone,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	createState() => _PostsPageState();
 }
 
 class _PostsPageState extends State<PostsPage> {
-	Map<Post, BuildContext> postContexts = Map();
+	Map<Post, BuildContext> postContexts = {};
 
 	@override
 	void didUpdateWidget(PostsPage old) {
@@ -61,7 +62,7 @@ class _PostsPageState extends State<PostsPage> {
 					child: Builder(
 					builder: (ctx) => ListView(
 						shrinkWrap: true,
-						physics: NeverScrollableScrollPhysics(),
+						physics: const NeverScrollableScrollPhysics(),
 						children: replies.map((reply) {
 							return Builder(
 								builder: (context) {

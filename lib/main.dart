@@ -24,10 +24,13 @@ import 'package:chan/widgets/sticky_media_query.dart';
 
 void main() async {
 	await Persistence.initializeStatic();
-	runApp(ChanApp());
+	runApp(const ChanApp());
 }
 
 class ChanApp extends StatefulWidget {
+	const ChanApp({Key? key}) : super(key: key);
+
+	@override
 	createState() => _ChanAppState();
 }
 
@@ -121,12 +124,12 @@ class _ChanAppState extends State<ChanApp> {
 				child: Builder(
 					builder: (BuildContext context) {
 						final settings = context.watch<EffectiveSettings>();
-						CupertinoThemeData theme = CupertinoThemeData(brightness: Brightness.light, primaryColor: Colors.black);
+						CupertinoThemeData theme = const CupertinoThemeData(brightness: Brightness.light, primaryColor: Colors.black);
 						if (settings.theme == Brightness.dark) {
 							theme = CupertinoThemeData(
 								brightness: Brightness.dark,
-								scaffoldBackgroundColor: settings.darkThemeIsPureBlack ? Colors.black : Color.fromRGBO(20, 20, 20, 1),
-								barBackgroundColor: settings.darkThemeIsPureBlack ? Color.fromRGBO(20, 20, 20, 1) : null,
+								scaffoldBackgroundColor: settings.darkThemeIsPureBlack ? Colors.black : const Color.fromRGBO(20, 20, 20, 1),
+								barBackgroundColor: settings.darkThemeIsPureBlack ? const Color.fromRGBO(20, 20, 20, 1) : null,
 								primaryColor: Colors.white
 							);
 						}
@@ -141,7 +144,7 @@ class _ChanAppState extends State<ChanApp> {
 											top: true,
 											child: threadWatcher != null ? ChanHomePage(key: ValueKey(site!.name)) : Container(
 												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-												child: Center(
+												child: const Center(
 													child: CupertinoActivityIndicator()
 												)
 											)
@@ -149,11 +152,11 @@ class _ChanAppState extends State<ChanApp> {
 									);
 								}
 							),
-							localizationsDelegates: [
+							localizationsDelegates: const [
 								DefaultCupertinoLocalizations.delegate,
 								DefaultMaterialLocalizations.delegate
 							],
-							scrollBehavior: CupertinoScrollBehavior().copyWith(dragDevices: {...PointerDeviceKind.values})
+							scrollBehavior: const CupertinoScrollBehavior().copyWith(dragDevices: {...PointerDeviceKind.values})
 						);
 					}
 				)
@@ -163,8 +166,9 @@ class _ChanAppState extends State<ChanApp> {
 }
 
 class ChanHomePage extends StatefulWidget {
-	ChanHomePage({Key? key}) : super(key: key);
+	const ChanHomePage({Key? key}) : super(key: key);
 
+	@override
 	createState() => _ChanHomePageState();
 }
 class _ChanHomePageState extends State<ChanHomePage> {
@@ -244,16 +248,16 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			);
 		}
 		else if (index == 1) {
-			child = SavedPage();
+			child = const SavedPage();
 		}
 		else if (index == 2) {
-			child = HistoryPage();
+			child = const HistoryPage();
 		}
 		else if (index == 3) {
-			child = SearchPage();
+			child = const SearchPage();
 		}
 		else {
-			child = SettingsPage();
+			child = const SettingsPage();
 		}
 		return KeyedSubtree(
 			key: _keys.putIfAbsent(index, () => GlobalKey()),
@@ -268,8 +272,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				child: Column(
 					children: [
 						icon,
-						SizedBox(height: 4),
-						Text(label, style: TextStyle(fontSize: 15))
+						const SizedBox(height: 4),
+						Text(label, style: const TextStyle(fontSize: 15))
 					]
 				)
 			),
@@ -281,16 +285,16 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								context: context,
 								barrierDismissible: true,
 								builder: (context) => CupertinoAlertDialog(
-									title: Text('Close tab?'),
+									title: const Text('Close tab?'),
 									actions: [
 										CupertinoDialogAction(
-											child: Text('No'),
+											child: const Text('No'),
 											onPressed: () {
 												Navigator.of(context).pop(false);
 											}
 										),
 										CupertinoDialogAction(
-											child: Text('Yes'),
+											child: const Text('Yes'),
 											isDestructiveAction: true,
 											onPressed: () {
 												Navigator.of(context).pop(true);
@@ -339,7 +343,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			child: Opacity(
 				opacity: 0.5,
 				child: Column(
-					children: [
+					children: const [
 						Icon(Icons.add),
 						SizedBox(height: 4),
 						Text("New", style: TextStyle(fontSize: 15))
@@ -354,7 +358,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				browserState.currentTab = browserState.tabs.length - 1;
 				browserState.save();
 				setState(() {});
-				Future.delayed(Duration(milliseconds: 100), () => _tabListController.animateTo(_tabListController.position.maxScrollExtent, duration: const Duration(milliseconds: 500), curve: Curves.ease));
+				Future.delayed(const Duration(milliseconds: 100), () => _tabListController.animateTo(_tabListController.position.maxScrollExtent, duration: const Duration(milliseconds: 500), curve: Curves.ease));
 			}
 		);
 	}
@@ -368,13 +372,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							ErrorMessageCard(this.boardFetchErrorMessage!, retry: _setupBoards)
+							ErrorMessageCard(boardFetchErrorMessage!, retry: _setupBoards)
 						]
 					)
 				);
 			}
 			else {
-				return Center(
+				return const Center(
 					child: CupertinoActivityIndicator()
 				);
 			}
@@ -395,7 +399,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												Expanded(
 													child: ReorderableList(
 														controller: _tabListController,
-														physics: BouncingScrollPhysics(),
+														physics: const BouncingScrollPhysics(),
 														onReorder: (oldIndex, newIndex) {
 															final currentTab = tabs[activeBrowserTab.value];
 															if (oldIndex < newIndex) {
@@ -412,7 +416,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 														},
 														itemCount: tabs.length,
 														itemBuilder: (context, i) {
-															return _buildTabletIcon(i * -1, Icon(Icons.topic), tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'Browse', reorderable: true);
+															return _buildTabletIcon(i * -1, const Icon(Icons.topic), tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'Browse', reorderable: true);
 														}
 													)
 												),
@@ -425,9 +429,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											primaryCount: context.watch<ThreadWatcher>().unseenYouCount,
 											secondaryCount: context.watch<ThreadWatcher>().unseenCount
 										), 'Saved'),
-									_buildTabletIcon(2, Icon(Icons.history), 'History'),
-									_buildTabletIcon(3, Icon(Icons.search), 'Search'),
-									_buildTabletIcon(4, Icon(Icons.settings), 'Settings')
+									_buildTabletIcon(2, const Icon(Icons.history), 'History'),
+									_buildTabletIcon(3, const Icon(Icons.search), 'Search'),
+									_buildTabletIcon(4, const Icon(Icons.settings), 'Settings')
 								]
 							)
 						),
@@ -451,7 +455,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						controller: _tabController,
 						tabBar: CupertinoTabBar(
 							items: [
-								BottomNavigationBarItem(
+								const BottomNavigationBarItem(
 									icon: Icon(Icons.topic),
 									label: 'Browse'
 								),
@@ -464,15 +468,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									),
 									label: 'Saved'
 								),
-								BottomNavigationBarItem(
+								const BottomNavigationBarItem(
 									icon: Icon(Icons.history),
 									label: 'History'
 								),
-								BottomNavigationBarItem(
+								const BottomNavigationBarItem(
 									icon: Icon(Icons.search),
 									label: 'Search'
 								),
-								BottomNavigationBarItem(
+								const BottomNavigationBarItem(
 									icon: Icon(Icons.settings),
 									label: 'Settings'
 								)
@@ -511,7 +515,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 													child: ReorderableList(
 														controller: _tabListController,
 														scrollDirection: Axis.horizontal,
-														physics: BouncingScrollPhysics(),
+														physics: const BouncingScrollPhysics(),
 														onReorder: (oldIndex, newIndex) {
 															final currentTab = tabs[activeBrowserTab.value];
 															if (oldIndex < newIndex) {
@@ -528,7 +532,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 														},
 														itemCount: tabs.length,
 														itemBuilder: (context, i) {
-															return _buildTabletIcon(i * -1, Icon(Icons.topic), tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'Browse', reorderable: true);
+															return _buildTabletIcon(i * -1, const Icon(Icons.topic), tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'Browse', reorderable: true);
 														}
 													)
 												),
@@ -537,7 +541,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										)
 									)
 								),
-								SizedBox(
+								const SizedBox(
 									height: 50.0
 								)
 							]

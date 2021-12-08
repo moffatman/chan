@@ -5,10 +5,11 @@ import 'package:flutter/widgets.dart';
 class TimedRebuilder extends StatefulWidget {
 	final Duration interval;
 	final WidgetBuilder builder;
-	TimedRebuilder({
+	const TimedRebuilder({
 		required this.interval,
-		required this.builder
-	});
+		required this.builder,
+		Key? key
+	}) : super(key: key);
 	@override
 	createState() => _TimedRebuilderState();
 }
@@ -18,7 +19,7 @@ class _TimedRebuilderState extends State<TimedRebuilder> {
 	@override
 	void initState() {
 		super.initState();
-		this.timer = Timer.periodic(widget.interval, (_) => {
+		timer = Timer.periodic(widget.interval, (_) => {
 			if (mounted) setState(() {})
 		});
 	}

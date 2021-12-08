@@ -6,10 +6,11 @@ class VideoControls extends StatefulWidget {
 	final VideoPlayerController controller;
 	final bool hasAudio;
 
-	VideoControls({
+	const VideoControls({
 		required this.controller,
-		required this.hasAudio
-	});
+		required this.hasAudio,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	createState() => _VideoControlsState();
@@ -58,8 +59,8 @@ class _VideoControlsState extends State<VideoControls> {
 		return Row(
 			mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 			children: [
-				SizedBox(width: 8),
-				Text(_formatDuration(value.position), style: TextStyle(color: Colors.white)),
+				const SizedBox(width: 8),
+				Text(_formatDuration(value.position), style: const TextStyle(color: Colors.white)),
 				Expanded(
 					child: CupertinoSlider(
 						value: sliderValue,
@@ -82,7 +83,7 @@ class _VideoControlsState extends State<VideoControls> {
 						},
 					)
 				),
-				Text(_formatDuration(value.duration), style: TextStyle(color: Colors.white)),
+				Text(_formatDuration(value.duration), style: const TextStyle(color: Colors.white)),
 				if (widget.hasAudio) CupertinoButton(
 					child: Icon(value.volume > 0 ? Icons.volume_up : Icons.volume_off),
 					padding: EdgeInsets.zero,

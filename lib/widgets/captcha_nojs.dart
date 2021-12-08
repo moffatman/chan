@@ -13,17 +13,18 @@ class CaptchaNoJS extends StatefulWidget {
 	final RecaptchaRequest request;
 	final ValueChanged<RecaptchaSolution> onCaptchaSolved;
 
-	CaptchaNoJS({
+	const CaptchaNoJS({
 		required this.request,
-		required this.onCaptchaSolved
-	});
+		required this.onCaptchaSolved,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	createState() => _CaptchaNoJSState();
 }
 
 // Copied from Clover
-const Map _HEADERS = {
+const Map<String, String> _headers = {
 	'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36',
 	'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
 	'Accept-Language': 'en-US',
@@ -35,6 +36,7 @@ class CaptchaNoJSException implements Exception {
 	String message;
 	CaptchaNoJSException(this.message);
 
+	@override
 	String toString() => 'Recaptcha (no JS) error: $message';
 }
 
@@ -115,12 +117,12 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			throw CaptchaNoJSException('Image missing from challenge');
 		}
 		final challengeImageCompleter = Completer<ui.Image>();
-		NetworkImage('https://www.google.com' + img.attributes['src']!).resolve(ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+		NetworkImage('https://www.google.com' + img.attributes['src']!).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
 			challengeImageCompleter.complete(info.image);
 		}, onError: (e, st) {
 			challengeImageCompleter.completeError(e);
 		}));
-		final checkboxes = Set<int>();
+		final Set<int> checkboxes = {};
 		for (final checkbox in document.querySelectorAll('input[name="response"]')) {
 			checkboxes.add(int.parse(checkbox.attributes['value']!));
 		}
@@ -154,7 +156,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			options: Options(
 				headers: {
 					'Referer': widget.request.sourceUrl,
-					..._HEADERS
+					..._headers
 				},
 				responseType: ResponseType.plain
 			)
@@ -173,14 +175,14 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 				challenge?.dispose();
 				challenge = null;
 			});
-			this.challenge = await _requestChallenge();
+			challenge = await _requestChallenge();
 			setState(() {});
 		}
 		catch(e, st) {
 			print(e);
 			print(st);
 			setState(() {
-				this.errorMessage = e.toString();
+				errorMessage = e.toString();
 			});
 		}
 	}
@@ -205,7 +207,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 				contentType: Headers.formUrlEncodedContentType,
 				headers: {
 					'Referer': 'https://www.google.com/recaptcha/api/fallback?k=${widget.request.key}',
-					..._HEADERS
+					..._headers
 				}
 			)
 		);
@@ -218,7 +220,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			widget.onCaptchaSolved(RecaptchaSolution(response: tokenElement.text));
 		}
 		else {
-			this.challenge = await _gotChallengePage(document);
+			challenge = await _gotChallengePage(document);
 			setState(() {});
 		}
 	}
@@ -231,7 +233,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			print(e);
 			print(st);
 			setState(() {
-				this.errorMessage = e.toString();
+				errorMessage = e.toString();
 			});
 		}
 	}
@@ -249,7 +251,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 					children: [
 						Text(errorMessage!),
 						CupertinoButton(
-							child: Text('Retry'),
+							child: const Text('Retry'),
 							onPressed: _tryRequestChallenge
 						)
 					]
@@ -261,16 +263,16 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 				mainAxisSize: MainAxisSize.min,
 				children: [
 					Text(challenge!.title),
-					SizedBox(height: 16),
+					const SizedBox(height: 16),
 					Flexible(
 						child: ConstrainedBox(
-							constraints: BoxConstraints(
+							constraints: const BoxConstraints(
 								maxWidth: 500
 							),
 							child: GridView(
 								shrinkWrap: true,
-								physics: NeverScrollableScrollPhysics(),
-								gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+								physics: const NeverScrollableScrollPhysics(),
+								gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
 									crossAxisCount: 3,
 									crossAxisSpacing: 12,
 									mainAxisSpacing: 12
@@ -298,17 +300,17 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 							)
 						)
 					),
-					SizedBox(height: 16),
+					const SizedBox(height: 16),
 					Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
 							CupertinoButton(
-								child: Text('Refresh'),
+								child: const Text('Refresh'),
 								onPressed: _tryRequestChallenge
 							),
-							SizedBox(width: 32),
+							const SizedBox(width: 32),
 							CupertinoButton(
-								child: Text('Submit'),
+								child: const Text('Submit'),
 								onPressed: _trySubmitChallenge
 							)
 						]
@@ -317,7 +319,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			);
 		}
 		else {
-			return Container(
+			return const Center(
 				child: CupertinoActivityIndicator()
 			);
 		}
@@ -330,7 +332,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 			),
 			width: double.infinity,
-			padding: EdgeInsets.all(16),
+			padding: const EdgeInsets.all(16),
 			child: AnimatedSize(
 				duration: const Duration(milliseconds: 100),
 				child: _build(context)

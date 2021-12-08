@@ -27,7 +27,7 @@ class _CircularLoadingIndicatorPainter extends CustomPainter {
 		final center = Offset(size.width / 2, size.height / 2);
 		final rect = Rect.fromCenter(center: center, width: size.height, height: size.height);
 		canvas.drawCircle(center, size.height / 2, paint);
-		canvas.drawCircle(center, size.height / 2 - 4, Paint()..color = Color.fromRGBO(0, 0, 0, 0.25)..blendMode = BlendMode.src);
+		canvas.drawCircle(center, size.height / 2 - 4, Paint()..color = const Color.fromRGBO(0, 0, 0, 0.25)..blendMode = BlendMode.src);
 		canvas.drawArc(
 			rect,
 			(-pi / 2) + startAngle,
@@ -44,17 +44,19 @@ class _CircularLoadingIndicatorPainter extends CustomPainter {
 class CircularLoadingIndicator extends StatefulWidget {
 	final double? value;
 	final Color? color;
-	CircularLoadingIndicator({
+	const CircularLoadingIndicator({
 		this.value,
-		this.color
-	});
+		this.color,
+		Key? key
+	}) : super(key: key);
 
+	@override
 	createState() => _CircularLoadingIndicatorState();
 }
 
 class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> with TickerProviderStateMixin {
-	static const double _CONTINUOUS_SWEEP_ANGLE = 1 / 6;
-	static const int _PERIOD_MS = 1000;
+	static const double _continuousSweepAngle = 1 / 6;
+	static const int _periodMs = 1000;
 	late AnimationController _startValueController;
 	bool _startValueControllerDisposed = false;
 	late AnimationController _endValueController;
@@ -112,12 +114,12 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 	AnimationController _continuousAnimation(double from) {
 		final a = AnimationController(
 			vsync: this,
-			duration: const Duration(milliseconds: _PERIOD_MS)
+			duration: const Duration(milliseconds: _periodMs)
 		);
 		a.forward(from: from);
 		a.stop();
 		a.repeat(
-			period: const Duration(milliseconds: _PERIOD_MS)
+			period: const Duration(milliseconds: _periodMs)
 		);
 		return a;
 	}
@@ -126,7 +128,7 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		double _to = reversed ? to : (to >= from) ? to : to + 1;
 		final a = AnimationController(
 			vsync: this,
-			duration: Duration(milliseconds: ((_to - from).abs() * _PERIOD_MS).round()),
+			duration: Duration(milliseconds: ((_to - from).abs() * _periodMs).round()),
 			lowerBound: reversed ? _to : from,
 			upperBound: reversed ? from : _to
 		);
@@ -163,21 +165,23 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		// animate startAngle forward until sweepAngle <= _CONTINUOUS_SWEEP_ANGLE
 		// animate endAngle forward until sweepAngle >= _CONTINUOUS_SWEEP_ANGLE
 		// animate both angles forward
-		if (_sweepAngle - _CONTINUOUS_SWEEP_ANGLE > 0.001) {
-			final x = _constantVelocityAnimation(_startValue, _endValue - _CONTINUOUS_SWEEP_ANGLE);
+		if (_sweepAngle - _continuousSweepAngle > 0.001) {
+			final x = _constantVelocityAnimation(_startValue, _endValue - _continuousSweepAngle);
 			_replaceStartValueController(x.item1);
 			setState(() {});
 			await x.item2;
 		}
-		if (_CONTINUOUS_SWEEP_ANGLE - _sweepAngle > 0.001) {
-			final x = _constantVelocityAnimation(_endValue, _startValue + _CONTINUOUS_SWEEP_ANGLE);
+		if (_continuousSweepAngle - _sweepAngle > 0.001) {
+			final x = _constantVelocityAnimation(_endValue, _startValue + _continuousSweepAngle);
 			_replaceEndValueController(x.item1);
 			setState(() {});
 			await x.item2;
 		}
-		_replaceStartValueController(_continuousAnimation(_startValue));
-		_replaceEndValueController(_continuousAnimation(_endValue));
-		if (mounted) setState(() {});
+		if (mounted) {
+			_replaceStartValueController(_continuousAnimation(_startValue));
+			_replaceEndValueController(_continuousAnimation(_endValue));
+			setState(() {});
+		}
 	}
 
 	@override
@@ -205,7 +209,7 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 			builder: (context, child) => AnimatedBuilder(
 				animation: _endValueController,
 				builder: (context, child) => CustomPaint(
-					size: Size(50, 50),
+					size: const Size(50, 50),
 					painter: _CircularLoadingIndicatorPainter(
 						startValue: _startValueController.value,
 						endValue: _endValueController.value,

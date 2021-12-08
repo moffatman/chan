@@ -58,33 +58,37 @@ class Thread implements Filterable {
 		this.uniqueIPCount,
 		this.customSpoilerId
 	}) {
-		Map<int, Post> postsById = Map();
-		for (final post in this.posts) {
+		Map<int, Post> postsById = {};
+		for (final post in posts) {
 			postsById[post.id] = post;
 			post.replyIds = [];
 		}
-		for (final post in this.posts) {
+		for (final post in posts) {
 			for (final referencedPostId in post.span.referencedPostIds(board)) {
 				postsById[referencedPostId]?.replyIds = [...?postsById[referencedPostId]?.replyIds, post.id];
 			}
 		}
 	}
 
-	bool operator == (dynamic d) {
-		return (d is Thread)
-			&& (d.id == id)
-			&& (this.posts.length != d.posts.length)
-			&& this.currentPage != d.currentPage
-			&& this.isArchived != d.isArchived
-			&& this.isDeleted != d.isDeleted
-			&& this.isSticky != d.isSticky;
+	@override
+	bool operator == (dynamic other) {
+		return (other is Thread)
+			&& (other.id == id)
+			&& (other.posts.length == posts.length)
+			&& other.currentPage == currentPage
+			&& other.isArchived == isArchived
+			&& other.isDeleted == isDeleted
+			&& other.isSticky == isSticky;
 	}
+	@override
 	int get hashCode => id;
 
+	@override
 	String toString() {
 		return 'Thread /$board/$id';
 	}
 
+	@override
 	List<String> getSearchableText() {
 		if (title != null) {
 			return [title!, posts[0].text];
@@ -108,8 +112,11 @@ class ThreadIdentifier {
 		required this.id
 	});
 
+	@override
 	String toString() => 'ThreadIdentifier: /$board/$id';
 
-	bool operator == (dynamic d) => (d is ThreadIdentifier) && (d.board == board) && (d.id == id);
+	@override
+	bool operator == (dynamic other) => (other is ThreadIdentifier) && (other.board == board) && (other.id == id);
+	@override
 	int get hashCode => board.hashCode * 31 + id.hashCode;
 }

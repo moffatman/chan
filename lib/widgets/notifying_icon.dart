@@ -8,15 +8,16 @@ class NotifyingIcon extends StatelessWidget {
 	final ValueListenable<int> primaryCount;
 	final ValueListenable<int>? secondaryCount;
 	final double topOffset;
-	NotifyingIcon({
+	const NotifyingIcon({
 		required this.icon,
 		required this.primaryCount,
 		required this.secondaryCount,
-		this.topOffset = 0
-	});
+		this.topOffset = 0,
+		Key? key
+	}) : super(key: key);
 
 	Widget _build(BuildContext context, int primary, [int secondary = 0]) {
-		final r = Radius.circular(10);
+		const r = Radius.circular(10);
 		return Stack(
 			clipBehavior: Clip.none,
 			children: [
@@ -29,17 +30,17 @@ class NotifyingIcon extends StatelessWidget {
 							if (primary > 0) Container(
 								decoration: BoxDecoration(
 									color: Colors.red,
-									borderRadius: (secondary > 0) ? BorderRadius.only(topLeft: r, bottomLeft: r) : BorderRadius.all(r)
+									borderRadius: (secondary > 0) ? const BorderRadius.only(topLeft: r, bottomLeft: r) : const BorderRadius.all(r)
 								),
-								constraints: BoxConstraints(
+								constraints: const BoxConstraints(
 									minWidth: 20
 								),
 								height: 20,
 								alignment: Alignment.center,
-								padding: EdgeInsets.all(2),
+								padding: const EdgeInsets.all(2),
 								child: AutoSizeText(
 									primary.toString(),
-									style: TextStyle(
+									style: const TextStyle(
 										color: Colors.white
 									)
 								)
@@ -47,14 +48,14 @@ class NotifyingIcon extends StatelessWidget {
 							if (secondary > 0) Container(
 								decoration: BoxDecoration(
 									color: CupertinoTheme.of(context).primaryColor,
-									borderRadius: (primary > 0) ? BorderRadius.only(topRight: r, bottomRight: r) : BorderRadius.all(r)
+									borderRadius: (primary > 0) ? const BorderRadius.only(topRight: r, bottomRight: r) : const BorderRadius.all(r)
 								),
-								constraints: BoxConstraints(
+								constraints: const BoxConstraints(
 									minWidth: 20
 								),
 								height: 20,
 								alignment: Alignment.center,
-								padding: EdgeInsets.all(2),
+								padding: const EdgeInsets.all(2),
 								child:AutoSizeText(
 									secondary.toString(),
 									maxLines: 1,

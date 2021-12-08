@@ -38,6 +38,10 @@ class _PostThreadCombo implements Filterable {
 	List<String> getSearchableText() => post.getSearchableText();
 }
 class SavedPage extends StatefulWidget {
+	const SavedPage({
+		Key? key
+	}) : super(key: key);
+
 	@override
 	createState() => _SavedPageState();
 }
@@ -64,15 +68,15 @@ class _SavedPageState extends State<SavedPage> {
 			middle: Text(title),
 			trailing: CupertinoButton(
 				padding: EdgeInsets.zero,
-				child: Icon(Icons.sort),
+				child: const Icon(Icons.sort),
 				onPressed: () {
 					showCupertinoModalPopup<DateTime>(
 						context: context,
 						builder: (context) => CupertinoActionSheet(
 							title: const Text('Sort by...'),
 							actions: {
-								ThreadSortingMethod.SavedTime: 'Saved Date',
-								ThreadSortingMethod.LastPostTime: 'Posted Date',
+								ThreadSortingMethod.savedTime: 'Saved Date',
+								ThreadSortingMethod.lastPostTime: 'Posted Date',
 							}.entries.map((entry) => CupertinoActionSheetAction(
 								child: Text(entry.value, style: TextStyle(
 									fontWeight: entry.key == settings.savedThreadsSortingMethod ? FontWeight.bold : null
@@ -106,7 +110,7 @@ class _SavedPageState extends State<SavedPage> {
 						return SafeArea(
 							child: Column(
 								children: [
-									ThreadWatcherControls(),
+									const ThreadWatcherControls(),
 									Divider(
 										thickness: 1,
 										height: 0,
@@ -117,10 +121,10 @@ class _SavedPageState extends State<SavedPage> {
 											valueListenable: context.watch<Persistence>().threadStateBox.listenable(),
 											builder: (context, Box<PersistentThreadState> box, child) {
 												final states = box.toMap().values.where((s) => s.savedTime != null).toList();
-												if (settings.savedThreadsSortingMethod == ThreadSortingMethod.SavedTime) {
+												if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
 													states.sort((a, b) => b.savedTime!.compareTo(a.savedTime!));
 												}
-												else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.LastPostTime) {
+												else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
 													final noDate = DateTime.fromMillisecondsSinceEpoch(0);
 													states.sort((a, b) => (b.thread?.posts.last.time ?? noDate).compareTo(a.thread?.posts.last.time ?? noDate));
 												}
@@ -138,7 +142,7 @@ class _SavedPageState extends State<SavedPage> {
 															onThumbnailLoadError: (error) {
 																context.read<ThreadWatcher>().fixBrokenThread(state.thread!.identifier);
 															},
-															semanticParentIds: [-4],
+															semanticParentIds: const [-4],
 															onThumbnailTap: (initialAttachment) {
 																final attachments = _threadListController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
 																showGallery(
@@ -172,7 +176,7 @@ class _SavedPageState extends State<SavedPage> {
 				),
 				MultiMasterPane<_PostThreadCombo>(
 					id: 'yourPosts',
-					navigationBar: CupertinoNavigationBar(
+					navigationBar: const CupertinoNavigationBar(
 						transitionBetweenRoutes: false,
 						middle: Text('Your Posts')
 					),
@@ -231,10 +235,10 @@ class _SavedPageState extends State<SavedPage> {
 						valueListenable: context.watch<Persistence>().savedPostsBox.listenable(),
 						builder: (context, Box<SavedPost> box, child) {
 							final savedPosts = box.values.toList();
-							if (settings.savedThreadsSortingMethod == ThreadSortingMethod.SavedTime) {
+							if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
 								savedPosts.sort((a, b) => b.savedTime.compareTo(a.savedTime));
 							}
-							else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.LastPostTime) {
+							else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
 								savedPosts.sort((a, b) => b.post.time.compareTo(a.post.time));
 							}
 							return RefreshableList<SavedPost>(
@@ -281,7 +285,7 @@ class _SavedPageState extends State<SavedPage> {
 				),
 				MultiMasterPane<SavedAttachment>(
 					id: 'savedAttachments',
-					title: Text('Saved Attachments'),
+					title: const Text('Saved Attachments'),
 					icon: Icons.image,
 					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
 						valueListenable: context.watch<Persistence>().savedAttachmentsBox.listenable(),
@@ -295,7 +299,7 @@ class _SavedPageState extends State<SavedPage> {
 										child: Container(
 											decoration: BoxDecoration(
 												color: Colors.transparent,
-												borderRadius: BorderRadius.all(Radius.circular(4)),
+												borderRadius: const BorderRadius.all(Radius.circular(4)),
 												border: Border.all(color: list[i] == selected ? Colors.blue : Colors.transparent, width: 2)
 											),
 											margin: const EdgeInsets.all(4),
@@ -313,7 +317,7 @@ class _SavedPageState extends State<SavedPage> {
 										onTap: () => setter(list[i])
 									);
 								},
-								gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+								gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
 									crossAxisCount: 4
 								)
 							);
@@ -338,6 +342,11 @@ class _SavedPageState extends State<SavedPage> {
 }
 
 class ThreadWatcherControls extends StatefulWidget {
+	const ThreadWatcherControls({
+		Key? key
+	}) : super(key: key);
+
+	@override
 	createState() => _ThreadWatcherControls();
 }
 class _ThreadWatcherControls extends State<ThreadWatcherControls> {
@@ -345,24 +354,24 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 	Widget build(BuildContext context) {
 		final watcher = context.watch<ThreadWatcher>();
 		return AnimatedSize(
-			duration: Duration(milliseconds: 300),
+			duration: const Duration(milliseconds: 300),
 			child: Container(
-				padding: EdgeInsets.all(8),
+				padding: const EdgeInsets.all(8),
 				child: Column(
 					mainAxisSize: MainAxisSize.min,
 					children: [
 						Row(
 							children: [
-								SizedBox(width: 16),
+								const SizedBox(width: 16),
 								Expanded(
 									child: Column(
 										mainAxisSize: MainAxisSize.min,
 										crossAxisAlignment: CrossAxisAlignment.center,
 										children: [
-											Text('Thread Watcher'),
-											SizedBox(height: 8),
+											const Text('Thread Watcher'),
+											const SizedBox(height: 8),
 											if (watcher.nextUpdate != null && watcher.lastUpdate != null) ClipRRect(
-												borderRadius: BorderRadius.all(Radius.circular(8)),
+												borderRadius: const BorderRadius.all(Radius.circular(8)),
 												child: TimedRebuilder(
 													interval: const Duration(seconds: 1),
 													builder: (context) {
@@ -379,9 +388,9 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 										]
 									)
 								),
-								SizedBox(width: 16),
+								const SizedBox(width: 16),
 								CupertinoButton(
-									child: Icon(Icons.refresh),
+									child: const Icon(Icons.refresh),
 									onPressed: watcher.update
 								),
 								CupertinoSwitch(

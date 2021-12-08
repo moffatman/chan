@@ -23,6 +23,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	final unescape = HtmlUnescape();
 	final String baseUrl;
 	final String staticUrl;
+	@override
 	final String name;
 	ImageboardFlag? _makeFlag(dynamic data) {
 		if (data['poster_country'] != null && data['poster_country'].isNotEmpty) {
@@ -46,7 +47,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		final doc = parse(data.replaceAll('<wbr>', ''));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
-		final processQuotelink = (dom.Element quoteLink) {
+		processQuotelink(dom.Element quoteLink) {
 			final parts = quoteLink.attributes['href']!.split('/');
 			final linkedBoard = parts[3];
 			if (parts.length > 4) {
@@ -74,7 +75,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			else {
 				elements.add(PostBoardLink(linkedBoard));
 			}
-		};
+		}
 		for (final node in doc.body!.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'span') {
@@ -115,7 +116,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				id: int.parse(serverFilenameParts.first),
 				filename: data['media']['media_filename'],
 				ext: '.' + serverFilenameParts.last,
-				type: serverFilenameParts.last == 'webm' ? AttachmentType.WEBM : AttachmentType.Image,
+				type: serverFilenameParts.last == 'webm' ? AttachmentType.webm : AttachmentType.image,
 				url: Uri.parse(data['media']['media_link'] ?? data['media']['remote_media_link']),
 				thumbnailUrl: Uri.parse(data['media']['thumb_link']),
 				md5: data['media']['safe_media_hash'],
@@ -130,7 +131,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		final String board = data['board']['shortname'];
 		final int threadId = int.parse(data['thread_num']);
 		final postLinkMatcher = RegExp('https?://[^ ]+/([^/]+)/post/([0-9]+)/');
-		final linkedPostThreadIds = Map<String, int>();
+		final Map<String, int> linkedPostThreadIds = {};
 		for (final match in postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
 			final board = match.group(1)!;
 			final postId = int.parse(match.group(2)!);
@@ -144,7 +145,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			id: int.parse(data['num']),
 			threadId: threadId,
 			attachment: _makeAttachment(data),
-			spanFormat: PostSpanFormat.FoolFuuka,
+			spanFormat: PostSpanFormat.foolFuuka,
 			flag: _makeFlag(data),
 			posterId: data['id'],
 			foolfuukaLinkedPostThreadIds: linkedPostThreadIds
@@ -172,12 +173,14 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	Future<int> _getPostThreadId(String board, int postId) async {
 		return int.parse((await _getPostJson(board, postId))['thread_num']);
 	}
+	@override
 	Future<Post> getPost(String board, int id) async {		
 		return _makePost(await _getPostJson(board, id));
 	}
 	Future<Thread> getThreadContainingPost(String board, int id) async {
 		throw Exception('Unimplemented');
 	}
+	@override
 	Future<Thread> getThread(ThreadIdentifier thread) async {
 		if (!(await getBoards()).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
@@ -218,6 +221,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			uniqueIPCount: int.tryParse(postObjects.first['unique_ips'] ?? '')
 		);
 	}
+	@override
 	Future<List<Thread>> getCatalog(String board) async {
 		throw Exception('Catalog not supported on $name');
 	}
@@ -236,13 +240,13 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			);
 		}).toList();
 	}
+	@override
 	Future<List<ImageboardBoard>> getBoards() async {
-		if (_boards == null) {
-			_boards = await _getBoards();
-		}
+		_boards ??= await _getBoards();
 		return _boards!;
 	}
 
+	@override
 	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page}) async {
 		final knownBoards = await getBoards();
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
@@ -255,8 +259,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				'text': query.query,
 				'page': page.toString(),
 				if (query.boards.isNotEmpty) 'boards': query.boards.join('.'),
-				if (query.mediaFilter != MediaFilter.None) 'filter': query.mediaFilter == MediaFilter.OnlyWithMedia ? 'text' : 'image',
-				if (query.postTypeFilter != PostTypeFilter.None) 'type': query.postTypeFilter == PostTypeFilter.OnlyOPs ? 'op' : 'posts',
+				if (query.mediaFilter != MediaFilter.none) 'filter': query.mediaFilter == MediaFilter.onlyWithMedia ? 'text' : 'image',
+				if (query.postTypeFilter != PostTypeFilter.none) 'type': query.postTypeFilter == PostTypeFilter.onlyOPs ? 'op' : 'posts',
 				if (query.startDate != null) 'start': '${query.startDate!.year}-${query.startDate!.month}-${query.startDate!.day}',
 				if (query.endDate != null) 'end': '${query.endDate!.year}-${query.endDate!.month}-${query.endDate!.day}',
 				if (query.md5 != null) 'image': query.md5
@@ -275,6 +279,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		);
 	}
 
+	@override
 	String getWebUrl(String board, [int? threadId, int? postId]) {
 		String webUrl = 'https://$baseUrl/$board/';
 		if (threadId != null) {

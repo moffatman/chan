@@ -5,9 +5,9 @@ part 'attachment.g.dart';
 @HiveType(typeId: 10)
 enum AttachmentType {
 	@HiveField(0)
-	Image,
+	image,
 	@HiveField(1)
-	WEBM
+	webm
 }
 
 @HiveType(typeId: 9)
@@ -49,11 +49,12 @@ class Attachment {
 		this.width,
 		this.height,
 		this.threadId
-	}) : this.spoiler = spoiler ?? false;
+	}) : spoiler = spoiler ?? false;
 
 	bool? get isLandscape => (width == null || height == null) ? null : width! > height!;
 
 	String get globalId => '${board}_$id';
 
+	@override
 	String toString() => 'Attachment(board: $board, id: $id, ext: $ext, filename: $filename, type: $type, url: $url, thumbnailUrl: $thumbnailUrl, md5: $md5, spoiler: $spoiler, width: $width, height: $height, threadId: $threadId)';
 }

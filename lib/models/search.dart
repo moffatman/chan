@@ -5,21 +5,21 @@ part 'search.g.dart';
 @HiveType(typeId: 6)
 enum PostTypeFilter {
 	@HiveField(0)
-	None,
+	none,
 	@HiveField(1)
-	OnlyOPs,
+	onlyOPs,
 	@HiveField(2)
-	OnlyReplies
+	onlyReplies
 }
 
 @HiveType(typeId: 7)
 enum MediaFilter {
 	@HiveField(0)
-	None,
+	none,
 	@HiveField(1)
-	OnlyWithMedia,
+	onlyWithMedia,
 	@HiveField(2)
-	OnlyWithNoMedia
+	onlyWithNoMedia
 }
 
 @HiveType(typeId: 5)
@@ -40,22 +40,22 @@ class ImageboardArchiveSearchQuery extends HiveObject {
 	String? md5;
 	ImageboardArchiveSearchQuery({
 		this.query = '',
-		this.mediaFilter = MediaFilter.None,
-		this.postTypeFilter = PostTypeFilter.None,
+		this.mediaFilter = MediaFilter.none,
+		this.postTypeFilter = PostTypeFilter.none,
 		this.startDate,
 		this.endDate,
 		List<String>? boards,
 		this.md5
-	}) : this.boards = boards ?? [];
+	}) : boards = boards ?? [];
 
 	ImageboardArchiveSearchQuery clone() {
 		return ImageboardArchiveSearchQuery(
-			query: this.query.toString(),
-			mediaFilter: this.mediaFilter,
-			postTypeFilter: this.postTypeFilter,
-			startDate: (this.startDate != null) ? DateTime.fromMillisecondsSinceEpoch(this.startDate!.millisecondsSinceEpoch) : null,
-			endDate: (this.endDate != null) ? DateTime.fromMillisecondsSinceEpoch(this.endDate!.millisecondsSinceEpoch) : null,
-			boards: [...this.boards]
+			query: query.toString(),
+			mediaFilter: mediaFilter,
+			postTypeFilter: postTypeFilter,
+			startDate: (startDate != null) ? DateTime.fromMillisecondsSinceEpoch(startDate!.millisecondsSinceEpoch) : null,
+			endDate: (endDate != null) ? DateTime.fromMillisecondsSinceEpoch(endDate!.millisecondsSinceEpoch) : null,
+			boards: [...boards]
 		);
 	}
 }

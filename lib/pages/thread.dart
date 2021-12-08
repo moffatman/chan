@@ -29,11 +29,12 @@ class ThreadPage extends StatefulWidget {
 	final int? initialPostId;
 	final bool initiallyUseArchive;
 
-	ThreadPage({
+	const ThreadPage({
 		required this.thread,
 		this.initialPostId,
-		this.initiallyUseArchive = false
-	});
+		this.initiallyUseArchive = false,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	createState() => _ThreadPageState();
@@ -74,7 +75,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			final alignment = (scrollToId == widget.initialPostId) ? 0.0 : 1.0;
 			try {
 				await WidgetsBinding.instance!.endOfFrame;
-				await _listController.animateTo((post) => post.id == scrollToId, orElseLast: (post) => post.id <= scrollToId, alignment: alignment, duration: Duration(milliseconds: 1));
+				await _listController.animateTo((post) => post.id == scrollToId, orElseLast: (post) => post.id <= scrollToId, alignment: alignment, duration: const Duration(milliseconds: 1));
 				await WidgetsBinding.instance!.endOfFrame;
 			}
 			catch (e, st) {
@@ -85,7 +86,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			setState(() {
 				blocked = false;
 			});
-			await Future.delayed(Duration(milliseconds: 200));
+			await Future.delayed(const Duration(milliseconds: 200));
 			_unnaturallyScrolling = false;
 		}
 	}
@@ -103,7 +104,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			onNeedScrollToPost: (post) {
 				_subNavigatorKey.currentState!.popUntil((route) => route.isFirst);
 				_weakNavigatorKey.currentState!.popAllExceptFirst();
-				Future.delayed(Duration(milliseconds: 150), () => _listController.animateTo((val) => val.id == post.id));
+				Future.delayed(const Duration(milliseconds: 150), () => _listController.animateTo((val) => val.id == post.id));
 			}
 		);
 		_listController.slowScrollUpdates.listen((_) {
@@ -127,7 +128,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			persistentState = context.watch<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
 			persistentState.useArchive |= widget.initiallyUseArchive;
 			final oldZone = zone;
-			Future.delayed(Duration(milliseconds: 100), () => oldZone.dispose());
+			Future.delayed(const Duration(milliseconds: 100), () => oldZone.dispose());
 			zone = PostSpanRootZoneData(
 				thread: persistentState.thread ?? _nullThread,
 				site: context.read<ImageboardSite>(),
@@ -139,7 +140,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			setState(() {});
 		}
 		else if (widget.initialPostId != old.initialPostId && widget.initialPostId != null) {
-			_listController.animateTo((post) => post.id == widget.initialPostId!, orElseLast: (post) => post.id <= widget.initialPostId!, alignment: 0.0, duration: Duration(milliseconds: 500));
+			_listController.animateTo((post) => post.id == widget.initialPostId!, orElseLast: (post) => post.id <= widget.initialPostId!, alignment: 0.0, duration: const Duration(milliseconds: 500));
 		}
 	}
 
@@ -216,7 +217,7 @@ class _ThreadPageState extends State<ThreadPage> {
 							CupertinoButton(
 								key: _shareButtonKey,
 								padding: EdgeInsets.zero,
-								child: Icon(Icons.ios_share),
+								child: const Icon(Icons.ios_share),
 								onPressed: () {
 									final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 									final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
@@ -225,7 +226,7 @@ class _ThreadPageState extends State<ThreadPage> {
 							),
 							CupertinoButton(
 								padding: EdgeInsets.zero,
-								child: Icon(Icons.reply),
+								child: const Icon(Icons.reply),
 								onPressed: persistentState.thread?.isArchived == true ? null : _replyBoxKey.currentState?.toggleReplyBox
 							)
 						]
@@ -276,35 +277,35 @@ class _ThreadPageState extends State<ThreadPage> {
 																			autoUpdateDuration: const Duration(seconds: 60),
 																			initialList: persistentState.thread?.posts,
 																			footer: Container(
-																				padding: EdgeInsets.all(16),
+																				padding: const EdgeInsets.all(16),
 																				child: (persistentState.thread == null) ? null : Row(
 																					children: [
-																						Spacer(),
-																						Icon(Icons.reply_rounded),
-																						SizedBox(width: 4),
+																						const Spacer(),
+																						const Icon(Icons.reply_rounded),
+																						const SizedBox(width: 4),
 																						_limitCounter(persistentState.thread!.replyCount, context.watch<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
-																						Spacer(),
-																						Icon(Icons.image),
-																						SizedBox(width: 4),
+																						const Spacer(),
+																						const Icon(Icons.image),
+																						const SizedBox(width: 4),
 																						_limitCounter(persistentState.thread!.imageCount, context.watch<Persistence>().getBoard(widget.thread.board).threadImageLimit),
-																						Spacer(),
+																						const Spacer(),
 																						if (persistentState.thread!.uniqueIPCount != null) ...[
-																							Icon(Icons.person),
-																							SizedBox(width: 4),
+																							const Icon(Icons.person),
+																							const SizedBox(width: 4),
 																							Text('${persistentState.thread!.uniqueIPCount}'),
-																							Spacer(),
+																							const Spacer(),
 																						],
 																						if (persistentState.thread!.currentPage != null) ...[
-																							Icon(Icons.insert_drive_file_rounded),
-																							SizedBox(width: 4),
+																							const Icon(Icons.insert_drive_file_rounded),
+																							const SizedBox(width: 4),
 																							_limitCounter(persistentState.thread!.currentPage!, context.watch<Persistence>().getBoard(widget.thread.board).pageCount),
-																							Spacer()
+																							const Spacer()
 																						],
 																						if (persistentState.thread!.isArchived) ...[
 																							GestureDetector(
 																								behavior: HitTestBehavior.opaque,
 																								child: Row(
-																									children: [
+																									children: const [
 																										Icon(Icons.archive, color: Colors.grey),
 																										SizedBox(width: 4),
 																										Text('Archived'),
@@ -312,14 +313,14 @@ class _ThreadPageState extends State<ThreadPage> {
 																								),
 																								onTap: _switchToLive
 																							),
-																							Spacer()
+																							const Spacer()
 																						]
 																					]
 																				)
 																			),
 																			remedies: {
 																				ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
-																					child: Text('Try archive'),
+																					child: const Text('Try archive'),
 																					onPressed: () {
 																						persistentState.useArchive = true;
 																						persistentState.save();
@@ -342,7 +343,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																					}
 																					await _persistentState.save();
 																					setState(() {});
-																					Future.delayed(Duration(milliseconds: 100), () {
+																					Future.delayed(const Duration(milliseconds: 100), () {
 																						if (persistentState == _persistentState && !_unnaturallyScrolling) {
 																							if (_listController.lastVisibleIndex != -1) {
 																								_persistentState.lastSeenPostId = max(_persistentState.lastSeenPostId ?? 0, _persistentState.thread!.posts[_listController.lastVisibleIndex].id);
@@ -379,7 +380,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																					onRequestArchive: _switchToArchive,
 																					onTap: () {
 																						resetPage();
-																						Future.delayed(Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
+																						Future.delayed(const Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
 																					}
 																				);
 																			},
@@ -396,9 +397,9 @@ class _ThreadPageState extends State<ThreadPage> {
 																		if (persistentState.thread != null && persistentState.lastSeenPostId != -1 && _listController.lastVisibleIndex != -1) {
 																			greyCount = persistentState.thread!.posts.length - whiteCount - (_listController.lastVisibleIndex + 1);
 																		}
-																		const radius = const Radius.circular(8);
-																		const radiusAlone = const BorderRadius.all(radius);
-																		final scrollToBottom = () => _listController.animateTo((post) => post.id == persistentState.thread!.posts.last.id, alignment: 1.0);
+																		const radius = Radius.circular(8);
+																		const radiusAlone = BorderRadius.all(radius);
+																		scrollToBottom() => _listController.animateTo((post) => post.id == persistentState.thread!.posts.last.id, alignment: 1.0);
 																		if (redCount > 0 || whiteCount > 0 || greyCount > 0) {
 																			return SafeArea(
 																				child: Align(
@@ -409,10 +410,10 @@ class _ThreadPageState extends State<ThreadPage> {
 																							children: [
 																								if (redCount > 0) Container(
 																									decoration: BoxDecoration(
-																										borderRadius: (whiteCount > 0 || greyCount > 0) ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
+																										borderRadius: (whiteCount > 0 || greyCount > 0) ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
 																										color: Colors.red
 																									),
-																									padding: EdgeInsets.all(8),
+																									padding: const EdgeInsets.all(8),
 																									margin: EdgeInsets.only(bottom: 16, right: (whiteCount == 0 && greyCount == 0) ? 16 : 0),
 																									child: Text(
 																										redCount.toString(),
@@ -421,10 +422,10 @@ class _ThreadPageState extends State<ThreadPage> {
 																								),
 																								if (greyCount > 0) Container(
 																									decoration: BoxDecoration(
-																										borderRadius: (redCount > 0) ? (whiteCount > 0 ? null : BorderRadius.only(topRight: radius, bottomRight: radius)) : (whiteCount > 0 ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
+																										borderRadius: (redCount > 0) ? (whiteCount > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (whiteCount > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
 																										color: CupertinoTheme.of(context).primaryColor.withBrightness(0.6)
 																									),
-																									padding: EdgeInsets.all(8),
+																									padding: const EdgeInsets.all(8),
 																									margin: EdgeInsets.only(bottom: 16, right: whiteCount > 0 ? 0 : 16),
 																									child: Container(
 																										constraints: BoxConstraints(
@@ -441,11 +442,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																								),
 																								if (whiteCount > 0) Container(
 																									decoration: BoxDecoration(
-																										borderRadius: (greyCount > 0 || redCount > 0) ? BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
+																										borderRadius: (greyCount > 0 || redCount > 0) ? const BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
 																										color: CupertinoTheme.of(context).primaryColor
 																									),
-																									padding: EdgeInsets.all(8),
-																									margin: EdgeInsets.only(bottom: 16, right: 16),
+																									padding: const EdgeInsets.all(8),
+																									margin: const EdgeInsets.only(bottom: 16, right: 16),
 																									child: Container(
 																										constraints: BoxConstraints(
 																											minWidth: 24 * MediaQuery.of(context).textScaleFactor
@@ -474,7 +475,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																),
 																if (blocked) Container(
 																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																	child: Center(
+																	child: const Center(
 																		child: CupertinoActivityIndicator()
 																	)
 																)

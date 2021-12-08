@@ -8,6 +8,9 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:provider/provider.dart';
 
 class BoardSwitcherPage extends StatefulWidget {
+	const BoardSwitcherPage({Key? key}) : super(key: key);
+
+	@override
 	createState() => _BoardSwitcherPageState();
 }
 
@@ -71,11 +74,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 					}
 				)
 			),
-			child: (_filteredBoards.isEmpty) ? Center(
+			child: (_filteredBoards.isEmpty) ? const Center(
 				child: Text('No matching boards')
 			) : SafeArea(
 				child: GridView.extent(
-					padding: EdgeInsets.only(top: 4, bottom: 4),
+					padding: const EdgeInsets.only(top: 4, bottom: 4),
 					maxCrossAxisExtent: 125,
 					mainAxisSpacing: 4,
 					childAspectRatio: 1.2,
@@ -84,9 +87,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 					children: _filteredBoards.map((board) {
 						return GestureDetector(
 							child: Container(
-								padding: EdgeInsets.all(4),
+								padding: const EdgeInsets.all(4),
 								decoration: BoxDecoration(
-									borderRadius: BorderRadius.all(Radius.circular(4)),
+									borderRadius: const BorderRadius.all(Radius.circular(4)),
 									color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
 								),
 								child: Column(
@@ -97,16 +100,16 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											child: Center(
 												child: Text(
 													'/${board.name}/',
-													style: TextStyle(
+													style: const TextStyle(
 														fontSize: 24
 													)
 												)
 											)
 										),
-										SizedBox(height: 8),
+										const SizedBox(height: 8),
 										Flexible(
 											child: Center(
-												child: AutoSizeText('${board.title}', maxFontSize: 14, maxLines: 2, textAlign: TextAlign.center)
+												child: AutoSizeText(board.title, maxFontSize: 14, maxLines: 2, textAlign: TextAlign.center)
 											)
 										)
 									]

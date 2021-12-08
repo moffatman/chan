@@ -88,7 +88,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		this.overrideSource,
 		bool isPrimary = false
 	}) : _isPrimary = isPrimary {
-		_longPressFactorStream.bufferTime(Duration(milliseconds: 50)).listen((x) {
+		_longPressFactorStream.bufferTime(const Duration(milliseconds: 50)).listen((x) {
 			if (x.isNotEmpty) {
 				_onCoalescedLongPressUpdate(x.last);
 			}
@@ -140,10 +140,10 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	Future<void> _loadFullAttachment(bool startImageDownload, {bool force = false}) async {
-		if (attachment.type == AttachmentType.Image && goodImageSource != null && !force) {
+		if (attachment.type == AttachmentType.image && goodImageSource != null && !force) {
 			return;
 		}
-		if (attachment.type == AttachmentType.WEBM && ((videoPlayerController != null && !force) || _ongoingConversion != null)) {
+		if (attachment.type == AttachmentType.webm && ((videoPlayerController != null && !force) || _ongoingConversion != null)) {
 			return;
 		}
 		_errorMessage = null;
@@ -155,12 +155,12 @@ class AttachmentViewerController extends ChangeNotifier {
 		_isFullResolution = true;
 		_showLoadingProgress = false;
 		notifyListeners();
-		Future.delayed(Duration(milliseconds: 300), () {
+		Future.delayed(const Duration(milliseconds: 300), () {
 			_showLoadingProgress = true;
 			notifyListeners();
 		});
 		try {
-			if (attachment.type == AttachmentType.Image) {
+			if (attachment.type == AttachmentType.image) {
 				_goodImageSource = await _getGoodSource(attachment);
 				if (_goodImageSource?.scheme == 'file') {
 					_cachedFile = File(_goodImageSource!.path);
@@ -177,7 +177,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					}
 				}
 			}
-			else if (attachment.type == AttachmentType.WEBM) {
+			else if (attachment.type == AttachmentType.webm) {
 				final url = await _getGoodSource(attachment);
 				_ongoingConversion = MediaConversion.toMp4(url);
 				_ongoingConversion!.progress.addListener(() {
@@ -217,7 +217,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	Future<void> rotate() async {
 		_quarterTurns = 1;
 		notifyListeners();
-		if (attachment.type == AttachmentType.Image) {
+		if (attachment.type == AttachmentType.image) {
 			_rotationCompleter ??= Completer<void>();
 			await _rotationCompleter!.future;
 		}
@@ -299,7 +299,7 @@ class AttachmentViewer extends StatelessWidget {
 	final Iterable<int> semanticParentIds;
 	final ValueChanged<double>? onScaleChanged;
 
-	AttachmentViewer({
+	const AttachmentViewer({
 		required this.attachment,
 		required this.controller,
 		required this.semanticParentIds,
@@ -413,11 +413,11 @@ class AttachmentViewer extends StatelessWidget {
 														child: ErrorMessageCard(controller.errorMessage!)
 													),
 													CupertinoButton(
-														child: Text('Retry'),
+														child: const Text('Retry'),
 														onPressed: controller.loadFullAttachment
 													),
 													if (!controller.checkArchives) CupertinoButton(
-														child: Text('Try archives'),
+														child: const Text('Try archives'),
 														onPressed: controller.tryArchives
 													)
 												]
@@ -521,14 +521,14 @@ class AttachmentViewer extends StatelessWidget {
 							child: RotatedBox(
 								quarterTurns: controller.quarterTurns,
 								child: Container(
-									padding: EdgeInsets.all(8),
-									decoration: BoxDecoration(
+									padding: const EdgeInsets.all(8),
+									decoration: const BoxDecoration(
 										color: Colors.black54,
 										borderRadius: BorderRadius.all(Radius.circular(8))
 									),
 									child: Text(
 										controller.overlayText!,
-										style: TextStyle(
+										style: const TextStyle(
 											fontSize: 32,
 											color: Colors.white
 										)
@@ -547,7 +547,7 @@ class AttachmentViewer extends StatelessWidget {
 		return FirstBuildDetector(
 			identifier: _tag,
 			builder: (context, passedFirstBuild) {
-				if (attachment.type == AttachmentType.Image) {
+				if (attachment.type == AttachmentType.image) {
 					return _buildImage(context, passedFirstBuild);
 				}
 				else {

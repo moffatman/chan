@@ -11,7 +11,7 @@ class ImageboardTab extends StatelessWidget {
 	final ThreadIdentifier? initialThread;
 	final ValueChanged<ThreadIdentifier?>? onThreadChanged;
 	final String id;
-	ImageboardTab({
+	const ImageboardTab({
 		required this.initialBoard,
 		this.onBoardChanged,
 		this.initialThread,
@@ -41,7 +41,7 @@ class ImageboardTab extends StatelessWidget {
 							decoration: BoxDecoration(
 								color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 							),
-							child: Center(
+							child: const Center(
 								child: Text('Select a thread')
 							)
 						)

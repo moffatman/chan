@@ -9,9 +9,13 @@ import 'package:chan/widgets/thread_row.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:provider/src/provider.dart';
+import 'package:provider/provider.dart';
 
 class HistoryPage extends StatefulWidget {
+	const HistoryPage({
+		Key? key
+	}) : super(key: key);
+
 	@override
 	createState() => _HistoryPageState();
 }
@@ -26,7 +30,7 @@ class _HistoryPageState extends State<HistoryPage> {
 			masterBuilder: (context, selectedThread, threadSetter) {
 				return CupertinoPageScaffold(
 					resizeToAvoidBottomInset: false,
-					navigationBar: CupertinoNavigationBar(
+					navigationBar: const CupertinoNavigationBar(
 						transitionBetweenRoutes: false,
 						middle: Text('History')
 					),
@@ -47,7 +51,7 @@ class _HistoryPageState extends State<HistoryPage> {
 										child: ThreadRow(
 											thread: state.thread!,
 											isSelected: state.thread!.identifier == selectedThread,
-											semanticParentIds: [-3],
+											semanticParentIds: const [-3],
 											onThumbnailTap: (initialAttachment) {
 												final attachments = _listController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
 												showGallery(
@@ -65,7 +69,7 @@ class _HistoryPageState extends State<HistoryPage> {
 									),
 									actions: [
 										ContextMenuAction(
-											child: Text('Remove'),
+											child: const Text('Remove'),
 											onPressed: state.delete,
 											trailingIcon: Icons.delete,
 											isDestructiveAction: true
@@ -85,7 +89,7 @@ class _HistoryPageState extends State<HistoryPage> {
 							decoration: BoxDecoration(
 								color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 							),
-							child: Center(
+							child: const Center(
 								child: Text('Select a thread')
 							)
 						)

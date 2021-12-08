@@ -18,6 +18,7 @@ import 'package:chan/sites/imageboard_site.dart';
 
 class SiteLainchan extends ImageboardSite {
 	final String baseUrl;
+	@override
 	final String name;
 	List<ImageboardBoard>? _boards;
 
@@ -29,7 +30,7 @@ class SiteLainchan extends ImageboardSite {
 	});
 
 	static List<PostSpan> parsePlaintext(String text) {
-		return linkify(text, linkifiers: [UrlLinkifier()]).map((elem) {
+		return linkify(text, linkifiers: [const UrlLinkifier()]).map((elem) {
 			if (elem is UrlElement) {
 				return PostLinkSpan(elem.url);
 			}
@@ -86,7 +87,7 @@ class SiteLainchan extends ImageboardSite {
 			final String ext = data['ext'];
 			return Attachment(
 				id: id,
-				type: data['ext'] == '.webm' ? AttachmentType.WEBM : AttachmentType.Image,
+				type: data['ext'] == '.webm' ? AttachmentType.webm : AttachmentType.image,
 				filename: _unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
 				ext: ext,
 				board: board,
@@ -110,7 +111,7 @@ class SiteLainchan extends ImageboardSite {
 			threadId: threadId,
 			attachment: _makeAttachment(board, threadId, data),
 			attachmentDeleted: data['filedeleted'] == 1,
-			spanFormat: PostSpanFormat.Lainchan,
+			spanFormat: PostSpanFormat.lainchan,
 			posterId: data['id']
 		);
 	}
@@ -184,9 +185,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 	@override
 	Future<List<ImageboardBoard>> getBoards() async {
-		if (_boards == null) {
-			_boards = await _getBoards();
-		}
+		_boards ??= await _getBoards();
 		return _boards!;
 	}
 
@@ -246,27 +245,28 @@ class SiteLainchan extends ImageboardSite {
 			while (newPostId == null) {
 				await Future.delayed(const Duration(seconds: 2));
 				if (threadId == null) {
-					(await getCatalog(board)).reversed.forEach((thread) {
+					for (final thread in (await getCatalog(board)).reversed) {
 						if (thread.title == subject && thread.posts[0].text == text && (thread.time.compareTo(now) >= 0)) {
 							newPostId = thread.id;
 						}
-					});
+					}
 				}
 				else {
-					(await getThread(ThreadIdentifier(board: board, id: threadId))).posts.forEach((post) {
+					for (final post in (await getThread(ThreadIdentifier(board: board, id: threadId))).posts) {
 						if (post.text == text && (post.time.compareTo(now) >= 0)) {
 							newPostId = post.id;
 						}
-					});
+					}
 				}
 			}
 			return PostReceipt(
-				id: newPostId!,
+				id: newPostId,
 				password: password
 			);
 		}
 	}
 
+	@override
 	Future<PostReceipt> createThread({
 		required String board,
 		String name = '',
@@ -287,6 +287,7 @@ class SiteLainchan extends ImageboardSite {
 		overrideFilename: overrideFilename
 	);
 
+	@override
 	Future<PostReceipt> postReply({
 		required ThreadIdentifier thread,
 		String name = '',

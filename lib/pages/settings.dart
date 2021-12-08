@@ -11,12 +11,16 @@ import 'package:extended_image_library/extended_image_library.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatelessWidget {
+	const SettingsPage({
+		Key? key
+	}) : super(key: key);
+
 	@override
 	Widget build(BuildContext context) {
-		final settings = context.read<EffectiveSettings>();
+		final settings = context.watch<EffectiveSettings>();
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
-			navigationBar: CupertinoNavigationBar(
+			navigationBar: const CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
 				middle: Text('Settings')
 			),
@@ -24,18 +28,18 @@ class SettingsPage extends StatelessWidget {
 				child: Align(
 					alignment: Alignment.center,
 					child: ConstrainedBox(
-						constraints: BoxConstraints(
+						constraints: const BoxConstraints(
 							maxWidth: 500
 						),
 						child: ListView(
-							physics: BouncingScrollPhysics(),
+							physics: const BouncingScrollPhysics(),
 							children: [
-								Container(
+								const Padding(
 									padding: EdgeInsets.all(16),
 									child: Text('Content Filtering')
 								),
 								Container(
-									padding: EdgeInsets.only(left: 16, right: 16),
+									padding: const EdgeInsets.only(left: 16, right: 16),
 									child: Table(
 										children: {
 											'Images': settings.contentSettings.images,
@@ -51,14 +55,14 @@ class SettingsPage extends StatelessWidget {
 									)
 								),
 								Container(
-									padding: EdgeInsets.only(left: 16, right: 16),
+									padding: const EdgeInsets.only(left: 16, right: 16),
 									alignment: Alignment.center,
 									child: Wrap(
 										children: [
 											CupertinoButton(
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
-													children: [
+													children: const [
 														Text('Synchronize '),
 														Icon(Icons.sync_rounded, size: 16)
 													]
@@ -70,7 +74,7 @@ class SettingsPage extends StatelessWidget {
 											CupertinoButton(
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
-													children: [
+													children: const [
 														Text('Edit preferences '),
 														Icon(Icons.launch_rounded, size: 16)
 													]
@@ -81,11 +85,11 @@ class SettingsPage extends StatelessWidget {
 									)
 								),
 								Container(
-									padding: EdgeInsets.all(16),
-									child: Text('Use touchscreen layout'),
+									padding: const EdgeInsets.all(16),
+									child: const Text('Use touchscreen layout'),
 								),
 								CupertinoSegmentedControl<bool>(
-									children: {
+									children: const {
 										false: Text('No'),
 										true: Text('Yes')
 									},
@@ -94,42 +98,42 @@ class SettingsPage extends StatelessWidget {
 										settings.useTouchLayout = newValue;
 									}
 								),
-								Container(
+								const Padding(
 									padding: EdgeInsets.all(16),
 									child: Text('Theme'),
 								),
 								CupertinoSegmentedControl<ThemeSetting>(
-									children: {
-										ThemeSetting.Light: Text('Light'),
-										ThemeSetting.System: Text('Follow System'),
-										ThemeSetting.Dark: Text('Dark')
+									children: const {
+										ThemeSetting.light: Text('Light'),
+										ThemeSetting.system: Text('Follow System'),
+										ThemeSetting.dark: Text('Dark')
 									},
 									groupValue: settings.themeSetting,
 									onValueChanged: (newValue) {
 										settings.themeSetting = newValue;
 									}
 								),
-								Container(
+								const Padding(
 									padding: EdgeInsets.all(16),
 									child: Text('Automatically load attachments'),
 								),
 								CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
-									children: {
-										AutoloadAttachmentsSetting.Always: Text('Always'),
-										AutoloadAttachmentsSetting.WiFi: Text('When on Wi-Fi'),
-										AutoloadAttachmentsSetting.Never: Text('Never')
+									children: const {
+										AutoloadAttachmentsSetting.always: Text('Always'),
+										AutoloadAttachmentsSetting.wifi: Text('When on Wi-Fi'),
+										AutoloadAttachmentsSetting.never: Text('Never')
 									},
 									groupValue: settings.autoloadAttachmentsSetting,
 									onValueChanged: (newValue) {
 										settings.autoloadAttachmentsSetting = newValue;
 									}
 								),
-								Container(
+								const Padding(
 									padding: EdgeInsets.all(16),
 									child: Text('Darker dark theme (for OLED)'),
 								),
 								CupertinoSegmentedControl<bool>(
-									children: {
+									children: const {
 										false: Text('No'),
 										true: Text('Yes')
 									},
@@ -138,12 +142,12 @@ class SettingsPage extends StatelessWidget {
 										settings.darkThemeIsPureBlack = newValue;
 									}
 								),
-								Container(
+								const Padding(
 									padding: EdgeInsets.all(16),
 									child: Text('Hide old stickied threads'),
 								),
 								CupertinoSegmentedControl<bool>(
-									children: {
+									children: const {
 										false: Text('No'),
 										true: Text('Yes')
 									},
@@ -152,12 +156,12 @@ class SettingsPage extends StatelessWidget {
 										settings.hideOldStickiedThreads = newValue;
 									}
 								),
-								Container(
+								const Padding(
 									padding: EdgeInsets.all(16),
 									child: Text('Number of columns in catalog'),
 								),
 								CupertinoSegmentedControl<int>(
-									children: {
+									children: const {
 										1: Text('Rows'),
 										2: Text('2'),
 										3: Text('3'),
@@ -168,18 +172,18 @@ class SettingsPage extends StatelessWidget {
 										settings.boardCatalogColumns = newValue;
 									}
 								),
-								Container(
+								const Padding(
 									padding: EdgeInsets.only(top: 16, left: 16),
 									child: Text('Cached media')
 								),
-								SettingsCachePanel(),
-								Container(
+								const SettingsCachePanel(),
+								const Padding(
 									padding: EdgeInsets.only(top: 16, left: 16),
 									child: Text('Cached threads and history')
 								),
-								SettingsThreadsPanel(),
+								const SettingsThreadsPanel(),
 								CupertinoButton(
-									child: Text('Clear API cookies'),
+									child: const Text('Clear API cookies'),
 									onPressed: () {
 										Persistence.cookies.deleteAll();
 									}
@@ -194,10 +198,15 @@ class SettingsPage extends StatelessWidget {
 }
 
 class SettingsCachePanel extends StatefulWidget {
+	const SettingsCachePanel({
+		Key? key
+	}) : super(key: key);
+
+	@override
 	createState() => _SettingsCachePanelState();
 }
 
-const _KNOWN_CACHE_DIRS = {
+const _knownCacheDirs = {
 	cacheImageFolderName: 'Images',
 	'webmcache': 'Converted WEBM files',
 	'sharecache': 'Media exported for sharing',
@@ -217,7 +226,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 	Future<void> _readFilesystemInfo() async {
 		folderSizes = {};
 		final systemTempDirectory = Persistence.temporaryDirectory;
-		for (final dirName in _KNOWN_CACHE_DIRS.keys) {
+		for (final dirName in _knownCacheDirs.keys) {
 			final directory = Directory(systemTempDirectory.path + '/' + dirName);
 			if (await directory.exists()) {
 				int size = 0;
@@ -236,7 +245,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 		});
 		await clearDiskCachedImages();
 		final systemTempDirectory = Persistence.temporaryDirectory;
-		for (final dirName in _KNOWN_CACHE_DIRS.keys) {
+		for (final dirName in _knownCacheDirs.keys) {
 			final directory = Directory(systemTempDirectory.path + '/' + dirName);
 			if (await directory.exists()) {
 				await directory.delete(recursive: true);
@@ -252,36 +261,36 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 	Widget build(BuildContext context) {
 		return Container(
 			decoration: BoxDecoration(
-				borderRadius: BorderRadius.all(Radius.circular(8)),
+				borderRadius: const BorderRadius.all(Radius.circular(8)),
 				color: CupertinoTheme.of(context).primaryColor.withOpacity(0.2)
 			),
-			margin: EdgeInsets.all(16),
-			padding: EdgeInsets.all(16),
+			margin: const EdgeInsets.all(16),
+			padding: const EdgeInsets.all(16),
 			child: Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					if (folderSizes?.isEmpty ?? true) Text('No cached media'),
+					if (folderSizes?.isEmpty ?? true) const Text('No cached media'),
 					Table(
 						children: (folderSizes ?? {}).entries.map((entry) {
 							double megabytes = entry.value / 1000000;
 							return TableRow(
 								children: [
 									Padding(
-										padding: EdgeInsets.only(bottom: 8),
-										child: Text(_KNOWN_CACHE_DIRS[entry.key]!, textAlign: TextAlign.left)
+										padding: const EdgeInsets.only(bottom: 8),
+										child: Text(_knownCacheDirs[entry.key]!, textAlign: TextAlign.left)
 									),
 									Text(megabytes.toStringAsFixed(1) + ' MB', textAlign: TextAlign.right)
 								]
 							);
 						}).toList()
 					),
-					SizedBox(height: 8),
+					const SizedBox(height: 8),
 					Row(
 						mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 						children: [
 							CupertinoButton(
 								padding: EdgeInsets.zero,
-								child: Text('Recalculate'),
+								child: const Text('Recalculate'),
 								onPressed: _readFilesystemInfo
 							),
 							CupertinoButton(
@@ -298,6 +307,10 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 }
 
 class SettingsThreadsPanel extends StatelessWidget {
+	const SettingsThreadsPanel({
+		Key? key
+	}) : super(key: key);
+
 	@override
 	Widget build(BuildContext context) {
 		return ValueListenableBuilder(
@@ -311,7 +324,7 @@ class SettingsThreadsPanel extends StatelessWidget {
 					return Tuple2(days, oldThreads);
 				}).toList();
 				oldThreadRows.removeRange(oldThreadRows.lastIndexWhere((r) => r.item2.isNotEmpty) + 1, oldThreadRows.length);
-				final confirmDelete = (List<PersistentThreadState> toDelete) async {
+				confirmDelete(List<PersistentThreadState> toDelete) async {
 					final confirmed = await showCupertinoDialog<bool>(
 						context: context,
 						builder: (_context) => CupertinoAlertDialog(
@@ -339,24 +352,24 @@ class SettingsThreadsPanel extends StatelessWidget {
 							thread.delete();
 						}
 					}
-				};
+				}
 				return Container(
 					decoration: BoxDecoration(
-						borderRadius: BorderRadius.all(Radius.circular(8)),
+						borderRadius: const BorderRadius.all(Radius.circular(8)),
 						color: CupertinoTheme.of(context).primaryColor.withOpacity(0.2)
 					),
-					margin: EdgeInsets.all(16),
-					padding: EdgeInsets.only(left: 16, top: 8, bottom: 8),
+					margin: const EdgeInsets.all(16),
+					padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
 					child: Table(
 						defaultVerticalAlignment: TableCellVerticalAlignment.middle,
 						children: [
 							TableRow(
 								children: [
-									Text('Saved threads', textAlign: TextAlign.left),
+									const Text('Saved threads', textAlign: TextAlign.left),
 									Text(threadStateBox.values.where((t) => t.savedTime != null).length.toString(), textAlign: TextAlign.right),
-									CupertinoButton(
+									const CupertinoButton(
 										padding: EdgeInsets.zero,
-										child: const Text('Delete'),
+										child: Text('Delete'),
 										onPressed: null
 									)
 								]

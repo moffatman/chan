@@ -43,8 +43,9 @@ class PostRow extends StatelessWidget {
 		this.showCrossThreadLabel = true,
 		this.allowTappingLinks = true,
 		this.shrinkWrap = false,
-		this.isSelected = false
-	});
+		this.isSelected = false,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
@@ -56,7 +57,7 @@ class PostRow extends StatelessWidget {
 				final zone = context.watch<PostSpanZoneData>();
 				final settings = context.watch<EffectiveSettings>();
 				final receipt = zone.threadState?.receipts.tryFirstWhere((r) => r.id == _post.id);
-				final openReplies = () {
+				openReplies() {
 					if (_post.replyIds.isNotEmpty) {
 						WeakNavigator.push(context, PostsPage(
 								postsIdsToShow: _post.replyIds,
@@ -65,11 +66,11 @@ class PostRow extends StatelessWidget {
 							)
 						);
 					}
-				};
-				final content = (double factor) => PostSpanZone(
+				}
+				content(double factor) => PostSpanZone(
 					postId: _post.id,
 					builder: (ctx) => Container(
-						padding: EdgeInsets.all(8),
+						padding: const EdgeInsets.all(8),
 						child: Stack(
 							fit: StackFit.passthrough,
 							children: [
@@ -84,7 +85,7 @@ class PostRow extends StatelessWidget {
 												// Placeholder to guarantee the stacked reply button is not on top of text
 												if (settings.useTouchLayout && _post.replyIds.isNotEmpty) TextSpan(
 													text: List.filled(_post.replyIds.length.toString().length + 3, '1').join(),
-													style: TextStyle(color: Colors.transparent)
+													style: const TextStyle(color: Colors.transparent)
 												)
 											]
 										),
@@ -103,15 +104,15 @@ class PostRow extends StatelessWidget {
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
 													children: [
-														Icon(
+														const Icon(
 															Icons.reply_rounded,
 															color: Colors.red,
 															size: 14
 														),
-														SizedBox(width: 4),
+														const SizedBox(width: 4),
 														Text(
 															_post.replyIds.length.toString(),
-															style: TextStyle(
+															style: const TextStyle(
 																color: Colors.red,
 																fontWeight: FontWeight.bold
 															)
@@ -127,10 +128,10 @@ class PostRow extends StatelessWidget {
 						)
 					)
 				);
-				final innerChild = (BuildContext context, double slideFactor) => GestureDetector(
+				innerChild(BuildContext context, double slideFactor) => GestureDetector(
 					onTap: onTap,
 					child: Container(
-						padding: EdgeInsets.all(8),
+						padding: const EdgeInsets.all(8),
 						decoration: BoxDecoration(
 							border: zone.stackIds.isNotEmpty ? Border.all(width: 0) : null,
 							color: isSelected ? ((CupertinoTheme.of(context).brightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
@@ -160,7 +161,7 @@ class PostRow extends StatelessWidget {
 														FlagSpan(_post.flag!),
 														TextSpan(
 															text: _post.flag!.name,
-															style: TextStyle(
+															style: const TextStyle(
 																fontStyle: FontStyle.italic
 															)
 														)
@@ -170,7 +171,7 @@ class PostRow extends StatelessWidget {
 													),
 													TextSpan(
 														text: _post.id.toString(),
-														style: TextStyle(color: Colors.grey),
+														style: const TextStyle(color: Colors.grey),
 														recognizer: TapGestureRecognizer()..onTap = () {
 															ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
 														}
@@ -186,15 +187,15 @@ class PostRow extends StatelessWidget {
 															addExpandingPosts: false
 														))),
 														..._post.replyIds.map((id) => WidgetSpan(
-															child: ExpandingPost(id),
+															child: ExpandingPost(id: id),
 														))
 													]
-												].expand((span) => [TextSpan(text: ' '), span]).skip(1).toList()
+												].expand((span) => [const TextSpan(text: ' '), span]).skip(1).toList()
 											)
 										)
 									)
 								),
-								SizedBox(height: 2),
+								const SizedBox(height: 2),
 								Flexible(
 									child: IntrinsicHeight(
 										child: Row(
@@ -217,7 +218,7 @@ class PostRow extends StatelessWidget {
 																		semanticParents: zone.stackIds
 																	)
 																),
-																if (_post.attachment?.type == AttachmentType.WEBM) SizedBox(
+																if (_post.attachment?.type == AttachmentType.webm) SizedBox(
 																	width: 75,
 																	height: 75,
 																	child: Center(
@@ -227,12 +228,12 @@ class PostRow extends StatelessWidget {
 																				alignment: Alignment.bottomRight,
 																				child: Container(
 																					decoration: BoxDecoration(
-																						borderRadius: BorderRadius.only(topLeft: Radius.circular(6)),
+																						borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
 																						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 																						border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
 																					),
-																					padding: EdgeInsets.all(1),
-																					child: Icon(Icons.play_arrow, size: 18)
+																					padding: const EdgeInsets.all(1),
+																					child: const Icon(Icons.play_arrow, size: 18)
 																				)
 																			)
 																		)
@@ -251,7 +252,7 @@ class PostRow extends StatelessWidget {
 														height: 75,
 														child: GestureDetector(
 															behavior: HitTestBehavior.opaque,
-															child: Icon(Icons.broken_image, size: 36),
+															child: const Icon(Icons.broken_image, size: 36),
 															onTap: onRequestArchive
 														)
 													)
@@ -273,26 +274,26 @@ class PostRow extends StatelessWidget {
 				final child = ContextMenu(
 					actions: [
 						if (zone.stackIds.isNotEmpty && zone.onNeedScrollToPost != null) ContextMenuAction(
-							child: Text('Scroll to post'),
+							child: const Text('Scroll to post'),
 							trailingIcon: Icons.subdirectory_arrow_right,
 							onPressed: () => zone.onNeedScrollToPost!(_post)
 						),
 						if (context.watch<Persistence>().getSavedPost(post) == null) ContextMenuAction(
-							child: Text('Save Post'),
+							child: const Text('Save Post'),
 							trailingIcon: Icons.bookmark_add,
 							onPressed: () {
 								context.read<Persistence>().savePost(_post, zone.thread);
 							}
 						)
 						else ContextMenuAction(
-							child: Text('Unsave Post'),
+							child: const Text('Unsave Post'),
 							trailingIcon: Icons.bookmark_remove,
 							onPressed: () {
 								context.read<Persistence>().getSavedPost(post)?.delete();
 							}
 						),
 						ContextMenuAction(
-							child: Text('Share link'),
+							child: const Text('Share link'),
 							trailingIcon: Icons.ios_share,
 							onPressed: () {
 								final offset = (context.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
@@ -301,14 +302,14 @@ class PostRow extends StatelessWidget {
 							}
 						),
 						ContextMenuAction(
-							child: Text('Report Post'),
+							child: const Text('Report Post'),
 							trailingIcon: Icons.report_rounded,
 							onPressed: () {
 								openBrowser(context, context.read<ImageboardSite>().getPostReportUrl(_post.board, _post.id));
 							}
 						),
 						if (receipt != null) ContextMenuAction(
-							child: Text('Delete Post'),
+							child: const Text('Delete Post'),
 							trailingIcon: Icons.delete,
 							onPressed: () {
 								try {
@@ -321,16 +322,16 @@ class PostRow extends StatelessWidget {
 						),
 						if (_post.attachment != null) ...[
 							ContextMenuAction(
-								child: Text('Archive'),
+								child: const Text('Archive'),
 								trailingIcon: Icons.image_search,
 								onPressed: () {
 									context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(
-										builder: (context) => SearchQueryPage(ImageboardArchiveSearchQuery(boards: [_post.board], md5: _post.attachment!.md5))
+										builder: (context) => SearchQueryPage(query: ImageboardArchiveSearchQuery(boards: [_post.board], md5: _post.attachment!.md5))
 									));
 								}
 							),
 							ContextMenuAction(
-								child: Text('Google'),
+								child: const Text('Google'),
 								trailingIcon: Icons.image_search,
 								onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
 									'image_url': _post.attachment!.url.toString(),
@@ -338,7 +339,7 @@ class PostRow extends StatelessWidget {
 								}))
 							),
 							ContextMenuAction(
-								child: Text('Yandex'),
+								child: const Text('Yandex'),
 								trailingIcon: Icons.image_search,
 								onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
 									'rpt': 'imageview',

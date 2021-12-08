@@ -6,11 +6,12 @@ class RxStreamBuilder<T> extends StatelessWidget {
 	final Stream<T> stream;
 	final AsyncWidgetBuilder<T> builder;
 	
-	RxStreamBuilder({
+	const RxStreamBuilder({
 		required this.stream,
 		required this.builder,
-		this.initialData
-	});
+		this.initialData,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {

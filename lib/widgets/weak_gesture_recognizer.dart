@@ -16,7 +16,7 @@ enum _DragState {
 }
 
 
-const _WEAK_SLOW_ACCEPT_TIME = Duration(milliseconds: 50);
+const _weakSlowAcceptTime = Duration(milliseconds: 50);
 abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 	WeakDragGestureRecognizer({
 		Object? debugOwner,
@@ -67,7 +67,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 
 	bool _hasSufficientDurationToAccept(PointerEvent event) {
 		if (_pointerDownTimes[event.pointer] != null) {
-			return _WEAK_SLOW_ACCEPT_TIME.compareTo(event.timeStamp - _pointerDownTimes[event.pointer]!).isNegative;
+			return _weakSlowAcceptTime.compareTo(event.timeStamp - _pointerDownTimes[event.pointer]!).isNegative;
 		}
 		return false;
 	}
@@ -81,8 +81,9 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 							onStart == null &&
 							onUpdate == null &&
 							onEnd == null &&
-							onCancel == null)
+							onCancel == null) {
 						return false;
+					}
 					break;
 				default:
 					return false;
@@ -147,8 +148,9 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
           untransformedDelta: movedLocally,
           untransformedEndPosition: event.localPosition,
         ).distance * (_getPrimaryValueFromOffset(movedLocally) ?? 1).sign;
-        if (_hasSufficientGlobalDistanceToAccept(event, gestureSettings?.touchSlop))
+        if (_hasSufficientGlobalDistanceToAccept(event, gestureSettings?.touchSlop)) {
           resolve(GestureDisposition.accepted);
+				}
       }
     }
     if (event is PointerUpEvent || event is PointerCancelEvent) {
@@ -232,8 +234,9 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 		stopTrackingPointer(pointer);
 		// If we never accepted the pointer, we reject it since we are no longer
 		// interested in winning the gesture arena for it.
-		if (!_acceptedActivePointers.remove(pointer))
+		if (!_acceptedActivePointers.remove(pointer)) {
 			resolvePointer(pointer, GestureDisposition.rejected);
+		}
 	}
 
 	void _checkDown() {
@@ -282,8 +285,9 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 
 	void _checkEnd(int pointer) {
 		assert(_initialButtons == kPrimaryButton);
-		if (onEnd == null)
+		if (onEnd == null) {
 			return;
+		}
 
 		final VelocityTracker tracker = _velocityTrackers[pointer]!;
 
@@ -307,8 +311,9 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 				primaryVelocity: 0.0,
 			);
 			debugReport = () {
-				if (estimate == null)
+				if (estimate == null) {
 					return 'Could not estimate velocity.';
+				}
 				return '$estimate; judged to not be a fling.';
 			};
 		}
@@ -317,8 +322,9 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 
 	void _checkCancel() {
 		assert(_initialButtons == kPrimaryButton);
-		if (onCancel != null)
+		if (onCancel != null) {
 			invokeCallback<void>('onCancel', onCancel!);
+		}
 	}
 
 	@override

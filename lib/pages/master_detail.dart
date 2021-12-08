@@ -8,8 +8,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:provider/provider.dart';
 
-final fullWidthCupertinoPageRouteBuilder = (WidgetBuilder builder) => FullWidthCupertinoPageRoute(builder: builder);
-final transparentPageRouteBuilder = (WidgetBuilder builder) => TransparentRoute(builder: builder);
+PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder) => FullWidthCupertinoPageRoute(builder: builder);
+PageRoute transparentPageRouteBuilder(WidgetBuilder builder) => TransparentRoute(builder: builder);
 
 class BuiltDetailPane {
 	final Widget widget;
@@ -30,14 +30,15 @@ class MasterDetailPage<T> extends StatelessWidget {
 	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
 	final T? initialValue;
 	final ValueChanged<T?>? onValueChanged;
-	MasterDetailPage({
+	const MasterDetailPage({
 		required this.id,
 		required this.masterBuilder,
 		required this.detailBuilder,
 		this.twoPaneBreakpoint,
 		this.initialValue,
-		this.onValueChanged
-	});
+		this.onValueChanged,
+		Key? key
+	}) : super(key: key);
 	@override
 	Widget build(BuildContext context) {
 		return MultiMasterDetailPage(
@@ -98,11 +99,12 @@ class MultiMasterDetailPage extends StatefulWidget {
 	final List<MultiMasterPane> panes;
 	final bool showChrome;
 
-	MultiMasterDetailPage({
+	const MultiMasterDetailPage({
 		required this.panes,
 		this.twoPaneBreakpoint = 700,
-		this.showChrome = true
-	});
+		this.showChrome = true,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	createState() => _MultiMasterDetailPageState();
@@ -181,7 +183,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 							builder: (context) {
 								Widget child = TabBarView(
 									controller: _tabController,
-									physics: widget.panes.length > 1 ? AlwaysScrollableScrollPhysics() : NeverScrollableScrollPhysics(),
+									physics: widget.panes.length > 1 ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
 									children: widget.panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)).toList()
 								);
 								if (widget.showChrome) {

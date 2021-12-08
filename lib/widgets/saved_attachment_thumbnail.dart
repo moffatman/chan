@@ -7,11 +7,12 @@ class SavedAttachmentThumbnail extends StatefulWidget {
 	final File file;
 	final BoxFit? fit;
 	final double? fontSize;
-	SavedAttachmentThumbnail({
+	const SavedAttachmentThumbnail({
 		required this.file,
 		this.fit,
-		this.fontSize
-	});
+		this.fontSize,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	createState() => _SavedAttachmentThumbnailState();
@@ -71,11 +72,11 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 						if (label != null) Align(
 							alignment: Alignment.bottomRight,
 							child: Container(
-								decoration: BoxDecoration(
+								decoration: const BoxDecoration(
 									borderRadius: BorderRadius.only(topLeft: Radius.circular(4)),
 									color: Colors.black54
 								),
-								padding: EdgeInsets.only(left: 4, top: 4, right: 2, bottom: 2),
+								padding: const EdgeInsets.only(left: 4, top: 4, right: 2, bottom: 2),
 								child: label
 							)
 						)

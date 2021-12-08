@@ -55,9 +55,9 @@ class ImageboardArchiveException implements Exception {
 }
 
 enum ImageboardAction {
-	PostThread,
-	PostReply,
-	PostReplyWithImage
+	postThread,
+	postReply,
+	postReplyWithImage
 }
 
 class CaptchaRequest {
@@ -138,7 +138,7 @@ abstract class ImageboardSiteArchive {
 	Future<List<Thread>> getCatalog(String board);
 	Future<List<ImageboardBoard>> getBoards();
 	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page});
-	String getWebUrl(String board, [int? thread, int? postId]);
+	String getWebUrl(String board, [int? threadId, int? postId]);
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {

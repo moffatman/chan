@@ -8,7 +8,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:provider/provider.dart';
 
 class AttachmentSemanticLocation {
-	String _tag;
+	final String _tag;
 	AttachmentSemanticLocation({
 		required Iterable<int> semanticParents,
 		required Attachment attachment
@@ -42,7 +42,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final ValueChanged<Object?>? onLoadError;
 	final bool gaplessPlayback;
 
-	AttachmentThumbnail({
+	const AttachmentThumbnail({
 		required this.attachment,
 		this.thread,
 		this.width = 75,
@@ -51,8 +51,9 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.hero,
 		this.quarterTurns = 0,
 		this.onLoadError,
-		this.gaplessPlayback = false
-	});
+		this.gaplessPlayback = false,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
@@ -74,7 +75,7 @@ class AttachmentThumbnail extends StatelessWidget {
 					return SizedBox(
 						width: width,
 						height: height,
-						child: Center(
+						child: const Center(
 							child: CupertinoActivityIndicator()
 						)
 					);
@@ -84,7 +85,7 @@ class AttachmentThumbnail extends StatelessWidget {
 					return SizedBox(
 						width: width,
 						height: height,
-						child: Center(
+						child: const Center(
 							child: Icon(Icons.error)
 						)
 					);

@@ -10,6 +10,11 @@ import 'package:provider/provider.dart';
 import 'board_switcher.dart';
 
 class SearchPage extends StatefulWidget {
+	const SearchPage({
+		Key? key
+	}) : super(key: key);
+
+	@override
 	createState() => _SearchPageState();
 }
 
@@ -46,7 +51,7 @@ class _SearchPageState extends State<SearchPage> {
 				child: Column(
 					mainAxisSize: MainAxisSize.min,
 					children: [
-						Container(
+						SizedBox(
 							height: 300,
 							child: CupertinoDatePicker(
 								mode: CupertinoDatePickerMode.date,
@@ -60,15 +65,15 @@ class _SearchPageState extends State<SearchPage> {
 							mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 							children: [
 								CupertinoButton(
-									child: Text('Cancel'),
+									child: const Text('Cancel'),
 									onPressed: () => Navigator.of(context).pop()
 								),
 								CupertinoButton(
-									child: Text('Clear Date'),
+									child: const Text('Clear Date'),
 									onPressed: () => Navigator.of(context).pop(_clearedDate)
 								),
 								CupertinoButton(
-									child: Text('Done'),
+									child: const Text('Done'),
 									onPressed: () => Navigator.of(context).pop(_chosenDate)
 								)
 							]
@@ -98,19 +103,19 @@ class _SearchPageState extends State<SearchPage> {
 						Row(
 							children: [
 								Container(
-									padding: EdgeInsets.only(top: 4, bottom: 4),
+									padding: const EdgeInsets.only(top: 4, bottom: 4),
 									child: CupertinoButton(
 										color: CupertinoTheme.of(context).primaryColor.withOpacity(0.3),
 										alignment: Alignment.centerLeft,
-										padding: EdgeInsets.only(left: 10, right: 20),
-										child: Text('/${query.boards.first}/', style: TextStyle(
+										padding: const EdgeInsets.only(left: 10, right: 20),
+										child: Text('/${query.boards.first}/', style: const TextStyle(
 											color: Colors.white
 										)),
 										onPressed: () async {
-											final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => BoardSwitcherPage()));
+											final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => const BoardSwitcherPage()));
 											if (newBoard != null) {
 												setState(() {
-													this.query.boards = [newBoard.name];
+													query.boards = [newBoard.name];
 												});
 											}
 										}
@@ -126,8 +131,8 @@ class _SearchPageState extends State<SearchPage> {
 									maintainAnimation: true,
 									visible: false,
 									child: Container(
-										padding: EdgeInsets.only(left: 10, right: 5),
-										child: Text('/${query.boards.first}/', style: TextStyle(
+										padding: const EdgeInsets.only(left: 10, right: 5),
+										child: Text('/${query.boards.first}/', style: const TextStyle(
 											color: Colors.black,
 											fontWeight: FontWeight.bold
 										))
@@ -135,13 +140,13 @@ class _SearchPageState extends State<SearchPage> {
 								),
 								Expanded(
 									child: Container(
-										margin: EdgeInsets.only(top: 4, bottom: 4),
+										margin: const EdgeInsets.only(top: 4, bottom: 4),
 										child: Stack(
 											fit: StackFit.expand,
 											children: [
 												Container(
 													decoration: BoxDecoration(
-														borderRadius: BorderRadius.all(Radius.circular(9)),
+														borderRadius: const BorderRadius.all(Radius.circular(9)),
 														color: CupertinoTheme.of(context).barBackgroundColor
 													),
 												),
@@ -155,7 +160,7 @@ class _SearchPageState extends State<SearchPage> {
 														context.read<Persistence>().recentSearches.add(query.clone());
 														context.read<Persistence>().recentSearches.save();
 														Navigator.of(context).push(FullWidthCupertinoPageRoute(
-															builder: (context) => SearchQueryPage(query)
+															builder: (context) => SearchQueryPage(query: query)
 														));
 													},
 													onSuffixTap: () {
@@ -172,8 +177,8 @@ class _SearchPageState extends State<SearchPage> {
 									)
 								),
 								if (_searchFocused) CupertinoButton(
-									padding: EdgeInsets.only(left: 8),
-									child: Text('Cancel'),
+									padding: const EdgeInsets.only(left: 8),
+									child: const Text('Cancel'),
 									onPressed: () {
 										FocusManager.instance.primaryFocus!.unfocus();
 										_controller.clear();
@@ -189,14 +194,14 @@ class _SearchPageState extends State<SearchPage> {
 			child: AnimatedSwitcher(
 				duration: const Duration(milliseconds: 300),
 				child: _searchFocused ? ListView(
-					key: ValueKey(true),
+					key: const ValueKey(true),
 					children: [
-						SizedBox(height: 16),
+						const SizedBox(height: 16),
 						CupertinoSegmentedControl<PostTypeFilter>(
-							children: {
-								PostTypeFilter.None: Text('All posts'),
-								PostTypeFilter.OnlyOPs: Text('Threads'),
-								PostTypeFilter.OnlyReplies: Text('Replies')
+							children: const {
+								PostTypeFilter.none: Text('All posts'),
+								PostTypeFilter.onlyOPs: Text('Threads'),
+								PostTypeFilter.onlyReplies: Text('Replies')
 							},
 							groupValue: query.postTypeFilter,
 							onValueChanged: (newValue) {
@@ -204,12 +209,12 @@ class _SearchPageState extends State<SearchPage> {
 								setState(() {});
 							}
 						),
-						SizedBox(height: 16),
+						const SizedBox(height: 16),
 						CupertinoSegmentedControl<MediaFilter>(
-							children: {
-								MediaFilter.None: Text('All posts'),
-								MediaFilter.OnlyWithMedia: Text('With images'),
-								MediaFilter.OnlyWithNoMedia: Text('Without images'),
+							children: const {
+								MediaFilter.none: Text('All posts'),
+								MediaFilter.onlyWithMedia: Text('With images'),
+								MediaFilter.onlyWithNoMedia: Text('Without images'),
 							},
 							groupValue: query.mediaFilter,
 							onValueChanged: (newValue) {
@@ -217,12 +222,12 @@ class _SearchPageState extends State<SearchPage> {
 								setState(() {});
 							}
 						),
-						SizedBox(height: 16),
+						const SizedBox(height: 16),
 						Row(
 							children: [
 								Expanded(
 									child: Container(
-										padding: EdgeInsets.only(left: 16, right: 8),
+										padding: const EdgeInsets.only(left: 16, right: 8),
 										child: CupertinoButton(
 											padding: EdgeInsets.zero,
 											color: CupertinoTheme.of(context).primaryColor.withOpacity((query.startDate == null) ? 0.5 : 1),
@@ -240,7 +245,7 @@ class _SearchPageState extends State<SearchPage> {
 								),
 								Expanded(
 									child: Container(
-										padding: EdgeInsets.only(left: 8, right: 16),
+										padding: const EdgeInsets.only(left: 8, right: 16),
 										child: CupertinoButton(
 											padding: EdgeInsets.zero,
 											color: CupertinoTheme.of(context).primaryColor.withOpacity((query.endDate == null) ? 0.5 : 1),
@@ -260,7 +265,7 @@ class _SearchPageState extends State<SearchPage> {
 						)
 					]
 				) : ListView(
-					key: ValueKey(false),
+					key: const ValueKey(false),
 					children: context.watch<Persistence>().recentSearches.entries.map((q) {
 						return GestureDetector(
 							behavior: HitTestBehavior.opaque,
@@ -268,14 +273,14 @@ class _SearchPageState extends State<SearchPage> {
 								context.read<Persistence>().recentSearches.bump(q);
 								context.read<Persistence>().recentSearches.save();
 								Navigator.of(context).push(FullWidthCupertinoPageRoute(
-									builder: (context) => SearchQueryPage(q)
+									builder: (context) => SearchQueryPage(query: q)
 								));
 							},
 							child: Container(
 								decoration: BoxDecoration(
 									border: Border(bottom: BorderSide(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)))
 								),
-								padding: EdgeInsets.all(16),
+								padding: const EdgeInsets.all(16),
 								child: Row(
 									children: [
 										Expanded(
@@ -287,7 +292,7 @@ class _SearchPageState extends State<SearchPage> {
 										),
 										CupertinoButton(
 											padding: EdgeInsets.zero,
-											child: Icon(Icons.close),
+											child: const Icon(Icons.close),
 											onPressed: () {
 												context.read<Persistence>().recentSearches.remove(q);
 												context.read<Persistence>().recentSearches.save();
@@ -311,29 +316,29 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 			(board) => _SearchQueryFilterTag('/$board/')
 		),
 		Text(q.query),
-		if (q.mediaFilter == MediaFilter.OnlyWithMedia) _SearchQueryFilterTag('With images'),
-		if (q.mediaFilter == MediaFilter.OnlyWithNoMedia) _SearchQueryFilterTag('Without images'),
-		if (q.postTypeFilter == PostTypeFilter.OnlyOPs) _SearchQueryFilterTag('Threads'),
-		if (q.postTypeFilter == PostTypeFilter.OnlyReplies) _SearchQueryFilterTag('Replies'),
+		if (q.mediaFilter == MediaFilter.onlyWithMedia) const _SearchQueryFilterTag('With images'),
+		if (q.mediaFilter == MediaFilter.onlyWithNoMedia) const _SearchQueryFilterTag('Without images'),
+		if (q.postTypeFilter == PostTypeFilter.onlyOPs) const _SearchQueryFilterTag('Threads'),
+		if (q.postTypeFilter == PostTypeFilter.onlyReplies) const _SearchQueryFilterTag('Replies'),
 		if (q.startDate != null) _SearchQueryFilterTag('After ${q.startDate!.year}-${q.startDate!.month.toString().padLeft(2, '0')}-${q.startDate!.day.toString().padLeft(2, '0')}'),
 		if (q.endDate != null) _SearchQueryFilterTag('Before ${q.endDate!.year}-${q.endDate!.month.toString().padLeft(2, '0')}-${q.endDate!.day.toString().padLeft(2, '0')}'),
-		if (q.md5 != null) Icon(Icons.image)
+		if (q.md5 != null) const Icon(Icons.image)
 	];
 }
 
 class _SearchQueryFilterTag extends StatelessWidget {
 	final String filterDescription;
-	_SearchQueryFilterTag(this.filterDescription);
+	const _SearchQueryFilterTag(this.filterDescription);
 	@override
 	Widget build(BuildContext context) {
 		return Container(
-			margin: EdgeInsets.only(left: 4, right: 4),
-			padding: EdgeInsets.all(4),
+			margin: const EdgeInsets.only(left: 4, right: 4),
+			padding: const EdgeInsets.all(4),
 			decoration: BoxDecoration(
 				color: CupertinoTheme.of(context).primaryColor.withOpacity(0.3),
-				borderRadius: BorderRadius.all(Radius.circular(4))
+				borderRadius: const BorderRadius.all(Radius.circular(4))
 			),
-			child: Text(this.filterDescription)
+			child: Text(filterDescription)
 		);
 	}
 }

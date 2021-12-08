@@ -11,12 +11,13 @@ class OverscrollModalPage extends StatefulWidget {
 	final Color backgroundColor;
 	final Widget? background;
 
-	OverscrollModalPage({
+	const OverscrollModalPage({
 		required this.child,
 		this.background,
 		this.heightEstimate = 0,
-		this.backgroundColor = Colors.black38
-	});
+		this.backgroundColor = Colors.black38,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	createState() => _OverscrollModalPageState();
@@ -163,7 +164,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 								autofocus: true,
 								child: CustomScrollView(
 									controller: _controller,
-									physics: AlwaysScrollableScrollPhysics(),
+									physics: const AlwaysScrollableScrollPhysics(),
 									slivers: [
 										SliverToBoxAdapter(
 											child: ConstrainedBox(

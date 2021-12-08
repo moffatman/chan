@@ -14,7 +14,7 @@ abstract class Filterable {
 	List<String> getSearchableText();
 }
 
-const double _OVERSCROLL_TRIGGER_THRESHOLD = 100;
+const double _overscrollTriggerThreshold = 100;
 
 class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
@@ -30,7 +30,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Widget? footer;
 	final int gridColumns;
 
-	RefreshableList({
+	const RefreshableList({
 		required this.itemBuilder,
 		required this.listUpdater,
 		required this.id,
@@ -42,9 +42,11 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.initialList,
 		this.disableUpdates = false,
 		this.gridColumns = 1,
-		this.footer
-	});
+		this.footer,
+		Key? key
+	}) : super(key: key);
 
+	@override
 	createState() => RefreshableListState<T>();
 }
 
@@ -90,8 +92,8 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	void didUpdateWidget(RefreshableList<T> oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		if (oldWidget.id != widget.id) {
-			this.autoUpdateTimer?.cancel();
-			this.autoUpdateTimer = null;
+			autoUpdateTimer?.cancel();
+			autoUpdateTimer = null;
 			widget.controller?.newContentId(widget.id);
 			_scrollViewKey = PageStorageKey(widget.id);
 			_closeSearch();
@@ -99,16 +101,16 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				if (widget.initialList != null) {
 					widget.controller?.setItems(widget.initialList!);
 				}
-				this.list = widget.initialList;
-				this.errorMessage = null;
-				this.errorType = null;
-				this.lastUpdateTime = null;
+				list = widget.initialList;
+				errorMessage = null;
+				errorType = null;
+				lastUpdateTime = null;
 			});
 			update();
 		}
 		else if (oldWidget.disableUpdates != widget.disableUpdates) {
-			this.autoUpdateTimer?.cancel();
-			this.autoUpdateTimer = null;
+			autoUpdateTimer?.cancel();
+			autoUpdateTimer = null;
 			if (!widget.disableUpdates) {
 				update();
 				resetTimer();
@@ -126,14 +128,14 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	@override
 	void dispose() {
 		super.dispose();
-		this.autoUpdateTimer?.cancel();
+		autoUpdateTimer?.cancel();
 	}
 
 	void resetTimer() {
-		this.autoUpdateTimer?.cancel();
+		autoUpdateTimer?.cancel();
 		if (widget.autoUpdateDuration != null) {
-			this.autoUpdateTimer = Timer(widget.autoUpdateDuration!, update);
-			this.nextUpdateTime = DateTime.now().add(widget.autoUpdateDuration!);
+			autoUpdateTimer = Timer(widget.autoUpdateDuration!, update);
+			nextUpdateTime = DateTime.now().add(widget.autoUpdateDuration!);
 		}
 	}
 
@@ -141,36 +143,36 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		_searchFocusNode.unfocus();
 		_searchController.clear();
 		setState(() {
-			this._filter = '';
+			_filter = '';
 		});
 	}
 
 	Future<void> update() async {
 		try {
 			setState(() {
-				this.errorMessage = null;
-				this.errorType = null;
-				this.updatingNow = true;
+				errorMessage = null;
+				errorType = null;
+				updatingNow = true;
 			});
 			final newData = await widget.listUpdater();
 			resetTimer();
 			if (newData != null) {
 				widget.controller?.setItems(newData);
 				setState(() {
-					this.errorMessage = null;
-					this.errorType = null;
-					this.updatingNow = false;
-					this.list = newData;
-					this.lastUpdateTime = DateTime.now();
+					errorMessage = null;
+					errorType = null;
+					updatingNow = false;
+					list = newData;
+					lastUpdateTime = DateTime.now();
 				});
 			}
 		}
 		catch (e, st) {
 			if (mounted) {
 				setState(() {
-					this.errorMessage = e.toString();
-					this.errorType = e.runtimeType;
-					this.updatingNow = false;
+					errorMessage = e.toString();
+					errorType = e.runtimeType;
+					updatingNow = false;
 				});
 				if (widget.remedies[errorType] == null) {
 					print('Error refreshing list: $e');
@@ -203,7 +205,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 					final bool isScrollEnd = (notification is ScrollEndNotification) || (notification is ScrollUpdateNotification && notification.dragDetails == null);
 					if (widget.controller != null && isScrollEnd) {
 						double overscroll = widget.controller!.scrollController!.position.pixels - widget.controller!.scrollController!.position.maxScrollExtent;
-						if (overscroll > _OVERSCROLL_TRIGGER_THRESHOLD && !widget.disableUpdates) {
+						if (overscroll > _overscrollTriggerThreshold && !widget.disableUpdates) {
 							update();
 						}
 					}
@@ -228,7 +230,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 					child: CustomScrollView(
 						key: _scrollViewKey,
 						controller: widget.controller?.scrollController,
-						physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+						physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
 						slivers: [
 							SliverSafeArea(
 								sliver: widget.disableUpdates ? SliverToBoxAdapter(
@@ -242,16 +244,16 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 							SliverToBoxAdapter(
 								child: Container(
 									height: kMinInteractiveDimensionCupertino,
-									padding: EdgeInsets.all(4),
+									padding: const EdgeInsets.all(4),
 									child: Row(
 										mainAxisSize: MainAxisSize.min,
 										children: [
 											Expanded(
-												child: Container(
+												child: Center(
 													child: CupertinoSearchTextField(
 														onChanged: (searchText) {
 															setState(() {
-																this._filter = searchText.toLowerCase();
+																_filter = searchText.toLowerCase();
 															});
 														},
 														controller: _searchController,
@@ -261,15 +263,15 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 												)
 											),
 											if (_searchFocused) CupertinoButton(
-												padding: EdgeInsets.only(left: 8),
-												child: Text('Cancel'),
+												padding: const EdgeInsets.only(left: 8),
+												child: const Text('Cancel'),
 												onPressed: _closeSearch
 											)
 										]
 									)
 								)
 							),
-							if (values.length > 0)
+							if (values.isNotEmpty)
 								SliverList(
 									key: PageStorageKey('list for ${widget.id}'),
 									delegate: SliverChildBuilderDelegate(
@@ -309,10 +311,10 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 										childCount: widget.gridColumns > 1 ? (values.length / widget.gridColumns).ceil() : values.length * 2
 									)
 								),
-							if (values.length == 0)
+							if (values.isEmpty)
 								if (_filter.isNotEmpty)
-									SliverToBoxAdapter(
-										child: Container(
+									const SliverToBoxAdapter(
+										child: SizedBox(
 											height: 100,
 											child: Center(
 												child: Text('No results')
@@ -360,7 +362,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 					children: [
 						ErrorMessageCard(errorMessage.toString()),
 						CupertinoButton(
-							child: Text('Retry'),
+							child: const Text('Retry'),
 							onPressed: update
 						),
 						if (widget.remedies[errorType] != null) widget.remedies[errorType]!(context, update)
@@ -369,7 +371,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			);
 		}
 		else {
-			return Center(
+			return const Center(
 				child: CupertinoActivityIndicator()
 			);
 		}
@@ -384,15 +386,16 @@ class RefreshableListFooter extends StatelessWidget {
 	final DateTime? nextUpdateTime;
 	final Widget? remedy;
 	final ValueListenable<double>? overscrollFactor;
-	RefreshableListFooter({
+	const RefreshableListFooter({
 		required this.updater,
 		required this.updatingNow,
 		this.lastUpdateTime,
 		this.nextUpdateTime,
 		this.errorMessage,
 		this.remedy,
-		this.overscrollFactor
-	});
+		this.overscrollFactor,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
@@ -401,7 +404,7 @@ class RefreshableListFooter extends StatelessWidget {
 			onTap: updatingNow ? null : updater,
 			child: Container(
 				color: errorMessage != null ? Colors.orange.withOpacity(0.5) : null,
-				padding: EdgeInsets.all(16),
+				padding: const EdgeInsets.all(16),
 				child: Center(
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
@@ -411,16 +414,16 @@ class RefreshableListFooter extends StatelessWidget {
 								textAlign: TextAlign.center
 							),
 							if (!updatingNow && remedy != null) ...[
-								SizedBox(height: 16),
+								const SizedBox(height: 16),
 								remedy!
 							],
 							if (overscrollFactor != null) Container(
-								padding: EdgeInsets.only(top: 16),
-								constraints: BoxConstraints(
+								padding: const EdgeInsets.only(top: 16),
+								constraints: const BoxConstraints(
 									maxWidth: 100
 								),
 								child: ClipRRect(
-									borderRadius: BorderRadius.all(Radius.circular(8)),
+									borderRadius: const BorderRadius.all(Radius.circular(8)),
 									child: Stack(
 										children: [
 											if (nextUpdateTime != null && lastUpdateTime != null) TimedRebuilder(
@@ -452,7 +455,7 @@ class RefreshableListFooter extends StatelessWidget {
 									)
 								)
 							),
-							SizedBox(height: 4)
+							const SizedBox(height: 4)
 						]
 					)
 				)
@@ -481,9 +484,9 @@ class RefreshableListController<T extends Filterable> {
 	List<T> get items => _items.map((i) => i.item).toList();
 	ScrollController? scrollController;
 	final overscrollFactor = ValueNotifier<double>(0);
-	BehaviorSubject<Null> _scrollStream = BehaviorSubject();
-	BehaviorSubject<Null> slowScrollUpdates = BehaviorSubject();
-	late StreamSubscription<List<Null>> _slowScrollSubscription;
+	final BehaviorSubject<void> _scrollStream = BehaviorSubject();
+	final BehaviorSubject<void> slowScrollUpdates = BehaviorSubject();
+	late final StreamSubscription<List<void>> _slowScrollSubscription;
 	int currentIndex = 0;
 	double? topOffset;
 	double? bottomOffset;
@@ -502,7 +505,7 @@ class RefreshableListController<T extends Filterable> {
 			item.cachedOffset = _getOffset(object);
 		}
 	}
-	void _onSlowScroll(Null update) {
+	void _onSlowScroll(void update) {
 		for (final item in _items) {
 			if (item.cachedOffset == null) {
 				_tryCachingItem(item);
@@ -518,10 +521,10 @@ class RefreshableListController<T extends Filterable> {
 			}
 		}
 	}
-	void _onScroll(List<Null> notifications) {
+	void _onScroll(List<void> notifications) {
 		if ((scrollController?.hasClients ?? false)) {
 			final overscrollAmount = scrollController!.position.pixels - scrollController!.position.maxScrollExtent;
-			overscrollFactor.value = (overscrollAmount / _OVERSCROLL_TRIGGER_THRESHOLD).clamp(0, 1);
+			overscrollFactor.value = (overscrollAmount / _overscrollTriggerThreshold).clamp(0, 1);
 		}
 		slowScrollUpdates.add(null);
 	}
@@ -553,9 +556,9 @@ class RefreshableListController<T extends Filterable> {
 	void registerItem(int index, T item, BuildContext context) {
 		topOffset ??= MediaQuery.of(context).padding.top;
 		bottomOffset ??= MediaQuery.of(context).padding.bottom;
-		this._items[index].item = item;
-		this._items[index].context = context;
-		_tryCachingItem(this._items[index]);
+		_items[index].item = item;
+		_items[index].context = context;
+		_tryCachingItem(_items[index]);
 	}
 	double _getOffset(RenderObject object) {
 		return RenderAbstractViewport.of(object)!.getOffsetToReveal(object, 0.0).offset;
@@ -576,7 +579,7 @@ class RefreshableListController<T extends Filterable> {
 		}
 		return estimate!;
 	}
-	Future<void> animateTo(bool f(T val), {double alignment = 0.0, bool orElseLast(T val)?, Duration duration = const Duration(milliseconds: 200)}) async {
+	Future<void> animateTo(bool Function(T val) f, {double alignment = 0.0, bool Function(T val)? orElseLast, Duration duration = const Duration(milliseconds: 200)}) async {
 		_RefreshableListItem<T> targetItem = _items.firstWhere((i) => f(i.item), orElse: orElseLast == null ? null : () => _items.lastWhere((j) => orElseLast(j.item)));
 		Duration d = duration;
 		Curve c = Curves.ease;
@@ -585,7 +588,7 @@ class RefreshableListController<T extends Filterable> {
 			int targetIndex = _items.indexOf(targetItem);
 			DateTime scrollStartTime = DateTime.now();
 			c = Curves.easeIn;
-			while (DateTime.now().difference(scrollStartTime).compareTo(Duration(seconds: 5)).isNegative) {
+			while (DateTime.now().difference(scrollStartTime).compareTo(const Duration(seconds: 5)).isNegative) {
 				await SchedulerBinding.instance!.endOfFrame;
 				if (initialContentId != contentId) return;
 				await scrollController!.animateTo(

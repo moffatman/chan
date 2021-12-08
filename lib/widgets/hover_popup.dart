@@ -3,10 +3,13 @@ import 'package:flutter/widgets.dart';
 class HoverPopup extends StatefulWidget {
 	final Widget child;
 	final Widget popup;
-	HoverPopup({
+	const HoverPopup({
 		required this.child,
-		required this.popup
-	});
+		required this.popup,
+		Key? key
+	}) : super(key: key);
+	
+	@override
 	createState() => _HoverPopupState();
 }
 

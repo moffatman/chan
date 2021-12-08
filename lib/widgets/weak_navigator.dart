@@ -8,7 +8,7 @@ import 'package:tuple/tuple.dart';
 class WeakNavigator extends StatefulWidget {
   final Widget child;
 
-  WeakNavigator({
+  const WeakNavigator({
     required this.child,
     Key? key
   }) : super(key: key);
@@ -95,15 +95,11 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
     entry.item3.complete(result);
   }
 
-  void popAllExceptFirst({animated: false}) {
-    stack.forEach((x) async {
-      if (x.item1.mounted) {
-        if (animated) {
-          await x.item2.reverse(from: 1);
-        }
-        x.item1.remove();
-        x.item3.complete();
-      }
-    });
+  Future<void> popAllExceptFirst({bool animated = false}) async {
+    await Future.wait(stack.map((x) => x.item2.reverse(from: 1)));
+    for (final x in stack) {
+      x.item1.remove();
+      x.item3.complete();
+    }
   }
 }

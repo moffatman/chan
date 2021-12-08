@@ -24,7 +24,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:home_indicator/home_indicator.dart';
 
-const double _THUMBNAIL_SIZE = 60;
+const double _thumbnailSize = 60;
 
 class GalleryLeftIntent extends Intent {
 	const GalleryLeftIntent();
@@ -47,15 +47,16 @@ class GalleryPage extends StatefulWidget {
 	final Iterable<int> semanticParentIds;
 	final bool allowScroll;
 
-	GalleryPage({
+	const GalleryPage({
 		required this.attachments,
 		this.overrideSources = const {},
 		required this.initialAttachment,
 		required this.semanticParentIds,
 		this.initiallyShowChrome = false,
 		this.onChange,
-		this.allowScroll = true
-	});
+		this.allowScroll = true,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	createState() => _GalleryPageState();
@@ -72,26 +73,26 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	bool showingOverlays = true;
 	final Key _pageControllerKey = GlobalKey();
 	final Key _thumbnailsKey = GlobalKey();
-	final BehaviorSubject<Null> _scrollCoalescer = BehaviorSubject();
+	final BehaviorSubject<void> _scrollCoalescer = BehaviorSubject();
 	double? _lastpageControllerPixels;
 	bool _animatingNow = false;
 	final _shareButtonKey = GlobalKey();
 	final _slideStream = BehaviorSubject<void>();
 	bool _hideRotateButton = false;
-	final _rotationsInProgress = Set<Attachment>();
+	final Set<Attachment> _rotationsInProgress = {};
 	late final AnimationController _rotateButtonAnimationController;
 	final Map<Attachment, AttachmentViewerController> _controllers = {};
 
 	@override
 	void initState() {
 		super.initState();
-		_rotateButtonAnimationController = AnimationController(duration: Duration(milliseconds: 5000), vsync: this, upperBound: pi * 2);
+		_rotateButtonAnimationController = AnimationController(duration: const Duration(milliseconds: 5000), vsync: this, upperBound: pi * 2);
 		showChrome = widget.initiallyShowChrome;
 		_updateOverlays(showChrome);
 		currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
 		pageController = PageController(keepPage: true, initialPage: currentIndex);
 		pageController.addListener(_onPageControllerUpdate);
-		_scrollCoalescer.bufferTime(Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
+		_scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
 		_getController(widget.attachments[currentIndex]).loadFullAttachment();
 	}
 
@@ -99,8 +100,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	void didChangeDependencies() {
 		super.didChangeDependencies();
 		if (!firstControllerMade) {
-			final initialOffset = ((_THUMBNAIL_SIZE + 12) * (currentIndex + 0.5)) - (MediaQuery.of(context).size.width / 2);
-			final maxOffset = ((_THUMBNAIL_SIZE + 12) * widget.attachments.length) - MediaQuery.of(context).size.width;
+			final initialOffset = ((_thumbnailSize + 12) * (currentIndex + 0.5)) - (MediaQuery.of(context).size.width / 2);
+			final maxOffset = ((_thumbnailSize + 12) * widget.attachments.length) - MediaQuery.of(context).size.width;
 			if (maxOffset > 0) {
 				thumbnailScrollController = ScrollController(initialScrollOffset: initialOffset.clamp(0, maxOffset));
 			}
@@ -143,7 +144,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				await HomeIndicator.show();
 			}
 			on MissingPluginException {
-
+				// Might be incompatible platform
 			}
 			await showStatusBar();
 			showingOverlays = true;
@@ -153,7 +154,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				await HomeIndicator.hide();
 			}
 			on MissingPluginException {
-
+				// Might be incompatible platform
 			}
 			await hideStatusBar();
 			showingOverlays = false;
@@ -168,7 +169,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		if (pageController.hasClients && pageController.position.pixels != _lastpageControllerPixels) {
 			_lastpageControllerPixels = pageController.position.pixels;
 			final factor = pageController.position.pixels / pageController.position.maxScrollExtent;
-			final idealLocation = (thumbnailScrollController.position.maxScrollExtent + thumbnailScrollController.position.viewportDimension - _THUMBNAIL_SIZE - 12) * factor - (thumbnailScrollController.position.viewportDimension / 2) + (_THUMBNAIL_SIZE / 2 + 6);
+			final idealLocation = (thumbnailScrollController.position.maxScrollExtent + thumbnailScrollController.position.viewportDimension - _thumbnailSize - 12) * factor - (thumbnailScrollController.position.viewportDimension / 2) + (_thumbnailSize / 2 + 6);
 			thumbnailScrollController.jumpTo(idealLocation.clamp(0, thumbnailScrollController.position.maxScrollExtent));
 		}
 	}
@@ -215,7 +216,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 
 	void _onPageChanged(int index) {
 		_rotateButtonAnimationController.reset();
-		if (_rotationsInProgress.contains(index)) {
+		if (_rotationsInProgress.contains(widget.attachments[index])) {
 			_rotateButtonAnimationController.repeat();
 		}
 		final attachment = widget.attachments[index];
@@ -288,7 +289,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				return widget.allowScroll && ((details?.velocity ?? Velocity.zero) != Velocity.zero);
 			},
 			child: CupertinoTheme(
-				data: CupertinoThemeData(brightness: Brightness.dark, primaryColor: Colors.white),
+				data: const CupertinoThemeData(brightness: Brightness.dark, primaryColor: Colors.white),
 				child: CupertinoPageScaffold(
 					backgroundColor: Colors.transparent,
 					navigationBar: showChrome ? CupertinoNavigationBar(
@@ -319,7 +320,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 								CupertinoButton(
 									key: _shareButtonKey,
 									padding: EdgeInsets.zero,
-									child: Icon(Icons.ios_share),
+									child: const Icon(Icons.ios_share),
 									onPressed: canShare(currentAttachment) ? () => share(currentAttachment) : null
 								)
 							]
@@ -408,13 +409,13 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														key: ValueKey<bool>(_rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0),
 														alignment: Alignment.bottomRight,
 														child: RotationTransition(
-															turns: _rotationsInProgress.contains(currentAttachment) ? Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController) : AlwaysStoppedAnimation(0.0),
+															turns: _rotationsInProgress.contains(currentAttachment) ? Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController) : const AlwaysStoppedAnimation(0.0),
 															child: CupertinoButton(
-																padding: EdgeInsets.all(24),
+																padding: const EdgeInsets.all(24),
 																child: Transform(
 																	alignment: Alignment.center,
 																	transform: _rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0 ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
-																	child: Icon(Icons.rotate_90_degrees_ccw)
+																	child: const Icon(Icons.rotate_90_degrees_ccw)
 																),
 																onPressed: () {
 																	if (currentController.quarterTurns == 1) {
@@ -436,9 +437,9 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														child: Align(
 															alignment: Alignment.bottomLeft,
 															child: Container(
-																margin: EdgeInsets.all(16),
-																padding: EdgeInsets.all(8),
-																decoration: BoxDecoration(
+																margin: const EdgeInsets.all(16),
+																padding: const EdgeInsets.all(8),
+																decoration: const BoxDecoration(
 																	borderRadius: BorderRadius.all(Radius.circular(8)),
 																	color: Colors.black54
 																),
@@ -468,7 +469,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																		crossAxisAlignment: CrossAxisAlignment.center,
 																		children: [
 																			if (currentController.videoPlayerController != null) Container(
-																				decoration: BoxDecoration(
+																				decoration: const BoxDecoration(
 																					color: Colors.black38
 																				),
 																				child: VideoControls(
@@ -477,10 +478,10 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																				)
 																			),
 																			Container(
-																				decoration: BoxDecoration(
+																				decoration: const BoxDecoration(
 																					color: Colors.black38
 																				),
-																				height: _THUMBNAIL_SIZE + 8,
+																				height: _thumbnailSize + 8,
 																				child: KeyedSubtree(
 																					key: _thumbnailsKey,
 																					child: ListView.builder(
@@ -494,14 +495,14 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																								child: Container(
 																									decoration: BoxDecoration(
 																										color: Colors.transparent,
-																										borderRadius: BorderRadius.all(Radius.circular(4)),
+																										borderRadius: const BorderRadius.all(Radius.circular(4)),
 																										border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
 																									),
 																									margin: const EdgeInsets.all(4),
 																									child: AttachmentThumbnail(
 																										attachment: widget.attachments[index],
-																										width: _THUMBNAIL_SIZE,
-																										height: _THUMBNAIL_SIZE
+																										width: _thumbnailSize,
+																										height: _thumbnailSize
 																									)
 																								)
 																							);
@@ -563,7 +564,7 @@ Future<Attachment?> showGallery({
 		await HomeIndicator.show();
 	}
 	on MissingPluginException {
-
+		// Might be incompatible platform
 	}
 	await showStatusBar();
 	return lastSelected;

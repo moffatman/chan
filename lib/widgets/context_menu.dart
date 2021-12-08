@@ -23,16 +23,18 @@ class ContextMenu extends StatefulWidget {
 	final List<ContextMenuAction> actions;
 	final Widget child;
 
-	ContextMenu({
+	const ContextMenu({
 		required this.actions,
-		required this.child
-	});
+		required this.child,
+		Key? key
+	}) : super(key: key);
 
+	@override
 	createState() => _ContextMenuState();
 }
 
 enum _ContextMenuUseNewConstraints {
-	Yes
+	yes
 }
 
 class _ContextMenuState extends State<ContextMenu> {
@@ -57,14 +59,14 @@ class _ContextMenuState extends State<ContextMenu> {
 						previewBuilder: (ctx, animation, child) {
 							return IgnorePointer(
 								child: Provider<_ContextMenuUseNewConstraints>.value(
-									value: _ContextMenuUseNewConstraints.Yes,
+									value: _ContextMenuUseNewConstraints.yes,
 									child: child
 								)
 							);
 						},
 						child: LayoutBuilder(
 							builder: (context, newConstraints) {
-								final useNewConstraints = context.read<_ContextMenuUseNewConstraints?>() == _ContextMenuUseNewConstraints.Yes;
+								final useNewConstraints = context.read<_ContextMenuUseNewConstraints?>() == _ContextMenuUseNewConstraints.yes;
 								double newMaxWidth = originalConstraints.maxWidth;
 								double newMaxHeight = originalConstraints.maxHeight;
 								newMaxHeight = max(newMaxHeight, newConstraints.maxHeight - 50);
@@ -116,7 +118,7 @@ class _ContextMenuState extends State<ContextMenu> {
 										child: Container(
 											decoration: BoxDecoration(
 												border: Border.all(color: Colors.grey),
-												borderRadius: BorderRadius.all(Radius.circular(4))
+												borderRadius: const BorderRadius.all(Radius.circular(4))
 											),
 											child: Column(
 												mainAxisSize: MainAxisSize.min,
@@ -128,12 +130,12 @@ class _ContextMenuState extends State<ContextMenu> {
 																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 															),
 															height: 50,
-															padding: EdgeInsets.all(16),
+															padding: const EdgeInsets.all(16),
 															alignment: Alignment.center,
 															child: Row(
 																children: [
 																	action.child,
-																	Spacer(),
+																	const Spacer(),
 																	Icon(action.trailingIcon)
 																]
 															)

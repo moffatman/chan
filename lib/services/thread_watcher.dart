@@ -6,14 +6,14 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
-const _NORMAL_INTERVAL = const Duration(seconds: 90);
-const _ERROR_INTERVAL = const Duration(seconds: 180);
+const _normalInterval = Duration(seconds: 90);
+const _errorInterval = Duration(seconds: 180);
 
 class ThreadWatcher extends ChangeNotifier {
 	final ImageboardSite site;
 	final Persistence persistence;
-	final cachedUnseen = Map<ThreadIdentifier, int>();
-	final cachedUnseenYous = Map<ThreadIdentifier, int>();
+	final Map<ThreadIdentifier, int> cachedUnseen = {};
+	final Map<ThreadIdentifier, int> cachedUnseenYous = {};
 	StreamSubscription<BoxEvent>? _boxSubscription;
 	DateTime? lastUpdate;
 	Timer? nextUpdateTimer;
@@ -34,7 +34,7 @@ class ThreadWatcher extends ChangeNotifier {
 			cachedUnseen[liveSavedThread.thread!.identifier] = liveSavedThread.unseenReplyCount ?? 0;
 			cachedUnseenYous[liveSavedThread.thread!.identifier] = (liveSavedThread.unseenRepliesToYou ?? []).length;
 		}
-		if (liveSavedThreads.length > 0) {
+		if (liveSavedThreads.isNotEmpty) {
 			_updateCounts();
 		}
 		update();
@@ -96,14 +96,14 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 			_updateCounts();
 			lastUpdate = DateTime.now();
-			nextUpdate = lastUpdate!.add(_NORMAL_INTERVAL);
-			nextUpdateTimer = Timer(_NORMAL_INTERVAL, update);
+			nextUpdate = lastUpdate!.add(_normalInterval);
+			nextUpdateTimer = Timer(_normalInterval, update);
 		}
 		catch (e) {
 			updateErrorMessage = e.toString();
 			lastUpdate = DateTime.now();
-			nextUpdate = lastUpdate!.add(_ERROR_INTERVAL);
-			nextUpdateTimer = Timer(_ERROR_INTERVAL, update);
+			nextUpdate = lastUpdate!.add(_errorInterval);
+			nextUpdateTimer = Timer(_errorInterval, update);
 		}
 		notifyListeners();
 	}

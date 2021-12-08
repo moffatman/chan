@@ -32,7 +32,7 @@ class VideoImageProvider extends ImageProvider<VideoImageProvider> {
 	Future<VideoImageProvider> obtainKey(ImageConfiguration configuration) => SynchronousFuture<VideoImageProvider>(this);
 
 	@override
-	bool operator == (dynamic o) => (o is VideoImageProvider) && (o.video.path == video.path) && (o.scale == scale);
+	bool operator == (dynamic other) => (other is VideoImageProvider) && (other.video.path == video.path) && (other.scale == scale);
 
 	@override
 	int get hashCode => hashValues(video.path, scale);

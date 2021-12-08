@@ -15,7 +15,12 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 
 class SearchQueryPage extends StatefulWidget {
 	final ImageboardArchiveSearchQuery query;
-	SearchQueryPage(this.query);
+	const SearchQueryPage({
+		required this.query,
+		Key? key
+	}) : super(key: key);
+
+	@override
 	createState() => _SearchQueryPageState();
 }
 
@@ -33,11 +38,11 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 
 	void _runQuery() async {
 		setState(() {
-			this.errorMessage = null;
-			this.loading = true;
+			errorMessage = null;
+			loading = true;
 		});
 		try {
-			this.result = await context.read<ImageboardSite>().search(widget.query, page: page ?? 1);
+			result = await context.read<ImageboardSite>().search(widget.query, page: page ?? 1);
 			page = result!.page;
 			loading = false;
 			if (mounted) setState(() {});
@@ -45,7 +50,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		catch (e, st) {
 			print(e);
 			print(st);
-			this.errorMessage = e.toString();
+			errorMessage = e.toString();
 			loading = false;
 			if (mounted) setState(() {});
 		}
@@ -56,15 +61,15 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			mainAxisAlignment: MainAxisAlignment.spaceAround,
 			children: [
 				CupertinoButton(
-					child: Text('1'),
+					child: const Text('1'),
 					onPressed: (loading || result!.page == 1) ? null : () {
 						page = 1;
 						_runQuery();
 					}
 				),
-				Spacer(),
+				const Spacer(),
 				CupertinoButton(
-					child: Icon(Icons.navigate_before),
+					child: const Icon(Icons.navigate_before),
 					onPressed: (loading || result!.page == 1) ? null : () {
 						page = page! - 1;
 						_runQuery();
@@ -72,13 +77,13 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				),
 				Text('Page $page'),
 				CupertinoButton(
-					child: Icon(Icons.navigate_next),
+					child: const Icon(Icons.navigate_next),
 					onPressed: (loading || result!.page == result!.maxPage) ? null : () {
 						page = page! + 1;
 						_runQuery();
 					}
 				),
-				Spacer(),
+				const Spacer(),
 				CupertinoButton(
 					child: Text('${result!.maxPage}'),
 					onPressed: (loading || result!.page == result!.maxPage) ? null : () {
@@ -91,21 +96,21 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	}
 
 	Widget _build(BuildContext context) {
-		if (this.errorMessage != null) {
+		if (errorMessage != null) {
 			return Center(
 				child: Column(
 					mainAxisSize: MainAxisSize.min,
 					children: [
-						ErrorMessageCard(this.errorMessage!),
+						ErrorMessageCard(errorMessage!),
 						CupertinoButton(
-							child: Text('Retry'),
+							child: const Text('Retry'),
 							onPressed: _runQuery
 						)
 					]
 				)
 			);
 		}
-		else if (!loading && this.result != null) {
+		else if (!loading && result != null) {
 			return ListView.builder(
 				itemCount: result!.posts.length + 2,
 				itemBuilder: (context, i) {
@@ -159,7 +164,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					bottom: false,
 					child: _buildPagination()
 				),
-				Expanded(
+				const Expanded(
 					child: Center(
 						child: CupertinoActivityIndicator()
 					)
@@ -175,7 +180,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				transitionBetweenRoutes: false,
 				middle: Row(
 					children: [
-						Text('Results:'),
+						const Text('Results:'),
 						...describeQuery(widget.query)
 					]
 				)

@@ -105,20 +105,27 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 	bool get popGestureEnabled => _isPopGestureEnabled(this);
 
 	static bool _isPopGestureEnabled<T>(PageRoute<T> route) {
-		if (route.isFirst)
+		if (route.isFirst) {
 			return false;
-		if (route.willHandlePopInternally)
+		}
+		if (route.willHandlePopInternally) {
 			return false;
-		if (route.hasScopedWillPopCallback)
+		}
+		if (route.hasScopedWillPopCallback) {
 			return false;
-		if (route.fullscreenDialog)
+		}
+		if (route.fullscreenDialog) {
 			return false;
-		if (route.animation!.status != AnimationStatus.completed)
+		}
+		if (route.animation!.status != AnimationStatus.completed) {
 			return false;
-		if (route.secondaryAnimation!.status != AnimationStatus.dismissed)
+		}
+		if (route.secondaryAnimation!.status != AnimationStatus.dismissed) {
 			return false;
-		if (isPopGestureInProgress(route))
+		}
+		if (isPopGestureInProgress(route)) {
 			return false;
+		}
 
 		return true;
 	}
@@ -425,8 +432,9 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 	}
 
 	void _handlePointerDown(PointerDownEvent event) {
-		if (widget.enabledCallback())
+		if (widget.enabledCallback()) {
 			_recognizer.addPointer(event);
+		}
 	}
 
 	double _convertToLogical(double value) {
@@ -479,10 +487,12 @@ class _CupertinoBackGestureController<T> {
 		const Curve animationCurve = Curves.fastLinearToSlowEaseIn;
 		final bool animateForward;
 
-		if (velocity.abs() >= _kMinFlingVelocity)
+		if (velocity.abs() >= _kMinFlingVelocity) {
 			animateForward = velocity <= 0;
-		else
+		}
+		else {
 			animateForward = controller.value > 0.5;
+		}
 
 		if (animateForward) {
 			final int droppedPageForwardAnimationTime = min(
@@ -525,8 +535,9 @@ class _CupertinoEdgeShadowDecoration extends Decoration {
 		_CupertinoEdgeShadowDecoration? b,
 		double t,
 	) {
-		if (a == null && b == null)
+		if (a == null && b == null) {
 			return null;
+		}
 		return _CupertinoEdgeShadowDecoration(
 			edgeGradient: LinearGradient.lerp(a?.edgeGradient, b?.edgeGradient, t),
 		);
@@ -534,15 +545,17 @@ class _CupertinoEdgeShadowDecoration extends Decoration {
 
 	@override
 	_CupertinoEdgeShadowDecoration lerpFrom(Decoration? a, double t) {
-		if (a is _CupertinoEdgeShadowDecoration)
+		if (a is _CupertinoEdgeShadowDecoration) {
 			return _CupertinoEdgeShadowDecoration.lerp(a, this, t)!;
+		}
 		return _CupertinoEdgeShadowDecoration.lerp(null, this, t)!;
 	}
 
 	@override
 	_CupertinoEdgeShadowDecoration lerpTo(Decoration? b, double t) {
-		if (b is _CupertinoEdgeShadowDecoration)
+		if (b is _CupertinoEdgeShadowDecoration) {
 			return _CupertinoEdgeShadowDecoration.lerp(this, b, t)!;
+		}
 		return _CupertinoEdgeShadowDecoration.lerp(this, null, t)!;
 	}
 
@@ -553,8 +566,9 @@ class _CupertinoEdgeShadowDecoration extends Decoration {
 
 	@override
 	bool operator ==(Object other) {
-		if (other.runtimeType != runtimeType)
+		if (other.runtimeType != runtimeType) {
 			return false;
+		}
 		return other is _CupertinoEdgeShadowDecoration
 			&& other.edgeGradient == edgeGradient;
 	}
@@ -580,8 +594,9 @@ class _CupertinoEdgeShadowPainter extends BoxPainter {
 	@override
 	void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
 		final LinearGradient? gradient = _decoration.edgeGradient;
-		if (gradient == null)
+		if (gradient == null) {
 			return;
+		}
 		final TextDirection? textDirection = configuration.textDirection;
 		assert(textDirection != null);
 		final double deltaX;

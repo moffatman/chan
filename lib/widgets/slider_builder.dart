@@ -9,11 +9,12 @@ class SliderBuilder extends StatefulWidget {
 	final Widget Function(BuildContext context, double factor) builder;
   final Widget popup;
 	final double activationDistance;
-	SliderBuilder({
+	const SliderBuilder({
 		required this.builder,
 		required this.popup,
-		this.activationDistance = 50
-	});
+		this.activationDistance = 50,
+		Key? key
+	}) : super(key: key);
 	@override
 	createState() => _SliderBuilderState();
 }

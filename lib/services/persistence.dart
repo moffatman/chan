@@ -31,8 +31,8 @@ class UriAdapter extends TypeAdapter<Uri> {
 	}
 }
 
-const _SAVED_ATTACHMENTS_THUMBS_DIR = 'saved_attachments_thumbs';
-const _SAVED_ATTACHMENTS_DIR = 'saved_attachments';
+const _savedAttachmentThumbnailsDir = 'saved_attachments_thumbs';
+const _savedAttachmentsDir = 'saved_attachments';
 
 class Persistence {
 	final String id;
@@ -78,8 +78,8 @@ class Persistence {
 		cookies = PersistCookieJar(
 			storage: FileStorage(temporaryDirectory.path)
 		);
-		await Directory('${documentsDirectory.path}/$_SAVED_ATTACHMENTS_DIR').create(recursive: true);
-		await Directory('${documentsDirectory.path}/$_SAVED_ATTACHMENTS_THUMBS_DIR').create(recursive: true);
+		await Directory('${documentsDirectory.path}/$_savedAttachmentsDir').create(recursive: true);
+		await Directory('${documentsDirectory.path}/$_savedAttachmentThumbnailsDir').create(recursive: true);
 		await Hive.openBox<SavedSettings>('settings');
 	}
 
@@ -171,14 +171,14 @@ class Persistence {
 	String get currentBoardName => browserState.tabs[browserState.currentTab].board?.name ?? 'tv';
 }
 
-const _MAX_RECENT_ITEMS = 50;
+const _maxRecentItems = 50;
 @HiveType(typeId: 8)
 class PersistentRecentSearches extends HiveObject {
 	@HiveField(0)
 	List<ImageboardArchiveSearchQuery> entries = [];
 
 	void add(ImageboardArchiveSearchQuery entry) {
-		entries = [entry, ...entries.take(_MAX_RECENT_ITEMS)];
+		entries = [entry, ...entries.take(_maxRecentItems)];
 	}
 
 	void bump(ImageboardArchiveSearchQuery entry) {
@@ -207,7 +207,7 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	@HiveField(5)
 	bool useArchive = false;
 
-	PersistentThreadState() : this.lastOpenedTime = DateTime.now();
+	PersistentThreadState() : lastOpenedTime = DateTime.now();
 
 	List<int> get youIds => receipts.map((receipt) => receipt.id).toList();
 	List<Post>? get repliesToYou => thread?.posts.where((p) => p.span.referencedPostIds(thread!.board).any((id) => youIds.contains(id))).toList();
@@ -218,6 +218,7 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	@override
 	String toString() => 'PersistentThreadState(lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime)';
 
+	@override
 	List<String> getSearchableText() => thread?.getSearchableText() ?? [];
 }
 
@@ -247,7 +248,7 @@ class SavedAttachment extends HiveObject {
 		required this.attachment,
 		required this.savedTime,
 		List<int>? tags
-	}) : this.tags = tags ?? [];
+	}) : tags = tags ?? [];
 
 	@override
 	Future<void> delete() async {
@@ -256,8 +257,8 @@ class SavedAttachment extends HiveObject {
 		await file.delete();
 	}
 
-	File get thumbnailFile => File('${Persistence.documentsDirectory.path}/$_SAVED_ATTACHMENTS_THUMBS_DIR/${attachment.globalId}.jpg');
-	File get file => File('${Persistence.documentsDirectory.path}/$_SAVED_ATTACHMENTS_DIR/${attachment.globalId}${attachment.ext == '.webm' ? '.mp4' : attachment.ext}');
+	File get thumbnailFile => File('${Persistence.documentsDirectory.path}/$_savedAttachmentThumbnailsDir/${attachment.globalId}.jpg');
+	File get file => File('${Persistence.documentsDirectory.path}/$_savedAttachmentsDir/${attachment.globalId}${attachment.ext == '.webm' ? '.mp4' : attachment.ext}');
 }
 
 @HiveType(typeId: 19)
@@ -275,6 +276,7 @@ class SavedPost extends HiveObject implements Filterable {
 		required this.thread
 	});
 
+	@override
 	List<String> getSearchableText() => [post.text];
 }
 

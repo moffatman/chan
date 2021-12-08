@@ -7,5 +7,5 @@ import './main.dart';
 void main() async {
 	debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;
 	await Persistence.initializeStatic();
-	runApp(ChanApp());
+	runApp(const ChanApp());
 }

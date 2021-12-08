@@ -17,6 +17,10 @@ extension ToCssRgba on Color {
 }
 
 class WebImagePickerPage extends StatefulWidget {
+	const WebImagePickerPage({
+		Key? key
+	}) : super(key: key);
+
 	@override
 	createState() => _WebImagePickerPageState();
 }
@@ -119,7 +123,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											}
 											setState(() {
 												this.progress = progress / 100;
-												if (url.toString() != 'about:blank') urlController.text = this.url;
+												if (url.toString() != 'about:blank') urlController.text = url;
 											});
 										},
 										onUpdateVisitedHistory: (controller, url, androidIsReload) {
@@ -138,19 +142,19 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 							alignment: MainAxisAlignment.center,
 							children: <Widget>[
 								ElevatedButton(
-									child: Icon(Icons.arrow_back),
+									child: const Icon(Icons.arrow_back),
 									onPressed: () {
 										webViewController?.goBack();
 									}
 								),
 								ElevatedButton(
-									child: Icon(Icons.arrow_forward),
+									child: const Icon(Icons.arrow_forward),
 									onPressed: () {
 										webViewController?.goForward();
 									}
 								),
 								ElevatedButton(
-									child: Icon(Icons.image),
+									child: const Icon(Icons.image),
 									onPressed: () async {
 										final List<dynamic> returnedResults = await webViewController?.evaluateJavascript(
 											source: '''[...document.querySelectorAll('img')].map(img => {
@@ -170,21 +174,21 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										results.removeWhere((r) => r['src'].isEmpty);
 										results.sort((a, b) => a['left'].compareTo(b['left']));
 										mergeSort<dynamic>(results, compare: (a, b) => a['top'].compareTo(b['top']));
-										final _makeGrid = (BuildContext context, List<dynamic> images) => GridView.builder(
-											gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+										_makeGrid(BuildContext context, List<dynamic> images) => GridView.builder(
+											gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
 												maxCrossAxisExtent: 100,
 												mainAxisSpacing: 16,
 												crossAxisSpacing: 16
 											),
 											shrinkWrap: true,
-											physics: NeverScrollableScrollPhysics(),
+											physics: const NeverScrollableScrollPhysics(),
 											itemCount: images.length,
 											itemBuilder: (context, i) {
 												final image = images[i];
 												ExtendedImageState? eState;
-												final handleLoadState = (ExtendedImageState state) {
+												handleLoadState(ExtendedImageState state) {
 													eState = state;
-												};
+												}
 												Widget imageWidget = ExtendedImage.network(
 													image['src'],
 													fit: BoxFit.contain,
@@ -207,8 +211,8 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 															Expanded(
 																child: imageWidget
 															),
-															SizedBox(height: 4),
-															Text(image['width'].round().toString() + 'x' + image['height'].round().toString(), style: TextStyle(
+															const SizedBox(height: 4),
+															Text(image['width'].round().toString() + 'x' + image['height'].round().toString(), style: const TextStyle(
 																fontSize: 16
 															))
 														]
@@ -223,27 +227,27 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												child: Container(
 													width: double.infinity,
 													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-													padding: EdgeInsets.all(16),
+													padding: const EdgeInsets.all(16),
 													child: Column(
 														children: [
-															Text('Images'),
-															SizedBox(height: 16),
+															const Text('Images'),
+															const SizedBox(height: 16),
 															_makeGrid(context, fullImages),
 															if (thumbnails.isNotEmpty) ...[
-																SizedBox(height: 16),
+																const SizedBox(height: 16),
 																CupertinoButton(
-																	child: Text('Thumbnails'),
+																	child: const Text('Thumbnails'),
 																	onPressed: () async {
 																		final selectedThumbnail = await Navigator.of(context).push(TransparentRoute(
 																			builder: (innerContext) => OverscrollModalPage(
 																				child: Container(
 																					width: double.infinity,
 																					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																					padding: EdgeInsets.all(16),
+																					padding: const EdgeInsets.all(16),
 																					child: Column(
 																						children: [
-																							Text('Thumbnails'),
-																							SizedBox(height: 16),
+																							const Text('Thumbnails'),
+																							const SizedBox(height: 16),
 																							_makeGrid(innerContext, thumbnails)
 																						]
 																					)
@@ -270,7 +274,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 									}
 								),
 								ElevatedButton(
-									child: Icon(Icons.refresh),
+									child: const Icon(Icons.refresh),
 									onPressed: () {
 										webViewController?.reload();
 									}

@@ -1,3 +1,4 @@
+// ignore_for_file: file_names
 import 'dart:io';
 import 'dart:math';
 
@@ -25,7 +26,7 @@ class _ThreadCacheEntry {
 	});
 }
 
-const _CATALOG_CACHE_LIFETIME = const Duration(seconds: 10);
+const _catalogCacheLifetime = Duration(seconds: 10);
 
 class _CatalogCacheEntry {
 	final int page;
@@ -50,26 +51,28 @@ class _CatalogCache {
 }
 
 class Site4Chan extends ImageboardSite {
+	@override
 	final String name;
 	final String baseUrl;
 	final String staticUrl;
 	final String sysUrl;
 	final String apiUrl;
+	@override
 	final String imageUrl;
 	final String captchaKey;
 	final List<ImageboardSiteArchive> archives;
 	List<ImageboardBoard>? _boards;
 	final unescape = HtmlUnescape();
-	final Map<String, _ThreadCacheEntry> _threadCache = Map();
-	final Map<String, _CatalogCache> _catalogCaches = Map();
+	final Map<String, _ThreadCacheEntry> _threadCache = {};
+	final Map<String, _CatalogCache> _catalogCaches = {};
 	final _lastActionTime = {
-		ImageboardAction.PostReply: Map<String, DateTime>(),
-		ImageboardAction.PostReplyWithImage: Map<String, DateTime>(),
-		ImageboardAction.PostThread: Map<String, DateTime>(),
+		ImageboardAction.postReply: <String, DateTime>{},
+		ImageboardAction.postReplyWithImage: <String, DateTime>{},
+		ImageboardAction.postThread: <String, DateTime>{},
 	};
 
 	static List<PostSpan> parsePlaintext(String text) {
-		return linkify(text, linkifiers: [UrlLinkifier()]).map((elem) {
+		return linkify(text, linkifiers: [const UrlLinkifier()]).map((elem) {
 			if (elem is UrlElement) {
 				return PostLinkSpan(elem.url);
 			}
@@ -177,7 +180,7 @@ class Site4Chan extends ImageboardSite {
 			threadId: threadId,
 			attachment: _makeAttachment(board, threadId, data),
 			attachmentDeleted: data['filedeleted'] == 1,
-			spanFormat: PostSpanFormat.Chan4,
+			spanFormat: PostSpanFormat.chan4,
 			flag: _makeFlag(data),
 			posterId: data['id']
 		);
@@ -188,7 +191,7 @@ class Site4Chan extends ImageboardSite {
 			final String ext = data['ext'];
 			return Attachment(
 				id: id,
-				type: data['ext'] == '.webm' ? AttachmentType.WEBM : AttachmentType.Image,
+				type: data['ext'] == '.webm' ? AttachmentType.webm : AttachmentType.image,
 				filename: unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
 				ext: ext,
 				board: board,
@@ -205,7 +208,7 @@ class Site4Chan extends ImageboardSite {
 
 	Future<int?> _getThreadPage(ThreadIdentifier thread) async {
 		final now = DateTime.now();
-		if (_catalogCaches[thread.board] == null || now.difference(_catalogCaches[thread.board]!.lastUpdated).compareTo(_CATALOG_CACHE_LIFETIME) > 0) {
+		if (_catalogCaches[thread.board] == null || now.difference(_catalogCaches[thread.board]!.lastUpdated).compareTo(_catalogCacheLifetime) > 0) {
 			final response = await client.get(Uri.https(apiUrl, '/${thread.board}/catalog.json').toString());
 			if (response.statusCode != 200) {
 				if (response.statusCode == 404) {
@@ -215,7 +218,7 @@ class Site4Chan extends ImageboardSite {
 					return Future.error(HTTPStatusException(response.statusCode!));
 				}
 			}
-			final entries = Map<int, _CatalogCacheEntry>();
+			final Map<int, _CatalogCacheEntry> entries = {};
 			for (final page in response.data) {
 				for (final threadData in page['threads']) {
 					entries[threadData['no']] = _CatalogCacheEntry(
@@ -233,6 +236,7 @@ class Site4Chan extends ImageboardSite {
 		return _catalogCaches[thread.board]!.entries[thread.id]?.page;
 	}
 
+	@override
 	Future<Thread> getThread(ThreadIdentifier thread) async {
 		Map<String, String>? headers;
 		if (_threadCache['${thread.board}/${thread.id}'] != null) {
@@ -284,14 +288,15 @@ class Site4Chan extends ImageboardSite {
 		_threadCache['${thread.board}/${thread.id}']!.thread.currentPage = await _getThreadPage(thread);
 		return _threadCache['${thread.board}/${thread.id}']!.thread;
 	}
+	@override
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread) async {
-		final errorMessages = Map<String, String>();
+		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {
 			try {
 				return await archive.getThread(thread);
 			}
 			catch(e, st) {
-				if (!(e is BoardNotFoundException)) {
+				if (e is! BoardNotFoundException) {
 					print('Error from ${archive.name}');
 					print(e);
 					print(st);
@@ -307,17 +312,19 @@ class Site4Chan extends ImageboardSite {
 		}
 	}
 
+	@override
 	Future<Post> getPost(String board, int id) async {
 		throw Exception('Not implemented');
 	}
+	@override
 	Future<Post> getPostFromArchive(String board, int id) async {
-		final errorMessages = Map<String, String>();
+		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {
 			try {
 				return await archive.getPost(board, id);
 			}
 			catch(e) {
-				if (!(e is BoardNotFoundException)) {
+				if (e is! BoardNotFoundException) {
 					errorMessages[archive.name] = e.toString();
 				}
 			}
@@ -330,6 +337,7 @@ class Site4Chan extends ImageboardSite {
 		}
 	}
 
+	@override
 	Future<List<Thread>> getCatalog(String board) async {
 		final response = await client.get(Uri.https(apiUrl, '/$board/catalog.json').toString(), options: Options(
 			validateStatus: (x) => true
@@ -387,13 +395,13 @@ class Site4Chan extends ImageboardSite {
 			);
 		}).toList();
 	}
+	@override
 	Future<List<ImageboardBoard>> getBoards() async {
-		if (_boards == null) {
-			_boards = await _getBoards();
-		}
+		_boards ??= await _getBoards();
 		return _boards!;
 	}
 
+	@override
 	CaptchaRequest getCaptchaRequest(String board, [int? threadId]) {
 		return Chan4CustomCaptchaRequest(
 			challengeUrl: Uri.https(sysUrl, '/captcha', {
@@ -440,12 +448,12 @@ class Site4Chan extends ImageboardSite {
 		final metaTag = document.querySelector('meta[http-equiv="refresh"]');
 		if (metaTag != null) {
 			if (threadId == null) {
-				_lastActionTime[ImageboardAction.PostThread]![board] = DateTime.now();
+				_lastActionTime[ImageboardAction.postThread]![board] = DateTime.now();
 			}
 			else {
-				_lastActionTime[ImageboardAction.PostReply]![board] = DateTime.now();
+				_lastActionTime[ImageboardAction.postReply]![board] = DateTime.now();
 				if (file != null) {
-					_lastActionTime[ImageboardAction.PostReplyWithImage]![board] = DateTime.now();
+					_lastActionTime[ImageboardAction.postReplyWithImage]![board] = DateTime.now();
 				}
 			}
 			return PostReceipt(
@@ -465,6 +473,7 @@ class Site4Chan extends ImageboardSite {
 		}
 	}
 
+	@override
 	Future<PostReceipt> createThread({
 		required String board,
 		String name = '',
@@ -485,6 +494,7 @@ class Site4Chan extends ImageboardSite {
 		overrideFilename: overrideFilename
 	);
 
+	@override
 	Future<PostReceipt> postReply({
 		required ThreadIdentifier thread,
 		String name = '',
@@ -504,19 +514,21 @@ class Site4Chan extends ImageboardSite {
 		overrideFilename: overrideFilename
 	);
 
+	@override
 	DateTime? getActionAllowedTime(String board, ImageboardAction action) {
 		final lastActionTime = _lastActionTime[action]![board];
 		final b = persistence!.getBoard(board);
 		switch (action) {
-			case ImageboardAction.PostReply:
+			case ImageboardAction.postReply:
 				return lastActionTime?.add(Duration(seconds: b.replyCooldown ?? 0));
-			case ImageboardAction.PostReplyWithImage:
+			case ImageboardAction.postReplyWithImage:
 				return lastActionTime?.add(Duration(seconds: b.imageCooldown ?? 0));
-			case ImageboardAction.PostThread:
+			case ImageboardAction.postThread:
 				return lastActionTime?.add(Duration(seconds: b.threadCooldown ?? 0));
 		}
 	}
 
+	@override
 	Future<void> deletePost(String board, PostReceipt receipt) async {
 		final response = await client.post(
 			Uri.https(sysUrl, '/$board/imgboard.php').toString(),
@@ -531,6 +543,7 @@ class Site4Chan extends ImageboardSite {
 		}
 	}
 
+	@override
 	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page}) async {
 		String s = '';
 		for (final archive in archives) {
@@ -538,7 +551,7 @@ class Site4Chan extends ImageboardSite {
 				return await archive.search(query, page: page);
 			}
 			catch(e, st) {
-				if (!(e is BoardNotFoundException)) {
+				if (e is! BoardNotFoundException) {
 					print('Error from ${archive.name}');
 					print(e);
 					print(st);
@@ -549,6 +562,7 @@ class Site4Chan extends ImageboardSite {
 		throw Exception('Search failed - exhausted all archives$s');
 	}
 
+	@override
 	String getWebUrl(String board, [int? threadId, int? postId]) {
 		String webUrl = 'https://$baseUrl/$board/';
 		if (threadId != null) {
@@ -560,6 +574,7 @@ class Site4Chan extends ImageboardSite {
 		return webUrl;
 	}
 
+	@override
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
 		final customSpoilerId = (thread == null) ? null : _threadCache['${thread.board}/${thread.id}']?.thread.customSpoilerId;
 		if (customSpoilerId != null) {
@@ -570,6 +585,7 @@ class Site4Chan extends ImageboardSite {
 		}
 	}
 
+	@override
 	Uri getPostReportUrl(String board, int id) {
 		return Uri.https(sysUrl, '/$board/imgboard.php', {
 			'mode': 'report',

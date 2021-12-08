@@ -17,6 +17,7 @@ class MediaConversionFFMpegException implements Exception {
 	int exitCode;
 	MediaConversionFFMpegException(this.exitCode);
 
+	@override
 	String toString() => 'MediaConversionFFMpegException(exitCode: $exitCode)';
 }
 
@@ -54,7 +55,7 @@ class MediaScan {
 		required this.bitrate
 	});
 
-	static final _mediaScanCache = Map<_MediaScanCacheEntry, MediaScan>();
+	static final Map<_MediaScanCacheEntry, MediaScan> _mediaScanCache = {};
 	static final _ffprobeLock = Mutex();
 
 	static Future<MediaScan> _scan(Uri file) async {

@@ -65,7 +65,7 @@ class TransparentRoute<T> extends PageRoute<T> {
 	bool get maintainState => true;
 
 	@override
-	Duration get transitionDuration => Duration(milliseconds: 150);
+	Duration get transitionDuration => const Duration(milliseconds: 150);
 
 	@override
   Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
@@ -109,7 +109,7 @@ class TrulyTransparentRoute<T> extends PageRoute<T> {
 	bool get maintainState => true;
 
 	@override
-	Duration get transitionDuration => Duration(milliseconds: 150);
+	Duration get transitionDuration => const Duration(milliseconds: 150);
 
 	@override
   Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
@@ -128,26 +128,27 @@ class TrulyTransparentRoute<T> extends PageRoute<T> {
 class ErrorMessageCard extends StatelessWidget {
 	final String message;
 	final VoidCallback? retry;
-	ErrorMessageCard(this.message, {
-		this.retry
-	});
+	const ErrorMessageCard(this.message, {
+		this.retry,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
 		return Container(
-			padding: EdgeInsets.all(16),
+			padding: const EdgeInsets.all(16),
 			decoration: BoxDecoration(
 				color: CupertinoTheme.of(context).primaryColor,
-				borderRadius: BorderRadius.all(Radius.circular(8))
+				borderRadius: const BorderRadius.all(Radius.circular(8))
 			),
 			child: Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
 					Icon(Icons.error, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
-					SizedBox(height: 8),
+					const SizedBox(height: 8),
 					Text(message, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor), textAlign: TextAlign.center),
 					if (retry != null) ...[
-						SizedBox(height: 8),
+						const SizedBox(height: 8),
 						CupertinoButton(
 							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 							child: Text('Retry', style: TextStyle(
@@ -172,7 +173,7 @@ Future<void> openBrowser(BuildContext context, Uri url) {
 			context: context,
 			attachments: [
 				Attachment(
-					type: AttachmentType.WEBM,
+					type: AttachmentType.webm,
 					board: board,
 					id: id,
 					ext: '.webm',
@@ -201,10 +202,10 @@ Future<void> openBrowser(BuildContext context, Uri url) {
 extension ReduceBrightness on Color {
 	Color withBrightness(double factor) {
 		return Color.fromRGBO(
-			((this.red * factor) + ((255 - this.red) * (1 - factor))).round(),
-			((this.green * factor) + ((255 - this.green) * (1 - factor))).round(),
-			((this.blue * factor) + ((255 - this.blue) * (1 - factor))).round(),
-			this.opacity
+			((red * factor) + ((255 - red) * (1 - factor))).round(),
+			((green * factor) + ((255 - green) * (1 - factor))).round(),
+			((blue * factor) + ((255 - blue) * (1 - factor))).round(),
+			opacity
 		);
 	}
 }
@@ -213,11 +214,13 @@ class FirstBuildDetector extends StatefulWidget {
 	final Object identifier;
 	final Widget Function(BuildContext, bool) builder;
 
-	FirstBuildDetector({
+	const FirstBuildDetector({
 		required this.identifier,
-		required this.builder
-	});
+		required this.builder,
+		Key? key
+	}) : super(key: key);
 
+	@override
 	createState() => _FirstBuildDetectorState();
 }
 
@@ -251,14 +254,15 @@ class Expander extends StatelessWidget {
 	final bool expanded;
 	final bool bottomSafe;
 
-	Expander({
+	const Expander({
 		required this.child,
 		this.duration = const Duration(milliseconds: 300),
 		this.curve = Curves.ease,
 		required this.height,
 		required this.expanded,
-		this.bottomSafe = false
-	});
+		this.bottomSafe = false,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
@@ -277,7 +281,7 @@ class Expander extends StatelessWidget {
 							top: 0,
 							left: 0,
 							right: 0,
-							child: Container(
+							child: SizedBox(
 								height: height,
 								child: child
 							)

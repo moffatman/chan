@@ -16,7 +16,7 @@ class RotatedImageKey {
 	});
 
 	@override
-	bool operator == (dynamic d) => d is RotatedImageKey && (d.parentKey == parentKey) && (d.quarterTurns == quarterTurns);
+	bool operator == (dynamic other) => other is RotatedImageKey && (other.parentKey == parentKey) && (other.quarterTurns == quarterTurns);
 
 	@override
 	int get hashCode => hashValues(parentKey, quarterTurns);
@@ -81,7 +81,7 @@ class RotatingImageProvider extends ImageProvider<RotatedImageKey> {
 	}
 
 	@override
-	bool operator == (dynamic o) => (o is RotatingImageProvider) && (o.parent == parent) && (o.quarterTurns == quarterTurns);
+	bool operator == (dynamic other) => (other is RotatingImageProvider) && (other.parent == parent) && (other.quarterTurns == quarterTurns);
 
 	@override
 	int get hashCode => hashValues(parent, quarterTurns);
