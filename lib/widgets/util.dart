@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -66,14 +68,21 @@ class TransparentRoute<T> extends PageRoute<T> {
 	Duration get transitionDuration => Duration(milliseconds: 150);
 
 	@override
-  	Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+  Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
 		final result = builder(context);
-		return FadeTransition(
-			opacity: Tween<double>(begin: 0, end: 1).animate(animation),
+		return AnimatedBuilder(
+			animation: animation,
+			builder: (context, child) => BackdropFilter(
+				filter: ImageFilter.blur(sigmaX: animation.value * 5, sigmaY: animation.value * 5),
+				child: Opacity(
+					opacity: animation.value,
+					child: child
+				)
+			),
 			child: Semantics(
 				scopesRoute: true,
 				explicitChildNodes: true,
-				child: result,
+				child: result
 			)
 		);
 	}
