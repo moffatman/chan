@@ -61,6 +61,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	Timer? autoUpdateTimer;
 	bool _searchFocused = false;
 	late PageStorageKey _scrollViewKey;
+	int _pointerDownCount = 0;
 
 	@override
 	void initState() {
@@ -210,8 +211,17 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 					// Auto update here
 				},
 				child: Listener(
+					onPointerDown:(e) {
+						_pointerDownCount++;
+					},
+					onPointerUp: (e) {
+						_pointerDownCount--;
+					},
+					onPointerCancel: (e) {
+						_pointerDownCount--;
+					},
 					onPointerHover: (e) {
-						if (widget.controller?.scrollController != null && (widget.controller!.scrollController!.position.userScrollDirection != ScrollDirection.idle)) {
+						if (widget.controller?.scrollController != null && (widget.controller!.scrollController!.position.userScrollDirection != ScrollDirection.idle) && _pointerDownCount == 0) {
 							widget.controller!.scrollController!.jumpTo(widget.controller!.scrollController!.position.pixels);
 						}
 					},
