@@ -493,16 +493,17 @@ class AttachmentViewer extends StatelessWidget {
 					if (controller.errorMessage != null) Center(
 						child: ErrorMessageCard(controller.errorMessage!, retry: controller.reloadFullAttachment)
 					)
-					else if (controller.videoPlayerController != null) Center(
-						child: RotatedBox(
-							quarterTurns: controller.quarterTurns,
-							child: AspectRatio(
-								aspectRatio: controller.videoPlayerController!.value.aspectRatio,
-								child: GestureDetector(
-									child: VideoPlayer(controller.videoPlayerController!),
-									onLongPressStart: (x) => controller._onLongPressStart(),
-									onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.of(context).size.width / 2)),
-									onLongPressEnd: (x) => controller._onLongPressEnd()
+					else if (controller.videoPlayerController != null) GestureDetector(
+						behavior: HitTestBehavior.translucent,
+						onLongPressStart: (x) => controller._onLongPressStart(),
+						onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.of(context).size.width / 2)),
+						onLongPressEnd: (x) => controller._onLongPressEnd(),
+						child: Center(
+							child: RotatedBox(
+								quarterTurns: controller.quarterTurns,
+								child: AspectRatio(
+									aspectRatio: controller.videoPlayerController!.value.aspectRatio,
+									child: VideoPlayer(controller.videoPlayerController!)
 								)
 							)
 						)
