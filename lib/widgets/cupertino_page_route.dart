@@ -438,8 +438,9 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 	}
 
 	void _handlePointerPanZoomStart(PointerPanZoomStartEvent event) {
-		if (widget.enabledCallback())
+		if (widget.enabledCallback()) {
 			_recognizer.addPointerPanZoom(event);
+		}
 	}
 
 	double _convertToLogical(double value) {
