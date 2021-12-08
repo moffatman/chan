@@ -268,9 +268,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 	}
 
-	Widget _buildTabletIcon(int index, Widget icon, String label, {bool reorderable = false}) {
+	Widget _buildTabletIcon(int index, Widget icon, String label, {bool reorderable = false, Axis axis = Axis.vertical}) {
 		final child = CupertinoButton(
-			padding: const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8),
+			padding: axis == Axis.vertical ? const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8) : const EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
 			child: Opacity(
 				opacity: (index <= 0 ? (tabletIndex == 0 && index == -1*activeBrowserTab.value) : index == tabletIndex) ? 1.0 : 0.5,
 				child: Column(
@@ -368,6 +368,60 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 	}
 
+	Widget _buildTabList(Axis axis) {
+		return ReorderableList(
+			controller: _tabListController,
+			scrollDirection: axis,
+			physics: const BouncingScrollPhysics(),
+			onReorder: (oldIndex, newIndex) {
+				final currentTab = tabs[activeBrowserTab.value];
+				if (oldIndex < newIndex) {
+					newIndex -= 1;
+				}
+				final tab = tabs.removeAt(oldIndex);
+				tabs.insert(newIndex, tab);
+				browserState.tabs.removeAt(oldIndex);
+				browserState.tabs.insert(newIndex, tab.item1);
+				activeBrowserTab.value = tabs.indexOf(currentTab);
+				browserState.currentTab = activeBrowserTab.value;
+				browserState.save();
+				setState(() {});
+			},
+			itemCount: tabs.length,
+			itemBuilder: (context, i) {
+				const _icon = SizedBox(
+					width: 30,
+					height: 30,
+					child: Icon(Icons.topic)
+				);
+				Widget icon = _icon;
+				if (tabs[i].item1.thread != null) {
+					icon = ValueListenableBuilder(
+						valueListenable: context.read<Persistence>().listenForPersistentThreadStateChanges(tabs[i].item1.thread!),
+						builder: (context, box, child) {
+							final attachment = context.read<Persistence>().getThreadStateIfExists(tabs[i].item1.thread!)?.thread?.attachment;
+							if (attachment != null) {
+								return ClipRRect(
+									borderRadius: const BorderRadius.all(Radius.circular(4)),
+									child: AttachmentThumbnail(
+										fit: BoxFit.cover,
+										attachment: attachment,
+										width: 30,
+										height: 30
+									)
+								);
+							}
+							else {
+								return const Icon(Icons.topic);
+							}
+						}
+					);
+				}
+				return _buildTabletIcon(i * -1, icon, tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'None', reorderable: true, axis: axis);
+			}
+		);
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		isInTabletLayout = MediaQuery.of(context).size.width > 700;
@@ -402,51 +456,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										child: Column(
 											children: [
 												Expanded(
-													child: ReorderableList(
-														controller: _tabListController,
-														physics: const BouncingScrollPhysics(),
-														onReorder: (oldIndex, newIndex) {
-															final currentTab = tabs[activeBrowserTab.value];
-															if (oldIndex < newIndex) {
-																newIndex -= 1;
-															}
-															final tab = tabs.removeAt(oldIndex);
-															tabs.insert(newIndex, tab);
-															browserState.tabs.removeAt(oldIndex);
-															browserState.tabs.insert(newIndex, tab.item1);
-															activeBrowserTab.value = tabs.indexOf(currentTab);
-															browserState.currentTab = activeBrowserTab.value;
-															browserState.save();
-															setState(() {});
-														},
-														itemCount: tabs.length,
-														itemBuilder: (context, i) {
-															Widget icon = const Icon(Icons.topic);
-															if (tabs[i].item1.thread != null) {
-																icon = ValueListenableBuilder(
-																	valueListenable: context.read<Persistence>().listenForPersistentThreadStateChanges(tabs[i].item1.thread!),
-																	builder: (context, box, child) {
-																		final attachment = context.read<Persistence>().getThreadStateIfExists(tabs[i].item1.thread!)?.thread?.attachment;
-																		if (attachment != null) {
-																			return ClipRRect(
-																				borderRadius: const BorderRadius.all(Radius.circular(4)),
-																				child: AttachmentThumbnail(
-																					fit: BoxFit.cover,
-																					attachment: attachment,
-																					width: 25,
-																					height: 25
-																				)
-																			);
-																		}
-																		else {
-																			return const Icon(Icons.topic);
-																		}
-																	}
-																);
-															}
-															return _buildTabletIcon(i * -1, icon, tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'Browse', reorderable: true);
-														}
-													)
+													child: _buildTabList(Axis.vertical)
 												),
 												_buildNewTabIcon()
 											]
@@ -540,29 +550,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										child: Row(
 											children: [
 												Expanded(
-													child: ReorderableList(
-														controller: _tabListController,
-														scrollDirection: Axis.horizontal,
-														physics: const BouncingScrollPhysics(),
-														onReorder: (oldIndex, newIndex) {
-															final currentTab = tabs[activeBrowserTab.value];
-															if (oldIndex < newIndex) {
-																newIndex -= 1;
-															}
-															final tab = tabs.removeAt(oldIndex);
-															tabs.insert(newIndex, tab);
-															browserState.tabs.removeAt(oldIndex);
-															browserState.tabs.insert(newIndex, tab.item1);
-															activeBrowserTab.value = tabs.indexOf(currentTab);
-															browserState.currentTab = activeBrowserTab.value;
-															browserState.save();
-															setState(() {});
-														},
-														itemCount: tabs.length,
-														itemBuilder: (context, i) {
-															return _buildTabletIcon(i * -1, const Icon(Icons.topic), tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'Browse', reorderable: true);
-														}
-													)
+													child: _buildTabList(Axis.horizontal)
 												),
 												_buildNewTabIcon()
 											]
