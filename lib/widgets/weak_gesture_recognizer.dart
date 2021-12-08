@@ -200,8 +200,9 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
           untransformedDelta: movedLocally,
           untransformedEndPosition: event.localPosition + event.pan
         ).distance * (_getPrimaryValueFromOffset(movedLocally) ?? 1).sign;
-        if (_hasSufficientGlobalDistanceToAccept(event, gestureSettings?.touchSlop))
+        if (_hasSufficientGlobalDistanceToAccept(event, gestureSettings?.touchSlop)) {
           resolve(GestureDisposition.accepted);
+				}
       }
     }
     if (event is PointerUpEvent || event is PointerCancelEvent || event is PointerPanZoomEndEvent) {
