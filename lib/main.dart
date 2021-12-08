@@ -412,7 +412,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								);
 							}
 							else {
-								return const Icon(Icons.topic);
+								return _icon;
 							}
 						}
 					);
