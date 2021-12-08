@@ -9,6 +9,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -235,10 +236,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								onBoardChanged: (newBoard) {
 									tabs[i].item1.board = newBoard;
 									browserState.save();
+									setState(() {});
 								},
 								onThreadChanged: (newThread) {
 									tabs[i].item1.thread = newThread;
 									browserState.save();
+									setState(() {});
 								},
 								id: 'tab${tabs[index].item2.hashCode}'
 							)
@@ -418,7 +421,30 @@ class _ChanHomePageState extends State<ChanHomePage> {
 														},
 														itemCount: tabs.length,
 														itemBuilder: (context, i) {
-															return _buildTabletIcon(i * -1, const Icon(Icons.topic), tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'Browse', reorderable: true);
+															Widget icon = const Icon(Icons.topic);
+															if (tabs[i].item1.thread != null) {
+																icon = ValueListenableBuilder(
+																	valueListenable: context.read<Persistence>().listenForPersistentThreadStateChanges(tabs[i].item1.thread!),
+																	builder: (context, box, child) {
+																		final attachment = context.read<Persistence>().getThreadStateIfExists(tabs[i].item1.thread!)?.thread?.attachment;
+																		if (attachment != null) {
+																			return ClipRRect(
+																				borderRadius: const BorderRadius.all(Radius.circular(4)),
+																				child: AttachmentThumbnail(
+																					fit: BoxFit.cover,
+																					attachment: attachment,
+																					width: 25,
+																					height: 25
+																				)
+																			);
+																		}
+																		else {
+																			return const Icon(Icons.topic);
+																		}
+																	}
+																);
+															}
+															return _buildTabletIcon(i * -1, icon, tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'Browse', reorderable: true);
 														}
 													)
 												),

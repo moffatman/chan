@@ -11,6 +11,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:extended_image_library/extended_image_library.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 part 'persistence.g.dart';
@@ -169,6 +170,10 @@ class Persistence {
 	}
 
 	String get currentBoardName => browserState.tabs[browserState.currentTab].board?.name ?? 'tv';
+
+	ValueListenable<Box<PersistentThreadState>> listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
+		return threadStateBox.listenable(keys: ['${thread.board}/${thread.id}']);
+	}
 }
 
 const _maxRecentItems = 50;
