@@ -218,7 +218,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_setupBoards();
 	}
 
-	Widget _buildTab(BuildContext context, int index) {
+	Widget _buildTab(BuildContext context, int index, bool active) {
 		Widget child;
 		if (index <= 0) {
 			child = ValueListenableBuilder(
@@ -261,7 +261,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 		return KeyedSubtree(
 			key: _keys.putIfAbsent(index, () => GlobalKey()),
-			child: child
+			child: active ? child : PrimaryScrollController.none(child: child)
 		);
 	}
 
@@ -440,7 +440,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								index: max(0, tabletIndex),
 								children: List.generate(5, (i) => ExcludeFocus(
 									excluding: i != tabletIndex,
-									child: _buildTab(context, i)
+									child: _buildTab(context, i, i == tabletIndex)
 								))
 							)
 						)
@@ -496,7 +496,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							}
 						),
 						tabBuilder: (context, index) => CupertinoTabView(
-							builder: (context) => _buildTab(context, index)
+							builder: (context) => _buildTab(context, index, true)
 						)
 					),
 					Column(

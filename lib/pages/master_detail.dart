@@ -266,7 +266,9 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 				children: [
 					Flexible(
 						flex: 1,
-						child: masterNavigator
+						child: PrimaryScrollController.none(
+							child: masterNavigator
+						)
 					),
 					VerticalDivider(
 						width: 0,
