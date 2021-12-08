@@ -501,7 +501,7 @@ class AttachmentViewer extends StatelessWidget {
 								child: GestureDetector(
 									child: VideoPlayer(controller.videoPlayerController!),
 									onLongPressStart: (x) => controller._onLongPressStart(),
-									onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / 400),
+									onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.of(context).size.width / 2)),
 									onLongPressEnd: (x) => controller._onLongPressEnd()
 								)
 							)
