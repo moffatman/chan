@@ -239,7 +239,7 @@ class _ThreadPageState extends State<ThreadPage> {
 								child: Navigator(
 									key: _subNavigatorKey,
 									initialRoute: '/',
-									onGenerateRoute: (RouteSettings settings) => TransparentRoute(
+									onGenerateRoute: (RouteSettings settings) => TrulyTransparentRoute(
 										builder: (context) => Shortcuts(
 											shortcuts: {
 												LogicalKeySet(LogicalKeyboardKey.keyG): const OpenGalleryIntent()
