@@ -262,7 +262,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	void _onCoalescedLongPressUpdate(double factor) async {
 		if (_currentlyWithinLongPress) {
 			final duration = videoPlayerController!.value.duration.inMilliseconds;
-			final newPosition = Duration(milliseconds: ((_millisecondsBeforeLongPress + (duration * factor)) % duration).round());
+			final newPosition = Duration(milliseconds: ((_millisecondsBeforeLongPress + (duration * factor)).clamp(0, duration)).round());
 			_overlayText = _formatPosition(newPosition, videoPlayerController!.value.duration);
 			notifyListeners();
 			if (!_seeking) {
