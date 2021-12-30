@@ -101,5 +101,6 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
       x.item1.remove();
       x.item3.complete();
     }
+    stack.clear();
   }
 }
