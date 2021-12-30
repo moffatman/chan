@@ -243,8 +243,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: change_min
-      resolved-ref: bdf2bfd25cc477edcddfe011542ac63275d7c0f0
+      ref: master
+      resolved-ref: "65185a5c32cf5fd8f2261757cc7159db087313e3"
       url: "https://github.com/moffatman/extended_image.git"
     source: git
     version: "6.0.1"

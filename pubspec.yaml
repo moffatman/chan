@@ -132,7 +132,7 @@ dependency_overrides:
   extended_image:
     git:
       url: https://github.com/moffatman/extended_image.git
-      ref: change_min
+      ref: master
   ffmpeg_kit_flutter_full_gpl:
     git:
       url: https://github.com/moffatman/ffmpeg-kit.git
