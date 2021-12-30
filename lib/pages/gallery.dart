@@ -68,7 +68,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	AttachmentViewerController get currentController => _getController(currentAttachment);
 	bool firstControllerMade = false;
 	late final ScrollController thumbnailScrollController;
-	late final PageController pageController;
+	late final ExtendedPageController pageController;
 	late bool showChrome;
 	bool showingOverlays = true;
 	final Key _pageControllerKey = GlobalKey();
@@ -90,7 +90,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		showChrome = widget.initiallyShowChrome;
 		_updateOverlays(showChrome);
 		currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
-		pageController = PageController(keepPage: true, initialPage: currentIndex);
+		pageController = ExtendedPageController(keepPage: true, initialPage: currentIndex);
 		pageController.addListener(_onPageControllerUpdate);
 		_scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
 		_getController(widget.attachments[currentIndex]).loadFullAttachment();
@@ -372,7 +372,6 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													key: _pageControllerKey,
 													child: ExtendedImageGesturePageView.builder(
 														canScrollPage: (x) => widget.allowScroll,
-														canMovePage: (x) => widget.allowScroll,
 														onPageChanged: _onPageChanged,
 														controller: pageController,
 														itemCount: widget.attachments.length,
