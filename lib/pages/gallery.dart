@@ -82,6 +82,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	final Set<Attachment> _rotationsInProgress = {};
 	late final AnimationController _rotateButtonAnimationController;
 	final Map<Attachment, AttachmentViewerController> _controllers = {};
+	final _shouldShowPosition = ValueNotifier<bool>(false);
 
 	@override
 	void initState() {
@@ -182,15 +183,22 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		}
 		if (milliseconds == 0) {
 			pageController.jumpToPage(index);
+			_shouldShowPosition.value = true;
+			await Future.delayed(const Duration(seconds: 1));
+			if (currentIndex == index) {
+				_shouldShowPosition.value = false;
+			}
 		}
 		else {
 			_animatingNow = true;
+			_shouldShowPosition.value = true;
 			await pageController.animateToPage(
 				index,
 				duration: Duration(milliseconds: milliseconds),
 				curve: Curves.ease
 			);
 			_animatingNow = false;
+			_shouldShowPosition.value = false;
 			_onPageChanged(index);
 		}
 	}
@@ -432,7 +440,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												AnimatedBuilder(
 													animation: pageController,
 													builder: (context, child) => (pageController.positions.length != 1 ) ? Container() : AnimatedBuilder(
-														animation: pageController.position.isScrollingNotifier,
+														animation: _shouldShowPosition,
 														child: Align(
 															alignment: Alignment.bottomLeft,
 															child: Container(
@@ -447,7 +455,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														),
 														builder: (context, child) => AnimatedSwitcher(
 															duration: const Duration(milliseconds: 300),
-															child: pageController.position.isScrollingNotifier.value ? child : Container()
+															child: _shouldShowPosition.value ? child : Container()
 														)
 													)
 												),
