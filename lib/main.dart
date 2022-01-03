@@ -125,12 +125,16 @@ class _ChanAppState extends State<ChanApp> {
 				child: Builder(
 					builder: (BuildContext context) {
 						final settings = context.watch<EffectiveSettings>();
-						CupertinoThemeData theme = const CupertinoThemeData(brightness: Brightness.light, primaryColor: Colors.black);
+						CupertinoThemeData theme = const CupertinoThemeData(
+							brightness: Brightness.light,
+							primaryColor: Colors.black,
+							barBackgroundColor: Color(0xFFF9F9F9)
+						);
 						if (settings.theme == Brightness.dark) {
 							theme = CupertinoThemeData(
 								brightness: Brightness.dark,
 								scaffoldBackgroundColor: settings.darkThemeIsPureBlack ? Colors.black : const Color.fromRGBO(20, 20, 20, 1),
-								barBackgroundColor: settings.darkThemeIsPureBlack ? const Color.fromRGBO(20, 20, 20, 1) : null,
+								barBackgroundColor: settings.darkThemeIsPureBlack ? const Color.fromRGBO(20, 20, 20, 1) : const Color.fromRGBO(40, 40, 40, 1),
 								primaryColor: Colors.white
 							);
 						}

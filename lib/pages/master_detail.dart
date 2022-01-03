@@ -179,7 +179,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 					initialRoute: '/',
 					observers: [HeroController()],
 					onGenerateRoute: (RouteSettings settings) {
-						return TransparentRoute(
+						return FullWidthCupertinoPageRoute(
 							builder: (context) {
 								Widget child = TabBarView(
 									controller: _tabController,
