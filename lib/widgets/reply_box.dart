@@ -57,13 +57,11 @@ class ReplyBoxState extends State<ReplyBox> {
 		});
 	}
 
-	void onTapPostId(int id) {
-		showReplyBox();
+	void _insertText(String insertedText) {
 		int currentPos = _textFieldController.selection.base.offset;
 		if (currentPos < 0) {
 			currentPos = _textFieldController.text.length;
 		}
-		String insertedText = '>>$id';
 		if (currentPos == _textFieldController.text.length) {
 			insertedText += '\n';
 		}
@@ -74,6 +72,16 @@ class ReplyBoxState extends State<ReplyBox> {
 			),
 			text: _textFieldController.text.substring(0, currentPos) + insertedText + _textFieldController.text.substring(currentPos)
 		);
+	}
+
+	void onTapPostId(int id) {
+		showReplyBox();
+		_insertText('>>$id');
+	}
+
+	void onQuoteText(String text) {
+		showReplyBox();
+		_insertText('>' + text.replaceAll('\n', '\n>'));
 	}
 
 	void showReplyBox() {

@@ -1,3 +1,4 @@
+import 'package:chan/pages/selectable_post.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
@@ -19,7 +20,6 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
-
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/util.dart';
@@ -290,6 +290,17 @@ class PostRow extends StatelessWidget {
 							trailingIcon: Icons.bookmark_remove,
 							onPressed: () {
 								context.read<Persistence>().getSavedPost(post)?.delete();
+							}
+						),
+						ContextMenuAction(
+							child: const Text('Select text'),
+							trailingIcon: Icons.select_all,
+							onPressed: () {
+								WeakNavigator.push(context, SelectablePostPage(
+									post: _post,
+									zone: zone,
+									onQuoteText: (text) => context.read<GlobalKey<ReplyBoxState>>().currentState?.onQuoteText(text)
+								));
 							}
 						),
 						ContextMenuAction(
