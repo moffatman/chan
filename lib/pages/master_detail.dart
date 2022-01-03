@@ -24,7 +24,7 @@ class BuiltDetailPane {
 }
 
 class MasterDetailPage<T> extends StatelessWidget {
-	final String id;
+	final Object? id;
 	final double? twoPaneBreakpoint;
 	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T> valueSetter) masterBuilder;
 	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
@@ -43,9 +43,9 @@ class MasterDetailPage<T> extends StatelessWidget {
 	Widget build(BuildContext context) {
 		return MultiMasterDetailPage(
 			showChrome: false,
-			panes: [
+			id: id,
+			paneCreator: () => [
 				MultiMasterPane<T>(
-					id: id,
 					masterBuilder: masterBuilder,
 					detailBuilder: detailBuilder,
 					initialValue: initialValue,
@@ -57,7 +57,6 @@ class MasterDetailPage<T> extends StatelessWidget {
 }
 
 class MultiMasterPane<T> {
-	final String id;
 	final Widget? title;
 	final ObstructingPreferredSizeWidget? navigationBar;
 	final IconData? icon;
@@ -67,7 +66,6 @@ class MultiMasterPane<T> {
 	final ValueChanged<T?>? onValueChanged;
 
 	MultiMasterPane({
-		required this.id,
 		required this.masterBuilder,
 		required this.detailBuilder,
 		this.title,
@@ -85,6 +83,14 @@ class MultiMasterPane<T> {
 		});
 	}
 
+	void onPushReturn(dynamic value) {
+		if (value != false) {
+			// it was a user-initiated pop
+			currentValue = null;
+			onValueChanged?.call(null);
+		}
+	}
+
 	Widget buildDetail() {
 		return detailBuilder(currentValue, false).widget;
 	}
@@ -96,11 +102,13 @@ class MultiMasterPane<T> {
 
 class MultiMasterDetailPage extends StatefulWidget {
 	final double twoPaneBreakpoint;
-	final List<MultiMasterPane> panes;
+	final Object? id;
+	final List<MultiMasterPane> Function() paneCreator;
 	final bool showChrome;
 
 	const MultiMasterDetailPage({
-		required this.panes,
+		required this.paneCreator,
+		this.id,
 		this.twoPaneBreakpoint = 700,
 		this.showChrome = true,
 		Key? key
@@ -115,6 +123,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 	final _masterKey = GlobalKey<NavigatorState>();
 	final _detailKey = GlobalKey<NavigatorState>();
 	final _masterContentKey = GlobalKey();
+	List<MultiMasterPane> panes = [];
  	bool? lastOnePane;
 	late bool onePane;
 
@@ -125,11 +134,12 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 	@override
 	void initState() {
 		super.initState();
-		_tabController = TabController(length: widget.panes.length, vsync: this);
+		panes = widget.paneCreator();
+		_tabController = TabController(length: panes.length, vsync: this);
 		_tabController.addListener(_onPaneChanged);
 		Future.delayed(const Duration(milliseconds: 100), () {
-			if (widget.panes[_tabController.index].currentValue != null) {
-				_onNewValue(widget.panes[_tabController.index]);
+			if (panes[_tabController.index].currentValue != null) {
+				_onNewValue(panes[_tabController.index]);
 			}
 		});
 	}
@@ -137,21 +147,16 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 	@override
 	void didUpdateWidget(MultiMasterDetailPage old) {
 		super.didUpdateWidget(old);
-		if (old.panes != widget.panes) {
-			int? newIndex;
-			if (_tabController.index >= widget.panes.length) {
-				newIndex = max(0, widget.panes.length - 1);
-			}
-			for (final pane in widget.panes) {
-				final prev = old.panes.tryFirstWhere((p) => p.id == pane.id);
-				if (prev != null) {
-					pane.currentValue = prev.currentValue;
-				}
+		if (old.id != widget.id) {
+			int newIndex = _tabController.index;
+			panes = widget.paneCreator();
+			if (_tabController.index >= panes.length) {
+				newIndex = max(0, panes.length - 1);
 			}
 			_tabController.removeListener(_onPaneChanged);
 			_tabController = TabController(
-				initialIndex: newIndex ?? _tabController.index,
-				length: widget.panes.length,
+				initialIndex: newIndex,
+				length: panes.length,
 				vsync: this
 			);
 			_tabController.addListener(_onPaneChanged);
@@ -160,7 +165,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 
 	void _onNewValue<T> (MultiMasterPane<T> pane) {
 		if (onePane) {
-			_masterKey.currentState!.push(pane.buildDetailRoute());
+			_masterKey.currentState!.push(pane.buildDetailRoute()).then(pane.onPushReturn);
 		}
 		else {
 			_detailKey.currentState?.popUntil((route) => route.isFirst);
@@ -183,15 +188,15 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 							builder: (context) {
 								Widget child = TabBarView(
 									controller: _tabController,
-									physics: widget.panes.length > 1 ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
-									children: widget.panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)).toList()
+									physics: panes.length > 1 ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
+									children: panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)).toList()
 								);
 								if (widget.showChrome) {
 									child = CupertinoPageScaffold(
 										resizeToAvoidBottomInset: false,
-										navigationBar: widget.panes[_tabController.index].navigationBar ?? CupertinoNavigationBar(
+										navigationBar: panes[_tabController.index].navigationBar ?? CupertinoNavigationBar(
 											transitionBetweenRoutes: false,
-											middle: widget.panes[_tabController.index].title
+											middle: panes[_tabController.index].title
 										),
 										child: Column(
 											children: [
@@ -201,7 +206,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 														color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 														child: TabBar(
 															controller: _tabController,
-															tabs: widget.panes.map((pane) => Tab(
+															tabs: panes.map((pane) => Tab(
 																icon: Icon(
 																	pane.icon,
 																	color: CupertinoTheme.of(context).primaryColor
@@ -240,7 +245,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 					onGenerateRoute: (RouteSettings settings) {
 						return FullWidthCupertinoPageRoute(
 							builder: (context) {
-								return widget.panes[_tabController.index].buildDetail();
+								return panes[_tabController.index].buildDetail();
 							},
 							settings: settings
 						);
@@ -249,12 +254,17 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 			)
 		);
 		if (lastOnePane != null && lastOnePane != onePane) {
-			if (onePane && widget.panes[_tabController.index].currentValue != null) {
-				_masterKey.currentState!.push(widget.panes[_tabController.index].buildDetailRoute());
+			final pane = panes[_tabController.index];
+			if (onePane && pane.currentValue != null) {
+				_masterKey.currentState!.push(pane.buildDetailRoute()).then(pane.onPushReturn);
 			}
 			else {
-				_masterKey.currentState?.popUntil((route) => route.isFirst);
-				_detailKey.currentState?.popUntil((route) => route.isFirst);
+				while (_masterKey.currentState?.canPop() ?? false) {
+					_masterKey.currentState?.pop(false);
+				}
+				while (_detailKey.currentState?.canPop() ?? false) {
+					_detailKey.currentState?.pop(false);
+				}
 			}
 		}
 		lastOnePane = onePane;

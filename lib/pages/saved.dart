@@ -101,9 +101,9 @@ class _SavedPageState extends State<SavedPage> {
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
 		return MultiMasterDetailPage(
-			panes: [
+			id: 'saved',
+			paneCreator: () => [
 				MultiMasterPane<ThreadIdentifier>(
-					id: 'savedThreads',
 					navigationBar: _navigationBar('Saved Threads'),
 					icon: Icons.topic,
 					masterBuilder: (context, selectedThread, threadSetter) {
@@ -178,7 +178,6 @@ class _SavedPageState extends State<SavedPage> {
 					}
 				),
 				MultiMasterPane<_PostThreadCombo>(
-					id: 'yourPosts',
 					navigationBar: const CupertinoNavigationBar(
 						transitionBetweenRoutes: false,
 						middle: Text('Your Posts')
@@ -232,7 +231,6 @@ class _SavedPageState extends State<SavedPage> {
 					)
 				),
 				MultiMasterPane<SavedPost>(
-					id: 'savedPosts',
 					navigationBar: _navigationBar('Saved Posts'),
 					icon: Icons.reply,
 					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
@@ -289,7 +287,6 @@ class _SavedPageState extends State<SavedPage> {
 					)
 				),
 				MultiMasterPane<SavedAttachment>(
-					id: 'savedAttachments',
 					title: const Text('Saved Attachments'),
 					icon: Icons.image,
 					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
