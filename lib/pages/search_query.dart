@@ -133,7 +133,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 								time: DateTime.fromMicrosecondsSinceEpoch(0),
 								posts: [],
 							),
-							semanticRootId: -7
+							semanticRootIds: [-7]
 						),
 						child: PostRow(
 							post: post,
@@ -149,7 +149,8 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									builder: (context) => ThreadPage(
 										thread: post.threadIdentifier,
 										initialPostId: post.id,
-										initiallyUseArchive: true
+										initiallyUseArchive: true,
+										boardSemanticId: -7
 									)
 								));
 							}

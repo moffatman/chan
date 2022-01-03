@@ -169,7 +169,10 @@ class _SavedPageState extends State<SavedPage> {
 					},
 					detailBuilder: (selectedThread, poppedOut) {
 						return BuiltDetailPane(
-							widget: selectedThread != null ? ThreadPage(thread: selectedThread) : _placeholder('Select a thread'),
+							widget: selectedThread != null ? ThreadPage(
+								thread: selectedThread,
+								boardSemanticId: -4
+							) : _placeholder('Select a thread'),
 							pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
 						);
 					}
@@ -208,7 +211,7 @@ class _SavedPageState extends State<SavedPage> {
 									create: (context) => PostSpanRootZoneData(
 										site: context.read<ImageboardSite>(),
 										thread: item.thread,
-										semanticRootId: -8
+										semanticRootIds: [-8]
 									),
 									child: PostRow(
 										post: item.post,
@@ -223,6 +226,7 @@ class _SavedPageState extends State<SavedPage> {
 						widget: selected == null ? _placeholder('Select a post') : ThreadPage(
 							thread: selected.post.threadIdentifier,
 							initialPostId: selected.post.id,
+							boardSemanticId: -8
 						),
 						pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
 					)
@@ -251,7 +255,7 @@ class _SavedPageState extends State<SavedPage> {
 									create: (context) => PostSpanRootZoneData(
 										site: context.read<ImageboardSite>(),
 										thread: savedPost.thread,
-										semanticRootId: -2
+										semanticRootIds: [-2]
 									),
 									child: PostRow(
 										post: savedPost.post,
@@ -279,6 +283,7 @@ class _SavedPageState extends State<SavedPage> {
 						widget: selected == null ? _placeholder('Select a post') : ThreadPage(
 							thread: selected.post.threadIdentifier,
 							initialPostId: selected.post.id,
+							boardSemanticId: -2
 						),
 						pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
 					)

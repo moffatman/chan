@@ -84,7 +84,10 @@ class _HistoryPageState extends State<HistoryPage> {
 			},
 			detailBuilder: (selectedThread, poppedOut) {
 				return BuiltDetailPane(
-					widget: selectedThread != null ? ThreadPage(thread: selectedThread) : Builder(
+					widget: selectedThread != null ? ThreadPage(
+						thread: selectedThread,
+						boardSemanticId: -3
+					) : Builder(
 						builder: (context) => Container(
 							decoration: BoxDecoration(
 								color: CupertinoTheme.of(context).scaffoldBackgroundColor,

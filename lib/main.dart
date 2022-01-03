@@ -247,7 +247,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									browserState.save();
 									setState(() {});
 								},
-								id: 'tab${tabs[index].item2.hashCode}'
+								id: -1 * (i + 10)
 							)
 						))
 					);

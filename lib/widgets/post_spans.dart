@@ -134,7 +134,8 @@ class PostQuoteLinkSpan extends PostSpan {
 							id: threadId!
 						),
 						initialPostId: postId,
-						initiallyUseArchive: dead
+						initiallyUseArchive: dead,
+						boardSemanticId: -1
 					)
 				));
 			})
@@ -268,7 +269,12 @@ class PostBoardLink extends PostSpan {
 				decoration: TextDecoration.underline
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
-				context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(builder: (ctx) => BoardPage(initialBoard: context.read<Persistence>().getBoard(board))));
+				context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(
+					builder: (ctx) => BoardPage(
+						initialBoard: context.read<Persistence>().getBoard(board),
+						semanticId: -1
+					)
+				));
 			})
 		);
 	}
@@ -504,20 +510,18 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	final Map<int, bool> _isLoadingPostFromArchive = {};
 	final Map<int, Post> _postsFromArchive = {};
 	final Map<int, String> _postFromArchiveErrors = {};
-	final int? semanticRootId;
+	final Iterable<int> semanticRootIds;
 
 	PostSpanRootZoneData({
 		required this.thread,
 		required this.site,
 		this.threadState,
 		this.onNeedScrollToPost,
-		this.semanticRootId
+		this.semanticRootIds = const []
 	});
 
 	@override
-	Iterable<int> get stackIds => [
-		if (semanticRootId != null) semanticRootId!
-	];
+	Iterable<int> get stackIds => semanticRootIds;
 
 	@override
 	bool isLoadingPostFromArchive(int id) {

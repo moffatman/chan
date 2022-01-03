@@ -177,10 +177,7 @@ class ThreadRow extends StatelessWidget {
 																	attachment: _thread.attachment!,
 																	thread: _thread.identifier,
 																	onLoadError: onThumbnailLoadError,
-																	hero: AttachmentSemanticLocation(
-																		attachment: _thread.attachment!,
-																		semanticParents: semanticParentIds
-																	)
+																	hero: null
 																),
 																if (_thread.attachment?.type == AttachmentType.webm) Positioned(
 																	bottom: 0,

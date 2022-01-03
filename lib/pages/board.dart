@@ -22,6 +22,7 @@ import 'package:chan/pages/gallery.dart';
 const _oldThreadThreshold = Duration(days: 7);
 
 class BoardPage extends StatefulWidget {
+	final int semanticId;
 	final ImageboardBoard? initialBoard;
 	final bool allowChangingBoard;
 	final ValueChanged<ImageboardBoard>? onBoardChanged;
@@ -33,6 +34,7 @@ class BoardPage extends StatefulWidget {
 		this.onBoardChanged,
 		this.onThreadSelected,
 		this.selectedThread,
+		required this.semanticId,
 		Key? key
 	}) : super(key: key);
 
@@ -173,7 +175,7 @@ class _BoardPageState extends State<BoardPage> {
 												contentFocus: settings.boardCatalogColumns > 1,
 												thread: thread,
 												isSelected: thread.identifier == widget.selectedThread,
-												semanticParentIds: const [-1],
+												semanticParentIds: [widget.semanticId],
 												onThumbnailTap: (initialAttachment) {
 													final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
 													showGallery(
@@ -183,7 +185,7 @@ class _BoardPageState extends State<BoardPage> {
 														onChange: (attachment) {
 															_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
 														},
-														semanticParentIds: [-1]
+														semanticParentIds: [widget.semanticId]
 													);
 												}
 											),
@@ -192,7 +194,12 @@ class _BoardPageState extends State<BoardPage> {
 													widget.onThreadSelected!(thread.identifier);
 												}
 												else {
-													Navigator.of(context).push(FullWidthCupertinoPageRoute(builder: (ctx) => ThreadPage(thread: thread.identifier)));
+													Navigator.of(context).push(FullWidthCupertinoPageRoute(
+														builder: (ctx) => ThreadPage(
+															thread: thread.identifier,
+															boardSemanticId: widget.semanticId,
+														)
+													));
 												}
 											}
 										);

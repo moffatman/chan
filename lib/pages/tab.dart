@@ -10,20 +10,20 @@ class ImageboardTab extends StatelessWidget {
 	final ValueChanged<ImageboardBoard>? onBoardChanged;
 	final ThreadIdentifier? initialThread;
 	final ValueChanged<ThreadIdentifier?>? onThreadChanged;
-	final String id;
+	final int id;
 	const ImageboardTab({
 		required this.initialBoard,
 		this.onBoardChanged,
 		this.initialThread,
 		this.onThreadChanged,
-		this.id = 'tab',
+		this.id = -1,
 		Key? key
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
 		return MasterDetailPage<ThreadIdentifier>(
-			id: id,
+			id: 'tab_$id',
 			initialValue: initialThread,
 			onValueChanged: onThreadChanged,
 			masterBuilder: (context, selectedThread, threadSetter) {
@@ -32,11 +32,15 @@ class ImageboardTab extends StatelessWidget {
 					selectedThread: selectedThread,
 					onThreadSelected: threadSetter,
 					onBoardChanged: onBoardChanged,
+					semanticId: id
 				);
 			},
 			detailBuilder: (selectedThread, poppedOut) {
 				return BuiltDetailPane(
-					widget: selectedThread != null ? ThreadPage(thread: selectedThread) : Builder(
+					widget: selectedThread != null ? ThreadPage(
+						thread: selectedThread,
+						boardSemanticId: id
+					) : Builder(
 						builder: (context) => Container(
 							decoration: BoxDecoration(
 								color: CupertinoTheme.of(context).scaffoldBackgroundColor,

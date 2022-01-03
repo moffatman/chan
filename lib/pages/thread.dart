@@ -28,11 +28,13 @@ class ThreadPage extends StatefulWidget {
 	final ThreadIdentifier thread;
 	final int? initialPostId;
 	final bool initiallyUseArchive;
+	final int boardSemanticId;
 
 	const ThreadPage({
 		required this.thread,
 		this.initialPostId,
 		this.initiallyUseArchive = false,
+		required this.boardSemanticId,
 		Key? key
 	}) : super(key: key);
 
@@ -101,6 +103,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			thread: persistentState.thread ?? _nullThread,
 			site: context.read<ImageboardSite>(),
 			threadState: persistentState,
+			semanticRootIds: [widget.boardSemanticId, widget.thread.id],
 			onNeedScrollToPost: (post) {
 				_subNavigatorKey.currentState!.popUntil((route) => route.isFirst);
 				_weakNavigatorKey.currentState!.popAllExceptFirst();
@@ -154,7 +157,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			onChange: (attachment) {
 				_listController.animateTo((p) => p.attachment?.id == attachment.id);
 			},
-			semanticParentIds: []
+			semanticParentIds: [widget.boardSemanticId, widget.thread.id]
 		);
 	}
 
