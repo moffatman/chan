@@ -519,7 +519,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																						)
 																					),
 																					Transform(
-																						transform: Matrix4.translationValues(0, -75, 0),
+																						transform: Matrix4.translationValues(0, -50, 0),
 																						child: GridView.builder(
 																							shrinkWrap: true,
 																							physics: const NeverScrollableScrollPhysics(),
