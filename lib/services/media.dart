@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -60,13 +61,22 @@ class MediaScan {
 
 	static Future<MediaScan> _scan(Uri file) async {
 		return await _ffprobeLock.protect<MediaScan>(() async {
-			final mediaInfo = (await FFprobeKit.getMediaInformationAsync(file.toString())).getMediaInformation();
-			final seconds = double.tryParse(mediaInfo?.getDuration() ?? '');
-			return MediaScan(
-				hasAudio: mediaInfo?.getStreams().any((stream) => stream.getType() == 'audio') ?? true,
-				duration: seconds == null ? null : Duration(milliseconds: (seconds * 1000).round()),
-				bitrate: int.tryParse(mediaInfo?.getBitrate() ?? '')
-			);
+			final completer = Completer<MediaScan>();
+			FFprobeKit.getMediaInformationAsync(file.toString(), (session) async {
+				final output = await session.getOutput();
+				if (output == null) {
+					completer.completeError(Exception('No output from ffprobe'));
+					return;
+				}
+				final data = jsonDecode(output);
+				final seconds = double.tryParse(data['format']?['duration'] ?? '');
+				completer.complete(MediaScan(
+					hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
+					duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
+					bitrate: int.tryParse(data['format']?['bit_rate'])
+				));
+			});
+			return completer.future;
 		});
 	}
 
@@ -83,6 +93,9 @@ class MediaScan {
 			return _scan(file);
 		}
 	}
+
+	@override
+	String toString() => 'MediaScan(hasAudio: $hasAudio, duration: $duration, bitrate: $bitrate)';
 }
 
 class MediaConversion {
@@ -110,7 +123,7 @@ class MediaConversion {
 	static MediaConversion toMp4(Uri inputFile) {
 		List<String> extraOptions = [];
 		if (Platform.isAndroid || Platform.isIOS) {
-			extraOptions = ['-c:v', 'libx264', '-preset', 'ultrafast', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'];
+			extraOptions = ['-c:v', 'libx264', '-preset', 'medium', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'];
 		}
 		return MediaConversion(
 			inputFile: inputFile,
