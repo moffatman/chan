@@ -182,6 +182,7 @@ class _SearchPageState extends State<SearchPage> {
 									onPressed: () {
 										FocusManager.instance.primaryFocus!.unfocus();
 										_controller.clear();
+										_searchFocused = false;
 										query = ImageboardArchiveSearchQuery(boards: query.boards);
 										setState(() {});
 									}
