@@ -140,7 +140,7 @@ class _SavedPageState extends State<SavedPage> {
 															thread: state.thread!,
 															isSelected: state.thread!.identifier == selectedThread,
 															onThumbnailLoadError: (error) {
-																context.read<ThreadWatcher>().fixBrokenThread(state.thread!.identifier);
+																context.read<SavedThreadWatcher>().fixBrokenThread(state.thread!.identifier);
 															},
 															semanticParentIds: const [-4],
 															onThumbnailTap: (initialAttachment) {
@@ -354,7 +354,7 @@ class ThreadWatcherControls extends StatefulWidget {
 class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 	@override
 	Widget build(BuildContext context) {
-		final watcher = context.watch<ThreadWatcher>();
+		final watcher = context.watch<SavedThreadWatcher>();
 		return AnimatedSize(
 			duration: const Duration(milliseconds: 300),
 			child: Container(

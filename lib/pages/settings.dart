@@ -1,7 +1,14 @@
 import 'dart:io';
 
+import 'package:chan/models/board.dart';
+import 'package:chan/models/thread.dart';
+import 'package:chan/pages/board.dart';
+import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/thread_row.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -34,6 +41,55 @@ class SettingsPage extends StatelessWidget {
 						child: ListView(
 							physics: const BouncingScrollPhysics(),
 							children: [
+								const Padding(
+									padding: EdgeInsets.all(16),
+									child: Text('Development News')
+								),
+								FutureBuilder<List<Thread>>(
+									future: context.read<ImageboardSite>().getCatalog('chance'),
+									builder: (context, snapshot) {
+										final children = (snapshot.data ?? []).where((t) => t.isSticky).map((thread) => GestureDetector(
+											onTap: () => Navigator.push(context, FullWidthCupertinoPageRoute(
+												builder: (context) => ThreadPage(
+													thread: thread.identifier,
+													boardSemanticId: -1,
+												)
+											)),
+											child: ThreadRow(
+												thread: thread,
+												isSelected: false
+											)
+										)).toList();
+										if (children.isEmpty) {
+											return const Padding(
+												padding: EdgeInsets.all(16),
+												child: Center(
+													child: Text('No current news', style: TextStyle(color: Colors.grey))
+												)
+											);
+										}
+										return ListView(
+											shrinkWrap: true,
+											physics: const NeverScrollableScrollPhysics(),
+											children: children
+										);
+									}
+								),
+								CupertinoButton(
+									child: const Text('See more discussion'),
+									onPressed: () => Navigator.push(context, FullWidthCupertinoPageRoute(
+										builder: (context) => BoardPage(
+											initialBoard: ImageboardBoard(
+												name: 'chance',
+												title: 'Chance - Imageboard Browser',
+												isWorksafe: true,
+												webmAudioAllowed: false
+											),
+											allowChangingBoard: false,
+											semanticId: -1
+										)
+									))
+								),
 								const Padding(
 									padding: EdgeInsets.all(16),
 									child: Text('Content Filtering')

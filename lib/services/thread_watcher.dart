@@ -9,7 +9,57 @@ import 'package:hive/hive.dart';
 const _normalInterval = Duration(seconds: 90);
 const _errorInterval = Duration(seconds: 180);
 
-class ThreadWatcher extends ChangeNotifier {
+class StickyThreadWatcher extends ChangeNotifier {
+	final ImageboardSite site;
+	final Persistence persistence;
+	final String board;
+	final Duration interval;
+	StreamSubscription<BoxEvent>? _boxSubscription;
+	Timer? nextUpdateTimer;
+	List<Thread> unseenStickyThreads = [];
+
+	final unseenCount = ValueNotifier<int>(0);
+
+	StickyThreadWatcher({
+		required this.site,
+		required this.persistence,
+		required this.board,
+		this.interval = const Duration(minutes: 10)
+	}) {
+		_boxSubscription = persistence.threadStateBox.watch().listen(_threadUpdated);
+		update();
+	}
+
+	void _threadUpdated(BoxEvent event) {
+		if (event.value is PersistentThreadState) {
+			final newThreadState = event.value as PersistentThreadState;
+			unseenStickyThreads.removeWhere((t) => t.identifier == newThreadState.thread?.identifier);
+			unseenCount.value = unseenStickyThreads.length;
+		}
+	}
+
+	Future<void> update() async {
+		try {
+			final catalog = await site.getCatalog(board);
+			unseenStickyThreads = catalog.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).toList();
+			unseenCount.value = unseenStickyThreads.length;
+		}
+		catch (e) {
+			print(e);
+		}
+		nextUpdateTimer = Timer(interval, update);
+		notifyListeners();
+	}
+
+	@override
+	void dispose() {
+		nextUpdateTimer?.cancel();
+		_boxSubscription?.cancel();
+		super.dispose();
+	}
+}
+
+class SavedThreadWatcher extends ChangeNotifier {
 	final ImageboardSite site;
 	final Persistence persistence;
 	final Map<ThreadIdentifier, int> cachedUnseen = {};
@@ -24,7 +74,7 @@ class ThreadWatcher extends ChangeNotifier {
 	final unseenCount = ValueNotifier<int>(0);
 	final unseenYouCount = ValueNotifier<int>(0);
 	
-	ThreadWatcher({
+	SavedThreadWatcher({
 		required this.site,
 		required this.persistence
 	}) {

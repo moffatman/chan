@@ -5,6 +5,9 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/sites/4chan.dart';
+import 'package:chan/sites/foolfuuka.dart';
+import 'package:chan/sites/lainchan.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
 import '../models/thread.dart';
@@ -171,3 +174,40 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Uri getPostReportUrl(String board, int id);
 	Persistence? persistence;
 }
+
+ImageboardSite makeSite(dynamic data) {
+		if (data['type'] == 'lainchan') {
+			return SiteLainchan(
+				name: data['name'],
+				baseUrl: data['baseUrl']
+			);
+		}
+		else if (data['type'] == '4chan') {
+			return Site4Chan(
+				name: data['name'],
+				imageUrl: data['imageUrl'],
+				captchaKey: data['captchaKey'],
+				apiUrl: data['apiUrl'],
+				sysUrl: data['sysUrl'],
+				baseUrl: data['baseUrl'],
+				staticUrl: data['staticUrl'],
+				archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
+					if (archive['type'] == 'foolfuuka') {
+						return FoolFuukaArchive(
+							name: archive['name'],
+							baseUrl: archive['baseUrl'],
+							staticUrl: archive['staticUrl']
+						);
+					}
+					else {
+						print(archive);
+						throw UnsupportedError('Unknown archive type "${archive['type']}"');
+					}
+				}).toList()
+			);
+		}
+		else {
+			print(data);
+			throw UnsupportedError('Unknown site type "${data['type']}"');
+		}
+	}

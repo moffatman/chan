@@ -320,6 +320,15 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 												child: Text('No results')
 											)
 										)
+									)
+								else
+									const SliverToBoxAdapter(
+										child: SizedBox(
+											height: 100,
+											child: Center(
+												child: Text('Nothing to see here')
+											)
+										)
 									),
 							if (widget.footer != null && widget.disableUpdates) SliverSafeArea(
 								top: false,

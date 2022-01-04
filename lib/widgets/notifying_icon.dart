@@ -11,7 +11,7 @@ class NotifyingIcon extends StatelessWidget {
 	const NotifyingIcon({
 		required this.icon,
 		required this.primaryCount,
-		required this.secondaryCount,
+		this.secondaryCount,
 		this.topOffset = 0,
 		Key? key
 	}) : super(key: key);

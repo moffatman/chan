@@ -7,9 +7,8 @@ import 'package:chan/pages/saved.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
-import 'package:chan/sites/foolfuuka.dart';
-import 'package:chan/sites/lainchan.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -18,7 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tuple/tuple.dart';
 import 'sites/imageboard_site.dart';
-import 'sites/4chan.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/sticky_media_query.dart';
@@ -38,7 +36,7 @@ class ChanApp extends StatefulWidget {
 class _ChanAppState extends State<ChanApp> {
 	ImageboardSite? site;
 	Persistence? persistence;
-	ThreadWatcher? threadWatcher;
+	SavedThreadWatcher? threadWatcher;
 	final settings = EffectiveSettings();
 	late dynamic _lastSite;
 
@@ -58,48 +56,14 @@ class _ChanAppState extends State<ChanApp> {
 	}
 
 	Future<void> setSite(dynamic data) async {
-		ImageboardSite? _site;
-		if (data['type'] == 'lainchan') {
-			_site = SiteLainchan(
-				name: data['name'],
-				baseUrl: data['baseUrl']
-			);
-		}
-		else if (data['type'] == '4chan') {
-			_site = Site4Chan(
-				name: data['name'],
-				imageUrl: data['imageUrl'],
-				captchaKey: data['captchaKey'],
-				apiUrl: data['apiUrl'],
-				sysUrl: data['sysUrl'],
-				baseUrl: data['baseUrl'],
-				staticUrl: data['staticUrl'],
-				archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
-					if (archive['type'] == 'foolfuuka') {
-						return FoolFuukaArchive(
-							name: archive['name'],
-							baseUrl: archive['baseUrl'],
-							staticUrl: archive['staticUrl']
-						);
-					}
-					else {
-						print(archive);
-						throw UnsupportedError('Unknown archive type "${archive['type']}"');
-					}
-				}).toList()
-			);
-		}
-		else {
-			print(data);
-			throw UnsupportedError('Unknown site type "${data['type']}"');
-		}
+		final _site = makeSite(data);
 		Persistence _persistence = Persistence(_site.name);
 		await _persistence.initialize();
 		_site.persistence = _persistence;
 		site = _site;
 		persistence = _persistence;
 		final oldThreadWatcher = threadWatcher;
-		threadWatcher = ThreadWatcher(site: _site, persistence: _persistence);
+		threadWatcher = SavedThreadWatcher(site: _site, persistence: _persistence);
 		setState(() {});
 		await Future.delayed(const Duration(seconds: 5));
 		oldThreadWatcher?.dispose();
@@ -118,7 +82,7 @@ class _ChanAppState extends State<ChanApp> {
 				if (threadWatcher != null) ...[
 					Provider<ImageboardSite>.value(value: site!),
 					Provider<Persistence>.value(value: persistence!),
-					ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher!)
+					ChangeNotifierProvider<SavedThreadWatcher>.value(value: threadWatcher!)
 				]
 			],
 			child: SettingsSystemListener(
@@ -188,6 +152,21 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final tabs = <Tuple2<PersistentBrowserTab, Key>>[];
 	final activeBrowserTab = ValueNotifier<int>(0);
 	final _tabListController = ScrollController();
+	ImageboardSite? devSite;
+	Persistence? devPersistence;
+	StickyThreadWatcher? devThreadWatcher;
+
+	void _setupDevSite() async {
+		devSite = makeSite(defaultSite);
+		devPersistence = Persistence('devsite');
+		await devPersistence!.initialize();
+		devThreadWatcher = StickyThreadWatcher(
+			persistence: devPersistence!,
+			site: devSite!,
+			board: 'chance'
+		);
+		setState(() {});
+	}
 
 	void _setupBoards() async {
 		try {
@@ -221,6 +200,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		tabs.addAll(browserState.tabs.map((tab) => Tuple2(tab, GlobalKey())));
 		activeBrowserTab.value = browserState.currentTab;
 		_setupBoards();
+		_setupDevSite();
 	}
 
 	Widget _buildTab(BuildContext context, int index, bool active) {
@@ -264,7 +244,28 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			child = const SearchPage();
 		}
 		else {
-			child = const SettingsPage();
+			if (devThreadWatcher == null) {
+				child = const Center(
+					child: CupertinoActivityIndicator()
+				);
+			}
+			else {
+				child = MultiProvider(
+					providers: [
+						Provider.value(value: devSite!),
+						Provider.value(value: devPersistence!),
+						ChangeNotifierProvider.value(value: devThreadWatcher!)
+					],
+					child: ClipRect(
+						child: Navigator(
+							initialRoute: '/',
+							onGenerateRoute: (settings) => FullWidthCupertinoPageRoute(
+								builder: (context) => const SettingsPage()
+							)
+						)
+					)
+				);
+			}
 		}
 		return KeyedSubtree(
 			key: _keys.putIfAbsent(index, () => GlobalKey()),
@@ -470,12 +471,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									),
 									_buildTabletIcon(1, NotifyingIcon(
 											icon: Icons.bookmark,
-											primaryCount: context.watch<ThreadWatcher>().unseenYouCount,
-											secondaryCount: context.watch<ThreadWatcher>().unseenCount
+											primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
+											secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
 										), 'Saved'),
 									_buildTabletIcon(2, const Icon(Icons.history), 'History'),
 									_buildTabletIcon(3, const Icon(Icons.search), 'Search'),
-									_buildTabletIcon(4, const Icon(Icons.settings), 'Settings')
+									_buildTabletIcon(4, NotifyingIcon(
+										icon: Icons.settings,
+										primaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0)
+									), 'Settings')
 								]
 							)
 						),
@@ -506,8 +510,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								BottomNavigationBarItem(
 									icon: NotifyingIcon(
 										icon: Icons.bookmark,
-										primaryCount: context.watch<ThreadWatcher>().unseenYouCount,
-										secondaryCount: context.watch<ThreadWatcher>().unseenCount,
+										primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
+										secondaryCount: context.watch<SavedThreadWatcher>().unseenCount,
 										topOffset: 10
 									),
 									label: 'Saved'
@@ -520,8 +524,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									icon: Icon(Icons.search),
 									label: 'Search'
 								),
-								const BottomNavigationBarItem(
-									icon: Icon(Icons.settings),
+								BottomNavigationBarItem(
+									icon: NotifyingIcon(
+										icon: Icons.settings,
+										primaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0),
+										topOffset: 10
+									),
 									label: 'Settings'
 								)
 							],

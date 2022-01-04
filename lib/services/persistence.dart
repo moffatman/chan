@@ -138,7 +138,12 @@ class Persistence {
 			return board;
 		}
 		else {
-			throw BoardNotFoundException(boardName);
+			return ImageboardBoard(
+				title: boardName,
+				name: boardName,
+				webmAudioAllowed: false,
+				isWorksafe: true
+			);
 		}
 	}
 
