@@ -136,7 +136,8 @@ class _ThreadPageState extends State<ThreadPage> {
 				thread: persistentState.thread ?? _nullThread,
 				site: context.read<ImageboardSite>(),
 				threadState: persistentState,
-				onNeedScrollToPost: oldZone.onNeedScrollToPost
+				onNeedScrollToPost: oldZone.onNeedScrollToPost,
+				semanticRootIds: [widget.boardSemanticId, widget.thread.id]
 			);
 			persistentState.save();
 			_blockAndScrollToPostIfNeeded();
