@@ -624,6 +624,10 @@ class RefreshableListController<T extends Filterable> {
 			}
 			c = Curves.easeOut;
 		}
+		if (targetItem.cachedOffset == null) {
+			print('Failed to get the cachedOffset in time');
+			return;
+		}
 		final atAlignment0 = targetItem.cachedOffset! - topOffset!;
 		final alignmentSlidingWindow = scrollController!.position.viewportDimension - targetItem.cachedHeight! - topOffset! - bottomOffset!;
 		if (targetItem == _items.last) {
