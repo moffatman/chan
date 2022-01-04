@@ -25,7 +25,7 @@ class BuiltDetailPane {
 class MasterDetailPage<T> extends StatelessWidget {
 	final Object? id;
 	final double? twoPaneBreakpoint;
-	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T> valueSetter) masterBuilder;
+	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T?> valueSetter) masterBuilder;
 	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
 	final T? initialValue;
 	final ValueChanged<T?>? onValueChanged;
@@ -59,7 +59,7 @@ class MultiMasterPane<T> {
 	final Widget? title;
 	final ObstructingPreferredSizeWidget? navigationBar;
 	final IconData? icon;
-	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T> valueSetter) masterBuilder;
+	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T?> valueSetter) masterBuilder;
 	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
 	T? currentValue;
 	final ValueChanged<T?>? onValueChanged;
