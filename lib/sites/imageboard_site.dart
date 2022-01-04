@@ -8,6 +8,7 @@ import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/foolfuuka.dart';
+import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/widgets.dart';
@@ -272,6 +273,13 @@ ImageboardSite makeSite(BuildContext context, dynamic data) {
 							name: archive['name'],
 							baseUrl: archive['baseUrl'],
 							staticUrl: archive['staticUrl'],
+							boards: boards
+						);
+					}
+					else if (archive['type'] == 'fuuka') {
+						return FuukaArchive(
+							name: archive['name'],
+							baseUrl: archive['baseUrl'],
 							boards: boards
 						);
 					}
