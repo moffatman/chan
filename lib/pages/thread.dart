@@ -67,13 +67,14 @@ class _ThreadPageState extends State<ThreadPage> {
 		posts: [],
 	);
 
-	Future<void> _blockAndScrollToPostIfNeeded() async {
+	Future<void> _blockAndScrollToPostIfNeeded([Duration delayBeforeScroll = Duration.zero]) async {
 		final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;
 		if (persistentState.thread != null && scrollToId != null) {
 			setState(() {
 				blocked = true;
 				_unnaturallyScrolling = true;
 			});
+			await Future.delayed(delayBeforeScroll);
 			final alignment = (scrollToId == widget.initialPostId) ? 0.0 : 1.0;
 			try {
 				await WidgetsBinding.instance!.endOfFrame;
@@ -340,11 +341,12 @@ class _ThreadPageState extends State<ThreadPage> {
 																					await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
 																					await context.read<ImageboardSite>().getThread(widget.thread);
 																				final bool firstLoad = _persistentState.thread == null;
+																				bool shouldScroll = false;
 																				if (_thread != _persistentState.thread) {
 																					_persistentState.thread = _thread;
 																					if (persistentState == _persistentState) {
 																						zone.thread = _thread;
-																						if (firstLoad) await _blockAndScrollToPostIfNeeded();
+																						if (firstLoad) shouldScroll = true;
 																					}
 																					await _persistentState.save();
 																					setState(() {});
@@ -361,6 +363,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																						}
 																					});
 																				}
+																				if (shouldScroll) _blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500));
 																				// Don't show data if the thread switched
 																				if (persistentState == _persistentState) {
 																					return _thread.posts;
