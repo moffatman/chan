@@ -467,60 +467,94 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													maintainState: true,
 													maintainSize: true,
 													maintainAnimation: true,
-													child: Align(
-														alignment: Alignment.bottomCenter,
-														child: SafeArea(
-															top: false,
-															child: ClipRect(
+													child: DraggableScrollableActuator(
+														child: DraggableScrollableSheet(
+															snap: true,
+															initialChildSize: 0.15,
+															maxChildSize: 1 - ((kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top) / MediaQuery.of(context).size.height),
+															minChildSize: 0.15,
+															builder: (context, controller) => ClipRect(
 																child: BackdropFilter(
 																	filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-																	child: Column(
-																		mainAxisSize: MainAxisSize.min,
-																		crossAxisAlignment: CrossAxisAlignment.center,
-																		children: [
-																			if (currentController.videoPlayerController != null) Container(
-																				decoration: const BoxDecoration(
-																					color: Colors.black38
-																				),
-																				child: VideoControls(
-																					controller: currentController.videoPlayerController!,
-																					hasAudio: currentController.hasAudio
-																				)
-																			),
-																			Container(
-																				decoration: const BoxDecoration(
-																					color: Colors.black38
-																				),
-																				height: _thumbnailSize + 8,
-																				child: KeyedSubtree(
-																					key: _thumbnailsKey,
-																					child: ListView.builder(
-																						controller: thumbnailScrollController,
-																						itemCount: widget.attachments.length,
-																						scrollDirection: Axis.horizontal,
-																						itemBuilder: (context, index) {
-																							final attachment = widget.attachments[index];
-																							return GestureDetector(
-																								onTap: () => _animateToPage(index),
-																								child: Container(
-																									decoration: BoxDecoration(
-																										color: Colors.transparent,
-																										borderRadius: const BorderRadius.all(Radius.circular(4)),
-																										border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
-																									),
-																									margin: const EdgeInsets.all(4),
-																									child: AttachmentThumbnail(
-																										attachment: widget.attachments[index],
-																										width: _thumbnailSize,
-																										height: _thumbnailSize
+																	child: Container(
+																		color: Colors.black38,
+																		child: SingleChildScrollView(
+																			controller: controller,
+																			child: Column(
+																				mainAxisSize: MainAxisSize.min,
+																				crossAxisAlignment: CrossAxisAlignment.center,
+																				children: [
+																					if (currentController.videoPlayerController != null) VideoControls(
+																						controller: currentController.videoPlayerController!,
+																						hasAudio: currentController.hasAudio
+																					),
+																					SizedBox(
+																						height: _thumbnailSize + 8,
+																						child: KeyedSubtree(
+																							key: _thumbnailsKey,
+																							child: ListView.builder(
+																								controller: thumbnailScrollController,
+																								itemCount: widget.attachments.length,
+																								scrollDirection: Axis.horizontal,
+																								itemBuilder: (context, index) {
+																									final attachment = widget.attachments[index];
+																									return GestureDetector(
+																										onTap: () => _animateToPage(index),
+																										child: Container(
+																											decoration: BoxDecoration(
+																												color: Colors.transparent,
+																												borderRadius: const BorderRadius.all(Radius.circular(4)),
+																												border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
+																											),
+																											margin: const EdgeInsets.all(4),
+																											child: AttachmentThumbnail(
+																												attachment: widget.attachments[index],
+																												width: _thumbnailSize,
+																												height: _thumbnailSize
+																											)
+																										)
+																									);
+																								}
+																							)
+																						)
+																					),
+																					Transform(
+																						transform: Matrix4.translationValues(0, -75, 0),
+																						child: GridView.builder(
+																							shrinkWrap: true,
+																							physics: const NeverScrollableScrollPhysics(),
+																							gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+																								maxCrossAxisExtent: 200
+																							),
+																							itemCount: widget.attachments.length,
+																							itemBuilder: (context, index) {
+																								final attachment = widget.attachments[index];
+																								return GestureDetector(
+																									onTap: () {
+																										DraggableScrollableActuator.reset(context);
+																										Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
+																									},
+																									child: Container(
+																										decoration: BoxDecoration(
+																											color: Colors.transparent,
+																											borderRadius: const BorderRadius.all(Radius.circular(4)),
+																											border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
+																										),
+																										margin: const EdgeInsets.all(4),
+																										child: AttachmentThumbnail(
+																											attachment: widget.attachments[index],
+																											width: 200,
+																											height: 200,
+																											hero: null
+																										)
 																									)
-																								)
-																							);
-																						}
+																								);
+																							}
+																						)
 																					)
-																				)
+																				]
 																			)
-																		]
+																		)
 																	)
 																)
 															)
