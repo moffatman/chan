@@ -83,6 +83,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	late final AnimationController _rotateButtonAnimationController;
 	final Map<Attachment, AttachmentViewerController> _controllers = {};
 	final _shouldShowPosition = ValueNotifier<bool>(false);
+	Widget? scrollSheetChild;
+	ScrollController? scrollSheetController;
 
 	@override
 	void initState() {
@@ -281,6 +283,93 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		return offset.distance / threshold;
 	}
 
+	Widget _buildScrollSheetChild(ScrollController controller) {
+		return ClipRect(
+			child: BackdropFilter(
+				filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+				child: Container(
+					color: Colors.black38,
+					child: CustomScrollView(
+						cacheExtent: 500,
+						controller: controller,
+						slivers: [
+							if (currentController.videoPlayerController != null) SliverToBoxAdapter(
+								child: VideoControls(
+									controller: currentController.videoPlayerController!,
+									hasAudio: currentController.hasAudio
+								)
+							),
+							SliverToBoxAdapter(
+								child: SizedBox(
+									height: _thumbnailSize + 8,
+									child: KeyedSubtree(
+										key: _thumbnailsKey,
+										child: ListView.builder(
+											controller: thumbnailScrollController,
+											itemCount: widget.attachments.length,
+											scrollDirection: Axis.horizontal,
+											itemBuilder: (context, index) {
+												final attachment = widget.attachments[index];
+												return GestureDetector(
+													onTap: () => _animateToPage(index),
+													child: Container(
+														decoration: BoxDecoration(
+															color: Colors.transparent,
+															borderRadius: const BorderRadius.all(Radius.circular(4)),
+															border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
+														),
+														margin: const EdgeInsets.all(4),
+														child: AttachmentThumbnail(
+															attachment: widget.attachments[index],
+															width: _thumbnailSize,
+															height: _thumbnailSize
+														)
+													)
+												);
+											}
+										)
+									)
+								)
+							),
+							SliverGrid(
+								gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+									maxCrossAxisExtent: 200
+								),
+								delegate: SliverChildBuilderDelegate(
+									(context, index) {
+										final attachment = widget.attachments[index];
+										return GestureDetector(
+											onTap: () {
+												DraggableScrollableActuator.reset(context);
+												Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
+											},
+											child: Container(
+												decoration: BoxDecoration(
+													color: Colors.transparent,
+													borderRadius: const BorderRadius.all(Radius.circular(4)),
+													border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
+												),
+												margin: const EdgeInsets.all(4),
+												child: AttachmentThumbnail(
+													gaplessPlayback: true,
+													attachment: widget.attachments[index],
+													width: 200,
+													height: 200,
+													hero: null
+												)
+											)
+										);
+									},
+									childCount: widget.attachments.length
+								)
+							)
+						]
+					)
+				)
+			)
+		);
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		return ExtendedImageSlidePage(
@@ -473,91 +562,13 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 															initialChildSize: 0.15,
 															maxChildSize: 1 - ((kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top) / MediaQuery.of(context).size.height),
 															minChildSize: 0.15,
-															builder: (context, controller) => ClipRect(
-																child: BackdropFilter(
-																	filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-																	child: Container(
-																		color: Colors.black38,
-																		child: SingleChildScrollView(
-																			controller: controller,
-																			child: Column(
-																				mainAxisSize: MainAxisSize.min,
-																				crossAxisAlignment: CrossAxisAlignment.center,
-																				children: [
-																					if (currentController.videoPlayerController != null) VideoControls(
-																						controller: currentController.videoPlayerController!,
-																						hasAudio: currentController.hasAudio
-																					),
-																					SizedBox(
-																						height: _thumbnailSize + 8,
-																						child: KeyedSubtree(
-																							key: _thumbnailsKey,
-																							child: ListView.builder(
-																								controller: thumbnailScrollController,
-																								itemCount: widget.attachments.length,
-																								scrollDirection: Axis.horizontal,
-																								itemBuilder: (context, index) {
-																									final attachment = widget.attachments[index];
-																									return GestureDetector(
-																										onTap: () => _animateToPage(index),
-																										child: Container(
-																											decoration: BoxDecoration(
-																												color: Colors.transparent,
-																												borderRadius: const BorderRadius.all(Radius.circular(4)),
-																												border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
-																											),
-																											margin: const EdgeInsets.all(4),
-																											child: AttachmentThumbnail(
-																												attachment: widget.attachments[index],
-																												width: _thumbnailSize,
-																												height: _thumbnailSize
-																											)
-																										)
-																									);
-																								}
-																							)
-																						)
-																					),
-																					Transform(
-																						transform: Matrix4.translationValues(0, -50, 0),
-																						child: GridView.builder(
-																							shrinkWrap: true,
-																							physics: const NeverScrollableScrollPhysics(),
-																							gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-																								maxCrossAxisExtent: 200
-																							),
-																							itemCount: widget.attachments.length,
-																							itemBuilder: (context, index) {
-																								final attachment = widget.attachments[index];
-																								return GestureDetector(
-																									onTap: () {
-																										DraggableScrollableActuator.reset(context);
-																										Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
-																									},
-																									child: Container(
-																										decoration: BoxDecoration(
-																											color: Colors.transparent,
-																											borderRadius: const BorderRadius.all(Radius.circular(4)),
-																											border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
-																										),
-																										margin: const EdgeInsets.all(4),
-																										child: AttachmentThumbnail(
-																											attachment: widget.attachments[index],
-																											width: 200,
-																											height: 200,
-																											hero: null
-																										)
-																									)
-																								);
-																							}
-																						)
-																					)
-																				]
-																			)
-																		)
-																	)
-																)
-															)
+															builder: (context, controller) {
+																if (scrollSheetChild == null || controller != scrollSheetController) {
+																	scrollSheetController = controller;
+																	scrollSheetChild = _buildScrollSheetChild(controller);
+																}
+																return scrollSheetChild!;
+															}
 														)
 													)
 												)

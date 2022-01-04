@@ -410,6 +410,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								return ClipRRect(
 									borderRadius: const BorderRadius.all(Radius.circular(4)),
 									child: AttachmentThumbnail(
+										gaplessPlayback: true,
 										fit: BoxFit.cover,
 										attachment: attachment,
 										width: 30,

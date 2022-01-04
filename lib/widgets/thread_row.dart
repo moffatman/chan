@@ -173,6 +173,7 @@ class ThreadRow extends StatelessWidget {
 														return Stack(
 															children: [
 																AttachmentThumbnail(
+																	gaplessPlayback: true,
 																	width: constraints.maxWidth,
 																	height: constraints.maxHeight,
 																	fit: BoxFit.cover,
@@ -255,6 +256,7 @@ class ThreadRow extends StatelessWidget {
 																fit: StackFit.loose,
 																children: [
 																	AttachmentThumbnail(
+																		gaplessPlayback: true,
 																		attachment: _thread.attachment!,
 																		thread: _thread.identifier,
 																		hero: AttachmentSemanticLocation(
