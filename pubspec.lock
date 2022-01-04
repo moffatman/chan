@@ -242,9 +242,11 @@ packages:
   extended_image_library:
     dependency: "direct main"
     description:
-      name: extended_image_library
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: "."
+      ref: HEAD
+      resolved-ref: "88fb4536e224268cf3e22528afa9c5f4c4d71634"
+      url: "git@github.com:moffatman/extended_image_library.git"
+    source: git
     version: "3.1.0"
   ffi:
     dependency: transitive

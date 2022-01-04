@@ -115,3 +115,6 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.io/custom-fonts/#from-packages
+dependency_overrides:
+  extended_image_library:
+    git: 'git@github.com:moffatman/extended_image_library.git'
