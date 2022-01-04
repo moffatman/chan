@@ -28,12 +28,14 @@ class BoardPage extends StatefulWidget {
 	final ValueChanged<ImageboardBoard>? onBoardChanged;
 	final ValueChanged<ThreadIdentifier>? onThreadSelected;
 	final ThreadIdentifier? selectedThread;
+	final String? initialSearch;
 	const BoardPage({
 		required this.initialBoard,
 		this.allowChangingBoard = true,
 		this.onBoardChanged,
 		this.onThreadSelected,
 		this.selectedThread,
+		this.initialSearch,
 		required this.semanticId,
 		Key? key
 	}) : super(key: key);
@@ -151,6 +153,7 @@ class _BoardPageState extends State<BoardPage> {
 							fit: StackFit.expand,
 							children: [
 								RefreshableList<Thread>(
+									initialFilter: widget.initialSearch,
 									gridColumns: settings.boardCatalogColumns,
 									controller: _listController,
 									listUpdater: () => site.getCatalog(board!.name).then((list) {

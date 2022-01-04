@@ -380,6 +380,32 @@ class PostLinkSpan extends PostSpan {
 	}
 }
 
+class PostCatalogSearchSpan extends PostSpan {
+	final String board;
+	final String query;
+	PostCatalogSearchSpan({
+		required this.board,
+		required this.query
+	});
+	@override
+	build(context, options) {
+		return TextSpan(
+			text: '>>/$board/$query',
+			style: options.baseTextStyle.copyWith(
+				decoration: TextDecoration.underline,
+				color: Colors.red
+			),
+			recognizer: TapGestureRecognizer()..onTap = () => (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
+				builder: (ctx) => BoardPage(
+					initialBoard: context.read<Persistence>().getBoard(board),
+					initialSearch: query,
+					semanticId: -1
+				)
+			))
+		);
+	}
+}
+
 class PostSpanZone extends StatelessWidget {
 	final int postId;
 	final WidgetBuilder builder;

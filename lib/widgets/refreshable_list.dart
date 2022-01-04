@@ -29,6 +29,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final bool disableUpdates;
 	final Widget? footer;
 	final int gridColumns;
+	final String? initialFilter;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -43,6 +44,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.disableUpdates = false,
 		this.gridColumns = 1,
 		this.footer,
+		this.initialFilter,
 		Key? key
 	}) : super(key: key);
 
@@ -68,6 +70,10 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	@override
 	void initState() {
 		super.initState();
+		if (widget.initialFilter != null) {
+			_filter = widget.initialFilter!;
+			_searchController.text = widget.initialFilter!;
+		}
 		_scrollViewKey = PageStorageKey(widget.id);
 		widget.controller?.attach(this);
 		widget.controller?.newContentId(widget.id);

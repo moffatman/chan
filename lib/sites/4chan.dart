@@ -115,7 +115,13 @@ class Site4Chan extends ImageboardSite {
 					else {
 						// href looks like '//boards.4chan.org/pol/'
 						final parts = node.attributes['href']!.split('/');
-						elements.add(PostBoardLink(parts[parts.length - 2]));
+						final catalogSearchMatch = RegExp(r'^catalog#s=(.+)$').firstMatch(parts.last);
+						if (catalogSearchMatch != null) {
+							elements.add(PostCatalogSearchSpan(board: board, query: catalogSearchMatch.group(1)!));
+						}
+						else {
+							elements.add(PostBoardLink(parts[parts.length - 2]));
+						}
 					}
 				}
 				else if (node.localName == 'span') {
