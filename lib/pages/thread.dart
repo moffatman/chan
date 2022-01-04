@@ -103,7 +103,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			thread: persistentState.thread ?? _nullThread,
 			site: context.read<ImageboardSite>(),
 			threadState: persistentState,
-			semanticRootIds: [widget.boardSemanticId, widget.thread.id],
+			semanticRootIds: [widget.boardSemanticId, 0],
 			onNeedScrollToPost: (post) {
 				_subNavigatorKey.currentState!.popUntil((route) => route.isFirst);
 				_weakNavigatorKey.currentState!.popAllExceptFirst();
@@ -137,7 +137,7 @@ class _ThreadPageState extends State<ThreadPage> {
 				site: context.read<ImageboardSite>(),
 				threadState: persistentState,
 				onNeedScrollToPost: oldZone.onNeedScrollToPost,
-				semanticRootIds: [widget.boardSemanticId, widget.thread.id]
+				semanticRootIds: [widget.boardSemanticId, 0]
 			);
 			persistentState.save();
 			_blockAndScrollToPostIfNeeded();
@@ -158,7 +158,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			onChange: (attachment) {
 				_listController.animateTo((p) => p.attachment?.id == attachment.id);
 			},
-			semanticParentIds: [widget.boardSemanticId, widget.thread.id]
+			semanticParentIds: [widget.boardSemanticId, 0]
 		);
 	}
 
