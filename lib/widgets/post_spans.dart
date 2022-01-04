@@ -127,7 +127,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				decoration: TextDecoration.underline
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
-				context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(
+				(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 					builder: (ctx) => ThreadPage(
 						thread: ThreadIdentifier(
 							board: board,
@@ -269,7 +269,7 @@ class PostBoardLink extends PostSpan {
 				decoration: TextDecoration.underline
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
-				context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(
+				(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 					builder: (ctx) => BoardPage(
 						initialBoard: context.read<Persistence>().getBoard(board),
 						semanticId: -1
