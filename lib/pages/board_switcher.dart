@@ -1,6 +1,7 @@
 import 'package:chan/models/board.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	void initState() {
 		super.initState();
 		boards = context.read<Persistence>().boardBox.toMap().values.toList();
+		context.read<ImageboardSite>().getBoards().then((b) => setState(() {
+			boards = b;
+			_filteredBoards = b;
+		}));
 		final settings = context.read<EffectiveSettings>();
 		_filteredBoards = boards.where((b) => settings.showBoard(context, b.name)).toList();
 	}
