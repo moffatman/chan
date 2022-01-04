@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -25,7 +27,7 @@ class _VideoControlsState extends State<VideoControls> {
 	void initState() {
 		super.initState();
 		value = widget.controller.value;
-		sliderValue = value.position.inMilliseconds.toDouble();
+		sliderValue = max(0, value.position.inMilliseconds).toDouble();
 		wasAlreadyPlaying = value.isPlaying;
 		widget.controller.addListener(_onControllerUpdate);
 	}
@@ -36,7 +38,7 @@ class _VideoControlsState extends State<VideoControls> {
 		if (widget.controller != old.controller) {
 			old.controller.removeListener(_onControllerUpdate);
 			value = widget.controller.value;
-			sliderValue = value.position.inMilliseconds.toDouble();
+			sliderValue = max(0, value.position.inMilliseconds).toDouble();
 			widget.controller.addListener(_onControllerUpdate);
 		}
 	}
@@ -45,7 +47,7 @@ class _VideoControlsState extends State<VideoControls> {
 		setState(() {
 			if (mounted) {
 				value = widget.controller.value;
-				sliderValue = value.position.inMilliseconds.toDouble();
+				sliderValue = max(0, value.position.inMilliseconds).toDouble();
 			}
 		});
 	}
@@ -64,7 +66,7 @@ class _VideoControlsState extends State<VideoControls> {
 				Expanded(
 					child: CupertinoSlider(
 						value: sliderValue,
-						max: value.duration.inMilliseconds.toDouble(),
+						max: max(1, value.duration.inMilliseconds).toDouble(),
 						onChangeStart: (newSliderValue) {
 							wasAlreadyPlaying = value.isPlaying;
 							widget.controller.pause();
