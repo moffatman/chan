@@ -73,12 +73,14 @@ class ThreadRow extends StatelessWidget {
 				int unseenImageCount = 0;
 				Color? replyCountColor;
 				Color? imageCountColor;
+				Color? otherMetadataColor;
 				if (threadState?.lastSeenPostId != null) {
 					unseenReplyCount = (threadState?.unseenReplyCount ?? 0) + ((latestReplyCount + 1) - _thread.posts.length);
 					unseenYouCount = threadState?.unseenRepliesToYou?.length ?? 0;
 					unseenImageCount = (threadState?.unseenImageCount ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.where((x) => x.attachment != null).length ?? 0));
 					replyCountColor = unseenReplyCount == 0 ? Colors.grey : null;
 					imageCountColor = unseenImageCount == 0 ? Colors.grey : null;
+					otherMetadataColor = unseenReplyCount == 0 && unseenImageCount == 0  ? Colors.grey : null;
 				}
 				Widget _makeCounters() => Container(
 					decoration: BoxDecoration(
@@ -94,9 +96,9 @@ class ThreadRow extends StatelessWidget {
 						crossAxisAlignment: WrapCrossAlignment.center,
 						children: [
 							const SizedBox(width: 4),
-							if (_thread.isSticky) ... const [
-								Icon(Icons.push_pin, size: 18),
-								SizedBox(width: 4),
+							if (_thread.isSticky) ... [
+								Icon(Icons.push_pin, color: otherMetadataColor, size: 18),
+								const SizedBox(width: 4),
 							],
 							if (_thread.isArchived) ... const [
 								Icon(Icons.archive, color: Colors.grey, size: 18),
@@ -107,9 +109,9 @@ class ThreadRow extends StatelessWidget {
 									child: Row(
 									mainAxisSize: MainAxisSize.min,
 									children: [
-										const Icon(Icons.access_time_filled, size: 18),
+										Icon(Icons.access_time_filled, color: otherMetadataColor, size: 18),
 										const SizedBox(width: 4),
-										Text(_timeDiff(thread.time)),
+										Text(_timeDiff(thread.time), style: TextStyle(color: otherMetadataColor)),
 										const SizedBox(width: 2),
 									]
 								)
