@@ -260,6 +260,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																	_showGallery(initialAttachment: nextPostWithImage.attachment);
 																}
 															}
+															return null;
 														}
 													)
 												},
@@ -363,6 +364,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																				if (persistentState == _persistentState) {
 																					return _thread.posts;
 																				}
+																				return null;
 																			},
 																			controller: _listController,
 																			itemBuilder: (context, post) {

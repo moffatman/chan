@@ -100,6 +100,7 @@ class SiteLainchan extends ImageboardSite {
 				threadId: threadId
 			);
 		}
+		return null;
 	}
 	Post _makePost(String board, int threadId, dynamic data) {
 		return Post(

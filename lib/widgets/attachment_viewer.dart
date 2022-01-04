@@ -440,6 +440,7 @@ class AttachmentViewer extends StatelessWidget {
 						]
 					);
 				}
+				return null;
 			},
 			initGestureConfigHandler: (state) {
 				return GestureConfig(

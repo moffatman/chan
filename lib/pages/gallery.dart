@@ -352,6 +352,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												if (currentIndex > 0) {
 													_animateToPage(currentIndex - 1, milliseconds: 0);
 												}
+												return null;
 											}
 										),
 										GalleryRightIntent: CallbackAction<GalleryRightIntent>(
@@ -359,6 +360,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												if (currentIndex < widget.attachments.length - 1) {
 													_animateToPage(currentIndex + 1, milliseconds: 0);
 												}
+												return null;
 											}
 										),
 										GalleryToggleChromeIntent: CallbackAction<GalleryToggleChromeIntent>(
@@ -369,6 +371,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												if (Navigator.of(context).canPop()) {
 													Navigator.of(context).pop();
 												}
+												return null;
 											}
 										)
 									},

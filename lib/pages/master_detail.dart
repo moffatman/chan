@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
 
 import 'package:flutter/material.dart';

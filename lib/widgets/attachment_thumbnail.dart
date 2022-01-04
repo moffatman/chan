@@ -90,6 +90,7 @@ class AttachmentThumbnail extends StatelessWidget {
 						)
 					);
 				}
+				return null;
 			}
 		);
 		return (hero != null) ? Hero(

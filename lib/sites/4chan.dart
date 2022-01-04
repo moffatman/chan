@@ -168,6 +168,7 @@ class Site4Chan extends ImageboardSite {
 				imageHeight: 11
 			);
 		}
+		return null;
 	}
 
 	Post _makePost(String board, int threadId, dynamic data) {
@@ -204,6 +205,7 @@ class Site4Chan extends ImageboardSite {
 				threadId: threadId
 			);
 		}
+		return null;
 	}
 
 	Future<int?> _getThreadPage(ThreadIdentifier thread) async {

@@ -42,6 +42,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				imageHeight: 11
 			);
 		}
+		return null;
 	}
 	static PostSpan makeSpan(String board, int threadId, Map<String, int> linkedPostThreadIds, String data) {
 		final doc = parse(data.replaceAll('<wbr>', ''));
@@ -125,7 +126,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				height: int.parse(data['media']['media_h']),
 				threadId: int.tryParse(data['thread_num'])
 			);
-		}	
+		}
+		return null;
 	}
 	Future<Post> _makePost(dynamic data) async {
 		final String board = data['board']['shortname'];
