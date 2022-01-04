@@ -26,8 +26,9 @@ class SiteLainchan extends ImageboardSite {
 
 	SiteLainchan({
 		required this.baseUrl,
-		required this.name
-	});
+		required this.name,
+		List<ImageboardSiteArchive> archives = const []
+	}) : super(archives);
 
 	static List<PostSpan> parsePlaintext(String text) {
 		return linkify(text, linkifiers: [const UrlLinkifier()]).map((elem) {

@@ -60,7 +60,6 @@ class Site4Chan extends ImageboardSite {
 	@override
 	final String imageUrl;
 	final String captchaKey;
-	final List<ImageboardSiteArchive> archives;
 	List<ImageboardBoard>? _boards;
 	final unescape = HtmlUnescape();
 	final Map<String, _ThreadCacheEntry> _threadCache = {};
@@ -296,53 +295,10 @@ class Site4Chan extends ImageboardSite {
 		_threadCache['${thread.board}/${thread.id}']!.thread.currentPage = await _getThreadPage(thread);
 		return _threadCache['${thread.board}/${thread.id}']!.thread;
 	}
-	@override
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread) async {
-		final Map<String, String> errorMessages = {};
-		for (final archive in archives) {
-			try {
-				return await archive.getThread(thread);
-			}
-			catch(e, st) {
-				if (e is! BoardNotFoundException) {
-					print('Error from ${archive.name}');
-					print(e);
-					print(st);
-					errorMessages[archive.name] = e.toString();
-				}
-			}
-		}
-		if (errorMessages.isNotEmpty) {
-			throw ImageboardArchiveException(errorMessages);
-		}
-		else {
-			throw BoardNotFoundException(thread.board);
-		}
-	}
 
 	@override
 	Future<Post> getPost(String board, int id) async {
 		throw Exception('Not implemented');
-	}
-	@override
-	Future<Post> getPostFromArchive(String board, int id) async {
-		final Map<String, String> errorMessages = {};
-		for (final archive in archives) {
-			try {
-				return await archive.getPost(board, id);
-			}
-			catch(e) {
-				if (e is! BoardNotFoundException) {
-					errorMessages[archive.name] = e.toString();
-				}
-			}
-		}
-		if (errorMessages.isNotEmpty) {
-			throw ImageboardArchiveException(errorMessages);
-		}
-		else {
-			throw BoardNotFoundException(board);
-		}
 	}
 
 	@override
@@ -609,6 +565,6 @@ class Site4Chan extends ImageboardSite {
 		required this.imageUrl,
 		required this.name,
 		required this.captchaKey,
-		this.archives = const []
-	});
+		List<ImageboardSiteArchive> archives = const []
+	}) : super(archives);
 }

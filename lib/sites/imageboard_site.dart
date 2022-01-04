@@ -4,15 +4,18 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
+import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter/widgets.dart';
 
 import '../models/thread.dart';
 
 import 'package:dio/dio.dart';
+const userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/605.1.15 (KHTML, like Gecko)';
 
 class PostNotFoundException implements Exception {
 	String board;
@@ -123,17 +126,34 @@ class ImageboardArchiveSearchResult {
 	final List<Post> posts;
 	final int page;
 	final int maxPage;
+	final ImageboardSiteArchive archive;
 	ImageboardArchiveSearchResult({
 		required this.posts,
 		required this.page,
-		required this.maxPage
+		required this.maxPage,
+		required this.archive
 	});
 }
 
 abstract class ImageboardSiteArchive {
-	final Dio client = Dio();
+	final Dio client = Dio(BaseOptions(
+		receiveTimeout: 5000,
+		connectTimeout: 5000
+	));
+	BuildContext? _context;
+	BuildContext get context => _context!;
+	set context(BuildContext value) {
+		_context = value;
+	}
 	ImageboardSiteArchive() {
 		client.interceptors.add(CookieManager(Persistence.cookies));
+		client.interceptors.add(InterceptorsWrapper(
+			onRequest: (options, handler) {
+				options.headers['user-agent'] = userAgent;
+				handler.next(options);
+			}
+		));
+		client.interceptors.add(CloudflareInterceptor(this));
 	}
 	String get name;
 	Future<Post> getPost(String board, int id);
@@ -145,6 +165,15 @@ abstract class ImageboardSiteArchive {
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
+	final List<ImageboardSiteArchive> archives;
+	ImageboardSite(this.archives);
+	@override
+	set context(BuildContext value) {
+		super.context = value;
+		for (final archive in archives) {
+			archive.context = value;
+		}
+	}
 	String get imageUrl;
 	CaptchaRequest getCaptchaRequest(String board, [int? threadId]);
 	Future<PostReceipt> createThread({
@@ -168,14 +197,54 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	});
 	DateTime? getActionAllowedTime(String board, ImageboardAction action);
 	Future<void> deletePost(String board, PostReceipt receipt);
-	Future<Post> getPostFromArchive(String board, int id);
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread);
+	Future<Post> getPostFromArchive(String board, int id) async {
+		final Map<String, String> errorMessages = {};
+		for (final archive in archives) {
+			try {
+				return await archive.getPost(board, id);
+			}
+			catch(e) {
+				if (e is! BoardNotFoundException) {
+					errorMessages[archive.name] = e.toString();
+				}
+			}
+		}
+		if (errorMessages.isNotEmpty) {
+			throw ImageboardArchiveException(errorMessages);
+		}
+		else {
+			throw BoardNotFoundException(board);
+		}
+	}
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread) async {
+		final Map<String, String> errorMessages = {};
+		for (final archive in archives) {
+			print('Trying archive.name');
+			try {
+				return await archive.getThread(thread);
+			}
+			catch(e, st) {
+				if (e is! BoardNotFoundException) {
+					print('Error from ${archive.name}');
+					print(e);
+					print(st);
+					errorMessages[archive.name] = e.toString();
+				}
+			}
+		}
+		if (errorMessages.isNotEmpty) {
+			throw ImageboardArchiveException(errorMessages);
+		}
+		else {
+			throw BoardNotFoundException(thread.board);
+		}
+	}
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
 	Uri getPostReportUrl(String board, int id);
 	Persistence? persistence;
 }
 
-ImageboardSite makeSite(dynamic data) {
+ImageboardSite makeSite(BuildContext context, dynamic data) {
 		if (data['type'] == 'lainchan') {
 			return SiteLainchan(
 				name: data['name'],
@@ -192,11 +261,18 @@ ImageboardSite makeSite(dynamic data) {
 				baseUrl: data['baseUrl'],
 				staticUrl: data['staticUrl'],
 				archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
+					final boards = (archive['boards'] as List<dynamic>?)?.map((b) => ImageboardBoard(
+						title: b['title'],
+						name: b['name'],
+						isWorksafe: b['isWorksafe'],
+						webmAudioAllowed: false
+					)).toList();
 					if (archive['type'] == 'foolfuuka') {
 						return FoolFuukaArchive(
 							name: archive['name'],
 							baseUrl: archive['baseUrl'],
-							staticUrl: archive['staticUrl']
+							staticUrl: archive['staticUrl'],
+							boards: boards
 						);
 					}
 					else {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/media.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/rotating_image_provider.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -14,6 +15,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:tuple/tuple.dart';
 import 'package:video_player/video_player.dart';
 
 class AttachmentNotFoundException {
@@ -36,7 +38,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	String? _errorMessage;
 	VideoPlayerController? _videoPlayerController;
 	bool _hasAudio = false;
-	Uri? _goodImageSource;
+	Tuple2<Uri, Map<String, String>?>? _goodImageSource;
 	File? _cachedFile;
 	bool _isPrimary = false;
 	MediaConversion? _ongoingConversion;
@@ -64,7 +66,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	/// Whether the attachment is a video that has an audio track
 	bool get hasAudio => _hasAudio;
 	/// The Uri to use to load the image, if needed
-	Uri? get goodImageSource => _goodImageSource;
+	Tuple2<Uri, Map<String, String>?>? get goodImageSource => _goodImageSource;
 	/// The file which contains the local cache of this attachment
 	File? get cachedFile => _cachedFile;
 	/// Whether the attachment has been cached locally
@@ -105,15 +107,20 @@ class AttachmentViewerController extends ChangeNotifier {
 		_isPrimary = val;
 	}
 
-	Future<Uri> _getGoodSource(Attachment attachment) async {
+	Future<Tuple2<Uri, Map<String, String>?>> _getGoodSource(Attachment attachment) async {
 		if (overrideSource != null) {
-			return overrideSource!;
+			return Tuple2(overrideSource!, null);
 		}
+		final mainHeaders = {
+			'user-agent': userAgent,
+			'cookie': (await Persistence.cookies.loadForRequest(attachment.url)).join('; ')
+		};
 		Response result = await site.client.head(attachment.url.toString(), options: Options(
-			validateStatus: (_) => true
+			validateStatus: (_) => true,
+			headers: mainHeaders,
 		));
 		if (result.statusCode == 200) {
-			return attachment.url;
+			return Tuple2(attachment.url, mainHeaders);
 		}
 		else {
 			if (_checkArchives && attachment.threadId != null) {
@@ -123,11 +130,16 @@ class AttachmentViewerController extends ChangeNotifier {
 				));
 				for (final reply in archivedThread.posts) {
 					if (reply.attachment?.id == attachment.id) {
+						final archiveHeaders = {
+							'user-agent': userAgent,
+							'cookie': (await Persistence.cookies.loadForRequest(reply.attachment!.url)).join('; ')
+						};
 						result = await site.client.head(reply.attachment!.url.toString(), options: Options(
-							validateStatus: (_) => true
+							validateStatus: (_) => true,
+							headers: archiveHeaders
 						));
 						if (result.statusCode == 200) {
-							return reply.attachment!.url;
+							return Tuple2(reply.attachment!.url, archiveHeaders);
 						}
 					}
 				}
@@ -162,14 +174,15 @@ class AttachmentViewerController extends ChangeNotifier {
 		try {
 			if (attachment.type == AttachmentType.image) {
 				_goodImageSource = await _getGoodSource(attachment);
-				if (_goodImageSource?.scheme == 'file') {
-					_cachedFile = File(_goodImageSource!.path);
+				if (_goodImageSource?.item1.scheme == 'file') {
+					_cachedFile = File(_goodImageSource!.item1.path);
 				}
 				notifyListeners();
 				if (startImageDownload) {
 					await ExtendedNetworkImageProvider(
 						goodImageSource.toString(),
-						cache: true
+						cache: true,
+						headers: goodImageSource?.item2
 					).getNetworkImageData();
 					final file = await getCachedImageFile(goodImageSource.toString());
 					if (file != null && _cachedFile?.path != file.path) {
@@ -179,7 +192,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			}
 			else if (attachment.type == AttachmentType.webm) {
 				final url = await _getGoodSource(attachment);
-				_ongoingConversion = MediaConversion.toMp4(url);
+				_ongoingConversion = MediaConversion.toMp4(url.item1);
 				_ongoingConversion!.progress.addListener(() {
 					videoLoadingProgress.value = _ongoingConversion!.progress.value;
 					notifyListeners();
@@ -331,17 +344,18 @@ class AttachmentViewer extends StatelessWidget {
 	);
 
 	Widget _buildImage(context, bool passedFirstBuild) {
-		Uri url = attachment.thumbnailUrl;
+		Tuple2<Uri, Map<String, String>?> source = Tuple2(attachment.thumbnailUrl, null);
 		if (controller.goodImageSource != null && passedFirstBuild) {
-			url = controller.goodImageSource!;
+			source = controller.goodImageSource!;
 		}
 		ImageProvider image = ExtendedNetworkImageProvider(
-			url.toString(),
-			cache: true
+			source.item1.toString(),
+			cache: true,
+			headers: source.item2
 		);
-		if (url.scheme == 'file') {
+		if (source.item1.scheme == 'file') {
 			image = ExtendedFileImageProvider(
-				File(url.path),
+				File(source.item1.path),
 				imageCacheName: 'asdf'
 			);
 		}
@@ -380,8 +394,8 @@ class AttachmentViewer extends StatelessWidget {
 					if (loadstate.loadingProgress?.cumulativeBytesLoaded != null && loadstate.loadingProgress?.expectedTotalBytes != null) {
 						// If we got image download completion, we can check if it's cached
 						loadingValue = loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes!;
-						if ((url != attachment.thumbnailUrl) && loadingValue == 1) {
-							getCachedImageFile(url.toString()).then((file) {
+						if ((source.item1 != attachment.thumbnailUrl) && loadingValue == 1) {
+							getCachedImageFile(source.item1.toString()).then((file) {
 								if (file != null) {
 									controller.onCacheCompleted(file);
 								}
@@ -390,7 +404,7 @@ class AttachmentViewer extends StatelessWidget {
 					}
 					else if (loadstate.extendedImageInfo?.image.width == attachment.width) {
 						// If the displayed image looks like the full image, we can check cache
-						getCachedImageFile(url.toString()).then((file) {
+						getCachedImageFile(source.item1.toString()).then((file) {
 							if (file != null) {
 								controller.onCacheCompleted(file);
 							}

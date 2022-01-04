@@ -56,7 +56,7 @@ class _ChanAppState extends State<ChanApp> {
 	}
 
 	Future<void> setSite(dynamic data) async {
-		final _site = makeSite(data);
+		final _site = makeSite(context, data);
 		Persistence _persistence = Persistence(_site.name);
 		await _persistence.initialize();
 		_site.persistence = _persistence;
@@ -107,6 +107,7 @@ class _ChanAppState extends State<ChanApp> {
 							theme: theme,
 							home: Builder(
 								builder: (BuildContext context) {
+									site?.context = context;
 									return DefaultTextStyle(
 										style: CupertinoTheme.of(context).textTheme.textStyle,
 										child: StickyMediaQuery(
@@ -157,7 +158,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	StickyThreadWatcher? devThreadWatcher;
 
 	void _setupDevSite() async {
-		devSite = makeSite(defaultSite);
+		devSite = makeSite(context, defaultSite);
 		devPersistence = Persistence('devsite');
 		await devPersistence!.initialize();
 		devThreadWatcher = StickyThreadWatcher(

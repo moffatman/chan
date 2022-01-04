@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/rotating_image_provider.dart';
 import 'package:flutter/cupertino.dart';
@@ -57,48 +60,63 @@ class AttachmentThumbnail extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		ImageProvider image = ExtendedNetworkImageProvider(
-			attachment.spoiler ? context.watch<ImageboardSite>().getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString(),
-			cache: true
-		);
-		if (quarterTurns != 0) {
-			image = RotatingImageProvider(parent: image, quarterTurns: quarterTurns);
-		}
-		Widget child = ExtendedImage(
-			image: image,
+		final loader = SizedBox(
 			width: width,
 			height: height,
-			fit: fit,
-			gaplessPlayback: gaplessPlayback,
-			loadStateChanged: (loadstate) {
-				if (loadstate.extendedImageLoadState == LoadState.loading) {
-					return SizedBox(
+			child: const Center(
+				child: CupertinoActivityIndicator()
+			)
+		);
+		return FutureBuilder(
+			future: Persistence.cookies.loadForRequest(attachment.url),
+			builder: (context, AsyncSnapshot<List<Cookie>> snapshot) {
+				if (snapshot.hasData) {
+					ImageProvider image = ExtendedNetworkImageProvider(
+						attachment.spoiler ? context.watch<ImageboardSite>().getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString(),
+						cache: true,
+						headers: {
+							'user-agent': userAgent,
+							'cookie': snapshot.data!.join('; ')
+						}
+					);
+					if (quarterTurns != 0) {
+						image = RotatingImageProvider(parent: image, quarterTurns: quarterTurns);
+					}
+					Widget child = ExtendedImage(
+						image: image,
 						width: width,
 						height: height,
-						child: const Center(
-							child: CupertinoActivityIndicator()
-						)
+						fit: fit,
+						gaplessPlayback: gaplessPlayback,
+						loadStateChanged: (loadstate) {
+							if (loadstate.extendedImageLoadState == LoadState.loading) {
+								return loader;
+							}
+							else if (loadstate.extendedImageLoadState == LoadState.failed) {
+								onLoadError?.call(loadstate.lastException);
+								return SizedBox(
+									width: width,
+									height: height,
+									child: const Center(
+										child: Icon(Icons.error)
+									)
+								);
+							}
+							return null;
+						}
 					);
+					return (hero != null) ? Hero(
+						tag: hero!,
+						child: child,
+						flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+							return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
+						},
+					) : child;
 				}
-				else if (loadstate.extendedImageLoadState == LoadState.failed) {
-					onLoadError?.call(loadstate.lastException);
-					return SizedBox(
-						width: width,
-						height: height,
-						child: const Center(
-							child: Icon(Icons.error)
-						)
-					);
+				else {
+					return loader;
 				}
-				return null;
 			}
 		);
-		return (hero != null) ? Hero(
-			tag: hero!,
-			child: child,
-			flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
-				return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
-			},
-		) : child;
 	}
 }

@@ -7,6 +7,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:dio/dio.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 import 'package:html_unescape/html_unescape_small.dart';
@@ -19,7 +20,7 @@ class FoolFuukaException implements Exception {
 }
 
 class FoolFuukaArchive extends ImageboardSiteArchive {
-	List<ImageboardBoard>? _boards;
+	List<ImageboardBoard>? boards;
 	final unescape = HtmlUnescape();
 	final String baseUrl;
 	final String staticUrl;
@@ -53,8 +54,14 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			final linkedBoard = parts[3];
 			if (parts.length > 4) {
 				final linkType = parts[4];
-				final linkedId = int.parse(parts[5]);
-				if (linkType == 'post') {
+				final linkedId = int.tryParse(parts[5]);
+				if (linkedId == null) {
+					elements.add(PostCatalogSearchSpan(
+						board: linkedBoard,
+						query: parts[5]
+					));
+				}
+				else if (linkType == 'post') {
 					final linkedPostThreadId = linkedPostThreadIds['$linkedBoard/$linkedId'] ?? -1;
 					elements.add(PostQuoteLinkSpan(
 						board: linkedBoard,
@@ -182,6 +189,30 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	Future<Thread> getThreadContainingPost(String board, int id) async {
 		throw Exception('Unimplemented');
 	}
+	Future<Thread> _makeThread(ThreadIdentifier thread, dynamic data) async {
+		final op = data[thread.id.toString()]['op'];
+		var replies = data[thread.id.toString()]['posts'] ?? [];
+		if (replies is! Iterable) {
+			replies = replies.values;
+		}
+		final posts = (await Future.wait([op, ...replies].map(_makePost))).toList();
+		final String? title = op['title'];
+		return Thread(
+			board: thread.board,
+			isDeleted: false,
+			replyCount: posts.length - 1,
+			imageCount: posts.skip(1).where((post) => post.attachment != null).length,
+			isArchived: true,
+			posts: posts,
+			id: thread.id,
+			attachment: _makeAttachment(op),
+			title: (title == null) ? null : unescape.convert(title),
+			isSticky: op['sticky'] == 1,
+			time: posts.first.time,
+			flag: _makeFlag(op),
+			uniqueIPCount: int.tryParse(op['unique_ips'] ?? '')
+		);
+	}
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread) async {
 		if (!(await getBoards()).any((b) => b.name == thread.board)) {
@@ -192,7 +223,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			queryParameters: {
 				'board': thread.board,
 				'num': thread.id.toString()
-			}
+			},
+			options: Options(
+				validateStatus: (x) => true
+			)
 		);
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
@@ -204,28 +238,20 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (data['error'] != null) {
 			throw Exception(data['error']);
 		}
-		final postObjects = [data[thread.id.toString()]['op'], ...data[thread.id.toString()]['posts'].values];
-		final posts = (await Future.wait(postObjects.map(_makePost))).toList();
-		final String? title = postObjects.first['title'];
-		return Thread(
-			board: thread.board,
-			isDeleted: false,
-			replyCount: posts.length - 1,
-			imageCount: posts.skip(1).where((post) => post.attachment != null).length,
-			isArchived: true,
-			posts: posts,
-			id: thread.id,
-			attachment: _makeAttachment(postObjects.first),
-			title: (title == null) ? null : unescape.convert(title),
-			isSticky: postObjects.first['sticky'] == 1,
-			time: posts.first.time,
-			flag: _makeFlag(postObjects.first),
-			uniqueIPCount: int.tryParse(postObjects.first['unique_ips'] ?? '')
-		);
+		return _makeThread(thread, data);
 	}
 	@override
 	Future<List<Thread>> getCatalog(String board) async {
-		throw Exception('Catalog not supported on $name');
+		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/index').toString(), queryParameters: {
+			'board': board,
+			'page': '1'
+		});
+		return Future.wait((response.data as Map<dynamic, dynamic>).keys.where((threadIdStr) {
+			return response.data[threadIdStr]['op'] != null;
+		}).map((threadIdStr) => _makeThread(ThreadIdentifier(
+			board: board,
+			id: int.parse(threadIdStr)
+		), response.data)).toList());
 	}
 	Future<List<ImageboardBoard>> _getBoards() async {
 		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/archives').toString());
@@ -244,8 +270,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	}
 	@override
 	Future<List<ImageboardBoard>> getBoards() async {
-		_boards ??= await _getBoards();
-		return _boards!;
+		boards ??= await _getBoards();
+		return boards!;
 	}
 
 	@override
@@ -277,7 +303,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return ImageboardArchiveSearchResult(
 			posts: (await Future.wait((data['0']['posts'] as Iterable<dynamic>).map(_makePost))).toList(),
 			page: page,
-			maxPage: (data['meta']['total_found'] / 25).ceil()
+			maxPage: (data['meta']['total_found'] / 25).ceil(),
+			archive: this
 		);
 	}
 
@@ -296,6 +323,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	FoolFuukaArchive({
 		required this.baseUrl,
 		required this.staticUrl,
-		required this.name
+		required this.name,
+		this.boards
 	});
 }
