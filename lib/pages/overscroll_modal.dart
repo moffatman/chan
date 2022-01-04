@@ -40,7 +40,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	@override
 	void initState() {
 		super.initState();
-		_scrollStopPosition = -150.0 - widget.heightEstimate;
+		_scrollStopPosition = -1 * min(150.0 + widget.heightEstimate, context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.height);
 		_controller = ScrollController(initialScrollOffset: _scrollStopPosition);
 		_controller.addListener(_onScrollUpdate);
 	}
