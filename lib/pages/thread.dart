@@ -231,7 +231,23 @@ class _ThreadPageState extends State<ThreadPage> {
 							),
 							CupertinoButton(
 								padding: EdgeInsets.zero,
-								child: const Icon(Icons.reply),
+								child: (_replyBoxKey.currentState?.show ?? false) ? SizedBox(
+									width: 25,
+									height: 25,
+									child: Stack(
+										fit: StackFit.passthrough,
+										children: const [
+											Align(
+												alignment: Alignment.bottomLeft,
+												child: Icon(Icons.reply, size: 20)
+											),
+											Align(
+												alignment: Alignment.topRight,
+												child: Icon(Icons.close, size: 15)
+											)
+										]
+									)
+								) : const Icon(Icons.reply),
 								onPressed: persistentState.thread?.isArchived == true ? null : _replyBoxKey.currentState?.toggleReplyBox
 							)
 						]
