@@ -117,4 +117,6 @@ flutter:
   # see https://flutter.io/custom-fonts/#from-packages
 dependency_overrides:
   extended_image_library:
-    git: 'https://github.com/moffatman/extended_image_library.git'
+    git: 
+      url: https://github.com/moffatman/extended_image_library.git
+      ref: both

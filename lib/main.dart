@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:chan/pages/history.dart';
@@ -11,6 +12,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +24,10 @@ import 'package:provider/provider.dart';
 import 'package:chan/widgets/sticky_media_query.dart';
 
 void main() async {
+	final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
+	imageHttpClient.connectionTimeout = const Duration(seconds: 10);
+	imageHttpClient.idleTimeout = const Duration(seconds: 10);
+	imageHttpClient.maxConnectionsPerHost = 10;
 	await Persistence.initializeStatic();
 	runApp(const ChanApp());
 }
