@@ -151,7 +151,10 @@ class FuukaArchive extends ImageboardSiteArchive {
 		return thread.posts.firstWhere((t) => t.id == id);
 	}
 	Future<Thread> _makeThread(dom.Element document, String board, int id) async {
-		final op = document.querySelector('#p$id')!;
+		final op = document.querySelector('#p$id');
+		if (op == null) {
+			throw FuukaException('OP was not archived');
+		}
 		final replies = document.querySelectorAll('.reply:not(.subreply)');
 		final posts = (await Future.wait([op, ...replies].map(_makePost))).toList();
 		final title = document.querySelector('.filetitle')?.text;
