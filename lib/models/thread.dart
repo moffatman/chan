@@ -78,7 +78,8 @@ class Thread implements Filterable {
 			&& other.currentPage == currentPage
 			&& other.isArchived == isArchived
 			&& other.isDeleted == isDeleted
-			&& other.isSticky == isSticky;
+			&& other.isSticky == isSticky
+			&& other.attachment?.thumbnailUrl == attachment?.thumbnailUrl;
 	}
 	@override
 	int get hashCode => id;

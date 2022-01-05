@@ -257,6 +257,7 @@ class ThreadRow extends StatelessWidget {
 																children: [
 																	AttachmentThumbnail(
 																		gaplessPlayback: true,
+																		onLoadError: onThumbnailLoadError,
 																		attachment: _thread.attachment!,
 																		thread: _thread.identifier,
 																		hero: AttachmentSemanticLocation(

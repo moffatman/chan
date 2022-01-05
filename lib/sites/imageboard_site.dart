@@ -220,15 +220,18 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread) async {
 		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {
-			print('Trying archive.name');
 			try {
 				return await archive.getThread(thread);
 			}
 			catch(e, st) {
 				if (e is! BoardNotFoundException) {
-					print('Error from ${archive.name}');
-					print(e);
-					print(st);
+					if (e is DioError) {
+						print('Error getting $thread from ${archive.name}: ${e.message}');
+					}
+					else {
+						print('Error getting $thread from ${archive.name}: $e');
+					}
+					// print(st);
 					errorMessages[archive.name] = e.toString();
 				}
 			}

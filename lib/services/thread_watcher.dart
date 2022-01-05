@@ -5,6 +5,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
+import 'package:mutex/mutex.dart';
 
 const _normalInterval = Duration(seconds: 90);
 const _errorInterval = Duration(seconds: 180);
@@ -70,6 +71,8 @@ class SavedThreadWatcher extends ChangeNotifier {
 	DateTime? nextUpdate;
 	String? updateErrorMessage;
 	bool get active => nextUpdateTimer?.isActive ?? false;
+	final fixBrokenLock = Mutex();
+	final Set<ThreadIdentifier> fixedThreads = {};
 
 	final unseenCount = ValueNotifier<int>(0);
 	final unseenYouCount = ValueNotifier<int>(0);
@@ -119,7 +122,7 @@ class SavedThreadWatcher extends ChangeNotifier {
 		}
 	}
 
-	Future<void> _updateThread(PersistentThreadState threadState) async {
+	Future<bool> _updateThread(PersistentThreadState threadState) async {
 		Thread? newThread;
 		try {
 			newThread = await site.getThread(threadState.thread!.identifier);
@@ -129,13 +132,15 @@ class SavedThreadWatcher extends ChangeNotifier {
 				newThread = await site.getThreadFromArchive(threadState.thread!.identifier);
 			}
 			on ThreadNotFoundException {
-				return;
+				return false;
 			}
 		}
 		if (newThread != threadState.thread) {
 			threadState.thread = newThread;
 			threadState.save();
+			return true;
 		}
+		return false;
 	}
 
 	Future<void> update() async {
@@ -165,10 +170,18 @@ class SavedThreadWatcher extends ChangeNotifier {
 	}
 
 	void fixBrokenThread(ThreadIdentifier thread) {
-		final state = persistence.getThreadStateIfExists(thread);
-		if (state != null) {
-			_updateThread(state);
-		}
+		fixBrokenLock.protect(() async {
+			if (fixedThreads.contains(thread)) {
+				// fixed while we were waiting
+				return;
+			}
+			final state = persistence.getThreadStateIfExists(thread);
+			if (state != null) {
+				if (await _updateThread(state)) {
+					fixedThreads.add(thread);
+				}
+			}
+		});
 	}
 
 	@override
