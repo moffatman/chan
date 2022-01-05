@@ -411,9 +411,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					icon = ValueListenableBuilder(
 						valueListenable: context.read<Persistence>().listenForPersistentThreadStateChanges(tabs[i].item1.thread!),
 						builder: (context, box, child) {
-							final attachment = context.read<Persistence>().getThreadStateIfExists(tabs[i].item1.thread!)?.thread?.attachment;
-							if (attachment != null) {
-								return ClipRRect(
+							final threadState = context.read<Persistence>().getThreadStateIfExists(tabs[i].item1.thread!);
+							final attachment = threadState?.thread?.attachment;
+							return StationaryNotifyingIcon(
+								icon: attachment == null ? _icon : ClipRRect(
 									borderRadius: const BorderRadius.all(Radius.circular(4)),
 									child: AttachmentThumbnail(
 										gaplessPlayback: true,
@@ -422,11 +423,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										width: 30,
 										height: 30
 									)
-								);
-							}
-							else {
-								return _icon;
-							}
+								),
+								primary: threadState?.unseenRepliesToYou?.length ?? 0,
+								secondary: threadState?.unseenReplyCount ?? 0
+							);
 						}
 					);
 				}
@@ -478,14 +478,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										)
 									),
 									_buildTabletIcon(1, NotifyingIcon(
-											icon: Icons.bookmark,
+											icon: const Icon(Icons.bookmark),
 											primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
 											secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
 										), 'Saved'),
 									_buildTabletIcon(2, const Icon(Icons.history), 'History'),
 									_buildTabletIcon(3, const Icon(Icons.search), 'Search'),
 									_buildTabletIcon(4, NotifyingIcon(
-										icon: Icons.settings,
+										icon: const Icon(Icons.settings),
 										primaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0)
 									), 'Settings')
 								]
@@ -517,7 +517,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								),
 								BottomNavigationBarItem(
 									icon: NotifyingIcon(
-										icon: Icons.bookmark,
+										icon: const Icon(Icons.bookmark),
 										primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
 										secondaryCount: context.watch<SavedThreadWatcher>().unseenCount,
 										topOffset: 10
@@ -534,7 +534,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								),
 								BottomNavigationBarItem(
 									icon: NotifyingIcon(
-										icon: Icons.settings,
+										icon: const Icon(Icons.settings),
 										primaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0),
 										topOffset: 10
 									),

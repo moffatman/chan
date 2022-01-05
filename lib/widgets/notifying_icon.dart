@@ -3,25 +3,27 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
-class NotifyingIcon extends StatelessWidget {
-	final IconData icon;
-	final ValueListenable<int> primaryCount;
-	final ValueListenable<int>? secondaryCount;
+class StationaryNotifyingIcon extends StatelessWidget {
+	final Widget icon;
+	final int primary;
+	final int secondary;
 	final double topOffset;
-	const NotifyingIcon({
+
+	const StationaryNotifyingIcon({
 		required this.icon,
-		required this.primaryCount,
-		this.secondaryCount,
+		required this.primary,
+		this.secondary = 0,
 		this.topOffset = 0,
 		Key? key
 	}) : super(key: key);
 
-	Widget _build(BuildContext context, int primary, [int secondary = 0]) {
+	@override
+	Widget build(BuildContext context) {
 		const r = Radius.circular(10);
 		return Stack(
 			clipBehavior: Clip.none,
 			children: [
-				Icon(icon),
+				icon,
 				if (primary > 0 || secondary > 0) Positioned(
 					right: -10,
 					top: -10 + topOffset,
@@ -72,14 +74,35 @@ class NotifyingIcon extends StatelessWidget {
 			]
 		);
 	}
+}
+
+class NotifyingIcon extends StatelessWidget {
+	final Widget icon;
+	final ValueListenable<int> primaryCount;
+	final ValueListenable<int>? secondaryCount;
+	final double topOffset;
+	const NotifyingIcon({
+		required this.icon,
+		required this.primaryCount,
+		this.secondaryCount,
+		this.topOffset = 0,
+		Key? key
+	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
 		return ValueListenableBuilder(
 			valueListenable: primaryCount,
-			builder: (BuildContext context, int primary, Widget? child) => (secondaryCount == null) ? _build(context, primary) : ValueListenableBuilder(
+			builder: (BuildContext context, int primary, Widget? child) => (secondaryCount == null) ? StationaryNotifyingIcon(
+				icon: icon,
+				primary: primary
+			) : ValueListenableBuilder(
 				valueListenable: secondaryCount!,
-				builder: (BuildContext context, int secondary, Widget? child) => _build(context, primary, secondary)
+				builder: (BuildContext context, int secondary, Widget? child) => StationaryNotifyingIcon(
+					icon: icon,
+					primary: primary,
+					secondary: secondary
+				)
 			)
 		);
 	}
