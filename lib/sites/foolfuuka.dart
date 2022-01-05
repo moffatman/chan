@@ -213,8 +213,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			uniqueIPCount: int.tryParse(op['unique_ips'] ?? '')
 		);
 	}
-	@override
-	Future<Thread> getThread(ThreadIdentifier thread) async {
+	Future<Thread> _getThread(ThreadIdentifier thread, int attempt) async {
 		if (!(await getBoards()).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}
@@ -232,6 +231,14 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			if (response.statusCode == 404) {
 				return Future.error(ThreadNotFoundException(thread));
 			}
+			if (response.statusCode == 429) {
+				if (attempt < 3) {
+					final seconds = int.parse(response.headers.value('retry-after')!);
+					print('Waiting $seconds seconds due to server-side rate-limiting');
+					await Future.delayed(Duration(seconds: seconds));
+					return _getThread(thread, attempt + 1);
+				}
+			}
 			return Future.error(HTTPStatusException(response.statusCode!));
 		}
 		final data = response.data;
@@ -239,6 +246,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			throw Exception(data['error']);
 		}
 		return _makeThread(thread, data);
+	}
+	@override
+	Future<Thread> getThread(ThreadIdentifier thread) async {
+		return _getThread(thread, 0);
 	}
 	@override
 	Future<List<Thread>> getCatalog(String board) async {
