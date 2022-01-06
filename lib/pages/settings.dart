@@ -9,8 +9,10 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/thread_row.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tuple/tuple.dart';
 import 'package:provider/provider.dart';
@@ -139,6 +141,9 @@ class SettingsPage extends StatelessWidget {
 											)
 										]
 									)
+								),
+								SettingsFilterPanel(
+									initialConfiguration: settings.filterConfiguration,
 								),
 								Container(
 									padding: const EdgeInsets.all(16),
@@ -447,6 +452,104 @@ class SettingsThreadsPanel extends StatelessWidget {
 					),
 				);
 			}
+		);
+	}
+}
+
+class SettingsFilterPanel extends StatefulWidget {
+	final String initialConfiguration;
+	const SettingsFilterPanel({
+		required this.initialConfiguration,
+		Key? key
+	}) : super(key: key);
+	@override
+	createState() => _SettingsFilterPanelState();
+}
+
+class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
+	final regexController = TextEditingController();
+
+	@override
+	void initState() {
+		super.initState();
+		regexController.text = widget.initialConfiguration;
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
+		return Column(
+			mainAxisSize: MainAxisSize.min,
+			crossAxisAlignment: CrossAxisAlignment.stretch,
+			children: [
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: Wrap(
+						crossAxisAlignment: WrapCrossAlignment.center,
+						alignment: WrapAlignment.start,
+						spacing: 16,
+						runSpacing: 16,
+						children: [
+							const Text('RegEx filters'),
+							CupertinoButton(
+								minSize: 0,
+								padding: EdgeInsets.zero,
+								child: const Icon(Icons.help),
+								onPressed: () {
+									showCupertinoModalPopup(
+										context: context,
+										builder: (context) => CupertinoActionSheet(
+											message: Text.rich(
+												buildFakeMarkdown(context,
+													'One regular expression per line, lines starting with # will be ignored\n'
+													'Example: `/sneed/` will hide any thread or post containing "sneed"\n'
+													'Example: `/bane/;boards:tv;thread` will hide any thread containing "sneed" in the OP on /tv/\n'
+													'Add `i` after the regex to make it case-insensitive\n'
+													'Example: `/sneed/i` will match `SNEED`\n'
+													'\n'
+													'Qualifiers may be added after the regex:\n'
+													'`;boards:<list>` Only apply on certain boards\n'
+													'Example: `;board:tv,mu` will only apply the filter on /tv/ and /mu/\n'
+													'`;exclude:<list>` Don\'t apply on certain boards\n'
+													'`;highlight` Highlight instead of hiding matches\n'
+													'`;top` Highlight and pin match to top of list instead of hiding\n'
+													'`;file:only` Only apply to posts with files\n'
+													'`;file:no` Only apply to posts without files\n'
+													'`;thread` Only apply to threads\n'
+													'`;type:<list>` Only apply regex filter to certain fields\n'
+													'The list of possible fields is `[text, subject, name, filename, postID, posterID, flag]`\n'
+													'The default fields that are searched are `[text, subject, name, filename]`'
+												),
+												textAlign: TextAlign.left,
+												style: const TextStyle(
+													fontSize: 16,
+													height: 1.5
+												)
+											)
+										)
+									);
+								}
+							),
+							if (settings.filterError != null) Text('${settings.filterError}', style: const TextStyle(
+								color: Colors.red
+							))
+						]
+					)
+				),
+				StatefulBuilder(
+					builder: (context, setInnerState) {
+						return CupertinoTextField(
+							style: GoogleFonts.ibmPlexMono(),
+							minLines: 5,
+							maxLines: 5,
+							controller: regexController,
+							onChanged: (string) {
+								settings.filterConfiguration = string;
+							},
+						);
+					}
+				)
+			]
 		);
 	}
 }

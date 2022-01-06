@@ -6,8 +6,8 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/filtering.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/widgets/refreshable_list.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/foundation.dart';
@@ -215,12 +215,19 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	Thread? thread;
 	@HiveField(5)
 	bool useArchive = false;
+	@HiveField(7, defaultValue: [])
+	List<int> postsMarkedAsYou = [];
+	@HiveField(8, defaultValue: [])
+	List<int> hiddenPostIds = [];
 
 	PersistentThreadState() : lastOpenedTime = DateTime.now();
 
-	List<int> get youIds => receipts.map((receipt) => receipt.id).toList();
-	List<Post>? get repliesToYou => thread?.posts.where((p) => p.span.referencedPostIds(thread!.board).any((id) => youIds.contains(id))).toList();
-	List<Post>? get unseenRepliesToYou => repliesToYou?.where((p) => p.id > lastSeenPostId!).toList();
+	List<int> get youIds => receipts.map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toList();
+	List<int>? get replyIdsToYou {
+		final _youIds = youIds;
+		return thread?.posts.where((p) => p.span.referencedPostIds(thread!.board).any((id) => _youIds.contains(id))).map((p) => p.id).toList();
+	}
+	List<int>? get unseenReplyIdsToYou => replyIdsToYou?.where((id) => id > lastSeenPostId!).toList();
 	int? get unseenReplyCount => (lastSeenPostId == null) ? null : thread?.posts.where((p) => p.id > lastSeenPostId!).length;
 	int? get unseenImageCount => (lastSeenPostId == null) ? null : thread?.posts.where((p) => (p.id > lastSeenPostId!) && (p.attachment != null)).length;
 
@@ -228,7 +235,19 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	String toString() => 'PersistentThreadState(lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime, useArchive: $useArchive)';
 
 	@override
-	List<String> getSearchableText() => thread?.getSearchableText() ?? [];
+	String get board => thread?.board ?? '';
+	@override
+	int get id => thread?.id ?? 0;
+	@override
+	String? getFilterFieldText(String fieldName) => thread?.getFilterFieldText(fieldName);
+	@override
+	bool get hasFile => thread?.hasFile ?? false;
+	@override
+	bool get isThread => true;
+
+	Filter get threadFilter => IDFilter(hiddenPostIds);
+	void hidePost(int id) => hiddenPostIds.add(id);
+	void unHidePost(int id) => hiddenPostIds.remove(id);
 }
 
 @HiveType(typeId: 4)
@@ -286,7 +305,15 @@ class SavedPost extends HiveObject implements Filterable {
 	});
 
 	@override
-	List<String> getSearchableText() => [post.text];
+	String get board => post.board;
+	@override
+	int get id => post.id;
+	@override
+	String? getFilterFieldText(String fieldName) => post.getFilterFieldText(fieldName);
+	@override
+	bool get hasFile => post.hasFile;
+	@override
+	bool get isThread => false;
 }
 
 @HiveType(typeId: 21)
@@ -307,8 +334,28 @@ class PersistentBrowserState extends HiveObject {
 	List<PersistentBrowserTab> tabs;
 	@HiveField(1)
 	int currentTab;
+	@HiveField(2, defaultValue: {})
+	final Map<String, List<int>> hiddenIds;
+	
 	PersistentBrowserState({
 		required this.tabs,
-		this.currentTab = 0
+		this.currentTab = 0,
+		this.hiddenIds = const {}
 	});
+
+	Filter getCatalogFilter(String board) {
+		return IDFilter(hiddenIds[board] ?? []);
+	}
+	
+	bool isThreadHidden(String board, int id) {
+		return hiddenIds[board]?.contains(id) ?? false;
+	}
+
+	void hideThread(String board, int id) {
+		hiddenIds.putIfAbsent(board, () => []).add(id);
+	}
+
+	void unHideThread(String board, int id) {
+		hiddenIds[board]?.remove(id);
+	}
 }

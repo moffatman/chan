@@ -3,6 +3,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/filtering.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -35,7 +36,15 @@ class _PostThreadCombo implements Filterable {
 	int get hashCode => post.hashCode * 31 + thread.hashCode;
 
 	@override
-	List<String> getSearchableText() => post.getSearchableText();
+	String get board => post.board;
+	@override
+	int get id => post.id;
+	@override
+	String? getFilterFieldText(String fieldName) => post.getFilterFieldText(fieldName);
+	@override
+	bool get hasFile => post.hasFile;
+	@override
+	bool get isThread => false;
 }
 class SavedPage extends StatefulWidget {
 	const SavedPage({
@@ -189,8 +198,8 @@ class _SavedPageState extends State<SavedPage> {
 							final replies = <_PostThreadCombo>[];
 							for (final s in box.values) {
 								if (s.thread != null) {
-									for (final r in s.receipts) {
-										final reply = s.thread!.posts.tryFirstWhere((p) => p.id == r.id);
+									for (final id in s.youIds) {
+										final reply = s.thread!.posts.tryFirstWhere((p) => p.id == id);
 										if (reply != null) {
 											replies.add(_PostThreadCombo(
 												post: reply,

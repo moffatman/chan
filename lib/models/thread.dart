@@ -1,7 +1,7 @@
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
-import 'package:chan/widgets/refreshable_list.dart';
+import 'package:chan/services/filtering.dart';
 import 'package:hive/hive.dart';
 
 part 'thread.g.dart';
@@ -18,8 +18,10 @@ class Thread implements Filterable {
 	final int replyCount;
 	@HiveField(4)
 	final int imageCount;
+	@override
 	@HiveField(5)
 	final int id;
+	@override
 	@HiveField(6)
 	final String board;
 	@HiveField(7)
@@ -90,14 +92,30 @@ class Thread implements Filterable {
 	}
 
 	@override
-	List<String> getSearchableText() {
-		if (title != null) {
-			return [title!, posts[0].text];
-		}
-		else {
-			return [posts[0].text];
+	String? getFilterFieldText(String fieldName) {
+		switch (fieldName) {
+			case 'subject':
+				return title;
+			case 'name':
+				return posts.first.name;
+			case 'filename':
+				return attachment?.filename;
+			case 'text':
+				return posts.first.span.buildText();
+			case 'postID':
+				return id.toString();
+			case 'posterID':
+				return posts.first.posterId;
+			case 'flag':
+				return posts.first.flag?.name;
+			default:
+				return null;
 		}
 	}
+	@override
+	bool get hasFile => attachment != null;
+	@override
+	bool get isThread => true;
 
 	ThreadIdentifier get identifier => ThreadIdentifier(board: board, id: id);
 }

@@ -6,6 +6,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 void alertError(BuildContext context, String error) {
@@ -292,4 +293,16 @@ class Expander extends StatelessWidget {
 			)
 		);
 	}
+}
+
+InlineSpan buildFakeMarkdown(BuildContext context, String input) {
+	return TextSpan(
+		children: input.split('`').asMap().entries.map((t) => TextSpan(
+			text: t.value,
+			style: t.key % 2 == 0 ? null : GoogleFonts.ibmPlexMono(
+				backgroundColor: CupertinoTheme.of(context).primaryColor,
+				color: CupertinoTheme.of(context).scaffoldBackgroundColor
+			)
+		)).toList()
+	);
 }

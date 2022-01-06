@@ -57,6 +57,34 @@ class PostRow extends StatelessWidget {
 				final zone = context.watch<PostSpanZoneData>();
 				final settings = context.watch<EffectiveSettings>();
 				final receipt = zone.threadState?.receipts.tryFirstWhere((r) => r.id == _post.id);
+				final isYourPost = receipt != null || (zone.threadState?.postsMarkedAsYou.contains(post.id) ?? false);
+				Color color = CupertinoTheme.of(context).scaffoldBackgroundColor;
+				Border? border;
+				if (isYourPost) {
+					border = const Border(
+						left: BorderSide(color: Colors.red, width: 10)
+					);
+				}
+				if (zone.threadState?.replyIdsToYou?.contains(post.id) ?? false) {
+					if (CupertinoTheme.of(context).brightness == Brightness.light) {
+						border = Border(
+							left: BorderSide(color: Colors.red.shade100, width: 10)
+						);
+					}
+					else {
+						border = const Border(
+							left: BorderSide(color: Color.fromARGB(255, 90, 30, 30), width: 10)
+						);
+					}
+				}
+				if (isSelected) {
+					if (CupertinoTheme.of(context).brightness == Brightness.light) {
+						color = Colors.grey.shade400;
+					}
+					else {
+						color = Colors.grey.shade800;
+					}
+			 	}
 				openReplies() {
 					if (_post.replyIds.isNotEmpty) {
 						WeakNavigator.push(context, PostsPage(
@@ -133,8 +161,8 @@ class PostRow extends StatelessWidget {
 					child: Container(
 						padding: const EdgeInsets.all(8),
 						decoration: BoxDecoration(
-							border: zone.stackIds.isNotEmpty ? Border.all(width: 0) : null,
-							color: isSelected ? ((CupertinoTheme.of(context).brightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor
+							border: border,
+							color: color,
 						),
 						child: Column(
 							mainAxisSize: MainAxisSize.min,
@@ -147,8 +175,8 @@ class PostRow extends StatelessWidget {
 											TextSpan(
 												children: [
 													TextSpan(
-														text: context.read<EffectiveSettings>().filterProfanity(_post.name) + ((receipt != null) ? ' (You)' : ''),
-														style: TextStyle(fontWeight: FontWeight.w600, color: (receipt != null) ? Colors.red : null)
+														text: context.read<EffectiveSettings>().filterProfanity(_post.name) + (isYourPost ? ' (You)' : ''),
+														style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? Colors.red : null)
 													),
 													if (_post.posterId != null) IDSpan(
 														id: _post.posterId!,
@@ -293,6 +321,41 @@ class PostRow extends StatelessWidget {
 								context.read<Persistence>().getSavedPost(post)?.delete();
 							}
 						),
+						if (zone.threadState != null) ...[
+							if (zone.threadState!.postsMarkedAsYou.contains(_post.id)) ContextMenuAction(
+									child: const Text('Unmark as You'),
+									trailingIcon: Icons.check_box,
+									onPressed: () {
+										zone.threadState!.postsMarkedAsYou.remove(_post.id);
+										zone.threadState!.save();
+									}
+								)
+							else ContextMenuAction(
+									child: const Text('Mark as You'),
+									trailingIcon: Icons.check_box_outline_blank,
+									onPressed: () {
+										zone.threadState!.postsMarkedAsYou.add(_post.id);
+										zone.threadState!.savedTime ??= DateTime.now();
+										zone.threadState!.save();
+									}
+								),
+							if (zone.threadState!.hiddenPostIds.contains(_post.id)) ContextMenuAction(
+								child: const Text('Unhide post'),
+								trailingIcon: Icons.check_box,
+								onPressed: () {
+									zone.threadState!.unHidePost(_post.id);
+									zone.threadState!.save();
+								}
+							)
+							else ContextMenuAction(
+								child: const Text('Hide post'),
+								trailingIcon: Icons.check_box_outline_blank,
+								onPressed: () {
+									zone.threadState!.hidePost(_post.id);
+									zone.threadState!.save();
+								}
+							)
+						],
 						ContextMenuAction(
 							child: const Text('Select text'),
 							trailingIcon: Icons.select_all,

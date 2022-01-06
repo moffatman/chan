@@ -6,6 +6,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/thread_row.dart';
@@ -173,6 +174,11 @@ class _BoardPageState extends State<BoardPage> {
 							children: [
 								RefreshableList<Thread>(
 									initialFilter: widget.initialSearch,
+									filters: [
+										context.watch<EffectiveSettings>().filter,
+										context.watch<Persistence>().browserState.getCatalogFilter(board!.name)
+									],
+									allowReordering: true,
 									gridColumns: settings.boardCatalogColumns,
 									controller: _listController,
 									listUpdater: () => site.getCatalog(board!.name).then((list) {
@@ -192,38 +198,53 @@ class _BoardPageState extends State<BoardPage> {
 									}),
 									id: '/${board!.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
 									itemBuilder: (context, thread) {
-										return GestureDetector(
-											child: ThreadRow(
-												contentFocus: settings.boardCatalogColumns > 1,
-												thread: thread,
-												isSelected: thread.identifier == widget.selectedThread,
-												semanticParentIds: [widget.semanticId],
-												onThumbnailTap: (initialAttachment) {
-													final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
-													showGallery(
-														context: context,
-														attachments: attachments,
-														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-														onChange: (attachment) {
-															_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
-														},
-														semanticParentIds: [widget.semanticId]
-													);
+										final browserState = context.watch<Persistence>().browserState;
+										return ContextMenu(
+											actions: [
+												if (browserState.isThreadHidden(thread.board, thread.id)) ContextMenuAction(
+													child: const Text('Unhide thread'),
+													trailingIcon: Icons.check_box,
+													onPressed: () => browserState.unHideThread(thread.board, thread.id)
+												)
+												else ContextMenuAction(
+													child: const Text('Hide thread'),
+													trailingIcon: Icons.check_box_outline_blank,
+													onPressed: () => browserState.hideThread(thread.board, thread.id)
+												)
+											],
+											child: GestureDetector(
+												child: ThreadRow(
+													contentFocus: settings.boardCatalogColumns > 1,
+													thread: thread,
+													isSelected: thread.identifier == widget.selectedThread,
+													semanticParentIds: [widget.semanticId],
+													onThumbnailTap: (initialAttachment) {
+														final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
+														showGallery(
+															context: context,
+															attachments: attachments,
+															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+															onChange: (attachment) {
+																_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
+															},
+															semanticParentIds: [widget.semanticId]
+														);
+													}
+												),
+												onTap: () {
+													if (widget.onThreadSelected != null) {
+														widget.onThreadSelected!(thread.identifier);
+													}
+													else {
+														Navigator.of(context).push(FullWidthCupertinoPageRoute(
+															builder: (ctx) => ThreadPage(
+																thread: thread.identifier,
+																boardSemanticId: widget.semanticId,
+															)
+														));
+													}
 												}
-											),
-											onTap: () {
-												if (widget.onThreadSelected != null) {
-													widget.onThreadSelected!(thread.identifier);
-												}
-												else {
-													Navigator.of(context).push(FullWidthCupertinoPageRoute(
-														builder: (ctx) => ThreadPage(
-															thread: thread.identifier,
-															boardSemanticId: widget.semanticId,
-														)
-													));
-												}
-											}
+											)
 										);
 									},
 									filterHint: 'Search in board'

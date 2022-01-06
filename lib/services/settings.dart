@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:chan/services/filtering.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:dio/dio.dart';
@@ -104,6 +105,8 @@ class SavedSettings extends HiveObject {
 	ContentSettings contentSettings;
 	@HiveField(12)
 	int boardCatalogColumns;
+	@HiveField(13)
+	String filterConfiguration;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -118,7 +121,8 @@ class SavedSettings extends HiveObject {
 		bool? useTouchLayout,
 		String? userId,
 		ContentSettings? contentSettings,
-		int? boardCatalogColumns
+		int? boardCatalogColumns,
+		String? filterConfiguration
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? ThemeSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -130,7 +134,8 @@ class SavedSettings extends HiveObject {
 		useTouchLayout = useTouchLayout ?? (Platform.isAndroid || Platform.isIOS),
 		userId = userId ?? (const Uuid()).v4(),
 		contentSettings = contentSettings ?? ContentSettings(),
-		boardCatalogColumns = boardCatalogColumns ?? 1;
+		boardCatalogColumns = boardCatalogColumns ?? 1,
+		filterConfiguration = filterConfiguration ?? '';
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -266,6 +271,26 @@ class EffectiveSettings extends ChangeNotifier {
 		}
 	}
 
+	String? filterError;
+	Filter? _filter;
+	Filter get filter => _filter ?? const DummyFilter();
+	void _tryToSetupFilter() {
+		try {
+			_filter = makeFilter(filterConfiguration);
+			filterError = null;
+		}
+		catch (e) {
+			filterError = e.toString();
+		}
+	}
+	String get filterConfiguration => _settings.filterConfiguration;
+	set filterConfiguration(String setting) {
+		_settings.filterConfiguration = setting;
+		_settings.save();
+		_tryToSetupFilter();
+		notifyListeners();
+	}
+
 	int get boardCatalogColumns => _settings.boardCatalogColumns;
 	set boardCatalogColumns(int setting) {
 		_settings.boardCatalogColumns = setting;
@@ -274,6 +299,7 @@ class EffectiveSettings extends ChangeNotifier {
 	}
 
 	EffectiveSettings() {
+		_tryToSetupFilter();
 		updateContentSettings();
 	}
 }

@@ -1,10 +1,10 @@
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/filtering.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/lainchan.dart';
-import 'package:chan/widgets/refreshable_list.dart';
 import 'package:hive/hive.dart';
 
 import '../widgets/post_spans.dart';
@@ -27,6 +27,7 @@ enum PostSpanFormat {
 
 @HiveType(typeId: 11)
 class Post implements Filterable {
+	@override
 	@HiveField(0)
 	final String board;
 	@HiveField(1)
@@ -37,6 +38,7 @@ class Post implements Filterable {
 	final DateTime time;
 	@HiveField(4)
 	final int threadId;
+	@override
 	@HiveField(5)
 	final int id;
 	@HiveField(6)
@@ -92,9 +94,28 @@ class Post implements Filterable {
 	}
 
 	@override
-	List<String> getSearchableText() {
-		return [text];
+	String? getFilterFieldText(String fieldName) {
+		switch (fieldName) {
+			case 'name':
+				return name;
+			case 'filename':
+				return attachment?.filename;
+			case 'text':
+				return span.buildText();
+			case 'postID':
+				return id.toString();
+			case 'posterID':
+				return posterId;
+			case 'flag':
+				return flag?.name;
+			default:
+				return null;
+		}
 	}
+	@override
+	bool get hasFile => attachment != null;
+	@override
+	bool get isThread => false;
 
 	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board: board, id: threadId);
 

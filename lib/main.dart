@@ -156,7 +156,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _tabController = CupertinoTabController();
 	bool showTabPopup = false;
 	late final PersistentBrowserState browserState;
-	final tabs = <Tuple2<PersistentBrowserTab, Key>>[];
+	final tabs = <Tuple3<PersistentBrowserTab, Key, ValueNotifier<int>>>[];
+	late Listenable browseCountListenable;
 	final activeBrowserTab = ValueNotifier<int>(0);
 	final _tabListController = ScrollController();
 	ImageboardSite? devSite;
@@ -204,7 +205,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		super.initState();
 		initialized = context.read<Persistence>().boardBox.length > 0;
 		browserState = context.read<Persistence>().browserState;
-		tabs.addAll(browserState.tabs.map((tab) => Tuple2(tab, GlobalKey())));
+		tabs.addAll(browserState.tabs.map((tab) => Tuple3(tab, GlobalKey(), ValueNotifier<int>(0))));
+		browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.item3)]);
 		activeBrowserTab.value = browserState.currentTab;
 		_setupBoards();
 		_setupDevSite();
@@ -322,6 +324,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							if (shouldClose == true) {
 								tabs.removeAt(-1 * index);
 								browserState.tabs.removeAt(-1 * index);
+								browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.item3)]);
 								final newActiveTabIndex = min(activeBrowserTab.value, tabs.length - 1);
 								activeBrowserTab.value = newActiveTabIndex;
 								browserState.currentTab = newActiveTabIndex;
@@ -370,7 +373,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			onPressed: () {
 				final tab = PersistentBrowserTab();
 				browserState.tabs.add(tab);
-				tabs.add(Tuple2(tab, GlobalKey()));
+				tabs.add(Tuple3(tab, GlobalKey(), ValueNotifier<int>(0)));
+				browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.item3)]);
 				activeBrowserTab.value = tabs.length - 1;
 				browserState.currentTab = browserState.tabs.length - 1;
 				browserState.save();
@@ -412,6 +416,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						valueListenable: context.read<Persistence>().listenForPersistentThreadStateChanges(tabs[i].item1.thread!),
 						builder: (context, box, child) {
 							final threadState = context.read<Persistence>().getThreadStateIfExists(tabs[i].item1.thread!);
+							tabs[i].item3.value = threadState?.unseenReplyCount ?? 0;
 							final attachment = threadState?.thread?.attachment;
 							return StationaryNotifyingIcon(
 								icon: attachment == null ? _icon : ClipRRect(
@@ -424,11 +429,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										height: 30
 									)
 								),
-								primary: threadState?.unseenRepliesToYou?.length ?? 0,
+								primary: threadState?.unseenReplyIdsToYou?.length ?? 0,
 								secondary: threadState?.unseenReplyCount ?? 0
 							);
 						}
 					);
+				}
+				else {
+					tabs[i].item3.value = 0;
 				}
 				return _buildTabletIcon(i * -1, icon, tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'None', reorderable: true, axis: axis);
 			}
@@ -511,8 +519,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						controller: _tabController,
 						tabBar: CupertinoTabBar(
 							items: [
-								const BottomNavigationBarItem(
-									icon: Icon(Icons.topic),
+								BottomNavigationBarItem(
+									icon: AnimatedBuilder(
+										animation: browseCountListenable,
+										builder: (context, child) => StationaryNotifyingIcon(
+											icon: const Icon(Icons.topic),
+											primary: 0,
+											secondary: tabs.asMap().entries.where((x) => x.key != activeBrowserTab.value).map((x) => x.value.item3.value).reduce((a, b) => a + b)
+										)
+									),
 									label: 'Browse'
 								),
 								BottomNavigationBarItem(

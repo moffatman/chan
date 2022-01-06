@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:chan/services/filtering.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,10 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:rxdart/rxdart.dart';
-
-abstract class Filterable {
-	List<String> getSearchableText();
-}
+import 'package:tuple/tuple.dart';
 
 const double _overscrollTriggerThreshold = 100;
 
@@ -30,6 +28,8 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Widget? footer;
 	final int gridColumns;
 	final String? initialFilter;
+	final List<Filter> filters;
+	final bool allowReordering;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -45,6 +45,8 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.gridColumns = 1,
 		this.footer,
 		this.initialFilter,
+		this.filters = const [],
+		this.allowReordering = false,
 		Key? key
 	}) : super(key: key);
 
@@ -56,7 +58,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	List<T>? list;
 	String? errorMessage;
 	Type? errorType;
-	String _filter = '';
+	Filter? _searchFilter;
 	bool updatingNow = false;
 	final _searchController = TextEditingController();
 	final _searchFocusNode = FocusNode();
@@ -66,12 +68,13 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	bool _searchFocused = false;
 	late PageStorageKey _scrollViewKey;
 	int _pointerDownCount = 0;
+	bool _showFilteredValues = false;
 
 	@override
 	void initState() {
 		super.initState();
 		if (widget.initialFilter != null) {
-			_filter = widget.initialFilter!;
+			_searchFilter = SearchFilter(widget.initialFilter!);
 			_searchController.text = widget.initialFilter!;
 		}
 		_scrollViewKey = PageStorageKey(widget.id);
@@ -149,7 +152,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		_searchFocusNode.unfocus();
 		_searchController.clear();
 		setState(() {
-			_filter = '';
+			_searchFilter = null;
 		});
 	}
 
@@ -192,19 +195,69 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		}
 	}
 
-	Widget _itemBuilder(BuildContext context, T value) {
-		if (_filter.isNotEmpty && widget.filteredItemBuilder!= null) {
-			return widget.filteredItemBuilder!(context, value, _closeSearch);
+	Widget _itemBuilder(BuildContext context, T value, {bool highlighted = false}) {
+		Widget child;
+		if (_searchFilter != null && widget.filteredItemBuilder!= null) {
+			child = widget.filteredItemBuilder!(context, value, _closeSearch);
 		}
 		else {
-			return widget.itemBuilder(context, value);
+			child = widget.itemBuilder(context, value);
 		}
+		if (highlighted) {
+			return Stack(
+				children: [
+					child,
+					Positioned.fill(
+						child: Container(
+							color: Colors.yellow.withOpacity(0.1)
+						)
+					)
+				]
+			);
+		}
+		return child;
 	}
 
 	@override
 	Widget build(BuildContext context) {
 		if (list != null) {
-			final List<T> values = _filter.isEmpty ? list! : list!.where((val) => val.getSearchableText().any((s) => s.toLowerCase().contains(_filter))).toList();
+			final pinnedValues = <T>[];
+			final values = <Tuple2<T, bool>>[];
+			final filteredValues = <Tuple2<T, String>>[];
+			final filters = [
+				...widget.filters,
+				if (_searchFilter != null) _searchFilter!
+			];
+			for (final item in list!) {
+				bool handled = false;
+				for (final filter in filters) {
+					final result = filter.filter(item);
+					if (result != null) {
+						switch (result.type) {
+							case FilterResultType.hide:
+								filteredValues.add(Tuple2(item, result.reason));
+								break;
+							case FilterResultType.highlight:
+								values.add(Tuple2(item, true));
+								break;
+							case FilterResultType.pinToTop:
+								if (widget.allowReordering) {
+									pinnedValues.add(item);
+								}
+								else {
+									values.add(Tuple2(item, true));
+								}
+								break;
+						}
+						handled = true;
+						break;
+					}
+				}
+				if (!handled) {
+					values.add(Tuple2(item, false));
+				}
+			}
+			values.insertAll(0, pinnedValues.map((x) => Tuple2(x, true)));
 			return NotificationListener<ScrollNotification>(
 				key: ValueKey(widget.id),
 				onNotification: (notification) {
@@ -259,7 +312,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 													child: CupertinoSearchTextField(
 														onChanged: (searchText) {
 															setState(() {
-																_filter = searchText.toLowerCase();
+																_searchFilter = SearchFilter(searchText.toLowerCase());
 															});
 														},
 														controller: _searchController,
@@ -289,8 +342,8 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 															for (int j = (i * widget.gridColumns).floor(); j < ((i + 1) * widget.gridColumns).floor(); j++) Flexible(
 																child: j < values.length ? Builder(
 																	builder: (context) {
-																		widget.controller?.registerItem(j, values[j], context);
-																		return _itemBuilder(context, values[j]);
+																		widget.controller?.registerItem(j, values[j].item1, context);
+																		return _itemBuilder(context, values[j].item1, highlighted: values[j].item2);
 																	}
 																) : Container()
 															)
@@ -301,8 +354,8 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 											else if (i % 2 == 0) {
 												return Builder(
 													builder: (context) {
-														widget.controller?.registerItem(i ~/ 2, values[i ~/ 2], context);
-														return _itemBuilder(context, values[i ~/ 2]);
+														widget.controller?.registerItem(i ~/ 2, values[i ~/ 2].item1, context);
+														return _itemBuilder(context, values[i ~/ 2].item1, highlighted: values[i ~/ 2].item2);
 													}
 												);
 											}
@@ -318,17 +371,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 									)
 								),
 							if (values.isEmpty)
-								if (_filter.isNotEmpty)
-									const SliverToBoxAdapter(
-										child: SizedBox(
-											height: 100,
-											child: Center(
-												child: Text('No results')
-											)
-										)
-									)
-								else
-									const SliverToBoxAdapter(
+								const SliverToBoxAdapter(
 										child: SizedBox(
 											height: 100,
 											child: Center(
@@ -336,6 +379,62 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 											)
 										)
 									),
+							if (filteredValues.isNotEmpty) ...[
+								SliverToBoxAdapter(
+									child: GestureDetector(
+										onTap: () {
+											setState(() {
+												_showFilteredValues = !_showFilteredValues;
+											});
+										},
+										child: SizedBox(
+											height: 50,
+											child: Center(
+												child: Text(
+													_showFilteredValues ? 
+														'Showing ${filteredValues.length} filtered items' :
+														'${filteredValues.length} filtered items',
+													style: TextStyle(
+														color: CupertinoTheme.of(context).primaryColor.withBrightness(0.4)
+													)
+												)
+											)
+										)
+									),
+								),
+								if (_showFilteredValues) SliverList(
+									key: PageStorageKey('filtered list for ${widget.id}'),
+									delegate: SliverChildBuilderDelegate(
+										(context, i) {
+											if (i % 2 == 0) {
+												return Stack(
+													children: [
+														_itemBuilder(context, filteredValues[i ~/ 2].item1),
+														Align(
+															alignment: Alignment.topRight,
+															child: Container(
+																padding: const EdgeInsets.all(4),
+																color: CupertinoTheme.of(context).primaryColor,
+																child: Text('Filter reason:\n' + filteredValues[i ~/ 2].item2, style: TextStyle(
+																	color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																))
+															)
+														)
+													]
+												);
+											}
+											else {
+												return Divider(
+													thickness: 1,
+													height: 0,
+													color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
+												);
+											}
+										},
+										childCount: widget.gridColumns > 1 ? (filteredValues.length / widget.gridColumns).ceil() : filteredValues.length * 2
+									)
+								)
+							],
 							if (widget.footer != null && widget.disableUpdates) SliverSafeArea(
 								top: false,
 								sliver: SliverToBoxAdapter(

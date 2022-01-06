@@ -85,7 +85,7 @@ class SavedThreadWatcher extends ChangeNotifier {
 		final liveSavedThreads = persistence.threadStateBox.values.where((s) => s.thread != null && s.savedTime != null);
 		for (final liveSavedThread in liveSavedThreads) {
 			cachedUnseen[liveSavedThread.thread!.identifier] = liveSavedThread.unseenReplyCount ?? 0;
-			cachedUnseenYous[liveSavedThread.thread!.identifier] = (liveSavedThread.unseenRepliesToYou ?? []).length;
+			cachedUnseenYous[liveSavedThread.thread!.identifier] = (liveSavedThread.unseenReplyIdsToYou ?? []).length;
 		}
 		if (liveSavedThreads.isNotEmpty) {
 			_updateCounts();
@@ -106,7 +106,7 @@ class SavedThreadWatcher extends ChangeNotifier {
 			if (newThreadState.thread != null) {
 				if (newThreadState.savedTime != null) {
 					final newUnseen = newThreadState.unseenReplyCount!;
-					final newUnseenYous = newThreadState.unseenRepliesToYou!.length;
+					final newUnseenYous = newThreadState.unseenReplyIdsToYou!.length;
 					if (cachedUnseen[newThreadState.thread!.identifier] != newUnseen || cachedUnseenYous[newThreadState.thread!.identifier] != newUnseenYous) {
 						cachedUnseen[newThreadState.thread!.identifier] = newUnseen;
 						cachedUnseenYous[newThreadState.thread!.identifier] = newUnseenYous;

@@ -1,0 +1,170 @@
+enum FilterResultType {
+	hide,
+	highlight,
+	pinToTop
+}
+
+class FilterResult {
+	FilterResultType type;
+	String reason;
+	FilterResult(this.type, this.reason);
+}
+
+abstract class Filterable {
+	String? getFilterFieldText(String fieldName);
+	String get board;
+	int get id;
+	bool get hasFile;
+	bool get isThread;
+}
+
+abstract class Filter {
+	FilterResult? filter(Filterable item);
+}
+
+class CustomFilter implements Filter {
+	final String configuration;
+	final RegExp pattern;
+	List<String> patternFields;
+	FilterResultType outputType;
+	List<String>? boards;
+	List<String>? excludeBoards;
+	bool? hasFile;
+	bool? threadOnly;
+	CustomFilter({
+		required this.configuration,
+		required this.pattern,
+		this.patternFields = const ['subject', 'name', 'filename', 'text'],
+		this.outputType = FilterResultType.hide
+	});
+	@override
+	FilterResult? filter(Filterable item) {
+		bool matches = false;
+		for (final field in patternFields) {
+			if (pattern.hasMatch(item.getFilterFieldText(field) ?? '')) {
+				matches = true;
+				break;
+			}
+		}
+		if (boards != null && !boards!.contains(item.getFilterFieldText('board'))) {
+			return null;
+		}
+		if (excludeBoards != null && excludeBoards!.contains(item.getFilterFieldText('board'))) {
+			return null;
+		}
+		if (hasFile != null && hasFile != item.hasFile) {
+			return null;
+		}
+		if (threadOnly == true && !item.isThread) {
+			return null;
+		}
+		return matches ? FilterResult(outputType, 'Matched "$configuration"') : null;
+	}
+}
+
+class IDFilter implements Filter {
+	final List<int> ids;
+	IDFilter(this.ids);
+	@override
+	FilterResult? filter(Filterable item) {
+		return ids.contains(item.id) ? FilterResult(FilterResultType.hide, 'Manually hidden') : null;
+	}
+}
+
+class SearchFilter implements Filter {
+	final String text;
+	SearchFilter(this.text);
+	@override
+	FilterResult? filter(Filterable item) {
+		return (item.getFilterFieldText('text') ?? '').toLowerCase().contains(text) ? null : FilterResult(FilterResultType.hide, 'Search for "$text"');
+	}
+}
+
+class FilterGroup implements Filter {
+	final List<Filter> filters;
+	FilterGroup(this.filters);
+	@override
+	FilterResult? filter(Filterable item) {
+		for (final filter in filters) {
+			final result = filter.filter(item);
+			if (result != null) {
+				return result;
+			}
+		}
+		return null;
+	}
+}
+
+class DummyFilter implements Filter {
+	const DummyFilter();
+	@override
+	FilterResult? filter(Filterable item) => null;
+}
+
+class FilterException implements Exception {
+	String message;
+	FilterException(this.message);
+
+	@override
+	String toString() => 'Filter Error: $message';
+}
+
+final _configurationLinePattern = RegExp(r'^\/(.*)\/(i?)(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?$');
+
+Filter _makeFilter(String configuration) {
+	final match = _configurationLinePattern.firstMatch(configuration);
+	if (match == null) {
+		throw FilterException('Invalid syntax: "$configuration"');
+	}
+	final filter = CustomFilter(
+		configuration: configuration,
+		pattern: RegExp(match.group(1)!, multiLine: true, caseSensitive: match.group(2) != 'i')
+	);
+	int i = 4;
+	while (true) {
+		final s = match.group(i);
+		if (s == null) {
+			break;
+		}
+		else if (s == 'highlight') {
+			filter.outputType = FilterResultType.highlight;
+		}
+		else if (s == 'top') {
+			filter.outputType = FilterResultType.pinToTop;
+		}
+		else if (s.startsWith('type:')) {
+			filter.patternFields = s.split(':').skip(1).toList();
+		}
+		else if (s.startsWith('boards:')) {
+			filter.boards = s.split(':').skip(1).toList();
+		}
+		else if (s.startsWith('exclude:')) {
+			filter.excludeBoards = s.split(':').skip(1).toList();
+		}
+		else if (s == 'file:only') {
+			filter.hasFile = true;
+		}
+		else if (s == 'file:no') {
+			filter.hasFile = false;
+		}
+		else if (s == 'thread') {
+			filter.threadOnly = true;
+		}
+		else {
+			throw FilterException('Unknown qualifier "$s"');
+		}
+		i += 2;
+	}
+	return filter;
+}
+
+Filter makeFilter(String configuration) {
+	final filters = <Filter>[];
+	for (final line in configuration.split('\n')) {
+		if (line.startsWith('#') || line.isEmpty) {
+			continue;
+		}
+		filters.add(_makeFilter(line));
+	}
+	return FilterGroup(filters);
+}

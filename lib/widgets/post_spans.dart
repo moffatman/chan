@@ -44,11 +44,11 @@ abstract class PostSpan {
 		return [];
 	}
 	InlineSpan build(BuildContext context, PostSpanRenderOptions options);
+	String buildText();
 }
 
 class PostNodeSpan extends PostSpan {
 	List<PostSpan> children;
-
 	PostNodeSpan(this.children);
 
 	@override
@@ -57,35 +57,52 @@ class PostNodeSpan extends PostSpan {
 	}
 
 	@override
-	build(context, options) {
+	InlineSpan build(context, options) {
 		return TextSpan(
 			children: children.map((child) => child.build(context, options)).toList()
 		);
+	}
+
+	@override
+	String buildText() {
+		return children.map((x) => x.buildText()).join(' ');
 	}
 }
 
 class PostTextSpan extends PostSpan {
 	final String text;
 	PostTextSpan(this.text);
+
 	@override
-	build(context, options) {
+	InlineSpan build(context, options) {
 		return TextSpan(
 			text: context.read<EffectiveSettings>().filterProfanity(text),
 			style: options.baseTextStyle,
 			recognizer: options.recognizer
 		);
 	}
+
+	@override
+	String buildText() {
+		return text;
+	}
 }
 class PostQuoteSpan extends PostSpan {
 	final PostSpan child;
 	PostQuoteSpan(this.child);
+
 	@override
-	build(context, options) {
+	InlineSpan build(context, options) {
 		return TextSpan(
 			children: [child.build(context, options)],
 			style: options.baseTextStyle.copyWith(color: options.overrideTextColor ?? const Color.fromRGBO(120, 153, 34, 1)),
 			recognizer: options.recognizer
 		);
+	}
+
+	@override
+	String buildText() {
+		return child.buildText();
 	}
 }
 
@@ -255,6 +272,11 @@ class PostQuoteLinkSpan extends PostSpan {
 			return _build(context, options);
 		}
 	}
+
+	@override
+	String buildText() {
+		return '>>$postId';
+	}
 }
 
 class PostBoardLink extends PostSpan {
@@ -277,6 +299,11 @@ class PostBoardLink extends PostSpan {
 				));
 			})
 		);
+	}
+
+	@override
+	String buildText() {
+		return '>>/$board/';
 	}
 }
 
@@ -334,6 +361,11 @@ class PostCodeSpan extends PostSpan {
 			)
 		);
 	}
+
+	@override
+	String buildText() {
+		return '[code]' + text + '[/code]';
+	}
 }
 
 class PostSpoilerSpan extends PostSpan {
@@ -363,6 +395,11 @@ class PostSpoilerSpan extends PostSpan {
 			recognizer: toggleRecognizer
 		);
 	}
+
+	@override
+	String buildText() {
+		return '[spoiler]' + child.buildText() + '[/spoiler]';
+	}
 }
 
 class PostLinkSpan extends PostSpan {
@@ -377,6 +414,11 @@ class PostLinkSpan extends PostSpan {
 			),
 			recognizer: TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(url))
 		);
+	}
+
+	@override
+	String buildText() {
+		return url;
 	}
 }
 
@@ -403,6 +445,11 @@ class PostCatalogSearchSpan extends PostSpan {
 				)
 			))
 		);
+	}
+
+	@override
+	String buildText() {
+		return '>>/$board/$query';
 	}
 }
 
