@@ -71,6 +71,7 @@ class ThreadRow extends StatelessWidget {
 				int unseenReplyCount = 0;
 				int unseenYouCount = 0;
 				int unseenImageCount = 0;
+				final grey = CupertinoTheme.of(context).primaryColor.withBrightness(0.6);
 				Color? replyCountColor;
 				Color? imageCountColor;
 				Color? otherMetadataColor;
@@ -78,9 +79,9 @@ class ThreadRow extends StatelessWidget {
 					unseenReplyCount = (threadState?.unseenReplyCount ?? 0) + ((latestReplyCount + 1) - _thread.posts.length);
 					unseenYouCount = threadState?.unseenReplyIdsToYou?.length ?? 0;
 					unseenImageCount = (threadState?.unseenImageCount ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.where((x) => x.attachment != null).length ?? 0));
-					replyCountColor = unseenReplyCount == 0 ? Colors.grey : null;
-					imageCountColor = unseenImageCount == 0 ? Colors.grey : null;
-					otherMetadataColor = unseenReplyCount == 0 && unseenImageCount == 0  ? Colors.grey : null;
+					replyCountColor = unseenReplyCount == 0 ? grey : null;
+					imageCountColor = unseenImageCount == 0 ? grey : null;
+					otherMetadataColor = unseenReplyCount == 0 && unseenImageCount == 0 ? grey : null;
 				}
 				Widget _makeCounters() => Container(
 					decoration: BoxDecoration(
@@ -100,9 +101,9 @@ class ThreadRow extends StatelessWidget {
 								Icon(Icons.push_pin, color: otherMetadataColor, size: 18),
 								const SizedBox(width: 4),
 							],
-							if (_thread.isArchived) ... const [
-								Icon(Icons.archive, color: Colors.grey, size: 18),
-								SizedBox(width: 4),
+							if (_thread.isArchived) ... [
+								Icon(Icons.archive, color: grey, size: 18),
+								const SizedBox(width: 4),
 							],
 							FittedBox(
 								fit: BoxFit.contain,
@@ -124,8 +125,8 @@ class ThreadRow extends StatelessWidget {
 										const SizedBox(width: 6),
 										Icon(Icons.reply_rounded, size: 18, color: replyCountColor),
 										const SizedBox(width: 4),
-										Text(latestReplyCount.toString(), style: TextStyle(color: replyCountColor)),
-										if (unseenReplyCount > 0) Text(' (+$unseenReplyCount)'),
+										Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
+										if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
 										if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: const TextStyle(color: Colors.red)),
 										const SizedBox(width: 2),
 									]
@@ -139,8 +140,8 @@ class ThreadRow extends StatelessWidget {
 										const SizedBox(width: 6),
 										Icon(Icons.image, size: 18, color: imageCountColor),
 										const SizedBox(width: 4),
-										Text(latestImageCount.toString(), style: TextStyle(color: imageCountColor)),
-										if (unseenImageCount > 0) Text(' (+$unseenImageCount)'),
+										Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
+										if (unseenImageCount > 0) Text('+$unseenImageCount'),
 										const SizedBox(width: 2)
 									]
 								)
