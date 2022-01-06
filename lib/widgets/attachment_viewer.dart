@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
@@ -381,9 +382,16 @@ class AttachmentViewer extends StatelessWidget {
 			handleLoadingProgress: true,
 			onDoubleTap: (state) {
 				final old = state.gestureDetails!;
+				double autozoomScale = 2.0;
+				if (attachment.width != null && attachment.height != null) {
+					double screenAspectRatio = MediaQuery.of(context).size.width / MediaQuery.of(context).size.height;
+					double attachmentAspectRatio = attachment.width! / attachment.height!;
+					double fillZoomScale = screenAspectRatio / attachmentAspectRatio;
+					autozoomScale = max(autozoomScale, max(fillZoomScale, 1 / fillZoomScale));
+				}
 				state.gestureDetails = GestureDetails(
 					offset: state.pointerDownPosition!.scale(old.layoutRect!.width / MediaQuery.of(context).size.width, old.layoutRect!.height / MediaQuery.of(context).size.height) * -1,
-					totalScale: (old.totalScale ?? 1) > 1 ? 1 : 2,
+					totalScale: (old.totalScale ?? 1) > 1 ? 1 : autozoomScale,
 					actionType: ActionType.zoom
 				);
 			},
