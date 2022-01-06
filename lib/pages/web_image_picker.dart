@@ -81,7 +81,8 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										initialOptions: InAppWebViewGroupOptions(
 											crossPlatform: InAppWebViewOptions(
 												mediaPlaybackRequiresUserGesture: false,
-												transparentBackground: true
+												transparentBackground: true,
+												userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Mobile/15E148 Safari/604.1'
 											),
 											android: AndroidInAppWebViewOptions(
 												useHybridComposition: true,
@@ -176,7 +177,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										mergeSort<dynamic>(results, compare: (a, b) => a['top'].compareTo(b['top']));
 										_makeGrid(BuildContext context, List<dynamic> images) => GridView.builder(
 											gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-												maxCrossAxisExtent: 100,
+												maxCrossAxisExtent: 150,
 												mainAxisSpacing: 16,
 												crossAxisSpacing: 16
 											),
