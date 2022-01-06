@@ -138,8 +138,27 @@ class _BoardPageState extends State<BoardPage> {
 						),
 						CupertinoButton(
 							padding: EdgeInsets.zero,
-							child: Icon((_replyBoxKey.currentState?.show ?? false) ? Icons.create : Icons.create_outlined),
-							onPressed: _replyBoxKey.currentState?.toggleReplyBox
+							child: (_replyBoxKey.currentState?.show ?? false) ? SizedBox(
+								width: 25,
+								height: 25,
+								child: Stack(
+									fit: StackFit.passthrough,
+									children: const [
+										Align(
+											alignment: Alignment.bottomRight,
+											child: Icon(Icons.create, size: 20)
+										),
+										Align(
+											alignment: Alignment.topLeft,
+											child: Icon(Icons.close, size: 15)
+										)
+									]
+								)
+							) : const Icon(Icons.create),
+							onPressed: () {
+								_replyBoxKey.currentState?.toggleReplyBox();
+								setState(() {});
+							}
 						)
 					]
 				)
