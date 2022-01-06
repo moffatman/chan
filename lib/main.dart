@@ -416,7 +416,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						valueListenable: context.read<Persistence>().listenForPersistentThreadStateChanges(tabs[i].item1.thread!),
 						builder: (context, box, child) {
 							final threadState = context.read<Persistence>().getThreadStateIfExists(tabs[i].item1.thread!);
-							tabs[i].item3.value = threadState?.unseenReplyCount ?? 0;
+							Future.microtask(() => tabs[i].item3.value = threadState?.unseenReplyCount ?? 0);
 							final attachment = threadState?.thread?.attachment;
 							return StationaryNotifyingIcon(
 								icon: attachment == null ? _icon : ClipRRect(
@@ -436,7 +436,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					);
 				}
 				else {
-					tabs[i].item3.value = 0;
+					Future.microtask(() => tabs[i].item3.value = 0);
 				}
 				return _buildTabletIcon(i * -1, icon, tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'None', reorderable: true, axis: axis);
 			}
