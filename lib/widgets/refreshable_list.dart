@@ -592,6 +592,15 @@ class _RefreshableListItem<T> {
 		}
 	}
 	_RefreshableListItem(this.item);
+
+	@override
+	bool operator == (dynamic o) => (o is _RefreshableListItem<T>) && o.item == item;
+
+	@override
+	int get hashCode => item.hashCode;
+
+	@override
+	String toString() => '_RefreshableListItem(item: $item, cachedOffset: $cachedOffset, cachedHeight: $cachedHeight)';
 }
 class RefreshableListController<T extends Filterable> {
 	List<_RefreshableListItem<T>> _items = [];
@@ -606,23 +615,37 @@ class RefreshableListController<T extends Filterable> {
 	double? bottomOffset;
 	String? contentId;
 	RefreshableListState<T>? state;
+	final Map<Tuple2<int, bool>, Completer<void>> _itemCacheCallbacks = {};
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onScroll);
 		slowScrollUpdates.listen(_onSlowScroll);
 		SchedulerBinding.instance!.endOfFrame.then((_) => _onScroll([]));
 	}
-	Future<void> _tryCachingItem(_RefreshableListItem<T> item) async {
+	Future<void> _tryCachingItem(int index, _RefreshableListItem<T> item) async {
 		await SchedulerBinding.instance!.endOfFrame;
 		if (item.hasGoodState) {
 			final RenderObject object = item.context!.findRenderObject()!;
 			item.cachedHeight = object.semanticBounds.height;
 			item.cachedOffset = _getOffset(object);
+			final keys = _itemCacheCallbacks.keys.toList();
+			for (final position in keys) {
+				if (position.item2 && index >= position.item1) {
+					// scrolling down
+					_itemCacheCallbacks[position]?.complete();
+					_itemCacheCallbacks.remove(position);
+				}
+				else if (!position.item2 && index <= position.item1) {
+					// scrolling up
+					_itemCacheCallbacks[position]?.complete();
+					_itemCacheCallbacks.remove(position);
+				}
+			}
 		}
 	}
 	void _onSlowScroll(void update) {
-		for (final item in _items) {
-			if (item.cachedOffset == null) {
-				_tryCachingItem(item);
+		for (final entry in _items.asMap().entries) {
+			if (entry.value.cachedOffset == null) {
+				_tryCachingItem(entry.key, entry.value);
 			}
 		}
 		double? scrollableViewportHeight;
@@ -662,6 +685,10 @@ class RefreshableListController<T extends Filterable> {
 	void newContentId(String contentId) {
 		this.contentId = contentId;
 		_items = [];
+		for (final cb in _itemCacheCallbacks.values) {
+			cb.completeError(Exception('page changed'));
+		}
+		_itemCacheCallbacks.clear();
 		currentIndex = 0;
 	}
 	void setItems(List<T> items) {
@@ -672,7 +699,7 @@ class RefreshableListController<T extends Filterable> {
 		bottomOffset ??= MediaQuery.of(context).padding.bottom;
 		_items[index].item = item;
 		_items[index].context = context;
-		_tryCachingItem(_items[index]);
+		_tryCachingItem(index, _items[index]);
 	}
 	double _getOffset(RenderObject object) {
 		return RenderAbstractViewport.of(object)!.getOffsetToReveal(object, 0.0).offset;
@@ -694,52 +721,55 @@ class RefreshableListController<T extends Filterable> {
 		return estimate!;
 	}
 	Future<void> animateTo(bool Function(T val) f, {double alignment = 0.0, bool Function(T val)? orElseLast, Duration duration = const Duration(milliseconds: 200)}) async {
-		_RefreshableListItem<T> targetItem = _items.firstWhere((i) => f(i.item), orElse: orElseLast == null ? null : () => _items.lastWhere((j) => orElseLast(j.item)));
-		Duration d = duration;
-		Curve c = Curves.ease;
-		final initialContentId = contentId;
-		if (targetItem.cachedOffset == null) {
-			int targetIndex = _items.indexOf(targetItem);
-			DateTime scrollStartTime = DateTime.now();
-			c = Curves.easeIn;
-			while (DateTime.now().difference(scrollStartTime).compareTo(const Duration(seconds: 5)).isNegative) {
-				await SchedulerBinding.instance!.endOfFrame;
-				if (initialContentId != contentId) return;
-				await scrollController!.animateTo(
-					_estimateOffset(targetIndex) - topOffset!,
-					duration: duration ~/ 4,
-					curve: c
-				);
-				if (initialContentId != contentId) return;
-				c = Curves.linear;
-				await SchedulerBinding.instance!.endOfFrame;
-				if (initialContentId != contentId) return;
-				if (_items[targetIndex].hasGoodState) {
-					break;
-				}
+		final start = DateTime.now();
+		int targetIndex = _items.indexWhere((i) => f(i.item));
+		if (targetIndex == -1) {
+			if (orElseLast != null) {
+				targetIndex = _items.lastIndexWhere((i) => orElseLast(i.item));
 			}
-			await _tryCachingItem(_items[targetIndex]);
+			if (targetIndex == -1) {
+				throw StateError('No matching item to scroll to');
+			}
+		}
+		Duration d = duration;
+		Curve c = Curves.easeIn;
+		final initialContentId = contentId;
+		Future<bool> attemptResolve() async {
+			final completer = Completer<void>();
+			final estimate = _estimateOffset(targetIndex) - topOffset!;
+			_itemCacheCallbacks[Tuple2(targetIndex, estimate > scrollController!.position.pixels)] = completer;
+			final delay = Duration(milliseconds: min(300, estimate ~/ 100));
+			scrollController!.animateTo(
+				estimate,
+				duration: delay,
+				curve: c
+			);
+			await Future.any([completer.future, Future.delayed(delay ~/ 4)]);
+			return (_items[targetIndex].cachedOffset != null);
+		}
+		if (_items[targetIndex].cachedOffset == null) {
+			while (!(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 20) {
+				c = Curves.linear;
+			}
 			if (initialContentId != contentId) return;
-			Duration timeLeft = duration - DateTime.now().difference(scrollStartTime);
+			Duration timeLeft = duration - DateTime.now().difference(start);
 			if (timeLeft.inMilliseconds.isNegative) {
 				d = duration ~/ 4;
 			}
 			else {
 				d = Duration(milliseconds: min(timeLeft.inMilliseconds, duration.inMilliseconds ~/ 4));
 			}
-			c = Curves.easeOut;
 		}
-		if (targetItem.cachedOffset == null) {
-			print('Failed to get the cachedOffset in time');
-			return;
+		if (_items[targetIndex].cachedOffset == null) {
+			throw Exception('Scrolling timed out');
 		}
-		final atAlignment0 = targetItem.cachedOffset! - topOffset!;
-		final alignmentSlidingWindow = scrollController!.position.viewportDimension - targetItem.cachedHeight! - topOffset! - bottomOffset!;
-		if (targetItem == _items.last) {
+		final atAlignment0 = _items[targetIndex].cachedOffset! - topOffset!;
+		final alignmentSlidingWindow = scrollController!.position.viewportDimension - _items[targetIndex].cachedHeight! - topOffset! - bottomOffset!;
+		if (_items[targetIndex] == _items.last) {
 			await scrollController!.animateTo(
 				scrollController!.position.maxScrollExtent,
 				duration: d,
-				curve: c
+				curve: Curves.easeOut
 			);
 			await SchedulerBinding.instance!.endOfFrame;
 		}
@@ -747,7 +777,7 @@ class RefreshableListController<T extends Filterable> {
 			await scrollController!.animateTo(
 				(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent),
 				duration: d,
-				curve: c
+				curve: Curves.easeOut
 			);
 			await SchedulerBinding.instance!.endOfFrame;
 		}

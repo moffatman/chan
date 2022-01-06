@@ -114,7 +114,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		);
 		_listController.slowScrollUpdates.listen((_) {
 			if (persistentState.thread != null && !_unnaturallyScrolling && _listController.lastVisibleIndex >= 0) {
-				final newLastSeen = persistentState.thread!.posts[_listController.lastVisibleIndex].id;	
+				final newLastSeen = persistentState.thread!.posts[_listController.lastVisibleIndex].id;
 				if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
 					persistentState.lastSeenPostId = newLastSeen;
 					persistentState.save();
@@ -142,7 +142,7 @@ class _ThreadPageState extends State<ThreadPage> {
 				semanticRootIds: [widget.boardSemanticId, 0]
 			);
 			persistentState.save();
-			_blockAndScrollToPostIfNeeded();
+			_blockAndScrollToPostIfNeeded(const Duration(milliseconds: 100));
 			setState(() {});
 		}
 		else if (widget.initialPostId != old.initialPostId && widget.initialPostId != null) {
@@ -431,7 +431,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																				final whiteCount = persistentState.unseenReplyCount ?? 0;
 																				int greyCount = 0;
 																				if (persistentState.thread != null && persistentState.lastSeenPostId != -1 && _listController.lastVisibleIndex != -1) {
-																					greyCount = persistentState.thread!.posts.length - whiteCount - (_listController.lastVisibleIndex + 1);
+																					greyCount = persistentState.thread!.posts.length - whiteCount - (_listController.lastVisibleIndex + 2);
 																				}
 																				const radius = Radius.circular(8);
 																				const radiusAlone = BorderRadius.all(radius);

@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/util.dart';
 
 import 'package:flutter/material.dart';
@@ -178,101 +179,64 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 		final masterNavigator = Provider.value(
 			value: _masterKey,
 			child: ClipRect(
-				child: Builder(
-					builder: (context) {
-						final properScrollController = PrimaryScrollController.of(context);
-						return Navigator(
-							key: _masterKey,
-							initialRoute: '/',
-							observers: [HeroController()],
-							onGenerateRoute: (RouteSettings settings) {
-								return FullWidthCupertinoPageRoute(
-									builder: (context) {
-										Widget child = TabBarView(
-											controller: _tabController,
-											physics: panes.length > 1 ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
-											children: panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)).toList()
-										);
-										if (widget.showChrome) {
-											child = CupertinoPageScaffold(
-												resizeToAvoidBottomInset: false,
-												navigationBar: panes[_tabController.index].navigationBar ?? CupertinoNavigationBar(
-													transitionBetweenRoutes: false,
-													middle: panes[_tabController.index].title
-												),
-												child: Column(
-													children: [
-														SafeArea(
-															bottom: false,
-															child: Material(
-																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																child: TabBar(
-																	controller: _tabController,
-																	tabs: panes.map((pane) => Tab(
-																		icon: Icon(
-																			pane.icon,
-																			color: CupertinoTheme.of(context).primaryColor
-																		)
-																	)).toList()
-																)
+				child: PrimaryScrollControllerInjectingNavigator(
+					key: _masterKey,
+					observers: [HeroController()],
+					buildRoot: (context) {
+							Widget child = TabBarView(
+								controller: _tabController,
+								physics: panes.length > 1 ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
+								children: panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)).toList()
+							);
+							if (widget.showChrome) {
+								child = CupertinoPageScaffold(
+									resizeToAvoidBottomInset: false,
+									navigationBar: panes[_tabController.index].navigationBar ?? CupertinoNavigationBar(
+										transitionBetweenRoutes: false,
+										middle: panes[_tabController.index].title
+									),
+									child: Column(
+										children: [
+											SafeArea(
+												bottom: false,
+												child: Material(
+													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+													child: TabBar(
+														controller: _tabController,
+														tabs: panes.map((pane) => Tab(
+															icon: Icon(
+																pane.icon,
+																color: CupertinoTheme.of(context).primaryColor
 															)
-														),
-														MediaQuery(
-															data: MediaQuery.of(context).removePadding(removeTop: true),
-															child: Expanded(
-																child: child
-															)
-														)
-													]
+														)).toList()
+													)
 												)
-											);
-										}
-										if (properScrollController != null) {
-											child = PrimaryScrollController(
-												controller: properScrollController,
-												child: child
-											);
-										}
-										child = KeyedSubtree(
-											key: _masterContentKey,
-											child: child
-										);
-										return child;
-									}
+											),
+											MediaQuery(
+												data: MediaQuery.of(context).removePadding(removeTop: true),
+												child: Expanded(
+													child: child
+												)
+											)
+										]
+									)
 								);
 							}
-						);
-					}
+							child = KeyedSubtree(
+								key: _masterContentKey,
+								child: child
+							);
+							return child;
+						}
 				)
 			)
 		);
 		final detailNavigator = Provider.value(
 			value: _detailKey,
 			child: ClipRect(
-				child: Builder(
-					builder: (context) {
-						final properScrollController = PrimaryScrollController.of(context);
-						return Navigator(
-							key: _detailKey,
-							initialRoute: '/',
-							onGenerateRoute: (RouteSettings settings) {
-								return FullWidthCupertinoPageRoute(
-									builder: (context) {
-										if (properScrollController == null) {
-											return panes[_tabController.index].buildDetail();
-										}
-										else {
-											return PrimaryScrollController(
-												controller: properScrollController,
-												child: panes[_tabController.index].buildDetail()
-											);
-										}
-									},
-									settings: settings
-								);
-							}
-						);
-					}
+				child: PrimaryScrollControllerInjectingNavigator(
+					key: _detailKey,
+					buildRoot: (context) => panes[_tabController.index].buildDetail()
 				)
 			)
 		);
