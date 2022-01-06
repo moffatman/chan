@@ -257,23 +257,29 @@ class _BoardPageState extends State<BoardPage> {
 											child: GestureDetector(
 												child: Container(
 													decoration: BoxDecoration(
-														color: CupertinoTheme.of(context).primaryColor.withBrightness(0.6),
+														color: CupertinoTheme.of(context).primaryColor.withBrightness(0.8),
 														borderRadius: const BorderRadius.all(Radius.circular(8))
-													),
-													constraints: BoxConstraints(
-														minWidth: 36 * MediaQuery.of(context).textScaleFactor
 													),
 													padding: const EdgeInsets.all(8),
 													margin: const EdgeInsets.only(bottom: 16, right: 16),
-													child: Text(
-														_listController.firstVisibleIndex.toString(),
-														textAlign: TextAlign.center,
-														style: TextStyle(
-															color: CupertinoTheme.of(context).scaffoldBackgroundColor
-														)
+													child: Row(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															Icon(Icons.vertical_align_top, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+															SizedBox(
+																width: 40,
+																child: Text(
+																	_listController.firstVisibleIndex.toString(),
+																	textAlign: TextAlign.center,
+																	style: TextStyle(
+																		color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																	)
+																)
+															)
+														]
 													)
 												),
-												onTap: () => _listController.animateTo((f) => true, alignment: 0.0)
+												onTap: () => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease)
 											)
 										)
 									)
