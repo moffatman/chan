@@ -167,7 +167,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		_isFullResolution = true;
 		_showLoadingProgress = false;
 		notifyListeners();
-		Future.delayed(const Duration(milliseconds: 300), () {
+		Future.delayed(const Duration(milliseconds: 500), () {
 			_showLoadingProgress = true;
 			notifyListeners();
 		});
