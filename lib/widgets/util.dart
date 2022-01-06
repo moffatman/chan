@@ -306,3 +306,51 @@ InlineSpan buildFakeMarkdown(BuildContext context, String input) {
 		)).toList()
 	);
 }
+
+class RootCustomScale extends StatelessWidget {
+	final double scale;
+	final Widget child;
+	const RootCustomScale({
+		required this.scale,
+		required this.child,
+		Key? key
+	}) : super(key: key);
+	@override
+	Widget build(BuildContext context) {
+		if (scale == 1) {
+			return child;
+		}
+    return FractionallySizedBox(
+      widthFactor: 1 * scale,
+      heightFactor: 1 * scale,
+      child: Transform.scale(
+        scale: 1 / scale,
+        child: child
+			)
+		);
+	}
+}
+
+class MQCustomScale extends StatelessWidget {
+	final double scale;
+	final Widget child;
+	const MQCustomScale({
+		required this.scale,
+		required this.child,
+		Key? key
+	}) : super(key: key);
+	@override
+	Widget build(BuildContext context) {
+		final mq = MediaQuery.of(context);
+    return MediaQuery(
+			data: mq.copyWith(
+				viewInsets: mq.viewInsets * scale,
+				padding: mq.padding * scale,
+				viewPadding: mq.viewPadding * scale,
+				systemGestureInsets: mq.systemGestureInsets * scale,
+				size: mq.size / scale
+			),
+			child: child
+		);
+	}
+}

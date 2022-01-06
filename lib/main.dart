@@ -116,12 +116,15 @@ class _ChanAppState extends State<ChanApp> {
 									site?.context = context;
 									return DefaultTextStyle(
 										style: CupertinoTheme.of(context).textTheme.textStyle,
-										child: StickyMediaQuery(
-											top: true,
-											child: threadWatcher != null ? ChanHomePage(key: ValueKey(site!.name)) : Container(
-												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-												child: const Center(
-													child: CupertinoActivityIndicator()
+										child: RootCustomScale(
+											scale: (Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0,
+											child: StickyMediaQuery(
+												top: true,
+												child: threadWatcher != null ? ChanHomePage(key: ValueKey(site!.name)) : Container(
+													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+													child: const Center(
+														child: CupertinoActivityIndicator()
+													)
 												)
 											)
 										)
