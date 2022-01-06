@@ -18,6 +18,7 @@ class StickyThreadWatcher extends ChangeNotifier {
 	StreamSubscription<BoxEvent>? _boxSubscription;
 	Timer? nextUpdateTimer;
 	List<Thread> unseenStickyThreads = [];
+	bool disposed = false;
 
 	final unseenCount = ValueNotifier<int>(0);
 
@@ -49,13 +50,22 @@ class StickyThreadWatcher extends ChangeNotifier {
 			print(e);
 		}
 		nextUpdateTimer = Timer(interval, update);
-		notifyListeners();
+		if (disposed) {
+			nextUpdateTimer?.cancel();
+			_boxSubscription?.cancel();
+		}
+		else {
+			notifyListeners();
+		}
 	}
 
 	@override
 	void dispose() {
+		disposed = true;
 		nextUpdateTimer?.cancel();
+		nextUpdateTimer = null;
 		_boxSubscription?.cancel();
+		_boxSubscription = null;
 		super.dispose();
 	}
 }
@@ -73,6 +83,7 @@ class SavedThreadWatcher extends ChangeNotifier {
 	bool get active => nextUpdateTimer?.isActive ?? false;
 	final fixBrokenLock = Mutex();
 	final Set<ThreadIdentifier> fixedThreads = {};
+	bool disposed = false;
 
 	final unseenCount = ValueNotifier<int>(0);
 	final unseenYouCount = ValueNotifier<int>(0);
@@ -160,7 +171,13 @@ class SavedThreadWatcher extends ChangeNotifier {
 			nextUpdate = lastUpdate!.add(_errorInterval);
 			nextUpdateTimer = Timer(_errorInterval, update);
 		}
-		notifyListeners();
+		if (disposed) {
+			nextUpdateTimer?.cancel();
+			_boxSubscription?.cancel();
+		}
+		else {
+			notifyListeners();
+		}
 	}
 
 	void cancel() {
@@ -186,8 +203,11 @@ class SavedThreadWatcher extends ChangeNotifier {
 
 	@override
 	void dispose() {
+		disposed = true;
 		nextUpdateTimer?.cancel();
+		nextUpdateTimer = null;
 		_boxSubscription?.cancel();
+		_boxSubscription = null;
 		super.dispose();
 	}
 }
