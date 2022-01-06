@@ -220,9 +220,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				builder: (context, int index, child) {
 					return IndexedStack(
 						index: index,
-						children: List.generate(tabs.length, (i) => ExcludeFocus(
-							excluding: i != activeBrowserTab.value,
-							child: ImageboardTab(
+						children: List.generate(tabs.length, (i) {
+							final tab = ImageboardTab(
 								key: tabs[i].item2,
 								initialBoard: tabs[i].item1.board,
 								initialThread: tabs[i].item1.thread,
@@ -237,8 +236,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									setState(() {});
 								},
 								id: -1 * (i + 10)
-							)
-						))
+							);
+							return ExcludeFocus(
+								excluding: i != activeBrowserTab.value,
+								child: i == activeBrowserTab.value ? tab : PrimaryScrollController.none(
+									child: tab
+								)
+							);
+						})
 					);
 				}
 			);
