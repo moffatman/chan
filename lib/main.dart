@@ -220,9 +220,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		if (index <= 0) {
 			child = ValueListenableBuilder(
 				valueListenable: activeBrowserTab,
-				builder: (context, int index, child) {
+				builder: (context, int activeIndex, child) {
 					return IndexedStack(
-						index: index,
+						index: activeIndex,
 						children: List.generate(tabs.length, (i) {
 							final tab = ImageboardTab(
 								key: tabs[i].item2,
@@ -241,8 +241,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								id: -1 * (i + 10)
 							);
 							return ExcludeFocus(
-								excluding: i != activeBrowserTab.value,
-								child: i == activeBrowserTab.value ? tab : PrimaryScrollController.none(
+								excluding: i != activeIndex,
+								child: i == activeIndex ? tab : PrimaryScrollController.none(
 									child: tab
 								)
 							);
@@ -579,7 +579,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							}
 						),
 						tabBuilder: (context, index) => CupertinoTabView(
-							builder: (context) => _buildTab(context, index, true)
+							builder: (context) => AnimatedBuilder(
+								animation: _tabController,
+								builder: (context, child) => _buildTab(context, index, _tabController.index == index)
+							)
 						)
 					),
 					Column(

@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 
 class InjectingNavigator extends Navigator {
 	final Listenable animation;
-	final Widget Function(BuildContext, WidgetBuilder) injector;
+	final Widget Function(BuildContext, Route?, WidgetBuilder) injector;
 	const InjectingNavigator({
 		required this.animation,
 		required this.injector,
@@ -23,22 +23,30 @@ class InjectingNavigator extends Navigator {
 }
 
 class _InjectingNavigatorState extends NavigatorState {
-	final _primaryScrollControllerTracker = ValueNotifier<ScrollController?>(null);
+	final _routeStack = <Route>[];
+	final topRoute = ValueNotifier<Route?>(null);
 
 	@override
 	Future<T?> push<T extends Object?>(Route<T> route) {
+		_routeStack.add(route);
 		if (route is FullWidthCupertinoPageRoute<T> && widget is InjectingNavigator) {
 			return super.push(FullWidthCupertinoPageRoute<T>(
 				settings: route.settings,
-				builder: (context) => (widget as InjectingNavigator).injector(context, route.builder)
+				builder: (context) => (widget as InjectingNavigator).injector(context, route, route.builder)
 			));
 		}
 		return super.push(route);
 	}
 
 	@override
+	void pop<T extends Object?>([T? result]) {
+		_routeStack.removeLast();
+		topRoute.value = _routeStack.isEmpty ? null : _routeStack.last;
+		super.pop(result);
+	}
+
+	@override
 	Widget build(BuildContext context) {
-		_primaryScrollControllerTracker.value = PrimaryScrollController.of(context);
 		return super.build(context);
 	}
 }
@@ -60,11 +68,16 @@ class PrimaryScrollControllerInjectingNavigator extends StatefulWidget {
 class _PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScrollControllerInjectingNavigator> {
 	final _primaryScrollControllerTracker = ValueNotifier<ScrollController?>(null);
 
-	Widget _injectController(BuildContext context, WidgetBuilder childBuilder) {
-		return ValueListenableBuilder(
-			valueListenable: _primaryScrollControllerTracker,
-			builder: (context, ScrollController? controller, child) {
-				if (controller == null) {
+	Widget _injectController(BuildContext context, Route? route, WidgetBuilder childBuilder) {
+		final topRoute = ((widget.navigatorKey.currentState) as _InjectingNavigatorState?)?.topRoute;
+		return AnimatedBuilder(
+			animation: Listenable.merge([
+				_primaryScrollControllerTracker,
+				topRoute
+			]),
+			builder: (context, child) {
+				final controller = _primaryScrollControllerTracker.value;
+				if (route != topRoute?.value || controller == null) {
 					return Builder(builder: childBuilder);
 				}
 				else {
@@ -89,7 +102,7 @@ class _PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScrol
 			onGenerateRoute: (settings) {
 				return FullWidthCupertinoPageRoute(
 					settings: settings,
-					builder: (context) => _injectController(context, widget.buildRoot)
+					builder: (context) => _injectController(context, null, widget.buildRoot)
 				);
 			}
 		);
