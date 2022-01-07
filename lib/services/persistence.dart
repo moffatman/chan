@@ -336,11 +336,14 @@ class PersistentBrowserState extends HiveObject {
 	int currentTab;
 	@HiveField(2, defaultValue: {})
 	final Map<String, List<int>> hiddenIds;
+	@HiveField(3, defaultValue: [])
+	final List<String> favouriteBoards;
 	
 	PersistentBrowserState({
 		required this.tabs,
 		this.currentTab = 0,
-		this.hiddenIds = const {}
+		this.hiddenIds = const {},
+		this.favouriteBoards = const []
 	});
 
 	Filter getCatalogFilter(String board) {
