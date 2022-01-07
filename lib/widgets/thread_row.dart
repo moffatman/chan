@@ -22,12 +22,14 @@ class ThreadRow extends StatelessWidget {
 	final ValueChanged<Attachment>? onThumbnailTap;
 	final Iterable<int> semanticParentIds;
 	final bool contentFocus;
+	final bool showBoardName;
 	const ThreadRow({
 		required this.thread,
 		required this.isSelected,
 		this.onThumbnailLoadError,
 		this.onThumbnailTap,
 		this.contentFocus = false,
+		this.showBoardName = false,
 		this.semanticParentIds = const [],
 		Key? key
 	}) : super(key: key);
@@ -339,7 +341,9 @@ class ThreadRow extends StatelessWidget {
 																				),
 																				const TextSpan(text: ' '),
 																				TextSpan(
-																					text: _thread.id.toString(),
+																					text: showBoardName ? 
+																						'/${_thread.board}/${_thread.id}' :
+																						_thread.id.toString(),
 																					style: const TextStyle(color: Colors.grey)
 																				),
 																				const TextSpan(text: '\n')

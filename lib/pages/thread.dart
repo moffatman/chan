@@ -192,13 +192,19 @@ class _ThreadPageState extends State<ThreadPage> {
 	@override
 	Widget build(BuildContext context) {
 		final properScrollController = PrimaryScrollController.of(context)!;
-		String title = context.read<EffectiveSettings>().filterProfanity(persistentState.thread?.title ?? '/${widget.thread.board}/${widget.thread.id}');
-		if (persistentState.thread?.isArchived ?? false) {
-			title += ' (Archived)';
-		}
 		return ValueListenableBuilder(
 			valueListenable: context.watch<Persistence>().listenForPersistentThreadStateChanges(widget.thread),
 			builder: (context, box, child) {
+				String title = '/${widget.thread.board}/';
+				if (persistentState.thread?.title != null) {
+					title += ' - ' + context.read<EffectiveSettings>().filterProfanity(persistentState.thread!.title!);
+				}
+				else {
+					title += widget.thread.id.toString();
+				}
+				if (persistentState.thread?.isArchived ?? false) {
+					title += ' (Archived)';
+				}
 				return Provider.value(
 					value: _replyBoxKey,
 					child: CupertinoPageScaffold(

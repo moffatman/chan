@@ -148,6 +148,7 @@ class _SavedPageState extends State<SavedPage> {
 														child: ThreadRow(
 															thread: state.thread!,
 															isSelected: state.thread!.identifier == selectedThread,
+															showBoardName: true,
 															onThumbnailLoadError: (error) {
 																context.read<SavedThreadWatcher>().fixBrokenThread(state.thread!.identifier);
 															},

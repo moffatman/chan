@@ -52,6 +52,7 @@ class _HistoryPageState extends State<HistoryPage> {
 											thread: state.thread!,
 											isSelected: state.thread!.identifier == selectedThread,
 											semanticParentIds: const [-3],
+											showBoardName: true,
 											onThumbnailTap: (initialAttachment) {
 												final attachments = _listController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
 												showGallery(
