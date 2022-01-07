@@ -159,7 +159,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _tabController = CupertinoTabController();
 	bool showTabPopup = false;
 	late final PersistentBrowserState browserState;
-	final tabs = <Tuple3<PersistentBrowserTab, Key, ValueNotifier<int>>>[];
+	final tabs = <Tuple3<PersistentBrowserTab, GlobalKey, ValueNotifier<int>>>[];
 	late Listenable browseCountListenable;
 	final activeBrowserTab = ValueNotifier<int>(0);
 	final _tabListController = ScrollController();

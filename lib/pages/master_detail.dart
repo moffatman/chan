@@ -123,6 +123,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 	final _masterKey = GlobalKey<NavigatorState>();
 	final _detailKey = GlobalKey<NavigatorState>();
 	final _masterContentKey = GlobalKey();
+	final _detailContentKey = GlobalKey();
 	List<MultiMasterPane> panes = [];
  	bool? lastOnePane;
 	late bool onePane;
@@ -236,7 +237,10 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 			child: ClipRect(
 				child: PrimaryScrollControllerInjectingNavigator(
 					key: _detailKey,
-					buildRoot: (context) => panes[_tabController.index].buildDetail()
+					buildRoot: (context) => KeyedSubtree(
+						key: _detailContentKey,
+						child: panes[_tabController.index].buildDetail()
+					)
 				)
 			)
 		);
