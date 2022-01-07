@@ -220,6 +220,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 
 	@override
 	Widget build(BuildContext context) {
+		widget.controller?.reportPrimaryScrollController(PrimaryScrollController.of(context));
 		if (list != null) {
 			final pinnedValues = <T>[];
 			final values = <Tuple2<T, bool>>[];
@@ -670,10 +671,13 @@ class RefreshableListController<T extends Filterable> {
 	}
 	void attach(RefreshableListState<T> list) {
 		state = list;
-		WidgetsBinding.instance!.addPostFrameCallback((_) {
-			scrollController = PrimaryScrollController.of(list.context);
+	}
+	void reportPrimaryScrollController(ScrollController? controller) {
+		if (scrollController != controller) {
+			scrollController?.removeListener(_onScrollControllerNotification);
+			scrollController = controller;
 			scrollController!.addListener(_onScrollControllerNotification);
-		});
+		}
 	}
 	void dispose() {
 		_scrollStream.close();
@@ -704,8 +708,9 @@ class RefreshableListController<T extends Filterable> {
 	double _getOffset(RenderObject object) {
 		return RenderAbstractViewport.of(object)!.getOffsetToReveal(object, 0.0).offset;
 	}
-	double _estimateOffset(int targetIndex) {
+	double? _estimateOffset(int targetIndex) {
 		final heightedItems = _items.map((i) => i.cachedHeight).where((i) => i != null);
+		if (heightedItems.length < 2) return null;
 		final averageItemHeight = heightedItems.reduce((a, b) => a! + b!)! / heightedItems.length;
 		int nearestDistance = _items.length + 1;
 		double? estimate;
@@ -718,7 +723,7 @@ class RefreshableListController<T extends Filterable> {
 				}
 			}
 		}
-		return estimate!;
+		return estimate;
 	}
 	Future<void> animateTo(bool Function(T val) f, {double alignment = 0.0, bool Function(T val)? orElseLast, Duration duration = const Duration(milliseconds: 200)}) async {
 		final start = DateTime.now();
@@ -736,7 +741,7 @@ class RefreshableListController<T extends Filterable> {
 		final initialContentId = contentId;
 		Future<bool> attemptResolve() async {
 			final completer = Completer<void>();
-			final estimate = _estimateOffset(targetIndex) - topOffset!;
+			double estimate = (_estimateOffset(targetIndex) ?? 1000) - topOffset!;
 			_itemCacheCallbacks[Tuple2(targetIndex, estimate > scrollController!.position.pixels)] = completer;
 			final delay = Duration(milliseconds: min(300, estimate ~/ 100));
 			scrollController!.animateTo(
@@ -748,10 +753,10 @@ class RefreshableListController<T extends Filterable> {
 			return (_items[targetIndex].cachedOffset != null);
 		}
 		if (_items[targetIndex].cachedOffset == null) {
-			while (!(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 20) {
+			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 20) {
 				c = Curves.linear;
 			}
-			if (initialContentId != contentId) return;
+			if (initialContentId != contentId) throw Exception('List was hijacked');
 			Duration timeLeft = duration - DateTime.now().difference(start);
 			if (timeLeft.inMilliseconds.isNegative) {
 				d = duration ~/ 4;

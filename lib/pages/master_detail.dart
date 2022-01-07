@@ -181,7 +181,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 			value: _masterKey,
 			child: ClipRect(
 				child: PrimaryScrollControllerInjectingNavigator(
-					key: _masterKey,
+					navigatorKey: _masterKey,
 					observers: [HeroController()],
 					buildRoot: (context) {
 							Widget child = TabBarView(
@@ -236,7 +236,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 			value: _detailKey,
 			child: ClipRect(
 				child: PrimaryScrollControllerInjectingNavigator(
-					key: _detailKey,
+					navigatorKey: _detailKey,
 					buildRoot: (context) => KeyedSubtree(
 						key: _detailContentKey,
 						child: panes[_tabController.index].buildDetail()

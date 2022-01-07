@@ -46,11 +46,13 @@ class _InjectingNavigatorState extends NavigatorState {
 class PrimaryScrollControllerInjectingNavigator extends StatefulWidget {
 	final List<NavigatorObserver> observers;
 	final WidgetBuilder buildRoot;
+	final GlobalKey<NavigatorState> navigatorKey;
 	const PrimaryScrollControllerInjectingNavigator({
 		this.observers = const [],
 		required this.buildRoot,
-		Key? key}
-	) : super(key: key);
+		required this.navigatorKey,
+		Key? key
+	}) : super(key: key);
 	@override
 	createState() => _PrimaryScrollControllerInjectingNavigatorState();
 }
@@ -83,6 +85,7 @@ class _PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScrol
 			injector: _injectController,
 			initialRoute: '/',
 			observers: widget.observers,
+			key: widget.navigatorKey,
 			onGenerateRoute: (settings) {
 				return FullWidthCupertinoPageRoute(
 					settings: settings,
