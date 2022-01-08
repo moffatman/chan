@@ -533,7 +533,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										builder: (context, child) => StationaryNotifyingIcon(
 											icon: const Icon(Icons.topic),
 											primary: 0,
-											secondary: tabs.asMap().entries.where((x) => x.key != activeBrowserTab.value).map((x) => x.value.item3.value).reduce((a, b) => a + b)
+											secondary: tabs.length == 1 ? 0 : tabs.asMap().entries.where((x) => x.key != activeBrowserTab.value).map((x) => x.value.item3.value).reduce((a, b) => a + b)
 										)
 									),
 									label: 'Browse'
