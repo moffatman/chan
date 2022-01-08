@@ -107,6 +107,8 @@ class SavedSettings extends HiveObject {
 	int boardCatalogColumns;
 	@HiveField(13)
 	String filterConfiguration;
+	@HiveField(14)
+	bool boardSwitcherHasKeyboardFocus;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -122,7 +124,8 @@ class SavedSettings extends HiveObject {
 		String? userId,
 		ContentSettings? contentSettings,
 		int? boardCatalogColumns,
-		String? filterConfiguration
+		String? filterConfiguration,
+		bool? boardSwitcherHasKeyboardFocus,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? ThemeSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -135,7 +138,8 @@ class SavedSettings extends HiveObject {
 		userId = userId ?? (const Uuid()).v4(),
 		contentSettings = contentSettings ?? ContentSettings(),
 		boardCatalogColumns = boardCatalogColumns ?? 1,
-		filterConfiguration = filterConfiguration ?? '';
+		filterConfiguration = filterConfiguration ?? '',
+		boardSwitcherHasKeyboardFocus = boardSwitcherHasKeyboardFocus ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -298,6 +302,14 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
+	bool get boardSwitcherHasKeyboardFocus => _settings.boardSwitcherHasKeyboardFocus;
+	set boardSwitcherHasKeyboardFocus(bool setting) {
+		_settings.boardSwitcherHasKeyboardFocus = setting;
+		_settings.save();
+		// no need
+		// notifyListeners();
+	}
+	
 	EffectiveSettings() {
 		_tryToSetupFilter();
 		updateContentSettings();

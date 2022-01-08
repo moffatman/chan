@@ -27,11 +27,13 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	late List<ImageboardBoard> boards;
 	late List<ImageboardBoard> _filteredBoards;
 	String? errorMessage;
+	final scrollController = ScrollController();
 
 	@override
 	void initState() {
 		super.initState();
 		boards = context.read<Persistence>().boardBox.toMap().values.toList();
+		scrollController.addListener(_onScroll);
 		context.read<ImageboardSite>().getBoards().then((b) => setState(() {
 			boards = b;
 			_filteredBoards = b;
@@ -40,6 +42,13 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		final settings = context.read<EffectiveSettings>();
 		_filteredBoards = boards.where((b) => settings.showBoard(context, b.name)).toList();
 		_sortByFavourite();
+	}
+
+	void _onScroll() {
+		if (_focusNode.hasFocus) {
+			_focusNode.unfocus();
+			context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus = false;
+		}
 	}
 
 	void _sortByFavourite() {
@@ -70,11 +79,14 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 						return SizedBox(
 							width: box.maxWidth * 0.75,
 							child: CupertinoTextField(
-								autofocus: true,
+								autofocus: context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus,
 								autocorrect: false,
 								placeholder: 'Board...',
 								textAlign: TextAlign.center,
 								focusNode: _focusNode,
+								onTap: () {
+									context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus = true;
+								},
 								onSubmitted: (String board) {
 									if (_filteredBoards.isNotEmpty) {
 										Navigator.of(context).pop(_filteredBoards.first);
@@ -212,12 +224,13 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				child: Text('No matching boards')
 			) : SafeArea(
 				child: GridView.extent(
+					physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+					controller: scrollController,
 					padding: const EdgeInsets.only(top: 4, bottom: 4),
 					maxCrossAxisExtent: 125,
 					mainAxisSpacing: 4,
 					childAspectRatio: 1.2,
 					crossAxisSpacing: 4,
-					shrinkWrap: true,
 					children: _filteredBoards.map((board) {
 						return GestureDetector(
 							child: Container(
@@ -268,5 +281,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				)
 			)
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		scrollController.dispose();
 	}
 }
