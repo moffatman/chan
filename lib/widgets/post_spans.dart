@@ -140,7 +140,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		return TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
-				color: options.overrideTextColor ?? Colors.red,
+				color: options.overrideTextColor ?? CupertinoTheme.of(context).textTheme.actionTextStyle.color,
 				decoration: TextDecoration.underline
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
@@ -173,7 +173,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		return TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
-				color: options.overrideTextColor ?? Colors.red,
+				color: options.overrideTextColor ?? CupertinoTheme.of(context).textTheme.actionTextStyle.color,
 				decoration: TextDecoration.underline
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
@@ -195,7 +195,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		return TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
-				color: options.overrideTextColor ?? (expandedImmediatelyAbove ? Colors.pink : Colors.red),
+				color: options.overrideTextColor ?? (expandedImmediatelyAbove ? Colors.pink : CupertinoTheme.of(context).textTheme.actionTextStyle.color),
 				decoration: TextDecoration.underline,
 				decorationStyle: expandedSomewhereAbove ? TextDecorationStyle.dashed : null
 			),
@@ -287,7 +287,7 @@ class PostBoardLink extends PostSpan {
 		return TextSpan(
 			text: '>>/$board/',
 			style: options.baseTextStyle.copyWith(
-				color: options.overrideTextColor ?? Colors.red,
+				color: options.overrideTextColor ?? CupertinoTheme.of(context).textTheme.actionTextStyle.color,
 				decoration: TextDecoration.underline
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
@@ -435,7 +435,7 @@ class PostCatalogSearchSpan extends PostSpan {
 			text: '>>/$board/$query',
 			style: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline,
-				color: Colors.red
+				color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
 			),
 			recognizer: TapGestureRecognizer()..onTap = () => (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 				builder: (ctx) => BoardPage(

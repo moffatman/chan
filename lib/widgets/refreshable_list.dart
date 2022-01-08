@@ -208,8 +208,10 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				children: [
 					child,
 					Positioned.fill(
-						child: Container(
-							color: Colors.yellow.withOpacity(0.1)
+							child: IgnorePointer(
+							child: Container(
+								color: CupertinoTheme.of(context).textTheme.actionTextStyle.color?.withOpacity(0.2)
+							)
 						)
 					)
 				]
@@ -364,7 +366,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 												return Divider(
 													thickness: 1,
 													height: 0,
-													color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
+													color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
 												);
 											}
 										},
@@ -396,7 +398,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 														'Showing ${filteredValues.length} filtered items' :
 														'${filteredValues.length} filtered items',
 													style: TextStyle(
-														color: CupertinoTheme.of(context).primaryColor.withBrightness(0.4)
+														color: CupertinoTheme.of(context).primaryColorWithBrightness(0.4)
 													)
 												)
 											)
@@ -428,7 +430,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 												return Divider(
 													thickness: 1,
 													height: 0,
-													color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
+													color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
 												);
 											}
 										},
@@ -548,7 +550,7 @@ class RefreshableListFooter extends StatelessWidget {
 													return LinearProgressIndicator(
 														value: updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds,
 														color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
-														backgroundColor: CupertinoTheme.of(context).primaryColor.withBrightness(0.2),
+														backgroundColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.2),
 														minHeight: 8
 													);
 												}

@@ -49,6 +49,8 @@ class Persistence {
 
 	static Future<void> initializeStatic() async {
 		await Hive.initFlutter();
+		Hive.registerAdapter(ColorAdapter());
+		Hive.registerAdapter(SavedThemeAdapter());
 		Hive.registerAdapter(ThemeSettingAdapter());
 		Hive.registerAdapter(AutoloadAttachmentsSettingAdapter());
 		Hive.registerAdapter(ThreadSortingMethodAdapter());

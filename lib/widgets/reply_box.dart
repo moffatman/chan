@@ -435,7 +435,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		final _controller = TextEditingController()..text = overrideAttachmentFilename?.replaceAll(RegExp('.$ext\$'), '') ?? '';
 		return Container(
 			decoration: BoxDecoration(
-				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))),
+				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor
 			),
 			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 8),
@@ -498,7 +498,7 @@ class ReplyBoxState extends State<ReplyBox> {
 														child: CupertinoTextField(
 															controller: _controller,
 															placeholder: attachment!.uri.pathSegments.last.replaceAll(RegExp('.$ext\$'), ''),
-															placeholderStyle: TextStyle(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.7)),
+															placeholderStyle: TextStyle(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.7)),
 															maxLines: 1,
 															textCapitalization: TextCapitalization.none,
 															autocorrect: false,
@@ -669,7 +669,7 @@ class ReplyBoxState extends State<ReplyBox> {
 					height: (widget.threadId == null) ? 150 : 100,
 					child: Container(
 						decoration: BoxDecoration(
-							border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))),
+							border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
 							color: CupertinoTheme.of(context).scaffoldBackgroundColor
 						),
 						padding: const EdgeInsets.only(top: 1),

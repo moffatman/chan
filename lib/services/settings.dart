@@ -5,6 +5,7 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/scheduler.dart';
@@ -79,6 +80,40 @@ class ContentSettings {
 	}) : site = site ?? defaultSite;
 }
 
+class ColorAdapter extends TypeAdapter<Color> {
+	@override
+	final int typeId = 24;
+
+	@override
+  Color read(BinaryReader reader) {
+		return Color(reader.readInt32());
+  }
+
+  @override
+  void write(BinaryWriter writer, Color obj) {
+    writer.writeInt32(obj.value);
+  }
+}
+
+@HiveType(typeId: 25)
+class SavedTheme {
+	@HiveField(0)
+	Color backgroundColor;
+	@HiveField(1)
+	Color barColor;
+	@HiveField(2)
+	Color primaryColor;
+	@HiveField(3)
+	Color secondaryColor;
+
+	SavedTheme({
+		required this.backgroundColor,
+		required this.barColor,
+		required this.primaryColor,
+		required this.secondaryColor
+	});
+}
+
 @HiveType(typeId: 0)
 class SavedSettings extends HiveObject {
 	@HiveField(0)
@@ -95,8 +130,6 @@ class SavedSettings extends HiveObject {
 	ThreadSortingMethod savedThreadsSortingMethod;
 	@HiveField(6)
 	bool autoRotateInGallery;
-	@HiveField(8)
-	bool darkThemeIsPureBlack;
 	@HiveField(9)
 	bool useTouchLayout;
 	@HiveField(10)
@@ -109,6 +142,10 @@ class SavedSettings extends HiveObject {
 	String filterConfiguration;
 	@HiveField(14)
 	bool boardSwitcherHasKeyboardFocus;
+	@HiveField(15)
+	SavedTheme lightTheme;
+	@HiveField(16)
+	SavedTheme darkTheme;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -119,13 +156,14 @@ class SavedSettings extends HiveObject {
 		ThreadSortingMethod? savedThreadsSortingMethod,
 		bool? autoRotateInGallery,
 		String? currentBoardName,
-		bool? darkThemeIsPureBlack,
 		bool? useTouchLayout,
 		String? userId,
 		ContentSettings? contentSettings,
 		int? boardCatalogColumns,
 		String? filterConfiguration,
 		bool? boardSwitcherHasKeyboardFocus,
+		SavedTheme? lightTheme,
+		SavedTheme? darkTheme,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? ThemeSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -133,13 +171,24 @@ class SavedSettings extends HiveObject {
 		reverseCatalogSorting = reverseCatalogSorting ?? false,
 		savedThreadsSortingMethod = savedThreadsSortingMethod ?? ThreadSortingMethod.savedTime,
 		autoRotateInGallery = autoRotateInGallery ?? false,
-		darkThemeIsPureBlack = darkThemeIsPureBlack ?? false,
 		useTouchLayout = useTouchLayout ?? (Platform.isAndroid || Platform.isIOS),
 		userId = userId ?? (const Uuid()).v4(),
 		contentSettings = contentSettings ?? ContentSettings(),
 		boardCatalogColumns = boardCatalogColumns ?? 1,
 		filterConfiguration = filterConfiguration ?? '',
-		boardSwitcherHasKeyboardFocus = boardSwitcherHasKeyboardFocus ?? true;
+		boardSwitcherHasKeyboardFocus = boardSwitcherHasKeyboardFocus ?? true,
+		lightTheme = lightTheme ?? SavedTheme(
+			primaryColor: Colors.black,
+			secondaryColor: Colors.red,
+			barColor: const Color(0xFFF9F9F9),
+			backgroundColor: CupertinoColors.systemBackground
+		),
+		darkTheme = darkTheme ?? SavedTheme(
+			primaryColor: Colors.white,
+			secondaryColor: Colors.red,
+			barColor: const Color.fromRGBO(40, 40, 40, 1),
+			backgroundColor: const Color.fromRGBO(20, 20, 20, 1)
+		);
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -182,13 +231,6 @@ class EffectiveSettings extends ChangeNotifier {
 			return Brightness.light;
 		}
 		return _systemBrightness ?? SchedulerBinding.instance!.window.platformBrightness;
-	}
-
-	bool get darkThemeIsPureBlack => _settings.darkThemeIsPureBlack;
-	set darkThemeIsPureBlack(bool setting) {
-		_settings.darkThemeIsPureBlack = setting;
-		_settings.save();
-		notifyListeners();
 	}
 
 	bool get useTouchLayout => _settings.useTouchLayout;
@@ -310,6 +352,13 @@ class EffectiveSettings extends ChangeNotifier {
 		// notifyListeners();
 	}
 	
+	SavedTheme get lightTheme => _settings.lightTheme;
+	SavedTheme get darkTheme => _settings.darkTheme;
+	void handleThemesAltered() {
+		_settings.save();
+		notifyListeners();
+	}
+
 	EffectiveSettings() {
 		_tryToSetupFilter();
 		updateContentSettings();

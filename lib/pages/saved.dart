@@ -123,7 +123,7 @@ class _SavedPageState extends State<SavedPage> {
 									Divider(
 										thickness: 1,
 										height: 0,
-										color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
+										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
 									),
 									Expanded(
 										child: ValueListenableBuilder(
@@ -312,7 +312,7 @@ class _SavedPageState extends State<SavedPage> {
 											decoration: BoxDecoration(
 												color: Colors.transparent,
 												borderRadius: const BorderRadius.all(Radius.circular(4)),
-												border: Border.all(color: list[i] == selected ? Colors.blue : Colors.transparent, width: 2)
+												border: Border.all(color: list[i] == selected ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
 											),
 											margin: const EdgeInsets.all(4),
 											child: Hero(
@@ -391,7 +391,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 														return LinearProgressIndicator(
 															value: now.difference(watcher.lastUpdate!).inSeconds / watcher.nextUpdate!.difference(watcher.lastUpdate!).inSeconds,
 															color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
-															backgroundColor: CupertinoTheme.of(context).primaryColor.withBrightness(0.2),
+															backgroundColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.2),
 															minHeight: 8
 														);
 													}

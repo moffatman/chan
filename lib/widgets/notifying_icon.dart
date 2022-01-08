@@ -31,7 +31,7 @@ class StationaryNotifyingIcon extends StatelessWidget {
 						children: [
 							if (primary > 0) Container(
 								decoration: BoxDecoration(
-									color: Colors.red,
+									color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
 									borderRadius: (secondary > 0) ? const BorderRadius.only(topLeft: r, bottomLeft: r) : const BorderRadius.all(r)
 								),
 								constraints: const BoxConstraints(

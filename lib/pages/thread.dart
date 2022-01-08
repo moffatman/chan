@@ -449,7 +449,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																								if (redCount > 0) Container(
 																									decoration: BoxDecoration(
 																										borderRadius: (whiteCount > 0 || greyCount > 0) ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
-																										color: Colors.red
+																										color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
 																									),
 																									padding: const EdgeInsets.all(8),
 																									margin: EdgeInsets.only(bottom: 16, right: (whiteCount == 0 && greyCount == 0) ? 16 : 0),
@@ -461,7 +461,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																								if (greyCount > 0) Container(
 																									decoration: BoxDecoration(
 																										borderRadius: (redCount > 0) ? (whiteCount > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (whiteCount > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
-																										color: CupertinoTheme.of(context).primaryColor.withBrightness(0.6)
+																										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
 																									),
 																									padding: const EdgeInsets.all(8),
 																									margin: EdgeInsets.only(bottom: 16, right: whiteCount > 0 ? 0 : 16),

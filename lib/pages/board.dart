@@ -257,7 +257,7 @@ class _BoardPageState extends State<BoardPage> {
 											child: GestureDetector(
 												child: Container(
 													decoration: BoxDecoration(
-														color: CupertinoTheme.of(context).primaryColor.withBrightness(0.8),
+														color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
 														borderRadius: const BorderRadius.all(Radius.circular(8))
 													),
 													padding: const EdgeInsets.all(8),

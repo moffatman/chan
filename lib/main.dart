@@ -95,17 +95,36 @@ class _ChanAppState extends State<ChanApp> {
 				child: Builder(
 					builder: (BuildContext context) {
 						final settings = context.watch<EffectiveSettings>();
-						CupertinoThemeData theme = const CupertinoThemeData(
+						CupertinoThemeData theme = CupertinoThemeData(
 							brightness: Brightness.light,
-							primaryColor: Colors.black,
-							barBackgroundColor: Color(0xFFF9F9F9)
+							scaffoldBackgroundColor: settings.lightTheme.backgroundColor,
+							barBackgroundColor: settings.lightTheme.barColor,
+							primaryColor: settings.lightTheme.primaryColor,
+							textTheme: CupertinoTextThemeData(
+								textStyle: TextStyle(
+									fontFamily: '.SF Pro Text',
+									fontSize: 17.0,
+									letterSpacing: -0.41,
+									color: settings.lightTheme.primaryColor
+								),
+								actionTextStyle: TextStyle(color: settings.lightTheme.secondaryColor)
+							)
 						);
 						if (settings.theme == Brightness.dark) {
 							theme = CupertinoThemeData(
 								brightness: Brightness.dark,
-								scaffoldBackgroundColor: settings.darkThemeIsPureBlack ? Colors.black : const Color.fromRGBO(20, 20, 20, 1),
-								barBackgroundColor: settings.darkThemeIsPureBlack ? const Color.fromRGBO(20, 20, 20, 1) : const Color.fromRGBO(40, 40, 40, 1),
-								primaryColor: Colors.white
+								scaffoldBackgroundColor: settings.darkTheme.backgroundColor,
+								barBackgroundColor: settings.darkTheme.barColor,
+								primaryColor: settings.darkTheme.primaryColor,
+								textTheme: CupertinoTextThemeData(
+									textStyle: TextStyle(
+										fontFamily: '.SF Pro Text',
+  									fontSize: 17.0,
+  									letterSpacing: -0.41,
+										color: settings.darkTheme.primaryColor
+									),
+									actionTextStyle: TextStyle(color: settings.darkTheme.secondaryColor)
+								)
 							);
 						}
 						return CupertinoApp(

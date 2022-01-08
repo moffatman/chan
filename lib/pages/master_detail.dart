@@ -273,7 +273,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 					),
 					VerticalDivider(
 						width: 0,
-						color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)
+						color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
 					),
 					Flexible(
 						flex: 3,

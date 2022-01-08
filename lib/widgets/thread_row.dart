@@ -73,7 +73,7 @@ class ThreadRow extends StatelessWidget {
 				int unseenReplyCount = 0;
 				int unseenYouCount = 0;
 				int unseenImageCount = 0;
-				final grey = CupertinoTheme.of(context).primaryColor.withBrightness(0.6);
+				final grey = CupertinoTheme.of(context).primaryColorWithBrightness(0.6);
 				Color? replyCountColor;
 				Color? imageCountColor;
 				Color? otherMetadataColor;
@@ -89,7 +89,7 @@ class ThreadRow extends StatelessWidget {
 					decoration: BoxDecoration(
 						borderRadius: const BorderRadius.only(topLeft: Radius.circular(8)),
 						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-						border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
+						border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 					),
 					padding: const EdgeInsets.all(2),
 					child: Wrap(
@@ -129,7 +129,7 @@ class ThreadRow extends StatelessWidget {
 										const SizedBox(width: 4),
 										Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
 										if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
-										if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: const TextStyle(color: Colors.red)),
+										if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)),
 										const SizedBox(width: 2),
 									]
 								)
@@ -154,8 +154,8 @@ class ThreadRow extends StatelessWidget {
 				final borderRadius = contentFocus ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
 				return Container(
 					decoration: BoxDecoration(
-						color: isSelected ? ((CupertinoTheme.of(context).brightness == Brightness.light) ? Colors.grey.shade400 : Colors.grey.shade800) : CupertinoTheme.of(context).scaffoldBackgroundColor,
-						border: contentFocus ? Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2)) : null,
+						color: isSelected ? CupertinoTheme.of(context).primaryColorWithBrightness(0.4) : CupertinoTheme.of(context).scaffoldBackgroundColor,
+						border: contentFocus ? Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)) : null,
 						borderRadius: borderRadius
 					),
 					padding: contentFocus ? null : const EdgeInsets.only(left: 8, top: 8),
@@ -192,7 +192,7 @@ class ThreadRow extends StatelessWidget {
 																		decoration: BoxDecoration(
 																			borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
 																			color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																			border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
+																			border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 																		),
 																		padding: const EdgeInsets.all(2),
 																		child: const Icon(Icons.play_arrow)
@@ -280,7 +280,7 @@ class ThreadRow extends StatelessWidget {
 																						decoration: BoxDecoration(
 																							borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
 																							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																							border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
+																							border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 																						),
 																						padding: const EdgeInsets.all(1),
 																						child: const Icon(Icons.play_arrow, size: 18)

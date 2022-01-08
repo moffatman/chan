@@ -58,33 +58,17 @@ class PostRow extends StatelessWidget {
 				final settings = context.watch<EffectiveSettings>();
 				final receipt = zone.threadState?.receipts.tryFirstWhere((r) => r.id == _post.id);
 				final isYourPost = receipt != null || (zone.threadState?.postsMarkedAsYou.contains(post.id) ?? false);
-				Color color = CupertinoTheme.of(context).scaffoldBackgroundColor;
 				Border? border;
 				if (isYourPost) {
-					border = const Border(
-						left: BorderSide(color: Colors.red, width: 10)
+					border = Border(
+						left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color ?? Colors.red, width: 10)
 					);
 				}
 				if (zone.threadState?.replyIdsToYou?.contains(post.id) ?? false) {
-					if (CupertinoTheme.of(context).brightness == Brightness.light) {
-						border = Border(
-							left: BorderSide(color: Colors.red.shade100, width: 10)
-						);
-					}
-					else {
-						border = const Border(
-							left: BorderSide(color: Color.fromARGB(255, 90, 30, 30), width: 10)
-						);
-					}
+					border = Border(
+						left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color ?? const Color.fromARGB(255, 90, 30, 30), width: 10)
+					);
 				}
-				if (isSelected) {
-					if (CupertinoTheme.of(context).brightness == Brightness.light) {
-						color = Colors.grey.shade400;
-					}
-					else {
-						color = Colors.grey.shade800;
-					}
-			 	}
 				openReplies() {
 					if (_post.replyIds.isNotEmpty) {
 						WeakNavigator.push(context, PostsPage(
@@ -132,16 +116,16 @@ class PostRow extends StatelessWidget {
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
 													children: [
-														const Icon(
+														Icon(
 															Icons.reply_rounded,
-															color: Colors.red,
+															color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
 															size: 14
 														),
 														const SizedBox(width: 4),
 														Text(
 															_post.replyIds.length.toString(),
-															style: const TextStyle(
-																color: Colors.red,
+															style: TextStyle(
+																color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
 																fontWeight: FontWeight.bold
 															)
 														)
@@ -162,7 +146,7 @@ class PostRow extends StatelessWidget {
 						padding: const EdgeInsets.all(8),
 						decoration: BoxDecoration(
 							border: border,
-							color: color,
+							color: isSelected ? CupertinoTheme.of(context).primaryColorWithBrightness(0.4) : CupertinoTheme.of(context).scaffoldBackgroundColor,
 						),
 						child: Column(
 							mainAxisSize: MainAxisSize.min,
@@ -259,7 +243,7 @@ class PostRow extends StatelessWidget {
 																					decoration: BoxDecoration(
 																						borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
 																						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																						border: Border.all(color: CupertinoTheme.of(context).primaryColor.withBrightness(0.2))
+																						border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 																					),
 																					padding: const EdgeInsets.all(1),
 																					child: const Icon(Icons.play_arrow, size: 18)

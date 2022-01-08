@@ -18,6 +18,7 @@ import 'package:tuple/tuple.dart';
 import 'package:provider/provider.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flex_color_picker/flex_color_picker.dart';
 
 class SettingsPage extends StatelessWidget {
 	const SettingsPage({
@@ -161,7 +162,7 @@ class SettingsPage extends StatelessWidget {
 								),
 								const Padding(
 									padding: EdgeInsets.all(16),
-									child: Text('Theme'),
+									child: Text('Active Theme'),
 								),
 								CupertinoSegmentedControl<ThemeSetting>(
 									children: const {
@@ -174,6 +175,81 @@ class SettingsPage extends StatelessWidget {
 										settings.themeSetting = newValue;
 									}
 								),
+								...[
+									Tuple2('Light Theme Colors', settings.lightTheme),
+									Tuple2('Dark Theme Colors', settings.darkTheme)
+								].map((theme) => Container(
+									margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
+									padding: const EdgeInsets.only(bottom: 16),
+									decoration: BoxDecoration(
+										color: theme.item2.backgroundColor,
+										borderRadius: const BorderRadius.all(Radius.circular(8))
+									),
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											Padding(
+												padding: const EdgeInsets.all(16),
+												child: Center(
+													child: Text(theme.item1, style: TextStyle(color: theme.item2.primaryColor))
+												)
+											),
+											Wrap(
+												alignment: WrapAlignment.center,
+												spacing: 16,
+												runSpacing: 16,
+												children: [
+													Tuple3('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c),
+													Tuple3('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c),
+													Tuple3('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c),
+													Tuple3('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c)
+												].map((color) => Column(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Text(color.item1, style: TextStyle(color: theme.item2.primaryColor)),
+														const SizedBox(height: 16),
+														ColorIndicator(
+															color: color.item2,
+															hasBorder: true,
+															borderColor: theme.item2.primaryColor,
+															onSelect: () async {
+																await showCupertinoModalPopup(
+																	barrierDismissible: true,
+																	context: context,
+																	builder: (context) => CupertinoActionSheet(
+																		title: Text('Select ${color.item1} Color'),
+																		message: Material(
+																			color: Colors.transparent,
+																			child: ColorPicker(
+																				color: color.item2,
+																				wheelDiameter: 300,
+																				wheelWidth: 30,
+																				pickersEnabled: const {
+																					ColorPickerType.both: false,
+																					ColorPickerType.primary: false,
+																					ColorPickerType.accent: false,
+																					ColorPickerType.bw: false,
+																					ColorPickerType.custom: false,
+																					ColorPickerType.wheel: true,
+																				},
+																				onColorChanged: color.item3,
+																				enableShadesSelection: false,
+																				showColorCode: true,
+																				colorCodePrefixStyle: GoogleFonts.ibmPlexMono(color: CupertinoTheme.of(context).primaryColor),
+																				colorCodeTextStyle: GoogleFonts.ibmPlexMono(color: CupertinoTheme.of(context).primaryColor)
+																			)
+																		)
+																	)
+																);
+																settings.handleThemesAltered();
+															}
+														)
+													]
+												)).toList()
+											)
+										]
+									)
+								)),
 								const Padding(
 									padding: EdgeInsets.all(16),
 									child: Text('Automatically load attachments'),
@@ -187,20 +263,6 @@ class SettingsPage extends StatelessWidget {
 									groupValue: settings.autoloadAttachmentsSetting,
 									onValueChanged: (newValue) {
 										settings.autoloadAttachmentsSetting = newValue;
-									}
-								),
-								const Padding(
-									padding: EdgeInsets.all(16),
-									child: Text('Darker dark theme (for OLED)'),
-								),
-								CupertinoSegmentedControl<bool>(
-									children: const {
-										false: Text('No'),
-										true: Text('Yes')
-									},
-									groupValue: settings.darkThemeIsPureBlack,
-									onValueChanged: (newValue) {
-										settings.darkThemeIsPureBlack = newValue;
 									}
 								),
 								const Padding(

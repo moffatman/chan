@@ -318,7 +318,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 															decoration: BoxDecoration(
 																color: Colors.transparent,
 																borderRadius: const BorderRadius.all(Radius.circular(4)),
-																border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
+																border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
 															),
 															margin: const EdgeInsets.all(4),
 															child: AttachmentThumbnail(
@@ -350,7 +350,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													decoration: BoxDecoration(
 														color: Colors.transparent,
 														borderRadius: const BorderRadius.all(Radius.circular(4)),
-														border: Border.all(color: attachment == currentAttachment ? Colors.blue : Colors.transparent, width: 2)
+														border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
 													),
 													margin: const EdgeInsets.all(4),
 													child: AttachmentThumbnail(

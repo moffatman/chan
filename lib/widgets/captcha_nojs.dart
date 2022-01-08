@@ -282,7 +282,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 										child: Container(
 											decoration: BoxDecoration(
 												border: Border.all(
-													color: subimage.selected ? Colors.blue : Colors.transparent,
+													color: subimage.selected ? CupertinoTheme.of(context).primaryColor : Colors.transparent,
 													width: 4
 												)
 											),

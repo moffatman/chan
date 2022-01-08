@@ -201,13 +201,13 @@ Future<void> openBrowser(BuildContext context, Uri url) {
 	}
 }
 
-extension ReduceBrightness on Color {
-	Color withBrightness(double factor) {
+extension ReduceBrightness on CupertinoThemeData {
+	Color primaryColorWithBrightness(double factor) {
 		return Color.fromRGBO(
-			((red * factor) + ((255 - red) * (1 - factor))).round(),
-			((green * factor) + ((255 - green) * (1 - factor))).round(),
-			((blue * factor) + ((255 - blue) * (1 - factor))).round(),
-			opacity
+			((primaryColor.red * factor) + (scaffoldBackgroundColor.red * (1 - factor))).round(),
+			((primaryColor.green * factor) + (scaffoldBackgroundColor.green * (1 - factor))).round(),
+			((primaryColor.blue * factor) + (scaffoldBackgroundColor.blue * (1 - factor))).round(),
+			primaryColor.opacity
 		);
 	}
 }
