@@ -63,6 +63,7 @@ class _BoardPageState extends State<BoardPage> {
 			_loadCompleter = Completer<void>()
 				..future.then((_) {
 					_listController.animateTo((t) => t.identifier == widget.selectedThread);
+					_loadCompleter = null;
 				});
 		}
 	}
