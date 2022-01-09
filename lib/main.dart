@@ -232,6 +232,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	Widget _buildTab(BuildContext context, int index, bool active) {
+		final persistence = context.watch<Persistence>();
 		Widget child;
 		if (index <= 0) {
 			child = ValueListenableBuilder(
@@ -246,12 +247,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								initialThread: tabs[i].item1.thread,
 								onBoardChanged: (newBoard) {
 									tabs[i].item1.board = newBoard;
-									context.read<Persistence>().didUpdateBrowserState();
+									persistence.didUpdateBrowserState();
 									setState(() {});
 								},
 								onThreadChanged: (newThread) {
 									tabs[i].item1.thread = newThread;
-									context.read<Persistence>().didUpdateBrowserState();
+									persistence.didUpdateBrowserState();
 									setState(() {});
 								},
 								id: -1 * (i + 10)
