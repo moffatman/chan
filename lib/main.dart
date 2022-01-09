@@ -107,7 +107,8 @@ class _ChanAppState extends State<ChanApp> {
 									letterSpacing: -0.41,
 									color: settings.lightTheme.primaryColor
 								),
-								actionTextStyle: TextStyle(color: settings.lightTheme.secondaryColor)
+								actionTextStyle: TextStyle(color: settings.lightTheme.secondaryColor),
+								navActionTextStyle: TextStyle(color: settings.lightTheme.primaryColor)
 							)
 						);
 						if (settings.theme == Brightness.dark) {
@@ -123,7 +124,8 @@ class _ChanAppState extends State<ChanApp> {
   									letterSpacing: -0.41,
 										color: settings.darkTheme.primaryColor
 									),
-									actionTextStyle: TextStyle(color: settings.darkTheme.secondaryColor)
+									actionTextStyle: TextStyle(color: settings.darkTheme.secondaryColor),
+									navActionTextStyle: TextStyle(color: settings.darkTheme.primaryColor)
 								)
 							);
 						}
