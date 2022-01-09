@@ -48,50 +48,61 @@ class SettingsPage extends StatelessWidget {
 									padding: EdgeInsets.all(16),
 									child: Text('Development News')
 								),
-								FutureBuilder<List<Thread>>(
-									future: context.read<ImageboardSite>().getCatalog('chance'),
-									builder: (context, snapshot) {
-										final children = (snapshot.data ?? []).where((t) => t.isSticky).map((thread) => GestureDetector(
-											onTap: () => Navigator.push(context, FullWidthCupertinoPageRoute(
-												builder: (context) => ThreadPage(
-													thread: thread.identifier,
-													boardSemanticId: -1,
+								SizedBox(
+									height: 200,
+									child: FutureBuilder<List<Thread>>(
+										future: context.read<ImageboardSite>().getCatalog('chance'),
+										builder: (context, snapshot) {
+											if (!snapshot.hasData) {
+												return const Center(
+													child: CupertinoActivityIndicator()
+												);
+											}
+											else if (snapshot.hasError) {
+												return Center(
+													child: Text(snapshot.error.toString())
+												);
+											}
+											final children = (snapshot.data ?? []).where((t) => t.isSticky).map<Widget>((thread) => GestureDetector(
+												onTap: () => Navigator.push(context, FullWidthCupertinoPageRoute(
+													builder: (context) => ThreadPage(
+														thread: thread.identifier,
+														boardSemanticId: -1,
+													)
+												)),
+												child: ThreadRow(
+													thread: thread,
+													isSelected: false
 												)
-											)),
-											child: ThreadRow(
-												thread: thread,
-												isSelected: false
-											)
-										)).toList();
-										if (children.isEmpty) {
-											return const Padding(
-												padding: EdgeInsets.all(16),
-												child: Center(
-													child: Text('No current news', style: TextStyle(color: Colors.grey))
-												)
+											)).toList();
+											if (children.isEmpty) {
+												children.add(const Padding(
+													padding: EdgeInsets.all(16),
+													child: Center(
+														child: Text('No current news', style: TextStyle(color: Colors.grey))
+													)
+												));
+											}
+											children.add(CupertinoButton(
+												child: const Text('See more discussion'),
+												onPressed: () => Navigator.push(context, FullWidthCupertinoPageRoute(
+													builder: (context) => BoardPage(
+														initialBoard: ImageboardBoard(
+															name: 'chance',
+															title: 'Chance - Imageboard Browser',
+															isWorksafe: true,
+															webmAudioAllowed: false
+														),
+														allowChangingBoard: false,
+														semanticId: -1
+													)
+												))
+											));
+											return ListView(
+												children: children
 											);
 										}
-										return ListView(
-											shrinkWrap: true,
-											physics: const NeverScrollableScrollPhysics(),
-											children: children
-										);
-									}
-								),
-								CupertinoButton(
-									child: const Text('See more discussion'),
-									onPressed: () => Navigator.push(context, FullWidthCupertinoPageRoute(
-										builder: (context) => BoardPage(
-											initialBoard: ImageboardBoard(
-												name: 'chance',
-												title: 'Chance - Imageboard Browser',
-												isWorksafe: true,
-												webmAudioAllowed: false
-											),
-											allowChangingBoard: false,
-											semanticId: -1
-										)
-									))
+									)
 								),
 								const Padding(
 									padding: EdgeInsets.all(16),
