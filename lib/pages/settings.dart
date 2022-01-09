@@ -18,7 +18,7 @@ import 'package:tuple/tuple.dart';
 import 'package:provider/provider.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flex_color_picker/flex_color_picker.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class SettingsPage extends StatelessWidget {
 	const SettingsPage({
@@ -208,35 +208,38 @@ class SettingsPage extends StatelessWidget {
 													children: [
 														Text(color.item1, style: TextStyle(color: theme.item2.primaryColor)),
 														const SizedBox(height: 16),
-														ColorIndicator(
-															color: color.item2,
-															hasBorder: true,
-															borderColor: theme.item2.primaryColor,
-															onSelect: () async {
+														GestureDetector(
+															child: Container(
+																decoration: BoxDecoration(
+																	borderRadius: const BorderRadius.all(Radius.circular(8)),
+																	border: Border.all(color: theme.item2.primaryColor),
+																	color: color.item2
+																),
+																width: 50,
+																height: 50
+															),
+															onTap: () async {
 																await showCupertinoModalPopup(
 																	barrierDismissible: true,
 																	context: context,
 																	builder: (context) => CupertinoActionSheet(
 																		title: Text('Select ${color.item1} Color'),
-																		message: Material(
-																			color: Colors.transparent,
-																			child: ColorPicker(
-																				color: color.item2,
-																				wheelDiameter: 300,
-																				wheelWidth: 30,
-																				pickersEnabled: const {
-																					ColorPickerType.both: false,
-																					ColorPickerType.primary: false,
-																					ColorPickerType.accent: false,
-																					ColorPickerType.bw: false,
-																					ColorPickerType.custom: false,
-																					ColorPickerType.wheel: true,
-																				},
-																				onColorChanged: color.item3,
-																				enableShadesSelection: false,
-																				showColorCode: true,
-																				colorCodePrefixStyle: GoogleFonts.ibmPlexMono(color: CupertinoTheme.of(context).primaryColor),
-																				colorCodeTextStyle: GoogleFonts.ibmPlexMono(color: CupertinoTheme.of(context).primaryColor)
+																		message: Theme(
+																			data: ThemeData(
+																				textTheme: Theme.of(context).textTheme.apply(
+																					bodyColor: CupertinoTheme.of(context).primaryColor,
+																					displayColor: CupertinoTheme.of(context).primaryColor
+																				)
+																			),
+																			child: Material(
+																				color: Colors.transparent,
+																				child: ColorPicker(
+																					pickerColor: color.item2,
+																					onColorChanged: color.item3,
+																					enableAlpha: false,
+																					portraitOnly: true,
+																					displayThumbColor: true
+																				)
 																			)
 																		)
 																	)
