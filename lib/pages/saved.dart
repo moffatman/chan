@@ -109,6 +109,7 @@ class _SavedPageState extends State<SavedPage> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
+		final persistence = context.watch<Persistence>();
 		return MultiMasterDetailPage(
 			id: 'saved',
 			paneCreator: () => [
@@ -127,7 +128,7 @@ class _SavedPageState extends State<SavedPage> {
 									),
 									Expanded(
 										child: ValueListenableBuilder(
-											valueListenable: context.watch<Persistence>().threadStateBox.listenable(),
+											valueListenable: persistence.threadStateBox.listenable(),
 											builder: (context, Box<PersistentThreadState> box, child) {
 												final states = box.toMap().values.where((s) => s.savedTime != null).toList();
 												if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
@@ -194,7 +195,7 @@ class _SavedPageState extends State<SavedPage> {
 					),
 					icon: Icons.person,
 					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
-						valueListenable: context.watch<Persistence>().threadStateBox.listenable(),
+						valueListenable: persistence.threadStateBox.listenable(),
 						builder: (context, Box<PersistentThreadState> box, child) {
 							final replies = <_PostThreadCombo>[];
 							for (final s in box.values) {
@@ -243,10 +244,10 @@ class _SavedPageState extends State<SavedPage> {
 				MultiMasterPane<SavedPost>(
 					navigationBar: _navigationBar('Saved Posts'),
 					icon: Icons.reply,
-					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
-						valueListenable: context.watch<Persistence>().savedPostsBox.listenable(),
-						builder: (context, Box<SavedPost> box, child) {
-							final savedPosts = box.values.toList();
+					masterBuilder: (context, selected, setter) => AnimatedBuilder(
+						animation: persistence.savedPostsNotifier,
+						builder: (context, child) {
+							final savedPosts = persistence.savedPosts.values.toList();
 							if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
 								savedPosts.sort((a, b) => b.savedTime.compareTo(a.savedTime));
 							}
@@ -299,10 +300,10 @@ class _SavedPageState extends State<SavedPage> {
 				MultiMasterPane<SavedAttachment>(
 					title: const Text('Saved Attachments'),
 					icon: Icons.image,
-					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
-						valueListenable: context.watch<Persistence>().savedAttachmentsBox.listenable(),
-						builder: (context, box, child) {
-							final list = context.watch<Persistence>().savedAttachmentsBox.values.toList();
+					masterBuilder: (context, selected, setter) => AnimatedBuilder(
+						animation: persistence.savedAttachmentsNotifier,
+						builder: (context, child) {
+							final list = persistence.savedAttachments.values.toList();
 							list.sort((a, b) => b.savedTime.compareTo(a.savedTime));
 							return GridView.builder(
 								itemCount: list.length,

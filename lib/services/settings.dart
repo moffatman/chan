@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:chan/models/board.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
@@ -146,6 +147,16 @@ class SavedSettings extends HiveObject {
 	SavedTheme lightTheme;
 	@HiveField(16)
 	SavedTheme darkTheme;
+	@HiveField(17)
+	Map<String, PersistentRecentSearches> recentSearchesBySite;
+	@HiveField(18)
+	Map<String, PersistentBrowserState> browserStateBySite;
+	@HiveField(19)
+	Map<String, Map<String, SavedPost>> savedPostsBySite;
+	@HiveField(20)
+	Map<String, Map<String, SavedAttachment>> savedAttachmentsBySite;
+	@HiveField(21)
+	Map<String, Map<String, ImageboardBoard>> boardsBySite;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -164,6 +175,11 @@ class SavedSettings extends HiveObject {
 		bool? boardSwitcherHasKeyboardFocus,
 		SavedTheme? lightTheme,
 		SavedTheme? darkTheme,
+		Map<String, PersistentRecentSearches>? recentSearchesBySite,
+		Map<String, PersistentBrowserState>? browserStateBySite,
+		Map<String, Map<String, SavedPost>>? savedPostsBySite,
+		Map<String, Map<String, SavedAttachment>>? savedAttachmentsBySite,
+		Map<String, Map<String, ImageboardBoard>>? boardsBySite,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? ThemeSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -188,11 +204,16 @@ class SavedSettings extends HiveObject {
 			secondaryColor: Colors.red,
 			barColor: const Color.fromRGBO(40, 40, 40, 1),
 			backgroundColor: const Color.fromRGBO(20, 20, 20, 1)
-		);
+		),
+		recentSearchesBySite = recentSearchesBySite ?? {},
+		browserStateBySite = browserStateBySite ?? {},
+		savedPostsBySite = savedPostsBySite ?? {},
+		savedAttachmentsBySite = savedAttachmentsBySite ?? {},
+		boardsBySite = boardsBySite ?? {};
 }
 
 class EffectiveSettings extends ChangeNotifier {
-	final SavedSettings _settings = Hive.box<SavedSettings>('settings').get('settings', defaultValue: SavedSettings())!;
+	late final SavedSettings _settings;
 	String? filename;
 	ConnectivityResult? _connectivity;
 	ConnectivityResult? get connectivity {
@@ -298,7 +319,7 @@ class EffectiveSettings extends ChangeNotifier {
 	}
 
 	bool showImages(BuildContext context, String board) {
-		return _settings.contentSettings.images && ((context.read<Persistence>().boardBox.get(board)?.isWorksafe ?? false) || _settings.contentSettings.nsfwImages);
+		return _settings.contentSettings.images && ((context.read<Persistence>().boards[board]?.isWorksafe ?? false) || _settings.contentSettings.nsfwImages);
 	}
 
 	String filterProfanity(String input) {
@@ -359,7 +380,8 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	EffectiveSettings() {
+	EffectiveSettings(SavedSettings settings) {
+		_settings = settings;
 		_tryToSetupFilter();
 		updateContentSettings();
 	}

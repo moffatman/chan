@@ -196,7 +196,7 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	Future<void> _selectAttachment() async {
 		final picker = ImagePicker();
-		final savedAttachments = context.read<Persistence>().savedAttachmentsBox.values.toList();
+		final savedAttachments = context.read<Persistence>().savedAttachments.values.toList();
 		savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
 		final sources = (Platform.isIOS || Platform.isAndroid || kIsWeb) ? [
 			Tuple2(Icons.photo_library, () => picker.pickImage(source: ImageSource.gallery).then((x) => x?.path)),

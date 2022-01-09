@@ -43,7 +43,7 @@ class _ChanAppState extends State<ChanApp> {
 	ImageboardSite? site;
 	Persistence? persistence;
 	SavedThreadWatcher? threadWatcher;
-	final settings = EffectiveSettings();
+	final settings = EffectiveSettings(Persistence.settings);
 	late dynamic _lastSite;
 
 	@override
@@ -204,10 +204,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				boardFetchErrorMessage = null;
 			});
 			final freshBoards = await context.read<ImageboardSite>().getBoards();
-			await context.read<Persistence>().boardBox.clear();
-			await context.read<Persistence>().boardBox.putAll({
-				for (final board in freshBoards) board.name: board
-			});
+			await context.read<Persistence>().reinitializeBoards(freshBoards);
 			setState(() {
 				initialized = true;
 			});
@@ -225,7 +222,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	@override
 	void initState() {
 		super.initState();
-		initialized = context.read<Persistence>().boardBox.length > 0;
+		initialized = context.read<Persistence>().boards.isNotEmpty;
 		browserState = context.read<Persistence>().browserState;
 		tabs.addAll(browserState.tabs.map((tab) => Tuple3(tab, GlobalKey(), ValueNotifier<int>(0))));
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.item3)]);
@@ -249,12 +246,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								initialThread: tabs[i].item1.thread,
 								onBoardChanged: (newBoard) {
 									tabs[i].item1.board = newBoard;
-									browserState.save();
+									context.read<Persistence>().didUpdateBrowserState();
 									setState(() {});
 								},
 								onThreadChanged: (newThread) {
 									tabs[i].item1.thread = newThread;
-									browserState.save();
+									context.read<Persistence>().didUpdateBrowserState();
 									setState(() {});
 								},
 								id: -1 * (i + 10)
@@ -355,7 +352,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								final newActiveTabIndex = min(activeBrowserTab.value, tabs.length - 1);
 								activeBrowserTab.value = newActiveTabIndex;
 								browserState.currentTab = newActiveTabIndex;
-								browserState.save();
+								context.read<Persistence>().didUpdateBrowserState();
 								setState(() {});
 							}
 						}
@@ -363,7 +360,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					else {
 						activeBrowserTab.value = -1 * index;
 						browserState.currentTab = -1 * index;
-						browserState.save();
+						context.read<Persistence>().didUpdateBrowserState();
 					}
 				}
 				_tabController.index = max(0, index);
@@ -404,7 +401,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.item3)]);
 				activeBrowserTab.value = tabs.length - 1;
 				browserState.currentTab = browserState.tabs.length - 1;
-				browserState.save();
+				context.read<Persistence>().didUpdateBrowserState();
 				setState(() {});
 				Future.delayed(const Duration(milliseconds: 100), () => _tabListController.animateTo(_tabListController.position.maxScrollExtent, duration: const Duration(milliseconds: 500), curve: Curves.ease));
 			}
@@ -427,7 +424,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				browserState.tabs.insert(newIndex, tab.item1);
 				activeBrowserTab.value = tabs.indexOf(currentTab);
 				browserState.currentTab = activeBrowserTab.value;
-				browserState.save();
+				context.read<Persistence>().didUpdateBrowserState();
 				setState(() {});
 			},
 			itemCount: tabs.length,

@@ -32,7 +32,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	@override
 	void initState() {
 		super.initState();
-		boards = context.read<Persistence>().boardBox.toMap().values.toList();
+		boards = context.read<Persistence>().boards.values.toList();
 		scrollController.addListener(_onScroll);
 		context.read<ImageboardSite>().getBoards().then((b) => setState(() {
 			boards = b;
@@ -214,7 +214,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								]
 							)
 						);
-						browserState.save();
+						context.read<Persistence>().didUpdateBrowserState();
 						_sortByFavourite();
 						setState(() {});
 					}

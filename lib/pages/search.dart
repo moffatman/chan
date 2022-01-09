@@ -158,7 +158,7 @@ class _SearchPageState extends State<SearchPage> {
 														_controller.clear();
 														FocusManager.instance.primaryFocus!.unfocus();
 														context.read<Persistence>().recentSearches.add(query.clone());
-														context.read<Persistence>().recentSearches.save();
+														context.read<Persistence>().didUpdateRecentSearches();
 														Navigator.of(context).push(FullWidthCupertinoPageRoute(
 															builder: (context) => SearchQueryPage(query: query)
 														));
@@ -272,7 +272,7 @@ class _SearchPageState extends State<SearchPage> {
 							behavior: HitTestBehavior.opaque,
 							onTap: () {
 								context.read<Persistence>().recentSearches.bump(q);
-								context.read<Persistence>().recentSearches.save();
+								context.read<Persistence>().didUpdateRecentSearches();
 								Navigator.of(context).push(FullWidthCupertinoPageRoute(
 									builder: (context) => SearchQueryPage(query: q)
 								));
@@ -296,7 +296,7 @@ class _SearchPageState extends State<SearchPage> {
 											child: const Icon(Icons.close),
 											onPressed: () {
 												context.read<Persistence>().recentSearches.remove(q);
-												context.read<Persistence>().recentSearches.save();
+												context.read<Persistence>().didUpdateRecentSearches();
 												setState(() {});
 											}
 										)

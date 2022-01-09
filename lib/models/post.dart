@@ -42,7 +42,7 @@ class Post implements Filterable {
 	@HiveField(5)
 	final int id;
 	@HiveField(6)
-	final Attachment? attachment;
+	Attachment? attachment;
 	@HiveField(7)
 	final ImageboardFlag? flag;
 	@HiveField(8)

@@ -44,11 +44,6 @@ class _InjectingNavigatorState extends NavigatorState {
 		topRoute.value = _routeStack.isEmpty ? null : _routeStack.last;
 		super.pop(result);
 	}
-
-	@override
-	Widget build(BuildContext context) {
-		return super.build(context);
-	}
 }
 
 class PrimaryScrollControllerInjectingNavigator extends StatefulWidget {

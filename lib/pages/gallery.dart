@@ -21,7 +21,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:home_indicator/home_indicator.dart';
 
 const double _thumbnailSize = 60;
@@ -400,16 +399,16 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 						trailing: Row(
 							mainAxisSize: MainAxisSize.min,
 							children: [
-								ValueListenableBuilder(
-									valueListenable: context.watch<Persistence>().savedAttachmentsBox.listenable(keys: [currentAttachment.globalId]),
-									builder: (context, box, child) {
+								AnimatedBuilder(
+									animation: context.watch<Persistence>().savedAttachmentsNotifier,
+									builder: (context, child) {
 										final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment) != null;
 										return CupertinoButton(
 											padding: EdgeInsets.zero,
 											child: Icon(currentlySaved ? Icons.bookmark : Icons.bookmark_outline),
 											onPressed: canShare(currentAttachment) ? () {
 												if (currentlySaved) {
-													context.read<Persistence>().getSavedAttachment(currentAttachment)?.delete();
+													context.read<Persistence>().deleteSavedAttachment(currentAttachment);
 												}
 												else {
 													context.read<Persistence>().saveAttachment(currentAttachment, currentController.cachedFile!);

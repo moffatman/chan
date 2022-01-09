@@ -23,7 +23,7 @@ enum MediaFilter {
 }
 
 @HiveType(typeId: 5)
-class ImageboardArchiveSearchQuery extends HiveObject {
+class ImageboardArchiveSearchQuery {
 	@HiveField(0)
 	String query;
 	@HiveField(1)

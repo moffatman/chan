@@ -34,15 +34,24 @@ class UriAdapter extends TypeAdapter<Uri> {
 const _savedAttachmentThumbnailsDir = 'saved_attachments_thumbs';
 const _savedAttachmentsDir = 'saved_attachments';
 
+class _SimpleChangeNotifier extends ChangeNotifier {
+	void newChange() {
+		notifyListeners();
+	}
+}
+
 class Persistence {
 	final String id;
 	Persistence(this.id);
 	late final Box<PersistentThreadState> threadStateBox;
-	late final Box<ImageboardBoard> boardBox;
-	late final Box<SavedAttachment> savedAttachmentsBox;
-	late final Box<SavedPost> savedPostsBox;
-	late final PersistentRecentSearches recentSearches;
-	late final PersistentBrowserState browserState;
+	Map<String, ImageboardBoard> get boards => settings.boardsBySite[id]!;
+	Map<String, SavedAttachment> get savedAttachments => settings.savedAttachmentsBySite[id]!;
+	Map<String, SavedPost> get savedPosts => settings.savedPostsBySite[id]!;
+	PersistentRecentSearches get recentSearches => settings.recentSearchesBySite[id]!;
+	PersistentBrowserState get browserState => settings.browserStateBySite[id]!;
+	final savedAttachmentsNotifier = _SimpleChangeNotifier();
+	final savedPostsNotifier = _SimpleChangeNotifier();
+	static late final SavedSettings settings;
 	static late final Directory temporaryDirectory;
 	static late final Directory documentsDirectory;
 	static late final PersistCookieJar cookies;
@@ -82,35 +91,62 @@ class Persistence {
 		);
 		await Directory('${documentsDirectory.path}/$_savedAttachmentsDir').create(recursive: true);
 		await Directory('${documentsDirectory.path}/$_savedAttachmentThumbnailsDir').create(recursive: true);
-		await Hive.openBox<SavedSettings>('settings');
+		final settingsBox = await Hive.openBox<SavedSettings>('settings');
+		settings = settingsBox.get('settings', defaultValue: SavedSettings())!;
 	}
 
 	Future<void> initialize() async {
 		threadStateBox = await Hive.openBox<PersistentThreadState>('threadStates_$id');
-		final searchesBox = await Hive.openBox<PersistentRecentSearches>('searches_$id');
-		final existingRecentSearches = searchesBox.get('recentSearches');
-		if (existingRecentSearches != null) {
-			recentSearches = existingRecentSearches;
+		if (await Hive.boxExists('searches_$id')) {
+			print('Migrating searches box');
+			final searchesBox = await Hive.openBox<PersistentRecentSearches>('searches_$id');
+			final existingRecentSearches = searchesBox.get('recentSearches');
+			if (existingRecentSearches != null) {
+				settings.recentSearchesBySite[id] = existingRecentSearches;
+			}
+			await searchesBox.deleteFromDisk();
 		}
-		else {
-			recentSearches = PersistentRecentSearches();
-			searchesBox.put('recentSearches', recentSearches);
+		settings.recentSearchesBySite.putIfAbsent(id, () => PersistentRecentSearches());
+		if (await Hive.boxExists('browserStates_$id')) {
+			print('Migrating browser states box');
+			final browserStateBox = await Hive.openBox<PersistentBrowserState>('browserStates_$id');
+			final existingBrowserState = browserStateBox.get('browserState');
+			if (existingBrowserState != null) {
+				settings.browserStateBySite[id] = existingBrowserState;
+			}
+			await browserStateBox.deleteFromDisk();
 		}
-		//Hive.deleteBoxFromDisk('browserStates_$id');
-		final browserStateBox = await Hive.openBox<PersistentBrowserState>('browserStates_$id');
-		final existingBrowserState = browserStateBox.get('browserState');
-		if (existingBrowserState != null) {
-			browserState = existingBrowserState;
+		settings.browserStateBySite.putIfAbsent(id, () => PersistentBrowserState(
+			tabs: [PersistentBrowserTab(board: null)]
+		));
+		if (await Hive.boxExists('boards_$id')) {
+			print('Migrating boards box');
+			final boardBox = await Hive.openBox<ImageboardBoard>('boards_$id');
+			settings.boardsBySite[id] = {
+				for (final key in boardBox.keys) key.toString(): boardBox.get(key)!
+			};
+			await boardBox.deleteFromDisk();
 		}
-		else {
-			browserState = PersistentBrowserState(
-				tabs: [PersistentBrowserTab(board: null)]
-			);
-			browserStateBox.put('browserState', browserState);
+		settings.boardsBySite.putIfAbsent(id, () => {});
+		if (await Hive.boxExists('savedAttachments_$id')) {
+			print('Migrating saved attachments box');
+			final savedAttachmentsBox = await Hive.openBox<SavedAttachment>('savedAttachments_$id');
+			settings.savedAttachmentsBySite[id] = {
+				for (final key in savedAttachmentsBox.keys) key.toString(): savedAttachmentsBox.get(key)!
+			};
+			await savedAttachmentsBox.deleteFromDisk();
 		}
-		boardBox = await Hive.openBox<ImageboardBoard>('boards_$id');
-		savedAttachmentsBox = await Hive.openBox<SavedAttachment>('savedAttachments_$id');
-		savedPostsBox = await Hive.openBox<SavedPost>('savedPosts_$id');
+		settings.savedAttachmentsBySite.putIfAbsent(id, () => {});
+		if (await Hive.boxExists('savedPosts_$id')) {
+			print('Migrating saved posts box');
+			final savedPostsBox = await Hive.openBox<SavedPost>('savedPosts_$id');
+			settings.savedPostsBySite[id] = {
+				for (final key in savedPostsBox.keys) key.toString(): savedPostsBox.get(key)!
+			};
+			await savedPostsBox.deleteFromDisk();
+		}
+		settings.savedPostsBySite.putIfAbsent(id, () => {});
+		await settings.save();
 	}
 
 	PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
@@ -134,7 +170,7 @@ class Persistence {
 	}
 
 	ImageboardBoard getBoard(String boardName) {
-		final board = boardBox.get(boardName);
+		final board = boards[boardName];
 		if (board != null) {
 			return board;
 		}
@@ -149,12 +185,12 @@ class Persistence {
 	}
 
 	SavedAttachment? getSavedAttachment(Attachment attachment) {
-		return savedAttachmentsBox.get(attachment.globalId);
+		return savedAttachments[attachment.globalId];
 	}
 
 	void saveAttachment(Attachment attachment, File fullResolutionFile) {
 		final newSavedAttachment = SavedAttachment(attachment: attachment, savedTime: DateTime.now());
-		savedAttachmentsBox.put(attachment.globalId, newSavedAttachment);
+		savedAttachments[attachment.globalId] = newSavedAttachment;
 		fullResolutionFile.copy(newSavedAttachment.file.path);
 		getCachedImageFile(attachment.thumbnailUrl.toString()).then((file) {
 			if (file != null) {
@@ -164,15 +200,37 @@ class Persistence {
 				print('Failed to find cached copy of ${attachment.thumbnailUrl.toString()}');
 			}
 		});
+		settings.save();
+		savedAttachmentsNotifier.newChange();
+	}
+
+	void deleteSavedAttachment(Attachment attachment) {
+		final removed = savedAttachments.remove(attachment.globalId);
+		if (removed != null) {
+			removed.deleteFiles();
+		}
+		settings.save();
+		savedAttachmentsNotifier.newChange();
 	}
 
 	SavedPost? getSavedPost(Post post) {
-		return savedPostsBox.get(post.globalId);
+		return savedPosts[post.globalId];
 	}
 
 	void savePost(Post post, Thread thread) {
-		final newSavedPost = SavedPost(post: post, savedTime: DateTime.now(), thread: thread);
-		savedPostsBox.put(post.globalId, newSavedPost);
+		savedPosts[post.globalId] = SavedPost(post: post, savedTime: DateTime.now(), thread: thread);
+		settings.save();
+		// Likely will force the widget to rebuild
+		getThreadStateIfExists(post.threadIdentifier)?.save();
+		savedPostsNotifier.newChange();
+	}
+
+	void unsavePost(Post post) {
+		savedPosts.remove(post.globalId);
+		settings.save();
+		// Likely will force the widget to rebuild
+		getThreadStateIfExists(post.threadIdentifier)?.save();
+		savedPostsNotifier.newChange();
 	}
 
 	String get currentBoardName => browserState.tabs[browserState.currentTab].board?.name ?? 'tv';
@@ -180,11 +238,31 @@ class Persistence {
 	ValueListenable<Box<PersistentThreadState>> listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
 		return threadStateBox.listenable(keys: ['${thread.board}/${thread.id}']);
 	}
+
+	Future<void> reinitializeBoards(List<ImageboardBoard> newBoards) async {
+		boards.clear();
+		boards.addAll({
+			for (final board in newBoards) board.name: board
+		});
+	}
+
+	Future<void> didUpdateBrowserState() async {
+		await settings.save();
+	}
+
+	Future<void> didUpdateRecentSearches() async {
+		await settings.save();
+	}
+
+	Future<void> didUpdateSavedPost() async {
+		await settings.save();
+		savedPostsNotifier.newChange();
+	}
 }
 
 const _maxRecentItems = 50;
 @HiveType(typeId: 8)
-class PersistentRecentSearches extends HiveObject {
+class PersistentRecentSearches {
 	@HiveField(0)
 	List<ImageboardArchiveSearchQuery> entries = [];
 
@@ -253,7 +331,7 @@ class PersistentThreadState extends HiveObject implements Filterable {
 }
 
 @HiveType(typeId: 4)
-class PostReceipt extends HiveObject {
+class PostReceipt {
 	@HiveField(0)
 	final String password;
 	@HiveField(1)
@@ -267,7 +345,7 @@ class PostReceipt extends HiveObject {
 }
 
 @HiveType(typeId: 18)
-class SavedAttachment extends HiveObject {
+class SavedAttachment {
 	@HiveField(0)
 	final Attachment attachment;
 	@HiveField(1)
@@ -280,9 +358,7 @@ class SavedAttachment extends HiveObject {
 		List<int>? tags
 	}) : tags = tags ?? [];
 
-	@override
-	Future<void> delete() async {
-		super.delete();
+	Future<void> deleteFiles() async {
 		await thumbnailFile.delete();
 		await file.delete();
 	}
@@ -292,7 +368,7 @@ class SavedAttachment extends HiveObject {
 }
 
 @HiveType(typeId: 19)
-class SavedPost extends HiveObject implements Filterable {
+class SavedPost implements Filterable {
 	@HiveField(0)
 	final Post post;
 	@HiveField(1)
@@ -319,7 +395,7 @@ class SavedPost extends HiveObject implements Filterable {
 }
 
 @HiveType(typeId: 21)
-class PersistentBrowserTab extends HiveObject {
+class PersistentBrowserTab {
 	@HiveField(0)
 	ImageboardBoard? board;
 	@HiveField(1)
@@ -331,7 +407,7 @@ class PersistentBrowserTab extends HiveObject {
 }
 
 @HiveType(typeId: 22)
-class PersistentBrowserState extends HiveObject {
+class PersistentBrowserState {
 	@HiveField(0)
 	List<PersistentBrowserTab> tabs;
 	@HiveField(1)
