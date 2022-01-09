@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:chan/models/board.dart';
@@ -49,6 +50,7 @@ class _BoardPageState extends State<BoardPage> {
 	late ImageboardBoard? board;
 	final _listController = RefreshableListController<Thread>();
 	final _replyBoxKey = GlobalKey<ReplyBoxState>();
+	Completer<void>? _loadCompleter;
 
 	@override
 	void initState() {
@@ -56,6 +58,12 @@ class _BoardPageState extends State<BoardPage> {
 		board = widget.initialBoard;
 		if (board == null) {
 			Future.delayed(const Duration(milliseconds: 100), _selectBoard);
+		}
+		if (widget.selectedThread != null) {
+			_loadCompleter = Completer<void>()
+				..future.then((_) {
+					_listController.animateTo((t) => t.identifier == widget.selectedThread);
+				});
 		}
 	}
 
@@ -194,6 +202,7 @@ class _BoardPageState extends State<BoardPage> {
 										else if (settings.catalogSortingMethod == ThreadSortingMethod.threadPostTime) {
 											list.sort((a, b) => b.id.compareTo(a.id));
 										}
+										Future.delayed(const Duration(milliseconds: 100), () => _loadCompleter?.complete());
 										return settings.reverseCatalogSorting ? list.reversed.toList() : list;
 									}),
 									id: '/${board!.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
