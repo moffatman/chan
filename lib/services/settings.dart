@@ -24,6 +24,18 @@ const defaultSite = {
 	'name': 'testchan',
 	'baseUrl': 'callum.crabdance.com'
 };
+final defaultLightTheme = SavedTheme(
+	primaryColor: Colors.black,
+	secondaryColor: Colors.red,
+	barColor: const Color(0xFFF9F9F9),
+	backgroundColor: CupertinoColors.systemBackground
+);
+final defaultDarkTheme = SavedTheme(
+	primaryColor: Colors.white,
+	secondaryColor: Colors.red,
+	barColor: const Color.fromRGBO(40, 40, 40, 1),
+	backgroundColor: const Color.fromRGBO(20, 20, 20, 1)
+);
 
 @HiveType(typeId: 1)
 enum AutoloadAttachmentsSetting {
@@ -194,16 +206,16 @@ class SavedSettings extends HiveObject {
 		filterConfiguration = filterConfiguration ?? '',
 		boardSwitcherHasKeyboardFocus = boardSwitcherHasKeyboardFocus ?? true,
 		lightTheme = lightTheme ?? SavedTheme(
-			primaryColor: Colors.black,
-			secondaryColor: Colors.red,
-			barColor: const Color(0xFFF9F9F9),
-			backgroundColor: CupertinoColors.systemBackground
+			primaryColor: defaultLightTheme.primaryColor,
+			secondaryColor: defaultLightTheme.secondaryColor,
+			barColor: defaultLightTheme.barColor,
+			backgroundColor: defaultLightTheme.backgroundColor
 		),
 		darkTheme = darkTheme ?? SavedTheme(
-			primaryColor: Colors.white,
-			secondaryColor: Colors.red,
-			barColor: const Color.fromRGBO(40, 40, 40, 1),
-			backgroundColor: const Color.fromRGBO(20, 20, 20, 1)
+			primaryColor: defaultDarkTheme.primaryColor,
+			secondaryColor: defaultDarkTheme.secondaryColor,
+			barColor: defaultDarkTheme.barColor,
+			backgroundColor: defaultDarkTheme.backgroundColor
 		),
 		recentSearchesBySite = recentSearchesBySite ?? {},
 		browserStateBySite = browserStateBySite ?? {},

@@ -176,8 +176,8 @@ class SettingsPage extends StatelessWidget {
 									}
 								),
 								...[
-									Tuple2('Light Theme Colors', settings.lightTheme),
-									Tuple2('Dark Theme Colors', settings.darkTheme)
+									Tuple3('Light Theme Colors', settings.lightTheme, defaultLightTheme),
+									Tuple3('Dark Theme Colors', settings.darkTheme, defaultDarkTheme)
 								].map((theme) => Container(
 									margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
 									padding: const EdgeInsets.only(bottom: 16),
@@ -198,11 +198,11 @@ class SettingsPage extends StatelessWidget {
 												alignment: WrapAlignment.center,
 												spacing: 16,
 												runSpacing: 16,
-												children: [
-													Tuple3('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c),
-													Tuple3('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c),
-													Tuple3('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c),
-													Tuple3('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c)
+												children: <Tuple4<String, Color, ValueChanged<Color>, Color>>[
+													Tuple4('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c, theme.item3.primaryColor),
+													Tuple4('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c, theme.item3.secondaryColor),
+													Tuple4('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c, theme.item3.barColor),
+													Tuple4('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c, theme.item3.backgroundColor)
 												].map((color) => Column(
 													mainAxisSize: MainAxisSize.min,
 													children: [
@@ -241,6 +241,13 @@ class SettingsPage extends StatelessWidget {
 																		)
 																	)
 																);
+																settings.handleThemesAltered();
+															}
+														),
+														CupertinoButton(
+															child: Text('Reset', style: TextStyle(color: theme.item2.primaryColor)),
+															onPressed: () {
+																color.item3(color.item4);
 																settings.handleThemesAltered();
 															}
 														)
