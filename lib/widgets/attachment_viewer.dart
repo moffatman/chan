@@ -381,7 +381,7 @@ class AttachmentViewer extends StatelessWidget {
 					autozoomScale = max(autozoomScale, max(fillZoomScale, 1 / fillZoomScale));
 				}
 				state.gestureDetails = GestureDetails(
-					offset: state.pointerDownPosition!.scale(old.layoutRect!.width / MediaQuery.of(context).size.width, old.layoutRect!.height / MediaQuery.of(context).size.height) * -1,
+					offset: state.pointerDownPosition!.scale(old.layoutRect!.width / MediaQuery.of(context).size.width, old.layoutRect!.height / MediaQuery.of(context).size.height) * -1 * autozoomScale,
 					totalScale: (old.totalScale ?? 1) > 1 ? 1 : autozoomScale,
 					actionType: ActionType.zoom
 				);
