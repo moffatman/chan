@@ -36,6 +36,7 @@ final defaultDarkTheme = SavedTheme(
 	barColor: const Color.fromRGBO(40, 40, 40, 1),
 	backgroundColor: const Color.fromRGBO(20, 20, 20, 1)
 );
+const twoPaneSplitDenominator = 12;
 
 @HiveType(typeId: 1)
 enum AutoloadAttachmentsSetting {
@@ -149,8 +150,6 @@ class SavedSettings extends HiveObject {
 	String userId;
   @HiveField(11)
 	ContentSettings contentSettings;
-	@HiveField(12)
-	int boardCatalogColumns;
 	@HiveField(13)
 	String filterConfiguration;
 	@HiveField(14)
@@ -169,6 +168,16 @@ class SavedSettings extends HiveObject {
 	Map<String, Map<String, SavedAttachment>> savedAttachmentsBySite;
 	@HiveField(21)
 	Map<String, Map<String, ImageboardBoard>> boardsBySite;
+	@HiveField(22)
+	double twoPaneBreakpoint;
+	@HiveField(23)
+	int twoPaneSplit;
+	@HiveField(24)
+	bool useCatalogGrid;
+	@HiveField(25)
+	double catalogGridWidth;
+	@HiveField(26)
+	double catalogGridHeight;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -192,6 +201,11 @@ class SavedSettings extends HiveObject {
 		Map<String, Map<String, SavedPost>>? savedPostsBySite,
 		Map<String, Map<String, SavedAttachment>>? savedAttachmentsBySite,
 		Map<String, Map<String, ImageboardBoard>>? boardsBySite,
+		double? twoPaneBreakpoint,
+		int? twoPaneSplit,
+		bool? useCatalogGrid,
+		double? catalogGridWidth,
+		double? catalogGridHeight,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? ThemeSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -202,7 +216,6 @@ class SavedSettings extends HiveObject {
 		useTouchLayout = useTouchLayout ?? (Platform.isAndroid || Platform.isIOS),
 		userId = userId ?? (const Uuid()).v4(),
 		contentSettings = contentSettings ?? ContentSettings(),
-		boardCatalogColumns = boardCatalogColumns ?? 1,
 		filterConfiguration = filterConfiguration ?? '',
 		boardSwitcherHasKeyboardFocus = boardSwitcherHasKeyboardFocus ?? true,
 		lightTheme = lightTheme ?? SavedTheme(
@@ -221,7 +234,12 @@ class SavedSettings extends HiveObject {
 		browserStateBySite = browserStateBySite ?? {},
 		savedPostsBySite = savedPostsBySite ?? {},
 		savedAttachmentsBySite = savedAttachmentsBySite ?? {},
-		boardsBySite = boardsBySite ?? {};
+		boardsBySite = boardsBySite ?? {},
+		twoPaneBreakpoint = twoPaneBreakpoint ?? 700,
+		twoPaneSplit = twoPaneSplit ?? twoPaneSplitDenominator ~/ 4,
+		useCatalogGrid = useCatalogGrid ?? false,
+		catalogGridWidth = catalogGridWidth ?? 200,
+		catalogGridHeight = catalogGridHeight ?? 300;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -370,13 +388,6 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	int get boardCatalogColumns => _settings.boardCatalogColumns;
-	set boardCatalogColumns(int setting) {
-		_settings.boardCatalogColumns = setting;
-		_settings.save();
-		notifyListeners();
-	}
-
 	bool get boardSwitcherHasKeyboardFocus => _settings.boardSwitcherHasKeyboardFocus;
 	set boardSwitcherHasKeyboardFocus(bool setting) {
 		_settings.boardSwitcherHasKeyboardFocus = setting;
@@ -388,6 +399,41 @@ class EffectiveSettings extends ChangeNotifier {
 	SavedTheme get lightTheme => _settings.lightTheme;
 	SavedTheme get darkTheme => _settings.darkTheme;
 	void handleThemesAltered() {
+		_settings.save();
+		notifyListeners();
+	}
+
+	double get twoPaneBreakpoint => _settings.twoPaneBreakpoint;
+	set twoPaneBreakpoint(double setting) {
+		_settings.twoPaneBreakpoint = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	int get twoPaneSplit => _settings.twoPaneSplit;
+	set twoPaneSplit(int setting) {
+		_settings.twoPaneSplit = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get useCatalogGrid => _settings.useCatalogGrid;
+	set useCatalogGrid(bool setting) {
+		_settings.useCatalogGrid = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	double get catalogGridWidth => _settings.catalogGridWidth;
+	set catalogGridWidth(double setting) {
+		_settings.catalogGridWidth = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	double get catalogGridHeight => _settings.catalogGridHeight;
+	set catalogGridHeight(double setting) {
+		_settings.catalogGridHeight = setting;
 		_settings.save();
 		notifyListeners();
 	}

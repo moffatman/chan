@@ -188,7 +188,7 @@ class _BoardPageState extends State<BoardPage> {
 										context.watch<Persistence>().browserState.getCatalogFilter(board!.name)
 									],
 									allowReordering: true,
-									gridColumns: settings.boardCatalogColumns,
+									gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
 									controller: _listController,
 									listUpdater: () => site.getCatalog(board!.name).then((list) {
 										final now = DateTime.now();
@@ -224,7 +224,7 @@ class _BoardPageState extends State<BoardPage> {
 											],
 											child: GestureDetector(
 												child: ThreadRow(
-													contentFocus: settings.boardCatalogColumns > 1,
+													contentFocus: settings.useCatalogGrid,
 													thread: thread,
 													isSelected: thread.identifier == widget.selectedThread,
 													semanticParentIds: [widget.semanticId],

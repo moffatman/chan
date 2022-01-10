@@ -177,7 +177,6 @@ class ChanHomePage extends StatefulWidget {
 class _ChanHomePageState extends State<ChanHomePage> {
 	bool initialized = false;
 	String? boardFetchErrorMessage;
-	late bool isInTabletLayout;
 	int tabletIndex = 0;
 	final _keys = <int, GlobalKey>{};
 	final _tabController = CupertinoTabController();
@@ -306,13 +305,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				);
 			}
 		}
-		return KeyedSubtree(
+		child = KeyedSubtree(
 			key: _keys.putIfAbsent(index, () => GlobalKey()),
-			child: active ? child : PrimaryScrollController.none(child: child)
+			child: child
 		);
+		return active ? child : PrimaryScrollController.none(child: child);
 	}
 
-	Widget _buildTabletIcon(int index, Widget icon, String label, {bool reorderable = false, Axis axis = Axis.vertical}) {
+	Widget _buildTabletIcon(int index, Widget icon, String? label, {bool reorderable = false, Axis axis = Axis.vertical}) {
 		final child = CupertinoButton(
 			padding: axis == Axis.vertical ? const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8) : const EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
 			child: Opacity(
@@ -320,8 +320,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				child: Column(
 					children: [
 						icon,
-						const SizedBox(height: 4),
-						Text(label, style: const TextStyle(fontSize: 15))
+						if (label != null) ...[
+							const SizedBox(height: 4),
+							Text(label, style: const TextStyle(fontSize: 15))
+						]
 					]
 				)
 			),
@@ -387,16 +389,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
-	Widget _buildNewTabIcon() {
+	Widget _buildNewTabIcon({bool hideLabel = false}) {
 		return CupertinoButton(
 			padding: const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8),
 			child: Opacity(
 				opacity: 0.5,
 				child: Column(
-					children: const [
-						Icon(Icons.add),
-						SizedBox(height: 4),
-						Text("New", style: TextStyle(fontSize: 15))
+					children: [
+						const Icon(Icons.add),
+						if (!hideLabel) ...[
+							const SizedBox(height: 4),
+							const Text("New", style: TextStyle(fontSize: 15))
+						]
 					]
 				)
 			),
@@ -475,7 +479,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	@override
 	Widget build(BuildContext context) {
-		isInTabletLayout = MediaQuery.of(context).size.width > 700;
+		final isInTabletLayout = MediaQuery.of(context).size.width > 700;
+		final hideTabletLayoutLabels = MediaQuery.of(context).size.height < 600;
 		if (!initialized) {
 			if (boardFetchErrorMessage != null) {
 				return Center(
@@ -499,36 +504,41 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			return CupertinoPageScaffold(
 				child: Row(
 					children: [
-						Container(
-							padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-							color: CupertinoTheme.of(context).barBackgroundColor,
-							width: 85,
-							child: Column(
-								children: [
-									Expanded(
-										child: Column(
-											children: [
-												Expanded(
-													child: _buildTabList(Axis.vertical)
-												),
-												_buildNewTabIcon()
-											]
-										)
-									),
-									_buildTabletIcon(1, Builder(
-										builder: (context) => NotifyingIcon(
-											icon: const Icon(Icons.bookmark),
-											primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
-											secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
-										)
-									), 'Saved'),
-									_buildTabletIcon(2, const Icon(Icons.history), 'History'),
-									_buildTabletIcon(3, const Icon(Icons.search), 'Search'),
-									_buildTabletIcon(4, NotifyingIcon(
-										icon: const Icon(Icons.settings),
-										primaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0)
-									), 'Settings')
-								]
+						SafeArea(
+							top: false,
+							bottom: false,
+							right: false,
+							child: Container(
+								padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+								color: CupertinoTheme.of(context).barBackgroundColor,
+								width: 85,
+								child: Column(
+									children: [
+										Expanded(
+											child: Column(
+												children: [
+													Expanded(
+														child: _buildTabList(Axis.vertical)
+													),
+													_buildNewTabIcon(hideLabel: hideTabletLayoutLabels)
+												]
+											)
+										),
+										_buildTabletIcon(1, Builder(
+											builder: (context) => NotifyingIcon(
+												icon: const Icon(Icons.bookmark),
+												primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
+												secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
+											)
+										), hideTabletLayoutLabels ? null : 'Saved'),
+										_buildTabletIcon(2, const Icon(Icons.history), hideTabletLayoutLabels ? null : 'History'),
+										_buildTabletIcon(3, const Icon(Icons.search), hideTabletLayoutLabels ? null : 'Search'),
+										_buildTabletIcon(4, NotifyingIcon(
+											icon: const Icon(Icons.settings),
+											primaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0)
+										), hideTabletLayoutLabels ? null : 'Settings')
+									]
+								)
 							)
 						),
 						Expanded(

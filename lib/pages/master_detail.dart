@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/util.dart';
 
@@ -25,7 +26,6 @@ class BuiltDetailPane {
 
 class MasterDetailPage<T> extends StatelessWidget {
 	final Object? id;
-	final double? twoPaneBreakpoint;
 	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T?> valueSetter) masterBuilder;
 	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
 	final T? initialValue;
@@ -34,7 +34,6 @@ class MasterDetailPage<T> extends StatelessWidget {
 		required this.id,
 		required this.masterBuilder,
 		required this.detailBuilder,
-		this.twoPaneBreakpoint,
 		this.initialValue,
 		this.onValueChanged,
 		Key? key
@@ -101,7 +100,6 @@ class MultiMasterPane<T> {
 }
 
 class MultiMasterDetailPage extends StatefulWidget {
-	final double twoPaneBreakpoint;
 	final Object? id;
 	final List<MultiMasterPane> Function() paneCreator;
 	final bool showChrome;
@@ -109,7 +107,6 @@ class MultiMasterDetailPage extends StatefulWidget {
 	const MultiMasterDetailPage({
 		required this.paneCreator,
 		this.id,
-		this.twoPaneBreakpoint = 700,
 		this.showChrome = true,
 		Key? key
 	}) : super(key: key);
@@ -176,7 +173,8 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 
 	@override
 	Widget build(BuildContext context) {
-		onePane = MediaQuery.of(context).size.width < widget.twoPaneBreakpoint;
+		final settings = context.watch<EffectiveSettings>();
+		onePane = MediaQuery.of(context).size.width < settings.twoPaneBreakpoint;
 		final masterNavigator = Provider.value(
 			value: _masterKey,
 			child: ClipRect(
@@ -266,7 +264,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 			return Row(
 				children: [
 					Flexible(
-						flex: 1,
+						flex: settings.twoPaneSplit,
 						child: PrimaryScrollController.none(
 							child: masterNavigator
 						)
@@ -276,7 +274,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 						color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
 					),
 					Flexible(
-						flex: 3,
+						flex: twoPaneSplitDenominator - settings.twoPaneSplit,
 						child: detailNavigator
 					)
 				]

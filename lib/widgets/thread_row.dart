@@ -169,39 +169,36 @@ class ThreadRow extends StatelessWidget {
 									Column(
 										mainAxisSize: MainAxisSize.min,
 										children: [
-											if (thread.attachment != null) AspectRatio(
-												aspectRatio: 4/3,
-												child: LayoutBuilder(
-													builder: (context, constraints) {
-														return Stack(
-															children: [
-																AttachmentThumbnail(
-																	width: constraints.maxWidth,
-																	height: constraints.maxHeight,
-																	fit: BoxFit.cover,
-																	attachment: _thread.attachment!,
-																	thread: _thread.identifier,
-																	onLoadError: onThumbnailLoadError,
-																	hero: null
-																),
-																if (_thread.attachment?.type == AttachmentType.webm) Positioned(
-																	bottom: 0,
-																	right: 0,
-																	child: Container(
-																		decoration: BoxDecoration(
-																			borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																			color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																			border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-																		),
-																		padding: const EdgeInsets.all(2),
-																		child: const Icon(Icons.play_arrow)
+											if (thread.attachment != null) Flexible(child: LayoutBuilder(
+												builder: (context, constraints) {
+													return Stack(
+														children: [
+															AttachmentThumbnail(
+																width: constraints.maxWidth,
+																height: constraints.maxHeight,
+																fit: BoxFit.cover,
+																attachment: _thread.attachment!,
+																thread: _thread.identifier,
+																onLoadError: onThumbnailLoadError,
+																hero: null
+															),
+															if (_thread.attachment?.type == AttachmentType.webm) Positioned(
+																bottom: 0,
+																right: 0,
+																child: Container(
+																	decoration: BoxDecoration(
+																		borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																		color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																		border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+																	),
+																	padding: const EdgeInsets.all(2),
+																	child: const Icon(Icons.play_arrow)
 																)
-																)
-															]
-														);
-													}
-												)
-											),
+															)
+														]
+													);
+												}
+											)),
 											Expanded(
 												child: Container(
 													constraints: const BoxConstraints(maxHeight: 125, minHeight: 25),

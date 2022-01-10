@@ -26,7 +26,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
 	final bool disableUpdates;
 	final Widget? footer;
-	final int gridColumns;
+	final Size? gridSize;
 	final String? initialFilter;
 	final List<Filter> filters;
 	final bool allowReordering;
@@ -42,7 +42,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.remedies = const {},
 		this.initialList,
 		this.disableUpdates = false,
-		this.gridColumns = 1,
+		this.gridSize,
 		this.footer,
 		this.initialFilter,
 		this.filters = const [],
@@ -334,27 +334,27 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 								)
 							),
 							if (values.isNotEmpty)
-								SliverList(
+								if (widget.gridSize != null) SliverGrid(
+									key: PageStorageKey('grid for ${widget.id}'),
+									gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+										maxCrossAxisExtent: widget.gridSize!.width,
+										childAspectRatio: widget.gridSize!.aspectRatio
+									),
+									delegate: SliverChildBuilderDelegate(
+										(context, i) => Builder(
+											builder: (context) {
+												widget.controller?.registerItem(i, values[i].item1, context);
+												return _itemBuilder(context, values[i].item1, highlighted: values[i].item2);
+											}
+										),
+										childCount: values.length
+									)
+								)
+								else SliverList(
 									key: PageStorageKey('list for ${widget.id}'),
 									delegate: SliverChildBuilderDelegate(
 										(context, i) {
-											if (widget.gridColumns > 1) {
-												return IntrinsicHeight(
-													child: Row(
-														children: [
-															for (int j = (i * widget.gridColumns).floor(); j < ((i + 1) * widget.gridColumns).floor(); j++) Flexible(
-																child: j < values.length ? Builder(
-																	builder: (context) {
-																		widget.controller?.registerItem(j, values[j].item1, context);
-																		return _itemBuilder(context, values[j].item1, highlighted: values[j].item2);
-																	}
-																) : Container()
-															)
-														]
-													)
-												);
-											}
-											else if (i % 2 == 0) {
+											if (i % 2 == 0) {
 												return Builder(
 													builder: (context) {
 														widget.controller?.registerItem(i ~/ 2, values[i ~/ 2].item1, context);
@@ -370,7 +370,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 												);
 											}
 										},
-										childCount: widget.gridColumns > 1 ? (values.length / widget.gridColumns).ceil() : values.length * 2
+										childCount: values.length * 2
 									)
 								),
 							if (values.isEmpty)
@@ -434,7 +434,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 												);
 											}
 										},
-										childCount: widget.gridColumns > 1 ? (filteredValues.length / widget.gridColumns).ceil() : filteredValues.length * 2
+										childCount: filteredValues.length * 2
 									)
 								)
 							],

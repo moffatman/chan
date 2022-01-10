@@ -28,6 +28,7 @@ class SettingsPage extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
+		final firstPanePercent = (settings.twoPaneSplit / twoPaneSplitDenominator) * 100;
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
 			navigationBar: const CupertinoNavigationBar(
@@ -35,305 +36,358 @@ class SettingsPage extends StatelessWidget {
 				middle: Text('Settings')
 			),
 			child: SafeArea(
-				child: Align(
-					alignment: Alignment.center,
-					child: ConstrainedBox(
-						constraints: const BoxConstraints(
-							maxWidth: 500
-						),
-						child: ListView(
-							physics: const BouncingScrollPhysics(),
-							children: [
-								const Padding(
-									padding: EdgeInsets.all(16),
-									child: Text('Development News')
-								),
-								SizedBox(
-									height: 200,
-									child: FutureBuilder<List<Thread>>(
-										future: context.read<ImageboardSite>().getCatalog('chance'),
-										builder: (context, snapshot) {
-											if (!snapshot.hasData) {
-												return const Center(
-													child: CupertinoActivityIndicator()
-												);
-											}
-											else if (snapshot.hasError) {
-												return Center(
-													child: Text(snapshot.error.toString())
-												);
-											}
-											final children = (snapshot.data ?? []).where((t) => t.isSticky).map<Widget>((thread) => GestureDetector(
-												onTap: () => Navigator.push(context, FullWidthCupertinoPageRoute(
-													builder: (context) => ThreadPage(
-														thread: thread.identifier,
-														boardSemanticId: -1,
-													)
-												)),
-												child: ThreadRow(
-													thread: thread,
-													isSelected: false
-												)
-											)).toList();
-											if (children.isEmpty) {
-												children.add(const Padding(
-													padding: EdgeInsets.all(16),
-													child: Center(
-														child: Text('No current news', style: TextStyle(color: Colors.grey))
-													)
-												));
-											}
-											children.add(CupertinoButton(
-												child: const Text('See more discussion'),
-												onPressed: () => Navigator.push(context, FullWidthCupertinoPageRoute(
-													builder: (context) => BoardPage(
-														initialBoard: ImageboardBoard(
-															name: 'chance',
-															title: 'Chance - Imageboard Browser',
-															isWorksafe: true,
-															webmAudioAllowed: false
-														),
-														allowChangingBoard: false,
-														semanticId: -1
-													)
-												))
-											));
-											return ListView(
-												physics: const BouncingScrollPhysics(),
-												children: children
-											);
-										}
-									)
-								),
-								const Padding(
-									padding: EdgeInsets.all(16),
-									child: Text('Content Filtering')
-								),
-								Container(
-									padding: const EdgeInsets.only(left: 16, right: 16),
-									child: Table(
-										children: {
-											'Images': settings.contentSettings.images,
-											'NSFW Boards': settings.contentSettings.nsfwBoards,
-											'NSFW Images': settings.contentSettings.nsfwImages,
-											'NSFW Text': settings.contentSettings.nsfwText
-										}.entries.map((x) => TableRow(
-											children: [
-												Text(x.key),
-												Text(x.value ? 'Allowed' : 'Blocked', textAlign: TextAlign.right)
-											]
-										)).toList()
-									)
-								),
-								Container(
-									padding: const EdgeInsets.only(left: 16, right: 16),
-									alignment: Alignment.center,
-									child: Wrap(
-										children: [
-											CupertinoButton(
-												child: Row(
-													mainAxisSize: MainAxisSize.min,
-													children: const [
-														Text('Synchronize '),
-														Icon(Icons.sync_rounded, size: 16)
-													]
-												),
-												onPressed: () {
-													settings.updateContentSettings();
-												}
-											),
-											CupertinoButton(
-												child: Row(
-													mainAxisSize: MainAxisSize.min,
-													children: const [
-														Text('Edit preferences '),
-														Icon(Icons.launch_rounded, size: 16)
-													]
-												),
-												onPressed: () => launch(settings.contentSettingsUrl, forceSafariVC: false)
-											)
-										]
-									)
-								),
-								SettingsFilterPanel(
-									initialConfiguration: settings.filterConfiguration,
-								),
-								Container(
-									padding: const EdgeInsets.all(16),
-									child: const Text('Use touchscreen layout'),
-								),
-								CupertinoSegmentedControl<bool>(
-									children: const {
-										false: Text('No'),
-										true: Text('Yes')
-									},
-									groupValue: settings.useTouchLayout,
-									onValueChanged: (newValue) {
-										settings.useTouchLayout = newValue;
-									}
-								),
-								const Padding(
-									padding: EdgeInsets.all(16),
-									child: Text('Active Theme'),
-								),
-								CupertinoSegmentedControl<ThemeSetting>(
-									children: const {
-										ThemeSetting.light: Text('Light'),
-										ThemeSetting.system: Text('Follow System'),
-										ThemeSetting.dark: Text('Dark')
-									},
-									groupValue: settings.themeSetting,
-									onValueChanged: (newValue) {
-										settings.themeSetting = newValue;
-									}
-								),
-								...[
-									Tuple3('Light Theme Colors', settings.lightTheme, defaultLightTheme),
-									Tuple3('Dark Theme Colors', settings.darkTheme, defaultDarkTheme)
-								].map((theme) => Container(
-									margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
-									padding: const EdgeInsets.only(bottom: 16),
-									decoration: BoxDecoration(
-										color: theme.item2.backgroundColor,
-										borderRadius: const BorderRadius.all(Radius.circular(8))
+				child: SingleChildScrollView(
+					physics: const BouncingScrollPhysics(),
+					child: Align(
+						alignment: Alignment.center,
+						child: ConstrainedBox(
+							constraints: const BoxConstraints(
+								maxWidth: 500
+							),
+							child: Column(
+								crossAxisAlignment: CrossAxisAlignment.stretch,
+								children: [
+									const Padding(
+										padding: EdgeInsets.all(16),
+										child: Text('Development News')
 									),
-									child: Column(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											Padding(
-												padding: const EdgeInsets.all(16),
-												child: Center(
-													child: Text(theme.item1, style: TextStyle(color: theme.item2.primaryColor))
-												)
-											),
-											Wrap(
-												alignment: WrapAlignment.center,
-												spacing: 16,
-												runSpacing: 16,
-												children: <Tuple4<String, Color, ValueChanged<Color>, Color>>[
-													Tuple4('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c, theme.item3.primaryColor),
-													Tuple4('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c, theme.item3.secondaryColor),
-													Tuple4('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c, theme.item3.barColor),
-													Tuple4('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c, theme.item3.backgroundColor)
-												].map((color) => Column(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														Text(color.item1, style: TextStyle(color: theme.item2.primaryColor)),
-														const SizedBox(height: 16),
-														GestureDetector(
-															child: Container(
-																decoration: BoxDecoration(
-																	borderRadius: const BorderRadius.all(Radius.circular(8)),
-																	border: Border.all(color: theme.item2.primaryColor),
-																	color: color.item2
-																),
-																width: 50,
-																height: 50
+									SizedBox(
+										height: 200,
+										child: FutureBuilder<List<Thread>>(
+											future: context.read<ImageboardSite>().getCatalog('chance'),
+											builder: (context, snapshot) {
+												if (!snapshot.hasData) {
+													return const Center(
+														child: CupertinoActivityIndicator()
+													);
+												}
+												else if (snapshot.hasError) {
+													return Center(
+														child: Text(snapshot.error.toString())
+													);
+												}
+												final children = (snapshot.data ?? []).where((t) => t.isSticky).map<Widget>((thread) => GestureDetector(
+													onTap: () => Navigator.push(context, FullWidthCupertinoPageRoute(
+														builder: (context) => ThreadPage(
+															thread: thread.identifier,
+															boardSemanticId: -1,
+														)
+													)),
+													child: ThreadRow(
+														thread: thread,
+														isSelected: false
+													)
+												)).toList();
+												if (children.isEmpty) {
+													children.add(const Padding(
+														padding: EdgeInsets.all(16),
+														child: Center(
+															child: Text('No current news', style: TextStyle(color: Colors.grey))
+														)
+													));
+												}
+												children.add(CupertinoButton(
+													child: const Text('See more discussion'),
+													onPressed: () => Navigator.push(context, FullWidthCupertinoPageRoute(
+														builder: (context) => BoardPage(
+															initialBoard: ImageboardBoard(
+																name: 'chance',
+																title: 'Chance - Imageboard Browser',
+																isWorksafe: true,
+																webmAudioAllowed: false
 															),
-															onTap: () async {
-																await showCupertinoModalPopup(
-																	barrierDismissible: true,
-																	context: context,
-																	builder: (context) => CupertinoActionSheet(
-																		title: Text('Select ${color.item1} Color'),
-																		message: Theme(
-																			data: ThemeData(
-																				textTheme: Theme.of(context).textTheme.apply(
-																					bodyColor: CupertinoTheme.of(context).primaryColor,
-																					displayColor: CupertinoTheme.of(context).primaryColor
-																				)
-																			),
-																			child: Material(
-																				color: Colors.transparent,
-																				child: ColorPicker(
-																					pickerColor: color.item2,
-																					onColorChanged: color.item3,
-																					enableAlpha: false,
-																					portraitOnly: true,
-																					displayThumbColor: true
+															allowChangingBoard: false,
+															semanticId: -1
+														)
+													))
+												));
+												return ListView(
+													physics: const BouncingScrollPhysics(),
+													children: children
+												);
+											}
+										)
+									),
+									const Padding(
+										padding: EdgeInsets.all(16),
+										child: Text('Content Filtering')
+									),
+									Container(
+										padding: const EdgeInsets.only(left: 16, right: 16),
+										child: Table(
+											children: {
+												'Images': settings.contentSettings.images,
+												'NSFW Boards': settings.contentSettings.nsfwBoards,
+												'NSFW Images': settings.contentSettings.nsfwImages,
+												'NSFW Text': settings.contentSettings.nsfwText
+											}.entries.map((x) => TableRow(
+												children: [
+													Text(x.key),
+													Text(x.value ? 'Allowed' : 'Blocked', textAlign: TextAlign.right)
+												]
+											)).toList()
+										)
+									),
+									Container(
+										padding: const EdgeInsets.only(left: 16, right: 16),
+										alignment: Alignment.center,
+										child: Wrap(
+											children: [
+												CupertinoButton(
+													child: Row(
+														mainAxisSize: MainAxisSize.min,
+														children: const [
+															Text('Synchronize '),
+															Icon(Icons.sync_rounded, size: 16)
+														]
+													),
+													onPressed: () {
+														settings.updateContentSettings();
+													}
+												),
+												CupertinoButton(
+													child: Row(
+														mainAxisSize: MainAxisSize.min,
+														children: const [
+															Text('Edit preferences '),
+															Icon(Icons.launch_rounded, size: 16)
+														]
+													),
+													onPressed: () => launch(settings.contentSettingsUrl, forceSafariVC: false)
+												)
+											]
+										)
+									),
+									SettingsFilterPanel(
+										initialConfiguration: settings.filterConfiguration,
+									),
+									Container(
+										padding: const EdgeInsets.all(16),
+										child: const Text('Use touchscreen layout'),
+									),
+									CupertinoSegmentedControl<bool>(
+										children: const {
+											false: Text('No'),
+											true: Text('Yes')
+										},
+										groupValue: settings.useTouchLayout,
+										onValueChanged: (newValue) {
+											settings.useTouchLayout = newValue;
+										}
+									),
+									const Padding(
+										padding: EdgeInsets.all(16),
+										child: Text('Active Theme'),
+									),
+									CupertinoSegmentedControl<ThemeSetting>(
+										children: const {
+											ThemeSetting.light: Text('Light'),
+											ThemeSetting.system: Text('Follow System'),
+											ThemeSetting.dark: Text('Dark')
+										},
+										groupValue: settings.themeSetting,
+										onValueChanged: (newValue) {
+											settings.themeSetting = newValue;
+										}
+									),
+									...[
+										Tuple3('Light Theme Colors', settings.lightTheme, defaultLightTheme),
+										Tuple3('Dark Theme Colors', settings.darkTheme, defaultDarkTheme)
+									].map((theme) => Container(
+										margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
+										padding: const EdgeInsets.only(bottom: 16),
+										decoration: BoxDecoration(
+											color: theme.item2.backgroundColor,
+											borderRadius: const BorderRadius.all(Radius.circular(8))
+										),
+										child: Column(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												Padding(
+													padding: const EdgeInsets.all(16),
+													child: Center(
+														child: Text(theme.item1, style: TextStyle(color: theme.item2.primaryColor))
+													)
+												),
+												Wrap(
+													alignment: WrapAlignment.center,
+													spacing: 16,
+													runSpacing: 16,
+													children: <Tuple4<String, Color, ValueChanged<Color>, Color>>[
+														Tuple4('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c, theme.item3.primaryColor),
+														Tuple4('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c, theme.item3.secondaryColor),
+														Tuple4('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c, theme.item3.barColor),
+														Tuple4('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c, theme.item3.backgroundColor)
+													].map((color) => Column(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															Text(color.item1, style: TextStyle(color: theme.item2.primaryColor)),
+															const SizedBox(height: 16),
+															GestureDetector(
+																child: Container(
+																	decoration: BoxDecoration(
+																		borderRadius: const BorderRadius.all(Radius.circular(8)),
+																		border: Border.all(color: theme.item2.primaryColor),
+																		color: color.item2
+																	),
+																	width: 50,
+																	height: 50
+																),
+																onTap: () async {
+																	await showCupertinoModalPopup(
+																		barrierDismissible: true,
+																		context: context,
+																		builder: (context) => CupertinoActionSheet(
+																			title: Text('Select ${color.item1} Color'),
+																			message: Theme(
+																				data: ThemeData(
+																					textTheme: Theme.of(context).textTheme.apply(
+																						bodyColor: CupertinoTheme.of(context).primaryColor,
+																						displayColor: CupertinoTheme.of(context).primaryColor
+																					)
+																				),
+																				child: Material(
+																					color: Colors.transparent,
+																					child: ColorPicker(
+																						pickerColor: color.item2,
+																						onColorChanged: color.item3,
+																						enableAlpha: false,
+																						portraitOnly: true,
+																						displayThumbColor: true
+																					)
 																				)
 																			)
 																		)
-																	)
-																);
-																settings.handleThemesAltered();
-															}
-														),
-														CupertinoButton(
-															child: Text('Reset', style: TextStyle(color: theme.item2.primaryColor)),
-															onPressed: () {
-																color.item3(color.item4);
-																settings.handleThemesAltered();
-															}
-														)
-													]
-												)).toList()
-											)
-										]
+																	);
+																	settings.handleThemesAltered();
+																}
+															),
+															CupertinoButton(
+																child: Text('Reset', style: TextStyle(color: theme.item2.primaryColor)),
+																onPressed: () {
+																	color.item3(color.item4);
+																	settings.handleThemesAltered();
+																}
+															)
+														]
+													)).toList()
+												)
+											]
+										)
+									)),
+									const Padding(
+										padding: EdgeInsets.all(16),
+										child: Text('Automatically load attachments'),
+									),
+									CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
+										children: const {
+											AutoloadAttachmentsSetting.always: Text('Always'),
+											AutoloadAttachmentsSetting.wifi: Text('When on Wi-Fi'),
+											AutoloadAttachmentsSetting.never: Text('Never')
+										},
+										groupValue: settings.autoloadAttachmentsSetting,
+										onValueChanged: (newValue) {
+											settings.autoloadAttachmentsSetting = newValue;
+										}
+									),
+									const Padding(
+										padding: EdgeInsets.all(16),
+										child: Text('Hide old stickied threads'),
+									),
+									CupertinoSegmentedControl<bool>(
+										children: const {
+											false: Text('No'),
+											true: Text('Yes')
+										},
+										groupValue: settings.hideOldStickiedThreads,
+										onValueChanged: (newValue) {
+											settings.hideOldStickiedThreads = newValue;
+										}
+									),
+									const Padding(
+										padding: EdgeInsets.all(16),
+										child: Text('Catalog Layout'),
+									),
+									CupertinoSegmentedControl<bool>(
+										children: const {
+											false: Text('Rows'),
+											true: Text('Grid'),
+										},
+										groupValue: settings.useCatalogGrid,
+										onValueChanged: (newValue) {
+											settings.useCatalogGrid = newValue;
+										}
+									),
+									Padding(
+										padding: const EdgeInsets.all(16),
+										child: Text('Catalog grid item width: ${settings.catalogGridWidth.round()} pixels'),
+									),
+									CupertinoSlider(
+										min: 50,
+										max: 1000,
+										divisions: 19,
+										value: settings.catalogGridWidth,
+										onChanged: (newValue) {
+											settings.catalogGridWidth = newValue;
+										}
+									),
+									Padding(
+										padding: const EdgeInsets.all(16),
+										child: Text('Catalog grid item height: ${settings.catalogGridHeight.round()} pixels'),
+									),
+									CupertinoSlider(
+										min: 50,
+										max: 1000,
+										divisions: 19,
+										value: settings.catalogGridHeight,
+										onChanged: (newValue) {
+											settings.catalogGridHeight = newValue;
+										}
+									),
+									Padding(
+										padding: const EdgeInsets.all(16),
+										child: Text('Two-pane breakpoint: ${settings.twoPaneBreakpoint.round()} pixels'),
+									),
+									CupertinoSlider(
+										min: 50,
+										max: 3000,
+										divisions: 59,
+										value: settings.twoPaneBreakpoint,
+										onChanged: (newValue) {
+											settings.twoPaneBreakpoint = newValue;
+										}
+									),
+									Padding(
+										padding: const EdgeInsets.all(16),
+										child: Text('Two-pane split: ${firstPanePercent.toStringAsFixed(0)}% catalog, ${(100 - firstPanePercent).toStringAsFixed(0)}% board'),
+									),
+									CupertinoSlider(
+										min: 1,
+										max: (twoPaneSplitDenominator - 1).toDouble(),
+										divisions: twoPaneSplitDenominator - 1,
+										value: settings.twoPaneSplit.toDouble(),
+										onChanged: (newValue) {
+											settings.twoPaneSplit = newValue.toInt();
+										}
+									),
+									const Padding(
+										padding: EdgeInsets.only(top: 16, left: 16),
+										child: Text('Cached media')
+									),
+									const SettingsCachePanel(),
+									const Padding(
+										padding: EdgeInsets.only(top: 16, left: 16),
+										child: Text('Cached threads and history')
+									),
+									const SettingsThreadsPanel(),
+									CupertinoButton(
+										child: const Text('Clear API cookies'),
+										onPressed: () {
+											Persistence.cookies.deleteAll();
+										}
 									)
-								)),
-								const Padding(
-									padding: EdgeInsets.all(16),
-									child: Text('Automatically load attachments'),
-								),
-								CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
-									children: const {
-										AutoloadAttachmentsSetting.always: Text('Always'),
-										AutoloadAttachmentsSetting.wifi: Text('When on Wi-Fi'),
-										AutoloadAttachmentsSetting.never: Text('Never')
-									},
-									groupValue: settings.autoloadAttachmentsSetting,
-									onValueChanged: (newValue) {
-										settings.autoloadAttachmentsSetting = newValue;
-									}
-								),
-								const Padding(
-									padding: EdgeInsets.all(16),
-									child: Text('Hide old stickied threads'),
-								),
-								CupertinoSegmentedControl<bool>(
-									children: const {
-										false: Text('No'),
-										true: Text('Yes')
-									},
-									groupValue: settings.hideOldStickiedThreads,
-									onValueChanged: (newValue) {
-										settings.hideOldStickiedThreads = newValue;
-									}
-								),
-								const Padding(
-									padding: EdgeInsets.all(16),
-									child: Text('Number of columns in catalog'),
-								),
-								CupertinoSegmentedControl<int>(
-									children: const {
-										1: Text('Rows'),
-										2: Text('2'),
-										3: Text('3'),
-										4: Text('4')
-									},
-									groupValue: settings.boardCatalogColumns,
-									onValueChanged: (newValue) {
-										settings.boardCatalogColumns = newValue;
-									}
-								),
-								const Padding(
-									padding: EdgeInsets.only(top: 16, left: 16),
-									child: Text('Cached media')
-								),
-								const SettingsCachePanel(),
-								const Padding(
-									padding: EdgeInsets.only(top: 16, left: 16),
-									child: Text('Cached threads and history')
-								),
-								const SettingsThreadsPanel(),
-								CupertinoButton(
-									child: const Text('Clear API cookies'),
-									onPressed: () {
-										Persistence.cookies.deleteAll();
-									}
-								)
-							],
+								],
+							)
 						)
 					)
 				)
