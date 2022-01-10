@@ -99,6 +99,7 @@ class SettingsPage extends StatelessWidget {
 												))
 											));
 											return ListView(
+												physics: const BouncingScrollPhysics(),
 												children: children
 											);
 										}
