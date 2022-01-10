@@ -166,8 +166,18 @@ abstract class ImageboardSiteArchive {
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
+	final Map<String, Map<String, String>> memoizedHeaders = {};
 	final List<ImageboardSiteArchive> archives;
 	ImageboardSite(this.archives);
+	Future<void> ensureCookiesMemoized(Uri url) async {
+		memoizedHeaders[url.host] = {
+			'user-agent': userAgent,
+			'cookie': (await Persistence.cookies.loadForRequest(url)).join('; ')
+		};
+	}
+	Map<String, String>? getHeaders(Uri url) {
+		return memoizedHeaders[url.host];
+	}
 	@override
 	set context(BuildContext value) {
 		super.context = value;
@@ -202,7 +212,12 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {
 			try {
-				return await archive.getPost(board, id);
+				final post = await archive.getPost(board, id);
+				if (post.attachment != null) {
+					await ensureCookiesMemoized(post.attachment!.thumbnailUrl);
+					await ensureCookiesMemoized(post.attachment!.url);
+				}
+				return post;
 			}
 			catch(e) {
 				if (e is! BoardNotFoundException) {
@@ -221,7 +236,12 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {
 			try {
-				return await archive.getThread(thread);
+				final thread_ = await archive.getThread(thread);
+				if (thread_.attachment != null) {
+					await ensureCookiesMemoized(thread_.attachment!.thumbnailUrl);
+					await ensureCookiesMemoized(thread_.attachment!.url);
+				}
+				return thread_;
 			}
 			catch(e, st) {
 				if (e is! BoardNotFoundException) {

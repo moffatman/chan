@@ -18,7 +18,7 @@ import 'package:chan/models/thread.dart';
 class ThreadRow extends StatelessWidget {
 	final Thread thread;
 	final bool isSelected;
-	final ValueChanged<Object?>? onThumbnailLoadError;
+	final Function(Object?, StackTrace?)? onThumbnailLoadError;
 	final ValueChanged<Attachment>? onThumbnailTap;
 	final Iterable<int> semanticParentIds;
 	final bool contentFocus;
@@ -176,7 +176,6 @@ class ThreadRow extends StatelessWidget {
 														return Stack(
 															children: [
 																AttachmentThumbnail(
-																	gaplessPlayback: true,
 																	width: constraints.maxWidth,
 																	height: constraints.maxHeight,
 																	fit: BoxFit.cover,
@@ -259,7 +258,6 @@ class ThreadRow extends StatelessWidget {
 																fit: StackFit.loose,
 																children: [
 																	AttachmentThumbnail(
-																		gaplessPlayback: true,
 																		onLoadError: onThumbnailLoadError,
 																		attachment: _thread.attachment!,
 																		thread: _thread.identifier,

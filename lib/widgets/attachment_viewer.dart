@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/media.dart';
-import 'package:chan/services/persistence.dart';
 import 'package:chan/services/rotating_image_provider.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -15,8 +14,8 @@ import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:tuple/tuple.dart';
 import 'package:video_player/video_player.dart';
 
 class AttachmentNotFoundException {
@@ -39,7 +38,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	String? _errorMessage;
 	VideoPlayerController? _videoPlayerController;
 	bool _hasAudio = false;
-	Tuple2<Uri, Map<String, String>?>? _goodImageSource;
+	Uri? _goodImageSource;
 	File? _cachedFile;
 	bool _isPrimary = false;
 	MediaConversion? _ongoingConversion;
@@ -67,7 +66,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	/// Whether the attachment is a video that has an audio track
 	bool get hasAudio => _hasAudio;
 	/// The Uri to use to load the image, if needed
-	Tuple2<Uri, Map<String, String>?>? get goodImageSource => _goodImageSource;
+	Uri? get goodImageSource => _goodImageSource;
 	/// The file which contains the local cache of this attachment
 	File? get cachedFile => _cachedFile;
 	/// Whether the attachment has been cached locally
@@ -108,20 +107,16 @@ class AttachmentViewerController extends ChangeNotifier {
 		_isPrimary = val;
 	}
 
-	Future<Tuple2<Uri, Map<String, String>?>> _getGoodSource(Attachment attachment) async {
+	Future<Uri> _getGoodSource(BuildContext context, Attachment attachment) async {
 		if (overrideSource != null) {
-			return Tuple2(overrideSource!, null);
+			return overrideSource!;
 		}
-		final mainHeaders = {
-			'user-agent': userAgent,
-			'cookie': (await Persistence.cookies.loadForRequest(attachment.url)).join('; ')
-		};
 		Response result = await site.client.head(attachment.url.toString(), options: Options(
 			validateStatus: (_) => true,
-			headers: mainHeaders,
+			headers: context.read<ImageboardSite>().getHeaders(attachment.url),
 		));
 		if (result.statusCode == 200) {
-			return Tuple2(attachment.url, mainHeaders);
+			return attachment.url;
 		}
 		else {
 			if (_checkArchives && attachment.threadId != null) {
@@ -131,16 +126,12 @@ class AttachmentViewerController extends ChangeNotifier {
 				));
 				for (final reply in archivedThread.posts) {
 					if (reply.attachment?.id == attachment.id) {
-						final archiveHeaders = {
-							'user-agent': userAgent,
-							'cookie': (await Persistence.cookies.loadForRequest(reply.attachment!.url)).join('; ')
-						};
 						result = await site.client.head(reply.attachment!.url.toString(), options: Options(
 							validateStatus: (_) => true,
-							headers: archiveHeaders
+							headers: context.read<ImageboardSite>().getHeaders(reply.attachment!.url)
 						));
 						if (result.statusCode == 200) {
-							return Tuple2(reply.attachment!.url, archiveHeaders);
+							return reply.attachment!.url;
 						}
 					}
 				}
@@ -152,7 +143,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		throw HTTPStatusException(result.statusCode!);
 	}
 
-	Future<void> _loadFullAttachment(bool startImageDownload, {bool force = false}) async {
+	Future<void> _loadFullAttachment(BuildContext context, bool startImageDownload, {bool force = false}) async {
 		if (attachment.type == AttachmentType.image && goodImageSource != null && !force) {
 			return;
 		}
@@ -174,16 +165,16 @@ class AttachmentViewerController extends ChangeNotifier {
 		});
 		try {
 			if (attachment.type == AttachmentType.image) {
-				_goodImageSource = await _getGoodSource(attachment);
-				if (_goodImageSource?.item1.scheme == 'file') {
-					_cachedFile = File(_goodImageSource!.item1.path);
+				_goodImageSource = await _getGoodSource(context, attachment);
+				if (_goodImageSource?.scheme == 'file') {
+					_cachedFile = File(_goodImageSource!.path);
 				}
 				notifyListeners();
 				if (startImageDownload) {
 					await ExtendedNetworkImageProvider(
 						goodImageSource.toString(),
 						cache: true,
-						headers: goodImageSource?.item2
+						headers: context.read<ImageboardSite>().getHeaders(goodImageSource!)
 					).getNetworkImageData();
 					final file = await getCachedImageFile(goodImageSource.toString());
 					if (file != null && _cachedFile?.path != file.path) {
@@ -192,8 +183,8 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 			}
 			else if (attachment.type == AttachmentType.webm) {
-				final url = await _getGoodSource(attachment);
-				_ongoingConversion = MediaConversion.toMp4(url.item1);
+				final url = await _getGoodSource(context, attachment);
+				_ongoingConversion = MediaConversion.toMp4(url);
 				_ongoingConversion!.progress.addListener(() {
 					videoLoadingProgress.value = _ongoingConversion!.progress.value;
 					notifyListeners();
@@ -222,11 +213,11 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 	}
 
-	Future<void> loadFullAttachment() => _loadFullAttachment(false);
+	Future<void> loadFullAttachment(BuildContext context) => _loadFullAttachment(context, false);
 
-	Future<void> reloadFullAttachment() => _loadFullAttachment(false, force: true);
+	Future<void> reloadFullAttachment(BuildContext context) => _loadFullAttachment(context, false, force: true);
 
-	void preloadFullAttachment() => _loadFullAttachment(true);
+	void preloadFullAttachment(BuildContext context) => _loadFullAttachment(context, true);
 
 	Future<void> rotate() async {
 		_quarterTurns = 1;
@@ -251,9 +242,9 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	void tryArchives() {
+	void tryArchives(BuildContext context) {
 		_checkArchives = true;
-		loadFullAttachment();
+		loadFullAttachment(context);
 	}
 
 	String _formatPosition(Duration position, Duration duration) {
@@ -344,19 +335,19 @@ class AttachmentViewer extends StatelessWidget {
 		)
 	);
 
-	Widget _buildImage(context, bool passedFirstBuild) {
-		Tuple2<Uri, Map<String, String>?> source = Tuple2(attachment.thumbnailUrl, null);
+	Widget _buildImage(BuildContext context, bool passedFirstBuild) {
+		Uri source = attachment.thumbnailUrl;
 		if (controller.goodImageSource != null && passedFirstBuild) {
 			source = controller.goodImageSource!;
 		}
 		ImageProvider image = ExtendedNetworkImageProvider(
-			source.item1.toString(),
+			source.toString(),
 			cache: true,
-			headers: source.item2
+			headers: context.read<ImageboardSite>().getHeaders(source)
 		);
-		if (source.item1.scheme == 'file') {
+		if (source.scheme == 'file') {
 			image = ExtendedFileImageProvider(
-				File(source.item1.path),
+				File(source.path),
 				imageCacheName: 'asdf'
 			);
 		}
@@ -402,8 +393,8 @@ class AttachmentViewer extends StatelessWidget {
 					if (loadstate.loadingProgress?.cumulativeBytesLoaded != null && loadstate.loadingProgress?.expectedTotalBytes != null) {
 						// If we got image download completion, we can check if it's cached
 						loadingValue = loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes!;
-						if ((source.item1 != attachment.thumbnailUrl) && loadingValue == 1) {
-							getCachedImageFile(source.item1.toString()).then((file) {
+						if ((source != attachment.thumbnailUrl) && loadingValue == 1) {
+							getCachedImageFile(source.toString()).then((file) {
 								if (file != null) {
 									controller.onCacheCompleted(file);
 								}
@@ -412,7 +403,7 @@ class AttachmentViewer extends StatelessWidget {
 					}
 					else if (loadstate.extendedImageInfo?.image.width == attachment.width) {
 						// If the displayed image looks like the full image, we can check cache
-						getCachedImageFile(source.item1.toString()).then((file) {
+						getCachedImageFile(source.toString()).then((file) {
 							if (file != null) {
 								controller.onCacheCompleted(file);
 							}
@@ -429,8 +420,8 @@ class AttachmentViewer extends StatelessWidget {
 									if (controller.errorMessage != null) {
 										_child = Center(
 											child: ErrorMessageCard(controller.errorMessage!, remedies: {
-													'Retry': controller.loadFullAttachment,
-													if (!controller.checkArchives) 'Try archives': controller.tryArchives
+													'Retry': () => controller.loadFullAttachment(context),
+													if (!controller.checkArchives) 'Try archives': () => controller.tryArchives(context)
 												}
 											)
 										);
@@ -504,7 +495,7 @@ class AttachmentViewer extends StatelessWidget {
 					),
 					if (controller.errorMessage != null) Center(
 						child: ErrorMessageCard(controller.errorMessage!, remedies: {
-							'Retry': controller.reloadFullAttachment
+							'Retry': () => controller.reloadFullAttachment(context)
 						})
 					)
 					else if (controller.videoPlayerController != null) GestureDetector(

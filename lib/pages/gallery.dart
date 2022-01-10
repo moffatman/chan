@@ -95,7 +95,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		pageController = ExtendedPageController(keepPage: true, initialPage: currentIndex);
 		pageController.addListener(_onPageControllerUpdate);
 		_scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
-		_getController(widget.attachments[currentIndex]).loadFullAttachment();
+		_getController(widget.attachments[currentIndex]).loadFullAttachment(context);
 	}
 
 	@override
@@ -121,7 +121,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		if (widget.initialAttachment != old.initialAttachment) {
 			currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
 			if (context.read<EffectiveSettings>().autoloadAttachments) {
-				_getController(widget.attachments[currentIndex]).loadFullAttachment();
+				_getController(widget.attachments[currentIndex]).loadFullAttachment(context);
 			}
 		}
 	}
@@ -180,7 +180,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
 		if (context.read<EffectiveSettings>().autoloadAttachments) {
-			_getController(attachment).loadFullAttachment();
+			_getController(attachment).loadFullAttachment(context);
 		}
 		if (milliseconds == 0) {
 			pageController.jumpToPage(index);
@@ -234,12 +234,12 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		if (!_animatingNow) {
 			final settings = context.read<EffectiveSettings>();
 			if (settings.autoloadAttachments) {
-				_getController(attachment).loadFullAttachment();
+				_getController(attachment).loadFullAttachment(context);
 				if (index > 0 ) {
-					_getController(widget.attachments[index - 1]).preloadFullAttachment();
+					_getController(widget.attachments[index - 1]).preloadFullAttachment(context);
 				}
 				if (index < (widget.attachments.length - 1)) {
-					_getController(widget.attachments[index + 1]).preloadFullAttachment();
+					_getController(widget.attachments[index + 1]).preloadFullAttachment(context);
 				}
 			}
 			if (settings.autoRotateInGallery && _rotationAppropriate(attachment) && _getController(attachment).quarterTurns == 0) {
@@ -499,7 +499,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																	semanticParentIds: widget.semanticParentIds
 																),
 																onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
-																	_getController(attachment).loadFullAttachment();
+																	_getController(attachment).loadFullAttachment(context);
 																}
 															);
 														}

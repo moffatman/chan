@@ -223,7 +223,6 @@ class PostRow extends StatelessWidget {
 													fit: StackFit.loose,
 													children: [
 														AttachmentThumbnail(
-															gaplessPlayback: true,
 															attachment: _post.attachment!,
 															thread: _post.threadIdentifier,
 															hero: AttachmentSemanticLocation(

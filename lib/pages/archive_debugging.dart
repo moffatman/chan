@@ -15,9 +15,9 @@ import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
-class WrappedArchive implements ImageboardSite {
+class WrappedArchive extends ImageboardSite {
 	final ImageboardSiteArchive archive;
-	WrappedArchive(this.archive);
+	WrappedArchive(this.archive) : super([]);
 
   @override
   List<ImageboardSiteArchive> get archives => [];
@@ -111,9 +111,6 @@ class WrappedArchive implements ImageboardSite {
   Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page}) {
     return archive.search(query, page: page);
   }
-
-  @override
-  Persistence? persistence;
 }
 
 class ArchiveDebuggingPage extends StatelessWidget {

@@ -285,6 +285,10 @@ class Site4Chan extends ImageboardSite {
 				thread: output,
 				lastModified: response.headers.value('last-modified')!
 			);
+			if (output.attachment != null) {
+				await ensureCookiesMemoized(output.attachment!.url);
+				await ensureCookiesMemoized(output.attachment!.thumbnailUrl);
+			}
 		}
 		else if (!(response.statusCode == 304 && headers != null)) {
 			if (response.statusCode == 404) {

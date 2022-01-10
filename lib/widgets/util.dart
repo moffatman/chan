@@ -70,21 +70,27 @@ class TransparentRoute<T> extends PageRoute<T> {
 
 	@override
   Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
-		final result = builder(context);
+		return Semantics(
+			scopesRoute: true,
+			explicitChildNodes: true,
+			child: builder(context)
+		);
+	}
+
+	@override
+	Widget buildTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
 		return AnimatedBuilder(
 			animation: animation,
-			builder: (context, child) => BackdropFilter(
-				filter: ImageFilter.blur(sigmaX: animation.value * 5, sigmaY: animation.value * 5),
-				child: Opacity(
-					opacity: animation.value,
-					child: child
-				)
-			),
-			child: Semantics(
-				scopesRoute: true,
-				explicitChildNodes: true,
-				child: result
-			)
+			builder: (context, child) {
+				return BackdropFilter(
+					filter: ImageFilter.blur(sigmaX: animation.value * 5, sigmaY: animation.value * 5),
+					child: Opacity(
+						opacity: animation.value,
+						child: child
+					)
+				);
+			},
+			child: child
 		);
 	}
 }

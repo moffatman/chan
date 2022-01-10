@@ -129,34 +129,37 @@ class _ChanAppState extends State<ChanApp> {
 								)
 							);
 						}
-						return CupertinoApp(
-							title: 'Chance',
-							theme: theme,
-							home: Builder(
-								builder: (BuildContext context) {
-									site?.context = context;
-									return DefaultTextStyle(
-										style: CupertinoTheme.of(context).textTheme.textStyle,
-										child: RootCustomScale(
-											scale: (Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0,
-											child: StickyMediaQuery(
-												top: true,
-												child: threadWatcher != null ? ChanHomePage(key: ValueKey(site!.name)) : Container(
-													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-													child: const Center(
-														child: CupertinoActivityIndicator()
+						return MediaQuery.fromWindow(
+							child: StickyMediaQuery(
+								top: true,
+								child: CupertinoApp(
+									title: 'Chance',
+									useInheritedMediaQuery: true,
+									theme: theme,
+									home: Builder(
+										builder: (BuildContext context) {
+											site?.context = context;
+											return DefaultTextStyle(
+												style: CupertinoTheme.of(context).textTheme.textStyle,
+												child: RootCustomScale(
+													scale: (Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0,
+													child: threadWatcher != null ? ChanHomePage(key: ValueKey(site!.name)) : Container(
+														color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+														child: const Center(
+															child: CupertinoActivityIndicator()
+														)
 													)
 												)
-											)
-										)
-									);
-								}
-							),
-							localizationsDelegates: const [
-								DefaultCupertinoLocalizations.delegate,
-								DefaultMaterialLocalizations.delegate
-							],
-							scrollBehavior: const CupertinoScrollBehavior().copyWith(dragDevices: {...PointerDeviceKind.values})
+											);
+										}
+									),
+									localizationsDelegates: const [
+										DefaultCupertinoLocalizations.delegate,
+										DefaultMaterialLocalizations.delegate
+									],
+									scrollBehavior: const CupertinoScrollBehavior().copyWith(dragDevices: {...PointerDeviceKind.values})
+								)
+							)
 						);
 					}
 				)
@@ -512,11 +515,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											]
 										)
 									),
-									_buildTabletIcon(1, NotifyingIcon(
+									_buildTabletIcon(1, Builder(
+										builder: (context) => NotifyingIcon(
 											icon: const Icon(Icons.bookmark),
 											primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
 											secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
-										), 'Saved'),
+										)
+									), 'Saved'),
 									_buildTabletIcon(2, const Icon(Icons.history), 'History'),
 									_buildTabletIcon(3, const Icon(Icons.search), 'Search'),
 									_buildTabletIcon(4, NotifyingIcon(
@@ -558,11 +563,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									label: 'Browse'
 								),
 								BottomNavigationBarItem(
-									icon: NotifyingIcon(
-										icon: const Icon(Icons.bookmark),
-										primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
-										secondaryCount: context.watch<SavedThreadWatcher>().unseenCount,
-										topOffset: 10
+									icon: Builder(
+										builder: (context) => NotifyingIcon(
+											icon: const Icon(Icons.bookmark),
+											primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
+											secondaryCount: context.watch<SavedThreadWatcher>().unseenCount,
+											topOffset: 10
+										)
 									),
 									label: 'Saved'
 								),

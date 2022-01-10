@@ -150,7 +150,7 @@ class _SavedPageState extends State<SavedPage> {
 															thread: state.thread!,
 															isSelected: state.thread!.identifier == selectedThread,
 															showBoardName: true,
-															onThumbnailLoadError: (error) {
+															onThumbnailLoadError: (error, stackTrace) {
 																context.read<SavedThreadWatcher>().fixBrokenThread(state.thread!.identifier);
 															},
 															semanticParentIds: const [-4],
