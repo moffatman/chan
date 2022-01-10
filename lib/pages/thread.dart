@@ -557,6 +557,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	@override
 	void dispose() {
 		super.dispose();
+		_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
 		_listController.dispose();
 	}
 }
