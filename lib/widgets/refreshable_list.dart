@@ -745,13 +745,13 @@ class RefreshableListController<T extends Filterable> {
 			final completer = Completer<void>();
 			double estimate = (_estimateOffset(targetIndex) ?? scrollController!.position.maxScrollExtent) - topOffset!;
 			_itemCacheCallbacks[Tuple2(targetIndex, estimate > scrollController!.position.pixels)] = completer;
-			final delay = Duration(milliseconds: min(300, estimate ~/ 100));
+			final delay = Duration(milliseconds: min(300, (estimate - scrollController!.position.pixels).abs() ~/ 100));
 			scrollController!.animateTo(
 				estimate,
 				duration: delay,
 				curve: c
 			);
-			await Future.any([completer.future, Future.delayed(delay ~/ 4)]);
+			await Future.any([completer.future, Future.wait([Future.delayed(const Duration(milliseconds: 32)), Future.delayed(delay ~/ 4)])]);
 			return (_items[targetIndex].cachedOffset != null);
 		}
 		if (_items[targetIndex].cachedOffset == null) {
