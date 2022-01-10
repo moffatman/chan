@@ -49,4 +49,7 @@ class ImageboardBoard {
 		this.replyCooldown,
 		this.imageCooldown
 	});
+
+	@override
+	String toString() => '/$name/';
 }

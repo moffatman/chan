@@ -36,7 +36,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		scrollController.addListener(_onScroll);
 		context.read<ImageboardSite>().getBoards().then((b) => setState(() {
 			boards = b;
-			_filteredBoards = b;
+			_filteredBoards = b.toList();
 			_sortByFavourite();
 		}));
 		final settings = context.read<EffectiveSettings>();
@@ -136,6 +136,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										child: Stack(
 											children: [
 												ReorderableList(
+													padding: const EdgeInsets.only(bottom: 64),
 													itemCount: browserState.favouriteBoards.length,
 													onReorder: (oldIndex, newIndex) {
 														if (oldIndex < newIndex) {
