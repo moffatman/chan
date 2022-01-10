@@ -1,6 +1,9 @@
 import 'dart:io';
+import 'dart:math';
 
+import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
+import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
 import 'package:chan/pages/thread.dart';
@@ -86,7 +89,8 @@ class SettingsPage extends StatelessWidget {
 														)
 													));
 												}
-												children.add(CupertinoButton(
+												children.add(const SizedBox(height: 8));
+												children.add(CupertinoButton.filled(
 													child: const Text('See more discussion'),
 													onPressed: () => Navigator.push(context, FullWidthCupertinoPageRoute(
 														builder: (context) => BoardPage(
@@ -129,11 +133,14 @@ class SettingsPage extends StatelessWidget {
 										)
 									),
 									Container(
-										padding: const EdgeInsets.only(left: 16, right: 16),
+										padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
 										alignment: Alignment.center,
 										child: Wrap(
+											spacing: 16,
+											runSpacing: 16,
 											children: [
-												CupertinoButton(
+												CupertinoButton.filled(
+													padding: const EdgeInsets.all(8),
 													child: Row(
 														mainAxisSize: MainAxisSize.min,
 														children: const [
@@ -145,7 +152,8 @@ class SettingsPage extends StatelessWidget {
 														settings.updateContentSettings();
 													}
 												),
-												CupertinoButton(
+												CupertinoButton.filled(
+													padding: const EdgeInsets.all(8),
 													child: Row(
 														mainAxisSize: MainAxisSize.min,
 														children: const [
@@ -262,12 +270,17 @@ class SettingsPage extends StatelessWidget {
 																	settings.handleThemesAltered();
 																}
 															),
-															CupertinoButton(
-																child: Text('Reset', style: TextStyle(color: theme.item2.primaryColor)),
-																onPressed: () {
-																	color.item3(color.item4);
-																	settings.handleThemesAltered();
-																}
+															Padding(
+																padding: const EdgeInsets.all(8),
+																child: CupertinoButton(
+																	padding: const EdgeInsets.all(8),
+																	color: theme.item2.primaryColor,
+																	child: Text('Reset', style: TextStyle(color: theme.item2.backgroundColor)),
+																	onPressed: () {
+																		color.item3(color.item4);
+																		settings.handleThemesAltered();
+																	}
+																)
 															)
 														]
 													)).toList()
@@ -320,29 +333,115 @@ class SettingsPage extends StatelessWidget {
 									),
 									Padding(
 										padding: const EdgeInsets.all(16),
-										child: Text('Catalog grid item width: ${settings.catalogGridWidth.round()} pixels'),
-									),
-									CupertinoSlider(
-										min: 50,
-										max: 1000,
-										divisions: 19,
-										value: settings.catalogGridWidth,
-										onChanged: (newValue) {
-											settings.catalogGridWidth = newValue;
-										}
-									),
-									Padding(
-										padding: const EdgeInsets.all(16),
-										child: Text('Catalog grid item height: ${settings.catalogGridHeight.round()} pixels'),
-									),
-									CupertinoSlider(
-										min: 50,
-										max: 1000,
-										divisions: 19,
-										value: settings.catalogGridHeight,
-										onChanged: (newValue) {
-											settings.catalogGridHeight = newValue;
-										}
+										child: CupertinoButton.filled(
+											child: const Text('Edit catalog grid item size'),
+											onPressed: () async {
+												Size size = Size(settings.catalogGridWidth, settings.catalogGridHeight);
+												await showCupertinoModalPopup(
+													context: context,
+													builder: (_context) => StatefulBuilder(
+														builder: (context, setDialogState) => CupertinoActionSheet(
+															title: const Text('Resize catalog grid item'),
+															actions: [
+																CupertinoButton(
+																	child: const Text('Close'),
+																	onPressed: () => Navigator.pop(_context)
+																)
+															],
+															message: DefaultTextStyle(
+																style: DefaultTextStyle.of(context).style,
+																	child: SizedBox(
+																	width: MediaQuery.of(context).size.width,
+																	height: MediaQuery.of(context).size.height - 200,
+																	child: Column(
+																		children: [
+																			Text('Current size: ${size.width.round()}x${size.height.round()}'),
+																			Expanded(
+																				child: Stack(
+																					children: [
+																						Align(
+																							alignment: Alignment.topLeft,
+																							child: SizedBox.fromSize(
+																								size: size,
+																								child: ThreadRow(
+																									contentFocus: true,
+																									isSelected: false,
+																									thread: Thread(
+																										attachment: Attachment(
+																											type: AttachmentType.image,
+																											board: 'tv',
+																											id: 99999,
+																											ext: '.png',
+																											filename: 'example',
+																											md5: '',
+																											url: Uri.parse('https://picsum.photos/800'),
+																											thumbnailUrl: Uri.parse('https://picsum.photos/200')
+																										),
+																										board: 'tv',
+																										replyCount: 300,
+																										imageCount: 30,
+																										id: 99999,
+																										time: DateTime.now().subtract(const Duration(minutes: 5)),
+																										title: 'Example thread',
+																										isSticky: false,
+																										posts: [
+																											Post(
+																												board: 'tv',
+																												text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ',
+																												name: 'Anonymous',
+																												time: DateTime.now().subtract(const Duration(minutes: 5)),
+																												threadId: 99999,
+																												id: 99999,
+																												spanFormat: PostSpanFormat.chan4
+																											)
+																										]
+																									)
+																								)
+																							)
+																						),
+																						Positioned(
+																							top: size.height - 20,
+																							left: size.width - 20,
+																							width: 40,
+																							height: 40,
+																							child: Container(
+																								decoration: const BoxDecoration(
+																									borderRadius: BorderRadius.all(Radius.circular(20)),
+																									color: Colors.red
+																								),
+																								child: Transform.rotate(
+																									angle: pi / -4,
+																									child: const Icon(Icons.drag_handle)
+																								)
+																							)
+																						),
+																						GestureDetector(
+																							behavior: HitTestBehavior.opaque,
+																							onPanUpdate: (details) {
+																								setDialogState(() {
+																									size += details.delta;
+																									size = Size(max(100, size.width), max(100, size.height));
+																								});
+																							},
+																							child: const SizedBox(
+																								width: double.infinity,
+																								height: double.infinity
+																							)
+																						)
+																					]
+																				)
+																			)
+																		]
+																	)
+																)
+															)
+														)
+													)
+												);
+												settings.catalogGridHeight = size.height;
+												settings.catalogGridWidth = size.width;
+											}
+										)
 									),
 									Padding(
 										padding: const EdgeInsets.all(16),
@@ -485,15 +584,13 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 					),
 					const SizedBox(height: 8),
 					Row(
-						mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+						mainAxisAlignment: MainAxisAlignment.spaceBetween,
 						children: [
-							CupertinoButton(
-								padding: EdgeInsets.zero,
+							CupertinoButton.filled(
 								child: const Text('Recalculate'),
 								onPressed: _readFilesystemInfo
 							),
-							CupertinoButton(
-								padding: EdgeInsets.zero,
+							CupertinoButton.filled(
 								child: Text(clearing ? 'Deleting...' : 'Delete all'),
 								onPressed: (folderSizes?.isEmpty ?? true) ? null : (clearing ? null : _clearCaches)
 							)
