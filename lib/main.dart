@@ -555,98 +555,95 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			);
 		}
 		else {
-			return Stack(
-				children: [
-					CupertinoTabScaffold(
-						controller: _tabController,
-						tabBar: CupertinoTabBar(
-							items: [
-								BottomNavigationBarItem(
-									icon: AnimatedBuilder(
-										animation: browseCountListenable,
-										builder: (context, child) => StationaryNotifyingIcon(
-											icon: const Icon(Icons.topic),
-											primary: 0,
-											secondary: tabs.length == 1 ? 0 : tabs.asMap().entries.where((x) => x.key != activeBrowserTab.value).map((x) => x.value.item3.value).reduce((a, b) => a + b)
-										)
-									),
-									label: 'Browse'
-								),
-								BottomNavigationBarItem(
-									icon: Builder(
-										builder: (context) => NotifyingIcon(
-											icon: const Icon(Icons.bookmark),
-											primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
-											secondaryCount: context.watch<SavedThreadWatcher>().unseenCount,
-											topOffset: 10
-										)
-									),
-									label: 'Saved'
-								),
-								const BottomNavigationBarItem(
-									icon: Icon(Icons.history),
-									label: 'History'
-								),
-								const BottomNavigationBarItem(
-									icon: Icon(Icons.search),
-									label: 'Search'
-								),
-								BottomNavigationBarItem(
-									icon: NotifyingIcon(
-										icon: const Icon(Icons.settings),
-										primaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0),
-										topOffset: 10
-									),
-									label: 'Settings'
+			return CupertinoTabScaffold(
+				controller: _tabController,
+				tabBar: CupertinoTabBar(
+					items: [
+						BottomNavigationBarItem(
+							icon: AnimatedBuilder(
+								animation: browseCountListenable,
+								builder: (context, child) => StationaryNotifyingIcon(
+									icon: const Icon(Icons.topic),
+									primary: 0,
+									secondary: (tabs.length == 1) ? 0 : tabs.asMap().entries.where((x) => x.key != activeBrowserTab.value).map((x) => x.value.item3.value).reduce((a, b) => a + b)
 								)
-							],
-							onTap: (index) {
-								if (index == tabletIndex && index == 0) {
-									setState(() {
-										showTabPopup = !showTabPopup;
-									});
-								}
-								else {
-									setState(() {
-										tabletIndex = index;
-										showTabPopup = false;
-									});
-								}
-							}
+							),
+							label: 'Browse'
 						),
-						tabBuilder: (context, index) => CupertinoTabView(
-							builder: (context) => AnimatedBuilder(
+						BottomNavigationBarItem(
+							icon: Builder(
+								builder: (context) => NotifyingIcon(
+									icon: const Icon(Icons.bookmark),
+									primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
+									secondaryCount: context.watch<SavedThreadWatcher>().unseenCount,
+									topOffset: 10
+								)
+							),
+							label: 'Saved'
+						),
+						const BottomNavigationBarItem(
+							icon: Icon(Icons.history),
+							label: 'History'
+						),
+						const BottomNavigationBarItem(
+							icon: Icon(Icons.search),
+							label: 'Search'
+						),
+						BottomNavigationBarItem(
+							icon: NotifyingIcon(
+								icon: const Icon(Icons.settings),
+								primaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0),
+								topOffset: 10
+							),
+							label: 'Settings'
+						)
+					],
+					onTap: (index) {
+						if (index == tabletIndex && index == 0) {
+							setState(() {
+								showTabPopup = !showTabPopup;
+							});
+						}
+						else {
+							setState(() {
+								tabletIndex = index;
+								showTabPopup = false;
+							});
+						}
+					}
+				),
+				tabBuilder: (context, index) => CupertinoTabView(
+					builder: (context) => Stack(
+						children: [
+							AnimatedBuilder(
 								animation: _tabController,
 								builder: (context, child) => _buildTab(context, index, _tabController.index == index)
-							)
-						)
-					),
-					Column(
-							mainAxisAlignment: MainAxisAlignment.end,
-							children: [
-								Expander(
-									duration: const Duration(milliseconds: 2000),
-									height: 80,
-									bottomSafe: false,
-									expanded: showTabPopup,
-									child: Container(
-										color: CupertinoTheme.of(context).barBackgroundColor,
-										child: Row(
-											children: [
-												Expanded(
-													child: _buildTabList(Axis.horizontal)
-												),
-												_buildNewTabIcon()
-											]
+							),
+							Column(
+								mainAxisAlignment: MainAxisAlignment.end,
+								children: [
+									Expander(
+										duration: const Duration(milliseconds: 2000),
+										height: 80,
+										bottomSafe: false,
+										expanded: showTabPopup,
+										child: Container(
+											color: CupertinoTheme.of(context).barBackgroundColor,
+											child: Row(
+												children: [
+													Expanded(
+														child: _buildTabList(Axis.horizontal)
+													),
+													_buildNewTabIcon()
+												]
+											)
 										)
 									)
-								),
-								const SizedBox(
-									height: 50.0
-								)
-							]
-						)
-				]
+								]
+							)
+						]
+					)
+				)
 			);
 		}
 	}
