@@ -122,7 +122,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			}
 		);
 		Future.delayed(const Duration(milliseconds: 50), () {
-			_threadStateListenable = context.watch<Persistence>().listenForPersistentThreadStateChanges(widget.thread);
+			_threadStateListenable = context.read<Persistence>().listenForPersistentThreadStateChanges(widget.thread);
 			_threadStateListenable.addListener(_onThreadStateListenableUpdate);
 		});
 		_listController.slowScrollUpdates.listen((_) {
