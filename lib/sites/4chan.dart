@@ -61,7 +61,7 @@ class Site4Chan extends ImageboardSite {
 	final String imageUrl;
 	final String captchaKey;
 	List<ImageboardBoard>? _boards;
-	final unescape = HtmlUnescape();
+	static final unescape = HtmlUnescape();
 	final Map<String, _ThreadCacheEntry> _threadCache = {};
 	final Map<String, _CatalogCache> _catalogCaches = {};
 	final _lastActionTime = {
@@ -143,7 +143,7 @@ class Site4Chan extends ImageboardSite {
 					elements.add(PostSpoilerSpan(makeSpan(board, threadId, node.innerHtml), spoilerSpanId++));
 				}
 				else if (node.localName == 'pre') {
-					elements.add(PostCodeSpan(node.innerHtml.replaceFirst(RegExp(r'<br>$'), '').replaceAll('<br>', '\n')));
+					elements.add(PostCodeSpan(unescape.convert(node.innerHtml.replaceFirst(RegExp(r'<br>$'), '').replaceAll('<br>', '\n'))));
 				}
 				else {
 					elements.addAll(parsePlaintext(node.text));
