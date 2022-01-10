@@ -458,7 +458,7 @@ class SettingsPage extends StatelessWidget {
 									),
 									Padding(
 										padding: const EdgeInsets.all(16),
-										child: Text('Two-pane split: ${firstPanePercent.toStringAsFixed(0)}% catalog, ${(100 - firstPanePercent).toStringAsFixed(0)}% board'),
+										child: Text('Two-pane split: ${firstPanePercent.toStringAsFixed(0)}% catalog, ${(100 - firstPanePercent).toStringAsFixed(0)}% thread'),
 									),
 									CupertinoSlider(
 										min: 1,
