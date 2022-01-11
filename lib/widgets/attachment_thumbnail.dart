@@ -2,6 +2,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/rotating_image_provider.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:provider/provider.dart';
@@ -72,7 +73,16 @@ class AttachmentThumbnail extends StatelessWidget {
 			fit: fit,
 			gaplessPlayback: gaplessPlayback,
 			loadStateChanged: (loadstate) {
-				if (loadstate.extendedImageLoadState == LoadState.failed) {
+				if (loadstate.extendedImageLoadState == LoadState.loading) {
+					return SizedBox(
+						width: width,
+						height: height,
+						child: const Center(
+							child: CupertinoActivityIndicator()
+						)
+					);
+				}
+				else if (loadstate.extendedImageLoadState == LoadState.failed) {
 					onLoadError?.call(loadstate.lastException, loadstate.lastStack);
 					return SizedBox(
 						width: width,
