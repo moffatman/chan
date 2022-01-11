@@ -24,7 +24,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class SettingsPage extends StatelessWidget {
+	final Persistence realPersistence;
 	const SettingsPage({
+		required this.realPersistence,
 		Key? key
 	}) : super(key: key);
 
@@ -478,7 +480,9 @@ class SettingsPage extends StatelessWidget {
 										padding: EdgeInsets.only(top: 16, left: 16),
 										child: Text('Cached threads and history')
 									),
-									const SettingsThreadsPanel(),
+									SettingsThreadsPanel(
+										persistence: realPersistence
+									),
 									CupertinoButton(
 										child: const Text('Clear API cookies'),
 										onPressed: () {
@@ -603,16 +607,18 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 }
 
 class SettingsThreadsPanel extends StatelessWidget {
+	final Persistence persistence;
 	const SettingsThreadsPanel({
+		required this.persistence,
 		Key? key
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
 		return ValueListenableBuilder(
-			valueListenable: context.watch<Persistence>().threadStateBox.listenable(),
+			valueListenable: persistence.threadStateBox.listenable(),
 			builder: (context, Box<PersistentThreadState> threadStateBox, child) {
-				final oldThreadRows =[0, 7, 14, 30, 60, 90, 180].map((days) {
+				final oldThreadRows = [0, 7, 14, 30, 60, 90, 180].map((days) {
 					final cutoff = DateTime.now().subtract(Duration(days: days));
 					final oldThreads = threadStateBox.values.where((state) {
 						return (state.savedTime == null) && state.lastOpenedTime.compareTo(cutoff).isNegative;

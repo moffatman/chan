@@ -298,7 +298,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						child: Navigator(
 							initialRoute: '/',
 							onGenerateRoute: (settings) => FullWidthCupertinoPageRoute(
-								builder: (context) => const SettingsPage()
+								builder: (_) => SettingsPage(
+									realPersistence: persistence
+								)
 							)
 						)
 					)
