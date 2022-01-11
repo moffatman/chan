@@ -1,3 +1,5 @@
+const defaultPatternFields = ['subject', 'name', 'filename', 'text'];
+
 enum FilterResultType {
 	hide,
 	highlight,
@@ -34,7 +36,7 @@ class CustomFilter implements Filter {
 	CustomFilter({
 		required this.configuration,
 		required this.pattern,
-		this.patternFields = const ['subject', 'name', 'filename', 'text'],
+		this.patternFields = defaultPatternFields,
 		this.outputType = FilterResultType.hide
 	});
 	@override
@@ -76,7 +78,9 @@ class SearchFilter implements Filter {
 	SearchFilter(this.text);
 	@override
 	FilterResult? filter(Filterable item) {
-		return (item.getFilterFieldText('text') ?? '').toLowerCase().contains(text) ? null : FilterResult(FilterResultType.hide, 'Search for "$text"');
+		return defaultPatternFields.map((field) {
+			return item.getFilterFieldText(field) ?? '';
+		}).join(' ').toLowerCase().contains(text) ? null : FilterResult(FilterResultType.hide, 'Search for "$text"');
 	}
 }
 
