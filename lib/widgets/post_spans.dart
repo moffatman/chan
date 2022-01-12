@@ -195,7 +195,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		return TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
-				color: options.overrideTextColor ?? (expandedImmediatelyAbove ? Colors.pink : CupertinoTheme.of(context).textTheme.actionTextStyle.color),
+				color: options.overrideTextColor ?? (expandedImmediatelyAbove ? CupertinoTheme.of(context).textTheme.actionTextStyle.color?.towardsWhite(0.2) : CupertinoTheme.of(context).textTheme.actionTextStyle.color),
 				decoration: TextDecoration.underline,
 				decorationStyle: expandedSomewhereAbove ? TextDecorationStyle.dashed : null
 			),

@@ -218,6 +218,17 @@ extension ReduceBrightness on CupertinoThemeData {
 	}
 }
 
+extension OffsetBrightness on Color {
+	Color towardsWhite(double factor) {
+		return Color.fromRGBO(
+			red + ((255 - red) * factor).round(),
+			green + ((255 - green) * factor).round(),
+			blue + ((255 - blue) * factor).round(),
+			opacity
+		);
+	}
+}
+
 class FirstBuildDetector extends StatefulWidget {
 	final Object identifier;
 	final Widget Function(BuildContext, bool) builder;
