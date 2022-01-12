@@ -52,11 +52,12 @@ class _PostsPageState extends State<PostsPage> {
 			}
 		}
 		final attachments = replies.expand<Attachment>((a) => a.attachment == null ? [] : [a.attachment!]).toList();
+		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.thread.posts.tryFirstWhere((p) => p.id == widget.postIdForBackground);
 		return ChangeNotifierProvider.value(
 				value: widget.zone,
 				child: OverscrollModalPage(
-					background: widget.postIdForBackground == null ? null : PostRow(
-						post: widget.zone.thread.posts.firstWhere((p) => p.id == widget.postIdForBackground),
+					background: postForBackground == null ? null : PostRow(
+						post: postForBackground,
 						isSelected: true
 					),
 					child: Builder(
