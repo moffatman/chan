@@ -51,6 +51,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _playingBeforeLongPress = false;
 	bool _seeking = false;
 	String? _overlayText;
+	bool _isDisposed = false;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -193,10 +194,22 @@ class AttachmentViewerController extends ChangeNotifier {
 				final result = await _ongoingConversion!.result;
 				_ongoingConversion = null;
 				_videoPlayerController = VideoPlayerController.file(result.file, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+				if (_isDisposed) {
+					return;
+				}
 				await _videoPlayerController!.initialize();
+				if (_isDisposed) {
+					return;
+				}
 				await _videoPlayerController!.setLooping(true);
+				if (_isDisposed) {
+					return;
+				}
 				if (isPrimary) {
 					await _videoPlayerController!.play();
+				}
+				if (_isDisposed) {
+					return;
 				}
 				_cachedFile = result.file;
 				_hasAudio = result.hasAudio;
@@ -205,6 +218,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 		catch (e, st) {
 			_errorMessage = e.toString();
+			print(e);
 			print(st);
 			notifyListeners();
 		}
@@ -291,9 +305,10 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	@override
 	void dispose() {
+		_isDisposed = true;
 		super.dispose();
 		_ongoingConversion?.cancel();
-		videoPlayerController?.dispose();
+		videoPlayerController?.pause().then((_) => videoPlayerController?.dispose());
 		_longPressFactorStream.close();
 	}
 }
