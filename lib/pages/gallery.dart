@@ -95,7 +95,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		pageController = ExtendedPageController(keepPage: true, initialPage: currentIndex);
 		pageController.addListener(_onPageControllerUpdate);
 		_scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
-		_getController(widget.attachments[currentIndex]).loadFullAttachment(context);
+		final attachment = widget.attachments[currentIndex];
+		_getController(attachment).loadFullAttachment(context).then((_) => _handleAttachmentLoaded(attachment));
 	}
 
 	@override
@@ -121,7 +122,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		if (widget.initialAttachment != old.initialAttachment) {
 			currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
 			if (context.read<EffectiveSettings>().autoloadAttachments) {
-				_getController(widget.attachments[currentIndex]).loadFullAttachment(context);
+				final attachment = widget.attachments[currentIndex];
+				_getController(attachment).loadFullAttachment(context).then((_) => _handleAttachmentLoaded(attachment));
 			}
 		}
 	}
@@ -180,7 +182,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
 		if (context.read<EffectiveSettings>().autoloadAttachments) {
-			_getController(attachment).loadFullAttachment(context);
+			_getController(attachment).loadFullAttachment(context).then((_) => _handleAttachmentLoaded(attachment));
 		}
 		if (milliseconds == 0) {
 			pageController.jumpToPage(index);
@@ -234,12 +236,14 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		if (!_animatingNow) {
 			final settings = context.read<EffectiveSettings>();
 			if (settings.autoloadAttachments) {
-				_getController(attachment).loadFullAttachment(context);
-				if (index > 0 ) {
-					_getController(widget.attachments[index - 1]).preloadFullAttachment(context);
+				_getController(attachment).loadFullAttachment(context).then((_) => _handleAttachmentLoaded(attachment));
+				if (index > 0) {
+					final previousAttachment = widget.attachments[index - 1];
+					_getController(previousAttachment).preloadFullAttachment(context).then((_) => _handleAttachmentLoaded(previousAttachment));
 				}
 				if (index < (widget.attachments.length - 1)) {
-					_getController(widget.attachments[index + 1]).preloadFullAttachment(context);
+					final nextAttachment = widget.attachments[index + 1];
+					_getController(nextAttachment).preloadFullAttachment(context).then((_) => _handleAttachmentLoaded(nextAttachment));
 				}
 			}
 			if (settings.autoRotateInGallery && _rotationAppropriate(attachment) && _getController(attachment).quarterTurns == 0) {
@@ -275,6 +279,13 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		showChrome = !showChrome;
 		_updateOverlays(showChrome);
 		setState(() {});
+	}
+
+	void _handleAttachmentLoaded(Attachment attachment) {
+		if (attachment == currentAttachment && attachment.type == AttachmentType.webm && scrollSheetController != null) {
+			scrollSheetChild = _buildScrollSheetChild(scrollSheetController!);
+			setState(() {});
+		}
 	}
 
 	double _dragPopFactor(Offset offset, Size size) {
@@ -499,7 +510,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																	semanticParentIds: widget.semanticParentIds
 																),
 																onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
-																	_getController(attachment).loadFullAttachment(context);
+																	_getController(attachment).loadFullAttachment(context).then((_) => _handleAttachmentLoaded(attachment));
 																}
 															);
 														}

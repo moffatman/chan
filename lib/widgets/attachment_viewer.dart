@@ -233,7 +233,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<void> reloadFullAttachment(BuildContext context) => _loadFullAttachment(context, false, force: true);
 
-	void preloadFullAttachment(BuildContext context) => _loadFullAttachment(context, true);
+	Future<void> preloadFullAttachment(BuildContext context) => _loadFullAttachment(context, true);
 
 	Future<void> rotate() async {
 		_quarterTurns = 1;
