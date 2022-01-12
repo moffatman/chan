@@ -144,6 +144,11 @@ class AttachmentViewerController extends ChangeNotifier {
 		throw HTTPStatusException(result.statusCode!);
 	}
 
+	void _onConversionProgressUpdate() {
+		videoLoadingProgress.value = _ongoingConversion!.progress.value;
+		notifyListeners();
+	}
+
 	Future<void> _loadFullAttachment(BuildContext context, bool startImageDownload, {bool force = false}) async {
 		if (attachment.type == AttachmentType.image && goodImageSource != null && !force) {
 			return;
@@ -186,10 +191,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			else if (attachment.type == AttachmentType.webm) {
 				final url = await _getGoodSource(context, attachment);
 				_ongoingConversion = MediaConversion.toMp4(url);
-				_ongoingConversion!.progress.addListener(() {
-					videoLoadingProgress.value = _ongoingConversion!.progress.value;
-					notifyListeners();
-				});
+				_ongoingConversion!.progress.addListener(_onConversionProgressUpdate);
 				_ongoingConversion!.start();
 				final result = await _ongoingConversion!.result;
 				_ongoingConversion = null;
@@ -307,6 +309,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	void dispose() {
 		_isDisposed = true;
 		super.dispose();
+		_ongoingConversion?.progress.removeListener(_onConversionProgressUpdate);
 		_ongoingConversion?.cancel();
 		videoPlayerController?.pause().then((_) => videoPlayerController?.dispose());
 		_longPressFactorStream.close();
