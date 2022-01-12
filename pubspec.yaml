@@ -120,4 +120,8 @@ dependency_overrides:
   extended_image_library:
     git: 
       url: https://github.com/moffatman/extended_image_library.git
-
+  ffmpeg_kit_flutter_full_gpl:
+    git:
+      url: https://github.com/moffatman/ffmpeg-kit.git
+      ref: full_gpl_temp
+      path: flutter/flutter/
