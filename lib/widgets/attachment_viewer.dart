@@ -391,18 +391,28 @@ class AttachmentViewer extends StatelessWidget {
 			handleLoadingProgress: true,
 			onDoubleTap: (state) {
 				final old = state.gestureDetails!;
-				double autozoomScale = 2.0;
-				if (attachment.width != null && attachment.height != null) {
-					double screenAspectRatio = MediaQuery.of(context).size.width / MediaQuery.of(context).size.height;
-					double attachmentAspectRatio = attachment.width! / attachment.height!;
-					double fillZoomScale = screenAspectRatio / attachmentAspectRatio;
-					autozoomScale = max(autozoomScale, max(fillZoomScale, 1 / fillZoomScale));
+				if ((old.totalScale ?? 1) > 1) {
+					state.gestureDetails = GestureDetails(
+						offset: Offset.zero,
+						totalScale: 1,
+						actionType: ActionType.zoom
+					);
 				}
-				state.gestureDetails = GestureDetails(
-					offset: state.pointerDownPosition!.scale(old.layoutRect!.width / MediaQuery.of(context).size.width, old.layoutRect!.height / MediaQuery.of(context).size.height) * -1 * autozoomScale,
-					totalScale: (old.totalScale ?? 1) > 1 ? 1 : autozoomScale,
-					actionType: ActionType.zoom
-				);
+				else {
+					double autozoomScale = 2.0;
+					if (attachment.width != null && attachment.height != null) {
+						double screenAspectRatio = MediaQuery.of(context).size.width / MediaQuery.of(context).size.height;
+						double attachmentAspectRatio = attachment.width! / attachment.height!;
+						double fillZoomScale = screenAspectRatio / attachmentAspectRatio;
+						autozoomScale = max(autozoomScale, max(fillZoomScale, 1 / fillZoomScale));
+					}
+					final center = Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2);
+					state.gestureDetails = GestureDetails(
+						offset: (state.pointerDownPosition! * autozoomScale - center).scale(-1, -1),
+						totalScale: autozoomScale,
+						actionType: ActionType.zoom
+					);
+				}
 			},
 			loadStateChanged: (loadstate) {
 				// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback
