@@ -66,6 +66,7 @@ class ThreadRow extends StatelessWidget {
 		return ValueListenableBuilder(
 			valueListenable: context.watch<Persistence>().listenForPersistentThreadStateChanges(thread.identifier),
 			builder: (context, box, child) {
+				final settings = context.watch<EffectiveSettings>();
 				final threadState = context.watch<Persistence>().getThreadStateIfExists(thread.identifier);
 				final _thread = threadState?.thread ?? thread;
 				final int latestReplyCount = max(thread.replyCount, _thread.replyCount);
@@ -134,7 +135,7 @@ class ThreadRow extends StatelessWidget {
 									]
 								)
 							),
-							FittedBox(
+							if (settings.showImageCountInCatalog) FittedBox(
 								fit: BoxFit.contain,
 								child: Row(
 									mainAxisSize: MainAxisSize.min,
@@ -214,7 +215,7 @@ class ThreadRow extends StatelessWidget {
 																	TextSpan(
 																		children: [
 																			if (_thread.title != null) TextSpan(
-																				text: context.read<EffectiveSettings>().filterProfanity(_thread.title!) + '\n',
+																				text: settings.filterProfanity(_thread.title!) + '\n',
 																				style: const TextStyle(fontWeight: FontWeight.bold)
 																			),
 																			_thread.posts[0].span.build(ctx, PostSpanRenderOptions()),
@@ -243,7 +244,7 @@ class ThreadRow extends StatelessWidget {
 									crossAxisAlignment: CrossAxisAlignment.start,
 									mainAxisSize: MainAxisSize.max,
 									children: [
-										if (_thread.attachment != null && context.watch<EffectiveSettings>().showImages(context, _thread.board)) Column(
+										if (_thread.attachment != null && settings.showImages(context, _thread.board)) Column(
 											mainAxisSize: MainAxisSize.min,
 											children: [
 												Flexible(
@@ -316,7 +317,7 @@ class ThreadRow extends StatelessWidget {
 																		TextSpan(
 																			children: [
 																				TextSpan(
-																					text: context.read<EffectiveSettings>().filterProfanity(_thread.posts[0].name),
+																					text: settings.filterProfanity(_thread.posts[0].name),
 																					style: const TextStyle(fontWeight: FontWeight.w600)
 																				),
 																				const TextSpan(text: ' '),
@@ -345,7 +346,7 @@ class ThreadRow extends StatelessWidget {
 																			]
 																		),
 																		if (_thread.title != null) TextSpan(
-																			text: context.read<EffectiveSettings>().filterProfanity(_thread.title!) + '\n',
+																			text: settings.filterProfanity(_thread.title!) + '\n',
 																			style: const TextStyle(fontWeight: FontWeight.bold)
 																		),
 																		_thread.posts[0].span.build(ctx, PostSpanRenderOptions()),

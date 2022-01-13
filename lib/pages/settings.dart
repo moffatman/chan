@@ -29,6 +29,43 @@ class SettingsPage extends StatelessWidget {
 		Key? key
 	}) : super(key: key);
 
+	Widget _buildFakeThreadRow({bool contentFocus = true}) {
+		return ThreadRow(
+			contentFocus: contentFocus,
+			isSelected: false,
+			thread: Thread(
+				attachment: Attachment(
+					type: AttachmentType.image,
+					board: 'tv',
+					id: 99999,
+					ext: '.png',
+					filename: 'example',
+					md5: '',
+					url: Uri.parse('https://picsum.photos/800'),
+					thumbnailUrl: Uri.parse('https://picsum.photos/200')
+				),
+				board: 'tv',
+				replyCount: 300,
+				imageCount: 30,
+				id: 99999,
+				time: DateTime.now().subtract(const Duration(minutes: 5)),
+				title: 'Example thread',
+				isSticky: false,
+				posts: [
+					Post(
+						board: 'tv',
+						text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ',
+						name: 'Anonymous',
+						time: DateTime.now().subtract(const Duration(minutes: 5)),
+						threadId: 99999,
+						id: 99999,
+						spanFormat: PostSpanFormat.chan4
+					)
+				]
+			)
+		);
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
@@ -324,9 +361,8 @@ class SettingsPage extends StatelessWidget {
 												settings.useCatalogGrid = newValue;
 											}
 										),
-										Container(
-											padding: const EdgeInsets.all(16),
-											alignment: Alignment.center,
+										const SizedBox(height: 16),
+										Center(
 											child: CupertinoButton.filled(
 												child: const Text('Edit catalog grid item size'),
 												onPressed: () async {
@@ -434,6 +470,54 @@ class SettingsPage extends StatelessWidget {
 											)
 										),
 										const SizedBox(height: 16),
+										Center(
+											child: CupertinoButton.filled(
+												child: const Text('Edit catalog item details'),
+												onPressed: () async {
+													await showCupertinoModalPopup(
+														context: context,
+														builder: (_context) => StatefulBuilder(
+															builder: (context, setDialogState) => CupertinoActionSheet(
+																title: const Text('Edit catalog item details'),
+																actions: [
+																	CupertinoButton(
+																		child: const Text('Close'),
+																		onPressed: () => Navigator.pop(_context)
+																	)
+																],
+																message: DefaultTextStyle(
+																	style: DefaultTextStyle.of(context).style,
+																	child: Column(
+																		children: [
+																			_buildFakeThreadRow(contentFocus: false),
+																			const SizedBox(height: 16),
+																			Align(
+																				alignment: Alignment.topLeft,
+																				child: SizedBox.fromSize(
+																					size: Size(settings.catalogGridWidth, settings.catalogGridHeight),
+																					child: _buildFakeThreadRow()
+																				)
+																			),
+																			Row(
+																				children: [
+																					const Text('Show image count'),
+																					const Spacer(),
+																					CupertinoSwitch(
+																						value: settings.showImageCountInCatalog,
+																						onChanged: (d) => settings.showImageCountInCatalog = d
+																					)
+																				]
+																			)
+																		]
+																	)
+																)
+															)
+														)
+													);
+												}
+											)
+										),
+										const SizedBox(height: 32),
 										Text('Two-pane breakpoint: ${settings.twoPaneBreakpoint.round()} pixels'),
 										Padding(
 											padding: const EdgeInsets.all(16),
