@@ -34,12 +34,12 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		super.initState();
 		boards = context.read<Persistence>().boards.values.toList();
 		scrollController.addListener(_onScroll);
-		context.read<ImageboardSite>().getBoards().then((b) => setState(() {
-			boards = b;
-			_filteredBoards = b.toList();
+		final settings = context.read<EffectiveSettings>();
+		context.read<ImageboardSite>().getBoards().then((freshBoards) => setState(() {
+			boards = freshBoards;
+			_filteredBoards = freshBoards.where((b) => settings.showBoard(context, b.name)).toList();
 			_sortByFavourite();
 		}));
-		final settings = context.read<EffectiveSettings>();
 		_filteredBoards = boards.where((b) => settings.showBoard(context, b.name)).toList();
 		_sortByFavourite();
 	}
