@@ -55,12 +55,18 @@ class _ThreadPageState extends State<ThreadPage> {
 	bool _unnaturallyScrolling = false;
 	late Listenable _threadStateListenable;
 	Thread? lastThread;
+	int lastHiddenPostIdsLength = 0;
+	int lastPostsMarkedAsYouLength = 0;
 
 	void _onThreadStateListenableUpdate() {
-		if (persistentState.thread != lastThread) {
+		if (persistentState.thread != lastThread ||
+				persistentState.hiddenPostIds.length != lastHiddenPostIdsLength || 
+				persistentState.postsMarkedAsYou.length != lastPostsMarkedAsYouLength) {
 			setState(() {});
 		}
 		lastThread = persistentState.thread;
+		lastHiddenPostIdsLength = persistentState.hiddenPostIds.length;
+		lastPostsMarkedAsYouLength = persistentState.postsMarkedAsYou.length;
 	}
 
 	Thread get _nullThread => Thread(
