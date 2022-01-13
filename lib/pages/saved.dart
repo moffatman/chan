@@ -310,58 +310,6 @@ class _SavedPageState extends State<SavedPage> {
 						),
 						pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
 					)
-				),
-				MultiMasterPane<SavedAttachment>(
-					title: const Text('Saved Attachments'),
-					icon: Icons.image,
-					masterBuilder: (context, selected, setter) => AnimatedBuilder(
-						animation: persistence.savedAttachmentsNotifier,
-						builder: (context, child) {
-							final list = persistence.savedAttachments.values.toList();
-							list.sort((a, b) => b.savedTime.compareTo(a.savedTime));
-							return GridView.builder(
-								itemCount: list.length,
-								itemBuilder: (context, i) {
-									return GestureDetector(
-										child: Container(
-											decoration: BoxDecoration(
-												color: Colors.transparent,
-												borderRadius: const BorderRadius.all(Radius.circular(4)),
-												border: Border.all(color: list[i] == selected ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
-											),
-											margin: const EdgeInsets.all(4),
-											child: Hero(
-												tag: AttachmentSemanticLocation(
-													attachment: list[i].attachment,
-													semanticParents: [-5]
-												),
-												child: SavedAttachmentThumbnail(
-													file: list[i].file,
-													fit: BoxFit.cover
-												)
-											)
-										),
-										onTap: () => setter(list[i])
-									);
-								},
-								gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-									crossAxisCount: 4
-								)
-							);
-						}
-					),
-					detailBuilder: (selectedValue, poppedOut) => BuiltDetailPane(
-						widget: selectedValue == null ? _placeholder('Select an attachment') : GalleryPage(
-							initialAttachment: selectedValue.attachment,
-							attachments: [selectedValue.attachment],
-							overrideSources: {
-								selectedValue.attachment: selectedValue.file.uri
-							},
-							semanticParentIds: poppedOut ? [-5] : [-6],
-							allowScroll: poppedOut
-						),
-						pageRouteBuilder: transparentPageRouteBuilder
-					)
 				)
 			]
 		);

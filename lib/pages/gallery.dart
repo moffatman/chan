@@ -10,6 +10,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/status_bar.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
@@ -22,7 +23,9 @@ import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:home_indicator/home_indicator.dart';
+import 'package:photo_manager/photo_manager.dart';
 
+const deviceGalleryAlbumName = 'Chance';
 const double _thumbnailSize = 60;
 
 class GalleryLeftIntent extends Intent {
@@ -84,6 +87,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	final _shouldShowPosition = ValueNotifier<bool>(false);
 	Widget? scrollSheetChild;
 	ScrollController? scrollSheetController;
+	final Set<Attachment> _downloadedAttachments = {};
 
 	@override
 	void initState() {
@@ -261,7 +265,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		return (widget.overrideSources[attachment] ?? _getController(attachment).cachedFile) != null;
 	}
 
-	Future<void> share(Attachment attachment) async {
+	Future<File> _moveToShareCache(Attachment attachment) async {
 		final systemTempDirectory = Persistence.temporaryDirectory;
 		final shareDirectory = await (Directory(systemTempDirectory.path + '/sharecache')).create(recursive: true);
 		final newFilename = currentAttachment.id.toString() + currentAttachment.ext.replaceFirst('webm', 'mp4');
@@ -269,10 +273,23 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		if (widget.overrideSources[attachment] != null) {
 			originalFile = File(widget.overrideSources[attachment]!.path);
 		}
-		final renamedFile = await originalFile!.copy(shareDirectory.path.toString() + '/' + newFilename);
+		return await originalFile!.copy(shareDirectory.path.toString() + '/' + newFilename);
+	}
+
+	Future<void> share(Attachment attachment) async {
 		final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 		final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-		await Share.shareFiles([renamedFile.path], subject: currentAttachment.filename, sharePositionOrigin: (offset != null && size != null) ? offset & size : null);
+		await Share.shareFiles([(await _moveToShareCache(attachment)).path], subject: currentAttachment.filename, sharePositionOrigin: (offset != null && size != null) ? offset & size : null);
+	}
+
+	Future<void> download(Attachment attachment) async {
+		final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common, filterOption: FilterOptionGroup(containsEmptyAlbum: true));
+		AssetPathEntity? album = existingAlbums.tryFirstWhere((album) => album.name == deviceGalleryAlbumName);
+		album ??= await PhotoManager.editor.iOS.createAlbum('Chance');
+		final asAsset = await PhotoManager.editor.saveImageWithPath((await _moveToShareCache(attachment)).path);
+		await PhotoManager.editor.copyAssetToPath(asset: asAsset!, pathEntity: album!);
+		_downloadedAttachments.add(attachment);
+		setState(() {});
 	}
 
 	void _toggleChrome() {
@@ -410,23 +427,10 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 						trailing: Row(
 							mainAxisSize: MainAxisSize.min,
 							children: [
-								AnimatedBuilder(
-									animation: context.watch<Persistence>().savedAttachmentsNotifier,
-									builder: (context, child) {
-										final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment) != null;
-										return CupertinoButton(
-											padding: EdgeInsets.zero,
-											child: Icon(currentlySaved ? Icons.bookmark : Icons.bookmark_outline),
-											onPressed: canShare(currentAttachment) ? () {
-												if (currentlySaved) {
-													context.read<Persistence>().deleteSavedAttachment(currentAttachment);
-												}
-												else {
-													context.read<Persistence>().saveAttachment(currentAttachment, currentController.cachedFile!);
-												}
-											} : null
-										);
-									}
+								CupertinoButton(
+									padding: EdgeInsets.zero,
+									child: const Icon(Icons.download),
+									onPressed: canShare(currentAttachment) && !_downloadedAttachments.contains(currentAttachment) ? () => download(currentAttachment) : null
 								),
 								CupertinoButton(
 									key: _shareButtonKey,

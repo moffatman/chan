@@ -58,5 +58,7 @@
 		</array>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Photo library modification permission is needed to save images directly</string>
 	</dict>
 </plist>
