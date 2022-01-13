@@ -66,7 +66,7 @@ class PostRow extends StatelessWidget {
 		}
 		if (zone.threadState?.replyIdsToYou?.contains(post.id) ?? false) {
 			border = Border(
-				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color ?? const Color.fromARGB(255, 90, 30, 30), width: 10)
+				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color?.towardsBlack(0.5) ?? const Color.fromARGB(255, 90, 30, 30), width: 10)
 			);
 		}
 		openReplies() {
@@ -160,7 +160,7 @@ class PostRow extends StatelessWidget {
 										children: [
 											TextSpan(
 												text: context.read<EffectiveSettings>().filterProfanity(_post.name) + (isYourPost ? ' (You)' : ''),
-												style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? Colors.red : null)
+												style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
 											),
 											if (_post.posterId != null) IDSpan(
 												id: _post.posterId!,

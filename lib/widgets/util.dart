@@ -227,6 +227,14 @@ extension OffsetBrightness on Color {
 			opacity
 		);
 	}
+	Color towardsBlack(double factor) {
+		return Color.fromRGBO(
+			(red * (1 - factor)).round(),
+			(green * (1 - factor)).round(),
+			(blue * (1 - factor)).round(),
+			opacity
+		);
+	}
 }
 
 class FirstBuildDetector extends StatefulWidget {
