@@ -263,7 +263,7 @@ class _BoardPageState extends State<BoardPage> {
 									stream: _listController.slowScrollUpdates,
 									builder: (context, _) => (_listController.firstVisibleIndex <= 0) ? Container() : SafeArea(
 										child: Align(
-											alignment: Alignment.bottomRight,
+											alignment: Alignment.topRight,
 											child: GestureDetector(
 												child: Container(
 													decoration: BoxDecoration(
@@ -271,7 +271,7 @@ class _BoardPageState extends State<BoardPage> {
 														borderRadius: const BorderRadius.all(Radius.circular(8))
 													),
 													padding: const EdgeInsets.all(8),
-													margin: const EdgeInsets.only(bottom: 16, right: 16),
+													margin: const EdgeInsets.only(top: 16, right: 16),
 													child: Row(
 														mainAxisSize: MainAxisSize.min,
 														children: [
