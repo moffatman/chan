@@ -745,7 +745,7 @@ class RefreshableListController<T extends Filterable> {
 			final completer = Completer<void>();
 			double estimate = (_estimateOffset(targetIndex) ?? scrollController!.position.maxScrollExtent) - topOffset!;
 			_itemCacheCallbacks[Tuple2(targetIndex, estimate > scrollController!.position.pixels)] = completer;
-			final delay = Duration(milliseconds: min(300, (estimate - scrollController!.position.pixels).abs() ~/ 100));
+			final delay = Duration(milliseconds: min(300, max(1, (estimate - scrollController!.position.pixels).abs() ~/ 100)));
 			scrollController!.animateTo(
 				estimate,
 				duration: delay,
