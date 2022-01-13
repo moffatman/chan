@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
@@ -49,447 +48,439 @@ class SettingsPage extends StatelessWidget {
 							constraints: const BoxConstraints(
 								maxWidth: 500
 							),
-							child: Column(
-								crossAxisAlignment: CrossAxisAlignment.stretch,
-								children: [
-									const Padding(
-										padding: EdgeInsets.all(16),
-										child: Text('Development News')
-									),
-									SizedBox(
-										height: 200,
-										child: FutureBuilder<List<Thread>>(
-											future: context.read<ImageboardSite>().getCatalog('chance'),
-											builder: (context, snapshot) {
-												if (!snapshot.hasData) {
-													return const Center(
-														child: CupertinoActivityIndicator()
-													);
-												}
-												else if (snapshot.hasError) {
-													return Center(
-														child: Text(snapshot.error.toString())
-													);
-												}
-												final children = (snapshot.data ?? []).where((t) => t.isSticky).map<Widget>((thread) => GestureDetector(
-													onTap: () => Navigator.push(context, FullWidthCupertinoPageRoute(
-														builder: (context) => ThreadPage(
-															thread: thread.identifier,
-															boardSemanticId: -1,
+							child: Padding(
+								padding: const EdgeInsets.all(16),
+								child: Column(
+									crossAxisAlignment: CrossAxisAlignment.stretch,
+									children: [
+										const Text('Development News'),
+										SizedBox(
+											height: 200,
+											child: FutureBuilder<List<Thread>>(
+												future: context.read<ImageboardSite>().getCatalog('chance'),
+												builder: (context, snapshot) {
+													if (!snapshot.hasData) {
+														return const Center(
+															child: CupertinoActivityIndicator()
+														);
+													}
+													else if (snapshot.hasError) {
+														return Center(
+															child: Text(snapshot.error.toString())
+														);
+													}
+													final children = (snapshot.data ?? []).where((t) => t.isSticky).map<Widget>((thread) => GestureDetector(
+														onTap: () => Navigator.push(context, FullWidthCupertinoPageRoute(
+															builder: (context) => ThreadPage(
+																thread: thread.identifier,
+																boardSemanticId: -1,
+															)
+														)),
+														child: ThreadRow(
+															thread: thread,
+															isSelected: false
 														)
-													)),
-													child: ThreadRow(
-														thread: thread,
-														isSelected: false
-													)
-												)).toList();
-												if (children.isEmpty) {
-													children.add(const Padding(
-														padding: EdgeInsets.all(16),
-														child: Center(
+													)).toList();
+													if (children.isEmpty) {
+														children.add(const Center(
 															child: Text('No current news', style: TextStyle(color: Colors.grey))
+														));
+													}
+													children.add(const SizedBox(height: 16));
+													children.add(Center(
+														child: CupertinoButton.filled(
+															child: const Text('See more discussion'),
+															onPressed: () => Navigator.push(context, FullWidthCupertinoPageRoute(
+																builder: (context) => BoardPage(
+																	initialBoard: ImageboardBoard(
+																		name: 'chance',
+																		title: 'Chance - Imageboard Browser',
+																		isWorksafe: true,
+																		webmAudioAllowed: false
+																	),
+																	allowChangingBoard: false,
+																	semanticId: -1
+																)
+															))
 														)
 													));
+													return ListView(
+														physics: const BouncingScrollPhysics(),
+														children: children
+													);
 												}
-												children.add(const SizedBox(height: 8));
-												children.add(CupertinoButton.filled(
-													child: const Text('See more discussion'),
-													onPressed: () => Navigator.push(context, FullWidthCupertinoPageRoute(
-														builder: (context) => BoardPage(
-															initialBoard: ImageboardBoard(
-																name: 'chance',
-																title: 'Chance - Imageboard Browser',
-																isWorksafe: true,
-																webmAudioAllowed: false
-															),
-															allowChangingBoard: false,
-															semanticId: -1
-														)
-													))
-												));
-												return ListView(
-													physics: const BouncingScrollPhysics(),
-													children: children
-												);
-											}
-										)
-									),
-									const Padding(
-										padding: EdgeInsets.all(16),
-										child: Text('Content Filtering')
-									),
-									Container(
-										padding: const EdgeInsets.only(left: 16, right: 16),
-										child: Table(
-											children: {
-												'Images': settings.contentSettings.images,
-												'NSFW Boards': settings.contentSettings.nsfwBoards,
-												'NSFW Images': settings.contentSettings.nsfwImages,
-												'NSFW Text': settings.contentSettings.nsfwText
-											}.entries.map((x) => TableRow(
-												children: [
-													Text(x.key),
-													Text(x.value ? 'Allowed' : 'Blocked', textAlign: TextAlign.right)
-												]
-											)).toList()
-										)
-									),
-									Container(
-										padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
-										alignment: Alignment.center,
-										child: Wrap(
-											spacing: 16,
-											runSpacing: 16,
-											children: [
-												CupertinoButton.filled(
-													padding: const EdgeInsets.all(8),
-													child: Row(
-														mainAxisSize: MainAxisSize.min,
-														children: const [
-															Text('Synchronize '),
-															Icon(Icons.sync_rounded, size: 16)
-														]
-													),
-													onPressed: () {
-														settings.updateContentSettings();
-													}
-												),
-												CupertinoButton.filled(
-													padding: const EdgeInsets.all(8),
-													child: Row(
-														mainAxisSize: MainAxisSize.min,
-														children: const [
-															Text('Edit preferences '),
-															Icon(Icons.launch_rounded, size: 16)
-														]
-													),
-													onPressed: () => launch(settings.contentSettingsUrl, forceSafariVC: false)
-												)
-											]
-										)
-									),
-									SettingsFilterPanel(
-										initialConfiguration: settings.filterConfiguration,
-									),
-									Container(
-										padding: const EdgeInsets.all(16),
-										child: const Text('Use touchscreen layout'),
-									),
-									CupertinoSegmentedControl<bool>(
-										children: const {
-											false: Text('No'),
-											true: Text('Yes')
-										},
-										groupValue: settings.useTouchLayout,
-										onValueChanged: (newValue) {
-											settings.useTouchLayout = newValue;
-										}
-									),
-									const Padding(
-										padding: EdgeInsets.all(16),
-										child: Text('Active Theme'),
-									),
-									CupertinoSegmentedControl<ThemeSetting>(
-										children: const {
-											ThemeSetting.light: Text('Light'),
-											ThemeSetting.system: Text('Follow System'),
-											ThemeSetting.dark: Text('Dark')
-										},
-										groupValue: settings.themeSetting,
-										onValueChanged: (newValue) {
-											settings.themeSetting = newValue;
-										}
-									),
-									...[
-										Tuple3('Light Theme Colors', settings.lightTheme, defaultLightTheme),
-										Tuple3('Dark Theme Colors', settings.darkTheme, defaultDarkTheme)
-									].map((theme) => Container(
-										margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
-										padding: const EdgeInsets.only(bottom: 16),
-										decoration: BoxDecoration(
-											color: theme.item2.backgroundColor,
-											borderRadius: const BorderRadius.all(Radius.circular(8))
+											)
 										),
-										child: Column(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												Padding(
-													padding: const EdgeInsets.all(16),
-													child: Center(
-														child: Text(theme.item1, style: TextStyle(color: theme.item2.primaryColor))
+										const SizedBox(height: 24),
+										const Text('Content Filtering'),
+										const SizedBox(height: 16),
+										Padding(
+											padding: const EdgeInsets.only(left: 16, right: 16),
+											child: Table(
+												children: {
+													'Images': settings.contentSettings.images,
+													'NSFW Boards': settings.contentSettings.nsfwBoards,
+													'NSFW Images': settings.contentSettings.nsfwImages,
+													'NSFW Text': settings.contentSettings.nsfwText
+												}.entries.map((x) => TableRow(
+													children: [
+														Text(x.key),
+														Text(x.value ? 'Allowed' : 'Blocked', textAlign: TextAlign.right)
+													]
+												)).toList()
+											)
+										),
+										const SizedBox(height: 16),
+										Center(
+											child: Wrap(
+												spacing: 16,
+												runSpacing: 16,
+												children: [
+													CupertinoButton.filled(
+														padding: const EdgeInsets.all(8),
+														child: Row(
+															mainAxisSize: MainAxisSize.min,
+															children: const [
+																Text('Synchronize '),
+																Icon(Icons.sync_rounded, size: 16)
+															]
+														),
+														onPressed: () {
+															settings.updateContentSettings();
+														}
+													),
+													CupertinoButton.filled(
+														padding: const EdgeInsets.all(8),
+														child: Row(
+															mainAxisSize: MainAxisSize.min,
+															children: const [
+																Text('Edit preferences '),
+																Icon(Icons.launch_rounded, size: 16)
+															]
+														),
+														onPressed: () => launch(settings.contentSettingsUrl, forceSafariVC: false)
 													)
-												),
-												Wrap(
-													alignment: WrapAlignment.center,
-													spacing: 16,
-													runSpacing: 16,
-													children: <Tuple4<String, Color, ValueChanged<Color>, Color>>[
-														Tuple4('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c, theme.item3.primaryColor),
-														Tuple4('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c, theme.item3.secondaryColor),
-														Tuple4('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c, theme.item3.barColor),
-														Tuple4('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c, theme.item3.backgroundColor)
-													].map((color) => Column(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															Text(color.item1, style: TextStyle(color: theme.item2.primaryColor)),
-															const SizedBox(height: 16),
-															GestureDetector(
-																child: Container(
-																	decoration: BoxDecoration(
-																		borderRadius: const BorderRadius.all(Radius.circular(8)),
-																		border: Border.all(color: theme.item2.primaryColor),
-																		color: color.item2
+												]
+											)
+										),
+										const SizedBox(height: 32),
+										SettingsFilterPanel(
+											initialConfiguration: settings.filterConfiguration,
+										),
+										const SizedBox(height: 32),
+										const Text('Use touchscreen layout'),
+										const SizedBox(height: 16),
+										CupertinoSegmentedControl<bool>(
+											children: const {
+												false: Text('No'),
+												true: Text('Yes')
+											},
+											groupValue: settings.useTouchLayout,
+											onValueChanged: (newValue) {
+												settings.useTouchLayout = newValue;
+											}
+										),
+										const SizedBox(height: 32),
+										const Text('Active Theme'),
+										const SizedBox(height: 16),
+										CupertinoSegmentedControl<ThemeSetting>(
+											children: const {
+												ThemeSetting.light: Text('Light'),
+												ThemeSetting.system: Text('Follow System'),
+												ThemeSetting.dark: Text('Dark')
+											},
+											groupValue: settings.themeSetting,
+											onValueChanged: (newValue) {
+												settings.themeSetting = newValue;
+											}
+										),
+										...[
+											Tuple3('Light Theme Colors', settings.lightTheme, defaultLightTheme),
+											Tuple3('Dark Theme Colors', settings.darkTheme, defaultDarkTheme)
+										].map((theme) => Container(
+											margin: const EdgeInsets.only(top: 16),
+											padding: const EdgeInsets.only(bottom: 16),
+											decoration: BoxDecoration(
+												color: theme.item2.backgroundColor,
+												borderRadius: const BorderRadius.all(Radius.circular(8))
+											),
+											child: Column(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Padding(
+														padding: const EdgeInsets.all(16),
+														child: Center(
+															child: Text(theme.item1, style: TextStyle(color: theme.item2.primaryColor))
+														)
+													),
+													Wrap(
+														alignment: WrapAlignment.center,
+														spacing: 16,
+														runSpacing: 16,
+														children: <Tuple4<String, Color, ValueChanged<Color>, Color>>[
+															Tuple4('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c, theme.item3.primaryColor),
+															Tuple4('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c, theme.item3.secondaryColor),
+															Tuple4('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c, theme.item3.barColor),
+															Tuple4('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c, theme.item3.backgroundColor)
+														].map((color) => Column(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																Text(color.item1, style: TextStyle(color: theme.item2.primaryColor)),
+																const SizedBox(height: 16),
+																GestureDetector(
+																	child: Container(
+																		decoration: BoxDecoration(
+																			borderRadius: const BorderRadius.all(Radius.circular(8)),
+																			border: Border.all(color: theme.item2.primaryColor),
+																			color: color.item2
+																		),
+																		width: 50,
+																		height: 50
 																	),
-																	width: 50,
-																	height: 50
-																),
-																onTap: () async {
-																	await showCupertinoModalPopup(
-																		barrierDismissible: true,
-																		context: context,
-																		builder: (context) => CupertinoActionSheet(
-																			title: Text('Select ${color.item1} Color'),
-																			message: Theme(
-																				data: ThemeData(
-																					textTheme: Theme.of(context).textTheme.apply(
-																						bodyColor: CupertinoTheme.of(context).primaryColor,
-																						displayColor: CupertinoTheme.of(context).primaryColor
-																					)
-																				),
-																				child: Material(
-																					color: Colors.transparent,
-																					child: ColorPicker(
-																						pickerColor: color.item2,
-																						onColorChanged: color.item3,
-																						enableAlpha: false,
-																						portraitOnly: true,
-																						displayThumbColor: true
+																	onTap: () async {
+																		await showCupertinoModalPopup(
+																			barrierDismissible: true,
+																			context: context,
+																			builder: (context) => CupertinoActionSheet(
+																				title: Text('Select ${color.item1} Color'),
+																				message: Theme(
+																					data: ThemeData(
+																						textTheme: Theme.of(context).textTheme.apply(
+																							bodyColor: CupertinoTheme.of(context).primaryColor,
+																							displayColor: CupertinoTheme.of(context).primaryColor
+																						)
+																					),
+																					child: Material(
+																						color: Colors.transparent,
+																						child: ColorPicker(
+																							pickerColor: color.item2,
+																							onColorChanged: color.item3,
+																							enableAlpha: false,
+																							portraitOnly: true,
+																							displayThumbColor: true
+																						)
 																					)
 																				)
 																			)
-																		)
-																	);
-																	settings.handleThemesAltered();
-																}
-															),
-															Padding(
-																padding: const EdgeInsets.all(8),
-																child: CupertinoButton(
-																	padding: const EdgeInsets.all(8),
-																	color: theme.item2.primaryColor,
-																	child: Text('Reset', style: TextStyle(color: theme.item2.backgroundColor)),
-																	onPressed: () {
-																		color.item3(color.item4);
+																		);
 																		settings.handleThemesAltered();
 																	}
+																),
+																Padding(
+																	padding: const EdgeInsets.all(8),
+																	child: CupertinoButton(
+																		padding: const EdgeInsets.all(8),
+																		color: theme.item2.primaryColor,
+																		child: Text('Reset', style: TextStyle(color: theme.item2.backgroundColor)),
+																		onPressed: () {
+																			color.item3(color.item4);
+																			settings.handleThemesAltered();
+																		}
+																	)
 																)
-															)
-														]
-													)).toList()
-												)
-											]
-										)
-									)),
-									const Padding(
-										padding: EdgeInsets.all(16),
-										child: Text('Automatically load attachments'),
-									),
-									CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
-										children: const {
-											AutoloadAttachmentsSetting.always: Text('Always'),
-											AutoloadAttachmentsSetting.wifi: Text('When on Wi-Fi'),
-											AutoloadAttachmentsSetting.never: Text('Never')
-										},
-										groupValue: settings.autoloadAttachmentsSetting,
-										onValueChanged: (newValue) {
-											settings.autoloadAttachmentsSetting = newValue;
-										}
-									),
-									const Padding(
-										padding: EdgeInsets.all(16),
-										child: Text('Hide old stickied threads'),
-									),
-									CupertinoSegmentedControl<bool>(
-										children: const {
-											false: Text('No'),
-											true: Text('Yes')
-										},
-										groupValue: settings.hideOldStickiedThreads,
-										onValueChanged: (newValue) {
-											settings.hideOldStickiedThreads = newValue;
-										}
-									),
-									const Padding(
-										padding: EdgeInsets.all(16),
-										child: Text('Catalog Layout'),
-									),
-									CupertinoSegmentedControl<bool>(
-										children: const {
-											false: Text('Rows'),
-											true: Text('Grid'),
-										},
-										groupValue: settings.useCatalogGrid,
-										onValueChanged: (newValue) {
-											settings.useCatalogGrid = newValue;
-										}
-									),
-									Padding(
-										padding: const EdgeInsets.all(16),
-										child: CupertinoButton.filled(
-											child: const Text('Edit catalog grid item size'),
-											onPressed: () async {
-												Size size = Size(settings.catalogGridWidth, settings.catalogGridHeight);
-												await showCupertinoModalPopup(
-													context: context,
-													builder: (_context) => StatefulBuilder(
-														builder: (context, setDialogState) => CupertinoActionSheet(
-															title: const Text('Resize catalog grid item'),
-															actions: [
-																CupertinoButton(
-																	child: const Text('Close'),
-																	onPressed: () => Navigator.pop(_context)
-																)
-															],
-															message: DefaultTextStyle(
-																style: DefaultTextStyle.of(context).style,
-																	child: SizedBox(
-																	width: MediaQuery.of(context).size.width,
-																	height: MediaQuery.of(context).size.height - 200,
+															]
+														)).toList()
+													)
+												]
+											)
+										)),
+										const SizedBox(height: 16),
+										const Text('Automatically load attachments'),
+										const SizedBox(height: 16),
+										CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
+											children: const {
+												AutoloadAttachmentsSetting.always: Text('Always'),
+												AutoloadAttachmentsSetting.wifi: Text('When on Wi-Fi'),
+												AutoloadAttachmentsSetting.never: Text('Never')
+											},
+											groupValue: settings.autoloadAttachmentsSetting,
+											onValueChanged: (newValue) {
+												settings.autoloadAttachmentsSetting = newValue;
+											}
+										),
+										const SizedBox(height: 32),
+										const Text('Hide old stickied threads'),
+										const SizedBox(height: 16),
+										CupertinoSegmentedControl<bool>(
+											children: const {
+												false: Text('No'),
+												true: Text('Yes')
+											},
+											groupValue: settings.hideOldStickiedThreads,
+											onValueChanged: (newValue) {
+												settings.hideOldStickiedThreads = newValue;
+											}
+										),
+										const SizedBox(height: 32),
+										const Text('Catalog Layout'),
+										const SizedBox(height: 16),
+										CupertinoSegmentedControl<bool>(
+											children: const {
+												false: Text('Rows'),
+												true: Text('Grid'),
+											},
+											groupValue: settings.useCatalogGrid,
+											onValueChanged: (newValue) {
+												settings.useCatalogGrid = newValue;
+											}
+										),
+										Container(
+											padding: const EdgeInsets.all(16),
+											alignment: Alignment.center,
+											child: CupertinoButton.filled(
+												child: const Text('Edit catalog grid item size'),
+												onPressed: () async {
+													Size size = Size(settings.catalogGridWidth, settings.catalogGridHeight);
+													await showCupertinoModalPopup(
+														context: context,
+														builder: (_context) => StatefulBuilder(
+															builder: (context, setDialogState) => CupertinoActionSheet(
+																title: const Text('Resize catalog grid item'),
+																actions: [
+																	CupertinoButton(
+																		child: const Text('Close'),
+																		onPressed: () => Navigator.pop(_context)
+																	)
+																],
+																message: DefaultTextStyle(
+																	style: DefaultTextStyle.of(context).style,
 																	child: Column(
 																		children: [
-																			Text('Current size: ${size.width.round()}x${size.height.round()}'),
-																			Expanded(
-																				child: Stack(
-																					children: [
-																						Align(
-																							alignment: Alignment.topLeft,
-																							child: SizedBox.fromSize(
-																								size: size,
-																								child: ThreadRow(
-																									contentFocus: true,
-																									isSelected: false,
-																									thread: Thread(
-																										attachment: Attachment(
-																											type: AttachmentType.image,
-																											board: 'tv',
-																											id: 99999,
-																											ext: '.png',
-																											filename: 'example',
-																											md5: '',
-																											url: Uri.parse('https://picsum.photos/800'),
-																											thumbnailUrl: Uri.parse('https://picsum.photos/200')
-																										),
-																										board: 'tv',
-																										replyCount: 300,
-																										imageCount: 30,
-																										id: 99999,
-																										time: DateTime.now().subtract(const Duration(minutes: 5)),
-																										title: 'Example thread',
-																										isSticky: false,
-																										posts: [
-																											Post(
-																												board: 'tv',
-																												text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ',
-																												name: 'Anonymous',
-																												time: DateTime.now().subtract(const Duration(minutes: 5)),
-																												threadId: 99999,
-																												id: 99999,
-																												spanFormat: PostSpanFormat.chan4
-																											)
-																										]
-																									)
-																								)
-																							)
-																						),
-																						Positioned(
-																							top: size.height - 20,
-																							left: size.width - 20,
-																							width: 40,
-																							height: 40,
-																							child: Container(
-																								decoration: const BoxDecoration(
-																									borderRadius: BorderRadius.all(Radius.circular(20)),
-																									color: Colors.red
+																			SizedBox(
+																				width: 600,
+																				height: 600,
+																				child: Align(
+																					alignment: Alignment.topLeft,
+																					child: SizedBox.fromSize(
+																						size: size,
+																						child: ThreadRow(
+																							contentFocus: true,
+																							isSelected: false,
+																							thread: Thread(
+																								attachment: Attachment(
+																									type: AttachmentType.image,
+																									board: 'tv',
+																									id: 99999,
+																									ext: '.png',
+																									filename: 'example',
+																									md5: '',
+																									url: Uri.parse('https://picsum.photos/800'),
+																									thumbnailUrl: Uri.parse('https://picsum.photos/200')
 																								),
-																								child: Transform.rotate(
-																									angle: pi / -4,
-																									child: const Icon(Icons.drag_handle)
-																								)
-																							)
-																						),
-																						GestureDetector(
-																							behavior: HitTestBehavior.opaque,
-																							onPanUpdate: (details) {
-																								setDialogState(() {
-																									size += details.delta;
-																									size = Size(max(100, size.width), max(100, size.height));
-																								});
-																							},
-																							child: const SizedBox(
-																								width: double.infinity,
-																								height: double.infinity
+																								board: 'tv',
+																								replyCount: 300,
+																								imageCount: 30,
+																								id: 99999,
+																								time: DateTime.now().subtract(const Duration(minutes: 5)),
+																								title: 'Example thread',
+																								isSticky: false,
+																								posts: [
+																									Post(
+																										board: 'tv',
+																										text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ',
+																										name: 'Anonymous',
+																										time: DateTime.now().subtract(const Duration(minutes: 5)),
+																										threadId: 99999,
+																										id: 99999,
+																										spanFormat: PostSpanFormat.chan4
+																									)
+																								]
 																							)
 																						)
-																					]
+																					)
 																				)
+																			),
+																			Row(
+																				mainAxisAlignment: MainAxisAlignment.spaceBetween,
+																				children: [
+																					Text('Width: ${size.width.round()}px'),
+																					CupertinoSlider(
+																						value: size.width,
+																						min: 100,
+																						max: 600,
+																						onChanged: (d) {
+																							setDialogState(() {
+																								size = Size(d, size.height);
+																							});
+																						}
+																					)
+																				]
+																			),
+																			Row(
+																				mainAxisAlignment: MainAxisAlignment.spaceBetween,
+																				children: [
+																					Text('Height: ${size.height.round()}px'),
+																					CupertinoSlider(
+																						value: size.height,
+																						min: 100,
+																						max: 600,
+																						onChanged: (d) {
+																							setDialogState(() {
+																								size = Size(size.width, d);
+																							});
+																						}
+																					)
+																				]
 																			)
 																		]
 																	)
 																)
 															)
 														)
-													)
-												);
-												settings.catalogGridHeight = size.height;
-												settings.catalogGridWidth = size.width;
-											}
-										)
-									),
-									Padding(
-										padding: const EdgeInsets.all(16),
-										child: Text('Two-pane breakpoint: ${settings.twoPaneBreakpoint.round()} pixels'),
-									),
-									CupertinoSlider(
-										min: 50,
-										max: 3000,
-										divisions: 59,
-										value: settings.twoPaneBreakpoint,
-										onChanged: (newValue) {
-											settings.twoPaneBreakpoint = newValue;
-										}
-									),
-									Padding(
-										padding: const EdgeInsets.all(16),
-										child: Text('Two-pane split: ${firstPanePercent.toStringAsFixed(0)}% catalog, ${(100 - firstPanePercent).toStringAsFixed(0)}% thread'),
-									),
-									CupertinoSlider(
-										min: 1,
-										max: (twoPaneSplitDenominator - 1).toDouble(),
-										divisions: twoPaneSplitDenominator - 1,
-										value: settings.twoPaneSplit.toDouble(),
-										onChanged: (newValue) {
-											settings.twoPaneSplit = newValue.toInt();
-										}
-									),
-									const Padding(
-										padding: EdgeInsets.only(top: 16, left: 16),
-										child: Text('Cached media')
-									),
-									const SettingsCachePanel(),
-									const Padding(
-										padding: EdgeInsets.only(top: 16, left: 16),
-										child: Text('Cached threads and history')
-									),
-									SettingsThreadsPanel(
-										persistence: realPersistence
-									),
-									CupertinoButton(
-										child: const Text('Clear API cookies'),
-										onPressed: () {
-											Persistence.cookies.deleteAll();
-										}
-									)
-								],
+													);
+													settings.catalogGridHeight = size.height;
+													settings.catalogGridWidth = size.width;
+												}
+											)
+										),
+										const SizedBox(height: 16),
+										Text('Two-pane breakpoint: ${settings.twoPaneBreakpoint.round()} pixels'),
+										Padding(
+											padding: const EdgeInsets.all(16),
+											child: CupertinoSlider(
+												min: 50,
+												max: 3000,
+												divisions: 59,
+												value: settings.twoPaneBreakpoint,
+												onChanged: (newValue) {
+													settings.twoPaneBreakpoint = newValue;
+												}
+											)
+										),
+										const SizedBox(height: 16),
+										Text('Two-pane split: ${firstPanePercent.toStringAsFixed(0)}% catalog, ${(100 - firstPanePercent).toStringAsFixed(0)}% thread'),
+										Padding(
+											padding: const EdgeInsets.all(16),
+											child: CupertinoSlider(
+												min: 1,
+												max: (twoPaneSplitDenominator - 1).toDouble(),
+												divisions: twoPaneSplitDenominator - 1,
+												value: settings.twoPaneSplit.toDouble(),
+												onChanged: (newValue) {
+													settings.twoPaneSplit = newValue.toInt();
+												}
+											)
+										),
+										const SizedBox(height: 16),
+										const Text('Cached media'),
+										const SettingsCachePanel(),
+										const SizedBox(height: 16),
+										const Text('Cached threads and history'),
+										SettingsThreadsPanel(
+											persistence: realPersistence
+										),
+										const SizedBox(height: 16),
+										Center(
+											child: CupertinoButton.filled(
+												child: const Text('Clear API cookies'),
+												onPressed: () {
+													Persistence.cookies.deleteAll();
+												}
+											)
+										),
+										const SizedBox(height: 16)
+									],
+								)
 							)
 						)
 					)
@@ -573,6 +564,10 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 				children: [
 					if (folderSizes?.isEmpty ?? true) const Text('No cached media'),
 					Table(
+						columnWidths: const {
+							0: FlexColumnWidth(),
+							1: IntrinsicColumnWidth()
+						},
 						children: (folderSizes ?? {}).entries.map((entry) {
 							double megabytes = entry.value / 1000000;
 							return TableRow(
@@ -591,10 +586,12 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 						mainAxisAlignment: MainAxisAlignment.spaceBetween,
 						children: [
 							CupertinoButton.filled(
+								padding: const EdgeInsets.all(16),
 								child: const Text('Recalculate'),
 								onPressed: _readFilesystemInfo
 							),
 							CupertinoButton.filled(
+								padding: const EdgeInsets.all(16),
 								child: Text(clearing ? 'Deleting...' : 'Delete all'),
 								onPressed: (folderSizes?.isEmpty ?? true) ? null : (clearing ? null : _clearCaches)
 							)
@@ -663,6 +660,9 @@ class SettingsThreadsPanel extends StatelessWidget {
 					margin: const EdgeInsets.all(16),
 					padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
 					child: Table(
+						columnWidths: const {
+							0: FlexColumnWidth(2)
+						},
 						defaultVerticalAlignment: TableCellVerticalAlignment.middle,
 						children: [
 							TableRow(
@@ -723,72 +723,73 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 			mainAxisSize: MainAxisSize.min,
 			crossAxisAlignment: CrossAxisAlignment.stretch,
 			children: [
-				Padding(
-					padding: const EdgeInsets.all(16),
-					child: Wrap(
-						crossAxisAlignment: WrapCrossAlignment.center,
-						alignment: WrapAlignment.start,
-						spacing: 16,
-						runSpacing: 16,
-						children: [
-							const Text('RegEx filters'),
-							CupertinoButton(
-								minSize: 0,
-								padding: EdgeInsets.zero,
-								child: const Icon(Icons.help),
-								onPressed: () {
-									showCupertinoModalPopup(
-										context: context,
-										builder: (context) => CupertinoActionSheet(
-											message: Text.rich(
-												buildFakeMarkdown(context,
-													'One regular expression per line, lines starting with # will be ignored\n'
-													'Example: `/sneed/` will hide any thread or post containing "sneed"\n'
-													'Example: `/bane/;boards:tv;thread` will hide any thread containing "sneed" in the OP on /tv/\n'
-													'Add `i` after the regex to make it case-insensitive\n'
-													'Example: `/sneed/i` will match `SNEED`\n'
-													'\n'
-													'Qualifiers may be added after the regex:\n'
-													'`;boards:<list>` Only apply on certain boards\n'
-													'Example: `;board:tv,mu` will only apply the filter on /tv/ and /mu/\n'
-													'`;exclude:<list>` Don\'t apply on certain boards\n'
-													'`;highlight` Highlight instead of hiding matches\n'
-													'`;top` Highlight and pin match to top of list instead of hiding\n'
-													'`;file:only` Only apply to posts with files\n'
-													'`;file:no` Only apply to posts without files\n'
-													'`;thread` Only apply to threads\n'
-													'`;type:<list>` Only apply regex filter to certain fields\n'
-													'The list of possible fields is `[text, subject, name, filename, postID, posterID, flag]`\n'
-													'The default fields that are searched are `[text, subject, name, filename]`'
-												),
-												textAlign: TextAlign.left,
-												style: const TextStyle(
-													fontSize: 16,
-													height: 1.5
-												)
+				Wrap(
+					crossAxisAlignment: WrapCrossAlignment.center,
+					alignment: WrapAlignment.start,
+					spacing: 16,
+					runSpacing: 16,
+					children: [
+						const Text('RegEx filters'),
+						CupertinoButton(
+							minSize: 0,
+							padding: EdgeInsets.zero,
+							child: const Icon(Icons.help),
+							onPressed: () {
+								showCupertinoModalPopup(
+									context: context,
+									builder: (context) => CupertinoActionSheet(
+										message: Text.rich(
+											buildFakeMarkdown(context,
+												'One regular expression per line, lines starting with # will be ignored\n'
+												'Example: `/sneed/` will hide any thread or post containing "sneed"\n'
+												'Example: `/bane/;boards:tv;thread` will hide any thread containing "sneed" in the OP on /tv/\n'
+												'Add `i` after the regex to make it case-insensitive\n'
+												'Example: `/sneed/i` will match `SNEED`\n'
+												'\n'
+												'Qualifiers may be added after the regex:\n'
+												'`;boards:<list>` Only apply on certain boards\n'
+												'Example: `;board:tv,mu` will only apply the filter on /tv/ and /mu/\n'
+												'`;exclude:<list>` Don\'t apply on certain boards\n'
+												'`;highlight` Highlight instead of hiding matches\n'
+												'`;top` Highlight and pin match to top of list instead of hiding\n'
+												'`;file:only` Only apply to posts with files\n'
+												'`;file:no` Only apply to posts without files\n'
+												'`;thread` Only apply to threads\n'
+												'`;type:<list>` Only apply regex filter to certain fields\n'
+												'The list of possible fields is `[text, subject, name, filename, postID, posterID, flag]`\n'
+												'The default fields that are searched are `[text, subject, name, filename]`'
+											),
+											textAlign: TextAlign.left,
+											style: const TextStyle(
+												fontSize: 16,
+												height: 1.5
 											)
 										)
-									);
-								}
-							),
-							if (settings.filterError != null) Text('${settings.filterError}', style: const TextStyle(
-								color: Colors.red
-							))
-						]
-					)
+									)
+								);
+							}
+						),
+						if (settings.filterError != null) Text('${settings.filterError}', style: const TextStyle(
+							color: Colors.red
+						))
+					]
 				),
-				StatefulBuilder(
-					builder: (context, setInnerState) {
-						return CupertinoTextField(
-							style: GoogleFonts.ibmPlexMono(),
-							minLines: 5,
-							maxLines: 5,
-							controller: regexController,
-							onChanged: (string) {
-								settings.filterConfiguration = string;
-							},
-						);
-					}
+				const SizedBox(height: 16),
+				Padding(
+					padding: const EdgeInsets.only(left: 16, right: 16),
+					child: StatefulBuilder(
+						builder: (context, setInnerState) {
+							return CupertinoTextField(
+								style: GoogleFonts.ibmPlexMono(),
+								minLines: 5,
+								maxLines: 5,
+								controller: regexController,
+								onChanged: (string) {
+									settings.filterConfiguration = string;
+								},
+							);
+						}
+					)
 				)
 			]
 		);
