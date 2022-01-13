@@ -170,10 +170,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	final List<ImageboardSiteArchive> archives;
 	ImageboardSite(this.archives);
 	Future<void> ensureCookiesMemoized(Uri url) async {
-		memoizedHeaders[url.host] = {
-			'user-agent': userAgent,
-			'cookie': (await Persistence.cookies.loadForRequest(url)).join('; ')
-		};
+		memoizedHeaders.putIfAbsent(url.host, () => {
+			'user-agent': userAgent
+		})['cookie'] = (await Persistence.cookies.loadForRequest(url)).join('; ');
 	}
 	Map<String, String>? getHeaders(Uri url) {
 		return memoizedHeaders[url.host];
