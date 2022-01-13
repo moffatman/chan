@@ -113,8 +113,10 @@ class ThreadRow extends StatelessWidget {
 									child: Row(
 									mainAxisSize: MainAxisSize.min,
 									children: [
-										Icon(Icons.access_time_filled, color: otherMetadataColor, size: 18),
-										const SizedBox(width: 4),
+										if (settings.showClockIconInCatalog) ...[
+											Icon(Icons.access_time_filled, color: otherMetadataColor, size: 18),
+											const SizedBox(width: 4)
+										],
 										Text(_timeDiff(thread.time), style: TextStyle(color: otherMetadataColor)),
 										const SizedBox(width: 2),
 									]

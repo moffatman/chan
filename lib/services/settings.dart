@@ -180,6 +180,8 @@ class SavedSettings extends HiveObject {
 	double catalogGridHeight;
 	@HiveField(27)
 	bool showImageCountInCatalog;
+	@HiveField(28)
+	bool showClockIconInCatalog;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -209,6 +211,7 @@ class SavedSettings extends HiveObject {
 		double? catalogGridWidth,
 		double? catalogGridHeight,
 		bool? showImageCountInCatalog,
+		bool? showClockIconInCatalog,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? ThemeSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -243,7 +246,8 @@ class SavedSettings extends HiveObject {
 		useCatalogGrid = useCatalogGrid ?? false,
 		catalogGridWidth = catalogGridWidth ?? 200,
 		catalogGridHeight = catalogGridHeight ?? 300,
-		showImageCountInCatalog = showImageCountInCatalog ?? true;
+		showImageCountInCatalog = showImageCountInCatalog ?? true,
+		showClockIconInCatalog = showClockIconInCatalog ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -445,6 +449,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showImageCountInCatalog => _settings.showImageCountInCatalog;
 	set showImageCountInCatalog(bool setting) {
 		_settings.showImageCountInCatalog = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showClockIconInCatalog => _settings.showClockIconInCatalog;
+	set showClockIconInCatalog(bool setting) {
+		_settings.showClockIconInCatalog = setting;
 		_settings.save();
 		notifyListeners();
 	}
