@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:tuple/tuple.dart';
 
 class StickyMediaQuery extends StatefulWidget {
 	final bool top;
@@ -21,29 +22,30 @@ class StickyMediaQuery extends StatefulWidget {
 }
 
 class _StickyMediaQueryState extends State<StickyMediaQuery> {
-	EdgeInsets? _padding;
-	EdgeInsets? _viewPadding;
+	final Map<Orientation, Tuple2<EdgeInsets, EdgeInsets>> map = {};
 
 	@override
 	Widget build(BuildContext context) {
-		_padding ??= MediaQuery.of(context).padding;
-		_viewPadding ??= MediaQuery.of(context).viewPadding;
-		_padding = MediaQuery.of(context).padding.clamp(EdgeInsets.only(
-			left: widget.left ? _padding!.left : 0,
-			top: widget.top ? _padding!.top : 0,
-			right: widget.right ? _padding!.right : 0,
-			bottom: widget.bottom ? _padding!.bottom : 0
-		), const EdgeInsets.all(double.nan)).resolve(TextDirection.ltr);
-		_viewPadding = MediaQuery.of(context).padding.clamp(EdgeInsets.only(
-			left: widget.left ? _viewPadding!.left : 0,
-			top: widget.top ? _viewPadding!.top : 0,
-			right: widget.right ? _viewPadding!.right : 0,
-			bottom: widget.bottom ? _viewPadding!.bottom : 0
-		), const EdgeInsets.all(double.nan)).resolve(TextDirection.ltr);
+		final data = map.update(MediaQuery.of(context).orientation, (old) {
+			return Tuple2(
+				MediaQuery.of(context).padding.clamp(EdgeInsets.only(
+					left: widget.left ? old.item1.left : 0,
+					top: widget.top ? old.item1.top : 0,
+					right: widget.right ? old.item1.right : 0,
+					bottom: widget.bottom ? old.item1.bottom : 0
+				), const EdgeInsets.all(double.nan)).resolve(TextDirection.ltr),
+				MediaQuery.of(context).padding.clamp(EdgeInsets.only(
+					left: widget.left ? old.item2.left : 0,
+					top: widget.top ? old.item2.top : 0,
+					right: widget.right ? old.item2.right : 0,
+					bottom: widget.bottom ? old.item2.bottom : 0
+				), const EdgeInsets.all(double.nan)).resolve(TextDirection.ltr)
+			);
+		}, ifAbsent: () => Tuple2(MediaQuery.of(context).padding, MediaQuery.of(context).viewPadding));
 		return MediaQuery(
 			data: MediaQuery.of(context).copyWith(
-				padding: _padding,
-				viewPadding: _viewPadding
+				padding: data.item1,
+				viewPadding: data.item2
 			),
 			child: widget.child
 		);

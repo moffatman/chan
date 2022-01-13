@@ -504,55 +504,56 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 		else if (isInTabletLayout) {
 			return CupertinoPageScaffold(
-				child: Row(
-					children: [
-						SafeArea(
-							top: false,
-							bottom: false,
-							right: false,
-							child: Container(
-								padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-								color: CupertinoTheme.of(context).barBackgroundColor,
-								width: 85,
-								child: Column(
-									children: [
-										Expanded(
-											child: Column(
-												children: [
-													Expanded(
-														child: _buildTabList(Axis.vertical)
-													),
-													_buildNewTabIcon(hideLabel: hideTabletLayoutLabels)
-												]
-											)
-										),
-										_buildTabletIcon(1, Builder(
-											builder: (context) => NotifyingIcon(
-												icon: const Icon(Icons.bookmark),
-												primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
-												secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
-											)
-										), hideTabletLayoutLabels ? null : 'Saved'),
-										_buildTabletIcon(2, const Icon(Icons.history), hideTabletLayoutLabels ? null : 'History'),
-										_buildTabletIcon(3, const Icon(Icons.search), hideTabletLayoutLabels ? null : 'Search'),
-										_buildTabletIcon(4, NotifyingIcon(
-											icon: const Icon(Icons.settings),
-											primaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0)
-										), hideTabletLayoutLabels ? null : 'Settings')
-									]
+				child: Container(
+					color: CupertinoTheme.of(context).barBackgroundColor,
+					child: SafeArea(
+						top: false,
+						bottom: false,
+						child: Row(
+							children: [
+								Container(
+									padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+									width: 85,
+									child: Column(
+										children: [
+											Expanded(
+												child: Column(
+													children: [
+														Expanded(
+															child: _buildTabList(Axis.vertical)
+														),
+														_buildNewTabIcon(hideLabel: hideTabletLayoutLabels)
+													]
+												)
+											),
+											_buildTabletIcon(1, Builder(
+												builder: (context) => NotifyingIcon(
+													icon: const Icon(Icons.bookmark),
+													primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
+													secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
+												)
+											), hideTabletLayoutLabels ? null : 'Saved'),
+											_buildTabletIcon(2, const Icon(Icons.history), hideTabletLayoutLabels ? null : 'History'),
+											_buildTabletIcon(3, const Icon(Icons.search), hideTabletLayoutLabels ? null : 'Search'),
+											_buildTabletIcon(4, NotifyingIcon(
+												icon: const Icon(Icons.settings),
+												primaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0)
+											), hideTabletLayoutLabels ? null : 'Settings')
+										]
+									)
+								),
+								Expanded(
+									child: IndexedStack(
+										index: max(0, tabletIndex),
+										children: List.generate(5, (i) => ExcludeFocus(
+											excluding: i != tabletIndex,
+											child: _buildTab(context, i, i == tabletIndex)
+										))
+									)
 								)
-							)
-						),
-						Expanded(
-							child: IndexedStack(
-								index: max(0, tabletIndex),
-								children: List.generate(5, (i) => ExcludeFocus(
-									excluding: i != tabletIndex,
-									child: _buildTab(context, i, i == tabletIndex)
-								))
-							)
+							]
 						)
-					]
+					)
 				)
 			);
 		}
