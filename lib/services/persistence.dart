@@ -374,7 +374,7 @@ class SavedPost implements Filterable {
 	@HiveField(1)
 	final DateTime savedTime;
 	@HiveField(2)
-	final Thread thread;
+	Thread thread;
 
 	SavedPost({
 		required this.post,

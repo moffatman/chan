@@ -33,11 +33,13 @@ class PostRow extends StatelessWidget {
 	final bool allowTappingLinks;
 	final bool shrinkWrap;
 	final bool isSelected;
+	final Function(Object?, StackTrace?)? onThumbnailLoadError;
 
 	const PostRow({
 		required this.post,
 		this.onTap,
 		this.onThumbnailTap,
+		this.onThumbnailLoadError,
 		this.onRequestArchive,
 		this.showCrossThreadLabel = true,
 		this.allowTappingLinks = true,
@@ -225,6 +227,7 @@ class PostRow extends StatelessWidget {
 														AttachmentThumbnail(
 															attachment: _post.attachment!,
 															thread: _post.threadIdentifier,
+															onLoadError: onThumbnailLoadError,
 															hero: AttachmentSemanticLocation(
 																attachment: _post.attachment!,
 																semanticParents: zone.stackIds

@@ -270,6 +270,20 @@ class _SavedPageState extends State<SavedPage> {
 										post: savedPost.post,
 										isSelected: savedPost == selected,
 										onTap: () => setter(savedPost),
+										onThumbnailLoadError: (e, st) async {
+											final site = context.read<ImageboardSite>();
+											Thread? newThread;
+											try {
+												newThread = await site.getThread(savedPost.thread.identifier);
+											}
+											on ThreadNotFoundException {
+												newThread = await site.getThreadFromArchive(savedPost.thread.identifier);
+											}
+											if (newThread != savedPost.thread) {
+												savedPost.thread = newThread;
+												persistence.didUpdateSavedPost();
+											}
+										},
 										onThumbnailTap: (initialAttachment) {
 											final attachments = _postListController.items.where((_) => _.thread.attachment != null).map((_) => _.thread.attachment!).toList();
 											showGallery(
