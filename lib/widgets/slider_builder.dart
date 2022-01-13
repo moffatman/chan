@@ -55,12 +55,12 @@ class _SliderBuilderState extends State<SliderBuilder> {
 	}
 
 	void _handleDragEnd(DragEndDetails details) {
-		if ((details.velocity == Velocity.zero) || (details.velocity.pixelsPerSecond.direction.abs() > math.pi * 0.75)) {
+		if (details.velocity.pixelsPerSecond.direction.abs() > math.pi * 0.75) {
 			if (!insertedEarly) {
 				WeakNavigator.push(context, widget.popup);
 			}
 		}
-		else {
+		else if (details.velocity != Velocity.zero) {
 			WeakNavigator.pop(context);
 		}
 		setState(() {
@@ -89,5 +89,12 @@ class _SliderBuilderState extends State<SliderBuilder> {
 				_claimingRecognizer.addPointer(e);
 			}
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_recognizingRecognizer.dispose();
+		_claimingRecognizer.dispose();
 	}
 }
