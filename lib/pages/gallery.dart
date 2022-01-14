@@ -414,7 +414,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				return Colors.black.withOpacity((1 - factor.clamp(0, 1)));
 			},
 			slideEndHandler: (offset, {ScaleEndDetails? details, ExtendedImageSlidePageState? state}) {
-				return widget.allowScroll && ((details?.velocity ?? Velocity.zero) != Velocity.zero);
+				final a = ((details?.velocity ?? Velocity.zero).pixelsPerSecond.direction / pi).abs();
+				return widget.allowScroll && (a >= 0.25 && a <= 0.75);
 			},
 			child: CupertinoTheme(
 				data: const CupertinoThemeData(brightness: Brightness.dark, primaryColor: Colors.white),
