@@ -292,6 +292,74 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		setState(() {});
 	}
 
+	void _downloadAll() async {
+		final toDownload = widget.attachments.where((a) => !_downloadedAttachments.contains(a)).toList();
+		final shouldDownload = await showCupertinoDialog<bool>(
+			context: context,
+			barrierDismissible: true,
+			builder: (context) => CupertinoAlertDialog(
+				title: const Text('Download all?'),
+				content: Text("${toDownload.length} attachment${toDownload.length == 1 ? '' : 's'} will be saved to your library"),
+				actions: [
+					CupertinoDialogAction(
+						child: const Text('No'),
+						onPressed: () {
+							Navigator.of(context).pop(false);
+						}
+					),
+					CupertinoDialogAction(
+						child: const Text('Yes'),
+						isDefaultAction: true,
+						onPressed: () {
+							Navigator.of(context).pop(true);
+						}
+					)
+				]
+			)
+		);
+		if (shouldDownload == true) {
+			final loadingStream = ValueNotifier<int>(0);
+			bool cancel = false;
+			showCupertinoDialog(
+				context: context,
+				barrierDismissible: false,
+				builder: (context) => CupertinoAlertDialog(
+					title: const Text('Bulk Download'),
+					content: ValueListenableBuilder<int>(
+						valueListenable: loadingStream,
+						builder: (context, completedCount, child) => Column(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								Text('${loadingStream.value} / ${toDownload.length} complete'),
+								const SizedBox(height: 8),
+								LinearProgressIndicator(
+									value: completedCount / toDownload.length
+								)
+							]	
+						)
+					),
+					actions: [
+						CupertinoDialogAction(
+							child: const Text('Cancel'),
+							isDestructiveAction: true,
+							onPressed: () {
+								cancel = true;
+								Navigator.of(context).pop();
+							}
+						)
+					]
+				)
+			);
+			for (final attachment in toDownload) {
+				if (cancel) return;
+				await _getController(attachment).preloadFullAttachment(context);
+				await download(attachment);
+				loadingStream.value = loadingStream.value + 1;
+			}
+			if (!cancel) Navigator.of(context, rootNavigator: true).pop();
+		}
+	}
+
 	void _toggleChrome() {
 		showChrome = !showChrome;
 		_updateOverlays(showChrome);
@@ -367,6 +435,21 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 									),
 									delegate: SliverChildBuilderDelegate(
 										(context, index) {
+											if (index == widget.attachments.length) {
+												return Center(
+													child: CupertinoButton.filled(
+														padding: const EdgeInsets.all(8),
+														child: Column(
+															mainAxisSize: MainAxisSize.min,
+															children: const [
+																Icon(CupertinoIcons.cloud_download, size: 50),
+																Text('Download all')
+															]
+														),
+														onPressed: _downloadAll
+													)
+												);
+											}
 											final attachment = widget.attachments[index];
 											return GestureDetector(
 												onTap: () {
@@ -390,7 +473,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												)
 											);
 										},
-										childCount: widget.attachments.length
+										childCount: widget.attachments.length + 1
 									)
 								)
 							]
