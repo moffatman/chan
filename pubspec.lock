@@ -235,9 +235,11 @@ packages:
   extended_image:
     dependency: "direct main"
     description:
-      name: extended_image
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: "."
+      ref: change_min
+      resolved-ref: dbcc14cb2c88b8a454fd3d5d7752b7eba0647816
+      url: "https://github.com/moffatman/extended_image.git"
+    source: git
     version: "6.0.1"
   extended_image_library:
     dependency: "direct main"
@@ -1009,4 +1011,4 @@ packages:
     version: "3.1.0"
 sdks:
   dart: ">=2.16.0-100.0.dev <3.0.0"
-  flutter: ">=2.8.0"
+  flutter: ">=2.5.0"
