@@ -22,10 +22,12 @@ class ContextMenuAction {
 class ContextMenu extends StatefulWidget {
 	final List<ContextMenuAction> actions;
 	final Widget child;
+	final double? maxHeight;
 
 	const ContextMenu({
 		required this.actions,
 		required this.child,
+		this.maxHeight,
 		Key? key
 	}) : super(key: key);
 
@@ -39,6 +41,12 @@ enum _ContextMenuUseNewConstraints {
 
 class _ContextMenuState extends State<ContextMenu> {
 	OverlayEntry? _overlayEntry;
+
+	Widget get constrainedChild => widget.maxHeight == null ? widget.child : ConstrainedBox(constraints: BoxConstraints(
+			maxHeight: widget.maxHeight!
+		),
+		child: widget.child
+	);
 
 	@override
 	Widget build(BuildContext context) {
@@ -66,27 +74,42 @@ class _ContextMenuState extends State<ContextMenu> {
 						},
 						child: LayoutBuilder(
 							builder: (context, newConstraints) {
-								final useNewConstraints = context.read<_ContextMenuUseNewConstraints?>() == _ContextMenuUseNewConstraints.yes;
+								final useNewConstraints = context.read<_ContextMenuUseNewConstraints?>() == _ContextMenuUseNewConstraints.yes && newConstraints.maxHeight >= 75;
 								double newMaxWidth = originalConstraints.maxWidth;
 								double newMaxHeight = originalConstraints.maxHeight;
-								newMaxHeight = max(newMaxHeight, newConstraints.maxHeight - 50);
-								newMaxHeight = min(newMaxHeight, newConstraints.maxHeight + 50);
-								newMaxWidth = max(newMaxWidth, newConstraints.maxWidth - 50);
-								newMaxWidth = min(newMaxWidth, newConstraints.maxWidth + 50);
-								return FittedBox(
-									child: ConstrainedBox(
-										constraints: useNewConstraints ? BoxConstraints(
-											maxWidth: newMaxWidth,
-											maxHeight: newMaxHeight,
-											minWidth: 0,
-											minHeight: 0
-										) : originalConstraints,
+								const x = 50;
+								newMaxHeight = max(newMaxHeight, newConstraints.maxHeight - x);
+								newMaxHeight = min(newMaxHeight, newConstraints.maxHeight + x);
+								newMaxWidth = max(newMaxWidth, newConstraints.maxWidth - x);
+								newMaxWidth = min(newMaxWidth, newConstraints.maxWidth + x);
+								final newNewConstraints = BoxConstraints(
+									maxWidth: newMaxWidth,
+									//maxWidth: originalConstraints.maxWidth,
+									maxHeight: newMaxHeight,
+									minWidth: 0,
+									minHeight: 0
+								);
+								if (!useNewConstraints) {
+									return FittedBox(
+										alignment: Alignment.topRight,
+										child: ConstrainedBox(
+											constraints: originalConstraints,
+											child: (zone == null) ? constrainedChild : ChangeNotifierProvider.value(
+												value: zone,
+												child: constrainedChild
+											)
+										)
+									);
+								}
+								else {
+									return ConstrainedBox(
+										constraints: newNewConstraints,
 										child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
 											value: zone,
 											child: widget.child
 										)
-									)
-								);
+									);
+								}
 							}
 						)
 					);
@@ -155,7 +178,7 @@ class _ContextMenuState extends State<ContextMenu> {
 					);
 					Overlay.of(context, rootOverlay: true)!.insert(_overlayEntry!);
 				},
-				child: widget.child
+				child: constrainedChild
 			);
 		}
 	}

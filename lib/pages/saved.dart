@@ -10,6 +10,7 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
@@ -144,30 +145,44 @@ class _SavedPageState extends State<SavedPage> {
 													id: 'saved',
 													disableUpdates: true,
 													initialList: states,
-													itemBuilder: (context, state) => GestureDetector(
-														behavior: HitTestBehavior.opaque,
-														child: ThreadRow(
-															thread: state.thread!,
-															isSelected: state.thread!.identifier == selectedThread,
-															showBoardName: true,
-															onThumbnailLoadError: (error, stackTrace) {
-																context.read<SavedThreadWatcher>().fixBrokenThread(state.thread!.identifier);
-															},
-															semanticParentIds: const [-4],
-															onThumbnailTap: (initialAttachment) {
-																final attachments = _threadListController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
-																showGallery(
-																	context: context,
-																	attachments: attachments,
-																	initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-																	onChange: (attachment) {
-																		_threadListController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
-																	},
-																	semanticParentIds: [-4]
-																);
-															}
+													itemBuilder: (context, state) => ContextMenu(
+														maxHeight: 125,
+														child: GestureDetector(
+															behavior: HitTestBehavior.opaque,
+															child: ThreadRow(
+																thread: state.thread!,
+																isSelected: state.thread!.identifier == selectedThread,
+																showBoardName: true,
+																onThumbnailLoadError: (error, stackTrace) {
+																	context.read<SavedThreadWatcher>().fixBrokenThread(state.thread!.identifier);
+																},
+																semanticParentIds: const [-4],
+																onThumbnailTap: (initialAttachment) {
+																	final attachments = _threadListController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
+																	showGallery(
+																		context: context,
+																		attachments: attachments,
+																		initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+																		onChange: (attachment) {
+																			_threadListController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
+																		},
+																		semanticParentIds: [-4]
+																	);
+																}
+															),
+															onTap: () => threadSetter(state.thread!.identifier)
 														),
-														onTap: () => threadSetter(state.thread!.identifier)
+														actions: [
+															ContextMenuAction(
+																child: const Text('Unsave'),
+																onPressed: () {
+																	state.savedTime = null;
+																	state.save();
+																},
+																trailingIcon: Icons.delete,
+																isDestructiveAction: true
+															)
+														]
 													),
 													filterHint: 'Search saved threads'
 												);
@@ -309,6 +324,58 @@ class _SavedPageState extends State<SavedPage> {
 							boardSemanticId: -2
 						),
 						pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
+					)
+				),
+				MultiMasterPane<SavedAttachment>(
+					title: const Text('Saved Attachments'),
+					icon: Icons.image,
+					masterBuilder: (context, selected, setter) => AnimatedBuilder(
+						animation: persistence.savedAttachmentsNotifier,
+						builder: (context, child) {
+							final list = persistence.savedAttachments.values.toList();
+							list.sort((a, b) => b.savedTime.compareTo(a.savedTime));
+							return GridView.builder(
+								itemCount: list.length,
+								itemBuilder: (context, i) {
+									return GestureDetector(
+										child: Container(
+											decoration: BoxDecoration(
+												color: Colors.transparent,
+												borderRadius: const BorderRadius.all(Radius.circular(4)),
+												border: Border.all(color: list[i] == selected ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
+											),
+											margin: const EdgeInsets.all(4),
+											child: Hero(
+												tag: AttachmentSemanticLocation(
+													attachment: list[i].attachment,
+													semanticParents: [-5]
+												),
+												child: SavedAttachmentThumbnail(
+													file: list[i].file,
+													fit: BoxFit.cover
+												)
+											)
+										),
+										onTap: () => setter(list[i])
+									);
+								},
+								gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+									crossAxisCount: 4
+								)
+							);
+						}
+					),
+					detailBuilder: (selectedValue, poppedOut) => BuiltDetailPane(
+						widget: selectedValue == null ? _placeholder('Select an attachment') : GalleryPage(
+							initialAttachment: selectedValue.attachment,
+							attachments: [selectedValue.attachment],
+							overrideSources: {
+								selectedValue.attachment: selectedValue.file.uri
+							},
+							semanticParentIds: poppedOut ? [-5] : [-6],
+							allowScroll: poppedOut
+						),
+						pageRouteBuilder: transparentPageRouteBuilder
 					)
 				)
 			]

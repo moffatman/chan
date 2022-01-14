@@ -113,9 +113,14 @@ class SettingsPage extends StatelessWidget {
 																boardSemanticId: -1,
 															)
 														)),
-														child: ThreadRow(
-															thread: thread,
-															isSelected: false
+														child: ConstrainedBox(
+															constraints: const BoxConstraints(
+																maxHeight: 125
+															),
+															child: ThreadRow(
+																thread: thread,
+																isSelected: false
+															)
 														)
 													)).toList();
 													if (children.isEmpty) {

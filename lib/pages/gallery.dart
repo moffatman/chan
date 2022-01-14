@@ -432,6 +432,24 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 									child: const Icon(Icons.download),
 									onPressed: canShare(currentAttachment) && !_downloadedAttachments.contains(currentAttachment) ? () => download(currentAttachment) : null
 								),
+								AnimatedBuilder(
+									animation: context.watch<Persistence>().savedAttachmentsNotifier,
+									builder: (context, child) {
+										final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment) != null;
+										return CupertinoButton(
+											padding: EdgeInsets.zero,
+											child: Icon(currentlySaved ? Icons.bookmark : Icons.bookmark_outline),
+											onPressed: canShare(currentAttachment) ? () {
+												if (currentlySaved) {
+													context.read<Persistence>().deleteSavedAttachment(currentAttachment);
+												}
+												else {
+													context.read<Persistence>().saveAttachment(currentAttachment, currentController.cachedFile!);
+												}
+											} : null
+										);
+									}
+								),
 								CupertinoButton(
 									key: _shareButtonKey,
 									padding: EdgeInsets.zero,

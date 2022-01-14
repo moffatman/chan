@@ -46,6 +46,7 @@ class _HistoryPageState extends State<HistoryPage> {
 								disableUpdates: true,
 								initialList: states,
 								itemBuilder: (context, state) => ContextMenu(
+									maxHeight: 125,
 									child: GestureDetector(
 										behavior: HitTestBehavior.opaque,
 										child: ThreadRow(

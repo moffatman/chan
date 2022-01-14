@@ -204,7 +204,7 @@ class ThreadRow extends StatelessWidget {
 											)),
 											Expanded(
 												child: Container(
-													constraints: const BoxConstraints(maxHeight: 125, minHeight: 25),
+													constraints: const BoxConstraints(minHeight: 25),
 													padding: const EdgeInsets.all(8),
 													child: ChangeNotifierProvider<PostSpanZoneData>(
 														create: (ctx) => PostSpanRootZoneData(
@@ -304,7 +304,7 @@ class ThreadRow extends StatelessWidget {
 										),
 										Expanded(
 											child: Container(
-												constraints: const BoxConstraints(maxHeight: 125, minHeight: 75),
+												constraints: const BoxConstraints(minHeight: 75),
 												padding: const EdgeInsets.only(left: 8, right: 8),
 												child: ChangeNotifierProvider<PostSpanZoneData>(
 													create: (ctx) => PostSpanRootZoneData(

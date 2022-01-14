@@ -222,7 +222,8 @@ class _BoardPageState extends State<BoardPage> {
 													onPressed: () => browserState.hideThread(thread.board, thread.id)
 												)
 											],
-											child: GestureDetector(
+											maxHeight: 125,
+											child:  GestureDetector(
 												child: ThreadRow(
 													contentFocus: settings.useCatalogGrid,
 													thread: thread,
