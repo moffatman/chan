@@ -229,7 +229,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		}
 	}
 
-	void _onPageChanged(int index) {
+	void _onPageChanged(int index) async {
 		_rotateButtonAnimationController.reset();
 		if (_rotationsInProgress.contains(widget.attachments[index])) {
 			_rotateButtonAnimationController.repeat();
@@ -259,6 +259,11 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		}
 		_hideRotateButton = false;
 		setState(() {});
+		_shouldShowPosition.value = true;
+		await Future.delayed(const Duration(seconds: 1));
+		if (currentIndex == index) {
+			_shouldShowPosition.value = false;
+		}
 	}
 
 	bool canShare(Attachment attachment) {
