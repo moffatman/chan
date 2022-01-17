@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -190,6 +191,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	ImageboardSite? devSite;
 	Persistence? devPersistence;
 	StickyThreadWatcher? devThreadWatcher;
+	Timer? _saveBrowserTabsDuringDraftEditingTimer;
 
 	void _setupDevSite() async {
 		devSite = makeSite(context, defaultSite);
@@ -259,6 +261,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									tabs[i].item1.thread = newThread;
 									persistence.didUpdateBrowserState();
 									setState(() {});
+								},
+								initialThreadDraftText: tabs[i].item1.draftThread,
+								onThreadDraftTextChanged: (newText) {
+									tabs[i].item1.draftThread = newText;
+									_saveBrowserTabsDuringDraftEditingTimer?.cancel();
+									_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), () => persistence.didUpdateBrowserState());
+								},
+								initialThreadDraftSubject: tabs[i].item1.draftSubject,
+								onThreadDraftSubjectChanged: (newSubject) {
+									tabs[i].item1.draftSubject = newSubject;
+									_saveBrowserTabsDuringDraftEditingTimer?.cancel();
+									_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), () => persistence.didUpdateBrowserState());
 								},
 								id: -1 * (i + 10)
 							);

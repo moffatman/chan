@@ -10,12 +10,20 @@ class ImageboardTab extends StatelessWidget {
 	final ValueChanged<ImageboardBoard>? onBoardChanged;
 	final ThreadIdentifier? initialThread;
 	final ValueChanged<ThreadIdentifier?>? onThreadChanged;
+	final String initialThreadDraftText;
+	final ValueChanged<String>? onThreadDraftTextChanged;
+	final String initialThreadDraftSubject;
+	final ValueChanged<String>? onThreadDraftSubjectChanged;
 	final int id;
 	const ImageboardTab({
 		required this.initialBoard,
 		this.onBoardChanged,
 		this.initialThread,
 		this.onThreadChanged,
+		this.initialThreadDraftText = '',
+		this.onThreadDraftTextChanged,
+		this.initialThreadDraftSubject = '',
+		this.onThreadDraftSubjectChanged,
 		this.id = -1,
 		Key? key
 	}) : super(key: key);
@@ -32,6 +40,10 @@ class ImageboardTab extends StatelessWidget {
 					selectedThread: selectedThread,
 					onThreadSelected: threadSetter,
 					onBoardChanged: onBoardChanged,
+					initialDraftText: initialThreadDraftText,
+					onDraftTextChanged: onThreadDraftTextChanged,
+					initialDraftSubject: initialThreadDraftSubject,
+					onDraftSubjectChanged: onThreadDraftSubjectChanged,
 					semanticId: id
 				);
 			},

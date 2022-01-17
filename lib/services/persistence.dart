@@ -299,6 +299,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	List<int> postsMarkedAsYou = [];
 	@HiveField(8, defaultValue: [])
 	List<int> hiddenPostIds = [];
+	@HiveField(9, defaultValue: '')
+	String draftReply = '';
 
 	PersistentThreadState() : lastOpenedTime = DateTime.now();
 
@@ -400,9 +402,15 @@ class PersistentBrowserTab {
 	ImageboardBoard? board;
 	@HiveField(1)
 	ThreadIdentifier? thread;
+	@HiveField(2, defaultValue: '')
+	String draftThread;
+	@HiveField(3, defaultValue: '')
+	String draftSubject;
 	PersistentBrowserTab({
 		this.board,
-		this.thread
+		this.thread,
+		this.draftThread = '',
+		this.draftSubject = ''
 	});
 }
 

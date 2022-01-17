@@ -31,6 +31,10 @@ class BoardPage extends StatefulWidget {
 	final ValueChanged<ThreadIdentifier>? onThreadSelected;
 	final ThreadIdentifier? selectedThread;
 	final String? initialSearch;
+	final String initialDraftText;
+	final ValueChanged<String>? onDraftTextChanged;
+	final String initialDraftSubject;
+	final ValueChanged<String>? onDraftSubjectChanged;
 	const BoardPage({
 		required this.initialBoard,
 		this.allowChangingBoard = true,
@@ -38,6 +42,10 @@ class BoardPage extends StatefulWidget {
 		this.onThreadSelected,
 		this.selectedThread,
 		this.initialSearch,
+		this.initialDraftText = '',
+		this.onDraftTextChanged,
+		this.initialDraftSubject = '',
+		this.onDraftSubjectChanged,
 		required this.semanticId,
 		Key? key
 	}) : super(key: key);
@@ -301,6 +309,14 @@ class _BoardPageState extends State<BoardPage> {
 					ReplyBox(
 						key: _replyBoxKey,
 						board: board!.name,
+						initialText: widget.initialDraftText,
+						onTextChanged: (text) {
+							widget.onDraftTextChanged?.call(text);
+						},
+						initialSubject: widget.initialDraftSubject,
+						onSubjectChanged: (subject) {
+							widget.onDraftSubjectChanged?.call(subject);
+						},
 						onReplyPosted: (receipt) {
 							final persistentState = context.read<Persistence>().getThreadState(ThreadIdentifier(board: board!.name, id: receipt.id));
 							persistentState.savedTime = DateTime.now();

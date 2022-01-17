@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
@@ -57,6 +58,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	Thread? lastThread;
 	int lastHiddenPostIdsLength = 0;
 	int lastPostsMarkedAsYouLength = 0;
+	Timer? _saveThreadStateDuringEditingTimer;
 
 	void _onThreadStateListenableUpdate() {
 		if (persistentState.thread != lastThread ||
@@ -547,6 +549,12 @@ class _ThreadPageState extends State<ThreadPage> {
 								key: _replyBoxKey,
 								board: widget.thread.board,
 								threadId: widget.thread.id,
+								initialText: persistentState.draftReply,
+								onTextChanged: (text) {
+									persistentState.draftReply = text;
+									_saveThreadStateDuringEditingTimer?.cancel();
+									_saveThreadStateDuringEditingTimer = Timer(const Duration(seconds: 3), () => persistentState.save());
+								},
 								onReplyPosted: (receipt) {
 									persistentState.savedTime = DateTime.now();
 									persistentState.save();

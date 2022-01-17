@@ -25,11 +25,19 @@ class ReplyBox extends StatefulWidget {
 	final String board;
 	final int? threadId;
 	final ValueChanged<PostReceipt> onReplyPosted;
+	final String initialText;
+	final ValueChanged<String>? onTextChanged;
+	final String initialSubject;
+	final ValueChanged<String>? onSubjectChanged;
 
 	const ReplyBox({
 		required this.board,
 		this.threadId,
 		required this.onReplyPosted,
+		this.initialText = '',
+		this.onTextChanged,
+		this.initialSubject = '',
+		this.onSubjectChanged,
 		Key? key
 	}) : super(key: key);
 
@@ -38,9 +46,9 @@ class ReplyBox extends StatefulWidget {
 }
 
 class ReplyBoxState extends State<ReplyBox> {
-	final _textFieldController = TextEditingController();
+	late final TextEditingController _textFieldController;
 	final _nameFieldController = TextEditingController();
-	final _subjectFieldController = TextEditingController();
+	late final TextEditingController _subjectFieldController;
 	final _optionsFieldController = TextEditingController();
 	final _textFocusNode = FocusNode();
 	bool loading = false;
@@ -52,9 +60,15 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	@override
 	void initState() {
+		_textFieldController = TextEditingController(text: widget.initialText);
+		_subjectFieldController = TextEditingController(text: widget.initialSubject);
 		super.initState();
 		_textFieldController.addListener(() {
+			widget.onTextChanged?.call(_textFieldController.text);
 			setState(() {});
+		});
+		_subjectFieldController.addListener(() {
+			widget.onSubjectChanged?.call(_subjectFieldController.text);
 		});
 	}
 
