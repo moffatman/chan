@@ -82,13 +82,20 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	static PostSpan makeSpan(String board, int threadId, String data) {
-		final doc = parse(data.replaceAll('<wbr>', ''));
+		final doc = parse(data.replaceAll('<wbr>', '').replaceAllMapped(RegExp(r'\[math\](.+?)\[\/math\]'), (match) {
+			return '<tex>${match.group(1)!}</tex>';
+		}).replaceAllMapped(RegExp(r'\[eqn\](.+?)\[\/eqn\]'), (match) {
+			return '<tex>${match.group(1)!}</tex>';
+		}));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
 		for (final node in doc.body!.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
 					elements.add(PostTextSpan('\n'));
+				}
+				else if (node.localName == 'tex') {
+					elements.add(PostTeXSpan(node.innerHtml));
 				}
 				else if (node.localName == 'a' && node.classes.contains('quotelink')) {
 					if (node.attributes['href']!.startsWith('#p')) {

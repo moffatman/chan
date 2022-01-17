@@ -11,6 +11,7 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/hover_popup.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/tex.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -28,13 +29,15 @@ class PostSpanRenderOptions {
 	final bool showCrossThreadLabel;
 	final bool addExpandingPosts;
 	final TextStyle baseTextStyle;
+	final bool renderTex;
 	PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
 		this.overrideTextColor,
 		this.showCrossThreadLabel = true,
 		this.addExpandingPosts = true,
-		this.baseTextStyle = const TextStyle()
+		this.baseTextStyle = const TextStyle(),
+		this.renderTex = true
 	});
 	GestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 }
@@ -451,6 +454,24 @@ class PostCatalogSearchSpan extends PostSpan {
 	String buildText() {
 		return '>>/$board/$query';
 	}
+}
+
+class PostTeXSpan extends PostSpan {
+	final String tex;
+	PostTeXSpan(this.tex);
+	@override
+	build(context, options) {
+		return options.renderTex ? WidgetSpan(
+			alignment: PlaceholderAlignment.middle,
+			child: TexWidget(
+				tex: tex,
+			)
+		) : TextSpan(
+			text: '[math]$tex[/math]'
+		);
+	}
+	@override
+	String buildText() => tex;
 }
 
 class PostSpanZone extends StatelessWidget {

@@ -224,7 +224,9 @@ class SelectablePostPage extends StatelessWidget {
 						child: SelectableText.rich(
 							TextSpan(
 								children: [
-									post.span.build(context, PostSpanRenderOptions())
+									post.span.build(context, PostSpanRenderOptions(
+										renderTex: false
+									))
 								]
 							),
 							scrollPhysics: const NeverScrollableScrollPhysics(),
