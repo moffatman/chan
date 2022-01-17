@@ -58,17 +58,20 @@ class _ThreadPageState extends State<ThreadPage> {
 	Thread? lastThread;
 	int lastHiddenPostIdsLength = 0;
 	int lastPostsMarkedAsYouLength = 0;
+	DateTime? lastSavedTime;
 	Timer? _saveThreadStateDuringEditingTimer;
 
 	void _onThreadStateListenableUpdate() {
 		if (persistentState.thread != lastThread ||
 				persistentState.hiddenPostIds.length != lastHiddenPostIdsLength || 
-				persistentState.postsMarkedAsYou.length != lastPostsMarkedAsYouLength) {
+				persistentState.postsMarkedAsYou.length != lastPostsMarkedAsYouLength || 
+				persistentState.savedTime != lastSavedTime) {
 			setState(() {});
 		}
 		lastThread = persistentState.thread;
 		lastHiddenPostIdsLength = persistentState.hiddenPostIds.length;
 		lastPostsMarkedAsYouLength = persistentState.postsMarkedAsYou.length;
+		lastSavedTime = persistentState.savedTime;
 	}
 
 	Thread get _nullThread => Thread(

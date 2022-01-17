@@ -97,6 +97,7 @@ class _BoardPageState extends State<BoardPage> {
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
 		final settings = context.watch<EffectiveSettings>();
+		final persistence = context.watch<Persistence>();
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
 			navigationBar: CupertinoNavigationBar(
@@ -192,8 +193,8 @@ class _BoardPageState extends State<BoardPage> {
 								RefreshableList<Thread>(
 									initialFilter: widget.initialSearch,
 									filters: [
-										context.watch<EffectiveSettings>().filter,
-										context.watch<Persistence>().browserState.getCatalogFilter(board!.name)
+										settings.filter,
+										persistence.browserState.getCatalogFilter(board!.name)
 									],
 									allowReordering: true,
 									gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
@@ -216,9 +217,29 @@ class _BoardPageState extends State<BoardPage> {
 									}),
 									id: '/${board!.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
 									itemBuilder: (context, thread) {
-										final browserState = context.watch<Persistence>().browserState;
+										final browserState = persistence.browserState;
 										return ContextMenu(
 											actions: [
+												if (persistence.getThreadStateIfExists(thread.identifier)?.savedTime != null) ContextMenuAction(
+													child: const Text('Un-save thread'),
+													trailingIcon: Icons.bookmark_remove,
+													onPressed: () {
+														final threadState = persistence.getThreadState(thread.identifier);
+														threadState.savedTime = null;
+														threadState.save();
+														setState(() {});
+													}
+												)
+												else ContextMenuAction(
+													child: const Text('Save thread'),
+													trailingIcon: Icons.bookmark_add,
+													onPressed: () {
+														final threadState = persistence.getThreadState(thread.identifier);
+														threadState.savedTime = DateTime.now();
+														threadState.save();
+														setState(() {});
+													}
+												),
 												if (browserState.isThreadHidden(thread.board, thread.id)) ContextMenuAction(
 													child: const Text('Unhide thread'),
 													trailingIcon: Icons.check_box,
@@ -318,7 +339,7 @@ class _BoardPageState extends State<BoardPage> {
 							widget.onDraftSubjectChanged?.call(subject);
 						},
 						onReplyPosted: (receipt) {
-							final persistentState = context.read<Persistence>().getThreadState(ThreadIdentifier(board: board!.name, id: receipt.id));
+							final persistentState = persistence.getThreadState(ThreadIdentifier(board: board!.name, id: receipt.id));
 							persistentState.savedTime = DateTime.now();
 							persistentState.save();
 							_listController.update();
