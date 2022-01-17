@@ -108,7 +108,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
 										return (b.name.contains(searchString) ? 1 : 0) - (a.name.contains(searchString) ? 1 : 0);
 									});
-									_sortByFavourite();
+									if (searchString.isEmpty) {
+										_sortByFavourite();
+									}
 									final settings = context.read<EffectiveSettings>();
 									_filteredBoards = _filteredBoards.where((b) => settings.showBoard(context, b.name)).toList();
 									setState(() {});
