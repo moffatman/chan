@@ -290,7 +290,7 @@ class ReplyBoxState extends State<ReplyBox> {
 					}
 				}
 				else if (ext == 'gif') {
-					if ((board.maxImageSizeBytes == null) || (size > board.maxImageSizeBytes!)) {
+					if ((board.maxImageSizeBytes != null) && (size > board.maxImageSizeBytes!)) {
 						throw Exception('GIF is too large, and automatic re-encoding of GIFs is not supported');
 					}
 				}
