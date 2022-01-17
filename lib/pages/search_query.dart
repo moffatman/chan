@@ -6,6 +6,7 @@ import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
@@ -51,7 +52,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		catch (e, st) {
 			print(e);
 			print(st);
-			errorMessage = e.toString();
+			errorMessage = e.toStringDio();
 			loading = false;
 			if (mounted) setState(() {});
 		}

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui show Image;
 
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -178,11 +179,9 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			challenge = await _requestChallenge();
 			setState(() {});
 		}
-		catch(e, st) {
-			print(e);
-			print(st);
+		catch(e) {
 			setState(() {
-				errorMessage = e.toString();
+				errorMessage = e.toStringDio();
 			});
 		}
 	}
@@ -229,11 +228,9 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 		try {
 			await _submitChallenge();
 		}
-		catch(e, st) {
-			print(e);
-			print(st);
+		catch(e) {
 			setState(() {
-				errorMessage = e.toString();
+				errorMessage = e.toStringDio();
 			});
 		}
 	}

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:chan/services/filtering.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -179,7 +180,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		catch (e, st) {
 			if (mounted) {
 				setState(() {
-					errorMessage = e.toString();
+					errorMessage = e.toStringDio();
 					errorType = e.runtimeType;
 					updatingNow = false;
 				});

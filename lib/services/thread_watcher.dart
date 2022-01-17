@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:mutex/mutex.dart';
@@ -166,7 +167,7 @@ class SavedThreadWatcher extends ChangeNotifier {
 			nextUpdateTimer = Timer(_normalInterval, update);
 		}
 		catch (e) {
-			updateErrorMessage = e.toString();
+			updateErrorMessage = e.toStringDio();
 			lastUpdate = DateTime.now();
 			nextUpdate = lastUpdate!.add(_errorInterval);
 			nextUpdateTimer = Timer(_errorInterval, update);

@@ -6,6 +6,7 @@ import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
@@ -340,7 +341,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			catch (e, st) {
 				print(e);
 				print(st);
-				alertError(context, e.toString());
+				alertError(context, e.toStringDio());
 			}
 		}
 	}
@@ -426,7 +427,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			setState(() {
 				loading = false;
 			});
-			alertError(context, e.toString());
+			alertError(context, e.toStringDio());
 		}
 	}
 

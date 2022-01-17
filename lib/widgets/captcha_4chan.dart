@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:ui' as ui show Image, PictureRecorder;
 
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -138,11 +139,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			setState(() {});
 			_solutionNode.requestFocus();
 		}
-		catch(e, st) {
-			print(e);
-			print(st);
+		catch(e) {
 			setState(() {
-				errorMessage = e.toString();
+				errorMessage = e.toStringDio();
 			});
 		}
 	}

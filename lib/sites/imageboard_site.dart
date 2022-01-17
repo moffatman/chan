@@ -10,6 +10,7 @@ import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:chan/util.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/widgets.dart';
 
@@ -220,7 +221,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			}
 			catch(e) {
 				if (e is! BoardNotFoundException) {
-					errorMessages[archive.name] = e.toString();
+					errorMessages[archive.name] = e.toStringDio();
 				}
 			}
 		}
@@ -242,16 +243,10 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				}
 				return thread_;
 			}
-			catch(e, st) {
+			catch(e) {
 				if (e is! BoardNotFoundException) {
-					if (e is DioError) {
-						print('Error getting $thread from ${archive.name}: ${e.message}');
-					}
-					else {
-						print('Error getting $thread from ${archive.name}: $e');
-					}
-					// print(st);
-					errorMessages[archive.name] = e.toString();
+					print('Error getting $thread from ${archive.name}: ${e.toStringDio()}');
+					errorMessages[archive.name] = e.toStringDio();
 				}
 			}
 		}

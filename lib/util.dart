@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:mutex/mutex.dart';
 
 extension SafeWhere<T> on Iterable<T> {
@@ -38,5 +39,16 @@ class ExpiringMutexResource<T> {
 			await work(await _getInitialized());
 			_timer = Timer(_interval, _deinitialize);
 		});
+	}
+}
+
+extension ToStringDio on Object {
+	String toStringDio() {
+		if (this is DioError) {
+			return (this as DioError).message;
+		}
+		else {
+			return toString();
+		}
 	}
 }

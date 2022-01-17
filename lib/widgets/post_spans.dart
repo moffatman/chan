@@ -636,7 +636,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 			print('Error getting post from archive');
 			print(e);
 			print(st);
-			_postFromArchiveErrors[id] = e.toString();
+			_postFromArchiveErrors[id] = e.toStringDio();
 		}
 		_isLoadingPostFromArchive[id] = false;
 		notifyListeners();

@@ -8,6 +8,7 @@ import 'package:chan/pages/saved.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/notifying_icon.dart';
@@ -217,7 +218,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			print(error);
 			if (!initialized) {
 				setState(() {
-					boardFetchErrorMessage = error.toString();
+					boardFetchErrorMessage = error.toStringDio();
 				});
 			}
 		}

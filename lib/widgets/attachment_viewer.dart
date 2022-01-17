@@ -6,6 +6,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/rotating_image_provider.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/circular_loading_indicator.dart';
 import 'package:chan/widgets/rx_stream_builder.dart';
@@ -219,7 +220,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			notifyListeners();
 		}
 		catch (e, st) {
-			_errorMessage = e.toString();
+			_errorMessage = e.toStringDio();
 			print(e);
 			print(st);
 			notifyListeners();

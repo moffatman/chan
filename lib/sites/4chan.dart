@@ -223,7 +223,9 @@ class Site4Chan extends ImageboardSite {
 	Future<int?> _getThreadPage(ThreadIdentifier thread) async {
 		final now = DateTime.now();
 		if (_catalogCaches[thread.board] == null || now.difference(_catalogCaches[thread.board]!.lastUpdated).compareTo(_catalogCacheLifetime) > 0) {
-			final response = await client.get(Uri.https(apiUrl, '/${thread.board}/catalog.json').toString());
+			final response = await client.get(Uri.https(apiUrl, '/${thread.board}/catalog.json').toString(), options: Options(
+				validateStatus: (x) => true
+			));
 			if (response.statusCode != 200) {
 				if (response.statusCode == 404) {
 					return Future.error(BoardNotFoundException(thread.board));

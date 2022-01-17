@@ -377,7 +377,7 @@ class PostRow extends StatelessWidget {
 							site.deletePost(_post.board, receipt);
 						}
 						catch (error) {
-							alertError(context, error.toString());
+							alertError(context, error.toStringDio());
 						}
 					}
 				),
