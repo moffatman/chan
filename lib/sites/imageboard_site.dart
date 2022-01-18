@@ -138,10 +138,7 @@ class ImageboardArchiveSearchResult {
 }
 
 abstract class ImageboardSiteArchive {
-	final Dio client = Dio(BaseOptions(
-		receiveTimeout: 5000,
-		connectTimeout: 5000
-	));
+	final Dio client = Dio();
 	BuildContext? _context;
 	BuildContext get context => _context!;
 	set context(BuildContext value) {
