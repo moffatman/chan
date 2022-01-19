@@ -300,7 +300,8 @@ class SettingsPage extends StatelessWidget {
 																							onColorChanged: color.item3,
 																							enableAlpha: false,
 																							portraitOnly: true,
-																							displayThumbColor: true
+																							displayThumbColor: true,
+																							hexInputBar: true
 																						)
 																					)
 																				)
