@@ -441,9 +441,8 @@ class PostLinkSpan extends PostSpan {
 			if (thumbnailUrl != null) {
 				return WidgetSpan(
 					alignment: PlaceholderAlignment.middle,
-					child: CupertinoButton(
-						padding: EdgeInsets.zero,
-						onPressed: () => openBrowser(context, Uri.parse(url)),
+					child: GestureDetector(
+						onTap: () => openBrowser(context, Uri.parse(url)),
 						child: Padding(
 							padding: const EdgeInsets.only(top: 8, bottom: 8),
 							child: ClipRRect(
