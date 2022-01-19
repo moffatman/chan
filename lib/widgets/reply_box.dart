@@ -214,8 +214,8 @@ class ReplyBoxState extends State<ReplyBox> {
 		final savedAttachments = context.read<Persistence>().savedAttachments.values.toList();
 		savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
 		final sources = (Platform.isIOS || Platform.isAndroid || kIsWeb) ? [
-			Tuple2(Icons.photo_library, () => picker.pickImage(source: ImageSource.gallery).then((x) => x?.path)),
-			Tuple2(Icons.video_library, () => picker.pickVideo(source: ImageSource.gallery).then((x) => x?.path)),
+			Tuple2(Icons.photo_library, () => FilePicker.platform.pickFiles(type: FileType.image).then((x) => x?.files.single.path)),
+			Tuple2(Icons.video_library, () => FilePicker.platform.pickFiles(type: FileType.video).then((x) => x?.files.single.path)),
 			Tuple2(Icons.camera_alt, () => picker.pickImage(source: ImageSource.camera).then((x) => x?.path)),
 			Tuple2(Icons.videocam, () => picker.pickImage(source: ImageSource.camera).then((x) => x?.path)),
 			Tuple2(Icons.image_search, () => Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
