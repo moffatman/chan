@@ -387,6 +387,38 @@ class SettingsPage extends StatelessWidget {
 																	style: DefaultTextStyle.of(context).style,
 																	child: Column(
 																		children: [
+																			Row(
+																				mainAxisAlignment: MainAxisAlignment.spaceBetween,
+																				children: [
+																					Text('Width: ${size.width.round()}px'),
+																					CupertinoSlider(
+																						value: size.width,
+																						min: 100,
+																						max: 600,
+																						onChanged: (d) {
+																							setDialogState(() {
+																								size = Size(d, size.height);
+																							});
+																						}
+																					)
+																				]
+																			),
+																			Row(
+																				mainAxisAlignment: MainAxisAlignment.spaceBetween,
+																				children: [
+																					Text('Height: ${size.height.round()}px'),
+																					CupertinoSlider(
+																						value: size.height,
+																						min: 100,
+																						max: 600,
+																						onChanged: (d) {
+																							setDialogState(() {
+																								size = Size(size.width, d);
+																							});
+																						}
+																					)
+																				]
+																			),
 																			SizedBox(
 																				width: 600,
 																				height: 600,
@@ -430,38 +462,6 @@ class SettingsPage extends StatelessWidget {
 																						)
 																					)
 																				)
-																			),
-																			Row(
-																				mainAxisAlignment: MainAxisAlignment.spaceBetween,
-																				children: [
-																					Text('Width: ${size.width.round()}px'),
-																					CupertinoSlider(
-																						value: size.width,
-																						min: 100,
-																						max: 600,
-																						onChanged: (d) {
-																							setDialogState(() {
-																								size = Size(d, size.height);
-																							});
-																						}
-																					)
-																				]
-																			),
-																			Row(
-																				mainAxisAlignment: MainAxisAlignment.spaceBetween,
-																				children: [
-																					Text('Height: ${size.height.round()}px'),
-																					CupertinoSlider(
-																						value: size.height,
-																						min: 100,
-																						max: 600,
-																						onChanged: (d) {
-																							setDialogState(() {
-																								size = Size(size.width, d);
-																							});
-																						}
-																					)
-																				]
 																			)
 																		]
 																	)
