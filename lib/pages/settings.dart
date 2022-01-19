@@ -289,8 +289,9 @@ class SettingsPage extends StatelessWidget {
 																					data: ThemeData(
 																						textTheme: Theme.of(context).textTheme.apply(
 																							bodyColor: CupertinoTheme.of(context).primaryColor,
-																							displayColor: CupertinoTheme.of(context).primaryColor
-																						)
+																							displayColor: CupertinoTheme.of(context).primaryColor,
+																						),
+																						canvasColor: CupertinoTheme.of(context).scaffoldBackgroundColor
 																					),
 																					child: Material(
 																						color: Colors.transparent,
