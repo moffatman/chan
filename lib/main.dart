@@ -631,33 +631,30 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					}
 				),
 				tabBuilder: (context, index) => CupertinoTabView(
-					builder: (context) => Stack(
+					builder: (context) => Column(
 						children: [
-							AnimatedBuilder(
-								animation: _tabController,
-								builder: (context, child) => _buildTab(context, index, _tabController.index == index)
+							Expanded(
+								child: AnimatedBuilder(
+									animation: _tabController,
+									builder: (context, child) => _buildTab(context, index, _tabController.index == index)
+								)
 							),
-							Column(
-								mainAxisAlignment: MainAxisAlignment.end,
-								children: [
-									Expander(
-										duration: const Duration(milliseconds: 2000),
-										height: 80,
-										bottomSafe: false,
-										expanded: showTabPopup,
-										child: Container(
-											color: CupertinoTheme.of(context).barBackgroundColor,
-											child: Row(
-												children: [
-													Expanded(
-														child: _buildTabList(Axis.horizontal)
-													),
-													_buildNewTabIcon()
-												]
-											)
-										)
+							Expander(
+								duration: const Duration(milliseconds: 2000),
+								height: 80,
+								bottomSafe: false,
+								expanded: showTabPopup,
+								child: Container(
+									color: CupertinoTheme.of(context).barBackgroundColor,
+									child: Row(
+										children: [
+											Expanded(
+												child: _buildTabList(Axis.horizontal)
+											),
+											_buildNewTabIcon()
+										]
 									)
-								]
+								)
 							)
 						]
 					)
