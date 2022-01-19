@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
@@ -13,6 +15,7 @@ import 'package:chan/widgets/post_row.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/tex.dart';
 import 'package:chan/widgets/weak_navigator.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +32,7 @@ class PostSpanRenderOptions {
 	final bool showCrossThreadLabel;
 	final bool addExpandingPosts;
 	final TextStyle baseTextStyle;
-	final bool renderTex;
+	final bool showRawSource;
 	PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -37,7 +40,7 @@ class PostSpanRenderOptions {
 		this.showCrossThreadLabel = true,
 		this.addExpandingPosts = true,
 		this.baseTextStyle = const TextStyle(),
-		this.renderTex = true
+		this.showRawSource = false
 	});
 	GestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 }
@@ -407,9 +410,77 @@ class PostSpoilerSpan extends PostSpan {
 
 class PostLinkSpan extends PostSpan {
 	final String url;
+	String? title;
 	PostLinkSpan(this.url);
 	@override
 	build(context, options) {
+		final zone = context.watch<PostSpanZoneData>();
+		final embedPossible = context.watch<EffectiveSettings>().embedRegexes.any((regex) => regex.hasMatch(url));
+		if (embedPossible && !options.showRawSource) {
+			final snapshot = zone.getFutureForComputation(
+				id: 'noembed $url',
+				work: () => context.read<ImageboardSite>().client.get('https://noembed.com/embed', queryParameters: {
+					'url': url
+				})
+			);
+			String? title;
+			String? provider;
+			String? author;
+			String? thumbnailUrl;
+			if (snapshot.data?.data != null) {
+				final data = jsonDecode(snapshot.data?.data);
+				title = data['title'];
+				author = data['author_name'];
+				thumbnailUrl = data['thumbnail_url'];
+				provider = data['provider_name'];
+			}
+			String? byline = provider;
+			if (author != null && !(title != null && title.contains(author))) {
+				byline = byline == null ? author : '$author - $byline';
+			}
+			if (thumbnailUrl != null) {
+				return WidgetSpan(
+					alignment: PlaceholderAlignment.middle,
+					child: CupertinoButton(
+						padding: EdgeInsets.zero,
+						onPressed: () => openBrowser(context, Uri.parse(url)),
+						child: Padding(
+							padding: const EdgeInsets.only(top: 8, bottom: 8),
+							child: ClipRRect(
+								borderRadius: const BorderRadius.all(Radius.circular(8)),
+								child: Container(
+									color: CupertinoTheme.of(context).barBackgroundColor,
+									child: Row(
+										crossAxisAlignment: CrossAxisAlignment.center,
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											ExtendedImage.network(
+												thumbnailUrl,
+												cache: true,
+												width: 75,
+												height: 75,
+												fit: BoxFit.cover
+											),
+											const SizedBox(width: 16),
+											Flexible(
+												child: Column(
+													crossAxisAlignment: CrossAxisAlignment.start,
+													children: [
+														if (title != null) Text(title),
+														if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey))
+													]
+												)
+											),
+											const SizedBox(width: 16)
+										]
+									)
+								)
+							)
+						)
+					)
+				);	
+			}
+		}
 		return TextSpan(
 			text: url,
 			style: options.baseTextStyle.copyWith(
@@ -461,17 +532,17 @@ class PostTeXSpan extends PostSpan {
 	PostTeXSpan(this.tex);
 	@override
 	build(context, options) {
-		return options.renderTex ? WidgetSpan(
+		return options.showRawSource ? TextSpan(
+			text: buildText()
+		) : WidgetSpan(
 			alignment: PlaceholderAlignment.middle,
 			child: TexWidget(
 				tex: tex,
 			)
-		) : TextSpan(
-			text: '[math]$tex[/math]'
 		);
 	}
 	@override
-	String buildText() => tex;
+	String buildText() => '[math]$tex[/math]';
 }
 
 class PostSpanZone extends StatelessWidget {
@@ -511,6 +582,10 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	String? postFromArchiveError(int id) => null;
 	bool shouldShowSpoiler(int id) => false;
 	void toggleShowingOfSpoiler(int id) => throw UnimplementedError();
+	AsyncSnapshot<T> getFutureForComputation<T>({
+		required String id,
+		required Future<T> Function() work
+	}) => throw UnimplementedError();
 	PostSpanZoneData childZoneFor(int postId) {
 		if (!_children.containsKey(postId)) {
 			_children[postId] = PostSpanChildZoneData(
@@ -589,6 +664,12 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	Post? postFromArchive(int id) => parent.postFromArchive(id);
 	@override
 	String? postFromArchiveError(int id) => parent.postFromArchiveError(id);
+
+	@override
+	AsyncSnapshot<T> getFutureForComputation<T>({
+		required String id,
+		required Future<T> Function() work
+	}) => parent.getFutureForComputation(id: id, work: work);
 }
 
 
@@ -605,6 +686,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	final Map<int, Post> _postsFromArchive = {};
 	final Map<int, String> _postFromArchiveErrors = {};
 	final Iterable<int> semanticRootIds;
+	final Map<String, AsyncSnapshot> _futures = {};
 
 	PostSpanRootZoneData({
 		required this.thread,
@@ -650,6 +732,27 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	String? postFromArchiveError(int id) {
 		return _postFromArchiveErrors[id];
+	}
+
+	@override
+	AsyncSnapshot<T> getFutureForComputation<T>({
+		required String id,
+		required Future<T> Function() work
+	}) {
+		if (!_futures.containsKey(id)) {
+			_futures[id] = AsyncSnapshot<T>.waiting();
+			() async {
+				try {
+					final data = await work();
+					_futures[id] = AsyncSnapshot<T>.withData(ConnectionState.done, data);
+				}
+				catch (e) {
+					_futures[id] = AsyncSnapshot<T>.withError(ConnectionState.done, e);
+				}
+				notifyListeners();
+			}();
+		}
+		return _futures[id] as AsyncSnapshot<T>;
 	}
 }
 

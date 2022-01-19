@@ -225,7 +225,7 @@ class SelectablePostPage extends StatelessWidget {
 							TextSpan(
 								children: [
 									post.span.build(context, PostSpanRenderOptions(
-										renderTex: false
+										showRawSource: true
 									))
 								]
 							),

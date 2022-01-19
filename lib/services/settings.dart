@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:chan/models/board.dart';
@@ -182,6 +183,8 @@ class SavedSettings extends HiveObject {
 	bool showImageCountInCatalog;
 	@HiveField(28)
 	bool showClockIconInCatalog;
+	@HiveField(29)
+	List<String> embedRegexes;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -212,6 +215,7 @@ class SavedSettings extends HiveObject {
 		double? catalogGridHeight,
 		bool? showImageCountInCatalog,
 		bool? showClockIconInCatalog,
+		List<String>? embedRegexes,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? ThemeSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -247,7 +251,8 @@ class SavedSettings extends HiveObject {
 		catalogGridWidth = catalogGridWidth ?? 200,
 		catalogGridHeight = catalogGridHeight ?? 300,
 		showImageCountInCatalog = showImageCountInCatalog ?? true,
-		showClockIconInCatalog = showClockIconInCatalog ?? true;
+		showClockIconInCatalog = showClockIconInCatalog ?? true,
+		embedRegexes = embedRegexes ?? [];
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -349,6 +354,20 @@ class EffectiveSettings extends ChangeNotifier {
 		}
 		catch (e) {
 			print('Error updating content settings: $e');
+		}
+	}
+
+	late List<RegExp> embedRegexes;
+	void updateEmbedRegexes() async {
+		try {
+			final response = await Dio().get('https://noembed.com/providers');
+			final data = jsonDecode(response.data);
+			_settings.embedRegexes = List<String>.from(data.expand((x) => (x['patterns'] as List<dynamic>).cast<String>()));
+			embedRegexes = _settings.embedRegexes.map((x) => RegExp(x)).toList();
+			notifyListeners();
+		}
+		catch (e) {
+			print('Error updating embed regexes: $e');
 		}
 	}
 
@@ -463,6 +482,8 @@ class EffectiveSettings extends ChangeNotifier {
 	EffectiveSettings(SavedSettings settings) {
 		_settings = settings;
 		_tryToSetupFilter();
+		embedRegexes = settings.embedRegexes.map((x) => RegExp(x)).toList();
+		updateEmbedRegexes();
 		updateContentSettings();
 	}
 }
