@@ -6,6 +6,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
@@ -532,7 +533,7 @@ class Site4Chan extends ImageboardSite {
 					print('Error from ${archive.name}');
 					print(e);
 					print(st);
-					s += '\n${archive.name}: $e';
+					s += '\n${archive.name}: ${e.toStringDio()}';
 				}
 			}
 		}
