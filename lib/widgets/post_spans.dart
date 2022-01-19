@@ -358,10 +358,14 @@ class PostCodeSpan extends PostSpan {
 					color: Colors.black,
 					borderRadius: BorderRadius.all(Radius.circular(8))
 				),
-				child: RichText(
-					text: TextSpan(
-						style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
-						children: _spans
+				child: SingleChildScrollView(
+					scrollDirection: Axis.horizontal,
+					child: RichText(
+						text: TextSpan(
+							style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
+							children: _spans
+						),
+						softWrap: false
 					)
 				)
 			)
