@@ -63,6 +63,7 @@ class _PostsPageState extends State<PostsPage> {
 					child: Builder(
 					builder: (ctx) => ListView(
 						shrinkWrap: true,
+						primary: false,
 						physics: const NeverScrollableScrollPhysics(),
 						children: replies.map((reply) {
 							return Builder(
