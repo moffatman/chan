@@ -216,13 +216,14 @@ class ReplyBoxState extends State<ReplyBox> {
 		final sources = (Platform.isIOS || Platform.isAndroid || kIsWeb) ? [
 			Tuple2(Icons.photo_library, () => FilePicker.platform.pickFiles(type: FileType.image).then((x) => x?.files.single.path)),
 			Tuple2(Icons.video_library, () => FilePicker.platform.pickFiles(type: FileType.video).then((x) => x?.files.single.path)),
+			Tuple2(Icons.upload_file, () => FilePicker.platform.pickFiles(type: FileType.any).then((x) => x?.files.single.path)),
 			Tuple2(Icons.camera_alt, () => picker.pickImage(source: ImageSource.camera).then((x) => x?.path)),
-			Tuple2(Icons.videocam, () => picker.pickImage(source: ImageSource.camera).then((x) => x?.path)),
+			Tuple2(Icons.videocam, () => picker.pickVideo(source: ImageSource.camera).then((x) => x?.path)),
 			Tuple2(Icons.image_search, () => Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
 				builder: (context) => const WebImagePickerPage()
 			)).then((x) => x?.path))
 		] : [
-			Tuple2(Icons.attachment, () => FilePicker.platform.pickFiles().then((x) => x?.files.single.path))
+			Tuple2(Icons.upload_file, () => FilePicker.platform.pickFiles().then((x) => x?.files.single.path))
 		];
 		File? file = await Navigator.of(context).push<File>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
