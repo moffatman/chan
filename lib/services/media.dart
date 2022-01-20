@@ -49,11 +49,15 @@ class MediaScan {
 	final bool hasAudio;
 	final Duration? duration;
 	final int? bitrate;
+	final int? width;
+	final int? height;
 
 	MediaScan({
 		required this.hasAudio,
 		required this.duration,
-		required this.bitrate
+		required this.bitrate,
+		required this.width,
+		required this.height
 	});
 
 	static final Map<_MediaScanCacheEntry, MediaScan> _mediaScanCache = {};
@@ -70,10 +74,18 @@ class MediaScan {
 				}
 				final data = jsonDecode(output);
 				final seconds = double.tryParse(data['format']?['duration'] ?? '');
+				int width = 0;
+				int height = 0;
+				for (final stream in (data['streams'] as List<dynamic>)) {
+					width = max(width, stream['width'] ?? 0);
+					height = max(height, stream['height'] ?? 0);
+				}
 				completer.complete(MediaScan(
 					hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
 					duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
-					bitrate: int.tryParse(data['format']?['bit_rate'])
+					bitrate: int.tryParse(data['format']?['bit_rate']),
+					width: width == 0 ? null : width,
+					height: height == 0 ? null : height
 				));
 			});
 			return completer.future;
@@ -142,7 +154,7 @@ class MediaConversion {
 			maximumSizeInBytes: maximumSizeInBytes,
 			maximumDurationInSeconds: maximumDurationInSeconds,
 			stripAudio: stripAudio,
-			extraOptions: ['-c:v', 'libvpx', '-c:a', 'libvorbis']
+			extraOptions: ['-c:a', 'libvorbis', '-c:v', 'libvpx', '-cpu-used', '2']
 		);
 	}
 
@@ -221,7 +233,16 @@ class MediaConversion {
 							outputDurationInMilliseconds = min(maximumDurationInSeconds! * 1000, outputDurationInMilliseconds!);
 						}
 						if (maximumSizeInBytes != null) {
-							outputBitrate = min(outputBitrate, (6 * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round());
+							outputBitrate = min(outputBitrate, (8 * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round());
+						}
+					}
+					String? filter;
+					if (scan.width != null && scan.height != null) {
+						double scaleDownFactorSq = outputBitrate/(2 * scan.width! * scan.height!);
+						if (scaleDownFactorSq < 1) {
+							final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
+							final newHeight = (scan.height! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
+							filter = 'scale=$newWidth:$newHeight';
 						}
 					}
 					bool passedFirstEvent = false;
@@ -233,6 +254,7 @@ class MediaConversion {
 							passedFirstEvent = true;
 						}
 					});
+					final bitrateString = (outputBitrate / 1000).floor().toString() + 'K';
 					final ffmpegCompleter = Completer<Session>();
 					 _session = await FFmpegKit.executeWithArgumentsAsync([
 						'-hwaccel', 'auto',
@@ -241,7 +263,9 @@ class MediaConversion {
 						...extraOptions,
 						if (stripAudio) '-an',
 						if (outputFileExtension == 'jpg') ...['-qscale:v', '5']
-						else ...['-b:v', outputBitrate.toString()],
+						else ...['-b:v', bitrateString],
+						if (outputFileExtension == 'webm') ...['-crf', '10'],
+						if (filter != null) ...['-vf', filter],
 						if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
 						convertedFile.path
 					], (c) => ffmpegCompleter.complete(c));
@@ -262,7 +286,7 @@ class MediaConversion {
 		catch (error, st) {
 			_completer!.completeError(error, st);
 		}
-		progress.dispose();
+		Future.delayed(const Duration(milliseconds: 500), () => progress.dispose());
 	}
 
 	void cancel() => _session?.cancel();
