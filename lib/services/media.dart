@@ -122,11 +122,11 @@ class MediaConversion {
 
 	static MediaConversion toMp4(Uri inputFile) {
 		List<String> extraOptions = [];
-		if (Platform.isAndroid) {
-			extraOptions = ['-c:v', 'libx264', '-preset', 'medium', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'];
-		}
-		else if (Platform.isIOS) {
+		if (Platform.isIOS && !RegExp(r'Version 15\.[01]').hasMatch(Platform.operatingSystemVersion)) {
 			extraOptions = ['-vcodec', 'h264_videotoolbox'];
+		}
+		else if (Platform.isAndroid || Platform.isIOS) {
+			extraOptions = ['-c:v', 'libx264', '-preset', 'medium', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'];
 		}
 		return MediaConversion(
 			inputFile: inputFile,
