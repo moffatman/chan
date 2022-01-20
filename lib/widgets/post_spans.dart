@@ -33,6 +33,7 @@ class PostSpanRenderOptions {
 	final bool addExpandingPosts;
 	final TextStyle baseTextStyle;
 	final bool showRawSource;
+	final bool avoidBuggyClippers;
 	PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -40,7 +41,8 @@ class PostSpanRenderOptions {
 		this.showCrossThreadLabel = true,
 		this.addExpandingPosts = true,
 		this.baseTextStyle = const TextStyle(),
-		this.showRawSource = false
+		this.showRawSource = false,
+		this.avoidBuggyClippers = false
 	});
 	GestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 }
@@ -351,6 +353,13 @@ class PostCodeSpan extends PostSpan {
 
 	@override
 	build(context, options) {
+		final child = RichText(
+			text: TextSpan(
+				style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
+				children: _spans
+			),
+			softWrap: false
+		);
 		return WidgetSpan(
 			child: Container(
 				padding: const EdgeInsets.all(8),
@@ -358,15 +367,9 @@ class PostCodeSpan extends PostSpan {
 					color: Colors.black,
 					borderRadius: BorderRadius.all(Radius.circular(8))
 				),
-				child: SingleChildScrollView(
+				child: options.avoidBuggyClippers ? child : SingleChildScrollView(
 					scrollDirection: Axis.horizontal,
-					child: RichText(
-						text: TextSpan(
-							style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
-							children: _spans
-						),
-						softWrap: false
-					)
+					child: child
 				)
 			)
 		);
@@ -443,43 +446,51 @@ class PostLinkSpan extends PostSpan {
 				byline = byline == null ? author : '$author - $byline';
 			}
 			if (thumbnailUrl != null) {
-				return WidgetSpan(
-					alignment: PlaceholderAlignment.middle,
-					child: GestureDetector(
-						onTap: () => openBrowser(context, Uri.parse(url)),
-						child: Padding(
-							padding: const EdgeInsets.only(top: 8, bottom: 8),
-							child: ClipRRect(
-								borderRadius: const BorderRadius.all(Radius.circular(8)),
-								child: Container(
-									color: CupertinoTheme.of(context).barBackgroundColor,
-									child: Row(
-										crossAxisAlignment: CrossAxisAlignment.center,
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											ExtendedImage.network(
-												thumbnailUrl,
-												cache: true,
-												width: 75,
-												height: 75,
-												fit: BoxFit.cover
-											),
-											const SizedBox(width: 16),
-											Flexible(
-												child: Column(
-													crossAxisAlignment: CrossAxisAlignment.start,
-													children: [
-														if (title != null) Text(title),
-														if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey))
-													]
-												)
-											),
-											const SizedBox(width: 16)
-										]
-									)
-								)
+				final tapChild = Padding(
+					padding: const EdgeInsets.only(top: 8, bottom: 8),
+					child: ClipRRect(
+						borderRadius: const BorderRadius.all(Radius.circular(8)),
+						child: Container(
+							color: CupertinoTheme.of(context).barBackgroundColor,
+							child: Row(
+								crossAxisAlignment: CrossAxisAlignment.center,
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									ExtendedImage.network(
+										thumbnailUrl,
+										cache: true,
+										width: 75,
+										height: 75,
+										fit: BoxFit.cover
+									),
+									const SizedBox(width: 16),
+									Flexible(
+										child: Column(
+											crossAxisAlignment: CrossAxisAlignment.start,
+											children: [
+												if (title != null) Text(title),
+												if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey))
+											]
+										)
+									),
+									const SizedBox(width: 16)
+								]
 							)
 						)
+					)
+				);
+				onTap() {
+					openBrowser(context, Uri.parse(url));
+				}
+				return WidgetSpan(
+					alignment: PlaceholderAlignment.middle,
+					child: options.avoidBuggyClippers ? GestureDetector(
+						onTap: onTap,
+						child: tapChild
+					) : CupertinoButton(
+						padding: EdgeInsets.zero,
+						onPressed: onTap,
+						child: tapChild
 					)
 				);	
 			}

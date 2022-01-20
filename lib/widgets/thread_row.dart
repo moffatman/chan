@@ -220,7 +220,9 @@ class ThreadRow extends StatelessWidget {
 																				text: settings.filterProfanity(_thread.title!) + '\n',
 																				style: const TextStyle(fontWeight: FontWeight.bold)
 																			),
-																			_thread.posts[0].span.build(ctx, PostSpanRenderOptions()),
+																			_thread.posts[0].span.build(ctx, PostSpanRenderOptions(
+																				avoidBuggyClippers: true
+																			)),
 																			WidgetSpan(
 																				child: Visibility(
 																					visible: false,
@@ -351,7 +353,9 @@ class ThreadRow extends StatelessWidget {
 																			text: settings.filterProfanity(_thread.title!) + '\n',
 																			style: const TextStyle(fontWeight: FontWeight.bold)
 																		),
-																		_thread.posts[0].span.build(ctx, PostSpanRenderOptions()),
+																		_thread.posts[0].span.build(ctx, PostSpanRenderOptions(
+																			avoidBuggyClippers: true
+																		)),
 																	]
 																),
 																overflow: TextOverflow.fade
