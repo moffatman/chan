@@ -329,21 +329,26 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		return active ? child : PrimaryScrollController.none(child: child);
 	}
 
-	Widget _buildTabletIcon(int index, Widget icon, String? label, {bool reorderable = false, Axis axis = Axis.vertical}) {
+	Widget _buildTabletIcon(int index, Widget icon, String? label, {
+		bool reorderable = false,
+		Axis axis = Axis.vertical,
+		Widget Function(BuildContext, Widget)? opacityParentBuilder,
+	}) {
+		final content = Opacity(
+			opacity: (index <= 0 ? (tabletIndex == 0 && index == -1*activeBrowserTab.value) : index == tabletIndex) ? 1.0 : 0.5,
+			child: Column(
+				children: [
+					icon,
+					if (label != null) ...[
+						const SizedBox(height: 4),
+						Text(label, style: const TextStyle(fontSize: 15))
+					]
+				]
+			)
+		);
 		final child = CupertinoButton(
 			padding: axis == Axis.vertical ? const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8) : const EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
-			child: Opacity(
-				opacity: (index <= 0 ? (tabletIndex == 0 && index == -1*activeBrowserTab.value) : index == tabletIndex) ? 1.0 : 0.5,
-				child: Column(
-					children: [
-						icon,
-						if (label != null) ...[
-							const SizedBox(height: 4),
-							Text(label, style: const TextStyle(fontSize: 15))
-						]
-					]
-				)
-			),
+			child: opacityParentBuilder != null ? opacityParentBuilder(context, content) : content,
 			onPressed: () async {
 				if (index <= 0) {
 					if (activeBrowserTab.value == -1 * index && _tabController.index == 0) {
@@ -413,7 +418,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				opacity: 0.5,
 				child: Column(
 					children: [
-						const Icon(Icons.add),
+						const Icon(CupertinoIcons.add),
 						if (!hideLabel) ...[
 							const SizedBox(height: 4),
 							const Text("New", style: TextStyle(fontSize: 15))
@@ -459,18 +464,17 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				const _icon = SizedBox(
 					width: 30,
 					height: 30,
-					child: Icon(Icons.topic)
+					child: Icon(CupertinoIcons.rectangle_stack)
 				);
-				Widget icon = _icon;
+				Widget? child;
 				if (tabs[i].item1.thread != null) {
-					icon = ValueListenableBuilder(
+					child = ValueListenableBuilder(
 						valueListenable: context.read<Persistence>().listenForPersistentThreadStateChanges(tabs[i].item1.thread!),
 						builder: (context, box, child) {
 							final threadState = context.read<Persistence>().getThreadStateIfExists(tabs[i].item1.thread!);
 							Future.microtask(() => tabs[i].item3.value = threadState?.unseenReplyCount ?? 0);
 							final attachment = threadState?.thread?.attachment;
-							return StationaryNotifyingIcon(
-								icon: attachment == null ? _icon : ClipRRect(
+							return _buildTabletIcon(i * -1, attachment == null ? _icon : ClipRRect(
 									borderRadius: const BorderRadius.all(Radius.circular(4)),
 									child: AttachmentThumbnail(
 										gaplessPlayback: true,
@@ -480,16 +484,27 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										height: 30
 									)
 								),
-								primary: threadState?.unseenReplyIdsToYou?.length ?? 0,
-								secondary: threadState?.unseenReplyCount ?? 0
+								tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'None',
+								reorderable: false,
+								axis: axis,
+								opacityParentBuilder: (context, child) => StationaryNotifyingIcon(
+								icon: child,
+									primary: threadState?.unseenReplyIdsToYou?.length ?? 0,
+									secondary: threadState?.unseenReplyCount ?? 0
+								)
 							);
 						}
 					);
 				}
 				else {
 					Future.microtask(() => tabs[i].item3.value = 0);
+					child = _buildTabletIcon(i * -1, _icon, tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'None', reorderable: false, axis: axis);
 				}
-				return _buildTabletIcon(i * -1, icon, tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'None', reorderable: true, axis: axis);
+				return ReorderableDelayedDragStartListener(
+					index: i,
+					key: ValueKey(i),
+					child: child
+				);
 			}
 		);
 	}
@@ -541,19 +556,22 @@ class _ChanHomePageState extends State<ChanHomePage> {
 													]
 												)
 											),
-											_buildTabletIcon(1, Builder(
-												builder: (context) => NotifyingIcon(
-													icon: const Icon(Icons.bookmark),
+											_buildTabletIcon(1, const Icon(CupertinoIcons.bookmark), hideTabletLayoutLabels ? null : 'Saved',
+												opacityParentBuilder: (context, child) => NotifyingIcon(
+													icon: child,
 													primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
 													secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
 												)
-											), hideTabletLayoutLabels ? null : 'Saved'),
-											_buildTabletIcon(2, const Icon(Icons.history), hideTabletLayoutLabels ? null : 'History'),
-											_buildTabletIcon(3, const Icon(Icons.search), hideTabletLayoutLabels ? null : 'Search'),
-											_buildTabletIcon(4, NotifyingIcon(
-												icon: const Icon(Icons.settings),
-												primaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0)
-											), hideTabletLayoutLabels ? null : 'Settings')
+											),
+											_buildTabletIcon(2, const Icon(CupertinoIcons.archivebox), hideTabletLayoutLabels ? null : 'History'),
+											_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
+											_buildTabletIcon(4, const Icon(CupertinoIcons.settings), hideTabletLayoutLabels ? null : 'Settings',
+												opacityParentBuilder: (context, child) => NotifyingIcon(
+													icon: child,
+													primaryCount: devThreadWatcher?.unseenYouCount ?? ValueNotifier(0),
+													secondaryCount: devThreadWatcher?.unseenStickyThreadCount ?? ValueNotifier(0),
+												)
+											)
 										]
 									)
 								),
@@ -581,7 +599,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							icon: AnimatedBuilder(
 								animation: browseCountListenable,
 								builder: (context, child) => StationaryNotifyingIcon(
-									icon: const Icon(Icons.topic),
+									icon: const Icon(CupertinoIcons.rectangle_stack),
 									primary: 0,
 									secondary: (tabs.length == 1) ? 0 : tabs.asMap().entries.where((x) => x.key != activeBrowserTab.value).map((x) => x.value.item3.value).reduce((a, b) => a + b)
 								)
@@ -591,27 +609,26 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						BottomNavigationBarItem(
 							icon: Builder(
 								builder: (context) => NotifyingIcon(
-									icon: const Icon(Icons.bookmark),
+									icon: const Icon(CupertinoIcons.bookmark),
 									primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
-									secondaryCount: context.watch<SavedThreadWatcher>().unseenCount,
-									topOffset: 10
+									secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
 								)
 							),
 							label: 'Saved'
 						),
 						const BottomNavigationBarItem(
-							icon: Icon(Icons.history),
+							icon: Icon(CupertinoIcons.archivebox),
 							label: 'History'
 						),
 						const BottomNavigationBarItem(
-							icon: Icon(Icons.search),
+							icon: Icon(CupertinoIcons.search),
 							label: 'Search'
 						),
 						BottomNavigationBarItem(
 							icon: NotifyingIcon(
-								icon: const Icon(Icons.settings),
-								primaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0),
-								topOffset: 10
+								icon: const Icon(CupertinoIcons.settings),
+								primaryCount: devThreadWatcher?.unseenYouCount ?? ValueNotifier(0),
+								secondaryCount: devThreadWatcher?.unseenStickyThreadCount ?? ValueNotifier(0),
 							),
 							label: 'Settings'
 						)

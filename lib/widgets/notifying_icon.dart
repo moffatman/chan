@@ -101,7 +101,8 @@ class NotifyingIcon extends StatelessWidget {
 				builder: (BuildContext context, int secondary, Widget? child) => StationaryNotifyingIcon(
 					icon: icon,
 					primary: primary,
-					secondary: secondary
+					secondary: secondary,
+					topOffset: topOffset
 				)
 			)
 		);

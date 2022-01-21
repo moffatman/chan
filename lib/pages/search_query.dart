@@ -72,7 +72,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				),
 				const Spacer(),
 				CupertinoButton(
-					child: const Icon(Icons.navigate_before),
+					child: const Icon(CupertinoIcons.chevron_left),
 					onPressed: (loading || result!.page == 1) ? null : () {
 						page = page! - 1;
 						_runQuery();
@@ -81,7 +81,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				),
 				Text('Page $page'),
 				CupertinoButton(
-					child: const Icon(Icons.navigate_next),
+					child: const Icon(CupertinoIcons.chevron_right),
 					onPressed: (loading || result!.page == result!.maxPage) ? null : () {
 						page = page! + 1;
 						_runQuery();
@@ -182,7 +182,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					transitionBetweenRoutes: false,
 					leading: CupertinoButton(
 						padding: EdgeInsets.zero,
-						child: const Icon(Icons.arrow_back_ios),
+						child: const Icon(CupertinoIcons.chevron_left),
 						onPressed: () => nav.pop()
 					),
 					middle: Row(

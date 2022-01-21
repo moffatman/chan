@@ -121,7 +121,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				),
 				trailing: widget.currentlyPickingFavourites ? null : CupertinoButton(
 					padding: EdgeInsets.zero,
-					child: browserState.favouriteBoards.isEmpty ? const Icon(Icons.star_border) : const Icon(Icons.star),
+					child: browserState.favouriteBoards.isEmpty ? const Icon(CupertinoIcons.star) : const Icon(CupertinoIcons.star_fill),
 					onPressed: () async {
 						await showCupertinoDialog(
 							barrierDismissible: true,
@@ -164,7 +164,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																		Text('/${browserState.favouriteBoards[i]}/', style: const TextStyle(fontSize: 20)),
 																		const Spacer(),
 																		CupertinoButton(
-																			child: const Icon(Icons.delete),
+																			child: const Icon(CupertinoIcons.delete),
 																			onPressed: () {
 																				browserState.favouriteBoards.remove(browserState.favouriteBoards[i]);
 																				setDialogState(() {});
@@ -187,7 +187,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																	child: Row(
 																		mainAxisAlignment: MainAxisAlignment.center,
 																		children: const [
-																			Icon(Icons.add),
+																			Icon(CupertinoIcons.add),
 																			Text(' Add board')
 																		]
 																	),
@@ -270,7 +270,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											alignment: Alignment.topRight,
 											child: Padding(
 												padding: EdgeInsets.only(top: 4, right: 4),
-												child: Icon(Icons.star, size: 15)
+												child: Icon(CupertinoIcons.star_fill, size: 15)
 											)
 										)
 									]

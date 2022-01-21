@@ -78,7 +78,7 @@ class _SavedPageState extends State<SavedPage> {
 			middle: Text(title),
 			trailing: CupertinoButton(
 				padding: EdgeInsets.zero,
-				child: const Icon(Icons.sort),
+				child: const Icon(CupertinoIcons.sort_down),
 				onPressed: () {
 					showCupertinoModalPopup<DateTime>(
 						context: context,
@@ -116,7 +116,7 @@ class _SavedPageState extends State<SavedPage> {
 			paneCreator: () => [
 				MultiMasterPane<ThreadIdentifier>(
 					navigationBar: _navigationBar('Saved Threads'),
-					icon: Icons.topic,
+					icon: CupertinoIcons.tray_full,
 					masterBuilder: (context, selectedThread, threadSetter) {
 						return SafeArea(
 							child: Column(
@@ -179,7 +179,7 @@ class _SavedPageState extends State<SavedPage> {
 																	state.savedTime = null;
 																	state.save();
 																},
-																trailingIcon: Icons.delete,
+																trailingIcon: CupertinoIcons.xmark,
 																isDestructiveAction: true
 															)
 														]
@@ -208,7 +208,7 @@ class _SavedPageState extends State<SavedPage> {
 						transitionBetweenRoutes: false,
 						middle: Text('Your Posts')
 					),
-					icon: Icons.person,
+					icon: CupertinoIcons.pencil,
 					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
 						valueListenable: persistence.threadStateBox.listenable(),
 						builder: (context, Box<PersistentThreadState> box, child) {
@@ -258,7 +258,7 @@ class _SavedPageState extends State<SavedPage> {
 				),
 				MultiMasterPane<SavedPost>(
 					navigationBar: _navigationBar('Saved Posts'),
-					icon: Icons.reply,
+					icon: CupertinoIcons.reply,
 					masterBuilder: (context, selected, setter) => AnimatedBuilder(
 						animation: persistence.savedPostsNotifier,
 						builder: (context, child) {
@@ -328,7 +328,7 @@ class _SavedPageState extends State<SavedPage> {
 				),
 				MultiMasterPane<SavedAttachment>(
 					title: const Text('Saved Attachments'),
-					icon: Icons.image,
+					icon: CupertinoIcons.photo,
 					masterBuilder: (context, selected, setter) => AnimatedBuilder(
 						animation: persistence.savedAttachmentsNotifier,
 						builder: (context, child) {
@@ -432,7 +432,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 								),
 								const SizedBox(width: 16),
 								CupertinoButton(
-									child: const Icon(Icons.refresh),
+									child: const Icon(CupertinoIcons.refresh),
 									onPressed: watcher.update
 								),
 								CupertinoSwitch(

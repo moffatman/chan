@@ -73,7 +73,7 @@ class _HistoryPageState extends State<HistoryPage> {
 										ContextMenuAction(
 											child: const Text('Remove'),
 											onPressed: state.delete,
-											trailingIcon: Icons.delete,
+											trailingIcon: CupertinoIcons.xmark,
 											isDestructiveAction: true
 										)
 									]

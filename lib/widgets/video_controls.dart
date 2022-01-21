@@ -87,7 +87,7 @@ class _VideoControlsState extends State<VideoControls> {
 				),
 				Text(_formatDuration(value.duration), style: const TextStyle(color: Colors.white)),
 				if (widget.hasAudio) CupertinoButton(
-					child: Icon(value.volume > 0 ? Icons.volume_up : Icons.volume_off),
+					child: Icon(value.volume > 0 ? CupertinoIcons.volume_up : CupertinoIcons.volume_off),
 					padding: EdgeInsets.zero,
 					onPressed: () async {
 						if (value.volume > 0) {
@@ -99,7 +99,7 @@ class _VideoControlsState extends State<VideoControls> {
 					}
 				),
 				CupertinoButton(
-					child: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow),
+					child: Icon(value.isPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_arrow_solid),
 					padding: EdgeInsets.zero,
 					onPressed: () async {
 						if (value.isPlaying) {

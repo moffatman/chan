@@ -346,7 +346,7 @@ class AttachmentViewer extends StatelessWidget {
 				child: active ? CircularLoadingIndicator(
 					value: value
 				) : Icon(
-					Icons.download_for_offline,
+					CupertinoIcons.arrow_down_circle,
 					size: 60,
 					color: CupertinoTheme.of(context).primaryColor
 				)

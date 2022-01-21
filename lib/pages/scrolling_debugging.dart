@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 
 class ScrollingDebuggingPage extends StatefulWidget {
 	const ScrollingDebuggingPage({
@@ -38,7 +37,7 @@ class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
 			navigationBar: CupertinoNavigationBar(
 				middle: const Text('Scrolling debugging'),
 				trailing: CupertinoButton(
-					child: const Icon(Icons.vertical_align_bottom),
+					child: const Icon(CupertinoIcons.arrow_down_to_line),
 					onPressed: () {
 						controller.animateTo((x) => x.id == 3000);
 					}

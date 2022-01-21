@@ -101,11 +101,11 @@ class ThreadRow extends StatelessWidget {
 						children: [
 							const SizedBox(width: 4),
 							if (_thread.isSticky) ... [
-								Icon(Icons.push_pin, color: otherMetadataColor, size: 18),
+								Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
 								const SizedBox(width: 4),
 							],
 							if (_thread.isArchived) ... [
-								Icon(Icons.archive, color: grey, size: 18),
+								Icon(CupertinoIcons.archivebox, color: grey, size: 18),
 								const SizedBox(width: 4),
 							],
 							FittedBox(
@@ -114,7 +114,7 @@ class ThreadRow extends StatelessWidget {
 									mainAxisSize: MainAxisSize.min,
 									children: [
 										if (settings.showClockIconInCatalog) ...[
-											Icon(Icons.access_time_filled, color: otherMetadataColor, size: 18),
+											Icon(CupertinoIcons.clock, color: otherMetadataColor, size: 18),
 											const SizedBox(width: 4)
 										],
 										Text(_timeDiff(thread.time), style: TextStyle(color: otherMetadataColor)),
@@ -128,7 +128,7 @@ class ThreadRow extends StatelessWidget {
 									mainAxisSize: MainAxisSize.min,
 									children: [
 										const SizedBox(width: 6),
-										Icon(Icons.reply_rounded, size: 18, color: replyCountColor),
+										Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
 										const SizedBox(width: 4),
 										Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
 										if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
@@ -143,10 +143,13 @@ class ThreadRow extends StatelessWidget {
 									mainAxisSize: MainAxisSize.min,
 									children: [
 										const SizedBox(width: 6),
-										Icon(Icons.image, size: 18, color: imageCountColor),
+										Icon(CupertinoIcons.photo, size: 18, color: imageCountColor),
 										const SizedBox(width: 4),
-										Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
-										if (unseenImageCount > 0) Text('+$unseenImageCount'),
+										if (latestImageCount > unseenImageCount) ...[
+											Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
+											if (unseenImageCount > 0) Text('+$unseenImageCount'),
+										]
+										else Text('$unseenImageCount', style: TextStyle(color: unseenImageCount == 0 ? grey : null)),
 										const SizedBox(width: 2)
 									]
 								)
@@ -195,7 +198,7 @@ class ThreadRow extends StatelessWidget {
 																		border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 																	),
 																	padding: const EdgeInsets.all(2),
-																	child: const Icon(Icons.play_arrow)
+																	child: const Icon(CupertinoIcons.play_arrow_solid)
 																)
 															)
 														]
@@ -282,8 +285,8 @@ class ThreadRow extends StatelessWidget {
 																							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 																							border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 																						),
-																						padding: const EdgeInsets.all(1),
-																						child: const Icon(Icons.play_arrow, size: 18)
+																						padding: const EdgeInsets.all(2),
+																						child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
 																					)
 																				)
 																			)
@@ -301,7 +304,7 @@ class ThreadRow extends StatelessWidget {
 											child: SizedBox(
 												width: 75,
 												height: 75,
-												child: Icon(Icons.broken_image, size: 36)
+												child: Icon(CupertinoIcons.xmark_square, size: 36)
 											)
 										),
 										Expanded(

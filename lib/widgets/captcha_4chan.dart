@@ -6,7 +6,6 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class Captcha4ChanCustom extends StatefulWidget {
@@ -216,7 +215,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 						child: Row(
 							mainAxisSize: MainAxisSize.min,
 							children: [
-								const Icon(Icons.refresh),
+								const Icon(CupertinoIcons.refresh),
 								const SizedBox(width: 16),
 								SizedBox(
 									width: 24,
@@ -230,7 +229,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			);
 		}
 		return CupertinoButton(
-			child: const Icon(Icons.refresh),
+			child: const Icon(CupertinoIcons.refresh),
 			onPressed: _tryRequestChallenge
 		);
 	}
@@ -291,7 +290,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 								),
 								Row(
 									children: [
-										const Icon(Icons.timer),
+										const Icon(CupertinoIcons.timer),
 										const SizedBox(width: 16),
 										SizedBox(
 											width: 60,

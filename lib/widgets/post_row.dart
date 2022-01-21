@@ -119,7 +119,7 @@ class PostRow extends StatelessWidget {
 											mainAxisSize: MainAxisSize.min,
 											children: [
 												Icon(
-													Icons.reply_rounded,
+													CupertinoIcons.reply_thick_solid,
 													color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
 													size: 14
 												),
@@ -247,8 +247,8 @@ class PostRow extends StatelessWidget {
 																				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 																				border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 																			),
-																			padding: const EdgeInsets.all(1),
-																			child: const Icon(Icons.play_arrow, size: 18)
+																			padding: const EdgeInsets.all(2),
+																			child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
 																		)
 																	)
 																)
@@ -267,7 +267,7 @@ class PostRow extends StatelessWidget {
 												height: 75,
 												child: GestureDetector(
 													behavior: HitTestBehavior.opaque,
-													child: const Icon(Icons.broken_image, size: 36),
+													child: const Icon(CupertinoIcons.question_square, size: 36),
 													onTap: onRequestArchive
 												)
 											)
@@ -288,21 +288,21 @@ class PostRow extends StatelessWidget {
 		);
 		final child = ContextMenu(
 			actions: [
-				if (zone.stackIds.isNotEmpty && zone.onNeedScrollToPost != null) ContextMenuAction(
+				if (zone.stackIds.length > 2 && zone.onNeedScrollToPost != null) ContextMenuAction(
 					child: const Text('Scroll to post'),
-					trailingIcon: Icons.subdirectory_arrow_right,
+					trailingIcon: CupertinoIcons.return_icon,
 					onPressed: () => zone.onNeedScrollToPost!(_post)
 				),
 				if (context.watch<Persistence>().getSavedPost(post) == null) ContextMenuAction(
 					child: const Text('Save Post'),
-					trailingIcon: Icons.bookmark_add,
+					trailingIcon: CupertinoIcons.bookmark,
 					onPressed: () {
 						context.read<Persistence>().savePost(_post, zone.thread);
 					}
 				)
 				else ContextMenuAction(
 					child: const Text('Unsave Post'),
-					trailingIcon: Icons.bookmark_remove,
+					trailingIcon: CupertinoIcons.bookmark_fill,
 					onPressed: () {
 						context.read<Persistence>().unsavePost(post);
 					}
@@ -310,7 +310,7 @@ class PostRow extends StatelessWidget {
 				if (zone.threadState != null) ...[
 					if (zone.threadState!.postsMarkedAsYou.contains(_post.id)) ContextMenuAction(
 							child: const Text('Unmark as You'),
-							trailingIcon: Icons.check_box,
+							trailingIcon: CupertinoIcons.person_badge_minus,
 							onPressed: () {
 								zone.threadState!.postsMarkedAsYou.remove(_post.id);
 								zone.threadState!.save();
@@ -318,7 +318,7 @@ class PostRow extends StatelessWidget {
 						)
 					else ContextMenuAction(
 							child: const Text('Mark as You'),
-							trailingIcon: Icons.check_box_outline_blank,
+							trailingIcon: CupertinoIcons.person_badge_plus,
 							onPressed: () {
 								zone.threadState!.postsMarkedAsYou.add(_post.id);
 								zone.threadState!.savedTime ??= DateTime.now();
@@ -327,7 +327,7 @@ class PostRow extends StatelessWidget {
 						),
 					if (zone.threadState!.hiddenPostIds.contains(_post.id)) ContextMenuAction(
 						child: const Text('Unhide post'),
-						trailingIcon: Icons.check_box,
+						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
 							zone.threadState!.unHidePost(_post.id);
 							zone.threadState!.save();
@@ -335,7 +335,7 @@ class PostRow extends StatelessWidget {
 					)
 					else ContextMenuAction(
 						child: const Text('Hide post'),
-						trailingIcon: Icons.check_box_outline_blank,
+						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () {
 							zone.threadState!.hidePost(_post.id);
 							zone.threadState!.save();
@@ -344,7 +344,7 @@ class PostRow extends StatelessWidget {
 				],
 				ContextMenuAction(
 					child: const Text('Select text'),
-					trailingIcon: Icons.select_all,
+					trailingIcon: CupertinoIcons.selection_pin_in_out,
 					onPressed: () {
 						WeakNavigator.push(context, SelectablePostPage(
 							post: _post,
@@ -355,7 +355,7 @@ class PostRow extends StatelessWidget {
 				),
 				ContextMenuAction(
 					child: const Text('Share link'),
-					trailingIcon: Icons.ios_share,
+					trailingIcon: CupertinoIcons.share,
 					onPressed: () {
 						final offset = (context.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 						final size = context.findRenderObject()?.semanticBounds.size;
@@ -364,14 +364,14 @@ class PostRow extends StatelessWidget {
 				),
 				ContextMenuAction(
 					child: const Text('Report Post'),
-					trailingIcon: Icons.report_rounded,
+					trailingIcon: CupertinoIcons.exclamationmark_octagon,
 					onPressed: () {
 						openBrowser(context, context.read<ImageboardSite>().getPostReportUrl(_post.board, _post.id));
 					}
 				),
 				if (receipt != null) ContextMenuAction(
 					child: const Text('Delete Post'),
-					trailingIcon: Icons.delete,
+					trailingIcon: CupertinoIcons.delete,
 					onPressed: () {
 						try {
 							site.deletePost(_post.board, receipt);
@@ -383,7 +383,7 @@ class PostRow extends StatelessWidget {
 				),
 				if (_post.attachment != null) ...[
 					ContextMenuAction(
-						child: const Text('Archive'),
+						child: const Text('Search archives'),
 						trailingIcon: Icons.image_search,
 						onPressed: () {
 							context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(
@@ -392,7 +392,7 @@ class PostRow extends StatelessWidget {
 						}
 					),
 					ContextMenuAction(
-						child: const Text('Google'),
+						child: const Text('Search Google'),
 						trailingIcon: Icons.image_search,
 						onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
 							'image_url': _post.attachment!.url.toString(),
@@ -400,7 +400,7 @@ class PostRow extends StatelessWidget {
 						}))
 					),
 					ContextMenuAction(
-						child: const Text('Yandex'),
+						child: const Text('Search Yandex'),
 						trailingIcon: Icons.image_search,
 						onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
 							'rpt': 'imageview',

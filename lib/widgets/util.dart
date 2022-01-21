@@ -152,7 +152,7 @@ class ErrorMessageCard extends StatelessWidget {
 			child: Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					Icon(Icons.error, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+					Icon(CupertinoIcons.exclamationmark_triangle_fill, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
 					const SizedBox(height: 8),
 					Text(message, maxLines: 20, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor), textAlign: TextAlign.center),
 					for (final remedy in remedies.entries) ...[

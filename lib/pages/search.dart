@@ -293,7 +293,7 @@ class _SearchPageState extends State<SearchPage> {
 										),
 										CupertinoButton(
 											padding: EdgeInsets.zero,
-											child: const Icon(Icons.close),
+											child: const Icon(CupertinoIcons.xmark),
 											onPressed: () {
 												context.read<Persistence>().recentSearches.remove(q);
 												context.read<Persistence>().didUpdateRecentSearches();
@@ -323,7 +323,7 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.postTypeFilter == PostTypeFilter.onlyReplies) const _SearchQueryFilterTag('Replies'),
 		if (q.startDate != null) _SearchQueryFilterTag('After ${q.startDate!.year}-${q.startDate!.month.toString().padLeft(2, '0')}-${q.startDate!.day.toString().padLeft(2, '0')}'),
 		if (q.endDate != null) _SearchQueryFilterTag('Before ${q.endDate!.year}-${q.endDate!.month.toString().padLeft(2, '0')}-${q.endDate!.day.toString().padLeft(2, '0')}'),
-		if (q.md5 != null) const Icon(Icons.image)
+		if (q.md5 != null) const Icon(CupertinoIcons.photo)
 	];
 }
 

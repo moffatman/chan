@@ -241,7 +241,7 @@ class _ThreadPageState extends State<ThreadPage> {
 						children: [
 							CupertinoButton(
 								padding: EdgeInsets.zero,
-								child: Icon(persistentState.savedTime == null ? Icons.bookmark_outline : Icons.bookmark),
+								child: Icon(persistentState.savedTime == null ? CupertinoIcons.bookmark : CupertinoIcons.bookmark_fill),
 								onPressed: () {
 									if (persistentState.savedTime != null) {
 										persistentState.savedTime = null;
@@ -256,7 +256,7 @@ class _ThreadPageState extends State<ThreadPage> {
 							CupertinoButton(
 								key: _shareButtonKey,
 								padding: EdgeInsets.zero,
-								child: const Icon(Icons.ios_share),
+								child: const Icon(CupertinoIcons.share),
 								onPressed: () {
 									final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 									final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
@@ -265,23 +265,7 @@ class _ThreadPageState extends State<ThreadPage> {
 							),
 							CupertinoButton(
 								padding: EdgeInsets.zero,
-								child: (_replyBoxKey.currentState?.show ?? false) ? SizedBox(
-									width: 25,
-									height: 25,
-									child: Stack(
-										fit: StackFit.passthrough,
-										children: const [
-											Align(
-												alignment: Alignment.bottomLeft,
-												child: Icon(Icons.reply, size: 20)
-											),
-											Align(
-												alignment: Alignment.topRight,
-												child: Icon(Icons.close, size: 15)
-											)
-										]
-									)
-								) : const Icon(Icons.reply),
+								child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply),
 								onPressed: persistentState.thread?.isArchived == true ? null : () {
 									_replyBoxKey.currentState?.toggleReplyBox();
 									setState(() {});
@@ -337,44 +321,47 @@ class _ThreadPageState extends State<ThreadPage> {
 																	],
 																	footer: Container(
 																		padding: const EdgeInsets.all(16),
-																		child: (persistentState.thread == null) ? null : Row(
-																			children: [
-																				const Spacer(),
-																				const Icon(Icons.reply_rounded),
-																				const SizedBox(width: 4),
-																				_limitCounter(persistentState.thread!.replyCount, context.watch<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
-																				const Spacer(),
-																				const Icon(Icons.image),
-																				const SizedBox(width: 4),
-																				_limitCounter(persistentState.thread!.imageCount, context.watch<Persistence>().getBoard(widget.thread.board).threadImageLimit),
-																				const Spacer(),
-																				if (persistentState.thread!.uniqueIPCount != null) ...[
-																					const Icon(Icons.person),
-																					const SizedBox(width: 4),
-																					Text('${persistentState.thread!.uniqueIPCount}'),
+																		child: (persistentState.thread == null) ? null : Opacity(
+																			opacity: persistentState.thread?.isArchived == true ? 0.5 : 1,
+																			child: Row(
+																				children: [
 																					const Spacer(),
-																				],
-																				if (persistentState.thread!.currentPage != null) ...[
-																					const Icon(Icons.insert_drive_file_rounded),
+																					const Icon(CupertinoIcons.reply),
 																					const SizedBox(width: 4),
-																					_limitCounter(persistentState.thread!.currentPage!, context.watch<Persistence>().getBoard(widget.thread.board).pageCount),
-																					const Spacer()
-																				],
-																				if (persistentState.thread!.isArchived) ...[
-																					GestureDetector(
-																						behavior: HitTestBehavior.opaque,
-																						child: Row(
-																							children: const [
-																								Icon(Icons.archive, color: Colors.grey),
-																								SizedBox(width: 4),
-																								Text('Archived'),
-																							]
+																					_limitCounter(persistentState.thread!.replyCount, context.watch<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
+																					const Spacer(),
+																					const Icon(CupertinoIcons.photo),
+																					const SizedBox(width: 4),
+																					_limitCounter(persistentState.thread!.imageCount, context.watch<Persistence>().getBoard(widget.thread.board).threadImageLimit),
+																					const Spacer(),
+																					if (persistentState.thread!.uniqueIPCount != null) ...[
+																						const Icon(CupertinoIcons.person),
+																						const SizedBox(width: 4),
+																						Text('${persistentState.thread!.uniqueIPCount}'),
+																						const Spacer(),
+																					],
+																					if (persistentState.thread!.currentPage != null) ...[
+																						const Icon(CupertinoIcons.doc),
+																						const SizedBox(width: 4),
+																						_limitCounter(persistentState.thread!.currentPage!, context.watch<Persistence>().getBoard(widget.thread.board).pageCount),
+																						const Spacer()
+																					],
+																					if (persistentState.thread!.isArchived) ...[
+																						GestureDetector(
+																							behavior: HitTestBehavior.opaque,
+																							child: Row(
+																								children: const [
+																									Icon(CupertinoIcons.archivebox),
+																									SizedBox(width: 4),
+																									Text('Archived')
+																								]
+																							),
+																							onTap: _switchToLive
 																						),
-																						onTap: _switchToLive
-																					),
-																					const Spacer()
+																						const Spacer()
+																					]
 																				]
-																			]
+																			)
 																		)
 																	),
 																	remedies: {

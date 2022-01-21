@@ -587,6 +587,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	Iterable<int> get stackIds;
 	PersistentThreadState? get threadState;
 	ValueChanged<Post>? get onNeedScrollToPost;
+	bool disposed = false;
 
 	bool shouldExpandPost(int id) => false;
 	void toggleExpansionOfPost(int id) => throw UnimplementedError();
@@ -617,6 +618,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 			zone.dispose();	
 		}
 		super.dispose();
+		disposed = true;
 	}
 }
 
@@ -763,7 +765,9 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 				catch (e) {
 					_futures[id] = AsyncSnapshot<T>.withError(ConnectionState.done, e);
 				}
-				notifyListeners();
+				if (!disposed) {
+					notifyListeners();
+				}
 			}();
 		}
 		return _futures[id] as AsyncSnapshot<T>;

@@ -121,7 +121,7 @@ class _BoardPageState extends State<BoardPage> {
 							child: Transform(
 								alignment: Alignment.center,
 								transform: settings.reverseCatalogSorting ? Matrix4.rotationX(pi) : Matrix4.identity(),
-								child: const Icon(Icons.sort)
+								child: const Icon(CupertinoIcons.sort_down)
 							),
 							onPressed: () {
 								showCupertinoModalPopup<DateTime>(
@@ -157,23 +157,7 @@ class _BoardPageState extends State<BoardPage> {
 						),
 						CupertinoButton(
 							padding: EdgeInsets.zero,
-							child: (_replyBoxKey.currentState?.show ?? false) ? SizedBox(
-								width: 25,
-								height: 25,
-								child: Stack(
-									fit: StackFit.passthrough,
-									children: const [
-										Align(
-											alignment: Alignment.bottomRight,
-											child: Icon(Icons.create, size: 20)
-										),
-										Align(
-											alignment: Alignment.topLeft,
-											child: Icon(Icons.close, size: 15)
-										)
-									]
-								)
-							) : const Icon(Icons.create),
+							child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.pencil_slash) : const Icon(CupertinoIcons.pencil),
 							onPressed: () {
 								_replyBoxKey.currentState?.toggleReplyBox();
 								setState(() {});
@@ -222,7 +206,7 @@ class _BoardPageState extends State<BoardPage> {
 											actions: [
 												if (persistence.getThreadStateIfExists(thread.identifier)?.savedTime != null) ContextMenuAction(
 													child: const Text('Un-save thread'),
-													trailingIcon: Icons.bookmark_remove,
+													trailingIcon: CupertinoIcons.bookmark_fill,
 													onPressed: () {
 														final threadState = persistence.getThreadState(thread.identifier);
 														threadState.savedTime = null;
@@ -232,7 +216,7 @@ class _BoardPageState extends State<BoardPage> {
 												)
 												else ContextMenuAction(
 													child: const Text('Save thread'),
-													trailingIcon: Icons.bookmark_add,
+													trailingIcon: CupertinoIcons.bookmark,
 													onPressed: () {
 														final threadState = persistence.getThreadState(thread.identifier);
 														threadState.savedTime = DateTime.now();
@@ -242,12 +226,12 @@ class _BoardPageState extends State<BoardPage> {
 												),
 												if (browserState.isThreadHidden(thread.board, thread.id)) ContextMenuAction(
 													child: const Text('Unhide thread'),
-													trailingIcon: Icons.check_box,
+													trailingIcon: CupertinoIcons.eye_slash_fill,
 													onPressed: () => browserState.unHideThread(thread.board, thread.id)
 												)
 												else ContextMenuAction(
 													child: const Text('Hide thread'),
-													trailingIcon: Icons.check_box_outline_blank,
+													trailingIcon: CupertinoIcons.eye_slash,
 													onPressed: () => browserState.hideThread(thread.board, thread.id)
 												)
 											],
@@ -305,7 +289,7 @@ class _BoardPageState extends State<BoardPage> {
 													child: Row(
 														mainAxisSize: MainAxisSize.min,
 														children: [
-															Icon(Icons.vertical_align_top, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+															Icon(CupertinoIcons.arrow_up_to_line, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
 															SizedBox(
 																width: 40,
 																child: Text(

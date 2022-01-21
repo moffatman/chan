@@ -518,7 +518,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 							children: [
 								CupertinoButton(
 									padding: EdgeInsets.zero,
-									child: const Icon(Icons.download),
+									child: const Icon(CupertinoIcons.cloud_download),
 									onPressed: canShare(currentAttachment) && !_downloadedAttachments.contains(currentAttachment) ? () => download(currentAttachment) : null
 								),
 								AnimatedBuilder(
@@ -527,7 +527,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 										final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment) != null;
 										return CupertinoButton(
 											padding: EdgeInsets.zero,
-											child: Icon(currentlySaved ? Icons.bookmark : Icons.bookmark_outline),
+											child: Icon(currentlySaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark),
 											onPressed: canShare(currentAttachment) ? () {
 												if (currentlySaved) {
 													context.read<Persistence>().deleteSavedAttachment(currentAttachment);
@@ -542,7 +542,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 								CupertinoButton(
 									key: _shareButtonKey,
 									padding: EdgeInsets.zero,
-									child: const Icon(Icons.ios_share),
+									child: const Icon(CupertinoIcons.share),
 									onPressed: canShare(currentAttachment) ? () => share(currentAttachment) : null
 								)
 							]
@@ -639,7 +639,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																child: Transform(
 																	alignment: Alignment.center,
 																	transform: _rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0 ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
-																	child: const Icon(Icons.rotate_90_degrees_ccw)
+																	child: const Icon(CupertinoIcons.rotate_left)
 																),
 																onPressed: () {
 																	if (currentController.quarterTurns == 1) {

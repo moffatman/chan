@@ -3,7 +3,6 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/rotating_image_provider.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:provider/provider.dart';
 
@@ -88,7 +87,7 @@ class AttachmentThumbnail extends StatelessWidget {
 						width: width,
 						height: height,
 						child: const Center(
-							child: Icon(Icons.error)
+							child: Icon(CupertinoIcons.exclamationmark_triangle_fill)
 						)
 					);
 				}

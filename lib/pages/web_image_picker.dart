@@ -143,19 +143,19 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 							alignment: MainAxisAlignment.center,
 							children: <Widget>[
 								ElevatedButton(
-									child: const Icon(Icons.arrow_back),
+									child: const Icon(CupertinoIcons.arrow_left),
 									onPressed: () {
 										webViewController?.goBack();
 									}
 								),
 								ElevatedButton(
-									child: const Icon(Icons.arrow_forward),
+									child: const Icon(CupertinoIcons.arrow_right),
 									onPressed: () {
 										webViewController?.goForward();
 									}
 								),
 								ElevatedButton(
-									child: const Icon(Icons.image),
+									child: const Icon(CupertinoIcons.photo),
 									onPressed: () async {
 										final List<dynamic> returnedResults = await webViewController?.evaluateJavascript(
 											source: '''[...document.querySelectorAll('img')].map(img => {
@@ -275,7 +275,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 									}
 								),
 								ElevatedButton(
-									child: const Icon(Icons.refresh),
+									child: const Icon(CupertinoIcons.refresh),
 									onPressed: () {
 										webViewController?.reload();
 									}

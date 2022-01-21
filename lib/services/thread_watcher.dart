@@ -17,11 +17,13 @@ class StickyThreadWatcher extends ChangeNotifier {
 	final String board;
 	final Duration interval;
 	StreamSubscription<BoxEvent>? _boxSubscription;
+	final Map<ThreadIdentifier, int> cachedUnseenYous = {};
 	Timer? nextUpdateTimer;
 	List<Thread> unseenStickyThreads = [];
 	bool disposed = false;
 
-	final unseenCount = ValueNotifier<int>(0);
+	final unseenStickyThreadCount = ValueNotifier<int>(0);
+	final unseenYouCount = ValueNotifier<int>(0);
 
 	StickyThreadWatcher({
 		required this.site,
@@ -37,7 +39,12 @@ class StickyThreadWatcher extends ChangeNotifier {
 		if (event.value is PersistentThreadState) {
 			final newThreadState = event.value as PersistentThreadState;
 			unseenStickyThreads.removeWhere((t) => t.identifier == newThreadState.thread?.identifier);
-			unseenCount.value = unseenStickyThreads.length;
+			unseenStickyThreadCount.value = unseenStickyThreads.length;
+			cachedUnseenYous[newThreadState.thread!.identifier] = newThreadState.unseenReplyIdsToYou?.length ?? 0;
+			if (!disposed) {
+				unseenYouCount.value = cachedUnseenYous.values.reduce((a, b) => a + b);
+				notifyListeners();
+			}
 		}
 	}
 
@@ -45,7 +52,18 @@ class StickyThreadWatcher extends ChangeNotifier {
 		try {
 			final catalog = await site.getCatalog(board);
 			unseenStickyThreads = catalog.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).toList();
-			unseenCount.value = unseenStickyThreads.length;
+			unseenStickyThreadCount.value = unseenStickyThreads.length;
+			// Update sticky threads for (you)s
+			final stickyThreadStates = persistence.threadStateBox.values.where((s) => s.thread != null && s.thread!.isSticky);
+			for (final threadState in stickyThreadStates) {
+				if (threadState.youIds.isNotEmpty) {
+					final newThread = await site.getThread(threadState.thread!.identifier);
+					if (newThread != threadState.thread) {
+						threadState.thread = newThread;
+						await threadState.save();
+					}
+				}
+			}
 		}
 		catch (e) {
 			print(e);

@@ -834,7 +834,7 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 						CupertinoButton(
 							minSize: 0,
 							padding: EdgeInsets.zero,
-							child: const Icon(Icons.help),
+							child: const Icon(CupertinoIcons.question_circle),
 							onPressed: () {
 								showCupertinoModalPopup(
 									context: context,
