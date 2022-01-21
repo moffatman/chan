@@ -33,8 +33,8 @@ class Captcha4ChanCustomException implements Exception {
 class Captcha4ChanCustomChallenge {
 	String challenge;
 	DateTime expiresAt;
-	ui.Image foregroundImage;
-	ui.Image backgroundImage;
+	ui.Image? foregroundImage;
+	ui.Image? backgroundImage;
 
 	Captcha4ChanCustomChallenge({
 		required this.challenge,
@@ -44,14 +44,14 @@ class Captcha4ChanCustomChallenge {
 	});
 
 	void dispose() {
-		foregroundImage.dispose();
-		backgroundImage.dispose();
+		foregroundImage?.dispose();
+		backgroundImage?.dispose();
 	}
 }
 
 class _Captcha4ChanCustomPainter extends CustomPainter{
 	final ui.Image foregroundImage;
-	final ui.Image backgroundImage;
+	final ui.Image? backgroundImage;
 	final int backgroundSlide;
 	_Captcha4ChanCustomPainter({
 		required this.foregroundImage,
@@ -63,12 +63,14 @@ class _Captcha4ChanCustomPainter extends CustomPainter{
 	void paint(Canvas canvas, Size size) {
 		final double height = foregroundImage.height.toDouble();
 		final double width = foregroundImage.width.toDouble();
-		canvas.drawImageRect(
-			backgroundImage,
-			Rect.fromLTWH(backgroundSlide.toDouble(), 0, width, height),
-			Rect.fromLTWH(0, 0, size.width, size.height),
-			Paint()
-		);
+		if (backgroundImage != null) {
+			canvas.drawImageRect(
+				backgroundImage!,
+				Rect.fromLTWH(backgroundSlide.toDouble(), 0, width, height),
+				Rect.fromLTWH(0, 0, size.width, size.height),
+				Paint()
+			);
+		}
 		canvas.drawImageRect(
 			foregroundImage,
 			Rect.fromLTWH(0, 0, width, height),
@@ -102,20 +104,26 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		if (data['error'] != null) {
 			throw Captcha4ChanCustomException(data['error']);
 		}
-		final foregroundImageCompleter = Completer<ui.Image>();
-		MemoryImage(base64Decode(data['img'])).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
-			foregroundImageCompleter.complete(info.image);
-		}, onError: (e, st) {
-			foregroundImageCompleter.completeError(e);
-		}));
-		final backgroundImageCompleter = Completer<ui.Image>();
-		MemoryImage(base64Decode(data['bg'])).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
-			backgroundImageCompleter.complete(info.image);
-		}, onError: (e, st) {
-			backgroundImageCompleter.completeError(e);
-		}));
-		final foregroundImage = await foregroundImageCompleter.future;
-		final backgroundImage = await backgroundImageCompleter.future;
+		Completer<ui.Image>? foregroundImageCompleter;
+		if (data['img'] != null) {
+			foregroundImageCompleter = Completer<ui.Image>();
+			MemoryImage(base64Decode(data['img'])).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+				foregroundImageCompleter!.complete(info.image);
+			}, onError: (e, st) {
+				foregroundImageCompleter!.completeError(e);
+			}));
+		}
+		Completer<ui.Image>? backgroundImageCompleter;
+		if (data['bg'] != null) {
+			backgroundImageCompleter = Completer<ui.Image>();
+			MemoryImage(base64Decode(data['bg'])).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+				backgroundImageCompleter!.complete(info.image);
+			}, onError: (e, st) {
+				backgroundImageCompleter!.completeError(e);
+			}));
+		}
+		final foregroundImage = await foregroundImageCompleter?.future;
+		final backgroundImage = await backgroundImageCompleter?.future;
 		return Captcha4ChanCustomChallenge(
 			challenge: data['challenge'],
 			expiresAt: DateTime.now().add(Duration(seconds: data['ttl'])),
@@ -133,8 +141,22 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				challenge = null;
 			});
 			challenge = await _requestChallenge();
+			if (challenge!.foregroundImage == null && challenge!.backgroundImage == null) {
+				if (challenge!.challenge == 'noop') {
+					widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
+						challenge: 'noop',
+						response: ''
+					));
+					return;
+				}
+				else {
+					throw Captcha4ChanCustomException('Unknown error, maybe the captcha format has changed: ${challenge!.challenge}');
+				}
+			}
 			backgroundSlide = 0;
-			await _alignImage();
+			if (challenge!.backgroundImage != null) {
+				await _alignImage();
+			}
 			setState(() {});
 			_solutionNode.requestFocus();
 		}
@@ -148,9 +170,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	Future<void> _alignImage() async {
 		int? lowestMismatch;
 		int? bestSlide;
-		final width = challenge!.foregroundImage.width;
-		final height = challenge!.foregroundImage.height;
-		final foregroundBytes = (await challenge!.foregroundImage.toByteData())!;
+		final width = challenge!.foregroundImage!.width;
+		final height = challenge!.foregroundImage!.height;
+		final foregroundBytes = (await challenge!.foregroundImage!.toByteData())!;
 		final checkRights = [];
 		final checkDowns = [];
 		for (int x = 0; x < width - 1; x++) {
@@ -166,12 +188,12 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				}
 			}
 		}
-		for (var i = 0; i < (challenge!.backgroundImage.width - width); i++) {
+		for (var i = 0; i < (challenge!.backgroundImage!.width - width); i++) {
 			final recorder = ui.PictureRecorder();
 			final canvas = Canvas(recorder);
 			_Captcha4ChanCustomPainter(
-				backgroundImage: challenge!.backgroundImage,
-				foregroundImage: challenge!.foregroundImage,
+				backgroundImage: challenge!.backgroundImage!,
+				foregroundImage: challenge!.foregroundImage!,
 				backgroundSlide: i
 			).paint(canvas, Size(width.toDouble(), height.toDouble()));
 			final image = await recorder.endRecording().toImage(width, height);
@@ -256,12 +278,12 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 							constraints: const BoxConstraints(
 								maxWidth: 500
 							),
-							child: AspectRatio(
-								aspectRatio: challenge!.foregroundImage.width / challenge!.foregroundImage.height,
+							child: (challenge!.foregroundImage == null) ? const Text('Verification not required') : AspectRatio(
+								aspectRatio: challenge!.foregroundImage!.width / challenge!.foregroundImage!.height,
 								child: CustomPaint(
-									size: Size(challenge!.foregroundImage.width.toDouble(), challenge!.foregroundImage.height.toDouble()),
+									size: Size(challenge!.foregroundImage!.width.toDouble(), challenge!.foregroundImage!.height.toDouble()),
 									painter: _Captcha4ChanCustomPainter(
-										foregroundImage: challenge!.foregroundImage,
+										foregroundImage: challenge!.foregroundImage!,
 										backgroundImage: challenge!.backgroundImage,
 										backgroundSlide: backgroundSlide
 									)
@@ -278,10 +300,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 							mainAxisAlignment: MainAxisAlignment.spaceBetween,
 							children: [
 								_cooldownedRetryButton(context),
-								CupertinoSlider(
+								if (challenge!.backgroundImage != null) CupertinoSlider(
 									value: backgroundSlide.toDouble(),
-									divisions: challenge!.backgroundImage.width - challenge!.foregroundImage.width,
-									max: (challenge!.backgroundImage.width - challenge!.foregroundImage.width).toDouble(),
+									divisions: challenge!.backgroundImage!.width - challenge!.foregroundImage!.width,
+									max: (challenge!.backgroundImage!.width - challenge!.foregroundImage!.width).toDouble(),
 									onChanged: (newOffset) {
 										setState(() {
 											backgroundSlide = newOffset.floor();
