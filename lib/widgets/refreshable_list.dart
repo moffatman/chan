@@ -66,7 +66,6 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	DateTime? lastUpdateTime;
 	DateTime? nextUpdateTime;
 	Timer? autoUpdateTimer;
-	bool _searchFocused = false;
 	late PageStorageKey _scrollViewKey;
 	int _pointerDownCount = 0;
 	bool _showFilteredValues = false;
@@ -81,13 +80,6 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		_scrollViewKey = PageStorageKey(widget.id);
 		widget.controller?.attach(this);
 		widget.controller?.newContentId(widget.id);
-		_searchFocusNode.addListener(() {
-			if (mounted && _searchFocusNode.hasFocus != _searchFocused) {
-				setState(() {
-					_searchFocused = _searchFocusNode.hasFocus;
-				});
-			}
-		});
 		list = widget.initialList;
 		if (list != null) {
 			widget.controller?.setItems(list!);
@@ -325,7 +317,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 													)
 												)
 											),
-											if (_searchFocused) CupertinoButton(
+											if (_searchFilter != null) CupertinoButton(
 												padding: const EdgeInsets.only(left: 8),
 												child: const Text('Cancel'),
 												onPressed: _closeSearch
