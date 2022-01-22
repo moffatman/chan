@@ -1,11 +1,10 @@
-import 'dart:convert';
-
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/embed.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -417,35 +416,23 @@ class PostSpoilerSpan extends PostSpan {
 
 class PostLinkSpan extends PostSpan {
 	final String url;
-	String? title;
 	PostLinkSpan(this.url);
 	@override
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
-		final embedPossible = context.watch<EffectiveSettings>().embedRegexes.any((regex) => regex.hasMatch(url));
-		if (embedPossible && !options.showRawSource) {
+		if (embedPossible(url: url, context: context) && !options.showRawSource) {
 			final snapshot = zone.getFutureForComputation(
 				id: 'noembed $url',
-				work: () => context.read<ImageboardSite>().client.get('https://noembed.com/embed', queryParameters: {
-					'url': url
-				})
+				work: () => loadEmbedData(
+					context: context,
+					url: url
+				)
 			);
-			String? title;
-			String? provider;
-			String? author;
-			String? thumbnailUrl;
-			if (snapshot.data?.data != null) {
-				final data = jsonDecode(snapshot.data?.data);
-				title = data['title'];
-				author = data['author_name'];
-				thumbnailUrl = data['thumbnail_url'];
-				provider = data['provider_name'];
+			String? byline = snapshot.data?.author;
+			if (snapshot.data?.author != null && !(snapshot.data?.title != null && snapshot.data!.title!.contains(snapshot.data!.author!))) {
+				byline = byline == null ? snapshot.data?.author : '${snapshot.data?.author} - $byline';
 			}
-			String? byline = provider;
-			if (author != null && !(title != null && title.contains(author))) {
-				byline = byline == null ? author : '$author - $byline';
-			}
-			if (thumbnailUrl != null) {
+			if (snapshot.data?.thumbnailUrl != null) {
 				final tapChild = Padding(
 					padding: const EdgeInsets.only(top: 8, bottom: 8),
 					child: ClipRRect(
@@ -457,7 +444,7 @@ class PostLinkSpan extends PostSpan {
 								mainAxisSize: MainAxisSize.min,
 								children: [
 									ExtendedImage.network(
-										thumbnailUrl,
+										snapshot.data!.thumbnailUrl!,
 										cache: true,
 										width: 75,
 										height: 75,
@@ -468,7 +455,7 @@ class PostLinkSpan extends PostSpan {
 										child: Column(
 											crossAxisAlignment: CrossAxisAlignment.start,
 											children: [
-												if (title != null) Text(title),
+												if (snapshot.data?.title != null) Text(snapshot.data!.title!),
 												if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey))
 											]
 										)

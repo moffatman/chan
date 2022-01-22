@@ -4,6 +4,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/web_image_picker.dart';
+import 'package:chan/services/embed.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -13,6 +14,7 @@ import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -46,6 +48,8 @@ class ReplyBox extends StatefulWidget {
 	createState() => ReplyBoxState();
 }
 
+final _imageUrlPattern = RegExp(r'https?:\/\/[^. ]\.[^ ]+\.(jpg|jpeg|png|gif)');
+
 class ReplyBoxState extends State<ReplyBox> {
 	late final TextEditingController _textFieldController;
 	final _nameFieldController = TextEditingController();
@@ -58,16 +62,44 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _showOptions = false;
 	bool get showOptions => _showOptions && !loading;
 	bool show = false;
+	String? _lastFoundUrl;
+	String? _proposedAttachmentUrl;
+
+	void _onTextChanged() async {
+		widget.onTextChanged?.call(_textFieldController.text);
+		setState(() {});
+		final rawUrl = _imageUrlPattern.firstMatch(_textFieldController.text)?.group(0);
+		if (rawUrl != _lastFoundUrl && rawUrl != null) {
+			try {
+				await context.read<ImageboardSite>().client.head(rawUrl);
+				_lastFoundUrl = rawUrl;
+				_proposedAttachmentUrl = rawUrl;
+				setState(() {});
+			}
+			catch (e) {
+				print('Url did not have a good response: ${e.toStringDio()}');
+				_lastFoundUrl = null;
+			}
+		}
+		else {
+			final possibleEmbed = findEmbedUrl(text: _textFieldController.text, context: context);
+			if (possibleEmbed != _lastFoundUrl && possibleEmbed != null) {
+				final embedData = await loadEmbedData(url: possibleEmbed, context: context);
+				_lastFoundUrl = possibleEmbed;
+				if (embedData?.thumbnailUrl != null) {
+					_proposedAttachmentUrl = embedData!.thumbnailUrl!;
+					setState(() {});
+				}
+			}
+		}
+	}
 
 	@override
 	void initState() {
 		_textFieldController = TextEditingController(text: widget.initialText);
 		_subjectFieldController = TextEditingController(text: widget.initialSubject);
 		super.initState();
-		_textFieldController.addListener(() {
-			widget.onTextChanged?.call(_textFieldController.text);
-			setState(() {});
-		});
+		_textFieldController.addListener(_onTextChanged);
 		_subjectFieldController.addListener(() {
 			widget.onSubjectChanged?.call(_subjectFieldController.text);
 		});
@@ -701,6 +733,55 @@ class ReplyBoxState extends State<ReplyBox> {
 					child: Focus(
 						descendantsAreFocusable: showOptions,
 						child: _buildOptions(context)
+					)
+				),
+				Expander(
+					expanded: show && _proposedAttachmentUrl != null,
+					bottomSafe: true,
+					height: 100,
+					child: Row(
+						mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+						children: [
+							if (_proposedAttachmentUrl != null) Padding(
+								padding: const EdgeInsets.all(8),
+								child: ClipRRect(
+									borderRadius: const BorderRadius.all(Radius.circular(8)),
+									child: Image.network(
+										_proposedAttachmentUrl!,
+										width: 100
+									)
+								)
+							),
+							Flexible(child: CupertinoButton.filled(
+								padding: const EdgeInsets.all(4),
+								child: const Text('Use suggested image', textAlign: TextAlign.center),
+								onPressed: () async {
+									try {
+										final dir = await (Directory(Persistence.temporaryDirectory.path + '/sharecache')).create(recursive: true);
+										final data = await context.read<ImageboardSite>().client.get(_proposedAttachmentUrl!, options: Options(responseType: ResponseType.bytes));
+										final newFile = File(dir.path + DateTime.now().millisecondsSinceEpoch.toString() + '_' + _proposedAttachmentUrl!.split('/').last);
+										await newFile.writeAsBytes(data.data);
+										attachment = newFile;
+										overrideAttachmentFilename = _proposedAttachmentUrl!.split('/').last;
+										_proposedAttachmentUrl = null;
+										setState(() {});
+									}
+									catch (e, st) {
+										print(e);
+										print(st);
+										alertError(context, e.toStringDio());
+									}
+								}
+							)),
+							CupertinoButton(
+								child: const Icon(CupertinoIcons.xmark),
+								onPressed: () {
+									setState(() {
+										_proposedAttachmentUrl = null;
+									});
+								}
+							)
+						]
 					)
 				),
 				Expander(
