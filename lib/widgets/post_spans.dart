@@ -428,7 +428,7 @@ class PostLinkSpan extends PostSpan {
 					url: url
 				)
 			);
-			String? byline = snapshot.data?.author;
+			String? byline = snapshot.data?.provider;
 			if (snapshot.data?.author != null && !(snapshot.data?.title != null && snapshot.data!.title!.contains(snapshot.data!.author!))) {
 				byline = byline == null ? snapshot.data?.author : '${snapshot.data?.author} - $byline';
 			}
@@ -438,17 +438,21 @@ class PostLinkSpan extends PostSpan {
 					child: ClipRRect(
 						borderRadius: const BorderRadius.all(Radius.circular(8)),
 						child: Container(
+							padding: const EdgeInsets.all(8),
 							color: CupertinoTheme.of(context).barBackgroundColor,
 							child: Row(
 								crossAxisAlignment: CrossAxisAlignment.center,
 								mainAxisSize: MainAxisSize.min,
 								children: [
-									ExtendedImage.network(
-										snapshot.data!.thumbnailUrl!,
-										cache: true,
-										width: 75,
-										height: 75,
-										fit: BoxFit.cover
+									ClipRRect(
+										borderRadius: const BorderRadius.all(Radius.circular(8)),
+										child: ExtendedImage.network(
+											snapshot.data!.thumbnailUrl!,
+											cache: true,
+											width: 75,
+											height: 75,
+											fit: BoxFit.cover
+										)
 									),
 									const SizedBox(width: 16),
 									Flexible(
