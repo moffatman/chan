@@ -327,22 +327,22 @@ class _ThreadPageState extends State<ThreadPage> {
 																				children: [
 																					const Spacer(),
 																					const Icon(CupertinoIcons.reply),
-																					const SizedBox(width: 4),
+																					const SizedBox(width: 8),
 																					_limitCounter(persistentState.thread!.replyCount, context.watch<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
 																					const Spacer(),
 																					const Icon(CupertinoIcons.photo),
-																					const SizedBox(width: 4),
+																					const SizedBox(width: 8),
 																					_limitCounter(persistentState.thread!.imageCount, context.watch<Persistence>().getBoard(widget.thread.board).threadImageLimit),
 																					const Spacer(),
 																					if (persistentState.thread!.uniqueIPCount != null) ...[
 																						const Icon(CupertinoIcons.person),
-																						const SizedBox(width: 4),
+																						const SizedBox(width: 8),
 																						Text('${persistentState.thread!.uniqueIPCount}'),
 																						const Spacer(),
 																					],
 																					if (persistentState.thread!.currentPage != null) ...[
 																						const Icon(CupertinoIcons.doc),
-																						const SizedBox(width: 4),
+																						const SizedBox(width: 8),
 																						_limitCounter(persistentState.thread!.currentPage!, context.watch<Persistence>().getBoard(widget.thread.board).pageCount),
 																						const Spacer()
 																					],
@@ -352,7 +352,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																							child: Row(
 																								children: const [
 																									Icon(CupertinoIcons.archivebox),
-																									SizedBox(width: 4),
+																									SizedBox(width: 8),
 																									Text('Archived')
 																								]
 																							),
