@@ -235,6 +235,16 @@ extension OffsetBrightness on Color {
 			opacity
 		);
 	}
+	Color shiftHue(double offset) {
+		HSVColor hsv = HSVColor.fromColor(this);
+		hsv = hsv.withHue(hsv.hue + offset % 360);
+		return hsv.toColor();
+	}
+	Color shiftSaturation(double offset) {
+		HSVColor hsv = HSVColor.fromColor(this);
+		hsv = hsv.withSaturation((hsv.saturation + offset).clamp(0, 1));
+		return hsv.toColor();
+	}
 }
 
 class FirstBuildDetector extends StatefulWidget {
