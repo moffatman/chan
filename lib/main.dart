@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:chan/models/thread.dart';
 import 'package:chan/pages/history.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/settings.dart';
@@ -238,6 +239,29 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_setupDevSite();
 	}
 
+	void _addNewTab({
+		int? atPosition,
+		ThreadIdentifier? withThread,
+		bool activate = false
+	}) {
+		final pos = atPosition ?? tabs.length;
+		final tab = withThread == null ? PersistentBrowserTab() : PersistentBrowserTab(
+			board: context.read<Persistence>().getBoard(withThread.board),
+			thread: withThread
+		);
+		browserState.tabs.insert(pos, tab);
+		tabs.insert(pos, Tuple3(tab, GlobalKey(), ValueNotifier<int>(0)));
+		browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.item3)]);
+		if (activate) {
+			activeBrowserTab.value = pos;
+			browserState.currentTab = pos;
+		}
+		showTabPopup = true;
+		context.read<Persistence>().didUpdateBrowserState();
+		setState(() {});
+		Future.delayed(const Duration(milliseconds: 100), () => _tabListController.animateTo((_tabListController.position.maxScrollExtent / tabs.length) * (pos + 1), duration: const Duration(milliseconds: 500), curve: Curves.ease));
+	}
+
 	Widget _buildTab(BuildContext context, int index, bool active) {
 		final persistence = context.watch<Persistence>();
 		Widget child;
@@ -273,6 +297,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									tabs[i].item1.draftSubject = newSubject;
 									_saveBrowserTabsDuringDraftEditingTimer?.cancel();
 									_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), () => persistence.didUpdateBrowserState());
+								},
+								onWantOpenThreadInNewTab: (thread) {
+									_addNewTab(
+										atPosition: i + 1,
+										withThread: thread
+									);
 								},
 								id: -1 * (i + 10)
 							);
@@ -426,17 +456,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					]
 				)
 			),
-			onPressed: () {
-				final tab = PersistentBrowserTab();
-				browserState.tabs.add(tab);
-				tabs.add(Tuple3(tab, GlobalKey(), ValueNotifier<int>(0)));
-				browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.item3)]);
-				activeBrowserTab.value = tabs.length - 1;
-				browserState.currentTab = browserState.tabs.length - 1;
-				context.read<Persistence>().didUpdateBrowserState();
-				setState(() {});
-				Future.delayed(const Duration(milliseconds: 100), () => _tabListController.animateTo(_tabListController.position.maxScrollExtent, duration: const Duration(milliseconds: 500), curve: Curves.ease));
-			}
+			onPressed: () => _addNewTab(activate: true)
 		);
 	}
 

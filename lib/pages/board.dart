@@ -35,6 +35,7 @@ class BoardPage extends StatefulWidget {
 	final ValueChanged<String>? onDraftTextChanged;
 	final String initialDraftSubject;
 	final ValueChanged<String>? onDraftSubjectChanged;
+	final ValueChanged<ThreadIdentifier>? onWantOpenThreadInNewTab;
 	const BoardPage({
 		required this.initialBoard,
 		this.allowChangingBoard = true,
@@ -46,6 +47,7 @@ class BoardPage extends StatefulWidget {
 		this.onDraftTextChanged,
 		this.initialDraftSubject = '',
 		this.onDraftSubjectChanged,
+		this.onWantOpenThreadInNewTab,
 		required this.semanticId,
 		Key? key
 	}) : super(key: key);
@@ -204,6 +206,13 @@ class _BoardPageState extends State<BoardPage> {
 										final browserState = persistence.browserState;
 										return ContextMenu(
 											actions: [
+												if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+													child: const Text('Open in new tab'),
+													trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+													onPressed: () {
+														widget.onWantOpenThreadInNewTab?.call(thread.identifier);
+													}
+												),
 												if (persistence.getThreadStateIfExists(thread.identifier)?.savedTime != null) ContextMenuAction(
 													child: const Text('Un-save thread'),
 													trailingIcon: CupertinoIcons.bookmark_fill,
