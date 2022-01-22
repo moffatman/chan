@@ -694,6 +694,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	final Map<int, String> _postFromArchiveErrors = {};
 	final Iterable<int> semanticRootIds;
 	final Map<String, AsyncSnapshot> _futures = {};
+	static final Map<String, AsyncSnapshot> _globalFutures = {};
 
 	PostSpanRootZoneData({
 		required this.thread,
@@ -746,6 +747,9 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		required String id,
 		required Future<T> Function() work
 	}) {
+		if (_globalFutures.containsKey(id)) {
+			return _globalFutures[id]! as AsyncSnapshot<T>;
+		}
 		if (!_futures.containsKey(id)) {
 			_futures[id] = AsyncSnapshot<T>.waiting();
 			() async {
@@ -756,6 +760,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 				catch (e) {
 					_futures[id] = AsyncSnapshot<T>.withError(ConnectionState.done, e);
 				}
+				_globalFutures[id] = _futures[id]!;
 				if (!disposed) {
 					notifyListeners();
 				}
