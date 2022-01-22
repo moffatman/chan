@@ -372,7 +372,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	}
 
 	void _handleAttachmentLoaded(Attachment attachment) {
-		if (attachment == currentAttachment && attachment.type == AttachmentType.webm && scrollSheetController != null) {
+		if (mounted && attachment == currentAttachment && attachment.type == AttachmentType.webm && scrollSheetController != null) {
 			scrollSheetChild = _buildScrollSheetChild(scrollSheetController!);
 			setState(() {});
 		}
