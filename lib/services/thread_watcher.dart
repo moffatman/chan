@@ -135,7 +135,7 @@ class SavedThreadWatcher extends ChangeNotifier {
 			final newThreadState = event.value as PersistentThreadState;
 			if (newThreadState.thread != null) {
 				if (newThreadState.savedTime != null) {
-					final newUnseen = newThreadState.unseenReplyCount!;
+					final newUnseen = newThreadState.unseenReplyCount ?? newThreadState.thread!.replyCount;
 					final newUnseenYous = newThreadState.unseenReplyIdsToYou!.length;
 					if (cachedUnseen[newThreadState.thread!.identifier] != newUnseen || cachedUnseenYous[newThreadState.thread!.identifier] != newUnseenYous) {
 						cachedUnseen[newThreadState.thread!.identifier] = newUnseen;

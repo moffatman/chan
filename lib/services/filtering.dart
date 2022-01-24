@@ -3,7 +3,8 @@ const defaultPatternFields = ['subject', 'name', 'filename', 'text'];
 enum FilterResultType {
 	hide,
 	highlight,
-	pinToTop
+	pinToTop,
+	autoSave
 }
 
 class FilterResult {
@@ -48,10 +49,10 @@ class CustomFilter implements Filter {
 				break;
 			}
 		}
-		if (boards != null && !boards!.contains(item.getFilterFieldText('board'))) {
+		if (boards != null && !boards!.contains(item.board)) {
 			return null;
 		}
-		if (excludeBoards != null && excludeBoards!.contains(item.getFilterFieldText('board'))) {
+		if (excludeBoards != null && excludeBoards!.contains(item.board)) {
 			return null;
 		}
 		if (hasFile != null && hasFile != item.hasFile) {
@@ -62,6 +63,9 @@ class CustomFilter implements Filter {
 		}
 		return matches ? FilterResult(outputType, 'Matched "$configuration"') : null;
 	}
+
+	@override
+	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadOnly: $threadOnly)';
 }
 
 class IDFilter implements Filter {
@@ -71,6 +75,9 @@ class IDFilter implements Filter {
 	FilterResult? filter(Filterable item) {
 		return ids.contains(item.id) ? FilterResult(FilterResultType.hide, 'Manually hidden') : null;
 	}
+
+	@override
+	String toString() => 'IDFilter(ids: $ids)';
 }
 
 class SearchFilter implements Filter {
@@ -82,6 +89,9 @@ class SearchFilter implements Filter {
 			return item.getFilterFieldText(field) ?? '';
 		}).join(' ').toLowerCase().contains(text) ? null : FilterResult(FilterResultType.hide, 'Search for "$text"');
 	}
+
+	@override
+	String toString() => 'SearchFilter(text: $text)';
 }
 
 class FilterGroup implements Filter {
@@ -97,6 +107,9 @@ class FilterGroup implements Filter {
 		}
 		return null;
 	}
+
+	@override
+	String toString() => 'FilterGroup(filters: $filters)';
 }
 
 class DummyFilter implements Filter {
@@ -135,6 +148,9 @@ Filter _makeFilter(String configuration) {
 		}
 		else if (s == 'top') {
 			filter.outputType = FilterResultType.pinToTop;
+		}
+		else if (s == 'save') {
+			filter.outputType = FilterResultType.autoSave;	
 		}
 		else if (s.startsWith('type:')) {
 			filter.patternFields = s.split(':').skip(1).toList();

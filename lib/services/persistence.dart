@@ -330,6 +330,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	Filter get threadFilter => IDFilter(hiddenPostIds);
 	void hidePost(int id) => hiddenPostIds.add(id);
 	void unHidePost(int id) => hiddenPostIds.remove(id);
+
+	ThreadIdentifier get identifier => ThreadIdentifier(board: board, id: id);
 }
 
 @HiveType(typeId: 4)
@@ -424,12 +426,15 @@ class PersistentBrowserState {
 	final Map<String, List<int>> hiddenIds;
 	@HiveField(3, defaultValue: [])
 	final List<String> favouriteBoards;
+	@HiveField(5, defaultValue: {})
+	final Map<String, List<int>> autosavedIds;
 	
 	PersistentBrowserState({
 		required this.tabs,
 		this.currentTab = 0,
 		this.hiddenIds = const {},
-		this.favouriteBoards = const []
+		this.favouriteBoards = const [],
+		this.autosavedIds = const {}
 	});
 
 	Filter getCatalogFilter(String board) {

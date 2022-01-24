@@ -810,6 +810,7 @@ class SettingsFilterPanel extends StatefulWidget {
 
 class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 	final regexController = TextEditingController();
+	final regexFocusNode = FocusNode();
 
 	@override
 	void initState() {
@@ -853,6 +854,7 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 												'`;exclude:<list>` Don\'t apply on certain boards\n'
 												'`;highlight` Highlight instead of hiding matches\n'
 												'`;top` Highlight and pin match to top of list instead of hiding\n'
+												'`;save` Automatically save matching threads\n'
 												'`;file:only` Only apply to posts with files\n'
 												'`;file:no` Only apply to posts without files\n'
 												'`;thread` Only apply to threads\n'
@@ -870,6 +872,19 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 								);
 							}
 						),
+						AnimatedBuilder(
+							animation: regexFocusNode,
+							builder: (context, child) => regexFocusNode.hasFocus ? child! : const SizedBox(),
+							child: CupertinoButton(
+								padding: EdgeInsets.zero,
+								minSize: 0,
+								child: const Text('Done'),
+								onPressed: () {
+									settings.filterConfiguration = regexController.text;
+									regexFocusNode.unfocus();
+								}
+							)
+						),
 						if (settings.filterError != null) Text('${settings.filterError}', style: const TextStyle(
 							color: Colors.red
 						))
@@ -884,10 +899,8 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 								style: GoogleFonts.ibmPlexMono(),
 								minLines: 5,
 								maxLines: 5,
-								controller: regexController,
-								onChanged: (string) {
-									settings.filterConfiguration = string;
-								},
+								focusNode: regexFocusNode,
+								controller: regexController
 							);
 						}
 					)

@@ -183,6 +183,18 @@ class _BoardPageState extends State<BoardPage> {
 										persistence.browserState.getCatalogFilter(board!.name)
 									],
 									allowReordering: true,
+									onWantAutosave: (thread) async {
+										if (persistence.browserState.autosavedIds[thread.board]?.contains(thread.id) ?? false) {
+											// Already saw this thread
+											return;
+										}
+										final threadState = persistence.getThreadState(thread.identifier);
+										threadState.savedTime = DateTime.now();
+										threadState.thread = thread;
+										persistence.browserState.autosavedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+										await threadState.save();
+										await persistence.didUpdateBrowserState();
+									},
 									gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
 									controller: _listController,
 									listUpdater: () => site.getCatalog(board!.name).then((list) {
@@ -228,6 +240,7 @@ class _BoardPageState extends State<BoardPage> {
 													trailingIcon: CupertinoIcons.bookmark,
 													onPressed: () {
 														final threadState = persistence.getThreadState(thread.identifier);
+														threadState.thread = thread;
 														threadState.savedTime = DateTime.now();
 														threadState.save();
 														setState(() {});

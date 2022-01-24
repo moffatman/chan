@@ -31,6 +31,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final String? initialFilter;
 	final List<Filter> filters;
 	final bool allowReordering;
+	final ValueChanged<T>? onWantAutosave;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -48,6 +49,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.initialFilter,
 		this.filters = const [],
 		this.allowReordering = false,
+		this.onWantAutosave,
 		Key? key
 	}) : super(key: key);
 
@@ -244,6 +246,9 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 									values.add(Tuple2(item, true));
 								}
 								break;
+							case FilterResultType.autoSave:
+								widget.onWantAutosave?.call(item);
+								values.add(Tuple2(item, true));
 						}
 						handled = true;
 						break;

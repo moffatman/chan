@@ -170,7 +170,7 @@ class _SavedPageState extends State<SavedPage> {
 																	);
 																}
 															),
-															onTap: () => threadSetter(state.thread!.identifier)
+															onTap: () => threadSetter(state.identifier)
 														),
 														actions: [
 															ContextMenuAction(
