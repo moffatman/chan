@@ -1,23 +1,32 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/search_query.dart';
 import 'package:chan/services/media.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/rotating_image_provider.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/circular_loading_indicator.dart';
+import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/rx_stream_builder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
+
+const deviceGalleryAlbumName = 'Chance';
 
 class AttachmentNotFoundException {
 	final Attachment attachment;
@@ -53,6 +62,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _seeking = false;
 	String? _overlayText;
 	bool _isDisposed = false;
+	bool _isDownloaded = false;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -79,10 +89,14 @@ class AttachmentViewerController extends ChangeNotifier {
 	int get quarterTurns => _quarterTurns;
 	/// A key to use to with ExtendedImage (to help maintain gestures when the image widget is replaced)
 	final gestureKey = GlobalKey<ExtendedImageGestureState>();
+	/// A key to use with CupertinoContextMenu share button
+	final contextMenuShareButtonKey = GlobalKey();
 	/// Whether archive checking for this attachment is enabled
 	bool get checkArchives => _checkArchives;
 	/// Modal text which should be overlayed on the attachment
 	String? get overlayText => _overlayText;
+	/// Whether the image has already been downloaded
+	bool get isDownloaded => _isDownloaded;
 
 
 	AttachmentViewerController({
@@ -306,6 +320,33 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
+	bool get canShare => (overrideSource ?? cachedFile) != null;
+
+	Future<File> _moveToShareCache(Attachment attachment) async {
+		final systemTempDirectory = Persistence.temporaryDirectory;
+		final shareDirectory = await (Directory(systemTempDirectory.path + '/sharecache')).create(recursive: true);
+		final newFilename = attachment.id.toString() + attachment.ext.replaceFirst('webm', 'mp4');
+		File? originalFile = cachedFile;
+		if (overrideSource != null) {
+			originalFile = File(overrideSource!.path);
+		}
+		return await originalFile!.copy(shareDirectory.path.toString() + '/' + newFilename);
+	}
+
+	Future<void> share(Rect? sharePosition) async {
+		await Share.shareFiles([(await _moveToShareCache(attachment)).path], subject: attachment.filename, sharePositionOrigin: sharePosition);
+	}
+
+	Future<void> download() async {
+		if (_isDownloaded) return;
+		final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common, filterOption: FilterOptionGroup(containsEmptyAlbum: true));
+		AssetPathEntity? album = existingAlbums.tryFirstWhere((album) => album.name == deviceGalleryAlbumName);
+		album ??= await PhotoManager.editor.iOS.createAlbum('Chance');
+		final asAsset = await PhotoManager.editor.saveImageWithPath((await _moveToShareCache(attachment)).path);
+		await PhotoManager.editor.copyAssetToPath(asset: asAsset!, pathEntity: album!);
+		_isDownloaded = true;
+	}
+
 	@override
 	void dispose() {
 		_isDisposed = true;
@@ -377,9 +418,9 @@ class AttachmentViewer extends StatelessWidget {
 				onLoaded: controller.onRotationCompleted
 			);
 		}
-		return ExtendedImage(
+		_buildChild(bool useRealGestureKey) => ExtendedImage(
 			image: image,
-			extendedImageGestureKey: controller.gestureKey,
+			extendedImageGestureKey: useRealGestureKey ? controller.gestureKey : null,
 			color: const Color.fromRGBO(238, 242, 255, 1),
 			colorBlendMode: BlendMode.dstOver,
 			enableSlideOutPage: true,
@@ -501,6 +542,56 @@ class AttachmentViewer extends StatelessWidget {
 					flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
 				);
 			}
+		);
+		return CupertinoContextMenu(
+			actions: [
+					CupertinoContextMenuAction(
+						child: const Text('Download'),
+						trailingIcon: CupertinoIcons.cloud_download,
+						onPressed: () {
+							controller.download();
+							Navigator.of(context, rootNavigator: true).pop();
+						}
+					),
+					CupertinoContextMenuAction(
+						child: const Text('Share'),
+						trailingIcon: CupertinoIcons.share,
+						onPressed: () async {
+							final offset = (controller.contextMenuShareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+							final size = controller.contextMenuShareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+							await controller.share((offset != null && size != null) ? offset & size : null);
+							Navigator.of(context, rootNavigator: true).pop();
+						},
+						key: controller.contextMenuShareButtonKey
+					),
+					CupertinoContextMenuAction(
+						child: const Text('Search archives'),
+						trailingIcon: Icons.image_search,
+						onPressed: () {
+							Navigator.of(context).push(FullWidthCupertinoPageRoute(
+								builder: (context) => SearchQueryPage(query: ImageboardArchiveSearchQuery(boards: [attachment.board], md5: attachment.md5))
+							));
+						}
+					),
+					CupertinoContextMenuAction(
+						child: const Text('Search Google'),
+						trailingIcon: Icons.image_search,
+						onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
+							'image_url': attachment.url.toString(),
+							'safe': 'off'
+						}))
+					),
+					CupertinoContextMenuAction(
+						child: const Text('Search Yandex'),
+						trailingIcon: Icons.image_search,
+						onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
+							'rpt': 'imageview',
+							'url': attachment.url.toString()
+						}))
+					)
+			],
+			child: _buildChild(true),
+			previewBuilder: (context, animation, child) => _buildChild(false)
 		);
 	}
 
