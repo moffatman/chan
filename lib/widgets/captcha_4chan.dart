@@ -145,7 +145,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				if (challenge!.challenge == 'noop') {
 					widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
 						challenge: 'noop',
-						response: ''
+						response: '',
+						expiresAt: challenge!.expiresAt
 					));
 					return;
 				}
@@ -340,7 +341,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 							placeholder: 'Captcha text',
 							onSubmitted: (response) => widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
 								challenge: challenge!.challenge,
-								response: response
+								response: response,
+								expiresAt: challenge!.expiresAt
 							)),
 						)
 					)

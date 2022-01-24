@@ -68,8 +68,16 @@ class ReplyBoxState extends State<ReplyBox> {
 	CaptchaSolution? _captchaSolution;
 	Timer? _autoPostTimer;
 
+	bool get _haveValidCaptcha {
+		if (_captchaSolution == null) {
+			return false;
+		}
+		return _captchaSolution?.expiresAt?.isAfter(DateTime.now()) ?? true;
+	}
+
 	void _onTextChanged() async {
 		widget.onTextChanged?.call(_textFieldController.text);
+		_autoPostTimer?.cancel();
 		setState(() {});
 		final rawUrl = _imageUrlPattern.firstMatch(_textFieldController.text)?.group(0);
 		if (rawUrl != _lastFoundUrl && rawUrl != null) {
@@ -712,14 +720,22 @@ class ReplyBoxState extends State<ReplyBox> {
 							final now = DateTime.now();
 							final diff = timeout.difference(now);
 							if (!diff.isNegative) {
-								final prefix = (_autoPostTimer?.isActive ?? false) ? 'Auto\n' : '';
 								return CupertinoButton(
 									padding: EdgeInsets.zero,
-									child: Text(prefix + (diff.inMilliseconds / 1000).round().toString(), textAlign: TextAlign.center),
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
+										crossAxisAlignment: CrossAxisAlignment.center,
+										children: [
+											if (_autoPostTimer?.isActive ?? false) const Text('Auto', style: TextStyle(fontSize: 12)),
+											Text((diff.inMilliseconds / 1000).round().toString())
+										]
+									),
 									onPressed: () async {
 										if (!(_autoPostTimer?.isActive ?? false)) {
-											await _solveCaptcha();
-											if (_captchaSolution != null) {
+											if (!_haveValidCaptcha) {
+												await _solveCaptcha();
+											}
+											if (_haveValidCaptcha) {
 												_autoPostTimer = Timer(timeout.difference(DateTime.now()), _submit);
 											}
 										}

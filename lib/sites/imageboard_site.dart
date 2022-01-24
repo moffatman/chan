@@ -96,12 +96,13 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl)';
 }
 
-class CaptchaSolution {
-
+abstract class CaptchaSolution {
+	DateTime? get expiresAt;
 }
 
 class NoCaptchaSolution extends CaptchaSolution {
-  
+	@override
+	DateTime? get expiresAt => null;
 }
 
 class RecaptchaSolution extends CaptchaSolution {
@@ -110,15 +111,20 @@ class RecaptchaSolution extends CaptchaSolution {
 		required this.response
 	});
 	@override
+	DateTime? get expiresAt => null;
+	@override
 	String toString() => 'RecaptchaSolution(response: $response)';
 }
 
 class Chan4CustomCaptchaSolution extends CaptchaSolution {
 	final String challenge;
 	final String response;
+	@override
+	final DateTime expiresAt;
 	Chan4CustomCaptchaSolution({
 		required this.challenge,
-		required this.response
+		required this.response,
+		required this.expiresAt
 	});
 	@override
 	String toString() => 'Chan4CustomCaptchaSolution(challenge: $challenge, response: $response)';
