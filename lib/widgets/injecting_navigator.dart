@@ -71,16 +71,12 @@ class _PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScrol
 				topRoute
 			]),
 			builder: (context, child) {
-				final controller = _primaryScrollControllerTracker.value;
-				if (route != topRoute?.value || controller == null) {
-					return Builder(builder: childBuilder);
-				}
-				else {
-					return PrimaryScrollController(
-						controller: controller,
-						child: Builder(builder: childBuilder)
-					);
-				}
+				final bestController = _primaryScrollControllerTracker.value;
+				final automaticController = PrimaryScrollController.of(context)!;
+				return PrimaryScrollController(
+					controller: (route != topRoute?.value || bestController == null) ? automaticController : bestController,
+					child: Builder(builder: childBuilder)
+				);
 			}
 		);
 	}
