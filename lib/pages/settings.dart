@@ -210,19 +210,6 @@ class SettingsPage extends StatelessWidget {
 											initialConfiguration: settings.filterConfiguration,
 										),
 										const SizedBox(height: 32),
-										const Text('Use touchscreen layout'),
-										const SizedBox(height: 16),
-										CupertinoSegmentedControl<bool>(
-											children: const {
-												false: Text('No'),
-												true: Text('Yes')
-											},
-											groupValue: settings.useTouchLayout,
-											onValueChanged: (newValue) {
-												settings.useTouchLayout = newValue;
-											}
-										),
-										const SizedBox(height: 32),
 										const Text('Active Theme'),
 										const SizedBox(height: 16),
 										CupertinoSegmentedControl<ThemeSetting>(

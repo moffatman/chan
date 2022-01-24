@@ -297,12 +297,13 @@ class EffectiveSettings extends ChangeNotifier {
 		return _systemBrightness ?? SchedulerBinding.instance!.window.platformBrightness;
 	}
 
-	bool get useTouchLayout => _settings.useTouchLayout;
-	set useTouchLayout(bool setting) {
-		_settings.useTouchLayout = setting;
-		_settings.save();
-		notifyListeners();
-	}
+	bool get useTouchLayout => true;
+	//bool get useTouchLayout => _settings.useTouchLayout;
+	//set useTouchLayout(bool setting) {
+	//	_settings.useTouchLayout = setting;
+	//	_settings.save();
+	//	notifyListeners();
+	//}
 
 	bool get hideOldStickiedThreads => _settings.hideOldStickiedThreads;
 	set hideOldStickiedThreads(bool setting) {
