@@ -259,8 +259,8 @@ class _SavedPageState extends State<SavedPage> {
 				MultiMasterPane<SavedPost>(
 					navigationBar: _navigationBar('Saved Posts'),
 					icon: CupertinoIcons.reply,
-					masterBuilder: (context, selected, setter) => AnimatedBuilder(
-						animation: persistence.savedPostsNotifier,
+					masterBuilder: (context, selected, setter) => StreamBuilder(
+						stream: persistence.savedPostsNotifier,
 						builder: (context, child) {
 							final savedPosts = persistence.savedPosts.values.toList();
 							if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
@@ -329,8 +329,8 @@ class _SavedPageState extends State<SavedPage> {
 				MultiMasterPane<SavedAttachment>(
 					title: const Text('Saved Attachments'),
 					icon: CupertinoIcons.photo,
-					masterBuilder: (context, selected, setter) => AnimatedBuilder(
-						animation: persistence.savedAttachmentsNotifier,
+					masterBuilder: (context, selected, setter) => StreamBuilder(
+						stream: persistence.savedAttachmentsNotifier,
 						builder: (context, child) {
 							final list = persistence.savedAttachments.values.toList();
 							list.sort((a, b) => b.savedTime.compareTo(a.savedTime));

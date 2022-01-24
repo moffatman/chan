@@ -145,140 +145,160 @@ class PostRow extends StatelessWidget {
 		innerChild(BuildContext context, double slideFactor) => GestureDetector(
 			onTap: onTap,
 			child: Container(
-				padding: const EdgeInsets.all(8),
+				padding: const EdgeInsets.only(left: 8, bottom: 8),
 				decoration: BoxDecoration(
 					border: border,
 					color: isSelected ? CupertinoTheme.of(context).primaryColorWithBrightness(0.4) : CupertinoTheme.of(context).scaffoldBackgroundColor,
 				),
-				child: Column(
-					mainAxisSize: MainAxisSize.min,
-					crossAxisAlignment: CrossAxisAlignment.start,
+				child: Stack(
 					children: [
-						ClipRect(
-							child: PostSpanZone(
-								postId: _post.id,
-								builder: (ctx) => Text.rich(
-									TextSpan(
-										children: [
+						Column(
+							mainAxisSize: MainAxisSize.min,
+							crossAxisAlignment: CrossAxisAlignment.start,
+							children: [
+								const SizedBox(height: 8),
+								ClipRect(
+									child: PostSpanZone(
+										postId: _post.id,
+										builder: (ctx) => Text.rich(
 											TextSpan(
-												text: context.read<EffectiveSettings>().filterProfanity(_post.name) + (isYourPost ? ' (You)' : ''),
-												style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
-											),
-											if (_post.posterId != null) IDSpan(
-												id: _post.posterId!,
-												onPressed: () => WeakNavigator.push(context, PostsPage(
-													postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
-													zone: zone
-												))
-											),
-											if (_post.flag != null) ...[
-												FlagSpan(_post.flag!),
-												TextSpan(
-													text: _post.flag!.name,
-													style: const TextStyle(
-														fontStyle: FontStyle.italic
-													)
-												)
-											],
-											TextSpan(
-												text: formatTime(_post.time)
-											),
-											TextSpan(
-												text: _post.id.toString(),
-												style: const TextStyle(color: Colors.grey),
-												recognizer: TapGestureRecognizer()..onTap = () {
-													ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
-												}
-											),
-											if (!settings.useTouchLayout) ...[
-												..._post.replyIds.map((id) => PostQuoteLinkSpan(
-													board: _post.board,
-													threadId: _post.threadId,
-													postId: id,
-													dead: false
-												).build(ctx, PostSpanRenderOptions(
-													showCrossThreadLabel: showCrossThreadLabel,
-													addExpandingPosts: false
-												))),
-												..._post.replyIds.map((id) => WidgetSpan(
-													child: ExpandingPost(id: id),
-												))
-											]
-										].expand((span) => [const TextSpan(text: ' '), span]).skip(1).toList()
-									)
-								)
-							)
-						),
-						const SizedBox(height: 2),
-						Flexible(
-							child: IntrinsicHeight(
-								child: Row(
-									crossAxisAlignment: CrossAxisAlignment.stretch,
-									mainAxisAlignment: MainAxisAlignment.start,
-									mainAxisSize: MainAxisSize.min,
-									children: [
-										if (_post.attachment != null && settings.showImages(context, _post.board)) Align(
-											alignment: Alignment.topCenter,
-											child: GestureDetector(
-												child: Stack(
-													alignment: Alignment.center,
-													fit: StackFit.loose,
-													children: [
-														AttachmentThumbnail(
-															attachment: _post.attachment!,
-															thread: _post.threadIdentifier,
-															onLoadError: onThumbnailLoadError,
-															hero: AttachmentSemanticLocation(
-																attachment: _post.attachment!,
-																semanticParents: zone.stackIds
+												children: [
+													TextSpan(
+														text: context.read<EffectiveSettings>().filterProfanity(_post.name) + (isYourPost ? ' (You)' : ''),
+														style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
+													),
+													if (_post.posterId != null) IDSpan(
+														id: _post.posterId!,
+														onPressed: () => WeakNavigator.push(context, PostsPage(
+															postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
+															zone: zone
+														))
+													),
+													if (_post.flag != null) ...[
+														FlagSpan(_post.flag!),
+														TextSpan(
+															text: _post.flag!.name,
+															style: const TextStyle(
+																fontStyle: FontStyle.italic
 															)
-														),
-														if (_post.attachment?.type == AttachmentType.webm) SizedBox(
-															width: 75,
-															height: 75,
-															child: Center(
-																child: AspectRatio(
-																	aspectRatio: (_post.attachment!.width ?? 1) / (_post.attachment!.height ?? 1),
-																	child: Align(
-																		alignment: Alignment.bottomRight,
-																		child: Container(
-																			decoration: BoxDecoration(
-																				borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																				border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-																			),
-																			padding: const EdgeInsets.all(2),
-																			child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
+														)
+													],
+													TextSpan(
+														text: formatTime(_post.time)
+													),
+													TextSpan(
+														text: _post.id.toString(),
+														style: const TextStyle(color: Colors.grey),
+														recognizer: TapGestureRecognizer()..onTap = () {
+															ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
+														}
+													),
+													if (!settings.useTouchLayout) ...[
+														..._post.replyIds.map((id) => PostQuoteLinkSpan(
+															board: _post.board,
+															threadId: _post.threadId,
+															postId: id,
+															dead: false
+														).build(ctx, PostSpanRenderOptions(
+															showCrossThreadLabel: showCrossThreadLabel,
+															addExpandingPosts: false
+														))),
+														..._post.replyIds.map((id) => WidgetSpan(
+															child: ExpandingPost(id: id),
+														))
+													]
+												].expand((span) => [const TextSpan(text: ' '), span]).skip(1).toList()
+											)
+										)
+									)
+								),
+								const SizedBox(height: 2),
+								Flexible(
+									child: IntrinsicHeight(
+										child: Row(
+											crossAxisAlignment: CrossAxisAlignment.stretch,
+											mainAxisAlignment: MainAxisAlignment.start,
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												if (_post.attachment != null && settings.showImages(context, _post.board)) Align(
+													alignment: Alignment.topCenter,
+													child: GestureDetector(
+														child: Stack(
+															alignment: Alignment.center,
+															fit: StackFit.loose,
+															children: [
+																AttachmentThumbnail(
+																	attachment: _post.attachment!,
+																	thread: _post.threadIdentifier,
+																	onLoadError: onThumbnailLoadError,
+																	hero: AttachmentSemanticLocation(
+																		attachment: _post.attachment!,
+																		semanticParents: zone.stackIds
+																	)
+																),
+																if (_post.attachment?.type == AttachmentType.webm) SizedBox(
+																	width: 75,
+																	height: 75,
+																	child: Center(
+																		child: AspectRatio(
+																			aspectRatio: (_post.attachment!.width ?? 1) / (_post.attachment!.height ?? 1),
+																			child: Align(
+																				alignment: Alignment.bottomRight,
+																				child: Container(
+																					decoration: BoxDecoration(
+																						borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																						border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+																					),
+																					padding: const EdgeInsets.all(2),
+																					child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
+																				)
+																			)
 																		)
 																	)
 																)
-															)
-														)
-													]
-												),
-												onTap: () {
-													onThumbnailTap?.call(_post.attachment!);
-												}
-											)
-										)
-										else if (_post.attachmentDeleted) Center(
-											child: SizedBox(
-												width: 75,
-												height: 75,
-												child: GestureDetector(
-													behavior: HitTestBehavior.opaque,
-													child: const Icon(CupertinoIcons.question_square, size: 36),
-													onTap: onRequestArchive
+															]
+														),
+														onTap: () {
+															onThumbnailTap?.call(_post.attachment!);
+														}
+													)
 												)
-											)
-										),
-										if (shrinkWrap) Flexible(
-											child: content(slideFactor)
+												else if (_post.attachmentDeleted) Center(
+													child: SizedBox(
+														width: 75,
+														height: 75,
+														child: GestureDetector(
+															behavior: HitTestBehavior.opaque,
+															child: const Icon(CupertinoIcons.question_square, size: 36),
+															onTap: onRequestArchive
+														)
+													)
+												),
+												if (shrinkWrap) Flexible(
+													child: content(slideFactor)
+												)
+												else Expanded(
+													child: content(slideFactor)
+												),
+												const SizedBox(width: 8)
+											]
 										)
-										else Expanded(
-											child: content(slideFactor)
-										)
-									]
+									)
+								)
+							]
+						),
+						if (context.watch<Persistence>().getSavedPost(post) != null) Positioned.fill(
+							child: Align(
+								alignment: Alignment.topRight,
+								child: Container(
+									decoration: BoxDecoration(
+										borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
+										color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+										border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+									),
+									padding: const EdgeInsets.only(top: 2, bottom: 2, left: 6, right: 6),
+									child: const Icon(CupertinoIcons.bookmark_fill, size: 18)
 								)
 							)
 						)

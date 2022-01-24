@@ -484,8 +484,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 									child: const Icon(CupertinoIcons.cloud_download),
 									onPressed: currentController.canShare && !currentController.isDownloaded ? currentController.download : null
 								),
-								AnimatedBuilder(
-									animation: context.watch<Persistence>().savedAttachmentsNotifier,
+								StreamBuilder(
+									stream: context.watch<Persistence>().savedAttachmentsNotifier,
 									builder: (context, child) {
 										final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment) != null;
 										return CupertinoButton(

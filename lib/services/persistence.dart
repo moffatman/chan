@@ -14,6 +14,7 @@ import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:rxdart/rxdart.dart';
 part 'persistence.g.dart';
 
 class UriAdapter extends TypeAdapter<Uri> {
@@ -37,12 +38,6 @@ const _savedAttachmentsDir = 'saved_attachments';
 const _maxAutosavedIdsPerBoard = 250;
 const _maxHiddenIdsPerBoard = 1000;
 
-class _SimpleChangeNotifier extends ChangeNotifier {
-	void newChange() {
-		notifyListeners();
-	}
-}
-
 class Persistence {
 	final String id;
 	Persistence(this.id);
@@ -52,8 +47,8 @@ class Persistence {
 	Map<String, SavedPost> get savedPosts => settings.savedPostsBySite[id]!;
 	PersistentRecentSearches get recentSearches => settings.recentSearchesBySite[id]!;
 	PersistentBrowserState get browserState => settings.browserStateBySite[id]!;
-	final savedAttachmentsNotifier = _SimpleChangeNotifier();
-	final savedPostsNotifier = _SimpleChangeNotifier();
+	final savedAttachmentsNotifier = PublishSubject<void>();
+	final savedPostsNotifier = PublishSubject<void>();
 	static late final SavedSettings settings;
 	static late final Directory temporaryDirectory;
 	static late final Directory documentsDirectory;
@@ -213,7 +208,7 @@ class Persistence {
 			}
 		});
 		settings.save();
-		savedAttachmentsNotifier.newChange();
+		savedAttachmentsNotifier.add(null);
 	}
 
 	void deleteSavedAttachment(Attachment attachment) {
@@ -222,7 +217,7 @@ class Persistence {
 			removed.deleteFiles();
 		}
 		settings.save();
-		savedAttachmentsNotifier.newChange();
+		savedAttachmentsNotifier.add(null);
 	}
 
 	SavedPost? getSavedPost(Post post) {
@@ -234,7 +229,7 @@ class Persistence {
 		settings.save();
 		// Likely will force the widget to rebuild
 		getThreadStateIfExists(post.threadIdentifier)?.save();
-		savedPostsNotifier.newChange();
+		savedPostsNotifier.add(null);
 	}
 
 	void unsavePost(Post post) {
@@ -242,7 +237,7 @@ class Persistence {
 		settings.save();
 		// Likely will force the widget to rebuild
 		getThreadStateIfExists(post.threadIdentifier)?.save();
-		savedPostsNotifier.newChange();
+		savedPostsNotifier.add(null);
 	}
 
 	String get currentBoardName => browserState.tabs[browserState.currentTab].board?.name ?? 'tv';
@@ -268,7 +263,7 @@ class Persistence {
 
 	Future<void> didUpdateSavedPost() async {
 		await settings.save();
-		savedPostsNotifier.newChange();
+		savedPostsNotifier.add(null);
 	}
 }
 
