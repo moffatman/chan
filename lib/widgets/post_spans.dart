@@ -420,6 +420,7 @@ class PostLinkSpan extends PostSpan {
 	@override
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
+		bool setHeight = false;
 		if (embedPossible(url: url, context: context) && !options.showRawSource) {
 			final snapshot = zone.getFutureForComputation(
 				id: 'noembed $url',
@@ -428,6 +429,7 @@ class PostLinkSpan extends PostSpan {
 					url: url
 				)
 			);
+			setHeight = snapshot.connectionState == ConnectionState.waiting;
 			String? byline = snapshot.data?.provider;
 			if (snapshot.data?.author != null && !(snapshot.data?.title != null && snapshot.data!.title!.contains(snapshot.data!.author!))) {
 				byline = byline == null ? snapshot.data?.author : '${snapshot.data?.author} - $byline';
@@ -489,7 +491,8 @@ class PostLinkSpan extends PostSpan {
 		return TextSpan(
 			text: url,
 			style: options.baseTextStyle.copyWith(
-				decoration: TextDecoration.underline
+				decoration: TextDecoration.underline,
+				height: setHeight ? (88 / 14) : null
 			),
 			recognizer: TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(url))
 		);
