@@ -164,7 +164,7 @@ class ThreadRow extends StatelessWidget {
 						border: contentFocus ? Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)) : null,
 						borderRadius: borderRadius
 					),
-					padding: contentFocus ? null : const EdgeInsets.only(left: 8, top: 8),
+					padding: contentFocus ? null : const EdgeInsets.only(left: 8),
 					margin: contentFocus ? const EdgeInsets.all(4) : null,
 					child: ClipRRect(
 						borderRadius: borderRadius,
@@ -256,7 +256,7 @@ class ThreadRow extends StatelessWidget {
 											children: [
 												Flexible(
 													child: Container(
-														padding: const EdgeInsets.only(bottom: 8),
+														padding: const EdgeInsets.only(top: 8, bottom: 8),
 														child: GestureDetector(
 															child: Stack(
 																alignment: Alignment.center,
@@ -310,7 +310,7 @@ class ThreadRow extends StatelessWidget {
 										Expanded(
 											child: Container(
 												constraints: const BoxConstraints(minHeight: 75),
-												padding: const EdgeInsets.only(left: 8, right: 8),
+												padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 												child: ChangeNotifierProvider<PostSpanZoneData>(
 													create: (ctx) => PostSpanRootZoneData(
 														thread: _thread,
@@ -374,6 +374,25 @@ class ThreadRow extends StatelessWidget {
 									child: Align(
 										alignment: Alignment.bottomRight,
 										child: _makeCounters()
+									)
+								),
+								if (threadState?.savedTime != null) Positioned.fill(
+									child: Align(
+										alignment: Alignment.topRight,
+										child: Container(
+											decoration: BoxDecoration(
+												borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
+												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+												border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+											),
+											padding: const EdgeInsets.only(top: 2, bottom: 2, left: 6, right: 6),
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Icon(CupertinoIcons.bookmark_fill, color: otherMetadataColor, size: 18),
+												]
+											)
+										)
 									)
 								)
 							]
