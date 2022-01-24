@@ -66,7 +66,7 @@ class _ContextMenuState extends State<ContextMenu> {
 						)).toList(),
 						previewBuilder: (ctx, animation, child) {
 							return IgnorePointer(
-								child: Provider<_ContextMenuUseNewConstraints>.value(
+								child: animation.value == 0 ? child : Provider<_ContextMenuUseNewConstraints>.value(
 									value: _ContextMenuUseNewConstraints.yes,
 									child: child
 								)
