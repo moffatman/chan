@@ -78,14 +78,14 @@ class ReplyBoxState extends State<ReplyBox> {
 	void _onTextChanged() async {
 		widget.onTextChanged?.call(_textFieldController.text);
 		_autoPostTimer?.cancel();
-		setState(() {});
+		if (mounted) setState(() {});
 		final rawUrl = _imageUrlPattern.firstMatch(_textFieldController.text)?.group(0);
 		if (rawUrl != _lastFoundUrl && rawUrl != null) {
 			try {
 				await context.read<ImageboardSite>().client.head(rawUrl);
 				_lastFoundUrl = rawUrl;
 				_proposedAttachmentUrl = rawUrl;
-				setState(() {});
+				if (mounted) setState(() {});
 			}
 			catch (e) {
 				print('Url did not have a good response: ${e.toStringDio()}');
@@ -99,7 +99,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				_lastFoundUrl = possibleEmbed;
 				if (embedData?.thumbnailUrl != null) {
 					_proposedAttachmentUrl = embedData!.thumbnailUrl!;
-					setState(() {});
+					if (mounted) setState(() {});
 				}
 			}
 		}
@@ -114,6 +114,15 @@ class ReplyBoxState extends State<ReplyBox> {
 		_subjectFieldController.addListener(() {
 			widget.onSubjectChanged?.call(_subjectFieldController.text);
 		});
+	}
+
+	@override
+	void didUpdateWidget(ReplyBox oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (oldWidget.board != widget.board || oldWidget.threadId != widget.threadId) {
+			_textFieldController.text = widget.initialText;
+			_subjectFieldController.text = widget.initialSubject;
+		}
 	}
 
 	void _insertText(String insertedText) {
@@ -471,6 +480,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			loading = true;
 		});
 		try {
+			final persistence = context.read<Persistence>();
 			final receipt = (widget.threadId != null) ? (await site.postReply(
 				thread: ThreadIdentifier(board: widget.board, id: widget.threadId!),
 				name: _nameFieldController.text,
@@ -493,15 +503,14 @@ class ReplyBoxState extends State<ReplyBox> {
 			_nameFieldController.clear();
 			_optionsFieldController.clear();
 			_subjectFieldController.clear();
-			setState(() {
-				show = false;
-				loading = false;
-				attachment = null;
-				overrideAttachmentFilename = null;
-			});
+			show = false;
+			loading = false;
+			attachment = null;
+			overrideAttachmentFilename = null;
+			if (mounted) setState(() {});
 			print(receipt);
 			_textFocusNode.unfocus();
-			final threadState = context.read<Persistence>().getThreadState((widget.threadId != null) ?
+			final threadState = persistence.getThreadState((widget.threadId != null) ?
 				ThreadIdentifier(board: widget.board, id: widget.threadId!) :
 				ThreadIdentifier(board: widget.board, id: receipt.id));
 			threadState.receipts = [...threadState.receipts, receipt];
