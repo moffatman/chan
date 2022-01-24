@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:auto_size_text/auto_size_text.dart';
@@ -64,6 +65,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool show = false;
 	String? _lastFoundUrl;
 	String? _proposedAttachmentUrl;
+	CaptchaSolution? _captchaSolution;
+	Timer? _autoPostTimer;
 
 	void _onTextChanged() async {
 		widget.onTextChanged?.call(_textFieldController.text);
@@ -417,13 +420,11 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
-	Future<void> _submit() async {
-		final site = context.read<ImageboardSite>();
-		final captchaRequest = site.getCaptchaRequest(widget.board, widget.threadId);
-		CaptchaSolution? captchaSolution;
+	Future<void> _solveCaptcha() async {
+		final captchaRequest = context.read<ImageboardSite>().getCaptchaRequest(widget.board, widget.threadId);
 		if (captchaRequest is RecaptchaRequest) {
 			hideReplyBox();
-			captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(builder: (context) {
+			_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(builder: (context) {
 				return OverscrollModalPage(
 					child: CaptchaNoJS(
 						request: captchaRequest,
@@ -435,7 +436,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 		else if (captchaRequest is Chan4CustomCaptchaRequest) {
 			hideReplyBox();
-			captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(builder: (context) {
+			_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(builder: (context) {
 				return OverscrollModalPage(
 					child: Captcha4ChanCustom(
 						request: captchaRequest,
@@ -446,9 +447,16 @@ class ReplyBoxState extends State<ReplyBox> {
 			showReplyBox();
 		}
 		else if (captchaRequest is NoCaptchaRequest) {
-			captchaSolution = NoCaptchaSolution();
+			_captchaSolution = NoCaptchaSolution();
 		}
-		if (captchaSolution == null) {
+	}
+
+	Future<void> _submit() async {
+		final site = context.read<ImageboardSite>();
+		if (_captchaSolution == null) {
+			await _solveCaptcha();
+		}
+		if (_captchaSolution == null) {
 			return;
 		}
 		setState(() {
@@ -459,7 +467,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				thread: ThreadIdentifier(board: widget.board, id: widget.threadId!),
 				name: _nameFieldController.text,
 				options: _optionsFieldController.text,
-				captchaSolution: captchaSolution,
+				captchaSolution: _captchaSolution!,
 				text: _textFieldController.text,
 				file: attachment,
 				overrideFilename: overrideAttachmentFilename
@@ -467,7 +475,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				board: widget.board,
 				name: _nameFieldController.text,
 				options: _optionsFieldController.text,
-				captchaSolution: captchaSolution,
+				captchaSolution: _captchaSolution!,
 				text: _textFieldController.text,
 				file: attachment,
 				overrideFilename: overrideAttachmentFilename,
@@ -500,6 +508,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			});
 			alertError(context, e.toStringDio());
 		}
+		_captchaSolution = null;
 	}
 
 	Widget _buildOptions(BuildContext context) {
@@ -703,10 +712,22 @@ class ReplyBoxState extends State<ReplyBox> {
 							final now = DateTime.now();
 							final diff = timeout.difference(now);
 							if (!diff.isNegative) {
+								final prefix = (_autoPostTimer?.isActive ?? false) ? 'Auto\n' : '';
 								return CupertinoButton(
 									padding: EdgeInsets.zero,
-									child: Text((diff.inMilliseconds / 1000).round().toString(), textAlign: TextAlign.center),
-									onPressed: null
+									child: Text(prefix + (diff.inMilliseconds / 1000).round().toString(), textAlign: TextAlign.center),
+									onPressed: () async {
+										if (!(_autoPostTimer?.isActive ?? false)) {
+											await _solveCaptcha();
+											if (_captchaSolution != null) {
+												_autoPostTimer = Timer(timeout.difference(DateTime.now()), _submit);
+											}
+										}
+										else {
+											_autoPostTimer!.cancel();
+										}
+										setState(() {});
+									}
 								);
 							}
 						}
