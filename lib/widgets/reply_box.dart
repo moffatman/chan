@@ -746,6 +746,7 @@ class ReplyBoxState extends State<ReplyBox> {
 											}
 											if (_haveValidCaptcha) {
 												_autoPostTimer = Timer(timeout.difference(DateTime.now()), _submit);
+												_textFocusNode.unfocus();
 											}
 										}
 										else {
