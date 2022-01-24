@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
@@ -33,6 +34,8 @@ class UriAdapter extends TypeAdapter<Uri> {
 
 const _savedAttachmentThumbnailsDir = 'saved_attachments_thumbs';
 const _savedAttachmentsDir = 'saved_attachments';
+const _maxAutosavedIdsPerBoard = 250;
+const _maxHiddenIdsPerBoard = 1000;
 
 class _SimpleChangeNotifier extends ChangeNotifier {
 	void newChange() {
@@ -146,6 +149,15 @@ class Persistence {
 			await savedPostsBox.deleteFromDisk();
 		}
 		settings.savedPostsBySite.putIfAbsent(id, () => {});
+		// Cleanup expanding lists
+		for (final browserState in settings.browserStateBySite.values) {
+			for (final list in browserState.autosavedIds.values) {
+				list.removeRange(0, max(0, list.length - _maxAutosavedIdsPerBoard));
+			}
+			for (final list in browserState.hiddenIds.values) {
+				list.removeRange(0, max(0, list.length - _maxHiddenIdsPerBoard));
+			}
+		}
 		await settings.save();
 	}
 
