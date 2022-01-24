@@ -149,7 +149,7 @@ class ThreadRow extends StatelessWidget {
 											Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
 											if (unseenImageCount > 0) Text('+$unseenImageCount'),
 										]
-										else Text('$unseenImageCount', style: TextStyle(color: unseenImageCount == 0 ? grey : null)),
+										else Text('$unseenImageCount', style: TextStyle(color: threadState?.lastSeenPostId != null ? grey : null)),
 										const SizedBox(width: 2)
 									]
 								)
