@@ -392,9 +392,10 @@ class PostRow extends StatelessWidget {
 				if (receipt != null) ContextMenuAction(
 					child: const Text('Delete Post'),
 					trailingIcon: CupertinoIcons.delete,
-					onPressed: () {
+					isDestructiveAction: true,
+					onPressed: () async {
 						try {
-							site.deletePost(_post.board, receipt);
+							await site.deletePost(_post.board, receipt);
 						}
 						catch (error) {
 							alertError(context, error.toStringDio());

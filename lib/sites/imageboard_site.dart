@@ -55,6 +55,13 @@ class PostFailedException implements Exception {
 	String toString() => 'Posting failed: $reason';
 }
 
+class DeletionFailedException implements Exception {
+	final String reason;
+	const DeletionFailedException(this.reason);
+	@override
+	String toString() => 'Deleting failed: $reason';
+}
+
 class ImageboardArchiveException implements Exception {
 	Map<String, String> archiveErrors;
 	ImageboardArchiveException(this.archiveErrors);

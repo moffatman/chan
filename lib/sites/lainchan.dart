@@ -315,12 +315,18 @@ class SiteLainchan extends ImageboardSite {
 			Uri.https(baseUrl, '/post.php').toString(),
 			data: FormData.fromMap({
 				'board': board,
-				'delete_$receipt.id': 'on',
+				'delete_${receipt.id}': 'on',
 				'delete': 'Delete',
 				'password': receipt.password
-			})
+			}),
+			options: Options(
+				validateStatus: (x) => true
+			)
 		);
 		if (response.statusCode != 200) {
+			if (response.statusCode == 500) {
+				throw DeletionFailedException(parse(response.data).querySelector('h2')?.text ?? 'Unknown error');
+			}
 			throw HTTPStatusException(response.statusCode!);
 		}
 	}
