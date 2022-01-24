@@ -591,7 +591,7 @@ class AttachmentViewer extends StatelessWidget {
 					)
 			],
 			child: _buildChild(true),
-			previewBuilder: (context, animation, child) => _buildChild(false)
+			previewBuilder: (context, animation, child) => IgnorePointer(child: _buildChild(false))
 		);
 	}
 
