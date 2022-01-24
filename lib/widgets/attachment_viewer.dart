@@ -591,7 +591,12 @@ class AttachmentViewer extends StatelessWidget {
 					)
 			],
 			child: _buildChild(true),
-			previewBuilder: (context, animation, child) => IgnorePointer(child: _buildChild(false))
+			previewBuilder: (context, animation, child) => IgnorePointer(
+				child: AspectRatio(
+					aspectRatio: (attachment.width != null && attachment.height != null) ? (attachment.width! / attachment.height!) : 1,
+					child: _buildChild(false)
+				)
+			)
 		);
 	}
 
