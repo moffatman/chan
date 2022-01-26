@@ -121,6 +121,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
   @override
   void addAllowedPointerPanZoom(PointerPanZoomStartEvent event) {
     super.addAllowedPointerPanZoom(event);
+		startTrackingPointer(event.pointer);
     _velocityTrackers[event.pointer] = velocityTrackerBuilder(event);
     if (_state == _DragState.ready) {
       _state = _DragState.possible;
