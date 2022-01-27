@@ -200,10 +200,6 @@ class _FloatingHoverPopupLayoutDelegate extends SingleChildLayoutDelegate {
 		}
 		else {
 			// Put image to right of cursor
-			print('''Offset(
-				min(${size.width} - ${childSize.width}, ${mousePosition.dx} + (${anchor?.dx} ?? $_idealCursorGap)),
-				$top
-			)''');
 			return Offset(
 				min(size.width - childSize.width, mousePosition.dx + (anchor?.dx ?? _idealCursorGap)),
 				top
