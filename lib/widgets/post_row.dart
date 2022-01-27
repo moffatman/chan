@@ -136,6 +136,11 @@ class PostRow extends StatelessWidget {
 														text: context.read<EffectiveSettings>().filterProfanity(_post.name) + (isYourPost ? ' (You)' : ''),
 														style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
 													),
+													if (_post.trip != null) TextSpan(
+														text: context.read<EffectiveSettings>().filterProfanity(_post.trip!),
+														style: TextStyle(color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
+													),
+													const TextSpan(text: ' '),
 													if (_post.posterId != null) IDSpan(
 														id: _post.posterId!,
 														onPressed: () => WeakNavigator.push(context, PostsPage(
@@ -144,7 +149,9 @@ class PostRow extends StatelessWidget {
 														))
 													),
 													if (_post.flag != null) ...[
+														const TextSpan(text: ' '),
 														FlagSpan(_post.flag!),
+														const TextSpan(text: ' '),
 														TextSpan(
 															text: _post.flag!.name,
 															style: const TextStyle(
@@ -152,9 +159,11 @@ class PostRow extends StatelessWidget {
 															)
 														)
 													],
+													const TextSpan(text: ' '),
 													TextSpan(
 														text: formatTime(_post.time)
 													),
+													const TextSpan(text: ' '),
 													TextSpan(
 														text: _post.id.toString(),
 														style: const TextStyle(color: Colors.grey),
@@ -175,8 +184,8 @@ class PostRow extends StatelessWidget {
 														..._post.replyIds.map((id) => WidgetSpan(
 															child: ExpandingPost(id: id),
 														))
-													]
-												].expand((span) => [const TextSpan(text: ' '), span]).skip(1).toList()
+													].expand((span) => [const TextSpan(text: ' '), span])
+												]
 											)
 										)
 									)

@@ -73,11 +73,14 @@ class Post implements Filterable {
 	List<int> replyIds = [];
 	@HiveField(11, defaultValue: false)
 	bool attachmentDeleted;
+	@HiveField(13)
+	String? trip;
 	Post({
 		required this.board,
 		required this.text,
 		required this.name,
 		required this.time,
+		this.trip,
 		required this.threadId,
 		required this.id,
 		required this.spanFormat,

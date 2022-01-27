@@ -149,7 +149,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return Post(
 			board: board,
 			text: data['comment_processed'] ?? '',
-			name: (data['name'] ?? '') + (data['trip'] ?? ''),
+			name: data['name'] ?? '',
+			trip: data['trip'],
 			time: DateTime.fromMillisecondsSinceEpoch(data['timestamp'] * 1000),
 			id: int.parse(data['num']),
 			threadId: threadId,
