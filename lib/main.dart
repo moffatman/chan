@@ -230,7 +230,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		super.initState();
 		initialized = context.read<Persistence>().boards.isNotEmpty;
 		browserState = context.read<Persistence>().browserState;
-		tabs.addAll(browserState.tabs.map((tab) => Tuple3(tab, GlobalKey(), ValueNotifier<int>(0))));
+		tabs.addAll(browserState.tabs.map((tab) => Tuple3(tab, GlobalKey(debugLabel: 'tab $tab'), ValueNotifier<int>(0))));
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.item3)]);
 		activeBrowserTab.value = browserState.currentTab;
 		_setupBoards();
@@ -248,7 +248,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			thread: withThread
 		);
 		browserState.tabs.insert(pos, tab);
-		tabs.insert(pos, Tuple3(tab, GlobalKey(), ValueNotifier<int>(0)));
+		tabs.insert(pos, Tuple3(tab, GlobalKey(debugLabel: 'tab $tab'), ValueNotifier<int>(0)));
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.item3)]);
 		if (activate) {
 			activeBrowserTab.value = pos;
@@ -264,55 +264,55 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		final persistence = context.watch<Persistence>();
 		Widget child;
 		if (index <= 0) {
-			child = ValueListenableBuilder(
-				valueListenable: activeBrowserTab,
-				builder: (context, int activeIndex, child) {
-					return IndexedStack(
-						index: activeIndex,
-						children: List.generate(tabs.length, (i) {
-							final tab = ImageboardTab(
-								key: tabs[i].item2,
-								initialBoard: tabs[i].item1.board,
-								initialThread: tabs[i].item1.thread,
-								onBoardChanged: (newBoard) {
-									tabs[i].item1.board = newBoard;
-									persistence.didUpdateBrowserState();
-									setState(() {});
-								},
-								onThreadChanged: (newThread) {
-									tabs[i].item1.thread = newThread;
-									persistence.didUpdateBrowserState();
-									setState(() {});
-								},
-								initialThreadDraftText: tabs[i].item1.draftThread,
-								onThreadDraftTextChanged: (newText) {
-									tabs[i].item1.draftThread = newText;
-									_saveBrowserTabsDuringDraftEditingTimer?.cancel();
-									_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), () => persistence.didUpdateBrowserState());
-								},
-								initialThreadDraftSubject: tabs[i].item1.draftSubject,
-								onThreadDraftSubjectChanged: (newSubject) {
-									tabs[i].item1.draftSubject = newSubject;
-									_saveBrowserTabsDuringDraftEditingTimer?.cancel();
-									_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), () => persistence.didUpdateBrowserState());
-								},
-								onWantOpenThreadInNewTab: (thread) {
-									_addNewTab(
-										atPosition: i + 1,
-										withThread: thread
-									);
-								},
-								id: -1 * (i + 10)
+			child = IndexedStack(
+				index: activeBrowserTab.value,
+				children: List.generate(tabs.length, (i) {
+					final tab = ImageboardTab(
+						key: tabs[i].item2,
+						initialBoard: tabs[i].item1.board,
+						initialThread: tabs[i].item1.thread,
+						onBoardChanged: (newBoard) {
+							tabs[i].item1.board = newBoard;
+							persistence.didUpdateBrowserState();
+							setState(() {});
+						},
+						onThreadChanged: (newThread) {
+							tabs[i].item1.thread = newThread;
+							persistence.didUpdateBrowserState();
+							setState(() {});
+						},
+						initialThreadDraftText: tabs[i].item1.draftThread,
+						onThreadDraftTextChanged: (newText) {
+							tabs[i].item1.draftThread = newText;
+							_saveBrowserTabsDuringDraftEditingTimer?.cancel();
+							_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), () => persistence.didUpdateBrowserState());
+						},
+						initialThreadDraftSubject: tabs[i].item1.draftSubject,
+						onThreadDraftSubjectChanged: (newSubject) {
+							tabs[i].item1.draftSubject = newSubject;
+							_saveBrowserTabsDuringDraftEditingTimer?.cancel();
+							_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), () => persistence.didUpdateBrowserState());
+						},
+						onWantOpenThreadInNewTab: (thread) {
+							_addNewTab(
+								atPosition: i + 1,
+								withThread: thread
 							);
+						},
+						id: -1 * (i + 10)
+					);
+					return ValueListenableBuilder(
+						valueListenable: activeBrowserTab,
+						builder: (context, int activeIndex, child) {
 							return ExcludeFocus(
 								excluding: i != activeIndex,
 								child: i == activeIndex ? tab : PrimaryScrollController.none(
 									child: tab
 								)
 							);
-						})
+						}
 					);
-				}
+				})
 			);
 		}
 		else if (index == 1) {
@@ -351,7 +351,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			}
 		}
 		child = KeyedSubtree(
-			key: _keys.putIfAbsent(index, () => GlobalKey()),
+			key: _keys.putIfAbsent(index, () => GlobalKey(debugLabel: '_keys[$index]')),
 			child: child
 		);
 		return active ? child : PrimaryScrollController.none(child: child);
