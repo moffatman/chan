@@ -164,7 +164,7 @@ class Site4Chan extends ImageboardSite {
 		return PostNodeSpan(elements);
 	}
 
-	ImageboardFlag? _makeFlag(dynamic data) {
+	ImageboardFlag? _makeFlag(dynamic data, String board) {
 		if (data['country'] != null) {
 			return ImageboardFlag(
 				name: data['country_name'],
@@ -177,6 +177,14 @@ class Site4Chan extends ImageboardSite {
 			return ImageboardFlag(
 				name: data['country_name'],
 				imageUrl: Uri.https(staticUrl, '/image/country/troll/${data['troll_country'].toLowerCase()}.gif').toString(),
+				imageWidth: 16,
+				imageHeight: 11
+			);
+		}
+		else if (data['board_flag'] != null) {
+			return ImageboardFlag(
+				name: data['flag_name'],
+				imageUrl: Uri.https(staticUrl, '/image/flags/$board/${data['board_flag'].toLowerCase()}.gif').toString(),
 				imageWidth: 16,
 				imageHeight: 11
 			);
@@ -195,7 +203,7 @@ class Site4Chan extends ImageboardSite {
 			attachment: _makeAttachment(board, threadId, data),
 			attachmentDeleted: data['filedeleted'] == 1,
 			spanFormat: PostSpanFormat.chan4,
-			flag: _makeFlag(data),
+			flag: _makeFlag(data, board),
 			posterId: data['id']
 		);
 	}
@@ -286,7 +294,7 @@ class Site4Chan extends ImageboardSite {
 				title: (title == null) ? null : unescape.convert(title),
 				isSticky: data['posts'][0]['sticky'] == 1,
 				time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
-				flag: _makeFlag(data['posts'][0]),
+				flag: _makeFlag(data['posts'][0], thread.board),
 				currentPage: await _getThreadPage(thread),
 				uniqueIPCount: data['posts'][0]['unique_ips'],
 				customSpoilerId: data['posts'][0]['custom_spoiler']
@@ -344,7 +352,7 @@ class Site4Chan extends ImageboardSite {
 					title: (title == null) ? null : unescape.convert(title),
 					isSticky: threadData['sticky'] == 1,
 					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
-					flag: _makeFlag(threadData),
+					flag: _makeFlag(threadData, board),
 					currentPage: page['page']
 				);
 				threads.add(thread);
