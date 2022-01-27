@@ -616,37 +616,52 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						BottomNavigationBarItem(
 							icon: AnimatedBuilder(
 								animation: browseCountListenable,
-								builder: (context, child) => StationaryNotifyingIcon(
-									icon: const Icon(CupertinoIcons.rectangle_stack),
-									primary: 0,
-									secondary: (tabs.length == 1) ? 0 : tabs.asMap().entries.where((x) => x.key != activeBrowserTab.value).map((x) => x.value.item3.value).reduce((a, b) => a + b)
+								builder: (context, child) => Align(
+									alignment: Alignment.bottomCenter,
+									child: StationaryNotifyingIcon(
+										icon: const Icon(CupertinoIcons.rectangle_stack, size: 28),
+										primary: 0,
+										secondary: (tabs.length == 1) ? 0 : tabs.asMap().entries.where((x) => x.key != activeBrowserTab.value).map((x) => x.value.item3.value).reduce((a, b) => a + b)
+									)
 								)
 							),
 							label: 'Browse'
 						),
 						BottomNavigationBarItem(
 							icon: Builder(
-								builder: (context) => NotifyingIcon(
-									icon: const Icon(CupertinoIcons.bookmark),
-									primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
-									secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
+								builder: (context) => Align(
+									alignment: Alignment.bottomCenter,
+									child: NotifyingIcon(
+										icon: const Icon(CupertinoIcons.bookmark, size: 28),
+										primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
+										secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
+									)
 								)
 							),
 							label: 'Saved'
 						),
 						const BottomNavigationBarItem(
-							icon: Icon(CupertinoIcons.archivebox),
+							icon: Align(
+								alignment: Alignment.bottomCenter,
+								child: Icon(CupertinoIcons.archivebox, size: 28)
+							),
 							label: 'History'
 						),
 						const BottomNavigationBarItem(
-							icon: Icon(CupertinoIcons.search),
+							icon: Align(
+								alignment: Alignment.bottomCenter,
+								child: Icon(CupertinoIcons.search, size: 28)
+							),
 							label: 'Search'
 						),
 						BottomNavigationBarItem(
-							icon: NotifyingIcon(
-								icon: const Icon(CupertinoIcons.settings),
-								primaryCount: devThreadWatcher?.unseenYouCount ?? ValueNotifier(0),
-								secondaryCount: devThreadWatcher?.unseenStickyThreadCount ?? ValueNotifier(0),
+							icon: Align(
+								alignment: Alignment.bottomCenter,
+								child: NotifyingIcon(
+									icon: const Icon(CupertinoIcons.settings, size: 28),
+									primaryCount: devThreadWatcher?.unseenYouCount ?? ValueNotifier(0),
+									secondaryCount: devThreadWatcher?.unseenStickyThreadCount ?? ValueNotifier(0),
+								)
 							),
 							label: 'Settings'
 						)
