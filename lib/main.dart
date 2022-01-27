@@ -17,7 +17,6 @@ import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tuple/tuple.dart';
@@ -159,8 +158,7 @@ class _ChanAppState extends State<ChanApp> {
 									localizationsDelegates: const [
 										DefaultCupertinoLocalizations.delegate,
 										DefaultMaterialLocalizations.delegate
-									],
-									scrollBehavior: const CupertinoScrollBehavior().copyWith(dragDevices: {...PointerDeviceKind.values})
+									]
 								)
 							)
 						);
