@@ -1,5 +1,6 @@
 import 'package:chan/pages/selectable_post.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/pages/posts.dart';
@@ -97,45 +98,13 @@ class PostRow extends StatelessWidget {
 											showCrossThreadLabel: showCrossThreadLabel
 										)),
 										// Placeholder to guarantee the stacked reply button is not on top of text
-										if (settings.useTouchLayout && _post.replyIds.isNotEmpty) TextSpan(
+										if (_post.replyIds.isNotEmpty) TextSpan(
 											text: List.filled(_post.replyIds.length.toString().length + 4, '1').join(),
 											style: const TextStyle(color: Colors.transparent)
 										)
 									]
 								),
 								overflow: TextOverflow.fade
-							)
-						),
-						if (settings.useTouchLayout && _post.replyIds.isNotEmpty) Positioned.fill(
-							child: Align(
-								alignment: Alignment.bottomRight,
-								child: CupertinoButton(
-									alignment: Alignment.bottomRight,
-									padding: EdgeInsets.zero,
-									child: Transform.scale(
-										alignment: Alignment.bottomRight,
-										scale: 1 + factor.clamp(0, 1),
-										child: Row(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												Icon(
-													CupertinoIcons.reply_thick_solid,
-													color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
-													size: 14
-												),
-												const SizedBox(width: 4),
-												Text(
-													_post.replyIds.length.toString(),
-													style: TextStyle(
-														color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
-														fontWeight: FontWeight.bold
-													)
-												)
-											]
-										)
-									),
-									onPressed: openReplies
-								)
 							)
 						)
 					]
@@ -193,7 +162,7 @@ class PostRow extends StatelessWidget {
 															ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
 														}
 													),
-													if (!settings.useTouchLayout) ...[
+													if (settings.supportMouse) ...[
 														..._post.replyIds.map((id) => PostQuoteLinkSpan(
 															board: _post.board,
 															threadId: _post.threadId,
@@ -214,79 +183,109 @@ class PostRow extends StatelessWidget {
 								),
 								const SizedBox(height: 2),
 								Flexible(
-									child: IntrinsicHeight(
-										child: Row(
-											crossAxisAlignment: CrossAxisAlignment.stretch,
-											mainAxisAlignment: MainAxisAlignment.start,
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												if (_post.attachment != null && settings.showImages(context, _post.board)) Align(
-													alignment: Alignment.topCenter,
-													child: GestureDetector(
-														child: Stack(
-															alignment: Alignment.center,
-															fit: StackFit.loose,
-															children: [
-																AttachmentThumbnail(
+									child: Row(
+										crossAxisAlignment: CrossAxisAlignment.start,
+										mainAxisAlignment: MainAxisAlignment.start,
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											if (_post.attachment != null && settings.showImages(context, _post.board)) PopupAttachment(
+												attachment: _post.attachment!,
+												child: GestureDetector(
+													child: Stack(
+														alignment: Alignment.center,
+														fit: StackFit.loose,
+														children: [
+															AttachmentThumbnail(
+																attachment: _post.attachment!,
+																thread: _post.threadIdentifier,
+																onLoadError: onThumbnailLoadError,
+																hero: AttachmentSemanticLocation(
 																	attachment: _post.attachment!,
-																	thread: _post.threadIdentifier,
-																	onLoadError: onThumbnailLoadError,
-																	hero: AttachmentSemanticLocation(
-																		attachment: _post.attachment!,
-																		semanticParents: zone.stackIds
-																	)
-																),
-																if (_post.attachment?.type == AttachmentType.webm) SizedBox(
-																	width: 75,
-																	height: 75,
-																	child: Center(
-																		child: AspectRatio(
-																			aspectRatio: (_post.attachment!.width ?? 1) / (_post.attachment!.height ?? 1),
-																			child: Align(
-																				alignment: Alignment.bottomRight,
-																				child: Container(
-																					decoration: BoxDecoration(
-																						borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																						border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-																					),
-																					padding: const EdgeInsets.all(2),
-																					child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
-																				)
+																	semanticParents: zone.stackIds
+																)
+															),
+															if (_post.attachment?.type == AttachmentType.webm) SizedBox(
+																width: 75,
+																height: 75,
+																child: Center(
+																	child: AspectRatio(
+																		aspectRatio: (_post.attachment!.width ?? 1) / (_post.attachment!.height ?? 1),
+																		child: Align(
+																			alignment: Alignment.bottomRight,
+																			child: Container(
+																				decoration: BoxDecoration(
+																					borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																					border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+																				),
+																				padding: const EdgeInsets.all(2),
+																				child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
 																			)
 																		)
 																	)
 																)
-															]
-														),
-														onTap: () {
-															onThumbnailTap?.call(_post.attachment!);
-														}
+															)
+														]
+													),
+													onTap: () {
+														onThumbnailTap?.call(_post.attachment!);
+													}
+												)
+											)
+											else if (_post.attachmentDeleted) Center(
+												child: SizedBox(
+													width: 75,
+													height: 75,
+													child: GestureDetector(
+														behavior: HitTestBehavior.opaque,
+														child: const Icon(CupertinoIcons.question_square, size: 36),
+														onTap: onRequestArchive
 													)
 												)
-												else if (_post.attachmentDeleted) Center(
-													child: SizedBox(
-														width: 75,
-														height: 75,
-														child: GestureDetector(
-															behavior: HitTestBehavior.opaque,
-															child: const Icon(CupertinoIcons.question_square, size: 36),
-															onTap: onRequestArchive
-														)
-													)
-												),
-												if (shrinkWrap) Flexible(
-													child: content(slideFactor)
-												)
-												else Expanded(
-													child: content(slideFactor)
-												),
-												const SizedBox(width: 8)
-											]
-										)
+											),
+											if (shrinkWrap) Flexible(
+												child: content(slideFactor)
+											)
+											else Expanded(
+												child: content(slideFactor)
+											),
+											const SizedBox(width: 8)
+										]
 									)
 								)
 							]
+						),
+						if (_post.replyIds.isNotEmpty) Positioned.fill(
+							child: Align(
+								alignment: Alignment.bottomRight,
+								child: CupertinoButton(
+									alignment: Alignment.bottomRight,
+									padding: const EdgeInsets.only(bottom: 8, right: 16),
+									child: Transform.scale(
+										alignment: Alignment.bottomRight,
+										scale: 1 + slideFactor.clamp(0, 1),
+										child: Row(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												Icon(
+													CupertinoIcons.reply_thick_solid,
+													color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
+													size: 14
+												),
+												const SizedBox(width: 4),
+												Text(
+													_post.replyIds.length.toString(),
+													style: TextStyle(
+														color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
+														fontWeight: FontWeight.bold
+													)
+												)
+											]
+										)
+									),
+									onPressed: openReplies
+								)
+							)
 						),
 						if (context.watch<Persistence>().getSavedPost(post) != null) Positioned.fill(
 							child: Align(

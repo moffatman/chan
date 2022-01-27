@@ -38,7 +38,7 @@ class AttachmentNotFoundException {
 class AttachmentViewerController extends ChangeNotifier {
 	// Parameters
 	final Attachment attachment;
-	final Stream<void> redrawGestureStream;
+	final Stream<void>? redrawGestureStream;
 	final ImageboardSite site;
 	final Uri? overrideSource;
 
@@ -101,7 +101,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	AttachmentViewerController({
 		required this.attachment,
-		required this.redrawGestureStream,
+		this.redrawGestureStream,
 		required this.site,
 		this.overrideSource,
 		bool isPrimary = false
@@ -182,6 +182,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 		Future.delayed(const Duration(milliseconds: 500), () {
 			_showLoadingProgress = true;
+			if (_isDisposed) return;
 			notifyListeners();
 		});
 		try {
@@ -190,6 +191,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (_goodImageSource?.scheme == 'file') {
 					_cachedFile = File(_goodImageSource!.path);
 				}
+				if (_isDisposed) return;
 				notifyListeners();
 				if (startImageDownload) {
 					await ExtendedNetworkImageProvider(
@@ -231,6 +233,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				_cachedFile = result.file;
 				_hasAudio = result.hasAudio;
 			}
+			if (_isDisposed) return;
 			notifyListeners();
 		}
 		catch (e, st) {
@@ -270,6 +273,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	void onCacheCompleted(File file) {
 		_cachedFile = file;
+		if (_isDisposed) return;
 		notifyListeners();
 	}
 
@@ -359,18 +363,20 @@ class AttachmentViewerController extends ChangeNotifier {
 }
 
 class AttachmentViewer extends StatelessWidget {
-	final Attachment attachment;
 	final AttachmentViewerController controller;
 	final Iterable<int> semanticParentIds;
 	final ValueChanged<double>? onScaleChanged;
+	final bool fill;
 
 	const AttachmentViewer({
-		required this.attachment,
 		required this.controller,
 		required this.semanticParentIds,
 		this.onScaleChanged,
+		this.fill = true,
 		Key? key
 	}) : super(key: key);
+
+	Attachment get attachment => controller.attachment;
 
 	Object get _tag => AttachmentSemanticLocation(
 		attachment: attachment,
@@ -395,7 +401,7 @@ class AttachmentViewer extends StatelessWidget {
 		)
 	);
 
-	Widget _buildImage(BuildContext context, bool passedFirstBuild) {
+	Widget _buildImage(BuildContext context, Size? size, bool passedFirstBuild) {
 		Uri source = attachment.thumbnailUrl;
 		if (controller.goodImageSource != null && passedFirstBuild) {
 			source = controller.goodImageSource!;
@@ -427,8 +433,8 @@ class AttachmentViewer extends StatelessWidget {
 			gaplessPlayback: true,
 			fit: BoxFit.contain,
 			mode: ExtendedImageMode.gesture,
-			width: double.infinity,
-			height: double.infinity,
+			width: size?.width ?? double.infinity,
+			height: size?.height ?? double.infinity,
 			enableLoadState: true,
 			handleLoadingProgress: true,
 			onDoubleTap: (state) {
@@ -480,46 +486,48 @@ class AttachmentViewer extends StatelessWidget {
 						});
 					}
 					loadstate.returnLoadStateChangedWidget = true;
+					buildContent(context, _) {
+						Widget _child = Container();
+						if (controller.errorMessage != null) {
+							_child = Center(
+								child: ErrorMessageCard(controller.errorMessage!, remedies: {
+										'Retry': () => controller.loadFullAttachment(context),
+										if (!controller.checkArchives) 'Try archives': () => controller.tryArchives(context)
+									}
+								)
+							);
+						}
+						else if (controller.showLoadingProgress) {
+							_child = _centeredLoader(
+								active: controller.isFullResolution,
+								value: loadingValue
+							);
+						}
+						final Rect? rect = controller.gestureKey.currentState?.gestureDetails?.destinationRect?.shift(controller.gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero);
+						final Widget __child = Transform.scale(
+							scale: (controller.gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (controller.gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
+							child: _child
+						);
+						if (rect == null) {
+							return Positioned.fill(
+								child: __child
+							);
+						}
+						else {
+							return Positioned.fromRect(
+								rect: rect,
+								child: __child
+							);
+						}
+					}
 					return Stack(
 						children: [
 							loadstate.completedWidget,
-							RxStreamBuilder(
-								stream: controller.redrawGestureStream,
-								builder: (context, _) {
-									Widget _child = Container();
-									if (controller.errorMessage != null) {
-										_child = Center(
-											child: ErrorMessageCard(controller.errorMessage!, remedies: {
-													'Retry': () => controller.loadFullAttachment(context),
-													if (!controller.checkArchives) 'Try archives': () => controller.tryArchives(context)
-												}
-											)
-										);
-									}
-									else if (controller.showLoadingProgress) {
-										_child = _centeredLoader(
-											active: controller.isFullResolution,
-											value: loadingValue
-										);
-									}
-									final Rect? rect = controller.gestureKey.currentState?.gestureDetails?.destinationRect?.shift(controller.gestureKey.currentState?.extendedImageSlidePageState?.offset ?? Offset.zero);
-									final Widget __child = Transform.scale(
-										scale: (controller.gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (controller.gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
-										child: _child
-									);
-								  if (rect == null) {
-										return Positioned.fill(
-											child: __child
-										);
-									}
-									else {
-										return Positioned.fromRect(
-											rect: rect,
-											child: __child
-										);
-									}
-								}
+							if (controller.redrawGestureStream != null) RxStreamBuilder(
+								stream: controller.redrawGestureStream!,
+								builder: buildContent
 							)
+							else buildContent(context, null)
 						]
 					);
 				}
@@ -600,7 +608,7 @@ class AttachmentViewer extends StatelessWidget {
 		);
 	}
 
-	Widget _buildVideo(context) {
+	Widget _buildVideo(BuildContext context, Size? size) {
 		return ExtendedImageSlidePageHandler(
 			heroBuilderForSlidingPage: (Widget result) {
 				return Hero(
@@ -609,65 +617,68 @@ class AttachmentViewer extends StatelessWidget {
 					flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
 				);
 			},
-			child: Stack(
-				children: [
-					AttachmentThumbnail(
-						attachment: attachment,
-						width: double.infinity,
-						height: double.infinity,
-						quarterTurns: controller.quarterTurns,
-						gaplessPlayback: true
-					),
-					if (controller.errorMessage != null) Center(
-						child: ErrorMessageCard(controller.errorMessage!, remedies: {
-							'Retry': () => controller.reloadFullAttachment(context)
-						})
-					)
-					else if (controller.videoPlayerController != null) GestureDetector(
-						behavior: HitTestBehavior.translucent,
-						onLongPressStart: (x) => controller._onLongPressStart(),
-						onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.of(context).size.width / 2)),
-						onLongPressEnd: (x) => controller._onLongPressEnd(),
-						child: Center(
-							child: RotatedBox(
-								quarterTurns: controller.quarterTurns,
-								child: AspectRatio(
-									aspectRatio: controller.videoPlayerController!.value.aspectRatio,
-									child: VideoPlayer(controller.videoPlayerController!)
-								)
-							)
+			child: SizedBox.fromSize(
+				size: size,
+				child: Stack(
+					children: [
+						AttachmentThumbnail(
+							attachment: attachment,
+							width: double.infinity,
+							height: double.infinity,
+							quarterTurns: controller.quarterTurns,
+							gaplessPlayback: true
+						),
+						if (controller.errorMessage != null) Center(
+							child: ErrorMessageCard(controller.errorMessage!, remedies: {
+								'Retry': () => controller.reloadFullAttachment(context)
+							})
 						)
-					)
-					else if (controller.showLoadingProgress) ValueListenableBuilder(
-						valueListenable: controller.videoLoadingProgress,
-						builder: (context, double? loadingProgress, child) => _centeredLoader(
-							active: controller.isFullResolution,
-							value: loadingProgress
-						)
-					),
-					AnimatedSwitcher(
-						duration: const Duration(milliseconds: 250),
-						child: (controller.overlayText != null) ? Center(
-							child: RotatedBox(
-								quarterTurns: controller.quarterTurns,
-								child: Container(
-									padding: const EdgeInsets.all(8),
-									decoration: const BoxDecoration(
-										color: Colors.black54,
-										borderRadius: BorderRadius.all(Radius.circular(8))
-									),
-									child: Text(
-										controller.overlayText!,
-										style: const TextStyle(
-											fontSize: 32,
-											color: Colors.white
-										)
+						else if (controller.videoPlayerController != null) GestureDetector(
+							behavior: HitTestBehavior.translucent,
+							onLongPressStart: (x) => controller._onLongPressStart(),
+							onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.of(context).size.width / 2)),
+							onLongPressEnd: (x) => controller._onLongPressEnd(),
+							child: Center(
+								child: RotatedBox(
+									quarterTurns: controller.quarterTurns,
+									child: AspectRatio(
+										aspectRatio: controller.videoPlayerController!.value.aspectRatio,
+										child: VideoPlayer(controller.videoPlayerController!)
 									)
 								)
 							)
-						) : Container()
-					)
-				]
+						)
+						else if (controller.showLoadingProgress) ValueListenableBuilder(
+							valueListenable: controller.videoLoadingProgress,
+							builder: (context, double? loadingProgress, child) => _centeredLoader(
+								active: controller.isFullResolution,
+								value: loadingProgress
+							)
+						),
+						AnimatedSwitcher(
+							duration: const Duration(milliseconds: 250),
+							child: (controller.overlayText != null) ? Center(
+								child: RotatedBox(
+									quarterTurns: controller.quarterTurns,
+									child: Container(
+										padding: const EdgeInsets.all(8),
+										decoration: const BoxDecoration(
+											color: Colors.black54,
+											borderRadius: BorderRadius.all(Radius.circular(8))
+										),
+										child: Text(
+											controller.overlayText!,
+											style: const TextStyle(
+												fontSize: 32,
+												color: Colors.white
+											)
+										)
+									)
+								)
+							) : Container()
+						)
+					]
+				)
 			)
 		);
 	}
@@ -677,12 +688,20 @@ class AttachmentViewer extends StatelessWidget {
 		return FirstBuildDetector(
 			identifier: _tag,
 			builder: (context, passedFirstBuild) {
-				if (attachment.type == AttachmentType.image) {
-					return _buildImage(context, passedFirstBuild);
-				}
-				else {
-					return _buildVideo(context);
-				}
+				return LayoutBuilder(
+					builder: (context, constraints) {
+						Size? targetSize;
+						if (!fill && attachment.width != null && attachment.height != null && constraints.hasBoundedHeight && constraints.hasBoundedWidth) {
+							targetSize = applyBoxFit(BoxFit.scaleDown, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), constraints.biggest).destination;
+						}
+						if (attachment.type == AttachmentType.image) {
+							return _buildImage(context, targetSize, passedFirstBuild);
+						}
+						else {
+							return _buildVideo(context, targetSize);
+						}
+					}
+				);
 			}
 		);
 	}

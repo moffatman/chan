@@ -210,13 +210,27 @@ class SettingsPage extends StatelessWidget {
 											initialConfiguration: settings.filterConfiguration,
 										),
 										const SizedBox(height: 32),
+										const Text('Interface Style'),
+										const SizedBox(height: 16),
+										CupertinoSegmentedControl<TristateSystemSetting>(
+											children: const {
+												TristateSystemSetting.a: Text('Touchscreen'),
+												TristateSystemSetting.system: Text('Automatic'),
+												TristateSystemSetting.b: Text('Mouse')
+											},
+											groupValue: settings.supportMouseSetting,
+											onValueChanged: (newValue) {
+												settings.supportMouseSetting = newValue;
+											}
+										),
+										const SizedBox(height: 32),
 										const Text('Active Theme'),
 										const SizedBox(height: 16),
-										CupertinoSegmentedControl<ThemeSetting>(
+										CupertinoSegmentedControl<TristateSystemSetting>(
 											children: const {
-												ThemeSetting.light: Text('Light'),
-												ThemeSetting.system: Text('Follow System'),
-												ThemeSetting.dark: Text('Dark')
+												TristateSystemSetting.a: Text('Light'),
+												TristateSystemSetting.system: Text('Follow System'),
+												TristateSystemSetting.b: Text('Dark')
 											},
 											groupValue: settings.themeSetting,
 											onValueChanged: (newValue) {

@@ -208,7 +208,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
 				if (!zone.stackIds.contains(postId)) {
-					if (context.read<EffectiveSettings>().useTouchLayout) {
+					if (!context.read<EffectiveSettings>().supportMouse) {
 						WeakNavigator.push(context, PostsPage(
 								zone: zone.childZoneFor(postId),
 								postsIdsToShow: [postId],
@@ -243,21 +243,29 @@ class PostQuoteLinkSpan extends PostSpan {
 			// Normal link
 			final span = _buildNormalLink(context, options);
 			final thisPostInThread = zone.thread.posts.where((p) => p.id == postId);
-			if (thisPostInThread.isEmpty || context.read<EffectiveSettings>().useTouchLayout || zone.stackIds.contains(postId) || zone.shouldExpandPost(postId)) {
+			if (thisPostInThread.isEmpty || zone.shouldExpandPost(postId)) {
 				return span;
 			}
 			else {
 				return WidgetSpan(
 					child: HoverPopup(
+						style: HoverPopupStyle.floating,
+						anchor: const Offset(30, -80),
 						child: Text.rich(
 							span,
 							textScaleFactor: 1
 						),
 						popup: ChangeNotifierProvider.value(
 							value: zone,
-							child: PostRow(
-								post: thisPostInThread.first,
-								shrinkWrap: true
+							child: DecoratedBox(
+								decoration: BoxDecoration(
+									border: Border.all(color: CupertinoTheme.of(context).primaryColor)
+								),
+								position: DecorationPosition.foreground,
+								child: PostRow(
+									post: thisPostInThread.first,
+									shrinkWrap: true
+								)
 							)
 						)
 					)
@@ -796,16 +804,25 @@ class ExpandingPost extends StatelessWidget {
 				) : Row(
 					children: [
 						Flexible(
-							child: PostRow(
-								post: post,
-								onThumbnailTap: (attachment) {
-									showGallery(
-										context: context,
-										attachments: [attachment],
-										semanticParentIds: zone.stackIds
-									);
-								},
-								shrinkWrap: true
+							child: Padding(
+								padding: const EdgeInsets.only(top: 8, bottom: 8),
+								child: DecoratedBox(
+									decoration: BoxDecoration(
+										border: Border.all(color: CupertinoTheme.of(context).primaryColor)
+									),
+									position: DecorationPosition.foreground,
+									child: PostRow(
+										post: post,
+										onThumbnailTap: (attachment) {
+											showGallery(
+												context: context,
+												attachments: [attachment],
+												semanticParentIds: zone.stackIds
+											);
+										},
+										shrinkWrap: true
+									)
+								)
 							)
 						)
 					]

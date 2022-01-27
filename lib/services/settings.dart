@@ -50,13 +50,13 @@ enum AutoloadAttachmentsSetting {
 }
 
 @HiveType(typeId: 2)
-enum ThemeSetting {
+enum TristateSystemSetting {
 	@HiveField(0)
-	light,
+	a,
 	@HiveField(1)
 	system,
 	@HiveField(2)
-	dark
+	b
 }
 
 @HiveType(typeId: 17)
@@ -134,7 +134,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(0)
 	AutoloadAttachmentsSetting autoloadAttachments;
 	@HiveField(1)
-	ThemeSetting theme;
+	TristateSystemSetting theme;
 	@HiveField(2)
 	bool hideOldStickiedThreads;
 	@HiveField(3)
@@ -185,10 +185,12 @@ class SavedSettings extends HiveObject {
 	bool showClockIconInCatalog;
 	@HiveField(29)
 	List<String> embedRegexes;
+	@HiveField(30)
+	TristateSystemSetting supportMouse;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
-		ThemeSetting? theme = ThemeSetting.system,
+		TristateSystemSetting? theme = TristateSystemSetting.system,
 		bool? hideOldStickiedThreads,
 		ThreadSortingMethod? catalogSortingMethod,
 		bool? reverseCatalogSorting,
@@ -216,8 +218,9 @@ class SavedSettings extends HiveObject {
 		bool? showImageCountInCatalog,
 		bool? showClockIconInCatalog,
 		List<String>? embedRegexes,
+		TristateSystemSetting? supportMouse,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
-		theme = theme ?? ThemeSetting.system,
+		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
 		catalogSortingMethod = catalogSortingMethod ?? ThreadSortingMethod.unsorted,
 		reverseCatalogSorting = reverseCatalogSorting ?? false,
@@ -252,7 +255,8 @@ class SavedSettings extends HiveObject {
 		catalogGridHeight = catalogGridHeight ?? 300,
 		showImageCountInCatalog = showImageCountInCatalog ?? true,
 		showClockIconInCatalog = showClockIconInCatalog ?? true,
-		embedRegexes = embedRegexes ?? [];
+		embedRegexes = embedRegexes ?? [],
+		supportMouse = supportMouse ?? TristateSystemSetting.system;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -269,7 +273,9 @@ class EffectiveSettings extends ChangeNotifier {
 	Brightness? _systemBrightness;
 	set systemBrightness(Brightness? newBrightness) {
 		_systemBrightness = newBrightness;
-		notifyListeners();
+		if (_settings.theme == TristateSystemSetting.system) {
+			notifyListeners();
+		}
 	}
 	AutoloadAttachmentsSetting get autoloadAttachmentsSetting => _settings.autoloadAttachments;
 	set autoloadAttachmentsSetting(AutoloadAttachmentsSetting setting) {
@@ -281,29 +287,21 @@ class EffectiveSettings extends ChangeNotifier {
 		return (_settings.autoloadAttachments == AutoloadAttachmentsSetting.always) ||
 			((_settings.autoloadAttachments == AutoloadAttachmentsSetting.wifi) && (connectivity == ConnectivityResult.wifi));
 	}
-	ThemeSetting get themeSetting => _settings.theme;
-	set themeSetting(ThemeSetting setting) {
+	TristateSystemSetting get themeSetting => _settings.theme;
+	set themeSetting(TristateSystemSetting setting) {
 		_settings.theme = setting;
 		_settings.save();
 		notifyListeners();
 	}
 	Brightness get theme {
-		if (_settings.theme == ThemeSetting.dark) {
+		if (_settings.theme == TristateSystemSetting.b) {
 			return Brightness.dark;
 		}
-		else if (_settings.theme == ThemeSetting.light) {
+		else if (_settings.theme == TristateSystemSetting.a) {
 			return Brightness.light;
 		}
 		return _systemBrightness ?? SchedulerBinding.instance!.window.platformBrightness;
 	}
-
-	bool get useTouchLayout => true;
-	//bool get useTouchLayout => _settings.useTouchLayout;
-	//set useTouchLayout(bool setting) {
-	//	_settings.useTouchLayout = setting;
-	//	_settings.save();
-	//	notifyListeners();
-	//}
 
 	bool get hideOldStickiedThreads => _settings.hideOldStickiedThreads;
 	set hideOldStickiedThreads(bool setting) {
@@ -480,6 +478,29 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
+	bool _systemMousePresent = false;
+	set systemMousePresent(bool setting) {
+		_systemMousePresent = setting;
+		if (_settings.supportMouse == TristateSystemSetting.system) {
+			notifyListeners();
+		}
+	}
+	bool get supportMouse {
+		switch (_settings.supportMouse) {
+			case TristateSystemSetting.a:
+				return false;
+			case TristateSystemSetting.system:
+				return _systemMousePresent;
+			case TristateSystemSetting.b:
+				return true;
+		}
+	}
+	TristateSystemSetting get supportMouseSetting => _settings.supportMouse;
+	set supportMouseSetting(TristateSystemSetting setting) {
+		_settings.supportMouse = setting;
+		notifyListeners();
+	}
+
 	EffectiveSettings(SavedSettings settings) {
 		_settings = settings;
 		_tryToSetupFilter();
@@ -546,6 +567,15 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 
 	@override
 	Widget build(BuildContext context) {
-		return widget.child;
+		return MouseRegion(
+			onEnter: (event) {
+				context.read<EffectiveSettings>().systemMousePresent = true;
+			},
+			onExit: (event) {
+				context.read<EffectiveSettings>().systemMousePresent = false;
+			},
+			opaque: false,
+			child: widget.child
+		);
 	}
 }

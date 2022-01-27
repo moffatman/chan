@@ -584,7 +584,6 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																			});
 																		}
 																	},
-																	attachment: attachment,
 																	semanticParentIds: widget.semanticParentIds
 																),
 																onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {

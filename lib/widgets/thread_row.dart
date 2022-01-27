@@ -4,10 +4,13 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/hover_popup.dart';
+import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:flutter/material.dart';
@@ -175,36 +178,48 @@ class ThreadRow extends StatelessWidget {
 									Column(
 										mainAxisSize: MainAxisSize.min,
 										children: [
-											if (thread.attachment != null) Flexible(child: LayoutBuilder(
-												builder: (context, constraints) {
-													return Stack(
-														children: [
-															AttachmentThumbnail(
-																width: constraints.maxWidth,
-																height: constraints.maxHeight,
-																fit: BoxFit.cover,
-																attachment: _thread.attachment!,
-																thread: _thread.identifier,
-																onLoadError: onThumbnailLoadError,
-																hero: null
-															),
-															if (_thread.attachment?.type == AttachmentType.webm) Positioned(
-																bottom: 0,
-																right: 0,
-																child: Container(
-																	decoration: BoxDecoration(
-																		borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																		color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																		border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+											if (_thread.attachment != null) Flexible(
+												child: LayoutBuilder(
+													builder: (context, constraints) {
+														return PopupAttachment(
+															attachment: _thread.attachment!,
+															child: Stack(
+																children: [
+																	HoverPopup(
+																		style: HoverPopupStyle.floating,
+																		child: AttachmentThumbnail(
+																			width: constraints.maxWidth,
+																			height: constraints.maxHeight,
+																			fit: BoxFit.cover,
+																			attachment: _thread.attachment!,
+																			thread: _thread.identifier,
+																			onLoadError: onThumbnailLoadError,
+																			hero: null
+																		),
+																		popup: ExtendedImage.network(
+																			_thread.attachment!.url.toString(),
+																			cache: true
+																		)
 																	),
-																	padding: const EdgeInsets.all(2),
-																	child: const Icon(CupertinoIcons.play_arrow_solid)
-																)
+																	if (_thread.attachment?.type == AttachmentType.webm) Positioned(
+																		bottom: 0,
+																		right: 0,
+																		child: Container(
+																			decoration: BoxDecoration(
+																				borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																				border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+																			),
+																			padding: const EdgeInsets.all(2),
+																			child: const Icon(CupertinoIcons.play_arrow_solid)
+																		)
+																	)
+																]
 															)
-														]
-													);
-												}
-											)),
+														);
+													}
+												)
+											),
 											Expanded(
 												child: Container(
 													constraints: const BoxConstraints(minHeight: 25),
@@ -257,44 +272,47 @@ class ThreadRow extends StatelessWidget {
 												Flexible(
 													child: Container(
 														padding: const EdgeInsets.only(top: 8, bottom: 8),
-														child: GestureDetector(
-															child: Stack(
-																alignment: Alignment.center,
-																fit: StackFit.loose,
-																children: [
-																	AttachmentThumbnail(
-																		onLoadError: onThumbnailLoadError,
-																		attachment: _thread.attachment!,
-																		thread: _thread.identifier,
-																		hero: AttachmentSemanticLocation(
+														child: PopupAttachment(
+															attachment: _thread.attachment!,
+															child: GestureDetector(
+																child: Stack(
+																	alignment: Alignment.center,
+																	fit: StackFit.loose,
+																	children: [
+																		AttachmentThumbnail(
+																			onLoadError: onThumbnailLoadError,
 																			attachment: _thread.attachment!,
-																			semanticParents: semanticParentIds
-																		)
-																	),
-																	if (_thread.attachment?.type == AttachmentType.webm) SizedBox(
-																		width: 75,
-																		height: 75,
-																		child: Center(
-																			child: AspectRatio(
-																				aspectRatio: (_thread.attachment!.width ?? 1) / (_thread.attachment!.height ?? 1),
-																				child: Align(
-																					alignment: Alignment.bottomRight,
-																					child: Container(
-																						decoration: BoxDecoration(
-																							borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																							border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-																						),
-																						padding: const EdgeInsets.all(2),
-																						child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
+																			thread: _thread.identifier,
+																			hero: AttachmentSemanticLocation(
+																				attachment: _thread.attachment!,
+																				semanticParents: semanticParentIds
+																			)
+																		),
+																		if (_thread.attachment?.type == AttachmentType.webm) SizedBox(
+																			width: 75,
+																			height: 75,
+																			child: Center(
+																				child: AspectRatio(
+																					aspectRatio: (_thread.attachment!.width ?? 1) / (_thread.attachment!.height ?? 1),
+																					child: Align(
+																						alignment: Alignment.bottomRight,
+																						child: Container(
+																							decoration: BoxDecoration(
+																								borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																								color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																								border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+																							),
+																							padding: const EdgeInsets.all(2),
+																							child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
+																						)
 																					)
 																				)
 																			)
 																		)
-																	)
-																]
-															),
-															onTap: () => onThumbnailTap?.call(_thread.attachment!)
+																	]
+																),
+																onTap: () => onThumbnailTap?.call(_thread.attachment!)
+															)
 														)
 													)
 												)

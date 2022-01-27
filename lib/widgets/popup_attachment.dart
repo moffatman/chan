@@ -1,0 +1,69 @@
+import 'package:chan/models/attachment.dart';
+import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/attachment_viewer.dart';
+import 'package:chan/widgets/hover_popup.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
+
+class PopupAttachment extends StatelessWidget {
+	final Attachment attachment;
+	final Widget child;
+
+	const PopupAttachment({
+		required this.attachment,
+		required this.child,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		return HoverPopup<AttachmentViewerController>(
+			style: HoverPopupStyle.floating,
+			child: child,
+			popupBuilder: (controller) => AnimatedBuilder(
+				animation: controller!,
+				builder: (context, child) => AttachmentViewer(
+					controller: controller,
+					semanticParentIds: const [-1, -1],
+					fill: false
+				)
+			),
+			setup: () {
+				final controller = AttachmentViewerController(
+					attachment: attachment,
+					site: context.read<ImageboardSite>()
+				);
+				controller.isPrimary = true;
+				controller.loadFullAttachment(context);
+				return controller;
+			},
+			softSetup: (controller) {
+				controller?.isPrimary = true;
+				controller?.videoPlayerController?.play();
+			},
+			softCleanup: (controller) {
+				controller?.isPrimary = false;
+				controller?.videoPlayerController?.pause();
+			},
+			cleanup: (controller) {
+				controller?.dispose();
+			}
+			/*popup: ExtendedImage.network(
+				_post.attachment!.url.toString(),
+				cache: true,
+				loadStateChanged: (state) {
+					if (state.extendedImageLoadState == LoadState.loading) {
+						return Container(
+							height: (_post.attachment!.height ?? 100).toDouble(),
+							width: (_post.attachment!.width ?? 100).toDouble(),
+							color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.2),
+							child: const Center(
+								child: CircularLoadingIndicator()
+							)
+						);
+					}
+				},
+			)*/
+		);
+	}
+}
