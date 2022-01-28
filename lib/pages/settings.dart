@@ -294,15 +294,18 @@ class SettingsPage extends StatelessWidget {
 																						),
 																						canvasColor: CupertinoTheme.of(context).scaffoldBackgroundColor
 																					),
-																					child: Material(
-																						color: Colors.transparent,
-																						child: ColorPicker(
-																							pickerColor: color.item2,
-																							onColorChanged: color.item3,
-																							enableAlpha: false,
-																							portraitOnly: true,
-																							displayThumbColor: true,
-																							hexInputBar: true
+																					child: Padding(
+																						padding: MediaQuery.of(context).viewInsets,
+																						child: Material(
+																							color: Colors.transparent,
+																							child: ColorPicker(
+																								pickerColor: color.item2,
+																								onColorChanged: color.item3,
+																								enableAlpha: false,
+																								portraitOnly: true,
+																								displayThumbColor: true,
+																								hexInputBar: true
+																							)
 																						)
 																					)
 																				)
