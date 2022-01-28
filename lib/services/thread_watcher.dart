@@ -57,9 +57,15 @@ class StickyThreadWatcher extends ChangeNotifier {
 			final stickyThreadStates = persistence.threadStateBox.values.where((s) => s.thread != null && s.thread!.isSticky);
 			for (final threadState in stickyThreadStates) {
 				if (threadState.youIds.isNotEmpty) {
-					final newThread = await site.getThread(threadState.thread!.identifier);
-					if (newThread != threadState.thread) {
-						threadState.thread = newThread;
+					try {
+						final newThread = await site.getThread(threadState.thread!.identifier);
+						if (newThread != threadState.thread) {
+							threadState.thread = newThread;
+							await threadState.save();
+						}
+					}
+					on ThreadNotFoundException {
+						threadState.thread?.isSticky = false;
 						await threadState.save();
 					}
 				}

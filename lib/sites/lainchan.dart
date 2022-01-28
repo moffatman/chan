@@ -124,7 +124,15 @@ class SiteLainchan extends ImageboardSite {
 	}
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread) async {
-		final response = await client.get(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json').toString());
+		final response = await client.get(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json').toString(), options: Options(
+			validateStatus: (x) => true
+		));
+		if (response.statusCode == 404) {
+			throw ThreadNotFoundException(thread);
+		}
+		else if (response.statusCode != 200) {
+			throw HTTPStatusException(response.statusCode ?? 0);
+		}
 		final firstPost = response.data['posts'][0];
 		final List<Post> posts = (response.data['posts'] ?? []).map<Post>((postData) => _makePost(thread.board, thread.id, postData)).toList();
 		return Thread(

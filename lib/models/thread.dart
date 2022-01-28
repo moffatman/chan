@@ -29,7 +29,7 @@ class Thread implements Filterable {
 	@HiveField(8)
 	final String? title;
 	@HiveField(9)
-	final bool isSticky;
+	bool isSticky;
 	@HiveField(10)
 	final DateTime time;
 	@HiveField(11)
