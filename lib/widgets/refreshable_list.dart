@@ -768,24 +768,18 @@ class RefreshableListController<T extends Filterable> {
 		if (_items[targetIndex].cachedOffset == null) {
 			throw Exception('Scrolling timed out');
 		}
-		final atAlignment0 = _items[targetIndex].cachedOffset! - topOffset!;
+		double atAlignment0 = _items[targetIndex].cachedOffset! - topOffset!;
 		final alignmentSlidingWindow = scrollController!.position.viewportDimension - _items[targetIndex].cachedHeight! - topOffset! - bottomOffset!;
 		if (_items[targetIndex] == _items.last) {
-			await scrollController!.animateTo(
-				scrollController!.position.maxScrollExtent,
-				duration: d,
-				curve: Curves.easeOut
-			);
-			await SchedulerBinding.instance!.endOfFrame;
+			// add offset to reveal the full footer
+			atAlignment0 += 110;
 		}
-		else {
-			await scrollController!.animateTo(
-				(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent),
-				duration: d,
-				curve: Curves.easeOut
-			);
-			await SchedulerBinding.instance!.endOfFrame;
-		}
+		await scrollController!.animateTo(
+			(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent),
+			duration: d,
+			curve: Curves.easeOut
+		);
+		await SchedulerBinding.instance!.endOfFrame;
 	}
 	int get firstVisibleIndex {
 		if (scrollController?.hasOnePosition ?? false) {
