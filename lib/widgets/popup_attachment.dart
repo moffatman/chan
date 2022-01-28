@@ -15,6 +15,16 @@ class PopupAttachment extends StatelessWidget {
 		Key? key
 	}) : super(key: key);
 
+	AttachmentViewerController _makeController(BuildContext context) {
+		final controller = AttachmentViewerController(
+			attachment: attachment,
+			site: context.read<ImageboardSite>()
+		);
+		controller.isPrimary = true;
+		controller.loadFullAttachment(context);
+		return controller;
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		return HoverPopup<AttachmentViewerController>(
@@ -28,18 +38,17 @@ class PopupAttachment extends StatelessWidget {
 					fill: false
 				)
 			),
-			setup: () {
-				final controller = AttachmentViewerController(
-					attachment: attachment,
-					site: context.read<ImageboardSite>()
-				);
-				controller.isPrimary = true;
-				controller.loadFullAttachment(context);
-				return controller;
-			},
+			setup: () => _makeController(context),
 			softSetup: (controller) {
-				controller?.isPrimary = true;
-				controller?.videoPlayerController?.play();
+				if (controller?.attachment != attachment) {
+					controller?.dispose();
+					return _makeController(context);
+				}
+				else {
+					controller?.isPrimary = true;
+					controller?.videoPlayerController?.play();
+					return controller;
+				}
 			},
 			softCleanup: (controller) {
 				controller?.isPrimary = false;

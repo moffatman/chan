@@ -14,7 +14,7 @@ class HoverPopup<T> extends StatefulWidget {
 	final Widget Function(T? value)? popupBuilder;
 	final HoverPopupStyle style;
 	final T Function()? setup;
-	final Function(T?)? softSetup;
+	final T? Function(T?)? softSetup;
 	final void Function(T?)? softCleanup;
 	final void Function(T?)? cleanup;
 	final Duration valueLifetime;
@@ -59,7 +59,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 					_value = widget.setup?.call();
 				}
 				else {
-					widget.softSetup?.call(_value);
+					_value = widget.softSetup?.call(_value);
 				}
 				if (widget.style == HoverPopupStyle.attached) {
 					final childTop = childBox.localToGlobal(Offset.zero).dy;
