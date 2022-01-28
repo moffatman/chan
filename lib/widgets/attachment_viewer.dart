@@ -349,6 +349,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		final asAsset = await PhotoManager.editor.saveImageWithPath((await _moveToShareCache(attachment)).path);
 		await PhotoManager.editor.copyAssetToPath(asset: asAsset!, pathEntity: album!);
 		_isDownloaded = true;
+		notifyListeners();
 	}
 
 	@override
