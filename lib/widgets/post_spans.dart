@@ -593,6 +593,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 
 	bool shouldExpandPost(int id) => false;
 	void toggleExpansionOfPost(int id) => throw UnimplementedError();
+	void unExpandAllPosts() => throw UnimplementedError();
 	bool isLoadingPostFromArchive(int id) => false;
 	Future<void> loadPostFromArchive(int id) => throw UnimplementedError();
 	Post? postFromArchive(int id) => null;
@@ -660,6 +661,18 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	@override
 	void toggleExpansionOfPost(int id) {
 		_shouldExpandPost[id] = !shouldExpandPost(id);
+		if (!_shouldExpandPost[id]!) {
+			_children[id]?.unExpandAllPosts();
+		}
+		notifyListeners();
+	}
+
+	@override
+	void unExpandAllPosts() {
+		_shouldExpandPost.updateAll((key, value) => false);
+		for (final child in _children.values) {
+			child.unExpandAllPosts();
+		}
 		notifyListeners();
 	}
 
