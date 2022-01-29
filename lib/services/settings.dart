@@ -522,8 +522,11 @@ class SettingsSystemListener extends StatefulWidget {
 	createState() => _SettingsSystemListenerState();
 }
 
+const _mouseStateChangeTimeout = Duration(seconds: 3);
+
 class _SettingsSystemListenerState extends State<SettingsSystemListener> with WidgetsBindingObserver {
 	late StreamSubscription connectivitySubscription;
+	Timer? _mouseStateChangeTimer;
 
 	@override
 	void initState() {
@@ -569,10 +572,12 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 	Widget build(BuildContext context) {
 		return MouseRegion(
 			onEnter: (event) {
-				context.read<EffectiveSettings>().systemMousePresent = true;
+				_mouseStateChangeTimer?.cancel();
+				_mouseStateChangeTimer = Timer(_mouseStateChangeTimeout, () => context.read<EffectiveSettings>().systemMousePresent = true);
 			},
 			onExit: (event) {
-				context.read<EffectiveSettings>().systemMousePresent = false;
+				_mouseStateChangeTimer?.cancel();
+				_mouseStateChangeTimer = Timer(_mouseStateChangeTimeout, () => context.read<EffectiveSettings>().systemMousePresent = false);
 			},
 			opaque: false,
 			child: widget.child
