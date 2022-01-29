@@ -482,22 +482,25 @@ class EffectiveSettings extends ChangeNotifier {
 	set systemMousePresent(bool setting) {
 		_systemMousePresent = setting;
 		if (_settings.supportMouse == TristateSystemSetting.system) {
-			notifyListeners();
+			supportMouse.value = setting;
 		}
 	}
-	bool get supportMouse {
-		switch (_settings.supportMouse) {
-			case TristateSystemSetting.a:
-				return false;
-			case TristateSystemSetting.system:
-				return _systemMousePresent;
-			case TristateSystemSetting.b:
-				return true;
-		}
-	}
+	final supportMouse = ValueNotifier<bool>(false);
+
 	TristateSystemSetting get supportMouseSetting => _settings.supportMouse;
 	set supportMouseSetting(TristateSystemSetting setting) {
 		_settings.supportMouse = setting;
+		switch (supportMouseSetting) {
+			case TristateSystemSetting.a:
+				supportMouse.value = false;
+				break;
+			case TristateSystemSetting.system:
+				supportMouse.value = _systemMousePresent;
+				break;
+			case TristateSystemSetting.b:
+				supportMouse.value = true;
+				break;
+		}
 		notifyListeners();
 	}
 

@@ -208,7 +208,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
 				if (!zone.stackIds.contains(postId)) {
-					if (!context.read<EffectiveSettings>().supportMouse) {
+					if (!context.read<EffectiveSettings>().supportMouse.value) {
 						WeakNavigator.push(context, PostsPage(
 								zone: zone.childZoneFor(postId),
 								postsIdsToShow: [postId],

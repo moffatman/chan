@@ -129,63 +129,66 @@ class PostRow extends StatelessWidget {
 								ClipRect(
 									child: PostSpanZone(
 										postId: _post.id,
-										builder: (ctx) => Text.rich(
-											TextSpan(
-												children: [
-													TextSpan(
-														text: context.read<EffectiveSettings>().filterProfanity(_post.name) + (isYourPost ? ' (You)' : ''),
-														style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
-													),
-													if (_post.trip != null) TextSpan(
-														text: context.read<EffectiveSettings>().filterProfanity(_post.trip!),
-														style: TextStyle(color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
-													),
-													const TextSpan(text: ' '),
-													if (_post.posterId != null) IDSpan(
-														id: _post.posterId!,
-														onPressed: () => WeakNavigator.push(context, PostsPage(
-															postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
-															zone: zone
-														))
-													),
-													if (_post.flag != null) ...[
+										builder: (ctx) => ValueListenableBuilder<bool>(
+											valueListenable: settings.supportMouse,
+											builder: (context, supportMouse, child) => Text.rich(
+												TextSpan(
+													children: [
+														TextSpan(
+															text: context.read<EffectiveSettings>().filterProfanity(_post.name) + (isYourPost ? ' (You)' : ''),
+															style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
+														),
+														if (_post.trip != null) TextSpan(
+															text: context.read<EffectiveSettings>().filterProfanity(_post.trip!),
+															style: TextStyle(color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
+														),
 														const TextSpan(text: ' '),
-														FlagSpan(_post.flag!),
+														if (_post.posterId != null) IDSpan(
+															id: _post.posterId!,
+															onPressed: () => WeakNavigator.push(context, PostsPage(
+																postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
+																zone: zone
+															))
+														),
+														if (_post.flag != null) ...[
+															const TextSpan(text: ' '),
+															FlagSpan(_post.flag!),
+															const TextSpan(text: ' '),
+															TextSpan(
+																text: _post.flag!.name,
+																style: const TextStyle(
+																	fontStyle: FontStyle.italic
+																)
+															)
+														],
 														const TextSpan(text: ' '),
 														TextSpan(
-															text: _post.flag!.name,
-															style: const TextStyle(
-																fontStyle: FontStyle.italic
-															)
-														)
-													],
-													const TextSpan(text: ' '),
-													TextSpan(
-														text: formatTime(_post.time)
-													),
-													const TextSpan(text: ' '),
-													TextSpan(
-														text: _post.id.toString(),
-														style: const TextStyle(color: Colors.grey),
-														recognizer: TapGestureRecognizer()..onTap = () {
-															ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
-														}
-													),
-													if (settings.supportMouse) ...[
-														..._post.replyIds.map((id) => PostQuoteLinkSpan(
-															board: _post.board,
-															threadId: _post.threadId,
-															postId: id,
-															dead: false
-														).build(ctx, PostSpanRenderOptions(
-															showCrossThreadLabel: showCrossThreadLabel,
-															addExpandingPosts: false
-														))),
-														..._post.replyIds.map((id) => WidgetSpan(
-															child: ExpandingPost(id: id),
-														))
-													].expand((span) => [const TextSpan(text: ' '), span])
-												]
+															text: formatTime(_post.time)
+														),
+														const TextSpan(text: ' '),
+														TextSpan(
+															text: _post.id.toString(),
+															style: const TextStyle(color: Colors.grey),
+															recognizer: TapGestureRecognizer()..onTap = () {
+																ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
+															}
+														),
+														if (supportMouse) ...[
+															..._post.replyIds.map((id) => PostQuoteLinkSpan(
+																board: _post.board,
+																threadId: _post.threadId,
+																postId: id,
+																dead: false
+															).build(ctx, PostSpanRenderOptions(
+																showCrossThreadLabel: showCrossThreadLabel,
+																addExpandingPosts: false
+															))),
+															..._post.replyIds.map((id) => WidgetSpan(
+																child: ExpandingPost(id: id),
+															))
+														].expand((span) => [const TextSpan(text: ' '), span])
+													]
+												)
 											)
 										)
 									)
