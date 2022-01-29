@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:chan/models/board.dart';
@@ -28,6 +29,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	late List<ImageboardBoard> _filteredBoards;
 	String? errorMessage;
 	final scrollController = ScrollController();
+	final _backgroundColor = ValueNotifier<Color?>(null);
+	int _pointersDownCount = 0;
+	bool _popping = false;
 
 	@override
 	void initState() {
@@ -44,11 +48,18 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		_sortByFavourite();
 	}
 
+	double _getOverscroll() {
+		final overscrollTop = scrollController.position.minScrollExtent - scrollController.position.pixels;
+		final overscrollBottom = scrollController.position.pixels - scrollController.position.maxScrollExtent;
+		return max(overscrollTop, overscrollBottom);
+	}
+
 	void _onScroll() {
 		if (_focusNode.hasFocus) {
 			_focusNode.unfocus();
 			context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus = false;
 		}
+		_backgroundColor.value = CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(1.0 - max(0, _getOverscroll() / 50).clamp(0, 1));
 	}
 
 	void _sortByFavourite() {
@@ -69,9 +80,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		_backgroundColor.value ??= CupertinoTheme.of(context).scaffoldBackgroundColor;
 		final browserState = context.watch<Persistence>().browserState;
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
+			backgroundColor: Colors.transparent,
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
 				middle: LayoutBuilder(
@@ -223,64 +236,86 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 					}
 				)
 			),
-			child: (_filteredBoards.isEmpty) ? const Center(
-				child: Text('No matching boards')
-			) : SafeArea(
-				child: GridView.extent(
-					physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-					controller: scrollController,
-					padding: const EdgeInsets.only(top: 4, bottom: 4),
-					maxCrossAxisExtent: 125,
-					mainAxisSpacing: 4,
-					childAspectRatio: 1.2,
-					crossAxisSpacing: 4,
-					children: _filteredBoards.map((board) {
-						return GestureDetector(
-							child: Container(
-								padding: const EdgeInsets.all(4),
-								decoration: BoxDecoration(
-									borderRadius: const BorderRadius.all(Radius.circular(4)),
-									color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
-								),
-								child: Stack(
-									children: [
-										Column(
-											mainAxisAlignment: MainAxisAlignment.start,
-											crossAxisAlignment: CrossAxisAlignment.center,
-											children: [
-												Flexible(
-													child: Center(
-														child: Text(
-															'/${board.name}/',
-															style: const TextStyle(
-																fontSize: 24
+			child: Listener(
+				onPointerDown: (event) {
+					_pointersDownCount++;
+				},
+				onPointerUp: (event) {
+					_pointersDownCount--;
+					if (!_popping && _pointersDownCount == 0 && _getOverscroll() > 50) {
+						_popping = true;
+						Navigator.pop(context);
+					}
+				},
+				child: Stack(
+					children: [
+						ValueListenableBuilder<Color?>(
+							valueListenable: _backgroundColor,
+							builder: (context, color, child) => Container(
+								color: color
+							)
+						),
+						(_filteredBoards.isEmpty) ? const Center(
+							child: Text('No matching boards')
+						) : SafeArea(
+							child: GridView.extent(
+								physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+								controller: scrollController,
+								padding: const EdgeInsets.only(top: 4, bottom: 4),
+								maxCrossAxisExtent: 125,
+								mainAxisSpacing: 4,
+								childAspectRatio: 1.2,
+								crossAxisSpacing: 4,
+								children: _filteredBoards.map((board) {
+									return GestureDetector(
+										child: Container(
+											padding: const EdgeInsets.all(4),
+											decoration: BoxDecoration(
+												borderRadius: const BorderRadius.all(Radius.circular(4)),
+												color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
+											),
+											child: Stack(
+												children: [
+													Column(
+														mainAxisAlignment: MainAxisAlignment.start,
+														crossAxisAlignment: CrossAxisAlignment.center,
+														children: [
+															Flexible(
+																child: Center(
+																	child: Text(
+																		'/${board.name}/',
+																		style: const TextStyle(
+																			fontSize: 24
+																		)
+																	)
+																)
+															),
+															const SizedBox(height: 8),
+															Flexible(
+																child: Center(
+																	child: AutoSizeText(board.title, maxFontSize: 14, maxLines: 2, textAlign: TextAlign.center)
+																)
 															)
+														]
+													),
+													if (browserState.favouriteBoards.contains(board.name)) const Align(
+														alignment: Alignment.topRight,
+														child: Padding(
+															padding: EdgeInsets.only(top: 4, right: 4),
+															child: Icon(CupertinoIcons.star_fill, size: 15)
 														)
 													)
-												),
-												const SizedBox(height: 8),
-												Flexible(
-													child: Center(
-														child: AutoSizeText(board.title, maxFontSize: 14, maxLines: 2, textAlign: TextAlign.center)
-													)
-												)
-											]
-										),
-										if (browserState.favouriteBoards.contains(board.name)) const Align(
-											alignment: Alignment.topRight,
-											child: Padding(
-												padding: EdgeInsets.only(top: 4, right: 4),
-												child: Icon(CupertinoIcons.star_fill, size: 15)
+												]
 											)
-										)
-									]
-								)
-							),
-							onTap: () {
-								Navigator.of(context).pop(board);
-							}
-						);
-					}).toList()
+										),
+										onTap: () {
+											Navigator.of(context).pop(board);
+										}
+									);
+								}).toList()
+							)
+						)
+					]
 				)
 			)
 		);
