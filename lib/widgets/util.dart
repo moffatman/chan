@@ -8,8 +8,8 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-void alertError(BuildContext context, String error) {
-  	showCupertinoDialog(
+Future<void> alertError(BuildContext context, String error) async {
+	await showCupertinoDialog(
 		context: context,
 		builder: (_context) {
 			return CupertinoAlertDialog(

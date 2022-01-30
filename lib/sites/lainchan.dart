@@ -388,4 +388,29 @@ class SiteLainchan extends ImageboardSite {
 	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page}) {
 		throw UnimplementedError();
 	}
+
+  @override
+  Future<ImageboardSiteLoginStatus?> getLoginStatus() async {
+    return null;
+  }
+
+  @override
+  List<ImageboardSiteLoginField> getLoginFields() {
+    return [];
+  }
+
+  @override
+  Future<void> logout() {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields) {
+    throw UnimplementedError();
+  }
+
+  @override
+  String? getLoginSystemName() {
+    return null;
+  }
 }

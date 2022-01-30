@@ -9,6 +9,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
@@ -24,8 +25,10 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class SettingsPage extends StatelessWidget {
 	final Persistence realPersistence;
+	final ImageboardSite realSite;
 	const SettingsPage({
 		required this.realPersistence,
+		required this.realSite,
 		Key? key
 	}) : super(key: key);
 
@@ -210,6 +213,14 @@ class SettingsPage extends StatelessWidget {
 											initialConfiguration: settings.filterConfiguration,
 										),
 										const SizedBox(height: 32),
+										if (realSite.getLoginSystemName() != null) ...[
+											Text(realSite.getLoginSystemName()!),
+											const SizedBox(height: 16),
+											SettingsLoginPanel(
+												site: realSite
+											),
+											const SizedBox(height: 32)
+										],
 										const Text('Interface Style'),
 										const SizedBox(height: 16),
 										CupertinoSegmentedControl<TristateSystemSetting>(
@@ -909,6 +920,126 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 						}
 					)
 				)
+			]
+		);
+	}
+}
+
+class SettingsLoginPanel extends StatefulWidget {
+	final ImageboardSite site;
+	const SettingsLoginPanel({
+		required this.site,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	createState() => _SettingsLoginPanelState();
+}
+
+class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
+	ImageboardSiteLoginStatus? status;
+	bool loading = false;
+
+	Future<void> _updateStatus() async {
+		final newStatus = await widget.site.getLoginStatus();
+		setState(() {
+			status = newStatus;
+		});
+	}
+
+	@override
+	void initState() {
+		super.initState();
+	}
+
+	Future<void> _login() async {
+		final fields = {
+			for (final field in widget.site.getLoginFields()) field: ''
+		};
+		final cont = await showCupertinoDialog<bool>(
+			context: context,
+			builder: (context) => CupertinoAlertDialog(
+				title: Text(widget.site.getLoginSystemName()! + ' Login'),
+				content: ListBody(
+					children: [
+						const SizedBox(height: 8),
+						for (final field in fields.keys) ...[
+							Text(field.displayName, textAlign: TextAlign.left),
+							const SizedBox(height: 8),
+							CupertinoTextField(
+								autofocus: field == fields.keys.first,
+								onChanged: (value) {
+									fields[field] = value;
+								}
+							),
+							const SizedBox(height: 16),
+						]
+					]
+				),
+				actions: [
+					CupertinoDialogAction(
+						child: const Text('Cancel'),
+						onPressed: () => Navigator.pop(context)
+					),
+					CupertinoDialogAction(
+						child: const Text('Login'),
+						onPressed: () => Navigator.pop(context, true)
+					)
+				]
+			)
+		);
+		if (cont == true) {
+			print(fields);
+			setState(() {
+				loading = true;
+			});
+			try {
+				await widget.site.login(fields);
+			}
+			catch (e) {
+				alertError(context, e.toStringDio());
+			}
+			await _updateStatus();
+			setState(() {
+				loading = false;
+			});
+		}
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		return Column(
+			mainAxisSize: MainAxisSize.min,
+			children: [
+				if (status == null) ...[
+					CupertinoButton.filled(
+						child: const Text('Login'),
+						onPressed: () async {
+							try {
+								await _login();
+							}
+							catch (e) {
+								await alertError(context, e.toStringDio());
+							}
+						}
+					)
+				]
+				else ...[
+					Text('Logged in as ${status!.loginName}\n'),
+					if (status?.expires != null) Text('Expires ${status!.expires}'),
+					CupertinoButton.filled(
+						child: const Text('Logout'),
+						onPressed: () async {
+							try {
+								await widget.site.logout();
+							}
+							catch (e) {
+								await alertError(context, e.toStringDio());
+							}
+							await _updateStatus();
+						}
+					)
+				]
 			]
 		);
 	}

@@ -150,6 +150,38 @@ class ImageboardArchiveSearchResult {
 	});
 }
 
+class ImageboardSiteLoginField {
+	final String displayName;
+	final String formKey;
+	const ImageboardSiteLoginField({
+		required this.displayName,
+		required this.formKey
+	});
+
+	@override
+	String toString() => 'ImageboardSiteLoginField(displayName: $displayName, formKey: $formKey)';
+}
+
+class ImageboardSiteLoginStatus {
+	final String loginName;
+	final DateTime? expires;
+	const ImageboardSiteLoginStatus({
+		required this.loginName,
+		this.expires
+	});
+
+	@override
+	String toString() => 'ImageboardSiteLoginStatus(loginName: $loginName, expires: $expires)';
+}
+
+class ImageboardSiteLoginException implements Exception {
+	final String message;
+	const ImageboardSiteLoginException(this.message);
+
+	@override
+	String toString() => 'Login failed: $message';
+}
+
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	BuildContext? _context;
@@ -179,7 +211,7 @@ abstract class ImageboardSiteArchive {
 abstract class ImageboardSite extends ImageboardSiteArchive {
 	final Map<String, Map<String, String>> memoizedHeaders = {};
 	final List<ImageboardSiteArchive> archives;
-	ImageboardSite(this.archives);
+	ImageboardSite(this.archives) : super();
 	Future<void> ensureCookiesMemoized(Uri url) async {
 		memoizedHeaders.putIfAbsent(url.host, () => {
 			'user-agent': userAgent
@@ -270,55 +302,60 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
 	Uri getPostReportUrl(String board, int id);
 	Persistence? persistence;
+	String? getLoginSystemName();
+	List<ImageboardSiteLoginField> getLoginFields();
+	Future<void> login(Map<ImageboardSiteLoginField, String> fields);
+	Future<ImageboardSiteLoginStatus?> getLoginStatus();
+	Future<void> logout();
 }
 
 ImageboardSite makeSite(BuildContext context, dynamic data) {
-		if (data['type'] == 'lainchan') {
-			return SiteLainchan(
-				name: data['name'],
-				baseUrl: data['baseUrl']
-			);
-		}
-		else if (data['type'] == '4chan') {
-			return Site4Chan(
-				name: data['name'],
-				imageUrl: data['imageUrl'],
-				captchaKey: data['captchaKey'],
-				apiUrl: data['apiUrl'],
-				sysUrl: data['sysUrl'],
-				baseUrl: data['baseUrl'],
-				staticUrl: data['staticUrl'],
-				archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
-					final boards = (archive['boards'] as List<dynamic>?)?.map((b) => ImageboardBoard(
-						title: b['title'],
-						name: b['name'],
-						isWorksafe: b['isWorksafe'],
-						webmAudioAllowed: false
-					)).toList();
-					if (archive['type'] == 'foolfuuka') {
-						return FoolFuukaArchive(
-							name: archive['name'],
-							baseUrl: archive['baseUrl'],
-							staticUrl: archive['staticUrl'],
-							boards: boards
-						);
-					}
-					else if (archive['type'] == 'fuuka') {
-						return FuukaArchive(
-							name: archive['name'],
-							baseUrl: archive['baseUrl'],
-							boards: boards
-						);
-					}
-					else {
-						print(archive);
-						throw UnsupportedError('Unknown archive type "${archive['type']}"');
-					}
-				}).toList()
-			);
-		}
-		else {
-			print(data);
-			throw UnsupportedError('Unknown site type "${data['type']}"');
-		}
+	if (data['type'] == 'lainchan') {
+		return SiteLainchan(
+			name: data['name'],
+			baseUrl: data['baseUrl']
+		);
 	}
+	else if (data['type'] == '4chan') {
+		return Site4Chan(
+			name: data['name'],
+			imageUrl: data['imageUrl'],
+			captchaKey: data['captchaKey'],
+			apiUrl: data['apiUrl'],
+			sysUrl: data['sysUrl'],
+			baseUrl: data['baseUrl'],
+			staticUrl: data['staticUrl'],
+			archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
+				final boards = (archive['boards'] as List<dynamic>?)?.map((b) => ImageboardBoard(
+					title: b['title'],
+					name: b['name'],
+					isWorksafe: b['isWorksafe'],
+					webmAudioAllowed: false
+				)).toList();
+				if (archive['type'] == 'foolfuuka') {
+					return FoolFuukaArchive(
+						name: archive['name'],
+						baseUrl: archive['baseUrl'],
+						staticUrl: archive['staticUrl'],
+						boards: boards
+					);
+				}
+				else if (archive['type'] == 'fuuka') {
+					return FuukaArchive(
+						name: archive['name'],
+						baseUrl: archive['baseUrl'],
+						boards: boards
+					);
+				}
+				else {
+					print(archive);
+					throw UnsupportedError('Unknown archive type "${archive['type']}"');
+				}
+			}).toList()
+		);
+	}
+	else {
+		print(data);
+		throw UnsupportedError('Unknown site type "${data['type']}"');
+	}
+}

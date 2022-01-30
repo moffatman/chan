@@ -65,6 +65,7 @@ class Site4Chan extends ImageboardSite {
 	static final unescape = HtmlUnescape();
 	final Map<String, _ThreadCacheEntry> _threadCache = {};
 	final Map<String, _CatalogCache> _catalogCaches = {};
+	bool _passEnabled = false;
 	final _lastActionTime = {
 		ImageboardAction.postReply: <String, DateTime>{},
 		ImageboardAction.postReplyWithImage: <String, DateTime>{},
@@ -390,6 +391,9 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	CaptchaRequest getCaptchaRequest(String board, [int? threadId]) {
+		if (_passEnabled) {
+			return NoCaptchaRequest();
+		}
 		return Chan4CustomCaptchaRequest(
 			challengeUrl: Uri.https(sysUrl, '/captcha', {
 				'board': board,
@@ -505,14 +509,22 @@ class Site4Chan extends ImageboardSite {
 	DateTime? getActionAllowedTime(String board, ImageboardAction action) {
 		final lastActionTime = _lastActionTime[action]![board];
 		final b = persistence!.getBoard(board);
+		int cooldownSeconds = 0;
 		switch (action) {
 			case ImageboardAction.postReply:
-				return lastActionTime?.add(Duration(seconds: b.replyCooldown ?? 0));
+				cooldownSeconds = b.replyCooldown ?? 0;
+				break;
 			case ImageboardAction.postReplyWithImage:
-				return lastActionTime?.add(Duration(seconds: b.imageCooldown ?? 0));
+				cooldownSeconds = b.imageCooldown ?? 0;
+				break;
 			case ImageboardAction.postThread:
-				return lastActionTime?.add(Duration(seconds: b.threadCooldown ?? 0));
+				cooldownSeconds = b.threadCooldown ?? 0;
+				break;
 		}
+		if (_passEnabled) {
+			cooldownSeconds ~/= 2;
+		}
+		return lastActionTime?.add(Duration(seconds: cooldownSeconds));
 	}
 
 	@override
@@ -589,5 +601,66 @@ class Site4Chan extends ImageboardSite {
 		required this.name,
 		required this.captchaKey,
 		List<ImageboardSiteArchive> archives = const []
-	}) : super(archives);
+	}) : super(archives) {
+		getLoginStatus();
+	}
+
+  @override
+  Future<ImageboardSiteLoginStatus?> getLoginStatus() async {
+    final cookies = await Persistence.cookies.loadForRequest(Uri.https(sysUrl, '/'));
+		for (final cookie in cookies) {
+			if (cookie.name == 'pass_id') {
+				_passEnabled = true;
+				return ImageboardSiteLoginStatus(
+					loginName: cookie.value.split('.').first,
+					expires: cookie.expires
+				);
+			}
+		}
+		_passEnabled = false;
+		return null;
+  }
+
+  @override
+  List<ImageboardSiteLoginField> getLoginFields() {
+    return const [
+			ImageboardSiteLoginField(
+				displayName: 'Token',
+				formKey: 'id'
+			),
+			ImageboardSiteLoginField(
+				displayName: 'PIN',
+				formKey: 'pin'
+			)
+		];
+  }
+
+  @override
+  Future<void> logout() async {
+		await Persistence.cookies.delete(Uri.https(sysUrl, '/'), true);
+		await Persistence.cookies.delete(Uri.https(sysUrl, '/'), true);
+  }
+
+  @override
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
+    final response = await client.post(
+			Uri.https(sysUrl, '/auth').toString(),
+			data: FormData.fromMap({
+				for (final field in fields.entries) field.key.formKey: field.value
+			})
+		);
+		final document = parse(response.data);
+		final message = document.querySelector('h2')?.text;
+		if (message == null) {
+			throw const ImageboardSiteLoginException('Unexpected response, contact developer');
+		}
+		if (!message.contains('Success!')) {
+			throw ImageboardSiteLoginException(message);
+		}
+  }
+
+  @override
+  String? getLoginSystemName() {
+    return '4chan Pass';
+  }
 }

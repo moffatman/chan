@@ -261,6 +261,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	Widget _buildTab(BuildContext context, int index, bool active) {
+		final site = context.watch<ImageboardSite>();
 		final persistence = context.watch<Persistence>();
 		Widget child;
 		if (index <= 0) {
@@ -342,7 +343,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							initialRoute: '/',
 							onGenerateRoute: (settings) => FullWidthCupertinoPageRoute(
 								builder: (_) => SettingsPage(
-									realPersistence: persistence
+									realPersistence: persistence,
+									realSite: site
 								)
 							)
 						)
