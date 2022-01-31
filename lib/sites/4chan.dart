@@ -197,7 +197,7 @@ class Site4Chan extends ImageboardSite {
 		return Post(
 			board: board,
 			text: data['com'] ?? '',
-			name: (data['name'] ?? ''),
+			name: unescape.convert(data['name'] ?? ''),
 			trip: data['trip'],
 			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
 			id: data['no'],
