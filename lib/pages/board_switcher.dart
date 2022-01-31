@@ -57,7 +57,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	void _onScroll() {
 		if (_focusNode.hasFocus) {
 			_focusNode.unfocus();
-			context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus = false;
 		}
 		_backgroundColor.value = CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(1.0 - max(0, _getOverscroll() / 50).clamp(0, 1));
 	}
@@ -242,9 +241,14 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				},
 				onPointerUp: (event) {
 					_pointersDownCount--;
-					if (!_popping && _pointersDownCount == 0 && _getOverscroll() > 50) {
-						_popping = true;
-						Navigator.pop(context);
+					if (!_popping && _pointersDownCount == 0) {
+						if (_getOverscroll() > 50) {
+							_popping = true;
+							Navigator.pop(context);
+						}
+						else {
+							context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus = false;
+						}
 					}
 				},
 				child: Stack(
