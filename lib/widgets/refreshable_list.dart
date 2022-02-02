@@ -68,7 +68,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	DateTime? lastUpdateTime;
 	DateTime? nextUpdateTime;
 	Timer? autoUpdateTimer;
-	late PageStorageKey _scrollViewKey;
+	GlobalKey _scrollViewKey = GlobalKey();
 	int _pointerDownCount = 0;
 	bool _showFilteredValues = false;
 
@@ -79,7 +79,6 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			_searchFilter = SearchFilter(widget.initialFilter!);
 			_searchController.text = widget.initialFilter!;
 		}
-		_scrollViewKey = PageStorageKey(widget.id);
 		widget.controller?.attach(this);
 		widget.controller?.newContentId(widget.id);
 		list = widget.initialList;
@@ -99,7 +98,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			autoUpdateTimer?.cancel();
 			autoUpdateTimer = null;
 			widget.controller?.newContentId(widget.id);
-			_scrollViewKey = PageStorageKey(widget.id);
+			_scrollViewKey = GlobalKey();
 			_closeSearch();
 			setState(() {
 				if (widget.initialList != null) {
