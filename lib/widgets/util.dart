@@ -388,3 +388,27 @@ class MQCustomScale extends StatelessWidget {
 		);
 	}
 }
+
+class BenchmarkBuilder extends StatelessWidget {
+	final WidgetBuilder builder;
+
+	const BenchmarkBuilder({
+		required this.builder,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		final start = DateTime.now();
+		final child = builder(context);
+		return Stack(
+			children: [
+				child,
+				Container(
+					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+					child: Text('${DateTime.now().difference(start).inMicroseconds / 1000} ms')
+				)
+			]
+		);
+	}
+}
