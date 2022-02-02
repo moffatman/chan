@@ -48,7 +48,10 @@ class TransparentRoute<T> extends PageRoute<T> {
 	TransparentRoute({
 		required this.builder,
 		RouteSettings? settings,
-  	}) : super(settings: settings, fullscreenDialog: false);
+  	}) : super(settings: settings);
+	
+	@override
+  bool get barrierDismissible => false;
 
 	final WidgetBuilder builder;
 
@@ -78,18 +81,12 @@ class TransparentRoute<T> extends PageRoute<T> {
 
 	@override
 	Widget buildTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
-		return AnimatedBuilder(
-			animation: animation,
-			builder: (context, child) {
-				return BackdropFilter(
-					filter: ImageFilter.blur(sigmaX: animation.value * 5, sigmaY: animation.value * 5),
-					child: Opacity(
-						opacity: animation.value,
-						child: child
-					)
-				);
-			},
-			child: child
+		return FadeTransition(
+			opacity: animation,
+			child: BackdropFilter(
+				filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+				child: child
+			)
 		);
 	}
 }
