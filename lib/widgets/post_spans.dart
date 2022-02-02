@@ -808,39 +808,36 @@ class ExpandingPost extends StatelessWidget {
 		if (post == null) {
 			print('Could not find post with ID $id in zone for ${zone.thread.id}');
 		}
-		return Visibility(
-			visible: zone.shouldExpandPost(id),
-			child: MediaQuery(
-				data: MediaQuery.of(context).copyWith(textScaleFactor: 1),
-				child: (post == null) ? Center(
-					child: Text('Could not find /${zone.thread.board}/$id')
-				) : Row(
-					children: [
-						Flexible(
-							child: Padding(
-								padding: const EdgeInsets.only(top: 8, bottom: 8),
-								child: DecoratedBox(
-									decoration: BoxDecoration(
-										border: Border.all(color: CupertinoTheme.of(context).primaryColor)
-									),
-									position: DecorationPosition.foreground,
-									child: PostRow(
-										post: post,
-										onThumbnailTap: (attachment) {
-											showGallery(
-												context: context,
-												attachments: [attachment],
-												semanticParentIds: zone.stackIds
-											);
-										},
-										shrinkWrap: true
-									)
+		return zone.shouldExpandPost(id) ? MediaQuery(
+			data: MediaQuery.of(context).copyWith(textScaleFactor: 1),
+			child: (post == null) ? Center(
+				child: Text('Could not find /${zone.thread.board}/$id')
+			) : Row(
+				children: [
+					Flexible(
+						child: Padding(
+							padding: const EdgeInsets.only(top: 8, bottom: 8),
+							child: DecoratedBox(
+								decoration: BoxDecoration(
+									border: Border.all(color: CupertinoTheme.of(context).primaryColor)
+								),
+								position: DecorationPosition.foreground,
+								child: PostRow(
+									post: post,
+									onThumbnailTap: (attachment) {
+										showGallery(
+											context: context,
+											attachments: [attachment],
+											semanticParentIds: zone.stackIds
+										);
+									},
+									shrinkWrap: true
 								)
 							)
 						)
-					]
-				)
+					)
+				]
 			)
-		);
+		) : const SizedBox.shrink();
 	}
 }
