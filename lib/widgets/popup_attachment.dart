@@ -57,22 +57,6 @@ class PopupAttachment extends StatelessWidget {
 			cleanup: (controller) {
 				controller?.dispose();
 			}
-			/*popup: ExtendedImage.network(
-				_post.attachment!.url.toString(),
-				cache: true,
-				loadStateChanged: (state) {
-					if (state.extendedImageLoadState == LoadState.loading) {
-						return Container(
-							height: (_post.attachment!.height ?? 100).toDouble(),
-							width: (_post.attachment!.width ?? 100).toDouble(),
-							color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.2),
-							child: const Center(
-								child: CircularLoadingIndicator()
-							)
-						);
-					}
-				},
-			)*/
 		);
 	}
 }
