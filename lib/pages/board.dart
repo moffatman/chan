@@ -199,7 +199,7 @@ class _BoardPageState extends State<BoardPage> {
 									controller: _listController,
 									listUpdater: () => site.getCatalog(board!.name).then((list) {
 										final now = DateTime.now();
-										if (settings.hideOldStickiedThreads) {
+										if (settings.hideOldStickiedThreads && list.length > 100) {
 											list = list.where((thread) {
 												return !thread.isSticky || now.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
 											}).toList();
