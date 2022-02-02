@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:chan/services/settings.dart';
 import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 
 enum HoverPopupStyle {
 	attached,
@@ -47,6 +49,9 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	Widget build(BuildContext context) {
 		return MouseRegion(
 			onEnter: (event) {
+				if (!context.read<EffectiveSettings>().supportMouse.value) {
+					return;
+				}
 				if (_entry != null) {
 					return;
 				}
