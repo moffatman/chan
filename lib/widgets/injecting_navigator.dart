@@ -29,6 +29,7 @@ class _InjectingNavigatorState extends NavigatorState {
 	@override
 	Future<T?> push<T extends Object?>(Route<T> route) {
 		_routeStack.add(route);
+		topRoute.value = route;
 		if (route is FullWidthCupertinoPageRoute<T> && widget is InjectingNavigator) {
 			return super.push(FullWidthCupertinoPageRoute<T>(
 				settings: route.settings,
@@ -62,6 +63,7 @@ class PrimaryScrollControllerInjectingNavigator extends StatefulWidget {
 
 class _PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScrollControllerInjectingNavigator> {
 	final _primaryScrollControllerTracker = ValueNotifier<ScrollController?>(null);
+	late InjectingNavigator _navigator;
 
 	Widget _injectController(BuildContext context, Route? route, WidgetBuilder childBuilder) {
 		final topRoute = ((widget.navigatorKey.currentState) as _InjectingNavigatorState?)?.topRoute;
@@ -75,27 +77,44 @@ class _PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScrol
 				final automaticController = PrimaryScrollController.of(context)!;
 				return PrimaryScrollController(
 					controller: (route != topRoute?.value || bestController == null) ? automaticController : bestController,
-					child: Builder(builder: childBuilder)
+					child: child!
 				);
-			}
+			},
+			child: Builder(builder: childBuilder)
 		);
+	}
+
+	InjectingNavigator _makeNavigator() => InjectingNavigator(
+		animation: _primaryScrollControllerTracker,
+		injector: _injectController,
+		initialRoute: '/',
+		observers: widget.observers,
+		key: widget.navigatorKey,
+		onGenerateRoute: (settings) {
+			return FullWidthCupertinoPageRoute(
+				settings: settings,
+				builder: (context) => _injectController(context, null, widget.buildRoot)
+			);
+		}
+	);
+
+	@override
+	void initState() {
+		super.initState();
+		_navigator = _makeNavigator();
+	}
+
+	@override
+	void didUpdateWidget(PrimaryScrollControllerInjectingNavigator oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.navigatorKey != oldWidget.navigatorKey) {
+			_navigator = _makeNavigator();
+		}
 	}
 
 	@override
 	Widget build(BuildContext context) {
 		_primaryScrollControllerTracker.value = PrimaryScrollController.of(context);
-		return InjectingNavigator(
-			animation: _primaryScrollControllerTracker,
-			injector: _injectController,
-			initialRoute: '/',
-			observers: widget.observers,
-			key: widget.navigatorKey,
-			onGenerateRoute: (settings) {
-				return FullWidthCupertinoPageRoute(
-					settings: settings,
-					builder: (context) => _injectController(context, null, widget.buildRoot)
-				);
-			}
-		);
+		return _navigator;
 	}
 }

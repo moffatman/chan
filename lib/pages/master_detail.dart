@@ -61,7 +61,7 @@ class MultiMasterPane<T> {
 	final IconData? icon;
 	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T?> valueSetter) masterBuilder;
 	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
-	T? currentValue;
+	ValueNotifier<T?> currentValue;
 	final ValueChanged<T?>? onValueChanged;
 
 	MultiMasterPane({
@@ -72,30 +72,37 @@ class MultiMasterPane<T> {
 		this.icon,
 		T? initialValue,
 		this.onValueChanged
-	}) : currentValue = initialValue;
+	}) : currentValue = ValueNotifier<T?>(initialValue);
 
 	Widget buildMaster(BuildContext context, VoidCallback onNewValue, bool provideCurrentValue) {
-		return masterBuilder(context, provideCurrentValue ? currentValue : null, (newValue) {
-			currentValue = newValue;
-			onValueChanged?.call(newValue);
-			onNewValue();
-		});
+		return ValueListenableBuilder(
+			valueListenable: currentValue,
+			builder: (context, T? v, child) => masterBuilder(context, provideCurrentValue ? v : null, (newValue) {
+					currentValue.value = newValue;
+					onValueChanged?.call(newValue);
+					onNewValue();
+				}
+			)
+		);
 	}
 
 	void onPushReturn(dynamic value) {
 		if (value != false) {
 			// it was a user-initiated pop
-			currentValue = null;
+			currentValue.value = null;
 			onValueChanged?.call(null);
 		}
 	}
 
 	Widget buildDetail() {
-		return detailBuilder(currentValue, false).widget;
+		return ValueListenableBuilder(
+			valueListenable: currentValue,
+			builder: (context, T? v, child) => detailBuilder(v, false).widget
+		);
 	}
 
 	PageRoute buildDetailRoute() {
-		return detailBuilder(currentValue, true).pageRoute;
+		return detailBuilder(currentValue.value, true).pageRoute;
 	}
 }
 
@@ -148,7 +155,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 		_tabController.addListener(_onPaneChanged);
 		_initGlobalKeys();
 		Future.delayed(const Duration(milliseconds: 100), () {
-			if (panes[_tabController.index].currentValue != null) {
+			if (panes[_tabController.index].currentValue.value != null) {
 				_onNewValue(panes[_tabController.index]);
 			}
 		});
@@ -259,7 +266,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 		);
 		if (lastOnePane != null && lastOnePane != onePane) {
 			final pane = panes[_tabController.index];
-			if (onePane && pane.currentValue != null) {
+			if (onePane && pane.currentValue.value != null) {
 				_masterKey.currentState!.push(pane.buildDetailRoute()).then(pane.onPushReturn);
 			}
 			else {
