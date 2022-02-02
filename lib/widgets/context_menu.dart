@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:chan/widgets/post_spans.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -34,23 +32,13 @@ class ContextMenu extends StatefulWidget {
 	createState() => _ContextMenuState();
 }
 
-enum _ContextMenuUseNewConstraints {
-	yes
-}
-
 class _ContextMenuState extends State<ContextMenu> {
 	OverlayEntry? _overlayEntry;
-
-	Widget get constrainedChild => widget.maxHeight == null ? widget.child : ConstrainedBox(constraints: BoxConstraints(
-			maxHeight: widget.maxHeight!
-		),
-		child: widget.child
-	);
 
 	@override
 	Widget build(BuildContext context) {
 		final zone = context.watch<PostSpanZoneData?>();
-		return GestureDetector(
+		final child = GestureDetector(
 			onSecondaryTapUp: (event) {
 				final topOfUsableSpace = MediaQuery.of(context).size.height * 0.8;
 				final showOnRight = event.globalPosition.dx > (MediaQuery.of(context).size.width - 210);
@@ -111,69 +99,31 @@ class _ContextMenuState extends State<ContextMenu> {
 				);
 				Overlay.of(context, rootOverlay: true)!.insert(_overlayEntry!);
 			},
-			child: LayoutBuilder(
-				builder: (context, originalConstraints) {
-					return CupertinoContextMenu(
-						actions: widget.actions.map((action) => CupertinoContextMenuAction(
-							child: action.child,
-							trailingIcon: action.trailingIcon,
-							onPressed: () {
-								action.onPressed();
-								Navigator.of(context, rootNavigator: true).pop();
-							},
-							isDestructiveAction: action.isDestructiveAction
-						)).toList(),
-						previewBuilder: (ctx, animation, child) {
-							return IgnorePointer(
-								child: animation.value == 0 ? child : Provider<_ContextMenuUseNewConstraints>.value(
-									value: _ContextMenuUseNewConstraints.yes,
-									child: child
-								)
-							);
-						},
-						child: LayoutBuilder(
-							builder: (context, newConstraints) {
-								final useNewConstraints = context.read<_ContextMenuUseNewConstraints?>() == _ContextMenuUseNewConstraints.yes && newConstraints.maxHeight >= 75;
-								double newMaxWidth = originalConstraints.maxWidth;
-								double newMaxHeight = originalConstraints.maxHeight;
-								const x = 50;
-								newMaxHeight = max(newMaxHeight, newConstraints.maxHeight - x);
-								newMaxHeight = min(newMaxHeight, newConstraints.maxHeight + x);
-								newMaxWidth = max(newMaxWidth, newConstraints.maxWidth - x);
-								newMaxWidth = min(newMaxWidth, newConstraints.maxWidth + x);
-								final newNewConstraints = BoxConstraints(
-									maxWidth: newMaxWidth,
-									//maxWidth: originalConstraints.maxWidth,
-									maxHeight: newMaxHeight,
-									minWidth: 0,
-									minHeight: 0
-								);
-								if (!useNewConstraints) {
-									return FittedBox(
-										alignment: Alignment.topRight,
-										child: ConstrainedBox(
-											constraints: originalConstraints,
-											child: (zone == null) ? constrainedChild : ChangeNotifierProvider.value(
-												value: zone,
-												child: constrainedChild
-											)
-										)
-									);
-								}
-								else {
-									return ConstrainedBox(
-										constraints: newNewConstraints,
-										child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
-											value: zone,
-											child: widget.child
-										)
-									);
-								}
-							}
-						)
-					);
-				}
+			child: CupertinoContextMenu(
+				actions: widget.actions.map((action) => CupertinoContextMenuAction(
+					child: action.child,
+					trailingIcon: action.trailingIcon,
+					onPressed: () {
+						action.onPressed();
+						Navigator.of(context, rootNavigator: true).pop();
+					},
+					isDestructiveAction: action.isDestructiveAction
+				)).toList(),
+				previewBuilder: (context, animation, child) => IgnorePointer(child: child),
+				child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
+					value: zone,
+					child: widget.child
+				)
 			)
 		);
+		if (widget.maxHeight != null) {
+			return ConstrainedBox(
+				constraints: BoxConstraints(
+					maxHeight: widget.maxHeight!
+				),
+				child: child
+			);
+		}
+		return child;
 	}
 }
