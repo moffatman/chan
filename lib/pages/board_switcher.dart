@@ -96,6 +96,18 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		return _filteredBoards;
 	}
 
+	void _afterScroll() {
+		if (!_popping && _pointersDownCount == 0) {
+			if (_getOverscroll() > 50) {
+				_popping = true;
+				Navigator.pop(context);
+			}
+			else if (scrollController.position.isScrollingNotifier.value == true && isPhoneSoftwareKeyboard()) {
+				context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus = false;
+			}
+		}
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
@@ -276,15 +288,14 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				},
 				onPointerUp: (event) {
 					_pointersDownCount--;
-					if (!_popping && _pointersDownCount == 0) {
-						if (_getOverscroll() > 50) {
-							_popping = true;
-							Navigator.pop(context);
-						}
-						else if (scrollController.position.isScrollingNotifier.value == true && isPhoneSoftwareKeyboard()) {
-							settings.boardSwitcherHasKeyboardFocus = false;
-						}
-					}
+					_afterScroll();
+				},
+				onPointerPanZoomStart: (event) {
+					_pointersDownCount++;
+				},
+				onPointerPanZoomEnd: (event) {
+					_pointersDownCount--;
+					_afterScroll();
 				},
 				child: Stack(
 					children: [
