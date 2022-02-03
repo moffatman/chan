@@ -77,6 +77,18 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		}
 	}
 
+	void _afterScroll() {
+		if (!_popping && _pointersDownCount == 0) {
+			if (_getOverscroll() > 50) {
+				_popping = true;
+				Navigator.pop(context);
+			}
+			else if (scrollController.position.isScrollingNotifier.value == true) {
+				context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus = false;
+			}
+		}
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		_backgroundColor.value ??= CupertinoTheme.of(context).scaffoldBackgroundColor;
@@ -242,15 +254,14 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				},
 				onPointerUp: (event) {
 					_pointersDownCount--;
-					if (!_popping && _pointersDownCount == 0) {
-						if (_getOverscroll() > 50) {
-							_popping = true;
-							Navigator.pop(context);
-						}
-						else if (scrollController.position.isScrollingNotifier.value == true) {
-							context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus = false;
-						}
-					}
+					_afterScroll();
+				},
+				onPointerPanZoomStart: (event) {
+					_pointersDownCount++;
+				},
+				onPointerPanZoomEnd: (event) {
+					_pointersDownCount--;
+					_afterScroll();
 				},
 				child: Stack(
 					children: [
