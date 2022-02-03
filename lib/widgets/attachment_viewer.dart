@@ -458,6 +458,7 @@ class AttachmentViewer extends StatelessWidget {
 						double fillZoomScale = screenAspectRatio / attachmentAspectRatio;
 						autozoomScale = max(autozoomScale, max(fillZoomScale, 1 / fillZoomScale));
 					}
+					autozoomScale = min(autozoomScale, 5);
 					final center = Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2);
 					state.gestureDetails = GestureDetails(
 						offset: (state.pointerDownPosition! * autozoomScale - center).scale(-1, -1),
