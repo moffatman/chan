@@ -11,7 +11,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
 class HistoryPage extends StatefulWidget {
+	final bool isActive;
+
 	const HistoryPage({
+		required this.isActive,
 		Key? key
 	}) : super(key: key);
 
@@ -27,60 +30,61 @@ class _HistoryPageState extends State<HistoryPage> {
 		return MasterDetailPage<ThreadIdentifier>(
 			id: 'history',
 			masterBuilder: (context, selectedThread, threadSetter) {
+				Widget _masterBuilder(BuildContext context, Box<PersistentThreadState> box, Widget? child) {
+					final states = box.toMap().values.where((s) => s.thread != null).toList();
+					states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
+					return RefreshableList<PersistentThreadState>(
+						controller: _listController,
+						listUpdater: () => throw UnimplementedError(),
+						id: 'history',
+						disableUpdates: true,
+						initialList: states,
+						itemBuilder: (context, state) => ContextMenu(
+							maxHeight: 125,
+							child: GestureDetector(
+								behavior: HitTestBehavior.opaque,
+								child: ThreadRow(
+									thread: state.thread!,
+									isSelected: state.thread!.identifier == selectedThread,
+									semanticParentIds: const [-3],
+									showBoardName: true,
+									onThumbnailTap: (initialAttachment) {
+										final attachments = _listController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
+										showGallery(
+											context: context,
+											attachments: attachments,
+											initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+											onChange: (attachment) {
+												_listController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
+											},
+											semanticParentIds: [-3]
+										);
+									}
+								),
+								onTap: () => threadSetter(state.thread!.identifier)
+							),
+							actions: [
+								ContextMenuAction(
+									child: const Text('Remove'),
+									onPressed: state.delete,
+									trailingIcon: CupertinoIcons.xmark,
+									isDestructiveAction: true
+								)
+							]
+						),
+						filterHint: 'Search history'
+					);
+				}
 				return CupertinoPageScaffold(
 					resizeToAvoidBottomInset: false,
 					navigationBar: const CupertinoNavigationBar(
 						transitionBetweenRoutes: false,
 						middle: Text('History')
 					),
-					child: ValueListenableBuilder(
+					child: widget.isActive ? ValueListenableBuilder(
 						valueListenable: context.watch<Persistence>().threadStateBox.listenable(),
-						builder: (context, Box<PersistentThreadState> box, child) {
-							final states = box.toMap().values.where((s) => s.thread != null).toList();
-							states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
-							return RefreshableList<PersistentThreadState>(
-								controller: _listController,
-								listUpdater: () => throw UnimplementedError(),
-								id: 'history',
-								disableUpdates: true,
-								initialList: states,
-								itemBuilder: (context, state) => ContextMenu(
-									maxHeight: 125,
-									child: GestureDetector(
-										behavior: HitTestBehavior.opaque,
-										child: ThreadRow(
-											thread: state.thread!,
-											isSelected: state.thread!.identifier == selectedThread,
-											semanticParentIds: const [-3],
-											showBoardName: true,
-											onThumbnailTap: (initialAttachment) {
-												final attachments = _listController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
-												showGallery(
-													context: context,
-													attachments: attachments,
-													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-													onChange: (attachment) {
-														_listController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
-													},
-													semanticParentIds: [-3]
-												);
-											}
-										),
-										onTap: () => threadSetter(state.thread!.identifier)
-									),
-									actions: [
-										ContextMenuAction(
-											child: const Text('Remove'),
-											onPressed: state.delete,
-											trailingIcon: CupertinoIcons.xmark,
-											isDestructiveAction: true
-										)
-									]
-								),
-								filterHint: 'Search history'
-							);
-						}
-					)
+						builder: _masterBuilder
+					) : _masterBuilder(context, context.watch<Persistence>().threadStateBox, null)
 				);
 			},
 			detailBuilder: (selectedThread, poppedOut) {

@@ -317,10 +317,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			);
 		}
 		else if (index == 1) {
-			child = const SavedPage();
+			child = SavedPage(
+				isActive: active
+			);
 		}
 		else if (index == 2) {
-			child = const HistoryPage();
+			child = HistoryPage(
+				isActive: active
+			);
 		}
 		else if (index == 3) {
 			child = const SearchPage();

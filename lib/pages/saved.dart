@@ -48,7 +48,10 @@ class _PostThreadCombo implements Filterable {
 	bool get isThread => false;
 }
 class SavedPage extends StatefulWidget {
+	final bool isActive;
+
 	const SavedPage({
+		required this.isActive,
 		Key? key
 	}) : super(key: key);
 
@@ -118,6 +121,63 @@ class _SavedPageState extends State<SavedPage> {
 					navigationBar: _navigationBar('Saved Threads'),
 					icon: CupertinoIcons.tray_full,
 					masterBuilder: (context, selectedThread, threadSetter) {
+						Widget _masterBuilder(BuildContext context, Box<PersistentThreadState> box, Widget? child) {
+							final states = box.toMap().values.where((s) => s.savedTime != null).toList();
+							if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
+								states.sort((a, b) => b.savedTime!.compareTo(a.savedTime!));
+							}
+							else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
+								final noDate = DateTime.fromMillisecondsSinceEpoch(0);
+								states.sort((a, b) => (b.thread?.posts.last.time ?? noDate).compareTo(a.thread?.posts.last.time ?? noDate));
+							}
+							return RefreshableList<PersistentThreadState>(
+								controller: _threadListController,
+								listUpdater: () => throw UnimplementedError(),
+								id: 'saved',
+								disableUpdates: true,
+								initialList: states,
+								itemBuilder: (context, state) => ContextMenu(
+									maxHeight: 125,
+									child: GestureDetector(
+										behavior: HitTestBehavior.opaque,
+										child: ThreadRow(
+											thread: state.thread!,
+											isSelected: state.thread!.identifier == selectedThread,
+											showBoardName: true,
+											onThumbnailLoadError: (error, stackTrace) {
+												context.read<SavedThreadWatcher>().fixBrokenThread(state.thread!.identifier);
+											},
+											semanticParentIds: const [-4],
+											onThumbnailTap: (initialAttachment) {
+												final attachments = _threadListController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
+												showGallery(
+													context: context,
+													attachments: attachments,
+													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+													onChange: (attachment) {
+														_threadListController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
+													},
+													semanticParentIds: [-4]
+												);
+											}
+										),
+										onTap: () => threadSetter(state.identifier)
+									),
+									actions: [
+										ContextMenuAction(
+											child: const Text('Unsave'),
+											onPressed: () {
+												state.savedTime = null;
+												state.save();
+											},
+											trailingIcon: CupertinoIcons.xmark,
+											isDestructiveAction: true
+										)
+									]
+								),
+								filterHint: 'Search saved threads'
+							);
+						}
 						return SafeArea(
 							child: Column(
 								children: [
@@ -128,66 +188,10 @@ class _SavedPageState extends State<SavedPage> {
 										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
 									),
 									Expanded(
-										child: ValueListenableBuilder(
+										child: widget.isActive ? ValueListenableBuilder(
 											valueListenable: persistence.threadStateBox.listenable(),
-											builder: (context, Box<PersistentThreadState> box, child) {
-												final states = box.toMap().values.where((s) => s.savedTime != null).toList();
-												if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
-													states.sort((a, b) => b.savedTime!.compareTo(a.savedTime!));
-												}
-												else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
-													final noDate = DateTime.fromMillisecondsSinceEpoch(0);
-													states.sort((a, b) => (b.thread?.posts.last.time ?? noDate).compareTo(a.thread?.posts.last.time ?? noDate));
-												}
-												return RefreshableList<PersistentThreadState>(
-													controller: _threadListController,
-													listUpdater: () => throw UnimplementedError(),
-													id: 'saved',
-													disableUpdates: true,
-													initialList: states,
-													itemBuilder: (context, state) => ContextMenu(
-														maxHeight: 125,
-														child: GestureDetector(
-															behavior: HitTestBehavior.opaque,
-															child: ThreadRow(
-																thread: state.thread!,
-																isSelected: state.thread!.identifier == selectedThread,
-																showBoardName: true,
-																onThumbnailLoadError: (error, stackTrace) {
-																	context.read<SavedThreadWatcher>().fixBrokenThread(state.thread!.identifier);
-																},
-																semanticParentIds: const [-4],
-																onThumbnailTap: (initialAttachment) {
-																	final attachments = _threadListController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
-																	showGallery(
-																		context: context,
-																		attachments: attachments,
-																		initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-																		onChange: (attachment) {
-																			_threadListController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
-																		},
-																		semanticParentIds: [-4]
-																	);
-																}
-															),
-															onTap: () => threadSetter(state.identifier)
-														),
-														actions: [
-															ContextMenuAction(
-																child: const Text('Unsave'),
-																onPressed: () {
-																	state.savedTime = null;
-																	state.save();
-																},
-																trailingIcon: CupertinoIcons.xmark,
-																isDestructiveAction: true
-															)
-														]
-													),
-													filterHint: 'Search saved threads'
-												);
-											}
-										)
+											builder: _masterBuilder
+										) : _masterBuilder(context, persistence.threadStateBox, null)
 									)
 								]
 							)
@@ -209,9 +213,8 @@ class _SavedPageState extends State<SavedPage> {
 						middle: Text('Your Posts')
 					),
 					icon: CupertinoIcons.pencil,
-					masterBuilder: (context, selected, setter) => ValueListenableBuilder(
-						valueListenable: persistence.threadStateBox.listenable(),
-						builder: (context, Box<PersistentThreadState> box, child) {
+					masterBuilder: (context, selected, setter) {
+						Widget _masterBuilder(BuildContext context, Box<PersistentThreadState> box, Widget? child) {
 							final replies = <_PostThreadCombo>[];
 							for (final s in box.values) {
 								if (s.thread != null) {
@@ -246,7 +249,11 @@ class _SavedPageState extends State<SavedPage> {
 								)
 							);
 						}
-					),
+						return widget.isActive ? ValueListenableBuilder(
+							valueListenable: persistence.threadStateBox.listenable(),
+							builder: _masterBuilder
+						) : _masterBuilder(context, persistence.threadStateBox, null);
+					},
 					detailBuilder: (selected, poppedOut) => BuiltDetailPane(
 						widget: selected == null ? _placeholder('Select a post') : ThreadPage(
 							thread: selected.post.threadIdentifier,
