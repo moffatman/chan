@@ -82,6 +82,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	final _shouldShowPosition = ValueNotifier<bool>(false);
 	Widget? scrollSheetChild;
 	ScrollController? scrollSheetController;
+	final _currentAttachmentChanged = BehaviorSubject<void>();
 
 	@override
 	void initState() {
@@ -252,6 +253,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 			}
 		}
 		_hideRotateButton = false;
+		_currentAttachmentChanged.add(null);
 		setState(() {});
 		_shouldShowPosition.value = true;
 		await Future.delayed(const Duration(seconds: 1));
@@ -347,36 +349,86 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	}
 
 	Widget _buildScrollSheetChild(ScrollController controller) {
-		return ClipRect(
-			child: BackdropFilter(
-				filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-				child: Container(
-					color: Colors.black38,
-					child: AnimatedBuilder(
-						animation: pageController,
-						builder: (context, child) => CustomScrollView(
-							cacheExtent: 500,
-							controller: controller,
-							slivers: [
-								if (currentController.videoPlayerController != null) SliverToBoxAdapter(
-									child: VideoControls(
-										controller: currentController.videoPlayerController!,
-										hasAudio: currentController.hasAudio
-									)
-								),
-								SliverToBoxAdapter(
-									child: SizedBox(
-										height: _thumbnailSize + 8,
-										child: KeyedSubtree(
-											key: _thumbnailsKey,
-											child: ListView.builder(
-												controller: thumbnailScrollController,
-												itemCount: widget.attachments.length,
-												scrollDirection: Axis.horizontal,
-												itemBuilder: (context, index) {
+		return StreamBuilder(
+			stream: _currentAttachmentChanged,
+			builder: (context, child) {
+				return Padding(
+					padding: currentController.videoPlayerController == null ? const EdgeInsets.only(top: 44) : EdgeInsets.zero,
+					child: ClipRect(
+						child: BackdropFilter(
+							filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+							child: Container(
+								color: Colors.black38,
+								child: CustomScrollView(
+									cacheExtent: 500,
+									controller: controller,
+									slivers: [
+										if (currentController.videoPlayerController != null) SliverToBoxAdapter(
+											child: VideoControls(
+												controller: currentController.videoPlayerController!,
+												hasAudio: currentController.hasAudio
+											)
+										),
+										SliverToBoxAdapter(
+											child: SizedBox(
+												height: _thumbnailSize + 8,
+												child: KeyedSubtree(
+													key: _thumbnailsKey,
+													child: ListView.builder(
+														controller: thumbnailScrollController,
+														itemCount: widget.attachments.length,
+														scrollDirection: Axis.horizontal,
+														itemBuilder: (context, index) {
+															final attachment = widget.attachments[index];
+															return GestureDetector(
+																onTap: () => _animateToPage(index),
+																child: Container(
+																	decoration: BoxDecoration(
+																		color: Colors.transparent,
+																		borderRadius: const BorderRadius.all(Radius.circular(4)),
+																		border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
+																	),
+																	margin: const EdgeInsets.all(4),
+																	child: AttachmentThumbnail(
+																		gaplessPlayback: true,
+																		attachment: widget.attachments[index],
+																		width: _thumbnailSize,
+																		height: _thumbnailSize
+																	)
+																)
+															);
+														}
+													)
+												)
+											)
+										),
+										SliverGrid(
+											gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+												maxCrossAxisExtent: 200
+											),
+											delegate: SliverChildBuilderDelegate(
+												(context, index) {
+													if (index == widget.attachments.length) {
+														return Center(
+															child: CupertinoButton.filled(
+																padding: const EdgeInsets.all(8),
+																child: Column(
+																	mainAxisSize: MainAxisSize.min,
+																	children: const [
+																		Icon(CupertinoIcons.cloud_download, size: 50),
+																		Text('Download all')
+																	]
+																),
+																onPressed: _downloadAll
+															)
+														);
+													}
 													final attachment = widget.attachments[index];
 													return GestureDetector(
-														onTap: () => _animateToPage(index),
+														onTap: () {
+															DraggableScrollableActuator.reset(context);
+															Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
+														},
 														child: Container(
 															decoration: BoxDecoration(
 																color: Colors.transparent,
@@ -387,68 +439,23 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 															child: AttachmentThumbnail(
 																gaplessPlayback: true,
 																attachment: widget.attachments[index],
-																width: _thumbnailSize,
-																height: _thumbnailSize
+																width: 200,
+																height: 200,
+																hero: null
 															)
 														)
 													);
-												}
+												},
+												childCount: widget.attachments.length + 1
 											)
 										)
-									)
-								),
-								SliverGrid(
-									gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-										maxCrossAxisExtent: 200
-									),
-									delegate: SliverChildBuilderDelegate(
-										(context, index) {
-											if (index == widget.attachments.length) {
-												return Center(
-													child: CupertinoButton.filled(
-														padding: const EdgeInsets.all(8),
-														child: Column(
-															mainAxisSize: MainAxisSize.min,
-															children: const [
-																Icon(CupertinoIcons.cloud_download, size: 50),
-																Text('Download all')
-															]
-														),
-														onPressed: _downloadAll
-													)
-												);
-											}
-											final attachment = widget.attachments[index];
-											return GestureDetector(
-												onTap: () {
-													DraggableScrollableActuator.reset(context);
-													Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
-												},
-												child: Container(
-													decoration: BoxDecoration(
-														color: Colors.transparent,
-														borderRadius: const BorderRadius.all(Radius.circular(4)),
-														border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
-													),
-													margin: const EdgeInsets.all(4),
-													child: AttachmentThumbnail(
-														gaplessPlayback: true,
-														attachment: widget.attachments[index],
-														width: 200,
-														height: 200,
-														hero: null
-													)
-												)
-											);
-										},
-										childCount: widget.attachments.length + 1
-									)
+									]
 								)
-							]
+							)
 						)
 					)
-				)
-			)
+				);
+			}
 		);
 	}
 
@@ -621,25 +628,22 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													) : Container()
 												),
 												AnimatedBuilder(
-													animation: pageController,
-													builder: (context, child) => (pageController.positions.length != 1 ) ? Container() : AnimatedBuilder(
-														animation: _shouldShowPosition,
-														child: Align(
-															alignment: Alignment.bottomLeft,
-															child: Container(
-																margin: const EdgeInsets.all(16),
-																padding: const EdgeInsets.all(8),
-																decoration: const BoxDecoration(
-																	borderRadius: BorderRadius.all(Radius.circular(8)),
-																	color: Colors.black54
-																),
-																child: Text("${currentIndex + 1} / ${widget.attachments.length}")
-															)
-														),
-														builder: (context, child) => AnimatedSwitcher(
-															duration: const Duration(milliseconds: 300),
-															child: _shouldShowPosition.value ? child : Container()
+													animation: _shouldShowPosition,
+													child: Align(
+														alignment: Alignment.bottomLeft,
+														child: Container(
+															margin: const EdgeInsets.all(16),
+															padding: const EdgeInsets.all(8),
+															decoration: const BoxDecoration(
+																borderRadius: BorderRadius.all(Radius.circular(8)),
+																color: Colors.black54
+															),
+															child: Text("${currentIndex + 1} / ${widget.attachments.length}")
 														)
+													),
+													builder: (context, child) => AnimatedSwitcher(
+														duration: const Duration(milliseconds: 300),
+														child: _shouldShowPosition.value ? child : Container()
 													)
 												),
 												Visibility(
