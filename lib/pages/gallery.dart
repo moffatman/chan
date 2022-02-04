@@ -662,6 +662,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													visible: showChrome,
 													maintainState: true,
 													maintainSize: true,
+													maintainAnimation: true,
 													child: DraggableScrollableActuator(
 														child: DraggableScrollableSheet(
 															snap: true,
