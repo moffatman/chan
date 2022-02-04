@@ -71,12 +71,14 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	GlobalKey _scrollViewKey = GlobalKey();
 	int _pointerDownCount = 0;
 	bool _showFilteredValues = false;
+	bool _searchTapped = false;
 
 	@override
 	void initState() {
 		super.initState();
 		if (widget.initialFilter != null) {
 			_searchFilter = SearchFilter(widget.initialFilter!);
+			_searchTapped = true;
 			_searchController.text = widget.initialFilter!;
 		}
 		widget.controller?.attach(this);
@@ -146,6 +148,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		_searchFocusNode.unfocus();
 		_searchController.clear();
 		setState(() {
+			_searchTapped = false;
 			_searchFilter = null;
 		});
 	}
@@ -310,6 +313,11 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 											Expanded(
 												child: Center(
 													child: CupertinoSearchTextField(
+														onTap: () {
+															setState(() {
+																_searchTapped = true;
+															});
+														},
 														onChanged: (searchText) {
 															setState(() {
 																_searchFilter = SearchFilter(searchText.toLowerCase());
@@ -321,7 +329,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 													)
 												)
 											),
-											if (_searchFilter != null) CupertinoButton(
+											if (_searchTapped) CupertinoButton(
 												padding: const EdgeInsets.only(left: 8),
 												child: const Text('Cancel'),
 												onPressed: _closeSearch
