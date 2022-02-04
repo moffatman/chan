@@ -83,6 +83,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	Widget? scrollSheetChild;
 	ScrollController? scrollSheetController;
 	final _currentAttachmentChanged = BehaviorSubject<void>();
+	final _rotationsChanged = BehaviorSubject<void>();
 
 	@override
 	void initState() {
@@ -95,7 +96,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		pageController.addListener(_onPageControllerUpdate);
 		_scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
 		final attachment = widget.attachments[currentIndex];
-		_getController(attachment).loadFullAttachment(context).then((_) => _handleAttachmentLoaded(attachment));
+		_getController(attachment).loadFullAttachment(context);
 	}
 
 	@override
@@ -122,7 +123,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 			currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
 			if (context.read<EffectiveSettings>().autoloadAttachments) {
 				final attachment = widget.attachments[currentIndex];
-				_getController(attachment).loadFullAttachment(context).then((_) => _handleAttachmentLoaded(attachment));
+				_getController(attachment).loadFullAttachment(context);
 			}
 		}
 	}
@@ -136,7 +137,6 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				isPrimary: attachment == currentAttachment,
 				overrideSource: widget.overrideSources[attachment]
 			);
-			_controllers[attachment]!.addListener(() => setState(() => {}));
 		}
 		return _controllers[attachment]!;
 	}
@@ -181,7 +181,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
 		if (context.read<EffectiveSettings>().autoloadAttachments) {
-			_getController(attachment).loadFullAttachment(context).then((_) => _handleAttachmentLoaded(attachment));
+			_getController(attachment).loadFullAttachment(context);
 		}
 		if (milliseconds == 0) {
 			pageController.jumpToPage(index);
@@ -215,10 +215,10 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 			_rotateButtonAnimationController.repeat();
 		}
 		_rotationsInProgress.add(attachment);
-		setState(() {});
+		_rotationsChanged.add(null);
 		await _getController(attachment).rotate();
 		_rotationsInProgress.remove(attachment);
-		setState(() {});
+		_rotationsChanged.add(null);
 		if (attachment == currentAttachment) {
 			_rotateButtonAnimationController.reset();
 		}
@@ -235,14 +235,14 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		if (!_animatingNow) {
 			final settings = context.read<EffectiveSettings>();
 			if (settings.autoloadAttachments) {
-				_getController(attachment).loadFullAttachment(context).then((_) => _handleAttachmentLoaded(attachment));
+				_getController(attachment).loadFullAttachment(context);
 				if (index > 0) {
 					final previousAttachment = widget.attachments[index - 1];
-					_getController(previousAttachment).preloadFullAttachment(context).then((_) => _handleAttachmentLoaded(previousAttachment));
+					_getController(previousAttachment).preloadFullAttachment(context);
 				}
 				if (index < (widget.attachments.length - 1)) {
 					final nextAttachment = widget.attachments[index + 1];
-					_getController(nextAttachment).preloadFullAttachment(context).then((_) => _handleAttachmentLoaded(nextAttachment));
+					_getController(nextAttachment).preloadFullAttachment(context);
 				}
 			}
 			if (settings.autoRotateInGallery && _rotationAppropriate(attachment) && _getController(attachment).quarterTurns == 0) {
@@ -251,10 +251,9 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 			for (final c in _controllers.entries) {
 				c.value.isPrimary = c.key == currentAttachment;
 			}
+			_currentAttachmentChanged.add(null);
 		}
 		_hideRotateButton = false;
-		_currentAttachmentChanged.add(null);
-		setState(() {});
 		_shouldShowPosition.value = true;
 		await Future.delayed(const Duration(seconds: 1));
 		if (currentIndex == index) {
@@ -334,13 +333,6 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		showChrome = !showChrome;
 		_updateOverlays(showChrome);
 		setState(() {});
-	}
-
-	void _handleAttachmentLoaded(Attachment attachment) {
-		if (mounted && attachment == currentAttachment && attachment.type == AttachmentType.webm && scrollSheetController != null) {
-			scrollSheetChild = _buildScrollSheetChild(scrollSheetController!);
-			setState(() {});
-		}
 	}
 
 	double _dragPopFactor(Offset offset, Size size) {
@@ -469,7 +461,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				if (!showChrome) {
 					_updateOverlays(factor > 1);
 				}
-				return Colors.black.withOpacity((1 - factor.clamp(0, 1)));
+				return Colors.black.withOpacity(1 - factor.clamp(0, 1));
 			},
 			slideEndHandler: (offset, {ScaleEndDetails? details, ExtendedImageSlidePageState? state}) {
 				final a = ((details?.velocity ?? Velocity.zero).pixelsPerSecond.direction / pi).abs();
@@ -481,45 +473,56 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 					backgroundColor: Colors.transparent,
 					navigationBar: showChrome ? CupertinoNavigationBar(
 						transitionBetweenRoutes: false,
-						middle: AutoSizeText("${currentAttachment.filename} (${currentAttachment.width}x${currentAttachment.height})"),
+						middle: StreamBuilder(
+							stream: _currentAttachmentChanged,
+							builder: (context, _) => AutoSizeText("${currentAttachment.filename} (${currentAttachment.width}x${currentAttachment.height})")
+						),
 						backgroundColor: Colors.black38,
-						trailing: Row(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								CupertinoButton(
-									padding: EdgeInsets.zero,
-									child: const Icon(CupertinoIcons.cloud_download),
-									onPressed: currentController.canShare && !currentController.isDownloaded ? currentController.download : null
-								),
-								StreamBuilder(
-									stream: context.watch<Persistence>().savedAttachmentsNotifier,
-									builder: (context, child) {
-										final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment) != null;
-										return CupertinoButton(
-											padding: EdgeInsets.zero,
-											child: Icon(currentlySaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark),
-											onPressed: currentController.canShare ? () {
-												if (currentlySaved) {
-													context.read<Persistence>().deleteSavedAttachment(currentAttachment);
+						trailing: StreamBuilder(
+							stream: _currentAttachmentChanged,
+							builder: (context, _) => AnimatedBuilder(
+								animation: currentController,
+								builder: (context, _) {
+									return Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											CupertinoButton(
+												padding: EdgeInsets.zero,
+												child: const Icon(CupertinoIcons.cloud_download),
+												onPressed: currentController.canShare && !currentController.isDownloaded ? currentController.download : null
+											),
+											StreamBuilder(
+												stream: context.watch<Persistence>().savedAttachmentsNotifier,
+												builder: (context, child) {
+													final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment) != null;
+													return CupertinoButton(
+														padding: EdgeInsets.zero,
+														child: Icon(currentlySaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark),
+														onPressed: currentController.canShare ? () {
+															if (currentlySaved) {
+																context.read<Persistence>().deleteSavedAttachment(currentAttachment);
+															}
+															else {
+																context.read<Persistence>().saveAttachment(currentAttachment, currentController.cachedFile!);
+															}
+														} : null
+													);
 												}
-												else {
-													context.read<Persistence>().saveAttachment(currentAttachment, currentController.cachedFile!);
-												}
-											} : null
-										);
-									}
-								),
-								CupertinoButton(
-									key: _shareButtonKey,
-									padding: EdgeInsets.zero,
-									child: const Icon(CupertinoIcons.share),
-									onPressed: currentController.canShare ? () {
-										final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-										final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-										currentController.share((offset != null && size != null) ? offset & size : null);
-									 } : null
-								)
-							]
+											),
+											CupertinoButton(
+												key: _shareButtonKey,
+												padding: EdgeInsets.zero,
+												child: const Icon(CupertinoIcons.share),
+												onPressed: currentController.canShare ? () {
+													final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+													final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+													currentController.share((offset != null && size != null) ? offset & size : null);
+												} : null
+											)
+										]
+									);
+								}
+							)
 						)
 					) : null,
 					child: Container(
@@ -576,56 +579,62 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														itemCount: widget.attachments.length,
 														itemBuilder: (context, index) {
 															final attachment = widget.attachments[index];
-															return GestureDetector(
-																child: AttachmentViewer(
-																	controller: _getController(attachment),
-																	onScaleChanged: (scale) {
-																		if (scale > 1 && !_hideRotateButton) {
-																			setState(() {
-																				_hideRotateButton = true;
-																			});
-																		}
-																		else if (scale <= 1 && _hideRotateButton) {
-																			setState(() {
-																				_hideRotateButton = false;
-																			});
-																		}
-																	},
-																	semanticParentIds: widget.semanticParentIds
-																),
-																onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
-																	_getController(attachment).loadFullAttachment(context).then((_) => _handleAttachmentLoaded(attachment));
-																}
+															return AnimatedBuilder(
+																animation: _getController(attachment),
+																builder: (context, _) => GestureDetector(
+																	child: AttachmentViewer(
+																		controller: _getController(attachment),
+																		onScaleChanged: (scale) {
+																			if (scale > 1 && !_hideRotateButton) {
+																				setState(() {
+																					_hideRotateButton = true;
+																				});
+																			}
+																			else if (scale <= 1 && _hideRotateButton) {
+																				setState(() {
+																					_hideRotateButton = false;
+																				});
+																			}
+																		},
+																		semanticParentIds: widget.semanticParentIds
+																	),
+																	onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
+																		_getController(attachment).loadFullAttachment(context);
+																	}
+																)
 															);
 														}
 													)
 												),
-												AnimatedSwitcher(
-													duration: const Duration(milliseconds: 300),
-													child: (_rotationAppropriate(currentAttachment) && !_hideRotateButton) ? Align(
-														key: ValueKey<bool>(_rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0),
-														alignment: Alignment.bottomRight,
-														child: RotationTransition(
-															turns: _rotationsInProgress.contains(currentAttachment) ? Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController) : const AlwaysStoppedAnimation(0.0),
-															child: CupertinoButton(
-																padding: const EdgeInsets.all(24),
-																child: Transform(
-																	alignment: Alignment.center,
-																	transform: _rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0 ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
-																	child: const Icon(CupertinoIcons.rotate_left)
-																),
-																onPressed: () {
-																	if (currentController.quarterTurns == 1) {
-																		currentController.unrotate();
+												StreamBuilder(
+													stream: _rotationsChanged.mergeWith([_currentAttachmentChanged]),
+													builder: (context, _) => AnimatedSwitcher(
+														duration: const Duration(milliseconds: 300),
+														child: (_rotationAppropriate(currentAttachment) && !_hideRotateButton) ? Align(
+															key: ValueKey<bool>(_rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0),
+															alignment: Alignment.bottomRight,
+															child: RotationTransition(
+																turns: _rotationsInProgress.contains(currentAttachment) ? Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController) : const AlwaysStoppedAnimation(0.0),
+																child: CupertinoButton(
+																	padding: const EdgeInsets.all(24),
+																	child: Transform(
+																		alignment: Alignment.center,
+																		transform: _rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0 ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
+																		child: const Icon(CupertinoIcons.rotate_left)
+																	),
+																	onPressed: () {
+																		if (currentController.quarterTurns == 1) {
+																			currentController.unrotate();
+																		}
+																		else {
+																			_rotate(currentAttachment);
+																		}
+																		_rotationsChanged.add(null);
 																	}
-																	else {
-																		_rotate(currentAttachment);
-																	}
-																	setState(() {});
-																}
+																)
 															)
-														)
-													) : Container()
+														) : Container()
+													)
 												),
 												AnimatedBuilder(
 													animation: _shouldShowPosition,
@@ -638,7 +647,10 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																borderRadius: BorderRadius.all(Radius.circular(8)),
 																color: Colors.black54
 															),
-															child: Text("${currentIndex + 1} / ${widget.attachments.length}")
+															child: StreamBuilder(
+																stream: _currentAttachmentChanged,
+																builder: (context, _) => Text("${currentIndex + 1} / ${widget.attachments.length}")
+															)
 														)
 													),
 													builder: (context, child) => AnimatedSwitcher(
@@ -650,13 +662,12 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													visible: showChrome,
 													maintainState: true,
 													maintainSize: true,
-													maintainAnimation: true,
 													child: DraggableScrollableActuator(
 														child: DraggableScrollableSheet(
 															snap: true,
-															initialChildSize: 0.15,
+															initialChildSize: 0.20,
 															maxChildSize: 1 - ((kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top) / MediaQuery.of(context).size.height),
-															minChildSize: 0.15,
+															minChildSize: 0.20,
 															builder: (context, controller) {
 																if (scrollSheetChild == null || controller != scrollSheetController) {
 																	scrollSheetController = controller;

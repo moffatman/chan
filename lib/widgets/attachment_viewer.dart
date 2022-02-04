@@ -364,6 +364,9 @@ class AttachmentViewerController extends ChangeNotifier {
 		videoPlayerController?.pause().then((_) => videoPlayerController?.dispose());
 		_longPressFactorStream.close();
 	}
+
+	@override
+	String toString() => 'AttachmentViewerController(attachment: $attachment)';
 }
 
 class AttachmentViewer extends StatelessWidget {
