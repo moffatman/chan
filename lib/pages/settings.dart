@@ -578,6 +578,27 @@ class SettingsPage extends StatelessWidget {
 											)
 										),
 										const SizedBox(height: 16),
+										Row(
+											children: [
+												const Text('Interface scale'),
+												const Spacer(),
+												CupertinoButton(
+													child: const Icon(CupertinoIcons.minus),
+													onPressed: settings.interfaceScale <= 0.5 ? null : () {
+														settings.interfaceScale -= 0.1;
+													}
+												),
+												Text('${(settings.interfaceScale * 100).round()}%'),
+												CupertinoButton(
+													child: const Icon(CupertinoIcons.plus),
+													onPressed: settings.interfaceScale >= 2.0 ? null : () {
+														settings.interfaceScale += 0.1;
+													}
+												),
+												const SizedBox(width: 16)
+											]
+										),
+										const SizedBox(height: 32),
 										const Text('Cached media'),
 										const SettingsCachePanel(),
 										const SizedBox(height: 16),

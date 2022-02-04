@@ -47,6 +47,7 @@ class _ChanAppState extends State<ChanApp> {
 	SavedThreadWatcher? threadWatcher;
 	final settings = EffectiveSettings(Persistence.settings);
 	late dynamic _lastSite;
+	final Map<String, GlobalKey> _siteKeys = {};
 
 	@override
 	void initState() {
@@ -144,8 +145,8 @@ class _ChanAppState extends State<ChanApp> {
 											return DefaultTextStyle(
 												style: CupertinoTheme.of(context).textTheme.textStyle,
 												child: RootCustomScale(
-													scale: (Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0,
-													child: threadWatcher != null ? ChanHomePage(key: ValueKey(site!.name)) : Container(
+													scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
+													child: threadWatcher != null ? ChanHomePage(key: _siteKeys.putIfAbsent(site!.name, () => GlobalKey())) : Container(
 														color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 														child: const Center(
 															child: CupertinoActivityIndicator()
