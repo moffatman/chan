@@ -490,6 +490,7 @@ class EffectiveSettings extends ChangeNotifier {
 	TristateSystemSetting get supportMouseSetting => _settings.supportMouse;
 	set supportMouseSetting(TristateSystemSetting setting) {
 		_settings.supportMouse = setting;
+		_settings.save();
 		switch (supportMouseSetting) {
 			case TristateSystemSetting.a:
 				supportMouse.value = false;
