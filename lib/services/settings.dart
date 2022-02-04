@@ -519,6 +519,9 @@ class EffectiveSettings extends ChangeNotifier {
 
 	EffectiveSettings(SavedSettings settings) {
 		_settings = settings;
+		if (_settings.supportMouse == TristateSystemSetting.b) {
+			supportMouse.value = true;
+		}
 		_tryToSetupFilter();
 		embedRegexes = settings.embedRegexes.map((x) => RegExp(x)).toList();
 		updateEmbedRegexes();
