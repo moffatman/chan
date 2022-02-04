@@ -19,6 +19,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:highlight/highlight.dart';
 import 'package:flutter_highlight/themes/atom-one-dark-reasonable.dart';
@@ -33,6 +34,8 @@ class PostSpanRenderOptions {
 	final TextStyle baseTextStyle;
 	final bool showRawSource;
 	final bool avoidBuggyClippers;
+	final PointerEnterEventListener? onEnter;
+	final PointerExitEventListener? onExit;
 	PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -41,7 +44,9 @@ class PostSpanRenderOptions {
 		this.addExpandingPosts = true,
 		this.baseTextStyle = const TextStyle(),
 		this.showRawSource = false,
-		this.avoidBuggyClippers = false
+		this.avoidBuggyClippers = false,
+		this.onEnter,
+		this.onExit
 	});
 	GestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 }
@@ -85,7 +90,9 @@ class PostTextSpan extends PostSpan {
 		return TextSpan(
 			text: context.read<EffectiveSettings>().filterProfanity(text),
 			style: options.baseTextStyle,
-			recognizer: options.recognizer
+			recognizer: options.recognizer,
+			onEnter: options.onEnter,
+			onExit: options.onExit
 		);
 	}
 
@@ -220,7 +227,9 @@ class PostQuoteLinkSpan extends PostSpan {
 						zone.toggleExpansionOfPost(postId);
 					}
 				}
-			})
+			}),
+			onEnter: options.onEnter,
+			onExit: options.onExit
 		);
 	}
 	_build(BuildContext context, PostSpanRenderOptions options) {
@@ -312,7 +321,9 @@ class PostBoardLink extends PostSpan {
 						semanticId: -1
 					)
 				));
-			})
+			}),
+			onEnter: options.onEnter,
+			onExit: options.onExit
 		);
 	}
 
@@ -401,18 +412,24 @@ class PostSpoilerSpan extends PostSpan {
 		};
 		final hiddenColor = DefaultTextStyle.of(context).style.color;
 		final visibleColor = CupertinoTheme.of(context).scaffoldBackgroundColor;
+		onEnter(_) => zone.showSpoiler(id);
+		onExit(_) => zone.hideSpoiler(id);
 		return TextSpan(
 			children: [child.build(context, PostSpanRenderOptions(
 				recognizer: toggleRecognizer,
 				overrideRecognizer: !showSpoiler,
 				overrideTextColor: showSpoiler ? visibleColor : hiddenColor,
-				showCrossThreadLabel: options.showCrossThreadLabel
+				showCrossThreadLabel: options.showCrossThreadLabel,
+				onEnter: onEnter,
+				onExit: onExit
 			))],
 			style: options.baseTextStyle.copyWith(
 				backgroundColor: hiddenColor,
 				color: showSpoiler ? visibleColor : null
 			),
-			recognizer: toggleRecognizer
+			recognizer: toggleRecognizer,
+			onEnter: onEnter,
+			onExit: onExit
 		);
 	}
 
@@ -518,7 +535,9 @@ class PostLinkSpan extends PostSpan {
 			style: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline
 			),
-			recognizer: TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(url))
+			recognizer: TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(url)),
+			onEnter: options.onEnter,
+			onExit: options.onExit
 		);
 	}
 
@@ -549,7 +568,9 @@ class PostCatalogSearchSpan extends PostSpan {
 					initialSearch: query,
 					semanticId: -1
 				)
-			))
+			)),
+			onEnter: options.onEnter,
+			onExit: options.onExit
 		);
 	}
 
@@ -615,6 +636,8 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	Post? postFromArchive(int id) => null;
 	String? postFromArchiveError(int id) => null;
 	bool shouldShowSpoiler(int id) => false;
+	void showSpoiler(int id) => throw UnimplementedError();
+	void hideSpoiler(int id) => throw UnimplementedError();
 	void toggleShowingOfSpoiler(int id) => throw UnimplementedError();
 	AsyncSnapshot<T> getFutureForComputation<T>({
 		required String id,
@@ -695,6 +718,18 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	@override
 	bool shouldShowSpoiler(int id) {
 		return _shouldShowSpoiler[id] ?? false;
+	}
+
+	@override
+	void showSpoiler(int id) {
+		_shouldShowSpoiler[id] = true;
+		notifyListeners();
+	}
+
+	@override
+	void hideSpoiler(int id) {
+		_shouldShowSpoiler[id] = false;
+		notifyListeners();
 	}
 
 	@override
