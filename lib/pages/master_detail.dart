@@ -232,8 +232,8 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 												)
 											)
 										),
-										MediaQuery(
-											data: MediaQuery.of(context).removePadding(removeTop: true),
+										TransformedMediaQuery(
+											transformation: (mq) => mq.removePadding(removeTop: true),
 											child: Expanded(
 												child: child
 											)

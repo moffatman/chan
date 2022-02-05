@@ -859,8 +859,8 @@ class ExpandingPost extends StatelessWidget {
 		if (post == null) {
 			print('Could not find post with ID $id in zone for ${zone.thread.id}');
 		}
-		return zone.shouldExpandPost(id) ? MediaQuery(
-			data: MediaQuery.of(context).copyWith(textScaleFactor: 1),
+		return zone.shouldExpandPost(id) ? TransformedMediaQuery(
+			transformation: (mq) => mq.copyWith(textScaleFactor: 1),
 			child: (post == null) ? Center(
 				child: Text('Could not find /${zone.thread.board}/$id')
 			) : Row(

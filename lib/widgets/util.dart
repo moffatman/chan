@@ -409,3 +409,22 @@ class BenchmarkBuilder extends StatelessWidget {
 		);
 	}
 }
+
+class TransformedMediaQuery extends StatelessWidget {
+	final Widget child;
+	final MediaQueryData Function(MediaQueryData) transformation;
+
+	const TransformedMediaQuery({
+		required this.child,
+		required this.transformation,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		return MediaQuery(
+			data: transformation(MediaQuery.of(context)),
+			child: child
+		);
+	}
+}
