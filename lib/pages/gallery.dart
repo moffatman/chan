@@ -143,8 +143,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	void didChangeDependencies() {
 		super.didChangeDependencies();
 		if (!firstControllerMade) {
-			final initialOffset = ((_thumbnailSize + 12) * (currentIndex + 0.5)) - (MediaQuery.of(context).size.width / 2);
-			final maxOffset = ((_thumbnailSize + 12) * widget.attachments.length) - MediaQuery.of(context).size.width;
+			final initialOffset = ((_thumbnailSize + 12) * (currentIndex + 0.5)) - (MediaQuery.of(context, MediaQueryAspect.width).size.width / 2);
+			final maxOffset = ((_thumbnailSize + 12) * widget.attachments.length) - MediaQuery.of(context, MediaQueryAspect.width).size.width;
 			if (maxOffset > 0) {
 				thumbnailScrollController = ScrollController(initialScrollOffset: initialOffset.clamp(0, maxOffset));
 			}
@@ -258,7 +258,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	}
 
 	bool _rotationAppropriate(Attachment attachment) {
-		final displayIsLandscape = MediaQuery.of(context).size.width > MediaQuery.of(context).size.height;
+		final displayIsLandscape = MediaQuery.of(context, MediaQueryAspect.width).size.width > MediaQuery.of(context, MediaQueryAspect.height).size.height;
 		return attachment.isLandscape != null && displayIsLandscape != attachment.isLandscape;
 	}
 
@@ -395,14 +395,14 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		return offset.distance / threshold;
 	}
 
-	double get _maxScrollSheetSize => 1 - (((currentController.videoPlayerController == null ? -44 : 0) + kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top) / MediaQuery.of(context).size.height);
+	double get _maxScrollSheetSize => 1 - (((currentController.videoPlayerController == null ? -44 : 0) + kMinInteractiveDimensionCupertino + MediaQuery.of(context, MediaQueryAspect.viewPadding).viewPadding.top) / MediaQuery.of(context, MediaQueryAspect.height).size.height);
 
 	double get _minScrollSheetSize {
 		if (context.read<EffectiveSettings>().showThumbnailsInGallery) {
 			return 0.2;
 		}
 		if (currentController.videoPlayerController != null) {
-			return (44 + MediaQuery.of(context).padding.bottom) / MediaQuery.of(context).size.height;
+			return (44 + MediaQuery.of(context, MediaQueryAspect.padding).padding.bottom) / MediaQuery.of(context, MediaQueryAspect.height).size.height;
 		}
 		return 0.0;
 	}
@@ -567,7 +567,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		final layoutInsets = MediaQuery.of(context).padding;
+		final layoutInsets = MediaQuery.of(context, MediaQueryAspect.padding).padding;
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
@@ -825,7 +825,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														alignment: Alignment.bottomLeft,
 														child: Container(
 															margin: showChrome ? EdgeInsets.only(
-																bottom: (settings.showThumbnailsInGallery ? MediaQuery.of(context).size.height * 0.2 : (44 + MediaQuery.of(context).padding.bottom)) + 16 - (currentController.videoPlayerController == null ? 44 : 0),
+																bottom: (settings.showThumbnailsInGallery ? MediaQuery.of(context, MediaQueryAspect.height).size.height * 0.2 : (44 + MediaQuery.of(context, MediaQueryAspect.padding).padding.bottom)) + 16 - (currentController.videoPlayerController == null ? 44 : 0),
 																left: 16
 															) : const EdgeInsets.all(16),
 															padding: const EdgeInsets.all(8),

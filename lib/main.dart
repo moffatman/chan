@@ -1305,11 +1305,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 	}
 
-	bool get isInTabletLayout => (MediaQuery.of(context).size.width - 85) > (MediaQuery.of(context).size.height - 50);
+	bool get isInTabletLayout => (MediaQuery.of(context, MediaQueryAspect.width).size.width - 85) > (MediaQuery.of(context, MediaQueryAspect.height).size.height - 50);
 
 	@override
 	Widget build(BuildContext context) {
-		final hideTabletLayoutLabels = MediaQuery.of(context).size.height < 600;
+		final hideTabletLayoutLabels = MediaQuery.of(context, MediaQueryAspect.height).size.height < 600;
 		if (!ImageboardRegistry.instance.initialized) {
 			return const Center(
 				child: CupertinoActivityIndicator()
@@ -1347,7 +1347,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								child: Row(
 									children: [
 										Container(
-											padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+											padding: EdgeInsets.only(top: MediaQuery.of(context, MediaQueryAspect.padding).padding.top),
 											width: 85,
 											child: Column(
 												children: [
