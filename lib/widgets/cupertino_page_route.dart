@@ -475,7 +475,7 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 				widget.child,
 				PositionedDirectional(
 					start: 0.0,
-					width: MediaQuery.of(context).size.width,
+					width: MediaQuery.sizeOf(context).width,
 					top: 0.0,
 					bottom: 0.0,
 					child: Listener(

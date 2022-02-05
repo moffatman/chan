@@ -308,7 +308,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	bool _rotationAppropriate(Attachment attachment) {
-		final displayIsLandscape = MediaQuery.of(context).size.width > MediaQuery.of(context).size.height;
+		final displayIsLandscape = MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;
 		return attachment.isLandscape != null && displayIsLandscape != attachment.isLandscape;
 	}
 
@@ -429,14 +429,14 @@ class _GalleryPageState extends State<GalleryPage> {
 		return offset.distance / threshold;
 	}
 
-	double get _maxScrollSheetSize => (_thumbnailSize + 8 +_gridViewHeight + kMinInteractiveDimensionCupertino) / MediaQuery.of(context).size.height;
+	double get _maxScrollSheetSize => (_thumbnailSize + 8 +_gridViewHeight + kMinInteractiveDimensionCupertino) / MediaQuery.sizeOf(context).height;
 
 	double get _minScrollSheetSize {
 		if (context.read<EffectiveSettings>().showThumbnailsInGallery) {
 			return 0.2;
 		}
 		if (currentController.videoPlayerController != null) {
-			return (44 + MediaQuery.of(context).padding.bottom) / MediaQuery.of(context).size.height;
+			return (44 + MediaQuery.paddingOf(context).bottom) / MediaQuery.sizeOf(context).height;
 		}
 		return 0.0;
 	}
@@ -687,7 +687,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		final layoutInsets = MediaQuery.of(context).padding;
+		final layoutInsets = MediaQuery.paddingOf(context);
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
@@ -945,7 +945,7 @@ class _GalleryPageState extends State<GalleryPage> {
 												alignment: Alignment.bottomLeft,
 												child: Container(
 													margin: showChrome ? EdgeInsets.only(
-														bottom: (settings.showThumbnailsInGallery ? MediaQuery.of(context).size.height * 0.2 : (44 + MediaQuery.of(context).padding.bottom)) + 16 - (currentController.videoPlayerController == null ? 44 : 0),
+														bottom: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) + 16 - (currentController.videoPlayerController == null ? 44 : 0),
 														left: 16
 													) : const EdgeInsets.all(16),
 													padding: const EdgeInsets.all(8),

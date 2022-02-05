@@ -378,7 +378,7 @@ class _CupertinoContextMenuState2 extends State<CupertinoContextMenu2> with Tick
   // it.
   _ContextMenuLocation get _contextMenuLocation {
     final Rect childRect = _getRect(_childGlobalKey);
-    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenWidth = MediaQuery.sizeOf(context).width;
 
     final double center = screenWidth / 2;
     final bool centerDividesChild = childRect.left < center
@@ -1229,7 +1229,7 @@ class _ContextMenuRouteStaticState extends State<_ContextMenuRouteStatic> with T
   Widget _buildChildAnimation(BuildContext context, Widget? child) {
     _lastScale = _getScale(
       widget.orientation,
-      MediaQuery.of(context).size.height,
+      MediaQuery.sizeOf(context).height,
       _moveAnimation.value.dy,
     );
     return Transform.scale(
@@ -1374,7 +1374,7 @@ class _ContextMenuSheet extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(height: MediaQuery.of(context).padding.bottom),
+            SizedBox(height: MediaQuery.paddingOf(context).bottom),
           ],
         ),
       ),

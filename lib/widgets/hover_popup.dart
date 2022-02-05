@@ -106,8 +106,8 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 
 	void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
 		_touchGlobalKey?.currentState?.setScale(
-			blur: 20 - (25 * max(details.localOffsetFromOrigin.dy / min(400, MediaQuery.of(context).size.height - _touchStart!.dy), (-1 * details.localOffsetFromOrigin.dy) / min(400, _touchStart!.dy)).abs().clamp(0, 1)),
-			scale: 0.1 + (1.1 * (details.localOffsetFromOrigin.dx / min(400, MediaQuery.of(context).size.width)).abs()).clamp(0, 0.9)
+			blur: 20 - (25 * max(details.localOffsetFromOrigin.dy / min(400, MediaQuery.sizeOf(context).height - _touchStart!.dy), (-1 * details.localOffsetFromOrigin.dy) / min(400, _touchStart!.dy)).abs().clamp(0, 1)),
+			scale: 0.1 + (1.1 * (details.localOffsetFromOrigin.dx / min(400, MediaQuery.sizeOf(context).width)).abs()).clamp(0, 0.9)
 		);
 	}
 
@@ -153,20 +153,20 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 						final childTop = childBox.localToGlobal(Offset.zero).dy;
 						final childBottom = childBox.localToGlobal(Offset(0, childBox.size.height)).dy;
 						final childCenterHorizontal = childBox.localToGlobal(Offset(childBox.size.width / 2, 0)).dx;
-						final topOfUsableSpace = MediaQuery.of(context).size.height / 2;
+						final topOfUsableSpace = MediaQuery.sizeOf(context).height / 2;
 						final left = childBox.localToGlobal(Offset.zero).dx;
 						final cblg = childBox.localToGlobal(Offset(childBox.size.width, 0)).dx;
 						_entry = OverlayEntry(
 							builder: (_) {
-								final showOnRight = childCenterHorizontal > (MediaQuery.of(context).size.width / 2);
+								final showOnRight = childCenterHorizontal > (MediaQuery.sizeOf(context).width / 2);
 								return Positioned(
-									right: showOnRight ? (MediaQuery.of(context).size.width - cblg) : null,
+									right: showOnRight ? (MediaQuery.sizeOf(context).width - cblg) : null,
 									left: showOnRight ? null : left,
-									bottom: (childTop > topOfUsableSpace) ? MediaQuery.of(context).size.height - childTop : null,
+									bottom: (childTop > topOfUsableSpace) ? MediaQuery.sizeOf(context).height - childTop : null,
 									top: (childTop > topOfUsableSpace) ? null : childBottom,
 									child: ConstrainedBox(
 										constraints: BoxConstraints(
-											maxWidth: MediaQuery.of(context).size.width / 2
+											maxWidth: MediaQuery.sizeOf(context).width / 2
 										),
 										child: ImageboardScope(
 											imageboardKey: null,

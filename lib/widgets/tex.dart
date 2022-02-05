@@ -17,7 +17,7 @@ class TexWidget extends StatelessWidget {
 			child: Image(
 				image: TeXImageProvider(
 					tex,
-					textScaleFactor: MediaQuery.of(context).textScaleFactor
+					textScaleFactor: MediaQuery.textScaleFactorOf(context)
 				),
 				loadingBuilder: (context, child, chunk) {
 					if (chunk == null) {

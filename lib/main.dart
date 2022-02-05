@@ -1426,11 +1426,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 	}
 
-	bool get isInTabletLayout => (MediaQuery.of(context).size.width - 85) > (MediaQuery.of(context).size.height - 50);
+	bool get isInTabletLayout => (MediaQuery.sizeOf(context).width - 85) > (MediaQuery.sizeOf(context).height - 50);
 
 	@override
 	Widget build(BuildContext context) {
-		final hideTabletLayoutLabels = MediaQuery.of(context).size.height < 600;
+		final hideTabletLayoutLabels = MediaQuery.sizeOf(context).height < 600;
 		if (!ImageboardRegistry.instance.initialized) {
 			return const ChanSplashPage();
 		}
@@ -1464,7 +1464,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							child: Row(
 								children: [
 									Container(
-										padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+										padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
 										color: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
 										width: 85,
 										child: Column(

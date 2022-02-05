@@ -1489,7 +1489,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																canvasColor: CupertinoTheme.of(context).scaffoldBackgroundColor
 															),
 															child: Padding(
-																padding: MediaQuery.of(context).viewInsets,
+																padding: MediaQuery.viewInsetsOf(context),
 																child: Column(
 																	mainAxisSize: MainAxisSize.min,
 																	children: [
@@ -2004,7 +2004,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																padding: EdgeInsets.zero,
 																onPressed: (settings.catalogGridModeTextLinesLimit ?? 2) <= 1 ? null : () {
 																	setDialogState(() {
-																		settings.catalogGridModeTextLinesLimit = (settings.catalogGridModeTextLinesLimit ?? (settings.catalogGridHeight / (2 * 14 * MediaQuery.of(context).textScaleFactor)).round()) - 1;
+																		settings.catalogGridModeTextLinesLimit = (settings.catalogGridModeTextLinesLimit ?? (settings.catalogGridHeight / (2 * 14 * MediaQuery.textScaleFactorOf(context))).round()) - 1;
 																	});
 																},
 																child: const Icon(CupertinoIcons.minus)

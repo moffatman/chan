@@ -67,7 +67,7 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 	
 	@override
 	Widget build(BuildContext context) {
-		final screenSize = MediaQuery.of(context).size;
+		final screenSize = MediaQuery.sizeOf(context);
 		lastSize ??= screenSize;
 		if (screenSize != lastSize) {
 			// window was resized

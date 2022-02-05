@@ -59,8 +59,8 @@ class _ContextMenuState extends State<ContextMenu> {
 		final iconSize = 24 * context.select<EffectiveSettings, double>((s) => s.textScale);
 		final child = GestureDetector(
 			onSecondaryTapUp: (event) {
-				final topOfUsableSpace = MediaQuery.of(context).size.height * 0.8;
-				final showOnRight = event.globalPosition.dx > (MediaQuery.of(context).size.width - 210);
+				final topOfUsableSpace = MediaQuery.sizeOf(context).height * 0.8;
+				final showOnRight = event.globalPosition.dx > (MediaQuery.sizeOf(context).width - 210);
 				_overlayEntry = OverlayEntry(
 					builder: (context) {
 						return Stack(
@@ -73,9 +73,9 @@ class _ContextMenuState extends State<ContextMenu> {
 									)
 								),
 								Positioned(
-									right: showOnRight ? MediaQuery.of(context).size.width - event.globalPosition.dx : null,
+									right: showOnRight ? MediaQuery.sizeOf(context).width - event.globalPosition.dx : null,
 									left: showOnRight ? null : event.globalPosition.dx,
-									bottom: (event.globalPosition.dy > topOfUsableSpace) ? MediaQuery.of(context).size.height - event.globalPosition.dy : null,
+									bottom: (event.globalPosition.dy > topOfUsableSpace) ? MediaQuery.sizeOf(context).height - event.globalPosition.dy : null,
 									top: (event.globalPosition.dy > topOfUsableSpace) ? null : event.globalPosition.dy,
 									width: 200,
 									child: Container(
