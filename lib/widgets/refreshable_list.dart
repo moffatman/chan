@@ -220,6 +220,8 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	@override
 	Widget build(BuildContext context) {
 		widget.controller?.reportPrimaryScrollController(PrimaryScrollController.of(context));
+		widget.controller?.topOffset = MediaQuery.of(context).padding.top;
+		widget.controller?.bottomOffset = MediaQuery.of(context).padding.bottom;
 		if (list != null) {
 			final pinnedValues = <T>[];
 			final values = <Tuple2<T, bool>>[];
@@ -706,8 +708,6 @@ class RefreshableListController<T extends Filterable> {
 		_items = items.map((item) => _RefreshableListItem(item)).toList();
 	}
 	void registerItem(int index, T item, BuildContext context) {
-		topOffset ??= MediaQuery.of(context).padding.top;
-		bottomOffset ??= MediaQuery.of(context).padding.bottom;
 		_items[index].item = item;
 		_items[index].context = context;
 		_tryCachingItem(index, _items[index]);
