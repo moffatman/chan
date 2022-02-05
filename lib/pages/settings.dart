@@ -750,7 +750,7 @@ class SettingsAppearancePage extends StatelessWidget {
 																canvasColor: CupertinoTheme.of(context).scaffoldBackgroundColor
 															),
 															child: Padding(
-																padding: MediaQuery.of(context).viewInsets,
+																padding: MediaQuery.of(context, MediaQueryAspect.viewInsets).viewInsets,
 																child: Material(
 																	color: Colors.transparent,
 																	child: ColorPicker(

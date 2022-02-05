@@ -35,7 +35,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	bool _popping = false;
 
 	bool isPhoneSoftwareKeyboard() {
-		 return MediaQuery.of(context).viewInsets.bottom > 100;
+		 return MediaQuery.of(context, MediaQueryAspect.viewInsets).viewInsets.bottom > 100;
 	}
 
 	@override
