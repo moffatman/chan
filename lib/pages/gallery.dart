@@ -129,8 +129,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	void didChangeDependencies() {
 		super.didChangeDependencies();
 		if (!firstControllerMade) {
-			final initialOffset = ((_thumbnailSize + 12) * (currentIndex + 0.5)) - (MediaQuery.of(context).size.width / 2);
-			final maxOffset = ((_thumbnailSize + 12) * widget.attachments.length) - MediaQuery.of(context).size.width;
+			final initialOffset = ((_thumbnailSize + 12) * (currentIndex + 0.5)) - (MediaQuery.of(context, MediaQueryAspect.width).size.width / 2);
+			final maxOffset = ((_thumbnailSize + 12) * widget.attachments.length) - MediaQuery.of(context, MediaQueryAspect.width).size.width;
 			if (maxOffset > 0) {
 				thumbnailScrollController = ScrollController(initialScrollOffset: initialOffset.clamp(0, maxOffset));
 			}
@@ -236,7 +236,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	}
 
 	bool _rotationAppropriate(Attachment attachment) {
-		final displayIsLandscape = MediaQuery.of(context).size.width > MediaQuery.of(context).size.height;
+		final displayIsLandscape = MediaQuery.of(context, MediaQueryAspect.width).size.width > MediaQuery.of(context, MediaQueryAspect.height).size.height;
 		return attachment.isLandscape != null && displayIsLandscape != attachment.isLandscape;
 	}
 
@@ -764,7 +764,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														alignment: Alignment.bottomLeft,
 														child: Container(
 															margin: showChrome ? EdgeInsets.only(
-																bottom: MediaQuery.of(context).size.height * 0.2 + 16 - (currentController.videoPlayerController == null ? 44 : 0),
+																bottom: MediaQuery.of(context, MediaQueryAspect.height).size.height * 0.2 + 16 - (currentController.videoPlayerController == null ? 44 : 0),
 																left: 16
 															) : const EdgeInsets.all(16),
 															padding: const EdgeInsets.all(8),
@@ -792,7 +792,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														child: DraggableScrollableSheet(
 															snap: true,
 															initialChildSize: 0.20,
-															maxChildSize: 1 - ((kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top) / MediaQuery.of(context).size.height),
+															maxChildSize: 1 - ((kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top) / MediaQuery.of(context, MediaQueryAspect.height).size.height),
 															minChildSize: 0.20,
 															builder: (context, controller) {
 																if (scrollSheetChild == null || controller != scrollSheetController) {
