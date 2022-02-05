@@ -694,8 +694,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final isInTabletLayout = MediaQuery.of(context).size.width > 700;
-		final hideTabletLayoutLabels = MediaQuery.of(context).size.height < 600;
+		final isInTabletLayout = MediaQuery.of(context, MediaQueryAspect.width).size.width > 700;
+		final hideTabletLayoutLabels = MediaQuery.of(context, MediaQueryAspect.height).size.height < 600;
 		if (!initialized) {
 			if (boardFetchErrorMessage != null) {
 				return Center(
@@ -737,7 +737,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									child: Row(
 										children: [
 											Container(
-												padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+												padding: EdgeInsets.only(top: MediaQuery.of(context, MediaQueryAspect.padding).padding.top),
 												width: 85,
 												child: Column(
 													children: [

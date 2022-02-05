@@ -71,20 +71,20 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 					final childTop = childBox.localToGlobal(Offset.zero).dy;
 					final childBottom = childBox.localToGlobal(Offset(0, childBox.size.height)).dy;
 					final childCenterHorizontal = childBox.localToGlobal(Offset(childBox.size.width / 2, 0)).dx;
-					final topOfUsableSpace = MediaQuery.of(context).size.height / 2;
+					final topOfUsableSpace = MediaQuery.of(context, MediaQueryAspect.height).size.height / 2;
 					final left = childBox.localToGlobal(Offset.zero).dx;
 					final cblg = childBox.localToGlobal(Offset(childBox.size.width, 0)).dx;
 					_entry = OverlayEntry(
 						builder: (context) {
-							final showOnRight = childCenterHorizontal > (MediaQuery.of(context).size.width / 2);
+							final showOnRight = childCenterHorizontal > (MediaQuery.of(context, MediaQueryAspect.width).size.width / 2);
 							return Positioned(
-								right: showOnRight ? (MediaQuery.of(context).size.width - cblg) : null,
+								right: showOnRight ? (MediaQuery.of(context, MediaQueryAspect.width).size.width - cblg) : null,
 								left: showOnRight ? null : left,
-								bottom: (childTop > topOfUsableSpace) ? MediaQuery.of(context).size.height - childTop : null,
+								bottom: (childTop > topOfUsableSpace) ? MediaQuery.of(context, MediaQueryAspect.height).size.height - childTop : null,
 								top: (childTop > topOfUsableSpace) ? null : childBottom,
 								child: ConstrainedBox(
 									constraints: BoxConstraints(
-										maxWidth: MediaQuery.of(context).size.width / 2
+										maxWidth: MediaQuery.of(context, MediaQueryAspect.width).size.width / 2
 									),
 									child: widget.popupBuilder?.call(_value) ?? widget.popup
 								)

@@ -505,7 +505,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																							margin: EdgeInsets.only(bottom: 16, right: whiteCount > 0 ? 0 : 16),
 																							child: Container(
 																								constraints: BoxConstraints(
-																									minWidth: 24 * MediaQuery.of(context).textScaleFactor
+																									minWidth: 24 * MediaQuery.of(context, MediaQueryAspect.textScaleFactor).textScaleFactor
 																								),
 																								child: Text(
 																									greyCount.toString(),
@@ -525,7 +525,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																							margin: const EdgeInsets.only(bottom: 16, right: 16),
 																							child: Container(
 																								constraints: BoxConstraints(
-																									minWidth: 24 * MediaQuery.of(context).textScaleFactor
+																									minWidth: 24 * MediaQuery.of(context, MediaQueryAspect.textScaleFactor).textScaleFactor
 																								),
 																								child: Text(
 																									whiteCount.toString(),
