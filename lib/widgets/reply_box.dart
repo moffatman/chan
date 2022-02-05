@@ -241,7 +241,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		return await Navigator.of(context).push<Future<File>>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
 				child: Container(
-					width: MediaQuery.of(context).size.width,
+					width: MediaQuery.of(context, MediaQueryAspect.width).size.width,
 					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 					padding: const EdgeInsets.all(16),
 					child: StatefulBuilder(
@@ -1108,7 +1108,7 @@ class ReplyBoxState extends State<ReplyBox> {
 								behavior: HitTestBehavior.opaque,
 								onPanUpdate: (event) {
 									setState(() {
-										settings.replyBoxHeightOffset = min(MediaQuery.of(context).size.height / 2, max(0, settings.replyBoxHeightOffset - event.delta.dy));
+										settings.replyBoxHeightOffset = min(MediaQuery.of(context, MediaQueryAspect.height).size.height / 2, max(0, settings.replyBoxHeightOffset - event.delta.dy));
 									});
 								},
 								onPanEnd: (event) {
