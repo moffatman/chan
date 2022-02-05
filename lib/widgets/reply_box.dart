@@ -500,7 +500,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		return await Navigator.of(context).push<Future<File>>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
 				child: Container(
-					width: MediaQuery.of(context).size.width,
+					width: MediaQuery.of(context, MediaQueryAspect.width).size.width,
 					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 					padding: const EdgeInsets.all(16),
 					child: StatefulBuilder(
@@ -934,7 +934,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		final pickedEmote = await Navigator.of(context).push<ImageboardEmote>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
 				child: Container(
-					width: MediaQuery.of(context).size.width,
+					width: MediaQuery.of(context, MediaQueryAspect.width).size.width,
 					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 					padding: const EdgeInsets.all(16),
 					child: StatefulBuilder(
@@ -986,7 +986,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		final pickedFlag = await Navigator.of(context).push<ImageboardBoardFlag>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
 				child: Container(
-					width: MediaQuery.of(context).size.width,
+					width: MediaQuery.of(context, MediaQueryAspect.width).size.width,
 					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 					padding: const EdgeInsets.all(16),
 					child: Column(
@@ -1630,7 +1630,7 @@ class ReplyBoxState extends State<ReplyBox> {
 											_willHideOnPanEnd = ((WidgetsBinding.instance.window.physicalSize.height / r) - event.globalPosition.dy) < (WidgetsBinding.instance.window.viewInsets.bottom / r);
 											if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= 0)) {
 												// touch not above keyboard
-												settings.replyBoxHeightOffset = min(MediaQuery.of(context).size.height / 2, max(0, settings.replyBoxHeightOffset - event.delta.dy));
+												settings.replyBoxHeightOffset = min(MediaQuery.of(context, MediaQueryAspect.height).size.height / 2, max(0, settings.replyBoxHeightOffset - event.delta.dy));
 											}
 										});
 									},

@@ -265,7 +265,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		onePane = MediaQuery.of(context).size.width < settings.twoPaneBreakpoint;
+		onePane = MediaQuery.of(context, MediaQueryAspect.width).size.width < settings.twoPaneBreakpoint;
 		final masterNavigator = Provider.value(
 			value: masterKey,
 			child: ClipRect(
