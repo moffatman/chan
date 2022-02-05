@@ -672,13 +672,13 @@ class AttachmentViewer extends StatelessWidget {
 			else {
 				double autozoomScale = 2.0;
 				if (attachment.width != null && attachment.height != null) {
-					double screenAspectRatio = MediaQuery.of(context).size.width / MediaQuery.of(context).size.height;
+					double screenAspectRatio = MediaQuery.of(context, MediaQueryAspect.width).size.width / MediaQuery.of(context, MediaQueryAspect.height).size.height;
 					double attachmentAspectRatio = attachment.width! / attachment.height!;
 					double fillZoomScale = screenAspectRatio / attachmentAspectRatio;
 					autozoomScale = max(autozoomScale, max(fillZoomScale, 1 / fillZoomScale));
 				}
 				autozoomScale = min(autozoomScale, 5);
-				final center = Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2);
+				final center = Offset(MediaQuery.of(context, MediaQueryAspect.width).size.width / 2, MediaQuery.of(context, MediaQueryAspect.height).size.height / 2);
 				state.gestureDetails = GestureDetails(
 					offset: (state.pointerDownPosition! * autozoomScale - center).scale(-1, -1),
 					totalScale: autozoomScale,
@@ -805,7 +805,7 @@ class AttachmentViewer extends StatelessWidget {
 			onDoubleTapDrag: (details) {
 				final state = controller.gestureKey.currentState!;
 				controller._gestureDetailsOnDoubleTapDragStart ??= state.gestureDetails;
-				final screenCenter = Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2);
+				final screenCenter = Offset(MediaQuery.of(context, MediaQueryAspect.width).size.width / 2, MediaQuery.of(context, MediaQueryAspect.height).size.height / 2);
 				Offset centerTarget = screenCenter;
 				centerTarget = (centerTarget - controller._gestureDetailsOnDoubleTapDragStart!.offset!) / controller._gestureDetailsOnDoubleTapDragStart!.totalScale!;
 				final scale = max(1.0, min(5.0, state.gestureDetails!.totalScale! * (1 +  (0.005 * details.localDelta.dy))));
@@ -932,7 +932,7 @@ class AttachmentViewer extends StatelessWidget {
 						else if (controller.videoPlayerController != null) GestureDetector(
 							behavior: HitTestBehavior.translucent,
 							onLongPressStart: (x) => controller._onLongPressStart(),
-							onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.of(context).size.width / 2)),
+							onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.of(context, MediaQueryAspect.width).size.width / 2)),
 							onLongPressEnd: (x) => controller._onLongPressEnd(),
 							child: Center(
 								child: RotatedBox(

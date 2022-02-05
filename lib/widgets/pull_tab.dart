@@ -65,8 +65,8 @@ class _PullTabState extends State<PullTab> {
 		..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
 	}
 
-	double get width => context.findRenderObject()?.paintBounds.width ?? MediaQuery.of(context).size.width;
-	double get height => context.findRenderObject()?.paintBounds.height ?? MediaQuery.of(context).size.height;
+	double get width => context.findRenderObject()?.paintBounds.width ?? MediaQuery.of(context, MediaQueryAspect.width).size.width;
+	double get height => context.findRenderObject()?.paintBounds.height ?? MediaQuery.of(context, MediaQueryAspect.height).size.height;
 
 	bool get disabled => widget.tab == null;
 	bool get rtl => widget.position == PullTabPosition.left;
