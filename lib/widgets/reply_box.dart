@@ -221,7 +221,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		return await Navigator.of(context).push<Future<File>>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
 				child: Container(
-					width: MediaQuery.of(context).size.width,
+					width: MediaQuery.of(context, MediaQueryAspect.width).size.width,
 					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 					padding: const EdgeInsets.all(16),
 					child: StatefulBuilder(
