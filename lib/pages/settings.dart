@@ -750,7 +750,7 @@ class SettingsAppearancePage extends StatelessWidget {
 																canvasColor: CupertinoTheme.of(context).scaffoldBackgroundColor
 															),
 															child: Padding(
-																padding: MediaQuery.of(context).viewInsets,
+																padding: MediaQuery.of(context, MediaQueryAspect.viewInsets).viewInsets,
 																child: Material(
 																	color: Colors.transparent,
 																	child: ColorPicker(
@@ -1185,7 +1185,7 @@ class SettingsAppearancePage extends StatelessWidget {
 																padding: EdgeInsets.zero,
 																onPressed: (settings.catalogGridModeTextLinesLimit ?? 2) <= 1 ? null : () {
 																	setDialogState(() {
-																		settings.catalogGridModeTextLinesLimit = (settings.catalogGridModeTextLinesLimit ?? (settings.catalogGridHeight / (2 * 14 * MediaQuery.of(context).textScaleFactor)).round()) - 1;
+																		settings.catalogGridModeTextLinesLimit = (settings.catalogGridModeTextLinesLimit ?? (settings.catalogGridHeight / (2 * 14 * MediaQuery.of(context, MediaQueryAspect.textScaleFactor).textScaleFactor)).round()) - 1;
 																	});
 																},
 																child: const Icon(CupertinoIcons.minus)

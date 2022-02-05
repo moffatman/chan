@@ -711,7 +711,7 @@ class EffectiveSettings extends ChangeNotifier {
 					fontFamily: '.SF Pro Text',
 					fontSize: 17.0,
 					letterSpacing: -0.41,
-					fontWeight: MediaQuery.of(context).boldText ? FontWeight.w500 : null,
+					fontWeight: MediaQuery.of(context, MediaQueryAspect.boldText).boldText ? FontWeight.w500 : null,
 					color: lightTheme.primaryColor
 				),
 				actionTextStyle: TextStyle(color: lightTheme.secondaryColor),
@@ -730,7 +730,7 @@ class EffectiveSettings extends ChangeNotifier {
 					fontFamily: '.SF Pro Text',
 					fontSize: 17.0,
 					letterSpacing: -0.41,
-					fontWeight: MediaQuery.of(context).boldText ? FontWeight.w500 : null,
+					fontWeight: MediaQuery.of(context, MediaQueryAspect.boldText).boldText ? FontWeight.w500 : null,
 					color: darkTheme.primaryColor
 				),
 				actionTextStyle: TextStyle(color: darkTheme.secondaryColor),

@@ -907,7 +907,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 										margin: EdgeInsets.only(bottom: 16, right: _whiteCount > 0 ? 0 : 16),
 										child: Container(
 											constraints: BoxConstraints(
-												minWidth: 24 * MediaQuery.of(context).textScaleFactor
+												minWidth: 24 * MediaQuery.of(context, MediaQueryAspect.textScaleFactor).textScaleFactor
 											),
 											child: Text(
 												_greyCount.toString(),
@@ -927,7 +927,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 										margin: const EdgeInsets.only(bottom: 16, right: 16),
 										child: Container(
 											constraints: BoxConstraints(
-												minWidth: 24 * MediaQuery.of(context).textScaleFactor
+												minWidth: 24 * MediaQuery.of(context, MediaQueryAspect.textScaleFactor).textScaleFactor
 											),
 											child: Text(
 												_whiteCount.toString(),
