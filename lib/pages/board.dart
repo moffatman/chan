@@ -634,7 +634,7 @@ class _BoardPageState extends State<BoardPage> {
 											imageboardKey: null,
 											imageboard: imageboard!,
 											child: Padding(
-												padding: MediaQuery.of(ctx).viewInsets,
+												padding: MediaQuery.of(ctx, MediaQueryAspect.viewInsets).viewInsets,
 												child: Container(
 													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 													child: ReplyBox(

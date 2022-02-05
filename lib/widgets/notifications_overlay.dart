@@ -141,7 +141,7 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 				if (widget.onePane) ...shown.reversed.map((notification) => Align(
 					alignment: Alignment.topCenter,
 					child: Padding(
-						padding: EdgeInsets.only(top: 44 + MediaQuery.of(context).padding.top),
+						padding: EdgeInsets.only(top: 44 + MediaQuery.of(context, MediaQueryAspect.padding).padding.top),
 						child: TopNotification(
 							notification: notification,
 							onTap: () => _notificationTapped(notification),

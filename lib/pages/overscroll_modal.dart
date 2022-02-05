@@ -190,7 +190,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 														),
 														child: SafeArea(
 															child: Padding(
-																padding: MediaQuery.of(context).viewInsets,
+																padding: MediaQuery.of(context, MediaQueryAspect.viewInsets).viewInsets,
 																child: Center(
 																	key: _scrollKey,
 																	child: Opacity(

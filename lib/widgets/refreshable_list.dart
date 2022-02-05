@@ -669,8 +669,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	@override
 	Widget build(BuildContext context) {
 		widget.controller?.reportPrimaryScrollController(PrimaryScrollController.of(context));
-		widget.controller?.topOffset = MediaQuery.of(context).padding.top;
-		widget.controller?.bottomOffset = MediaQuery.of(context).padding.bottom;
+		widget.controller?.topOffset = MediaQuery.of(context, MediaQueryAspect.padding).padding.top;
+		widget.controller?.bottomOffset = MediaQuery.of(context, MediaQueryAspect.padding).padding.bottom;
 		if (sortedList != null) {
 			final pinnedValues = <RefreshableListItem<T>>[];
 			List<RefreshableListItem<T>> values = [];
