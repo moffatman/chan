@@ -246,7 +246,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							_popping = true;
 							Navigator.pop(context);
 						}
-						else {
+						else if (scrollController.position.isScrollingNotifier.value == true) {
 							context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus = false;
 						}
 					}
