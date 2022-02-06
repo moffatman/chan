@@ -268,7 +268,9 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	void onRotationCompleted() {
-		_rotationCompleter?.complete();
+		if (!(_rotationCompleter?.isCompleted ?? false)) {
+			_rotationCompleter?.complete();
+		}
 	}
 
 	void onCacheCompleted(File file) {
@@ -430,6 +432,11 @@ class AttachmentViewer extends StatelessWidget {
 				quarterTurns: controller.quarterTurns,
 				onLoaded: controller.onRotationCompleted
 			);
+			image.obtainCacheStatus(configuration: createLocalImageConfiguration(context)).then((status) {
+				if (status?.keepAlive == true) {
+					controller.onRotationCompleted();
+				}
+			});
 		}
 		_buildChild(bool useRealGestureKey) => ExtendedImage(
 			image: image,
