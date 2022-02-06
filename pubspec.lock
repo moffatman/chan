@@ -21,7 +21,7 @@ packages:
       name: archive
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.1.9"
+    version: "3.1.11"
   args:
     dependency: transitive
     description:
@@ -262,7 +262,7 @@ packages:
     description:
       path: "flutter/flutter"
       ref: full_gpl_temp
-      resolved-ref: "24316bbe9d8a3e1fbeee6e2d73696b500abad041"
+      resolved-ref: b6ac3fa6ff5da27bc802c91782af47a1152b58ea
       url: "https://github.com/moffatman/ffmpeg-kit.git"
     source: git
     version: "4.5.1"
@@ -340,7 +340,7 @@ packages:
       name: flutter_native_splash
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.3.3"
+    version: "2.0.1+1"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -380,7 +380,7 @@ packages:
       name: google_fonts
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0"
+    version: "2.3.1"
   graphs:
     dependency: transitive
     description:
@@ -485,7 +485,7 @@ packages:
       name: image_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.4+5"
+    version: "0.8.4+6"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -966,7 +966,21 @@ packages:
       name: video_player
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.16"
+    version: "2.2.18"
+  video_player_android:
+    dependency: transitive
+    description:
+      name: video_player_android
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.2.17"
+  video_player_avfoundation:
+    dependency: transitive
+    description:
+      name: video_player_avfoundation
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.2.18"
   video_player_platform_interface:
     dependency: transitive
     description:
@@ -1036,14 +1050,14 @@ packages:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.8"
+    version: "2.3.10"
   xdg_directories:
     dependency: transitive
     description:
       name: xdg_directories
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.0"
+    version: "0.2.0+1"
   xml:
     dependency: transitive
     description:
@@ -1060,4 +1074,4 @@ packages:
     version: "3.1.0"
 sdks:
   dart: ">=2.16.0-100.0.dev <3.0.0"
-  flutter: ">=2.5.0"
+  flutter: ">=2.10.0-0"
