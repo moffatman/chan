@@ -336,41 +336,44 @@ class PostBoardLink extends PostSpan {
 class PostCodeSpan extends PostSpan {
 	final String text;
 	final List<TextSpan> _spans = [];
+	bool _initialized = false;
 
-	PostCodeSpan(this.text) {
-		const theme = atomOneDarkReasonableTheme;
-		final nodes = highlight.parse(text.replaceAll('\t', ' ' * 4), autoDetection: true).nodes!;
-
-		List<TextSpan> currentSpans = _spans;
-		List<List<TextSpan>> stack = [];
-
-		_traverse(Node node) {
-			if (node.value != null) {
-				currentSpans.add(node.className == null
-						? TextSpan(text: node.value)
-						: TextSpan(text: node.value, style: theme[node.className!]));
-			} else if (node.children != null) {
-				List<TextSpan> tmp = [];
-				currentSpans.add(TextSpan(children: tmp, style: theme[node.className!]));
-				stack.add(currentSpans);
-				currentSpans = tmp;
-
-				for (final n in node.children!) {
-					_traverse(n);
-					if (n == node.children!.last) {
-						currentSpans = stack.isEmpty ? _spans : stack.removeLast();
-					}
-				}
-			}
-		}
-
-		for (var node in nodes) {
-			_traverse(node);
-		}
-	}
+	PostCodeSpan(this.text);
 
 	@override
 	build(context, options) {
+		if (!_initialized) {
+			const theme = atomOneDarkReasonableTheme;
+			final nodes = highlight.parse(text.replaceAll('\t', ' ' * 4), autoDetection: true).nodes!;
+
+			List<TextSpan> currentSpans = _spans;
+			List<List<TextSpan>> stack = [];
+
+			_traverse(Node node) {
+				if (node.value != null) {
+					currentSpans.add(node.className == null
+							? TextSpan(text: node.value)
+							: TextSpan(text: node.value, style: theme[node.className!]));
+				} else if (node.children != null) {
+					List<TextSpan> tmp = [];
+					currentSpans.add(TextSpan(children: tmp, style: theme[node.className!]));
+					stack.add(currentSpans);
+					currentSpans = tmp;
+
+					for (final n in node.children!) {
+						_traverse(n);
+						if (n == node.children!.last) {
+							currentSpans = stack.isEmpty ? _spans : stack.removeLast();
+						}
+					}
+				}
+			}
+
+			for (var node in nodes) {
+				_traverse(node);
+			}
+			_initialized = true;
+		}
 		final child = RichText(
 			text: TextSpan(
 				style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
