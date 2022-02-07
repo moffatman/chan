@@ -368,6 +368,8 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 																controller: _searchController,
 																focusNode: _searchFocusNode,
 																placeholder: widget.filterHint,
+																smartQuotesType: SmartQuotesType.disabled,
+																smartDashesType: SmartDashesType.disabled
 															)
 														),
 													),
