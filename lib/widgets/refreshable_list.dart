@@ -337,6 +337,8 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 																_searchFilter = SearchFilter(searchText.toLowerCase());
 															});
 														},
+														smartQuotesType: SmartQuotesType.disabled,
+														smartDashesType: SmartDashesType.disabled,
 														controller: _searchController,
 														focusNode: _searchFocusNode,
 														placeholder: widget.filterHint,
