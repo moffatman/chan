@@ -273,6 +273,8 @@ class _SearchComposePageState extends State<SearchComposePage> {
 														context.read<Persistence>().didUpdateRecentSearches();
 														widget.onSearchComposed(query);
 													},
+													smartQuotesType: SmartQuotesType.disabled,
+													smartDashesType: SmartDashesType.disabled,
 													onSuffixTap: () {
 														_controller.clear();
 														FocusManager.instance.primaryFocus!.unfocus();
