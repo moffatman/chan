@@ -971,6 +971,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 	@override
 	void initState() {
 		super.initState();
+		_updateStatus();
 	}
 
 	Future<void> _login() async {
