@@ -128,6 +128,9 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			}
 			setState(() {});
 		}
+		else if (!listEquals(oldWidget.filters, widget.filters)) {
+			setState(() {});
+		}
 	}
 
 	@override

@@ -66,6 +66,12 @@ class CustomFilter implements Filter {
 
 	@override
 	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadOnly: $threadOnly)';
+
+	@override
+	operator == (dynamic other) => other is CustomFilter && other.configuration == configuration;
+
+	@override
+	int get hashCode => configuration.hashCode;
 }
 
 class IDFilter implements Filter {
@@ -78,6 +84,12 @@ class IDFilter implements Filter {
 
 	@override
 	String toString() => 'IDFilter(ids: $ids)';
+
+	@override
+	operator == (dynamic other) => other is IDFilter && other.ids == ids;
+
+	@override
+	int get hashCode => ids.hashCode;
 }
 
 class SearchFilter implements Filter {
@@ -92,6 +104,12 @@ class SearchFilter implements Filter {
 
 	@override
 	String toString() => 'SearchFilter(text: $text)';
+
+	@override
+	operator == (dynamic other) => other is SearchFilter && other.text == text;
+
+	@override
+	int get hashCode => text.hashCode;
 }
 
 class FilterGroup implements Filter {
@@ -110,12 +128,24 @@ class FilterGroup implements Filter {
 
 	@override
 	String toString() => 'FilterGroup(filters: $filters)';
+
+	@override
+	operator == (dynamic other) => other is FilterGroup && other.filters == filters;
+
+	@override
+	int get hashCode => filters.hashCode;
 }
 
 class DummyFilter implements Filter {
 	const DummyFilter();
 	@override
 	FilterResult? filter(Filterable item) => null;
+
+	@override
+	operator == (dynamic other) => other is DummyFilter;
+
+	@override
+	int get hashCode => 0;
 }
 
 class FilterException implements Exception {

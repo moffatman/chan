@@ -249,12 +249,20 @@ class _BoardPageState extends State<BoardPage> {
 												if (browserState.isThreadHidden(thread.board, thread.id)) ContextMenuAction(
 													child: const Text('Unhide thread'),
 													trailingIcon: CupertinoIcons.eye_slash_fill,
-													onPressed: () => browserState.unHideThread(thread.board, thread.id)
+													onPressed: () {
+														browserState.unHideThread(thread.board, thread.id);
+														persistence.didUpdateBrowserState();
+														setState(() {});
+													}
 												)
 												else ContextMenuAction(
 													child: const Text('Hide thread'),
 													trailingIcon: CupertinoIcons.eye_slash,
-													onPressed: () => browserState.hideThread(thread.board, thread.id)
+													onPressed: () {
+														browserState.hideThread(thread.board, thread.id);
+														persistence.didUpdateBrowserState();
+														setState(() {});
+													}
 												)
 											],
 											maxHeight: 125,
