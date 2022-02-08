@@ -178,6 +178,9 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	}
 
 	Future<void> _animateToPage(int index, {int milliseconds = 200}) async {
+		if (currentController.gestureKey.currentState?.extendedImageSlidePageState?.isSliding ?? false) {
+			return;
+		}
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
 		if (context.read<EffectiveSettings>().autoloadAttachments) {
