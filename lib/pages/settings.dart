@@ -595,14 +595,14 @@ class SettingsPage extends StatelessWidget {
 												CupertinoButton(
 													child: const Icon(CupertinoIcons.minus),
 													onPressed: settings.interfaceScale <= 0.5 ? null : () {
-														settings.interfaceScale -= 0.1;
+														settings.interfaceScale -= 0.05;
 													}
 												),
 												Text('${(settings.interfaceScale * 100).round()}%'),
 												CupertinoButton(
 													child: const Icon(CupertinoIcons.plus),
 													onPressed: settings.interfaceScale >= 2.0 ? null : () {
-														settings.interfaceScale += 0.1;
+														settings.interfaceScale += 0.05;
 													}
 												),
 												const SizedBox(width: 16)
