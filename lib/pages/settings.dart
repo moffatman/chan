@@ -539,6 +539,16 @@ class SettingsPage extends StatelessWidget {
 																						onChanged: (d) => settings.showClockIconInCatalog = d
 																					)
 																				]
+																			),
+																			Row(
+																				children: [
+																					const Text('Show name'),
+																					const Spacer(),
+																					CupertinoSwitch(
+																						value: settings.showNameInCatalog,
+																						onChanged: (d) => settings.showNameInCatalog = d
+																					)
+																				]
 																			)
 																		]
 																	)

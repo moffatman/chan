@@ -341,11 +341,13 @@ class ThreadRow extends StatelessWidget {
 																	children: [
 																		TextSpan(
 																			children: [
-																				TextSpan(
-																					text: settings.filterProfanity(_thread.posts[0].name),
-																					style: const TextStyle(fontWeight: FontWeight.w600)
-																				),
-																				const TextSpan(text: ' '),
+																				if (settings.showNameInCatalog) ...[
+																					TextSpan(
+																						text: settings.filterProfanity(_thread.posts[0].name),
+																						style: const TextStyle(fontWeight: FontWeight.w600)
+																					),
+																					const TextSpan(text: ' ')
+																				],
 																				if (_thread.flag != null) ...[
 																					FlagSpan(_thread.flag!),
 																					const TextSpan(text: ' '),

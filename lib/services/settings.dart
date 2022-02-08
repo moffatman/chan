@@ -187,7 +187,8 @@ class SavedSettings extends HiveObject {
 	List<String> embedRegexes;
 	@HiveField(30)
 	TristateSystemSetting supportMouse;
-	// @HiveField(31) could be bool
+  @HiveField(31)
+	bool showNameInCatalog;
 	@HiveField(32)
 	double interfaceScale;
 
@@ -222,6 +223,7 @@ class SavedSettings extends HiveObject {
 		bool? showClockIconInCatalog,
 		List<String>? embedRegexes,
 		TristateSystemSetting? supportMouse,
+		bool? showNameInCatalog,
 		double? interfaceScale,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
@@ -261,6 +263,7 @@ class SavedSettings extends HiveObject {
 		showClockIconInCatalog = showClockIconInCatalog ?? true,
 		embedRegexes = embedRegexes ?? [],
 		supportMouse = supportMouse ?? TristateSystemSetting.system,
+		showNameInCatalog = showNameInCatalog ?? true,
 		interfaceScale = interfaceScale ?? 1.0;
 }
 
@@ -513,6 +516,13 @@ class EffectiveSettings extends ChangeNotifier {
 	double get interfaceScale => _settings.interfaceScale;
 	set interfaceScale(double setting) {
 		_settings.interfaceScale = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showNameInCatalog => _settings.showNameInCatalog;
+	set showNameInCatalog(bool setting) {
+		_settings.showNameInCatalog = setting;
 		_settings.save();
 		notifyListeners();
 	}
