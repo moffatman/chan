@@ -248,37 +248,33 @@ class SettingsPage extends StatelessWidget {
 												settings.themeSetting = newValue;
 											}
 										),
-										...[
+										for (final theme in [
 											Tuple3('Light Theme Colors', settings.lightTheme, defaultLightTheme),
 											Tuple3('Dark Theme Colors', settings.darkTheme, defaultDarkTheme)
-										].map((theme) => Container(
-											margin: const EdgeInsets.only(top: 16),
-											padding: const EdgeInsets.only(bottom: 16),
-											decoration: BoxDecoration(
-												color: theme.item2.backgroundColor,
-												borderRadius: const BorderRadius.all(Radius.circular(8))
+										]) ... [
+											Padding(
+												padding: const EdgeInsets.only(top: 16, bottom: 16),
+												child: Text(theme.item1)
 											),
-											child: Column(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													Padding(
-														padding: const EdgeInsets.all(16),
-														child: Center(
-															child: Text(theme.item1, style: TextStyle(color: theme.item2.primaryColor))
-														)
-													),
-													Wrap(
-														alignment: WrapAlignment.center,
-														spacing: 16,
-														runSpacing: 16,
+											Container(
+												margin: const EdgeInsets.only(left: 16, right: 16),
+												decoration: BoxDecoration(
+													color: theme.item2.barColor,
+													borderRadius: const BorderRadius.all(Radius.circular(8))
+												),
+												child: SingleChildScrollView(
+													scrollDirection: Axis.horizontal,
+													child: Row(
 														children: <Tuple4<String, Color, ValueChanged<Color>, Color>>[
 															Tuple4('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c, theme.item3.primaryColor),
 															Tuple4('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c, theme.item3.secondaryColor),
 															Tuple4('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c, theme.item3.barColor),
-															Tuple4('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c, theme.item3.backgroundColor)
+															Tuple4('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c, theme.item3.backgroundColor),
+															Tuple4('Quote', theme.item2.quoteColor, (c) => theme.item2.quoteColor = c, theme.item3.quoteColor)
 														].map((color) => Column(
 															mainAxisSize: MainAxisSize.min,
 															children: [
+																const SizedBox(height: 16),
 																Text(color.item1, style: TextStyle(color: theme.item2.primaryColor)),
 																const SizedBox(height: 16),
 																GestureDetector(
@@ -326,7 +322,7 @@ class SettingsPage extends StatelessWidget {
 																	}
 																),
 																Padding(
-																	padding: const EdgeInsets.all(8),
+																	padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 16),
 																	child: CupertinoButton(
 																		padding: const EdgeInsets.all(8),
 																		color: theme.item2.primaryColor,
@@ -336,13 +332,13 @@ class SettingsPage extends StatelessWidget {
 																			settings.handleThemesAltered();
 																		}
 																	)
-																)
+																),
 															]
 														)).toList()
 													)
-												]
+												)
 											)
-										)),
+										],
 										const SizedBox(height: 16),
 										const Text('Automatically load attachments'),
 										const SizedBox(height: 16),

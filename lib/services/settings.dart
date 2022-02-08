@@ -110,6 +110,8 @@ class ColorAdapter extends TypeAdapter<Color> {
   }
 }
 
+const _defaultQuoteColor = Color.fromRGBO(120, 153, 34, 1);
+
 @HiveType(typeId: 25)
 class SavedTheme {
 	@HiveField(0)
@@ -120,12 +122,15 @@ class SavedTheme {
 	Color primaryColor;
 	@HiveField(3)
 	Color secondaryColor;
+	@HiveField(4, defaultValue: _defaultQuoteColor)
+	Color quoteColor;
 
 	SavedTheme({
 		required this.backgroundColor,
 		required this.barColor,
 		required this.primaryColor,
-		required this.secondaryColor
+		required this.secondaryColor,
+		this.quoteColor = _defaultQuoteColor
 	});
 }
 
@@ -301,7 +306,7 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.save();
 		notifyListeners();
 	}
-	Brightness get theme {
+	Brightness get whichTheme {
 		if (_settings.theme == TristateSystemSetting.b) {
 			return Brightness.dark;
 		}
@@ -432,6 +437,7 @@ class EffectiveSettings extends ChangeNotifier {
 	
 	SavedTheme get lightTheme => _settings.lightTheme;
 	SavedTheme get darkTheme => _settings.darkTheme;
+	SavedTheme get theme => whichTheme == Brightness.dark ? darkTheme : lightTheme;
 	void handleThemesAltered() {
 		_settings.save();
 		notifyListeners();

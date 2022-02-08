@@ -114,7 +114,7 @@ class _ChanAppState extends State<ChanApp> {
 								navActionTextStyle: TextStyle(color: settings.lightTheme.primaryColor)
 							)
 						);
-						if (settings.theme == Brightness.dark) {
+						if (settings.whichTheme == Brightness.dark) {
 							theme = CupertinoThemeData(
 								brightness: Brightness.dark,
 								scaffoldBackgroundColor: settings.darkTheme.backgroundColor,

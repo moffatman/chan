@@ -109,7 +109,7 @@ class PostQuoteSpan extends PostSpan {
 	InlineSpan build(context, options) {
 		return TextSpan(
 			children: [child.build(context, options)],
-			style: options.baseTextStyle.copyWith(color: options.overrideTextColor ?? const Color.fromRGBO(120, 153, 34, 1)),
+			style: options.baseTextStyle.copyWith(color: options.overrideTextColor ?? context.read<EffectiveSettings>().theme.quoteColor),
 			recognizer: options.recognizer
 		);
 	}
