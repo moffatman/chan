@@ -18,7 +18,7 @@ class _CircularLoadingIndicatorPainter extends CustomPainter {
 	void paint(Canvas canvas, Size size) {
 		final startAngle = (startValue % 1) * 2 * pi;
 		double endAngle = (endValue % 1) * 2 * pi;
-		if (startAngle > endAngle) {
+		if (startAngle > endAngle || (endValue == 1.0 && startValue == 0.0)) {
 			endAngle += 2 * pi;
 		}
 
@@ -211,7 +211,7 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 				builder: (context, child) => CustomPaint(
 					size: const Size(50, 50),
 					painter: _CircularLoadingIndicatorPainter(
-						startValue: _startValueController.value,
+						startValue: _startValueController.value % 1,
 						endValue: _endValueController.value,
 						color: widget.color ?? CupertinoTheme.of(context).primaryColor
 					)

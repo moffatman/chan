@@ -249,7 +249,7 @@ class MediaConversion {
 					FFmpegKitConfig.enableStatisticsCallback((stats) {
 						if (stats.getSessionId() == _session?.getSessionId()) {
 							if (scan.duration != null && passedFirstEvent && outputDurationInMilliseconds != null) {
-								progress.value = stats.getTime() / outputDurationInMilliseconds;
+								progress.value = (stats.getTime() / outputDurationInMilliseconds).clamp(0, 1);
 							}
 							passedFirstEvent = true;
 						}
