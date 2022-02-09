@@ -94,7 +94,7 @@ class Site4Chan extends ImageboardSite {
 		for (final node in doc.body!.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
-					elements.add(PostTextSpan('\n'));
+					elements.add(PostLineBreakSpan());
 				}
 				else if (node.localName == 'tex') {
 					elements.add(PostTeXSpan(node.innerHtml));

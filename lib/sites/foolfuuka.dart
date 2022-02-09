@@ -46,7 +46,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return null;
 	}
 	static PostSpan makeSpan(String board, int threadId, Map<String, int> linkedPostThreadIds, String data) {
-		final doc = parse(data.replaceAll('<wbr>', ''));
+		final doc = parse(data.replaceAll('<wbr>', '').replaceAll('\n', ''));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
 		processQuotelink(dom.Element quoteLink) {
@@ -86,7 +86,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}
 		for (final node in doc.body!.nodes) {
 			if (node is dom.Element) {
-				if (node.localName == 'span') {
+				if (node.localName == 'br') {
+					elements.add(PostLineBreakSpan());
+				}
+				else if (node.localName == 'span') {
 					if (node.classes.contains('greentext')) {
 						final quoteLink = node.querySelector('a.backlink');
 						if (quoteLink != null) {

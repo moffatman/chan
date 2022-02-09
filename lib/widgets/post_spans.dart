@@ -24,6 +24,7 @@ import 'package:provider/provider.dart';
 import 'package:highlight/highlight.dart';
 import 'package:flutter_highlight/themes/atom-one-dark-reasonable.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tuple/tuple.dart';
 
 class PostSpanRenderOptions {
 	final GestureRecognizer? recognizer;
@@ -36,6 +37,7 @@ class PostSpanRenderOptions {
 	final bool avoidBuggyClippers;
 	final PointerEnterEventListener? onEnter;
 	final PointerExitEventListener? onExit;
+	final bool ownLine;
 	PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -46,9 +48,26 @@ class PostSpanRenderOptions {
 		this.showRawSource = false,
 		this.avoidBuggyClippers = false,
 		this.onEnter,
-		this.onExit
+		this.onExit,
+		this.ownLine = false
 	});
 	GestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
+
+	PostSpanRenderOptions copyWith({
+		bool? ownLine
+	}) => PostSpanRenderOptions(
+		recognizer: recognizer,
+		overrideRecognizer: overrideRecognizer,
+		overrideTextColor: overrideTextColor,
+		showCrossThreadLabel: showCrossThreadLabel,
+		addExpandingPosts: addExpandingPosts,
+		baseTextStyle: baseTextStyle,
+		showRawSource: showRawSource,
+		avoidBuggyClippers: avoidBuggyClippers,
+		onEnter: onEnter,
+		onExit: onExit,
+		ownLine: ownLine ?? this.ownLine
+	);
 }
 
 abstract class PostSpan {
@@ -70,8 +89,17 @@ class PostNodeSpan extends PostSpan {
 
 	@override
 	InlineSpan build(context, options) {
+		final _children = <InlineSpan>[];
+		for (int i = 0; i < children.length; i++) {
+			if ((i == 0 || children[i - 1] is PostLineBreakSpan) && (i == children.length - 1 || children[i + 1] is PostLineBreakSpan)) {
+				_children.add(children[i].build(context, options.copyWith(ownLine: true)));
+			}
+			else {
+				_children.add(children[i].build(context, options));
+			}
+		}
 		return TextSpan(
-			children: children.map((child) => child.build(context, options)).toList()
+			children: _children
 		);
 	}
 
@@ -101,6 +129,11 @@ class PostTextSpan extends PostSpan {
 		return text;
 	}
 }
+
+class PostLineBreakSpan extends PostTextSpan {
+	PostLineBreakSpan() : super('\n');
+}
+
 class PostQuoteSpan extends PostSpan {
 	final PostSpan child;
 	PostQuoteSpan(this.child);
@@ -142,7 +175,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		return [];
 	}
-	InlineSpan _buildCrossThreadLink(BuildContext context, PostSpanRenderOptions options) {
+	Tuple2<InlineSpan, GestureRecognizer> _buildCrossThreadLink(BuildContext context, PostSpanRenderOptions options) {
 		String text = '>>';
 		if (context.watch<PostSpanZoneData>().thread.board != board) {
 			text += '/$board/';
@@ -151,28 +184,29 @@ class PostQuoteLinkSpan extends PostSpan {
 		if (options.showCrossThreadLabel) {
 			text += ' (Cross-thread)';
 		}
-		return TextSpan(
+		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
+			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
+				builder: (ctx) => ThreadPage(
+					thread: ThreadIdentifier(
+						board: board,
+						id: threadId!
+					),
+					initialPostId: postId,
+					initiallyUseArchive: dead,
+					boardSemanticId: -1
+				)
+			));
+		});
+		return Tuple2(TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? CupertinoTheme.of(context).textTheme.actionTextStyle.color,
 				decoration: TextDecoration.underline
 			),
-			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
-				(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
-					builder: (ctx) => ThreadPage(
-						thread: ThreadIdentifier(
-							board: board,
-							id: threadId!
-						),
-						initialPostId: postId,
-						initiallyUseArchive: dead,
-						boardSemanticId: -1
-					)
-				));
-			})
-		);
+			recognizer: recognizer
+		), recognizer);
 	}
-	InlineSpan _buildDeadLink(BuildContext context, PostSpanRenderOptions options) {
+	Tuple2<InlineSpan, GestureRecognizer> _buildDeadLink(BuildContext context, PostSpanRenderOptions options) {
 		final zone = context.watch<PostSpanZoneData>();
 		String text = '>>$postId';
 		if (zone.postFromArchiveError(postId) != null) {
@@ -184,18 +218,19 @@ class PostQuoteLinkSpan extends PostSpan {
 		else {
 			text += ' (Dead)';
 		}
-		return TextSpan(
+		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
+			if (!zone.isLoadingPostFromArchive(postId)) zone.loadPostFromArchive(postId);
+		});
+		return Tuple2(TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? CupertinoTheme.of(context).textTheme.actionTextStyle.color,
 				decoration: TextDecoration.underline
 			),
-			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
-				if (!zone.isLoadingPostFromArchive(postId)) zone.loadPostFromArchive(postId);
-			})
-		);
+			recognizer: recognizer
+		), recognizer);
 	}
-	InlineSpan _buildNormalLink(BuildContext context, PostSpanRenderOptions options) {
+	Tuple2<InlineSpan, GestureRecognizer> _buildNormalLink(BuildContext context, PostSpanRenderOptions options) {
 		final zone = context.watch<PostSpanZoneData>();
 		String text = '>>$postId';
 		if (postId == threadId) {
@@ -206,33 +241,34 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		final bool expandedImmediatelyAbove = zone.shouldExpandPost(postId) || zone.stackIds.length > 1 && zone.stackIds.elementAt(zone.stackIds.length - 2) == postId;
 		final bool expandedSomewhereAbove = expandedImmediatelyAbove || zone.stackIds.contains(postId);
-		return TextSpan(
+		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
+			if (!zone.stackIds.contains(postId)) {
+				if (!context.read<EffectiveSettings>().supportMouse.value) {
+					WeakNavigator.push(context, PostsPage(
+							zone: zone.childZoneFor(postId),
+							postsIdsToShow: [postId],
+							postIdForBackground: zone.stackIds.last,
+						)
+					);
+				}
+				else {
+					zone.toggleExpansionOfPost(postId);
+				}
+			}
+		});
+		return Tuple2(TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? (expandedImmediatelyAbove ? CupertinoTheme.of(context).textTheme.actionTextStyle.color?.shiftSaturation(-0.3) : CupertinoTheme.of(context).textTheme.actionTextStyle.color),
 				decoration: TextDecoration.underline,
 				decorationStyle: expandedSomewhereAbove ? TextDecorationStyle.dashed : null
 			),
-			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
-				if (!zone.stackIds.contains(postId)) {
-					if (!context.read<EffectiveSettings>().supportMouse.value) {
-						WeakNavigator.push(context, PostsPage(
-								zone: zone.childZoneFor(postId),
-								postsIdsToShow: [postId],
-								postIdForBackground: zone.stackIds.last,
-							)
-						);
-					}
-					else {
-						zone.toggleExpansionOfPost(postId);
-					}
-				}
-			}),
+			recognizer: recognizer,
 			onEnter: options.onEnter,
 			onExit: options.onExit
-		);
+		), recognizer);
 	}
-	_build(BuildContext context, PostSpanRenderOptions options) {
+	Tuple2<InlineSpan, GestureRecognizer> _build(BuildContext context, PostSpanRenderOptions options) {
 		final zone = context.watch<PostSpanZoneData>();
 		if (dead && threadId == null) {
 			// Dead links do not know their thread
@@ -256,44 +292,58 @@ class PostQuoteLinkSpan extends PostSpan {
 				return span;
 			}
 			else {
-				return WidgetSpan(
-					child: HoverPopup(
-						style: HoverPopupStyle.floating,
-						anchor: const Offset(30, -80),
-						child: Text.rich(
-							span,
-							textScaleFactor: 1
-						),
-						popup: ChangeNotifierProvider.value(
-							value: zone,
-							child: DecoratedBox(
-								decoration: BoxDecoration(
-									border: Border.all(color: CupertinoTheme.of(context).primaryColor)
-								),
-								position: DecorationPosition.foreground,
-								child: PostRow(
-									post: thisPostInThread.first,
-									shrinkWrap: true
-								)
+				final popup = HoverPopup(
+					style: HoverPopupStyle.floating,
+					anchor: const Offset(30, -80),
+					child: Text.rich(
+						span.item1,
+						textScaleFactor: 1
+					),
+					popup: ChangeNotifierProvider.value(
+						value: zone,
+						child: DecoratedBox(
+							decoration: BoxDecoration(
+								border: Border.all(color: CupertinoTheme.of(context).primaryColor)
+							),
+							position: DecorationPosition.foreground,
+							child: PostRow(
+								post: thisPostInThread.first,
+								shrinkWrap: true
 							)
 						)
 					)
 				);
+				return Tuple2(WidgetSpan(
+					child: options.ownLine ? Row(
+						children: [
+							Expanded(child: popup)
+						]
+					) : popup
+				), span.item2);
 			}
 		}
 	}
 	@override
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
+		final _span = _build(context, options);
+		final span = options.ownLine ? TextSpan(
+			children: [
+				_span.item1,
+				WidgetSpan(child: Row())
+			],
+			recognizer: _span.item2
+		) : _span.item1;
 		if (options.addExpandingPosts && (threadId == zone.thread.id && board == zone.thread.board)) {
 			return TextSpan(
 				children: [
-					_build(context, options),
+					span,
 					WidgetSpan(child: ExpandingPost(id: postId))
-			]);
+				]
+			);
 		}
 		else {
-			return _build(context, options);
+			return span;
 		}
 	}
 

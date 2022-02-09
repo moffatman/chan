@@ -47,7 +47,7 @@ class SiteLainchan extends ImageboardSite {
 		for (final node in doc.body!.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
-					elements.add(PostTextSpan('\n'));
+					elements.add(PostLineBreakSpan());
 				}
 				else if (node.localName == 'a' && node.attributes['href'] != null) {
 					final match = RegExp(r'^\/(\w+)\/res\/(\d+).html#(\d+)').firstMatch(node.attributes['href']!);

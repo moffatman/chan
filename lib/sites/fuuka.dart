@@ -29,11 +29,14 @@ class FuukaArchive extends ImageboardSiteArchive {
 	@override
 	final String name;
 	static PostSpan makeSpan(String board, int threadId, Map<String, int> linkedPostThreadIds, String data) {
-		final doc = parse(data.replaceAll('<br>', '\n'));
+		final doc = parse(data);
 		final List<PostSpan> elements = [];
 		for (final node in doc.body!.nodes) {
 			if (node is dom.Element) {
-				if (node.localName == 'span') {
+				if (node.localName == 'br') {
+					elements.add(PostLineBreakSpan());
+				}
+				else if (node.localName == 'span') {
 					if (node.classes.contains('unkfunc')) {
 						final match = _crossBoardLinkMatcher.firstMatch(node.innerHtml);
 						if (match != null) {
