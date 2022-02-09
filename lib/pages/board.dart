@@ -319,17 +319,32 @@ class _BoardPageState extends State<BoardPage> {
 													child: Row(
 														mainAxisSize: MainAxisSize.min,
 														children: [
-															Icon(CupertinoIcons.arrow_up_to_line, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
-															SizedBox(
-																width: 40,
-																child: Text(
-																	_listController.firstVisibleIndex.toString(),
-																	textAlign: TextAlign.center,
-																	style: TextStyle(
-																		color: CupertinoTheme.of(context).scaffoldBackgroundColor
+															if (_listController.firstVisibleItem?.currentPage != null) ...[
+																Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+																SizedBox(
+																	width: 25,
+																	child: Text(
+																		_listController.firstVisibleItem!.currentPage.toString(),
+																		textAlign: TextAlign.center,
+																		style: TextStyle(
+																			color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																		)
 																	)
 																)
-															)
+															]
+															else ...[
+																Icon(CupertinoIcons.arrow_up_to_line, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+																SizedBox(
+																	width: 40,
+																	child: Text(
+																		_listController.firstVisibleIndex.toString(),
+																		textAlign: TextAlign.center,
+																		style: TextStyle(
+																			color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																		)
+																	)
+																)
+															]
 														]
 													)
 												),
