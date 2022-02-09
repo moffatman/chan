@@ -305,53 +305,85 @@ class _BoardPageState extends State<BoardPage> {
 								),
 								StreamBuilder(
 									stream: _listController.slowScrollUpdates,
-									builder: (context, _) => (_listController.firstVisibleIndex <= 0) ? Container() : SafeArea(
-										child: Align(
-											alignment: Alignment.topRight,
-											child: GestureDetector(
-												child: Container(
-													decoration: BoxDecoration(
-														color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
-														borderRadius: const BorderRadius.all(Radius.circular(8))
-													),
-													padding: const EdgeInsets.all(8),
-													margin: const EdgeInsets.only(top: 16, right: 16),
-													child: Row(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															if (_listController.firstVisibleItem?.currentPage != null) ...[
-																Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
-																SizedBox(
-																	width: 25,
-																	child: Text(
-																		_listController.firstVisibleItem!.currentPage.toString(),
-																		textAlign: TextAlign.center,
-																		style: TextStyle(
-																			color: CupertinoTheme.of(context).scaffoldBackgroundColor
-																		)
-																	)
+									builder: (context, _) {
+										final topItem = _listController.firstVisibleItem;
+										_scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+										return (_listController.firstVisibleIndex <= 0) ? Container() : SafeArea(
+											child: Align(
+												alignment: Alignment.topRight,
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														GestureDetector(
+															onTap: _scrollToTop,
+															child: Container(
+																decoration: BoxDecoration(
+																	color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
+																	borderRadius: const BorderRadius.only(topLeft: Radius.circular(8), bottomLeft: Radius.circular(8))
+																),
+																padding: const EdgeInsets.all(8),
+																margin: const EdgeInsets.only(top: 16),
+																child: Icon(CupertinoIcons.arrow_up_to_line, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
+															)
+														),
+														GestureDetector(
+															onTap: () {
+																int pageToAnimateTo = topItem?.currentPage ?? _listController.firstVisibleIndex ~/ 15;
+																if (_listController.items.indexWhere((t) => t.currentPage == pageToAnimateTo) == _listController.firstVisibleIndex - 1) {
+																	pageToAnimateTo = max(pageToAnimateTo - 1, 1);
+																}
+																if (pageToAnimateTo == 1) {
+																	_scrollToTop();
+																}
+																else {
+																	_listController.animateTo((t) =>	t.currentPage == pageToAnimateTo, duration: const Duration(milliseconds: 200));
+																}
+															},
+															child: Container(
+																decoration: BoxDecoration(
+																	color: CupertinoTheme.of(context).primaryColor,
+																	borderRadius: const BorderRadius.only(topRight: Radius.circular(8), bottomRight: Radius.circular(8))
+																),
+																padding: const EdgeInsets.all(8),
+																margin: const EdgeInsets.only(top: 16, right: 16),
+																child: Row(
+																	mainAxisSize: MainAxisSize.min,
+																	children: [
+																		if (topItem?.currentPage != null) ...[
+																			Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+																			SizedBox(
+																				width: 25,
+																				child: Text(
+																					topItem!.currentPage.toString(),
+																					textAlign: TextAlign.center,
+																					style: TextStyle(
+																						color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																					)
+																				)
+																			)
+																		]
+																		else ...[
+																			Icon(CupertinoIcons.arrow_up_to_line, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+																			SizedBox(
+																				width: 40,
+																				child: Text(
+																					_listController.firstVisibleIndex.toString(),
+																					textAlign: TextAlign.center,
+																					style: TextStyle(
+																						color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																					)
+																				)
+																			)
+																		]
+																	]
 																)
-															]
-															else ...[
-																Icon(CupertinoIcons.arrow_up_to_line, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
-																SizedBox(
-																	width: 40,
-																	child: Text(
-																		_listController.firstVisibleIndex.toString(),
-																		textAlign: TextAlign.center,
-																		style: TextStyle(
-																			color: CupertinoTheme.of(context).scaffoldBackgroundColor
-																		)
-																	)
-																)
-															]
-														]
-													)
-												),
-												onTap: () => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease)
+															)
+														)
+													]
+												)
 											)
-										)
-									)
+										);
+									}
 								)
 							]
 						)
