@@ -27,7 +27,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tuple/tuple.dart';
 
 class PostSpanRenderOptions {
-	final GestureRecognizer? recognizer;
+	final TapGestureRecognizer? recognizer;
 	final bool overrideRecognizer;
 	final Color? overrideTextColor;
 	final bool showCrossThreadLabel;
@@ -51,7 +51,7 @@ class PostSpanRenderOptions {
 		this.onExit,
 		this.ownLine = false
 	});
-	GestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
+	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 
 	PostSpanRenderOptions copyWith({
 		bool? ownLine
@@ -175,7 +175,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		return [];
 	}
-	Tuple2<InlineSpan, GestureRecognizer> _buildCrossThreadLink(BuildContext context, PostSpanRenderOptions options) {
+	Tuple2<InlineSpan, TapGestureRecognizer> _buildCrossThreadLink(BuildContext context, PostSpanRenderOptions options) {
 		String text = '>>';
 		if (context.watch<PostSpanZoneData>().thread.board != board) {
 			text += '/$board/';
@@ -206,7 +206,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer
 		), recognizer);
 	}
-	Tuple2<InlineSpan, GestureRecognizer> _buildDeadLink(BuildContext context, PostSpanRenderOptions options) {
+	Tuple2<InlineSpan, TapGestureRecognizer> _buildDeadLink(BuildContext context, PostSpanRenderOptions options) {
 		final zone = context.watch<PostSpanZoneData>();
 		String text = '>>$postId';
 		if (zone.postFromArchiveError(postId) != null) {
@@ -230,7 +230,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer
 		), recognizer);
 	}
-	Tuple2<InlineSpan, GestureRecognizer> _buildNormalLink(BuildContext context, PostSpanRenderOptions options) {
+	Tuple2<InlineSpan, TapGestureRecognizer> _buildNormalLink(BuildContext context, PostSpanRenderOptions options) {
 		final zone = context.watch<PostSpanZoneData>();
 		String text = '>>$postId';
 		if (postId == threadId) {
@@ -268,7 +268,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			onExit: options.onExit
 		), recognizer);
 	}
-	Tuple2<InlineSpan, GestureRecognizer> _build(BuildContext context, PostSpanRenderOptions options) {
+	Tuple2<InlineSpan, TapGestureRecognizer> _build(BuildContext context, PostSpanRenderOptions options) {
 		final zone = context.watch<PostSpanZoneData>();
 		if (dead && threadId == null) {
 			// Dead links do not know their thread
@@ -314,10 +314,17 @@ class PostQuoteLinkSpan extends PostSpan {
 					)
 				);
 				return Tuple2(WidgetSpan(
-					child: options.ownLine ? Row(
-						children: [
-							Expanded(child: popup)
-						]
+					child: options.ownLine ? IntrinsicHeight(
+						child: Row(
+							children: [
+								popup,
+								Expanded(
+									child: GestureDetector(
+										onTap: span.item2.onTap
+									)
+								)
+							]
+						)
 					) : popup
 				), span.item2);
 			}
