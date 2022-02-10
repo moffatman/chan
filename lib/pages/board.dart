@@ -319,30 +319,7 @@ class _BoardPageState extends State<BoardPage> {
 															child: Container(
 																decoration: BoxDecoration(
 																	color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
-																	borderRadius: const BorderRadius.only(topLeft: Radius.circular(8), bottomLeft: Radius.circular(8))
-																),
-																padding: const EdgeInsets.all(8),
-																margin: const EdgeInsets.only(top: 16),
-																child: Icon(CupertinoIcons.arrow_up_to_line, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
-															)
-														),
-														GestureDetector(
-															onTap: () {
-																int pageToAnimateTo = topItem?.currentPage ?? _listController.firstVisibleIndex ~/ 15;
-																if (_listController.items.indexWhere((t) => t.currentPage == pageToAnimateTo) == _listController.firstVisibleIndex - 1) {
-																	pageToAnimateTo = max(pageToAnimateTo - 1, 1);
-																}
-																if (pageToAnimateTo == 1) {
-																	_scrollToTop();
-																}
-																else {
-																	_listController.animateTo((t) =>	t.currentPage == pageToAnimateTo, duration: const Duration(milliseconds: 200));
-																}
-															},
-															child: Container(
-																decoration: BoxDecoration(
-																	color: CupertinoTheme.of(context).primaryColor,
-																	borderRadius: const BorderRadius.only(topRight: Radius.circular(8), bottomRight: Radius.circular(8))
+																	borderRadius: const BorderRadius.all(Radius.circular(8))
 																),
 																padding: const EdgeInsets.all(8),
 																margin: const EdgeInsets.only(top: 16, right: 16),
