@@ -24,6 +24,7 @@ import 'sites/imageboard_site.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/sticky_media_query.dart';
+import 'package:uni_links/uni_links.dart';
 
 void main() async {
 	final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
@@ -226,6 +227,25 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
+	void _onNewLink(String? link) {
+		if (link != null) {
+			print(link);
+			final threadLink = RegExp(r'chance:\/\/([^\/]+)\/thread\/(\d+)').firstMatch(link);
+			if (threadLink != null) {
+				_addNewTab(
+					withThread: ThreadIdentifier(
+						board: threadLink.group(1)!,
+						id: int.parse(threadLink.group(2)!)
+					),
+					activate: true
+				);
+			}
+			else {
+				alertError(context, 'Unrecognized link\n$link');
+			}
+		}
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -236,6 +256,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		activeBrowserTab.value = browserState.currentTab;
 		_setupBoards();
 		_setupDevSite();
+		getInitialLink().then(_onNewLink);
+		linkStream.listen(_onNewLink);
 	}
 
 	void _addNewTab({
