@@ -23,7 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:share_extend/share_extend.dart';
 import 'package:video_player/video_player.dart';
 
 const deviceGalleryAlbumName = 'Chance';
@@ -340,7 +340,12 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	Future<void> share(Rect? sharePosition) async {
-		await Share.shareFiles([(await _moveToShareCache(attachment)).path], subject: attachment.filename, sharePositionOrigin: sharePosition);
+		await shareOne(
+			text: (await _moveToShareCache(attachment)).path,
+			subject: attachment.filename,
+			type: "file",
+			sharePositionOrigin: sharePosition
+		);
 	}
 
 	Future<void> download() async {

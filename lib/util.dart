@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:mutex/mutex.dart';
+import 'package:share_extend/share_extend.dart';
+import 'package:share_plus/share_plus.dart';
 
 extension SafeWhere<T> on Iterable<T> {
 	T? tryFirstWhere(bool Function(T v) f) => cast<T?>().firstWhere((v) => f(v!), orElse: () => null);
@@ -50,5 +54,37 @@ extension ToStringDio on Object {
 		else {
 			return toString();
 		}
+	}
+}
+
+Future<void> shareOne({
+	required String text,
+	required String type,
+	String? subject,
+	required Rect? sharePositionOrigin
+}) async {
+	if (type == 'file') {
+		try {
+			await ShareExtend.share(
+				text,
+				type,
+				subject: subject ?? '',
+				sharePositionOrigin: sharePositionOrigin
+			);
+		}
+		on MissingPluginException {
+			await Share.shareFiles(
+				[text],
+				subject: subject,
+				sharePositionOrigin: sharePositionOrigin
+			);
+		}
+	}
+	else {
+		await Share.share(
+			text,
+			subject: subject,
+			sharePositionOrigin: sharePositionOrigin
+		);
 	}
 }

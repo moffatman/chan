@@ -16,7 +16,7 @@ import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:share_extend/share_extend.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 
 import 'package:chan/models/post.dart';
@@ -383,7 +383,11 @@ class PostRow extends StatelessWidget {
 					onPressed: () {
 						final offset = (context.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 						final size = context.findRenderObject()?.semanticBounds.size;
-						Share.share(site.getWebUrl(_post.board, _post.threadId, _post.id), sharePositionOrigin: (offset != null && size != null) ? offset & size : null);
+						shareOne(
+							text: site.getWebUrl(_post.board, _post.threadId, _post.id),
+							type: "text",
+							sharePositionOrigin: (offset != null && size != null) ? offset & size : null
+						);
 					}
 				),
 				ContextMenuAction(

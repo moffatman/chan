@@ -30,6 +30,7 @@ dependencies:
   extended_image: ^6.0.1
   html_unescape: ^2.0.0
   share_plus: ^3.0.4
+  share_extend: "^2.0.0"
   extended_image_library: ^3.0.0
   flutter_inappwebview: ^5.2.1
   home_indicator: ^2.0.0
