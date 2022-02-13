@@ -104,6 +104,13 @@ class _BoardPageState extends State<BoardPage> {
 			resizeToAvoidBottomInset: false,
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
+				leading: settings.supportMouse.value ? CupertinoButton(
+					padding: EdgeInsets.zero,
+					child: const Icon(CupertinoIcons.refresh),
+					onPressed: () {
+						_listController.blockAndUpdate();
+					}
+				) : null,
 				middle: GestureDetector(
 					onTap: widget.allowChangingBoard ? _selectBoard : null,
 					child: Row(
