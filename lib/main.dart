@@ -86,85 +86,99 @@ class _ChanAppState extends State<ChanApp> {
 			systemNavigationBarColor: Colors.transparent,
 			systemNavigationBarDividerColor: Colors.transparent
 		));
-		return MultiProvider(
-			providers: [
-				ChangeNotifierProvider.value(value: settings),
-				if (threadWatcher != null) ...[
-					Provider<ImageboardSite>.value(value: site!),
-					Provider<Persistence>.value(value: persistence!),
-					ChangeNotifierProvider<SavedThreadWatcher>.value(value: threadWatcher!)
-				]
-			],
-			child: SettingsSystemListener(
-				child: Builder(
-					builder: (BuildContext context) {
-						final settings = context.watch<EffectiveSettings>();
-						CupertinoThemeData theme = CupertinoThemeData(
-							brightness: Brightness.light,
-							scaffoldBackgroundColor: settings.lightTheme.backgroundColor,
-							barBackgroundColor: settings.lightTheme.barColor,
-							primaryColor: settings.lightTheme.primaryColor,
-							textTheme: CupertinoTextThemeData(
-								textStyle: TextStyle(
-									fontFamily: '.SF Pro Text',
-									fontSize: 17.0,
-									letterSpacing: -0.41,
-									color: settings.lightTheme.primaryColor
-								),
-								actionTextStyle: TextStyle(color: settings.lightTheme.secondaryColor),
-								navActionTextStyle: TextStyle(color: settings.lightTheme.primaryColor)
-							)
-						);
-						if (settings.whichTheme == Brightness.dark) {
-							theme = CupertinoThemeData(
-								brightness: Brightness.dark,
-								scaffoldBackgroundColor: settings.darkTheme.backgroundColor,
-								barBackgroundColor: settings.darkTheme.barColor,
-								primaryColor: settings.darkTheme.primaryColor,
+		return CallbackShortcuts(
+			bindings: {
+				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.equal): () {
+					if (settings.interfaceScale < 2.0) {
+						settings.interfaceScale += 0.05;
+					}
+				},
+				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.minus): (){
+					if (settings.interfaceScale > 0.5) {
+						settings.interfaceScale -= 0.05;
+					}
+				}
+			},
+			child: MultiProvider(
+				providers: [
+					ChangeNotifierProvider.value(value: settings),
+					if (threadWatcher != null) ...[
+						Provider<ImageboardSite>.value(value: site!),
+						Provider<Persistence>.value(value: persistence!),
+						ChangeNotifierProvider<SavedThreadWatcher>.value(value: threadWatcher!)
+					]
+				],
+				child: SettingsSystemListener(
+					child: Builder(
+						builder: (BuildContext context) {
+							final settings = context.watch<EffectiveSettings>();
+							CupertinoThemeData theme = CupertinoThemeData(
+								brightness: Brightness.light,
+								scaffoldBackgroundColor: settings.lightTheme.backgroundColor,
+								barBackgroundColor: settings.lightTheme.barColor,
+								primaryColor: settings.lightTheme.primaryColor,
 								textTheme: CupertinoTextThemeData(
 									textStyle: TextStyle(
 										fontFamily: '.SF Pro Text',
-  									fontSize: 17.0,
-  									letterSpacing: -0.41,
-										color: settings.darkTheme.primaryColor
+										fontSize: 17.0,
+										letterSpacing: -0.41,
+										color: settings.lightTheme.primaryColor
 									),
-									actionTextStyle: TextStyle(color: settings.darkTheme.secondaryColor),
-									navActionTextStyle: TextStyle(color: settings.darkTheme.primaryColor)
+									actionTextStyle: TextStyle(color: settings.lightTheme.secondaryColor),
+									navActionTextStyle: TextStyle(color: settings.lightTheme.primaryColor)
+								)
+							);
+							if (settings.whichTheme == Brightness.dark) {
+								theme = CupertinoThemeData(
+									brightness: Brightness.dark,
+									scaffoldBackgroundColor: settings.darkTheme.backgroundColor,
+									barBackgroundColor: settings.darkTheme.barColor,
+									primaryColor: settings.darkTheme.primaryColor,
+									textTheme: CupertinoTextThemeData(
+										textStyle: TextStyle(
+											fontFamily: '.SF Pro Text',
+											fontSize: 17.0,
+											letterSpacing: -0.41,
+											color: settings.darkTheme.primaryColor
+										),
+										actionTextStyle: TextStyle(color: settings.darkTheme.secondaryColor),
+										navActionTextStyle: TextStyle(color: settings.darkTheme.primaryColor)
+									)
+								);
+							}
+							return MediaQuery.fromWindow(
+								child: StickyMediaQuery(
+									top: true,
+									child: CupertinoApp(
+										title: 'Chance',
+										useInheritedMediaQuery: true,
+										theme: theme,
+										home: Builder(
+											builder: (BuildContext context) {
+												site?.context = context;
+												return DefaultTextStyle(
+													style: CupertinoTheme.of(context).textTheme.textStyle,
+													child: RootCustomScale(
+														scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
+														child: threadWatcher != null ? ChanHomePage(key: _siteKeys.putIfAbsent(site!.name, () => GlobalKey())) : Container(
+															color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+															child: const Center(
+																child: CupertinoActivityIndicator()
+															)
+														)
+													)
+												);
+											}
+										),
+										localizationsDelegates: const [
+											DefaultCupertinoLocalizations.delegate,
+											DefaultMaterialLocalizations.delegate
+										]
+									)
 								)
 							);
 						}
-						return MediaQuery.fromWindow(
-							child: StickyMediaQuery(
-								top: true,
-								child: CupertinoApp(
-									title: 'Chance',
-									useInheritedMediaQuery: true,
-									theme: theme,
-									home: Builder(
-										builder: (BuildContext context) {
-											site?.context = context;
-											return DefaultTextStyle(
-												style: CupertinoTheme.of(context).textTheme.textStyle,
-												child: RootCustomScale(
-													scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
-													child: threadWatcher != null ? ChanHomePage(key: _siteKeys.putIfAbsent(site!.name, () => GlobalKey())) : Container(
-														color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-														child: const Center(
-															child: CupertinoActivityIndicator()
-														)
-													)
-												)
-											);
-										}
-									),
-									localizationsDelegates: const [
-										DefaultCupertinoLocalizations.delegate,
-										DefaultMaterialLocalizations.delegate
-									]
-								)
-							)
-						);
-					}
+					)
 				)
 			)
 		);
