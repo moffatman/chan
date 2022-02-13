@@ -67,26 +67,31 @@ class MediaScan {
 		return await _ffprobeLock.protect<MediaScan>(() async {
 			final completer = Completer<MediaScan>();
 			FFprobeKit.getMediaInformationAsync(file.toString(), (session) async {
-				final output = await session.getOutput();
-				if (output == null) {
-					completer.completeError(Exception('No output from ffprobe'));
-					return;
+				try {
+					final output = await session.getOutput();
+					if (output == null) {
+						completer.completeError(Exception('No output from ffprobe'));
+						return;
+					}
+					final data = jsonDecode(output);
+					final seconds = double.tryParse(data['format']?['duration'] ?? '');
+					int width = 0;
+					int height = 0;
+					for (final stream in (data['streams'] as List<dynamic>)) {
+						width = max(width, stream['width'] ?? 0);
+						height = max(height, stream['height'] ?? 0);
+					}
+					completer.complete(MediaScan(
+						hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
+						duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
+						bitrate: int.tryParse(data['format']?['bit_rate']),
+						width: width == 0 ? null : width,
+						height: height == 0 ? null : height
+					));
 				}
-				final data = jsonDecode(output);
-				final seconds = double.tryParse(data['format']?['duration'] ?? '');
-				int width = 0;
-				int height = 0;
-				for (final stream in (data['streams'] as List<dynamic>)) {
-					width = max(width, stream['width'] ?? 0);
-					height = max(height, stream['height'] ?? 0);
+				catch (e) {
+					completer.completeError(e);
 				}
-				completer.complete(MediaScan(
-					hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
-					duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
-					bitrate: int.tryParse(data['format']?['bit_rate']),
-					width: width == 0 ? null : width,
-					height: height == 0 ? null : height
-				));
 			});
 			return completer.future;
 		});
@@ -192,7 +197,14 @@ class MediaConversion {
 		final stat = await file.stat();
 		MediaScan? scan;
 		if (outputFileExtension != 'jpg') {
-			scan = await MediaScan.scan(file.uri);
+			try {
+				scan = await MediaScan.scan(file.uri);
+			}
+			catch (e, st) {
+				print('Error scanning existing file: $e');
+				print(st);
+				return null;
+			}
 		}
 		if (stripAudio && scan!.hasAudio) {
 			return null;
