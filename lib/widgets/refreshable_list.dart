@@ -72,6 +72,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	int _pointerDownCount = 0;
 	bool _showFilteredValues = false;
 	bool _searchTapped = false;
+	bool _overscrollEndingNow = false;
 
 	@override
 	void initState() {
@@ -157,6 +158,9 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	}
 
 	Future<void> update() async {
+		if (updatingNow) {
+			return;
+		}
 		try {
 			setState(() {
 				errorMessage = null;
@@ -165,24 +169,16 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			});
 			final newData = await widget.listUpdater();
 			resetTimer();
+			lastUpdateTime = DateTime.now();
 			if (newData != null) {
 				widget.controller?.setItems(newData);
-				setState(() {
-					errorMessage = null;
-					errorType = null;
-					updatingNow = false;
-					list = newData;
-					lastUpdateTime = DateTime.now();
-				});
+				list = newData;
 			}
 		}
 		catch (e, st) {
+			errorMessage = e.toStringDio();
+			errorType = e.runtimeType;
 			if (mounted) {
-				setState(() {
-					errorMessage = e.toStringDio();
-					errorType = e.runtimeType;
-					updatingNow = false;
-				});
 				if (widget.remedies[errorType] == null) {
 					print('Error refreshing list: $e');
 					print(st);
@@ -192,6 +188,10 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 					nextUpdateTime = null;
 				}
 			}
+		}
+		updatingNow = false;
+		if (mounted) {
+			setState(() {});
 		}
 	}
 
@@ -271,10 +271,16 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				onNotification: (notification) {
 					final bool isScrollEnd = (notification is ScrollEndNotification) || (notification is ScrollUpdateNotification && notification.dragDetails == null);
 					if (widget.controller != null && isScrollEnd) {
-						double overscroll = widget.controller!.scrollController!.position.pixels - widget.controller!.scrollController!.position.maxScrollExtent;
-						if (overscroll > _overscrollTriggerThreshold && !widget.disableUpdates) {
-							update();
+						if (!_overscrollEndingNow) {
+							double overscroll = widget.controller!.scrollController!.position.pixels - widget.controller!.scrollController!.position.maxScrollExtent;
+							if (overscroll > _overscrollTriggerThreshold && !widget.disableUpdates) {
+								_overscrollEndingNow = true;
+								update();
+							}
 						}
+					}
+					else {
+						_overscrollEndingNow = false;
 					}
 					return false;
 					// Auto update here
