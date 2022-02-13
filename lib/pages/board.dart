@@ -306,9 +306,9 @@ class _BoardPageState extends State<BoardPage> {
 								StreamBuilder(
 									stream: _listController.slowScrollUpdates,
 									builder: (context, _) {
-										final topItem = _listController.firstVisibleItem;
+										final page = _listController.firstVisibleItem?.currentPage;
 										_scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-										return (_listController.firstVisibleIndex <= 0) ? Container() : SafeArea(
+										return (page == null || page == 0) ? Container() : SafeArea(
 											child: Align(
 												alignment: Alignment.topRight,
 												child: Row(
@@ -326,32 +326,17 @@ class _BoardPageState extends State<BoardPage> {
 																child: Row(
 																	mainAxisSize: MainAxisSize.min,
 																	children: [
-																		if (topItem?.currentPage != null) ...[
-																			Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
-																			SizedBox(
-																				width: 25,
-																				child: Text(
-																					topItem!.currentPage.toString(),
-																					textAlign: TextAlign.center,
-																					style: TextStyle(
-																						color: CupertinoTheme.of(context).scaffoldBackgroundColor
-																					)
+																		Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+																		SizedBox(
+																			width: 25,
+																			child: Text(
+																				page.toString(),
+																				textAlign: TextAlign.center,
+																				style: TextStyle(
+																					color: CupertinoTheme.of(context).scaffoldBackgroundColor
 																				)
 																			)
-																		]
-																		else ...[
-																			Icon(CupertinoIcons.arrow_up_to_line, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
-																			SizedBox(
-																				width: 40,
-																				child: Text(
-																					_listController.firstVisibleIndex.toString(),
-																					textAlign: TextAlign.center,
-																					style: TextStyle(
-																						color: CupertinoTheme.of(context).scaffoldBackgroundColor
-																					)
-																				)
-																			)
-																		]
+																		)
 																	]
 																)
 															)
