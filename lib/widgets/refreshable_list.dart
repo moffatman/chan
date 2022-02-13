@@ -639,10 +639,10 @@ class RefreshableListController<T extends Filterable> {
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onScroll);
 		slowScrollUpdates.listen(_onSlowScroll);
-		SchedulerBinding.instance!.endOfFrame.then((_) => _onScroll([]));
+		SchedulerBinding.instance.endOfFrame.then((_) => _onScroll([]));
 	}
 	Future<void> _tryCachingItem(int index, _RefreshableListItem<T> item) async {
-		await SchedulerBinding.instance!.endOfFrame;
+		await SchedulerBinding.instance.endOfFrame;
 		if (item.hasGoodState) {
 			final RenderObject object = item.context!.findRenderObject()!;
 			item.cachedHeight = object.semanticBounds.height;
@@ -798,7 +798,7 @@ class RefreshableListController<T extends Filterable> {
 			duration: d,
 			curve: Curves.easeOut
 		);
-		await SchedulerBinding.instance!.endOfFrame;
+		await SchedulerBinding.instance.endOfFrame;
 	}
 	int get firstVisibleIndex {
 		if (scrollController?.hasOnePosition ?? false) {

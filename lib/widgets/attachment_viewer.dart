@@ -24,7 +24,6 @@ import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:share_extend/share_extend.dart';
 import 'package:video_player/video_player.dart';
 
 const deviceGalleryAlbumName = 'Chance';

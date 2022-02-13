@@ -321,7 +321,7 @@ class EffectiveSettings extends ChangeNotifier {
 		else if (_settings.theme == TristateSystemSetting.a) {
 			return Brightness.light;
 		}
-		return _systemBrightness ?? SchedulerBinding.instance!.window.platformBrightness;
+		return _systemBrightness ?? SchedulerBinding.instance.window.platformBrightness;
 	}
 
 	bool get hideOldStickiedThreads => _settings.hideOldStickiedThreads;
@@ -588,7 +588,7 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 	@override
 	void initState() {
 		super.initState();
-		WidgetsBinding.instance!.addObserver(this);
+		WidgetsBinding.instance.addObserver(this);
 		_checkConnectivity();
 		connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
 			context.read<EffectiveSettings>().connectivity = result;
@@ -609,7 +609,7 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 	@override
 	void dispose() {
 		super.dispose();
-		WidgetsBinding.instance!.removeObserver(this);
+		WidgetsBinding.instance.removeObserver(this);
 		connectivitySubscription.cancel();
 	}
 
@@ -622,7 +622,7 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 
 	@override
 	void didChangePlatformBrightness() {
-		context.read<EffectiveSettings>().systemBrightness = SchedulerBinding.instance!.window.platformBrightness;
+		context.read<EffectiveSettings>().systemBrightness = SchedulerBinding.instance.window.platformBrightness;
 	}
 
 	@override

@@ -103,9 +103,9 @@ class _ThreadPageState extends State<ThreadPage> {
 			await Future.delayed(delayBeforeScroll);
 			final alignment = (scrollToId == widget.initialPostId) ? 0.0 : 1.0;
 			try {
-				await WidgetsBinding.instance!.endOfFrame;
+				await WidgetsBinding.instance.endOfFrame;
 				await _listController.animateTo((post) => post.id == scrollToId, orElseLast: (post) => post.id <= scrollToId, alignment: alignment, duration: const Duration(milliseconds: 1));
-				await WidgetsBinding.instance!.endOfFrame;
+				await WidgetsBinding.instance.endOfFrame;
 			}
 			catch (e, st) {
 				print('${widget.thread} Error scrolling');
