@@ -1,9 +1,11 @@
 import 'dart:math';
 
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:provider/provider.dart';
 
 class OverscrollModalPage extends StatefulWidget {
 	final Widget child;
@@ -41,7 +43,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	void initState() {
 		super.initState();
 		_scrollStopPosition = -1 * min(150.0 + widget.heightEstimate, context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.height);
-		_controller = ScrollController(initialScrollOffset: _scrollStopPosition);
+		_controller = ScrollController(initialScrollOffset: context.read<EffectiveSettings>().showAnimations ? _scrollStopPosition : 0);
 		_controller.addListener(_onScrollUpdate);
 	}
 

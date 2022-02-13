@@ -416,7 +416,8 @@ class PostRow extends StatelessWidget {
 						trailingIcon: Icons.image_search,
 						onPressed: () {
 							context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(
-								builder: (context) => SearchQueryPage(query: ImageboardArchiveSearchQuery(boards: [_post.board], md5: _post.attachment!.md5))
+								builder: (context) => SearchQueryPage(query: ImageboardArchiveSearchQuery(boards: [_post.board], md5: _post.attachment!.md5)),
+								showAnimations: context.read<EffectiveSettings>().showAnimations
 							));
 						}
 					),

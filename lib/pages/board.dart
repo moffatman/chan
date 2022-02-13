@@ -85,7 +85,10 @@ class _BoardPageState extends State<BoardPage> {
 	}
 
 	void _selectBoard() async {
-		final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => const BoardSwitcherPage()));
+		final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(
+			builder: (ctx) => const BoardSwitcherPage(),
+			showAnimations: context.read<EffectiveSettings>().showAnimations
+		));
 		if (newBoard != null) {
 			widget.onBoardChanged?.call(newBoard);
 			setState(() {
@@ -301,7 +304,8 @@ class _BoardPageState extends State<BoardPage> {
 															builder: (ctx) => ThreadPage(
 																thread: thread.identifier,
 																boardSemanticId: widget.semanticId,
-															)
+															),
+															showAnimations: context.read<EffectiveSettings>().showAnimations
 														));
 													}
 												}

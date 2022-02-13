@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 
 class WeakNavigator extends StatefulWidget {
@@ -26,7 +28,8 @@ class WeakNavigator extends StatefulWidget {
     }
     else {
       return Navigator.of(context).push(TransparentRoute(
-        builder: (context) => widget
+        builder: (context) => widget,
+        showAnimations: context.read<EffectiveSettings>().showAnimations
       ));
     }
   }

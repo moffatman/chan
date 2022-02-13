@@ -83,7 +83,7 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 	}
 
 	@override
-	Duration get transitionDuration => const Duration(milliseconds: 400);
+	Duration get transitionDuration => (this is! FullWidthCupertinoPageRoute || (this as FullWidthCupertinoPageRoute).showAnimations) ? const Duration(milliseconds: 400) : Duration.zero;
 
 	@override
 	Color? get barrierColor => null;
@@ -186,11 +186,13 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 }
 
 class FullWidthCupertinoPageRoute<T> extends PageRoute<T> with CupertinoRouteTransitionMixin<T> {
+	final bool showAnimations;
 	FullWidthCupertinoPageRoute({
 		required this.builder,
 		this.title,
 		RouteSettings? settings,
 		this.maintainState = true,
+		required this.showAnimations,
 		bool fullscreenDialog = false,
 	}) : super(settings: settings, fullscreenDialog: fullscreenDialog) {
 		assert(opaque);

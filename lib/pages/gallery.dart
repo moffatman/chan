@@ -16,6 +16,7 @@ import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
@@ -33,6 +34,23 @@ class GalleryRightIntent extends Intent {
 
 class GalleryToggleChromeIntent extends Intent {
 	const GalleryToggleChromeIntent();
+}
+
+class _FasterSnappingPageScrollPhysics extends ScrollPhysics {
+  const _FasterSnappingPageScrollPhysics({ScrollPhysics? parent})
+      : super(parent: parent);
+
+  @override
+  _FasterSnappingPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return _FasterSnappingPageScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  SpringDescription get spring => const SpringDescription(
+        mass: 80,
+        stiffness: 100,
+        damping: 2,
+      );
 }
 
 class GalleryPage extends StatefulWidget {
@@ -576,6 +594,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												KeyedSubtree(
 													key: _pageControllerKey,
 													child: ExtendedImageGesturePageView.builder(
+														physics: context.read<EffectiveSettings>().showAnimations ? null : const _FasterSnappingPageScrollPhysics(),
 														canScrollPage: (x) => widget.allowScroll,
 														onPageChanged: _onPageChanged,
 														controller: pageController,
@@ -723,7 +742,8 @@ Future<Attachment?> showGallery({
 				onChange: onChange,
 				semanticParentIds: semanticParentIds
 			);
-		}
+		},
+		showAnimations: context.read<EffectiveSettings>().showAnimations
 	));
 	try {
 		await HomeIndicator.show();

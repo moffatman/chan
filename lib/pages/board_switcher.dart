@@ -205,7 +205,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																	),
 																	onPressed: () async {
 																		final board = await Navigator.push<ImageboardBoard>(context, TransparentRoute(
-																			builder: (context) => const BoardSwitcherPage(currentlyPickingFavourites: true)
+																			builder: (context) => const BoardSwitcherPage(currentlyPickingFavourites: true),
+																			showAnimations: context.read<EffectiveSettings>().showAnimations
 																		));
 																		if (board != null && !browserState.favouriteBoards.contains(board.name)) {
 																			browserState.favouriteBoards.add(board.name);

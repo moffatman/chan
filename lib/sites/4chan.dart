@@ -609,6 +609,7 @@ class Site4Chan extends ImageboardSite {
   Future<ImageboardSiteLoginStatus?> getLoginStatus() async {
     final cookies = await Persistence.cookies.loadForRequest(Uri.https(sysUrl, '/'));
 		for (final cookie in cookies) {
+			print(cookie);
 			if (cookie.name == 'pass_id') {
 				_passEnabled = true;
 				return ImageboardSiteLoginStatus(

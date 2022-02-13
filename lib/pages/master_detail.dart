@@ -9,19 +9,19 @@ import 'package:flutter/cupertino.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:provider/provider.dart';
 
-PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder) => FullWidthCupertinoPageRoute(builder: builder);
-PageRoute transparentPageRouteBuilder(WidgetBuilder builder) => TransparentRoute(builder: builder);
+PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder, bool showAnimations) => FullWidthCupertinoPageRoute(builder: builder, showAnimations: showAnimations);
+PageRoute transparentPageRouteBuilder(WidgetBuilder builder, bool showAnimations) => TransparentRoute(builder: builder, showAnimations: showAnimations);
 
 class BuiltDetailPane {
 	final Widget widget;
-	final PageRoute Function(WidgetBuilder builder) pageRouteBuilder;
+	final PageRoute Function(WidgetBuilder builder, bool showAnimations) pageRouteBuilder;
 
 	BuiltDetailPane({
 		required this.widget,
 		required this.pageRouteBuilder
 	});
 
-	PageRoute get pageRoute => pageRouteBuilder((context) => widget);
+	PageRoute pageRoute(bool showAnimations) => pageRouteBuilder((context) => widget, showAnimations);
 }
 
 class MasterDetailPage<T> extends StatelessWidget {
@@ -101,8 +101,8 @@ class MultiMasterPane<T> {
 		);
 	}
 
-	PageRoute buildDetailRoute() {
-		return detailBuilder(currentValue.value, true).pageRoute;
+	PageRoute buildDetailRoute(bool showAnimations) {
+		return detailBuilder(currentValue.value, true).pageRoute(showAnimations);
 	}
 }
 
@@ -183,7 +183,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 
 	void _onNewValue<T> (MultiMasterPane<T> pane) {
 		if (onePane) {
-			_masterKey.currentState!.push(pane.buildDetailRoute()).then(pane.onPushReturn);
+			_masterKey.currentState!.push(pane.buildDetailRoute(context.read<EffectiveSettings>().showAnimations)).then(pane.onPushReturn);
 		}
 		else {
 			_detailKey.currentState?.popUntil((route) => route.isFirst);
@@ -267,7 +267,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 		if (lastOnePane != null && lastOnePane != onePane) {
 			final pane = panes[_tabController.index];
 			if (onePane && pane.currentValue.value != null) {
-				_masterKey.currentState!.push(pane.buildDetailRoute()).then(pane.onPushReturn);
+				_masterKey.currentState!.push(pane.buildDetailRoute(context.read<EffectiveSettings>().showAnimations)).then(pane.onPushReturn);
 			}
 			else {
 				while (_masterKey.currentState?.canPop() ?? false) {

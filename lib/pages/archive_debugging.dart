@@ -5,6 +5,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/services/settings.dart';
 import 'dart:io';
 
 import 'package:chan/sites/4chan.dart';
@@ -169,7 +170,8 @@ class ArchiveDebuggingPage extends StatelessWidget {
                       builder: (context) => const BoardPage(
                         initialBoard: null,
                         semanticId: -1
-                      )
+                      ),
+                      showAnimations: context.read<EffectiveSettings>().showAnimations
                     )
                   )
                 )

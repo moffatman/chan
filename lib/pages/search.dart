@@ -2,6 +2,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/pages/search_query.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -112,7 +113,10 @@ class _SearchPageState extends State<SearchPage> {
 											color: Colors.white
 										)),
 										onPressed: () async {
-											final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(builder: (ctx) => const BoardSwitcherPage()));
+											final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(
+												builder: (ctx) => const BoardSwitcherPage(),
+												showAnimations: context.read<EffectiveSettings>().showAnimations
+											));
 											if (newBoard != null) {
 												setState(() {
 													query.boards = [newBoard.name];
@@ -160,7 +164,8 @@ class _SearchPageState extends State<SearchPage> {
 														context.read<Persistence>().recentSearches.add(query.clone());
 														context.read<Persistence>().didUpdateRecentSearches();
 														Navigator.of(context).push(FullWidthCupertinoPageRoute(
-															builder: (context) => SearchQueryPage(query: query)
+															builder: (context) => SearchQueryPage(query: query),
+															showAnimations: context.read<EffectiveSettings>().showAnimations
 														));
 													},
 													onSuffixTap: () {
@@ -274,7 +279,8 @@ class _SearchPageState extends State<SearchPage> {
 								context.read<Persistence>().recentSearches.bump(q);
 								context.read<Persistence>().didUpdateRecentSearches();
 								Navigator.of(context).push(FullWidthCupertinoPageRoute(
-									builder: (context) => SearchQueryPage(query: q)
+									builder: (context) => SearchQueryPage(query: q),
+									showAnimations: context.read<EffectiveSettings>().showAnimations
 								));
 							},
 							child: Container(

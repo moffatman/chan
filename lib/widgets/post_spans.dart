@@ -194,7 +194,8 @@ class PostQuoteLinkSpan extends PostSpan {
 					initialPostId: postId,
 					initiallyUseArchive: dead,
 					boardSemanticId: -1
-				)
+				),
+				showAnimations: context.read<EffectiveSettings>().showAnimations
 			));
 		});
 		return Tuple2(TextSpan(
@@ -376,7 +377,8 @@ class PostBoardLink extends PostSpan {
 					builder: (ctx) => BoardPage(
 						initialBoard: context.read<Persistence>().getBoard(board),
 						semanticId: -1
-					)
+					),
+					showAnimations: context.read<EffectiveSettings>().showAnimations
 				));
 			}),
 			onEnter: options.onEnter,
@@ -627,7 +629,8 @@ class PostCatalogSearchSpan extends PostSpan {
 					initialBoard: context.read<Persistence>().getBoard(board),
 					initialSearch: query,
 					semanticId: -1
-				)
+				),
+				showAnimations: context.read<EffectiveSettings>().showAnimations
 			)),
 			onEnter: options.onEnter,
 			onExit: options.onExit

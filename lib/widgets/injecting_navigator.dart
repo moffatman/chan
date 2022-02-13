@@ -1,5 +1,7 @@
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 
 class InjectingNavigator extends Navigator {
 	final Listenable animation;
@@ -33,7 +35,8 @@ class _InjectingNavigatorState extends NavigatorState {
 		if (route is FullWidthCupertinoPageRoute<T> && widget is InjectingNavigator) {
 			return super.push(FullWidthCupertinoPageRoute<T>(
 				settings: route.settings,
-				builder: (context) => (widget as InjectingNavigator).injector(context, route, route.builder)
+				builder: (context) => (widget as InjectingNavigator).injector(context, route, route.builder),
+				showAnimations: context.read<EffectiveSettings>().showAnimations
 			));
 		}
 		return super.push(route);
@@ -93,7 +96,8 @@ class _PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScrol
 		onGenerateRoute: (settings) {
 			return FullWidthCupertinoPageRoute(
 				settings: settings,
-				builder: (context) => _injectController(context, null, widget.buildRoot)
+				builder: (context) => _injectController(context, null, widget.buildRoot),
+				showAnimations: context.read<EffectiveSettings>().showAnimations
 			);
 		}
 	);

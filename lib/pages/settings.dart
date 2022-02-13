@@ -114,7 +114,8 @@ class SettingsPage extends StatelessWidget {
 															builder: (context) => ThreadPage(
 																thread: thread.identifier,
 																boardSemanticId: -1,
-															)
+															),
+															showAnimations: context.read<EffectiveSettings>().showAnimations
 														)),
 														child: ConstrainedBox(
 															constraints: const BoxConstraints(
@@ -145,7 +146,8 @@ class SettingsPage extends StatelessWidget {
 																	),
 																	allowChangingBoard: false,
 																	semanticId: -1
-																)
+																),
+																showAnimations: context.read<EffectiveSettings>().showAnimations
 															))
 														)
 													));
@@ -232,6 +234,19 @@ class SettingsPage extends StatelessWidget {
 											groupValue: settings.supportMouseSetting,
 											onValueChanged: (newValue) {
 												settings.supportMouseSetting = newValue;
+											}
+										),
+										const SizedBox(height: 32),
+										const Text('Animations'),
+										const SizedBox(height: 16),
+										CupertinoSegmentedControl<bool>(
+											children: const {
+												false: Text('Disabled'),
+												true: Text('Enabled'),
+											},
+											groupValue: settings.showAnimations,
+											onValueChanged: (newValue) {
+												settings.showAnimations = newValue;
 											}
 										),
 										const SizedBox(height: 32),

@@ -8,6 +8,7 @@ import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
@@ -258,7 +259,8 @@ class ReplyBoxState extends State<ReplyBox> {
 						)
 					)
 				)
-			)
+			),
+			showAnimations: context.read<EffectiveSettings>().showAnimations
 		));
 	}
 
@@ -351,7 +353,8 @@ class ReplyBoxState extends State<ReplyBox> {
 						)
 					)
 				)
-			)
+			),
+			showAnimations: context.read<EffectiveSettings>().showAnimations
 		));
 		if (file != null) {
 			try {
@@ -441,26 +444,28 @@ class ReplyBoxState extends State<ReplyBox> {
 		final captchaRequest = context.read<ImageboardSite>().getCaptchaRequest(widget.board, widget.threadId);
 		if (captchaRequest is RecaptchaRequest) {
 			hideReplyBox();
-			_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(builder: (context) {
-				return OverscrollModalPage(
+			_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
+				builder: (context) => OverscrollModalPage(
 					child: CaptchaNoJS(
 						request: captchaRequest,
 						onCaptchaSolved: (solution) => Navigator.of(context).pop(solution)
 					)
-				);
-			}));
+				),
+				showAnimations: context.read<EffectiveSettings>().showAnimations
+			));
 			showReplyBox();
 		}
 		else if (captchaRequest is Chan4CustomCaptchaRequest) {
 			hideReplyBox();
-			_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(builder: (context) {
-				return OverscrollModalPage(
+			_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
+				builder: (context) => OverscrollModalPage(
 					child: Captcha4ChanCustom(
 						request: captchaRequest,
 						onCaptchaSolved: (key) => Navigator.of(context).pop(key)
 					)
-				);
-			}));
+				),
+				showAnimations: context.read<EffectiveSettings>().showAnimations
+			));
 			showReplyBox();
 		}
 		else if (captchaRequest is NoCaptchaRequest) {

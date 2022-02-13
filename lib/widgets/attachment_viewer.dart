@@ -9,6 +9,7 @@ import 'package:chan/pages/search_query.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/rotating_image_provider.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -597,7 +598,8 @@ class AttachmentViewer extends StatelessWidget {
 						trailingIcon: Icons.image_search,
 						onPressed: () {
 							Navigator.of(context).push(FullWidthCupertinoPageRoute(
-								builder: (context) => SearchQueryPage(query: ImageboardArchiveSearchQuery(boards: [attachment.board], md5: attachment.md5))
+								builder: (context) => SearchQueryPage(query: ImageboardArchiveSearchQuery(boards: [attachment.board], md5: attachment.md5)),
+								showAnimations: context.read<EffectiveSettings>().showAnimations
 							));
 						}
 					),

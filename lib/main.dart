@@ -386,7 +386,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								builder: (_) => SettingsPage(
 									realPersistence: persistence,
 									realSite: site
-								)
+								),
+								showAnimations: context.read<EffectiveSettings>().showAnimations
 							)
 						)
 					)

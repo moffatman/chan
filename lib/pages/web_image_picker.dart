@@ -5,12 +5,14 @@ import 'dart:ui';
 
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:provider/provider.dart';
 
 extension ToCssRgba on Color {
 	String toCssRgba() => 'rgba($red, $green, $blue, $opacity)';
@@ -253,7 +255,8 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																						]
 																					)
 																				)
-																			)
+																			),
+																			showAnimations: context.read<EffectiveSettings>().showAnimations
 																		));
 																		if (selectedThumbnail != null) {
 																			Navigator.of(context).pop(selectedThumbnail);
@@ -264,7 +267,8 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 														]
 													)
 												)
-											)
+											),
+											showAnimations: context.read<EffectiveSettings>().showAnimations
 										));
 										if (pickedBytes != null) {
 											final f = File(Persistence.temporaryDirectory.path + '/webpickercache/' + DateTime.now().millisecondsSinceEpoch.toString() + '.png');

@@ -47,9 +47,11 @@ String formatTime(DateTime time) {
 }
 
 class TransparentRoute<T> extends PageRoute<T> {
+	final bool showAnimations;
 	TransparentRoute({
 		required this.builder,
 		RouteSettings? settings,
+		required this.showAnimations
   	}) : super(settings: settings);
 	
 	@override
@@ -70,7 +72,7 @@ class TransparentRoute<T> extends PageRoute<T> {
 	bool get maintainState => true;
 
 	@override
-	Duration get transitionDuration => const Duration(milliseconds: 150);
+	Duration get transitionDuration => showAnimations ? const Duration(milliseconds: 150) : Duration.zero;
 
 	@override
   Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {

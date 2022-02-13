@@ -1,9 +1,11 @@
 import 'package:chan/pages/cloudflare.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:html/parser.dart';
+import 'package:provider/provider.dart';
 
 class CloudflareInterceptor extends Interceptor {
 	final ImageboardSiteArchive site;
@@ -17,7 +19,8 @@ class CloudflareInterceptor extends Interceptor {
 						final response = await Navigator.of(site.context).push<String>(FullWidthCupertinoPageRoute(
 							builder: (context) => CloudflareLoginPage(
 								desiredUrl: err.requestOptions.uri
-							)
+							),
+							showAnimations: site.context.read<EffectiveSettings?>()?.showAnimations ?? true
 						));
 						if (response != null) {
 							handler.resolve(Response(
