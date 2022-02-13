@@ -23,6 +23,24 @@ import Flutter
         result(FlutterMethodNotImplemented)
       }
     })
+    let isOnMacChannel = FlutterMethodChannel(name: "com.moffatman.chan/isOnMac", binaryMessenger: controller.binaryMessenger)
+    isOnMacChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      if (call.method == "isOnMac") {
+        #if targetEnvironment(macCatalyst)
+            result(true)
+        #else
+            if #available(iOS 14.0, *) {
+                result(ProcessInfo.processInfo.isiOSAppOnMac)
+            } else {
+                result(false)
+            }
+        #endif
+      }
+      else {
+        result(FlutterMethodNotImplemented)
+      }
+    })
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

@@ -2,11 +2,13 @@ import 'dart:ui';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/services/is_on_mac.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 Future<void> alertError(BuildContext context, String error) async {
 	await showCupertinoDialog(
@@ -167,13 +169,13 @@ class ErrorMessageCard extends StatelessWidget {
 	}
 }
 
-Future<void> openBrowser(BuildContext context, Uri url) {
+Future<void> openBrowser(BuildContext context, Uri url) async {
 	final webmMatcher = RegExp('https?://${context.read<ImageboardSite>().imageUrl}/([^/]+)/([0-9]+).webm');
 	final match = webmMatcher.firstMatch(url.toString());
 	if (match != null) {
 		final String board = match.group(1)!;
 		final int id = int.parse(match.group(2)!);
-		return showGallery(
+		await showGallery(
 			context: context,
 			attachments: [
 				Attachment(
@@ -191,15 +193,20 @@ Future<void> openBrowser(BuildContext context, Uri url) {
 		);
 	}
 	else {
-		return ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
-			android: AndroidChromeCustomTabsOptions(
-				toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor
-			),
-			ios: IOSSafariOptions(
-				preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
-				preferredControlTintColor: CupertinoTheme.of(context).primaryColor
-			)
-		));
+		if (await isOnMac()) {
+			launch(url.toString());
+		}
+		else {
+			return ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
+				android: AndroidChromeCustomTabsOptions(
+					toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor
+				),
+				ios: IOSSafariOptions(
+					preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
+					preferredControlTintColor: CupertinoTheme.of(context).primaryColor
+				)
+			));
+		}
 	}
 }
 
