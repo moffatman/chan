@@ -161,6 +161,123 @@ class ThreadRow extends StatelessWidget {
 					)
 				);
 				final borderRadius = contentFocus ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
+				List<Widget> rowChildren() => [
+					if (_thread.attachment != null && settings.showImages(context, _thread.board)) Padding(
+						padding: const EdgeInsets.only(top: 8, bottom: 8),
+						child: PopupAttachment(
+							attachment: _thread.attachment!,
+							child: GestureDetector(
+								child: Stack(
+									alignment: Alignment.center,
+									fit: StackFit.loose,
+									children: [
+										AttachmentThumbnail(
+											onLoadError: onThumbnailLoadError,
+											attachment: _thread.attachment!,
+											thread: _thread.identifier,
+											hero: AttachmentSemanticLocation(
+												attachment: _thread.attachment!,
+												semanticParents: semanticParentIds
+											)
+										),
+										if (_thread.attachment?.type == AttachmentType.webm) SizedBox(
+											width: 75,
+											height: 75,
+											child: Center(
+												child: AspectRatio(
+													aspectRatio: (_thread.attachment!.width ?? 1) / (_thread.attachment!.height ?? 1),
+													child: Align(
+														alignment: Alignment.bottomRight,
+														child: Container(
+															decoration: BoxDecoration(
+																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+															),
+															padding: const EdgeInsets.all(2),
+															child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
+														)
+													)
+												)
+											)
+										)
+									]
+								),
+								onTap: () => onThumbnailTap?.call(_thread.attachment!)
+							)
+						)
+					)
+					else if (_thread.attachmentDeleted) const Center(
+						child: SizedBox(
+							width: 75,
+							height: 75,
+							child: Icon(CupertinoIcons.xmark_square, size: 36)
+						)
+					),
+					Expanded(
+						child: Container(
+							constraints: const BoxConstraints(minHeight: 75),
+							padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
+							child: ChangeNotifierProvider<PostSpanZoneData>(
+								create: (ctx) => PostSpanRootZoneData(
+									thread: _thread,
+									site: context.watch<ImageboardSite>()
+								),
+								child: Builder(
+									builder: (ctx) => IgnorePointer(
+										child: Text.rich(
+											TextSpan(
+												children: [
+													TextSpan(
+														children: [
+															if (settings.showNameInCatalog) ...[
+																TextSpan(
+																	text: settings.filterProfanity(_thread.posts[0].name),
+																	style: const TextStyle(fontWeight: FontWeight.w600)
+																),
+																const TextSpan(text: ' ')
+															],
+															if (_thread.flag != null) ...[
+																FlagSpan(_thread.flag!),
+																const TextSpan(text: ' '),
+																TextSpan(
+																	text: _thread.flag!.name,
+																	style: const TextStyle(
+																		fontStyle: FontStyle.italic
+																	)
+																),
+																const TextSpan(text: ' ')
+															],
+															TextSpan(
+																text: formatTime(_thread.time)
+															),
+															const TextSpan(text: ' '),
+															TextSpan(
+																text: showBoardName ? 
+																	'/${_thread.board}/${_thread.id}' :
+																	_thread.id.toString(),
+																style: const TextStyle(color: Colors.grey)
+															),
+															const TextSpan(text: '\n')
+														]
+													),
+													if (_thread.title != null) TextSpan(
+														text: settings.filterProfanity(_thread.title!) + '\n',
+														style: const TextStyle(fontWeight: FontWeight.bold)
+													),
+													_thread.posts[0].span.build(ctx, PostSpanRenderOptions(
+														avoidBuggyClippers: true
+													)),
+												]
+											),
+											overflow: TextOverflow.fade
+										)
+									)
+								)
+							)
+						)
+					)
+				];
 				return Container(
 					decoration: BoxDecoration(
 						color: isSelected ? CupertinoTheme.of(context).primaryColorWithBrightness(0.4) : CupertinoTheme.of(context).scaffoldBackgroundColor,
@@ -265,130 +382,7 @@ class ThreadRow extends StatelessWidget {
 								else Row(
 									crossAxisAlignment: CrossAxisAlignment.start,
 									mainAxisSize: MainAxisSize.max,
-									children: [
-										if (_thread.attachment != null && settings.showImages(context, _thread.board)) Column(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												Flexible(
-													child: Container(
-														padding: const EdgeInsets.only(top: 8, bottom: 8),
-														child: PopupAttachment(
-															attachment: _thread.attachment!,
-															child: GestureDetector(
-																child: Stack(
-																	alignment: Alignment.center,
-																	fit: StackFit.loose,
-																	children: [
-																		AttachmentThumbnail(
-																			onLoadError: onThumbnailLoadError,
-																			attachment: _thread.attachment!,
-																			thread: _thread.identifier,
-																			hero: AttachmentSemanticLocation(
-																				attachment: _thread.attachment!,
-																				semanticParents: semanticParentIds
-																			)
-																		),
-																		if (_thread.attachment?.type == AttachmentType.webm) SizedBox(
-																			width: 75,
-																			height: 75,
-																			child: Center(
-																				child: AspectRatio(
-																					aspectRatio: (_thread.attachment!.width ?? 1) / (_thread.attachment!.height ?? 1),
-																					child: Align(
-																						alignment: Alignment.bottomRight,
-																						child: Container(
-																							decoration: BoxDecoration(
-																								borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																								color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																								border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-																							),
-																							padding: const EdgeInsets.all(2),
-																							child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
-																						)
-																					)
-																				)
-																			)
-																		)
-																	]
-																),
-																onTap: () => onThumbnailTap?.call(_thread.attachment!)
-															)
-														)
-													)
-												)
-											]
-										)
-										else if (_thread.attachmentDeleted) const Center(
-											child: SizedBox(
-												width: 75,
-												height: 75,
-												child: Icon(CupertinoIcons.xmark_square, size: 36)
-											)
-										),
-										Expanded(
-											child: Container(
-												constraints: const BoxConstraints(minHeight: 75),
-												padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
-												child: ChangeNotifierProvider<PostSpanZoneData>(
-													create: (ctx) => PostSpanRootZoneData(
-														thread: _thread,
-														site: context.watch<ImageboardSite>()
-													),
-													child: Builder(
-														builder: (ctx) => IgnorePointer(
-															child: Text.rich(
-																TextSpan(
-																	children: [
-																		TextSpan(
-																			children: [
-																				if (settings.showNameInCatalog) ...[
-																					TextSpan(
-																						text: settings.filterProfanity(_thread.posts[0].name),
-																						style: const TextStyle(fontWeight: FontWeight.w600)
-																					),
-																					const TextSpan(text: ' ')
-																				],
-																				if (_thread.flag != null) ...[
-																					FlagSpan(_thread.flag!),
-																					const TextSpan(text: ' '),
-																					TextSpan(
-																						text: _thread.flag!.name,
-																						style: const TextStyle(
-																							fontStyle: FontStyle.italic
-																						)
-																					),
-																					const TextSpan(text: ' ')
-																				],
-																				TextSpan(
-																					text: formatTime(_thread.time)
-																				),
-																				const TextSpan(text: ' '),
-																				TextSpan(
-																					text: showBoardName ? 
-																						'/${_thread.board}/${_thread.id}' :
-																						_thread.id.toString(),
-																					style: const TextStyle(color: Colors.grey)
-																				),
-																				const TextSpan(text: '\n')
-																			]
-																		),
-																		if (_thread.title != null) TextSpan(
-																			text: settings.filterProfanity(_thread.title!) + '\n',
-																			style: const TextStyle(fontWeight: FontWeight.bold)
-																		),
-																		_thread.posts[0].span.build(ctx, PostSpanRenderOptions(
-																			avoidBuggyClippers: true
-																		)),
-																	]
-																),
-																overflow: TextOverflow.fade
-															)
-														)
-													)
-												)
-											)
-										)
-									]
+									children: settings.imagesOnRight ? rowChildren().reversed.toList() : rowChildren()
 								),
 								Positioned.fill(
 									child: Align(

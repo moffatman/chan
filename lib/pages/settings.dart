@@ -382,6 +382,19 @@ class SettingsPage extends StatelessWidget {
 											}
 										),
 										const SizedBox(height: 32),
+										const Text('Image thumbnail position'),
+										const SizedBox(height: 16),
+										CupertinoSegmentedControl<bool>(
+											children: const {
+												false: Text('Left'),
+												true: Text('Right')
+											},
+											groupValue: settings.imagesOnRight,
+											onValueChanged: (newValue) {
+												settings.imagesOnRight = newValue;
+											}
+										),
+										const SizedBox(height: 32),
 										const Text('Catalog Layout'),
 										const SizedBox(height: 16),
 										CupertinoSegmentedControl<bool>(

@@ -198,6 +198,8 @@ class SavedSettings extends HiveObject {
 	double interfaceScale;
 	@HiveField(33)
 	bool showAnimations;
+	@HiveField(34)
+	bool imagesOnRight;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -233,6 +235,7 @@ class SavedSettings extends HiveObject {
 		bool? showNameInCatalog,
 		double? interfaceScale,
 		bool? showAnimations,
+		bool? imagesOnRight,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -273,7 +276,8 @@ class SavedSettings extends HiveObject {
 		supportMouse = supportMouse ?? TristateSystemSetting.system,
 		showNameInCatalog = showNameInCatalog ?? true,
 		interfaceScale = interfaceScale ?? 1.0,
-		showAnimations = showAnimations ?? true;
+		showAnimations = showAnimations ?? true,
+		imagesOnRight = imagesOnRight ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -540,6 +544,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showAnimations => _settings.showAnimations;
 	set showAnimations(bool setting) {
 		_settings.showAnimations = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get imagesOnRight => _settings.imagesOnRight;
+	set imagesOnRight(bool setting) {
+		_settings.imagesOnRight = setting;
 		_settings.save();
 		notifyListeners();
 	}
