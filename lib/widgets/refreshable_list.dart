@@ -635,6 +635,7 @@ class RefreshableListController<T extends Filterable> {
 	String? contentId;
 	RefreshableListState<T>? state;
 	final Map<Tuple2<int, bool>, Completer<void>> _itemCacheCallbacks = {};
+	int? currentTargetIndex;
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onScroll);
 		slowScrollUpdates.listen(_onSlowScroll);
@@ -752,6 +753,7 @@ class RefreshableListController<T extends Filterable> {
 				throw StateError('No matching item to scroll to');
 			}
 		}
+		currentTargetIndex = targetIndex;
 		Duration d = duration;
 		Curve c = Curves.easeIn;
 		final initialContentId = contentId;
@@ -769,10 +771,11 @@ class RefreshableListController<T extends Filterable> {
 			return (_items[targetIndex].cachedOffset != null);
 		}
 		if (_items[targetIndex].cachedOffset == null) {
-			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 20) {
+			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 20 && targetIndex == currentTargetIndex) {
 				c = Curves.linear;
 			}
 			if (initialContentId != contentId) throw Exception('List was hijacked');
+			if (currentTargetIndex != targetIndex) throw Exception('animateTo was hijacked');
 			Duration timeLeft = duration - DateTime.now().difference(start);
 			if (timeLeft.inMilliseconds.isNegative) {
 				d = duration ~/ 4;
