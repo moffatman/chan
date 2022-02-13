@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:chan/services/settings.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
@@ -93,12 +94,17 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 				}
 				else if (widget.style == HoverPopupStyle.floating) {
 					_globalKey = GlobalKey();
+					final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
 					_entry = OverlayEntry(
-						builder: (context) => _FloatingHoverPopup(
-							key: _globalKey,
-							child: (widget.popupBuilder?.call(_value) ?? widget.popup)!,
-							anchor: widget.anchor,
-							initialMousePosition: event.position,
+						builder: (context) => RootCustomScale(
+							scale: scale,
+							child: _FloatingHoverPopup(
+								key: _globalKey,
+								scale: scale,
+								child: (widget.popupBuilder?.call(_value) ?? widget.popup)!,
+								anchor: widget.anchor,
+								initialMousePosition: event.position,
+							)
 						)
 					);
 				}
@@ -131,11 +137,13 @@ class _FloatingHoverPopup extends StatefulWidget {
 	final Widget child;
 	final Offset initialMousePosition;
 	final Offset? anchor;
+	final double scale;
 
 	const _FloatingHoverPopup({
 		required this.child,
 		required this.initialMousePosition,
 		this.anchor,
+		this.scale = 1.0,
 		Key? key
 	}) : super(key: key);
 
@@ -149,12 +157,12 @@ class _FloatingHoverPopupState extends State<_FloatingHoverPopup> {
 	@override
 	void initState() {
 		super.initState();
-		_mousePosition = widget.initialMousePosition;
+		_mousePosition = widget.initialMousePosition.scale(widget.scale, widget.scale);
 	}
 
 	void updateMousePosition(Offset newMousePosition) {
 		setState(() {
-			_mousePosition = newMousePosition;
+			_mousePosition = newMousePosition.scale(widget.scale, widget.scale);
 		});
 	}
 
