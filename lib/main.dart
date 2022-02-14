@@ -20,6 +20,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tuple/tuple.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'sites/imageboard_site.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
@@ -49,6 +50,7 @@ class _ChanAppState extends State<ChanApp> {
 	final settings = EffectiveSettings(Persistence.settings);
 	late dynamic _lastSite;
 	final Map<String, GlobalKey> _siteKeys = {};
+	String? siteSetupError;
 
 	@override
 	void initState() {
@@ -66,17 +68,25 @@ class _ChanAppState extends State<ChanApp> {
 	}
 
 	Future<void> setSite(dynamic data) async {
-		final _site = makeSite(context, data);
-		Persistence _persistence = Persistence(_site.name);
-		await _persistence.initialize();
-		_site.persistence = _persistence;
-		site = _site;
-		persistence = _persistence;
-		final oldThreadWatcher = threadWatcher;
-		threadWatcher = SavedThreadWatcher(site: _site, persistence: _persistence);
-		setState(() {});
-		await Future.delayed(const Duration(seconds: 5));
-		oldThreadWatcher?.dispose();
+		setState(() {
+			siteSetupError = null;
+		});
+		try {
+			final _site = makeSite(context, data);
+			Persistence _persistence = Persistence(_site.name);
+			await _persistence.initialize();
+			_site.persistence = _persistence;
+			site = _site;
+			persistence = _persistence;
+			final oldThreadWatcher = threadWatcher;
+			threadWatcher = SavedThreadWatcher(site: _site, persistence: _persistence);
+			setState(() {});
+			await Future.delayed(const Duration(seconds: 5));
+			oldThreadWatcher?.dispose();
+		}
+		catch (e) {
+			siteSetupError = 'Fatal setup error\n' + e.toStringDio();
+		}
 	}
 
 	@override
@@ -162,8 +172,16 @@ class _ChanAppState extends State<ChanApp> {
 														scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
 														child: threadWatcher != null ? ChanHomePage(key: _siteKeys.putIfAbsent(site!.name, () => GlobalKey())) : Container(
 															color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-															child: const Center(
-																child: CupertinoActivityIndicator()
+															child: Center(
+																child: siteSetupError != null ? ErrorMessageCard(siteSetupError!, remedies: {
+																	'Resynchronize': () {
+																		setState(() {
+																			siteSetupError = null;
+																		});
+																		settings.updateContentSettings();
+																	},
+																	'Edit content preferences': () => launch(settings.contentSettingsUrl, forceSafariVC: false)
+																}) : const CupertinoActivityIndicator()
 															)
 														)
 													)
