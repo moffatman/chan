@@ -94,8 +94,10 @@ class SettingsPage extends StatelessWidget {
 									crossAxisAlignment: CrossAxisAlignment.stretch,
 									children: [
 										const Text('Development News'),
-										SizedBox(
-											height: 200,
+										AnimatedSize(
+											duration: const Duration(milliseconds: 250),
+											curve: Curves.ease,
+											alignment: Alignment.topCenter,
 											child: FutureBuilder<List<Thread>>(
 												future: context.read<ImageboardSite>().getCatalog('chance'),
 												builder: (context, snapshot) {
@@ -151,8 +153,8 @@ class SettingsPage extends StatelessWidget {
 															))
 														)
 													));
-													return ListView(
-														physics: const BouncingScrollPhysics(),
+													return Column(
+														mainAxisSize: MainAxisSize.min,
 														children: children
 													);
 												}
