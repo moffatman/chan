@@ -38,6 +38,7 @@ class PostSpanRenderOptions {
 	final PointerEnterEventListener? onEnter;
 	final PointerExitEventListener? onExit;
 	final bool ownLine;
+	final bool shrinkWrap;
 	PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -49,7 +50,8 @@ class PostSpanRenderOptions {
 		this.avoidBuggyClippers = false,
 		this.onEnter,
 		this.onExit,
-		this.ownLine = false
+		this.ownLine = false,
+		this.shrinkWrap = false
 	});
 	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 
@@ -66,7 +68,8 @@ class PostSpanRenderOptions {
 		avoidBuggyClippers: avoidBuggyClippers,
 		onEnter: onEnter,
 		onExit: onExit,
-		ownLine: ownLine ?? this.ownLine
+		ownLine: ownLine ?? this.ownLine,
+		shrinkWrap: shrinkWrap
 	);
 }
 
@@ -315,7 +318,7 @@ class PostQuoteLinkSpan extends PostSpan {
 					)
 				);
 				return Tuple2(WidgetSpan(
-					child: options.ownLine ? IntrinsicHeight(
+					child: (options.ownLine && !options.shrinkWrap) ? IntrinsicHeight(
 						child: Row(
 							children: [
 								popup,
@@ -335,7 +338,7 @@ class PostQuoteLinkSpan extends PostSpan {
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
 		final _span = _build(context, options);
-		final span = options.ownLine ? TextSpan(
+		final span = (options.ownLine && !options.shrinkWrap) ? TextSpan(
 			children: [
 				_span.item1,
 				WidgetSpan(child: Row())

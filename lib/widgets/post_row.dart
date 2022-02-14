@@ -91,7 +91,8 @@ class PostRow extends StatelessWidget {
 						TextSpan(
 							children: [
 								_post.span.build(ctx, PostSpanRenderOptions(
-									showCrossThreadLabel: showCrossThreadLabel
+									showCrossThreadLabel: showCrossThreadLabel,
+									shrinkWrap: shrinkWrap
 								)),
 								// Placeholder to guarantee the stacked reply button is not on top of text
 								if (_post.replyIds.isNotEmpty) TextSpan(
@@ -244,7 +245,8 @@ class PostRow extends StatelessWidget {
 																dead: false
 															).build(ctx, PostSpanRenderOptions(
 																showCrossThreadLabel: showCrossThreadLabel,
-																addExpandingPosts: false
+																addExpandingPosts: false,
+																shrinkWrap: shrinkWrap
 															))),
 															..._post.replyIds.map((id) => WidgetSpan(
 																child: ExpandingPost(id: id),
