@@ -162,6 +162,7 @@ class _ChanAppState extends State<ChanApp> {
 									child: CupertinoApp(
 										title: 'Chance',
 										useInheritedMediaQuery: true,
+										debugShowCheckedModeBanner: false,
 										theme: theme,
 										home: Builder(
 											builder: (BuildContext context) {
