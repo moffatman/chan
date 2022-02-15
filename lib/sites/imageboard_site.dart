@@ -315,7 +315,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 					print('Error from ${archive.name}');
 					print(e);
 					print(st);
-					s += '\n${archive.name}: ${e.toStringDio()}';
+					s += '\n${archive.name}: ${e is Object ? e.toStringDio() : e}';
 				}
 			});
 		});
