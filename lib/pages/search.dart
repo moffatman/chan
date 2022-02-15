@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:chan/models/board.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/pages/search_query.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
@@ -19,6 +23,41 @@ class SearchPage extends StatefulWidget {
 	createState() => _SearchPageState();
 }
 
+enum _MediaFilter {
+	none,
+	onlyWithMedia,
+	onlyWithNoMedia,
+	withSpecificMedia
+}
+
+extension ConvertToPublic on _MediaFilter {
+	MediaFilter? get value {
+		switch (this) {
+			case _MediaFilter.none:
+				return MediaFilter.none;
+			case _MediaFilter.onlyWithMedia:
+				return MediaFilter.onlyWithMedia;
+			case _MediaFilter.onlyWithNoMedia:
+				return MediaFilter.onlyWithNoMedia;
+			default:
+				return null;
+		}
+	}
+}
+
+extension ConvertToPrivate on MediaFilter {
+	_MediaFilter? get value {
+		switch (this) {
+			case MediaFilter.none:
+				return _MediaFilter.none;
+			case MediaFilter.onlyWithMedia:
+				return _MediaFilter.onlyWithMedia;
+			case MediaFilter.onlyWithNoMedia:
+				return _MediaFilter.onlyWithNoMedia;
+		}
+	}
+}
+
 final _clearedDate = DateTime.fromMillisecondsSinceEpoch(0);
 
 class _SearchPageState extends State<SearchPage> {
@@ -27,6 +66,7 @@ class _SearchPageState extends State<SearchPage> {
 	late ImageboardArchiveSearchQuery query;
 	DateTime? _chosenDate;
 	bool _searchFocused = false;
+	bool _showingPicker = false;
 	late String _lastBoardName;
 
 	@override
@@ -36,7 +76,7 @@ class _SearchPageState extends State<SearchPage> {
 		query = ImageboardArchiveSearchQuery(boards: [_lastBoardName]);
 		_focusNode.addListener(() {
 			final bool isFocused = _focusNode.hasFocus;
-			if (mounted && (isFocused != _searchFocused)) {
+			if (mounted && (isFocused != _searchFocused) && !_showingPicker) {
 				setState(() {
 					_searchFocused = isFocused;
 				});
@@ -221,15 +261,28 @@ class _SearchPageState extends State<SearchPage> {
 							}
 						),
 						const SizedBox(height: 16),
-						CupertinoSegmentedControl<MediaFilter>(
+						CupertinoSegmentedControl<_MediaFilter>(
 							children: const {
-								MediaFilter.none: Text('All posts'),
-								MediaFilter.onlyWithMedia: Text('With images'),
-								MediaFilter.onlyWithNoMedia: Text('Without images'),
+								_MediaFilter.none: Text('All posts'),
+								_MediaFilter.onlyWithMedia: Text('With images'),
+								_MediaFilter.onlyWithNoMedia: Text('Without images'),
+								_MediaFilter.withSpecificMedia: Text('With MD5')
 							},
-							groupValue: query.mediaFilter,
-							onValueChanged: (newValue) {
-								query.mediaFilter = newValue;
+							groupValue: query.md5 == null ? query.mediaFilter.value : _MediaFilter.withSpecificMedia,
+							onValueChanged: (newValue) async {
+								if (newValue.value != null) {
+									query.md5 = null;
+									query.mediaFilter = newValue.value!;
+								}
+								else {
+									_showingPicker = true;
+									final file = await pickAttachment(context: context);
+									_showingPicker = false;
+									if (file != null) {
+										query.md5 = base64Encode(md5.convert(await file.readAsBytes()).bytes);
+										query.mediaFilter = MediaFilter.none;
+									}
+								}
 								setState(() {});
 							}
 						),
@@ -241,8 +294,8 @@ class _SearchPageState extends State<SearchPage> {
 										padding: const EdgeInsets.only(left: 16, right: 8),
 										child: CupertinoButton(
 											padding: EdgeInsets.zero,
-											color: CupertinoTheme.of(context).primaryColor.withOpacity((query.startDate == null) ? 0.5 : 1),
-											child: Text((query.startDate != null) ? 'Posted after ${query.startDate!.year}-${query.startDate!.month.toString().padLeft(2, '0')}-${query.startDate!.day.toString().padLeft(2, '0')}' : 'No start date filter'),
+											color: CupertinoTheme.of(context).primaryColor.withOpacity((query.startDate == null) ? 0.8: 1),
+											child: Text((query.startDate != null) ? 'Posted after ${query.startDate!.year}-${query.startDate!.month.toString().padLeft(2, '0')}-${query.startDate!.day.toString().padLeft(2, '0')}' : 'Posted after...'),
 											onPressed: () async {
 												final newDate = await _getDate(query.startDate);
 												if (newDate != null) {
@@ -259,8 +312,8 @@ class _SearchPageState extends State<SearchPage> {
 										padding: const EdgeInsets.only(left: 8, right: 16),
 										child: CupertinoButton(
 											padding: EdgeInsets.zero,
-											color: CupertinoTheme.of(context).primaryColor.withOpacity((query.endDate == null) ? 0.5 : 1),
-											child: Text((query.endDate != null) ? 'Posted before ${query.endDate!.year}-${query.endDate!.month.toString().padLeft(2, '0')}-${query.endDate!.day.toString().padLeft(2, '0')}' : 'No end date filter'),
+											color: CupertinoTheme.of(context).primaryColor.withOpacity((query.endDate == null) ? 0.8 : 1),
+											child: Text((query.endDate != null) ? 'Posted before ${query.endDate!.year}-${query.endDate!.month.toString().padLeft(2, '0')}-${query.endDate!.day.toString().padLeft(2, '0')}' : 'Posted before...'),
 											onPressed: () async {
 												final newDate = await _getDate(query.endDate);
 												if (newDate != null) {
@@ -273,6 +326,11 @@ class _SearchPageState extends State<SearchPage> {
 									)
 								)
 							]
+						),
+						if (query.md5 != null) Container(
+							padding: const EdgeInsets.only(top: 16),
+							alignment: Alignment.center,
+							child: Text('MD5: ${query.md5}')
 						)
 					]
 				) : ListView(
@@ -334,7 +392,7 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.postTypeFilter == PostTypeFilter.onlyReplies) const _SearchQueryFilterTag('Replies'),
 		if (q.startDate != null) _SearchQueryFilterTag('After ${q.startDate!.year}-${q.startDate!.month.toString().padLeft(2, '0')}-${q.startDate!.day.toString().padLeft(2, '0')}'),
 		if (q.endDate != null) _SearchQueryFilterTag('Before ${q.endDate!.year}-${q.endDate!.month.toString().padLeft(2, '0')}-${q.endDate!.day.toString().padLeft(2, '0')}'),
-		if (q.md5 != null) const Icon(CupertinoIcons.photo)
+		if (q.md5 != null) _SearchQueryFilterTag('MD5: ${q.md5}')
 	];
 }
 

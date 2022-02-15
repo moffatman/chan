@@ -55,7 +55,8 @@ class ImageboardArchiveSearchQuery {
 			postTypeFilter: postTypeFilter,
 			startDate: (startDate != null) ? DateTime.fromMillisecondsSinceEpoch(startDate!.millisecondsSinceEpoch) : null,
 			endDate: (endDate != null) ? DateTime.fromMillisecondsSinceEpoch(endDate!.millisecondsSinceEpoch) : null,
-			boards: [...boards]
+			boards: [...boards],
+			md5: md5
 		);
 	}
 }
