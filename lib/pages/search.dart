@@ -23,6 +23,7 @@ final _clearedDate = DateTime.fromMillisecondsSinceEpoch(0);
 
 class _SearchPageState extends State<SearchPage> {
 	final _controller = TextEditingController();
+	final _focusNode = FocusNode();
 	late ImageboardArchiveSearchQuery query;
 	DateTime? _chosenDate;
 	bool _searchFocused = false;
@@ -33,8 +34,8 @@ class _SearchPageState extends State<SearchPage> {
 		super.initState();
 		_lastBoardName = context.read<Persistence>().currentBoardName;
 		query = ImageboardArchiveSearchQuery(boards: [_lastBoardName]);
-		_controller.addListener(() {
-			final bool isFocused = _controller.value.selection.baseOffset >= 0;
+		_focusNode.addListener(() {
+			final bool isFocused = _focusNode.hasFocus;
 			if (mounted && (isFocused != _searchFocused)) {
 				setState(() {
 					_searchFocused = isFocused;
@@ -158,7 +159,7 @@ class _SearchPageState extends State<SearchPage> {
 												),
 												CupertinoSearchTextField(
 													placeholder: 'Search archives...',
-													//focusNode: _focusNode,
+													focusNode: _focusNode,
 													controller: _controller,
 													onSubmitted: (String q) {
 														_controller.clear();
@@ -201,6 +202,8 @@ class _SearchPageState extends State<SearchPage> {
 			),
 			child: AnimatedSwitcher(
 				duration: const Duration(milliseconds: 300),
+				switchInCurve: Curves.easeIn,
+				switchOutCurve: Curves.easeOut,
 				child: _searchFocused ? ListView(
 					key: const ValueKey(true),
 					children: [
