@@ -184,12 +184,15 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						child: const Icon(CupertinoIcons.chevron_left),
 						onPressed: () => nav.pop()
 					),
-					middle: Row(
-						mainAxisSize: MainAxisSize.min,
-						children: [
-							const Text('Results:'),
-							...describeQuery(widget.query)
-						]
+					middle: FittedBox(
+						fit: BoxFit.contain,
+						child: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								const Text('Results:'),
+								...describeQuery(widget.query)
+							]
+						)
 					)
 				),
 				child: _build(context, currentValue, setValue)
