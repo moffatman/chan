@@ -49,37 +49,39 @@ class _SearchPageState extends State<SearchPage> {
 			context: context,
 			builder: (context) => Container(
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-				child: Column(
-					mainAxisSize: MainAxisSize.min,
-					children: [
-						SizedBox(
-							height: 300,
-							child: CupertinoDatePicker(
-								mode: CupertinoDatePickerMode.date,
-								initialDateTime: initialDate,
-								onDateTimeChanged: (newDate) {
-									_chosenDate = newDate;
-								}
-							)
-						),
-						Row(
-							mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-							children: [
-								CupertinoButton(
-									child: const Text('Cancel'),
-									onPressed: () => Navigator.of(context).pop()
-								),
-								CupertinoButton(
-									child: const Text('Clear Date'),
-									onPressed: () => Navigator.of(context).pop(_clearedDate)
-								),
-								CupertinoButton(
-									child: const Text('Done'),
-									onPressed: () => Navigator.of(context).pop(_chosenDate)
+				child: SafeArea(
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							SizedBox(
+								height: 300,
+								child: CupertinoDatePicker(
+									mode: CupertinoDatePickerMode.date,
+									initialDateTime: initialDate,
+									onDateTimeChanged: (newDate) {
+										_chosenDate = newDate;
+									}
 								)
-							]
-						)
-					]
+							),
+							Row(
+								mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+								children: [
+									CupertinoButton(
+										child: const Text('Cancel'),
+										onPressed: () => Navigator.of(context).pop()
+									),
+									CupertinoButton(
+										child: const Text('Clear Date'),
+										onPressed: () => Navigator.of(context).pop(_clearedDate)
+									),
+									CupertinoButton(
+										child: const Text('Done'),
+										onPressed: () => Navigator.of(context).pop(_chosenDate)
+									)
+								]
+							)
+						]
+					)
 				)
 			)
 		);
