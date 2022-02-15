@@ -2,6 +2,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
+import 'package:chan/services/http_429_backoff.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
@@ -122,14 +123,22 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	Attachment? _makeAttachment(dynamic data) {
 		if (data['media'] != null) {
 			final List<String> serverFilenameParts =  data['media']['media_orig'].split('.');
+			Uri url = Uri.parse(data['media']['media_link'] ?? data['media']['remote_media_link']);
+			Uri thumbnailUrl = Uri.parse(data['media']['thumb_link']);
+			if (url.host.isEmpty) {
+				url = Uri.https(baseUrl, url.toString());
+			}
+			if (thumbnailUrl.host.isEmpty) {
+				thumbnailUrl = Uri.https(baseUrl, thumbnailUrl.toString());
+			}
 			return Attachment(
 				board: data['board']['shortname'],
 				id: int.parse(serverFilenameParts.first),
 				filename: data['media']['media_filename'],
 				ext: '.' + serverFilenameParts.last,
 				type: serverFilenameParts.last == 'webm' ? AttachmentType.webm : AttachmentType.image,
-				url: Uri.parse(data['media']['media_link'] ?? data['media']['remote_media_link']),
-				thumbnailUrl: Uri.parse(data['media']['thumb_link']),
+				url: url,
+				thumbnailUrl: thumbnailUrl,
 				md5: data['media']['safe_media_hash'],
 				spoiler: data['media']['spoiler'] == '1',
 				width: int.parse(data['media']['media_w']),
@@ -217,7 +226,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			uniqueIPCount: int.tryParse(op['unique_ips'] ?? '')
 		);
 	}
-	Future<Thread> _getThread(ThreadIdentifier thread, int attempt) async {
+	@override
+	Future<Thread> getThread(ThreadIdentifier thread) async {
 		if (!(await getBoards()).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}
@@ -235,14 +245,6 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			if (response.statusCode == 404) {
 				return Future.error(ThreadNotFoundException(thread));
 			}
-			if (response.statusCode == 429) {
-				if (attempt < 3) {
-					final seconds = int.parse(response.headers.value('retry-after')!);
-					print('Waiting $seconds seconds due to server-side rate-limiting');
-					await Future.delayed(Duration(seconds: seconds));
-					return _getThread(thread, attempt + 1);
-				}
-			}
 			return Future.error(HTTPStatusException(response.statusCode!));
 		}
 		final data = response.data;
@@ -250,10 +252,6 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			throw Exception(data['error']);
 		}
 		return _makeThread(thread, data);
-	}
-	@override
-	Future<Thread> getThread(ThreadIdentifier thread) async {
-		return _getThread(thread, 0);
 	}
 	@override
 	Future<List<Thread>> getCatalog(String board) async {
@@ -307,7 +305,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				if (query.startDate != null) 'start': '${query.startDate!.year}-${query.startDate!.month}-${query.startDate!.day}',
 				if (query.endDate != null) 'end': '${query.endDate!.year}-${query.endDate!.month}-${query.endDate!.day}',
 				if (query.md5 != null) 'image': query.md5
-		});
+			},
+			options: Options(
+				validateStatus: (x) => true
+		));
 		if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode!);
 		}
@@ -340,5 +341,9 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		required this.staticUrl,
 		required this.name,
 		this.boards
-	});
+	}) : super() {
+		client.interceptors.add(HTTP429BackoffInterceptor(
+			client: client
+		));
+	}
 }

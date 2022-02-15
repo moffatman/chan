@@ -26,10 +26,9 @@ class SearchQueryPage extends StatefulWidget {
 }
 
 class _SearchQueryPageState extends State<SearchQueryPage> {
-	ImageboardArchiveSearchResult? result;
-	String? errorMessage;
+	ValueNotifier<AsyncSnapshot<ImageboardArchiveSearchResult>> result = ValueNotifier(const AsyncSnapshot.waiting());
 	int? page;
-	bool loading = true;
+	bool get loading => result.value.connectionState == ConnectionState.waiting;
 
 	@override
 	void initState() {
@@ -38,21 +37,17 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	}
 
 	void _runQuery() async {
-		setState(() {
-			errorMessage = null;
-			loading = true;
-		});
+		final siteToUse = result.value.data?.archive ?? context.read<ImageboardSite>();
+		result.value = const AsyncSnapshot.waiting();
 		try {
-			result = await (result?.archive ?? context.read<ImageboardSite>()).search(widget.query, page: page ?? 1);
-			page = result!.page;
-			loading = false;
+			result.value = AsyncSnapshot.withData(ConnectionState.done, await siteToUse.search(widget.query, page: page ?? 1));
+			page = result.value.data?.page;
 			if (mounted) setState(() {});
 		}
 		catch (e, st) {
 			print(e);
 			print(st);
-			errorMessage = e.toStringDio();
-			loading = false;
+			result.value = AsyncSnapshot.withError(ConnectionState.done, e);
 			if (mounted) setState(() {});
 		}
 	}
@@ -63,7 +58,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			children: [
 				CupertinoButton(
 					child: const Text('1'),
-					onPressed: (loading || result!.page == 1) ? null : () {
+					onPressed: (loading || result.value.data?.page == 1) ? null : () {
 						page = 1;
 						_runQuery();
 						onChange();
@@ -72,7 +67,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				const Spacer(),
 				CupertinoButton(
 					child: const Icon(CupertinoIcons.chevron_left),
-					onPressed: (loading || result!.page == 1) ? null : () {
+					onPressed: (loading || result.value.data?.page == 1) ? null : () {
 						page = page! - 1;
 						_runQuery();
 						onChange();
@@ -81,7 +76,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				Text('Page $page'),
 				CupertinoButton(
 					child: const Icon(CupertinoIcons.chevron_right),
-					onPressed: (loading || result!.page == result!.maxPage) ? null : () {
+					onPressed: (loading || result.value.data?.page == result.value.data?.maxPage) ? null : () {
 						page = page! + 1;
 						_runQuery();
 						onChange();
@@ -89,9 +84,9 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				),
 				const Spacer(),
 				CupertinoButton(
-					child: Text('${result!.maxPage}'),
-					onPressed: (loading || result!.page == result!.maxPage) ? null : () {
-						page = result!.maxPage;
+					child: Text('${result.value.data?.maxPage}'),
+					onPressed: (loading || result.value.data?.page == result.value.data?.maxPage) ? null : () {
+						page = result.value.data?.maxPage;
 						_runQuery();
 						onChange();
 					}
@@ -101,12 +96,12 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	}
 
 	Widget _build(BuildContext context, Post? currentValue, ValueChanged<Post?> setValue) {
-		if (errorMessage != null) {
+		if (result.value.error != null) {
 			return Center(
 				child: Column(
 					mainAxisSize: MainAxisSize.min,
 					children: [
-						ErrorMessageCard(errorMessage!),
+						ErrorMessageCard(result.value.error!.toStringDio()),
 						CupertinoButton(
 							child: const Text('Retry'),
 							onPressed: _runQuery
@@ -115,14 +110,14 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				)
 			);
 		}
-		else if (!loading && result != null) {
+		else if (!loading && result.value.hasData) {
 			return ListView.builder(
-				itemCount: result!.posts.length + 2,
+				itemCount: result.value.data!.posts.length + 2,
 				itemBuilder: (context, i) {
-					if (i == 0 || i == result!.posts.length + 1) {
+					if (i == 0 || i == result.value.data!.posts.length + 1) {
 						return _buildPagination(() => setValue(currentValue));
 					}
-					final post = result!.posts[i - 1];
+					final post = result.value.data!.posts[i - 1];
 					return ChangeNotifierProvider<PostSpanZoneData>(
 						create: (context) => PostSpanRootZoneData(
 							site: context.read<ImageboardSite>(),
@@ -145,7 +140,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 							onThumbnailTap: (attachment) => showGallery(
 								context: context,
 								attachments: [attachment],
-								semanticParentIds: []
+								semanticParentIds: [-7]
 							),
 							showCrossThreadLabel: false,
 							allowTappingLinks: false,
@@ -158,7 +153,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		}
 		return Column(
 			children: [
-				if (result != null) SafeArea(
+				if (result.value.hasData) SafeArea(
 					bottom: false,
 					child: _buildPagination(() => setValue(currentValue))
 				),
@@ -176,26 +171,29 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		final nav = Navigator.of(context);
 		return MasterDetailPage<Post>(
 			id: widget.query,
-			masterBuilder: (context, currentValue, setValue) => CupertinoPageScaffold(
-				navigationBar: CupertinoNavigationBar(
-					transitionBetweenRoutes: false,
-					leading: CupertinoButton(
-						padding: EdgeInsets.zero,
-						child: const Icon(CupertinoIcons.chevron_left),
-						onPressed: () => nav.pop()
-					),
-					middle: FittedBox(
-						fit: BoxFit.contain,
-						child: Row(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								const Text('Results:'),
-								...describeQuery(widget.query)
-							]
+			masterBuilder: (context, currentValue, setValue) => AnimatedBuilder(
+				animation: result,
+				builder: (context, child) => CupertinoPageScaffold(
+					navigationBar: CupertinoNavigationBar(
+						transitionBetweenRoutes: false,
+						leading: CupertinoButton(
+							padding: EdgeInsets.zero,
+							child: const Icon(CupertinoIcons.chevron_left),
+							onPressed: () => nav.pop()
+						),
+						middle: FittedBox(
+							fit: BoxFit.contain,
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									const Text('Results:'),
+									...describeQuery(widget.query)
+								]
+							)
 						)
-					)
-				),
-				child: _build(context, currentValue, setValue)
+					),
+					child: _build(context, currentValue, setValue)
+				)
 			),
 			detailBuilder: (post, poppedOut) => BuiltDetailPane(
 				widget: post != null ? ThreadPage(

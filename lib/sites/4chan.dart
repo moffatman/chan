@@ -4,9 +4,7 @@ import 'dart:math';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
-import 'package:chan/models/search.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
@@ -540,25 +538,6 @@ class Site4Chan extends ImageboardSite {
 		if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode!);
 		}
-	}
-
-	@override
-	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page}) async {
-		String s = '';
-		for (final archive in archives) {
-			try {
-				return await archive.search(query, page: page);
-			}
-			catch(e, st) {
-				if (e is! BoardNotFoundException) {
-					print('Error from ${archive.name}');
-					print(e);
-					print(st);
-					s += '\n${archive.name}: ${e.toStringDio()}';
-				}
-			}
-		}
-		throw Exception('Search failed - exhausted all archives$s');
 	}
 
 	@override

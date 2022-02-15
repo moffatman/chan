@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
@@ -297,6 +298,34 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		}
 		else {
 			throw BoardNotFoundException(thread.board);
+		}
+	}
+
+	@override
+	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page}) async {
+		String s = '';
+		final completer = Completer<ImageboardArchiveSearchResult>();
+		final futures = archives.map((archive) {
+			return archive.search(query, page: page).then((result) {
+				if (!completer.isCompleted) {
+					completer.complete(result);
+				}
+			}, onError: (e, st) {
+				if (e is! BoardNotFoundException) {
+					print('Error from ${archive.name}');
+					print(e);
+					print(st);
+					s += '\n${archive.name}: ${e.toStringDio()}';
+				}
+			});
+		});
+		await Future.any([completer.future, Future.wait(futures)]);
+		if (completer.isCompleted) {
+			print('Returning search result');
+			return completer.future;
+		}
+		else {
+			throw Exception('Search failed - exhausted all archives$s');
 		}
 	}
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
