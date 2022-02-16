@@ -1,4 +1,3 @@
-import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
@@ -9,8 +8,10 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 
@@ -26,7 +27,7 @@ class SearchQueryPage extends StatefulWidget {
 }
 
 class _SearchQueryPageState extends State<SearchQueryPage> {
-	ValueNotifier<AsyncSnapshot<ImageboardArchiveSearchResult>> result = ValueNotifier(const AsyncSnapshot.waiting());
+	ValueNotifier<AsyncSnapshot<ImageboardArchiveSearchResultPage>> result = ValueNotifier(const AsyncSnapshot.waiting());
 	int? page;
 	bool get loading => result.value.connectionState == ConnectionState.waiting;
 
@@ -95,7 +96,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		);
 	}
 
-	Widget _build(BuildContext context, Post? currentValue, ValueChanged<Post?> setValue) {
+	Widget _build(BuildContext context, ImageboardArchiveSearchResult? currentValue, ValueChanged<ImageboardArchiveSearchResult?> setValue) {
 		if (result.value.error != null) {
 			return Center(
 				child: Column(
@@ -111,44 +112,66 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			);
 		}
 		else if (!loading && result.value.hasData) {
-			return ListView.builder(
+			return ListView.separated(
 				itemCount: result.value.data!.posts.length + 2,
 				itemBuilder: (context, i) {
 					if (i == 0 || i == result.value.data!.posts.length + 1) {
 						return _buildPagination(() => setValue(currentValue));
 					}
-					final post = result.value.data!.posts[i - 1];
-					return ChangeNotifierProvider<PostSpanZoneData>(
-						create: (context) => PostSpanRootZoneData(
-							site: context.read<ImageboardSite>(),
-							thread: Thread(
-								board: post.threadIdentifier.board,
-								id: post.threadIdentifier.id,
-								isDeleted: false,
-								isArchived: false,
-								title: '',
-								isSticky: false,
-								replyCount: -1,
-								imageCount: -1,
-								time: DateTime.fromMicrosecondsSinceEpoch(0),
-								posts: [],
+					final row = result.value.data!.posts[i - 1];
+					if (row.post != null) {
+						return ChangeNotifierProvider<PostSpanZoneData>(
+							create: (context) => PostSpanRootZoneData(
+								site: context.read<ImageboardSite>(),
+								thread: Thread(
+									board: row.post!.threadIdentifier.board,
+									id: row.post!.threadIdentifier.id,
+									isDeleted: false,
+									isArchived: false,
+									title: '',
+									isSticky: false,
+									replyCount: -1,
+									imageCount: -1,
+									time: DateTime.fromMicrosecondsSinceEpoch(0),
+									posts: [],
+								),
+								semanticRootIds: [-7]
 							),
-							semanticRootIds: [-7]
-						),
-						child: PostRow(
-							post: post,
-							onThumbnailTap: (attachment) => showGallery(
-								context: context,
-								attachments: [attachment],
-								semanticParentIds: [-7]
-							),
-							showCrossThreadLabel: false,
-							allowTappingLinks: false,
-							isSelected: currentValue == post,
-							onTap: () => setValue(post)
-						)
-					);
-				}
+							child: PostRow(
+								post: row.post!,
+								onThumbnailTap: (attachment) => showGallery(
+									context: context,
+									attachments: [attachment],
+									semanticParentIds: [-7]
+								),
+								showCrossThreadLabel: false,
+								allowTappingLinks: false,
+								isSelected: currentValue == row,
+								onTap: () => setValue(row)
+							)
+						);
+					}
+					else {
+						return GestureDetector(
+							onTap: () => setValue(row),
+							child: ThreadRow(
+								thread: row.thread!,
+								onThumbnailTap: (attachment) => showGallery(
+									context: context,
+									attachments: [attachment],
+									semanticParentIds: [-7]
+								),
+								isSelected: currentValue == row,
+								countsUnreliable: true
+							)
+						);
+					}
+				},
+				separatorBuilder: (context, i) => Divider(
+					thickness: 1,
+					height: 0,
+					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+				)
 			);
 		}
 		return Column(
@@ -169,7 +192,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	@override
 	Widget build(BuildContext context) {
 		final nav = Navigator.of(context);
-		return MasterDetailPage<Post>(
+		return MasterDetailPage<ImageboardArchiveSearchResult>(
 			id: widget.query,
 			masterBuilder: (context, currentValue, setValue) => AnimatedBuilder(
 				animation: result,

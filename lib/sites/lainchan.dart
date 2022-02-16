@@ -385,7 +385,7 @@ class SiteLainchan extends ImageboardSite {
 	String get imageUrl => baseUrl;
 
 	@override
-	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page}) {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page}) {
 		throw UnimplementedError();
 	}
 

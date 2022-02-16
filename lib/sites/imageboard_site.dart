@@ -139,11 +139,25 @@ class Chan4CustomCaptchaSolution extends CaptchaSolution {
 }
 
 class ImageboardArchiveSearchResult {
-	final List<Post> posts;
+	final Post? post;
+	final Thread? thread;
+	ImageboardArchiveSearchResult({
+		this.post,
+		this.thread
+	}) {
+		assert(post != null || thread != null);
+	}
+
+	ThreadIdentifier get threadIdentifier => (post?.threadIdentifier ?? thread?.identifier)!;
+	int get id => (post?.id ?? thread?.id)!;
+}
+
+class ImageboardArchiveSearchResultPage {
+	final List<ImageboardArchiveSearchResult> posts;
 	final int page;
 	final int maxPage;
 	final ImageboardSiteArchive archive;
-	ImageboardArchiveSearchResult({
+	ImageboardArchiveSearchResultPage({
 		required this.posts,
 		required this.page,
 		required this.maxPage,
@@ -205,7 +219,7 @@ abstract class ImageboardSiteArchive {
 	Future<Thread> getThread(ThreadIdentifier thread);
 	Future<List<Thread>> getCatalog(String board);
 	Future<List<ImageboardBoard>> getBoards();
-	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page});
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page});
 	String getWebUrl(String board, [int? threadId, int? postId]);
 }
 
@@ -302,9 +316,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page}) async {
 		String s = '';
-		final completer = Completer<ImageboardArchiveSearchResult>();
+		final completer = Completer<ImageboardArchiveSearchResultPage>();
 		final futures = archives.map((archive) {
 			return archive.search(query, page: page).then((result) {
 				if (!completer.isCompleted) {

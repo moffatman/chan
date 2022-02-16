@@ -26,6 +26,7 @@ class ThreadRow extends StatelessWidget {
 	final Iterable<int> semanticParentIds;
 	final bool contentFocus;
 	final bool showBoardName;
+	final bool countsUnreliable;
 	const ThreadRow({
 		required this.thread,
 		required this.isSelected,
@@ -33,6 +34,7 @@ class ThreadRow extends StatelessWidget {
 		this.onThumbnailTap,
 		this.contentFocus = false,
 		this.showBoardName = false,
+		this.countsUnreliable = false,
 		this.semanticParentIds = const [],
 		Key? key
 	}) : super(key: key);
@@ -44,7 +46,7 @@ class ThreadRow extends StatelessWidget {
 			timeDiff = '${diff.inDays ~/ 365}y';
 		}
 		else if (diff.inDays > 30) {
-			timeDiff = '${diff.inDays ~/ 30}m';
+			timeDiff = '${diff.inDays ~/ 30}mo';
 		}
 		else if (diff.inDays > 0) {
 			timeDiff = '${diff.inDays}d';
@@ -133,7 +135,8 @@ class ThreadRow extends StatelessWidget {
 										const SizedBox(width: 6),
 										Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
 										const SizedBox(width: 4),
-										Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
+										if ((latestReplyCount - unseenReplyCount) == 0 && countsUnreliable) const Text('--')
+										else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
 										if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
 										if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)),
 										const SizedBox(width: 2),
@@ -152,6 +155,7 @@ class ThreadRow extends StatelessWidget {
 											Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
 											if (unseenImageCount > 0) Text('+$unseenImageCount'),
 										]
+										else if (unseenImageCount == 0 && countsUnreliable) const Text('--')
 										else Text('$unseenImageCount', style: TextStyle(color: threadState?.lastSeenPostId != null ? grey : null)),
 										const SizedBox(width: 2)
 									]

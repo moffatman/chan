@@ -287,8 +287,28 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return boards!;
 	}
 
+	Future<ImageboardArchiveSearchResult> _makeResult(dynamic data) async {
+		if (data['op'] == '1') {
+			return ImageboardArchiveSearchResult(
+				thread: await _makeThread(ThreadIdentifier(
+					board: data['board']['shortname'],
+					id: int.parse(data['num'])
+				), {
+					data['num']: {
+						'op': data
+					}
+				})
+			);
+		}
+		else {
+			return ImageboardArchiveSearchResult(
+				post: await _makePost(data)
+			);
+		}
+	}
+
 	@override
-	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page}) async {
 		final knownBoards = await getBoards();
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {
@@ -316,8 +336,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (data['error'] != null) {
 			throw FoolFuukaException(data['error']);
 		}
-		return ImageboardArchiveSearchResult(
-			posts: (await Future.wait((data['0']['posts'] as Iterable<dynamic>).map(_makePost))).toList(),
+		return ImageboardArchiveSearchResultPage(
+			posts: (await Future.wait((data['0']['posts'] as Iterable<dynamic>).map(_makeResult))).toList(),
 			page: page,
 			maxPage: (data['meta']['total_found'] / 25).ceil(),
 			archive: this

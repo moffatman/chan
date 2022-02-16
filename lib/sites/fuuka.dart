@@ -225,7 +225,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResult> search(ImageboardArchiveSearchQuery query, {required int page}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page}) async {
 		final knownBoards = await getBoards();
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {
@@ -248,8 +248,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 			throw HTTPStatusException(response.statusCode!);
 		}
 		final document = parse(response.data);
-		return ImageboardArchiveSearchResult(
-			posts: (await Future.wait(document.querySelectorAll('.reply:not(.subreply)').map(_makePost))).toList(),
+		return ImageboardArchiveSearchResultPage(
+			posts: (await Future.wait(document.querySelectorAll('.reply:not(.subreply)').map(_makePost))).map((p) => ImageboardArchiveSearchResult(post: p)).toList(),
 			page: page,
 			maxPage: 100,
 			archive: this
