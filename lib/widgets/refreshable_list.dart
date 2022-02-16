@@ -57,7 +57,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	createState() => RefreshableListState<T>();
 }
 
-class RefreshableListState<T extends Filterable> extends State<RefreshableList<T>> {
+class RefreshableListState<T extends Filterable> extends State<RefreshableList<T>> with TickerProviderStateMixin {
 	List<T>? list;
 	String? errorMessage;
 	Type? errorType;
@@ -73,6 +73,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	bool _showFilteredValues = false;
 	bool _searchTapped = false;
 	bool _overscrollEndingNow = false;
+	late final AnimationController _footerShakeAnimation;
 
 	@override
 	void initState() {
@@ -92,6 +93,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			update();
 			resetTimer();
 		}
+		 _footerShakeAnimation = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
 	}
 
 	@override
@@ -161,6 +163,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		if (updatingNow) {
 			return;
 		}
+		_footerShakeAnimation.forward(from: 0);
 		try {
 			setState(() {
 				errorMessage = null;
@@ -479,7 +482,11 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 										nextUpdateTime: nextUpdateTime,
 										errorMessage: errorMessage,
 										remedy: widget.remedies[errorType]?.call(context, update),
-										overscrollFactor: widget.controller?.overscrollFactor
+										overscrollFactor: widget.controller?.overscrollFactor,
+										shakeAnimation: CurvedAnimation(
+											curve: Curves.easeInOutCubic,
+											parent: _footerShakeAnimation
+										)
 									)
 								)
 							)
@@ -519,6 +526,7 @@ class RefreshableListFooter extends StatelessWidget {
 	final DateTime? nextUpdateTime;
 	final Widget? remedy;
 	final ValueListenable<double>? overscrollFactor;
+	final Animation shakeAnimation;
 	const RefreshableListFooter({
 		required this.updater,
 		required this.updatingNow,
@@ -527,6 +535,7 @@ class RefreshableListFooter extends StatelessWidget {
 		this.errorMessage,
 		this.remedy,
 		this.overscrollFactor,
+		required this.shakeAnimation,
 		Key? key
 	}) : super(key: key);
 
@@ -550,41 +559,49 @@ class RefreshableListFooter extends StatelessWidget {
 								const SizedBox(height: 16),
 								remedy!
 							],
-							if (overscrollFactor != null) Container(
-								padding: const EdgeInsets.only(top: 16),
-								constraints: const BoxConstraints(
-									maxWidth: 100
+							if (overscrollFactor != null) AnimatedBuilder(
+								animation: shakeAnimation,
+								builder: (context, child) => Transform.scale(
+									//padding: EdgeInsets.only(left: 50 + sin(shakeAnimation.value * pi * 3) * 50, right: 50),
+									scale: 0.5 + (0.5 - shakeAnimation.value).abs(),
+									child: child
 								),
-								child: ClipRRect(
-									borderRadius: const BorderRadius.all(Radius.circular(8)),
-									child: Stack(
-										children: [
-											if (nextUpdateTime != null && lastUpdateTime != null) TimedRebuilder(
-												interval: const Duration(seconds: 1),
-												builder: (context) {
-													final now = DateTime.now();
-													return LinearProgressIndicator(
-														value: updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds,
-														color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
-														backgroundColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.2),
-														minHeight: 8
-													);
-												}
-											),
-											ValueListenableBuilder(
-												valueListenable: overscrollFactor!,
-												builder: (context, double value, child) => TweenAnimationBuilder(
-													tween: Tween<double>(begin: 0, end: value),
-													duration: const Duration(milliseconds: 50),
-													builder: (context, double smoothedValue, child) => LinearProgressIndicator(
-													value: updatingNow ? null : smoothedValue,
-														backgroundColor: Colors.transparent,
-														color: CupertinoTheme.of(context).primaryColor,
-														minHeight: 8
+								child: Container(
+									padding: const EdgeInsets.only(top: 16),
+									constraints: const BoxConstraints(
+										maxWidth: 100
+									),
+									child: ClipRRect(
+										borderRadius: const BorderRadius.all(Radius.circular(8)),
+										child: Stack(
+											children: [
+												if (nextUpdateTime != null && lastUpdateTime != null) TimedRebuilder(
+													interval: const Duration(seconds: 1),
+													builder: (context) {
+														final now = DateTime.now();
+														return LinearProgressIndicator(
+															value: updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds,
+															color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
+															backgroundColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.2),
+															minHeight: 8
+														);
+													}
+												),
+												ValueListenableBuilder(
+													valueListenable: overscrollFactor!,
+													builder: (context, double value, child) => TweenAnimationBuilder(
+														tween: Tween<double>(begin: 0, end: value),
+														duration: const Duration(milliseconds: 50),
+														builder: (context, double smoothedValue, child) => LinearProgressIndicator(
+														value: updatingNow ? null : smoothedValue,
+															backgroundColor: Colors.transparent,
+															color: CupertinoTheme.of(context).primaryColor,
+															minHeight: 8
+														)
 													)
 												)
-											)
-										]
+											]
+										)
 									)
 								)
 							),
