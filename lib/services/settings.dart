@@ -555,6 +555,17 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
+	final List<VoidCallback> _appResumeCallbacks = [];
+	void addAppResumeCallback(VoidCallback task) {
+		_appResumeCallbacks.add(task);
+	}
+	void _runAppResumeCallbacks() {
+		for (final task in _appResumeCallbacks) {
+			task();
+		}
+		_appResumeCallbacks.clear();
+	}
+
 	EffectiveSettings(SavedSettings settings) {
 		_settings = settings;
 		if (_settings.supportMouse == TristateSystemSetting.b) {
@@ -617,6 +628,7 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 	void didChangeAppLifecycleState(AppLifecycleState state) {
 		if (state == AppLifecycleState.resumed) {
 			_checkConnectivity();
+			context.read<EffectiveSettings>()._runAppResumeCallbacks();
 		}
 	}
 
@@ -631,6 +643,7 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 			onEnter: (event) {
 				_mouseExitTimer?.cancel();
 				context.read<EffectiveSettings>().systemMousePresent = true;
+				context.read<EffectiveSettings>()._runAppResumeCallbacks();
 			},
 			onExit: (event) {
 				_mouseExitTimer = Timer(_mouseStateChangeTimeout, () => context.read<EffectiveSettings>().systemMousePresent = false);

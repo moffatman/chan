@@ -207,7 +207,13 @@ class SettingsPage extends StatelessWidget {
 																Icon(Icons.launch_rounded, size: 16)
 															]
 														),
-														onPressed: () => launch(settings.contentSettingsUrl, forceSafariVC: false)
+														onPressed: () {
+															launch(settings.contentSettingsUrl, forceSafariVC: false);
+															settings.addAppResumeCallback(() async {
+																await Future.delayed(const Duration(seconds: 1));
+																settings.updateContentSettings();
+															});
+														}
 													)
 												]
 											)

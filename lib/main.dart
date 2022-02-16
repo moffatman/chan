@@ -181,7 +181,13 @@ class _ChanAppState extends State<ChanApp> {
 																		});
 																		settings.updateContentSettings();
 																	},
-																	'Edit content preferences': () => launch(settings.contentSettingsUrl, forceSafariVC: false)
+																	'Edit content preferences': () {
+																		launch(settings.contentSettingsUrl, forceSafariVC: false);
+																		settings.addAppResumeCallback(() async {
+																			await Future.delayed(const Duration(seconds: 1));
+																			settings.updateContentSettings();
+																		});
+																	}
 																}) : const CupertinoActivityIndicator()
 															)
 														)
