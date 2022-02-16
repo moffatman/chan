@@ -2,13 +2,17 @@ import 'dart:convert';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/models/search.dart';
+import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search_query.dart';
+import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +25,54 @@ class SearchPage extends StatefulWidget {
 
 	@override
 	createState() => _SearchPageState();
+}
+
+class _SearchPageState extends State<SearchPage> {
+	final _valueInjector = ValueNotifier<ImageboardArchiveSearchResult?>(null);
+	@override
+	Widget build(BuildContext context) {
+		return MasterDetailPage<ImageboardArchiveSearchResult>(
+			id: 'search',
+			masterBuilder: (context, currentValue, setValue) {
+				WidgetsBinding.instance.addPostFrameCallback((_){
+					_valueInjector.value = currentValue;
+				});
+				return SearchComposePage(
+					onSearchComposed: (query) {
+						Navigator.of(context).push(FullWidthCupertinoPageRoute(
+							builder: (context) => ValueListenableBuilder(
+								valueListenable: _valueInjector,
+								builder: (context, ImageboardArchiveSearchResult? selectedResult, child) => SearchQueryPage(
+									query: query,
+									selectedResult: selectedResult,
+									onResultSelected: setValue
+								)
+							),
+							showAnimations: context.read<EffectiveSettings>().showAnimations
+						));
+					},
+				);
+			},
+			detailBuilder: (post, poppedOut) => BuiltDetailPane(
+				widget: post != null ? ThreadPage(
+					thread: post.threadIdentifier,
+					initialPostId: post.id,
+					initiallyUseArchive: true,
+					boardSemanticId: -1
+				) : Builder(
+					builder: (context) => Container(
+						decoration: BoxDecoration(
+							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+						),
+						child: const Center(
+							child: Text('Select a search result')
+						)
+					)
+				),
+				pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
+			)
+		);
+	}
 }
 
 enum _MediaFilter {
@@ -60,7 +112,19 @@ extension ConvertToPrivate on MediaFilter {
 
 final _clearedDate = DateTime.fromMillisecondsSinceEpoch(0);
 
-class _SearchPageState extends State<SearchPage> {
+class SearchComposePage extends StatefulWidget {
+	final ValueChanged<ImageboardArchiveSearchQuery> onSearchComposed;
+
+	const SearchComposePage({
+		required this.onSearchComposed,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	createState() => _SearchComposePageState();
+}
+
+class _SearchComposePageState extends State<SearchComposePage> {
 	final _controller = TextEditingController();
 	final _focusNode = FocusNode();
 	late ImageboardArchiveSearchQuery query;
@@ -206,10 +270,7 @@ class _SearchPageState extends State<SearchPage> {
 														FocusManager.instance.primaryFocus!.unfocus();
 														context.read<Persistence>().recentSearches.add(query.clone());
 														context.read<Persistence>().didUpdateRecentSearches();
-														Navigator.of(context).push(FullWidthCupertinoPageRoute(
-															builder: (context) => SearchQueryPage(query: query),
-															showAnimations: context.read<EffectiveSettings>().showAnimations
-														));
+														widget.onSearchComposed(query);
 													},
 													onSuffixTap: () {
 														_controller.clear();
@@ -341,10 +402,7 @@ class _SearchPageState extends State<SearchPage> {
 							onTap: () {
 								context.read<Persistence>().recentSearches.bump(q);
 								context.read<Persistence>().didUpdateRecentSearches();
-								Navigator.of(context).push(FullWidthCupertinoPageRoute(
-									builder: (context) => SearchQueryPage(query: q),
-									showAnimations: context.read<EffectiveSettings>().showAnimations
-								));
+								widget.onSearchComposed(q);
 							},
 							child: Container(
 								decoration: BoxDecoration(

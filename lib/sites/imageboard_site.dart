@@ -150,6 +150,8 @@ class ImageboardArchiveSearchResult {
 
 	ThreadIdentifier get threadIdentifier => (post?.threadIdentifier ?? thread?.identifier)!;
 	int get id => (post?.id ?? thread?.id)!;
+
+	@override toString() => 'ImageboardArchiveSearchResult(${post ?? thread})';
 }
 
 class ImageboardArchiveSearchResultPage {

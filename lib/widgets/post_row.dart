@@ -16,7 +16,6 @@ import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
 
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
@@ -424,10 +423,7 @@ class PostRow extends StatelessWidget {
 						child: const Text('Search archives'),
 						trailingIcon: Icons.image_search,
 						onPressed: () {
-							context.read<GlobalKey<NavigatorState>>().currentState!.push(FullWidthCupertinoPageRoute(
-								builder: (context) => SearchQueryPage(query: ImageboardArchiveSearchQuery(boards: [_post.board], md5: _post.attachment!.md5)),
-								showAnimations: context.read<EffectiveSettings>().showAnimations
-							));
+							openSearch(context: context, query: ImageboardArchiveSearchQuery(boards: [_post.board], md5: _post.attachment!.md5));
 						}
 					),
 					ContextMenuAction(

@@ -1,11 +1,12 @@
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
-import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/thread_row.dart';
@@ -17,8 +18,12 @@ import 'package:provider/provider.dart';
 
 class SearchQueryPage extends StatefulWidget {
 	final ImageboardArchiveSearchQuery query;
+	final ImageboardArchiveSearchResult? selectedResult;
+	final ValueChanged<ImageboardArchiveSearchResult?> onResultSelected;
 	const SearchQueryPage({
 		required this.query,
+		required this.selectedResult,
+		required this.onResultSelected,
 		Key? key
 	}) : super(key: key);
 
@@ -27,9 +32,9 @@ class SearchQueryPage extends StatefulWidget {
 }
 
 class _SearchQueryPageState extends State<SearchQueryPage> {
-	ValueNotifier<AsyncSnapshot<ImageboardArchiveSearchResultPage>> result = ValueNotifier(const AsyncSnapshot.waiting());
+	AsyncSnapshot<ImageboardArchiveSearchResultPage> result = const AsyncSnapshot.waiting();
 	int? page;
-	bool get loading => result.value.connectionState == ConnectionState.waiting;
+	bool get loading => result.connectionState == ConnectionState.waiting;
 
 	@override
 	void initState() {
@@ -38,17 +43,18 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	}
 
 	void _runQuery() async {
-		final siteToUse = result.value.data?.archive ?? context.read<ImageboardSite>();
-		result.value = const AsyncSnapshot.waiting();
+		final siteToUse = result.data?.archive ?? context.read<ImageboardSite>();
+		result = const AsyncSnapshot.waiting();
+		setState(() {});
 		try {
-			result.value = AsyncSnapshot.withData(ConnectionState.done, await siteToUse.search(widget.query, page: page ?? 1));
-			page = result.value.data?.page;
+			result = AsyncSnapshot.withData(ConnectionState.done, await siteToUse.search(widget.query, page: page ?? 1));
+			page = result.data?.page;
 			if (mounted) setState(() {});
 		}
 		catch (e, st) {
 			print(e);
 			print(st);
-			result.value = AsyncSnapshot.withError(ConnectionState.done, e);
+			result = AsyncSnapshot.withError(ConnectionState.done, e);
 			if (mounted) setState(() {});
 		}
 	}
@@ -59,7 +65,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			children: [
 				CupertinoButton(
 					child: const Text('1'),
-					onPressed: (loading || result.value.data?.page == 1) ? null : () {
+					onPressed: (loading || result.data?.page == 1) ? null : () {
 						page = 1;
 						_runQuery();
 						onChange();
@@ -68,7 +74,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				const Spacer(),
 				CupertinoButton(
 					child: const Icon(CupertinoIcons.chevron_left),
-					onPressed: (loading || result.value.data?.page == 1) ? null : () {
+					onPressed: (loading || result.data?.page == 1) ? null : () {
 						page = page! - 1;
 						_runQuery();
 						onChange();
@@ -77,7 +83,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				Text('Page $page'),
 				CupertinoButton(
 					child: const Icon(CupertinoIcons.chevron_right),
-					onPressed: (loading || result.value.data?.page == result.value.data?.maxPage) ? null : () {
+					onPressed: (loading || result.data?.page == result.data?.maxPage) ? null : () {
 						page = page! + 1;
 						_runQuery();
 						onChange();
@@ -85,9 +91,9 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				),
 				const Spacer(),
 				CupertinoButton(
-					child: Text('${result.value.data?.maxPage}'),
-					onPressed: (loading || result.value.data?.page == result.value.data?.maxPage) ? null : () {
-						page = result.value.data?.maxPage;
+					child: Text('${result.data?.maxPage}'),
+					onPressed: (loading || result.data?.page == result.data?.maxPage) ? null : () {
+						page = result.data?.maxPage;
 						_runQuery();
 						onChange();
 					}
@@ -97,12 +103,13 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	}
 
 	Widget _build(BuildContext context, ImageboardArchiveSearchResult? currentValue, ValueChanged<ImageboardArchiveSearchResult?> setValue) {
-		if (result.value.error != null) {
+		print(currentValue);
+		if (result.error != null) {
 			return Center(
 				child: Column(
 					mainAxisSize: MainAxisSize.min,
 					children: [
-						ErrorMessageCard(result.value.error!.toStringDio()),
+						ErrorMessageCard(result.error!.toStringDio()),
 						CupertinoButton(
 							child: const Text('Retry'),
 							onPressed: _runQuery
@@ -111,14 +118,14 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				)
 			);
 		}
-		else if (!loading && result.value.hasData) {
+		else if (!loading && result.hasData) {
 			return ListView.separated(
-				itemCount: result.value.data!.posts.length + 2,
+				itemCount: result.data!.posts.length + 2,
 				itemBuilder: (context, i) {
-					if (i == 0 || i == result.value.data!.posts.length + 1) {
+					if (i == 0 || i == result.data!.posts.length + 1) {
 						return _buildPagination(() => setValue(currentValue));
 					}
-					final row = result.value.data!.posts[i - 1];
+					final row = result.data!.posts[i - 1];
 					if (row.post != null) {
 						return ChangeNotifierProvider<PostSpanZoneData>(
 							create: (context) => PostSpanRootZoneData(
@@ -176,7 +183,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		}
 		return Column(
 			children: [
-				if (result.value.hasData) SafeArea(
+				if (result.hasData) SafeArea(
 					bottom: false,
 					child: _buildPagination(() => setValue(currentValue))
 				),
@@ -191,51 +198,47 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final nav = Navigator.of(context);
-		return MasterDetailPage<ImageboardArchiveSearchResult>(
-			id: widget.query,
-			masterBuilder: (context, currentValue, setValue) => AnimatedBuilder(
-				animation: result,
-				builder: (context, child) => CupertinoPageScaffold(
-					navigationBar: CupertinoNavigationBar(
-						transitionBetweenRoutes: false,
-						leading: CupertinoButton(
-							padding: EdgeInsets.zero,
-							child: const Icon(CupertinoIcons.chevron_left),
-							onPressed: () => nav.pop()
-						),
-						middle: FittedBox(
-							fit: BoxFit.contain,
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									const Text('Results:'),
-									...describeQuery(widget.query)
-								]
-							)
-						)
-					),
-					child: _build(context, currentValue, setValue)
+		return  CupertinoPageScaffold(
+			navigationBar: CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
+				middle: FittedBox(
+					fit: BoxFit.contain,
+					child: Row(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							const Text('Results:'),
+							...describeQuery(widget.query)
+						]
+					)
 				)
 			),
-			detailBuilder: (post, poppedOut) => BuiltDetailPane(
-				widget: post != null ? ThreadPage(
-					thread: post.threadIdentifier,
-					initialPostId: post.id,
-					initiallyUseArchive: true,
-					boardSemanticId: -1
-				) : Builder(
-					builder: (context) => Container(
-						decoration: BoxDecoration(
-							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-						),
-						child: const Center(
-							child: Text('Select a search result')
-						)
-					)
-				),
-				pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
-			)
+			child: _build(context, widget.selectedResult, widget.onResultSelected)
 		);
 	}
+}
+
+openSearch({
+	required BuildContext context,
+	required ImageboardArchiveSearchQuery query
+}) {
+	Navigator.of(context).push(FullWidthCupertinoPageRoute(
+		builder: (context) => SearchQueryPage(
+			query: query,
+			onResultSelected: (result) {
+				if (result != null) {
+					Navigator.of(context).push(FullWidthCupertinoPageRoute(
+						builder: (context) => ThreadPage(
+							thread: result.threadIdentifier,
+							initialPostId: result.id,
+							initiallyUseArchive: true,
+							boardSemanticId: -1
+						),
+						showAnimations: context.read<EffectiveSettings>().showAnimations
+					));
+				}
+			},
+			selectedResult: null
+		),
+		showAnimations: context.read<EffectiveSettings>().showAnimations
+	));
 }

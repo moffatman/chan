@@ -9,12 +9,10 @@ import 'package:chan/pages/search_query.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/rotating_image_provider.dart';
-import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/circular_loading_indicator.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/rx_stream_builder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -596,10 +594,7 @@ class AttachmentViewer extends StatelessWidget {
 						child: const Text('Search archives'),
 						trailingIcon: Icons.image_search,
 						onPressed: () {
-							Navigator.of(context).push(FullWidthCupertinoPageRoute(
-								builder: (context) => SearchQueryPage(query: ImageboardArchiveSearchQuery(boards: [attachment.board], md5: attachment.md5)),
-								showAnimations: context.read<EffectiveSettings>().showAnimations
-							));
+							openSearch(context: context, query: ImageboardArchiveSearchQuery(boards: [attachment.board], md5: attachment.md5));
 						}
 					),
 					CupertinoContextMenuAction(
