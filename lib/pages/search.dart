@@ -12,7 +12,6 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:provider/provider.dart';
@@ -322,29 +321,47 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							}
 						),
 						const SizedBox(height: 16),
-						CupertinoSegmentedControl<_MediaFilter>(
-							children: const {
-								_MediaFilter.none: Text('All posts'),
-								_MediaFilter.onlyWithMedia: Text('With images'),
-								_MediaFilter.onlyWithNoMedia: Text('Without images'),
-								_MediaFilter.withSpecificMedia: Text('With MD5')
-							},
-							groupValue: query.md5 == null ? query.mediaFilter.value : _MediaFilter.withSpecificMedia,
-							onValueChanged: (newValue) async {
-								if (newValue.value != null) {
-									query.md5 = null;
-									query.mediaFilter = newValue.value!;
+						LayoutBuilder(
+							builder: (context, constraints) {
+								TextStyle? style;
+								if (constraints.maxWidth < 290) {
+									style = const TextStyle(
+										fontSize: 10
+									);
 								}
-								else {
-									_showingPicker = true;
-									final file = await pickAttachment(context: context);
-									_showingPicker = false;
-									if (file != null) {
-										query.md5 = base64Encode(md5.convert(await file.readAsBytes()).bytes);
-										query.mediaFilter = MediaFilter.none;
+								else if (constraints.maxWidth < 350) {
+									style = const TextStyle(
+										fontSize: 13
+									);
+								}
+								return CupertinoSegmentedControl<_MediaFilter>(
+									children: {
+										_MediaFilter.none: Text('All posts', textAlign: TextAlign.center, style: style),
+										_MediaFilter.onlyWithMedia: Text('With images', textAlign: TextAlign.center, style: style),
+										_MediaFilter.onlyWithNoMedia: Padding(
+											padding: const EdgeInsets.all(8),
+											child: Text('Without images', textAlign: TextAlign.center, style: style)
+										),
+										_MediaFilter.withSpecificMedia: Text('With MD5', textAlign: TextAlign.center, style: style)
+									},
+									groupValue: query.md5 == null ? query.mediaFilter.value : _MediaFilter.withSpecificMedia,
+									onValueChanged: (newValue) async {
+										if (newValue.value != null) {
+											query.md5 = null;
+											query.mediaFilter = newValue.value!;
+										}
+										else {
+											_showingPicker = true;
+											final file = await pickAttachment(context: context);
+											_showingPicker = false;
+											if (file != null) {
+												query.md5 = base64Encode(md5.convert(await file.readAsBytes()).bytes);
+												query.mediaFilter = MediaFilter.none;
+											}
+										}
+										setState(() {});
 									}
-								}
-								setState(() {});
+								);
 							}
 						),
 						const SizedBox(height: 16),
@@ -356,9 +373,14 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										child: CupertinoButton(
 											padding: EdgeInsets.zero,
 											color: CupertinoTheme.of(context).primaryColor.withOpacity((query.startDate == null) ? 0.8: 1),
-											child: Text((query.startDate != null) ? 'Posted after ${query.startDate!.year}-${query.startDate!.month.toString().padLeft(2, '0')}-${query.startDate!.day.toString().padLeft(2, '0')}' : 'Posted after...'),
+											child: Text(
+												(query.startDate != null) ? 'Posted after ${query.startDate!.year}-${query.startDate!.month.toString().padLeft(2, '0')}-${query.startDate!.day.toString().padLeft(2, '0')}' : 'Posted after...',
+												textAlign: TextAlign.center
+											),
 											onPressed: () async {
+												_showingPicker = true;
 												final newDate = await _getDate(query.startDate);
+												_showingPicker = false;
 												if (newDate != null) {
 													setState(() {
 														query.startDate = (newDate == _clearedDate) ? null : newDate;
@@ -374,9 +396,14 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										child: CupertinoButton(
 											padding: EdgeInsets.zero,
 											color: CupertinoTheme.of(context).primaryColor.withOpacity((query.endDate == null) ? 0.8 : 1),
-											child: Text((query.endDate != null) ? 'Posted before ${query.endDate!.year}-${query.endDate!.month.toString().padLeft(2, '0')}-${query.endDate!.day.toString().padLeft(2, '0')}' : 'Posted before...'),
+											child: Text(
+												(query.endDate != null) ? 'Posted before ${query.endDate!.year}-${query.endDate!.month.toString().padLeft(2, '0')}-${query.endDate!.day.toString().padLeft(2, '0')}' : 'Posted before...',
+												textAlign: TextAlign.center
+											),
 											onPressed: () async {
+												_showingPicker = true;
 												final newDate = await _getDate(query.endDate);
+												_showingPicker = false;
 												if (newDate != null) {
 													setState(() {
 														query.endDate = (newDate == _clearedDate) ? null : newDate;
