@@ -78,6 +78,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 	@override
 	void initState() {
 		super.initState();
+		 _footerShakeAnimation = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
 		if (widget.initialFilter != null) {
 			_searchFilter = SearchFilter(widget.initialFilter!);
 			_searchTapped = true;
@@ -93,7 +94,6 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			update();
 			resetTimer();
 		}
-		 _footerShakeAnimation = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
 	}
 
 	@override
