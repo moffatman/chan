@@ -835,6 +835,7 @@ class RefreshableListController<T extends Filterable> {
 		state?.list = null;
 		setItems([]);
 		await state?.update();
+		slowScrollUpdates.add(null);
 	}
 	Future<void> update() async {
 		await state?.update();
