@@ -9,6 +9,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/cupertino_thin_button.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/cupertino.dart';
@@ -370,9 +371,8 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								Expanded(
 									child: Container(
 										padding: const EdgeInsets.only(left: 16, right: 8),
-										child: CupertinoButton(
-											padding: EdgeInsets.zero,
-											color: CupertinoTheme.of(context).primaryColor.withOpacity((query.startDate == null) ? 0.8: 1),
+										child: CupertinoThinButton(
+											filled: query.startDate != null,
 											child: Text(
 												(query.startDate != null) ? 'Posted after ${query.startDate!.year}-${query.startDate!.month.toString().padLeft(2, '0')}-${query.startDate!.day.toString().padLeft(2, '0')}' : 'Posted after...',
 												textAlign: TextAlign.center
@@ -393,9 +393,8 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								Expanded(
 									child: Container(
 										padding: const EdgeInsets.only(left: 8, right: 16),
-										child: CupertinoButton(
-											padding: EdgeInsets.zero,
-											color: CupertinoTheme.of(context).primaryColor.withOpacity((query.endDate == null) ? 0.8 : 1),
+										child: CupertinoThinButton(
+											filled: query.endDate != null,
 											child: Text(
 												(query.endDate != null) ? 'Posted before ${query.endDate!.year}-${query.endDate!.month.toString().padLeft(2, '0')}-${query.endDate!.day.toString().padLeft(2, '0')}' : 'Posted before...',
 												textAlign: TextAlign.center
