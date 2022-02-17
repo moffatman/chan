@@ -102,13 +102,19 @@ class SettingsPage extends StatelessWidget {
 												future: context.read<ImageboardSite>().getCatalog('chance'),
 												builder: (context, snapshot) {
 													if (!snapshot.hasData) {
-														return const Center(
-															child: CupertinoActivityIndicator()
+														return const SizedBox(
+															height: 200,
+															child: Center(
+																child: CupertinoActivityIndicator()
+															)
 														);
 													}
 													else if (snapshot.hasError) {
-														return Center(
-															child: Text(snapshot.error.toString())
+														return SizedBox(
+															height: 200,
+															child: Center(
+																child: Text(snapshot.error.toString())
+															)
 														);
 													}
 													final children = (snapshot.data ?? []).where((t) => t.isSticky).map<Widget>((thread) => GestureDetector(
