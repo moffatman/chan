@@ -107,7 +107,7 @@ class _BoardPageState extends State<BoardPage> {
 			resizeToAvoidBottomInset: false,
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
-				leading: settings.supportMouse.value ? CupertinoButton(
+				leading: settings.supportMouse.value && !Navigator.of(context).canPop() ? CupertinoButton(
 					padding: EdgeInsets.zero,
 					child: const Icon(CupertinoIcons.refresh),
 					onPressed: () {
