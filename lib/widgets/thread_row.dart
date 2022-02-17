@@ -18,6 +18,15 @@ import 'package:provider/provider.dart';
 
 import 'package:chan/models/thread.dart';
 
+extension LazyCeil on double {
+	int lazyCeil() {
+		if (isFinite) {
+			return ceil();
+		}
+		return 99999999;
+	}
+}
+
 class ThreadRow extends StatelessWidget {
 	final Thread thread;
 	final bool isSelected;
@@ -272,8 +281,18 @@ class ThreadRow extends StatelessWidget {
 														),
 														_thread.posts[0].span.build(ctx, PostSpanRenderOptions(
 															avoidBuggyClippers: true,
-															maxLines: ((constraints.maxHeight - (DefaultTextStyle.of(context).style.fontSize ?? 17)) / (DefaultTextStyle.of(context).style.fontSize ?? 17)).ceil()
+															maxLines: ((constraints.maxHeight - (DefaultTextStyle.of(context).style.fontSize ?? 17)) / (DefaultTextStyle.of(context).style.fontSize ?? 17)).lazyCeil()
 														)),
+														WidgetSpan(
+															alignment: PlaceholderAlignment.top,
+															child: Visibility(
+																visible: false,
+																maintainState: true,
+																maintainAnimation: true,
+																maintainSize: true,
+																child: _makeCounters()
+															)
+														)
 													]
 												),
 												overflow: TextOverflow.fade
