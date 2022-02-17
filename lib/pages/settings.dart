@@ -5,6 +5,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
+import 'package:chan/pages/licenses.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -660,6 +661,18 @@ class SettingsPage extends StatelessWidget {
 												child: const Text('Clear API cookies'),
 												onPressed: () {
 													Persistence.cookies.deleteAll();
+												}
+											)
+										),
+										const SizedBox(height: 16),
+										Center(
+											child: CupertinoButton(
+												child: const Text('Licenses'),
+												onPressed: () {
+													Navigator.of(context).push(FullWidthCupertinoPageRoute(
+														builder: (context) => const LicensesPage(),
+														showAnimations: settings.showAnimations
+													));
 												}
 											)
 										),
