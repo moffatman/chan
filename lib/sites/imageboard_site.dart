@@ -320,29 +320,20 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page}) async {
 		String s = '';
-		final completer = Completer<ImageboardArchiveSearchResultPage>();
-		final futures = archives.map((archive) {
-			return archive.search(query, page: page).then((result) {
-				if (!completer.isCompleted) {
-					completer.complete(result);
-				}
-			}, onError: (e, st) {
+		for (final archive in archives) {
+			try {
+				return await archive.search(query, page: page);
+			}
+			catch (e, st) {
 				if (e is! BoardNotFoundException) {
 					print('Error from ${archive.name}');
 					print(e);
 					print(st);
-					s += '\n${archive.name}: ${e is Object ? e.toStringDio() : e}';
+					s += '\n${archive.name}: ${e.toStringDio()}';
 				}
-			});
-		});
-		await Future.any([completer.future, Future.wait(futures)]);
-		if (completer.isCompleted) {
-			print('Returning search result');
-			return completer.future;
+			}
 		}
-		else {
-			throw Exception('Search failed - exhausted all archives$s');
-		}
+		throw Exception('Search failed - exhausted all archives$s');
 	}
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
 	Uri getPostReportUrl(String board, int id);
