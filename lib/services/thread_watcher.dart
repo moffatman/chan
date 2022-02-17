@@ -24,6 +24,7 @@ class StickyThreadWatcher extends ChangeNotifier {
 
 	final unseenStickyThreadCount = ValueNotifier<int>(0);
 	final unseenYouCount = ValueNotifier<int>(0);
+	List<Thread>? lastCatalog;
 
 	StickyThreadWatcher({
 		required this.site,
@@ -50,8 +51,8 @@ class StickyThreadWatcher extends ChangeNotifier {
 
 	Future<void> update() async {
 		try {
-			final catalog = await site.getCatalog(board);
-			unseenStickyThreads = catalog.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).toList();
+			lastCatalog = await site.getCatalog(board);
+			unseenStickyThreads = lastCatalog!.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).toList();
 			unseenStickyThreadCount.value = unseenStickyThreads.length;
 			// Update sticky threads for (you)s
 			final stickyThreadStates = persistence.threadStateBox.values.where((s) => s.thread != null && s.thread!.isSticky);

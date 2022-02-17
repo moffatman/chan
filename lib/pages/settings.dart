@@ -9,6 +9,7 @@ import 'package:chan/pages/licenses.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
@@ -101,6 +102,7 @@ class SettingsPage extends StatelessWidget {
 											alignment: Alignment.topCenter,
 											child: FutureBuilder<List<Thread>>(
 												future: context.read<ImageboardSite>().getCatalog('chance'),
+												initialData: context.read<StickyThreadWatcher>().lastCatalog,
 												builder: (context, snapshot) {
 													if (!snapshot.hasData) {
 														return const SizedBox(
