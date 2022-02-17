@@ -63,7 +63,11 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 					));
 				}
 				else if (linkType == 'post') {
-					final linkedPostThreadId = linkedPostThreadIds['$linkedBoard/$linkedId'] ?? -1;
+					int linkedPostThreadId = linkedPostThreadIds['$linkedBoard/$linkedId'] ?? -1;
+					if (linkedId == threadId) {
+						// Easy fix so that uncached linkedPostThreadIds will correctly have (OP) in almost all cases
+						linkedPostThreadId = threadId;
+					}
 					elements.add(PostQuoteLinkSpan(
 						board: linkedBoard,
 						threadId: linkedPostThreadId,
@@ -148,15 +152,17 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}
 		return null;
 	}
-	Future<Post> _makePost(dynamic data) async {
+	Future<Post> _makePost(dynamic data, {bool resolveIds = true}) async {
 		final String board = data['board']['shortname'];
 		final int threadId = int.parse(data['thread_num']);
 		final postLinkMatcher = RegExp('https?://[^ ]+/([^/]+)/post/([0-9]+)/');
 		final Map<String, int> linkedPostThreadIds = {};
-		for (final match in postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
-			final board = match.group(1)!;
-			final postId = int.parse(match.group(2)!);
-			linkedPostThreadIds['$board/$postId'] = await _getPostThreadId(board, postId);
+		if (resolveIds) {
+			for (final match in postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
+				final board = match.group(1)!;
+				final postId = int.parse(match.group(2)!);
+				linkedPostThreadIds['$board/$postId'] = await _getPostThreadId(board, postId);
+			}
 		}
 		return Post(
 			board: board,
@@ -302,7 +308,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}
 		else {
 			return ImageboardArchiveSearchResult(
-				post: await _makePost(data)
+				post: await _makePost(data, resolveIds: false)
 			);
 		}
 	}
