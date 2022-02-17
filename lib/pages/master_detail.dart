@@ -12,6 +12,10 @@ import 'package:provider/provider.dart';
 PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder, bool showAnimations) => FullWidthCupertinoPageRoute(builder: builder, showAnimations: showAnimations);
 PageRoute transparentPageRouteBuilder(WidgetBuilder builder, bool showAnimations) => TransparentRoute(builder: builder, showAnimations: showAnimations);
 
+const dontAutoPopSettings = RouteSettings(
+	name: 'dontautoclose'
+);
+
 class BuiltDetailPane {
 	final Widget widget;
 	final PageRoute Function(WidgetBuilder builder, bool showAnimations) pageRouteBuilder;
@@ -183,7 +187,9 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 
 	void _onNewValue<T> (MultiMasterPane<T> pane) {
 		if (onePane) {
-			_masterKey.currentState!.push(pane.buildDetailRoute(context.read<EffectiveSettings>().showAnimations)).then(pane.onPushReturn);
+			if (pane.currentValue.value != null) {
+				_masterKey.currentState!.push(pane.buildDetailRoute(context.read<EffectiveSettings>().showAnimations)).then(pane.onPushReturn);
+			}
 		}
 		else {
 			_detailKey.currentState?.popUntil((route) => route.isFirst);
@@ -270,8 +276,17 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 				_masterKey.currentState!.push(pane.buildDetailRoute(context.read<EffectiveSettings>().showAnimations)).then(pane.onPushReturn);
 			}
 			else {
-				while (_masterKey.currentState?.canPop() ?? false) {
-					_masterKey.currentState?.pop(false);
+				bool continuePopping = true;
+				while ((_masterKey.currentState?.canPop() ?? false) && continuePopping) {
+					// Hack to peek at top route
+					// Need to pop with value=false so can't just use popUntil
+					_masterKey.currentState?.popUntil((route) {
+						continuePopping = route.settings != dontAutoPopSettings;
+						if (continuePopping) {
+							_masterKey.currentState?.pop(false);
+						}
+						return true;
+					});
 				}
 				while (_detailKey.currentState?.canPop() ?? false) {
 					_detailKey.currentState?.pop(false);

@@ -44,11 +44,12 @@ class _SearchPageState extends State<SearchPage> {
 								valueListenable: _valueInjector,
 								builder: (context, ImageboardArchiveSearchResult? selectedResult, child) => SearchQueryPage(
 									query: query,
-									selectedResult: selectedResult,
+									selectedResult: _valueInjector.value,
 									onResultSelected: setValue
 								)
 							),
-							showAnimations: context.read<EffectiveSettings>().showAnimations
+							showAnimations: context.read<EffectiveSettings>().showAnimations,
+							settings: dontAutoPopSettings
 						));
 					},
 				);
