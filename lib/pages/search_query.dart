@@ -80,7 +80,51 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						onChange();
 					}
 				),
-				Text('Page $page'),
+				CupertinoButton(
+					padding: EdgeInsets.zero,
+					child: Text('Page $page'),
+					onPressed: (loading || result.data?.maxPage == 1) ? null : () async {
+						final controller = TextEditingController();
+						final selectedPage = await showCupertinoDialog<int>(
+							context: context,
+							barrierDismissible: true,
+							builder: (context) => CupertinoAlertDialog(
+								title: const Text('Go to page'),
+								content: Padding(
+									padding: const EdgeInsets.only(top: 8),
+									child: CupertinoTextField(
+										controller: controller,
+										autofocus: true,
+										keyboardType: TextInputType.number,
+										onSubmitted: (str) {
+											Navigator.pop(context, int.tryParse(str));
+										}
+									)
+								),
+								actions: [
+									CupertinoDialogAction(
+										child: const Text('Cancel'),
+										onPressed: () {
+											Navigator.of(context).pop();
+										}
+									),
+									CupertinoDialogAction(
+										child: const Text('OK'),
+										isDefaultAction: true,
+										onPressed: () {
+											Navigator.of(context).pop(int.tryParse(controller.text));
+										}
+									)
+								]
+							)
+						);
+						if (selectedPage != null) {
+							page = selectedPage;
+							_runQuery();
+							onChange();
+						}
+					}
+				),
 				CupertinoButton(
 					child: const Icon(CupertinoIcons.chevron_right),
 					onPressed: (loading || result.data?.page == result.data?.maxPage) ? null : () {
@@ -103,7 +147,6 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 	}
 
 	Widget _build(BuildContext context, ImageboardArchiveSearchResult? currentValue, ValueChanged<ImageboardArchiveSearchResult?> setValue) {
-		print(currentValue);
 		if (result.error != null) {
 			return Center(
 				child: Column(
@@ -198,7 +241,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		return  CupertinoPageScaffold(
+		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
 				middle: FittedBox(
