@@ -107,9 +107,8 @@ class PostRow extends StatelessWidget {
 		);
 		innerChild(BuildContext context, double slideFactor) {
 			final mainRow = [
-				const SizedBox(width: 8),
 				if (_post.attachment != null && settings.showImages(context, _post.board)) Padding(
-					padding: settings.imagesOnRight ? const EdgeInsets.only(bottom: 32) : EdgeInsets.zero,
+					padding: (settings.imagesOnRight && _post.replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32) : EdgeInsets.zero,
 					child: PopupAttachment(
 						attachment: _post.attachment!,
 						child: GestureDetector(
@@ -171,13 +170,12 @@ class PostRow extends StatelessWidget {
 				)
 				else Expanded(
 					child: content(slideFactor)
-				),
-				const SizedBox(width: 8)
+				)
 			];
 			return GestureDetector(
 				onTap: onTap,
 				child: Container(
-					padding: const EdgeInsets.only(bottom: 8),
+					padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
 					decoration: BoxDecoration(
 						border: border,
 						color: isSelected ? CupertinoTheme.of(context).primaryColorWithBrightness(0.4) : CupertinoTheme.of(context).scaffoldBackgroundColor,
@@ -196,7 +194,6 @@ class PostRow extends StatelessWidget {
 											builder: (context, supportMouse, child) => Text.rich(
 												TextSpan(
 													children: [
-														const WidgetSpan(child: SizedBox(width: 8)),
 														TextSpan(
 															text: context.read<EffectiveSettings>().filterProfanity(_post.name) + (isYourPost ? ' (You)' : ''),
 															style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
@@ -272,7 +269,7 @@ class PostRow extends StatelessWidget {
 									alignment: Alignment.bottomRight,
 									child: CupertinoButton(
 										alignment: Alignment.bottomRight,
-										padding: const EdgeInsets.only(bottom: 8, right: 16),
+										padding: const EdgeInsets.only(bottom: 8, right: 8),
 										child: Transform.scale(
 											alignment: Alignment.bottomRight,
 											scale: 1 + slideFactor.clamp(0, 1),
