@@ -39,6 +39,7 @@ class PostSpanRenderOptions {
 	final PointerExitEventListener? onExit;
 	final bool ownLine;
 	final bool shrinkWrap;
+	final int maxLines;
 	PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -51,7 +52,8 @@ class PostSpanRenderOptions {
 		this.onEnter,
 		this.onExit,
 		this.ownLine = false,
-		this.shrinkWrap = false
+		this.shrinkWrap = false,
+		this.maxLines = 999999
 	});
 	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 
@@ -93,12 +95,16 @@ class PostNodeSpan extends PostSpan {
 	@override
 	InlineSpan build(context, options) {
 		final _children = <InlineSpan>[];
-		for (int i = 0; i < children.length; i++) {
+		int lines = 0;
+		for (int i = 0; i < children.length && lines < options.maxLines; i++) {
 			if ((i == 0 || children[i - 1] is PostLineBreakSpan) && (i == children.length - 1 || children[i + 1] is PostLineBreakSpan)) {
 				_children.add(children[i].build(context, options.copyWith(ownLine: true)));
 			}
 			else {
 				_children.add(children[i].build(context, options));
+			}
+			if (children[i] is PostLineBreakSpan) {
+				lines++;
 			}
 		}
 		return TextSpan(

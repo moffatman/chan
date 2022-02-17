@@ -229,52 +229,55 @@ class ThreadRow extends StatelessWidget {
 								),
 								child: Builder(
 									builder: (ctx) => IgnorePointer(
-										child: Text.rich(
-											TextSpan(
-												children: [
-													TextSpan(
-														children: [
-															if (settings.showNameInCatalog) ...[
+										child: LayoutBuilder(
+											builder: (context, constraints) => Text.rich(
+												TextSpan(
+													children: [
+														TextSpan(
+															children: [
+																if (settings.showNameInCatalog) ...[
+																	TextSpan(
+																		text: settings.filterProfanity(_thread.posts[0].name),
+																		style: const TextStyle(fontWeight: FontWeight.w600)
+																	),
+																	const TextSpan(text: ' ')
+																],
+																if (_thread.flag != null) ...[
+																	FlagSpan(_thread.flag!),
+																	const TextSpan(text: ' '),
+																	TextSpan(
+																		text: _thread.flag!.name,
+																		style: const TextStyle(
+																			fontStyle: FontStyle.italic
+																		)
+																	),
+																	const TextSpan(text: ' ')
+																],
 																TextSpan(
-																	text: settings.filterProfanity(_thread.posts[0].name),
-																	style: const TextStyle(fontWeight: FontWeight.w600)
+																	text: formatTime(_thread.time)
 																),
-																const TextSpan(text: ' ')
-															],
-															if (_thread.flag != null) ...[
-																FlagSpan(_thread.flag!),
 																const TextSpan(text: ' '),
 																TextSpan(
-																	text: _thread.flag!.name,
-																	style: const TextStyle(
-																		fontStyle: FontStyle.italic
-																	)
+																	text: showBoardName ?
+																		'/${_thread.board}/${_thread.id}' :
+																		_thread.id.toString(),
+																	style: const TextStyle(color: Colors.grey)
 																),
-																const TextSpan(text: ' ')
-															],
-															TextSpan(
-																text: formatTime(_thread.time)
-															),
-															const TextSpan(text: ' '),
-															TextSpan(
-																text: showBoardName ? 
-																	'/${_thread.board}/${_thread.id}' :
-																	_thread.id.toString(),
-																style: const TextStyle(color: Colors.grey)
-															),
-															const TextSpan(text: '\n')
-														]
-													),
-													if (_thread.title != null) TextSpan(
-														text: settings.filterProfanity(_thread.title!) + '\n',
-														style: const TextStyle(fontWeight: FontWeight.bold)
-													),
-													_thread.posts[0].span.build(ctx, PostSpanRenderOptions(
-														avoidBuggyClippers: true
-													)),
-												]
-											),
-											overflow: TextOverflow.fade
+																const TextSpan(text: '\n')
+															]
+														),
+														if (_thread.title != null) TextSpan(
+															text: settings.filterProfanity(_thread.title!) + '\n',
+															style: const TextStyle(fontWeight: FontWeight.bold)
+														),
+														_thread.posts[0].span.build(ctx, PostSpanRenderOptions(
+															avoidBuggyClippers: true,
+															maxLines: ((constraints.maxHeight - (DefaultTextStyle.of(context).style.fontSize ?? 17)) / (DefaultTextStyle.of(context).style.fontSize ?? 17)).ceil()
+														)),
+													]
+												),
+												overflow: TextOverflow.fade
+											)
 										)
 									)
 								)
