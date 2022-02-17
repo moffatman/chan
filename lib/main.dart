@@ -28,6 +28,7 @@ import 'package:chan/widgets/sticky_media_query.dart';
 import 'package:uni_links/uni_links.dart';
 
 void main() async {
+	WidgetsFlutterBinding.ensureInitialized();
 	final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
 	imageHttpClient.connectionTimeout = const Duration(seconds: 10);
 	imageHttpClient.idleTimeout = const Duration(seconds: 10);
