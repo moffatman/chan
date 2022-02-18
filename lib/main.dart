@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/history.dart';
+import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/settings.dart';
 import 'package:chan/pages/saved.dart';
@@ -14,6 +15,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/notifying_icon.dart';
+import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -233,6 +235,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Persistence? devPersistence;
 	StickyThreadWatcher? devThreadWatcher;
 	Timer? _saveBrowserTabsDuringDraftEditingTimer;
+	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
+	final _tabletWillPopZones = <int, WillPopZone>{};
+	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
 
 	void _setupDevSite() async {
 		devSite = makeSite(context, defaultSite);
@@ -328,9 +333,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		final persistence = context.watch<Persistence>();
 		Widget child;
 		if (index <= 0) {
-			child = IndexedStack(
-				index: activeBrowserTab.value,
-				children: List.generate(tabs.length, (i) {
+			child = TabSwitchingView(
+				currentTabIndex: activeBrowserTab.value,
+				tabCount: tabs.length,
+				tabBuilder: (context, i) {
 					final tab = ImageboardTab(
 						key: tabs[i].item2,
 						initialBoard: tabs[i].item1.board,
@@ -365,18 +371,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						},
 						id: -1 * (i + 10)
 					);
-					return ValueListenableBuilder(
-						valueListenable: activeBrowserTab,
-						builder: (context, int activeIndex, child) {
-							return ExcludeFocus(
-								excluding: i != activeIndex,
-								child: i == activeIndex ? tab : PrimaryScrollController.none(
+					return Provider.value(
+						value: _tabletWillPopZones.putIfAbsent(index, () => WillPopZone()),
+						child: ValueListenableBuilder(
+							valueListenable: activeBrowserTab,
+							builder: (context, int activeIndex, child) {
+								return i == activeIndex ? tab : PrimaryScrollController.none(
 									child: tab
-								)
-							);
-						}
+								);
+							}
+						)
 					);
-				})
+				}
 			);
 		}
 		else if (index == 1) {
@@ -399,21 +405,27 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				);
 			}
 			else {
-				child = MultiProvider(
-					providers: [
-						Provider.value(value: devSite!),
-						Provider.value(value: devPersistence!),
-						ChangeNotifierProvider.value(value: devThreadWatcher!)
-					],
-					child: ClipRect(
-						child: Navigator(
-							initialRoute: '/',
-							onGenerateRoute: (settings) => FullWidthCupertinoPageRoute(
-								builder: (_) => SettingsPage(
-									realPersistence: persistence,
-									realSite: site
-								),
-								showAnimations: context.read<EffectiveSettings>().showAnimations
+				child = WillPopScope(
+					onWillPop: () async {
+						return !(await _settingsNavigatorKey.currentState?.maybePop() ?? false);
+					},
+					child: MultiProvider(
+						providers: [
+							Provider.value(value: devSite!),
+							Provider.value(value: devPersistence!),
+							ChangeNotifierProvider.value(value: devThreadWatcher!)
+						],
+						child: ClipRect(
+							child: Navigator(
+								key: _settingsNavigatorKey,
+								initialRoute: '/',
+								onGenerateRoute: (settings) => FullWidthCupertinoPageRoute(
+									builder: (_) => SettingsPage(
+										realPersistence: persistence,
+										realSite: site
+									),
+									showAnimations: context.read<EffectiveSettings>().showAnimations
+								)
 							)
 						)
 					)
@@ -424,6 +436,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			key: _keys.putIfAbsent(index, () => GlobalKey(debugLabel: '_keys[$index]')),
 			child: child
 		);
+		if (index > 0) {
+			child = Provider.value(
+				value: _tabletWillPopZones.putIfAbsent(index, () => WillPopZone()),
+				child: child
+			);
+		}
 		return active ? child : PrimaryScrollController.none(child: child);
 	}
 
@@ -597,6 +615,31 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 	}
 
+	Future<bool> confirmExit() async {
+		return (await showCupertinoDialog<bool>(
+			context: context,
+			barrierDismissible: true,
+			builder: (context) => CupertinoAlertDialog(
+				title: const Text('Exit the app?'),
+				actions: [
+					CupertinoDialogAction(
+						child: const Text('Cancel'),
+						onPressed: () {
+							Navigator.of(context).pop(false);
+						}
+					),
+					CupertinoDialogAction(
+						child: const Text('Exit'),
+						isDestructiveAction: true,
+						onPressed: () {
+							Navigator.of(context).pop(true);
+						}
+					)
+				]
+			)
+		) ?? false);
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final isInTabletLayout = MediaQuery.of(context).size.width > 700;
@@ -621,147 +664,156 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			}
 		}
 		else if (isInTabletLayout) {
-			return CupertinoPageScaffold(
-				child: Container(
-					color: CupertinoTheme.of(context).barBackgroundColor,
-					child: SafeArea(
-						top: false,
-						bottom: false,
-						child: Row(
-							children: [
-								Container(
-									padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-									width: 85,
-									child: Column(
-										children: [
-											Expanded(
-												child: Column(
-													children: [
-														Expanded(
-															child: _buildTabList(Axis.vertical)
-														),
-														_buildNewTabIcon(hideLabel: hideTabletLayoutLabels)
-													]
+			return WillPopScope(
+				onWillPop: () async {
+					return ((await _tabletWillPopZones[tabletIndex]?.callback?.call() ?? false) && (await confirmExit()));
+				},
+				child: CupertinoPageScaffold(
+					child: Container(
+						color: CupertinoTheme.of(context).barBackgroundColor,
+						child: SafeArea(
+							top: false,
+							bottom: false,
+							child: Row(
+								children: [
+									Container(
+										padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+										width: 85,
+										child: Column(
+											children: [
+												Expanded(
+													child: Column(
+														children: [
+															Expanded(
+																child: _buildTabList(Axis.vertical)
+															),
+															_buildNewTabIcon(hideLabel: hideTabletLayoutLabels)
+														]
+													)
+												),
+												_buildTabletIcon(1, const Icon(CupertinoIcons.bookmark), hideTabletLayoutLabels ? null : 'Saved',
+													opacityParentBuilder: (context, child) => NotifyingIcon(
+														icon: child,
+														primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
+														secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
+													)
+												),
+												_buildTabletIcon(2, const Icon(CupertinoIcons.archivebox), hideTabletLayoutLabels ? null : 'History'),
+												_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
+												_buildTabletIcon(4, const Icon(CupertinoIcons.settings), hideTabletLayoutLabels ? null : 'Settings',
+													opacityParentBuilder: (context, child) => NotifyingIcon(
+														icon: child,
+														primaryCount: devThreadWatcher?.unseenYouCount ?? ValueNotifier(0),
+														secondaryCount: devThreadWatcher?.unseenStickyThreadCount ?? ValueNotifier(0),
+													)
 												)
-											),
-											_buildTabletIcon(1, const Icon(CupertinoIcons.bookmark), hideTabletLayoutLabels ? null : 'Saved',
-												opacityParentBuilder: (context, child) => NotifyingIcon(
-													icon: child,
-													primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
-													secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
-												)
-											),
-											_buildTabletIcon(2, const Icon(CupertinoIcons.archivebox), hideTabletLayoutLabels ? null : 'History'),
-											_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
-											_buildTabletIcon(4, const Icon(CupertinoIcons.settings), hideTabletLayoutLabels ? null : 'Settings',
-												opacityParentBuilder: (context, child) => NotifyingIcon(
-													icon: child,
-													primaryCount: devThreadWatcher?.unseenYouCount ?? ValueNotifier(0),
-													secondaryCount: devThreadWatcher?.unseenStickyThreadCount ?? ValueNotifier(0),
-												)
-											)
-										]
+											]
+										)
+									),
+									Expanded(
+										child: TabSwitchingView(
+											currentTabIndex: max(0, tabletIndex),
+											tabCount: 5,
+											tabBuilder: (context, i) => _buildTab(context, i, i == tabletIndex)
+										)
 									)
-								),
-								Expanded(
-									child: IndexedStack(
-										index: max(0, tabletIndex),
-										children: List.generate(5, (i) => ExcludeFocus(
-											excluding: i != tabletIndex,
-											child: _buildTab(context, i, i == tabletIndex)
-										))
-									)
-								)
-							]
+								]
+							)
 						)
 					)
 				)
 			);
 		}
 		else {
-			return CupertinoTabScaffold(
-				controller: _tabController,
-				tabBar: CupertinoTabBar(
-					items: [
-						BottomNavigationBarItem(
-							icon: AnimatedBuilder(
-								animation: browseCountListenable,
-								builder: (context, child) => StationaryNotifyingIcon(
-									icon: const Icon(CupertinoIcons.rectangle_stack, size: 28),
-									primary: 0,
-									secondary: (tabs.length == 1) ? 0 : tabs.asMap().entries.where((x) => x.key != activeBrowserTab.value || tabletIndex > 0).map((x) => x.value.item3.value).reduce((a, b) => a + b)
-								)
+			return WillPopScope(
+				onWillPop: () async {
+					return (!(await _tabNavigatorKeys[_tabController.index]?.currentState?.maybePop() ?? false) && (await confirmExit()));
+				},
+				child: CupertinoTabScaffold(
+					controller: _tabController,
+					tabBar: CupertinoTabBar(
+						items: [
+							BottomNavigationBarItem(
+								icon: AnimatedBuilder(
+									animation: browseCountListenable,
+									builder: (context, child) => StationaryNotifyingIcon(
+										icon: const Icon(CupertinoIcons.rectangle_stack, size: 28),
+										primary: 0,
+										secondary: (tabs.length == 1) ? 0 : tabs.asMap().entries.where((x) => x.key != activeBrowserTab.value || tabletIndex > 0).map((x) => x.value.item3.value).reduce((a, b) => a + b)
+									)
+								),
+								label: 'Browse'
 							),
-							label: 'Browse'
-						),
-						BottomNavigationBarItem(
-							icon: Builder(
-								builder: (context) => NotifyingIcon(
-									icon: const Icon(CupertinoIcons.bookmark, size: 28),
-									primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
-									secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
-								)
+							BottomNavigationBarItem(
+								icon: Builder(
+									builder: (context) => NotifyingIcon(
+										icon: const Icon(CupertinoIcons.bookmark, size: 28),
+										primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
+										secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
+									)
+								),
+								label: 'Saved'
 							),
-							label: 'Saved'
-						),
-						const BottomNavigationBarItem(
-							icon: Icon(CupertinoIcons.archivebox, size: 28),
-							label: 'History'
-						),
-						const BottomNavigationBarItem(
-							icon: Icon(CupertinoIcons.search, size: 28),
-							label: 'Search'
-						),
-						BottomNavigationBarItem(
-							icon: NotifyingIcon(
-								icon: const Icon(CupertinoIcons.settings, size: 28),
-								primaryCount: devThreadWatcher?.unseenYouCount ?? ValueNotifier(0),
-								secondaryCount: devThreadWatcher?.unseenStickyThreadCount ?? ValueNotifier(0),
+							const BottomNavigationBarItem(
+								icon: Icon(CupertinoIcons.archivebox, size: 28),
+								label: 'History'
 							),
-							label: 'Settings'
-						)
-					],
-					onTap: (index) {
-						if (index == tabletIndex && index == 0) {
-							setState(() {
-								showTabPopup = !showTabPopup;
-							});
+							const BottomNavigationBarItem(
+								icon: Icon(CupertinoIcons.search, size: 28),
+								label: 'Search'
+							),
+							BottomNavigationBarItem(
+								icon: NotifyingIcon(
+									icon: const Icon(CupertinoIcons.settings, size: 28),
+									primaryCount: devThreadWatcher?.unseenYouCount ?? ValueNotifier(0),
+									secondaryCount: devThreadWatcher?.unseenStickyThreadCount ?? ValueNotifier(0),
+								),
+								label: 'Settings'
+							)
+						],
+						onTap: (index) {
+							if (index == tabletIndex && index == 0) {
+								setState(() {
+									showTabPopup = !showTabPopup;
+								});
+							}
+							else {
+								setState(() {
+									tabletIndex = index;
+									showTabPopup = false;
+								});
+							}
 						}
-						else {
-							setState(() {
-								tabletIndex = index;
-								showTabPopup = false;
-							});
-						}
-					}
-				),
-				tabBuilder: (context, index) => CupertinoTabView(
-					builder: (context) => Column(
-						children: [
-							Expanded(
-								child: AnimatedBuilder(
-									animation: _tabController,
-									builder: (context, child) => _buildTab(context, index, _tabController.index == index)
-								)
-							),
-							Expander(
-								duration: const Duration(milliseconds: 2000),
-								height: 80,
-								bottomSafe: false,
-								expanded: showTabPopup,
-								child: Container(
-									color: CupertinoTheme.of(context).barBackgroundColor,
-									child: Row(
-										children: [
-											Expanded(
-												child: _buildTabList(Axis.horizontal)
-											),
-											_buildNewTabIcon()
-										]
+					),
+					tabBuilder: (context, index) => CupertinoTabView(
+						navigatorKey: _tabNavigatorKeys.putIfAbsent(index, () => GlobalKey<NavigatorState>()),
+						builder: (context) => Column(
+							children: [
+								Expanded(
+									child: AnimatedBuilder(
+										animation: _tabController,
+										builder: (context, child) => _buildTab(context, index, _tabController.index == index)
+									)
+								),
+								Expander(
+									duration: const Duration(milliseconds: 2000),
+									height: 80,
+									bottomSafe: false,
+									expanded: showTabPopup,
+									child: Container(
+										color: CupertinoTheme.of(context).barBackgroundColor,
+										child: Row(
+											children: [
+												Expanded(
+													child: _buildTabList(Axis.horizontal)
+												),
+												_buildNewTabIcon()
+											]
+										)
 									)
 								)
-							)
-						]
+							]
+						)
 					)
 				)
 			);

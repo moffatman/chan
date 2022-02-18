@@ -16,6 +16,10 @@ const dontAutoPopSettings = RouteSettings(
 	name: 'dontautoclose'
 );
 
+class WillPopZone {
+	WillPopCallback? callback;
+}
+
 class BuiltDetailPane {
 	final Widget widget;
 	final PageRoute Function(WidgetBuilder builder, bool showAnimations) pageRouteBuilder;
@@ -197,6 +201,18 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 		setState(() {});
 	}
 
+	Future<bool> _onWillPop() async {
+		if (onePane) {
+			return !(await _masterKey.currentState?.maybePop() ?? false);
+		}
+		else {
+			if (await _detailKey.currentState?.maybePop() ?? false) {
+				return false;
+			}
+			return !(await _masterKey.currentState?.maybePop() ?? false);
+		}
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
@@ -294,11 +310,10 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 			}
 		}
 		lastOnePane = onePane;
-		if (onePane) {
-			return masterNavigator;
-		}
-		else {
-			return Row(
+		context.watch<WillPopZone?>()?.callback = _onWillPop;
+		return WillPopScope(
+			onWillPop: _onWillPop,
+			child: onePane ? masterNavigator : Row(
 				children: [
 					Flexible(
 						flex: settings.twoPaneSplit,
@@ -315,7 +330,7 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 						child: detailNavigator
 					)
 				]
-			);
-		}
+			)
+		);
 	}
 }

@@ -60,10 +60,19 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
 
   @override
   Widget build(BuildContext context) {
-    return ClipRect(
-      child: Overlay(
-        key: _overlayKey,
-        initialEntries: [rootEntry]
+    return WillPopScope(
+      onWillPop: () async {
+        if (stack.isNotEmpty) {
+          pop();
+          return false;
+        }
+        return true;
+      },
+      child: ClipRect(
+        child: Overlay(
+          key: _overlayKey,
+          initialEntries: [rootEntry]
+        )
       )
     );
   }

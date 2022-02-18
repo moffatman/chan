@@ -262,7 +262,7 @@ packages:
     description:
       path: "flutter/flutter"
       ref: full_gpl_temp
-      resolved-ref: b6ac3fa6ff5da27bc802c91782af47a1152b58ea
+      resolved-ref: "577fbc95657963e077e3f76c3bda640ba7b0a0eb"
       url: "https://github.com/moffatman/ffmpeg-kit.git"
     source: git
     version: "4.5.1"
