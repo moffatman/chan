@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:provider/provider.dart';
+import 'package:rxdart/subjects.dart';
 
 PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder, bool showAnimations) => FullWidthCupertinoPageRoute(builder: builder, showAnimations: showAnimations);
 PageRoute transparentPageRouteBuilder(WidgetBuilder builder, bool showAnimations) => TransparentRoute(builder: builder, showAnimations: showAnimations);
@@ -141,9 +142,11 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 	List<MultiMasterPane> panes = [];
  	bool? lastOnePane;
 	late bool onePane;
+	final _rebuild = BehaviorSubject<void>();
 
 	void _onPaneChanged() {
 		setState(() {});
+		_rebuild.add(null);
 	}
 
 	void _initGlobalKeys() {
@@ -224,52 +227,55 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 					key: _masterInterceptorKey,
 					navigatorKey: _masterKey,
 					observers: [HeroController()],
-					buildRoot: (context) {
-						Widget child = TabBarView(
-							controller: _tabController,
-							physics: panes.length > 1 ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
-							children: panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)).toList()
-						);
-						if (widget.showChrome) {
-							child = CupertinoPageScaffold(
-								resizeToAvoidBottomInset: false,
-								navigationBar: panes[_tabController.index].navigationBar ?? CupertinoNavigationBar(
-									transitionBetweenRoutes: false,
-									middle: panes[_tabController.index].title
-								),
-								child: Column(
-									children: [
-										SafeArea(
-											bottom: false,
-											child: Material(
-												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-												child: TabBar(
-													controller: _tabController,
-													tabs: panes.map((pane) => Tab(
-														icon: Icon(
-															pane.icon,
-															color: CupertinoTheme.of(context).primaryColor
-														)
-													)).toList()
+					buildRoot: (context) => StreamBuilder(
+						stream: _rebuild,
+						builder: (context, _) {
+							Widget child = TabBarView(
+								controller: _tabController,
+								physics: panes.length > 1 ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
+								children: panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)).toList()
+							);
+							if (widget.showChrome) {
+								child = CupertinoPageScaffold(
+									resizeToAvoidBottomInset: false,
+									navigationBar: panes[_tabController.index].navigationBar ?? CupertinoNavigationBar(
+										transitionBetweenRoutes: false,
+										middle: panes[_tabController.index].title
+									),
+									child: Column(
+										children: [
+											SafeArea(
+												bottom: false,
+												child: Material(
+													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+													child: TabBar(
+														controller: _tabController,
+														tabs: panes.map((pane) => Tab(
+															icon: Icon(
+																pane.icon,
+																color: CupertinoTheme.of(context).primaryColor
+															)
+														)).toList()
+													)
+												)
+											),
+											TransformedMediaQuery(
+												transformation: (mq) => mq.removePadding(removeTop: true),
+												child: Expanded(
+													child: child
 												)
 											)
-										),
-										TransformedMediaQuery(
-											transformation: (mq) => mq.removePadding(removeTop: true),
-											child: Expanded(
-												child: child
-											)
-										)
-									]
-								)
+										]
+									)
+								);
+							}
+							child = KeyedSubtree(
+								key: _masterContentKey,
+								child: child
 							);
+							return child;
 						}
-						child = KeyedSubtree(
-							key: _masterContentKey,
-							child: child
-						);
-						return child;
-					}
+					)
 				)
 			)
 		);
@@ -279,9 +285,12 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 				child: PrimaryScrollControllerInjectingNavigator(
 					key: _detailInterceptorKey,
 					navigatorKey: _detailKey,
-					buildRoot: (context) => KeyedSubtree(
-						key: _detailContentKey,
-						child: panes[_tabController.index].buildDetail()
+					buildRoot: (context) => StreamBuilder(
+						stream: _rebuild,
+						builder: (context, _) => KeyedSubtree(
+							key: _detailContentKey,
+							child: panes[_tabController.index].buildDetail()
+						)
 					)
 				)
 			)
