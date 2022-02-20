@@ -360,12 +360,21 @@ class RootCustomScale extends StatelessWidget {
 		if (scale == 1) {
 			return child;
 		}
+		final mq = MediaQuery.of(context);
     return FractionallySizedBox(
       widthFactor: 1 * scale,
       heightFactor: 1 * scale,
       child: Transform.scale(
         scale: 1 / scale,
-        child: child
+        child: MediaQuery(
+					data: mq.copyWith(
+						viewInsets: mq.viewInsets * scale,
+						systemGestureInsets: mq.systemGestureInsets * scale,
+						viewPadding: mq.viewPadding * scale,
+						padding: mq.padding * scale
+					),
+					child: child
+				)
 			)
 		);
 	}
