@@ -383,7 +383,7 @@ class SavedAttachment {
 @HiveType(typeId: 19)
 class SavedPost implements Filterable {
 	@HiveField(0)
-	final Post post;
+	Post post;
 	@HiveField(1)
 	final DateTime savedTime;
 	@HiveField(2)

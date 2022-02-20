@@ -295,14 +295,20 @@ class _SavedPageState extends State<SavedPage> {
 										onThumbnailLoadError: (e, st) async {
 											final site = context.read<ImageboardSite>();
 											Thread? newThread;
+											bool hadToUseArchive = false;
 											try {
 												newThread = await site.getThread(savedPost.thread.identifier);
 											}
 											on ThreadNotFoundException {
 												newThread = await site.getThreadFromArchive(savedPost.thread.identifier);
+												hadToUseArchive = true;
 											}
-											if (newThread != savedPost.thread) {
+											if (newThread != savedPost.thread || hadToUseArchive) {
 												savedPost.thread = newThread;
+												final state = persistence.getThreadStateIfExists(savedPost.thread.identifier);
+												state?.thread = newThread;
+												await state?.save();
+												savedPost.post = newThread.posts.firstWhere((p) => p.id == savedPost.post.id);
 												persistence.didUpdateSavedPost();
 											}
 										},
