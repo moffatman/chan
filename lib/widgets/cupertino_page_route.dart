@@ -111,9 +111,6 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 		if (route.willHandlePopInternally) {
 			return false;
 		}
-		if (route.hasScopedWillPopCallback) {
-			return false;
-		}
 		if (route.fullscreenDialog) {
 			return false;
 		}
