@@ -86,21 +86,18 @@ class PostRow extends StatelessWidget {
 				padding: const EdgeInsets.all(8),
 				child: IgnorePointer(
 					ignoring: !allowTappingLinks,
-					child: Text.rich(
-						TextSpan(
-							children: [
-								_post.span.build(ctx, PostSpanRenderOptions(
-									showCrossThreadLabel: showCrossThreadLabel,
-									shrinkWrap: shrinkWrap
-								)),
-								// Placeholder to guarantee the stacked reply button is not on top of text
-								if (_post.replyIds.isNotEmpty) TextSpan(
-									text: List.filled(_post.replyIds.length.toString().length + 4, '1').join(),
-									style: const TextStyle(color: Colors.transparent)
-								)
-							]
-						),
-						overflow: TextOverflow.fade
+					child: ClipRect(
+						child: post.span.buildWidget(
+							ctx,
+							PostSpanRenderOptions(
+								showCrossThreadLabel: showCrossThreadLabel,
+								shrinkWrap: shrinkWrap,
+							),
+							postInject: (_post.replyIds.isEmpty) ? null : TextSpan(
+								text: List.filled(_post.replyIds.length.toString().length + 4, '1').join(),
+								style: const TextStyle(color: Colors.transparent)
+							)
+						)
 					)
 				)
 			)

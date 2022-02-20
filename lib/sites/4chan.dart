@@ -81,7 +81,7 @@ class Site4Chan extends ImageboardSite {
 		}).toList();
 	}
 
-	static PostSpan makeSpan(String board, int threadId, String data) {
+	static PostNodeSpan makeSpan(String board, int threadId, String data) {
 		final doc = parse(data.replaceAll('<wbr>', '').replaceAllMapped(RegExp(r'\[math\](.+?)\[\/math\]'), (match) {
 			return '<tex>${match.group(1)!}</tex>';
 		}).replaceAllMapped(RegExp(r'\[eqn\](.+?)\[\/eqn\]'), (match) {

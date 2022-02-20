@@ -41,7 +41,7 @@ class SiteLainchan extends ImageboardSite {
 		}).toList();
 	}
 
-	static PostSpan makeSpan(String board, int threadId, String data) {
+	static PostNodeSpan makeSpan(String board, int threadId, String data) {
 		final doc = parse(data.replaceAll('<wbr>', ''));
 		final List<PostSpan> elements = [];
 		for (final node in doc.body!.nodes) {

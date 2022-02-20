@@ -112,6 +112,48 @@ class PostNodeSpan extends PostSpan {
 		);
 	}
 
+	Widget buildWidget(BuildContext context, PostSpanRenderOptions options, {Widget? preInjectRow, InlineSpan? postInject}) {
+		final _rows = <List<InlineSpan>>[[]];
+		int lines = 1;
+		for (int i = 0; i < children.length && lines < options.maxLines; i++) {
+			if (children[i] is PostLineBreakSpan) {
+				_rows.add([]);
+				lines++;
+			}
+			else if ((i == 0 || children[i - 1] is PostLineBreakSpan) && (i == children.length - 1 || children[i + 1] is PostLineBreakSpan)) {
+				_rows.last.add(children[i].build(context, options.copyWith(ownLine: true)));
+			}
+			else {
+				_rows.last.add(children[i].build(context, options));
+			}
+		}
+		if (postInject != null) {
+			_rows.last.add(postInject);
+		}
+		if (_rows.last.isEmpty) {
+			_rows.removeLast();
+		}
+		final _columnChildren = <Widget>[
+			if (preInjectRow != null) preInjectRow
+		];
+		for (final row in _rows) {
+			if (row.isEmpty) {
+				_columnChildren.add(const Text.rich(TextSpan(text: '')));
+			}
+			else if (row.length == 1) {
+				_columnChildren.add(Text.rich(row.first));
+			}
+			else {
+				_columnChildren.add(Text.rich(TextSpan(children: row)));
+			}
+		}
+		return Column(
+			mainAxisSize: MainAxisSize.min,
+			crossAxisAlignment: CrossAxisAlignment.start,
+			children: _columnChildren
+		);
+	}
+
 	@override
 	String buildText() {
 		return children.map((x) => x.buildText()).join(' ');

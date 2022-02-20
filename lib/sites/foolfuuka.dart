@@ -46,7 +46,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}
 		return null;
 	}
-	static PostSpan makeSpan(String board, int threadId, Map<String, int> linkedPostThreadIds, String data) {
+	static PostNodeSpan makeSpan(String board, int threadId, Map<String, int> linkedPostThreadIds, String data) {
 		final doc = parse(data.replaceAll('<wbr>', '').replaceAll('\n', ''));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;

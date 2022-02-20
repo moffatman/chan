@@ -234,63 +234,66 @@ class ThreadRow extends StatelessWidget {
 						child: Builder(
 							builder: (ctx) => IgnorePointer(
 								child: LayoutBuilder(
-									builder: (context, constraints) => Text.rich(
-										TextSpan(
-											children: [
+									builder: (context, constraints) => ClipRect(
+										child: _thread.posts[0].span.buildWidget(
+											ctx,
+											PostSpanRenderOptions(
+												avoidBuggyClippers: true,
+												maxLines: ((constraints.maxHeight - (DefaultTextStyle.of(context).style.fontSize ?? 17)) / (DefaultTextStyle.of(context).style.fontSize ?? 17)).lazyCeil()
+											),
+											preInjectRow: Text.rich(
 												TextSpan(
 													children: [
-														if (settings.showNameInCatalog) ...[
-															TextSpan(
-																text: settings.filterProfanity(_thread.posts[0].name),
-																style: const TextStyle(fontWeight: FontWeight.w600)
-															),
-															const TextSpan(text: ' ')
-														],
-														if (_thread.flag != null) ...[
-															FlagSpan(_thread.flag!),
-															const TextSpan(text: ' '),
-															TextSpan(
-																text: _thread.flag!.name,
-																style: const TextStyle(
-																	fontStyle: FontStyle.italic
+														TextSpan(
+															children: [
+																if (settings.showNameInCatalog) ...[
+																	TextSpan(
+																		text: settings.filterProfanity(_thread.posts[0].name),
+																		style: const TextStyle(fontWeight: FontWeight.w600)
+																	),
+																	const TextSpan(text: ' ')
+																],
+																if (_thread.flag != null) ...[
+																	FlagSpan(_thread.flag!),
+																	const TextSpan(text: ' '),
+																	TextSpan(
+																		text: _thread.flag!.name,
+																		style: const TextStyle(
+																			fontStyle: FontStyle.italic
+																		)
+																	),
+																	const TextSpan(text: ' ')
+																],
+																TextSpan(
+																	text: formatTime(_thread.time)
+																),
+																const TextSpan(text: ' '),
+																TextSpan(
+																	text: showBoardName ?
+																		'/${_thread.board}/${_thread.id}' :
+																		_thread.id.toString(),
+																	style: const TextStyle(color: Colors.grey)
+																),
+																if (_thread.title != null) TextSpan(
+																	text: '\n' + settings.filterProfanity(_thread.title!),
+																	style: const TextStyle(fontWeight: FontWeight.bold)
 																)
-															),
-															const TextSpan(text: ' ')
-														],
-														TextSpan(
-															text: formatTime(_thread.time)
-														),
-														const TextSpan(text: ' '),
-														TextSpan(
-															text: showBoardName ?
-																'/${_thread.board}/${_thread.id}' :
-																_thread.id.toString(),
-															style: const TextStyle(color: Colors.grey)
-														),
-														const TextSpan(text: '\n')
+															]
+														)
 													]
-												),
-												if (_thread.title != null) TextSpan(
-													text: settings.filterProfanity(_thread.title!) + '\n',
-													style: const TextStyle(fontWeight: FontWeight.bold)
-												),
-												_thread.posts[0].span.build(ctx, PostSpanRenderOptions(
-													avoidBuggyClippers: true,
-													maxLines: ((constraints.maxHeight - (DefaultTextStyle.of(context).style.fontSize ?? 17)) / (DefaultTextStyle.of(context).style.fontSize ?? 17)).lazyCeil()
-												)),
-												WidgetSpan(
-													alignment: PlaceholderAlignment.top,
-													child: Visibility(
-														visible: false,
-														maintainState: true,
-														maintainAnimation: true,
-														maintainSize: true,
-														child: _makeCounters()
-													)
 												)
-											]
-										),
-										overflow: TextOverflow.fade
+											),
+											postInject: WidgetSpan(
+												alignment: PlaceholderAlignment.top,
+												child: Visibility(
+													visible: false,
+													maintainState: true,
+													maintainAnimation: true,
+													maintainSize: true,
+													child: _makeCounters()
+												)
+											)
+										)
 									)
 								)
 							)
@@ -369,28 +372,28 @@ class ThreadRow extends StatelessWidget {
 												),
 												child: Builder(
 													builder: (ctx) => IgnorePointer(
-														child: Text.rich(
-															TextSpan(
-																children: [
-																	if (_thread.title != null) TextSpan(
-																		text: settings.filterProfanity(_thread.title!) + '\n',
+														child: ClipRect(
+															child: _thread.posts[0].span.buildWidget(
+																ctx,
+																PostSpanRenderOptions(
+																	avoidBuggyClippers: true
+																),
+																preInjectRow: (thread.title == null) ? null : Text.rich(
+																	TextSpan(
+																		text: settings.filterProfanity(_thread.title!),
 																		style: const TextStyle(fontWeight: FontWeight.bold)
-																	),
-																	_thread.posts[0].span.build(ctx, PostSpanRenderOptions(
-																		avoidBuggyClippers: true
-																	)),
-																	WidgetSpan(
-																		child: Visibility(
-																			visible: false,
-																			maintainState: true,
-																			maintainAnimation: true,
-																			maintainSize: true,
-																			child: _makeCounters()
-																		)
 																	)
-																]
-															),
-															overflow: TextOverflow.fade
+																),
+																postInject: WidgetSpan(
+																	child: Visibility(
+																		visible: false,
+																		maintainState: true,
+																		maintainAnimation: true,
+																		maintainSize: true,
+																		child: _makeCounters()
+																	)
+																)
+															)
 														)
 													)
 												)

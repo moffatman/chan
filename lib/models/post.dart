@@ -49,10 +49,10 @@ class Post implements Filterable {
 	final String? posterId;
 	@HiveField(9)
 	PostSpanFormat spanFormat;
-	PostSpan? _span;
+	PostNodeSpan? _span;
 	@HiveField(12)
 	Map<String, int>? foolfuukaLinkedPostThreadIds;
-	PostSpan get span {
+	PostNodeSpan get span {
 		if (_span == null) {
 			if (spanFormat == PostSpanFormat.chan4) {
 				_span = Site4Chan.makeSpan(board, threadId, text);
