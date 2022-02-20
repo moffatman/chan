@@ -279,7 +279,6 @@ class _ThreadPageState extends State<ThreadPage> {
 								child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply),
 								onPressed: persistentState.thread?.isArchived == true ? null : () {
 									_replyBoxKey.currentState?.toggleReplyBox();
-									setState(() {});
 								}
 							)
 						]
@@ -572,6 +571,9 @@ class _ThreadPageState extends State<ThreadPage> {
 								persistentState.savedTime = DateTime.now();
 								persistentState.save();
 								_listController.update();
+							},
+							onVisibilityChanged: () {
+								setState(() {});
 							}
 						)
 					]

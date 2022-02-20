@@ -29,6 +29,7 @@ class ReplyBox extends StatefulWidget {
 	final ValueChanged<String>? onTextChanged;
 	final String initialSubject;
 	final ValueChanged<String>? onSubjectChanged;
+	final VoidCallback? onVisibilityChanged;
 
 	const ReplyBox({
 		required this.board,
@@ -38,6 +39,7 @@ class ReplyBox extends StatefulWidget {
 		this.onTextChanged,
 		this.initialSubject = '',
 		this.onSubjectChanged,
+		this.onVisibilityChanged,
 		Key? key
 	}) : super(key: key);
 
@@ -152,6 +154,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		setState(() {
 			show = true;
 		});
+		widget.onVisibilityChanged?.call();
 		_textFocusNode.requestFocus();
 	}
 
@@ -159,6 +162,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		setState(() {
 			show = false;
 		});
+		widget.onVisibilityChanged?.call();
 		_textFocusNode.unfocus();
 	}
 
