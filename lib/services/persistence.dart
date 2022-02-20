@@ -308,6 +308,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	List<int> hiddenPostIds = [];
 	@HiveField(9, defaultValue: '')
 	String draftReply = '';
+	// Don't persist this
+	final lastSeenPostIdNotifier = ValueNotifier<int?>(null);
 
 	PersistentThreadState() : lastOpenedTime = DateTime.now();
 

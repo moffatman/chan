@@ -76,8 +76,11 @@ class _ChanAppState extends State<ChanApp> {
 		});
 		try {
 			final _site = makeSite(context, data);
-			Persistence _persistence = Persistence(_site.name);
-			await _persistence.initialize();
+			Persistence? _persistence = persistence;
+			if (_persistence == null || site?.name != _site.name) {
+				_persistence = Persistence(_site.name);
+				await _persistence.initialize();
+			}
 			_site.persistence = _persistence;
 			site = _site;
 			persistence = _persistence;
@@ -87,8 +90,10 @@ class _ChanAppState extends State<ChanApp> {
 			await Future.delayed(const Duration(seconds: 5));
 			oldThreadWatcher?.dispose();
 		}
-		catch (e) {
+		catch (e, st) {
 			siteSetupError = 'Fatal setup error\n' + e.toStringDio();
+			print(e);
+			print(st);
 		}
 	}
 
@@ -580,7 +585,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							final threadState = context.read<Persistence>().getThreadStateIfExists(tabs[i].item1.thread!);
 							Future.microtask(() => tabs[i].item3.value = threadState?.unseenReplyCount ?? 0);
 							final attachment = threadState?.thread?.attachment;
-							return _buildTabletIcon(i * -1, attachment == null ? _icon : ClipRRect(
+							_build() => _buildTabletIcon(i * -1, attachment == null ? _icon : ClipRRect(
 									borderRadius: const BorderRadius.all(Radius.circular(4)),
 									child: AttachmentThumbnail(
 										gaplessPlayback: true,
@@ -599,6 +604,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									secondary: threadState?.unseenReplyCount ?? 0
 								)
 							);
+							if (threadState != null) {
+								return ValueListenableBuilder(
+									valueListenable: threadState.lastSeenPostIdNotifier,
+									builder: (context, _, __) => _build()
+								);
+							}
+							return _build();
 						}
 					);
 				}
