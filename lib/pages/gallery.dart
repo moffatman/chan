@@ -556,7 +556,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 									LogicalKeySet(LogicalKeyboardKey.arrowRight): const GalleryRightIntent(),
 									LogicalKeySet(LogicalKeyboardKey.space): const GalleryToggleChromeIntent(),
 									LogicalKeySet(LogicalKeyboardKey.keyG): const DismissIntent(),
-									LogicalKeySet(LogicalKeyboardKey.tab): Intent.doNothing
+									LogicalKeySet(LogicalKeyboardKey.tab): Intent.doNothing,
+									LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.arrowLeft) : const DismissIntent()
 								},
 								child: Actions(
 									actions: {
