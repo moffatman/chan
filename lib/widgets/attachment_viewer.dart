@@ -8,7 +8,9 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/search_query.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/storage.dart';
 import 'package:chan/services/rotating_image_provider.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -35,6 +37,7 @@ class AttachmentNotFoundException {
 
 class AttachmentViewerController extends ChangeNotifier {
 	// Parameters
+	final BuildContext context;
 	final Attachment attachment;
 	final Stream<void>? redrawGestureStream;
 	final ImageboardSite site;
@@ -77,10 +80,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool get hasAudio => _hasAudio;
 	/// The Uri to use to load the image, if needed
 	Uri? get goodImageSource => _goodImageSource;
-	/// The file which contains the local cache of this attachment
-	File? get cachedFile => _cachedFile;
 	/// Whether the attachment has been cached locally
-	bool get cacheCompleted => cachedFile != null;
+	bool get cacheCompleted => _cachedFile != null;
 	/// Whether this attachment is currently the primary one being displayed to the user
 	bool get isPrimary => _isPrimary;
 	/// How many turns to rotate the image by
@@ -98,6 +99,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 
 	AttachmentViewerController({
+		required this.context,
 		required this.attachment,
 		this.redrawGestureStream,
 		required this.site,
@@ -121,7 +123,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		_isPrimary = val;
 	}
 
-	Future<Uri> _getGoodSource(BuildContext context, Attachment attachment) async {
+	Future<Uri> _getGoodSource() async {
 		if (overrideSource != null) {
 			return overrideSource!;
 		}
@@ -162,7 +164,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	Future<void> _loadFullAttachment(BuildContext context, bool startImageDownload, {bool force = false}) async {
+	Future<void> _loadFullAttachment(bool startImageDownload, {bool force = false}) async {
 		if (attachment.type == AttachmentType.image && goodImageSource != null && !force) {
 			return;
 		}
@@ -185,7 +187,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		});
 		try {
 			if (attachment.type == AttachmentType.image) {
-				_goodImageSource = await _getGoodSource(context, attachment);
+				_goodImageSource = await _getGoodSource();
 				if (_goodImageSource?.scheme == 'file') {
 					_cachedFile = File(_goodImageSource!.path);
 				}
@@ -204,35 +206,60 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 			}
 			else if (attachment.type == AttachmentType.webm) {
-				final url = await _getGoodSource(context, attachment);
-				_ongoingConversion = MediaConversion.toMp4(url);
-				_ongoingConversion!.progress.addListener(_onConversionProgressUpdate);
-				_ongoingConversion!.start();
-				final result = await _ongoingConversion!.result;
-				_ongoingConversion = null;
-				_videoPlayerController = VideoPlayerController.file(result.file, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
-				if (_isDisposed) {
-					return;
+				final url = await _getGoodSource();
+				if (Platform.isAndroid) {
+					final scan = await MediaScan.scan(url);
+					_hasAudio = scan.hasAudio;
+					if (_isDisposed) {
+						return;
+					}
+					_videoPlayerController = VideoPlayerController.network(url.toString());
+					await _videoPlayerController!.initialize();
+					if (_isDisposed) {
+						return;
+					}
+					await videoPlayerController!.setLooping(true);
+					if (_isDisposed) {
+						return;
+					}
+					if (isPrimary) {
+						await videoPlayerController!.play();
+					}
+					if (_isDisposed) {
+						return;
+					}
+					notifyListeners();
 				}
-				await _videoPlayerController!.initialize();
-				if (_isDisposed) {
-					return;
+				else {
+					_ongoingConversion = MediaConversion.toMp4(url);
+					_ongoingConversion!.progress.addListener(_onConversionProgressUpdate);
+					_ongoingConversion!.start();
+					final result = await _ongoingConversion!.result;
+					_ongoingConversion = null;
+					_videoPlayerController = VideoPlayerController.file(result.file, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+					if (_isDisposed) {
+						return;
+					}
+					await _videoPlayerController!.initialize();
+					if (_isDisposed) {
+						return;
+					}
+					await _videoPlayerController!.setLooping(true);
+					if (_isDisposed) {
+						return;
+					}
+					if (isPrimary) {
+						await _videoPlayerController!.play();
+					}
+					if (_isDisposed) {
+						return;
+					}
+					_cachedFile = result.file;
+					_hasAudio = result.hasAudio;
 				}
-				await _videoPlayerController!.setLooping(true);
-				if (_isDisposed) {
-					return;
-				}
-				if (isPrimary) {
-					await _videoPlayerController!.play();
-				}
-				if (_isDisposed) {
-					return;
-				}
-				_cachedFile = result.file;
-				_hasAudio = result.hasAudio;
+				if (_isDisposed) return;
+				notifyListeners();
 			}
-			if (_isDisposed) return;
-			notifyListeners();
 		}
 		catch (e, st) {
 			_errorMessage = e.toStringDio();
@@ -245,11 +272,11 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 	}
 
-	Future<void> loadFullAttachment(BuildContext context) => _loadFullAttachment(context, false);
+	Future<void> loadFullAttachment() => _loadFullAttachment(false);
 
-	Future<void> reloadFullAttachment(BuildContext context) => _loadFullAttachment(context, false, force: true);
+	Future<void> reloadFullAttachment() => _loadFullAttachment(false, force: true);
 
-	Future<void> preloadFullAttachment(BuildContext context) => _loadFullAttachment(context, true);
+	Future<void> preloadFullAttachment() => _loadFullAttachment(true);
 
 	Future<void> rotate() async {
 		_quarterTurns = 1;
@@ -277,9 +304,9 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	void tryArchives(BuildContext context) {
+	void tryArchives() {
 		_checkArchives = true;
-		loadFullAttachment(context);
+		loadFullAttachment();
 	}
 
 	String _formatPosition(Duration position, Duration duration) {
@@ -324,22 +351,39 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	bool get canShare => (overrideSource ?? cachedFile) != null;
+	bool get canShare => (attachment.type == AttachmentType.webm && Platform.isAndroid) || (overrideSource ?? _cachedFile) != null;
 
-	Future<File> _moveToShareCache(Attachment attachment) async {
+	Future<File> getFile() async {
+		if (overrideSource != null) {
+			return File(overrideSource!.path);
+		}
+		else if (_cachedFile != null) {
+			return _cachedFile!;
+		}
+		else if (attachment.type == AttachmentType.webm && Platform.isAndroid) {
+			final response = await site.client.get((await _getGoodSource()).toString(), options: Options(
+				responseType: ResponseType.bytes
+			));
+			final systemTempDirectory = Persistence.temporaryDirectory;
+			final directory = await (Directory(systemTempDirectory.path + '/webmcache')).create(recursive: true);
+			return await File(directory.path + attachment.id.toString() + '.webm').writeAsBytes(response.data);
+		}
+		else {
+			throw Exception('No file available');
+		}
+	}
+
+	Future<File> _moveToShareCache() async {
 		final systemTempDirectory = Persistence.temporaryDirectory;
 		final shareDirectory = await (Directory(systemTempDirectory.path + '/sharecache')).create(recursive: true);
-		final newFilename = attachment.id.toString() + attachment.ext.replaceFirst('webm', 'mp4');
-		File? originalFile = cachedFile;
-		if (overrideSource != null) {
-			originalFile = File(overrideSource!.path);
-		}
-		return await originalFile!.copy(shareDirectory.path.toString() + '/' + newFilename);
+		final newFilename = attachment.id.toString() + attachment.ext.replaceFirst('webm', Platform.isAndroid ? 'webm' : 'mp4');
+		File? originalFile = await getFile();
+		return await originalFile.copy(shareDirectory.path.toString() + '/' + newFilename);
 	}
 
 	Future<void> share(Rect? sharePosition) async {
 		await shareOne(
-			text: (await _moveToShareCache(attachment)).path,
+			text: (await _moveToShareCache()).path,
 			subject: attachment.filename,
 			type: "file",
 			sharePositionOrigin: sharePosition
@@ -348,15 +392,40 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<void> download() async {
 		if (_isDownloaded) return;
-		final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common, filterOption: FilterOptionGroup(containsEmptyAlbum: true));
-		AssetPathEntity? album = existingAlbums.tryFirstWhere((album) => album.name == deviceGalleryAlbumName);
-		album ??= await PhotoManager.editor.iOS.createAlbum('Chance');
-		final shareCachedFile = await _moveToShareCache(attachment);
-		final asAsset = attachment.type == AttachmentType.image ? 
-			await PhotoManager.editor.saveImageWithPath(shareCachedFile.path, title: attachment.filename) :
-			await PhotoManager.editor.saveVideo(shareCachedFile, title: attachment.filename);
-		await PhotoManager.editor.copyAssetToPath(asset: asAsset!, pathEntity: album!);
-		_isDownloaded = true;
+		try {
+			if (Platform.isIOS) {
+				final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common, filterOption: FilterOptionGroup(containsEmptyAlbum: true));
+				AssetPathEntity? album = existingAlbums.tryFirstWhere((album) => album.name == deviceGalleryAlbumName);
+				album ??= await PhotoManager.editor.iOS.createAlbum('Chance');
+				final shareCachedFile = await _moveToShareCache();
+				final asAsset = attachment.type == AttachmentType.image ? 
+					await PhotoManager.editor.saveImageWithPath(shareCachedFile.path, title: attachment.filename) :
+					await PhotoManager.editor.saveVideo(shareCachedFile, title: attachment.filename);
+				await PhotoManager.editor.copyAssetToPath(asset: asAsset!, pathEntity: album!);
+				_isDownloaded = true;
+			}
+			else if (Platform.isAndroid) {
+				if (context.read<EffectiveSettings>().androidGallerySavePath == null) {
+					// pick the path
+					context.read<EffectiveSettings>().androidGallerySavePath = await pickDirectory();
+				}
+				if (context.read<EffectiveSettings>().androidGallerySavePath != null) {
+					File source = (await getFile());
+					await saveFile(
+						sourcePath: source.path,
+						destinationDir: context.read<EffectiveSettings>().androidGallerySavePath!,
+						destinationName: attachment.id.toString() + attachment.ext
+					);
+					_isDownloaded = true;
+				}
+			}
+			else {
+				throw UnsupportedError("Downloading not supported on this platform");
+			}
+		}
+		catch (e) {
+			alertError(context, e.toStringDio());
+		}
 		notifyListeners();
 	}
 
@@ -509,8 +578,8 @@ class AttachmentViewer extends StatelessWidget {
 						if (controller.errorMessage != null) {
 							_child = Center(
 								child: ErrorMessageCard(controller.errorMessage!, remedies: {
-										'Retry': () => controller.loadFullAttachment(context),
-										if (!controller.checkArchives) 'Try archives': () => controller.tryArchives(context)
+										'Retry': () => controller.loadFullAttachment(),
+										if (!controller.checkArchives) 'Try archives': () => controller.tryArchives()
 									}
 								)
 							);
@@ -646,7 +715,7 @@ class AttachmentViewer extends StatelessWidget {
 						),
 						if (controller.errorMessage != null) Center(
 							child: ErrorMessageCard(controller.errorMessage!, remedies: {
-								'Retry': () => controller.reloadFullAttachment(context)
+								'Retry': () => controller.reloadFullAttachment()
 							})
 						)
 						else if (controller.videoPlayerController != null) GestureDetector(

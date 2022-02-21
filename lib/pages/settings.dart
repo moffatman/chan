@@ -8,6 +8,7 @@ import 'package:chan/pages/board.dart';
 import 'package:chan/pages/licenses.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -649,6 +650,15 @@ class SettingsPage extends StatelessWidget {
 												const SizedBox(width: 16)
 											]
 										),
+										if (Platform.isAndroid) ...[
+											const SizedBox(height: 32),
+											CupertinoButton(
+												child: Text((settings.androidGallerySavePath == null ? 'Set' : 'Change') + ' media save directory'),
+												onPressed: () async {
+													settings.androidGallerySavePath = await pickDirectory();
+												}
+											)
+										],
 										const SizedBox(height: 32),
 										const Text('Cached media'),
 										const SettingsCachePanel(),

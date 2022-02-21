@@ -200,6 +200,8 @@ class SavedSettings extends HiveObject {
 	bool showAnimations;
 	@HiveField(34)
 	bool imagesOnRight;
+	@HiveField(35)
+	String? androidGallerySavePath;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -236,6 +238,7 @@ class SavedSettings extends HiveObject {
 		double? interfaceScale,
 		bool? showAnimations,
 		bool? imagesOnRight,
+		this.androidGallerySavePath,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -551,6 +554,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get imagesOnRight => _settings.imagesOnRight;
 	set imagesOnRight(bool setting) {
 		_settings.imagesOnRight = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	String? get androidGallerySavePath => _settings.androidGallerySavePath;
+	set androidGallerySavePath(String? setting) {
+		_settings.androidGallerySavePath = setting;
 		_settings.save();
 		notifyListeners();
 	}

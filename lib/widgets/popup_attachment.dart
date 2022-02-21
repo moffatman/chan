@@ -17,11 +17,12 @@ class PopupAttachment extends StatelessWidget {
 
 	AttachmentViewerController _makeController(BuildContext context) {
 		final controller = AttachmentViewerController(
+			context: context,
 			attachment: attachment,
 			site: context.read<ImageboardSite>()
 		);
 		controller.isPrimary = true;
-		controller.loadFullAttachment(context);
+		controller.loadFullAttachment();
 		return controller;
 	}
 

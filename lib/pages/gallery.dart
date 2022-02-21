@@ -114,7 +114,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		pageController.addListener(_onPageControllerUpdate);
 		_scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
 		final attachment = widget.attachments[currentIndex];
-		_getController(attachment).loadFullAttachment(context);
+		_getController(attachment).loadFullAttachment();
 	}
 
 	@override
@@ -141,7 +141,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 			currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
 			if (context.read<EffectiveSettings>().autoloadAttachments) {
 				final attachment = widget.attachments[currentIndex];
-				_getController(attachment).loadFullAttachment(context);
+				_getController(attachment).loadFullAttachment();
 			}
 		}
 	}
@@ -149,6 +149,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	AttachmentViewerController _getController(Attachment attachment) {
 		if (_controllers[attachment] == null) {
 			_controllers[attachment] = AttachmentViewerController(
+				context: context,
 				attachment: attachment,
 				redrawGestureStream: _slideStream,
 				site: context.read<ImageboardSite>(),
@@ -202,7 +203,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
 		if (context.read<EffectiveSettings>().autoloadAttachments) {
-			_getController(attachment).loadFullAttachment(context);
+			_getController(attachment).loadFullAttachment();
 		}
 		if (milliseconds == 0) {
 			pageController.jumpToPage(index);
@@ -256,14 +257,14 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		if (!_animatingNow) {
 			final settings = context.read<EffectiveSettings>();
 			if (settings.autoloadAttachments) {
-				_getController(attachment).loadFullAttachment(context);
+				_getController(attachment).loadFullAttachment();
 				if (index > 0) {
 					final previousAttachment = widget.attachments[index - 1];
-					_getController(previousAttachment).preloadFullAttachment(context);
+					_getController(previousAttachment).preloadFullAttachment();
 				}
 				if (index < (widget.attachments.length - 1)) {
 					final nextAttachment = widget.attachments[index + 1];
-					_getController(nextAttachment).preloadFullAttachment(context);
+					_getController(nextAttachment).preloadFullAttachment();
 				}
 			}
 			if (settings.autoRotateInGallery && _rotationAppropriate(attachment) && _getController(attachment).quarterTurns == 0) {
@@ -342,7 +343,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 			);
 			for (final attachment in toDownload) {
 				if (cancel) return;
-				await _getController(attachment).preloadFullAttachment(context);
+				await _getController(attachment).preloadFullAttachment();
 				await _getController(attachment).download();
 				loadingStream.value = loadingStream.value + 1;
 			}
@@ -519,12 +520,12 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													return CupertinoButton(
 														padding: EdgeInsets.zero,
 														child: Icon(currentlySaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark),
-														onPressed: currentController.canShare ? () {
+														onPressed: currentController.canShare ? () async {
 															if (currentlySaved) {
 																context.read<Persistence>().deleteSavedAttachment(currentAttachment);
 															}
 															else {
-																context.read<Persistence>().saveAttachment(currentAttachment, currentController.cachedFile!);
+																context.read<Persistence>().saveAttachment(currentAttachment, await currentController.getFile());
 															}
 														} : null
 													);
@@ -621,7 +622,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																		semanticParentIds: widget.semanticParentIds
 																	),
 																	onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
-																		_getController(attachment).loadFullAttachment(context);
+																		_getController(attachment).loadFullAttachment();
 																	}
 																)
 															);
