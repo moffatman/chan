@@ -176,17 +176,25 @@ class SettingsPage extends StatelessWidget {
 										Padding(
 											padding: const EdgeInsets.only(left: 16, right: 16),
 											child: Table(
-												children: {
-													'Images': settings.contentSettings.images,
-													'NSFW Boards': settings.contentSettings.nsfwBoards,
-													'NSFW Images': settings.contentSettings.nsfwImages,
-													'NSFW Text': settings.contentSettings.nsfwText
-												}.entries.map((x) => TableRow(
-													children: [
-														Text(x.key),
-														Text(x.value ? 'Allowed' : 'Blocked', textAlign: TextAlign.right)
-													]
-												)).toList()
+												children: [
+													TableRow(
+														children: [
+															const Text('Imageboard'),
+															Text(realSite.name, textAlign: TextAlign.right)
+														]
+													),
+														...{
+														'Images': settings.contentSettings.images,
+														'NSFW Boards': settings.contentSettings.nsfwBoards,
+														'NSFW Images': settings.contentSettings.nsfwImages,
+														'NSFW Text': settings.contentSettings.nsfwText
+													}.entries.map((x) => TableRow(
+														children: [
+															Text(x.key),
+															Text(x.value ? 'Allowed' : 'Blocked', textAlign: TextAlign.right)
+														]
+													))
+												]
 											)
 										),
 										const SizedBox(height: 16),
