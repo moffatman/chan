@@ -127,90 +127,96 @@ class _ChanAppState extends State<ChanApp> {
 					]
 				],
 				child: SettingsSystemListener(
-					child: Builder(
-						builder: (BuildContext context) {
-							final settings = context.watch<EffectiveSettings>();
-							CupertinoThemeData theme = CupertinoThemeData(
-								brightness: Brightness.light,
-								scaffoldBackgroundColor: settings.lightTheme.backgroundColor,
-								barBackgroundColor: settings.lightTheme.barColor,
-								primaryColor: settings.lightTheme.primaryColor,
-								textTheme: CupertinoTextThemeData(
-									textStyle: TextStyle(
-										fontFamily: '.SF Pro Text',
-										fontSize: 17.0,
-										letterSpacing: -0.41,
-										color: settings.lightTheme.primaryColor
-									),
-									actionTextStyle: TextStyle(color: settings.lightTheme.secondaryColor),
-									navActionTextStyle: TextStyle(color: settings.lightTheme.primaryColor)
-								)
-							);
-							if (settings.whichTheme == Brightness.dark) {
-								theme = CupertinoThemeData(
-									brightness: Brightness.dark,
-									scaffoldBackgroundColor: settings.darkTheme.backgroundColor,
-									barBackgroundColor: settings.darkTheme.barColor,
-									primaryColor: settings.darkTheme.primaryColor,
-									textTheme: CupertinoTextThemeData(
-										textStyle: TextStyle(
-											fontFamily: '.SF Pro Text',
-											fontSize: 17.0,
-											letterSpacing: -0.41,
-											color: settings.darkTheme.primaryColor
-										),
-										actionTextStyle: TextStyle(color: settings.darkTheme.secondaryColor),
-										navActionTextStyle: TextStyle(color: settings.darkTheme.primaryColor)
-									)
-								);
-							}
-							return MediaQuery.fromWindow(
-								child: StickyMediaQuery(
-									top: true,
-									child: CupertinoApp(
-										title: 'Chance',
-										useInheritedMediaQuery: true,
-										debugShowCheckedModeBanner: false,
-										theme: theme,
-										home: Builder(
-											builder: (BuildContext context) {
-												site?.context = context;
-												return DefaultTextStyle(
-													style: CupertinoTheme.of(context).textTheme.textStyle,
-													child: RootCustomScale(
-														scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
-														child: threadWatcher != null ? ChanHomePage(key: _siteKeys.putIfAbsent(site!.name, () => GlobalKey())) : Container(
-															color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-															child: Center(
-																child: siteSetupError != null ? ErrorMessageCard(siteSetupError!, remedies: {
-																	'Resynchronize': () {
-																		setState(() {
-																			siteSetupError = null;
-																		});
-																		settings.updateContentSettings();
-																	},
-																	'Edit content preferences': () {
-																		launch(settings.contentSettingsUrl, forceSafariVC: false);
-																		settings.addAppResumeCallback(() async {
-																			await Future.delayed(const Duration(seconds: 1));
+					child: MediaQuery.fromWindow(
+						child: StickyMediaQuery(
+							top: true,
+							child: Builder(
+								builder: (BuildContext context) {
+									final settings = context.watch<EffectiveSettings>();
+									final mq = MediaQuery.of(context);
+									CupertinoThemeData theme = CupertinoThemeData(
+										brightness: Brightness.light,
+										scaffoldBackgroundColor: settings.lightTheme.backgroundColor,
+										barBackgroundColor: settings.lightTheme.barColor,
+										primaryColor: settings.lightTheme.primaryColor,
+										textTheme: CupertinoTextThemeData(
+											textStyle: TextStyle(
+												fontFamily: '.SF Pro Text',
+												fontSize: 17.0,
+												letterSpacing: -0.41,
+												fontWeight: mq.boldText ? FontWeight.w500 : null,
+												color: settings.lightTheme.primaryColor
+											),
+											actionTextStyle: TextStyle(color: settings.lightTheme.secondaryColor),
+											navActionTextStyle: TextStyle(color: settings.lightTheme.primaryColor)
+										)
+									);
+									if (settings.whichTheme == Brightness.dark) {
+										theme = CupertinoThemeData(
+											brightness: Brightness.dark,
+											scaffoldBackgroundColor: settings.darkTheme.backgroundColor,
+											barBackgroundColor: settings.darkTheme.barColor,
+											primaryColor: settings.darkTheme.primaryColor,
+											textTheme: CupertinoTextThemeData(
+												textStyle: TextStyle(
+													fontFamily: '.SF Pro Text',
+													fontSize: 17.0,
+													letterSpacing: -0.41,
+													fontWeight: mq.boldText ? FontWeight.w500 : null,
+													color: settings.darkTheme.primaryColor
+												),
+												actionTextStyle: TextStyle(color: settings.darkTheme.secondaryColor),
+												navActionTextStyle: TextStyle(color: settings.darkTheme.primaryColor)
+											)
+										);
+									}
+									return MediaQuery(
+										data: mq.copyWith(boldText: false),
+										child: CupertinoApp(
+											title: 'Chance',
+											useInheritedMediaQuery: true,
+											debugShowCheckedModeBanner: false,
+											theme: theme,
+											home: Builder(
+												builder: (BuildContext context) {
+													site?.context = context;
+													return DefaultTextStyle(
+														style: CupertinoTheme.of(context).textTheme.textStyle,
+														child: RootCustomScale(
+															scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
+															child: threadWatcher != null ? ChanHomePage(key: _siteKeys.putIfAbsent(site!.name, () => GlobalKey())) : Container(
+																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																child: Center(
+																	child: siteSetupError != null ? ErrorMessageCard(siteSetupError!, remedies: {
+																		'Resynchronize': () {
+																			setState(() {
+																				siteSetupError = null;
+																			});
 																			settings.updateContentSettings();
-																		});
-																	}
-																}) : const CupertinoActivityIndicator()
+																		},
+																		'Edit content preferences': () {
+																			launch(settings.contentSettingsUrl, forceSafariVC: false);
+																			settings.addAppResumeCallback(() async {
+																				await Future.delayed(const Duration(seconds: 1));
+																				settings.updateContentSettings();
+																			});
+																		}
+																	}) : const CupertinoActivityIndicator()
+																)
 															)
 														)
-													)
-												);
-											}
-										),
-										localizationsDelegates: const [
-											DefaultCupertinoLocalizations.delegate,
-											DefaultMaterialLocalizations.delegate
-										]
-									)
-								)
-							);
-						}
+													);
+												}
+											),
+											localizationsDelegates: const [
+												DefaultCupertinoLocalizations.delegate,
+												DefaultMaterialLocalizations.delegate
+											]
+										)
+									);
+								}
+							)
+						)
 					)
 				)
 			)
