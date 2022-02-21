@@ -46,7 +46,8 @@ class _LicensesPageState extends State<LicensesPage> {
 				navigationBar: CupertinoNavigationBar(
 					leading: CupertinoButton(
 						padding: EdgeInsets.zero,
-						child: const Icon(CupertinoIcons.chevron_back),
+						minSize: 0,
+						child: const Icon(CupertinoIcons.chevron_back, size: 30),
 						onPressed: () => Navigator.pop(rootContext)
 					),
 					transitionBetweenRoutes: false,
