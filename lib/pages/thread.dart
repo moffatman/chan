@@ -132,6 +132,10 @@ class _ThreadPageState extends State<ThreadPage> {
 		zone = PostSpanRootZoneData(
 			thread: persistentState.thread ?? _nullThread,
 			site: context.read<ImageboardSite>(),
+			filter: FilterGroup([
+				context.read<EffectiveSettings>().filter,
+				IDFilter(persistentState.hiddenPostIds)
+			]),
 			threadState: persistentState,
 			semanticRootIds: [widget.boardSemanticId, 0],
 			onNeedScrollToPost: (post) {
@@ -172,6 +176,10 @@ class _ThreadPageState extends State<ThreadPage> {
 			zone = PostSpanRootZoneData(
 				thread: persistentState.thread ?? _nullThread,
 				site: context.read<ImageboardSite>(),
+				filter: FilterGroup([
+					context.watch<EffectiveSettings>().filter,
+					IDFilter(persistentState.hiddenPostIds)
+				]),
 				threadState: persistentState,
 				onNeedScrollToPost: oldZone.onNeedScrollToPost,
 				semanticRootIds: [widget.boardSemanticId, 0]

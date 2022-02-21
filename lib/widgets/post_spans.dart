@@ -5,6 +5,7 @@ import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/embed.dart';
+import 'package:chan/services/filtering.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -290,6 +291,10 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		if (zone.threadState?.youIds.contains(postId) ?? false) {
 			text += ' (You)';
+		}
+		final linkedPost = zone.thread.posts.tryFirstWhere((p) => p.id == postId);
+		if (linkedPost != null && zone.filter.filter(linkedPost)?.type == FilterResultType.hide) {
+			text += ' (Hidden)';
 		}
 		final bool expandedImmediatelyAbove = zone.shouldExpandPost(postId) || zone.stackIds.length > 1 && zone.stackIds.elementAt(zone.stackIds.length - 2) == postId;
 		final bool expandedSomewhereAbove = expandedImmediatelyAbove || zone.stackIds.contains(postId);
@@ -738,6 +743,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	Thread get thread;
 	ImageboardSite get site;
 	Iterable<int> get stackIds;
+	Filter get filter;
 	PersistentThreadState? get threadState;
 	ValueChanged<Post>? get onNeedScrollToPost;
 	bool disposed = false;
@@ -794,6 +800,9 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 
 	@override
 	ImageboardSite get site => parent.site;
+
+	@override
+	Filter get filter => parent.filter;
 
 	@override
 	PersistentThreadState? get threadState => parent.threadState;
@@ -884,10 +893,13 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	final Iterable<int> semanticRootIds;
 	final Map<String, AsyncSnapshot> _futures = {};
 	static final Map<String, AsyncSnapshot> _globalFutures = {};
+	@override
+	final Filter filter;
 
 	PostSpanRootZoneData({
 		required this.thread,
 		required this.site,
+		required this.filter,
 		this.threadState,
 		this.onNeedScrollToPost,
 		this.semanticRootIds = const []

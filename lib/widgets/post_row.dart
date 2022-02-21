@@ -1,4 +1,5 @@
 import 'package:chan/pages/selectable_post.dart';
+import 'package:chan/services/filtering.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -70,10 +71,20 @@ class PostRow extends StatelessWidget {
 				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color?.towardsBlack(0.5) ?? const Color.fromARGB(255, 90, 30, 30), width: 10)
 			);
 		}
+		final replyIds = _post.replyIds.toList();
+		replyIds.removeWhere((id) {
+			final replyPost = zone.thread.posts.tryFirstWhere((p) => p.id == id);
+			if (replyPost != null) {
+				if (zone.filter.filter(replyPost)?.type == FilterResultType.hide) {
+					return true;
+				}
+			}
+			return false;
+		});
 		openReplies() {
-			if (_post.replyIds.isNotEmpty) {
+			if (replyIds.isNotEmpty) {
 				WeakNavigator.push(context, PostsPage(
-						postsIdsToShow: _post.replyIds,
+						postsIdsToShow: replyIds,
 						postIdForBackground: _post.id,
 						zone: zone.childZoneFor(_post.id)
 					)
@@ -93,8 +104,8 @@ class PostRow extends StatelessWidget {
 								showCrossThreadLabel: showCrossThreadLabel,
 								shrinkWrap: shrinkWrap,
 							),
-							postInject: (_post.replyIds.isEmpty) ? null : TextSpan(
-								text: List.filled(_post.replyIds.length.toString().length + 4, '1').join(),
+							postInject: (replyIds.isEmpty) ? null : TextSpan(
+								text: List.filled(replyIds.length.toString().length + 4, '1').join(),
 								style: const TextStyle(color: Colors.transparent)
 							)
 						)
@@ -105,7 +116,7 @@ class PostRow extends StatelessWidget {
 		innerChild(BuildContext context, double slideFactor) {
 			final mainRow = [
 				if (_post.attachment != null && settings.showImages(context, _post.board)) Padding(
-					padding: (settings.imagesOnRight && _post.replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32) : EdgeInsets.zero,
+					padding: (settings.imagesOnRight && replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32) : EdgeInsets.zero,
 					child: PopupAttachment(
 						attachment: _post.attachment!,
 						child: GestureDetector(
@@ -231,7 +242,7 @@ class PostRow extends StatelessWidget {
 															}
 														),
 														if (supportMouse) ...[
-															..._post.replyIds.map((id) => PostQuoteLinkSpan(
+															...replyIds.map((id) => PostQuoteLinkSpan(
 																board: _post.board,
 																threadId: _post.threadId,
 																postId: id,
@@ -241,7 +252,7 @@ class PostRow extends StatelessWidget {
 																addExpandingPosts: false,
 																shrinkWrap: shrinkWrap
 															))),
-															..._post.replyIds.map((id) => WidgetSpan(
+															...replyIds.map((id) => WidgetSpan(
 																child: ExpandingPost(id: id),
 															))
 														].expand((span) => [const TextSpan(text: ' '), span])
@@ -261,7 +272,7 @@ class PostRow extends StatelessWidget {
 									)
 								]
 							),
-							if (_post.replyIds.isNotEmpty) Positioned.fill(
+							if (replyIds.isNotEmpty) Positioned.fill(
 								child: Align(
 									alignment: Alignment.bottomRight,
 									child: CupertinoButton(
@@ -280,7 +291,7 @@ class PostRow extends StatelessWidget {
 													),
 													const SizedBox(width: 4),
 													Text(
-														_post.replyIds.length.toString(),
+														replyIds.length.toString(),
 														style: TextStyle(
 															color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
 															fontWeight: FontWeight.bold
@@ -438,9 +449,9 @@ class PostRow extends StatelessWidget {
 					)
 				]
 			],
-			child: (_post.replyIds.isNotEmpty) ? SliderBuilder(
+			child: (replyIds.isNotEmpty) ? SliderBuilder(
 				popup: PostsPage(
-					postsIdsToShow: _post.replyIds,
+					postsIdsToShow: replyIds,
 					postIdForBackground: _post.id,
 					zone: zone.childZoneFor(_post.id)
 				),

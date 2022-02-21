@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
+import 'package:chan/services/filtering.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -229,7 +230,8 @@ class ThreadRow extends StatelessWidget {
 					child: ChangeNotifierProvider<PostSpanZoneData>(
 						create: (ctx) => PostSpanRootZoneData(
 							thread: _thread,
-							site: context.watch<ImageboardSite>()
+							site: context.watch<ImageboardSite>(),
+							filter: const DummyFilter()
 						),
 						child: Builder(
 							builder: (ctx) => IgnorePointer(
@@ -368,7 +370,8 @@ class ThreadRow extends StatelessWidget {
 											child: ChangeNotifierProvider<PostSpanZoneData>(
 												create: (ctx) => PostSpanRootZoneData(
 													thread: _thread,
-													site: context.watch<ImageboardSite>()
+													site: context.watch<ImageboardSite>(),
+													filter: const DummyFilter()
 												),
 												child: Builder(
 													builder: (ctx) => IgnorePointer(

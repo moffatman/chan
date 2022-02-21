@@ -239,7 +239,8 @@ class _SavedPageState extends State<SavedPage> {
 									create: (context) => PostSpanRootZoneData(
 										site: context.read<ImageboardSite>(),
 										thread: item.thread,
-										semanticRootIds: [-8]
+										semanticRootIds: [-8],
+										filter: context.watch<EffectiveSettings>().filter
 									),
 									child: PostRow(
 										post: item.post,
@@ -286,7 +287,8 @@ class _SavedPageState extends State<SavedPage> {
 									create: (context) => PostSpanRootZoneData(
 										site: context.read<ImageboardSite>(),
 										thread: savedPost.thread,
-										semanticRootIds: [-2]
+										semanticRootIds: [-2],
+										filter: context.watch<EffectiveSettings>().filter
 									),
 									child: PostRow(
 										post: savedPost.post,

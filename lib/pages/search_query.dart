@@ -3,6 +3,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/filtering.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -185,6 +186,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									time: DateTime.fromMicrosecondsSinceEpoch(0),
 									posts: [],
 								),
+								filter: const DummyFilter(),
 								semanticRootIds: [-7]
 							),
 							child: PostRow(
