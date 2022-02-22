@@ -115,7 +115,7 @@ class PostNodeSpan extends PostSpan {
 
 	Widget buildWidget(BuildContext context, PostSpanRenderOptions options, {Widget? preInjectRow, InlineSpan? postInject}) {
 		final _rows = <List<InlineSpan>>[[]];
-		int lines = 1;
+		int lines = preInjectRow != null ? 2 : 1;
 		for (int i = 0; i < children.length && lines < options.maxLines; i++) {
 			if (children[i] is PostLineBreakSpan) {
 				_rows.add([]);
