@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
@@ -17,6 +19,7 @@ import 'package:chan/widgets/tex.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
@@ -448,51 +451,76 @@ class PostBoardLink extends PostSpan {
 	}
 }
 
+class _DetectLanguageParam {
+	final String text;
+	final SendPort sendPort;
+	const _DetectLanguageParam(this.text, this.sendPort);
+}
+
+void _detectLanguageIsolate(_DetectLanguageParam param) {
+	final result = highlight.parse(param.text, autoDetection: true);
+	param.sendPort.send(result.language);
+}
+
 class PostCodeSpan extends PostSpan {
 	final String text;
-	final List<TextSpan> _spans = [];
-	bool _initialized = false;
 
 	PostCodeSpan(this.text);
 
 	@override
 	build(context, options) {
-		if (!_initialized) {
-			const theme = atomOneDarkReasonableTheme;
-			final nodes = highlight.parse(text.replaceAll('\t', ' ' * 4), autoDetection: true).nodes!;
+		final zone = context.watch<PostSpanZoneData>();
+		final result = zone.getFutureForComputation(
+			id: 'languagedetect $text',
+			work: () async {
+				final receivePort = ReceivePort();
+				String? language;
+				if (kDebugMode) {
+					language = highlight.parse(text, autoDetection: true).language;
+				}
+				else {
+					await Isolate.spawn(_detectLanguageIsolate, _DetectLanguageParam(text, receivePort.sendPort));
+					language = await receivePort.first as String?;
+				}
+				const theme = atomOneDarkReasonableTheme;
+				final nodes = highlight.parse(text.replaceAll('\t', ' ' * 4), language: language ?? 'plaintext').nodes!;
+				final List<TextSpan> _spans = [];
+				List<TextSpan> currentSpans = _spans;
+				List<List<TextSpan>> stack = [];
 
-			List<TextSpan> currentSpans = _spans;
-			List<List<TextSpan>> stack = [];
+				_traverse(Node node) {
+					if (node.value != null) {
+						currentSpans.add(node.className == null
+								? TextSpan(text: node.value)
+								: TextSpan(text: node.value, style: theme[node.className!]));
+					} else if (node.children != null) {
+						List<TextSpan> tmp = [];
+						currentSpans.add(TextSpan(children: tmp, style: theme[node.className!]));
+						stack.add(currentSpans);
+						currentSpans = tmp;
 
-			_traverse(Node node) {
-				if (node.value != null) {
-					currentSpans.add(node.className == null
-							? TextSpan(text: node.value)
-							: TextSpan(text: node.value, style: theme[node.className!]));
-				} else if (node.children != null) {
-					List<TextSpan> tmp = [];
-					currentSpans.add(TextSpan(children: tmp, style: theme[node.className!]));
-					stack.add(currentSpans);
-					currentSpans = tmp;
-
-					for (final n in node.children!) {
-						_traverse(n);
-						if (n == node.children!.last) {
-							currentSpans = stack.isEmpty ? _spans : stack.removeLast();
+						for (final n in node.children!) {
+							_traverse(n);
+							if (n == node.children!.last) {
+								currentSpans = stack.isEmpty ? _spans : stack.removeLast();
+							}
 						}
 					}
 				}
-			}
 
-			for (var node in nodes) {
-				_traverse(node);
+				for (var node in nodes) {
+					_traverse(node);
+				}
+
+				return _spans;
 			}
-			_initialized = true;
-		}
+		);
 		final child = RichText(
 			text: TextSpan(
 				style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
-				children: _spans
+				children: result.data ?? [
+					TextSpan(text: text)
+				]
 			),
 			softWrap: false
 		);
