@@ -18,6 +18,7 @@ import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
 
@@ -553,52 +554,57 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	Widget _buildTextField(BuildContext context) {
 		final board = context.watch<Persistence>().getBoard(widget.board);
-		return Container(
-			padding: const EdgeInsets.all(8),
-			child: Column(
-				children: [
-					if (widget.threadId == null) ...[
-						CupertinoTextField(
-							enabled: !loading,
-							controller: _subjectFieldController,
-							maxLines: 1,
-							placeholder: 'Subject',
-							textCapitalization: TextCapitalization.sentences,
-							keyboardAppearance: CupertinoTheme.of(context).brightness
-						),
-						const SizedBox(height: 8),
-					],
-					Flexible(
-						child: Stack(
-							children: [
-								CupertinoTextField(
-									enabled: !loading,
-									controller: _textFieldController,
-									placeholder: 'Comment',
-									maxLines: null,
-									minLines: 10,
-									focusNode: _textFocusNode,
-									textCapitalization: TextCapitalization.sentences,
-									keyboardAppearance: CupertinoTheme.of(context).brightness,
-								),
-								if (board.maxCommentCharacters != null && ((_textFieldController.text.length / board.maxCommentCharacters!) > 0.5)) IgnorePointer(
-									child: Align(
-										alignment: Alignment.bottomRight,
-										child: Container(
-											padding: const EdgeInsets.only(bottom: 4, right: 8),
-											child: Text(
-												'${_textFieldController.text.length} / ${board.maxCommentCharacters}',
-												style: TextStyle(
-													color: (_textFieldController.text.length > board.maxCommentCharacters!) ? Colors.red : Colors.grey
+		return CallbackShortcuts(
+			bindings: {
+				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter): _submit
+			},
+			child: Container(
+				padding: const EdgeInsets.all(8),
+				child: Column(
+					children: [
+						if (widget.threadId == null) ...[
+							CupertinoTextField(
+								enabled: !loading,
+								controller: _subjectFieldController,
+								maxLines: 1,
+								placeholder: 'Subject',
+								textCapitalization: TextCapitalization.sentences,
+								keyboardAppearance: CupertinoTheme.of(context).brightness
+							),
+							const SizedBox(height: 8),
+						],
+						Flexible(
+							child: Stack(
+								children: [
+									CupertinoTextField(
+										enabled: !loading,
+										controller: _textFieldController,
+										placeholder: 'Comment',
+										maxLines: null,
+										minLines: 10,
+										focusNode: _textFocusNode,
+										textCapitalization: TextCapitalization.sentences,
+										keyboardAppearance: CupertinoTheme.of(context).brightness,
+									),
+									if (board.maxCommentCharacters != null && ((_textFieldController.text.length / board.maxCommentCharacters!) > 0.5)) IgnorePointer(
+										child: Align(
+											alignment: Alignment.bottomRight,
+											child: Container(
+												padding: const EdgeInsets.only(bottom: 4, right: 8),
+												child: Text(
+													'${_textFieldController.text.length} / ${board.maxCommentCharacters}',
+													style: TextStyle(
+														color: (_textFieldController.text.length > board.maxCommentCharacters!) ? Colors.red : Colors.grey
+													)
 												)
 											)
 										)
 									)
-								)
-							]
+								]
+							)
 						)
-					)
-				]
+					]
+				)
 			)
 		);
 	}
