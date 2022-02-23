@@ -202,6 +202,8 @@ class SavedSettings extends HiveObject {
 	bool imagesOnRight;
 	@HiveField(35)
 	String? androidGallerySavePath;
+	@HiveField(36)
+	double replyBoxHeightOffset;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -239,6 +241,7 @@ class SavedSettings extends HiveObject {
 		bool? showAnimations,
 		bool? imagesOnRight,
 		this.androidGallerySavePath,
+		double? replyBoxHeightOffset,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -280,7 +283,8 @@ class SavedSettings extends HiveObject {
 		showNameInCatalog = showNameInCatalog ?? true,
 		interfaceScale = interfaceScale ?? 1.0,
 		showAnimations = showAnimations ?? true,
-		imagesOnRight = imagesOnRight ?? false;
+		imagesOnRight = imagesOnRight ?? false,
+		replyBoxHeightOffset = replyBoxHeightOffset ?? 0.0;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -561,6 +565,15 @@ class EffectiveSettings extends ChangeNotifier {
 	String? get androidGallerySavePath => _settings.androidGallerySavePath;
 	set androidGallerySavePath(String? setting) {
 		_settings.androidGallerySavePath = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	double get replyBoxHeightOffset => _settings.replyBoxHeightOffset;
+	set replyBoxHeightOffset(double setting) {
+		_settings.replyBoxHeightOffset = setting;
+	}
+	void finalizeReplyBoxHeightOffset() {
 		_settings.save();
 		notifyListeners();
 	}

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/overscroll_modal.dart';
@@ -455,7 +456,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor
 			),
-			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 8),
+			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 10),
 			child: Row(
 				children: [
 					Flexible(
@@ -558,7 +559,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter): _submit
 			},
 			child: Container(
-				padding: const EdgeInsets.all(8),
+				padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
 				child: Column(
 					children: [
 						if (widget.threadId == null) ...[
@@ -580,7 +581,7 @@ class ReplyBoxState extends State<ReplyBox> {
 										controller: _textFieldController,
 										placeholder: 'Comment',
 										maxLines: null,
-										minLines: 10,
+										minLines: 100,
 										focusNode: _textFocusNode,
 										textCapitalization: TextCapitalization.sentences,
 										keyboardAppearance: CupertinoTheme.of(context).brightness,
@@ -689,6 +690,7 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	@override
 	Widget build(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
 		return Column(
 			mainAxisSize: MainAxisSize.min,
 			children: [
@@ -753,36 +755,56 @@ class ReplyBoxState extends State<ReplyBox> {
 				Expander(
 					expanded: show,
 					bottomSafe: !show,
-					height: (widget.threadId == null) ? 150 : 100,
-					child: Container(
-						decoration: BoxDecoration(
-							border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
-							color: CupertinoTheme.of(context).scaffoldBackgroundColor
-						),
-						padding: const EdgeInsets.only(top: 1),
-						child: Stack(
-							children: [
-								Row(
-									crossAxisAlignment: CrossAxisAlignment.stretch,
-									children: [
-										Expanded(
-											child: _buildTextField(context)
-										),
-										_buildButtons(context),
-										const SizedBox(width: 4)
-									]
-								),
-								if (loading) Positioned.fill(
-										child: Container(
-										alignment: Alignment.bottomCenter,
-										child: LinearProgressIndicator(
-											valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
-											backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.7)
-										)
+					height: ((widget.threadId == null) ? 150 : 100) + settings.replyBoxHeightOffset,
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							GestureDetector(
+								behavior: HitTestBehavior.opaque,
+								onPanUpdate: (event) {
+									setState(() {
+										settings.replyBoxHeightOffset = min(MediaQuery.of(context).size.height / 2, max(0, settings.replyBoxHeightOffset - event.delta.dy));
+									});
+								},
+								onPanEnd: (event) {
+									settings.finalizeReplyBoxHeightOffset();
+								},
+								child: Container(
+									decoration: BoxDecoration(
+										border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)))
+									),
+									height: 10
+								)
+							),
+							Flexible(
+								child: Container(
+									color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+									child: Stack(
+										children: [
+											Row(
+												crossAxisAlignment: CrossAxisAlignment.stretch,
+												children: [
+													Expanded(
+														child: _buildTextField(context)
+													),
+													_buildButtons(context),
+													const SizedBox(width: 4)
+												]
+											),
+											if (loading) Positioned.fill(
+													child: Container(
+													alignment: Alignment.bottomCenter,
+													child: LinearProgressIndicator(
+														valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
+														backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.7)
+													)
+												)
+											)
+										]
 									)
 								)
-							]
-						)
+							)
+						]
 					)
 				)
 			]

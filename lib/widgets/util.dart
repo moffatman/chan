@@ -313,7 +313,7 @@ class _FirstBuildDetectorState extends State<FirstBuildDetector> {
 	}
 }
 
-class Expander extends StatelessWidget {
+class Expander extends StatefulWidget {
 	final Widget child;
 	final Duration duration;
 	final Curve curve;
@@ -332,31 +332,65 @@ class Expander extends StatelessWidget {
 	}) : super(key: key);
 
 	@override
+	createState() => _ExpanderState();
+}
+
+class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
+	late final AnimationController animation;
+
+	@override
+	void initState() {
+		super.initState();
+		animation = AnimationController(
+			value: widget.expanded ? 1.0 : 0.0,
+			vsync: this,
+			duration: const Duration(milliseconds: 300)
+		);
+	}
+
+	@override
+	void didUpdateWidget(Expander oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.expanded && !oldWidget.expanded) {
+			animation.forward(from: 0.0);
+		}
+		else if (!widget.expanded && oldWidget.expanded) {
+			animation.reverse(from: 1.0);
+		}
+	}
+
+	@override
 	Widget build(BuildContext context) {
 		return SafeArea(
 			top: false,
-			bottom: !bottomSafe,
-			child: AnimatedContainer(
-				curve: Curves.ease,
-				alignment: Alignment.topCenter,
-				duration: const Duration(milliseconds: 300),
-				height: expanded ? height : 0,
-				child: Stack(
-					clipBehavior: Clip.hardEdge,
-					children: [
-						Positioned(
-							top: 0,
-							left: 0,
-							right: 0,
-							child: SizedBox(
-								height: height,
-								child: child
+			bottom: !widget.bottomSafe,
+			child: AnimatedBuilder(
+				animation: animation,
+				builder: (context, _) => SizedBox(
+					height: Curves.ease.transform(animation.value) * widget.height,
+					child: Stack(
+						clipBehavior: Clip.hardEdge,
+						children: [
+							Positioned(
+								top: 0,
+								left: 0,
+								right: 0,
+								child: SizedBox(
+									height: widget.height,
+									child: widget.child
+								)
 							)
-						)
-					]
+						]
+					)
 				)
 			)
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		animation.dispose();
 	}
 }
 
