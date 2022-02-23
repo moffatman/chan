@@ -305,6 +305,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 					},
 					child: CustomScrollView(
 						key: _scrollViewKey,
+						cacheExtent: 2500,
 						controller: widget.controller?.scrollController,
 						physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
 						slivers: [
