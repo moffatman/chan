@@ -148,8 +148,9 @@ class _ThreadPageState extends State<ThreadPage> {
 			_threadStateListenable.addListener(_onThreadStateListenableUpdate);
 		});
 		_listController.slowScrollUpdates.listen((_) {
-			if (persistentState.thread != null && !_unnaturallyScrolling && _listController.lastVisibleIndex >= 0) {
-				final newLastSeen = persistentState.thread!.posts[_listController.lastVisibleIndex].id;
+			final lastItem = _listController.lastVisibleItem;
+			if (persistentState.thread != null && !_unnaturallyScrolling && lastItem != null) {
+				final newLastSeen = lastItem.id;
 				if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
 					persistentState.lastSeenPostId = newLastSeen;
 					persistentState.lastSeenPostIdNotifier.value = newLastSeen;
@@ -234,6 +235,7 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		final globalFilter = context.watch<EffectiveSettings>().filter;
 		String title = '/${widget.thread.board}/';
 		if (persistentState.thread?.title != null) {
 			title += ' - ' + context.read<EffectiveSettings>().filterProfanity(persistentState.thread!.title!);
@@ -342,7 +344,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																autoUpdateDuration: const Duration(seconds: 60),
 																initialList: persistentState.thread?.posts,
 																filters: [
-																	context.watch<EffectiveSettings>().filter,
+																	globalFilter,
 																	IDFilter(persistentState.hiddenPostIds)
 																],
 																footer: Container(
@@ -418,8 +420,9 @@ class _ThreadPageState extends State<ThreadPage> {
 																		setState(() {});
 																		Future.delayed(const Duration(milliseconds: 100), () {
 																			if (persistentState == _persistentState && !_unnaturallyScrolling) {
-																				if (_listController.lastVisibleIndex != -1) {
-																					_persistentState.lastSeenPostId = max(_persistentState.lastSeenPostId ?? 0, _persistentState.thread!.posts[_listController.lastVisibleIndex].id);
+																				final lastItem = _listController.lastVisibleItem;
+																				if (lastItem != null) {
+																					_persistentState.lastSeenPostId = max(_persistentState.lastSeenPostId ?? 0, lastItem.id);
 																					_persistentState.save();
 																					setState(() {});
 																				}
@@ -466,11 +469,13 @@ class _ThreadPageState extends State<ThreadPage> {
 													StreamBuilder(
 														stream: _listController.slowScrollUpdates,
 														builder: (context, a) {
-															final redCount = persistentState.unseenReplyIdsToYou?.length ?? 0;
-															final whiteCount = persistentState.unseenReplyCount ?? 0;
+															final redCount = persistentState.unseenReplyIdsToYou(globalFilter)?.length ?? 0;
+															final whiteCount = persistentState.unseenReplyCount(globalFilter) ?? 0;
 															int greyCount = 0;
-															if (persistentState.thread != null && persistentState.lastSeenPostId != -1 && _listController.lastVisibleIndex != -1) {
-																greyCount = persistentState.thread!.posts.length - whiteCount - (_listController.lastVisibleIndex + 2);
+															final lastItem = _listController.lastVisibleItem;
+															final filter = FilterGroup([context.read<EffectiveSettings>().filter, IDFilter(persistentState.hiddenPostIds)]);
+															if (persistentState.thread != null && persistentState.lastSeenPostId != -1 && lastItem != null) {
+																greyCount = persistentState.thread!.posts.where((p) => p.id > lastItem.id && filter.filter(p)?.type != FilterResultType.hide).length - whiteCount;
 															}
 															const radius = Radius.circular(8);
 															const radiusAlone = BorderRadius.all(radius);

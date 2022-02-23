@@ -314,13 +314,36 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	PersistentThreadState() : lastOpenedTime = DateTime.now();
 
 	List<int> get youIds => receipts.map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toList();
-	List<int>? get replyIdsToYou {
+	List<int>? replyIdsToYou(Filter filter) {
+		final _filter = FilterGroup([filter, IDFilter(hiddenPostIds)]);
 		final _youIds = youIds;
-		return thread?.posts.where((p) => p.span.referencedPostIds(thread!.board).any((id) => _youIds.contains(id))).map((p) => p.id).toList();
+		return thread?.posts.where((p) {
+			return (_filter.filter(p)?.type != FilterResultType.hide) &&
+						 p.span.referencedPostIds(thread!.board).any((id) => _youIds.contains(id));
+		}).map((p) => p.id).toList();
 	}
-	List<int>? get unseenReplyIdsToYou => replyIdsToYou?.where((id) => id > lastSeenPostId!).toList();
-	int? get unseenReplyCount => (lastSeenPostId == null) ? null : thread?.posts.where((p) => p.id > lastSeenPostId!).length;
-	int? get unseenImageCount => (lastSeenPostId == null) ? null : thread?.posts.where((p) => (p.id > lastSeenPostId!) && (p.attachment != null)).length;
+	List<int>? unseenReplyIdsToYou(Filter filter) => replyIdsToYou(filter)?.where((id) => id > lastSeenPostId!).toList();
+	int? unseenReplyCount(Filter filter) {
+		if (lastSeenPostId != null) {
+			final _filter = FilterGroup([filter, IDFilter(hiddenPostIds)]);
+			return thread?.posts.where((p) {
+				return (p.id > lastSeenPostId!) &&
+							 _filter.filter(p)?.type != FilterResultType.hide;
+			}).length;
+		}
+		return null;
+	}
+	int? unseenImageCount(Filter filter) {
+		if (lastSeenPostId != null) {
+			final _filter = FilterGroup([filter, IDFilter(hiddenPostIds)]);
+			return thread?.posts.where((p) {
+				return (p.id > lastSeenPostId!) &&
+							 (p.attachment != null) &&
+							 (_filter.filter(p)?.type != FilterResultType.hide);
+			}).length;
+		}
+		return null;
+	}
 
 	@override
 	String toString() => 'PersistentThreadState(lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime, useArchive: $useArchive)';

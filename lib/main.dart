@@ -85,7 +85,11 @@ class _ChanAppState extends State<ChanApp> {
 			site = _site;
 			persistence = _persistence;
 			final oldThreadWatcher = threadWatcher;
-			threadWatcher = SavedThreadWatcher(site: _site, persistence: _persistence);
+			threadWatcher = SavedThreadWatcher(
+				site: _site,
+				persistence: _persistence,
+				settings: settings
+			);
 			setState(() {});
 			await Future.delayed(const Duration(seconds: 5));
 			oldThreadWatcher?.dispose();
@@ -282,6 +286,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		devThreadWatcher = StickyThreadWatcher(
 			persistence: devPersistence!,
 			site: devSite!,
+			settings: context.read<EffectiveSettings>(),
 			board: 'chance'
 		);
 		setState(() {});
@@ -623,7 +628,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						valueListenable: context.read<Persistence>().listenForPersistentThreadStateChanges(tabs[i].item1.thread!),
 						builder: (context, box, child) {
 							final threadState = context.read<Persistence>().getThreadStateIfExists(tabs[i].item1.thread!);
-							Future.microtask(() => tabs[i].item3.value = threadState?.unseenReplyCount ?? 0);
+							Future.microtask(() => tabs[i].item3.value = threadState?.unseenReplyCount(context.read<EffectiveSettings>().filter) ?? 0);
 							final attachment = threadState?.thread?.attachment;
 							_build() => _buildTabletIcon(i * -1, attachment == null ? _icon : ClipRRect(
 									borderRadius: const BorderRadius.all(Radius.circular(4)),
@@ -640,8 +645,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								axis: axis,
 								opacityParentBuilder: (context, child) => StationaryNotifyingIcon(
 								icon: child,
-									primary: threadState?.unseenReplyIdsToYou?.length ?? 0,
-									secondary: threadState?.unseenReplyCount ?? 0
+									primary: threadState?.unseenReplyIdsToYou(context.read<EffectiveSettings>().filter)?.length ?? 0,
+									secondary: threadState?.unseenReplyCount(context.read<EffectiveSettings>().filter) ?? 0
 								)
 							);
 							if (threadState != null) {

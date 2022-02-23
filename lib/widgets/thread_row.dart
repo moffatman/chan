@@ -89,9 +89,9 @@ class ThreadRow extends StatelessWidget {
 		Color? imageCountColor;
 		Color? otherMetadataColor;
 		if (threadState?.lastSeenPostId != null) {
-			unseenReplyCount = (threadState?.unseenReplyCount ?? 0) + ((latestReplyCount + 1) - _thread.posts.length);
-			unseenYouCount = threadState?.unseenReplyIdsToYou?.length ?? 0;
-			unseenImageCount = (threadState?.unseenImageCount ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.where((x) => x.attachment != null).length ?? 0));
+			unseenReplyCount = (threadState?.unseenReplyCount(settings.filter) ?? 0) + ((latestReplyCount + 1) - _thread.posts.length);
+			unseenYouCount = threadState?.unseenReplyIdsToYou(settings.filter)?.length ?? 0;
+			unseenImageCount = (threadState?.unseenImageCount(settings.filter) ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.where((x) => x.attachment != null).length ?? 0));
 			replyCountColor = unseenReplyCount == 0 ? grey : null;
 			imageCountColor = unseenImageCount == 0 ? grey : null;
 			otherMetadataColor = unseenReplyCount == 0 && unseenImageCount == 0 ? grey : null;

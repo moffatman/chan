@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:flutter/foundation.dart';
@@ -16,6 +17,7 @@ class StickyThreadWatcher extends ChangeNotifier {
 	final Persistence persistence;
 	final String board;
 	final Duration interval;
+	final EffectiveSettings settings;
 	StreamSubscription<BoxEvent>? _boxSubscription;
 	final Map<ThreadIdentifier, int> cachedUnseenYous = {};
 	Timer? nextUpdateTimer;
@@ -30,6 +32,7 @@ class StickyThreadWatcher extends ChangeNotifier {
 		required this.site,
 		required this.persistence,
 		required this.board,
+		required this.settings,
 		this.interval = const Duration(minutes: 10)
 	}) {
 		_boxSubscription = persistence.threadStateBox.watch().listen(_threadUpdated);
@@ -41,7 +44,7 @@ class StickyThreadWatcher extends ChangeNotifier {
 			final newThreadState = event.value as PersistentThreadState;
 			unseenStickyThreads.removeWhere((t) => t.identifier == newThreadState.thread?.identifier);
 			unseenStickyThreadCount.value = unseenStickyThreads.length;
-			cachedUnseenYous[newThreadState.thread!.identifier] = newThreadState.unseenReplyIdsToYou?.length ?? 0;
+			cachedUnseenYous[newThreadState.thread!.identifier] = newThreadState.unseenReplyIdsToYou(settings.filter)?.length ?? 0;
 			if (!disposed) {
 				unseenYouCount.value = cachedUnseenYous.values.reduce((a, b) => a + b);
 				notifyListeners();
@@ -99,6 +102,7 @@ class StickyThreadWatcher extends ChangeNotifier {
 class SavedThreadWatcher extends ChangeNotifier {
 	final ImageboardSite site;
 	final Persistence persistence;
+	final EffectiveSettings settings;
 	final Map<ThreadIdentifier, int> cachedUnseen = {};
 	final Map<ThreadIdentifier, int> cachedUnseenYous = {};
 	StreamSubscription<BoxEvent>? _boxSubscription;
@@ -116,13 +120,14 @@ class SavedThreadWatcher extends ChangeNotifier {
 	
 	SavedThreadWatcher({
 		required this.site,
-		required this.persistence
+		required this.persistence,
+		required this.settings
 	}) {
 		_boxSubscription = persistence.threadStateBox.watch().listen(_threadUpdated);
 		final liveSavedThreads = persistence.threadStateBox.values.where((s) => s.thread != null && s.savedTime != null);
 		for (final liveSavedThread in liveSavedThreads) {
-			cachedUnseen[liveSavedThread.thread!.identifier] = liveSavedThread.unseenReplyCount ?? 0;
-			cachedUnseenYous[liveSavedThread.thread!.identifier] = (liveSavedThread.unseenReplyIdsToYou ?? []).length;
+			cachedUnseen[liveSavedThread.thread!.identifier] = liveSavedThread.unseenReplyCount(settings.filter) ?? 0;
+			cachedUnseenYous[liveSavedThread.thread!.identifier] = (liveSavedThread.unseenReplyIdsToYou(settings.filter) ?? []).length;
 		}
 		if (liveSavedThreads.isNotEmpty) {
 			_updateCounts();
@@ -142,8 +147,8 @@ class SavedThreadWatcher extends ChangeNotifier {
 			final newThreadState = event.value as PersistentThreadState;
 			if (newThreadState.thread != null) {
 				if (newThreadState.savedTime != null) {
-					final newUnseen = newThreadState.unseenReplyCount ?? newThreadState.thread!.replyCount;
-					final newUnseenYous = newThreadState.unseenReplyIdsToYou!.length;
+					final newUnseen = newThreadState.unseenReplyCount(settings.filter) ?? newThreadState.thread!.replyCount;
+					final newUnseenYous = newThreadState.unseenReplyIdsToYou(settings.filter)!.length;
 					if (cachedUnseen[newThreadState.thread!.identifier] != newUnseen || cachedUnseenYous[newThreadState.thread!.identifier] != newUnseenYous) {
 						cachedUnseen[newThreadState.thread!.identifier] = newUnseen;
 						cachedUnseenYous[newThreadState.thread!.identifier] = newUnseenYous;

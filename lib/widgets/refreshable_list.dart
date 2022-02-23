@@ -825,13 +825,15 @@ class RefreshableListController<T extends Filterable> {
 		return -1;
 	}
 	T? get firstVisibleItem => firstVisibleIndex < 0 ? null : _items[firstVisibleIndex].item;
-	int get lastVisibleIndex {
+	T? get lastVisibleItem {
 		if (scrollController?.hasOnePosition ?? false) {
-			return _items.lastIndexWhere((i) => (i.cachedOffset != null) && ((i.cachedOffset! + i.cachedHeight!) < (scrollController!.position.pixels + scrollController!.position.viewportDimension)));
+			return _items.tryLastWhere((i) {
+				return (i.cachedOffset != null) &&
+							 ((i.cachedOffset! + i.cachedHeight!) < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
+			})?.item;
 		}
-		return -1;
+		return null;
 	}
-	T? get lastVisibleItem => lastVisibleIndex < 0 ? null : _items[lastVisibleIndex].item;
 	Future<void> blockAndUpdate() async {
 		state?.list = null;
 		setItems([]);
