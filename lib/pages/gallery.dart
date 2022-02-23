@@ -511,7 +511,10 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 											CupertinoButton(
 												padding: EdgeInsets.zero,
 												child: const Icon(CupertinoIcons.cloud_download),
-												onPressed: currentController.canShare && !currentController.isDownloaded ? currentController.download : null
+												onPressed: currentController.canShare && !currentController.isDownloaded ? () async {
+													await currentController.download();
+													showToast(context: context, message: 'Downloaded ${currentAttachment.filename}', icon: CupertinoIcons.cloud_download);
+												 } : null
 											),
 											StreamBuilder(
 												stream: context.watch<Persistence>().savedAttachmentsNotifier,

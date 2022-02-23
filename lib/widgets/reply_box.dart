@@ -435,6 +435,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				ThreadIdentifier(board: widget.board, id: receipt.id));
 			threadState.receipts = [...threadState.receipts, receipt];
 			threadState.save();
+			showToast(context: context, message: 'Post successful', icon: CupertinoIcons.check_mark);
 			widget.onReplyPosted(receipt);
 		}
 		catch (e, st) {

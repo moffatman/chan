@@ -55,6 +55,7 @@ dependencies:
   flutter_tex: ^4.0.3+1
   uni_links: ^0.5.1
   crypto: ^3.0.1
+  fluttertoast: ^8.0.8
   flutter:
     sdk: flutter
 

@@ -6,6 +6,7 @@ import 'package:chan/services/is_on_mac.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -27,6 +28,30 @@ Future<void> alertError(BuildContext context, String error) async {
 				]
 			);
 		}
+	);
+}
+
+void showToast({
+	required BuildContext context,
+	required String message,
+	required IconData icon
+}) {
+	FToast().init(context).showToast(
+		child: Container(
+			padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+			decoration: BoxDecoration(
+				borderRadius: BorderRadius.circular(24),
+				color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+			),
+			child: Row(
+				mainAxisSize: MainAxisSize.min,
+				children: [
+					Icon(icon, color: CupertinoTheme.of(context).primaryColor),
+					const SizedBox(width: 12),
+					Text(message, style: TextStyle(color: CupertinoTheme.of(context).primaryColor))
+				]
+			)
+		)
 	);
 }
 
