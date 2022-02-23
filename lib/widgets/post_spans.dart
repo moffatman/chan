@@ -587,11 +587,13 @@ class PostSpoilerSpan extends PostSpan {
 
 class PostLinkSpan extends PostSpan {
 	final String url;
+	bool? _embedPossible;
 	PostLinkSpan(this.url);
 	@override
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
-		if (embedPossible(url: url, context: context) && !options.showRawSource) {
+		_embedPossible ??= embedPossible(url: url, context: context);
+		if (_embedPossible! && !options.showRawSource) {
 			final snapshot = zone.getFutureForComputation(
 				id: 'noembed $url',
 				work: () => loadEmbedData(
