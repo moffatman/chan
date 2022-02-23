@@ -55,10 +55,11 @@ class ReplyBoxState extends State<ReplyBox> {
 	final _nameFieldController = TextEditingController();
 	late final TextEditingController _subjectFieldController;
 	final _optionsFieldController = TextEditingController();
+	final _filenameController = TextEditingController();
 	final _textFocusNode = FocusNode();
 	bool loading = false;
 	File? attachment;
-	String? overrideAttachmentFilename;
+	String? get attachmentExt => attachment?.path.split('.').last.toLowerCase();
 	bool _showOptions = false;
 	bool get showOptions => _showOptions && !loading;
 	bool show = false;
@@ -396,6 +397,10 @@ class ReplyBoxState extends State<ReplyBox> {
 		});
 		try {
 			final persistence = context.read<Persistence>();
+			String? overrideAttachmentFilename;
+			if (_filenameController.text.isNotEmpty && attachment != null) {
+				overrideAttachmentFilename = _filenameController.text + '.' + attachmentExt!;
+			}
 			final receipt = (widget.threadId != null) ? (await site.postReply(
 				thread: ThreadIdentifier(board: widget.board, id: widget.threadId!),
 				name: _nameFieldController.text,
@@ -418,10 +423,10 @@ class ReplyBoxState extends State<ReplyBox> {
 			_nameFieldController.clear();
 			_optionsFieldController.clear();
 			_subjectFieldController.clear();
+			_filenameController.clear();
 			show = false;
 			loading = false;
 			attachment = null;
-			overrideAttachmentFilename = null;
 			if (mounted) setState(() {});
 			print(receipt);
 			_textFocusNode.unfocus();
@@ -444,8 +449,6 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	Widget _buildOptions(BuildContext context) {
-		final ext = attachment?.path.split('.').last.toLowerCase();
-		final _controller = TextEditingController()..text = overrideAttachmentFilename?.replaceAll(RegExp('.$ext\$'), '') ?? '';
 		return Container(
 			decoration: BoxDecoration(
 				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
@@ -492,7 +495,7 @@ class ReplyBoxState extends State<ReplyBox> {
 												onPressed: () {
 													setState(() {
 														attachment = null;
-														overrideAttachmentFilename = null;
+														_filenameController.clear();
 													});
 												}
 											)
@@ -509,22 +512,17 @@ class ReplyBoxState extends State<ReplyBox> {
 												children: [
 													Flexible(
 														child: CupertinoTextField(
-															controller: _controller,
-															placeholder: attachment!.uri.pathSegments.last.replaceAll(RegExp('.$ext\$'), ''),
+															controller: _filenameController,
+															placeholder: attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
 															placeholderStyle: TextStyle(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.7)),
 															maxLines: 1,
 															textCapitalization: TextCapitalization.none,
 															autocorrect: false,
-															keyboardAppearance: CupertinoTheme.of(context).brightness,
-															onSubmitted: (newFilename) {
-																setState(() {
-																	overrideAttachmentFilename = newFilename.isEmpty ? null : '$newFilename.$ext';
-																});
-															}
+															keyboardAppearance: CupertinoTheme.of(context).brightness
 														)
 													),
 													const SizedBox(width: 8),
-													Text('.$ext')
+													Text('.$attachmentExt')
 												]
 											)
 										]
@@ -729,7 +727,7 @@ class ReplyBoxState extends State<ReplyBox> {
 										final newFile = File(dir.path + DateTime.now().millisecondsSinceEpoch.toString() + '_' + _proposedAttachmentUrl!.split('/').last);
 										await newFile.writeAsBytes(data.data);
 										attachment = newFile;
-										overrideAttachmentFilename = _proposedAttachmentUrl!.split('/').last;
+										_filenameController.text = _proposedAttachmentUrl!.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
 										_proposedAttachmentUrl = null;
 										setState(() {});
 									}
