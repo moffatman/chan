@@ -448,11 +448,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				);
 			}
 			else {
-				child = CallbackShortcuts(
-					bindings: {
-						LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.arrowLeft): () {
-							_settingsNavigatorKey.currentState?.maybePop();
-						}
+				return Actions(
+					actions: {
+						ExtendSelectionToLineBreakIntent: CallbackAction(
+							onInvoke: (intent) {
+								_settingsNavigatorKey.currentState?.maybePop();
+								return null;
+							}
+						)
 					},
 					child: WillPopScope(
 						onWillPop: () async {
@@ -723,11 +726,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		else if (isInTabletLayout) {
 			return NotificationListener<ScrollNotification>(
 				onNotification: _onScrollNotification,
-				child: CallbackShortcuts(
-					bindings: {
-						LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.arrowLeft): () {
-							_tabletWillPopZones[tabletIndex]?.callback?.call();
-						}
+				child: Actions(
+					actions: {
+						ExtendSelectionToLineBreakIntent: CallbackAction(
+							onInvoke: (intent) {
+								_tabletWillPopZones[tabletIndex]?.callback?.call();
+								return null;
+							}
+						)
 					},
 					child: WillPopScope(
 						onWillPop: () async {
@@ -794,11 +800,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		else {
 			return NotificationListener<ScrollNotification>(
 				onNotification: _onScrollNotification,
-				child: CallbackShortcuts(
-					bindings: {
-						LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.arrowLeft): () {
-							_tabNavigatorKeys[_tabController.index]?.currentState?.maybePop();
-						}
+				child: Actions(
+					actions: {
+						ExtendSelectionToLineBreakIntent: CallbackAction(
+							onInvoke: (intent) {
+								_tabNavigatorKeys[_tabController.index]?.currentState?.maybePop();
+								return null;
+							}
+						)
 					},
 					child: WillPopScope(
 						onWillPop: () async {
