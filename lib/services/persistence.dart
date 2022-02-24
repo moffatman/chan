@@ -115,7 +115,11 @@ class Persistence {
 			await browserStateBox.deleteFromDisk();
 		}
 		settings.browserStateBySite.putIfAbsent(id, () => PersistentBrowserState(
-			tabs: [PersistentBrowserTab(board: null)]
+			tabs: [PersistentBrowserTab(board: null)],
+			hiddenIds: {},
+			favouriteBoards: [],
+			autosavedIds: {},
+			hiddenImageMD5s: []
 		));
 		if (await Hive.boxExists('boards_$id')) {
 			print('Migrating boards box');
@@ -460,17 +464,23 @@ class PersistentBrowserState {
 	final List<String> favouriteBoards;
 	@HiveField(5, defaultValue: {})
 	final Map<String, List<int>> autosavedIds;
+	@HiveField(6, defaultValue: [])
+	final Set<String> hiddenImageMD5s;
 	
 	PersistentBrowserState({
 		required this.tabs,
 		this.currentTab = 0,
-		this.hiddenIds = const {},
-		this.favouriteBoards = const [],
-		this.autosavedIds = const {}
-	});
+		required this.hiddenIds,
+		required this.favouriteBoards,
+		required this.autosavedIds,
+		required List<String> hiddenImageMD5s
+	}) : hiddenImageMD5s = hiddenImageMD5s.toSet();
 
 	Filter getCatalogFilter(String board) {
-		return IDFilter(hiddenIds[board] ?? []);
+		return FilterGroup([
+			IDFilter(hiddenIds[board] ?? []),
+			imageMD5Filter
+		]);
 	}
 	
 	bool isThreadHidden(String board, int id) {
@@ -484,4 +494,19 @@ class PersistentBrowserState {
 	void unHideThread(String board, int id) {
 		hiddenIds[board]?.remove(id);
 	}
+
+	bool isMD5Hidden(String? md5) {
+		if (md5 == null) return false;
+		return hiddenImageMD5s.contains(md5);
+	}
+
+	void hideByMD5(String md5) {
+		hiddenImageMD5s.add(md5);
+	}
+
+	void unHideByMD5(String md5) {
+		hiddenImageMD5s.remove(md5);
+	}
+
+	Filter get imageMD5Filter => MD5Filter(hiddenImageMD5s);
 }

@@ -111,6 +111,8 @@ class Post implements Filterable {
 				return posterId;
 			case 'flag':
 				return flag?.name;
+			case 'md5':
+				return attachment?.md5;
 			default:
 				return null;
 		}

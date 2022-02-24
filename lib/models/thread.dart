@@ -110,6 +110,8 @@ class Thread implements Filterable {
 				return posts.first.posterId;
 			case 'flag':
 				return posts.first.flag?.name;
+			case 'md5':
+				return attachment?.md5;
 			default:
 				return null;
 		}

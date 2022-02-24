@@ -294,6 +294,24 @@ class _BoardPageState extends State<BoardPage> {
 															persistence.didUpdateBrowserState();
 															setState(() {});
 														}
+													),
+													if (thread.attachment?.md5 != null && browserState.isMD5Hidden(thread.attachment?.md5)) ContextMenuAction(
+														child: const Text('Unhide by image'),
+														trailingIcon: CupertinoIcons.eye_slash_fill,
+														onPressed: () {
+															browserState.unHideByMD5(thread.attachment!.md5);
+															persistence.didUpdateBrowserState();
+															setState(() {});
+														}
+													)
+													else if (thread.attachment?.md5 != null) ContextMenuAction(
+														child: const Text('Hide by image'),
+														trailingIcon: CupertinoIcons.eye_slash,
+														onPressed: () {
+															browserState.hideByMD5(thread.attachment!.md5);
+															persistence.didUpdateBrowserState();
+															setState(() {});
+														}
 													)
 												],
 												maxHeight: 125,

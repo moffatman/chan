@@ -63,15 +63,18 @@ class _ThreadPageState extends State<ThreadPage> {
 	Timer? _saveThreadStateDuringEditingTimer;
 	int lastSavedPostsLength = 0;
 	bool _saveQueued = false;
+	int lastHiddenMD5sLength = 0;
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
 		final savedPostsLength = persistentState.thread?.posts.where((p) => persistence.getSavedPost(p) != null).length ?? 0;
+		final hiddenMD5sLength = persistence.browserState.hiddenImageMD5s.length;
 		if (persistentState.thread != lastThread ||
 				persistentState.hiddenPostIds.length != lastHiddenPostIdsLength || 
 				persistentState.postsMarkedAsYou.length != lastPostsMarkedAsYouLength || 
 				persistentState.savedTime != lastSavedTime ||
-				savedPostsLength != lastSavedPostsLength) {
+				savedPostsLength != lastSavedPostsLength ||
+				hiddenMD5sLength != lastHiddenMD5sLength) {
 			setState(() {});
 		}
 		lastThread = persistentState.thread;
@@ -79,6 +82,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		lastPostsMarkedAsYouLength = persistentState.postsMarkedAsYou.length;
 		lastSavedTime = persistentState.savedTime;
 		lastSavedPostsLength = savedPostsLength;
+		lastHiddenMD5sLength = hiddenMD5sLength;
 	}
 
 	Thread get _nullThread => Thread(
@@ -134,6 +138,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			site: context.read<ImageboardSite>(),
 			filter: FilterGroup([
 				context.read<EffectiveSettings>().filter,
+				context.read<Persistence>().browserState.imageMD5Filter,
 				IDFilter(persistentState.hiddenPostIds)
 			]),
 			threadState: persistentState,
@@ -179,6 +184,7 @@ class _ThreadPageState extends State<ThreadPage> {
 				site: context.read<ImageboardSite>(),
 				filter: FilterGroup([
 					context.watch<EffectiveSettings>().filter,
+					context.watch<Persistence>().browserState.imageMD5Filter,
 					IDFilter(persistentState.hiddenPostIds)
 				]),
 				threadState: persistentState,
@@ -235,7 +241,10 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final globalFilter = context.watch<EffectiveSettings>().filter;
+		final globalFilter = FilterGroup([
+			context.watch<EffectiveSettings>().filter,
+			context.watch<Persistence>().browserState.imageMD5Filter
+		]);
 		String title = '/${widget.thread.board}/';
 		if (persistentState.thread?.title != null) {
 			title += ' - ' + context.read<EffectiveSettings>().filterProfanity(persistentState.thread!.title!);
@@ -473,7 +482,7 @@ class _ThreadPageState extends State<ThreadPage> {
 															final whiteCount = persistentState.unseenReplyCount(globalFilter) ?? 0;
 															int greyCount = 0;
 															final lastItem = _listController.lastVisibleItem;
-															final filter = FilterGroup([context.read<EffectiveSettings>().filter, IDFilter(persistentState.hiddenPostIds)]);
+															final filter = FilterGroup([globalFilter, IDFilter(persistentState.hiddenPostIds)]);
 															if (persistentState.thread != null && persistentState.lastSeenPostId != -1 && lastItem != null) {
 																greyCount = persistentState.thread!.posts.where((p) => p.id > lastItem.id && filter.filter(p)?.type != FilterResultType.hide).length - whiteCount;
 															}

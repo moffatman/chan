@@ -51,7 +51,8 @@ class PostRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
-		Post _post = context.watch<Persistence>().getSavedPost(post)?.post ?? post;
+		final persistence = context.watch<Persistence>();
+		Post _post = persistence.getSavedPost(post)?.post ?? post;
 		if (_post.attachment?.url != post.attachment?.url) {
 			_post.attachment = post.attachment;
 			context.watch<Persistence>().didUpdateSavedPost();
@@ -380,6 +381,24 @@ class PostRow extends StatelessWidget {
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () {
 							zone.threadState!.hidePost(_post.id);
+							zone.threadState!.save();
+						}
+					),
+					if (_post.attachment?.md5 != null && persistence.browserState.isMD5Hidden(_post.attachment?.md5)) ContextMenuAction(
+						child: const Text('Unhide by image'),
+						trailingIcon: CupertinoIcons.eye_slash_fill,
+						onPressed: () {
+							persistence.browserState.unHideByMD5(_post.attachment!.md5);
+							persistence.didUpdateBrowserState();
+							zone.threadState!.save();
+						}
+					)
+					else if (_post.attachment?.md5 != null) ContextMenuAction(
+						child: const Text('Hide by image'),
+						trailingIcon: CupertinoIcons.eye_slash,
+						onPressed: () {
+							persistence.browserState.hideByMD5(_post.attachment!.md5);
+							persistence.didUpdateBrowserState();
 							zone.threadState!.save();
 						}
 					)

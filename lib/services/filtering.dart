@@ -92,6 +92,25 @@ class IDFilter implements Filter {
 	int get hashCode => ids.hashCode;
 }
 
+class MD5Filter implements Filter {
+	final Set<String> md5s;
+	MD5Filter(this.md5s);
+	@override
+	FilterResult? filter(Filterable item) {
+		return md5s.contains(item.getFilterFieldText('md5')) ?
+			FilterResult(FilterResultType.hide, 'Matches filtered image') : null;
+	}
+
+	@override
+	String toString() => 'MD5Filter(md5s: $md5s)';
+
+	@override
+	operator == (dynamic other) => other is MD5Filter && other.md5s == md5s;
+
+	@override
+	int get hashCode => md5s.hashCode;
+}
+
 class SearchFilter implements Filter {
 	final String text;
 	SearchFilter(this.text);
