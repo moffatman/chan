@@ -325,6 +325,11 @@ class PostRow extends StatelessWidget {
 		}
 		final child = ContextMenu(
 			actions: [
+				if (context.read<GlobalKey<ReplyBoxState>?>()?.currentState != null) ContextMenuAction(
+					child: const Text('Reply'),
+					trailingIcon: CupertinoIcons.reply,
+					onPressed: () => context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.id)
+				),
 				if (zone.stackIds.length > 2 && zone.onNeedScrollToPost != null) ContextMenuAction(
 					child: const Text('Scroll to post'),
 					trailingIcon: CupertinoIcons.return_icon,
