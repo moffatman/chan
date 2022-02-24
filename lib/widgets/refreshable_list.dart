@@ -269,6 +269,10 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				}
 			}
 			values.insertAll(0, pinnedValues.map((x) => Tuple2(x, true)));
+			if (filteredValues.isEmpty) {
+				// Don't auto open filtered values after clearing it before
+				_showFilteredValues = false;
+			}
 			return NotificationListener<ScrollNotification>(
 				key: ValueKey(widget.id),
 				onNotification: (notification) {
@@ -415,8 +419,8 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 											child: Center(
 												child: Text(
 													_showFilteredValues ? 
-														'Showing ${filteredValues.length} filtered items' :
-														'${filteredValues.length} filtered items',
+														'Showing ${filteredValues.length} filtered item${filteredValues.length > 1 ? 's' : ''}' :
+														'${filteredValues.length} filtered item${filteredValues.length > 1 ? 's' : ''}',
 													style: TextStyle(
 														color: CupertinoTheme.of(context).primaryColorWithBrightness(0.4)
 													)
