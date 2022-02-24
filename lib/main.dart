@@ -50,7 +50,7 @@ class _ChanAppState extends State<ChanApp> {
 	ImageboardSite? site;
 	Persistence? persistence;
 	SavedThreadWatcher? threadWatcher;
-	final settings = EffectiveSettings(Persistence.settings);
+	final settings = EffectiveSettings();
 	late dynamic _lastSite;
 	final Map<String, GlobalKey> _siteKeys = {};
 	String? siteSetupError;
@@ -80,6 +80,7 @@ class _ChanAppState extends State<ChanApp> {
 			if (_persistence == null || site?.name != _site.name) {
 				_persistence = Persistence(_site.name);
 				await _persistence.initialize();
+				_persistence.registerSettings(settings);
 			}
 			_site.persistence = _persistence;
 			site = _site;
@@ -283,6 +284,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		devSite = makeSite(context, defaultSite);
 		devPersistence = Persistence('devsite');
 		await devPersistence!.initialize();
+		devPersistence?.registerSettings(context.read<EffectiveSettings>());
 		devThreadWatcher = StickyThreadWatcher(
 			persistence: devPersistence!,
 			site: devSite!,
@@ -631,7 +633,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						valueListenable: context.read<Persistence>().listenForPersistentThreadStateChanges(tabs[i].item1.thread!),
 						builder: (context, box, child) {
 							final threadState = context.read<Persistence>().getThreadStateIfExists(tabs[i].item1.thread!);
-							Future.microtask(() => tabs[i].item3.value = threadState?.unseenReplyCount(context.read<EffectiveSettings>().filter) ?? 0);
+							Future.microtask(() => tabs[i].item3.value = threadState?.unseenReplyCount(context.read<Persistence>().filter) ?? 0);
 							final attachment = threadState?.thread?.attachment;
 							_build() => _buildTabletIcon(i * -1, attachment == null ? _icon : ClipRRect(
 									borderRadius: const BorderRadius.all(Radius.circular(4)),
@@ -648,8 +650,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								axis: axis,
 								opacityParentBuilder: (context, child) => StationaryNotifyingIcon(
 								icon: child,
-									primary: threadState?.unseenReplyIdsToYou(context.read<EffectiveSettings>().filter)?.length ?? 0,
-									secondary: threadState?.unseenReplyCount(context.read<EffectiveSettings>().filter) ?? 0
+									primary: threadState?.unseenReplyIdsToYou(context.read<Persistence>().filter)?.length ?? 0,
+									secondary: threadState?.unseenReplyCount(context.read<Persistence>().filter) ?? 0
 								)
 							);
 							if (threadState != null) {

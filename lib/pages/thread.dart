@@ -64,6 +64,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	int lastSavedPostsLength = 0;
 	bool _saveQueued = false;
 	int lastHiddenMD5sLength = 0;
+	final FilterCache _filterCacheForCounters = FilterCache(const DummyFilter());
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -136,11 +137,10 @@ class _ThreadPageState extends State<ThreadPage> {
 		zone = PostSpanRootZoneData(
 			thread: persistentState.thread ?? _nullThread,
 			site: context.read<ImageboardSite>(),
-			filter: FilterGroup([
-				context.read<EffectiveSettings>().filter,
-				context.read<Persistence>().browserState.imageMD5Filter,
-				IDFilter(persistentState.hiddenPostIds)
-			]),
+			filter: FilterCache(FilterGroup([
+				context.read<Persistence>().filter,
+				persistentState.threadFilter
+			])),
 			threadState: persistentState,
 			semanticRootIds: [widget.boardSemanticId, 0],
 			onNeedScrollToPost: (post) {
@@ -182,11 +182,10 @@ class _ThreadPageState extends State<ThreadPage> {
 			zone = PostSpanRootZoneData(
 				thread: persistentState.thread ?? _nullThread,
 				site: context.read<ImageboardSite>(),
-				filter: FilterGroup([
-					context.watch<EffectiveSettings>().filter,
-					context.watch<Persistence>().browserState.imageMD5Filter,
-					IDFilter(persistentState.hiddenPostIds)
-				]),
+				filter: FilterCache(FilterGroup([
+					context.watch<Persistence>().filter,
+					persistentState.threadFilter
+				])),
 				threadState: persistentState,
 				onNeedScrollToPost: oldZone.onNeedScrollToPost,
 				semanticRootIds: [widget.boardSemanticId, 0]
@@ -241,10 +240,7 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final globalFilter = FilterGroup([
-			context.watch<EffectiveSettings>().filter,
-			context.watch<Persistence>().browserState.imageMD5Filter
-		]);
+		final globalFilter = context.watch<Persistence>().filter;
 		String title = '/${widget.thread.board}/';
 		if (persistentState.thread?.title != null) {
 			title += ' - ' + context.read<EffectiveSettings>().filterProfanity(persistentState.thread!.title!);
@@ -354,7 +350,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																initialList: persistentState.thread?.posts,
 																filters: [
 																	globalFilter,
-																	IDFilter(persistentState.hiddenPostIds)
+																	persistentState.threadFilter
 																],
 																footer: Container(
 																	padding: const EdgeInsets.all(16),
@@ -482,9 +478,9 @@ class _ThreadPageState extends State<ThreadPage> {
 															final whiteCount = persistentState.unseenReplyCount(globalFilter) ?? 0;
 															int greyCount = 0;
 															final lastItem = _listController.lastVisibleItem;
-															final filter = FilterGroup([globalFilter, IDFilter(persistentState.hiddenPostIds)]);
+															_filterCacheForCounters.setFilter(FilterGroup([globalFilter, persistentState.threadFilter]));
 															if (persistentState.thread != null && persistentState.lastSeenPostId != -1 && lastItem != null) {
-																greyCount = persistentState.thread!.posts.where((p) => p.id > lastItem.id && filter.filter(p)?.type != FilterResultType.hide).length - whiteCount;
+																greyCount = persistentState.thread!.posts.where((p) => p.id > lastItem.id && _filterCacheForCounters.filter(p)?.type != FilterResultType.hide).length - whiteCount;
 															}
 															const radius = Radius.circular(8);
 															const radiusAlone = BorderRadius.all(radius);

@@ -423,11 +423,11 @@ class EffectiveSettings extends ChangeNotifier {
 	}
 
 	String? filterError;
-	Filter? _filter;
-	Filter get filter => _filter ?? const DummyFilter();
+	final FilterCache _filter = FilterCache(const DummyFilter());
+	Filter get filter => _filter;
 	void _tryToSetupFilter() {
 		try {
-			_filter = makeFilter(filterConfiguration);
+			_filter.setFilter(makeFilter(filterConfiguration));
 			filterError = null;
 		}
 		catch (e) {
@@ -589,13 +589,13 @@ class EffectiveSettings extends ChangeNotifier {
 		_appResumeCallbacks.clear();
 	}
 
-	EffectiveSettings(SavedSettings settings) {
-		_settings = settings;
+	EffectiveSettings() {
+		_settings = Persistence.settings;
 		if (_settings.supportMouse == TristateSystemSetting.b) {
 			supportMouse.value = true;
 		}
 		_tryToSetupFilter();
-		embedRegexes = settings.embedRegexes.map((x) => RegExp(x)).toList();
+		embedRegexes = _settings.embedRegexes.map((x) => RegExp(x)).toList();
 		updateEmbedRegexes();
 		updateContentSettings();
 	}

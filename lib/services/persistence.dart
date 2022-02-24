@@ -257,6 +257,9 @@ class Persistence {
 		});
 	}
 
+	final FilterCache _filterCache = FilterCache(const DummyFilter());
+	Filter get filter => _filterCache;
+
 	Future<void> didUpdateBrowserState() async {
 		await settings.save();
 	}
@@ -268,6 +271,19 @@ class Persistence {
 	Future<void> didUpdateSavedPost() async {
 		await settings.save();
 		savedPostsNotifier.add(null);
+	}
+
+	EffectiveSettings? _effectiveSettings;
+	void _onSettingsUpdate() {
+		_filterCache.setFilter(FilterGroup([
+			_effectiveSettings!.filter,
+			browserState.imageMD5Filter
+		]));
+	}
+
+	void registerSettings(EffectiveSettings effectiveSettings) {
+		_effectiveSettings = effectiveSettings;
+		_effectiveSettings?.addListener(_onSettingsUpdate);
 	}
 }
 
@@ -318,32 +334,33 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	PersistentThreadState() : lastOpenedTime = DateTime.now();
 
 	List<int> get youIds => receipts.map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toList();
+	final FilterCache _filterCache = FilterCache(const DummyFilter());
 	List<int>? replyIdsToYou(Filter filter) {
-		final _filter = FilterGroup([filter, IDFilter(hiddenPostIds)]);
+		_filterCache.setFilter(FilterGroup([filter, threadFilter]));
 		final _youIds = youIds;
 		return thread?.posts.where((p) {
-			return (_filter.filter(p)?.type != FilterResultType.hide) &&
+			return (_filterCache.filter(p)?.type != FilterResultType.hide) &&
 						 p.span.referencedPostIds(thread!.board).any((id) => _youIds.contains(id));
 		}).map((p) => p.id).toList();
 	}
 	List<int>? unseenReplyIdsToYou(Filter filter) => replyIdsToYou(filter)?.where((id) => id > lastSeenPostId!).toList();
 	int? unseenReplyCount(Filter filter) {
 		if (lastSeenPostId != null) {
-			final _filter = FilterGroup([filter, IDFilter(hiddenPostIds)]);
+			_filterCache.setFilter(FilterGroup([filter, threadFilter]));
 			return thread?.posts.where((p) {
 				return (p.id > lastSeenPostId!) &&
-							 _filter.filter(p)?.type != FilterResultType.hide;
+							 _filterCache.filter(p)?.type != FilterResultType.hide;
 			}).length;
 		}
 		return null;
 	}
 	int? unseenImageCount(Filter filter) {
 		if (lastSeenPostId != null) {
-			final _filter = FilterGroup([filter, IDFilter(hiddenPostIds)]);
+			_filterCache.setFilter(FilterGroup([filter, threadFilter]));
 			return thread?.posts.where((p) {
 				return (p.id > lastSeenPostId!) &&
 							 (p.attachment != null) &&
-							 (_filter.filter(p)?.type != FilterResultType.hide);
+							 (_filterCache.filter(p)?.type != FilterResultType.hide);
 			}).length;
 		}
 		return null;
@@ -363,9 +380,17 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	@override
 	bool get isThread => true;
 
-	Filter get threadFilter => IDFilter(hiddenPostIds);
-	void hidePost(int id) => hiddenPostIds.add(id);
-	void unHidePost(int id) => hiddenPostIds.remove(id);
+	late Filter threadFilter = FilterCache(IDFilter(hiddenPostIds));
+	void hidePost(int id) {
+		hiddenPostIds.add(id);
+		// invalidate cache
+		threadFilter = FilterCache(IDFilter(hiddenPostIds));
+	}
+	void unHidePost(int id) {
+		hiddenPostIds.remove(id);
+		// invalidate cache
+		threadFilter = FilterCache(IDFilter(hiddenPostIds));
+	}
 
 	ThreadIdentifier get identifier => ThreadIdentifier(board: board, id: id);
 }
@@ -466,6 +491,7 @@ class PersistentBrowserState {
 	final Map<String, List<int>> autosavedIds;
 	@HiveField(6, defaultValue: [])
 	final Set<String> hiddenImageMD5s;
+	Persistence? persistence;
 	
 	PersistentBrowserState({
 		required this.tabs,
@@ -476,11 +502,9 @@ class PersistentBrowserState {
 		required List<String> hiddenImageMD5s
 	}) : hiddenImageMD5s = hiddenImageMD5s.toSet();
 
+	final Map<String, Filter> _catalogFilters = {};
 	Filter getCatalogFilter(String board) {
-		return FilterGroup([
-			IDFilter(hiddenIds[board] ?? []),
-			imageMD5Filter
-		]);
+		return _catalogFilters.putIfAbsent(board, () => FilterCache(IDFilter(hiddenIds[board] ?? [])));
 	}
 	
 	bool isThreadHidden(String board, int id) {
@@ -488,10 +512,12 @@ class PersistentBrowserState {
 	}
 
 	void hideThread(String board, int id) {
+		_catalogFilters.remove(board);
 		hiddenIds.putIfAbsent(board, () => []).add(id);
 	}
 
 	void unHideThread(String board, int id) {
+		_catalogFilters.remove(board);
 		hiddenIds[board]?.remove(id);
 	}
 
@@ -500,13 +526,18 @@ class PersistentBrowserState {
 		return hiddenImageMD5s.contains(md5);
 	}
 
+	late Filter imageMD5Filter = MD5Filter(hiddenImageMD5s);
 	void hideByMD5(String md5) {
 		hiddenImageMD5s.add(md5);
+		// invalidate cache
+		imageMD5Filter = MD5Filter(hiddenImageMD5s);
+		_catalogFilters.clear();
 	}
 
 	void unHideByMD5(String md5) {
 		hiddenImageMD5s.remove(md5);
+		// invalidate cache
+		imageMD5Filter = MD5Filter(hiddenImageMD5s);
+		_catalogFilters.clear();
 	}
-
-	Filter get imageMD5Filter => MD5Filter(hiddenImageMD5s);
 }

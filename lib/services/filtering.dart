@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 const defaultPatternFields = ['subject', 'name', 'filename', 'text'];
 
 enum FilterResultType {
@@ -23,6 +25,32 @@ abstract class Filterable {
 
 abstract class Filter {
 	FilterResult? filter(Filterable item);
+}
+
+class FilterCache implements Filter {
+	Filter wrappedFilter;
+	FilterCache(this.wrappedFilter);
+	final Map<Filterable, FilterResult?> _cache = {};
+	void setFilter(Filter newFilter) {
+		if (newFilter != wrappedFilter) {
+			_cache.clear();
+		}
+		wrappedFilter = newFilter;
+	}
+
+	@override
+	FilterResult? filter(Filterable item) {
+		return _cache.putIfAbsent(item, () => wrappedFilter.filter(item));
+	}
+
+	@override
+	String toString() => 'FilterCache($wrappedFilter)';
+
+	@override
+	bool operator ==(dynamic other) => other is FilterCache && other.wrappedFilter == wrappedFilter;
+
+	@override
+	int get hashCode => wrappedFilter.hashCode;
 }
 
 class CustomFilter implements Filter {
@@ -86,7 +114,7 @@ class IDFilter implements Filter {
 	String toString() => 'IDFilter(ids: $ids)';
 
 	@override
-	operator == (dynamic other) => other is IDFilter && other.ids == ids;
+	operator == (dynamic other) => other is IDFilter && listEquals(other.ids, ids);
 
 	@override
 	int get hashCode => ids.hashCode;
@@ -105,7 +133,7 @@ class MD5Filter implements Filter {
 	String toString() => 'MD5Filter(md5s: $md5s)';
 
 	@override
-	operator == (dynamic other) => other is MD5Filter && other.md5s == md5s;
+	operator == (dynamic other) => other is MD5Filter && setEquals(other.md5s, md5s);
 
 	@override
 	int get hashCode => md5s.hashCode;
@@ -149,7 +177,7 @@ class FilterGroup implements Filter {
 	String toString() => 'FilterGroup(filters: $filters)';
 
 	@override
-	operator == (dynamic other) => other is FilterGroup && other.filters == filters;
+	operator == (dynamic other) => other is FilterGroup && listEquals(other.filters, filters);
 
 	@override
 	int get hashCode => filters.hashCode;

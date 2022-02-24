@@ -210,7 +210,7 @@ class _BoardPageState extends State<BoardPage> {
 									RefreshableList<Thread>(
 										initialFilter: widget.initialSearch,
 										filters: [
-											settings.filter,
+											persistence.filter,
 											persistence.browserState.getCatalogFilter(board!.name)
 										],
 										allowReordering: true,

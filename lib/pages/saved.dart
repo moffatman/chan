@@ -240,7 +240,7 @@ class _SavedPageState extends State<SavedPage> {
 										site: context.read<ImageboardSite>(),
 										thread: item.thread,
 										semanticRootIds: [-8],
-										filter: context.watch<EffectiveSettings>().filter
+										filter: context.watch<Persistence>().filter
 									),
 									child: PostRow(
 										post: item.post,
@@ -288,7 +288,7 @@ class _SavedPageState extends State<SavedPage> {
 										site: context.read<ImageboardSite>(),
 										thread: savedPost.thread,
 										semanticRootIds: [-2],
-										filter: context.watch<EffectiveSettings>().filter
+										filter: context.watch<Persistence>().filter
 									),
 									child: PostRow(
 										post: savedPost.post,

@@ -44,7 +44,7 @@ class StickyThreadWatcher extends ChangeNotifier {
 			final newThreadState = event.value as PersistentThreadState;
 			unseenStickyThreads.removeWhere((t) => t.identifier == newThreadState.thread?.identifier);
 			unseenStickyThreadCount.value = unseenStickyThreads.length;
-			cachedUnseenYous[newThreadState.thread!.identifier] = newThreadState.unseenReplyIdsToYou(settings.filter)?.length ?? 0;
+			cachedUnseenYous[newThreadState.thread!.identifier] = newThreadState.unseenReplyIdsToYou(persistence.filter)?.length ?? 0;
 			if (!disposed) {
 				unseenYouCount.value = cachedUnseenYous.values.reduce((a, b) => a + b);
 				notifyListeners();
@@ -126,8 +126,8 @@ class SavedThreadWatcher extends ChangeNotifier {
 		_boxSubscription = persistence.threadStateBox.watch().listen(_threadUpdated);
 		final liveSavedThreads = persistence.threadStateBox.values.where((s) => s.thread != null && s.savedTime != null);
 		for (final liveSavedThread in liveSavedThreads) {
-			cachedUnseen[liveSavedThread.thread!.identifier] = liveSavedThread.unseenReplyCount(settings.filter) ?? 0;
-			cachedUnseenYous[liveSavedThread.thread!.identifier] = (liveSavedThread.unseenReplyIdsToYou(settings.filter) ?? []).length;
+			cachedUnseen[liveSavedThread.thread!.identifier] = liveSavedThread.unseenReplyCount(persistence.filter) ?? 0;
+			cachedUnseenYous[liveSavedThread.thread!.identifier] = (liveSavedThread.unseenReplyIdsToYou(persistence.filter) ?? []).length;
 		}
 		if (liveSavedThreads.isNotEmpty) {
 			_updateCounts();
@@ -147,8 +147,8 @@ class SavedThreadWatcher extends ChangeNotifier {
 			final newThreadState = event.value as PersistentThreadState;
 			if (newThreadState.thread != null) {
 				if (newThreadState.savedTime != null) {
-					final newUnseen = newThreadState.unseenReplyCount(settings.filter) ?? newThreadState.thread!.replyCount;
-					final newUnseenYous = newThreadState.unseenReplyIdsToYou(settings.filter)!.length;
+					final newUnseen = newThreadState.unseenReplyCount(persistence.filter) ?? newThreadState.thread!.replyCount;
+					final newUnseenYous = newThreadState.unseenReplyIdsToYou(persistence.filter)!.length;
 					if (cachedUnseen[newThreadState.thread!.identifier] != newUnseen || cachedUnseenYous[newThreadState.thread!.identifier] != newUnseenYous) {
 						cachedUnseen[newThreadState.thread!.identifier] = newUnseen;
 						cachedUnseenYous[newThreadState.thread!.identifier] = newUnseenYous;
