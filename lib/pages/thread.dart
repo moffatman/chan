@@ -65,6 +65,11 @@ class _ThreadPageState extends State<ThreadPage> {
 	bool _saveQueued = false;
 	int lastHiddenMD5sLength = 0;
 	final FilterCache _filterCacheForCounters = FilterCache(const DummyFilter());
+	List<Post> _filteredPostsForCounters = [];
+	int _lastItemForCounters = -1;
+	int _redCountForCounters = 0;
+	int _whiteCountForCounters = 0;
+	int _greyCountForCounters = 0;
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -474,18 +479,29 @@ class _ThreadPageState extends State<ThreadPage> {
 													StreamBuilder(
 														stream: _listController.slowScrollUpdates,
 														builder: (context, a) {
-															final redCount = persistentState.unseenReplyIdsToYou(globalFilter)?.length ?? 0;
-															final whiteCount = persistentState.unseenReplyCount(globalFilter) ?? 0;
-															int greyCount = 0;
-															final lastItem = _listController.lastVisibleItem;
-															_filterCacheForCounters.setFilter(FilterGroup([globalFilter, persistentState.threadFilter]));
-															if (persistentState.thread != null && persistentState.lastSeenPostId != -1 && lastItem != null) {
-																greyCount = persistentState.thread!.posts.where((p) => p.id > lastItem.id && _filterCacheForCounters.filter(p)?.type != FilterResultType.hide).length - whiteCount;
+															if (persistentState.thread != null) {
+																bool refilter = false;
+																final newFilter = FilterGroup([globalFilter, persistentState.threadFilter]);
+																if (_filterCacheForCounters.wrappedFilter != newFilter) {
+																	_filterCacheForCounters.setFilter(newFilter);
+																	refilter = true;
+																}
+																if (refilter) {
+																	_filteredPostsForCounters = persistentState.thread!.posts.where((p) => _filterCacheForCounters.filter(p)?.type != FilterResultType.hide).toList();
+																}
+																final lastItemId = _listController.lastVisibleItem?.id;
+																if (persistentState.lastSeenPostId != null && lastItemId != null && lastItemId != _lastItemForCounters) {
+																	final youIds = persistentState.youIds;
+																	_redCountForCounters = _filteredPostsForCounters.where((p) => p.id > lastItemId && p.span.referencedPostIds(p.board).any((id) => youIds.contains(id))).length;
+																	_whiteCountForCounters = _filteredPostsForCounters.where((p) => p.id > persistentState.lastSeenPostId!).length;
+																	_greyCountForCounters = _filteredPostsForCounters.where((p) => p.id > lastItemId).length - _whiteCountForCounters;
+																	_lastItemForCounters = lastItemId;
+																}
 															}
 															const radius = Radius.circular(8);
 															const radiusAlone = BorderRadius.all(radius);
 															scrollToBottom() => _listController.animateTo((post) => post.id == persistentState.thread!.posts.last.id, alignment: 1.0);
-															if (redCount > 0 || whiteCount > 0 || greyCount > 0) {
+															if (_redCountForCounters > 0 || _whiteCountForCounters > 0 || _greyCountForCounters > 0) {
 																return SafeArea(
 																	child: Align(
 																		alignment: Alignment.bottomRight,
@@ -494,31 +510,31 @@ class _ThreadPageState extends State<ThreadPage> {
 																				builder: (context) => Row(
 																					mainAxisSize: MainAxisSize.min,
 																					children: [
-																						if (redCount > 0) Container(
+																						if (_redCountForCounters > 0) Container(
 																							decoration: BoxDecoration(
-																								borderRadius: (whiteCount > 0 || greyCount > 0) ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
+																								borderRadius: (_whiteCountForCounters > 0 || _greyCountForCounters > 0) ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
 																								color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
 																							),
 																							padding: const EdgeInsets.all(8),
-																							margin: EdgeInsets.only(bottom: 16, right: (whiteCount == 0 && greyCount == 0) ? 16 : 0),
+																							margin: EdgeInsets.only(bottom: 16, right: (_whiteCountForCounters == 0 && _greyCountForCounters == 0) ? 16 : 0),
 																							child: Text(
-																								redCount.toString(),
+																								_redCountForCounters.toString(),
 																								textAlign: TextAlign.center
 																							)
 																						),
-																						if (greyCount > 0) Container(
+																						if (_greyCountForCounters > 0) Container(
 																							decoration: BoxDecoration(
-																								borderRadius: (redCount > 0) ? (whiteCount > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (whiteCount > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
+																								borderRadius: (_redCountForCounters > 0) ? (_whiteCountForCounters > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (_whiteCountForCounters > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
 																								color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
 																							),
 																							padding: const EdgeInsets.all(8),
-																							margin: EdgeInsets.only(bottom: 16, right: whiteCount > 0 ? 0 : 16),
+																							margin: EdgeInsets.only(bottom: 16, right: _whiteCountForCounters > 0 ? 0 : 16),
 																							child: Container(
 																								constraints: BoxConstraints(
 																									minWidth: 24 * MediaQuery.of(context).textScaleFactor
 																								),
 																								child: Text(
-																									greyCount.toString(),
+																									_greyCountForCounters.toString(),
 																									style: TextStyle(
 																										color: CupertinoTheme.of(context).scaffoldBackgroundColor
 																									),
@@ -526,9 +542,9 @@ class _ThreadPageState extends State<ThreadPage> {
 																								)
 																							)
 																						),
-																						if (whiteCount > 0) Container(
+																						if (_whiteCountForCounters > 0) Container(
 																							decoration: BoxDecoration(
-																								borderRadius: (greyCount > 0 || redCount > 0) ? const BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
+																								borderRadius: (_greyCountForCounters > 0 || _redCountForCounters > 0) ? const BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
 																								color: CupertinoTheme.of(context).primaryColor
 																							),
 																							padding: const EdgeInsets.all(8),
@@ -538,7 +554,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																									minWidth: 24 * MediaQuery.of(context).textScaleFactor
 																								),
 																								child: Text(
-																									whiteCount.toString(),
+																									_whiteCountForCounters.toString(),
 																									style: TextStyle(
 																										color: CupertinoTheme.of(context).scaffoldBackgroundColor
 																									),
