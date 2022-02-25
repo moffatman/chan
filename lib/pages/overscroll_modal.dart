@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/weak_navigator.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -166,28 +167,31 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 							},
 							child: Focus(
 								autofocus: true,
-								child: CustomScrollView(
+								child: CupertinoScrollbar(
 									controller: _controller,
-									physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
-									slivers: [
-										SliverToBoxAdapter(
-											child: ConstrainedBox(
-												constraints: BoxConstraints(
-													minHeight: constraints.maxHeight
-												),
-												child: SafeArea(
-													child: Center(
-														key: _scrollKey,
-														child: Opacity(
-															key: _childKey,
-															opacity: _opacity,
-															child: widget.child
+									child: CustomScrollView(
+										controller: _controller,
+										physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
+										slivers: [
+											SliverToBoxAdapter(
+												child: ConstrainedBox(
+													constraints: BoxConstraints(
+														minHeight: constraints.maxHeight
+													),
+													child: SafeArea(
+														child: Center(
+															key: _scrollKey,
+															child: Opacity(
+																key: _childKey,
+																opacity: _opacity,
+																child: widget.child
+															)
 														)
 													)
 												)
 											)
-										)
-									]
+										]
+									)
 								)
 							)
 						)
