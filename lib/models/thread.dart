@@ -79,6 +79,7 @@ class Thread implements Filterable {
 		return (other is Thread)
 			&& (other.id == id)
 			&& (other.posts.length == posts.length)
+			&& other.posts.last == posts.last
 			&& other.currentPage == currentPage
 			&& other.isArchived == isArchived
 			&& other.isDeleted == isDeleted

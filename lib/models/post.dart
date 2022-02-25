@@ -125,4 +125,10 @@ class Post implements Filterable {
 	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board: board, id: threadId);
 
 	String get globalId => '${board}_${threadId}_$id';
+
+	@override
+	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id;
+
+	@override
+	int get hashCode => Object.hash(board, id);
 }
