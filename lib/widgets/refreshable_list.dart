@@ -817,7 +817,7 @@ class RefreshableListController<T extends Filterable> {
 		}
 		await scrollController!.animateTo(
 			(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent),
-			duration: d,
+			duration: Duration(milliseconds: max(1, d.inMilliseconds)),
 			curve: Curves.easeOut
 		);
 		await SchedulerBinding.instance.endOfFrame;
