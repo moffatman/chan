@@ -237,7 +237,7 @@ packages:
     description:
       path: "."
       ref: change_min
-      resolved-ref: a25f688a3c475955e1938874c75df8d16011b6aa
+      resolved-ref: bdf2bfd25cc477edcddfe011542ac63275d7c0f0
       url: "https://github.com/moffatman/extended_image.git"
     source: git
     version: "6.0.1"
