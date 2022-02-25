@@ -789,10 +789,35 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	void showSpoiler(int id) => throw UnimplementedError();
 	void hideSpoiler(int id) => throw UnimplementedError();
 	void toggleShowingOfSpoiler(int id) => throw UnimplementedError();
+
+	final Map<String, AsyncSnapshot> _futures = {};
+	static final Map<String, AsyncSnapshot> _globalFutures = {};
 	AsyncSnapshot<T> getFutureForComputation<T>({
 		required String id,
 		required Future<T> Function() work
-	}) => throw UnimplementedError();
+	}) {
+		if (_globalFutures.containsKey(id)) {
+			return _globalFutures[id]! as AsyncSnapshot<T>;
+		}
+		if (!_futures.containsKey(id)) {
+			_futures[id] = AsyncSnapshot<T>.waiting();
+			() async {
+				try {
+					final data = await work();
+					_futures[id] = AsyncSnapshot<T>.withData(ConnectionState.done, data);
+				}
+				catch (e) {
+					_futures[id] = AsyncSnapshot<T>.withError(ConnectionState.done, e);
+				}
+				_globalFutures[id] = _futures[id]!;
+				if (!disposed) {
+					notifyListeners();
+				}
+			}();
+		}
+		return _futures[id] as AsyncSnapshot<T>;
+	}
+
 	PostSpanZoneData childZoneFor(int postId) {
 		if (!_children.containsKey(postId)) {
 			_children[postId] = PostSpanChildZoneData(
@@ -899,12 +924,6 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	Post? postFromArchive(int id) => parent.postFromArchive(id);
 	@override
 	String? postFromArchiveError(int id) => parent.postFromArchiveError(id);
-
-	@override
-	AsyncSnapshot<T> getFutureForComputation<T>({
-		required String id,
-		required Future<T> Function() work
-	}) => parent.getFutureForComputation(id: id, work: work);
 }
 
 
@@ -921,8 +940,6 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	final Map<int, Post> _postsFromArchive = {};
 	final Map<int, String> _postFromArchiveErrors = {};
 	final Iterable<int> semanticRootIds;
-	final Map<String, AsyncSnapshot> _futures = {};
-	static final Map<String, AsyncSnapshot> _globalFutures = {};
 	@override
 	final Filter filter;
 
@@ -971,33 +988,6 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	String? postFromArchiveError(int id) {
 		return _postFromArchiveErrors[id];
-	}
-
-	@override
-	AsyncSnapshot<T> getFutureForComputation<T>({
-		required String id,
-		required Future<T> Function() work
-	}) {
-		if (_globalFutures.containsKey(id)) {
-			return _globalFutures[id]! as AsyncSnapshot<T>;
-		}
-		if (!_futures.containsKey(id)) {
-			_futures[id] = AsyncSnapshot<T>.waiting();
-			() async {
-				try {
-					final data = await work();
-					_futures[id] = AsyncSnapshot<T>.withData(ConnectionState.done, data);
-				}
-				catch (e) {
-					_futures[id] = AsyncSnapshot<T>.withError(ConnectionState.done, e);
-				}
-				_globalFutures[id] = _futures[id]!;
-				if (!disposed) {
-					notifyListeners();
-				}
-			}();
-		}
-		return _futures[id] as AsyncSnapshot<T>;
 	}
 }
 
