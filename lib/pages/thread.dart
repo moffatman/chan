@@ -284,7 +284,7 @@ class _ThreadPageState extends State<ThreadPage> {
 								CupertinoButton(
 									padding: EdgeInsets.zero,
 									child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply),
-									onPressed: persistentState.thread?.isArchived == true ? null : () {
+									onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
 										_replyBoxKey.currentState?.toggleReplyBox();
 									}
 								)
