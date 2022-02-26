@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
@@ -46,83 +48,149 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	T? _value;
 	Timer? _cleanupTimer;
 
+	GlobalKey<_ScalerBlurrerState>? _touchGlobalKey;
+	Offset? _touchStart;
+	OverlayEntry? _touchEntry;
+	late final recognizer = LongPressGestureRecognizer(
+		duration: kLongPressTimeout ~/ 2,
+		postAcceptSlopTolerance: 99999
+	)
+	..onLongPressStart = _onLongPressStart
+	..onLongPressMoveUpdate = _onLongPressMoveUpdate
+	..onLongPressEnd = _onLongPressEnd;
+
+	void _onLongPressStart(LongPressStartDetails details) {
+		if (_touchEntry != null) {
+			return;
+		}
+		final RenderBox? childBox = context.findRenderObject() as RenderBox;
+		if (childBox == null || !childBox.attached) {
+			return;
+		}
+		_cleanupTimer?.cancel();
+		if (_value == null) {
+			_value = widget.setup?.call();
+		}
+		else {
+			_value = widget.softSetup?.call(_value);
+		}
+		_touchGlobalKey = GlobalKey();
+		_touchStart = details.globalPosition;
+		final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
+		_touchEntry = OverlayEntry(
+			builder: (context) => RootCustomScale(
+				scale: scale,
+				child: IgnorePointer(
+					child: Center(
+						child: _ScalerBlurrer(
+							child: (widget.popupBuilder?.call(_value) ?? widget.popup)!,
+							key: _touchGlobalKey
+						)
+					)
+				)
+			)
+		);
+		Overlay.of(context, rootOverlay: true)!.insert(_touchEntry!);
+	}
+
+	void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
+		final h = MediaQuery.of(context).size.height;
+		_touchGlobalKey?.currentState?.setScale(
+			blur: 20 - (25 * max(details.localOffsetFromOrigin.dy / (h - _touchStart!.dy), (-1 * details.localOffsetFromOrigin.dy) / (_touchStart!.dy)).abs().clamp(0, 1)),
+			scale: 0.1 + (1.1 * (details.localOffsetFromOrigin.dx / MediaQuery.of(context).size.width).abs()).clamp(0, 0.9)
+		);
+	}
+
+	void _onLongPressEnd(LongPressEndDetails details) {
+		widget.softCleanup?.call(_value);
+		_cleanupTimer = Timer(widget.valueLifetime, () {
+			widget.cleanup?.call(_value);
+			_value = null;
+		});
+		_touchEntry?.remove();
+		_touchEntry = null;
+	}
+
 	@override
 	Widget build(BuildContext context) {
-		return MouseRegion(
-			onEnter: (event) {
-				if (!context.read<EffectiveSettings>().supportMouse.value) {
-					return;
-				}
-				if (_entry != null) {
-					return;
-				}
-				final RenderBox? childBox = context.findRenderObject() as RenderBox;
-				if (childBox == null || !childBox.attached) {
-					return;
-				}
-				_cleanupTimer?.cancel();
-				if (_value == null) {
-					_value = widget.setup?.call();
-				}
-				else {
-					_value = widget.softSetup?.call(_value);
-				}
-				if (widget.style == HoverPopupStyle.attached) {
-					final childTop = childBox.localToGlobal(Offset.zero).dy;
-					final childBottom = childBox.localToGlobal(Offset(0, childBox.size.height)).dy;
-					final childCenterHorizontal = childBox.localToGlobal(Offset(childBox.size.width / 2, 0)).dx;
-					final topOfUsableSpace = MediaQuery.of(context).size.height / 2;
-					final left = childBox.localToGlobal(Offset.zero).dx;
-					final cblg = childBox.localToGlobal(Offset(childBox.size.width, 0)).dx;
-					_entry = OverlayEntry(
-						builder: (context) {
-							final showOnRight = childCenterHorizontal > (MediaQuery.of(context).size.width / 2);
-							return Positioned(
-								right: showOnRight ? (MediaQuery.of(context).size.width - cblg) : null,
-								left: showOnRight ? null : left,
-								bottom: (childTop > topOfUsableSpace) ? MediaQuery.of(context).size.height - childTop : null,
-								top: (childTop > topOfUsableSpace) ? null : childBottom,
-								child: ConstrainedBox(
-									constraints: BoxConstraints(
-										maxWidth: MediaQuery.of(context).size.width / 2
-									),
-									child: widget.popupBuilder?.call(_value) ?? widget.popup
-								)
-							);
-						}
-					);
-				}
-				else if (widget.style == HoverPopupStyle.floating) {
-					_globalKey = GlobalKey();
-					final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
-					_entry = OverlayEntry(
-						builder: (context) => RootCustomScale(
-							scale: scale,
-							child: _FloatingHoverPopup(
-								key: _globalKey,
+		return Listener(
+			onPointerDown: (e) => recognizer.addPointer(e),
+			child: MouseRegion(
+				onEnter: (event) {
+					if (!context.read<EffectiveSettings>().supportMouse.value) {
+						return;
+					}
+					if (_entry != null) {
+						return;
+					}
+					final RenderBox? childBox = context.findRenderObject() as RenderBox;
+					if (childBox == null || !childBox.attached) {
+						return;
+					}
+					_cleanupTimer?.cancel();
+					if (_value == null) {
+						_value = widget.setup?.call();
+					}
+					else {
+						_value = widget.softSetup?.call(_value);
+					}
+					if (widget.style == HoverPopupStyle.attached) {
+						final childTop = childBox.localToGlobal(Offset.zero).dy;
+						final childBottom = childBox.localToGlobal(Offset(0, childBox.size.height)).dy;
+						final childCenterHorizontal = childBox.localToGlobal(Offset(childBox.size.width / 2, 0)).dx;
+						final topOfUsableSpace = MediaQuery.of(context).size.height / 2;
+						final left = childBox.localToGlobal(Offset.zero).dx;
+						final cblg = childBox.localToGlobal(Offset(childBox.size.width, 0)).dx;
+						_entry = OverlayEntry(
+							builder: (context) {
+								final showOnRight = childCenterHorizontal > (MediaQuery.of(context).size.width / 2);
+								return Positioned(
+									right: showOnRight ? (MediaQuery.of(context).size.width - cblg) : null,
+									left: showOnRight ? null : left,
+									bottom: (childTop > topOfUsableSpace) ? MediaQuery.of(context).size.height - childTop : null,
+									top: (childTop > topOfUsableSpace) ? null : childBottom,
+									child: ConstrainedBox(
+										constraints: BoxConstraints(
+											maxWidth: MediaQuery.of(context).size.width / 2
+										),
+										child: widget.popupBuilder?.call(_value) ?? widget.popup
+									)
+								);
+							}
+						);
+					}
+					else if (widget.style == HoverPopupStyle.floating) {
+						_globalKey = GlobalKey();
+						final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
+						_entry = OverlayEntry(
+							builder: (context) => RootCustomScale(
 								scale: scale,
-								child: (widget.popupBuilder?.call(_value) ?? widget.popup)!,
-								anchor: widget.anchor,
-								initialMousePosition: event.position,
+								child: _FloatingHoverPopup(
+									key: _globalKey,
+									scale: scale,
+									child: (widget.popupBuilder?.call(_value) ?? widget.popup)!,
+									anchor: widget.anchor,
+									initialMousePosition: event.position,
+								)
 							)
-						)
-					);
-				}
-				Overlay.of(context, rootOverlay: true)!.insert(_entry!);
-			},
-			onHover: (event) {
-				_globalKey?.currentState?.updateMousePosition(event.position);
-			},
-			onExit: (event) {
-				widget.softCleanup?.call(_value);
-				_cleanupTimer = Timer(widget.valueLifetime, () {
-					widget.cleanup?.call(_value);
-					_value = null;
-				});
-				_entry?.remove();
-				_entry = null;
-			},
-			child: widget.child
+						);
+					}
+					Overlay.of(context, rootOverlay: true)!.insert(_entry!);
+				},
+				onHover: (event) {
+					_globalKey?.currentState?.updateMousePosition(event.position);
+				},
+				onExit: (event) {
+					widget.softCleanup?.call(_value);
+					_cleanupTimer = Timer(widget.valueLifetime, () {
+						widget.cleanup?.call(_value);
+						_value = null;
+					});
+					_entry?.remove();
+					_entry = null;
+				},
+				child: widget.child
+			)
 		);
 	}
 
@@ -223,5 +291,52 @@ class _FloatingHoverPopupLayoutDelegate extends SingleChildLayoutDelegate {
 	@override
 	bool shouldRelayout(_FloatingHoverPopupLayoutDelegate oldDelegate) {
 		return mousePosition != oldDelegate.mousePosition;
+	}
+}
+
+class _ScalerBlurrer extends StatefulWidget {
+	final Widget child;
+	final double initialScale;
+	final double initialBlur;
+
+	const _ScalerBlurrer({
+		required this.child,
+		this.initialScale = 0.1,
+		this.initialBlur = 50.0,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	createState() => _ScalerBlurrerState();
+}
+
+class _ScalerBlurrerState extends State<_ScalerBlurrer> {
+	late double blur = widget.initialBlur;
+	late double scale = widget.initialScale;
+
+	void setScale({
+		required double blur,
+		required double scale
+	}) {
+		setState(() {
+			this.blur = blur;
+			this.scale = scale;
+		});
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		return ImageFiltered(
+			imageFilter: ImageFilter.blur(
+				sigmaX: blur,
+				sigmaY: blur,
+				tileMode: TileMode.decal
+			),
+			child: Transform.scale(
+				scale: scale,
+				alignment: Alignment.center,
+				child: widget.child
+			)
+		);
 	}
 }
