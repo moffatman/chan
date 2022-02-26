@@ -221,7 +221,7 @@ Future<void> openBrowser(BuildContext context, Uri url) async {
 	}
 	else {
 		if (await isOnMac()) {
-			launch(url.toString());
+			launch(url.toString(), forceSafariVC: false);
 		}
 		else {
 			return ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
