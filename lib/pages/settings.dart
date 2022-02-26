@@ -421,6 +421,19 @@ class SettingsPage extends StatelessWidget {
 											}
 										),
 										const SizedBox(height: 32),
+										const Text('Blur image thumbnails'),
+										const SizedBox(height: 16),
+										CupertinoSegmentedControl<bool>(
+											children: const {
+												false: Text('No'),
+												true: Text('Yes')
+											},
+											groupValue: settings.blurThumbnails,
+											onValueChanged: (newValue) {
+												settings.blurThumbnails = newValue;
+											}
+										),
+										const SizedBox(height: 32),
 										const Text('Catalog Layout'),
 										const SizedBox(height: 16),
 										CupertinoSegmentedControl<bool>(

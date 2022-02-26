@@ -1,5 +1,8 @@
+import 'dart:ui';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/rotating_image_provider.dart';
 import 'package:flutter/cupertino.dart';
@@ -94,6 +97,17 @@ class AttachmentThumbnail extends StatelessWidget {
 				return null;
 			}
 		);
+		if (context.watch<EffectiveSettings>().blurThumbnails) {
+			child = ClipRect(
+				child: ImageFiltered(
+					imageFilter: ImageFilter.blur(
+						sigmaX: 7.0,
+						sigmaY: 7.0
+					),
+					child: child
+				)
+			);
+		}
 		return (hero != null) ? Hero(
 			tag: hero!,
 			child: child,

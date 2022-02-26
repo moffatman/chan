@@ -204,6 +204,8 @@ class SavedSettings extends HiveObject {
 	String? androidGallerySavePath;
 	@HiveField(36)
 	double replyBoxHeightOffset;
+	@HiveField(37)
+	bool blurThumbnails;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -242,6 +244,7 @@ class SavedSettings extends HiveObject {
 		bool? imagesOnRight,
 		this.androidGallerySavePath,
 		double? replyBoxHeightOffset,
+		bool? blurThumbnails,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -284,7 +287,8 @@ class SavedSettings extends HiveObject {
 		interfaceScale = interfaceScale ?? 1.0,
 		showAnimations = showAnimations ?? true,
 		imagesOnRight = imagesOnRight ?? false,
-		replyBoxHeightOffset = replyBoxHeightOffset ?? 0.0;
+		replyBoxHeightOffset = replyBoxHeightOffset ?? 0.0,
+		blurThumbnails = blurThumbnails ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -574,6 +578,13 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.replyBoxHeightOffset = setting;
 	}
 	void finalizeReplyBoxHeightOffset() {
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get blurThumbnails => _settings.blurThumbnails;
+	set blurThumbnails(bool setting) {
+		_settings.blurThumbnails = setting;
 		_settings.save();
 		notifyListeners();
 	}
