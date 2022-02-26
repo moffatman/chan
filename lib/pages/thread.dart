@@ -532,12 +532,21 @@ class ThreadPositionIndicator extends StatefulWidget {
 }
 
 class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
-	final FilterCache _filterCacheForCounters = FilterCache(const DummyFilter());
-	List<Post> _filteredPostsForCounters = [];
-	int _lastItemForCounters = -1;
-	int _redCountForCounters = 0;
-	int _whiteCountForCounters = 0;
-	int _greyCountForCounters = 0;
+	final FilterCache _filterCache = FilterCache(const DummyFilter());
+	List<Post>? _filteredPosts;
+	int _lastLastItemId = -1;
+	int _redCount = 0;
+	int _whiteCount = 0;
+	int _greyCount = 0;
+
+	@override
+	void didUpdateWidget(ThreadPositionIndicator oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.persistentState != oldWidget.persistentState) {
+			_filteredPosts = null;
+			_lastLastItemId = -1;
+		}
+	}
 
 	@override
 	Widget build(BuildContext context) {
@@ -545,58 +554,54 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
 			stream: widget.listController.slowScrollUpdates,
 			builder: (context, a) {
 				if (widget.persistentState.thread != null) {
-					bool refilter = false;
 					final newFilter = Filter.of(context);
-					if (_filterCacheForCounters.wrappedFilter != newFilter) {
-						_filterCacheForCounters.setFilter(newFilter);
-						refilter = true;
-					}
-					if (refilter) {
-						_filteredPostsForCounters = widget.persistentState.thread!.posts.where((p) => _filterCacheForCounters.filter(p)?.type != FilterResultType.hide).toList();
+					if (_filterCache.wrappedFilter != newFilter || _filteredPosts == null) {
+						_filterCache.setFilter(newFilter);
+						_filteredPosts = widget.persistentState.thread!.posts.where((p) => _filterCache.filter(p)?.type != FilterResultType.hide).toList();
 					}
 					final lastItemId = widget.listController.lastVisibleItem?.id;
-					if (widget.persistentState.lastSeenPostId != null && lastItemId != null && lastItemId != _lastItemForCounters) {
+					if (widget.persistentState.lastSeenPostId != null && lastItemId != null && lastItemId != _lastLastItemId) {
 						final youIds = widget.persistentState.youIds;
-						_redCountForCounters = _filteredPostsForCounters.where((p) => p.id > lastItemId && p.span.referencedPostIds(p.board).any((id) => youIds.contains(id))).length;
-						_whiteCountForCounters = _filteredPostsForCounters.where((p) => p.id > widget.persistentState.lastSeenPostId!).length;
-						_greyCountForCounters = _filteredPostsForCounters.where((p) => p.id > lastItemId).length - _whiteCountForCounters;
-						_lastItemForCounters = lastItemId;
+						_redCount = _filteredPosts!.where((p) => p.id > lastItemId && p.span.referencedPostIds(p.board).any((id) => youIds.contains(id))).length;
+						_whiteCount = _filteredPosts!.where((p) => p.id > widget.persistentState.lastSeenPostId!).length;
+						_greyCount = _filteredPosts!.where((p) => p.id > lastItemId).length - _whiteCount;
+						_lastLastItemId = lastItemId;
 					}
 				}
 				const radius = Radius.circular(8);
 				const radiusAlone = BorderRadius.all(radius);
 				scrollToBottom() => widget.listController.animateTo((post) => post.id == widget.persistentState.thread!.posts.last.id, alignment: 1.0);
-				if (_redCountForCounters > 0 || _whiteCountForCounters > 0 || _greyCountForCounters > 0) {
+				if (_redCount > 0 || _whiteCount > 0 || _greyCount > 0) {
 					return GestureDetector(
 						child: Builder(
 							builder: (context) => Row(
 								mainAxisSize: MainAxisSize.min,
 								children: [
-									if (_redCountForCounters > 0) Container(
+									if (_redCount > 0) Container(
 										decoration: BoxDecoration(
-											borderRadius: (_whiteCountForCounters > 0 || _greyCountForCounters > 0) ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
+											borderRadius: (_whiteCount > 0 || _greyCount > 0) ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
 											color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
 										),
 										padding: const EdgeInsets.all(8),
-										margin: EdgeInsets.only(bottom: 16, right: (_whiteCountForCounters == 0 && _greyCountForCounters == 0) ? 16 : 0),
+										margin: EdgeInsets.only(bottom: 16, right: (_whiteCount == 0 && _greyCount == 0) ? 16 : 0),
 										child: Text(
-											_redCountForCounters.toString(),
+											_redCount.toString(),
 											textAlign: TextAlign.center
 										)
 									),
-									if (_greyCountForCounters > 0) Container(
+									if (_greyCount > 0) Container(
 										decoration: BoxDecoration(
-											borderRadius: (_redCountForCounters > 0) ? (_whiteCountForCounters > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (_whiteCountForCounters > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
+											borderRadius: (_redCount > 0) ? (_whiteCount > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (_whiteCount > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
 											color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
 										),
 										padding: const EdgeInsets.all(8),
-										margin: EdgeInsets.only(bottom: 16, right: _whiteCountForCounters > 0 ? 0 : 16),
+										margin: EdgeInsets.only(bottom: 16, right: _whiteCount > 0 ? 0 : 16),
 										child: Container(
 											constraints: BoxConstraints(
 												minWidth: 24 * MediaQuery.of(context).textScaleFactor
 											),
 											child: Text(
-												_greyCountForCounters.toString(),
+												_greyCount.toString(),
 												style: TextStyle(
 													color: CupertinoTheme.of(context).scaffoldBackgroundColor
 												),
@@ -604,9 +609,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
 											)
 										)
 									),
-									if (_whiteCountForCounters > 0) Container(
+									if (_whiteCount > 0) Container(
 										decoration: BoxDecoration(
-											borderRadius: (_greyCountForCounters > 0 || _redCountForCounters > 0) ? const BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
+											borderRadius: (_greyCount > 0 || _redCount > 0) ? const BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
 											color: CupertinoTheme.of(context).primaryColor
 										),
 										padding: const EdgeInsets.all(8),
@@ -616,7 +621,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
 												minWidth: 24 * MediaQuery.of(context).textScaleFactor
 											),
 											child: Text(
-												_whiteCountForCounters.toString(),
+												_whiteCount.toString(),
 												style: TextStyle(
 													color: CupertinoTheme.of(context).scaffoldBackgroundColor
 												),
