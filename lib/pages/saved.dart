@@ -175,7 +175,31 @@ class _SavedPageState extends State<SavedPage> {
 										)
 									]
 								),
-								filterHint: 'Search saved threads'
+								filterHint: 'Search saved threads',
+								footer: Container(
+									padding: const EdgeInsets.all(16),
+									child: CupertinoButton.filled(
+										padding: const EdgeInsets.all(8),
+										child: Row(
+											mainAxisSize: MainAxisSize.min,
+											children: const [
+												Icon(CupertinoIcons.delete),
+												SizedBox(width: 8),
+												Flexible(
+													child: Text('Remove all archived threads', textAlign: TextAlign.center)
+												)
+											]
+										),
+										onPressed: (states.any((s) => s.thread?.isArchived ?? false)) ? () {
+											final stateEntriesToRemove = box.toMap().entries.where((s) {
+												return s.value.savedTime != null && (s.value.thread?.isArchived ?? false);
+											}).toList();
+											for (final entry in stateEntriesToRemove) {
+												box.delete(entry.key);
+											}
+										} : null
+									)
+								)
 							);
 						}
 						return SafeArea(
