@@ -487,6 +487,7 @@ class _ThreadPageState extends State<ThreadPage> {
 								key: _replyBoxKey,
 								board: widget.thread.board,
 								threadId: widget.thread.id,
+								isArchived: persistentState.thread?.isArchived ?? false,
 								initialText: persistentState.draftReply,
 								onTextChanged: (text) {
 									persistentState.draftReply = text;

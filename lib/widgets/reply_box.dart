@@ -32,6 +32,7 @@ class ReplyBox extends StatefulWidget {
 	final String initialSubject;
 	final ValueChanged<String>? onSubjectChanged;
 	final VoidCallback? onVisibilityChanged;
+	final bool isArchived;
 
 	const ReplyBox({
 		required this.board,
@@ -42,6 +43,7 @@ class ReplyBox extends StatefulWidget {
 		this.initialSubject = '',
 		this.onSubjectChanged,
 		this.onVisibilityChanged,
+		this.isArchived = false,
 		Key? key
 	}) : super(key: key);
 
@@ -144,13 +146,17 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void onTapPostId(int id) {
-		showReplyBox();
-		_insertText('>>$id');
+		if (!widget.isArchived) {
+			showReplyBox();
+			_insertText('>>$id');
+		}
 	}
 
 	void onQuoteText(String text) {
-		showReplyBox();
-		_insertText('>' + text.replaceAll('\n', '\n>'));
+		if (!widget.isArchived) {
+			showReplyBox();
+			_insertText('>' + text.replaceAll('\n', '\n>'));
+		}
 	}
 
 	void showReplyBox() {
