@@ -425,6 +425,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 		catch (e) {
 			alertError(context, e.toStringDio());
+			rethrow;
 		}
 		notifyListeners();
 	}
@@ -643,9 +644,10 @@ class AttachmentViewer extends StatelessWidget {
 					CupertinoContextMenuAction(
 						child: const Text('Download'),
 						trailingIcon: CupertinoIcons.cloud_download,
-						onPressed: () {
-							controller.download();
+						onPressed: () async {
 							Navigator.of(context, rootNavigator: true).pop();
+							await controller.download();
+							showToast(context: context, message: 'Downloaded ${controller.attachment.filename}', icon: CupertinoIcons.cloud_download);
 						}
 					),
 					CupertinoContextMenuAction(
