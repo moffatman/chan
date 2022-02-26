@@ -468,7 +468,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						child: MultiProvider(
 							providers: [
 								Provider.value(value: devSite!),
-								Provider.value(value: devPersistence!),
+								ChangeNotifierProvider.value(value: devPersistence!),
 								ChangeNotifierProvider.value(value: devThreadWatcher!)
 							],
 							child: ClipRect(
