@@ -38,7 +38,7 @@ const _savedAttachmentsDir = 'saved_attachments';
 const _maxAutosavedIdsPerBoard = 250;
 const _maxHiddenIdsPerBoard = 1000;
 
-class Persistence {
+class Persistence extends ChangeNotifier {
 	final String id;
 	Persistence(this.id);
 	late final Box<PersistentThreadState> threadStateBox;
@@ -257,11 +257,9 @@ class Persistence {
 		});
 	}
 
-	final FilterCache _filterCache = FilterCache(const DummyFilter());
-	Filter get filter => _filterCache;
-
 	Future<void> didUpdateBrowserState() async {
 		await settings.save();
+		notifyListeners();
 	}
 
 	Future<void> didUpdateRecentSearches() async {
@@ -271,19 +269,6 @@ class Persistence {
 	Future<void> didUpdateSavedPost() async {
 		await settings.save();
 		savedPostsNotifier.add(null);
-	}
-
-	EffectiveSettings? _effectiveSettings;
-	void _onSettingsUpdate() {
-		_filterCache.setFilter(FilterGroup([
-			_effectiveSettings!.filter,
-			browserState.imageMD5Filter
-		]));
-	}
-
-	void registerSettings(EffectiveSettings effectiveSettings) {
-		_effectiveSettings = effectiveSettings;
-		_effectiveSettings?.addListener(_onSettingsUpdate);
 	}
 }
 
@@ -526,18 +511,14 @@ class PersistentBrowserState {
 		return hiddenImageMD5s.contains(md5);
 	}
 
-	late Filter imageMD5Filter = MD5Filter(hiddenImageMD5s);
+	late Filter imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
 	void hideByMD5(String md5) {
 		hiddenImageMD5s.add(md5);
-		// invalidate cache
-		imageMD5Filter = MD5Filter(hiddenImageMD5s);
-		_catalogFilters.clear();
+		imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
 	}
 
 	void unHideByMD5(String md5) {
 		hiddenImageMD5s.remove(md5);
-		// invalidate cache
-		imageMD5Filter = MD5Filter(hiddenImageMD5s);
-		_catalogFilters.clear();
+		imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
 	}
 }

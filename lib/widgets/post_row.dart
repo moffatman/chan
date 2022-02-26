@@ -67,7 +67,7 @@ class PostRow extends StatelessWidget {
 				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color ?? Colors.red, width: 10)
 			);
 		}
-		if (zone.threadState?.replyIdsToYou(persistence.filter)?.contains(post.id) ?? false) {
+		if (zone.threadState?.replyIdsToYou(Filter.of(context))?.contains(post.id) ?? false) {
 			border = Border(
 				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color?.towardsBlack(0.5) ?? const Color.fromARGB(255, 90, 30, 30), width: 10)
 			);
@@ -76,7 +76,7 @@ class PostRow extends StatelessWidget {
 		replyIds.removeWhere((id) {
 			final replyPost = zone.thread.posts.tryFirstWhere((p) => p.id == id);
 			if (replyPost != null) {
-				if (zone.filter.filter(replyPost)?.type == FilterResultType.hide) {
+				if (Filter.of(context).filter(replyPost)?.type == FilterResultType.hide) {
 					return true;
 				}
 			}

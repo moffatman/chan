@@ -296,7 +296,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			text += ' (You)';
 		}
 		final linkedPost = zone.thread.posts.tryFirstWhere((p) => p.id == postId);
-		if (linkedPost != null && zone.filter.filter(linkedPost)?.type == FilterResultType.hide) {
+		if (linkedPost != null && Filter.of(context).filter(linkedPost)?.type == FilterResultType.hide) {
 			text += ' (Hidden)';
 		}
 		final bool expandedImmediatelyAbove = zone.shouldExpandPost(postId) || zone.stackIds.length > 1 && zone.stackIds.elementAt(zone.stackIds.length - 2) == postId;
@@ -773,7 +773,6 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	Thread get thread;
 	ImageboardSite get site;
 	Iterable<int> get stackIds;
-	Filter get filter;
 	PersistentThreadState? get threadState;
 	ValueChanged<Post>? get onNeedScrollToPost;
 	bool disposed = false;
@@ -857,9 +856,6 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	ImageboardSite get site => parent.site;
 
 	@override
-	Filter get filter => parent.filter;
-
-	@override
 	PersistentThreadState? get threadState => parent.threadState;
 
 	@override
@@ -940,13 +936,10 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	final Map<int, Post> _postsFromArchive = {};
 	final Map<int, String> _postFromArchiveErrors = {};
 	final Iterable<int> semanticRootIds;
-	@override
-	final Filter filter;
 
 	PostSpanRootZoneData({
 		required this.thread,
 		required this.site,
-		required this.filter,
 		this.threadState,
 		this.onNeedScrollToPost,
 		this.semanticRootIds = const []

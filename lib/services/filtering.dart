@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 
 const defaultPatternFields = ['subject', 'name', 'filename', 'text'];
 
@@ -25,6 +27,10 @@ abstract class Filterable {
 
 abstract class Filter {
 	FilterResult? filter(Filterable item);
+
+	static Filter of(BuildContext context, {bool listen = true}) {
+		return (listen ? context.watch<Filter?>() : context.read<Filter?>()) ?? const DummyFilter();
+	}
 }
 
 class FilterCache implements Filter {
@@ -264,4 +270,23 @@ Filter makeFilter(String configuration) {
 		filters.add(_makeFilter(line));
 	}
 	return FilterGroup(filters);
+}
+
+class FilterZone extends StatelessWidget {
+	final Filter filter;
+	final Widget child;
+
+	const FilterZone({
+		required this.filter,
+		required this.child,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		return Provider<Filter>.value(
+			value: FilterCache(FilterGroup([Filter.of(context), FilterCache(filter)])),
+			child: child
+		);
+	}
 }

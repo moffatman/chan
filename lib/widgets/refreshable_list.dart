@@ -29,7 +29,6 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	final Widget? footer;
 	final Size? gridSize;
 	final String? initialFilter;
-	final List<Filter> filters;
 	final bool allowReordering;
 	final ValueChanged<T>? onWantAutosave;
 
@@ -47,7 +46,6 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 		this.gridSize,
 		this.footer,
 		this.initialFilter,
-		this.filters = const [],
 		this.allowReordering = false,
 		this.onWantAutosave,
 		Key? key
@@ -129,9 +127,6 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			if (list != null) {
 				widget.controller?.setItems(list!);
 			}
-			setState(() {});
-		}
-		else if (!listEquals(oldWidget.filters, widget.filters)) {
 			setState(() {});
 		}
 	}
@@ -233,7 +228,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			final values = <Tuple2<T, bool>>[];
 			final filteredValues = <Tuple2<T, String>>[];
 			final filters = [
-				...widget.filters,
+				Filter.of(context),
 				if (_searchFilter != null) _searchFilter!
 			];
 			for (final item in list!) {

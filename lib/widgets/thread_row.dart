@@ -78,7 +78,6 @@ class ThreadRow extends StatelessWidget {
 
 	Widget _build(BuildContext context, PersistentThreadState? threadState) {
 		final settings = context.watch<EffectiveSettings>();
-		final persistence = context.watch<Persistence>();
 		final _thread = threadState?.thread ?? thread;
 		final int latestReplyCount = max(thread.replyCount, _thread.replyCount);
 		final int latestImageCount = max(thread.imageCount, _thread.imageCount);
@@ -90,9 +89,10 @@ class ThreadRow extends StatelessWidget {
 		Color? imageCountColor;
 		Color? otherMetadataColor;
 		if (threadState?.lastSeenPostId != null) {
-			unseenReplyCount = (threadState?.unseenReplyCount(persistence.filter) ?? 0) + ((latestReplyCount + 1) - _thread.posts.length);
-			unseenYouCount = threadState?.unseenReplyIdsToYou(persistence.filter)?.length ?? 0;
-			unseenImageCount = (threadState?.unseenImageCount(persistence.filter) ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.where((x) => x.attachment != null).length ?? 0));
+			final _filter = Filter.of(context);
+			unseenReplyCount = (threadState?.unseenReplyCount(_filter) ?? 0) + ((latestReplyCount + 1) - _thread.posts.length);
+			unseenYouCount = threadState?.unseenReplyIdsToYou(_filter)?.length ?? 0;
+			unseenImageCount = (threadState?.unseenImageCount(_filter) ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.where((x) => x.attachment != null).length ?? 0));
 			replyCountColor = unseenReplyCount == 0 ? grey : null;
 			imageCountColor = unseenImageCount == 0 ? grey : null;
 			otherMetadataColor = unseenReplyCount == 0 && unseenImageCount == 0 ? grey : null;
@@ -231,8 +231,7 @@ class ThreadRow extends StatelessWidget {
 					child: ChangeNotifierProvider<PostSpanZoneData>(
 						create: (ctx) => PostSpanRootZoneData(
 							thread: _thread,
-							site: context.watch<ImageboardSite>(),
-							filter: const DummyFilter()
+							site: context.watch<ImageboardSite>()
 						),
 						child: Builder(
 							builder: (ctx) => IgnorePointer(
@@ -371,8 +370,7 @@ class ThreadRow extends StatelessWidget {
 											child: ChangeNotifierProvider<PostSpanZoneData>(
 												create: (ctx) => PostSpanRootZoneData(
 													thread: _thread,
-													site: context.watch<ImageboardSite>(),
-													filter: const DummyFilter()
+													site: context.watch<ImageboardSite>()
 												),
 												child: Builder(
 													builder: (ctx) => IgnorePointer(
