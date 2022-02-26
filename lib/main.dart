@@ -706,7 +706,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final isInTabletLayout = MediaQuery.of(context).size.width > 700;
+		final isInTabletLayout = (MediaQuery.of(context).size.width - 85) > (MediaQuery.of(context).size.height - 50);
 		final hideTabletLayoutLabels = MediaQuery.of(context).size.height < 600;
 		if (!initialized) {
 			if (boardFetchErrorMessage != null) {
