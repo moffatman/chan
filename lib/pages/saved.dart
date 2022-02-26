@@ -365,7 +365,7 @@ class _SavedPageState extends State<SavedPage> {
 												),
 												child: SavedAttachmentThumbnail(
 													file: list[i].file,
-													fit: BoxFit.cover
+													fit: BoxFit.contain
 												)
 											)
 										),
