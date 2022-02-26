@@ -37,6 +37,9 @@ class _CatalogCacheEntry {
 		required this.lastModified,
 		required this.replyCount
 	});
+
+	@override
+	String toString() => '_CatalogCacheEntry(page: $page, lastModified: $lastModified, replyCount: $replyCount)';
 }
 
 class _CatalogCache {

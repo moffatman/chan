@@ -64,6 +64,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	int lastSavedPostsLength = 0;
 	bool _saveQueued = false;
 	int lastHiddenMD5sLength = 0;
+	int? lastPageNumber;
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -397,6 +398,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																	},
 																	listUpdater: () async {
 																		final _persistentState = persistentState;
+																		lastPageNumber = persistentState.thread?.currentPage;
 																		// The thread might switch in this interval
 																		final _thread = _persistentState.useArchive ?
 																			await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
@@ -423,6 +425,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																						print('Failed to find last visible post after an update in $_persistentState');
 																					}
 																				}
+																			});
+																		}
+																		else if (_thread.currentPage != lastPageNumber) {
+																			setState(() {
+																				lastPageNumber = _thread.currentPage;
 																			});
 																		}
 																		if (shouldScroll) _blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500));
