@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:chan/widgets/post_spans.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -99,20 +101,41 @@ class _ContextMenuState extends State<ContextMenu> {
 				);
 				Overlay.of(context, rootOverlay: true)!.insert(_overlayEntry!);
 			},
-			child: CupertinoContextMenu(
-				actions: widget.actions.map((action) => CupertinoContextMenuAction(
-					child: action.child,
-					trailingIcon: action.trailingIcon,
-					onPressed: () {
-						action.onPressed();
-						Navigator.of(context, rootNavigator: true).pop();
-					},
-					isDestructiveAction: action.isDestructiveAction
-				)).toList(),
-				previewBuilder: (context, animation, child) => IgnorePointer(child: child),
-				child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
-					value: zone,
-					child: widget.child
+			child: LayoutBuilder(
+				builder: (context, originalConstraints) => CupertinoContextMenu(
+					actions: widget.actions.map((action) => CupertinoContextMenuAction(
+						child: action.child,
+						trailingIcon: action.trailingIcon,
+						onPressed: () {
+							action.onPressed();
+							Navigator.of(context, rootNavigator: true).pop();
+						},
+						isDestructiveAction: action.isDestructiveAction
+					)).toList(),
+					previewBuilder: (context, animation, child) => LayoutBuilder(
+						builder: (context, newConstraints) {
+							const x = 75;
+							final calculatedConstraints = BoxConstraints(
+								minWidth: 0,
+								maxWidth: min(max(originalConstraints.maxWidth, newConstraints.maxWidth - x), newConstraints.maxWidth + x),
+								minHeight: 0,
+								maxHeight: min(max(originalConstraints.maxHeight, newConstraints.maxHeight - x), newConstraints.maxHeight + x)
+							);
+							return FittedBox(
+								child: AnimatedBuilder(
+									animation: animation,
+									builder: (context, _) => ConstrainedBox(
+										constraints: calculatedConstraints,
+										child: IgnorePointer(child: child)
+									)
+								)
+							);
+						}
+					),
+					child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
+						value: zone,
+						child: widget.child
+					)
 				)
 			)
 		);
