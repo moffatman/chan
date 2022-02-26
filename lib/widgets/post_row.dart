@@ -441,6 +441,7 @@ class PostRow extends StatelessWidget {
 					onPressed: () async {
 						try {
 							await site.deletePost(_post.board, receipt);
+							showToast(context: context, message: 'Deleted post /${_post.board}/${receipt.id}', icon: CupertinoIcons.delete);
 						}
 						catch (error) {
 							alertError(context, error.toStringDio());
