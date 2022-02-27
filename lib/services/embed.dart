@@ -2,14 +2,34 @@ import 'dart:convert';
 
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
-bool embedPossible({
+class _EmbedParam {
+	final List<RegExp> regexes;
+	final String url;
+	const _EmbedParam({
+		required this.regexes,
+		required this.url
+	});
+}
+
+Future<bool> embedPossible({
 	required String url,
 	required BuildContext context
-}) {
-	return context.read<EffectiveSettings>().embedRegexes.any((regex) => regex.hasMatch(url));
+}) async {
+	if (kDebugMode) {
+		return context.read<EffectiveSettings>().embedRegexes.any((regex) => regex.hasMatch(url));
+	}
+	else {
+		return await compute<_EmbedParam, bool>((param) {
+			return param.regexes.any((regex) => regex.hasMatch(url));
+		}, _EmbedParam(
+			regexes: context.read<EffectiveSettings>().embedRegexes,
+			url: url
+		));
+	}
 }
 
 String? findEmbedUrl({

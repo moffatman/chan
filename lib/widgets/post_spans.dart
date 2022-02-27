@@ -587,95 +587,102 @@ class PostSpoilerSpan extends PostSpan {
 
 class PostLinkSpan extends PostSpan {
 	final String url;
-	bool? _embedPossible;
 	PostLinkSpan(this.url);
 	@override
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
-		_embedPossible ??= embedPossible(url: url, context: context);
-		if (_embedPossible! && !options.showRawSource) {
-			final snapshot = zone.getFutureForComputation(
-				id: 'noembed $url',
-				work: () => loadEmbedData(
+		if (!options.showRawSource) {
+			final check = zone.getFutureForComputation(
+				id: 'embedcheck $url',
+				work: () => embedPossible(
 					context: context,
 					url: url
 				)
 			);
-			Widget _build(List<Widget> _children) => Padding(
-				padding: const EdgeInsets.only(top: 8, bottom: 8),
-				child: ClipRRect(
-					borderRadius: const BorderRadius.all(Radius.circular(8)),
-					child: Container(
-						padding: const EdgeInsets.all(8),
-						color: CupertinoTheme.of(context).barBackgroundColor,
-						child: Row(
-							crossAxisAlignment: CrossAxisAlignment.center,
-							mainAxisSize: MainAxisSize.min,
-							children: _children
-						)
-					)
-				)
-			);
-			Widget? tapChild;
-			if (snapshot.connectionState == ConnectionState.waiting) {
-				tapChild = _build([
-					const SizedBox(
-						width: 75,
-						height: 75,
-						child: CupertinoActivityIndicator()
-					),
-					const SizedBox(width: 16),
-					Flexible(
-						child: Text(url, style: const TextStyle(decoration: TextDecoration.underline))
-					),
-					const SizedBox(width: 16)
-				]);
-			}
-			String? byline = snapshot.data?.provider;
-			if (snapshot.data?.author != null && !(snapshot.data?.title != null && snapshot.data!.title!.contains(snapshot.data!.author!))) {
-				byline = byline == null ? snapshot.data?.author : '${snapshot.data?.author} - $byline';
-			}
-			if (snapshot.data?.thumbnailUrl != null) {
-				tapChild = _build([
-					ClipRRect(
-						borderRadius: const BorderRadius.all(Radius.circular(8)),
-						child: ExtendedImage.network(
-							snapshot.data!.thumbnailUrl!,
-							cache: true,
-							width: 75,
-							height: 75,
-							fit: BoxFit.cover
-						)
-					),
-					const SizedBox(width: 16),
-					Flexible(
-						child: Column(
-							crossAxisAlignment: CrossAxisAlignment.start,
-							children: [
-								if (snapshot.data?.title != null) Text(snapshot.data!.title!),
-								if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey))
-							]
-						)
-					),
-					const SizedBox(width: 16)
-				]);
-			}
-
-			if (tapChild != null) {
-				onTap() {
-					openBrowser(context, Uri.parse(url));
-				}
-				return WidgetSpan(
-					alignment: PlaceholderAlignment.middle,
-					child: options.avoidBuggyClippers ? GestureDetector(
-						onTap: onTap,
-						child: tapChild
-					) : CupertinoButton(
-						padding: EdgeInsets.zero,
-						onPressed: onTap,
-						child: tapChild
+			if (check.data == true) {
+				final snapshot = zone.getFutureForComputation(
+					id: 'noembed $url',
+					work: () => loadEmbedData(
+						context: context,
+						url: url
 					)
 				);
+				Widget _build(List<Widget> _children) => Padding(
+					padding: const EdgeInsets.only(top: 8, bottom: 8),
+					child: ClipRRect(
+						borderRadius: const BorderRadius.all(Radius.circular(8)),
+						child: Container(
+							padding: const EdgeInsets.all(8),
+							color: CupertinoTheme.of(context).barBackgroundColor,
+							child: Row(
+								crossAxisAlignment: CrossAxisAlignment.center,
+								mainAxisSize: MainAxisSize.min,
+								children: _children
+							)
+						)
+					)
+				);
+				Widget? tapChild;
+				if (snapshot.connectionState == ConnectionState.waiting) {
+					tapChild = _build([
+						const SizedBox(
+							width: 75,
+							height: 75,
+							child: CupertinoActivityIndicator()
+						),
+						const SizedBox(width: 16),
+						Flexible(
+							child: Text(url, style: const TextStyle(decoration: TextDecoration.underline))
+						),
+						const SizedBox(width: 16)
+					]);
+				}
+				String? byline = snapshot.data?.provider;
+				if (snapshot.data?.author != null && !(snapshot.data?.title != null && snapshot.data!.title!.contains(snapshot.data!.author!))) {
+					byline = byline == null ? snapshot.data?.author : '${snapshot.data?.author} - $byline';
+				}
+				if (snapshot.data?.thumbnailUrl != null) {
+					tapChild = _build([
+						ClipRRect(
+							borderRadius: const BorderRadius.all(Radius.circular(8)),
+							child: ExtendedImage.network(
+								snapshot.data!.thumbnailUrl!,
+								cache: true,
+								width: 75,
+								height: 75,
+								fit: BoxFit.cover
+							)
+						),
+						const SizedBox(width: 16),
+						Flexible(
+							child: Column(
+								crossAxisAlignment: CrossAxisAlignment.start,
+								children: [
+									if (snapshot.data?.title != null) Text(snapshot.data!.title!),
+									if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey))
+								]
+							)
+						),
+						const SizedBox(width: 16)
+					]);
+				}
+
+				if (tapChild != null) {
+					onTap() {
+						openBrowser(context, Uri.parse(url));
+					}
+					return WidgetSpan(
+						alignment: PlaceholderAlignment.middle,
+						child: options.avoidBuggyClippers ? GestureDetector(
+							onTap: onTap,
+							child: tapChild
+						) : CupertinoButton(
+							padding: EdgeInsets.zero,
+							onPressed: onTap,
+							child: tapChild
+						)
+					);
+				}
 			}
 		}
 		return TextSpan(
