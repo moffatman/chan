@@ -115,18 +115,25 @@ class _ContextMenuState extends State<ContextMenu> {
 					previewBuilder: (context, animation, child) => LayoutBuilder(
 						builder: (context, newConstraints) {
 							const x = 75;
-							final calculatedConstraints = BoxConstraints(
-								minWidth: 0,
-								maxWidth: min(max(originalConstraints.maxWidth, newConstraints.maxWidth - x), newConstraints.maxWidth + x),
-								minHeight: 0,
-								maxHeight: min(max(originalConstraints.maxHeight, newConstraints.maxHeight - x), newConstraints.maxHeight + x)
-							);
 							return FittedBox(
 								child: AnimatedBuilder(
 									animation: animation,
-									builder: (context, _) => ConstrainedBox(
-										constraints: calculatedConstraints,
-										child: IgnorePointer(child: child)
+									builder: (context, _) => TweenAnimationBuilder(
+										tween: Tween<double>(
+											begin: originalConstraints.maxHeight,
+											end: newConstraints.maxHeight
+										),
+										curve: Curves.ease,
+										duration: const Duration(milliseconds: 300),
+										builder: (context, double maxHeight, _) => ConstrainedBox(
+											constraints: BoxConstraints(
+												minWidth: 0,
+												maxWidth: min(max(originalConstraints.maxWidth, newConstraints.maxWidth - x), newConstraints.maxWidth + x),
+												minHeight: 0,
+												maxHeight: maxHeight.isNaN ? double.infinity : maxHeight
+											),
+											child: IgnorePointer(child: child)
+										)
 									)
 								)
 							);
