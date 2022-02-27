@@ -55,6 +55,7 @@ class _ChanAppState extends State<ChanApp> {
 	late dynamic _lastSite;
 	final Map<String, GlobalKey> _siteKeys = {};
 	String? siteSetupError;
+	String? siteSetupStackTrace;
 
 	@override
 	void initState() {
@@ -97,6 +98,7 @@ class _ChanAppState extends State<ChanApp> {
 		}
 		catch (e, st) {
 			siteSetupError = 'Fatal setup error\n' + e.toStringDio();
+			siteSetupStackTrace = st.toStringDio();
 			print(e);
 			print(st);
 		}
@@ -195,6 +197,9 @@ class _ChanAppState extends State<ChanApp> {
 																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 																	child: Center(
 																		child: siteSetupError != null ? ErrorMessageCard(siteSetupError!, remedies: {
+																			if (siteSetupStackTrace != null) 'More details': () {
+																				alertError(context, siteSetupStackTrace!);
+																			},
 																			'Resynchronize': () {
 																				setState(() {
 																					siteSetupError = null;

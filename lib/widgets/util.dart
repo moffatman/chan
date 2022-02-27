@@ -186,7 +186,7 @@ class ErrorMessageCard extends StatelessWidget {
 							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 							child: Text(remedy.key, style: TextStyle(
 								color: CupertinoTheme.of(context).primaryColor
-							)),
+							), textAlign: TextAlign.center),
 							onPressed: remedy.value
 						)
 					]
