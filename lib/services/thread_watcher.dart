@@ -80,8 +80,9 @@ class StickyThreadWatcher extends ChangeNotifier {
 				}
 			}
 		}
-		catch (e) {
+		catch (e, st) {
 			print(e);
+			print(st);
 		}
 		nextUpdateTimer = Timer(interval, update);
 		if (disposed) {

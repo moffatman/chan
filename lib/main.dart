@@ -307,8 +307,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				initialized = true;
 			});
 		}
-		catch (error) {
+		catch (error, st) {
 			print(error);
+			print(st);
 			if (!initialized) {
 				setState(() {
 					boardFetchErrorMessage = error.toStringDio();
