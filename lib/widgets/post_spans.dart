@@ -91,9 +91,12 @@ class PostNodeSpan extends PostSpan {
 	List<PostSpan> children;
 	PostNodeSpan(this.children);
 
+	final Map<String, List<int>> _referencedPostIds = {};
 	@override
 	List<int> referencedPostIds(String forBoard) {
-		return children.expand((child) => child.referencedPostIds(forBoard)).toList();
+		return _referencedPostIds.putIfAbsent(forBoard, () {
+			return children.expand((child) => child.referencedPostIds(forBoard)).toList();
+		});
 	}
 
 	@override

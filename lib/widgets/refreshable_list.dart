@@ -649,7 +649,6 @@ class RefreshableListController<T extends Filterable> {
 	final BehaviorSubject<void> _scrollStream = BehaviorSubject();
 	final BehaviorSubject<void> slowScrollUpdates = BehaviorSubject();
 	late final StreamSubscription<List<void>> _slowScrollSubscription;
-	int currentIndex = 0;
 	double? topOffset;
 	double? bottomOffset;
 	String? contentId;
@@ -683,18 +682,15 @@ class RefreshableListController<T extends Filterable> {
 		}
 	}
 	void _onSlowScroll(void update) {
+		int lastCached = -1;
 		for (final entry in _items.asMap().entries) {
-			if (entry.value.cachedOffset == null) {
-				_tryCachingItem(entry.key, entry.value);
+			if (entry.value.cachedOffset != null) {
+				lastCached = entry.key;
 			}
 		}
-		double? scrollableViewportHeight;
-		for (final item in _items) {
-			if (item.hasGoodState) {
-				scrollableViewportHeight ??= Scrollable.of(item.context!)!.position.pixels;
-				if (item.cachedOffset! - scrollableViewportHeight > 0) {
-					currentIndex = _items.indexOf(item);
-				}
+		for (int i = 0; i < lastCached; i++) {
+			if (_items[i].cachedOffset == null) {
+				_tryCachingItem(i, _items[i]);
 			}
 		}
 	}
@@ -732,7 +728,6 @@ class RefreshableListController<T extends Filterable> {
 			cb.completeError(Exception('page changed'));
 		}
 		_itemCacheCallbacks.clear();
-		currentIndex = 0;
 	}
 	void setItems(List<T> items) {
 		_items = items.map((item) => _RefreshableListItem(item)).toList();
@@ -826,7 +821,10 @@ class RefreshableListController<T extends Filterable> {
 		}
 		return -1;
 	}
-	T? get firstVisibleItem => firstVisibleIndex < 0 ? null : _items[firstVisibleIndex].item;
+	T? get firstVisibleItem {
+		final index = firstVisibleIndex;
+		return index < 0 ? null : _items[index].item;
+	}
 	T? get lastVisibleItem {
 		if (scrollController?.hasOnePosition ?? false) {
 			return _items.tryLastWhere((i) {

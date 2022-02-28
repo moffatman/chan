@@ -12,6 +12,79 @@ extension SafeWhere<T> on Iterable<T> {
 	T? tryLastWhere(bool Function(T v) f) => cast<T?>().lastWhere((v) => f(v!), orElse: () => null);
 }
 
+extension BinarySafeWhere<T> on List<T> {
+	int binarySearchTryFirstIndexWhere(bool Function(T v) f) {
+		int min = 0;
+		int max = length - 1;
+		while (min < max) {
+			final int mid = min + ((max - min) >> 1);
+			final T element = this[mid];
+			final T next = this[mid + 1];
+			final bool elementPasses = f(element);
+			final bool nextElementPasses = f(next);
+			if (!elementPasses && nextElementPasses) {
+				return mid + 1;
+			}
+			else if (elementPasses) {
+				max = mid;
+			}
+			else {
+				min = mid + 1;
+			}
+		}
+		print(first);
+		print(f(first));
+		if (f(first)) {
+			return 0;
+		}
+		else if (f(last)) {
+			return length - 1;
+		}
+		return -1;
+	}
+	T? binarySearchTryFirstWhere(bool Function(T v) f) {
+		final index = binarySearchTryFirstIndexWhere(f);
+		if (index == -1) {
+			return null;
+		}
+		return this[index];
+	}
+	int binarySearchTryLastIndexWhere(bool Function(T v) f) {
+		int min = 0;
+		int max = length - 1;
+		while (min < max) {
+			final int mid = min + ((max - min) >> 1);
+			final T element = this[mid];
+			final T next = this[mid + 1];
+			final bool elementPasses = f(element);
+			final bool nextElementPasses = f(next);
+			if (elementPasses && !nextElementPasses) {
+				return mid;
+			}
+			else if (elementPasses) {
+				min = mid + 1;
+			}
+			else {
+				max = mid;
+			}
+		}
+		if (f(last)) {
+			return length - 1;
+		}
+		else if (f(first)) {
+			return 0;
+		}
+		return -1;
+	}
+	T? binarySearchTryLastWhere(bool Function(T v) f) {
+		final index = binarySearchTryLastIndexWhere(f);
+		if (index == -1) {
+			return null;
+		}
+		return this[index];
+	}
+}
+
 class ExpiringMutexResource<T> {
 	final Future<T> Function() _initializer;
 	final Future Function(T resource) _deinitializer;
