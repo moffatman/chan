@@ -328,10 +328,12 @@ class _ThreadPageState extends State<ThreadPage> {
 															child: NotificationListener<ScrollNotification>(
 																onNotification: (notification) {
 																	if (notification is ScrollEndNotification) {
-																		if (_saveQueued) {
-																			persistentState.save();
-																			_saveQueued = false;
-																		}
+																		Future.delayed(const Duration(milliseconds: 300), () {
+																			if (!(_listController.scrollController?.position.isScrollingNotifier.value ?? false) && _saveQueued) {
+																				persistentState.save();
+																				_saveQueued = false;
+																			}
+																		});
 																	}
 																	return false;
 																},
