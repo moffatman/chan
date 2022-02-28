@@ -3,6 +3,7 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
@@ -205,7 +206,9 @@ class SelectablePostPage extends StatelessWidget {
 							TextSpan(
 								children: [
 									post.span.build(context, PostSpanRenderOptions(
-										showRawSource: true
+										showRawSource: true,
+										recognizer: TapGestureRecognizer(),
+										overrideRecognizer: true
 									))
 								]
 							),
