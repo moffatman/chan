@@ -24,7 +24,7 @@ Future<bool> embedPossible({
 	}
 	else {
 		return await compute<_EmbedParam, bool>((param) {
-			return param.regexes.any((regex) => regex.hasMatch(url));
+			return param.regexes.any((regex) => regex.hasMatch(param.url));
 		}, _EmbedParam(
 			regexes: context.read<EffectiveSettings>().embedRegexes,
 			url: url
