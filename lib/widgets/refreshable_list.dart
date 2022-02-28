@@ -688,6 +688,7 @@ class RefreshableListController<T extends Filterable> {
 				lastCached = entry.key;
 			}
 		}
+		lastCached++; // Cache the final item if uncached
 		for (int i = 0; i < lastCached; i++) {
 			if (_items[i].cachedOffset == null) {
 				_tryCachingItem(i, _items[i]);
