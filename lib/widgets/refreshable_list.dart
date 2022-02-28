@@ -808,6 +808,9 @@ class RefreshableListController<T extends Filterable> {
 			// add offset to reveal the full footer
 			atAlignment0 += 110;
 		}
+		else {
+			atAlignment0 += 1;
+		}
 		await scrollController!.animateTo(
 			(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent),
 			duration: Duration(milliseconds: max(1, d.inMilliseconds)),
