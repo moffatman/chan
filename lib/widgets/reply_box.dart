@@ -288,6 +288,10 @@ class ReplyBoxState extends State<ReplyBox> {
 					file = File(heicPath);
 					ext = 'jpg';
 				}
+				else if (ext == 'webp') {
+					file = await convertToJpg(file);
+					ext = 'jpg';
+				}
 				final size = (await file.stat()).size;
 				if ((ext == 'jpg' || ext == 'jpeg' || ext == 'png')) {
 					if (board.maxImageSizeBytes != null && (size > board.maxImageSizeBytes!)) {
