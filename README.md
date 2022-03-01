@@ -35,15 +35,19 @@ Chance has not yet been submitted to the App Store. [Click here to join the beta
 git clone https://github.com/moffatman/chan.git
 cd chan
 ```
-3. (Optional) Modify the package name (find-and-replace `com.moffatman.chan` with your own package identifier)
+3. Fetch dependencies
+```
+flutter pub get
+```
+4. (Optional) Modify the package name (find-and-replace `com.moffatman.chan` with your own package identifier)
     - This will let you create signing keys and create signed builds, which is necessary to install the app on your own iOS devices, or distribute Android APKs
-4. Run `build_runner` to create some necessary generated dart code
+5. Run `build_runner` to create some necessary generated dart code
 ```
 flutter pub run build_runner build
 ```
-5. To build an APK for android, run `flutter build apk --split-per-abi --release`
-6. To build for iOS (Mac and Xcode required), run `flutter build ios --release`
-7. To run in development mode, use `flutter run` while your device is connected
+6. To build an APK for android, run `flutter build apk --split-per-abi --release`
+7. To build for iOS (Mac and Xcode required), run `flutter build ios --release`
+8. To run in development mode, use `flutter run` while your device is connected
 
 Chance is developed using the `flutter` `master` branch, so if you get errors while building or running, try using `flutter channel dev` or `flutter channel master`. 
 
