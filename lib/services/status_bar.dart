@@ -9,7 +9,9 @@ Future<void> showStatusBar() async {
 		await _platform.invokeMethod('showStatusBar');
 	}
 	else {
-		await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+		await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [
+			...SystemUiOverlay.values
+		]);
 	}
 }
 
