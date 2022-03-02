@@ -380,7 +380,8 @@ class Site4Chan extends ImageboardSite {
 				pageCount: board['pages'],
 				threadCooldown: board['cooldowns']?['threads'],
 				replyCooldown: board['cooldowns']?['replies'],
-				imageCooldown: board['cooldowns']?['images']
+				imageCooldown: board['cooldowns']?['images'],
+				spoilers: board['spoilers'] == 1
 			);
 		}).toList();
 	}
@@ -413,6 +414,7 @@ class Site4Chan extends ImageboardSite {
 		required String text,
 		required CaptchaSolution captchaSolution,
 		File? file,
+		bool? spoiler,
 		String? overrideFilename
 	}) async {
 		final random = Random();
@@ -430,7 +432,8 @@ class Site4Chan extends ImageboardSite {
 					't-challenge': captchaSolution.challenge,
 					't-response': captchaSolution.response
 				},
-				if (file != null) 'upfile': await MultipartFile.fromFile(file.path, filename: overrideFilename)
+				if (file != null) 'upfile': await MultipartFile.fromFile(file.path, filename: overrideFilename),
+				if (spoiler == true) 'spoiler': 'on'
 			}),
 			options: Options(
 				responseType: ResponseType.plain
@@ -474,6 +477,7 @@ class Site4Chan extends ImageboardSite {
 		required String text,
 		required CaptchaSolution captchaSolution,
 		File? file,
+		bool? spoiler,
 		String? overrideFilename
 	}) => _post(
 		board: board,
@@ -483,6 +487,7 @@ class Site4Chan extends ImageboardSite {
 		text: text,
 		captchaSolution: captchaSolution,
 		file: file,
+		spoiler: spoiler,
 		overrideFilename: overrideFilename
 	);
 
@@ -494,6 +499,7 @@ class Site4Chan extends ImageboardSite {
 		required String text,
 		required CaptchaSolution captchaSolution,
 		File? file,
+		bool? spoiler,
 		String? overrideFilename
 	}) => _post(
 		board: thread.board,
@@ -503,6 +509,7 @@ class Site4Chan extends ImageboardSite {
 		text: text,
 		captchaSolution: captchaSolution,
 		file: file,
+		spoiler: spoiler,
 		overrideFilename: overrideFilename
 	);
 

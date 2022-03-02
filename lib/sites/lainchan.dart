@@ -208,6 +208,7 @@ class SiteLainchan extends ImageboardSite {
 		required String text,
 		required CaptchaSolution captchaSolution,
 		File? file,
+		bool? spoiler,
 		String? overrideFilename
 	}) async {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
@@ -228,6 +229,9 @@ class SiteLainchan extends ImageboardSite {
 		}
 		if (file != null) {
 			fields['attachment'] = await MultipartFile.fromFile(file.path, filename: overrideFilename);
+		}
+		if (spoiler == true) {
+			fields['spoiler'] = 'on';
 		}
 		final response = await client.post(
 			Uri.https(baseUrl, '/post.php').toString(),
@@ -285,6 +289,7 @@ class SiteLainchan extends ImageboardSite {
 		required String text,
 		required CaptchaSolution captchaSolution,
 		File? file,
+		bool? spoiler,
 		String? overrideFilename
 	}) => _post(
 		board: board,
@@ -294,6 +299,7 @@ class SiteLainchan extends ImageboardSite {
 		text: text,
 		captchaSolution: captchaSolution,
 		file: file,
+		spoiler: spoiler,
 		overrideFilename: overrideFilename
 	);
 
@@ -305,6 +311,7 @@ class SiteLainchan extends ImageboardSite {
 		required String text,
 		required CaptchaSolution captchaSolution,
 		File? file,
+		bool? spoiler,
 		String? overrideFilename
 	}) => _post(
 		board: thread.board,
@@ -314,6 +321,7 @@ class SiteLainchan extends ImageboardSite {
 		text: text,
 		captchaSolution: captchaSolution,
 		file: file,
+		spoiler: spoiler,
 		overrideFilename: overrideFilename
 	);
 

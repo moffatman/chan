@@ -254,6 +254,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		required String text,
 		required CaptchaSolution captchaSolution,
 		File? file,
+		bool? spoiler,
 		String? overrideFilename
 	});
 	Future<PostReceipt> postReply({
@@ -263,6 +264,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		required String text,
 		required CaptchaSolution captchaSolution,
 		File? file,
+		bool? spoiler,
 		String? overrideFilename
 	});
 	DateTime? getActionAllowedTime(String board, ImageboardAction action);

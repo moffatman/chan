@@ -32,6 +32,8 @@ class ImageboardBoard {
 	final int? replyCooldown;
 	@HiveField(13)
 	final int? imageCooldown;
+	@HiveField(14)
+	final bool? spoilers;
 
 	ImageboardBoard({
 		required this.name,
@@ -47,7 +49,8 @@ class ImageboardBoard {
 		this.pageCount,
 		this.threadCooldown,
 		this.replyCooldown,
-		this.imageCooldown
+		this.imageCooldown,
+		this.spoilers
 	});
 
 	@override

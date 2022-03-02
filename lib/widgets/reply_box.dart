@@ -70,6 +70,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	String? _proposedAttachmentUrl;
 	CaptchaSolution? _captchaSolution;
 	Timer? _autoPostTimer;
+	bool spoiler = false;
 
 	bool get _haveValidCaptcha {
 		if (_captchaSolution == null) {
@@ -125,6 +126,8 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (oldWidget.board != widget.board || oldWidget.threadId != widget.threadId) {
 			_textFieldController.text = widget.initialText;
 			_subjectFieldController.text = widget.initialSubject;
+			attachment = null;
+			spoiler = false;
 		}
 	}
 
@@ -419,6 +422,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				captchaSolution: _captchaSolution!,
 				text: _textFieldController.text,
 				file: attachment,
+				spoiler: spoiler,
 				overrideFilename: overrideAttachmentFilename
 			)) : (await site.createThread(
 				board: widget.board,
@@ -427,6 +431,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				captchaSolution: _captchaSolution!,
 				text: _textFieldController.text,
 				file: attachment,
+				spoiler: spoiler,
 				overrideFilename: overrideAttachmentFilename,
 				subject: _subjectFieldController.text
 			));
@@ -461,6 +466,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	Widget _buildOptions(BuildContext context) {
+		final board = context.watch<Persistence>().getBoard(widget.board);
 		return Container(
 			decoration: BoxDecoration(
 				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
@@ -500,6 +506,24 @@ class ReplyBoxState extends State<ReplyBox> {
 										mainAxisAlignment: MainAxisAlignment.center,
 										crossAxisAlignment: CrossAxisAlignment.center,
 										children: [
+											if (board.spoilers == true) Padding(
+												padding: const EdgeInsets.only(right: 8),
+												child: CupertinoButton(
+													padding: EdgeInsets.zero,
+													child: Row(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															Icon(spoiler ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
+															const Text('Spoiler')
+														]
+													),
+													onPressed: () {
+														setState(() {
+															spoiler = !spoiler;
+														});
+													}
+												)
+											),
 											SavedAttachmentThumbnail(file: attachment!),
 											CupertinoButton(
 												padding: EdgeInsets.zero,
