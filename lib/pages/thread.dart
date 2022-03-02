@@ -84,6 +84,9 @@ class _ThreadPageState extends State<ThreadPage> {
 		lastSavedTime = persistentState.savedTime;
 		lastSavedPostsLength = savedPostsLength;
 		lastHiddenMD5sLength = hiddenMD5sLength;
+		if (persistentState.thread != null) {
+			zone.thread = persistentState.thread!;
+		}
 	}
 
 	Thread get _nullThread => Thread(
