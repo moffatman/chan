@@ -755,7 +755,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 			if (await directory.exists()) {
 				int size = 0;
 				await for (final subentry in directory.list(recursive: true)) {
-					size += (await subentry.stat()).size;
+					size += subentry.statSync().size;
 				}
 				folderSizes![directory.path.split('/').last] = size;
 			}
@@ -793,7 +793,8 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 			child: Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					if (folderSizes?.isEmpty ?? true) const Text('No cached media'),
+					if (folderSizes == null) const Text('Calculating...')
+					else if (folderSizes?.isEmpty ?? true) const Text('No cached media'),
 					Table(
 						columnWidths: const {
 							0: FlexColumnWidth(),
