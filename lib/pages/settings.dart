@@ -7,6 +7,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
 import 'package:chan/pages/licenses.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/filtering.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
@@ -1169,7 +1170,149 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 							);
 						}
 					)
+				),
+				const SizedBox(height: 16),
+				Row(
+					mainAxisAlignment: MainAxisAlignment.end,
+					children: [
+						CupertinoButton.filled(
+							padding: const EdgeInsets.all(16),
+							minSize: 0,
+							child: const Text('Test filter setup'),
+							onPressed: () {
+								Navigator.of(context).push(FullWidthCupertinoPageRoute(
+									builder: (context) => const FilterTestPage(),
+									showAnimations: settings.showAnimations
+								));
+							}
+						),
+						const SizedBox(width: 16)
+					]
 				)
+			]
+		);
+	}
+}
+
+class FilterTestPage extends StatefulWidget {
+	const FilterTestPage({
+		Key? key
+	}) : super(key: key);
+
+	@override
+	createState() => _FilterTestPageState();
+}
+
+class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
+	final _boardController = TextEditingController();
+	final _idController = TextEditingController();
+	final _textController = TextEditingController();
+	final _subjectController = TextEditingController();
+	final _nameController = TextEditingController();
+	final _filenameController = TextEditingController();
+	final _posterIdController = TextEditingController();
+	final _flagController = TextEditingController();
+
+	@override
+	String get board => _boardController.text;
+
+	@override
+	int get id => -1;
+
+	@override
+	bool get hasFile => _filenameController.text.isNotEmpty;
+
+	@override
+	bool isThread = true;
+
+	@override
+	String? getFilterFieldText(String fieldName) {
+		switch (fieldName) {
+			case 'subject':
+				return _subjectController.text;
+			case 'name':
+				return _nameController.text;
+			case 'filename':
+				return _filenameController.text;
+			case 'text':
+				return _textController.text;
+			case 'postID':
+				return _idController.text;
+			case 'posterID':
+				return _posterIdController.text;
+			case 'flag':
+				return _flagController.text;
+			default:
+				return null;
+		}
+	}
+
+	FilterResult? result;
+
+	void _recalculate() {
+		result = makeFilter(context.read<EffectiveSettings>().filterConfiguration).filter(this);
+		setState(() {});
+	}
+
+	String _filterResultType(FilterResultType? type) {
+		switch (type) {
+			case FilterResultType.autoSave:
+				return 'Auto-saved';
+			case FilterResultType.pinToTop:
+				return 'Pinned to top of catalog';
+			case FilterResultType.highlight:
+				return 'Highlighted';
+			case FilterResultType.hide:
+				return 'Hidden';
+			case null:
+				return 'No action';
+		}
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		return _SettingsPage(
+			title: 'Filter testing',
+			children: [
+				const Text('Fill the fields here to see how your filter setup will categorize threads and posts'),
+				const SizedBox(height: 16),
+				Text('Filter outcome:  ${_filterResultType(result?.type)}\nReason: ${result?.reason ?? 'No match'}'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('Post'),
+						true: Text('Thread')
+					},
+					groupValue: isThread,
+					onValueChanged: (setting) {
+						isThread = setting;
+						_recalculate();
+					}
+				),
+				const SizedBox(height: 16),
+				for (final field in [
+					Tuple3('Board', _boardController, null),
+					Tuple3(isThread ? 'Thread no.' : 'Post no.', _idController, null),
+					if (isThread) Tuple3('Subject', _subjectController, null),
+					Tuple3('Name', _nameController, null),
+					Tuple3('Poster ID', _posterIdController, null),
+					Tuple3('Flag', _flagController, null),
+					Tuple3('Filename', _filenameController, null),
+					Tuple3('Text', _textController, 5)
+				]) ...[
+					Text(field.item1),
+					Padding(
+						padding: const EdgeInsets.all(16),
+						child: CupertinoTextField(
+							controller: field.item2,
+							minLines: field.item3,
+							maxLines: null,
+							onChanged: (_) {
+								_recalculate();
+							}
+						)
+					)
+				]
 			]
 		);
 	}
