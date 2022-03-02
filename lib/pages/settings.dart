@@ -26,12 +26,341 @@ import 'package:extended_image_library/extended_image_library.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
+class _SettingsPage extends StatelessWidget {
+	final String title;
+	final List<Widget> children;
+	const _SettingsPage({
+		required this.children,
+		required this.title,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		return CupertinoPageScaffold(
+			resizeToAvoidBottomInset: false,
+			navigationBar: CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
+				middle: Text(title)
+			),
+			child: SafeArea(
+				child: SingleChildScrollView(
+					physics: const BouncingScrollPhysics(),
+					child: Align(
+						alignment: Alignment.center,
+						child: ConstrainedBox(
+							constraints: const BoxConstraints(
+								maxWidth: 500
+							),
+							child: Padding(
+								padding: const EdgeInsets.all(16),
+								child: Column(
+									crossAxisAlignment: CrossAxisAlignment.stretch,
+									children: children
+								)
+							)
+						)
+					)
+				)
+			)
+		);
+	}
+}
+
+class _SettingsPageButton extends StatelessWidget {
+	final String title;
+	final WidgetBuilder pageBuilder;
+	const _SettingsPageButton({
+		required this.title,
+		required this.pageBuilder,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		return GestureDetector(
+			behavior: HitTestBehavior.opaque,
+			child: Padding(
+				padding: const EdgeInsets.all(16),
+				child: Row(
+					children: [
+						Text(title),
+						const Spacer(),
+						const Icon(CupertinoIcons.chevron_forward)
+					]
+				)
+			),
+			onTap: () {
+				Navigator.of(context).push(FullWidthCupertinoPageRoute(
+					builder: pageBuilder,
+					showAnimations: context.read<EffectiveSettings>().showAnimations
+				));
+			}
+		);
+	}
+}
+
 class SettingsPage extends StatelessWidget {
 	final Persistence realPersistence;
 	final ImageboardSite realSite;
 	const SettingsPage({
 		required this.realPersistence,
 		required this.realSite,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
+		return _SettingsPage(
+			title: 'Settings',
+			children: [
+				const Text('Development News'),
+				AnimatedSize(
+					duration: const Duration(milliseconds: 250),
+					curve: Curves.ease,
+					alignment: Alignment.topCenter,
+					child: FutureBuilder<List<Thread>>(
+						future: context.read<ImageboardSite>().getCatalog('chance'),
+						initialData: context.read<StickyThreadWatcher>().lastCatalog,
+						builder: (context, snapshot) {
+							if (!snapshot.hasData) {
+								return const SizedBox(
+									height: 200,
+									child: Center(
+										child: CupertinoActivityIndicator()
+									)
+								);
+							}
+							else if (snapshot.hasError) {
+								return SizedBox(
+									height: 200,
+									child: Center(
+										child: Text(snapshot.error.toString())
+									)
+								);
+							}
+							final children = (snapshot.data ?? []).where((t) => t.isSticky).map<Widget>((thread) => GestureDetector(
+								onTap: () => Navigator.push(context, FullWidthCupertinoPageRoute(
+									builder: (context) => ThreadPage(
+										thread: thread.identifier,
+										boardSemanticId: -1,
+									),
+									showAnimations: context.read<EffectiveSettings>().showAnimations
+								)),
+								child: ConstrainedBox(
+									constraints: const BoxConstraints(
+										maxHeight: 125
+									),
+									child: ThreadRow(
+										thread: thread,
+										isSelected: false
+									)
+								)
+							)).toList();
+							if (children.isEmpty) {
+								children.add(const Center(
+									child: Text('No current news', style: TextStyle(color: Colors.grey))
+								));
+							}
+							children.add(const SizedBox(height: 16));
+							children.add(Center(
+								child: CupertinoButton.filled(
+									child: const Text('See more discussion'),
+									onPressed: () => Navigator.push(context, FullWidthCupertinoPageRoute(
+										builder: (context) => BoardPage(
+											initialBoard: ImageboardBoard(
+												name: 'chance',
+												title: 'Chance - Imageboard Browser',
+												isWorksafe: true,
+												webmAudioAllowed: false
+											),
+											allowChangingBoard: false,
+											semanticId: -1
+										),
+										showAnimations: context.read<EffectiveSettings>().showAnimations
+									))
+								)
+							));
+							return Column(
+								mainAxisSize: MainAxisSize.min,
+								children: children
+							);
+						}
+					)
+				),
+				const SizedBox(height: 24),
+				const Text('Content Filtering'),
+				const SizedBox(height: 16),
+				Padding(
+					padding: const EdgeInsets.only(left: 16, right: 16),
+					child: Table(
+						children: [
+							TableRow(
+								children: [
+									const Text('Imageboard'),
+									Text(realSite.name, textAlign: TextAlign.right)
+								]
+							),
+								...{
+								'Images': settings.contentSettings.images,
+								'NSFW Boards': settings.contentSettings.nsfwBoards,
+								'NSFW Images': settings.contentSettings.nsfwImages,
+								'NSFW Text': settings.contentSettings.nsfwText
+							}.entries.map((x) => TableRow(
+								children: [
+									Text(x.key),
+									Text(x.value ? 'Allowed' : 'Blocked', textAlign: TextAlign.right)
+								]
+							))
+						]
+					)
+				),
+				const SizedBox(height: 16),
+				Center(
+					child: Wrap(
+						spacing: 16,
+						runSpacing: 16,
+						children: [
+							CupertinoButton.filled(
+								padding: const EdgeInsets.all(8),
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: const [
+										Text('Synchronize '),
+										Icon(Icons.sync_rounded, size: 16)
+									]
+								),
+								onPressed: () {
+									settings.updateContentSettings();
+								}
+							),
+							CupertinoButton.filled(
+								padding: const EdgeInsets.all(8),
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: const [
+										Text('Edit preferences '),
+										Icon(Icons.launch_rounded, size: 16)
+									]
+								),
+								onPressed: () {
+									launch(settings.contentSettingsUrl, forceSafariVC: false);
+									settings.addAppResumeCallback(() async {
+										await Future.delayed(const Duration(seconds: 1));
+										settings.updateContentSettings();
+									});
+								}
+							)
+						]
+					)
+				),
+				const SizedBox(height: 32),
+				Divider(
+					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+				),
+				_SettingsPageButton(
+					title: 'Behavior Settings',
+					pageBuilder: (context) => SettingsBehaviorPage(
+						realSite: realSite
+					)
+				),
+				Divider(
+					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+				),
+				_SettingsPageButton(
+					title: 'Appearance Settings',
+					pageBuilder: (context) => const SettingsAppearancePage()
+				),
+				Divider(
+					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+				),
+				_SettingsPageButton(
+					title: 'Data Settings',
+					pageBuilder: (context) => SettingsDataPage(
+						realPersistence: realPersistence
+					)
+				),
+				Divider(
+					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+				),
+				const SizedBox(height: 16),
+				Center(
+					child: CupertinoButton(
+						child: const Text('Licenses'),
+						onPressed: () {
+							Navigator.of(context).push(FullWidthCupertinoPageRoute(
+								builder: (context) => const LicensesPage(),
+								showAnimations: settings.showAnimations
+							));
+						}
+					)
+				),
+				const SizedBox(height: 16),
+			],
+		);
+	}
+}
+
+class SettingsBehaviorPage extends StatelessWidget {
+	final ImageboardSite realSite;
+	const SettingsBehaviorPage({
+		required this.realSite,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
+		return _SettingsPage(
+			title: 'Behavior Settings',
+			children: [
+				SettingsFilterPanel(
+					initialConfiguration: settings.filterConfiguration,
+				),
+				const SizedBox(height: 32),
+				if (realSite.getLoginSystemName() != null) ...[
+					Text(realSite.getLoginSystemName()!),
+					const SizedBox(height: 16),
+					SettingsLoginPanel(
+						site: realSite
+					),
+					const SizedBox(height: 32)
+				],
+				const Text('Automatically load attachments'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
+					children: const {
+						AutoloadAttachmentsSetting.always: Text('Always'),
+						AutoloadAttachmentsSetting.wifi: Text('When on Wi-Fi'),
+						AutoloadAttachmentsSetting.never: Text('Never')
+					},
+					groupValue: settings.autoloadAttachmentsSetting,
+					onValueChanged: (newValue) {
+						settings.autoloadAttachmentsSetting = newValue;
+					}
+				),
+				const SizedBox(height: 32),
+				const Text('Hide old stickied threads'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('No'),
+						true: Text('Yes')
+					},
+					groupValue: settings.hideOldStickiedThreads,
+					onValueChanged: (newValue) {
+						settings.hideOldStickiedThreads = newValue;
+					}
+				),
+				const SizedBox(height: 32)
+			]
+		);
+	}
+}
+
+class SettingsAppearancePage extends StatelessWidget {
+	const SettingsAppearancePage({
 		Key? key
 	}) : super(key: key);
 
@@ -76,647 +405,451 @@ class SettingsPage extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
 		final firstPanePercent = (settings.twoPaneSplit / twoPaneSplitDenominator) * 100;
-		return CupertinoPageScaffold(
-			resizeToAvoidBottomInset: false,
-			navigationBar: const CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				middle: Text('Settings')
-			),
-			child: SafeArea(
-				child: SingleChildScrollView(
-					physics: const BouncingScrollPhysics(),
-					child: Align(
-						alignment: Alignment.center,
-						child: ConstrainedBox(
-							constraints: const BoxConstraints(
-								maxWidth: 500
-							),
-							child: Padding(
-								padding: const EdgeInsets.all(16),
-								child: Column(
-									crossAxisAlignment: CrossAxisAlignment.stretch,
+		return _SettingsPage(
+			title: 'Appearance Settings',
+			children: [
+				const SizedBox(height: 16),
+				Row(
+					children: [
+						const Text('Interface scale'),
+						const Spacer(),
+						CupertinoButton(
+							child: const Icon(CupertinoIcons.minus),
+							onPressed: settings.interfaceScale <= 0.5 ? null : () {
+								settings.interfaceScale -= 0.05;
+							}
+						),
+						Text('${(settings.interfaceScale * 100).round()}%'),
+						CupertinoButton(
+							child: const Icon(CupertinoIcons.plus),
+							onPressed: settings.interfaceScale >= 2.0 ? null : () {
+								settings.interfaceScale += 0.05;
+							}
+						),
+						const SizedBox(width: 16)
+					]
+				),
+				const SizedBox(height: 16),
+				const Text('Interface Style'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<TristateSystemSetting>(
+					children: const {
+						TristateSystemSetting.a: Text('Touchscreen'),
+						TristateSystemSetting.system: Text('Automatic'),
+						TristateSystemSetting.b: Text('Mouse')
+					},
+					groupValue: settings.supportMouseSetting,
+					onValueChanged: (newValue) {
+						settings.supportMouseSetting = newValue;
+					}
+				),
+				const SizedBox(height: 32),
+				const Text('Animations'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('Disabled'),
+						true: Text('Enabled'),
+					},
+					groupValue: settings.showAnimations,
+					onValueChanged: (newValue) {
+						settings.showAnimations = newValue;
+					}
+				),
+				const SizedBox(height: 32),
+				const Text('Active Theme'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<TristateSystemSetting>(
+					children: const {
+						TristateSystemSetting.a: Text('Light'),
+						TristateSystemSetting.system: Text('Follow System'),
+						TristateSystemSetting.b: Text('Dark')
+					},
+					groupValue: settings.themeSetting,
+					onValueChanged: (newValue) {
+						settings.themeSetting = newValue;
+					}
+				),
+				for (final theme in [
+					Tuple3('Light Theme Colors', settings.lightTheme, defaultLightTheme),
+					Tuple3('Dark Theme Colors', settings.darkTheme, defaultDarkTheme)
+				]) ... [
+					Padding(
+						padding: const EdgeInsets.only(top: 16, bottom: 16),
+						child: Text(theme.item1)
+					),
+					Container(
+						margin: const EdgeInsets.only(left: 16, right: 16),
+						decoration: BoxDecoration(
+							color: theme.item2.barColor,
+							borderRadius: const BorderRadius.all(Radius.circular(8))
+						),
+						child: SingleChildScrollView(
+							scrollDirection: Axis.horizontal,
+							child: Row(
+								children: <Tuple4<String, Color, ValueChanged<Color>, Color>>[
+									Tuple4('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c, theme.item3.primaryColor),
+									Tuple4('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c, theme.item3.secondaryColor),
+									Tuple4('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c, theme.item3.barColor),
+									Tuple4('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c, theme.item3.backgroundColor),
+									Tuple4('Quote', theme.item2.quoteColor, (c) => theme.item2.quoteColor = c, theme.item3.quoteColor)
+								].map((color) => Column(
+									mainAxisSize: MainAxisSize.min,
 									children: [
-										const Text('Development News'),
-										AnimatedSize(
-											duration: const Duration(milliseconds: 250),
-											curve: Curves.ease,
-											alignment: Alignment.topCenter,
-											child: FutureBuilder<List<Thread>>(
-												future: context.read<ImageboardSite>().getCatalog('chance'),
-												initialData: context.read<StickyThreadWatcher>().lastCatalog,
-												builder: (context, snapshot) {
-													if (!snapshot.hasData) {
-														return const SizedBox(
-															height: 200,
-															child: Center(
-																child: CupertinoActivityIndicator()
-															)
-														);
-													}
-													else if (snapshot.hasError) {
-														return SizedBox(
-															height: 200,
-															child: Center(
-																child: Text(snapshot.error.toString())
-															)
-														);
-													}
-													final children = (snapshot.data ?? []).where((t) => t.isSticky).map<Widget>((thread) => GestureDetector(
-														onTap: () => Navigator.push(context, FullWidthCupertinoPageRoute(
-															builder: (context) => ThreadPage(
-																thread: thread.identifier,
-																boardSemanticId: -1,
-															),
-															showAnimations: context.read<EffectiveSettings>().showAnimations
-														)),
-														child: ConstrainedBox(
-															constraints: const BoxConstraints(
-																maxHeight: 125
-															),
-															child: ThreadRow(
-																thread: thread,
-																isSelected: false
-															)
-														)
-													)).toList();
-													if (children.isEmpty) {
-														children.add(const Center(
-															child: Text('No current news', style: TextStyle(color: Colors.grey))
-														));
-													}
-													children.add(const SizedBox(height: 16));
-													children.add(Center(
-														child: CupertinoButton.filled(
-															child: const Text('See more discussion'),
-															onPressed: () => Navigator.push(context, FullWidthCupertinoPageRoute(
-																builder: (context) => BoardPage(
-																	initialBoard: ImageboardBoard(
-																		name: 'chance',
-																		title: 'Chance - Imageboard Browser',
-																		isWorksafe: true,
-																		webmAudioAllowed: false
-																	),
-																	allowChangingBoard: false,
-																	semanticId: -1
-																),
-																showAnimations: context.read<EffectiveSettings>().showAnimations
-															))
-														)
-													));
-													return Column(
-														mainAxisSize: MainAxisSize.min,
-														children: children
-													);
-												}
-											)
-										),
-										const SizedBox(height: 24),
-										const Text('Content Filtering'),
 										const SizedBox(height: 16),
-										Padding(
-											padding: const EdgeInsets.only(left: 16, right: 16),
-											child: Table(
-												children: [
-													TableRow(
-														children: [
-															const Text('Imageboard'),
-															Text(realSite.name, textAlign: TextAlign.right)
-														]
-													),
-														...{
-														'Images': settings.contentSettings.images,
-														'NSFW Boards': settings.contentSettings.nsfwBoards,
-														'NSFW Images': settings.contentSettings.nsfwImages,
-														'NSFW Text': settings.contentSettings.nsfwText
-													}.entries.map((x) => TableRow(
-														children: [
-															Text(x.key),
-															Text(x.value ? 'Allowed' : 'Blocked', textAlign: TextAlign.right)
-														]
-													))
-												]
-											)
-										),
+										Text(color.item1, style: TextStyle(color: theme.item2.primaryColor)),
 										const SizedBox(height: 16),
-										Center(
-											child: Wrap(
-												spacing: 16,
-												runSpacing: 16,
-												children: [
-													CupertinoButton.filled(
-														padding: const EdgeInsets.all(8),
-														child: Row(
-															mainAxisSize: MainAxisSize.min,
-															children: const [
-																Text('Synchronize '),
-																Icon(Icons.sync_rounded, size: 16)
-															]
-														),
-														onPressed: () {
-															settings.updateContentSettings();
-														}
-													),
-													CupertinoButton.filled(
-														padding: const EdgeInsets.all(8),
-														child: Row(
-															mainAxisSize: MainAxisSize.min,
-															children: const [
-																Text('Edit preferences '),
-																Icon(Icons.launch_rounded, size: 16)
-															]
-														),
-														onPressed: () {
-															launch(settings.contentSettingsUrl, forceSafariVC: false);
-															settings.addAppResumeCallback(() async {
-																await Future.delayed(const Duration(seconds: 1));
-																settings.updateContentSettings();
-															});
-														}
-													)
-												]
-											)
-										),
-										const SizedBox(height: 32),
-										SettingsFilterPanel(
-											initialConfiguration: settings.filterConfiguration,
-										),
-										const SizedBox(height: 32),
-										if (realSite.getLoginSystemName() != null) ...[
-											Text(realSite.getLoginSystemName()!),
-											const SizedBox(height: 16),
-											SettingsLoginPanel(
-												site: realSite
-											),
-											const SizedBox(height: 32)
-										],
-										const Text('Interface Style'),
-										const SizedBox(height: 16),
-										CupertinoSegmentedControl<TristateSystemSetting>(
-											children: const {
-												TristateSystemSetting.a: Text('Touchscreen'),
-												TristateSystemSetting.system: Text('Automatic'),
-												TristateSystemSetting.b: Text('Mouse')
-											},
-											groupValue: settings.supportMouseSetting,
-											onValueChanged: (newValue) {
-												settings.supportMouseSetting = newValue;
-											}
-										),
-										const SizedBox(height: 32),
-										const Text('Animations'),
-										const SizedBox(height: 16),
-										CupertinoSegmentedControl<bool>(
-											children: const {
-												false: Text('Disabled'),
-												true: Text('Enabled'),
-											},
-											groupValue: settings.showAnimations,
-											onValueChanged: (newValue) {
-												settings.showAnimations = newValue;
-											}
-										),
-										const SizedBox(height: 32),
-										const Text('Active Theme'),
-										const SizedBox(height: 16),
-										CupertinoSegmentedControl<TristateSystemSetting>(
-											children: const {
-												TristateSystemSetting.a: Text('Light'),
-												TristateSystemSetting.system: Text('Follow System'),
-												TristateSystemSetting.b: Text('Dark')
-											},
-											groupValue: settings.themeSetting,
-											onValueChanged: (newValue) {
-												settings.themeSetting = newValue;
-											}
-										),
-										for (final theme in [
-											Tuple3('Light Theme Colors', settings.lightTheme, defaultLightTheme),
-											Tuple3('Dark Theme Colors', settings.darkTheme, defaultDarkTheme)
-										]) ... [
-											Padding(
-												padding: const EdgeInsets.only(top: 16, bottom: 16),
-												child: Text(theme.item1)
-											),
-											Container(
-												margin: const EdgeInsets.only(left: 16, right: 16),
+										GestureDetector(
+											child: Container(
 												decoration: BoxDecoration(
-													color: theme.item2.barColor,
-													borderRadius: const BorderRadius.all(Radius.circular(8))
+													borderRadius: const BorderRadius.all(Radius.circular(8)),
+													border: Border.all(color: theme.item2.primaryColor),
+													color: color.item2
 												),
-												child: SingleChildScrollView(
-													scrollDirection: Axis.horizontal,
-													child: Row(
-														children: <Tuple4<String, Color, ValueChanged<Color>, Color>>[
-															Tuple4('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c, theme.item3.primaryColor),
-															Tuple4('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c, theme.item3.secondaryColor),
-															Tuple4('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c, theme.item3.barColor),
-															Tuple4('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c, theme.item3.backgroundColor),
-															Tuple4('Quote', theme.item2.quoteColor, (c) => theme.item2.quoteColor = c, theme.item3.quoteColor)
-														].map((color) => Column(
-															mainAxisSize: MainAxisSize.min,
-															children: [
-																const SizedBox(height: 16),
-																Text(color.item1, style: TextStyle(color: theme.item2.primaryColor)),
-																const SizedBox(height: 16),
-																GestureDetector(
-																	child: Container(
-																		decoration: BoxDecoration(
-																			borderRadius: const BorderRadius.all(Radius.circular(8)),
-																			border: Border.all(color: theme.item2.primaryColor),
-																			color: color.item2
-																		),
-																		width: 50,
-																		height: 50
-																	),
-																	onTap: () async {
-																		await showCupertinoModalPopup(
-																			barrierDismissible: true,
-																			context: context,
-																			builder: (context) => CupertinoActionSheet(
-																				title: Text('Select ${color.item1} Color'),
-																				message: Theme(
-																					data: ThemeData(
-																						textTheme: Theme.of(context).textTheme.apply(
-																							bodyColor: CupertinoTheme.of(context).primaryColor,
-																							displayColor: CupertinoTheme.of(context).primaryColor,
-																						),
-																						canvasColor: CupertinoTheme.of(context).scaffoldBackgroundColor
-																					),
-																					child: Padding(
-																						padding: MediaQuery.of(context).viewInsets,
-																						child: Material(
-																							color: Colors.transparent,
-																							child: ColorPicker(
-																								pickerColor: color.item2,
-																								onColorChanged: color.item3,
-																								enableAlpha: false,
-																								portraitOnly: true,
-																								displayThumbColor: true,
-																								hexInputBar: true
-																							)
-																						)
-																					)
-																				)
-																			)
-																		);
-																		settings.handleThemesAltered();
-																	}
+												width: 50,
+												height: 50
+											),
+											onTap: () async {
+												await showCupertinoModalPopup(
+													barrierDismissible: true,
+													context: context,
+													builder: (context) => CupertinoActionSheet(
+														title: Text('Select ${color.item1} Color'),
+														message: Theme(
+															data: ThemeData(
+																textTheme: Theme.of(context).textTheme.apply(
+																	bodyColor: CupertinoTheme.of(context).primaryColor,
+																	displayColor: CupertinoTheme.of(context).primaryColor,
 																),
-																Padding(
-																	padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 16),
-																	child: CupertinoButton(
-																		padding: const EdgeInsets.all(8),
-																		color: theme.item2.primaryColor,
-																		child: Text('Reset', style: TextStyle(color: theme.item2.backgroundColor)),
-																		onPressed: () {
-																			color.item3(color.item4);
-																			settings.handleThemesAltered();
-																		}
+																canvasColor: CupertinoTheme.of(context).scaffoldBackgroundColor
+															),
+															child: Padding(
+																padding: MediaQuery.of(context).viewInsets,
+																child: Material(
+																	color: Colors.transparent,
+																	child: ColorPicker(
+																		pickerColor: color.item2,
+																		onColorChanged: color.item3,
+																		enableAlpha: false,
+																		portraitOnly: true,
+																		displayThumbColor: true,
+																		hexInputBar: true
 																	)
-																),
-															]
-														)).toList()
+																)
+															)
+														)
 													)
-												)
-											)
-										],
-										const SizedBox(height: 16),
-										const Text('Automatically load attachments'),
-										const SizedBox(height: 16),
-										CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
-											children: const {
-												AutoloadAttachmentsSetting.always: Text('Always'),
-												AutoloadAttachmentsSetting.wifi: Text('When on Wi-Fi'),
-												AutoloadAttachmentsSetting.never: Text('Never')
-											},
-											groupValue: settings.autoloadAttachmentsSetting,
-											onValueChanged: (newValue) {
-												settings.autoloadAttachmentsSetting = newValue;
+												);
+												settings.handleThemesAltered();
 											}
 										),
-										const SizedBox(height: 32),
-										const Text('Hide old stickied threads'),
-										const SizedBox(height: 16),
-										CupertinoSegmentedControl<bool>(
-											children: const {
-												false: Text('No'),
-												true: Text('Yes')
-											},
-											groupValue: settings.hideOldStickiedThreads,
-											onValueChanged: (newValue) {
-												settings.hideOldStickiedThreads = newValue;
-											}
-										),
-										const SizedBox(height: 32),
-										const Text('Image thumbnail position'),
-										const SizedBox(height: 16),
-										CupertinoSegmentedControl<bool>(
-											children: const {
-												false: Text('Left'),
-												true: Text('Right')
-											},
-											groupValue: settings.imagesOnRight,
-											onValueChanged: (newValue) {
-												settings.imagesOnRight = newValue;
-											}
-										),
-										const SizedBox(height: 32),
-										const Text('Blur image thumbnails'),
-										const SizedBox(height: 16),
-										CupertinoSegmentedControl<bool>(
-											children: const {
-												false: Text('No'),
-												true: Text('Yes')
-											},
-											groupValue: settings.blurThumbnails,
-											onValueChanged: (newValue) {
-												settings.blurThumbnails = newValue;
-											}
-										),
-										const SizedBox(height: 32),
-										const Text('Catalog Layout'),
-										const SizedBox(height: 16),
-										CupertinoSegmentedControl<bool>(
-											children: const {
-												false: Text('Rows'),
-												true: Text('Grid'),
-											},
-											groupValue: settings.useCatalogGrid,
-											onValueChanged: (newValue) {
-												settings.useCatalogGrid = newValue;
-											}
-										),
-										const SizedBox(height: 16),
-										Center(
-											child: CupertinoButton.filled(
-												child: const Text('Edit catalog grid item size'),
-												onPressed: () async {
-													Size size = Size(settings.catalogGridWidth, settings.catalogGridHeight);
-													await showCupertinoModalPopup(
-														context: context,
-														builder: (_context) => StatefulBuilder(
-															builder: (context, setDialogState) => CupertinoActionSheet(
-																title: const Text('Resize catalog grid item'),
-																actions: [
-																	CupertinoButton(
-																		child: const Text('Close'),
-																		onPressed: () => Navigator.pop(_context)
-																	)
-																],
-																message: DefaultTextStyle(
-																	style: DefaultTextStyle.of(context).style,
-																	child: Column(
-																		children: [
-																			Row(
-																				mainAxisAlignment: MainAxisAlignment.spaceBetween,
-																				children: [
-																					Text('Width: ${size.width.round()}px'),
-																					CupertinoSlider(
-																						value: size.width,
-																						min: 100,
-																						max: 600,
-																						onChanged: (d) {
-																							setDialogState(() {
-																								size = Size(d, size.height);
-																							});
-																						}
-																					)
-																				]
-																			),
-																			Row(
-																				mainAxisAlignment: MainAxisAlignment.spaceBetween,
-																				children: [
-																					Text('Height: ${size.height.round()}px'),
-																					CupertinoSlider(
-																						value: size.height,
-																						min: 100,
-																						max: 600,
-																						onChanged: (d) {
-																							setDialogState(() {
-																								size = Size(size.width, d);
-																							});
-																						}
-																					)
-																				]
-																			),
-																			SizedBox(
-																				width: 600,
-																				height: 600,
-																				child: Align(
-																					alignment: Alignment.topLeft,
-																					child: SizedBox.fromSize(
-																						size: size,
-																						child: ThreadRow(
-																							contentFocus: true,
-																							isSelected: false,
-																							thread: Thread(
-																								attachment: Attachment(
-																									type: AttachmentType.image,
-																									board: 'tv',
-																									id: 99999,
-																									ext: '.png',
-																									filename: 'example',
-																									md5: '',
-																									url: Uri.parse('https://picsum.photos/800'),
-																									thumbnailUrl: Uri.parse('https://picsum.photos/200')
-																								),
-																								board: 'tv',
-																								replyCount: 300,
-																								imageCount: 30,
-																								id: 99999,
-																								time: DateTime.now().subtract(const Duration(minutes: 5)),
-																								title: 'Example thread',
-																								isSticky: false,
-																								posts: [
-																									Post(
-																										board: 'tv',
-																										text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ',
-																										name: 'Anonymous',
-																										time: DateTime.now().subtract(const Duration(minutes: 5)),
-																										threadId: 99999,
-																										id: 99999,
-																										spanFormat: PostSpanFormat.chan4
-																									)
-																								]
-																							)
-																						)
-																					)
-																				)
-																			)
-																		]
-																	)
-																)
-															)
-														)
-													);
-													settings.catalogGridHeight = size.height;
-													settings.catalogGridWidth = size.width;
-												}
-											)
-										),
-										const SizedBox(height: 16),
-										Center(
-											child: CupertinoButton.filled(
-												child: const Text('Edit catalog item details'),
-												onPressed: () async {
-													await showCupertinoModalPopup(
-														context: context,
-														builder: (_context) => StatefulBuilder(
-															builder: (context, setDialogState) => CupertinoActionSheet(
-																title: const Text('Edit catalog item details'),
-																actions: [
-																	CupertinoButton(
-																		child: const Text('Close'),
-																		onPressed: () => Navigator.pop(_context)
-																	)
-																],
-																message: DefaultTextStyle(
-																	style: DefaultTextStyle.of(context).style,
-																	child: Column(
-																		children: [
-																			_buildFakeThreadRow(contentFocus: false),
-																			const SizedBox(height: 16),
-																			Align(
-																				alignment: Alignment.topLeft,
-																				child: SizedBox.fromSize(
-																					size: Size(settings.catalogGridWidth, settings.catalogGridHeight),
-																					child: _buildFakeThreadRow()
-																				)
-																			),
-																			Row(
-																				children: [
-																					const Text('Show image count'),
-																					const Spacer(),
-																					CupertinoSwitch(
-																						value: settings.showImageCountInCatalog,
-																						onChanged: (d) => settings.showImageCountInCatalog = d
-																					)
-																				]
-																			),
-																			Row(
-																				children: [
-																					const Text('Show clock icon'),
-																					const Spacer(),
-																					CupertinoSwitch(
-																						value: settings.showClockIconInCatalog,
-																						onChanged: (d) => settings.showClockIconInCatalog = d
-																					)
-																				]
-																			),
-																			Row(
-																				children: [
-																					const Text('Show name'),
-																					const Spacer(),
-																					CupertinoSwitch(
-																						value: settings.showNameInCatalog,
-																						onChanged: (d) => settings.showNameInCatalog = d
-																					)
-																				]
-																			)
-																		]
-																	)
-																)
-															)
-														)
-													);
-												}
-											)
-										),
-										const SizedBox(height: 32),
-										Text('Two-pane breakpoint: ${settings.twoPaneBreakpoint.round()} pixels'),
 										Padding(
-											padding: const EdgeInsets.all(16),
-											child: CupertinoSlider(
-												min: 50,
-												max: 3000,
-												divisions: 59,
-												value: settings.twoPaneBreakpoint,
-												onChanged: (newValue) {
-													settings.twoPaneBreakpoint = newValue;
-												}
-											)
-										),
-										const SizedBox(height: 16),
-										Text('Two-pane split: ${firstPanePercent.toStringAsFixed(0)}% catalog, ${(100 - firstPanePercent).toStringAsFixed(0)}% thread'),
-										Padding(
-											padding: const EdgeInsets.all(16),
-											child: CupertinoSlider(
-												min: 1,
-												max: (twoPaneSplitDenominator - 1).toDouble(),
-												divisions: twoPaneSplitDenominator - 1,
-												value: settings.twoPaneSplit.toDouble(),
-												onChanged: (newValue) {
-													settings.twoPaneSplit = newValue.toInt();
-												}
-											)
-										),
-										const SizedBox(height: 16),
-										Row(
-											children: [
-												const Text('Interface scale'),
-												const Spacer(),
-												CupertinoButton(
-													child: const Icon(CupertinoIcons.minus),
-													onPressed: settings.interfaceScale <= 0.5 ? null : () {
-														settings.interfaceScale -= 0.05;
-													}
-												),
-												Text('${(settings.interfaceScale * 100).round()}%'),
-												CupertinoButton(
-													child: const Icon(CupertinoIcons.plus),
-													onPressed: settings.interfaceScale >= 2.0 ? null : () {
-														settings.interfaceScale += 0.05;
-													}
-												),
-												const SizedBox(width: 16)
-											]
-										),
-										if (Platform.isAndroid) ...[
-											const SizedBox(height: 32),
-											CupertinoButton(
-												child: Text((settings.androidGallerySavePath == null ? 'Set' : 'Change') + ' media save directory'),
-												onPressed: () async {
-													settings.androidGallerySavePath = await pickDirectory();
-												}
-											)
-										],
-										const SizedBox(height: 32),
-										const Text('Cached media'),
-										const SettingsCachePanel(),
-										const SizedBox(height: 16),
-										const Text('Cached threads and history'),
-										SettingsThreadsPanel(
-											persistence: realPersistence
-										),
-										const SizedBox(height: 16),
-										Center(
-											child: CupertinoButton.filled(
-												child: const Text('Clear API cookies'),
-												onPressed: () {
-													Persistence.cookies.deleteAll();
-												}
-											)
-										),
-										const SizedBox(height: 16),
-										Center(
+											padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 16),
 											child: CupertinoButton(
-												child: const Text('Licenses'),
+												padding: const EdgeInsets.all(8),
+												color: theme.item2.primaryColor,
+												child: Text('Reset', style: TextStyle(color: theme.item2.backgroundColor)),
 												onPressed: () {
-													Navigator.of(context).push(FullWidthCupertinoPageRoute(
-														builder: (context) => const LicensesPage(),
-														showAnimations: settings.showAnimations
-													));
+													color.item3(color.item4);
+													settings.handleThemesAltered();
 												}
 											)
 										),
-										const SizedBox(height: 16)
-									],
-								)
+									]
+								)).toList()
 							)
 						)
 					)
+				],
+				const SizedBox(height: 16),
+				const Text('Image thumbnail position'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('Left'),
+						true: Text('Right')
+					},
+					groupValue: settings.imagesOnRight,
+					onValueChanged: (newValue) {
+						settings.imagesOnRight = newValue;
+					}
+				),
+				const SizedBox(height: 32),
+				const Text('Blur image thumbnails'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('No'),
+						true: Text('Yes')
+					},
+					groupValue: settings.blurThumbnails,
+					onValueChanged: (newValue) {
+						settings.blurThumbnails = newValue;
+					}
+				),
+				const SizedBox(height: 32),
+				const Text('Catalog Layout'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('Rows'),
+						true: Text('Grid'),
+					},
+					groupValue: settings.useCatalogGrid,
+					onValueChanged: (newValue) {
+						settings.useCatalogGrid = newValue;
+					}
+				),
+				const SizedBox(height: 16),
+				Center(
+					child: CupertinoButton.filled(
+						child: const Text('Edit catalog grid item size'),
+						onPressed: () async {
+							Size size = Size(settings.catalogGridWidth, settings.catalogGridHeight);
+							await showCupertinoModalPopup(
+								context: context,
+								builder: (_context) => StatefulBuilder(
+									builder: (context, setDialogState) => CupertinoActionSheet(
+										title: const Text('Resize catalog grid item'),
+										actions: [
+											CupertinoButton(
+												child: const Text('Close'),
+												onPressed: () => Navigator.pop(_context)
+											)
+										],
+										message: DefaultTextStyle(
+											style: DefaultTextStyle.of(context).style,
+											child: Column(
+												children: [
+													Row(
+														mainAxisAlignment: MainAxisAlignment.spaceBetween,
+														children: [
+															Text('Width: ${size.width.round()}px'),
+															CupertinoSlider(
+																value: size.width,
+																min: 100,
+																max: 600,
+																onChanged: (d) {
+																	setDialogState(() {
+																		size = Size(d, size.height);
+																	});
+																}
+															)
+														]
+													),
+													Row(
+														mainAxisAlignment: MainAxisAlignment.spaceBetween,
+														children: [
+															Text('Height: ${size.height.round()}px'),
+															CupertinoSlider(
+																value: size.height,
+																min: 100,
+																max: 600,
+																onChanged: (d) {
+																	setDialogState(() {
+																		size = Size(size.width, d);
+																	});
+																}
+															)
+														]
+													),
+													SizedBox(
+														width: 600,
+														height: 600,
+														child: Align(
+															alignment: Alignment.topLeft,
+															child: SizedBox.fromSize(
+																size: size,
+																child: ThreadRow(
+																	contentFocus: true,
+																	isSelected: false,
+																	thread: Thread(
+																		attachment: Attachment(
+																			type: AttachmentType.image,
+																			board: 'tv',
+																			id: 99999,
+																			ext: '.png',
+																			filename: 'example',
+																			md5: '',
+																			url: Uri.parse('https://picsum.photos/800'),
+																			thumbnailUrl: Uri.parse('https://picsum.photos/200')
+																		),
+																		board: 'tv',
+																		replyCount: 300,
+																		imageCount: 30,
+																		id: 99999,
+																		time: DateTime.now().subtract(const Duration(minutes: 5)),
+																		title: 'Example thread',
+																		isSticky: false,
+																		posts: [
+																			Post(
+																				board: 'tv',
+																				text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ',
+																				name: 'Anonymous',
+																				time: DateTime.now().subtract(const Duration(minutes: 5)),
+																				threadId: 99999,
+																				id: 99999,
+																				spanFormat: PostSpanFormat.chan4
+																			)
+																		]
+																	)
+																)
+															)
+														)
+													)
+												]
+											)
+										)
+									)
+								)
+							);
+							settings.catalogGridHeight = size.height;
+							settings.catalogGridWidth = size.width;
+						}
+					)
+				),
+				const SizedBox(height: 16),
+				Center(
+					child: CupertinoButton.filled(
+						child: const Text('Edit catalog item details'),
+						onPressed: () async {
+							await showCupertinoModalPopup(
+								context: context,
+								builder: (_context) => StatefulBuilder(
+									builder: (context, setDialogState) => CupertinoActionSheet(
+										title: const Text('Edit catalog item details'),
+										actions: [
+											CupertinoButton(
+												child: const Text('Close'),
+												onPressed: () => Navigator.pop(_context)
+											)
+										],
+										message: DefaultTextStyle(
+											style: DefaultTextStyle.of(context).style,
+											child: Column(
+												children: [
+													_buildFakeThreadRow(contentFocus: false),
+													const SizedBox(height: 16),
+													Align(
+														alignment: Alignment.topLeft,
+														child: SizedBox.fromSize(
+															size: Size(settings.catalogGridWidth, settings.catalogGridHeight),
+															child: _buildFakeThreadRow()
+														)
+													),
+													Row(
+														children: [
+															const Text('Show image count'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showImageCountInCatalog,
+																onChanged: (d) => settings.showImageCountInCatalog = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show clock icon'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showClockIconInCatalog,
+																onChanged: (d) => settings.showClockIconInCatalog = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show name'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showNameInCatalog,
+																onChanged: (d) => settings.showNameInCatalog = d
+															)
+														]
+													)
+												]
+											)
+										)
+									)
+								)
+							);
+						}
+					)
+				),
+				const SizedBox(height: 32),
+				Text('Two-pane breakpoint: ${settings.twoPaneBreakpoint.round()} pixels'),
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: CupertinoSlider(
+						min: 50,
+						max: 3000,
+						divisions: 59,
+						value: settings.twoPaneBreakpoint,
+						onChanged: (newValue) {
+							settings.twoPaneBreakpoint = newValue;
+						}
+					)
+				),
+				const SizedBox(height: 16),
+				Text('Two-pane split: ${firstPanePercent.toStringAsFixed(0)}% catalog, ${(100 - firstPanePercent).toStringAsFixed(0)}% thread'),
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: CupertinoSlider(
+						min: 1,
+						max: (twoPaneSplitDenominator - 1).toDouble(),
+						divisions: twoPaneSplitDenominator - 1,
+						value: settings.twoPaneSplit.toDouble(),
+						onChanged: (newValue) {
+							settings.twoPaneSplit = newValue.toInt();
+						}
+					)
 				)
-			)
+			]
+		);
+	}
+}
+
+class SettingsDataPage extends StatelessWidget {
+	final Persistence realPersistence;
+	const SettingsDataPage({
+		required this.realPersistence,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
+		return _SettingsPage(
+			title: 'Data Settings',
+			children: [
+				if (Platform.isAndroid) ...[
+					const SizedBox(height: 16),
+					CupertinoButton(
+						child: Text((settings.androidGallerySavePath == null ? 'Set' : 'Change') + ' media save directory'),
+						onPressed: () async {
+							settings.androidGallerySavePath = await pickDirectory();
+						}
+					)
+				],
+				const SizedBox(height: 16),
+				const Text('Cached media'),
+				const SettingsCachePanel(),
+				const SizedBox(height: 16),
+				const Text('Cached threads and history'),
+				SettingsThreadsPanel(
+					persistence: realPersistence
+				),
+				const SizedBox(height: 16),
+				Center(
+					child: CupertinoButton.filled(
+						child: const Text('Clear API cookies'),
+						onPressed: () {
+							Persistence.cookies.deleteAll();
+						}
+					)
+				),
+				const SizedBox(height: 16),
+			]
 		);
 	}
 }
@@ -956,6 +1089,7 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 			mainAxisSize: MainAxisSize.min,
 			crossAxisAlignment: CrossAxisAlignment.stretch,
 			children: [
+				const SizedBox(height: 16),
 				Wrap(
 					crossAxisAlignment: WrapCrossAlignment.center,
 					alignment: WrapAlignment.start,
