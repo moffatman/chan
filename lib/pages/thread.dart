@@ -543,6 +543,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 
 class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
 	final FilterCache _filterCache = FilterCache(const DummyFilter());
+	Thread? _lastThread;
 	List<Post>? _filteredPosts;
 	int _lastLastItemId = -1;
 	int _redCount = 0;
@@ -565,9 +566,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
 			builder: (context, a) {
 				if (widget.persistentState.thread != null) {
 					final newFilter = Filter.of(context);
-					if (_filterCache.wrappedFilter != newFilter || _filteredPosts == null) {
+					if (_filterCache.wrappedFilter != newFilter || _filteredPosts == null || _lastThread != widget.persistentState.thread) {
 						_filterCache.setFilter(newFilter);
 						_filteredPosts = widget.persistentState.thread!.posts.where((p) => _filterCache.filter(p)?.type != FilterResultType.hide).toList();
+						_lastThread = widget.persistentState.thread;
 					}
 					final lastItemId = widget.listController.lastVisibleItem?.id;
 					if (widget.persistentState.lastSeenPostId != null && lastItemId != null && lastItemId != _lastLastItemId) {
