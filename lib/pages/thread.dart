@@ -476,7 +476,9 @@ class _ThreadPageState extends State<ThreadPage> {
 																alignment: Alignment.bottomRight,
 																child: ThreadPositionIndicator(
 																	persistentState: persistentState,
-																	listController: _listController
+																	thread: persistentState.thread,
+																	listController: _listController,
+																	filter: Filter.of(context)
 																)
 															)
 														),
@@ -532,11 +534,15 @@ class _ThreadPageState extends State<ThreadPage> {
 
 class ThreadPositionIndicator extends StatefulWidget {
 	final PersistentThreadState persistentState;
+	final Thread? thread;
 	final RefreshableListController listController;
+	final Filter filter;
 	
 	const ThreadPositionIndicator({
 		required this.persistentState,
+		required this.thread,
 		required this.listController,
+		required this.filter,
 		Key? key
 	}) : super(key: key);
 
@@ -545,116 +551,156 @@ class ThreadPositionIndicator extends StatefulWidget {
 }
 
 class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
-	final FilterCache _filterCache = FilterCache(const DummyFilter());
-	Thread? _lastThread;
 	List<Post>? _filteredPosts;
-	int _lastLastItemId = -1;
+	int? _lastLastVisibleItemId;
 	int _redCount = 0;
 	int _whiteCount = 0;
 	int _greyCount = 0;
+	late StreamSubscription<void> _slowScrollSubscription;
+	Timer? _waitForRebuildTimer;
+
+	bool _updateCounts() {
+		final lastVisibleItemId = widget.listController.lastVisibleItem?.id;
+		if (lastVisibleItemId == null || _filteredPosts == null) return false;
+		final youIds = widget.persistentState.youIds;
+		_redCount = _filteredPosts!.where((p) => p.id > widget.persistentState.lastSeenPostId! && p.span.referencedPostIds(p.board).any((id) => youIds.contains(id))).length;
+		_whiteCount = _filteredPosts!.where((p) => p.id > widget.persistentState.lastSeenPostId!).length;
+		_greyCount = _filteredPosts!.where((p) => p.id > lastVisibleItemId).length - _whiteCount;
+		_lastLastVisibleItemId = lastVisibleItemId;
+		setState(() {});
+		return true;
+	}
+
+	void _onSlowScroll(_) {
+		final lastVisibleItemId = widget.listController.lastVisibleItem?.id;
+		if (lastVisibleItemId != null && lastVisibleItemId != _lastLastVisibleItemId && _filteredPosts != null) {
+			_updateCounts();
+		}
+	}
+
+	@override
+	void initState() {
+		super.initState();
+		_slowScrollSubscription = widget.listController.slowScrollUpdates.listen(_onSlowScroll);
+		if (widget.thread != null) {
+			_filteredPosts = widget.thread!.posts.where((p) => widget.filter.filter(p)?.type != FilterResultType.hide).toList();
+		}
+	}
 
 	@override
 	void didUpdateWidget(ThreadPositionIndicator oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		if (widget.persistentState != oldWidget.persistentState) {
 			_filteredPosts = null;
-			_lastLastItemId = -1;
+			_lastLastVisibleItemId = null;
+		}
+		if (widget.thread != oldWidget.thread || widget.filter != oldWidget.filter) {
+			_waitForRebuildTimer?.cancel();
+			if (widget.thread == null) {
+				_filteredPosts = null;
+			}
+			else {
+				_filteredPosts = widget.thread!.posts.where((p) => widget.filter.filter(p)?.type != FilterResultType.hide).toList();
+			}
+			if (widget.thread?.identifier != oldWidget.thread?.identifier) {
+				setState(() {
+					_redCount = 0;
+					_whiteCount = 0;
+					_greyCount = 0;
+				});
+			}
+			if (!_updateCounts()) {
+				_waitForRebuildTimer = Timer.periodic(const Duration(milliseconds: 150), (t) {
+					if (_updateCounts()) {
+						t.cancel();
+					}
+				});
+			}
+		}
+		if (widget.listController != oldWidget.listController) {
+			_slowScrollSubscription.cancel();
+			_slowScrollSubscription = widget.listController.slowScrollUpdates.listen(_onSlowScroll);
 		}
 	}
 
 	@override
 	Widget build(BuildContext context) {
-		return StreamBuilder(
-			stream: widget.listController.slowScrollUpdates,
-			builder: (context, a) {
-				if (widget.persistentState.thread != null) {
-					final newFilter = Filter.of(context);
-					if (_filterCache.wrappedFilter != newFilter || _filteredPosts == null || _lastThread != widget.persistentState.thread) {
-						_filterCache.setFilter(newFilter);
-						_filteredPosts = widget.persistentState.thread!.posts.where((p) => _filterCache.filter(p)?.type != FilterResultType.hide).toList();
-						_lastThread = widget.persistentState.thread;
-					}
-					final lastItemId = widget.listController.lastVisibleItem?.id;
-					if (widget.persistentState.lastSeenPostId != null && lastItemId != null && lastItemId != _lastLastItemId) {
-						final youIds = widget.persistentState.youIds;
-						_redCount = _filteredPosts!.where((p) => p.id > widget.persistentState.lastSeenPostId! && p.span.referencedPostIds(p.board).any((id) => youIds.contains(id))).length;
-						_whiteCount = _filteredPosts!.where((p) => p.id > widget.persistentState.lastSeenPostId!).length;
-						_greyCount = _filteredPosts!.where((p) => p.id > lastItemId).length - _whiteCount;
-						_lastLastItemId = lastItemId;
-					}
-				}
-				const radius = Radius.circular(8);
-				const radiusAlone = BorderRadius.all(radius);
-				scrollToBottom() => widget.listController.animateTo((post) => post.id == widget.persistentState.thread!.posts.last.id, alignment: 1.0);
-				if (_redCount > 0 || _whiteCount > 0 || _greyCount > 0) {
-					return GestureDetector(
-						child: Builder(
-							builder: (context) => Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									if (_redCount > 0) Container(
-										decoration: BoxDecoration(
-											borderRadius: (_whiteCount > 0 || _greyCount > 0) ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
-											color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
-										),
-										padding: const EdgeInsets.all(8),
-										margin: EdgeInsets.only(bottom: 16, right: (_whiteCount == 0 && _greyCount == 0) ? 16 : 0),
-										child: Text(
-											_redCount.toString(),
-											textAlign: TextAlign.center
-										)
+		const radius = Radius.circular(8);
+		const radiusAlone = BorderRadius.all(radius);
+		scrollToBottom() => widget.listController.animateTo((post) => post.id == widget.persistentState.thread!.posts.last.id, alignment: 1.0);
+		if (_redCount > 0 || _whiteCount > 0 || _greyCount > 0) {
+			return GestureDetector(
+				child: Builder(
+					builder: (context) => Row(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							if (_redCount > 0) Container(
+								decoration: BoxDecoration(
+									borderRadius: (_whiteCount > 0 || _greyCount > 0) ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
+									color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
+								),
+								padding: const EdgeInsets.all(8),
+								margin: EdgeInsets.only(bottom: 16, right: (_whiteCount == 0 && _greyCount == 0) ? 16 : 0),
+								child: Text(
+									_redCount.toString(),
+									textAlign: TextAlign.center
+								)
+							),
+							if (_greyCount > 0) Container(
+								decoration: BoxDecoration(
+									borderRadius: (_redCount > 0) ? (_whiteCount > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (_whiteCount > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
+									color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
+								),
+								padding: const EdgeInsets.all(8),
+								margin: EdgeInsets.only(bottom: 16, right: _whiteCount > 0 ? 0 : 16),
+								child: Container(
+									constraints: BoxConstraints(
+										minWidth: 24 * MediaQuery.of(context).textScaleFactor
 									),
-									if (_greyCount > 0) Container(
-										decoration: BoxDecoration(
-											borderRadius: (_redCount > 0) ? (_whiteCount > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (_whiteCount > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
-											color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
+									child: Text(
+										_greyCount.toString(),
+										style: TextStyle(
+											color: CupertinoTheme.of(context).scaffoldBackgroundColor
 										),
-										padding: const EdgeInsets.all(8),
-										margin: EdgeInsets.only(bottom: 16, right: _whiteCount > 0 ? 0 : 16),
-										child: Container(
-											constraints: BoxConstraints(
-												minWidth: 24 * MediaQuery.of(context).textScaleFactor
-											),
-											child: Text(
-												_greyCount.toString(),
-												style: TextStyle(
-													color: CupertinoTheme.of(context).scaffoldBackgroundColor
-												),
-												textAlign: TextAlign.center
-											)
-										)
-									),
-									if (_whiteCount > 0) Container(
-										decoration: BoxDecoration(
-											borderRadius: (_greyCount > 0 || _redCount > 0) ? const BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
-											color: CupertinoTheme.of(context).primaryColor
-										),
-										padding: const EdgeInsets.all(8),
-										margin: const EdgeInsets.only(bottom: 16, right: 16),
-										child: Container(
-											constraints: BoxConstraints(
-												minWidth: 24 * MediaQuery.of(context).textScaleFactor
-											),
-											child: Text(
-												_whiteCount.toString(),
-												style: TextStyle(
-													color: CupertinoTheme.of(context).scaffoldBackgroundColor
-												),
-												textAlign: TextAlign.center
-											)
-										)
+										textAlign: TextAlign.center
 									)
-								]
+								)
+							),
+							if (_whiteCount > 0) Container(
+								decoration: BoxDecoration(
+									borderRadius: (_greyCount > 0 || _redCount > 0) ? const BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
+									color: CupertinoTheme.of(context).primaryColor
+								),
+								padding: const EdgeInsets.all(8),
+								margin: const EdgeInsets.only(bottom: 16, right: 16),
+								child: Container(
+									constraints: BoxConstraints(
+										minWidth: 24 * MediaQuery.of(context).textScaleFactor
+									),
+									child: Text(
+										_whiteCount.toString(),
+										style: TextStyle(
+											color: CupertinoTheme.of(context).scaffoldBackgroundColor
+										),
+										textAlign: TextAlign.center
+									)
+								)
 							)
-						),
-						onTap: () => widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0),
-						onLongPress: scrollToBottom
-					);
-				}
-				else {
-					return const SizedBox.shrink();
-				}
-			}
-		);
+						]
+					)
+				),
+				onTap: () => widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0),
+				onLongPress: scrollToBottom
+			);
+		}
+		else {
+			return const SizedBox.shrink();
+		}
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_slowScrollSubscription.cancel();
 	}
 }
