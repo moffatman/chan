@@ -831,6 +831,12 @@ class RefreshableListController<T extends Filterable> {
 	}
 	T? get lastVisibleItem {
 		if (scrollController?.hasOnePosition ?? false) {
+			if (_items.isNotEmpty &&
+					_items.first.cachedHeight != null &&
+					_items.first.cachedHeight! > scrollController!.position.pixels &&
+					_items.first.cachedHeight! > scrollController!.position.viewportDimension) {
+				return _items.first.item;
+			}
 			return _items.tryLastWhere((i) {
 				return (i.cachedOffset != null) &&
 							 ((i.cachedOffset! + i.cachedHeight!) < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
