@@ -563,8 +563,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
 		final lastVisibleItemId = widget.listController.lastVisibleItem?.id;
 		if (lastVisibleItemId == null || _filteredPosts == null) return false;
 		final youIds = widget.persistentState.youIds;
-		_redCount = _filteredPosts!.where((p) => p.id > widget.persistentState.lastSeenPostId! && p.span.referencedPostIds(p.board).any((id) => youIds.contains(id))).length;
-		_whiteCount = _filteredPosts!.where((p) => p.id > widget.persistentState.lastSeenPostId!).length;
+		final lastSeenPostId = widget.persistentState.lastSeenPostId ?? widget.persistentState.id;
+		_redCount = _filteredPosts!.where((p) => p.id > lastSeenPostId && p.span.referencedPostIds(p.board).any((id) => youIds.contains(id))).length;
+		_whiteCount = _filteredPosts!.where((p) => p.id >lastSeenPostId).length;
 		_greyCount = _filteredPosts!.where((p) => p.id > lastVisibleItemId).length - _whiteCount;
 		_lastLastVisibleItemId = lastVisibleItemId;
 		setState(() {});
