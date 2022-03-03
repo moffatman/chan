@@ -78,6 +78,22 @@ class _ThreadPageState extends State<ThreadPage> {
 				hiddenMD5sLength != lastHiddenMD5sLength) {
 			setState(() {});
 		}
+		if (persistentState.thread != lastThread) {
+			final _persistentState = persistentState;
+			Future.delayed(const Duration(milliseconds: 100), () {
+				if (persistentState == _persistentState && !_unnaturallyScrolling) {
+					final lastItem = _listController.lastVisibleItem;
+					if (lastItem != null) {
+						_persistentState.lastSeenPostId = max(_persistentState.lastSeenPostId ?? 0, lastItem.id);
+						_persistentState.save();
+						setState(() {});
+					}
+					else {
+						print('Failed to find last visible post after an update in $_persistentState');
+					}
+				}
+			});
+		}
 		lastThread = persistentState.thread;
 		lastHiddenPostIdsLength = persistentState.hiddenPostIds.length;
 		lastPostsMarkedAsYouLength = persistentState.postsMarkedAsYou.length;
@@ -565,7 +581,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
 		final youIds = widget.persistentState.youIds;
 		final lastSeenPostId = widget.persistentState.lastSeenPostId ?? widget.persistentState.id;
 		_redCount = _filteredPosts!.where((p) => p.id > lastSeenPostId && p.span.referencedPostIds(p.board).any((id) => youIds.contains(id))).length;
-		_whiteCount = _filteredPosts!.where((p) => p.id >lastSeenPostId).length;
+		_whiteCount = _filteredPosts!.where((p) => p.id > lastSeenPostId).length;
 		_greyCount = _filteredPosts!.where((p) => p.id > lastVisibleItemId).length - _whiteCount;
 		_lastLastVisibleItemId = lastVisibleItemId;
 		setState(() {});
@@ -579,10 +595,15 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
 		}
 	}
 
+	void _onLastSeenPostIdNotifier() {
+		_updateCounts();
+	}
+
 	@override
 	void initState() {
 		super.initState();
 		_slowScrollSubscription = widget.listController.slowScrollUpdates.listen(_onSlowScroll);
+		widget.persistentState.lastSeenPostIdNotifier.addListener(_onLastSeenPostIdNotifier);
 		if (widget.thread != null) {
 			_filteredPosts = widget.thread!.posts.where((p) => widget.filter.filter(p)?.type != FilterResultType.hide).toList();
 		}
@@ -594,6 +615,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
 		if (widget.persistentState != oldWidget.persistentState) {
 			_filteredPosts = null;
 			_lastLastVisibleItemId = null;
+			oldWidget.persistentState.lastSeenPostIdNotifier.removeListener(_onLastSeenPostIdNotifier);
+			widget.persistentState.lastSeenPostIdNotifier.addListener(_onLastSeenPostIdNotifier);
 		}
 		if (widget.thread != oldWidget.thread || widget.filter != oldWidget.filter) {
 			_waitForRebuildTimer?.cancel();
@@ -703,5 +726,6 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
 	void dispose() {
 		super.dispose();
 		_slowScrollSubscription.cancel();
+		widget.persistentState.lastSeenPostIdNotifier.removeListener(_onLastSeenPostIdNotifier);
 	}
 }
