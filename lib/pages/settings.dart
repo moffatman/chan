@@ -729,7 +729,10 @@ class SettingsAppearancePage extends StatelessWidget {
 											style: DefaultTextStyle.of(context).style,
 											child: Column(
 												children: [
-													_buildFakeThreadRow(contentFocus: false),
+													SizedBox(
+														height: 100,
+														child: _buildFakeThreadRow(contentFocus: false)
+													),
 													const SizedBox(height: 16),
 													Align(
 														alignment: Alignment.topLeft,
