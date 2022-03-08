@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:chan/models/board.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
@@ -390,7 +391,13 @@ class EffectiveSettings extends ChangeNotifier {
 
 	void updateContentSettings() async {
 		try {
-			final response = await Dio().get('$contentSettingsApiRoot/user/${_settings.userId}');
+			String platform = Platform.operatingSystem;
+			if (Platform.isIOS && (await isDevelopmentBuild())) {
+				platform += '-dev';
+			}
+			final response = await Dio().get('$contentSettingsApiRoot/user/${_settings.userId}', queryParameters: {
+				'platform': platform
+			});
 			_settings.contentSettings.images = response.data['images'];
 			_settings.contentSettings.nsfwBoards = response.data['nsfwBoards'];
 			_settings.contentSettings.nsfwImages = response.data['nsfwImages'];

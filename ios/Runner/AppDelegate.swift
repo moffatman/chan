@@ -23,7 +23,7 @@ import Flutter
         result(FlutterMethodNotImplemented)
       }
     })
-    let isOnMacChannel = FlutterMethodChannel(name: "com.moffatman.chan/isOnMac", binaryMessenger: controller.binaryMessenger)
+    let isOnMacChannel = FlutterMethodChannel(name: "com.moffatman.chan/apple", binaryMessenger: controller.binaryMessenger)
     isOnMacChannel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "isOnMac") {
@@ -35,6 +35,23 @@ import Flutter
             } else {
                 result(false)
             }
+        #endif
+      }
+      else if (call.method == "isDevelopmentBuild") {
+        #if targetEnvironment(simulator)
+            result(true)
+        #else
+        if let path = Bundle.main.path(forResource: "embedded", ofType: "mobileprovision") {
+          if NSData.init(contentsOfFile: path) != nil {
+            result(true)
+          }
+          else {
+            result(false)
+          }
+        }
+        else {
+          result(false)
+        }
         #endif
       }
       else {

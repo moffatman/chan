@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/gallery.dart';
-import 'package:chan/services/is_on_mac.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
