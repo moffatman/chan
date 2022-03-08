@@ -119,7 +119,7 @@ class ThreadRow extends StatelessWidget {
 						Icon(CupertinoIcons.archivebox, color: grey, size: 18),
 						const SizedBox(width: 4),
 					],
-					FittedBox(
+					if (settings.showTimeInCatalogStats) FittedBox(
 						fit: BoxFit.contain,
 							child: Row(
 							mainAxisSize: MainAxisSize.min,
@@ -129,7 +129,7 @@ class ThreadRow extends StatelessWidget {
 									const SizedBox(width: 4)
 								],
 								Text(_timeDiff(thread.time), style: TextStyle(color: otherMetadataColor)),
-								const SizedBox(width: 2),
+								const SizedBox(width: 4),
 							]
 						)
 					),
@@ -138,7 +138,6 @@ class ThreadRow extends StatelessWidget {
 						child: Row(
 							mainAxisSize: MainAxisSize.min,
 							children: [
-								const SizedBox(width: 6),
 								Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
 								const SizedBox(width: 4),
 								if ((latestReplyCount - unseenReplyCount) == 0 && countsUnreliable) const Text('--')
@@ -171,6 +170,47 @@ class ThreadRow extends StatelessWidget {
 			)
 		);
 		final borderRadius = contentFocus ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
+		final headerRow = [
+			if (settings.showNameInCatalog) ...[
+				TextSpan(
+					text: settings.filterProfanity(_thread.posts[0].name),
+					style: const TextStyle(fontWeight: FontWeight.w600)
+				),
+				const TextSpan(text: ' ')
+			],
+			if (settings.showFlagInCatalogHeader && _thread.flag != null) ...[
+				FlagSpan(_thread.flag!),
+				const TextSpan(text: ' '),
+				TextSpan(
+					text: _thread.flag!.name,
+					style: const TextStyle(
+						fontStyle: FontStyle.italic
+					)
+				),
+				const TextSpan(text: ' ')
+			],
+			if (settings.showTimeInCatalogHeader) ...[
+				TextSpan(
+					text: formatTime(_thread.time)
+				),
+				const TextSpan(text: ' ')
+			],
+			if (showBoardName || settings.showIdInCatalogHeader) TextSpan(
+				text: showBoardName ?
+					'/${_thread.board}/${_thread.id}' :
+					_thread.id.toString(),
+				style: const TextStyle(color: Colors.grey)
+			)
+		];
+		if (thread.title?.isNotEmpty == true) {
+			if (headerRow.isNotEmpty) {
+				headerRow.add(const TextSpan(text: '\n'));
+			}
+			headerRow.add(TextSpan(
+				text: settings.filterProfanity(_thread.title!),
+				style: const TextStyle(fontWeight: FontWeight.bold)
+			));
+		}
 		List<Widget> rowChildren() => [
 			if (_thread.attachment != null && settings.showImages(context, _thread.board)) Padding(
 				padding: const EdgeInsets.only(top: 8, bottom: 8),
@@ -243,46 +283,9 @@ class ThreadRow extends StatelessWidget {
 												avoidBuggyClippers: true,
 												maxLines: ((constraints.maxHeight - (DefaultTextStyle.of(context).style.fontSize ?? 17)) / (DefaultTextStyle.of(context).style.fontSize ?? 17)).lazyCeil()
 											),
-											preInjectRow: Text.rich(
+											preInjectRow: headerRow.isEmpty ? null : Text.rich(
 												TextSpan(
-													children: [
-														TextSpan(
-															children: [
-																if (settings.showNameInCatalog) ...[
-																	TextSpan(
-																		text: settings.filterProfanity(_thread.posts[0].name),
-																		style: const TextStyle(fontWeight: FontWeight.w600)
-																	),
-																	const TextSpan(text: ' ')
-																],
-																if (_thread.flag != null) ...[
-																	FlagSpan(_thread.flag!),
-																	const TextSpan(text: ' '),
-																	TextSpan(
-																		text: _thread.flag!.name,
-																		style: const TextStyle(
-																			fontStyle: FontStyle.italic
-																		)
-																	),
-																	const TextSpan(text: ' ')
-																],
-																TextSpan(
-																	text: formatTime(_thread.time)
-																),
-																const TextSpan(text: ' '),
-																TextSpan(
-																	text: showBoardName ?
-																		'/${_thread.board}/${_thread.id}' :
-																		_thread.id.toString(),
-																	style: const TextStyle(color: Colors.grey)
-																),
-																if (_thread.title != null) TextSpan(
-																	text: '\n' + settings.filterProfanity(_thread.title!),
-																	style: const TextStyle(fontWeight: FontWeight.bold)
-																)
-															]
-														)
-													]
+													children: headerRow
 												)
 											),
 											postInject: WidgetSpan(

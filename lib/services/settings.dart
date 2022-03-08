@@ -206,6 +206,14 @@ class SavedSettings extends HiveObject {
 	double replyBoxHeightOffset;
 	@HiveField(37)
 	bool blurThumbnails;
+	@HiveField(38)
+	bool showTimeInCatalogHeader;
+	@HiveField(39)
+	bool showTimeInCatalogStats;
+	@HiveField(40)
+	bool showIdInCatalogHeader;
+	@HiveField(41)
+	bool showFlagInCatalogHeader;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -245,6 +253,10 @@ class SavedSettings extends HiveObject {
 		this.androidGallerySavePath,
 		double? replyBoxHeightOffset,
 		bool? blurThumbnails,
+		bool? showTimeInCatalogHeader,
+		bool? showTimeInCatalogStats,
+		bool? showIdInCatalogHeader,
+		bool? showFlagInCatalogHeader,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -288,7 +300,11 @@ class SavedSettings extends HiveObject {
 		showAnimations = showAnimations ?? true,
 		imagesOnRight = imagesOnRight ?? false,
 		replyBoxHeightOffset = replyBoxHeightOffset ?? 0.0,
-		blurThumbnails = blurThumbnails ?? false;
+		blurThumbnails = blurThumbnails ?? false,
+		showTimeInCatalogHeader = showTimeInCatalogHeader ?? true,
+		showTimeInCatalogStats = showTimeInCatalogStats ?? true,
+		showIdInCatalogHeader = showIdInCatalogHeader ?? true,
+		showFlagInCatalogHeader = showFlagInCatalogHeader ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -585,6 +601,34 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get blurThumbnails => _settings.blurThumbnails;
 	set blurThumbnails(bool setting) {
 		_settings.blurThumbnails = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showTimeInCatalogHeader => _settings.showTimeInCatalogHeader;
+	set showTimeInCatalogHeader(bool setting) {
+		_settings.showTimeInCatalogHeader = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showTimeInCatalogStats => _settings.showTimeInCatalogStats;
+	set showTimeInCatalogStats(bool setting) {
+		_settings.showTimeInCatalogStats = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showIdInCatalogHeader => _settings.showIdInCatalogHeader;
+	set showIdInCatalogHeader(bool setting) {
+		_settings.showIdInCatalogHeader = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showFlagInCatalogHeader => _settings.showFlagInCatalogHeader;
+	set showFlagInCatalogHeader(bool setting) {
+		_settings.showFlagInCatalogHeader = setting;
 		_settings.save();
 		notifyListeners();
 	}

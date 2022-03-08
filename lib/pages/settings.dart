@@ -770,6 +770,46 @@ class SettingsAppearancePage extends StatelessWidget {
 																onChanged: (d) => settings.showNameInCatalog = d
 															)
 														]
+													),
+													Row(
+														children: [
+															const Text('Show exact time'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showTimeInCatalogHeader,
+																onChanged: (d) => settings.showTimeInCatalogHeader = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show relative time'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showTimeInCatalogStats,
+																onChanged: (d) => settings.showTimeInCatalogStats = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show ID'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showIdInCatalogHeader,
+																onChanged: (d) => settings.showIdInCatalogHeader = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show flag'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showFlagInCatalogHeader,
+																onChanged: (d) => settings.showFlagInCatalogHeader = d
+															)
+														]
 													)
 												]
 											)
