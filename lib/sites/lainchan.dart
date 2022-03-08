@@ -373,7 +373,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread) {
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? validate}) {
 		throw UnimplementedError();
 	}
 

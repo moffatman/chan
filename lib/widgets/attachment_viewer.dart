@@ -28,11 +28,18 @@ import 'package:video_player/video_player.dart';
 
 const deviceGalleryAlbumName = 'Chance';
 
-class AttachmentNotFoundException {
+class AttachmentNotFoundException implements Exception {
 	final Attachment attachment;
 	AttachmentNotFoundException(this.attachment);
 	@override
-	String toString() => 'Attachment not found: $attachment';
+	String toString() => 'Attachment not found';
+}
+
+class AttachmentNotArchivedException implements Exception {
+	final Attachment attachment;
+	AttachmentNotArchivedException(this.attachment);
+	@override
+	String toString() => 'Attachment not archived';
 }
 
 class AttachmentViewerController extends ChangeNotifier {
@@ -139,18 +146,20 @@ class AttachmentViewerController extends ChangeNotifier {
 				final archivedThread = await site.getThreadFromArchive(ThreadIdentifier(
 					board: attachment.board,
 					id: attachment.threadId!
-				));
-				for (final reply in archivedThread.posts) {
-					if (reply.attachment?.id == attachment.id) {
-						result = await site.client.head(reply.attachment!.url.toString(), options: Options(
-							validateStatus: (_) => true,
-							headers: context.read<ImageboardSite>().getHeaders(reply.attachment!.url)
-						));
-						if (result.statusCode == 200) {
-							return reply.attachment!.url;
-						}
+				), validate: (thread) async {
+					final post = thread.posts.tryFirstWhere((p) => p.attachment?.id == attachment.id);
+					if (post == null) {
+						throw AttachmentNotFoundException(attachment);
 					}
-				}
+					final _check = await site.client.head(post.attachment!.url.toString(), options: Options(
+						validateStatus: (_) => true,
+						headers: context.read<ImageboardSite>().getHeaders(post.attachment!.url)
+					));
+					if (_check.statusCode != 200) {
+						throw AttachmentNotArchivedException(attachment);
+					}
+				});
+				return archivedThread.posts.tryFirstWhere((p) => p.attachment?.id == attachment.id)!.attachment!.url;
 			}
 		}
 		if (result.statusCode == 404) {
@@ -579,7 +588,7 @@ class AttachmentViewer extends StatelessWidget {
 						if (controller.errorMessage != null) {
 							_child = Center(
 								child: ErrorMessageCard(controller.errorMessage!, remedies: {
-										'Retry': () => controller.loadFullAttachment(),
+										'Retry': () => controller.reloadFullAttachment(),
 										if (!controller.checkArchives) 'Try archives': () => controller.tryArchives()
 									}
 								)
@@ -717,7 +726,8 @@ class AttachmentViewer extends StatelessWidget {
 						),
 						if (controller.errorMessage != null) Center(
 							child: ErrorMessageCard(controller.errorMessage!, remedies: {
-								'Retry': () => controller.reloadFullAttachment()
+								'Retry': () => controller.reloadFullAttachment(),
+								if (!controller.checkArchives) 'Try archives': () => controller.tryArchives()
 							})
 						)
 						else if (controller.videoPlayerController != null) GestureDetector(

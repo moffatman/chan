@@ -67,7 +67,7 @@ class ImageboardArchiveException implements Exception {
 	Map<String, String> archiveErrors;
 	ImageboardArchiveException(this.archiveErrors);
 	@override
-	String toString() => archiveErrors.entries.map((e) => '${e.key}: ${e.value}').join(', ');
+	String toString() => archiveErrors.entries.map((e) => '${e.key}: ${e.value}').join('\n');
 }
 
 enum ImageboardAction {
@@ -293,7 +293,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			throw BoardNotFoundException(board);
 		}
 	}
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread) async {
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? validate}) async {
 		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {
 			try {
@@ -301,6 +301,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				if (thread_.attachment != null) {
 					await ensureCookiesMemoized(thread_.attachment!.thumbnailUrl);
 					await ensureCookiesMemoized(thread_.attachment!.url);
+				}
+				if (validate != null) {
+					await validate(thread_);
 				}
 				return thread_;
 			}
