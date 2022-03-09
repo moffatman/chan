@@ -215,6 +215,10 @@ class SavedSettings extends HiveObject {
 	bool showIdInCatalogHeader;
 	@HiveField(41)
 	bool showFlagInCatalogHeader;
+	@HiveField(42)
+	bool onlyShowFavouriteBoardsInSwitcher;
+	@HiveField(43)
+	bool useBoardSwitcherList;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -258,6 +262,8 @@ class SavedSettings extends HiveObject {
 		bool? showTimeInCatalogStats,
 		bool? showIdInCatalogHeader,
 		bool? showFlagInCatalogHeader,
+		bool? onlyShowFavouriteBoardsInSwitcher,
+		bool? useBoardSwitcherList,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -305,7 +311,9 @@ class SavedSettings extends HiveObject {
 		showTimeInCatalogHeader = showTimeInCatalogHeader ?? true,
 		showTimeInCatalogStats = showTimeInCatalogStats ?? true,
 		showIdInCatalogHeader = showIdInCatalogHeader ?? true,
-		showFlagInCatalogHeader = showFlagInCatalogHeader ?? true;
+		showFlagInCatalogHeader = showFlagInCatalogHeader ?? true,
+		onlyShowFavouriteBoardsInSwitcher = onlyShowFavouriteBoardsInSwitcher ?? false,
+		useBoardSwitcherList = useBoardSwitcherList ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -636,6 +644,20 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showFlagInCatalogHeader => _settings.showFlagInCatalogHeader;
 	set showFlagInCatalogHeader(bool setting) {
 		_settings.showFlagInCatalogHeader = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get onlyShowFavouriteBoardsInSwitcher => _settings.onlyShowFavouriteBoardsInSwitcher;
+	set onlyShowFavouriteBoardsInSwitcher(bool setting) {
+		_settings.onlyShowFavouriteBoardsInSwitcher = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get useBoardSwitcherList => _settings.useBoardSwitcherList;
+	set useBoardSwitcherList(bool setting) {
+		_settings.useBoardSwitcherList = setting;
 		_settings.save();
 		notifyListeners();
 	}

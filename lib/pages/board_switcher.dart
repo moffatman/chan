@@ -26,7 +26,7 @@ class BoardSwitcherPage extends StatefulWidget {
 class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	final _focusNode = FocusNode();
 	late List<ImageboardBoard> boards;
-	late List<ImageboardBoard> _filteredBoards;
+	String searchString = '';
 	String? errorMessage;
 	final scrollController = ScrollController();
 	final _backgroundColor = ValueNotifier<Color?>(null);
@@ -38,14 +38,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		super.initState();
 		boards = context.read<Persistence>().boards.values.toList();
 		scrollController.addListener(_onScroll);
-		final settings = context.read<EffectiveSettings>();
 		context.read<ImageboardSite>().getBoards().then((freshBoards) => setState(() {
 			boards = freshBoards;
-			_filteredBoards = freshBoards.where((b) => settings.showBoard(context, b.name)).toList();
-			_sortByFavourite();
 		}));
-		_filteredBoards = boards.where((b) => settings.showBoard(context, b.name)).toList();
-		_sortByFavourite();
 	}
 
 	double _getOverscroll() {
@@ -61,26 +56,48 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		_backgroundColor.value = CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(1.0 - max(0, _getOverscroll() / 50).clamp(0, 1));
 	}
 
-	void _sortByFavourite() {
-		final favsList = context.read<Persistence>().browserState.favouriteBoards;
-		if (widget.currentlyPickingFavourites) {
-			_filteredBoards.removeWhere((b) => favsList.contains(b.name));
+	List<ImageboardBoard> getFilteredBoards() {
+		final settings = context.read<EffectiveSettings>();
+		List<ImageboardBoard> _filteredBoards = boards.where((board) {
+			return board.name.toLowerCase().contains(searchString) || board.title.toLowerCase().contains(searchString);
+		}).toList();
+		mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
+			return a.name.length - b.name.length;
+		});
+		mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
+			return a.name.indexOf(searchString) - b.name.indexOf(searchString);
+		});
+		mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
+			return (b.name.contains(searchString) ? 1 : 0) - (a.name.contains(searchString) ? 1 : 0);
+		});
+		if (searchString.isEmpty) {
+			final favsList = context.read<Persistence>().browserState.favouriteBoards;
+			if (widget.currentlyPickingFavourites) {
+				_filteredBoards.removeWhere((b) => favsList.contains(b.name));
+			}
+			else {
+				final favs = {
+					for (final pair in favsList.asMap().entries)
+						pair.value: pair.key
+				};
+				mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
+					return (favs[a.name] ?? favs.length) - (favs[b.name] ?? favs.length);
+				});
+			}
 		}
-		else {
-			final favs = {
-				for (final pair in favsList.asMap().entries)
-					pair.value: pair.key
-			};
-			mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
-				return (favs[a.name] ?? favs.length) - (favs[b.name] ?? favs.length);
-			});
+		_filteredBoards = _filteredBoards.where((b) => settings.showBoard(context, b.name)).toList();
+		if (settings.onlyShowFavouriteBoardsInSwitcher) {
+			_filteredBoards = _filteredBoards.where((b) => context.read<Persistence>().browserState.favouriteBoards.contains(b.name)).toList();
 		}
+		return _filteredBoards;
 	}
 
 	@override
 	Widget build(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
 		_backgroundColor.value ??= CupertinoTheme.of(context).scaffoldBackgroundColor;
 		final browserState = context.watch<Persistence>().browserState;
+		final _filteredBoards = getFilteredBoards();
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
 			backgroundColor: Colors.transparent,
@@ -91,15 +108,16 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 						return SizedBox(
 							width: box.maxWidth * 0.75,
 							child: CupertinoTextField(
-								autofocus: context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus,
+								autofocus: settings.boardSwitcherHasKeyboardFocus,
 								autocorrect: false,
 								placeholder: 'Board...',
 								textAlign: TextAlign.center,
 								focusNode: _focusNode,
 								onTap: () {
-									context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus = true;
+									settings.boardSwitcherHasKeyboardFocus = true;
 								},
 								onSubmitted: (String board) {
+									final _filteredBoards = getFilteredBoards();
 									if (_filteredBoards.isNotEmpty) {
 										Navigator.of(context).pop(_filteredBoards.first);
 									}
@@ -107,25 +125,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										_focusNode.requestFocus();
 									}
 								},
-								onChanged: (String searchString) {
-									_filteredBoards = boards.where((board) {
-										return board.name.toLowerCase().contains(searchString) || board.title.toLowerCase().contains(searchString);
-									}).toList();
-									mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
-										return a.name.length - b.name.length;
+								onChanged: (String _searchString) {
+									setState(() {
+										searchString = _searchString;
 									});
-									mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
-										return a.name.indexOf(searchString) - b.name.indexOf(searchString);
-									});
-									mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
-										return (b.name.contains(searchString) ? 1 : 0) - (a.name.contains(searchString) ? 1 : 0);
-									});
-									if (searchString.isEmpty) {
-										_sortByFavourite();
-									}
-									final settings = context.read<EffectiveSettings>();
-									_filteredBoards = _filteredBoards.where((b) => settings.showBoard(context, b.name)).toList();
-									setState(() {});
 								}
 							)
 						);
@@ -133,7 +136,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				),
 				trailing: widget.currentlyPickingFavourites ? null : CupertinoButton(
 					padding: EdgeInsets.zero,
-					child: browserState.favouriteBoards.isEmpty ? const Icon(CupertinoIcons.star) : const Icon(CupertinoIcons.star_fill),
+					child: const Icon(CupertinoIcons.gear),
 					onPressed: () async {
 						await showCupertinoDialog(
 							barrierDismissible: true,
@@ -150,7 +153,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										child: Stack(
 											children: [
 												ReorderableList(
-													padding: const EdgeInsets.only(bottom: 64),
+													padding: const EdgeInsets.only(bottom: 128),
 													itemCount: browserState.favouriteBoards.length,
 													onReorder: (oldIndex, newIndex) {
 														if (oldIndex < newIndex) {
@@ -195,24 +198,51 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 															filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
 																child: Container(
 																color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.1),
-																child: CupertinoButton(
-																	child: Row(
-																		mainAxisAlignment: MainAxisAlignment.center,
-																		children: const [
-																			Icon(CupertinoIcons.add),
-																			Text(' Add board')
-																		]
-																	),
-																	onPressed: () async {
-																		final board = await Navigator.push<ImageboardBoard>(context, TransparentRoute(
-																			builder: (context) => const BoardSwitcherPage(currentlyPickingFavourites: true),
-																			showAnimations: context.read<EffectiveSettings>().showAnimations
-																		));
-																		if (board != null && !browserState.favouriteBoards.contains(board.name)) {
-																			browserState.favouriteBoards.add(board.name);
-																			setDialogState(() {});
-																		}
-																	}
+																child: Column(
+																	mainAxisSize: MainAxisSize.min,
+																	crossAxisAlignment: CrossAxisAlignment.stretch,
+																	children: [
+																		CupertinoButton(
+																			child: Row(
+																				mainAxisAlignment: MainAxisAlignment.center,
+																				children: const [
+																					Icon(CupertinoIcons.add),
+																					Text(' Add board')
+																				]
+																			),
+																			onPressed: () async {
+																				final board = await Navigator.push<ImageboardBoard>(context, TransparentRoute(
+																					builder: (context) => const BoardSwitcherPage(currentlyPickingFavourites: true),
+																					showAnimations: settings.showAnimations
+																				));
+																				if (board != null && !browserState.favouriteBoards.contains(board.name)) {
+																					browserState.favouriteBoards.add(board.name);
+																					setDialogState(() {});
+																				}
+																			}
+																		),
+																		CupertinoSegmentedControl<bool>(
+																			children: const {
+																				false: Text('All boards'),
+																				true: Text('Only favourites')
+																			},
+																			groupValue: settings.onlyShowFavouriteBoardsInSwitcher,
+																			onValueChanged: (setting) {
+																				settings.onlyShowFavouriteBoardsInSwitcher = setting;
+																			}
+																		),
+																		const SizedBox(height: 8),
+																		CupertinoSegmentedControl<bool>(
+																			children: const {
+																				false: Text('Grid'),
+																				true: Text('List')
+																			},
+																			groupValue: settings.useBoardSwitcherList,
+																			onValueChanged: (setting) {
+																				settings.useBoardSwitcherList = setting;
+																			}
+																		)
+																	]
 																)
 															)
 														)
@@ -231,7 +261,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							)
 						);
 						context.read<Persistence>().didUpdateBrowserState();
-						_sortByFavourite();
 						setState(() {});
 					}
 				)
@@ -248,7 +277,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							Navigator.pop(context);
 						}
 						else if (scrollController.position.isScrollingNotifier.value == true) {
-							context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus = false;
+							settings.boardSwitcherHasKeyboardFocus = false;
 						}
 					}
 				},
@@ -263,7 +292,53 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 						(_filteredBoards.isEmpty) ? const Center(
 							child: Text('No matching boards')
 						) : SafeArea(
-							child: GridView.extent(
+							child: settings.useBoardSwitcherList ? ListView.separated(
+								physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+								controller: scrollController,
+								padding: const EdgeInsets.only(top: 4, bottom: 4),
+								separatorBuilder: (context, i) => const SizedBox(height: 2),
+								itemCount: _filteredBoards.length,
+								itemBuilder: (context, i) {
+									final board = _filteredBoards[i];
+									return GestureDetector(
+										child: Container(
+											padding: const EdgeInsets.all(4),
+											height: 64,
+											decoration: BoxDecoration(
+												borderRadius: const BorderRadius.all(Radius.circular(4)),
+												color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
+											),
+											child: Stack(
+												fit: StackFit.expand,
+												children: [
+													Row(
+														crossAxisAlignment: CrossAxisAlignment.center,
+														children: [
+															const SizedBox(width: 16),
+															AutoSizeText(
+																'/${board.name}/ - ${board.title}',
+																maxFontSize: 20,
+																maxLines: 2,
+																textAlign: TextAlign.left
+															)
+														]
+													),
+													if (browserState.favouriteBoards.contains(board.name)) const Align(
+														alignment: Alignment.topRight,
+														child: Padding(
+															padding: EdgeInsets.only(top: 4, right: 4),
+															child: Icon(CupertinoIcons.star_fill, size: 15)
+														)
+													)
+												]
+											)
+										),
+										onTap: () {
+											Navigator.of(context).pop(board);
+										}
+									);
+								}
+							) : GridView.extent(
 								physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
 								controller: scrollController,
 								padding: const EdgeInsets.only(top: 4, bottom: 4),
