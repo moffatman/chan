@@ -233,6 +233,9 @@ class SiteLainchan extends ImageboardSite {
 		if (spoiler == true) {
 			fields['spoiler'] = 'on';
 		}
+		if (name.isNotEmpty) {
+			fields['name'] = name;
+		}
 		final response = await client.post(
 			Uri.https(baseUrl, '/post.php').toString(),
 			data: FormData.fromMap(fields),
