@@ -17,6 +17,7 @@ import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:dio/dio.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -550,7 +551,38 @@ class ReplyBoxState extends State<ReplyBox> {
 							crossAxisAlignment: CrossAxisAlignment.center,
 							children: [
 								Flexible(
-									child: SavedAttachmentThumbnail(file: attachment!)
+									child: GestureDetector(
+										child: Hero(
+											tag: _textFieldController,
+											child: SavedAttachmentThumbnail(file: attachment!)
+										),
+										onTap: () {
+											Navigator.of(context, rootNavigator: true).push(TransparentRoute(
+												showAnimations: context.read<EffectiveSettings>().showAnimations,
+												builder: (context) => ExtendedImageSlidePage(
+													resetPageDuration: const Duration(milliseconds: 100),
+													slidePageBackgroundHandler: (offset, size) {
+														final threshold = size.bottomRight(Offset.zero).distance / 3;
+														final factor = offset.distance / threshold;
+														return Colors.black.withOpacity(1 - factor.clamp(0, 1));
+													},
+													child: ExtendedImageSlidePageHandler(
+														child: GestureDetector(
+															onTap: () {
+																Navigator.of(context).pop();
+															},
+															child: SavedAttachmentThumbnail(file: attachment!)
+														),
+														heroBuilderForSlidingPage: (result) => Hero(
+															tag: _textFieldController,
+															child: result,
+															flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
+														),
+													)
+												)
+											));
+										}
+									)
 								),
 								const SizedBox(width: 8),
 								Column(
