@@ -65,6 +65,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	String? get attachmentExt => attachment?.path.split('.').last.toLowerCase();
 	bool _showOptions = false;
 	bool get showOptions => _showOptions && !loading;
+	bool _showAttachmentOptions = false;
+	bool get showAttachmentOptions => _showAttachmentOptions && !loading;
 	bool show = false;
 	String? _lastFoundUrl;
 	String? _proposedAttachmentUrl;
@@ -465,8 +467,53 @@ class ReplyBoxState extends State<ReplyBox> {
 		_captchaSolution = null;
 	}
 
-	Widget _buildOptions(BuildContext context) {
+	Widget _buildAttachmentOptions(BuildContext context) {
 		final board = context.watch<Persistence>().getBoard(widget.board);
+		return Container(
+			decoration: BoxDecoration(
+				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
+				color: CupertinoTheme.of(context).scaffoldBackgroundColor
+			),
+			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 10),
+			child: Row(
+				children: [
+					if (board.spoilers == true) Padding(
+						padding: const EdgeInsets.only(right: 8),
+						child: CupertinoButton(
+							padding: EdgeInsets.zero,
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									Icon(spoiler ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
+									const Text('Spoiler')
+								]
+							),
+							onPressed: () {
+								setState(() {
+									spoiler = !spoiler;
+								});
+							}
+						)
+					),
+					Flexible(
+						child: CupertinoTextField(
+							controller: _filenameController,
+							placeholder: attachment == null ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
+							placeholderStyle: TextStyle(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.7)),
+							maxLines: 1,
+							textCapitalization: TextCapitalization.none,
+							autocorrect: false,
+							keyboardAppearance: CupertinoTheme.of(context).brightness
+						)
+					),
+					const SizedBox(width: 8),
+					Text('.$attachmentExt')
+				]
+			)
+		);
+	}
+
+	Widget _buildOptions(BuildContext context) {
 		return Container(
 			decoration: BoxDecoration(
 				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
@@ -498,71 +545,40 @@ class ReplyBoxState extends State<ReplyBox> {
 					),
 					const SizedBox(width: 8),
 					Flexible(
-						child: (attachment != null) ? Column(
+						child: (attachment != null) ? Row(
+							mainAxisAlignment: MainAxisAlignment.center,
+							crossAxisAlignment: CrossAxisAlignment.center,
 							children: [
 								Flexible(
-									child: Row(
-										mainAxisSize: MainAxisSize.max,
-										mainAxisAlignment: MainAxisAlignment.center,
-										crossAxisAlignment: CrossAxisAlignment.center,
-										children: [
-											if (board.spoilers == true) Padding(
-												padding: const EdgeInsets.only(right: 8),
-												child: CupertinoButton(
-													padding: EdgeInsets.zero,
-													child: Row(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															Icon(spoiler ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
-															const Text('Spoiler')
-														]
-													),
-													onPressed: () {
-														setState(() {
-															spoiler = !spoiler;
-														});
-													}
-												)
-											),
-											SavedAttachmentThumbnail(file: attachment!),
-											CupertinoButton(
-												padding: EdgeInsets.zero,
-												child: const Icon(CupertinoIcons.xmark),
-												onPressed: () {
-													setState(() {
-														attachment = null;
-														_filenameController.clear();
-													});
-												}
-											)
-										]
-									)
+									child: SavedAttachmentThumbnail(file: attachment!)
 								),
-								const SizedBox(height: 4),
-								Flexible(
-									child: Column(
-										crossAxisAlignment: CrossAxisAlignment.start,
-										mainAxisAlignment: MainAxisAlignment.center,
-										children: [
-											Row(
-												children: [
-													Flexible(
-														child: CupertinoTextField(
-															controller: _filenameController,
-															placeholder: attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
-															placeholderStyle: TextStyle(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.7)),
-															maxLines: 1,
-															textCapitalization: TextCapitalization.none,
-															autocorrect: false,
-															keyboardAppearance: CupertinoTheme.of(context).brightness
-														)
-													),
-													const SizedBox(width: 8),
-													Text('.$attachmentExt')
-												]
-											)
-										]
-									)
+								const SizedBox(width: 8),
+								Column(
+									mainAxisAlignment: MainAxisAlignment.spaceBetween,
+									children: [
+										CupertinoButton(
+											padding: EdgeInsets.zero,
+											minSize: 30,
+											child: const Icon(CupertinoIcons.gear),
+											onPressed: () {
+												setState(() {
+													_showAttachmentOptions = !_showAttachmentOptions;
+												});
+											}
+										),
+										CupertinoButton(
+											padding: EdgeInsets.zero,
+											minSize: 30,
+											child: const Icon(CupertinoIcons.xmark),
+											onPressed: () {
+												setState(() {
+													attachment = null;
+													_showAttachmentOptions = false;
+													_filenameController.clear();
+												});
+											}
+										)
+									]
 								)
 							]
 						) : Center(
@@ -729,11 +745,20 @@ class ReplyBoxState extends State<ReplyBox> {
 			mainAxisSize: MainAxisSize.min,
 			children: [
 				Expander(
+					expanded: showAttachmentOptions && showOptions && show,
+					bottomSafe: true,
+					height: 55,
+					child: Focus(
+						descendantsAreFocusable: showAttachmentOptions && showOptions && show,
+						child: _buildAttachmentOptions(context)
+					)
+				),
+				Expander(
 					expanded: showOptions && show,
 					bottomSafe: true,
 					height: 100,
 					child: Focus(
-						descendantsAreFocusable: showOptions,
+						descendantsAreFocusable: showOptions && show,
 						child: _buildOptions(context)
 					)
 				),
