@@ -146,7 +146,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
 						challenge: 'noop',
 						response: '',
-						expiresAt: challenge!.expiresAt
+						expiresAt: challenge!.expiresAt,
+						alignedImage: null
 					));
 					return;
 				}
@@ -339,11 +340,24 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 							focusNode: _solutionNode,
 							autocorrect: false,
 							placeholder: 'Captcha text',
-							onSubmitted: (response) => widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
-								challenge: challenge!.challenge,
-								response: response,
-								expiresAt: challenge!.expiresAt
-							)),
+							onSubmitted: (response) async {
+								final recorder = ui.PictureRecorder();
+								final canvas = Canvas(recorder);
+								final width = challenge!.foregroundImage!.width;
+								final height = challenge!.foregroundImage!.height;
+								_Captcha4ChanCustomPainter(
+									backgroundImage: challenge!.backgroundImage!,
+									foregroundImage: challenge!.foregroundImage!,
+									backgroundSlide: backgroundSlide
+								).paint(canvas, Size(width.toDouble(), height.toDouble()));
+								final image = await recorder.endRecording().toImage(width, height);
+								widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
+									challenge: challenge!.challenge,
+									response: response,
+									expiresAt: challenge!.expiresAt,
+									alignedImage: image
+								));
+							},
 						)
 					)
 				]

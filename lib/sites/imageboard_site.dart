@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
@@ -129,10 +130,12 @@ class Chan4CustomCaptchaSolution extends CaptchaSolution {
 	final String response;
 	@override
 	final DateTime expiresAt;
+	final ui.Image? alignedImage;
 	Chan4CustomCaptchaSolution({
 		required this.challenge,
 		required this.response,
-		required this.expiresAt
+		required this.expiresAt,
+		required this.alignedImage
 	});
 	@override
 	String toString() => 'Chan4CustomCaptchaSolution(challenge: $challenge, response: $response)';

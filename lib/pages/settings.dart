@@ -876,6 +876,46 @@ class SettingsDataPage extends StatelessWidget {
 					)
 				],
 				const SizedBox(height: 16),
+				Row(
+					children: [
+						const Text('Contribute captcha data'),
+						const SizedBox(width: 8),
+						CupertinoButton(
+							minSize: 0,
+							padding: EdgeInsets.zero,
+							child: const Icon(CupertinoIcons.question_circle),
+							onPressed: () {
+								showCupertinoDialog<bool>(
+									context: context,
+									barrierDismissible: true,
+									builder: (_context) => CupertinoAlertDialog(
+										content: const Text('Send the captcha images you solve to a database to train an automated solver. No other information about your posts will be collected.'),
+										actions: [
+											CupertinoDialogAction(
+												child: const Text('OK'),
+												onPressed: () {
+													Navigator.of(_context).pop();
+												}
+											)
+										]
+									)
+								);
+							}
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('No'),
+						true: Text('Yes')
+					},
+					groupValue: settings.contributeCaptchas,
+					onValueChanged: (setting) {
+						settings.contributeCaptchas = setting;
+					}
+				),
+				const SizedBox(height: 16),
 				const Text('Cached media'),
 				const SettingsCachePanel(),
 				const SizedBox(height: 16),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/overscroll_modal.dart';
@@ -16,7 +17,8 @@ import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' as dio;
+import 'package:http_parser/http_parser.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +26,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
+
+const _captchaContributionServer = 'https://captcha.moffatman.com';
 
 class ReplyBox extends StatefulWidget {
 	final String board;
@@ -442,6 +446,54 @@ class ReplyBoxState extends State<ReplyBox> {
 				overrideFilename: overrideAttachmentFilename,
 				subject: _subjectFieldController.text
 			));
+			if (_captchaSolution is Chan4CustomCaptchaSolution) {
+				final solution = (_captchaSolution as Chan4CustomCaptchaSolution);
+				final settings = context.read<EffectiveSettings>();
+				settings.contributeCaptchas ??= await showCupertinoDialog<bool>(
+					context: context,
+					builder: (_context) => CupertinoAlertDialog(
+						title: const Text('Contribute captcha solutions?'),
+						content: const Text('The captcha images you solve will be collected to train an automated solver'),
+						actions: [
+							CupertinoDialogAction(
+								child: const Text('No'),
+								onPressed: () {
+									Navigator.of(_context).pop(false);
+								}
+							),
+							CupertinoDialogAction(
+								child: const Text('Yes'),
+								onPressed: () {
+									Navigator.of(_context).pop(true);
+								}
+							)
+						]
+					)
+				);
+				if (settings.contributeCaptchas == true) {
+					final bytes = await solution.alignedImage?.toByteData(format: ImageByteFormat.png);
+					if (bytes == null) {
+						print('Something went wrong converting the captcha image to bytes');
+					}
+					site.client.post(
+						_captchaContributionServer,
+						data: dio.FormData.fromMap({
+							'text': solution.response,
+							'image': dio.MultipartFile.fromBytes(
+								bytes!.buffer.asUint8List(),
+								filename: 'upload.png',
+								contentType: MediaType("image", "png")
+							)
+						}),
+						options: dio.Options(
+							validateStatus: (x) => true,
+							responseType: dio.ResponseType.plain
+						)
+					).then((response) {
+						print(response.data);
+					});
+				}
+			}
 			_textFieldController.clear();
 			_nameFieldController.clear();
 			_optionsFieldController.clear();
@@ -821,7 +873,7 @@ class ReplyBoxState extends State<ReplyBox> {
 								onPressed: () async {
 									try {
 										final dir = await (Directory(Persistence.temporaryDirectory.path + '/sharecache')).create(recursive: true);
-										final data = await context.read<ImageboardSite>().client.get(_proposedAttachmentUrl!, options: Options(responseType: ResponseType.bytes));
+										final data = await context.read<ImageboardSite>().client.get(_proposedAttachmentUrl!, options: dio.Options(responseType: dio.ResponseType.bytes));
 										final newFile = File(dir.path + DateTime.now().millisecondsSinceEpoch.toString() + '_' + _proposedAttachmentUrl!.split('/').last);
 										await newFile.writeAsBytes(data.data);
 										attachment = newFile;

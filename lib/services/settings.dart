@@ -219,6 +219,8 @@ class SavedSettings extends HiveObject {
 	bool onlyShowFavouriteBoardsInSwitcher;
 	@HiveField(43)
 	bool useBoardSwitcherList;
+	@HiveField(44)
+	bool? contributeCaptchas;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -264,6 +266,7 @@ class SavedSettings extends HiveObject {
 		bool? showFlagInCatalogHeader,
 		bool? onlyShowFavouriteBoardsInSwitcher,
 		bool? useBoardSwitcherList,
+		this.contributeCaptchas,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -658,6 +661,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get useBoardSwitcherList => _settings.useBoardSwitcherList;
 	set useBoardSwitcherList(bool setting) {
 		_settings.useBoardSwitcherList = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool? get contributeCaptchas => _settings.contributeCaptchas;
+	set contributeCaptchas(bool? setting) {
+		_settings.contributeCaptchas = setting;
 		_settings.save();
 		notifyListeners();
 	}
