@@ -93,7 +93,7 @@ class SiteLainchan extends ImageboardSite {
 				ext: ext,
 				board: board,
 				url: Uri.https(baseUrl, '/$board/src/$id$ext'),
-				thumbnailUrl: Uri.https(baseUrl, '/$board/thumb/$id.png'),
+				thumbnailUrl: Uri.https(baseUrl, '/$board/thumb/$id' + (data['ext'] == '.webm' ? '.jpg' : '.png')),
 				md5: data['md5'],
 				spoiler: data['spoiler'] == 1,
 				width: data['w'],
