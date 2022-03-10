@@ -36,6 +36,8 @@ class Attachment {
 	final int? height;
 	@HiveField(11)
 	final int? threadId;
+	@HiveField(12)
+	final int? sizeInBytes;
 	Attachment({
 		required this.type,
 		required this.board,
@@ -48,7 +50,8 @@ class Attachment {
 		bool? spoiler,
 		this.width,
 		this.height,
-		this.threadId
+		this.threadId,
+		this.sizeInBytes
 	}) : spoiler = spoiler ?? false;
 
 	bool? get isLandscape => (width == null || height == null) ? null : width! > height!;

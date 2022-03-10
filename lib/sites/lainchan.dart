@@ -98,7 +98,8 @@ class SiteLainchan extends ImageboardSite {
 				spoiler: data['spoiler'] == 1,
 				width: data['w'],
 				height: data['h'],
-				threadId: threadId
+				threadId: threadId,
+				sizeInBytes: data['fsize']
 			);
 		}
 		return null;
