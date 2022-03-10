@@ -114,7 +114,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		pageController.addListener(_onPageControllerUpdate);
 		_scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
 		final attachment = widget.attachments[currentIndex];
-		_getController(attachment).loadFullAttachment();
+		_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
 	}
 
 	@override
@@ -141,7 +141,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 			currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
 			if (context.read<EffectiveSettings>().autoloadAttachments) {
 				final attachment = widget.attachments[currentIndex];
-				_getController(attachment).loadFullAttachment();
+				_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
 			}
 		}
 	}
@@ -203,7 +203,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
 		if (context.read<EffectiveSettings>().autoloadAttachments) {
-			_getController(attachment).loadFullAttachment();
+			_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
 		}
 		if (milliseconds == 0) {
 			pageController.jumpToPage(index);
@@ -257,7 +257,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		if (!_animatingNow) {
 			final settings = context.read<EffectiveSettings>();
 			if (settings.autoloadAttachments) {
-				_getController(attachment).loadFullAttachment();
+				_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
 				if (index > 0) {
 					final previousAttachment = widget.attachments[index - 1];
 					_getController(previousAttachment).preloadFullAttachment();
@@ -626,7 +626,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																		semanticParentIds: widget.semanticParentIds
 																	),
 																	onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
-																		_getController(attachment).loadFullAttachment();
+																		_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
 																	}
 																)
 															);
