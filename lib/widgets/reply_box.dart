@@ -21,6 +21,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
 
@@ -286,6 +287,9 @@ class ReplyBoxState extends State<ReplyBox> {
 				print(file);
 				print(file.path);
 				String ext = file.path.split('.').last.toLowerCase();
+				if (ext == 'jpg' || ext == 'jpeg' || ext == 'heic') {
+					file = await FlutterExifRotation.rotateImage(path: file.path);
+				}
 				if (ext == 'heic') {
 					final heicPath = await HeicToJpg.convert(file.path);
 					if (heicPath == null) {
