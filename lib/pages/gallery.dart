@@ -668,7 +668,10 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													child: Align(
 														alignment: Alignment.bottomLeft,
 														child: Container(
-															margin: const EdgeInsets.all(16),
+															margin: showChrome ? EdgeInsets.only(
+																bottom: MediaQuery.of(context).size.height * 0.2 + 16 - (currentController.videoPlayerController == null ? 44 : 0),
+																left: 16
+															) : const EdgeInsets.all(16),
 															padding: const EdgeInsets.all(8),
 															decoration: const BoxDecoration(
 																borderRadius: BorderRadius.all(Radius.circular(8)),
