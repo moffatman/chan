@@ -18,6 +18,7 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -263,7 +264,8 @@ class SettingsPage extends StatelessWidget {
 				_SettingsPageButton(
 					title: 'Behavior Settings',
 					pageBuilder: (context) => SettingsBehaviorPage(
-						realSite: realSite
+						realSite: realSite,
+						realPersistence: realPersistence
 					)
 				),
 				Divider(
@@ -305,8 +307,10 @@ class SettingsPage extends StatelessWidget {
 
 class SettingsBehaviorPage extends StatelessWidget {
 	final ImageboardSite realSite;
+	final Persistence realPersistence;
 	const SettingsBehaviorPage({
 		required this.realSite,
+		required this.realPersistence,
 		Key? key
 	}) : super(key: key);
 
@@ -319,7 +323,33 @@ class SettingsBehaviorPage extends StatelessWidget {
 				SettingsFilterPanel(
 					initialConfiguration: settings.filterConfiguration,
 				),
-				const SizedBox(height: 32),
+				const SizedBox(height: 16),
+				const Text('Image filter'),
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: Row(
+						children: [
+							Text('Ignoring ${realPersistence.browserState.hiddenImageMD5s.length} images'),
+							const Spacer(),
+							CupertinoButton.filled(
+								padding: const EdgeInsets.all(16),
+								onPressed: () async {
+									final md5sBefore = realPersistence.browserState.hiddenImageMD5s;
+									await Navigator.of(context).push(FullWidthCupertinoPageRoute(
+										showAnimations: settings.showAnimations,
+										builder: (context) => SettingsImageFilterPage(
+											browserState: realPersistence.browserState
+										)
+									));
+									if (!setEquals(md5sBefore, realPersistence.browserState.hiddenImageMD5s)) {
+										realPersistence.didUpdateBrowserState();
+									}
+								},
+								child: const Text('Configure')
+							)
+						]
+					)
+				),
 				if (realSite.getLoginSystemName() != null) ...[
 					Text(realSite.getLoginSystemName()!),
 					const SizedBox(height: 16),
@@ -355,6 +385,46 @@ class SettingsBehaviorPage extends StatelessWidget {
 					}
 				),
 				const SizedBox(height: 32)
+			]
+		);
+	}
+}
+
+class SettingsImageFilterPage extends StatefulWidget {
+	final PersistentBrowserState browserState;
+	const SettingsImageFilterPage({
+		required this.browserState,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	createState() => _SettingsImageFilterPageState();
+}
+
+class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
+	late final TextEditingController controller;
+
+	@override
+	void initState() {
+		super.initState();
+		controller = TextEditingController(text: widget.browserState.hiddenImageMD5s.join('\n'));
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		return _SettingsPage(
+			title: 'Image Filter Settings',
+			children: [
+				const Text('One image MD5 per line'),
+				const SizedBox(height: 8),
+				CupertinoTextField(
+					controller: controller,
+					onChanged: (s) {
+						widget.browserState.setHiddenImageMD5s(s.split('\n').where((x) => x.isNotEmpty));
+					},
+					minLines: 10,
+					maxLines: 10
+				)
 			]
 		);
 	}

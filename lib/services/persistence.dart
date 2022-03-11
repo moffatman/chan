@@ -521,4 +521,18 @@ class PersistentBrowserState {
 		hiddenImageMD5s.remove(md5);
 		imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
 	}
+
+	void setHiddenImageMD5s(Iterable<String> md5s) {
+		hiddenImageMD5s.clear();
+		hiddenImageMD5s.addAll(md5s.map((md5) {
+			switch (md5.length % 3) {
+				case 1:
+					return md5 + '==';
+				case 2:
+					return md5 + '=';
+			}
+			return md5;
+		}));
+		imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
+	}
 }
