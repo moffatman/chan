@@ -237,6 +237,9 @@ class SiteLainchan extends ImageboardSite {
 		if (name.isNotEmpty) {
 			fields['name'] = name;
 		}
+		if (options.isNotEmpty) {
+			fields['email'] = options;
+		}
 		final response = await client.post(
 			Uri.https(baseUrl, '/post.php').toString(),
 			data: FormData.fromMap(fields),

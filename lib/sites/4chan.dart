@@ -429,6 +429,7 @@ class Site4Chan extends ImageboardSite {
 				'mode': 'regist',
 				'pwd': password,
 				'name': name,
+				'email': options,
 				if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
 				else if (captchaSolution is Chan4CustomCaptchaSolution) ...{
 					't-challenge': captchaSolution.challenge,
