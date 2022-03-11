@@ -283,9 +283,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				}
 				return post;
 			}
-			catch(e) {
+			catch(e, st) {
 				if (e is! BoardNotFoundException) {
 					errorMessages[archive.name] = e.toStringDio();
+					print(e);
+					print(st);
 				}
 			}
 		}

@@ -148,7 +148,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				width: int.parse(data['media']['media_w']),
 				height: int.parse(data['media']['media_h']),
 				threadId: int.tryParse(data['thread_num']),
-				sizeInBytes: int.tryParse(data['media_size'])
+				sizeInBytes: int.tryParse(data['media']['media_size'])
 			);
 		}
 		return null;
