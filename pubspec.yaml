@@ -155,7 +155,7 @@ dependency_overrides:
   extended_image:
     git:
       url: https://github.com/moffatman/extended_image.git
-      ref: chan_master
+      ref: chan_forked_flutter
   extended_image_library:
     git:
       url: https://github.com/moffatman/extended_image_library.git
