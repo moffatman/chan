@@ -37,11 +37,13 @@ class _SliderBuilderState extends State<SliderBuilder> {
 		..onUpdate = _handleDragUpdate
 		..onEnd = _handleDragEnd
 		..onCancel = _handleDragCancel
-		..team = _team;
+		..team = _team
+		..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
 		_team.captain = _recognizingRecognizer;
 		_claimingRecognizer = WeakHorizontalDragGestureRecognizer(weakness: 2, sign: -1, debugOwner: this)
 		..onStart = (e) {}
-		..team = _team;
+		..team = _team
+		..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
 	}
 
 	void _handleDragUpdate(DragUpdateDetails details) {

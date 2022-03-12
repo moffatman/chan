@@ -396,7 +396,8 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 		..onStart = _handleDragStart
 		..onUpdate = _handleDragUpdate
 		..onEnd = _handleDragEnd
-		..onCancel = _handleDragCancel;
+		..onCancel = _handleDragCancel
+		..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
 	}
 
 	@override

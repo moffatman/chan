@@ -51,13 +51,20 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	GlobalKey<_ScalerBlurrerState>? _touchGlobalKey;
 	Offset? _touchStart;
 	OverlayEntry? _touchEntry;
-	late final recognizer = LongPressGestureRecognizer(
-		duration: kLongPressTimeout ~/ 2,
-		postAcceptSlopTolerance: 99999
-	)
-	..onLongPressStart = _onLongPressStart
-	..onLongPressMoveUpdate = _onLongPressMoveUpdate
-	..onLongPressEnd = _onLongPressEnd;
+	late final LongPressGestureRecognizer recognizer;
+
+	@override
+	void initState() {
+		super.initState();
+		recognizer = LongPressGestureRecognizer(
+			duration: kLongPressTimeout ~/ 2,
+			postAcceptSlopTolerance: 99999
+		)
+		..onLongPressStart = _onLongPressStart
+		..onLongPressMoveUpdate = _onLongPressMoveUpdate
+		..onLongPressEnd = _onLongPressEnd
+		..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
+	}
 
 	void _onLongPressStart(LongPressStartDetails details) {
 		if (_touchEntry != null) {
