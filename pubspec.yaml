@@ -144,7 +144,7 @@ dependency_overrides:
   extended_image:
     git:
       url: https://github.com/moffatman/extended_image.git
-      ref: trackpad_gestures
+      ref: master
   extended_image_library:
     git:
       url: https://github.com/moffatman/extended_image_library.git
