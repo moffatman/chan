@@ -310,8 +310,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: chan_master
-      resolved-ref: fd7f78c009b58eab91df475d04d7fb98717c4b7f
+      ref: chan_forked_flutter
+      resolved-ref: "01f18d55c1f36731e0fea824fc41f3fab60b2e4a"
       url: "https://github.com/moffatman/extended_image.git"
     source: git
     version: "6.3.2"
