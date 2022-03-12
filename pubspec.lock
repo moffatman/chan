@@ -271,8 +271,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: trackpad_gestures
-      resolved-ref: "42aa1089adf6df7fa5908b9a03e06d0500d78e8b"
+      ref: master
+      resolved-ref: "2616c9c6e0e0371ed7aaa47e40adbe8d0c7ec6e0"
       url: "https://github.com/moffatman/extended_image.git"
     source: git
     version: "6.0.1"
