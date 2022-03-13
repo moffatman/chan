@@ -757,7 +757,7 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 	@override
 	Widget build(BuildContext context) {
 		return MouseRegion(
-			onEnter: (event) {
+			onHover: (event) {
 				_mouseExitTimer?.cancel();
 				context.read<EffectiveSettings>().systemMousePresent = true;
 				context.read<EffectiveSettings>()._runAppResumeCallbacks();
