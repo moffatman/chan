@@ -152,7 +152,7 @@ class DoubleTapDragGestureRecognizer extends GestureRecognizer {
   ///
   ///  * [kPrimaryButton], the button this callback responds to.
   ///  * [GestureDetector.onDoubleTap], which exposes this callback.
-  GestureDoubleTapCallback? onDoubleTap;
+  GestureDoubleTapDragUpdateCallback? onDoubleTapDone;
 
   GestureDoubleTapDragUpdateCallback? onDoubleTapDrag;
 
@@ -180,7 +180,7 @@ class DoubleTapDragGestureRecognizer extends GestureRecognizer {
       switch (event.buttons) {
         case kPrimaryButton:
           if (onDoubleTapDown == null &&
-              onDoubleTap == null &&
+              onDoubleTapDone == null &&
               onDoubleTapCancel == null) {
             return false;
 					}
@@ -241,7 +241,7 @@ class DoubleTapDragGestureRecognizer extends GestureRecognizer {
         _registerFirstTap(tracker);
 			}
       else {
-        _registerSecondTap(tracker);
+        _registerSecondTap(tracker, event);
 			}
     } else if (event is PointerMoveEvent) {
       if (_firstTap == tracker) {
@@ -332,12 +332,21 @@ class DoubleTapDragGestureRecognizer extends GestureRecognizer {
     _firstTap = tracker;
   }
 
-  void _registerSecondTap(_TapTracker tracker) {
+  void _registerSecondTap(_TapTracker tracker, PointerUpEvent event) {
     _firstTap!.entry.resolve(GestureDisposition.accepted);
     tracker.entry.resolve(GestureDisposition.accepted);
     _freezeTracker(tracker);
     _trackers.remove(tracker.pointer);
-    _checkUp(tracker.initialButtons);
+    if (tracker.initialButtons == kPrimaryButton) {
+      if (onDoubleTapDone != null) {
+        invokeCallback<void>('onDoubleTap', () => onDoubleTapDone!(DoubleTapDragUpdateDetails(
+          globalPosition: event.position,
+          localPosition: event.localPosition,
+          offsetFromOrigin: event.position - tracker._initialGlobalPosition,
+          localOffsetFromOrigin: event.localPosition - tracker._initialLocalPosition
+        )));
+      }
+    }
     _reset();
   }
 
@@ -359,13 +368,6 @@ class DoubleTapDragGestureRecognizer extends GestureRecognizer {
       _doubleTapTimer!.cancel();
       _doubleTapTimer = null;
     }
-  }
-
-  void _checkUp(int buttons) {
-    assert(buttons == kPrimaryButton);
-    if (onDoubleTap != null) {
-      invokeCallback<void>('onDoubleTap', onDoubleTap!);
-		}
   }
 
   void _checkCancel() {

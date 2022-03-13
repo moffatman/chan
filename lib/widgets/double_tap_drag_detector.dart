@@ -5,7 +5,7 @@ class DoubleTapDragDetector extends StatefulWidget {
 	final Widget child;
 	final bool Function()? shouldStart;
 	final GestureDoubleTapDragUpdateCallback? onDoubleTapDrag;
-	final VoidCallback? onDoubleTapDragEnd;
+	final GestureDoubleTapDragUpdateCallback? onDoubleTapDragEnd;
 
 	const DoubleTapDragDetector({
 		required this.child,
@@ -22,15 +22,15 @@ class DoubleTapDragDetector extends StatefulWidget {
 class _DoubleTapDragDetectorState extends State<DoubleTapDragDetector> {
 	late final recognizer = DoubleTapDragGestureRecognizer()
 		..onDoubleTapDrag = _onUpdate
-		..onDoubleTap = _onEnd
+		..onDoubleTapDone = _onEnd
 		..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
 
 	void _onUpdate(DoubleTapDragUpdateDetails details) {
 		widget.onDoubleTapDrag?.call(details);
 	}
 
-	void _onEnd() {
-		widget.onDoubleTapDragEnd?.call();
+	void _onEnd(DoubleTapDragUpdateDetails details) {
+		widget.onDoubleTapDragEnd?.call(details);
 	}
 
 	@override

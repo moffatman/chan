@@ -522,6 +522,32 @@ class AttachmentViewer extends StatelessWidget {
 				}
 			});
 		}
+		void _onDoubleTap(ExtendedImageGestureState state) {
+			final old = state.gestureDetails!;
+			if ((old.totalScale ?? 1) > 1) {
+				state.gestureDetails = GestureDetails(
+					offset: Offset.zero,
+					totalScale: 1,
+					actionType: ActionType.zoom
+				);
+			}
+			else {
+				double autozoomScale = 2.0;
+				if (attachment.width != null && attachment.height != null) {
+					double screenAspectRatio = MediaQuery.of(context).size.width / MediaQuery.of(context).size.height;
+					double attachmentAspectRatio = attachment.width! / attachment.height!;
+					double fillZoomScale = screenAspectRatio / attachmentAspectRatio;
+					autozoomScale = max(autozoomScale, max(fillZoomScale, 1 / fillZoomScale));
+				}
+				autozoomScale = min(autozoomScale, 5);
+				final center = Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2);
+				state.gestureDetails = GestureDetails(
+					offset: (state.pointerDownPosition! * autozoomScale - center).scale(-1, -1),
+					totalScale: autozoomScale,
+					actionType: ActionType.zoom
+				);
+			}
+		}
 		_buildChild(bool useRealGestureKey) => ExtendedImage(
 			image: image,
 			extendedImageGestureKey: useRealGestureKey ? controller.gestureKey : null,
@@ -535,32 +561,7 @@ class AttachmentViewer extends StatelessWidget {
 			height: size?.height ?? double.infinity,
 			enableLoadState: true,
 			handleLoadingProgress: true,
-			onDoubleTap: (state) {
-				final old = state.gestureDetails!;
-				if ((old.totalScale ?? 1) > 1) {
-					state.gestureDetails = GestureDetails(
-						offset: Offset.zero,
-						totalScale: 1,
-						actionType: ActionType.zoom
-					);
-				}
-				else {
-					double autozoomScale = 2.0;
-					if (attachment.width != null && attachment.height != null) {
-						double screenAspectRatio = MediaQuery.of(context).size.width / MediaQuery.of(context).size.height;
-						double attachmentAspectRatio = attachment.width! / attachment.height!;
-						double fillZoomScale = screenAspectRatio / attachmentAspectRatio;
-						autozoomScale = max(autozoomScale, max(fillZoomScale, 1 / fillZoomScale));
-					}
-					autozoomScale = min(autozoomScale, 5);
-					final center = Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2);
-					state.gestureDetails = GestureDetails(
-						offset: (state.pointerDownPosition! * autozoomScale - center).scale(-1, -1),
-						totalScale: autozoomScale,
-						actionType: ActionType.zoom
-					);
-				}
-			},
+			onDoubleTap: _onDoubleTap,
 			loadStateChanged: (loadstate) {
 				// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback
 				if (!controller.cacheCompleted) {
@@ -665,7 +666,10 @@ class AttachmentViewer extends StatelessWidget {
 					actionType: ActionType.zoom
 				);
 			},
-			onDoubleTapDragEnd: () {
+			onDoubleTapDragEnd: (details) {
+				if (details.localOffsetFromOrigin.distance < 1) {
+					_onDoubleTap(controller.gestureKey.currentState!);
+				}
 				controller._gestureDetailsOnDoubleTapDragStart = null;
 			},
 			child: CupertinoContextMenu(
