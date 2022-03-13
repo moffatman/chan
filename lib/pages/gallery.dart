@@ -14,6 +14,7 @@ import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/physics.dart';
@@ -514,7 +515,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												onPressed: currentController.canShare && !currentController.isDownloaded ? () async {
 													await currentController.download();
 													showToast(context: context, message: 'Downloaded ${currentAttachment.filename}', icon: CupertinoIcons.cloud_download);
-												 } : null
+												} : null
 											),
 											StreamBuilder(
 												stream: context.watch<Persistence>().savedAttachmentsNotifier,
@@ -606,28 +607,35 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														itemCount: widget.attachments.length,
 														itemBuilder: (context, index) {
 															final attachment = widget.attachments[index];
-															return AnimatedBuilder(
-																animation: _getController(attachment),
-																builder: (context, _) => GestureDetector(
-																	child: AttachmentViewer(
-																		controller: _getController(attachment),
-																		onScaleChanged: (scale) {
-																			if (scale > 1 && !_hideRotateButton) {
-																				setState(() {
-																					_hideRotateButton = true;
-																				});
-																			}
-																			else if (scale <= 1 && _hideRotateButton) {
-																				setState(() {
-																					_hideRotateButton = false;
-																				});
-																			}
-																		},
-																		semanticParentIds: widget.semanticParentIds
-																	),
-																	onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
-																		_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
-																	}
+															return TransformedMediaQuery(
+																transformation: (data) => data.copyWith(
+																	gestureSettings: DeviceGestureSettings(
+																		touchSlop: (data.gestureSettings.touchSlop ?? kTouchSlop) * 2
+																	)
+																),
+																child: AnimatedBuilder(
+																	animation: _getController(attachment),
+																	builder: (context, _) => GestureDetector(
+																		child: AttachmentViewer(
+																			controller: _getController(attachment),
+																			onScaleChanged: (scale) {
+																				if (scale > 1 && !_hideRotateButton) {
+																					setState(() {
+																						_hideRotateButton = true;
+																					});
+																				}
+																				else if (scale <= 1 && _hideRotateButton) {
+																					setState(() {
+																						_hideRotateButton = false;
+																					});
+																				}
+																			},
+																			semanticParentIds: widget.semanticParentIds
+																		),
+																		onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
+																			_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
+																		}
+																	)
 																)
 															);
 														}
