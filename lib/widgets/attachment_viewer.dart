@@ -15,6 +15,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/circular_loading_indicator.dart';
+import 'package:chan/widgets/double_tap_drag_detector.dart';
 import 'package:chan/widgets/rx_stream_builder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -71,6 +72,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	String? _overlayText;
 	bool _isDisposed = false;
 	bool _isDownloaded = false;
+	GestureDetails? _gestureDetailsOnDoubleTapDragStart;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -648,57 +650,76 @@ class AttachmentViewer extends StatelessWidget {
 				);
 			}
 		);
-		return CupertinoContextMenu(
-			actions: [
-					CupertinoContextMenuAction(
-						child: const Text('Download'),
-						trailingIcon: CupertinoIcons.cloud_download,
-						onPressed: () async {
-							Navigator.of(context, rootNavigator: true).pop();
-							await controller.download();
-							showToast(context: context, message: 'Downloaded ${controller.attachment.filename}', icon: CupertinoIcons.cloud_download);
-						}
-					),
-					CupertinoContextMenuAction(
-						child: const Text('Share'),
-						trailingIcon: CupertinoIcons.share,
-						onPressed: () async {
-							final offset = (controller.contextMenuShareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-							final size = controller.contextMenuShareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-							await controller.share((offset != null && size != null) ? offset & size : null);
-							Navigator.of(context, rootNavigator: true).pop();
-						},
-						key: controller.contextMenuShareButtonKey
-					),
-					CupertinoContextMenuAction(
-						child: const Text('Search archives'),
-						trailingIcon: Icons.image_search,
-						onPressed: () {
-							openSearch(context: context, query: ImageboardArchiveSearchQuery(boards: [attachment.board], md5: attachment.md5));
-						}
-					),
-					CupertinoContextMenuAction(
-						child: const Text('Search Google'),
-						trailingIcon: Icons.image_search,
-						onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
-							'image_url': attachment.url.toString(),
-							'safe': 'off'
-						}))
-					),
-					CupertinoContextMenuAction(
-						child: const Text('Search Yandex'),
-						trailingIcon: Icons.image_search,
-						onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
-							'rpt': 'imageview',
-							'url': attachment.url.toString()
-						}))
+		return DoubleTapDragDetector(
+			shouldStart: () => controller.isFullResolution,
+			onDoubleTapDrag: (details) {
+				final state = controller.gestureKey.currentState!;
+				controller._gestureDetailsOnDoubleTapDragStart ??= state.gestureDetails;
+				Offset centerTarget = state.pointerDownPosition!;
+				centerTarget = (centerTarget - controller._gestureDetailsOnDoubleTapDragStart!.offset!) / controller._gestureDetailsOnDoubleTapDragStart!.totalScale!;
+				final scale = max(1.0, min(5.0, state.gestureDetails!.totalScale! + (0.01 * details.localDelta.dy)));
+				final screenCenter = Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2);
+				state.gestureDetails = GestureDetails(
+					offset: (centerTarget * scale - screenCenter).scale(-1, -1),
+					totalScale: scale,
+					actionType: ActionType.zoom
+				);
+			},
+			onDoubleTapDragEnd: () {
+				controller._gestureDetailsOnDoubleTapDragStart = null;
+			},
+			child: CupertinoContextMenu(
+				actions: [
+						CupertinoContextMenuAction(
+							child: const Text('Download'),
+							trailingIcon: CupertinoIcons.cloud_download,
+							onPressed: () async {
+								Navigator.of(context, rootNavigator: true).pop();
+								await controller.download();
+								showToast(context: context, message: 'Downloaded ${controller.attachment.filename}', icon: CupertinoIcons.cloud_download);
+							}
+						),
+						CupertinoContextMenuAction(
+							child: const Text('Share'),
+							trailingIcon: CupertinoIcons.share,
+							onPressed: () async {
+								final offset = (controller.contextMenuShareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+								final size = controller.contextMenuShareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+								await controller.share((offset != null && size != null) ? offset & size : null);
+								Navigator.of(context, rootNavigator: true).pop();
+							},
+							key: controller.contextMenuShareButtonKey
+						),
+						CupertinoContextMenuAction(
+							child: const Text('Search archives'),
+							trailingIcon: Icons.image_search,
+							onPressed: () {
+								openSearch(context: context, query: ImageboardArchiveSearchQuery(boards: [attachment.board], md5: attachment.md5));
+							}
+						),
+						CupertinoContextMenuAction(
+							child: const Text('Search Google'),
+							trailingIcon: Icons.image_search,
+							onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
+								'image_url': attachment.url.toString(),
+								'safe': 'off'
+							}))
+						),
+						CupertinoContextMenuAction(
+							child: const Text('Search Yandex'),
+							trailingIcon: Icons.image_search,
+							onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
+								'rpt': 'imageview',
+								'url': attachment.url.toString()
+							}))
+						)
+				],
+				child: _buildChild(true),
+				previewBuilder: (context, animation, child) => IgnorePointer(
+					child: AspectRatio(
+						aspectRatio: (attachment.width != null && attachment.height != null) ? (attachment.width! / attachment.height!) : 1,
+						child: _buildChild(false)
 					)
-			],
-			child: _buildChild(true),
-			previewBuilder: (context, animation, child) => IgnorePointer(
-				child: AspectRatio(
-					aspectRatio: (attachment.width != null && attachment.height != null) ? (attachment.width! / attachment.height!) : 1,
-					child: _buildChild(false)
 				)
 			)
 		);
