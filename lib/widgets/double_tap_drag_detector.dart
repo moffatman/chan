@@ -22,7 +22,8 @@ class DoubleTapDragDetector extends StatefulWidget {
 class _DoubleTapDragDetectorState extends State<DoubleTapDragDetector> {
 	late final recognizer = DoubleTapDragGestureRecognizer()
 		..onDoubleTapDrag = _onUpdate
-		..onDoubleTap = _onEnd;
+		..onDoubleTap = _onEnd
+		..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
 
 	void _onUpdate(DoubleTapDragUpdateDetails details) {
 		widget.onDoubleTapDrag?.call(details);
