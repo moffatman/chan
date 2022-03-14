@@ -33,6 +33,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	int _pointersDownCount = 0;
 	bool _popping = false;
 
+	bool isPhoneSoftwareKeyboard() {
+		 return MediaQuery.of(context).viewInsets.bottom > 100;
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -50,7 +54,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	}
 
 	void _onScroll() {
-		if (_focusNode.hasFocus) {
+		if (_focusNode.hasFocus && isPhoneSoftwareKeyboard()) {
 			_focusNode.unfocus();
 		}
 		_backgroundColor.value = CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(1.0 - max(0, _getOverscroll() / 50).clamp(0, 1));
@@ -115,6 +119,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								focusNode: _focusNode,
 								onTap: () {
 									settings.boardSwitcherHasKeyboardFocus = true;
+									scrollController.jumpTo(scrollController.position.pixels);
 								},
 								onSubmitted: (String board) {
 									final _filteredBoards = getFilteredBoards();
@@ -276,7 +281,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							_popping = true;
 							Navigator.pop(context);
 						}
-						else if (scrollController.position.isScrollingNotifier.value == true) {
+						else if (scrollController.position.isScrollingNotifier.value == true && isPhoneSoftwareKeyboard()) {
 							settings.boardSwitcherHasKeyboardFocus = false;
 						}
 					}
