@@ -16,7 +16,7 @@ enum HoverPopupStyle {
 class HoverPopup<T> extends StatefulWidget {
 	final Widget child;
 	final Widget? popup;
-	final Widget Function(T? value)? popupBuilder;
+	final Widget Function(T? value, bool isWithinScalerBlurrer)? popupBuilder;
 	final HoverPopupStyle style;
 	final T Function()? setup;
 	final T? Function(T?)? softSetup;
@@ -90,7 +90,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 				child: IgnorePointer(
 					child: Center(
 						child: _ScalerBlurrer(
-							child: (widget.popupBuilder?.call(_value) ?? widget.popup)!,
+							child: (widget.popupBuilder?.call(_value, true) ?? widget.popup)!,
 							key: _touchGlobalKey
 						)
 					)
@@ -159,7 +159,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 										constraints: BoxConstraints(
 											maxWidth: MediaQuery.of(context).size.width / 2
 										),
-										child: widget.popupBuilder?.call(_value) ?? widget.popup
+										child: widget.popupBuilder?.call(_value, false) ?? widget.popup
 									)
 								);
 							}
@@ -174,7 +174,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 								child: _FloatingHoverPopup(
 									key: _globalKey,
 									scale: scale,
-									child: (widget.popupBuilder?.call(_value) ?? widget.popup)!,
+									child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!,
 									anchor: widget.anchor,
 									initialMousePosition: event.position,
 								)

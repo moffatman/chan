@@ -31,12 +31,12 @@ class PopupAttachment extends StatelessWidget {
 		return HoverPopup<AttachmentViewerController>(
 			style: HoverPopupStyle.floating,
 			child: child,
-			popupBuilder: (controller) => AnimatedBuilder(
+			popupBuilder: (controller, isWithinScalerBlurrer) => AnimatedBuilder(
 				animation: controller!,
 				builder: (context, child) => AttachmentViewer(
 					controller: controller,
 					semanticParentIds: const [-1, -1],
-					fill: false
+					fill: isWithinScalerBlurrer
 				)
 			),
 			setup: () => _makeController(context),
