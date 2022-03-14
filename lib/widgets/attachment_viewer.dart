@@ -460,11 +460,13 @@ class AttachmentViewer extends StatelessWidget {
 	final Iterable<int> semanticParentIds;
 	final ValueChanged<double>? onScaleChanged;
 	final bool fill;
+	final VoidCallback? onTap;
 
 	const AttachmentViewer({
 		required this.controller,
 		required this.semanticParentIds,
 		this.onScaleChanged,
+		this.onTap,
 		this.fill = true,
 		Key? key
 	}) : super(key: key);
@@ -561,7 +563,6 @@ class AttachmentViewer extends StatelessWidget {
 			height: size?.height ?? double.infinity,
 			enableLoadState: true,
 			handleLoadingProgress: true,
-			onDoubleTap: _onDoubleTap,
 			loadStateChanged: (loadstate) {
 				// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback
 				if (!controller.cacheCompleted) {
@@ -653,6 +654,7 @@ class AttachmentViewer extends StatelessWidget {
 		);
 		return DoubleTapDragDetector(
 			shouldStart: () => controller.isFullResolution,
+			onSingleTap: onTap,
 			onDoubleTapDrag: (details) {
 				final state = controller.gestureKey.currentState!;
 				controller._gestureDetailsOnDoubleTapDragStart ??= state.gestureDetails;
