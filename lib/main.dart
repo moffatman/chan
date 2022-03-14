@@ -141,41 +141,9 @@ class _ChanAppState extends State<ChanApp> {
 								builder: (BuildContext context) {
 									final settings = context.watch<EffectiveSettings>();
 									final mq = MediaQuery.of(context);
-									CupertinoThemeData theme = CupertinoThemeData(
-										brightness: Brightness.light,
-										scaffoldBackgroundColor: settings.lightTheme.backgroundColor,
-										barBackgroundColor: settings.lightTheme.barColor,
-										primaryColor: settings.lightTheme.primaryColor,
-										textTheme: CupertinoTextThemeData(
-											textStyle: TextStyle(
-												fontFamily: '.SF Pro Text',
-												fontSize: 17.0,
-												letterSpacing: -0.41,
-												fontWeight: mq.boldText ? FontWeight.w500 : null,
-												color: settings.lightTheme.primaryColor
-											),
-											actionTextStyle: TextStyle(color: settings.lightTheme.secondaryColor),
-											navActionTextStyle: TextStyle(color: settings.lightTheme.primaryColor)
-										)
-									);
+									CupertinoThemeData theme = settings.makeLightTheme(context);
 									if (settings.whichTheme == Brightness.dark) {
-										theme = CupertinoThemeData(
-											brightness: Brightness.dark,
-											scaffoldBackgroundColor: settings.darkTheme.backgroundColor,
-											barBackgroundColor: settings.darkTheme.barColor,
-											primaryColor: settings.darkTheme.primaryColor,
-											textTheme: CupertinoTextThemeData(
-												textStyle: TextStyle(
-													fontFamily: '.SF Pro Text',
-													fontSize: 17.0,
-													letterSpacing: -0.41,
-													fontWeight: mq.boldText ? FontWeight.w500 : null,
-													color: settings.darkTheme.primaryColor
-												),
-												actionTextStyle: TextStyle(color: settings.darkTheme.secondaryColor),
-												navActionTextStyle: TextStyle(color: settings.darkTheme.primaryColor)
-											)
-										);
+										theme = settings.makeDarkTheme(context);
 									}
 									return MediaQuery(
 										data: mq.copyWith(boldText: false),

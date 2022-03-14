@@ -491,7 +491,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				return ((details?.pointerCount ?? 0) == 0) && widget.allowScroll && (a >= 0.25 && a <= 0.75);
 			},
 			child: CupertinoTheme(
-				data: const CupertinoThemeData(brightness: Brightness.dark, primaryColor: Colors.white),
+				data: context.watch<EffectiveSettings>().makeDarkTheme(context),
 				child: CupertinoPageScaffold(
 					backgroundColor: Colors.transparent,
 					navigationBar: showChrome ? CupertinoNavigationBar(
