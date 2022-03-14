@@ -658,10 +658,10 @@ class AttachmentViewer extends StatelessWidget {
 			onDoubleTapDrag: (details) {
 				final state = controller.gestureKey.currentState!;
 				controller._gestureDetailsOnDoubleTapDragStart ??= state.gestureDetails;
-				Offset centerTarget = state.pointerDownPosition!;
-				centerTarget = (centerTarget - controller._gestureDetailsOnDoubleTapDragStart!.offset!) / controller._gestureDetailsOnDoubleTapDragStart!.totalScale!;
-				final scale = max(1.0, min(5.0, state.gestureDetails!.totalScale! + (0.01 * details.localDelta.dy)));
 				final screenCenter = Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height / 2);
+				Offset centerTarget = screenCenter;
+				centerTarget = (centerTarget - controller._gestureDetailsOnDoubleTapDragStart!.offset!) / controller._gestureDetailsOnDoubleTapDragStart!.totalScale!;
+				final scale = max(1.0, min(5.0, state.gestureDetails!.totalScale! * (1 +  (0.005 * details.localDelta.dy))));
 				state.gestureDetails = GestureDetails(
 					offset: (centerTarget * scale - screenCenter).scale(-1, -1),
 					totalScale: scale,
