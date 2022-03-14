@@ -56,6 +56,7 @@ class _FasterSnappingPageScrollPhysics extends ScrollPhysics {
 
 class GalleryPage extends StatefulWidget {
 	final List<Attachment> attachments;
+	final Map<Attachment, int> replyCounts;
 	final Map<Attachment, Uri> overrideSources;
 	final Attachment? initialAttachment;
 	final bool initiallyShowChrome;
@@ -65,6 +66,7 @@ class GalleryPage extends StatefulWidget {
 
 	const GalleryPage({
 		required this.attachments,
+		this.replyCounts = const {},
 		this.overrideSources = const {},
 		required this.initialAttachment,
 		required this.semanticParentIds,
@@ -404,11 +406,35 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																		border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
 																	),
 																	margin: const EdgeInsets.all(4),
-																	child: AttachmentThumbnail(
-																		gaplessPlayback: true,
-																		attachment: widget.attachments[index],
-																		width: _thumbnailSize,
-																		height: _thumbnailSize
+																	child: Stack(
+																		children: [
+																			AttachmentThumbnail(
+																				gaplessPlayback: true,
+																				attachment: widget.attachments[index],
+																				width: _thumbnailSize,
+																				height: _thumbnailSize
+																			),
+																			if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) SizedBox(
+																				width: _thumbnailSize,
+																				child: Center(
+																					child: Container(
+																						decoration: BoxDecoration(
+																							borderRadius: BorderRadius.circular(4),
+																							color: Colors.black54
+																						),
+																						padding: const EdgeInsets.all(4),
+																						child: Text(
+																							widget.replyCounts[widget.attachments[index]]!.toString(),
+																							style: const TextStyle(
+																								color: Colors.white70,
+																								fontSize: 14,
+																								fontWeight: FontWeight.bold
+																							)
+																						)
+																					)
+																				)
+																			)
+																		]
 																	)
 																)
 															);
@@ -451,12 +477,33 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
 															),
 															margin: const EdgeInsets.all(4),
-															child: AttachmentThumbnail(
-																gaplessPlayback: true,
-																attachment: widget.attachments[index],
-																width: 200,
-																height: 200,
-																hero: null
+															child: Stack(
+																children: [
+																	AttachmentThumbnail(
+																		gaplessPlayback: true,
+																		attachment: widget.attachments[index],
+																		width: 200,
+																		height: 200,
+																		hero: null
+																	),
+																	if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) Center(
+																		child: Container(
+																			decoration: BoxDecoration(
+																				borderRadius: BorderRadius.circular(8),
+																				color: Colors.black54
+																			),
+																			padding: const EdgeInsets.all(8),
+																			child: Text(
+																				widget.replyCounts[widget.attachments[index]]!.toString(),
+																				style: const TextStyle(
+																					color: Colors.white70,
+																					fontSize: 38,
+																					fontWeight: FontWeight.bold
+																				)
+																			)
+																		)
+																	)
+																]
 															)
 														)
 													);
@@ -746,6 +793,7 @@ Future<Attachment?> showGallery({
 	required BuildContext context,
 	required List<Attachment> attachments,
 	Map<Attachment, Uri> overrideSources = const {},
+	Map<Attachment, int> replyCounts = const {},
 	required Iterable<int> semanticParentIds,
 	Attachment? initialAttachment,
 	bool initiallyShowChrome = false,
@@ -755,6 +803,7 @@ Future<Attachment?> showGallery({
 		builder: (BuildContext _context) {
 			return GalleryPage(
 				attachments: attachments,
+				replyCounts: replyCounts,
 				overrideSources: overrideSources,
 				initialAttachment: initialAttachment,
 				initiallyShowChrome: initiallyShowChrome,

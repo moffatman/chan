@@ -221,6 +221,8 @@ class SavedSettings extends HiveObject {
 	bool useBoardSwitcherList;
 	@HiveField(44)
 	bool? contributeCaptchas;
+	@HiveField(45)
+	bool showReplyCountsInGallery;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -267,6 +269,7 @@ class SavedSettings extends HiveObject {
 		bool? onlyShowFavouriteBoardsInSwitcher,
 		bool? useBoardSwitcherList,
 		this.contributeCaptchas,
+		bool? showReplyCountsInGallery,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -316,7 +319,8 @@ class SavedSettings extends HiveObject {
 		showIdInCatalogHeader = showIdInCatalogHeader ?? true,
 		showFlagInCatalogHeader = showFlagInCatalogHeader ?? true,
 		onlyShowFavouriteBoardsInSwitcher = onlyShowFavouriteBoardsInSwitcher ?? false,
-		useBoardSwitcherList = useBoardSwitcherList ?? false;
+		useBoardSwitcherList = useBoardSwitcherList ?? false,
+		showReplyCountsInGallery = showReplyCountsInGallery ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -707,6 +711,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool? get contributeCaptchas => _settings.contributeCaptchas;
 	set contributeCaptchas(bool? setting) {
 		_settings.contributeCaptchas = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showReplyCountsInGallery => _settings.showReplyCountsInGallery;
+	set showReplyCountsInGallery(bool setting) {
+		_settings.showReplyCountsInGallery = setting;
 		_settings.save();
 		notifyListeners();
 	}

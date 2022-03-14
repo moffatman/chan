@@ -198,6 +198,9 @@ class _BoardPageState extends State<BoardPage> {
 											showGallery(
 												context: context,
 												attachments: attachments,
+												replyCounts: {
+													for (final thread in _listController.items.where((_) => _.attachment != null)) thread.attachment!: thread.replyCount
+												},
 												initialAttachment: attachments.firstWhere((a) => a.id == nextThreadWithImage.attachment!.id),
 												onChange: (attachment) {
 													_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
@@ -325,6 +328,9 @@ class _BoardPageState extends State<BoardPage> {
 																showGallery(
 																	context: context,
 																	attachments: attachments,
+																	replyCounts: {
+																		for (final thread in _listController.items.where((_) => _.attachment != null)) thread.attachment!: thread.replyCount
+																	},
 																	initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 																	onChange: (attachment) {
 																		_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);

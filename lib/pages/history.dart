@@ -53,6 +53,9 @@ class _HistoryPageState extends State<HistoryPage> {
 										showGallery(
 											context: context,
 											attachments: attachments,
+											replyCounts: {
+												for (final item in _listController.items.where((_) => _.thread?.attachment != null)) item.thread!.attachment!: item.thread!.replyCount
+											},
 											initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 											onChange: (attachment) {
 												_listController.animateTo((p) => p.thread?.attachment?.id == attachment.id);

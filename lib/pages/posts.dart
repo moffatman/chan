@@ -75,6 +75,9 @@ class _PostsPageState extends State<PostsPage> {
 											showGallery(
 												context: context,
 												attachments: attachments,
+												replyCounts: {
+													for (final reply in replies.where((_) => _.attachment != null)) reply.attachment!: reply.replyIds.length
+												},
 												initialAttachment: attachment,
 												semanticParentIds: ctx.read<PostSpanZoneData>().stackIds,
 												onChange: (attachment) {

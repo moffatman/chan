@@ -153,6 +153,9 @@ class _SavedPageState extends State<SavedPage> {
 												showGallery(
 													context: context,
 													attachments: attachments,
+													replyCounts: {
+														for (final item in _threadListController.items.where((_) => _.thread?.attachment != null)) item.thread!.attachment!: item.thread!.replyCount
+													},
 													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 													onChange: (attachment) {
 														_threadListController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
@@ -337,10 +340,13 @@ class _SavedPageState extends State<SavedPage> {
 											}
 										},
 										onThumbnailTap: (initialAttachment) {
-											final attachments = _postListController.items.where((_) => _.thread.attachment != null).map((_) => _.thread.attachment!).toList();
+											final attachments = _postListController.items.where((_) => _.post.attachment != null).map((_) => _.post.attachment!).toList();
 											showGallery(
 												context: context,
 												attachments: attachments,
+												replyCounts: {
+													for (final item in _postListController.items.where((_) => _.post.attachment != null)) item.post.attachment!: item.post.replyIds.length
+												},
 												initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 												onChange: (attachment) {
 													_postListController.animateTo((p) => p.thread.attachment?.id == attachment.id);

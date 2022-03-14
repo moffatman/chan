@@ -215,6 +215,9 @@ class _ThreadPageState extends State<ThreadPage> {
 		showGallery(
 			context: context,
 			attachments: attachments,
+			replyCounts: {
+				for (final post in persistentState.thread!.posts.where((_) => _.attachment != null)) post.attachment!: post.replyIds.length
+			},
 			initiallyShowChrome: initiallyShowChrome,
 			initialAttachment: (initialAttachment == null) ? null : attachments.firstWhere((a) => a.id == initialAttachment.id),
 			onChange: (attachment) {

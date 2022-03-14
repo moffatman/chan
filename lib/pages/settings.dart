@@ -659,6 +659,19 @@ class SettingsAppearancePage extends StatelessWidget {
 					}
 				),
 				const SizedBox(height: 32),
+				const Text('Show reply counts in gallery'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('No'),
+						true: Text('Yes')
+					},
+					groupValue: settings.showReplyCountsInGallery,
+					onValueChanged: (newValue) {
+						settings.showReplyCountsInGallery = newValue;
+					}
+				),
+				const SizedBox(height: 32),
 				const Text('Catalog Layout'),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<bool>(
