@@ -12,10 +12,10 @@ class ScrollingDebuggingPage extends StatefulWidget {
 	createState() => _ScrollingDebuggingPage();
 }
 
-class _FakeItem implements Filterable {
+class FakeItem implements Filterable {
 	@override
 	final int id;
-	const _FakeItem(this.id);
+	const FakeItem(this.id);
 	@override
 	String? getFilterFieldText(String fieldName) => null;
 
@@ -30,7 +30,7 @@ class _FakeItem implements Filterable {
 }
 
 class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
-	final controller = RefreshableListController<_FakeItem>();
+	final controller = RefreshableListController<FakeItem>();
 	@override
 	Widget build(BuildContext context) {
 		return CupertinoPageScaffold(
@@ -43,12 +43,12 @@ class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
 					}
 				)
 			),
-			child: RefreshableList<_FakeItem>(
+			child: RefreshableList<FakeItem>(
 				id: 'debuggingList',
 				controller: controller,
 				itemBuilder: (context, item) => ExpensiveWidget(id: item.id),
 				listUpdater: () async {
-					return List.generate(100000, (i) => _FakeItem(i));
+					return List.generate(100000, (i) => FakeItem(i));
 				}
 			)
 		);

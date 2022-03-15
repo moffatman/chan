@@ -158,14 +158,13 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 		if (updatingNow) {
 			return;
 		}
-		_footerShakeAnimation.forward(from: 0);
 		try {
 			setState(() {
 				errorMessage = null;
 				errorType = null;
 				updatingNow = true;
 			});
-			final newData = await widget.listUpdater();
+			final newData = (await Future.wait([widget.listUpdater(), Future<List<T>?>.delayed(const Duration(milliseconds: 100))])).first;
 			resetTimer();
 			lastUpdateTime = DateTime.now();
 			if (newData != null) {
@@ -186,6 +185,17 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 					nextUpdateTime = null;
 				}
 			}
+		}
+		if (widget.controller?.scrollController?.positions.length == 1 && widget.controller?.scrollController?.position.isScrollingNotifier.value == true) {
+			final completer = Completer<void>();
+			void listener() {
+				if (widget.controller!.scrollController!.position.isScrollingNotifier.value == false) {
+					completer.complete();
+				}
+			}
+			widget.controller!.scrollController!.position.isScrollingNotifier.addListener(listener);
+			await Future.any([completer.future, Future.delayed(const Duration(seconds: 3))]);
+			widget.controller?.scrollController?.position.isScrollingNotifier.removeListener(listener);
 		}
 		updatingNow = false;
 		if (mounted) {
@@ -268,6 +278,10 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				// Don't auto open filtered values after clearing it before
 				_showFilteredValues = false;
 			}
+			final shakeAnimation = CurvedAnimation(
+				curve: Curves.easeInOutCubic,
+				parent: _footerShakeAnimation
+			);
 			return NotificationListener<ScrollNotification>(
 				key: ValueKey(widget.id),
 				onNotification: (notification) {
@@ -466,7 +480,28 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 									)
 								)
 								else if (widget.footer != null && !widget.disableUpdates) SliverToBoxAdapter(
-									child: widget.footer
+									child: GestureDetector(
+										behavior: HitTestBehavior.opaque,
+										onTap: updatingNow ? null : () {
+											Future.delayed(const Duration(milliseconds: 17), () {
+												widget.controller?.scrollController?.animateTo(
+													widget.controller!.scrollController!.position.maxScrollExtent,
+													duration: const Duration(milliseconds: 250),
+													curve: Curves.ease
+												);
+											});
+											_footerShakeAnimation.forward(from: 0);
+											update();
+										},
+										child: AnimatedBuilder(
+											animation: shakeAnimation,
+											builder: (context, child) => Transform.scale(
+												scale: 1.0 - 0.2*sin(pi * shakeAnimation.value),
+												child: child
+											),
+											child: widget.footer
+										)
+									)
 								)
 								else if (widget.disableUpdates) SliverSafeArea(
 									top: false,
@@ -485,10 +520,9 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 											errorMessage: errorMessage,
 											remedy: widget.remedies[errorType]?.call(context, update),
 											overscrollFactor: widget.controller?.overscrollFactor,
-											shakeAnimation: CurvedAnimation(
-												curve: Curves.easeInOutCubic,
-												parent: _footerShakeAnimation
-											)
+											pointerDownNow: () {
+												return _pointerDownCount > 0;
+											}
 										)
 									)
 								)
@@ -529,7 +563,7 @@ class RefreshableListFooter extends StatelessWidget {
 	final DateTime? nextUpdateTime;
 	final Widget? remedy;
 	final ValueListenable<double>? overscrollFactor;
-	final Animation shakeAnimation;
+	final bool Function() pointerDownNow;
 	const RefreshableListFooter({
 		required this.updater,
 		required this.updatingNow,
@@ -538,7 +572,7 @@ class RefreshableListFooter extends StatelessWidget {
 		this.errorMessage,
 		this.remedy,
 		this.overscrollFactor,
-		required this.shakeAnimation,
+		required this.pointerDownNow,
 		Key? key
 	}) : super(key: key);
 
@@ -549,7 +583,7 @@ class RefreshableListFooter extends StatelessWidget {
 			onTap: updatingNow ? null : updater,
 			child: Container(
 				color: errorMessage != null ? Colors.orange.withOpacity(0.5) : null,
-				padding: const EdgeInsets.all(16),
+				padding: const EdgeInsets.all(1),
 				child: Center(
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
@@ -562,53 +596,61 @@ class RefreshableListFooter extends StatelessWidget {
 								const SizedBox(height: 16),
 								remedy!
 							],
-							if (overscrollFactor != null) AnimatedBuilder(
-								animation: shakeAnimation,
-								builder: (context, child) => Transform.scale(
-									//padding: EdgeInsets.only(left: 50 + sin(shakeAnimation.value * pi * 3) * 50, right: 50),
-									scale: 0.5 + (0.5 - shakeAnimation.value).abs(),
-									child: child
-								),
-								child: Container(
-									padding: const EdgeInsets.only(top: 16),
-									constraints: const BoxConstraints(
-										maxWidth: 100
-									),
-									child: ClipRRect(
-										borderRadius: const BorderRadius.all(Radius.circular(8)),
-										child: Stack(
-											children: [
-												if (nextUpdateTime != null && lastUpdateTime != null) TimedRebuilder(
-													interval: const Duration(seconds: 1),
-													builder: (context) {
-														final now = DateTime.now();
-														return LinearProgressIndicator(
-															value: updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds,
-															color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
-															backgroundColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.2),
-															minHeight: 8
-														);
-													}
-												),
-												ValueListenableBuilder(
-													valueListenable: overscrollFactor!,
-													builder: (context, double value, child) => TweenAnimationBuilder(
-														tween: Tween<double>(begin: 0, end: value),
-														duration: const Duration(milliseconds: 50),
-														builder: (context, double smoothedValue, child) => LinearProgressIndicator(
-														value: updatingNow ? null : smoothedValue,
-															backgroundColor: Colors.transparent,
-															color: CupertinoTheme.of(context).primaryColor,
-															minHeight: 8
+							if (overscrollFactor != null) SizedBox(
+								height: updatingNow ? 64 : 0,
+								child: OverflowBox(
+									maxHeight: 100,
+									alignment: Alignment.topCenter,
+									child: ValueListenableBuilder(
+										valueListenable: overscrollFactor!,
+										builder: (context, double value, child) => TweenAnimationBuilder(
+											tween: Tween<double>(begin: 0, end: value),
+											duration: const Duration(milliseconds: 50),
+											curve: Curves.ease,
+											builder: (context, double smoothedValue, child) => Stack(
+												alignment: Alignment.topCenter,
+												clipBehavior: Clip.none,
+												children: [
+													Positioned(
+														top: 0,
+														child: Container(
+															padding: const EdgeInsets.only(top: 32),
+															constraints: const BoxConstraints(
+																maxWidth: 100
+															),
+															child: ClipRRect(
+																borderRadius: const BorderRadius.all(Radius.circular(8)),
+																child: Stack(
+																	children: [
+																		if (nextUpdateTime != null && lastUpdateTime != null) TimedRebuilder(
+																			interval: const Duration(seconds: 1),
+																			builder: (context) {
+																				final now = DateTime.now();
+																				return LinearProgressIndicator(
+																					value: updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds,
+																					color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
+																					backgroundColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.2),
+																					minHeight: 8
+																				);
+																			}
+																		),
+																		LinearProgressIndicator(
+																			value: (updatingNow) ? null : (pointerDownNow() ? smoothedValue : 0),
+																			backgroundColor: Colors.transparent,
+																			color: CupertinoTheme.of(context).primaryColor,
+																			minHeight: 8
+																		)
+																	]
+																)
+															)
 														)
 													)
-												)
-											]
+												]
+											)
 										)
 									)
 								)
-							),
-							const SizedBox(height: 4)
+							)
 						]
 					)
 				)
