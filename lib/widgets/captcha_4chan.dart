@@ -346,7 +346,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 								final width = challenge!.foregroundImage!.width;
 								final height = challenge!.foregroundImage!.height;
 								_Captcha4ChanCustomPainter(
-									backgroundImage: challenge!.backgroundImage!,
+									backgroundImage: challenge!.backgroundImage,
 									foregroundImage: challenge!.foregroundImage!,
 									backgroundSlide: backgroundSlide
 								).paint(canvas, Size(width.toDouble(), height.toDouble()));
