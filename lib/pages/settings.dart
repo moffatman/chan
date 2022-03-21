@@ -723,6 +723,24 @@ class SettingsAppearancePage extends StatelessWidget {
 																					size = Size(d, size.height);
 																				});
 																			}
+																		),
+																		CupertinoButton(
+																			padding: EdgeInsets.zero,
+																			child: const Icon(CupertinoIcons.minus),
+																			onPressed: size.width <= 100 ? null : () {
+																				setDialogState(() {
+																					size = Size(size.width - 1, size.height);
+																				});
+																			}
+																		),
+																		CupertinoButton(
+																			padding: EdgeInsets.zero,
+																			child: const Icon(CupertinoIcons.plus),
+																			onPressed: size.width >= 600 ? null : () {
+																				setDialogState(() {
+																					size = Size(size.width + 1, size.height);
+																				});
+																			}
 																		)
 																	]
 																),
@@ -737,6 +755,24 @@ class SettingsAppearancePage extends StatelessWidget {
 																			onChanged: (d) {
 																				setDialogState(() {
 																					size = Size(size.width, d);
+																				});
+																			}
+																		),
+																		CupertinoButton(
+																			padding: EdgeInsets.zero,
+																			child: const Icon(CupertinoIcons.minus),
+																			onPressed: size.height <= 100 ? null : () {
+																				setDialogState(() {
+																					size = Size(size.width, size.height - 1);
+																				});
+																			}
+																		),
+																		CupertinoButton(
+																			padding: EdgeInsets.zero,
+																			child: const Icon(CupertinoIcons.plus),
+																			onPressed: size.height >= 600 ? null : () {
+																				setDialogState(() {
+																					size = Size(size.width, size.height + 1);
 																				});
 																			}
 																		)
