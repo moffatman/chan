@@ -65,9 +65,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		List<ImageboardBoard> _filteredBoards = boards.where((board) {
 			return board.name.toLowerCase().contains(searchString) || board.title.toLowerCase().contains(searchString);
 		}).toList();
-		mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
-			return a.name.length - b.name.length;
-		});
+		if (searchString.isNotEmpty) {
+			mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
+				return a.name.length - b.name.length;
+			});
+		}
 		mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
 			return a.name.indexOf(searchString) - b.name.indexOf(searchString);
 		});
