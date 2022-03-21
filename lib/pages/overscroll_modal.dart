@@ -111,10 +111,19 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 								builder: (context, child) {
 									final RenderBox? scrollBox = _scrollKey.currentContext?.findRenderObject() as RenderBox?;
 									final RenderBox? childBox = _childKey.currentContext?.findRenderObject() as RenderBox?;
-									final double scrollBoxTop = scrollBox?.localToGlobal(scrollBox.semanticBounds.topCenter).dy ?? 0;
-									final double scrollBoxBottom = scrollBox?.localToGlobal(scrollBox.semanticBounds.bottomCenter).dy ?? 0;
-									final double childBoxTopDiff = (childBox?.localToGlobal(childBox.semanticBounds.topCenter).dy ?? scrollBoxTop) - scrollBoxTop;
-									final double childBoxBottomDiff = scrollBoxBottom - (childBox?.localToGlobal(childBox.semanticBounds.bottomCenter).dy ?? scrollBoxBottom);
+									double scrollBoxTop = 0;
+									double scrollBoxBottom = 0;
+									double childBoxTopDiff = 0;
+									double childBoxBottomDiff = 0;
+									try {
+										scrollBoxTop = scrollBox?.localToGlobal(scrollBox.semanticBounds.topCenter).dy ?? 0;
+										scrollBoxBottom = scrollBox?.localToGlobal(scrollBox.semanticBounds.bottomCenter).dy ?? 0;
+										childBoxTopDiff = (childBox?.localToGlobal(childBox.semanticBounds.topCenter).dy ?? scrollBoxTop) - scrollBoxTop;
+										childBoxBottomDiff = scrollBoxBottom - (childBox?.localToGlobal(childBox.semanticBounds.bottomCenter).dy ?? scrollBoxBottom);
+									}
+									catch (e) {
+										// Maybe the box didn't have a size yet
+									}
 									if (_finishedPopIn && _controller.positions.isNotEmpty && _controller.position.isScrollingNotifier.value) {
 										return Stack(
 											fit: StackFit.expand,
