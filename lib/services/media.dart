@@ -299,7 +299,7 @@ class MediaConversion {
 		catch (error, st) {
 			_completer!.completeError(error, st);
 		}
-		Future.delayed(const Duration(milliseconds: 500), () => progress.dispose());
+		Future.delayed(const Duration(milliseconds: 2500), () => progress.dispose());
 	}
 
 	void cancel() => _session?.cancel();
