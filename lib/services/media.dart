@@ -15,6 +15,15 @@ import 'package:flutter/rendering.dart';
 import 'package:image/image.dart';
 import 'package:mutex/mutex.dart';
 
+extension HandleSpacesInPath on Uri {
+	String toStringFFMPEG() {
+		if (scheme == 'file') {
+			return Uri.decodeFull(path);
+		}
+		return toString();
+	}
+}
+
 class MediaConversionFFMpegException implements Exception {
 	int exitCode;
 	MediaConversionFFMpegException(this.exitCode);
@@ -67,7 +76,7 @@ class MediaScan {
 	static Future<MediaScan> _scan(Uri file) async {
 		return await _ffprobeLock.protect<MediaScan>(() async {
 			final completer = Completer<MediaScan>();
-			FFprobeKit.getMediaInformationAsync(file.toString(), (session) async {
+			FFprobeKit.getMediaInformationAsync(file.toStringFFMPEG(), (session) async {
 				try {
 					final output = await session.getOutput();
 					if (output == null) {
@@ -269,9 +278,9 @@ class MediaConversion {
 					});
 					final bitrateString = (outputBitrate / 1000).floor().toString() + 'K';
 					final ffmpegCompleter = Completer<Session>();
-					 _session = await FFmpegKit.executeWithArgumentsAsync([
+					_session = await FFmpegKit.executeWithArgumentsAsync([
 						'-hwaccel', 'auto',
-						'-i', inputFile.toString(),
+						'-i', inputFile.toStringFFMPEG(),
 						'-max_muxing_queue_size', '9999',
 						...extraOptions,
 						if (stripAudio) '-an',
