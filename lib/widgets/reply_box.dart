@@ -475,23 +475,25 @@ class ReplyBoxState extends State<ReplyBox> {
 					if (bytes == null) {
 						print('Something went wrong converting the captcha image to bytes');
 					}
-					site.client.post(
-						_captchaContributionServer,
-						data: dio.FormData.fromMap({
-							'text': solution.response,
-							'image': dio.MultipartFile.fromBytes(
-								bytes!.buffer.asUint8List(),
-								filename: 'upload.png',
-								contentType: MediaType("image", "png")
+					else {
+						site.client.post(
+							_captchaContributionServer,
+							data: dio.FormData.fromMap({
+								'text': solution.response,
+								'image': dio.MultipartFile.fromBytes(
+									bytes!.buffer.asUint8List(),
+									filename: 'upload.png',
+									contentType: MediaType("image", "png")
+								)
+							}),
+							options: dio.Options(
+								validateStatus: (x) => true,
+								responseType: dio.ResponseType.plain
 							)
-						}),
-						options: dio.Options(
-							validateStatus: (x) => true,
-							responseType: dio.ResponseType.plain
-						)
-					).then((response) {
-						print(response.data);
-					});
+						).then((response) {
+							print(response.data);
+						});
+					}
 				}
 			}
 			_textFieldController.clear();
