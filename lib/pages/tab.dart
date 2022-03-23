@@ -27,13 +27,13 @@ class ImageboardTab extends StatelessWidget {
 		this.onThreadDraftSubjectChanged,
 		this.onWantOpenThreadInNewTab,
 		this.id = -1,
-		Key? key
+		required Key key
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
 		return MasterDetailPage<ThreadIdentifier>(
-			id: 'tab_$id',
+			id: 'tab_$key',
 			initialValue: initialThread,
 			onValueChanged: onThreadChanged,
 			masterBuilder: (context, selectedThread, threadSetter) {
