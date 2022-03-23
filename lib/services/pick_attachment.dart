@@ -72,11 +72,14 @@ Future<File?> pickAttachment({
 													color: CupertinoTheme.of(context).primaryColor,
 													borderRadius: BorderRadius.circular(8)
 												),
+												padding: const EdgeInsets.all(8),
 												child: Column(
 													mainAxisAlignment: MainAxisAlignment.center,
 													children: [
 														Icon(entry.item2, size: 40, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
-														AutoSizeText(entry.item1, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor), textAlign: TextAlign.center)
+														Flexible(
+															child: AutoSizeText(entry.item1, minFontSize: 5, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor), textAlign: TextAlign.center)
+														)
 													]
 												)
 											)
