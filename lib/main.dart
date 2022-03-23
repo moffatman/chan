@@ -844,6 +844,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												showTabPopup = !showTabPopup;
 											});
 										}
+										else if (index == tabletIndex) {
+											if (tabletIndex == 4) {
+												_settingsNavigatorKey.currentState?.maybePop();
+											}
+											else {
+												_tabletWillPopZones[tabletIndex]?.callback?.call();
+											}
+										}
 										else {
 											setState(() {
 												tabletIndex = index;
