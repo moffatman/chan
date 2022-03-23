@@ -481,7 +481,7 @@ class ReplyBoxState extends State<ReplyBox> {
 							data: dio.FormData.fromMap({
 								'text': solution.response,
 								'image': dio.MultipartFile.fromBytes(
-									bytes!.buffer.asUint8List(),
+									bytes.buffer.asUint8List(),
 									filename: 'upload.png',
 									contentType: MediaType("image", "png")
 								)
