@@ -63,6 +63,8 @@ class GalleryPage extends StatefulWidget {
 	final ValueChanged<Attachment>? onChange;
 	final Iterable<int> semanticParentIds;
 	final bool allowScroll;
+	final bool allowContextMenu;
+	final bool allowChrome;
 
 	const GalleryPage({
 		required this.attachments,
@@ -73,6 +75,8 @@ class GalleryPage extends StatefulWidget {
 		this.initiallyShowChrome = false,
 		this.onChange,
 		this.allowScroll = true,
+		this.allowChrome = true,
+		this.allowContextMenu = true,
 		Key? key
 	}) : super(key: key);
 
@@ -355,7 +359,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	}
 
 	void _toggleChrome() {
-		showChrome = !showChrome;
+		showChrome = !showChrome & widget.allowChrome;
 		_updateOverlays(showChrome);
 		setState(() {});
 	}
@@ -680,7 +684,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																			semanticParentIds: widget.semanticParentIds,
 																			onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
 																				_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
-																			}
+																			},
+																			allowContextMenu: widget.allowContextMenu,
 																		),
 																		onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
 																			_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
@@ -797,6 +802,8 @@ Future<Attachment?> showGallery({
 	required Iterable<int> semanticParentIds,
 	Attachment? initialAttachment,
 	bool initiallyShowChrome = false,
+	bool allowChrome = true,
+	bool allowContextMenu = true,
 	ValueChanged<Attachment>? onChange,
 }) async {
 	final lastSelected = await Navigator.of(context, rootNavigator: true).push(TransparentRoute<Attachment>(
@@ -808,7 +815,9 @@ Future<Attachment?> showGallery({
 				initialAttachment: initialAttachment,
 				initiallyShowChrome: initiallyShowChrome,
 				onChange: onChange,
-				semanticParentIds: semanticParentIds
+				semanticParentIds: semanticParentIds,
+				allowChrome: allowChrome,
+				allowContextMenu: allowContextMenu,
 			);
 		},
 		showAnimations: context.read<EffectiveSettings>().showAnimations

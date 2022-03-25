@@ -461,6 +461,7 @@ class AttachmentViewer extends StatelessWidget {
 	final ValueChanged<double>? onScaleChanged;
 	final bool fill;
 	final VoidCallback? onTap;
+	final bool allowContextMenu;
 
 	const AttachmentViewer({
 		required this.controller,
@@ -468,6 +469,7 @@ class AttachmentViewer extends StatelessWidget {
 		this.onScaleChanged,
 		this.onTap,
 		this.fill = true,
+		this.allowContextMenu = true,
 		Key? key
 	}) : super(key: key);
 
@@ -674,7 +676,7 @@ class AttachmentViewer extends StatelessWidget {
 				}
 				controller._gestureDetailsOnDoubleTapDragStart = null;
 			},
-			child: CupertinoContextMenu(
+			child: !allowContextMenu ? _buildChild(true) : CupertinoContextMenu(
 				actions: [
 						CupertinoContextMenuAction(
 							child: const Text('Download'),

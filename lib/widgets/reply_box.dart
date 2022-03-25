@@ -3,7 +3,9 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/media.dart';
@@ -12,6 +14,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
@@ -19,7 +22,6 @@ import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:http_parser/http_parser.dart';
-import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -574,6 +576,16 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	Widget _buildOptions(BuildContext context) {
+		final fakeAttachment = Attachment(
+			ext: '.$attachmentExt',
+			url: Uri.https('', ''),
+			type: attachmentExt == 'webm' || attachmentExt == 'mp4' ? AttachmentType.webm : AttachmentType.image,
+			md5: '',
+			id: -1,
+			filename: attachment?.uri.pathSegments.last ?? '',
+			thumbnailUrl: Uri.https('', ''),
+			board: widget.board
+		);
 		return Container(
 			decoration: BoxDecoration(
 				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
@@ -612,34 +624,23 @@ class ReplyBoxState extends State<ReplyBox> {
 								Flexible(
 									child: GestureDetector(
 										child: Hero(
-											tag: _textFieldController,
+											tag: AttachmentSemanticLocation(
+												attachment: fakeAttachment,
+												semanticParents: [-99]
+											),
 											child: SavedAttachmentThumbnail(file: attachment!)
 										),
-										onTap: () {
-											Navigator.of(context, rootNavigator: true).push(TransparentRoute(
-												showAnimations: context.read<EffectiveSettings>().showAnimations,
-												builder: (context) => ExtendedImageSlidePage(
-													resetPageDuration: const Duration(milliseconds: 100),
-													slidePageBackgroundHandler: (offset, size) {
-														final threshold = size.bottomRight(Offset.zero).distance / 3;
-														final factor = offset.distance / threshold;
-														return Colors.black.withOpacity(1 - factor.clamp(0, 1));
-													},
-													child: ExtendedImageSlidePageHandler(
-														child: GestureDetector(
-															onTap: () {
-																Navigator.of(context).pop();
-															},
-															child: SavedAttachmentThumbnail(file: attachment!)
-														),
-														heroBuilderForSlidingPage: (result) => Hero(
-															tag: _textFieldController,
-															child: result,
-															flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
-														),
-													)
-												)
-											));
+										onTap: () async {
+											showGallery(
+												attachments: [fakeAttachment],
+												context: context,
+												semanticParentIds: [-99],
+												overrideSources: {
+													fakeAttachment: attachment!.uri
+												},
+												allowChrome: false,
+												allowContextMenu: false
+											);
 										}
 									)
 								),
