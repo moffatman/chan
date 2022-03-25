@@ -367,6 +367,19 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							}
 						),
 						const SizedBox(height: 16),
+						CupertinoSegmentedControl<PostDeletionStatusFilter>(
+							children: const {
+								PostDeletionStatusFilter.none: Text('All posts'),
+								PostDeletionStatusFilter.onlyDeleted: Text('Only deleted'),
+								PostDeletionStatusFilter.onlyNonDeleted: Text('Only non-deleted')
+							},
+							groupValue: query.deletionStatusFilter,
+							onValueChanged: (newValue) {
+								query.deletionStatusFilter = newValue;
+								setState(() {});
+							}
+						),
+						const SizedBox(height: 16),
 						Row(
 							children: [
 								Expanded(
@@ -477,7 +490,9 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.postTypeFilter == PostTypeFilter.onlyReplies) const _SearchQueryFilterTag('Replies'),
 		if (q.startDate != null) _SearchQueryFilterTag('After ${q.startDate!.year}-${q.startDate!.month.toString().padLeft(2, '0')}-${q.startDate!.day.toString().padLeft(2, '0')}'),
 		if (q.endDate != null) _SearchQueryFilterTag('Before ${q.endDate!.year}-${q.endDate!.month.toString().padLeft(2, '0')}-${q.endDate!.day.toString().padLeft(2, '0')}'),
-		if (q.md5 != null) _SearchQueryFilterTag('MD5: ${q.md5}')
+		if (q.md5 != null) _SearchQueryFilterTag('MD5: ${q.md5}'),
+		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.trash)),
+		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.trash_slash))
 	];
 }
 

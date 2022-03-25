@@ -76,6 +76,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(ImageboardArchiveSearchQueryAdapter());
 		Hive.registerAdapter(PostTypeFilterAdapter());
 		Hive.registerAdapter(MediaFilterAdapter());
+		Hive.registerAdapter(PostDeletionStatusFilterAdapter());
 		Hive.registerAdapter(PersistentRecentSearchesAdapter());
 		Hive.registerAdapter(SavedAttachmentAdapter());
 		Hive.registerAdapter(SavedPostAdapter());

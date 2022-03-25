@@ -240,7 +240,9 @@ class FuukaArchive extends ImageboardSiteArchive {
 				if (query.postTypeFilter == PostTypeFilter.onlyOPs) 'search_op': 'op',
 				if (query.startDate != null) 'search_datefrom': _formatDateForSearch(query.startDate!),
 				if (query.endDate != null) 'search_dateto': _formatDateForSearch(query.endDate!),
-				'offset': (page * 24).toString()
+				'offset': (page * 24).toString(),
+				if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) 'search_del': 'yes'
+				else if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) 'search_del': 'no'
 		}, options: Options(
 			responseType: ResponseType.plain
 		));

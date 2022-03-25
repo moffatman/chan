@@ -331,7 +331,9 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				if (query.postTypeFilter != PostTypeFilter.none) 'type': query.postTypeFilter == PostTypeFilter.onlyOPs ? 'op' : 'posts',
 				if (query.startDate != null) 'start': '${query.startDate!.year}-${query.startDate!.month}-${query.startDate!.day}',
 				if (query.endDate != null) 'end': '${query.endDate!.year}-${query.endDate!.month}-${query.endDate!.day}',
-				if (query.md5 != null) 'image': query.md5
+				if (query.md5 != null) 'image': query.md5,
+				if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) 'deleted': 'deleted'
+				else if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) 'deleted': 'not-deleted'
 			},
 			options: Options(
 				validateStatus: (x) => true

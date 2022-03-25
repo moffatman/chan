@@ -22,6 +22,16 @@ enum MediaFilter {
 	onlyWithNoMedia
 }
 
+@HiveType(typeId: 26)
+enum PostDeletionStatusFilter {
+	@HiveField(0)
+	none,
+	@HiveField(1)
+	onlyDeleted,
+	@HiveField(2)
+	onlyNonDeleted
+}
+
 @HiveType(typeId: 5)
 class ImageboardArchiveSearchQuery {
 	@HiveField(0)
@@ -38,6 +48,8 @@ class ImageboardArchiveSearchQuery {
 	List<String> boards;
 	@HiveField(6)
 	String? md5;
+	@HiveField(7, defaultValue: PostDeletionStatusFilter.none)
+	PostDeletionStatusFilter deletionStatusFilter;
 	ImageboardArchiveSearchQuery({
 		this.query = '',
 		this.mediaFilter = MediaFilter.none,
@@ -45,7 +57,8 @@ class ImageboardArchiveSearchQuery {
 		this.startDate,
 		this.endDate,
 		List<String>? boards,
-		this.md5
+		this.md5,
+		this.deletionStatusFilter = PostDeletionStatusFilter.none
 	}) : boards = boards ?? [];
 
 	ImageboardArchiveSearchQuery clone() {
@@ -56,7 +69,8 @@ class ImageboardArchiveSearchQuery {
 			startDate: (startDate != null) ? DateTime.fromMillisecondsSinceEpoch(startDate!.millisecondsSinceEpoch) : null,
 			endDate: (endDate != null) ? DateTime.fromMillisecondsSinceEpoch(endDate!.millisecondsSinceEpoch) : null,
 			boards: [...boards],
-			md5: md5
+			md5: md5,
+			deletionStatusFilter: deletionStatusFilter
 		);
 	}
 }
