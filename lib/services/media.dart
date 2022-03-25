@@ -260,11 +260,21 @@ class MediaConversion {
 					}
 					String? filter;
 					if (scan.width != null && scan.height != null) {
-						double scaleDownFactorSq = outputBitrate/(2 * scan.width! * scan.height!);
-						if (scaleDownFactorSq < 1) {
-							final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
-							final newHeight = (scan.height! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
-							filter = 'scale=$newWidth:$newHeight';
+						if (outputFileExtension != 'jpg') {
+							double scaleDownFactorSq = outputBitrate/(2 * scan.width! * scan.height!);
+							if (scaleDownFactorSq < 1) {
+								final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
+								final newHeight = (scan.height! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
+								filter = 'scale=$newWidth:$newHeight';
+							}
+						}
+						else if (maximumSizeInBytes != null) {
+							double scaleDownFactor = (scan.width! * scan.height!) / (maximumSizeInBytes! * 6);
+							if (scaleDownFactor > 1) {
+								final newWidth = ((scan.width! / scaleDownFactor) / 2).round() * 2;
+								final newHeight = ((scan.height! / scaleDownFactor) / 2).round() * 2;
+								filter = 'scale=$newWidth:$newHeight';
+							}
 						}
 					}
 					bool passedFirstEvent = false;
