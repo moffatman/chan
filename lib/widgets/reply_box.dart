@@ -163,9 +163,10 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
-	void onQuoteText(String text) {
+	void onQuoteText(String text, {required int fromId}) {
 		if (!widget.isArchived) {
 			showReplyBox();
+			_insertText('>>$fromId');
 			_insertText('>' + text.replaceAll('\n', '\n>'));
 		}
 	}

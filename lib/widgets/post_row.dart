@@ -415,7 +415,7 @@ class PostRow extends StatelessWidget {
 						WeakNavigator.push(context, SelectablePostPage(
 							post: _post,
 							zone: zone,
-							onQuoteText: (text) => context.read<GlobalKey<ReplyBoxState>>().currentState?.onQuoteText(text)
+							onQuoteText: (text) => context.read<GlobalKey<ReplyBoxState>>().currentState?.onQuoteText(text, fromId: _post.id)
 						));
 					}
 				),
