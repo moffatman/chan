@@ -165,7 +165,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 				updatingNow = true;
 			});
 			Duration minUpdateDuration = const Duration(milliseconds: 500);
-			if (widget.controller?.scrollController?.positions.length == 1 && widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent) {
+			if (widget.controller?.scrollController?.positions.length == 1 && (widget.controller!.scrollController!.position.pixels < 0 || (widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent))) {
 				minUpdateDuration = const Duration(seconds: 1);
 			}
 			final newData = (await Future.wait([widget.listUpdater(), Future<List<T>?>.delayed(minUpdateDuration)])).first;
