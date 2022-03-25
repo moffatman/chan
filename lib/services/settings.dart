@@ -71,7 +71,9 @@ enum ThreadSortingMethod {
 	@HiveField(3)
 	threadPostTime,
 	@HiveField(4)
-	savedTime
+	savedTime,
+	@HiveField(5)
+	postsPerMinute
 }
 
 @HiveType(typeId: 20)
