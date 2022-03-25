@@ -367,7 +367,7 @@ class _BoardPageState extends State<BoardPage> {
 											builder: (context, _) {
 												final page = _listController.firstVisibleItem?.currentPage;
 												_scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-												return (page == null || page == 0 || _listController.firstVisibleIndex == 0) ? Container() : SafeArea(
+												return (page == null || page == 0 || _listController.firstVisibleIndex == 0 || ((_listController.scrollController?.position.pixels ?? 1) < 0)) ? Container() : SafeArea(
 													child: Align(
 														alignment: Alignment.topRight,
 														child: Row(
