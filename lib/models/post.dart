@@ -75,6 +75,8 @@ class Post implements Filterable {
 	bool attachmentDeleted;
 	@HiveField(13)
 	String? trip;
+	@HiveField(14)
+	int? passSinceYear;
 	Post({
 		required this.board,
 		required this.text,
@@ -88,7 +90,8 @@ class Post implements Filterable {
 		this.attachment,
 		this.attachmentDeleted = false,
 		this.posterId,
-		this.foolfuukaLinkedPostThreadIds
+		this.foolfuukaLinkedPostThreadIds,
+		this.passSinceYear
 	});
 
 	@override

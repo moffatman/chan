@@ -247,6 +247,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			archive.context = value;
 		}
 	}
+	Uri get passIconUrl;
 	String get imageUrl;
 	CaptchaRequest getCaptchaRequest(String board, [int? threadId]);
 	Future<PostReceipt> createThread({

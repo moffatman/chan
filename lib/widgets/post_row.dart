@@ -223,6 +223,12 @@ class PostRow extends StatelessWidget {
 																	zone: zone
 																))
 															),
+															if (_post.passSinceYear != null) ...[
+																PassSinceSpan(
+																	sinceYear: _post.passSinceYear!,
+																	site: site
+																)
+															],
 															if (_post.flag != null) ...[
 																const TextSpan(text: ' '),
 																FlagSpan(_post.flag!),

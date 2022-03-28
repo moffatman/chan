@@ -207,7 +207,8 @@ class Site4Chan extends ImageboardSite {
 			attachmentDeleted: data['filedeleted'] == 1,
 			spanFormat: PostSpanFormat.chan4,
 			flag: _makeFlag(data, board),
-			posterId: data['id']
+			posterId: data['id'],
+			passSinceYear: data['since4pass']
 		);
 	}
 	Attachment? _makeAttachment(String board, int threadId, dynamic data) {
@@ -656,4 +657,7 @@ class Site4Chan extends ImageboardSite {
   String? getLoginSystemName() {
     return '4chan Pass';
   }
+
+	@override
+	Uri get passIconUrl => Uri.https(staticUrl, '/image/minileaf.gif');
 }

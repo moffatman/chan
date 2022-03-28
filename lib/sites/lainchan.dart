@@ -400,6 +400,9 @@ class SiteLainchan extends ImageboardSite {
 	String get imageUrl => baseUrl;
 
 	@override
+	Uri get passIconUrl => throw UnimplementedError();
+
+	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page}) {
 		throw UnimplementedError();
 	}

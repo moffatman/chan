@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
@@ -165,6 +167,16 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				linkedPostThreadIds['$board/$postId'] = await _getPostThreadId(board, postId);
 			}
 		}
+		int? passSinceYear;
+		if (data['exif'] != null) {
+			try {
+				final exifData = jsonDecode(data['exif']);
+				passSinceYear = int.tryParse(exifData['since4pass']);
+			}
+			catch (e) {
+				// Malformed EXIF JSON
+			}
+		}
 		return Post(
 			board: board,
 			text: data['comment_processed'] ?? '',
@@ -177,7 +189,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			spanFormat: PostSpanFormat.foolFuuka,
 			flag: _makeFlag(data),
 			posterId: data['id'],
-			foolfuukaLinkedPostThreadIds: linkedPostThreadIds
+			foolfuukaLinkedPostThreadIds: linkedPostThreadIds,
+			passSinceYear: passSinceYear
 		);
 	}
 	Future<dynamic> _getPostJson(String board, int id) async {

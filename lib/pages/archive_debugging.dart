@@ -101,6 +101,9 @@ class WrappedArchive extends ImageboardSite {
   String get imageUrl => throw UnimplementedError();
 
   @override
+  Uri get passIconUrl => throw UnimplementedError();
+
+  @override
   String get name => archive.name;
 
   @override

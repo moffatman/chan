@@ -1,4 +1,5 @@
 import 'package:chan/models/flag.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,34 @@ class FlagSpan extends WidgetSpan {
 			)
 		),
 		alignment: PlaceholderAlignment.middle
+	);
+}
+
+class PassSinceSpan extends TextSpan {
+	PassSinceSpan({
+		required int sinceYear,
+		required ImageboardSite site
+	}) : super(
+		children: [
+			WidgetSpan(
+				child: Row(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						SizedBox(
+							width: 16,
+							height: 16,
+							child: ExtendedImage.network(
+								site.passIconUrl.toString(),
+								cache: true,
+								enableLoadState: false
+							)
+						),
+						Text(sinceYear.toString())
+					]
+				),
+				alignment: PlaceholderAlignment.bottom
+			)
+		]
 	);
 }
 
