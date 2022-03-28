@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -198,7 +199,10 @@ List<_LetterScore> _scoreArrayForLetter(_ScoreArrayForLetterParam param) {
 	return scores;
 }
 
-Future<Chan4CustomCaptchaGuess> _guess(_GuessParam param) async {
+const _preprocessProportion = 0.3;
+const _scoreArrayProportion = 0.55;
+
+void _guess(_GuessParam param) async {
 	Uint8List captcha = await _getRedChannelOnly(param.rgbaData);
 	final random = Random();
 	final width = param.width;
@@ -234,16 +238,23 @@ Future<Chan4CustomCaptchaGuess> _guess(_GuessParam param) async {
 			captcha = filled;
 		}
 	}
+	param.sendPort.send(_preprocessProportion);
 	// Create score array
 	final pool = Pool(Platform.numberOfProcessors);
 	final letterFutures = <Future<List<_LetterScore>>>[];
+	int lettersDone = 0;
 	for (final letter in captchaLetters) {
-		letterFutures.add(pool.withResource(() => compute(_scoreArrayForLetter, _ScoreArrayForLetterParam(
-			captcha: captcha,
-			letter: letter,
-			width: width,
-			height: height
-		))));
+		letterFutures.add(pool.withResource(() async {
+			final data = await compute(_scoreArrayForLetter, _ScoreArrayForLetterParam(
+				captcha: captcha,
+				letter: letter,
+				width: width,
+				height: height
+			));
+			lettersDone++;
+			param.sendPort.send(_preprocessProportion + (_scoreArrayProportion * (lettersDone / captchaLetters.length)));
+			return data;
+		}));
 	}
 	final scores = (await Future.wait(letterFutures)).expand((x) => x).toList();
 	// Pick best set of letters
@@ -304,7 +315,8 @@ Future<Chan4CustomCaptchaGuess> _guess(_GuessParam param) async {
 		return ret;
 	}).toList();*/
 	final maxScore = answersBest.map((x) => x.score).reduce(max);
-	return Chan4CustomCaptchaGuess(
+	param.sendPort.send(1.0);
+	param.sendPort.send(Chan4CustomCaptchaGuess(
 		guess: answersBest.map((x) => x.letter).join(''),
 		//alternatives: alternatives,
 		alternatives: [[], [], [], [], []],
@@ -326,24 +338,39 @@ Future<Chan4CustomCaptchaGuess> _guess(_GuessParam param) async {
 			mean: 33.94387053066409,
 			variance: 9.811289141395186
 		))).toList()
-	);
+	));
 }
 
 class _GuessParam {
 	final ByteData rgbaData;
 	final int width;
 	final int height;
+	final SendPort sendPort;
 	const _GuessParam({
 		required this.rgbaData,
 		required this.width,
-		required this.height
+		required this.height,
+		required this.sendPort
 	});
 }
 
-Future<Chan4CustomCaptchaGuess> guess(ui.Image image) async {
-	return compute(_guess, _GuessParam(
+Future<Chan4CustomCaptchaGuess> guess(ui.Image image, {
+	ValueChanged<double>? onProgress
+}) async {
+	final receivePort = ReceivePort();
+	await Isolate.spawn(_guess, _GuessParam(
 		rgbaData: (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!,
 		width: image.width,
-		height: image.height
+		height: image.height,
+		sendPort: receivePort.sendPort
 	));
+	await for (final datum in receivePort) {
+		if (datum is double) {
+			onProgress?.call(datum);
+		}
+		else if (datum is Chan4CustomCaptchaGuess) {
+			return datum;
+		}
+	}
+	throw Exception('Computation failed');
 }

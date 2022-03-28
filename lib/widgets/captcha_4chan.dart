@@ -9,6 +9,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class Captcha4ChanCustom extends StatefulWidget {
@@ -100,13 +101,22 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	String _lastGuessText = "";
 	bool _greyOutPickers = true;
 	final _pickerKeys = List.generate(5, (i) => GlobalKey());
+	double _guessingProgress = 0.0;
 
 	Future<void> _animateGuess() async {
 		setState(() {
+			_guessingProgress = 0.0;
 			_greyOutPickers = true;
 		});
 		try {
-			final _guess = await guess(await _screenshotImage());
+			final _guess = await guess(
+				await _screenshotImage(),
+				onProgress: (progress) {
+					setState(() {
+						_guessingProgress = progress;
+					});
+				}
+			);
 			_solutionController.text = _guess.guess;
 			_lastGuessText = _guess.guess;
 			_guessConfidences = _guess.confidences;
@@ -350,7 +360,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 								const Icon(CupertinoIcons.refresh),
 								const SizedBox(width: 16),
 								SizedBox(
-									width: 24,
+									width: 32,
 									child: seconds > 0 ? Text('$seconds') : Container()
 								)
 							]
@@ -415,20 +425,26 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 										fit: FlexFit.tight,
 										child: Padding(
 											padding: const EdgeInsets.symmetric(horizontal: 16),
-											child: CupertinoSlider(
-												value: backgroundSlide.toDouble(),
-												divisions: challenge!.backgroundImage!.width - challenge!.foregroundImage!.width,
-												max: (challenge!.backgroundImage!.width - challenge!.foregroundImage!.width).toDouble(),
-												onChanged: (newOffset) {
-													setState(() {
-														backgroundSlide = newOffset.floor();
-													});
-												},
-												onChangeEnd: (newOffset) {
-													if (_solutionController.text.toUpperCase() == _lastGuessText.toUpperCase()) {
-														_animateGuess();
-													}
-												}
+											child: IgnorePointer(
+												ignoring: _greyOutPickers,
+												child: Opacity(
+													opacity: _greyOutPickers ? 0.5 : 1.0,
+													child: CupertinoSlider(
+														value: backgroundSlide.toDouble(),
+														divisions: challenge!.backgroundImage!.width - challenge!.foregroundImage!.width,
+														max: (challenge!.backgroundImage!.width - challenge!.foregroundImage!.width).toDouble(),
+														onChanged: (newOffset) {
+															setState(() {
+																backgroundSlide = newOffset.floor();
+															});
+														},
+														onChangeEnd: (newOffset) {
+															if (_solutionController.text.toUpperCase() == _lastGuessText.toUpperCase()) {
+																_animateGuess();
+															}
+														}
+													)
+												)
 											)
 										)
 									),
@@ -595,33 +611,41 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 														)
 													)
 												),
-											],
-											Flexible(
-												flex: 1,
-												fit: FlexFit.tight,
-												child: Container()
-											),
-											Flexible(
-												flex: 2,
-												fit: FlexFit.tight,
-												child: Center(
-													child: CupertinoButton.filled(
-														padding: EdgeInsets.zero,
-														child: const SizedBox(
-															height: 50,
-															child: Center(
-																child: Text('Submit', style: TextStyle(fontSize: 20))
-															)
-														),
-														onPressed: () {
-															_submit(_solutionController.text);
-														}
-													)
-												)
-											)
+											]
 										]
 									)
 								)
+							),
+							Stack(
+								children: [
+									ClipRRect(
+										borderRadius: BorderRadius.circular(8),
+										child: LinearProgressIndicator(
+											value: _guessingProgress,
+											minHeight: 50,
+											valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
+											backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.3)
+										)
+									),
+									CupertinoButton(
+										padding: EdgeInsets.zero,
+										child: SizedBox(
+											height: 50,
+											child: Center(
+												child: Text(
+													'Submit',
+													style: TextStyle(
+														fontSize: 20,
+														color: CupertinoTheme.of(context).scaffoldBackgroundColor
+													)
+												)
+											)
+										),
+										onPressed: _greyOutPickers ? null : () {
+											_submit(_solutionController.text);
+										}
+									)
+								]
 							)
 						]
 					)
