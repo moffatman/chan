@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:ui' as ui show Image, PictureRecorder;
 
+import 'package:chan/services/captcha_4chan.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
@@ -91,6 +94,35 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	Captcha4ChanCustomChallenge? challenge;
 	int backgroundSlide = 0;
 	final _solutionNode = FocusNode();
+	final _solutionController = TextEditingController();
+	final _letterPickerControllers = List.generate(5, (i) => FixedExtentScrollController());
+	List<double> _guessConfidences = List.generate(5, (i) => 1.0);
+	String _lastGuessText = "";
+	bool _greyOutPickers = true;
+	final _pickerKeys = List.generate(5, (i) => GlobalKey());
+
+	Future<void> _animateGuess() async {
+		setState(() {
+			_greyOutPickers = true;
+		});
+		try {
+			final _guess = await guess(await _screenshotImage());
+			_solutionController.text = _guess.guess;
+			_lastGuessText = _guess.guess;
+			_guessConfidences = _guess.confidences;
+		}
+		catch (e, st) {
+			print(e);
+			print(st);
+		}
+		if (context.read<EffectiveSettings>().supportMouse.value) {
+			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
+			_solutionNode.requestFocus();
+		}
+		setState(() {
+			_greyOutPickers = false;
+		});
+	}
 
 	Future<Captcha4ChanCustomChallenge> _requestChallenge() async {
 		final challengeResponse = await context.read<ImageboardSite>().client.get(widget.request.challengeUrl.toString());
@@ -159,8 +191,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			if (challenge!.backgroundImage != null) {
 				await _alignImage();
 			}
+			_solutionController.text = "00000";
 			setState(() {});
-			_solutionNode.requestFocus();
+			await _animateGuess();
 		}
 		catch(e) {
 			setState(() {
@@ -223,9 +256,84 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 	}
 
+	Future<ui.Image> _screenshotImage() {
+		final recorder = ui.PictureRecorder();
+		final canvas = Canvas(recorder);
+		final width = challenge!.foregroundImage!.width;
+		final height = challenge!.foregroundImage!.height;
+		_Captcha4ChanCustomPainter(
+			backgroundImage: challenge!.backgroundImage,
+			foregroundImage: challenge!.foregroundImage!,
+			backgroundSlide: backgroundSlide
+		).paint(canvas, Size(width.toDouble(), height.toDouble()));
+		return recorder.endRecording().toImage(width, height);
+	}
+
+	String _previousText = "00000";
+	TextSelection _previousSelection = const TextSelection(baseOffset: 0, extentOffset: 1);
+	bool _modifyingFromPicker = false;
+
+	void _onSolutionControllerUpdate() {
+		final selection = _solutionController.selection;
+		final newText = _solutionController.text;
+		if (_solutionController.text.length != 5) {
+			_solutionController.text = _solutionController.text.substring(0, min(5, _solutionController.text.length)).padRight(5, ' ');
+		}
+		for (int i = 0; i < 5; i++) {
+			final char = _solutionController.text[i].toUpperCase();
+			if (!captchaLetters.contains(char)) {
+				const remap = {
+					'B': '8',
+					'F': 'P',
+					'U': 'V',
+					'Z': '2',
+					'O': '0'
+				};
+				if (remap[char] != null) {
+					_solutionController.text = _solutionController.text.replaceRange(i, i + 1, remap[char]!);
+				}
+				else {
+					_solutionController.text = _previousText;
+					_solutionController.selection = TextSelection(baseOffset: i, extentOffset: i + 1);
+				}
+			}
+		}
+		int start = selection.baseOffset % 5;
+		if (selection.isCollapsed) {
+			if (_previousSelection.baseOffset == selection.baseOffset && _previousText == newText) {
+				// Left-arrow was pressed
+				start = (start - 1) % 5;
+			}
+			_solutionController.selection = TextSelection(baseOffset: start, extentOffset: start + 1);
+		}
+		if (!_modifyingFromPicker && _previousText != _solutionController.text) {
+			for (int i = 0; i < 5; i++) {
+				if (_previousText[i] != _solutionController.text[i]) {
+					_guessConfidences[i] = 1;
+					_letterPickerControllers[i].animateToItem(captchaLetters.indexOf(newText[i].toUpperCase()), duration: const Duration(milliseconds: 250), curve: Curves.elasticIn);
+					setState(() {});
+				}
+			}
+		}
+		_previousText = _solutionController.text;
+		_previousSelection = _solutionController.selection;
+	}
+
+	Future<void> _submit(String response) async {
+		widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
+			challenge: challenge!.challenge,
+			response: response,
+			expiresAt: challenge!.expiresAt,
+			alignedImage: await _screenshotImage()
+		));
+	}
+
 	@override
 	void initState() {
 		super.initState();
+		_solutionController.text = "00000";
+		_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
+		_solutionController.addListener(_onSolutionControllerUpdate);
 		_tryRequestChallenge();
 	}
 
@@ -270,97 +378,254 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			);
 		}
 		else if (challenge != null) {
-			return Column(
-				mainAxisSize: MainAxisSize.min,
-				children: [
-					const Text('Enter the text in the image below'),
-					const SizedBox(height: 16),
-					Flexible(
-						child: ConstrainedBox(
-							constraints: const BoxConstraints(
-								maxWidth: 500
-							),
-							child: (challenge!.foregroundImage == null) ? const Text('Verification not required') : AspectRatio(
-								aspectRatio: challenge!.foregroundImage!.width / challenge!.foregroundImage!.height,
-								child: CustomPaint(
-									size: Size(challenge!.foregroundImage!.width.toDouble(), challenge!.foregroundImage!.height.toDouble()),
-									painter: _Captcha4ChanCustomPainter(
-										foregroundImage: challenge!.foregroundImage!,
-										backgroundImage: challenge!.backgroundImage,
-										backgroundSlide: backgroundSlide
+			return Center(
+				child: ConstrainedBox(
+					constraints: const BoxConstraints(
+						maxWidth: 500
+					),
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							const Text('Enter the text in the image below'),
+							const SizedBox(height: 16),
+							Flexible(
+								child: (challenge!.foregroundImage == null) ? const Text('Verification not required') : AspectRatio(
+									aspectRatio: challenge!.foregroundImage!.width / challenge!.foregroundImage!.height,
+									child: CustomPaint(
+										size: Size(challenge!.foregroundImage!.width.toDouble(), challenge!.foregroundImage!.height.toDouble()),
+										painter: _Captcha4ChanCustomPainter(
+											foregroundImage: challenge!.foregroundImage!,
+											backgroundImage: challenge!.backgroundImage,
+											backgroundSlide: backgroundSlide
+										)
 									)
 								)
-							)
-						)
-					),
-					const SizedBox(height: 16),
-					ConstrainedBox(
-						constraints: const BoxConstraints(
-							maxWidth: 500
-						),
-						child: Row(
-							mainAxisAlignment: MainAxisAlignment.spaceBetween,
-							children: [
-								_cooldownedRetryButton(context),
-								if (challenge!.backgroundImage != null) CupertinoSlider(
-									value: backgroundSlide.toDouble(),
-									divisions: challenge!.backgroundImage!.width - challenge!.foregroundImage!.width,
-									max: (challenge!.backgroundImage!.width - challenge!.foregroundImage!.width).toDouble(),
-									onChanged: (newOffset) {
-										setState(() {
-											backgroundSlide = newOffset.floor();
-										});
-									}
-								),
-								Row(
-									children: [
-										const Icon(CupertinoIcons.timer),
-										const SizedBox(width: 16),
-										SizedBox(
-											width: 60,
-											child: TimedRebuilder(
-												interval: const Duration(seconds: 1),
-												builder: (context) {
-													final seconds = challenge!.expiresAt.difference(DateTime.now()).inSeconds;
-													return Text(
-														seconds > 0 ? '$seconds' : 'Expired'
-													);
+							),
+							const SizedBox(height: 16),
+							Row(
+								mainAxisAlignment: MainAxisAlignment.center,
+								children: [
+									Flexible(
+										fit: FlexFit.tight,
+										flex: 1,
+										child:  _cooldownedRetryButton(context)
+									),
+									if (challenge!.backgroundImage != null) Flexible(
+										flex: 2,
+										fit: FlexFit.tight,
+										child: Padding(
+											padding: const EdgeInsets.symmetric(horizontal: 16),
+											child: CupertinoSlider(
+												value: backgroundSlide.toDouble(),
+												divisions: challenge!.backgroundImage!.width - challenge!.foregroundImage!.width,
+												max: (challenge!.backgroundImage!.width - challenge!.foregroundImage!.width).toDouble(),
+												onChanged: (newOffset) {
+													setState(() {
+														backgroundSlide = newOffset.floor();
+													});
+												},
+												onChangeEnd: (newOffset) {
+													if (_solutionController.text.toUpperCase() == _lastGuessText.toUpperCase()) {
+														_animateGuess();
+													}
 												}
 											)
 										)
-									]
+									),
+									Flexible(
+										flex: 1,
+										fit: FlexFit.tight,
+										child: Row(
+											mainAxisAlignment: MainAxisAlignment.end,
+											children: [
+												const Icon(CupertinoIcons.timer),
+												const SizedBox(width: 16),
+												SizedBox(
+													width: 60,
+													child: TimedRebuilder(
+														interval: const Duration(seconds: 1),
+														builder: (context) {
+															final seconds = challenge!.expiresAt.difference(DateTime.now()).inSeconds;
+															return Text(
+																seconds > 0 ? '$seconds' : 'Expired'
+															);
+														}
+													)
+												)
+											]
+										)
+									)
+								]
+							),
+							const SizedBox(height: 0),
+							Visibility(
+								visible: false,
+								maintainAnimation: true,
+								maintainState: true,
+								child: SizedBox(
+									width: 150,
+									child: Actions(
+										actions: {
+											ExtendSelectionVerticallyToAdjacentLineIntent: CallbackAction<ExtendSelectionVerticallyToAdjacentLineIntent>(
+												onInvoke: (intent) {
+													final controller = _letterPickerControllers[_solutionController.selection.baseOffset];
+													if (intent.forward) {
+														controller.animateToItem(
+															controller.selectedItem + 1,
+															duration: const Duration(milliseconds: 100),
+															curve: Curves.ease
+														);
+													}
+													else {
+														controller.animateToItem(
+															controller.selectedItem - 1,
+															duration: const Duration(milliseconds: 100),
+															curve: Curves.ease
+														);
+													}
+													return null;
+												}
+											)
+										},
+										child: CupertinoTextField(
+											focusNode: _solutionNode,
+											controller: _solutionController,
+											autocorrect: false,
+											placeholder: 'Captcha text',
+											onSubmitted: (text) {
+												if (MediaQuery.of(context).viewInsets.bottom < 100) {
+													// Only submit on enter key if on hardware keyboard
+													_submit(text);
+												}
+											}
+										)
+									)
 								)
-							]
-						)
-					),
-					const SizedBox(height: 16),
-					SizedBox(
-						width: 150,
-						child: CupertinoTextField(
-							focusNode: _solutionNode,
-							autocorrect: false,
-							placeholder: 'Captcha text',
-							onSubmitted: (response) async {
-								final recorder = ui.PictureRecorder();
-								final canvas = Canvas(recorder);
-								final width = challenge!.foregroundImage!.width;
-								final height = challenge!.foregroundImage!.height;
-								_Captcha4ChanCustomPainter(
-									backgroundImage: challenge!.backgroundImage,
-									foregroundImage: challenge!.foregroundImage!,
-									backgroundSlide: backgroundSlide
-								).paint(canvas, Size(width.toDouble(), height.toDouble()));
-								final image = await recorder.endRecording().toImage(width, height);
-								widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
-									challenge: challenge!.challenge,
-									response: response,
-									expiresAt: challenge!.expiresAt,
-									alignedImage: image
-								));
-							},
-						)
+							),
+							IgnorePointer(
+								ignoring: _greyOutPickers,
+								child: Opacity(
+									opacity: _greyOutPickers ? 0.5 : 1.0,
+									child: Row(
+										mainAxisAlignment: MainAxisAlignment.center,
+										children: [
+											for (int i = 0; i < 5; i++) ...[
+												Flexible(
+													flex: 1,
+													fit: FlexFit.tight,
+													child: SizedBox(
+														height: 200,
+														child: Stack(
+															fit: StackFit.expand,
+															children: [
+																CupertinoPicker.builder(
+																	key: _pickerKeys[i],
+																	scrollController: _letterPickerControllers[i],
+																	selectionOverlay: AnimatedBuilder(
+																		animation: _solutionController,
+																		builder: (context, child) => CupertinoPickerDefaultSelectionOverlay(
+																			background: ColorTween(
+																				begin: CupertinoColors.tertiarySystemFill.resolveFrom(context),
+																				end: CupertinoTheme.of(context).primaryColor
+																			).transform((_solutionNode.hasFocus && (_solutionController.selection.baseOffset <= i) && (i < _solutionController.selection.extentOffset)) ? 0.5 : 0)!
+																		)
+																	),
+																	childCount: captchaLetters.length,
+																	itemBuilder: (context, l) => Padding(
+																		padding: const EdgeInsets.all(6),
+																		child: Center(
+																			child: Text(captchaLetters[l],
+																				style: TextStyle(
+																					fontSize: 34,
+																					color:  ColorTween(
+																						begin: CupertinoTheme.of(context).primaryColor,
+																						end: const Color.fromARGB(255, 241, 190, 19)).transform(1 - _guessConfidences[i]
+																					)!
+																				)
+																			)
+																		)
+																	),
+																	itemExtent: 50,
+																	onSelectedItemChanged: (letterIndex) {
+																		_modifyingFromPicker = true;
+																		final selection = _solutionController.selection;
+																		_solutionController.text = _solutionController.text.replaceRange(i, i + 1, captchaLetters[letterIndex]);
+																		_solutionController.selection = selection;
+																		_guessConfidences[i] = 1;
+																		setState(() {});
+																		_modifyingFromPicker = false;
+																	},
+																),
+																Column(
+																	crossAxisAlignment: CrossAxisAlignment.stretch,
+																	children: [
+																		GestureDetector(
+																			child:const SizedBox(height: 75),
+																			behavior: HitTestBehavior.translucent,
+																			onTap: () {
+																				_letterPickerControllers[i].animateToItem(
+																					_letterPickerControllers[i].selectedItem - 1,
+																					duration: const Duration(milliseconds: 100),
+																					curve: Curves.ease
+																				);
+																			}
+																		),
+																		GestureDetector(
+																			child: const SizedBox(height: 50),
+																			behavior: HitTestBehavior.translucent,
+																			onTap: () {
+																				_solutionController.selection = TextSelection(baseOffset: i, extentOffset: i + 1);
+																				_solutionNode.requestFocus();
+																			}
+																		),
+																		GestureDetector(
+																			child: const SizedBox(height: 75),
+																			behavior: HitTestBehavior.translucent,
+																			onTap: () {
+																				_letterPickerControllers[i].animateToItem(
+																					_letterPickerControllers[i].selectedItem + 1,
+																					duration: const Duration(milliseconds: 100),
+																					curve: Curves.ease
+																				);
+																			}
+																		)
+																	]
+																)
+															]
+														)
+													)
+												),
+											],
+											Flexible(
+												flex: 1,
+												fit: FlexFit.tight,
+												child: Container()
+											),
+											Flexible(
+												flex: 2,
+												fit: FlexFit.tight,
+												child: Center(
+													child: CupertinoButton.filled(
+														padding: EdgeInsets.zero,
+														child: const SizedBox(
+															height: 50,
+															child: Center(
+																child: Text('Submit', style: TextStyle(fontSize: 20))
+															)
+														),
+														onPressed: () {
+															_submit(_solutionController.text);
+														}
+													)
+												)
+											)
+										]
+									)
+								)
+							)
+						]
 					)
-				]
+				)
 			);
 		}
 		else {
@@ -383,5 +648,15 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				child: _build(context)
 			)
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_solutionNode.dispose();
+		_solutionController.dispose();
+		for (final controller in _letterPickerControllers) {
+			controller.dispose();
+		}
 	}
 }

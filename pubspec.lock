@@ -619,6 +619,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.1"
+  normal:
+    dependency: "direct main"
+    description:
+      name: normal
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.6.0"
   package_config:
     dependency: transitive
     description:
@@ -711,7 +718,7 @@ packages:
     source: hosted
     version: "2.1.2"
   pool:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: pool
       url: "https://pub.dartlang.org"
