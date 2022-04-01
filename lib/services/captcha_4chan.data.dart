@@ -7,55 +7,55 @@ final Map<String, List<_LetterImage>> captchaLetterImages = {
 		_LetterImage(
 			width: 28,
 			height: 36,
-			adjustment: -3,
+			adjustment: -1.5,
 			data: "eJz7/x8CGJDAfzRAbTlkMXR5asvhs58ecujitJRDpmktxwMEuNxDCzl6xR8+Nq3k0N32Hw1QUw4A+V+fMA=="
 		),
 		_LetterImage(
 			width: 28,
 			height: 46,
-			adjustment: -3,
+			adjustment: -1.5,
 			data: "eJy9k9sOgCAMQ/v/P12NCWYrrcRE7BscGN0F8hchglMRWIZbFA7RgqExOaP+DENhbMzE0DiZzZ5NnZBY9+nfSnk+sLe15eiNY9jBopdP8r+WifX7vS6u52PLMc13zcrazsDTfCgrcWfPqxlgQKx/i0YRsHZvrw6G0rVn"
 		),
 		_LetterImage(
 			width: 38,
 			height: 46,
-			adjustment: -3,
+			adjustment: -1.5,
 			data: "eJzFlFEOgDAIQ3v/S2MyNUqhQIxG/pS30gFq9mMAmFGoSNwpCe4puJC1ILn14FI5lQjMKCuos37SFOU20X5IcVFJuSt0FA9PUCsj3Y/mJuPIzyiEJRIUOrlwoOBmVxhRVTvs2q84lkwmHd77FIOSKj4c96Ki2Bxov/hs3tBYgRxoH+yznRs3MYDln7aUiWBH7eSE+iw2jlCweg=="
 		),
 		_LetterImage(
 			width: 33,
 			height: 46,
-			adjustment: -3,
+			adjustment: -1.5,
 			data: "eJy91EsOwCAIBNC5/6XpSsIgA9aFrJr4lI+mZu8CwAh6A492UZgNIK5FYBXYNt6ClS43XJaVz/sLOIuYzRnACOLouMhi+HJ2qacRNEHdSeNUHjOCoZMWmL8HBv4tRl09slvApgaiyBMQryG/hxro2XFCkZU2j0BMB/KfJTdn1AIq7UV8EXY29A=="
 		),
 		_LetterImage(
 			width: 38,
 			height: 46,
-			adjustment: -3,
+			adjustment: -1.5,
 			data: "eJzN1FkKgDAMBNDc/9IRxUKamUnqApovbZ/NQtH9N2HWiz0WSKUsxvFaE3lg2ErKULEPsuLJefuj9lnRarPiPUmlJgMliQEzhT02JeEH15WiARUHhmydgsenqmr03GrGMZvXRzsWW0WOdc8KkjuaWuXFOyqtyqFA4VqRCnJa0XN/d2MZtcF7jgLyVsT5X/Sz2ACZabB6"
 		),
 		_LetterImage(
 			width: 31,
 			height: 40,
-			adjustment: -3,
+			adjustment: -1.5,
 			data: "eJz7/x8KGFDAf3QwUNIoophKaCWNw60M6GBQSGPI0EkahTFopHlAALfzaSpNn/gmRRpVLQaH9tKYbv2PDmghDQDOVQYI"
 		),
 		_LetterImage(
 			width: 31,
 			height: 51,
-			adjustment: -3,
+			adjustment: -1.5,
 			data: "eJzNk1EOgDAIQ7n/pTFGF6GlmCVzsZ88XEsT3f8ma9CpjglsjxxXjPSODTDuTWFyoY99BA9YWN0DlSRj1Z4ugTFVU9sa7q3CvJOSK2xYVH3hJ7iLtrM6o/Zys/AKlJowV17jNJnAcVIemHyX4BhAn0nPRCz++gvL+sCgZiPjXh3VZEvf"
 		),
 		_LetterImage(
 			width: 42,
 			height: 51,
-			adjustment: -3,
+			adjustment: -1.5,
 			data: "eJzV0tEOgCAIBVD+/6dpM5sicLkrfYg342jAUP1hiAgvpdBiJNI9KzbAb134Jmw2leE7J6Ri2c5LIpVRYpt0BSBpJ8BI4WXLoY7yfXgvQXTCS98AkuvWRji4hS1brPKyGJVOm/xBmiPaELt7J6TDSMKOlk+FnL6PQy51kTaiBlw9G+TIzjfT8WUVJviZQRbVa5Fm5K1ZeT4u0up7vQ=="
 		),
 		_LetterImage(
 			width: 36,
 			height: 51,
-			adjustment: -3,
+			adjustment: -1.5,
 			data: "eJzN1FkOgCAMBFDuf+lqAoYuUzpporFfQp8sFRH5a4w7GFOxsaPKpywarWZDZbCJb79uZguVCu4WDdsxbrrM6IUXZjBm6NK7NVffkDU4Vpoxx7BVObnND4ox9eYKM/u7RsLJhEbwfdA13mUm/6s4s/ueR8b4ypmx3TRtE6dhTFrbtTNgNMNp6woj9iR9GRfspeFJ"
 		),
 	],
@@ -735,55 +735,55 @@ final Map<String, List<_LetterImage>> captchaLetterImages = {
 		_LetterImage(
 			width: 28,
 			height: 36,
-			adjustment: 0,
+			adjustment: -0.5,
 			data: "eJxjYMAO/gMBDimqyP1HAtjUjcqRJodNLS3l0Nn0kBsI+wdD3FJTDgDIkW6g"
 		),
 		_LetterImage(
 			width: 28,
 			height: 46,
-			adjustment: 0,
+			adjustment: -0.5,
 			data: "eJzd1FkKgEAMA9Dc/9J1Qeg0JlVcQOxXnTd2oogRDxYAL9qw1dJKSNeQVpaK0d7s+yFHJzdxv2DhjN77GYOz8boYZct+H5qfRc2/bsPZIiff21jddy/bP74Xmh2iXjRF/kezmoG5Jrp+hZc="
 		),
 		_LetterImage(
 			width: 38,
 			height: 46,
-			adjustment: 0,
+			adjustment: -0.5,
 			data: "eJzN1MEOgDAIA1D+/6dnMj0ItKXGy7hZnm7DaMQyKnZ5apKRylNMdoUgVE3mnMmeIQjX8NSrMain5anw1O5YCk7nMFUhVUlKFWDgQtInWHcD1wOoashVe9vpmqpXggdcw0mtD0p+jzn9r+qiVJUjaKVODjd3h1ypf+6pSgwJy1FteQGcvGy+"
 		),
 		_LetterImage(
 			width: 33,
 			height: 46,
-			adjustment: 0,
+			adjustment: -0.5,
 			data: "eJzN1EsOACEIA9De/9JOWMwEhra4cCE7yfMTRIHlAxEjcAgpRkANeoygmpyj5pfohqw6gi/rCrUHMIJI75fnBgB+RcpI8CILkMtT5g2T+squO8hhBNDtw8GqI9EPZ4B8F/bc26DuwkH5eDRAGTLQ0gQocQNgFy+QBWEeSif/HQ=="
 		),
 		_LetterImage(
 			width: 38,
 			height: 46,
-			adjustment: 0,
+			adjustment: -0.5,
 			data: "eJzd00sKwDAIBNC5/6UtIYuiM2oKaaB1V3nED9bsUADoBWqFO+Z3SYYSLyKJVHBdFtRd+npW3ne5QH6keMFR8YKFouKyXqEoyUqN5BPZ1Hopsc/3FB+onlE/KJWppE/4dP5bPJjpCxe9pnbcvSoelW7xuCqQ9WKqToy4AN62bL4="
 		),
 		_LetterImage(
 			width: 31,
 			height: 40,
-			adjustment: 0,
+			adjustment: -0.5,
 			data: "eJxjYMAJ/gMBblk6Sv9HAVjVjkrTVxoTEFBGP+n/mDz6SmOIDC5pWiSHwScNAD35wU0="
 		),
 		_LetterImage(
 			width: 31,
 			height: 51,
-			adjustment: 0,
+			adjustment: -0.5,
 			data: "eJzV1EsOgDAIBFDuf+kxLowwwGBi44eV9ikdTCPwQpmZxI7tqP26s/OR1hzTauT0gt9fNBu4iansFwzBoctCtp7DCjHP4m+KOdP8cat17JOUyVOHW0xhePqc9Qp/4SgOrM7awPmjnswZUNYjXCskDj9mYAOvMicE"
 		),
 		_LetterImage(
 			width: 42,
 			height: 51,
-			adjustment: 0,
+			adjustment: -0.5,
 			data: "eJzd1eEKgCAMBOB7/5c2MKrlbtsNCiJ/3j7UqSCAoQ10JDQNM3SZ61XGmkmuI+n1Woo5SzmOlntD2lotj6ouoctZkyV+Lh3O5F1X8tKK3HU2kTwJtSwKpI8zSd7SEjwibRbel8sVOZrSZqVMO2pKt4FMuhMoJfqSLBO2deSZbPxWX5YWl/LUkpx6A029IBk="
 		),
 		_LetterImage(
 			width: 36,
 			height: 51,
-			adjustment: 0,
+			adjustment: -0.5,
 			data: "eJzV00sSgCAMA9Dc/9I4OAga0o8MG7ojfSCCAihRIWdChl4ZYztwZYxw0hD7ptpNiWBy9V1m5K5pnYxBxtRGwvBRHGbYWebNHNNdYG5mTY5nCiW/Xn9x00z3TrteNoXHyvRwl3H+ZREuG3qcZWjjnsEP08baiIb9ckeYoTzzuMhUdgFDDbF5"
 		),
 	],
@@ -847,55 +847,55 @@ final Map<String, List<_LetterImage>> captchaLetterImages = {
 		_LetterImage(
 			width: 24,
 			height: 36,
-			adjustment: 4,
+			adjustment: 4.5,
 			data: "eJxjYBja4D8UoPNHxUfFB4M4ALjWvlA="
 		),
 		_LetterImage(
 			width: 24,
 			height: 46,
-			adjustment: 4,
+			adjustment: 4.5,
 			data: "eJzt0zEKACAMwMD8/9MVBFFqKoirGW+QWmiEhivi9FyzgzhrrsPZcuVC/eVijEff95L/MP20x+/fzbMWJxvVgb/XADyQrW8="
 		),
 		_LetterImage(
 			width: 34,
 			height: 46,
-			adjustment: 4,
+			adjustment: 4.5,
 			data: "eJztzlEKACAIA1Dvf2mDIipTJxFE4P4cjyERg1ANFh6iKVjoSoodKUIoQyzINrGlyNSNp08FYzGdtuiNK2oLBadI8ZlgLIbyRENAPEkB0iTUVg=="
 		),
 		_LetterImage(
 			width: 29,
 			height: 46,
-			adjustment: 4,
+			adjustment: 4.5,
 			data: "eJzt1DsOACAIA9De/9IajMYf7aDGiU7AW0hIABIPLBKZo0fi7oDgFSd3cHSfL/18tafYax9rS9EmCr0TBAYeov4dzRkW5vgjGYZvTtw="
 		),
 		_LetterImage(
 			width: 34,
 			height: 46,
-			adjustment: 4,
+			adjustment: 4.5,
 			data: "eJztlEEKACAIBP3/p42CCstdO9Qp5zoDFoKqAcJtJdC4kAm3XiEb3JrC16OAugXcMh+MP3//7QLuwv+WLbyB67ayyOLTAuheYK3R9X1MAaMj1FY="
 		),
 		_LetterImage(
 			width: 26,
 			height: 40,
-			adjustment: 4,
+			adjustment: 4.5,
 			data: "eJxjYBgp4D8MYIqMyozKjMqAAQAlZA0Q"
 		),
 		_LetterImage(
 			width: 26,
 			height: 51,
-			adjustment: 4,
+			adjustment: 4.5,
 			data: "eJzt1MEKACAIA9D9/08bBEU2JwQeOrjjXkIUaCYCBVKAUDCjehYgEriofstdLwl6ZL2UlwF11xI5jjhxw/RFJPygLS0/CPVy01i2tUoyALvSLvw="
 		),
 		_LetterImage(
 			width: 37,
 			height: 51,
-			adjustment: 4,
+			adjustment: 4.5,
 			data: "eJzt1UsKACAIBNC5/6UNgv6WQyRtnJ3DA3cKQMyARDAhaih0gFhCIcWpaJZ7dOc4+GArtdMfDdMedcURlc5CuWeQBAoUyA2Rp79BAwn5lT4nASk0npo="
 		),
 		_LetterImage(
 			width: 32,
 			height: 51,
-			adjustment: 4,
+			adjustment: 4.5,
 			data: "eJzt1EEKACAIRNG5/6WNICEtHYioRbmz9wnaBECyAfc0gQ7zoIEb5r4Y3SZTt82GZP0K9pYr3i2htz3zekRcvn9/xYW5JonzH/vsFGaxKRA="
 		),
 	],

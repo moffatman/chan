@@ -322,21 +322,21 @@ void _guess(_GuessParam param) async {
 		alternatives: [[], [], [], [], []],
 		confidence: (1 - Normal.cdf(
 			maxScore,
-			mean: 33.04293065376995,
-			variance: 5.498314092366682
+			mean: 30.55783844401451,
+			variance: 6.323088406300931
 		)) * (1 - Normal.cdf(
 			maxScore,
-			mean: 39.635586723948464,
-			variance: 7.1408268142981015
+			mean: 41.35456627422233,
+			variance: 11.558336881463264
 		)),
 		confidences: answersBest.map((x) => (1 - Normal.cdf(
 			x.score,
-			mean: 23.81770143538823,
-			variance: 7.07775508044155
+			mean: 21.52257188598484,
+			variance: 6.898344986831822
 		)) * (1 - Normal.cdf(
 			x.score,
-			mean: 33.94387053066409,
-			variance: 9.811289141395186
+			mean: 30.55783844401451,
+			variance: 13.318595396725442
 		))).toList()
 	));
 }
