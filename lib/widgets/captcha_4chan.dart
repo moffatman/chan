@@ -201,9 +201,15 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			if (challenge!.backgroundImage != null) {
 				await _alignImage();
 			}
-			_solutionController.text = "00000";
-			setState(() {});
-			await _animateGuess();
+			if (context.read<EffectiveSettings>().useNewCaptchaForm) {
+				_solutionController.text = "00000";
+				setState(() {});
+				await _animateGuess();
+			}
+			else {
+				setState(() {});
+				_solutionNode.requestFocus();
+			}
 		}
 		catch(e) {
 			setState(() {
@@ -341,9 +347,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	@override
 	void initState() {
 		super.initState();
-		_solutionController.text = "00000";
-		_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
-		_solutionController.addListener(_onSolutionControllerUpdate);
+		if (context.read<EffectiveSettings>().useNewCaptchaForm) {
+			_solutionController.text = "00000";
+			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
+			_solutionController.addListener(_onSolutionControllerUpdate);
+		}
 		_tryRequestChallenge();
 	}
 
@@ -475,7 +483,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 							),
 							const SizedBox(height: 0),
 							Visibility(
-								visible: false,
+								visible: !context.read<EffectiveSettings>().useNewCaptchaForm,
 								maintainAnimation: true,
 								maintainState: true,
 								child: SizedBox(
@@ -518,7 +526,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									)
 								)
 							),
-							IgnorePointer(
+							if (context.read<EffectiveSettings>().useNewCaptchaForm) IgnorePointer(
 								ignoring: _greyOutPickers,
 								child: Opacity(
 									opacity: _greyOutPickers ? 0.5 : 1.0,
@@ -616,7 +624,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									)
 								)
 							),
-							Stack(
+							if (context.read<EffectiveSettings>().useNewCaptchaForm) Stack(
 								children: [
 									ClipRRect(
 										borderRadius: BorderRadius.circular(8),

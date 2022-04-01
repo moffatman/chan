@@ -225,6 +225,8 @@ class SavedSettings extends HiveObject {
 	bool? contributeCaptchas;
 	@HiveField(45)
 	bool showReplyCountsInGallery;
+	@HiveField(46)
+	bool useNewCaptchaForm;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -272,6 +274,7 @@ class SavedSettings extends HiveObject {
 		bool? useBoardSwitcherList,
 		this.contributeCaptchas,
 		bool? showReplyCountsInGallery,
+		bool? useNewCaptchaForm,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -322,7 +325,8 @@ class SavedSettings extends HiveObject {
 		showFlagInCatalogHeader = showFlagInCatalogHeader ?? true,
 		onlyShowFavouriteBoardsInSwitcher = onlyShowFavouriteBoardsInSwitcher ?? false,
 		useBoardSwitcherList = useBoardSwitcherList ?? false,
-		showReplyCountsInGallery = showReplyCountsInGallery ?? false;
+		showReplyCountsInGallery = showReplyCountsInGallery ?? false,
+		useNewCaptchaForm = useNewCaptchaForm ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -720,6 +724,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showReplyCountsInGallery => _settings.showReplyCountsInGallery;
 	set showReplyCountsInGallery(bool setting) {
 		_settings.showReplyCountsInGallery = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get useNewCaptchaForm => _settings.useNewCaptchaForm;
+	set useNewCaptchaForm(bool setting) {
+		_settings.useNewCaptchaForm = setting;
 		_settings.save();
 		notifyListeners();
 	}

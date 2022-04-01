@@ -384,6 +384,19 @@ class SettingsBehaviorPage extends StatelessWidget {
 						settings.hideOldStickiedThreads = newValue;
 					}
 				),
+				const SizedBox(height: 32),
+				const Text('Use new captcha interface'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('No'),
+						true: Text('Yes')
+					},
+					groupValue: settings.useNewCaptchaForm,
+					onValueChanged: (newValue) {
+						settings.useNewCaptchaForm = newValue;
+					}
+				),
 				const SizedBox(height: 32)
 			]
 		);
