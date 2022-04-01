@@ -757,6 +757,34 @@ class PostTeXSpan extends PostSpan {
 	String buildText() => '[math]$tex[/math]';
 }
 
+class PostInlineImageSpan extends PostSpan {
+	final String src;
+	final int width;
+	final int height;
+	PostInlineImageSpan({
+		required this.src,
+		required this.width,
+		required this.height
+	});
+	@override
+	build(context, options) {
+		return WidgetSpan(
+			child: SizedBox(
+				width: width.toDouble(),
+				height: height.toDouble(),
+				child: ExtendedImage.network(
+					src,
+					cache: true,
+					enableLoadState: false
+				)
+			),
+			alignment: PlaceholderAlignment.bottom
+		);
+	}
+	@override
+	String buildText() => '';
+}
+
 class PostSpanZone extends StatelessWidget {
 	final int postId;
 	final WidgetBuilder builder;

@@ -100,6 +100,19 @@ class Site4Chan extends ImageboardSite {
 				else if (node.localName == 'tex') {
 					elements.add(PostTeXSpan(node.innerHtml));
 				}
+				else if (node.localName == 'img' && node.attributes.containsKey('width') && node.attributes.containsKey('height')) {
+					final src = node.attributes['src'];
+					final width = int.tryParse(node.attributes['width']!);
+					final height = int.tryParse(node.attributes['height']!);
+					if (src == null || width == null || height == null) {
+						continue;
+					}
+					elements.add(PostInlineImageSpan(
+						src: src,
+						width: width,
+						height: height
+					));
+				}
 				else if (node.localName == 'a' && node.classes.contains('quotelink')) {
 					if (node.attributes['href']!.startsWith('#p')) {
 						elements.add(PostQuoteLinkSpan(
