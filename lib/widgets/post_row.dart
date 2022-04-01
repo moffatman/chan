@@ -57,6 +57,10 @@ class PostRow extends StatelessWidget {
 			_post.attachment = post.attachment;
 			context.watch<Persistence>().didUpdateSavedPost();
 		}
+		else if (_post.replyIds.length != post.replyIds.length) {
+			_post.replyIds = post.replyIds;
+			context.watch<Persistence>().didUpdateSavedPost();
+		}
 		final zone = context.watch<PostSpanZoneData>();
 		final settings = context.watch<EffectiveSettings>();
 		final receipt = zone.threadState?.receipts.tryFirstWhere((r) => r.id == _post.id);
