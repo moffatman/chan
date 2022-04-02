@@ -366,10 +366,11 @@ class PostRow extends StatelessWidget {
 					}
 				),
 				if (zone.threadState != null) ...[
-					if (zone.threadState!.postsMarkedAsYou.contains(_post.id)) ContextMenuAction(
+					if (isYourPost) ContextMenuAction(
 							child: const Text('Unmark as You'),
 							trailingIcon: CupertinoIcons.person_badge_minus,
 							onPressed: () {
+								zone.threadState!.receipts.removeWhere((r) => r.id == _post.id);
 								zone.threadState!.postsMarkedAsYou.remove(_post.id);
 								zone.threadState!.save();
 							}
