@@ -202,6 +202,17 @@ class ImageboardSiteLoginException implements Exception {
 	String toString() => 'Login failed: $message';
 }
 
+class ImageboardEmote {
+	final String code;
+	final String? text;
+	final Uri? image;
+	const ImageboardEmote({
+		required this.code,
+		this.text,
+		this.image
+	});
+}
+
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	BuildContext? _context;
@@ -372,6 +383,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}
 	Future<ImageboardSiteLoginStatus?> getLoginStatus();
 	Future<void> logout();
+	List<ImageboardEmote> getEmotes();
 }
 
 ImageboardSite makeSite(BuildContext context, dynamic data) {

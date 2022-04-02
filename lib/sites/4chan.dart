@@ -1,4 +1,5 @@
 // ignore_for_file: file_names
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -607,7 +608,9 @@ class Site4Chan extends ImageboardSite {
 		required this.name,
 		required this.captchaKey,
 		List<ImageboardSiteArchive> archives = const []
-	}) : super(archives);
+	}) : super(archives) {
+		_loadEmotes();
+	}
 
   @override
   Future<ImageboardSiteLoginStatus?> getLoginStatus() async {
@@ -675,4 +678,34 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	Uri get passIconUrl => Uri.https(staticUrl, '/image/minileaf.gif');
+
+	List<ImageboardEmote> _emotes = [];
+
+	Future<void> _loadEmotes() async {
+		final emotesJs = await client.get(Uri.https(staticUrl, '/js/emotes2022.js').toString());
+		final emoteListMatch = RegExp(r'emoteList: ({.*})').firstMatch(emotesJs.data);
+		if (emoteListMatch != null) {
+			final Map<String, dynamic> data = jsonDecode(emoteListMatch.group(1)!);
+			_emotes = data.entries.map((entry) {
+				if (entry.value[1] == 1) {
+					// Emoji
+					return ImageboardEmote(
+						code: ':${entry.key}:',
+						text: entry.value[0]
+					);
+				}
+				else {
+					return ImageboardEmote(
+						code: ':${entry.value[0]}:',
+						image: Uri.https(staticUrl, '/image/emotes/${entry.key}_${entry.value[0]}.png')
+					);
+				}
+			}).toList();
+		}
+	}
+
+	@override
+	List<ImageboardEmote> getEmotes() {
+		return _emotes;
+	}
 }

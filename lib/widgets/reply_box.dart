@@ -22,6 +22,7 @@ import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:extended_image/extended_image.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -142,12 +143,12 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 	}
 
-	void _insertText(String insertedText) {
+	void _insertText(String insertedText, {bool addNewlineIfAtEnd = true}) {
 		int currentPos = _textFieldController.selection.base.offset;
 		if (currentPos < 0) {
 			currentPos = _textFieldController.text.length;
 		}
-		if (currentPos == _textFieldController.text.length) {
+		if (addNewlineIfAtEnd && currentPos == _textFieldController.text.length) {
 			insertedText += '\n';
 		}
 		_textFieldController.value = TextEditingValue(
@@ -589,6 +590,59 @@ class ReplyBoxState extends State<ReplyBox> {
 		_captchaSolution = null;
 	}
 
+	void _pickEmote() async {
+		final emotes = context.read<ImageboardSite>().getEmotes();
+		final pickedEmote = await Navigator.of(context).push<ImageboardEmote>(TransparentRoute(
+			builder: (context) => OverscrollModalPage(
+				child: Container(
+					width: MediaQuery.of(context).size.width,
+					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+					padding: const EdgeInsets.all(16),
+					child: StatefulBuilder(
+						builder: (context, _setState) => Column(
+							mainAxisSize: MainAxisSize.min,
+							crossAxisAlignment: CrossAxisAlignment.center,
+							children: [
+								const Text('Select emote'),
+								const SizedBox(height: 16),
+								GridView.builder(
+									gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+										maxCrossAxisExtent: 48,
+										childAspectRatio: 1,
+										mainAxisSpacing: 16,
+										crossAxisSpacing: 16
+									),
+									itemCount: emotes.length,
+									itemBuilder: (context, i) {
+										final emote = emotes[i];
+										return GestureDetector(
+											onTap: () {
+												Navigator.of(context).pop(emote);
+											},
+											child: emote.image != null ? ExtendedImage.network(
+												emote.image.toString(),
+												fit: BoxFit.contain,
+												cache: true
+											) : Text(emote.text ?? '', style: const TextStyle(
+												fontSize: 40
+											))
+										);
+									},
+									shrinkWrap: true,
+									physics: const NeverScrollableScrollPhysics(),
+								)
+							]
+						)
+					)
+				)
+			),
+			showAnimations: context.read<EffectiveSettings>().showAnimations
+		));
+		if (pickedEmote != null) {
+			_insertText(pickedEmote.code, addNewlineIfAtEnd: false);
+		}
+	}
+
 	Widget _buildAttachmentOptions(BuildContext context) {
 		final board = context.watch<Persistence>().getBoard(widget.board);
 		return Container(
@@ -747,6 +801,13 @@ class ReplyBoxState extends State<ReplyBox> {
 								),
 								onPressed: _selectAttachment
 							)
+						)
+					),
+					if (context.read<ImageboardSite>().getEmotes().isNotEmpty) Center(
+						child: CupertinoButton(
+							child: const Icon(CupertinoIcons.smiley),
+							padding: EdgeInsets.zero,
+							onPressed: _pickEmote
 						)
 					)
 				]

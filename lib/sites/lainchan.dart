@@ -431,4 +431,9 @@ class SiteLainchan extends ImageboardSite {
   String? getLoginSystemName() {
     return null;
   }
+	
+	@override
+	List<ImageboardEmote> getEmotes() {
+		return [];
+	}
 }

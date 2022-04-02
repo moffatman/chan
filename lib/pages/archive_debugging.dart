@@ -140,6 +140,11 @@ class WrappedArchive extends ImageboardSite {
   String? getLoginSystemName() {
     return null;
   }
+  
+  @override
+  List<ImageboardEmote> getEmotes() {
+    return [];
+  }
 }
 
 class ArchiveDebuggingPage extends StatelessWidget {
