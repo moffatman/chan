@@ -517,7 +517,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 											autocorrect: false,
 											placeholder: 'Captcha text',
 											onSubmitted: (text) {
-												if (MediaQuery.of(context).viewInsets.bottom < 100) {
+												if (WidgetsBinding.instance.window.viewInsets.bottom < 100) {
 													// Only submit on enter key if on hardware keyboard
 													_submit(text);
 												}
