@@ -49,9 +49,11 @@ class _PostThreadCombo implements Filterable {
 }
 class SavedPage extends StatefulWidget {
 	final bool isActive;
+	final ValueChanged<ThreadIdentifier>? onWantOpenThreadInNewTab;
 
 	const SavedPage({
 		required this.isActive,
+		this.onWantOpenThreadInNewTab,
 		Key? key
 	}) : super(key: key);
 
@@ -167,6 +169,13 @@ class _SavedPageState extends State<SavedPage> {
 										onTap: () => threadSetter(state.identifier)
 									),
 									actions: [
+										if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+											child: const Text('Open in new tab'),
+											trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+											onPressed: () {
+												widget.onWantOpenThreadInNewTab?.call(state.identifier);
+											}
+										),
 										ContextMenuAction(
 											child: const Text('Unsave'),
 											onPressed: () {

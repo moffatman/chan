@@ -381,6 +381,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		tabs.insert(pos, Tuple3(tab, GlobalKey(debugLabel: 'tab $tab'), ValueNotifier<int>(0)));
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.item3)]);
 		if (activate) {
+			_tabController.index = 0;
+			tabletIndex = 0;
 			activeBrowserTab.value = pos;
 			browserState.currentTab = pos;
 		}
@@ -451,12 +453,24 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 		else if (index == 1) {
 			child = SavedPage(
-				isActive: active
+				isActive: active,
+				onWantOpenThreadInNewTab: (thread) {
+					_addNewTab(
+						withThread: thread,
+						activate: true
+					);
+				}
 			);
 		}
 		else if (index == 2) {
 			child = HistoryPage(
-				isActive: active
+				isActive: active,
+				onWantOpenThreadInNewTab: (thread) {
+					_addNewTab(
+						withThread: thread,
+						activate: true
+					);
+				}
 			);
 		}
 		else if (index == 3) {
