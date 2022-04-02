@@ -182,18 +182,6 @@ class ImageboardSiteLoginField {
 	String toString() => 'ImageboardSiteLoginField(displayName: $displayName, formKey: $formKey)';
 }
 
-class ImageboardSiteLoginStatus {
-	final String loginName;
-	final DateTime? expires;
-	const ImageboardSiteLoginStatus({
-		required this.loginName,
-		this.expires
-	});
-
-	@override
-	String toString() => 'ImageboardSiteLoginStatus(loginName: $loginName, expires: $expires)';
-}
-
 class ImageboardSiteLoginException implements Exception {
 	final String message;
 	const ImageboardSiteLoginException(this.message);
@@ -381,8 +369,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		persistence?.browserState.loginFields.clear();
 		await persistence?.didUpdateBrowserState();
 	}
-	Future<ImageboardSiteLoginStatus?> getLoginStatus();
-	Future<void> logout();
+	Future<void> clearLoginCookies();
 	List<ImageboardEmote> getEmotes();
 }
 

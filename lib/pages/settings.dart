@@ -1553,15 +1553,12 @@ class SettingsLoginPanel extends StatefulWidget {
 }
 
 class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
-	ImageboardSiteLoginStatus? status;
 	Map<ImageboardSiteLoginField, String>? savedFields;
 	bool loading = true;
 
 	Future<void> _updateStatus() async {
-		final newStatus = await widget.site.getLoginStatus();
 		final newSavedFields = await widget.site.getSavedLoginFields();
 		setState(() {
-			status = newStatus;
 			savedFields = newSavedFields;
 			loading = false;
 		});
@@ -1634,53 +1631,20 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 				if (loading) const Center(
 					child: CupertinoActivityIndicator()
 				)
-				else if (status != null) ...[
-					Text('Logged in as ${status!.loginName}\n'),
-					if (status?.expires != null) Text('Expires ${status!.expires}'),
-					CupertinoButton.filled(
-						child: const Text('Logout'),
-						onPressed: () async {
-							setState(() {
-								loading = true;
-							});
-							try {
-								await widget.site.logout();
-							}
-							catch (e) {
-								await alertError(context, e.toStringDio());
-							}
-							await _updateStatus();
-						}
-					)
-				]
 				else if (savedFields != null) ...[
-					const Text('Credentials saved but not in use\n'),
+					const Text('Credentials saved\n'),
 					Wrap(
 						spacing: 16,
 						runSpacing: 16,
 						children: [
 							CupertinoButton.filled(
-								child: const Text('Activate'),
+								child: const Text('Remove'),
 								onPressed: () async {
 									setState(() {
 										loading = true;
 									});
 									try {
-										await widget.site.login(savedFields!);
-									}
-									catch (e) {
-										await alertError(context, e.toStringDio());
-									}
-									await _updateStatus();
-								}
-							),
-							CupertinoButton.filled(
-								child: const Text('Clear'),
-								onPressed: () async {
-									setState(() {
-										loading = true;
-									});
-									try {
+										await widget.site.clearLoginCookies();
 										await widget.site.clearSavedLoginFields();
 									}
 									catch (e) {
@@ -1704,7 +1668,32 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 							}
 						}
 					)
-				]
+				],
+				const SizedBox(height: 16),
+				Padding(
+					padding: const EdgeInsets.only(left: 16),
+					child: Align(
+						alignment: Alignment.topLeft,
+						child: Text('Try to use ${widget.site.getLoginSystemName()} on mobile networks?')
+					)
+				),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('No')
+						),
+						true: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Yes')
+						)
+					},
+					groupValue: context.watch<EffectiveSettings>().autoLoginOnMobileNetwork,
+					onValueChanged: (setting) {
+						context.read<EffectiveSettings>().autoLoginOnMobileNetwork = setting;
+					}
+				)
 			]
 		);
 	}

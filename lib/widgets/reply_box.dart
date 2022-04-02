@@ -384,72 +384,66 @@ class ReplyBoxState extends State<ReplyBox> {
 	Future<void> _solveCaptcha() async {
 		final site = context.read<ImageboardSite>();
 		final settings = context.read<EffectiveSettings>();
-		if ((await site.getLoginStatus()) == null) {
-			print('Might autologin');
-			final savedFields = await site.getSavedLoginFields();
-			if (savedFields != null) {
-				bool shouldAutoLogin = settings.connectivity != ConnectivityResult.mobile;
-				if (!shouldAutoLogin) {
-					settings.autoLoginOnMobileNetwork ??= await showCupertinoDialog<bool>(
-						context: context,
-						builder: (_context) => CupertinoAlertDialog(
-							title: Text('Use ${site.getLoginSystemName()} on mobile networks?'),
-							actions: [
-								CupertinoDialogAction(
-									child: const Text('Never'),
-									onPressed: () {
-										Navigator.of(_context).pop(false);
-									}
-								),
-								CupertinoDialogAction(
-									child: const Text('Not now'),
-									onPressed: () {
-										Navigator.of(_context).pop();
-									}
-								),
-								CupertinoDialogAction(
-									child: const Text('Just once'),
-									onPressed: () {
-										shouldAutoLogin = true;
-										Navigator.of(_context).pop();
-									}
-								),
-								CupertinoDialogAction(
-									child: const Text('Always'),
-									onPressed: () {
-										Navigator.of(_context).pop(true);
-									}
-								)
-							]
-						)
-					);
-					if (settings.autoLoginOnMobileNetwork == true) {
-						shouldAutoLogin = true;
-					}
-				}
-				if (shouldAutoLogin) {
-					try {
-						await site.login(savedFields);
-						showToast(
-							context: context,
-							icon: CupertinoIcons.padlock,
-							message: 'Logged in to ${site.getLoginSystemName()}'
-						);
-						print('Auto-logged in');
-					}
-					catch (e) {
-						showToast(
-							context: context,
-							icon: CupertinoIcons.exclamationmark_triangle,
-							message: 'Failed to log in to ${site.getLoginSystemName()}'
-						);
-						print('Problem auto-logging in: $e');
-					}
+		final savedFields = await site.getSavedLoginFields();
+		if (savedFields != null) {
+			bool shouldAutoLogin = settings.connectivity != ConnectivityResult.mobile;
+			if (!shouldAutoLogin) {
+				settings.autoLoginOnMobileNetwork ??= await showCupertinoDialog<bool>(
+					context: context,
+					builder: (_context) => CupertinoAlertDialog(
+						title: Text('Use ${site.getLoginSystemName()} on mobile networks?'),
+						actions: [
+							CupertinoDialogAction(
+								child: const Text('Never'),
+								onPressed: () {
+									Navigator.of(_context).pop(false);
+								}
+							),
+							CupertinoDialogAction(
+								child: const Text('Not now'),
+								onPressed: () {
+									Navigator.of(_context).pop();
+								}
+							),
+							CupertinoDialogAction(
+								child: const Text('Just once'),
+								onPressed: () {
+									shouldAutoLogin = true;
+									Navigator.of(_context).pop();
+								}
+							),
+							CupertinoDialogAction(
+								child: const Text('Always'),
+								onPressed: () {
+									Navigator.of(_context).pop(true);
+								}
+							)
+						]
+					)
+				);
+				if (settings.autoLoginOnMobileNetwork == true) {
+					shouldAutoLogin = true;
 				}
 			}
-		}
-		else {
-			print('Auto-login not necessary');
+			if (shouldAutoLogin) {
+				try {
+					await site.login(savedFields);
+					showToast(
+						context: context,
+						icon: CupertinoIcons.padlock,
+						message: 'Logged in to ${site.getLoginSystemName()}'
+					);
+					print('Auto-logged in');
+				}
+				catch (e) {
+					showToast(
+						context: context,
+						icon: CupertinoIcons.exclamationmark_triangle,
+						message: 'Failed to log in to ${site.getLoginSystemName()}'
+					);
+					print('Problem auto-logging in: $e');
+				}
+			}
 		}
 		final captchaRequest = site.getCaptchaRequest(widget.board, widget.threadId);
 		if (captchaRequest is RecaptchaRequest) {
@@ -485,15 +479,18 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	Future<void> _submit() async {
 		final site = context.read<ImageboardSite>();
+		setState(() {
+			loading = true;
+		});
 		if (_captchaSolution == null) {
 			await _solveCaptcha();
 		}
 		if (_captchaSolution == null) {
+			setState(() {
+				loading = false;
+			});
 			return;
 		}
-		setState(() {
-			loading = true;
-		});
 		try {
 			final persistence = context.read<Persistence>();
 			String? overrideAttachmentFilename;

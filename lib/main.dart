@@ -85,31 +85,25 @@ class _ChanAppState extends State<ChanApp> {
 				await _persistence.initialize();
 				// Only try to reauth on wifi
 				Future.microtask(() async {
-					if ((await _site.getLoginStatus()) == null) {
-						print('Might autologin');
-						final savedFields = await _site.getSavedLoginFields();
-						if (savedFields != null && settings.connectivity == ConnectivityResult.wifi) {
-							try {
-								await _site.login(savedFields);
-								showToast(
-									context: context,
-									icon: CupertinoIcons.padlock,
-									message: 'Logged in to ${_site.getLoginSystemName()}'
-								);
-								print('Auto-logged in');
-							}
-							catch (e) {
-								showToast(
-									context: context,
-									icon: CupertinoIcons.exclamationmark_triangle,
-									message: 'Failed to log in to ${_site.getLoginSystemName()}'
-								);
-								print('Problem auto-logging in: $e');
-							}
+					final savedFields = await _site.getSavedLoginFields();
+					if (savedFields != null && settings.connectivity == ConnectivityResult.wifi) {
+						try {
+							await _site.login(savedFields);
+							showToast(
+								context: context,
+								icon: CupertinoIcons.padlock,
+								message: 'Logged in to ${_site.getLoginSystemName()}'
+							);
+							print('Auto-logged in');
 						}
-					}
-					else {
-						print('Auto-login not necessary');
+						catch (e) {
+							showToast(
+								context: context,
+								icon: CupertinoIcons.exclamationmark_triangle,
+								message: 'Failed to log in to ${_site.getLoginSystemName()}'
+							);
+							print('Problem auto-logging in: $e');
+						}
 					}
 				});
 			}

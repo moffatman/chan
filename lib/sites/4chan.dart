@@ -613,24 +613,6 @@ class Site4Chan extends ImageboardSite {
 	}
 
   @override
-  Future<ImageboardSiteLoginStatus?> getLoginStatus() async {
-		await client.get(Uri.https(sysUrl, '/').toString());
-    final cookies = await Persistence.cookies.loadForRequest(Uri.https(sysUrl, '/'));
-		for (final cookie in cookies) {
-			print(cookie);
-			if (cookie.name == 'pass_id') {
-				_passEnabled = true;
-				return ImageboardSiteLoginStatus(
-					loginName: cookie.value.split('.').first,
-					expires: cookie.expires
-				);
-			}
-		}
-		_passEnabled = false;
-		return null;
-  }
-
-  @override
   List<ImageboardSiteLoginField> getLoginFields() {
     return const [
 			ImageboardSiteLoginField(
@@ -645,7 +627,7 @@ class Site4Chan extends ImageboardSite {
   }
 
   @override
-  Future<void> logout() async {
+  Future<void> clearLoginCookies() async {
 		await Persistence.cookies.delete(Uri.https(sysUrl, '/'), true);
 		await Persistence.cookies.delete(Uri.https(sysUrl, '/'), true);
   }
@@ -662,10 +644,12 @@ class Site4Chan extends ImageboardSite {
 		final message = document.querySelector('h2')?.text;
 		if (message == null) {
 			_passEnabled = false;
+			await clearLoginCookies();
 			throw const ImageboardSiteLoginException('Unexpected response, contact developer');
 		}
 		if (!message.contains('Success!')) {
 			_passEnabled = false;
+			await clearLoginCookies();
 			throw ImageboardSiteLoginException(message);
 		}
 		_passEnabled = true;

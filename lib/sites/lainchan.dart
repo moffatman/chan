@@ -408,18 +408,13 @@ class SiteLainchan extends ImageboardSite {
 	}
 
   @override
-  Future<ImageboardSiteLoginStatus?> getLoginStatus() async {
-    return null;
-  }
-
-  @override
   List<ImageboardSiteLoginField> getLoginFields() {
     return [];
   }
 
   @override
-  Future<void> logout() {
-    throw UnimplementedError();
+  Future<void> clearLoginCookies() async {
+		
   }
 
   @override
