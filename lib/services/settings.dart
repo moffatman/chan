@@ -227,6 +227,8 @@ class SavedSettings extends HiveObject {
 	bool showReplyCountsInGallery;
 	@HiveField(46)
 	bool useNewCaptchaForm;
+	@HiveField(47)
+	bool? autoLoginOnMobileNetwork;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -275,6 +277,7 @@ class SavedSettings extends HiveObject {
 		this.contributeCaptchas,
 		bool? showReplyCountsInGallery,
 		bool? useNewCaptchaForm,
+		this.autoLoginOnMobileNetwork,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -731,6 +734,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get useNewCaptchaForm => _settings.useNewCaptchaForm;
 	set useNewCaptchaForm(bool setting) {
 		_settings.useNewCaptchaForm = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool? get autoLoginOnMobileNetwork => _settings.autoLoginOnMobileNetwork;
+	set autoLoginOnMobileNetwork(bool? setting) {
+		_settings.autoLoginOnMobileNetwork = setting;
 		_settings.save();
 		notifyListeners();
 	}

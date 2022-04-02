@@ -352,6 +352,24 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String? getLoginSystemName();
 	List<ImageboardSiteLoginField> getLoginFields();
 	Future<void> login(Map<ImageboardSiteLoginField, String> fields);
+	Future<Map<ImageboardSiteLoginField, String>?> getSavedLoginFields() async {
+		 if ((persistence?.browserState.loginFields.length ?? 0) > 0) {
+			 try {
+					final savedFields = {
+						for (final field in getLoginFields()) field: persistence!.browserState.loginFields[field.formKey]!
+					};
+					return savedFields;
+			 }
+			 catch (e) {
+				 // Probably a field isn't present
+			 }
+		 }
+		 return null;
+	}
+	Future<void> clearSavedLoginFields() async {
+		persistence?.browserState.loginFields.clear();
+		await persistence?.didUpdateBrowserState();
+	}
 	Future<ImageboardSiteLoginStatus?> getLoginStatus();
 	Future<void> logout();
 }

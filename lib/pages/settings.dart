@@ -1554,12 +1554,16 @@ class SettingsLoginPanel extends StatefulWidget {
 
 class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 	ImageboardSiteLoginStatus? status;
-	bool loading = false;
+	Map<ImageboardSiteLoginField, String>? savedFields;
+	bool loading = true;
 
 	Future<void> _updateStatus() async {
 		final newStatus = await widget.site.getLoginStatus();
+		final newSavedFields = await widget.site.getSavedLoginFields();
 		setState(() {
 			status = newStatus;
+			savedFields = newSavedFields;
+			loading = false;
 		});
 	}
 
@@ -1607,19 +1611,18 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 		);
 		if (cont == true) {
 			print(fields);
-			setState(() {
-				loading = true;
-			});
 			try {
 				await widget.site.login(fields);
+				widget.site.persistence?.browserState.loginFields.clear();
+				widget.site.persistence?.browserState.loginFields.addAll({
+					for (final field in fields.entries) field.key.formKey: field.value
+				});
+				widget.site.persistence?.didUpdateBrowserState();
 			}
 			catch (e) {
 				alertError(context, e.toStringDio());
 			}
 			await _updateStatus();
-			setState(() {
-				loading = false;
-			});
 		}
 	}
 
@@ -1628,7 +1631,68 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 		return Column(
 			mainAxisSize: MainAxisSize.min,
 			children: [
-				if (status == null) ...[
+				if (loading) const Center(
+					child: CupertinoActivityIndicator()
+				)
+				else if (status != null) ...[
+					Text('Logged in as ${status!.loginName}\n'),
+					if (status?.expires != null) Text('Expires ${status!.expires}'),
+					CupertinoButton.filled(
+						child: const Text('Logout'),
+						onPressed: () async {
+							setState(() {
+								loading = true;
+							});
+							try {
+								await widget.site.logout();
+							}
+							catch (e) {
+								await alertError(context, e.toStringDio());
+							}
+							await _updateStatus();
+						}
+					)
+				]
+				else if (savedFields != null) ...[
+					const Text('Credentials saved but not in use\n'),
+					Wrap(
+						spacing: 16,
+						runSpacing: 16,
+						children: [
+							CupertinoButton.filled(
+								child: const Text('Activate'),
+								onPressed: () async {
+									setState(() {
+										loading = true;
+									});
+									try {
+										await widget.site.login(savedFields!);
+									}
+									catch (e) {
+										await alertError(context, e.toStringDio());
+									}
+									await _updateStatus();
+								}
+							),
+							CupertinoButton.filled(
+								child: const Text('Clear'),
+								onPressed: () async {
+									setState(() {
+										loading = true;
+									});
+									try {
+										await widget.site.clearSavedLoginFields();
+									}
+									catch (e) {
+										await alertError(context, e.toStringDio());
+									}
+									await _updateStatus();
+								}
+							)
+						]
+					)
+				]
+				else ...[
 					CupertinoButton.filled(
 						child: const Text('Login'),
 						onPressed: () async {
@@ -1638,22 +1702,6 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 							catch (e) {
 								await alertError(context, e.toStringDio());
 							}
-						}
-					)
-				]
-				else ...[
-					Text('Logged in as ${status!.loginName}\n'),
-					if (status?.expires != null) Text('Expires ${status!.expires}'),
-					CupertinoButton.filled(
-						child: const Text('Logout'),
-						onPressed: () async {
-							try {
-								await widget.site.logout();
-							}
-							catch (e) {
-								await alertError(context, e.toStringDio());
-							}
-							await _updateStatus();
 						}
 					)
 				]

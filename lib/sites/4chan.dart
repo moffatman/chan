@@ -607,12 +607,11 @@ class Site4Chan extends ImageboardSite {
 		required this.name,
 		required this.captchaKey,
 		List<ImageboardSiteArchive> archives = const []
-	}) : super(archives) {
-		getLoginStatus();
-	}
+	}) : super(archives);
 
   @override
   Future<ImageboardSiteLoginStatus?> getLoginStatus() async {
+		await client.get(Uri.https(sysUrl, '/').toString());
     final cookies = await Persistence.cookies.loadForRequest(Uri.https(sysUrl, '/'));
 		for (final cookie in cookies) {
 			print(cookie);
@@ -659,11 +658,14 @@ class Site4Chan extends ImageboardSite {
 		final document = parse(response.data);
 		final message = document.querySelector('h2')?.text;
 		if (message == null) {
+			_passEnabled = false;
 			throw const ImageboardSiteLoginException('Unexpected response, contact developer');
 		}
 		if (!message.contains('Success!')) {
+			_passEnabled = false;
 			throw ImageboardSiteLoginException(message);
 		}
+		_passEnabled = true;
   }
 
   @override

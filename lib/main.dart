@@ -18,6 +18,7 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -82,6 +83,25 @@ class _ChanAppState extends State<ChanApp> {
 			if (_persistence == null || site?.name != _site.name) {
 				_persistence = Persistence(_site.name);
 				await _persistence.initialize();
+				// Only try to reauth on wifi
+				Future.microtask(() async {
+					if ((await _site.getLoginStatus()) == null) {
+						print('Might autologin');
+						final savedFields = await _site.getSavedLoginFields();
+						if (savedFields != null && settings.connectivity == ConnectivityResult.wifi) {
+							try {
+								await _site.login(savedFields);
+								print('Auto-logged in');
+							}
+							catch (e) {
+								print('Problem auto-logging in: $e');
+							}
+						}
+					}
+					else {
+						print('Auto-login not necessary');
+					}
+				});
 			}
 			_site.persistence = _persistence;
 			site = _site;

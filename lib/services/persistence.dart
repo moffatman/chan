@@ -120,7 +120,8 @@ class Persistence extends ChangeNotifier {
 			hiddenIds: {},
 			favouriteBoards: [],
 			autosavedIds: {},
-			hiddenImageMD5s: []
+			hiddenImageMD5s: [],
+			loginFields: {}
 		));
 		if (await Hive.boxExists('boards_$id')) {
 			print('Migrating boards box');
@@ -478,6 +479,8 @@ class PersistentBrowserState {
 	@HiveField(6, defaultValue: [])
 	final Set<String> hiddenImageMD5s;
 	Persistence? persistence;
+	@HiveField(7, defaultValue: {})
+	Map<String, String> loginFields;
 	
 	PersistentBrowserState({
 		required this.tabs,
@@ -485,7 +488,8 @@ class PersistentBrowserState {
 		required this.hiddenIds,
 		required this.favouriteBoards,
 		required this.autosavedIds,
-		required List<String> hiddenImageMD5s
+		required List<String> hiddenImageMD5s,
+		required this.loginFields
 	}) : hiddenImageMD5s = hiddenImageMD5s.toSet();
 
 	final Map<String, Filter> _catalogFilters = {};
