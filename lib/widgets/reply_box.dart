@@ -430,9 +430,19 @@ class ReplyBoxState extends State<ReplyBox> {
 				if (shouldAutoLogin) {
 					try {
 						await site.login(savedFields);
+						showToast(
+							context: context,
+							icon: CupertinoIcons.padlock,
+							message: 'Logged in to ${site.getLoginSystemName()}'
+						);
 						print('Auto-logged in');
 					}
 					catch (e) {
+						showToast(
+							context: context,
+							icon: CupertinoIcons.exclamationmark_triangle,
+							message: 'Failed to log in to ${site.getLoginSystemName()}'
+						);
 						print('Problem auto-logging in: $e');
 					}
 				}
