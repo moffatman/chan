@@ -166,6 +166,7 @@ class Persistence extends ChangeNotifier {
 		return threadStateBox.get('${thread.board}/${thread.id}');
 	}
 
+	final Map<ThreadIdentifier, PersistentThreadState> _cachedEphemeralThreadStates = {};
 	PersistentThreadState getThreadState(ThreadIdentifier thread, {bool updateOpenedTime = false}) {
 		final existingState = threadStateBox.get('${thread.board}/${thread.id}');
 		if (existingState != null) {
@@ -175,10 +176,13 @@ class Persistence extends ChangeNotifier {
 			}
 			return existingState;
 		}
-		else {
+		else if (browserState.enableHistory) {
 			final newState = PersistentThreadState();
 			threadStateBox.put('${thread.board}/${thread.id}', newState);
 			return newState;
+		}
+		else {
+			return _cachedEphemeralThreadStates.putIfAbsent(thread, () => PersistentThreadState(ephemeral: true));
 		}
 	}
 
@@ -272,6 +276,10 @@ class Persistence extends ChangeNotifier {
 		await settings.save();
 		savedPostsNotifier.add(null);
 	}
+
+	void didEnableBrowserHistory() {
+		_cachedEphemeralThreadStates.clear();
+	}
 }
 
 const _maxRecentItems = 50;
@@ -317,8 +325,10 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	String draftReply = '';
 	// Don't persist this
 	final lastSeenPostIdNotifier = ValueNotifier<int?>(null);
+	// Don't persist this
+	bool ephemeral;
 
-	PersistentThreadState() : lastOpenedTime = DateTime.now();
+	PersistentThreadState({this.ephemeral = false}) : lastOpenedTime = DateTime.now();
 
 	List<int> get youIds => receipts.map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toList();
 	final FilterCache _filterCache = FilterCache(const DummyFilter());
@@ -377,6 +387,13 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		hiddenPostIds.remove(id);
 		// invalidate cache
 		threadFilter = FilterCache(IDFilter(hiddenPostIds));
+	}
+
+	@override
+	Future<void> save() async {
+		if (!ephemeral) {
+			await super.save();
+		}
 	}
 
 	ThreadIdentifier get identifier => ThreadIdentifier(board: board, id: id);
@@ -481,6 +498,8 @@ class PersistentBrowserState {
 	Persistence? persistence;
 	@HiveField(7, defaultValue: {})
 	Map<String, String> loginFields;
+	// Do not persist
+	bool enableHistory = true;
 	
 	PersistentBrowserState({
 		required this.tabs,

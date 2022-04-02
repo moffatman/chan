@@ -330,6 +330,19 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
+	void _toggleHistory() {
+		browserState.enableHistory = !browserState.enableHistory;
+		if (browserState.enableHistory) {
+			context.read<Persistence>().didEnableBrowserHistory();
+		}
+		setState(() {});
+		showToast(
+			context: context,
+			message: browserState.enableHistory ? 'History enabled' : 'History disabled',
+			icon: browserState.enableHistory ? CupertinoIcons.archivebox_fill : CupertinoIcons.archivebox
+		);
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -500,6 +513,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		bool reorderable = false,
 		Axis axis = Axis.vertical,
 		Widget Function(BuildContext, Widget)? opacityParentBuilder,
+		VoidCallback? onLongPress,
 	}) {
 		final content = Opacity(
 			opacity: (index <= 0 ? (tabletIndex == 0 && index == -1*activeBrowserTab.value) : index == tabletIndex) ? 1.0 : 0.5,
@@ -513,7 +527,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				]
 			)
 		);
-		final child = CupertinoButton(
+		Widget child = CupertinoButton(
 			padding: axis == Axis.vertical ? const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8) : const EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
 			child: opacityParentBuilder != null ? opacityParentBuilder(context, content) : content,
 			onPressed: () async {
@@ -565,6 +579,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					tabletIndex = _tabController.index;
 				});
 			}
+		);
+		child = GestureDetector(
+			child: child,
+			onLongPress: onLongPress
 		);
 		if (reorderable) {
 			return ReorderableDelayedDragStartListener(
@@ -769,7 +787,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 																	secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
 																)
 															),
-															_buildTabletIcon(2, const Icon(CupertinoIcons.archivebox), hideTabletLayoutLabels ? null : 'History'),
+															_buildTabletIcon(2, browserState.enableHistory ? const Icon(CupertinoIcons.archivebox_fill) : const Icon(CupertinoIcons.archivebox), hideTabletLayoutLabels ? null : 'History', onLongPress: _toggleHistory),
 															_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
 															_buildTabletIcon(4, const Icon(CupertinoIcons.settings), hideTabletLayoutLabels ? null : 'Settings',
 																opacityParentBuilder: (context, child) => NotifyingIcon(
@@ -841,8 +859,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											),
 											label: 'Saved'
 										),
-										const BottomNavigationBarItem(
-											icon: Icon(CupertinoIcons.archivebox, size: 28),
+										BottomNavigationBarItem(
+											icon: GestureDetector(
+												child: browserState.enableHistory ? const Icon(CupertinoIcons.archivebox_fill, size: 28) : const Icon(CupertinoIcons.archivebox, size: 28),
+												onLongPress: _toggleHistory
+											),
 											label: 'History'
 										),
 										const BottomNavigationBarItem(
