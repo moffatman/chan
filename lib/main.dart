@@ -343,7 +343,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		showToast(
 			context: context,
 			message: browserState.enableHistory ? 'History enabled' : 'History disabled',
-			icon: browserState.enableHistory ? CupertinoIcons.archivebox_fill : CupertinoIcons.archivebox
+			icon: browserState.enableHistory ? CupertinoIcons.archivebox : CupertinoIcons.eye_slash
 		);
 	}
 
@@ -805,7 +805,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 																	secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
 																)
 															),
-															_buildTabletIcon(2, browserState.enableHistory ? const Icon(CupertinoIcons.archivebox_fill) : const Icon(CupertinoIcons.archivebox), hideTabletLayoutLabels ? null : 'History', onLongPress: _toggleHistory),
+															_buildTabletIcon(2, browserState.enableHistory ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History', onLongPress: _toggleHistory),
 															_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
 															_buildTabletIcon(4, const Icon(CupertinoIcons.settings), hideTabletLayoutLabels ? null : 'Settings',
 																opacityParentBuilder: (context, child) => NotifyingIcon(
@@ -879,7 +879,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										),
 										BottomNavigationBarItem(
 											icon: GestureDetector(
-												child: browserState.enableHistory ? const Icon(CupertinoIcons.archivebox_fill, size: 28) : const Icon(CupertinoIcons.archivebox, size: 28),
+												child: browserState.enableHistory ? const Icon(CupertinoIcons.archivebox, size: 28) : const Icon(CupertinoIcons.eye_slash, size: 28),
 												onLongPress: _toggleHistory
 											),
 											label: 'History'
