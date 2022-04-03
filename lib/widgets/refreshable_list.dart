@@ -320,7 +320,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 							widget.controller!.scrollController!.jumpTo(widget.controller!.scrollController!.position.pixels);
 						}
 					},
-					child: CupertinoScrollbar(
+					child: MaybeCupertinoScrollbar(
 						controller: widget.controller?.scrollController,
 						child: CustomScrollView(
 							key: _scrollViewKey,

@@ -229,6 +229,8 @@ class SavedSettings extends HiveObject {
 	bool useNewCaptchaForm;
 	@HiveField(47)
 	bool? autoLoginOnMobileNetwork;
+	@HiveField(48)
+	bool showScrollbars;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -278,6 +280,7 @@ class SavedSettings extends HiveObject {
 		bool? showReplyCountsInGallery,
 		bool? useNewCaptchaForm,
 		this.autoLoginOnMobileNetwork,
+		bool? showScrollbars,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -329,7 +332,8 @@ class SavedSettings extends HiveObject {
 		onlyShowFavouriteBoardsInSwitcher = onlyShowFavouriteBoardsInSwitcher ?? false,
 		useBoardSwitcherList = useBoardSwitcherList ?? false,
 		showReplyCountsInGallery = showReplyCountsInGallery ?? false,
-		useNewCaptchaForm = useNewCaptchaForm ?? true;
+		useNewCaptchaForm = useNewCaptchaForm ?? true,
+		showScrollbars = showScrollbars ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -741,6 +745,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool? get autoLoginOnMobileNetwork => _settings.autoLoginOnMobileNetwork;
 	set autoLoginOnMobileNetwork(bool? setting) {
 		_settings.autoLoginOnMobileNetwork = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showScrollbars => _settings.showScrollbars;
+	set showScrollbars(bool setting) {
+		_settings.showScrollbars = setting;
 		_settings.save();
 		notifyListeners();
 	}

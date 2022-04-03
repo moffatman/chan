@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:chan/services/settings.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -176,7 +176,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 							},
 							child: Focus(
 								autofocus: true,
-								child: CupertinoScrollbar(
+								child: MaybeCupertinoScrollbar(
 									controller: _controller,
 									child: CustomScrollView(
 										controller: _controller,

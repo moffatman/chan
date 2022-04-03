@@ -46,19 +46,21 @@ class _SettingsPage extends StatelessWidget {
 				middle: Text(title)
 			),
 			child: SafeArea(
-				child: SingleChildScrollView(
-					physics: const BouncingScrollPhysics(),
-					child: Align(
-						alignment: Alignment.center,
-						child: ConstrainedBox(
-							constraints: const BoxConstraints(
-								maxWidth: 500
-							),
-							child: Padding(
-								padding: const EdgeInsets.all(16),
-								child: Column(
-									crossAxisAlignment: CrossAxisAlignment.stretch,
-									children: children
+				child: MaybeCupertinoScrollbar(
+					child: SingleChildScrollView(
+						physics: const BouncingScrollPhysics(),
+						child: Align(
+							alignment: Alignment.center,
+							child: ConstrainedBox(
+								constraints: const BoxConstraints(
+									maxWidth: 500
+								),
+								child: Padding(
+									padding: const EdgeInsets.all(16),
+									child: Column(
+										crossAxisAlignment: CrossAxisAlignment.stretch,
+										children: children
+									)
 								)
 							)
 						)
@@ -987,7 +989,21 @@ class SettingsAppearancePage extends StatelessWidget {
 							settings.twoPaneSplit = newValue.toInt();
 						}
 					)
-				)
+				),
+				const SizedBox(height: 16),
+				const Text('Show scrollbars'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('No'),
+						true: Text('Yes')
+					},
+					groupValue: settings.showScrollbars,
+					onValueChanged: (newValue) {
+						settings.showScrollbars = newValue;
+					}
+				),
+				const SizedBox(height: 16)
 			]
 		);
 	}

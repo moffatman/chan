@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -503,5 +504,27 @@ class TransformedMediaQuery extends StatelessWidget {
 			data: transformation(MediaQuery.of(context)),
 			child: child
 		);
+	}
+}
+
+class MaybeCupertinoScrollbar extends StatelessWidget {
+	final Widget child;
+	final ScrollController? controller;
+
+	const MaybeCupertinoScrollbar({
+		required this.child,
+		this.controller,
+		Key? key
+	}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		if (context.watch<EffectiveSettings>().showScrollbars) {
+			return CupertinoScrollbar(
+				child: child,
+				controller: controller
+			);
+		}
+		return child;
 	}
 }
