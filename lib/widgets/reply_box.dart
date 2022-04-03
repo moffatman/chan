@@ -444,6 +444,9 @@ class ReplyBoxState extends State<ReplyBox> {
 					print('Problem auto-logging in: $e');
 				}
 			}
+			else {
+				await site.clearLoginCookies();
+			}
 		}
 		final captchaRequest = site.getCaptchaRequest(widget.board, widget.threadId);
 		if (captchaRequest is RecaptchaRequest) {

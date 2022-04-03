@@ -627,6 +627,7 @@ class Site4Chan extends ImageboardSite {
   Future<void> clearLoginCookies() async {
 		await Persistence.cookies.delete(Uri.https(sysUrl, '/'), true);
 		await Persistence.cookies.delete(Uri.https(sysUrl, '/'), true);
+		_passEnabled = false;
   }
 
   @override
