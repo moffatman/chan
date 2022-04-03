@@ -162,7 +162,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		final posts = (await Future.wait([op, ...replies].map(_makePost))).toList();
 		final title = document.querySelector('.filetitle')?.text;
 		return Thread(
-			posts: posts,
+			posts_: posts,
 			id: id,
 			time: posts[0].time,
 			isSticky: false,

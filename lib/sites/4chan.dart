@@ -303,7 +303,7 @@ class Site4Chan extends ImageboardSite {
 				replyCount: data['posts'][0]['replies'],
 				imageCount: data['posts'][0]['images'],
 				isArchived: (data['posts'][0]['archived'] ?? 0) == 1,
-				posts: (data['posts'] ?? []).map<Post>((postData) {
+				posts_: (data['posts'] ?? []).map<Post>((postData) {
 					return _makePost(thread.board, thread.id, postData);
 				}).toList(),
 				id: data['posts'][0]['no'],
@@ -366,7 +366,7 @@ class Site4Chan extends ImageboardSite {
 					replyCount: threadData['replies'],
 					imageCount: threadData['images'],
 					attachment: _makeAttachment(board, threadId, threadData),
-					posts: [threadAsPost],
+					posts_: [threadAsPost],
 					title: (title == null) ? null : unescape.convert(title),
 					isSticky: threadData['sticky'] == 1,
 					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),

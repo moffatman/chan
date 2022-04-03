@@ -183,7 +183,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									replyCount: -1,
 									imageCount: -1,
 									time: DateTime.fromMicrosecondsSinceEpoch(0),
-									posts: [],
+									posts_: [],
 								),
 								semanticRootIds: [-7]
 							),

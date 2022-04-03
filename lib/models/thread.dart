@@ -9,7 +9,7 @@ part 'thread.g.dart';
 @HiveType(typeId: 15)
 class Thread implements Filterable {
 	@HiveField(0)
-	final List<Post> posts;
+	final List<Post> posts_;
 	@HiveField(1)
 	final bool isArchived;
 	@HiveField(2)
@@ -43,7 +43,7 @@ class Thread implements Filterable {
 	@HiveField(15, defaultValue: false)
 	bool attachmentDeleted;
 	Thread({
-		required this.posts,
+		required this.posts_,
 		this.isArchived = false,
 		this.isDeleted = false,
 		required this.replyCount,
@@ -59,19 +59,26 @@ class Thread implements Filterable {
 		this.currentPage,
 		this.uniqueIPCount,
 		this.customSpoilerId
-	}) {
-		Map<int, Post> postsById = {};
-		for (final post in posts) {
-			postsById[post.id] = post;
-			post.replyIds = [];
-		}
-		for (final post in posts) {
-			for (final referencedPostId in post.span.referencedPostIds(board)) {
-				if (!(postsById[referencedPostId]?.replyIds.contains(post.id) ?? true)) {
-					postsById[referencedPostId]?.replyIds.add(post.id);
+	});
+	
+	bool _initialized = false;
+	List<Post> get posts {
+		if (!_initialized) {
+			Map<int, Post> postsById = {};
+			for (final post in posts_) {
+				postsById[post.id] = post;
+				post.replyIds = [];
+			}
+			for (final post in posts_) {
+				for (final referencedPostId in post.span.referencedPostIds(board)) {
+					if (!(postsById[referencedPostId]?.replyIds.contains(post.id) ?? true)) {
+						postsById[referencedPostId]?.replyIds.add(post.id);
+					}
 				}
 			}
+			_initialized = true;
 		}
+		return posts_;
 	}
 
 	@override

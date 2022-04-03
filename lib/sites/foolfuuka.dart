@@ -249,7 +249,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			replyCount: posts.length - 1,
 			imageCount: posts.skip(1).where((post) => post.attachment != null).length,
 			isArchived: true,
-			posts: posts,
+			posts_: posts,
 			id: thread.id,
 			attachment: _makeAttachment(op),
 			title: (title == null) ? null : unescape.convert(title),

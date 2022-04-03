@@ -472,7 +472,7 @@ class SettingsAppearancePage extends StatelessWidget {
 				time: DateTime.now().subtract(const Duration(minutes: 5)),
 				title: 'Example thread',
 				isSticky: false,
-				posts: [
+				posts_: [
 					Post(
 						board: 'tv',
 						text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ',
@@ -824,7 +824,7 @@ class SettingsAppearancePage extends StatelessWidget {
 																		time: DateTime.now().subtract(const Duration(minutes: 5)),
 																		title: 'Example thread',
 																		isSticky: false,
-																		posts: [
+																		posts_: [
 																			Post(
 																				board: 'tv',
 																				text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ',

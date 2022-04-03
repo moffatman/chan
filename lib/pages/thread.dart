@@ -118,7 +118,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		replyCount: -1,
 		imageCount: -1,
 		time: DateTime.fromMicrosecondsSinceEpoch(0),
-		posts: [],
+		posts_: [],
 	);
 
 	Future<void> _blockAndScrollToPostIfNeeded([Duration delayBeforeScroll = Duration.zero]) async {

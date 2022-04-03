@@ -145,7 +145,7 @@ class SiteLainchan extends ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(firstPost['time'] * 1000),
 			replyCount: posts.length - 1,
 			imageCount: posts.where((p) => p.attachment != null).length - 1,
-			posts: posts
+			posts_: posts
 		);
 	}
 	@override
@@ -169,7 +169,7 @@ class SiteLainchan extends ImageboardSite {
 					board: board,
 					id: threadData['no'],
 					title: threadData['sub'],
-					posts: [threadAsPost],
+					posts_: [threadAsPost],
 					attachment: threadAsPost.attachment,
 					replyCount: threadData['replies'],
 					imageCount: threadData['images'],
