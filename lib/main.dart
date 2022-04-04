@@ -89,11 +89,6 @@ class _ChanAppState extends State<ChanApp> {
 					if (savedFields != null && settings.connectivity == ConnectivityResult.wifi) {
 						try {
 							await _site.login(savedFields);
-							showToast(
-								context: context,
-								icon: CupertinoIcons.padlock,
-								message: 'Logged in to ${_site.getLoginSystemName()}'
-							);
 							print('Auto-logged in');
 						}
 						catch (e) {

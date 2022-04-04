@@ -428,12 +428,6 @@ class ReplyBoxState extends State<ReplyBox> {
 			if (shouldAutoLogin) {
 				try {
 					await site.login(savedFields);
-					showToast(
-						context: context,
-						icon: CupertinoIcons.padlock,
-						message: 'Logged in to ${site.getLoginSystemName()}'
-					);
-					print('Auto-logged in');
 				}
 				catch (e) {
 					showToast(
