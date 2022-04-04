@@ -360,13 +360,14 @@ class Site4Chan extends ImageboardSite {
 				final String? title = threadData['sub'];
 				final int threadId = threadData['no'];
 				final Post threadAsPost = _makePost(board, threadId, threadData);
+				final List<Post> lastReplies = ((threadData['last_replies'] ?? []) as List<dynamic>).map((postData) => _makePost(board, threadId, postData)).toList();
 				Thread thread = Thread(
 					board: board,
 					id: threadId,
 					replyCount: threadData['replies'],
 					imageCount: threadData['images'],
 					attachment: _makeAttachment(board, threadId, threadData),
-					posts_: [threadAsPost],
+					posts_: [threadAsPost, ...lastReplies],
 					title: (title == null) ? null : unescape.convert(title),
 					isSticky: threadData['sticky'] == 1,
 					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),

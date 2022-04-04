@@ -146,7 +146,8 @@ class _BoardPageState extends State<BoardPage> {
 											ThreadSortingMethod.unsorted: 'Bump Order',
 											ThreadSortingMethod.replyCount: 'Reply Count',
 											ThreadSortingMethod.threadPostTime: 'Creation Date',
-											ThreadSortingMethod.postsPerMinute: 'Reply Rate'
+											ThreadSortingMethod.postsPerMinute: 'Reply Rate',
+											ThreadSortingMethod.lastReplyTime: 'Last Reply'
 										}.entries.map((entry) => CupertinoActionSheetAction(
 											child: Text(entry.value, style: TextStyle(
 												fontWeight: entry.key == settings.catalogSortingMethod ? FontWeight.bold : null
@@ -246,6 +247,9 @@ class _BoardPageState extends State<BoardPage> {
 												}
 												else if (settings.catalogSortingMethod == ThreadSortingMethod.postsPerMinute) {
 													list.sort((a, b) => -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds));
+												}
+												else if (settings.catalogSortingMethod == ThreadSortingMethod.lastReplyTime) {
+													list.sort((a, b) => b.posts.last.id.compareTo(a.posts.last.id));
 												}
 												Future.delayed(const Duration(milliseconds: 100), () => _loadCompleter?.complete());
 												return settings.reverseCatalogSorting ? list.reversed.toList() : list;
