@@ -6,6 +6,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/thread_row.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -87,16 +88,31 @@ class _HistoryPageState extends State<HistoryPage> {
 						filterHint: 'Search history'
 					);
 				}
+				final persistence = context.watch<Persistence>();
 				return CupertinoPageScaffold(
 					resizeToAvoidBottomInset: false,
-					navigationBar: const CupertinoNavigationBar(
+					navigationBar: CupertinoNavigationBar(
 						transitionBetweenRoutes: false,
-						middle: Text('History')
+						middle: const Text('History'),
+						trailing: CupertinoButton(
+							padding: EdgeInsets.zero,
+							child: Icon(persistence.browserState.enableHistory ? CupertinoIcons.stop : CupertinoIcons.play),
+							onPressed: () {
+								persistence.browserState.enableHistory = !persistence.browserState.enableHistory;
+								context.read<Persistence>().didChangeBrowserHistoryStatus();
+								threadSetter(selectedThread);
+								showToast(
+									context: context,
+									message: persistence.browserState.enableHistory ? 'History resumed' : 'History stopped',
+									icon: persistence.browserState.enableHistory ? CupertinoIcons.play : CupertinoIcons.stop
+								);
+							}
+						)
 					),
 					child: widget.isActive ? ValueListenableBuilder(
-						valueListenable: context.watch<Persistence>().threadStateBox.listenable(),
+						valueListenable: persistence.threadStateBox.listenable(),
 						builder: _masterBuilder
-					) : _masterBuilder(context, context.watch<Persistence>().threadStateBox, null)
+					) : _masterBuilder(context, persistence.threadStateBox, null)
 				);
 			},
 			detailBuilder: (selectedThread, poppedOut) {

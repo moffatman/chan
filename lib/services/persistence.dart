@@ -277,8 +277,9 @@ class Persistence extends ChangeNotifier {
 		savedPostsNotifier.add(null);
 	}
 
-	void didEnableBrowserHistory() {
+	void didChangeBrowserHistoryStatus() {
 		_cachedEphemeralThreadStates.clear();
+		notifyListeners();
 	}
 }
 
