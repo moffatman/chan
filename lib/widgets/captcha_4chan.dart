@@ -542,43 +542,53 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 														child: Stack(
 															fit: StackFit.expand,
 															children: [
-																CupertinoPicker.builder(
-																	key: _pickerKeys[i],
-																	scrollController: _letterPickerControllers[i],
-																	selectionOverlay: AnimatedBuilder(
-																		animation: _solutionController,
-																		builder: (context, child) => CupertinoPickerDefaultSelectionOverlay(
-																			background: ColorTween(
-																				begin: CupertinoColors.tertiarySystemFill.resolveFrom(context),
-																				end: CupertinoTheme.of(context).primaryColor
-																			).transform((_solutionNode.hasFocus && (_solutionController.selection.baseOffset <= i) && (i < _solutionController.selection.extentOffset)) ? 0.5 : 0)!
-																		)
-																	),
-																	childCount: captchaLetters.length,
-																	itemBuilder: (context, l) => Padding(
-																		padding: const EdgeInsets.all(6),
-																		child: Center(
-																			child: Text(captchaLetters[l],
-																				style: TextStyle(
-																					fontSize: 34,
-																					color:  ColorTween(
-																						begin: CupertinoTheme.of(context).primaryColor,
-																						end: const Color.fromARGB(255, 241, 190, 19)).transform(1 - _guessConfidences[i]
-																					)!
+																NotificationListener(
+																	onNotification: (notification) {
+																		if (notification is ScrollEndNotification && notification.metrics is FixedExtentMetrics) {
+																			_modifyingFromPicker = true;
+																			final selection = _solutionController.selection;
+																			_solutionController.text = _solutionController.text.replaceRange(i, i + 1, captchaLetters[(notification.metrics as FixedExtentMetrics).itemIndex]);
+																			_solutionController.selection = selection;
+																			if (_guessConfidences[i] != 1) {
+																				setState(() {
+																					_guessConfidences[i] = 1;
+																				});
+																			}
+																			_modifyingFromPicker = false;
+																			return true;
+																		}
+																		return false;
+																	},
+																	child: CupertinoPicker.builder(
+																		key: _pickerKeys[i],
+																		scrollController: _letterPickerControllers[i],
+																		selectionOverlay: AnimatedBuilder(
+																			animation: _solutionController,
+																			builder: (context, child) => CupertinoPickerDefaultSelectionOverlay(
+																				background: ColorTween(
+																					begin: CupertinoColors.tertiarySystemFill.resolveFrom(context),
+																					end: CupertinoTheme.of(context).primaryColor
+																				).transform((_solutionNode.hasFocus && (_solutionController.selection.baseOffset <= i) && (i < _solutionController.selection.extentOffset)) ? 0.5 : 0)!
+																			)
+																		),
+																		childCount: captchaLetters.length,
+																		itemBuilder: (context, l) => Padding(
+																			padding: const EdgeInsets.all(6),
+																			child: Center(
+																				child: Text(captchaLetters[l],
+																					style: TextStyle(
+																						fontSize: 34,
+																						color:  ColorTween(
+																							begin: CupertinoTheme.of(context).primaryColor,
+																							end: const Color.fromARGB(255, 241, 190, 19)).transform(1 - _guessConfidences[i]
+																						)!
+																					)
 																				)
 																			)
-																		)
-																	),
-																	itemExtent: 50,
-																	onSelectedItemChanged: (letterIndex) {
-																		_modifyingFromPicker = true;
-																		final selection = _solutionController.selection;
-																		_solutionController.text = _solutionController.text.replaceRange(i, i + 1, captchaLetters[letterIndex]);
-																		_solutionController.selection = selection;
-																		_guessConfidences[i] = 1;
-																		setState(() {});
-																		_modifyingFromPicker = false;
-																	},
+																		),
+																		itemExtent: 50,
+																		onSelectedItemChanged: null
+																	)
 																),
 																Column(
 																	crossAxisAlignment: CrossAxisAlignment.stretch,
