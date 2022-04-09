@@ -94,7 +94,7 @@ class MediaScan {
 					completer.complete(MediaScan(
 						hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
 						duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
-						bitrate: int.tryParse(data['format']?['bit_rate']),
+						bitrate: int.tryParse(data['format']?['bit_rate'] ?? ''),
 						width: width == 0 ? null : width,
 						height: height == 0 ? null : height
 					));

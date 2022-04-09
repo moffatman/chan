@@ -702,7 +702,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			url: Uri.https('', ''),
 			type: attachmentExt == 'webm' || attachmentExt == 'mp4' ? AttachmentType.webm : AttachmentType.image,
 			md5: '',
-			id: -1,
+			id: attachment?.uri.hashCode ?? -1,
 			filename: attachment?.uri.pathSegments.last ?? '',
 			thumbnailUrl: Uri.https('', ''),
 			board: widget.board
@@ -747,7 +747,7 @@ class ReplyBoxState extends State<ReplyBox> {
 										child: Hero(
 											tag: AttachmentSemanticLocation(
 												attachment: fakeAttachment,
-												semanticParents: [-99]
+												semanticParents: [_textFieldController.hashCode]
 											),
 											child: SavedAttachmentThumbnail(file: attachment!)
 										),
@@ -755,7 +755,7 @@ class ReplyBoxState extends State<ReplyBox> {
 											showGallery(
 												attachments: [fakeAttachment],
 												context: context,
-												semanticParentIds: [-99],
+												semanticParentIds: [_textFieldController.hashCode],
 												overrideSources: {
 													fakeAttachment: attachment!.uri
 												},

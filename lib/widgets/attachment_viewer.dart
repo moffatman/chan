@@ -510,7 +510,7 @@ class AttachmentViewer extends StatelessWidget {
 		);
 		if (source.scheme == 'file') {
 			image = ExtendedFileImageProvider(
-				File(source.path),
+				File(source.toStringFFMPEG()),
 				imageCacheName: 'asdf'
 			);
 		}
