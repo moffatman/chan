@@ -43,6 +43,7 @@ class ReplyBox extends StatefulWidget {
 	final ValueChanged<String>? onSubjectChanged;
 	final VoidCallback? onVisibilityChanged;
 	final bool isArchived;
+	final bool fullyExpanded;
 
 	const ReplyBox({
 		required this.board,
@@ -54,6 +55,7 @@ class ReplyBox extends StatefulWidget {
 		this.onSubjectChanged,
 		this.onVisibilityChanged,
 		this.isArchived = false,
+		this.fullyExpanded = false,
 		Key? key
 	}) : super(key: key);
 
@@ -77,7 +79,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool get showOptions => _showOptions && !loading;
 	bool _showAttachmentOptions = false;
 	bool get showAttachmentOptions => _showAttachmentOptions && !loading;
-	bool show = false;
+	bool _show = false;
+	bool get show => widget.fullyExpanded || _show;
 	String? _lastFoundUrl;
 	String? _proposedAttachmentUrl;
 	CaptchaSolution? _captchaSolution;
@@ -177,7 +180,7 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	void showReplyBox() {
 		setState(() {
-			show = true;
+			_show = true;
 		});
 		widget.onVisibilityChanged?.call();
 		_textFocusNode.requestFocus();
@@ -185,7 +188,7 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	void hideReplyBox() {
 		setState(() {
-			show = false;
+			_show = false;
 		});
 		widget.onVisibilityChanged?.call();
 		_textFocusNode.unfocus();
@@ -569,7 +572,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_optionsFieldController.clear();
 			_subjectFieldController.clear();
 			_filenameController.clear();
-			show = false;
+			_show = false;
 			loading = false;
 			attachment = null;
 			if (mounted) setState(() {});

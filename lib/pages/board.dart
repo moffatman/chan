@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/board_switcher.dart';
+import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/persistence.dart';
@@ -33,9 +34,9 @@ class BoardPage extends StatefulWidget {
 	final ValueChanged<ThreadIdentifier>? onThreadSelected;
 	final ThreadIdentifier? selectedThread;
 	final String? initialSearch;
-	final String initialDraftText;
+	final String Function()? getInitialDraftText;
 	final ValueChanged<String>? onDraftTextChanged;
-	final String initialDraftSubject;
+	final String Function()? getInitialDraftSubject;
 	final ValueChanged<String>? onDraftSubjectChanged;
 	final ValueChanged<ThreadIdentifier>? onWantOpenThreadInNewTab;
 	const BoardPage({
@@ -45,9 +46,9 @@ class BoardPage extends StatefulWidget {
 		this.onThreadSelected,
 		this.selectedThread,
 		this.initialSearch,
-		this.initialDraftText = '',
+		this.getInitialDraftText,
 		this.onDraftTextChanged,
-		this.initialDraftSubject = '',
+		this.getInitialDraftSubject,
 		this.onDraftSubjectChanged,
 		this.onWantOpenThreadInNewTab,
 		required this.semanticId,
@@ -175,8 +176,38 @@ class _BoardPageState extends State<BoardPage> {
 							padding: EdgeInsets.zero,
 							child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.pencil_slash) : const Icon(CupertinoIcons.pencil),
 							onPressed: () {
-								_replyBoxKey.currentState?.toggleReplyBox();
-								setState(() {});
+								if (context.read<MasterDetailHint?>()?.twoPane == true && _replyBoxKey.currentState?.show != true) {
+									showCupertinoModalPopup(
+										context: context,
+										builder: (context) => Container(
+											color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+											child: ReplyBox(
+												fullyExpanded: true,
+												board: board!.name,
+												initialText: widget.getInitialDraftText?.call() ?? '',
+												onTextChanged: (text) {
+													widget.onDraftTextChanged?.call(text);
+												},
+												initialSubject: widget.getInitialDraftSubject?.call() ?? '',
+												onSubjectChanged: (subject) {
+													widget.onDraftSubjectChanged?.call(subject);
+												},
+												onReplyPosted: (receipt) {
+													final persistentState = persistence.getThreadState(ThreadIdentifier(board: board!.name, id: receipt.id));
+													persistentState.savedTime = DateTime.now();
+													persistentState.save();
+													_listController.update();
+													widget.onThreadSelected?.call(ThreadIdentifier(board: board!.name, id: receipt.id));
+													Navigator.of(context).pop();
+												}
+											)
+										)
+									);
+								}
+								else {
+									_replyBoxKey.currentState?.toggleReplyBox();
+									setState(() {});
+								}
 							}
 						)
 					]
@@ -417,11 +448,11 @@ class _BoardPageState extends State<BoardPage> {
 						ReplyBox(
 							key: _replyBoxKey,
 							board: board!.name,
-							initialText: widget.initialDraftText,
+							initialText: widget.getInitialDraftText?.call() ?? '',
 							onTextChanged: (text) {
 								widget.onDraftTextChanged?.call(text);
 							},
-							initialSubject: widget.initialDraftSubject,
+							initialSubject: widget.getInitialDraftSubject?.call() ?? '',
 							onSubjectChanged: (subject) {
 								widget.onDraftSubjectChanged?.call(subject);
 							},

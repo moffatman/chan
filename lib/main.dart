@@ -393,13 +393,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							Future.delayed(const Duration(seconds: 1), () => _didUpdateBrowserState());
 							setState(() {});
 						},
-						initialThreadDraftText: tabs[i].item1.draftThread,
+						getInitialThreadDraftText: () => tabs[i].item1.draftThread,
 						onThreadDraftTextChanged: (newText) {
 							tabs[i].item1.draftThread = newText;
 							_saveBrowserTabsDuringDraftEditingTimer?.cancel();
 							_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), () => _didUpdateBrowserState());
 						},
-						initialThreadDraftSubject: tabs[i].item1.draftSubject,
+						getInitialThreadDraftSubject: () => tabs[i].item1.draftSubject,
 						onThreadDraftSubjectChanged: (newSubject) {
 							tabs[i].item1.draftSubject = newSubject;
 							_saveBrowserTabsDuringDraftEditingTimer?.cancel();

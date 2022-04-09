@@ -10,9 +10,9 @@ class ImageboardTab extends StatelessWidget {
 	final ValueChanged<ImageboardBoard>? onBoardChanged;
 	final ThreadIdentifier? initialThread;
 	final ValueChanged<ThreadIdentifier?>? onThreadChanged;
-	final String initialThreadDraftText;
+	final String Function()? getInitialThreadDraftText;
 	final ValueChanged<String>? onThreadDraftTextChanged;
-	final String initialThreadDraftSubject;
+	final String Function()? getInitialThreadDraftSubject;
 	final ValueChanged<String>? onThreadDraftSubjectChanged;
 	final ValueChanged<ThreadIdentifier>? onWantOpenThreadInNewTab;
 	final int id;
@@ -21,9 +21,9 @@ class ImageboardTab extends StatelessWidget {
 		this.onBoardChanged,
 		this.initialThread,
 		this.onThreadChanged,
-		this.initialThreadDraftText = '',
+		this.getInitialThreadDraftText,
 		this.onThreadDraftTextChanged,
-		this.initialThreadDraftSubject = '',
+		this.getInitialThreadDraftSubject,
 		this.onThreadDraftSubjectChanged,
 		this.onWantOpenThreadInNewTab,
 		this.id = -1,
@@ -42,9 +42,9 @@ class ImageboardTab extends StatelessWidget {
 					selectedThread: selectedThread,
 					onThreadSelected: threadSetter,
 					onBoardChanged: onBoardChanged,
-					initialDraftText: initialThreadDraftText,
+					getInitialDraftText: getInitialThreadDraftText,
 					onDraftTextChanged: onThreadDraftTextChanged,
-					initialDraftSubject: initialThreadDraftSubject,
+					getInitialDraftSubject: getInitialThreadDraftSubject,
 					onDraftSubjectChanged: onThreadDraftSubjectChanged,
 					onWantOpenThreadInNewTab: onWantOpenThreadInNewTab,
 					semanticId: id

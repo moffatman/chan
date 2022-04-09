@@ -13,6 +13,14 @@ import 'package:rxdart/subjects.dart';
 PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder, bool showAnimations) => FullWidthCupertinoPageRoute(builder: builder, showAnimations: showAnimations);
 PageRoute transparentPageRouteBuilder(WidgetBuilder builder, bool showAnimations) => TransparentRoute(builder: builder, showAnimations: showAnimations);
 
+class MasterDetailHint {
+	final bool twoPane;
+
+	const MasterDetailHint({
+		required this.twoPane
+	});
+}
+
 const dontAutoPopSettings = RouteSettings(
 	name: 'dontautoclose'
 );
@@ -320,25 +328,30 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 		}
 		lastOnePane = onePane;
 		context.watch<WillPopZone?>()?.callback = _onWillPop;
-		return WillPopScope(
-			onWillPop: _onWillPop,
-			child: onePane ? masterNavigator : Row(
-				children: [
-					Flexible(
-						flex: settings.twoPaneSplit,
-						child: PrimaryScrollController.none(
-							child: masterNavigator
+		return Provider.value(
+			value: MasterDetailHint(
+				twoPane: !onePane
+			),
+			child: WillPopScope(
+				onWillPop: _onWillPop,
+				child: onePane ? masterNavigator : Row(
+					children: [
+						Flexible(
+							flex: settings.twoPaneSplit,
+							child: PrimaryScrollController.none(
+								child: masterNavigator
+							)
+						),
+						VerticalDivider(
+							width: 0,
+							color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+						),
+						Flexible(
+							flex: twoPaneSplitDenominator - settings.twoPaneSplit,
+							child: detailNavigator
 						)
-					),
-					VerticalDivider(
-						width: 0,
-						color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
-					),
-					Flexible(
-						flex: twoPaneSplitDenominator - settings.twoPaneSplit,
-						child: detailNavigator
-					)
-				]
+					]
+				)
 			)
 		);
 	}
