@@ -347,6 +347,10 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 												Expanded(
 													child: Center(
 														child: CupertinoSearchTextField(
+															prefixIcon: const Padding(
+																padding: EdgeInsets.only(top: 2),
+																child: Icon(CupertinoIcons.search)
+															),
 															onTap: () {
 																setState(() {
 																	_searchTapped = true;
