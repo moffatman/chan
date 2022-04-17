@@ -691,75 +691,80 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 							)
 						)
 					),
-					child: Column(
-						crossAxisAlignment: CrossAxisAlignment.end,
-						mainAxisSize: MainAxisSize.min,
-						children: [
-							for (final button in [
-								Tuple3('Scroll to top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), () => widget.listController.animateTo((p) => true)),
-								Tuple3('${youIds.length} submission', const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
-										WeakNavigator.push(context, PostsPage(
-											zone: widget.zone,
-											postsIdsToShow: youIds,
-											onTap: (post) {
-												widget.listController.animateTo((p) => p.id == post.id);
-												WeakNavigator.pop(context);
-											}
-										)
-									);
-								}),
-								Tuple3('${_yous.length} (You)s', const Icon(CupertinoIcons.reply_all, size: 19), youIds.isEmpty ? null : () {
-										WeakNavigator.push(context, PostsPage(
-											zone: widget.zone,
-											postsIdsToShow: _yous.map((y) => y.id).toList(),
-											onTap: (post) {
-												widget.listController.animateTo((p) => p.id == post.id);
-												WeakNavigator.pop(context);
-											}
-										)
-									);
-								}),
-								Tuple3(
-									'${(widget.thread?.imageCount ?? 0) + 1} image${(widget.thread?.imageCount ?? 0) != 0 ? 's' : ''}',
-									const RotatedBox(
-										quarterTurns: 1,
-										child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19)
-									),
-									() {
-										final nextPostWithImage = widget.persistentState.thread?.posts.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.attachment != null, orElse: () {
-											return widget.persistentState.thread!.posts.take(widget.listController.firstVisibleIndex).firstWhere((p) => p.attachment != null);
-										});
-										Navigator.of(context).push(FullWidthCupertinoPageRoute(
-											builder: (context) => ThreadAttachmentsPage(
-												thread: widget.persistentState.thread!,
-												initialAttachment: nextPostWithImage?.attachment,
-												onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
+					child: Padding(
+						padding: const EdgeInsets.only(top: 10, bottom: 50),
+						child: FittedBox(
+							fit: BoxFit.contain,
+							child: Column(
+								crossAxisAlignment: CrossAxisAlignment.end,
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									for (final button in [
+										Tuple3('Scroll to top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), () => widget.listController.animateTo((p) => true)),
+										Tuple3('${youIds.length} submission', const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
+												WeakNavigator.push(context, PostsPage(
+													zone: widget.zone,
+													postsIdsToShow: youIds,
+													onTap: (post) {
+														widget.listController.animateTo((p) => p.id == post.id);
+														WeakNavigator.pop(context);
+													}
+												)
+											);
+										}),
+										Tuple3('${_yous.length} (You)s', const Icon(CupertinoIcons.reply_all, size: 19), youIds.isEmpty ? null : () {
+												WeakNavigator.push(context, PostsPage(
+													zone: widget.zone,
+													postsIdsToShow: _yous.map((y) => y.id).toList(),
+													onTap: (post) {
+														widget.listController.animateTo((p) => p.id == post.id);
+														WeakNavigator.pop(context);
+													}
+												)
+											);
+										}),
+										Tuple3(
+											'${(widget.thread?.imageCount ?? 0) + 1} image${(widget.thread?.imageCount ?? 0) != 0 ? 's' : ''}',
+											const RotatedBox(
+												quarterTurns: 1,
+												child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19)
 											),
-											showAnimations: context.read<EffectiveSettings>().showAnimations)
-										);
-									}
-								),
-								Tuple3('Scroll to last-seen', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), () => widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0)),
-								Tuple3('Scroll to bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom)
-							]) Padding(
-								padding: const EdgeInsets.only(bottom: 16, right: 16),
-								child: CupertinoButton.filled(
-									disabledColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.4),
-									padding: const EdgeInsets.all(8),
-									minSize: 0,
-									child: Row(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											Text(button.item1),
-											const SizedBox(width: 8),
-											button.item2
-										]
-									),
-									onPressed: button.item3
-								),
-							),
-							const SizedBox(height: 50),
-						]
+											() {
+												final nextPostWithImage = widget.persistentState.thread?.posts.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.attachment != null, orElse: () {
+													return widget.persistentState.thread!.posts.take(widget.listController.firstVisibleIndex).firstWhere((p) => p.attachment != null);
+												});
+												Navigator.of(context).push(FullWidthCupertinoPageRoute(
+													builder: (context) => ThreadAttachmentsPage(
+														thread: widget.persistentState.thread!,
+														initialAttachment: nextPostWithImage?.attachment,
+														onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
+													),
+													showAnimations: context.read<EffectiveSettings>().showAnimations)
+												);
+											}
+										),
+										Tuple3('Scroll to last-seen', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), () => widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0)),
+										Tuple3('Scroll to bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom)
+									]) Padding(
+										padding: const EdgeInsets.only(bottom: 16, right: 16),
+										child: CupertinoButton.filled(
+											disabledColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.4),
+											padding: const EdgeInsets.all(8),
+											minSize: 0,
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Text(button.item1),
+													const SizedBox(width: 8),
+													button.item2
+												]
+											),
+											onPressed: button.item3
+										),
+									)
+								]
+							)
+						)
 					)
 				),
 				CupertinoButton(
