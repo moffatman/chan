@@ -693,7 +693,7 @@ class PostLinkSpan extends PostSpan {
 			style: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline
 			),
-			recognizer: TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(url)),
+			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(url))),
 			onEnter: options.onEnter,
 			onExit: options.onExit
 		);
