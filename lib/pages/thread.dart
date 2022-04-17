@@ -780,7 +780,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 										textAlign: TextAlign.center
 									)
 								),
-								if (_whiteCount == 0  || _greyCount > 0) Container(
+								if (_whiteCount == 0 || _greyCount > 0) Container(
 									decoration: BoxDecoration(
 										borderRadius: (_redCount > 0) ? (_whiteCount > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (_whiteCount > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
 										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
@@ -802,7 +802,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 								),
 								if (_whiteCount > 0) Container(
 									decoration: BoxDecoration(
-										borderRadius: _greyCount == 0 ? radiusAlone : const BorderRadius.only(topRight: radius, bottomRight: radius),
+										borderRadius: _greyCount <= 0 ? radiusAlone : const BorderRadius.only(topRight: radius, bottomRight: radius),
 										color: CupertinoTheme.of(context).primaryColor
 									),
 									padding: const EdgeInsets.all(8),
