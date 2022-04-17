@@ -737,7 +737,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 													builder: (context) => ThreadAttachmentsPage(
 														thread: widget.persistentState.thread!,
 														initialAttachment: nextPostWithImage?.attachment,
-														onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
+														//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
 													),
 													showAnimations: context.read<EffectiveSettings>().showAnimations)
 												);
