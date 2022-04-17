@@ -13,11 +13,13 @@ class PostsPage extends StatefulWidget {
 	final PostSpanZoneData zone;
 	final int? postIdForBackground;
 	final List<int> postsIdsToShow;
+	final ValueChanged<Post>? onTap;
 
 	const PostsPage({
 		required this.postsIdsToShow,
 		this.postIdForBackground,
 		required this.zone,
+		this.onTap,
 		Key? key
 	}) : super(key: key);
 
@@ -71,6 +73,7 @@ class _PostsPageState extends State<PostsPage> {
 									postContexts[reply] = context;
 									return PostRow(
 										post: reply,
+										onTap: widget.onTap == null ? null : () => widget.onTap!(reply),
 										onThumbnailTap: (attachment) {
 											showGallery(
 												context: context,

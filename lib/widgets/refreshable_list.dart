@@ -15,7 +15,7 @@ import 'package:tuple/tuple.dart';
 
 const double _overscrollTriggerThreshold = 100;
 
-class RefreshableList<T extends Filterable> extends StatefulWidget {
+class RefreshableList<T> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
 	final List<T>? initialList;
 	final Future<List<T>?> Function() listUpdater;
@@ -55,7 +55,7 @@ class RefreshableList<T extends Filterable> extends StatefulWidget {
 	createState() => RefreshableListState<T>();
 }
 
-class RefreshableListState<T extends Filterable> extends State<RefreshableList<T>> with TickerProviderStateMixin {
+class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProviderStateMixin {
 	List<T>? list;
 	String? errorMessage;
 	Type? errorType;
@@ -248,7 +248,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 			for (final item in list!) {
 				bool handled = false;
 				for (final filter in filters) {
-					final result = filter.filter(item);
+					final result = item is Filterable ? filter.filter(item) : null;
 					if (result != null) {
 						switch (result.type) {
 							case FilterResultType.hide:
@@ -337,7 +337,7 @@ class RefreshableListState<T extends Filterable> extends State<RefreshableList<T
 									),
 									bottom: false
 								),
-								SliverToBoxAdapter(
+								if (T is Filterable) SliverToBoxAdapter(
 									child: Container(
 										height: kMinInteractiveDimensionCupertino,
 										padding: const EdgeInsets.all(4),
@@ -691,7 +691,7 @@ class _RefreshableListItem<T> {
 	@override
 	String toString() => '_RefreshableListItem(item: $item, cachedOffset: $cachedOffset, cachedHeight: $cachedHeight)';
 }
-class RefreshableListController<T extends Filterable> {
+class RefreshableListController<T> {
 	List<_RefreshableListItem<T>> _items = [];
 	List<T> get items => _items.map((i) => i.item).toList();
 	ScrollController? scrollController;

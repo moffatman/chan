@@ -4,12 +4,15 @@ import 'dart:math';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/posts.dart';
+import 'package:chan/pages/thread_attachments.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
@@ -21,6 +24,7 @@ import 'package:flutter/material.dart';
 import 'package:chan/models/post.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:tuple/tuple.dart';
 
 class OpenGalleryIntent extends Intent {
 	const OpenGalleryIntent();
@@ -500,6 +504,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																	persistentState: persistentState,
 																	thread: persistentState.thread,
 																	listController: _listController,
+																	zone: zone,
 																	filter: Filter.of(context)
 																)
 															)
@@ -557,14 +562,16 @@ class _ThreadPageState extends State<ThreadPage> {
 class ThreadPositionIndicator extends StatefulWidget {
 	final PersistentThreadState persistentState;
 	final Thread? thread;
-	final RefreshableListController listController;
+	final RefreshableListController<Post> listController;
 	final Filter filter;
+	final PostSpanZoneData zone;
 	
 	const ThreadPositionIndicator({
 		required this.persistentState,
 		required this.thread,
 		required this.listController,
 		required this.filter,
+		required this.zone,
 		Key? key
 	}) : super(key: key);
 
@@ -572,21 +579,31 @@ class ThreadPositionIndicator extends StatefulWidget {
 	createState() => _ThreadPositionIndicatorState();
 }
 
-class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
+class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with TickerProviderStateMixin {
 	List<Post>? _filteredPosts;
+	List<Post> _yous = [];
 	int? _lastLastVisibleItemId;
 	int _redCount = 0;
 	int _whiteCount = 0;
 	int _greyCount = 0;
 	late StreamSubscription<void> _slowScrollSubscription;
 	Timer? _waitForRebuildTimer;
+	late final _buttonsAnimationController = AnimationController(
+		vsync: this,
+		duration: const Duration(milliseconds: 300)
+	);
+	late final _buttonsAnimation = CurvedAnimation(
+		parent: _buttonsAnimationController,
+		curve: Curves.ease
+	);
 
 	bool _updateCounts() {
 		final lastVisibleItemId = widget.listController.lastVisibleItem?.id;
 		if (lastVisibleItemId == null || _filteredPosts == null) return false;
 		final youIds = widget.persistentState.youIds;
 		final lastSeenPostId = widget.persistentState.lastSeenPostId ?? widget.persistentState.id;
-		_redCount = _filteredPosts!.where((p) => p.id > lastSeenPostId && p.span.referencedPostIds(p.board).any((id) => youIds.contains(id))).length;
+		_yous = _filteredPosts!.where((p) => p.span.referencedPostIds(p.board).any((id) => youIds.contains(id))).toList();
+		_redCount = _yous.where((p) => p.id > lastSeenPostId).length;
 		_whiteCount = _filteredPosts!.where((p) => p.id > lastSeenPostId).length;
 		_greyCount = _filteredPosts!.where((p) => p.id > lastVisibleItemId).length - _whiteCount;
 		_lastLastVisibleItemId = lastVisibleItemId;
@@ -658,74 +675,165 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> {
 		const radius = Radius.circular(8);
 		const radiusAlone = BorderRadius.all(radius);
 		scrollToBottom() => widget.listController.animateTo((post) => post.id == widget.persistentState.thread!.posts.last.id, alignment: 1.0);
-		if (_redCount > 0 || _whiteCount > 0 || _greyCount > 0) {
-			return GestureDetector(
-				child: Builder(
-					builder: (context) => Row(
+		final youIds = widget.persistentState.youIds;
+		return Stack(
+			alignment: Alignment.bottomRight,
+			children: [
+				AnimatedBuilder(
+					animation: _buttonsAnimationController,
+					builder: (context, child) => Transform(
+						transform: Matrix4.translationValues(0, 100 - _buttonsAnimation.value * 100, 0),
+						child: Opacity(
+							opacity: _buttonsAnimation.value,
+							child: IgnorePointer(
+								ignoring: _buttonsAnimation.value < 0.5,
+								child: child
+							)
+						)
+					),
+					child: Column(
+						crossAxisAlignment: CrossAxisAlignment.end,
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							if (_redCount > 0) Container(
-								decoration: BoxDecoration(
-									borderRadius: (_whiteCount > 0 || _greyCount > 0) ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone,
-									color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
-								),
-								padding: const EdgeInsets.all(8),
-								margin: EdgeInsets.only(bottom: 16, right: (_whiteCount == 0 && _greyCount == 0) ? 16 : 0),
-								child: Text(
-									_redCount.toString(),
-									textAlign: TextAlign.center
-								)
-							),
-							if (_greyCount > 0) Container(
-								decoration: BoxDecoration(
-									borderRadius: (_redCount > 0) ? (_whiteCount > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (_whiteCount > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
-									color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
-								),
-								padding: const EdgeInsets.all(8),
-								margin: EdgeInsets.only(bottom: 16, right: _whiteCount > 0 ? 0 : 16),
-								child: Container(
-									constraints: BoxConstraints(
-										minWidth: 24 * MediaQuery.of(context).textScaleFactor
+							for (final button in [
+								Tuple3('Scroll to top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), () => widget.listController.animateTo((p) => true)),
+								Tuple3('${youIds.length} submission', const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
+										WeakNavigator.push(context, PostsPage(
+											zone: widget.zone,
+											postsIdsToShow: youIds,
+											onTap: (post) {
+												widget.listController.animateTo((p) => p.id == post.id);
+												WeakNavigator.pop(context);
+											}
+										)
+									);
+								}),
+								Tuple3('${_yous.length} (You)s', const Icon(CupertinoIcons.reply_all, size: 19), youIds.isEmpty ? null : () {
+										WeakNavigator.push(context, PostsPage(
+											zone: widget.zone,
+											postsIdsToShow: _yous.map((y) => y.id).toList(),
+											onTap: (post) {
+												widget.listController.animateTo((p) => p.id == post.id);
+												WeakNavigator.pop(context);
+											}
+										)
+									);
+								}),
+								Tuple3(
+									'${(widget.thread?.imageCount ?? 0) + 1} image${(widget.thread?.imageCount ?? 0) != 0 ? 's' : ''}',
+									const RotatedBox(
+										quarterTurns: 1,
+										child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19)
 									),
-									child: Text(
-										_greyCount.toString(),
-										style: TextStyle(
-											color: CupertinoTheme.of(context).scaffoldBackgroundColor
-										),
-										textAlign: TextAlign.center
-									)
-								)
-							),
-							if (_whiteCount > 0) Container(
-								decoration: BoxDecoration(
-									borderRadius: (_greyCount > 0 || _redCount > 0) ? const BorderRadius.only(topRight: radius, bottomRight: radius) : radiusAlone,
-									color: CupertinoTheme.of(context).primaryColor
+									() {
+										final nextPostWithImage = widget.persistentState.thread?.posts.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.attachment != null, orElse: () {
+											return widget.persistentState.thread!.posts.take(widget.listController.firstVisibleIndex).firstWhere((p) => p.attachment != null);
+										});
+										Navigator.of(context).push(FullWidthCupertinoPageRoute(
+											builder: (context) => ThreadAttachmentsPage(
+												thread: widget.persistentState.thread!,
+												initialAttachment: nextPostWithImage?.attachment,
+												onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
+											),
+											showAnimations: context.read<EffectiveSettings>().showAnimations)
+										);
+									}
 								),
-								padding: const EdgeInsets.all(8),
-								margin: const EdgeInsets.only(bottom: 16, right: 16),
-								child: Container(
-									constraints: BoxConstraints(
-										minWidth: 24 * MediaQuery.of(context).textScaleFactor
+								Tuple3('Scroll to last-seen', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), () => widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0)),
+								Tuple3('Scroll to bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom)
+							]) Padding(
+								padding: const EdgeInsets.only(bottom: 16, right: 16),
+								child: CupertinoButton.filled(
+									disabledColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.4),
+									padding: const EdgeInsets.all(8),
+									minSize: 0,
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											Text(button.item1),
+											const SizedBox(width: 8),
+											button.item2
+										]
 									),
-									child: Text(
-										_whiteCount.toString(),
-										style: TextStyle(
-											color: CupertinoTheme.of(context).scaffoldBackgroundColor
-										),
-										textAlign: TextAlign.center
-									)
-								)
-							)
+									onPressed: button.item3
+								),
+							),
+							const SizedBox(height: 50),
 						]
 					)
 				),
-				onTap: () => widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0),
-				onLongPress: scrollToBottom
-			);
-		}
-		else {
-			return const SizedBox.shrink();
-		}
+				CupertinoButton(
+					padding: EdgeInsets.zero,
+					child: Builder(
+						builder: (context) => Row(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								if (_redCount > 0) Container(
+									decoration: BoxDecoration(
+										borderRadius: const BorderRadius.only(topLeft: radius, bottomLeft: radius),
+										color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
+									),
+									padding: const EdgeInsets.all(8),
+									margin: EdgeInsets.only(bottom: 16, right: (_whiteCount == 0 && _greyCount == 0) ? 16 : 0),
+									child: Text(
+										_redCount.toString(),
+										textAlign: TextAlign.center
+									)
+								),
+								if (_whiteCount == 0  || _greyCount > 0) Container(
+									decoration: BoxDecoration(
+										borderRadius: (_redCount > 0) ? (_whiteCount > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (_whiteCount > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
+										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
+									),
+									padding: const EdgeInsets.all(8),
+									margin: EdgeInsets.only(bottom: 16, right: _whiteCount > 0 ? 0 : 16),
+									child: Container(
+										constraints: BoxConstraints(
+											minWidth: 24 * MediaQuery.of(context).textScaleFactor
+										),
+										child: Text(
+											_greyCount.toString(),
+											style: TextStyle(
+												color: CupertinoTheme.of(context).scaffoldBackgroundColor
+											),
+											textAlign: TextAlign.center
+										)
+									)
+								),
+								if (_whiteCount > 0) Container(
+									decoration: BoxDecoration(
+										borderRadius: _greyCount == 0 ? radiusAlone : const BorderRadius.only(topRight: radius, bottomRight: radius),
+										color: CupertinoTheme.of(context).primaryColor
+									),
+									padding: const EdgeInsets.all(8),
+									margin: const EdgeInsets.only(bottom: 16, right: 16),
+									child: Container(
+										constraints: BoxConstraints(
+											minWidth: 24 * MediaQuery.of(context).textScaleFactor
+										),
+										child: Text(
+											_whiteCount.toString(),
+											style: TextStyle(
+												color: CupertinoTheme.of(context).scaffoldBackgroundColor
+											),
+											textAlign: TextAlign.center
+										)
+									)
+								)
+							]
+						)
+					),
+					onPressed: () {
+						if (_buttonsAnimation.value > 0.5) {
+							_buttonsAnimationController.reverse();
+						}
+						else {
+							_buttonsAnimationController.forward();
+						}
+					}
+				)
+			]
+		);
 	}
 
 	@override
