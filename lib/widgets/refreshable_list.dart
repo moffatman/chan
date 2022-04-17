@@ -72,6 +72,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 	bool _searchTapped = false;
 	bool _overscrollEndingNow = false;
 	late final AnimationController _footerShakeAnimation;
+	List<T> _listAfterFiltering = [];
 
 	@override
 	void initState() {
@@ -278,6 +279,11 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 				}
 			}
 			values.insertAll(0, pinnedValues.map((x) => Tuple2(x, true)));
+			final newList = values.map((x) => x.item1).toList();
+			if (!listEquals(newList, _listAfterFiltering)) {
+				_listAfterFiltering = newList;
+				widget.controller?.setItems(newList);
+			}
 			if (filteredValues.isEmpty) {
 				// Don't auto open filtered values after clearing it before
 				_showFilteredValues = false;
