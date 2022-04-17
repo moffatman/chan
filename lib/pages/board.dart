@@ -148,7 +148,8 @@ class _BoardPageState extends State<BoardPage> {
 											ThreadSortingMethod.replyCount: 'Reply Count',
 											ThreadSortingMethod.threadPostTime: 'Creation Date',
 											ThreadSortingMethod.postsPerMinute: 'Reply Rate',
-											ThreadSortingMethod.lastReplyTime: 'Last Reply'
+											ThreadSortingMethod.lastReplyTime: 'Last Reply',
+											ThreadSortingMethod.imageCount: 'Image Count'
 										}.entries.map((entry) => CupertinoActionSheetAction(
 											child: Text(entry.value, style: TextStyle(
 												fontWeight: entry.key == settings.catalogSortingMethod ? FontWeight.bold : null
@@ -270,17 +271,27 @@ class _BoardPageState extends State<BoardPage> {
 														return !thread.isSticky || now.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
 													}).toList();
 												}
-												if (settings.catalogSortingMethod == ThreadSortingMethod.replyCount) {
-													list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
-												}
-												else if (settings.catalogSortingMethod == ThreadSortingMethod.threadPostTime) {
-													list.sort((a, b) => b.id.compareTo(a.id));
-												}
-												else if (settings.catalogSortingMethod == ThreadSortingMethod.postsPerMinute) {
-													list.sort((a, b) => -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds));
-												}
-												else if (settings.catalogSortingMethod == ThreadSortingMethod.lastReplyTime) {
-													list.sort((a, b) => b.posts.last.id.compareTo(a.posts.last.id));
+												switch (settings.catalogSortingMethod) {
+													case ThreadSortingMethod.replyCount:
+														list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
+														break;
+													case ThreadSortingMethod.threadPostTime:
+														list.sort((a, b) => b.id.compareTo(a.id));
+														break;
+													case ThreadSortingMethod.postsPerMinute:
+														list.sort((a, b) => -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds));
+														break;
+													case ThreadSortingMethod.lastReplyTime:
+														list.sort((a, b) => b.posts.last.id.compareTo(a.posts.last.id));
+														break;
+													case ThreadSortingMethod.imageCount:
+														list.sort((a, b) => b.imageCount.compareTo(a.imageCount));
+														break;
+													// Some methods only used for saved posts
+													case ThreadSortingMethod.savedTime:
+													case ThreadSortingMethod.lastPostTime:
+													case ThreadSortingMethod.unsorted:
+														break;
 												}
 												Future.delayed(const Duration(milliseconds: 100), () => _loadCompleter?.complete());
 												return settings.reverseCatalogSorting ? list.reversed.toList() : list;
