@@ -919,30 +919,36 @@ class ReplyBoxState extends State<ReplyBox> {
 							final now = DateTime.now();
 							final diff = timeout.difference(now);
 							if (!diff.isNegative) {
-								return CupertinoButton(
-									padding: EdgeInsets.zero,
-									child: Column(
-										mainAxisSize: MainAxisSize.min,
-										crossAxisAlignment: CrossAxisAlignment.center,
-										children: [
-											if (_autoPostTimer?.isActive ?? false) const Text('Auto', style: TextStyle(fontSize: 12)),
-											Text((diff.inMilliseconds / 1000).round().toString())
-										]
+								return GestureDetector(
+									child: CupertinoButton(
+										padding: EdgeInsets.zero,
+										child: Column(
+											mainAxisSize: MainAxisSize.min,
+											crossAxisAlignment: CrossAxisAlignment.center,
+											children: [
+												if (_autoPostTimer?.isActive ?? false) const Text('Auto', style: TextStyle(fontSize: 12)),
+												Text((diff.inMilliseconds / 1000).round().toString())
+											]
+										),
+										onPressed: () async {
+											if (!(_autoPostTimer?.isActive ?? false)) {
+												if (!_haveValidCaptcha) {
+													await _solveCaptcha();
+												}
+												if (_haveValidCaptcha) {
+													_autoPostTimer = Timer(timeout.difference(DateTime.now()), _submit);
+													_textFocusNode.unfocus();
+												}
+											}
+											else {
+												_autoPostTimer!.cancel();
+											}
+											setState(() {});
+										}
 									),
-									onPressed: () async {
-										if (!(_autoPostTimer?.isActive ?? false)) {
-											if (!_haveValidCaptcha) {
-												await _solveCaptcha();
-											}
-											if (_haveValidCaptcha) {
-												_autoPostTimer = Timer(timeout.difference(DateTime.now()), _submit);
-												_textFocusNode.unfocus();
-											}
-										}
-										else {
-											_autoPostTimer!.cancel();
-										}
-										setState(() {});
+									onLongPress: () {
+										_autoPostTimer?.cancel();
+										_submit();
 									}
 								);
 							}
