@@ -111,15 +111,11 @@ class CustomFilter implements Filter {
 
 class IDFilter implements Filter {
 	final List<int> ids;
-	final List<int> repliedToIds;
-	IDFilter(this.ids, this.repliedToIds);
+	IDFilter(this.ids);
 	@override
 	FilterResult? filter(Filterable item) {
 		if (ids.contains(item.id)) {
 			return FilterResult(FilterResultType.hide, 'Manually hidden');
-		}
-		else if (repliedToIds.any(item.repliedToIds.contains)) {
-			return FilterResult(FilterResultType.hide, 'Replied to manually hidden');
 		}
 		else {
 			return null;
@@ -131,6 +127,37 @@ class IDFilter implements Filter {
 
 	@override
 	operator == (dynamic other) => other is IDFilter && listEquals(other.ids, ids);
+
+	@override
+	int get hashCode => ids.hashCode;
+}
+
+class ThreadFilter implements Filter {
+	final List<int> ids;
+	final List<int> repliedToIds;
+	final List<String> posterIds;
+	ThreadFilter(this.ids, this.repliedToIds, this.posterIds);
+	@override
+	FilterResult? filter(Filterable item) {
+		if (ids.contains(item.id)) {
+			return FilterResult(FilterResultType.hide, 'Manually hidden');
+		}
+		else if (repliedToIds.any(item.repliedToIds.contains)) {
+			return FilterResult(FilterResultType.hide, 'Replied to manually hidden');
+		}
+		else if (posterIds.contains(item.getFilterFieldText('posterID'))) {
+			return FilterResult(FilterResultType.hide, 'Posted by "${item.getFilterFieldText('posterID')}"');
+		}
+		else {
+			return null;
+		}
+	}
+
+	@override
+	String toString() => 'ThreadFilter(ids: $ids, repliedToIds: $repliedToIds, posterIds: $posterIds)';
+
+	@override
+	operator == (dynamic other) => other is ThreadFilter && listEquals(other.ids, ids) && listEquals(other.repliedToIds, repliedToIds) && listEquals(other.posterIds, posterIds);
 
 	@override
 	int get hashCode => ids.hashCode;

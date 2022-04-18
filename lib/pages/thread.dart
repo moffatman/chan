@@ -70,6 +70,8 @@ class _ThreadPageState extends State<ThreadPage> {
 	int lastHiddenMD5sLength = 0;
 	int? lastPageNumber;
 	int lastReceiptsLength = 0;
+	int lastTreeHiddenIdsLength = 0;
+	int lastHiddenPosterIdsLength = 0;
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -81,7 +83,9 @@ class _ThreadPageState extends State<ThreadPage> {
 				persistentState.savedTime != lastSavedTime ||
 				savedPostsLength != lastSavedPostsLength ||
 				hiddenMD5sLength != lastHiddenMD5sLength ||
-				persistentState.receipts.length != lastReceiptsLength) {
+				persistentState.receipts.length != lastReceiptsLength ||
+				persistentState.treeHiddenPostIds.length != lastTreeHiddenIdsLength ||
+				persistentState.hiddenPosterIds.length != lastHiddenPosterIdsLength) {
 			setState(() {});
 		}
 		if (persistentState.thread != lastThread) {
@@ -107,6 +111,8 @@ class _ThreadPageState extends State<ThreadPage> {
 		lastSavedPostsLength = savedPostsLength;
 		lastHiddenMD5sLength = hiddenMD5sLength;
 		lastReceiptsLength = persistentState.receipts.length;
+		lastTreeHiddenIdsLength = persistentState.treeHiddenPostIds.length;
+		lastHiddenPosterIdsLength = persistentState.hiddenPosterIds.length;
 		if (persistentState.thread != null) {
 			zone.thread = persistentState.thread!;
 		}

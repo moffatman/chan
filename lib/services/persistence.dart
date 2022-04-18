@@ -330,6 +330,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	bool ephemeral;
 	@HiveField(10, defaultValue: [])
 	List<int> treeHiddenPostIds = [];
+	@HiveField(11, defaultValue: [])
+	List<String> hiddenPosterIds = [];
 
 	PersistentThreadState({this.ephemeral = false}) : lastOpenedTime = DateTime.now();
 
@@ -382,20 +384,31 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	@override
 	List<int> get repliedToIds => [];
 
-	late Filter threadFilter = FilterCache(IDFilter(hiddenPostIds, treeHiddenPostIds));
+	late Filter threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
 	void hidePost(int id, {bool tree = false}) {
 		hiddenPostIds.add(id);
 		if (tree) {
 			treeHiddenPostIds.add(id);
 		}
 		// invalidate cache
-		threadFilter = FilterCache(IDFilter(hiddenPostIds, treeHiddenPostIds));
+		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
 	}
 	void unHidePost(int id) {
 		hiddenPostIds.remove(id);
 		treeHiddenPostIds.remove(id);
 		// invalidate cache
-		threadFilter = FilterCache(IDFilter(hiddenPostIds, treeHiddenPostIds));
+		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
+	}
+
+	void hidePosterId(String id) {
+		hiddenPosterIds.add(id);
+		// invalidate cache
+		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
+	}
+	void unHidePosterId(String id) {
+		hiddenPosterIds.remove(id);
+		// invalidate cache
+		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
 	}
 
 	@override
@@ -524,7 +537,7 @@ class PersistentBrowserState {
 
 	final Map<String, Filter> _catalogFilters = {};
 	Filter getCatalogFilter(String board) {
-		return _catalogFilters.putIfAbsent(board, () => FilterCache(IDFilter(hiddenIds[board] ?? [], [])));
+		return _catalogFilters.putIfAbsent(board, () => FilterCache(IDFilter(hiddenIds[board] ?? [])));
 	}
 	
 	bool isThreadHidden(String board, int id) {

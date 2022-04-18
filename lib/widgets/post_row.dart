@@ -410,6 +410,32 @@ class PostRow extends StatelessWidget {
 							}
 						),
 					],
+					if (_post.posterId != null && zone.threadState!.hiddenPosterIds.contains(_post.posterId)) ContextMenuAction(
+						child: RichText(text: TextSpan(
+							children: [
+								const TextSpan(text: 'Unhide from '),
+								IDSpan(id: _post.posterId!, onPressed: null)
+							]
+						)),
+						trailingIcon: CupertinoIcons.eye_slash_fill,
+						onPressed: () {
+							zone.threadState!.unHidePosterId(_post.posterId!);
+							zone.threadState!.save();
+						}
+					)
+					else if (_post.posterId != null) ContextMenuAction(
+						child: RichText(text: TextSpan(
+							children: [
+								const TextSpan(text: 'Hide from '),
+								IDSpan(id: _post.posterId!, onPressed: null)
+							]
+						)),
+						trailingIcon: CupertinoIcons.eye_slash,
+						onPressed: () {
+							zone.threadState!.hidePosterId(_post.posterId!);
+							zone.threadState!.save();
+						}
+					),
 					if (_post.attachment?.md5 != null && persistence.browserState.isMD5Hidden(_post.attachment?.md5)) ContextMenuAction(
 						child: const Text('Unhide by image'),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
