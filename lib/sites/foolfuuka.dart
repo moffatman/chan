@@ -201,7 +201,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			attachment: _makeAttachment(data),
 			spanFormat: PostSpanFormat.foolFuuka,
 			flag: _makeFlag(data),
-			posterId: data['id'],
+			posterId: data['poster_hash'],
 			foolfuukaLinkedPostThreadIds: linkedPostThreadIds,
 			passSinceYear: passSinceYear
 		);
