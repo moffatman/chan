@@ -128,6 +128,8 @@ class Thread implements Filterable {
 	bool get hasFile => attachment != null;
 	@override
 	bool get isThread => true;
+	@override
+	List<int> get repliedToIds => [];
 
 	ThreadIdentifier get identifier => ThreadIdentifier(board: board, id: id);
 }

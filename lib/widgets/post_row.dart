@@ -392,14 +392,24 @@ class PostRow extends StatelessWidget {
 							zone.threadState!.save();
 						}
 					)
-					else ContextMenuAction(
-						child: const Text('Hide post'),
-						trailingIcon: CupertinoIcons.eye_slash,
-						onPressed: () {
-							zone.threadState!.hidePost(_post.id);
-							zone.threadState!.save();
-						}
-					),
+					else ...[
+						ContextMenuAction(
+							child: const Text('Hide post'),
+							trailingIcon: CupertinoIcons.eye_slash,
+							onPressed: () {
+								zone.threadState!.hidePost(_post.id);
+								zone.threadState!.save();
+							}
+						),
+						ContextMenuAction(
+							child: const Text('Hide post and replies'),
+							trailingIcon: CupertinoIcons.eye_slash,
+							onPressed: () {
+								zone.threadState!.hidePost(_post.id, tree: true);
+								zone.threadState!.save();
+							}
+						),
+					],
 					if (_post.attachment?.md5 != null && persistence.browserState.isMD5Hidden(_post.attachment?.md5)) ContextMenuAction(
 						child: const Text('Unhide by image'),
 						trailingIcon: CupertinoIcons.eye_slash_fill,

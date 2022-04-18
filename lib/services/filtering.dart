@@ -21,6 +21,7 @@ abstract class Filterable {
 	String? getFilterFieldText(String fieldName);
 	String get board;
 	int get id;
+	List<int> get repliedToIds;
 	bool get hasFile;
 	bool get isThread;
 }
@@ -110,10 +111,19 @@ class CustomFilter implements Filter {
 
 class IDFilter implements Filter {
 	final List<int> ids;
-	IDFilter(this.ids);
+	final List<int> repliedToIds;
+	IDFilter(this.ids, this.repliedToIds);
 	@override
 	FilterResult? filter(Filterable item) {
-		return ids.contains(item.id) ? FilterResult(FilterResultType.hide, 'Manually hidden') : null;
+		if (ids.contains(item.id)) {
+			return FilterResult(FilterResultType.hide, 'Manually hidden');
+		}
+		else if (repliedToIds.any(item.repliedToIds.contains)) {
+			return FilterResult(FilterResultType.hide, 'Replied to manually hidden');
+		}
+		else {
+			return null;
+		}
 	}
 
 	@override

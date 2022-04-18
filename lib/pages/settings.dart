@@ -1465,6 +1465,9 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 	bool isThread = true;
 
 	@override
+	List<int> get repliedToIds => [];
+
+	@override
 	String? getFilterFieldText(String fieldName) {
 		switch (fieldName) {
 			case 'subject':

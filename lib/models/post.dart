@@ -124,6 +124,8 @@ class Post implements Filterable {
 	bool get hasFile => attachment != null;
 	@override
 	bool get isThread => false;
+	@override
+	List<int> get repliedToIds => span.referencedPostIds(board);
 
 	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board: board, id: threadId);
 

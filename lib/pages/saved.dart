@@ -46,6 +46,8 @@ class _PostThreadCombo implements Filterable {
 	bool get hasFile => post.hasFile;
 	@override
 	bool get isThread => false;
+	@override
+	List<int> get repliedToIds => [];
 }
 class SavedPage extends StatefulWidget {
 	final bool isActive;

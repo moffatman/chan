@@ -328,6 +328,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	final lastSeenPostIdNotifier = ValueNotifier<int?>(null);
 	// Don't persist this
 	bool ephemeral;
+	@HiveField(10, defaultValue: [])
+	List<int> treeHiddenPostIds = [];
 
 	PersistentThreadState({this.ephemeral = false}) : lastOpenedTime = DateTime.now();
 
@@ -377,17 +379,23 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	bool get hasFile => thread?.hasFile ?? false;
 	@override
 	bool get isThread => true;
+	@override
+	List<int> get repliedToIds => [];
 
-	late Filter threadFilter = FilterCache(IDFilter(hiddenPostIds));
-	void hidePost(int id) {
+	late Filter threadFilter = FilterCache(IDFilter(hiddenPostIds, treeHiddenPostIds));
+	void hidePost(int id, {bool tree = false}) {
 		hiddenPostIds.add(id);
+		if (tree) {
+			treeHiddenPostIds.add(id);
+		}
 		// invalidate cache
-		threadFilter = FilterCache(IDFilter(hiddenPostIds));
+		threadFilter = FilterCache(IDFilter(hiddenPostIds, treeHiddenPostIds));
 	}
 	void unHidePost(int id) {
 		hiddenPostIds.remove(id);
+		treeHiddenPostIds.remove(id);
 		// invalidate cache
-		threadFilter = FilterCache(IDFilter(hiddenPostIds));
+		threadFilter = FilterCache(IDFilter(hiddenPostIds, treeHiddenPostIds));
 	}
 
 	@override
@@ -462,6 +470,8 @@ class SavedPost implements Filterable {
 	bool get hasFile => post.hasFile;
 	@override
 	bool get isThread => false;
+	@override
+	List<int> get repliedToIds => post.repliedToIds;
 }
 
 @HiveType(typeId: 21)
@@ -514,7 +524,7 @@ class PersistentBrowserState {
 
 	final Map<String, Filter> _catalogFilters = {};
 	Filter getCatalogFilter(String board) {
-		return _catalogFilters.putIfAbsent(board, () => FilterCache(IDFilter(hiddenIds[board] ?? [])));
+		return _catalogFilters.putIfAbsent(board, () => FilterCache(IDFilter(hiddenIds[board] ?? [], [])));
 	}
 	
 	bool isThreadHidden(String board, int id) {

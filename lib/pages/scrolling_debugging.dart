@@ -27,6 +27,9 @@ class FakeItem implements Filterable {
 
   @override
   bool get isThread => false;
+
+	@override
+	List<int> get repliedToIds => [];
 }
 
 class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
