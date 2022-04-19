@@ -219,7 +219,9 @@ class _SavedPageState extends State<SavedPage> {
 						return SafeArea(
 							child: Column(
 								children: [
-									const ThreadWatcherControls(),
+									ThreadWatcherControls(
+										isActive: widget.isActive
+									),
 									Divider(
 										thickness: 1,
 										height: 0,
@@ -438,13 +440,16 @@ class _SavedPageState extends State<SavedPage> {
 }
 
 class ThreadWatcherControls extends StatefulWidget {
+	final bool isActive;
 	const ThreadWatcherControls({
-		Key? key
+		Key? key,
+		required this.isActive
 	}) : super(key: key);
 
 	@override
 	createState() => _ThreadWatcherControls();
 }
+
 class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 	@override
 	Widget build(BuildContext context) {
@@ -469,6 +474,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 											if (watcher.nextUpdate != null && watcher.lastUpdate != null) ClipRRect(
 												borderRadius: const BorderRadius.all(Radius.circular(8)),
 												child: TimedRebuilder(
+													enabled: widget.isActive,
 													interval: const Duration(seconds: 1),
 													builder: (context) {
 														final now = DateTime.now();

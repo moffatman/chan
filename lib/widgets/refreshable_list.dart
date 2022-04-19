@@ -637,6 +637,7 @@ class RefreshableListFooter extends StatelessWidget {
 																child: Stack(
 																	children: [
 																		if (nextUpdateTime != null && lastUpdateTime != null) TimedRebuilder(
+																			enabled: true,
 																			interval: const Duration(seconds: 1),
 																			builder: (context) {
 																				final now = DateTime.now();

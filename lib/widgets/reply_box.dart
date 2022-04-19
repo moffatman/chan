@@ -911,6 +911,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				),
 				TimedRebuilder(
 					interval: const Duration(seconds: 1),
+					enabled: show,
 					builder: (context) {
 						final timeout = context.read<ImageboardSite>().getActionAllowedTime(widget.board, widget.threadId == null ? 
 							ImageboardAction.postThread :

@@ -358,6 +358,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	Widget _cooldownedRetryButton(BuildContext context) {
 		if (tryAgainAt != null) {
 			return TimedRebuilder(
+				enabled: true,
 				interval: const Duration(seconds: 1),
 				builder: (context) {
 					final seconds = tryAgainAt!.difference(DateTime.now()).inSeconds;
@@ -467,6 +468,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												SizedBox(
 													width: 60,
 													child: TimedRebuilder(
+														enabled: true,
 														interval: const Duration(seconds: 1),
 														builder: (context) {
 															final seconds = challenge!.expiresAt.difference(DateTime.now()).inSeconds;
