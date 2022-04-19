@@ -102,104 +102,114 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 			builder: (context, constraints) => Stack(
 				fit: StackFit.expand,
 				children: [
-					Container(
-						color: widget.backgroundColor,
-						child: (widget.background == null) ? null : SafeArea(
-							child: AnimatedBuilder(
-								animation: _controller,
-								child: widget.background,
-								builder: (context, child) {
-									final RenderBox? scrollBox = _scrollKey.currentContext?.findRenderObject() as RenderBox?;
-									final RenderBox? childBox = _childKey.currentContext?.findRenderObject() as RenderBox?;
-									double scrollBoxTop = 0;
-									double scrollBoxBottom = 0;
-									double childBoxTopDiff = 0;
-									double childBoxBottomDiff = 0;
-									try {
-										scrollBoxTop = scrollBox?.localToGlobal(scrollBox.semanticBounds.topCenter).dy ?? 0;
-										scrollBoxBottom = scrollBox?.localToGlobal(scrollBox.semanticBounds.bottomCenter).dy ?? 0;
-										childBoxTopDiff = (childBox?.localToGlobal(childBox.semanticBounds.topCenter).dy ?? scrollBoxTop) - scrollBoxTop;
-										childBoxBottomDiff = scrollBoxBottom - (childBox?.localToGlobal(childBox.semanticBounds.bottomCenter).dy ?? scrollBoxBottom);
-									}
-									catch (e) {
-										// Maybe the box didn't have a size yet
-									}
-									if (_finishedPopIn && _controller.positions.isNotEmpty && _controller.position.isScrollingNotifier.value) {
+					RepaintBoundary(
+						child: Container(
+							color: widget.backgroundColor,
+							child: (widget.background == null) ? null : SafeArea(
+								child: AnimatedBuilder(
+									animation: _controller,
+									child: widget.background,
+									builder: (context, child) {
+										final RenderBox? scrollBox = _scrollKey.currentContext?.findRenderObject() as RenderBox?;
+										final RenderBox? childBox = _childKey.currentContext?.findRenderObject() as RenderBox?;
+										double scrollBoxTop = 0;
+										double scrollBoxBottom = 0;
+										double childBoxTopDiff = 0;
+										double childBoxBottomDiff = 0;
+										try {
+											scrollBoxTop = scrollBox?.localToGlobal(scrollBox.semanticBounds.topCenter).dy ?? 0;
+											scrollBoxBottom = scrollBox?.localToGlobal(scrollBox.semanticBounds.bottomCenter).dy ?? 0;
+											childBoxTopDiff = (childBox?.localToGlobal(childBox.semanticBounds.topCenter).dy ?? scrollBoxTop) - scrollBoxTop;
+											childBoxBottomDiff = scrollBoxBottom - (childBox?.localToGlobal(childBox.semanticBounds.bottomCenter).dy ?? scrollBoxBottom);
+										}
+										catch (e) {
+											// Maybe the box didn't have a size yet
+										}
+										double topOverscroll = 0;
+										double bottomOverscroll = 0;
+										if (_finishedPopIn && _controller.positions.isNotEmpty && _controller.position.isScrollingNotifier.value) {
+											topOverscroll = -1 * min(0, _controller.position.pixels);
+											bottomOverscroll = max(0, _controller.position.pixels - _controller.position.maxScrollExtent);
+										}
 										return Stack(
 											fit: StackFit.expand,
 											children: [
 												Positioned(
-													top: childBoxTopDiff + (0 * max(0, _controller.position.pixels -	_controller.position.maxScrollExtent)) - (-1 * min(0, _controller.position.pixels)),
-													bottom: childBoxBottomDiff + (-0 * min(0, _controller.position.pixels)) - max(0, _controller.position.pixels -	_controller.position.maxScrollExtent),
+													top: childBoxTopDiff - topOverscroll,
+													bottom: childBoxBottomDiff - bottomOverscroll,
 													left: 0,
 													right: 0,
 													child: Center(
-														child: child!
+														child: Visibility(
+															visible: _finishedPopIn,
+															child: child!
+														)
 													)
 												)
 											]
 										);
 									}
-									return Container();
-								}
+								)
 							)
 						)
 					),
-					Listener(
-						onPointerDown: (event) {
-							_pointerDownCount++;
-							final RenderBox childBox = _childKey.currentContext!.findRenderObject()! as RenderBox;
-							_pointerDownPosition = event.position;
-							_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter).dy;
-						},
-						onPointerMove: (event) {
-							if (_pointerInSpacer) {
-								if ((event.position - _pointerDownPosition!).distance > kTouchSlop) {
-									_pointerInSpacer = false;
-								}
-							}
-						},
-						onPointerUp: (event) => _onPointerUp(),
-						onPointerCancel: (event) {
-							_pointerDownCount--;
-						},
-						onPointerHover: (event) {
-							if (_controller.position.userScrollDirection != ScrollDirection.idle && _pointerDownCount == 0) {
-								_controller.jumpTo(_controller.position.pixels);
-							}
-						},
-						child: Actions(
-							actions: {
-								DismissIntent: CallbackAction<DismissIntent>(
-									onInvoke: (i) => WeakNavigator.pop(context)
-								)
+					RepaintBoundary(
+						child: Listener(
+							onPointerDown: (event) {
+								_pointerDownCount++;
+								final RenderBox childBox = _childKey.currentContext!.findRenderObject()! as RenderBox;
+								_pointerDownPosition = event.position;
+								_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter).dy;
 							},
-							child: Focus(
-								autofocus: true,
-								child: MaybeCupertinoScrollbar(
-									controller: _controller,
-									child: CustomScrollView(
+							onPointerMove: (event) {
+								if (_pointerInSpacer) {
+									if ((event.position - _pointerDownPosition!).distance > kTouchSlop) {
+										_pointerInSpacer = false;
+									}
+								}
+							},
+							onPointerUp: (event) => _onPointerUp(),
+							onPointerCancel: (event) {
+								_pointerDownCount--;
+							},
+							onPointerHover: (event) {
+								if (_controller.position.userScrollDirection != ScrollDirection.idle && _pointerDownCount == 0) {
+									_controller.jumpTo(_controller.position.pixels);
+								}
+							},
+							child: Actions(
+								actions: {
+									DismissIntent: CallbackAction<DismissIntent>(
+										onInvoke: (i) => WeakNavigator.pop(context)
+									)
+								},
+								child: Focus(
+									autofocus: true,
+									child: MaybeCupertinoScrollbar(
 										controller: _controller,
-										physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
-										slivers: [
-											SliverToBoxAdapter(
-												child: ConstrainedBox(
-													constraints: BoxConstraints(
-														minHeight: constraints.maxHeight
-													),
-													child: SafeArea(
-														child: Center(
-															key: _scrollKey,
-															child: Opacity(
-																key: _childKey,
-																opacity: _opacity,
-																child: widget.child
+										child: CustomScrollView(
+											controller: _controller,
+											physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
+											slivers: [
+												SliverToBoxAdapter(
+													child: ConstrainedBox(
+														constraints: BoxConstraints(
+															minHeight: constraints.maxHeight
+														),
+														child: SafeArea(
+															child: Center(
+																key: _scrollKey,
+																child: Opacity(
+																	key: _childKey,
+																	opacity: _opacity,
+																	child: widget.child
+																)
 															)
 														)
 													)
 												)
-											)
-										]
+											]
+										)
 									)
 								)
 							)

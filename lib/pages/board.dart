@@ -408,72 +408,76 @@ class _BoardPageState extends State<BoardPage> {
 											},
 											filterHint: 'Search in board'
 										),
-										StreamBuilder(
-											stream: _listController.slowScrollUpdates,
-											builder: (context, _) {
-												final page = _listController.firstVisibleItem?.currentPage;
-												_scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-												return (page == null || page == 0 || _listController.firstVisibleIndex == 0 || ((_listController.scrollController?.position.pixels ?? 1) < 0)) ? Container() : SafeArea(
-													child: Align(
-														alignment: Alignment.topRight,
-														child: Row(
-															mainAxisSize: MainAxisSize.min,
-															children: [
-																GestureDetector(
-																	onTap: _scrollToTop,
-																	child: Container(
-																		decoration: BoxDecoration(
-																			color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
-																			borderRadius: const BorderRadius.all(Radius.circular(8))
-																		),
-																		padding: const EdgeInsets.all(8),
-																		margin: const EdgeInsets.only(top: 16, right: 16),
-																		child: Row(
-																			mainAxisSize: MainAxisSize.min,
-																			children: [
-																				Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
-																				SizedBox(
-																					width: 25,
-																					child: Text(
-																						page.toString(),
-																						textAlign: TextAlign.center,
-																						style: TextStyle(
-																							color: CupertinoTheme.of(context).scaffoldBackgroundColor
+										RepaintBoundary(
+											child: StreamBuilder(
+												stream: _listController.slowScrollUpdates,
+												builder: (context, _) {
+													final page = _listController.firstVisibleItem?.currentPage;
+													_scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+													return (page == null || page == 0 || _listController.firstVisibleIndex == 0 || ((_listController.scrollController?.position.pixels ?? 1) < 0)) ? Container() : SafeArea(
+														child: Align(
+															alignment: Alignment.topRight,
+															child: Row(
+																mainAxisSize: MainAxisSize.min,
+																children: [
+																	GestureDetector(
+																		onTap: _scrollToTop,
+																		child: Container(
+																			decoration: BoxDecoration(
+																				color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
+																				borderRadius: const BorderRadius.all(Radius.circular(8))
+																			),
+																			padding: const EdgeInsets.all(8),
+																			margin: const EdgeInsets.only(top: 16, right: 16),
+																			child: Row(
+																				mainAxisSize: MainAxisSize.min,
+																				children: [
+																					Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+																					SizedBox(
+																						width: 25,
+																						child: Text(
+																							page.toString(),
+																							textAlign: TextAlign.center,
+																							style: TextStyle(
+																								color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																							)
 																						)
 																					)
-																				)
-																			]
+																				]
+																			)
 																		)
 																	)
-																)
-															]
+																]
+															)
 														)
-													)
-												);
-											}
+													);
+												}
+											)
 										)
 									]
 								)
 							)
 						),
-						ReplyBox(
-							key: _replyBoxKey,
-							board: board!.name,
-							initialText: widget.getInitialDraftText?.call() ?? '',
-							onTextChanged: (text) {
-								widget.onDraftTextChanged?.call(text);
-							},
-							initialSubject: widget.getInitialDraftSubject?.call() ?? '',
-							onSubjectChanged: (subject) {
-								widget.onDraftSubjectChanged?.call(subject);
-							},
-							onReplyPosted: (receipt) {
-								final persistentState = persistence.getThreadState(ThreadIdentifier(board: board!.name, id: receipt.id));
-								persistentState.savedTime = DateTime.now();
-								persistentState.save();
-								_listController.update();
-								widget.onThreadSelected?.call(ThreadIdentifier(board: board!.name, id: receipt.id));
-							}
+						RepaintBoundary(
+							child: ReplyBox(
+								key: _replyBoxKey,
+								board: board!.name,
+								initialText: widget.getInitialDraftText?.call() ?? '',
+								onTextChanged: (text) {
+									widget.onDraftTextChanged?.call(text);
+								},
+								initialSubject: widget.getInitialDraftSubject?.call() ?? '',
+								onSubjectChanged: (subject) {
+									widget.onDraftSubjectChanged?.call(subject);
+								},
+								onReplyPosted: (receipt) {
+									final persistentState = persistence.getThreadState(ThreadIdentifier(board: board!.name, id: receipt.id));
+									persistentState.savedTime = DateTime.now();
+									persistentState.save();
+									_listController.update();
+									widget.onThreadSelected?.call(ThreadIdentifier(board: board!.name, id: receipt.id));
+								}
+							)
 						)
 					]
 				)

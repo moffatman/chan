@@ -330,7 +330,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 						controller: widget.controller?.scrollController,
 						child: CustomScrollView(
 							key: _scrollViewKey,
-							cacheExtent: 2500,
+							//cacheExtent: 2500,
 							controller: widget.controller?.scrollController,
 							physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
 							slivers: [
@@ -494,26 +494,28 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 									)
 								)
 								else if (widget.footer != null && !widget.disableUpdates) SliverToBoxAdapter(
-									child: GestureDetector(
-										behavior: HitTestBehavior.opaque,
-										onTap: updatingNow ? null : () {
-											Future.delayed(const Duration(milliseconds: 17), () {
-												widget.controller?.scrollController?.animateTo(
-													widget.controller!.scrollController!.position.maxScrollExtent,
-													duration: const Duration(milliseconds: 250),
-													curve: Curves.ease
-												);
-											});
-											_footerShakeAnimation.forward(from: 0);
-											update();
-										},
-										child: AnimatedBuilder(
-											animation: shakeAnimation,
-											builder: (context, child) => Transform.scale(
-												scale: 1.0 - 0.2*sin(pi * shakeAnimation.value),
-												child: child
-											),
-											child: widget.footer
+									child: RepaintBoundary(
+										child: GestureDetector(
+											behavior: HitTestBehavior.opaque,
+											onTap: updatingNow ? null : () {
+												Future.delayed(const Duration(milliseconds: 17), () {
+													widget.controller?.scrollController?.animateTo(
+														widget.controller!.scrollController!.position.maxScrollExtent,
+														duration: const Duration(milliseconds: 250),
+														curve: Curves.ease
+													);
+												});
+												_footerShakeAnimation.forward(from: 0);
+												update();
+											},
+											child: AnimatedBuilder(
+												animation: shakeAnimation,
+												builder: (context, child) => Transform.scale(
+													scale: 1.0 - 0.2*sin(pi * shakeAnimation.value),
+													child: child
+												),
+												child: widget.footer
+											)
 										)
 									)
 								)
@@ -526,17 +528,19 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 								if (!widget.disableUpdates) SliverSafeArea(
 									top: false,
 									sliver: SliverToBoxAdapter(
-										child: RefreshableListFooter(
-											updater: update,
-											updatingNow: updatingNow,
-											lastUpdateTime: lastUpdateTime,
-											nextUpdateTime: nextUpdateTime,
-											errorMessage: errorMessage,
-											remedy: widget.remedies[errorType]?.call(context, update),
-											overscrollFactor: widget.controller?.overscrollFactor,
-											pointerDownNow: () {
-												return _pointerDownCount > 0;
-											}
+										child: RepaintBoundary(
+											child: RefreshableListFooter(
+												updater: update,
+												updatingNow: updatingNow,
+												lastUpdateTime: lastUpdateTime,
+												nextUpdateTime: nextUpdateTime,
+												errorMessage: errorMessage,
+												remedy: widget.remedies[errorType]?.call(context, update),
+												overscrollFactor: widget.controller?.overscrollFactor,
+												pointerDownNow: () {
+													return _pointerDownCount > 0;
+												}
+											)
 										)
 									)
 								)

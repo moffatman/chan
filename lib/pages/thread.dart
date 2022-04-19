@@ -530,25 +530,27 @@ class _ThreadPageState extends State<ThreadPage> {
 									)
 								)
 							),
-							ReplyBox(
-								key: _replyBoxKey,
-								board: widget.thread.board,
-								threadId: widget.thread.id,
-								isArchived: persistentState.thread?.isArchived ?? false,
-								initialText: persistentState.draftReply,
-								onTextChanged: (text) {
-									persistentState.draftReply = text;
-									_saveThreadStateDuringEditingTimer?.cancel();
-									_saveThreadStateDuringEditingTimer = Timer(const Duration(seconds: 3), () => persistentState.save());
-								},
-								onReplyPosted: (receipt) {
-									persistentState.savedTime = DateTime.now();
-									persistentState.save();
-									_listController.update();
-								},
-								onVisibilityChanged: () {
-									setState(() {});
-								}
+							RepaintBoundary(
+								child: ReplyBox(
+									key: _replyBoxKey,
+									board: widget.thread.board,
+									threadId: widget.thread.id,
+									isArchived: persistentState.thread?.isArchived ?? false,
+									initialText: persistentState.draftReply,
+									onTextChanged: (text) {
+										persistentState.draftReply = text;
+										_saveThreadStateDuringEditingTimer?.cancel();
+										_saveThreadStateDuringEditingTimer = Timer(const Duration(seconds: 3), () => persistentState.save());
+									},
+									onReplyPosted: (receipt) {
+										persistentState.savedTime = DateTime.now();
+										persistentState.save();
+										_listController.update();
+									},
+									onVisibilityChanged: () {
+										setState(() {});
+									}
+								)
 							)
 						]
 					)
