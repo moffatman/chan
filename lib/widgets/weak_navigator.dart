@@ -54,6 +54,7 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
     super.initState();
     rootEntry = OverlayEntry(
       builder: (context) => widget.child,
+      opaque: true,
       maintainState: true
     );
   }
@@ -83,16 +84,12 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
       duration: const Duration(milliseconds: 150)
     );
     final entry = Tuple3(OverlayEntry(
-      builder: (context) => AnimatedBuilder(
-        animation: controller,
-        builder: (context, child) => BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: controller.value * 5, sigmaY: controller.value * 5),
-          child: Opacity(
-            opacity: controller.value,
-            child: child
-          )
-        ),
-        child: widget
+      builder: (context) => FadeTransition(
+        opacity: controller,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: widget
+        )
       ),
       maintainState: true
     ), controller, Completer<T>());
