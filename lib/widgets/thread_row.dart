@@ -307,6 +307,129 @@ class ThreadRow extends StatelessWidget {
 				)
 			)
 		];
+		final child = Stack(
+			fit: StackFit.passthrough,
+			children: [
+				if (contentFocus) ...[
+					Column(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							if (_thread.attachment != null) Flexible(
+								child: LayoutBuilder(
+									builder: (context, constraints) {
+										return PopupAttachment(
+											attachment: _thread.attachment!,
+											child: Stack(
+												children: [
+													HoverPopup(
+														style: HoverPopupStyle.floating,
+														child: AttachmentThumbnail(
+															width: constraints.maxWidth,
+															height: constraints.maxHeight,
+															fit: BoxFit.cover,
+															attachment: _thread.attachment!,
+															thread: _thread.identifier,
+															onLoadError: onThumbnailLoadError,
+															hero: null
+														),
+														popup: ExtendedImage.network(
+															_thread.attachment!.url.toString(),
+															cache: true
+														)
+													),
+													if (_thread.attachment?.type == AttachmentType.webm) Positioned(
+														bottom: 0,
+														right: 0,
+														child: Container(
+															decoration: BoxDecoration(
+																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+															),
+															padding: const EdgeInsets.all(2),
+															child: const Icon(CupertinoIcons.play_arrow_solid)
+														)
+													)
+												]
+											)
+										);
+									}
+								)
+							),
+							Expanded(
+								child: Container(
+									constraints: const BoxConstraints(minHeight: 25),
+									padding: const EdgeInsets.all(8),
+									child: ChangeNotifierProvider<PostSpanZoneData>(
+										create: (ctx) => PostSpanRootZoneData(
+											thread: _thread,
+											site: context.watch<ImageboardSite>()
+										),
+										child: Builder(
+											builder: (ctx) => IgnorePointer(
+												child: ClipRect(
+													child: _thread.posts[0].span.buildWidget(
+														ctx,
+														PostSpanRenderOptions(
+															avoidBuggyClippers: true
+														),
+														preInjectRow: (thread.title == null) ? null : Text.rich(
+															TextSpan(
+																text: settings.filterProfanity(_thread.title!),
+																style: const TextStyle(fontWeight: FontWeight.bold)
+															)
+														),
+														postInject: WidgetSpan(
+															child: Visibility(
+																visible: false,
+																maintainState: true,
+																maintainAnimation: true,
+																maintainSize: true,
+																child: _makeCounters()
+															)
+														)
+													)
+												)
+											)
+										)
+									)
+								)
+							)
+						]
+					)
+				]
+				else Row(
+					crossAxisAlignment: CrossAxisAlignment.start,
+					mainAxisSize: MainAxisSize.max,
+					children: settings.imagesOnRight ? rowChildren().reversed.toList() : rowChildren()
+				),
+				Positioned.fill(
+					child: Align(
+						alignment: Alignment.bottomRight,
+						child: _makeCounters()
+					)
+				),
+				if (threadState?.savedTime != null) Positioned.fill(
+					child: Align(
+						alignment: Alignment.topRight,
+						child: Container(
+							decoration: BoxDecoration(
+								borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
+								color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+								border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+							),
+							padding: const EdgeInsets.only(top: 2, bottom: 2, left: 6, right: 6),
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									Icon(CupertinoIcons.bookmark_fill, color: otherMetadataColor, size: 18),
+								]
+							)
+						)
+					)
+				)
+			]
+		);
 		return Container(
 			decoration: BoxDecoration(
 				color: isSelected ? CupertinoTheme.of(context).primaryColorWithBrightness(0.4) : CupertinoTheme.of(context).scaffoldBackgroundColor,
@@ -315,132 +438,10 @@ class ThreadRow extends StatelessWidget {
 			),
 			padding: contentFocus ? null : const EdgeInsets.only(left: 8),
 			margin: contentFocus ? const EdgeInsets.all(4) : null,
-			child: ClipRRect(
+			child: borderRadius != BorderRadius.zero ? ClipRRect(
 				borderRadius: borderRadius,
-				child: Stack(
-					fit: StackFit.passthrough,
-					children: [
-						if (contentFocus) ...[
-							Column(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									if (_thread.attachment != null) Flexible(
-										child: LayoutBuilder(
-											builder: (context, constraints) {
-												return PopupAttachment(
-													attachment: _thread.attachment!,
-													child: Stack(
-														children: [
-															HoverPopup(
-																style: HoverPopupStyle.floating,
-																child: AttachmentThumbnail(
-																	width: constraints.maxWidth,
-																	height: constraints.maxHeight,
-																	fit: BoxFit.cover,
-																	attachment: _thread.attachment!,
-																	thread: _thread.identifier,
-																	onLoadError: onThumbnailLoadError,
-																	hero: null
-																),
-																popup: ExtendedImage.network(
-																	_thread.attachment!.url.toString(),
-																	cache: true
-																)
-															),
-															if (_thread.attachment?.type == AttachmentType.webm) Positioned(
-																bottom: 0,
-																right: 0,
-																child: Container(
-																	decoration: BoxDecoration(
-																		borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																		color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																		border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-																	),
-																	padding: const EdgeInsets.all(2),
-																	child: const Icon(CupertinoIcons.play_arrow_solid)
-																)
-															)
-														]
-													)
-												);
-											}
-										)
-									),
-									Expanded(
-										child: Container(
-											constraints: const BoxConstraints(minHeight: 25),
-											padding: const EdgeInsets.all(8),
-											child: ChangeNotifierProvider<PostSpanZoneData>(
-												create: (ctx) => PostSpanRootZoneData(
-													thread: _thread,
-													site: context.watch<ImageboardSite>()
-												),
-												child: Builder(
-													builder: (ctx) => IgnorePointer(
-														child: ClipRect(
-															child: _thread.posts[0].span.buildWidget(
-																ctx,
-																PostSpanRenderOptions(
-																	avoidBuggyClippers: true
-																),
-																preInjectRow: (thread.title == null) ? null : Text.rich(
-																	TextSpan(
-																		text: settings.filterProfanity(_thread.title!),
-																		style: const TextStyle(fontWeight: FontWeight.bold)
-																	)
-																),
-																postInject: WidgetSpan(
-																	child: Visibility(
-																		visible: false,
-																		maintainState: true,
-																		maintainAnimation: true,
-																		maintainSize: true,
-																		child: _makeCounters()
-																	)
-																)
-															)
-														)
-													)
-												)
-											)
-										)
-									)
-								]
-							)
-						]
-						else Row(
-							crossAxisAlignment: CrossAxisAlignment.start,
-							mainAxisSize: MainAxisSize.max,
-							children: settings.imagesOnRight ? rowChildren().reversed.toList() : rowChildren()
-						),
-						Positioned.fill(
-							child: Align(
-								alignment: Alignment.bottomRight,
-								child: _makeCounters()
-							)
-						),
-						if (threadState?.savedTime != null) Positioned.fill(
-							child: Align(
-								alignment: Alignment.topRight,
-								child: Container(
-									decoration: BoxDecoration(
-										borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
-										color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-										border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-									),
-									padding: const EdgeInsets.only(top: 2, bottom: 2, left: 6, right: 6),
-									child: Row(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											Icon(CupertinoIcons.bookmark_fill, color: otherMetadataColor, size: 18),
-										]
-									)
-								)
-							)
-						)
-					]
-				)
-			)
+				child: child
+			) : child
 		);
 	}
 
