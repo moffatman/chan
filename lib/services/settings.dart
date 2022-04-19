@@ -9,6 +9,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/scheduler.dart';
@@ -846,9 +847,11 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 	Widget build(BuildContext context) {
 		return MouseRegion(
 			onHover: (event) {
-				_mouseExitTimer?.cancel();
-				context.read<EffectiveSettings>().systemMousePresent = true;
-				context.read<EffectiveSettings>()._runAppResumeCallbacks();
+				if (event.kind != PointerDeviceKind.touch) {
+					_mouseExitTimer?.cancel();
+					context.read<EffectiveSettings>().systemMousePresent = true;
+					context.read<EffectiveSettings>()._runAppResumeCallbacks();
+				}
 			},
 			onExit: (event) {
 				_mouseExitTimer = Timer(_mouseStateChangeTimeout, () => context.read<EffectiveSettings>().systemMousePresent = false);
