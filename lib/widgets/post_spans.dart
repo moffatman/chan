@@ -865,6 +865,12 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		return _children[postId]!;
 	}
 
+	void notifyAllListeners() {
+		notifyListeners();
+		for (final child in _children.values) {
+			child.notifyAllListeners();
+		}
+	}
 
 	@override
 	void dispose() {
@@ -1008,7 +1014,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 			_postFromArchiveErrors[id] = e.toStringDio();
 		}
 		_isLoadingPostFromArchive[id] = false;
-		notifyListeners();
+		notifyAllListeners();
 	}
 
 	@override
