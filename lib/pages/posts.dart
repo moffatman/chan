@@ -56,13 +56,13 @@ class _PostsPageState extends State<PostsPage> {
 		final attachments = replies.expand<Attachment>((a) => a.attachment == null ? [] : [a.attachment!]).toList();
 		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.thread.posts.tryFirstWhere((p) => p.id == widget.postIdForBackground);
 		return ChangeNotifierProvider.value(
-				value: widget.zone,
-				child: OverscrollModalPage(
-					background: postForBackground == null ? null : PostRow(
-						post: postForBackground,
-						isSelected: true
-					),
-					child: Builder(
+			value: widget.zone,
+			child: OverscrollModalPage(
+				background: postForBackground == null ? null : PostRow(
+					post: postForBackground,
+					isSelected: true
+				),
+				child: Builder(
 					builder: (ctx) => ListView(
 						shrinkWrap: true,
 						primary: false,
