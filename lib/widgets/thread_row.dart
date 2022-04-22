@@ -276,7 +276,7 @@ class ThreadRow extends StatelessWidget {
 						child: Builder(
 							builder: (ctx) => IgnorePointer(
 								child: LayoutBuilder(
-									builder: (context, constraints) => ClipRect(
+									builder: (context, constraints) => ClippingBox(
 										child: _thread.posts[0].span.buildWidget(
 											ctx,
 											PostSpanRenderOptions(
@@ -367,7 +367,7 @@ class ThreadRow extends StatelessWidget {
 										),
 										child: Builder(
 											builder: (ctx) => IgnorePointer(
-												child: ClipRect(
+												child: ClippingBox(
 													child: _thread.posts[0].span.buildWidget(
 														ctx,
 														PostSpanRenderOptions(

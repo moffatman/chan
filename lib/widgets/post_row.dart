@@ -102,7 +102,7 @@ class PostRow extends StatelessWidget {
 				padding: const EdgeInsets.all(8),
 				child: IgnorePointer(
 					ignoring: !allowTappingLinks,
-					child: ClipRect(
+					child: ClippingBox(
 						child: post.span.buildWidget(
 							ctx,
 							PostSpanRenderOptions(

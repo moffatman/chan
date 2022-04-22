@@ -6,6 +6,7 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -526,5 +527,47 @@ class MaybeCupertinoScrollbar extends StatelessWidget {
 			);
 		}
 		return child;
+	}
+}
+
+class _RenderTrulyUnconstrainedBox extends RenderProxyBox {
+	_RenderTrulyUnconstrainedBox();
+  @override
+  void performLayout() {
+    if (child != null) {
+      child!.layout(constraints.copyWith(maxHeight: double.infinity), parentUsesSize: true);
+      size = constraints.constrain(child!.size);
+    } else {
+      size = computeSizeForNoChild(constraints);
+    }
+  }
+}
+
+class _TrulyUnconstrainedBox extends SingleChildRenderObjectWidget {
+	const _TrulyUnconstrainedBox({
+		Key? key,
+		required Widget child
+	}) : super(key: key, child: child);
+
+	@override
+	_RenderTrulyUnconstrainedBox createRenderObject(BuildContext context) {
+		return _RenderTrulyUnconstrainedBox();
+	}
+}
+
+class ClippingBox extends StatelessWidget {
+	final Widget child;
+	const ClippingBox({
+		Key? key,
+		required this.child
+	}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		return ClipRect(
+			child: _TrulyUnconstrainedBox(
+				child: child
+			)
+		);
 	}
 }
