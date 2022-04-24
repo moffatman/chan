@@ -12,6 +12,7 @@ import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -493,9 +494,14 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 		try {
 			final persistence = context.read<Persistence>();
+			final settings = context.read<EffectiveSettings>();
 			String? overrideAttachmentFilename;
 			if (_filenameController.text.isNotEmpty && attachment != null) {
 				overrideAttachmentFilename = _filenameController.text + '.' + attachmentExt!;
+			}
+			if (settings.randomizeFilenames) {
+				const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+				overrideAttachmentFilename = List.generate(12, (i) => _chars[random.nextInt(_chars.length)]).join('') + '.' + attachmentExt!;
 			}
 			final receipt = (widget.threadId != null) ? (await site.postReply(
 				thread: ThreadIdentifier(board: widget.board, id: widget.threadId!),
@@ -519,7 +525,6 @@ class ReplyBoxState extends State<ReplyBox> {
 			));
 			if (_captchaSolution is Chan4CustomCaptchaSolution) {
 				final solution = (_captchaSolution as Chan4CustomCaptchaSolution);
-				final settings = context.read<EffectiveSettings>();
 				settings.contributeCaptchas ??= await showCupertinoDialog<bool>(
 					context: context,
 					builder: (_context) => CupertinoAlertDialog(
@@ -680,8 +685,9 @@ class ReplyBoxState extends State<ReplyBox> {
 					),
 					Flexible(
 						child: CupertinoTextField(
+							enabled: !context.watch<EffectiveSettings>().randomizeFilenames,
 							controller: _filenameController,
-							placeholder: attachment == null ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
+							placeholder: (context.watch<EffectiveSettings>().randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
 							placeholderStyle: TextStyle(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.7)),
 							maxLines: 1,
 							textCapitalization: TextCapitalization.none,
@@ -690,7 +696,23 @@ class ReplyBoxState extends State<ReplyBox> {
 						)
 					),
 					const SizedBox(width: 8),
-					Text('.$attachmentExt')
+					Text('.$attachmentExt'),
+					const SizedBox(width: 8),
+					CupertinoButton(
+						padding: EdgeInsets.zero,
+						child: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								Icon(context.watch<EffectiveSettings>().randomizeFilenames ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
+								const Text('Random')
+							]
+						),
+						onPressed: () {
+							setState(() {
+								context.read<EffectiveSettings>().randomizeFilenames = !context.read<EffectiveSettings>().randomizeFilenames;
+							});
+						}
+					)
 				]
 			)
 		);

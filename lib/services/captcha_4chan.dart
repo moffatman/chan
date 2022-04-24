@@ -6,6 +6,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:chan/services/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:normal/normal.dart';
 import 'package:pool/pool.dart';
@@ -204,7 +205,6 @@ const _scoreArrayProportion = 0.55;
 
 void _guess(_GuessParam param) async {
 	Uint8List captcha = await _getRedChannelOnly(param.rgbaData);
-	final random = Random();
 	final width = param.width;
 	final height = param.height;
 	// Threshold

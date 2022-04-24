@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/util.dart';
 import 'package:dio/dio.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
@@ -433,7 +434,6 @@ class Site4Chan extends ImageboardSite {
 		bool? spoiler,
 		String? overrideFilename
 	}) async {
-		final random = Random();
 		final password = List.generate(64, (i) => random.nextInt(16).toRadixString(16)).join();
 		final response = await client.post(
 			Uri.https(sysUrl, '/$board/post').toString(),

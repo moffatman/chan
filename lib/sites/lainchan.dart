@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/models/search.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
 import 'package:html_unescape/html_unescape_small.dart';
@@ -213,7 +214,6 @@ class SiteLainchan extends ImageboardSite {
 		String? overrideFilename
 	}) async {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
-		final random = Random();
 		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
 		final page = await client.get(getWebUrl(board, threadId));
 		final Map<String, dynamic> fields = {

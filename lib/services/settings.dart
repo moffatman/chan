@@ -236,6 +236,8 @@ class SavedSettings extends HiveObject {
 	bool? autoLoginOnMobileNetwork;
 	@HiveField(48)
 	bool showScrollbars;
+	@HiveField(49)
+	bool randomizeFilenames;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -286,6 +288,7 @@ class SavedSettings extends HiveObject {
 		bool? useNewCaptchaForm,
 		this.autoLoginOnMobileNetwork,
 		bool? showScrollbars,
+		bool? randomizeFilenames,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -338,7 +341,8 @@ class SavedSettings extends HiveObject {
 		useBoardSwitcherList = useBoardSwitcherList ?? false,
 		showReplyCountsInGallery = showReplyCountsInGallery ?? false,
 		useNewCaptchaForm = useNewCaptchaForm ?? true,
-		showScrollbars = showScrollbars ?? true;
+		showScrollbars = showScrollbars ?? true,
+		randomizeFilenames = randomizeFilenames ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -757,6 +761,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showScrollbars => _settings.showScrollbars;
 	set showScrollbars(bool setting) {
 		_settings.showScrollbars = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get randomizeFilenames => _settings.randomizeFilenames;
+	set randomizeFilenames(bool setting) {
+		_settings.randomizeFilenames = setting;
 		_settings.save();
 		notifyListeners();
 	}
