@@ -11,6 +11,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -437,6 +438,12 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 		}
 	}
 
+	void _handlePointerPanZoomStart(PointerPanZoomStartEvent event) {
+		if (widget.enabledCallback()) {
+			_recognizer.addPointerPanZoom(event);
+		}
+	}
+
 	double _convertToLogical(double value) {
 		switch (Directionality.of(context)) {
 			case TextDirection.rtl:
@@ -460,6 +467,7 @@ class _CupertinoBackGestureDetectorState<T> extends State<_CupertinoBackGestureD
 					bottom: 0.0,
 					child: Listener(
 						onPointerDown: _handlePointerDown,
+						onPointerPanZoomStart: _handlePointerPanZoomStart,
 						behavior: HitTestBehavior.translucent,
 					),
 				),
