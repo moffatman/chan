@@ -63,6 +63,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		..onLongPressStart = _onLongPressStart
 		..onLongPressMoveUpdate = _onLongPressMoveUpdate
 		..onLongPressEnd = _onLongPressEnd
+		..onLongPressCancel = _onLongPressDone
 		..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
 	}
 
@@ -107,7 +108,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		);
 	}
 
-	void _onLongPressEnd(LongPressEndDetails details) {
+	void _onLongPressDone() {
 		widget.softCleanup?.call(_value);
 		_cleanupTimer = Timer(widget.valueLifetime, () {
 			widget.cleanup?.call(_value);
@@ -116,6 +117,8 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		_touchEntry?.remove();
 		_touchEntry = null;
 	}
+
+	void _onLongPressEnd(LongPressEndDetails details) => _onLongPressDone();
 
 	@override
 	Widget build(BuildContext context) {
