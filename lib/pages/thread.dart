@@ -720,7 +720,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												)
 											);
 										}),
-										Tuple3('${_yous.length} (You)s', const Icon(CupertinoIcons.reply_all, size: 19), youIds.isEmpty ? null : () {
+										Tuple3('${_yous.length} (You)s', const Icon(CupertinoIcons.reply_all, size: 19), _yous.isEmpty ? null : () {
 												WeakNavigator.push(context, PostsPage(
 													zone: widget.zone,
 													postsIdsToShow: _yous.map((y) => y.id).toList(),
