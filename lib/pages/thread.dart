@@ -9,6 +9,7 @@ import 'package:chan/pages/thread_attachments.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/util.dart';
@@ -713,7 +714,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											duration: const Duration(milliseconds: 200),
 											curve: Curves.ease
 										)),
-										Tuple3('${youIds.length} submission', const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
+										Tuple3(describeCount(youIds.length, 'submission'), const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
 												WeakNavigator.push(context, PostsPage(
 													zone: widget.zone,
 													postsIdsToShow: youIds,
@@ -724,7 +725,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												)
 											);
 										}),
-										Tuple3('${_yous.length} (You)s', const Icon(CupertinoIcons.reply_all, size: 19), _yous.isEmpty ? null : () {
+										Tuple3(describeCount(_yous.length, '(You)'), const Icon(CupertinoIcons.reply_all, size: 19), _yous.isEmpty ? null : () {
 												WeakNavigator.push(context, PostsPage(
 													zone: widget.zone,
 													postsIdsToShow: _yous.map((y) => y.id).toList(),
@@ -736,7 +737,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											);
 										}),
 										Tuple3(
-											'${(widget.thread?.imageCount ?? 0) + 1} image${(widget.thread?.imageCount ?? 0) != 0 ? 's' : ''}',
+											describeCount((widget.thread?.imageCount ?? 0) + 1, 'image'),
 											const RotatedBox(
 												quarterTurns: 1,
 												child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19)

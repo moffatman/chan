@@ -13,6 +13,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
@@ -334,7 +335,7 @@ class SettingsBehaviorPage extends StatelessWidget {
 					padding: const EdgeInsets.all(16),
 					child: Row(
 						children: [
-							Text('Ignoring ${realPersistence.browserState.hiddenImageMD5s.length} images'),
+							Text('Ignoring ${describeCount(realPersistence.browserState.hiddenImageMD5s.length, 'image')}'),
 							const Spacer(),
 							CupertinoButton.filled(
 								padding: const EdgeInsets.all(16),
@@ -1416,7 +1417,7 @@ class SettingsThreadsPanel extends StatelessWidget {
 						context: context,
 						builder: (_context) => CupertinoAlertDialog(
 							title: const Text('Confirm deletion'),
-							content: Text('${toDelete.length} threads will be deleted'),
+							content: Text('${describeCount(toDelete.length, 'thread')} will be deleted'),
 							actions: [
 								CupertinoDialogAction(
 									child: const Text('Cancel'),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
@@ -449,9 +450,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 												height: 50,
 												child: Center(
 													child: Text(
-														_showFilteredValues ?
-															'Showing ${filteredValues.length} filtered item${filteredValues.length > 1 ? 's' : ''}' :
-															'${filteredValues.length} filtered item${filteredValues.length > 1 ? 's' : ''}',
+														(_showFilteredValues ? 'Showing ' : '') + describeCount(filteredValues.length, 'filtered item'),
 														style: TextStyle(
 															color: CupertinoTheme.of(context).primaryColorWithBrightness(0.4)
 														)

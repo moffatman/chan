@@ -6,3 +6,12 @@ bool isDesktop() {
 }
 
 final random = Random(DateTime.now().millisecondsSinceEpoch);
+
+String describeCount(int count, String noun) {
+	if (count == 1) {
+		return '$count $noun';
+	}
+	else {
+		return '$count ${noun}s';
+	}
+}

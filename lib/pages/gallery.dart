@@ -8,6 +8,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/status_bar.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/util.dart';
@@ -297,7 +298,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 			barrierDismissible: true,
 			builder: (context) => CupertinoAlertDialog(
 				title: const Text('Download all?'),
-				content: Text("${toDownload.length} attachment${toDownload.length == 1 ? '' : 's'} will be saved to your library"),
+				content: Text("${describeCount(toDownload.length, 'attachment')} will be saved to your library"),
 				actions: [
 					CupertinoDialogAction(
 						child: const Text('No'),
