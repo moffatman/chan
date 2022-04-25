@@ -400,7 +400,7 @@ class SiteLainchan extends ImageboardSite {
 	String get imageUrl => baseUrl;
 
 	@override
-	Uri get passIconUrl => throw UnimplementedError();
+	Uri get passIconUrl => Uri.https('callum.crabdance.com', '/minileaf.gif');
 
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page}) {

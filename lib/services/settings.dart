@@ -238,6 +238,26 @@ class SavedSettings extends HiveObject {
 	bool showScrollbars;
 	@HiveField(49)
 	bool randomizeFilenames;
+	@HiveField(50)
+	bool showNameOnPosts;
+	@HiveField(51)
+	bool showTripOnPosts;
+	@HiveField(52)
+	bool showAbsoluteTimeOnPosts;
+	@HiveField(53)
+	bool showRelativeTimeOnPosts;
+	@HiveField(54)
+	bool showCountryNameOnPosts;
+	@HiveField(55)
+	bool showPassOnPosts;
+	@HiveField(56)
+	bool showFilenameOnPosts;
+	@HiveField(57)
+	bool showFilesizeOnPosts;
+	@HiveField(58)
+	bool showFileDimensionsOnPosts;
+	@HiveField(59)
+	bool showFlagOnPosts;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -289,6 +309,16 @@ class SavedSettings extends HiveObject {
 		this.autoLoginOnMobileNetwork,
 		bool? showScrollbars,
 		bool? randomizeFilenames,
+		bool? showNameOnPosts,
+		bool? showTripOnPosts,
+		bool? showAbsoluteTimeOnPosts,
+		bool? showRelativeTimeOnPosts,
+		bool? showCountryNameOnPosts,
+		bool? showPassOnPosts,
+		bool? showFilenameOnPosts,
+		bool? showFilesizeOnPosts,
+		bool? showFileDimensionsOnPosts,
+		bool? showFlagOnPosts,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -342,7 +372,17 @@ class SavedSettings extends HiveObject {
 		showReplyCountsInGallery = showReplyCountsInGallery ?? false,
 		useNewCaptchaForm = useNewCaptchaForm ?? true,
 		showScrollbars = showScrollbars ?? true,
-		randomizeFilenames = randomizeFilenames ?? false;
+		randomizeFilenames = randomizeFilenames ?? false,
+		showNameOnPosts = showNameOnPosts ?? true,
+		showTripOnPosts = showTripOnPosts ?? true,
+		showAbsoluteTimeOnPosts = showAbsoluteTimeOnPosts ?? true,
+		showRelativeTimeOnPosts = showRelativeTimeOnPosts ?? false,
+		showCountryNameOnPosts = showCountryNameOnPosts ?? true,
+		showPassOnPosts = showPassOnPosts ?? true,
+		showFilenameOnPosts = showFilenameOnPosts ?? false,
+		showFilesizeOnPosts = showFilesizeOnPosts ?? false,
+		showFileDimensionsOnPosts = showFileDimensionsOnPosts ?? false,
+		showFlagOnPosts = showFlagOnPosts ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -768,6 +808,76 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get randomizeFilenames => _settings.randomizeFilenames;
 	set randomizeFilenames(bool setting) {
 		_settings.randomizeFilenames = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showNameOnPosts => _settings.showNameOnPosts;
+	set showNameOnPosts(bool setting) {
+		_settings.showNameOnPosts = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showTripOnPosts => _settings.showTripOnPosts;
+	set showTripOnPosts(bool setting) {
+		_settings.showTripOnPosts = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showAbsoluteTimeOnPosts => _settings.showAbsoluteTimeOnPosts;
+	set showAbsoluteTimeOnPosts(bool setting) {
+		_settings.showAbsoluteTimeOnPosts = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showRelativeTimeOnPosts => _settings.showRelativeTimeOnPosts;
+	set showRelativeTimeOnPosts(bool setting) {
+		_settings.showRelativeTimeOnPosts = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showCountryNameOnPosts => _settings.showCountryNameOnPosts;
+	set showCountryNameOnPosts(bool setting) {
+		_settings.showCountryNameOnPosts = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showPassOnPosts => _settings.showPassOnPosts;
+	set showPassOnPosts(bool setting) {
+		_settings.showPassOnPosts = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showFilenameOnPosts => _settings.showFilenameOnPosts;
+	set showFilenameOnPosts(bool setting) {
+		_settings.showFilenameOnPosts = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showFilesizeOnPosts => _settings.showFilesizeOnPosts;
+	set showFilesizeOnPosts(bool setting) {
+		_settings.showFilesizeOnPosts = setting;
+		_settings.save();
+	notifyListeners();
+	}
+
+	bool get showFileDimensionsOnPosts => _settings.showFileDimensionsOnPosts;
+	set showFileDimensionsOnPosts(bool setting) {
+		_settings.showFileDimensionsOnPosts = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showFlagOnPosts => _settings.showFlagOnPosts;
+	set showFlagOnPosts(bool setting) {
+		_settings.showFlagOnPosts = setting;
 		_settings.save();
 		notifyListeners();
 	}

@@ -73,6 +73,33 @@ String formatTime(DateTime time) {
 	return prefix + time.hour.toString().padLeft(2, '0') + ':' + time.minute.toString().padLeft(2, '0') + ':' + time.second.toString().padLeft(2, '0');
 }
 
+String formatRelativeTime(DateTime time) {
+	final diff = time.difference(DateTime.now()).abs();
+	String timeDiff = '';
+	if (diff.inDays > 365) {
+		timeDiff = '${diff.inDays ~/ 365}y';
+	}
+	else if (diff.inDays > 30) {
+		timeDiff = '${diff.inDays ~/ 30}mo';
+	}
+	else if (diff.inDays > 0) {
+		timeDiff = '${diff.inDays}d';
+	}
+	else if (diff.inHours > 0) {
+		timeDiff = '${diff.inHours}h';
+	}
+	else if (diff.inMinutes > 0) {
+		timeDiff = '${diff.inMinutes}m';
+	}
+	else {
+		timeDiff = '${(diff.inMilliseconds / 1000).round()}s';
+	}
+	if (time.isAfter(DateTime.now())) {
+		timeDiff = 'in $timeDiff';
+	}
+	return timeDiff;
+}
+
 class TransparentRoute<T> extends PageRoute<T> {
 	final bool showAnimations;
 	TransparentRoute({

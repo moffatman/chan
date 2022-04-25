@@ -86,6 +86,28 @@ class PostRow extends StatelessWidget {
 			}
 			return false;
 		});
+		String _makeAttachmentInfo() {
+			String text = '';
+			if (settings.showFilenameOnPosts) {
+				text += ' ${_post.attachment?.filename} ';
+			}
+			if (settings.showFilesizeOnPosts || settings.showFileDimensionsOnPosts) {
+				text += '(';
+				bool firstItemPassed = false;
+				if (settings.showFilesizeOnPosts) {
+					text += '${((_post.attachment?.sizeInBytes ?? 0) / 1024).round()} KB';
+					firstItemPassed = true;
+				}
+				if (settings.showFileDimensionsOnPosts) {
+					if (firstItemPassed) {
+						text += ', ';
+					}
+					text += '${_post.attachment?.width}x${_post.attachment?.height}';
+				}
+				text += ')';
+			}
+			return text;
+		}
 		openReplies() {
 			if (replyIds.isNotEmpty) {
 				WeakNavigator.push(context, PostsPage(
@@ -211,47 +233,66 @@ class PostRow extends StatelessWidget {
 												builder: (context, supportMouse, child) => Text.rich(
 													TextSpan(
 														children: [
-															TextSpan(
+															if (settings.showNameOnPosts) TextSpan(
 																text: context.read<EffectiveSettings>().filterProfanity(_post.name) + (isYourPost ? ' (You)' : ''),
 																style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
+															)
+															else if (isYourPost) TextSpan(
+																text: '(You)',
+																style: TextStyle(fontWeight: FontWeight.w600, color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)
 															),
-															if (_post.trip != null) TextSpan(
-																text: context.read<EffectiveSettings>().filterProfanity(_post.trip!),
+															if (settings.showTripOnPosts && _post.trip != null) TextSpan(
+																text: context.read<EffectiveSettings>().filterProfanity(_post.trip!) + ' ',
 																style: TextStyle(color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
-															),
-															const TextSpan(text: ' '),
-															if (_post.posterId != null) IDSpan(
-																id: _post.posterId!,
-																onPressed: () => WeakNavigator.push(context, PostsPage(
-																	postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
-																	zone: zone
-																))
-															),
-															if (_post.passSinceYear != null) ...[
+															)
+															else if (settings.showNameOnPosts || isYourPost) const TextSpan(text: ' '),
+															if (_post.posterId != null) ...[
+																IDSpan(
+																	id: _post.posterId!,
+																	onPressed: () => WeakNavigator.push(context, PostsPage(
+																		postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
+																		zone: zone
+																	))
+																),
+																const TextSpan(text: ' ')
+															],
+															if (_post.attachment != null) ...[
+																TextSpan(
+																	text: _makeAttachmentInfo(),
+																	style: TextStyle(
+																		color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8)
+																	)
+																),
+																const TextSpan(text: ' ')
+															],
+															if (settings.showPassOnPosts && _post.passSinceYear != null) ...[
 																PassSinceSpan(
 																	sinceYear: _post.passSinceYear!,
 																	site: site
-																)
+																),
+																const TextSpan(text: ' ')
 															],
 															if (_post.flag != null) ...[
-																const TextSpan(text: ' '),
-																FlagSpan(_post.flag!),
-																const TextSpan(text: ' '),
-																TextSpan(
-																	text: _post.flag!.name,
+																if (settings.showFlagOnPosts) ...[
+																	FlagSpan(_post.flag!),
+																	const TextSpan(text: ' ')
+																],
+																if (settings.showCountryNameOnPosts) TextSpan(
+																	text: _post.flag!.name + ' ',
 																	style: const TextStyle(
 																		fontStyle: FontStyle.italic
 																	)
 																)
 															],
-															const TextSpan(text: ' '),
-															TextSpan(
-																text: formatTime(_post.time)
+															if (settings.showAbsoluteTimeOnPosts)	TextSpan(
+																text: formatTime(_post.time) + ' '
 															),
-															const TextSpan(text: ' '),
+															if (settings.showRelativeTimeOnPosts) TextSpan(
+																text: formatRelativeTime(_post.time) + ' ago '
+															),
 															TextSpan(
 																text: _post.id.toString(),
-																style: const TextStyle(color: Colors.grey),
+																style: TextStyle(color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)),
 																recognizer: TapGestureRecognizer()..onTap = () {
 																	ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
 																}

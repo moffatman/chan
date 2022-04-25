@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
+import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
@@ -15,6 +16,8 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/post_row.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -450,39 +453,73 @@ class SettingsAppearancePage extends StatelessWidget {
 		Key? key
 	}) : super(key: key);
 
+	Thread _makeFakeThread() {
+		final flag = ImageboardFlag(
+			name: 'Canada',
+			imageUrl: 'https://callum.crabdance.com/ca.gif',
+			imageWidth: 16,
+			imageHeight: 11
+		);
+		final attachment = Attachment(
+			type: AttachmentType.image,
+			board: 'tv',
+			id: 99999,
+			ext: '.png',
+			width: 800,
+			height: 800,
+			filename: 'example.png',
+			md5: '',
+			sizeInBytes: 150634,
+			url: Uri.parse('https://picsum.photos/800'),
+			thumbnailUrl: Uri.parse('https://picsum.photos/200')
+		);
+		return Thread(
+			attachment: attachment,
+			board: 'tv',
+			replyCount: 300,
+			imageCount: 30,
+			id: 99999,
+			time: DateTime.now().subtract(const Duration(minutes: 5)),
+			title: 'Example thread',
+			isSticky: false,
+			flag: flag,
+			posts_: [
+				Post(
+					board: 'tv',
+					text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ',
+					name: 'Anonymous',
+					trip: '!asdf',
+					time: DateTime.now().subtract(const Duration(minutes: 5)),
+					threadId: 99999,
+					id: 99999,
+					passSinceYear: 2020,
+					flag: flag,
+					attachment: attachment,
+					spanFormat: PostSpanFormat.chan4
+				)
+			]
+		);
+	}
+
 	Widget _buildFakeThreadRow({bool contentFocus = true}) {
 		return ThreadRow(
 			contentFocus: contentFocus,
 			isSelected: false,
-			thread: Thread(
-				attachment: Attachment(
-					type: AttachmentType.image,
-					board: 'tv',
-					id: 99999,
-					ext: '.png',
-					filename: 'example',
-					md5: '',
-					url: Uri.parse('https://picsum.photos/800'),
-					thumbnailUrl: Uri.parse('https://picsum.photos/200')
-				),
-				board: 'tv',
-				replyCount: 300,
-				imageCount: 30,
-				id: 99999,
-				time: DateTime.now().subtract(const Duration(minutes: 5)),
-				title: 'Example thread',
-				isSticky: false,
-				posts_: [
-					Post(
-						board: 'tv',
-						text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ',
-						name: 'Anonymous',
-						time: DateTime.now().subtract(const Duration(minutes: 5)),
-						threadId: 99999,
-						id: 99999,
-						spanFormat: PostSpanFormat.chan4
-					)
-				]
+			thread: _makeFakeThread()
+		);
+	}
+
+	Widget _buildFakePostRow() {
+		final thread = _makeFakeThread();
+		return ChangeNotifierProvider<PostSpanZoneData>(
+			create: (context) => PostSpanRootZoneData(
+				site: context.read<ImageboardSite>(),
+				thread: thread,
+				semanticRootIds: [-9]
+			),
+			child: PostRow(
+				isSelected: false,
+				post: thread.posts.first
 			)
 		);
 	}
@@ -674,6 +711,141 @@ class SettingsAppearancePage extends StatelessWidget {
 					}
 				),
 				const SizedBox(height: 32),
+				Center(
+					child: CupertinoButton.filled(
+						child: const Text('Edit post details'),
+						onPressed: () async {
+							await showCupertinoModalPopup(
+								context: context,
+								builder: (_context) => StatefulBuilder(
+									builder: (context, setDialogState) => CupertinoActionSheet(
+										title: const Text('Edit post details'),
+										actions: [
+											CupertinoButton(
+												child: const Text('Close'),
+												onPressed: () => Navigator.pop(_context)
+											)
+										],
+										message: DefaultTextStyle(
+											style: DefaultTextStyle.of(context).style,
+											child: Column(
+												children: [
+													SizedBox(
+														 height: 125,
+														 child: IgnorePointer(
+															 child: _buildFakePostRow()
+														 )
+														),
+													Row(
+														children: [
+															const Text('Show name'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showNameOnPosts,
+																onChanged: (d) => settings.showNameOnPosts = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show trip'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showTripOnPosts,
+																onChanged: (d) => settings.showTripOnPosts = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show filename'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showFilenameOnPosts,
+																onChanged: (d) => settings.showFilenameOnPosts = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show filesize'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showFilesizeOnPosts,
+																onChanged: (d) => settings.showFilesizeOnPosts = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show file dimensions'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showFileDimensionsOnPosts,
+																onChanged: (d) => settings.showFileDimensionsOnPosts = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show pass'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showPassOnPosts,
+																onChanged: (d) => settings.showPassOnPosts = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show flag'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showFlagOnPosts,
+																onChanged: (d) => settings.showFlagOnPosts = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show country name'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showCountryNameOnPosts,
+																onChanged: (d) => settings.showCountryNameOnPosts = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show exact time'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showAbsoluteTimeOnPosts,
+																onChanged: (d) => settings.showAbsoluteTimeOnPosts = d
+															)
+														]
+													),
+													Row(
+														children: [
+															const Text('Show relative time'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.showRelativeTimeOnPosts,
+																onChanged: (d) => settings.showRelativeTimeOnPosts = d
+															)
+														]
+													)
+												]
+											)
+										)
+									)
+								)
+							);
+						}
+					)
+				),
+				const SizedBox(height: 32),
 				const Text('Show reply counts in gallery'),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<bool>(
@@ -806,36 +978,7 @@ class SettingsAppearancePage extends StatelessWidget {
 																child: ThreadRow(
 																	contentFocus: true,
 																	isSelected: false,
-																	thread: Thread(
-																		attachment: Attachment(
-																			type: AttachmentType.image,
-																			board: 'tv',
-																			id: 99999,
-																			ext: '.png',
-																			filename: 'example',
-																			md5: '',
-																			url: Uri.parse('https://picsum.photos/800'),
-																			thumbnailUrl: Uri.parse('https://picsum.photos/200')
-																		),
-																		board: 'tv',
-																		replyCount: 300,
-																		imageCount: 30,
-																		id: 99999,
-																		time: DateTime.now().subtract(const Duration(minutes: 5)),
-																		title: 'Example thread',
-																		isSticky: false,
-																		posts_: [
-																			Post(
-																				board: 'tv',
-																				text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ',
-																				name: 'Anonymous',
-																				time: DateTime.now().subtract(const Duration(minutes: 5)),
-																				threadId: 99999,
-																				id: 99999,
-																				spanFormat: PostSpanFormat.chan4
-																			)
-																		]
-																	)
+																	thread: _makeFakeThread()
 																)
 															)
 														)

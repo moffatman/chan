@@ -49,33 +49,6 @@ class ThreadRow extends StatelessWidget {
 		Key? key
 	}) : super(key: key);
 
-	String _timeDiff(DateTime value) {
-		final diff = value.difference(DateTime.now()).abs();
-		String timeDiff = '';
-		if (diff.inDays > 365) {
-			timeDiff = '${diff.inDays ~/ 365}y';
-		}
-		else if (diff.inDays > 30) {
-			timeDiff = '${diff.inDays ~/ 30}mo';
-		}
-		else if (diff.inDays > 0) {
-			timeDiff = '${diff.inDays}d';
-		}
-		else if (diff.inHours > 0) {
-			timeDiff = '${diff.inHours}h';
-		}
-		else if (diff.inMinutes > 0) {
-			timeDiff = '${diff.inMinutes}m';
-		}
-		else {
-			timeDiff = '${(diff.inMilliseconds / 1000).round()}s';
-		}
-		if (value.isAfter(DateTime.now())) {
-			timeDiff = 'in $timeDiff';
-		}
-		return timeDiff;
-	}
-
 	Widget _build(BuildContext context, PersistentThreadState? threadState) {
 		final settings = context.watch<EffectiveSettings>();
 		final _thread = threadState?.thread ?? thread;
@@ -128,7 +101,7 @@ class ThreadRow extends StatelessWidget {
 									Icon(CupertinoIcons.clock, color: otherMetadataColor, size: 18),
 									const SizedBox(width: 4)
 								],
-								Text(_timeDiff(thread.time), style: TextStyle(color: otherMetadataColor)),
+								Text(formatRelativeTime(thread.time), style: TextStyle(color: otherMetadataColor)),
 								const SizedBox(width: 4),
 							]
 						)
