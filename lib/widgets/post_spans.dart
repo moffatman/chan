@@ -269,7 +269,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		final zone = context.watch<PostSpanZoneData>();
 		String text = '>>$postId';
 		if (zone.postFromArchiveError(postId) != null) {
-			text += ' (Error: ${zone.postFromArchiveError(postId)}';
+			text += ' (Error: ${zone.postFromArchiveError(postId)})';
 		}
 		else if (zone.isLoadingPostFromArchive(postId)) {
 			text += ' (Loading...)';

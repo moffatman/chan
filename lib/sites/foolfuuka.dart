@@ -223,6 +223,9 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			}
 			return Future.error(HTTPStatusException(response.statusCode!));
 		}
+		if (response.data['error'] != null) {
+			throw FoolFuukaException(response.data['error']);
+		}
 		return response.data;
 	}
 	Future<int> _getPostThreadId(String board, int postId) async {
