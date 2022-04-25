@@ -853,7 +853,9 @@ class RefreshableListController<T> {
 			await Future.any([completer.future, Future.wait([Future.delayed(const Duration(milliseconds: 32)), Future.delayed(delay ~/ 4)])]);
 			return (_items[targetIndex].cachedOffset != null);
 		}
+		bool usingKnownGoodValue = true;
 		if (_items[targetIndex].cachedOffset == null) {
+			usingKnownGoodValue = false;
 			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 20 && targetIndex == currentTargetIndex) {
 				c = Curves.linear;
 			}
@@ -879,8 +881,12 @@ class RefreshableListController<T> {
 		else {
 			atAlignment0 += 1;
 		}
+		double finalDestination = (atAlignment0 - (alignmentSlidingWindow * alignment));
+		if (!usingKnownGoodValue) {
+			finalDestination = finalDestination.clamp(0, scrollController!.position.maxScrollExtent);
+		}
 		await scrollController!.animateTo(
-			(atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent),
+			finalDestination,
 			duration: Duration(milliseconds: max(1, d.inMilliseconds)),
 			curve: Curves.easeOut
 		);

@@ -708,7 +708,11 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 								mainAxisSize: MainAxisSize.min,
 								children: [
 									for (final button in [
-										Tuple3('Scroll to top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), () => widget.listController.animateTo((p) => true)),
+										Tuple3('Scroll to top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), () => widget.listController.scrollController?.animateTo(
+											0,
+											duration: const Duration(milliseconds: 200),
+											curve: Curves.ease
+										)),
 										Tuple3('${youIds.length} submission', const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
 												WeakNavigator.push(context, PostsPage(
 													zone: widget.zone,
