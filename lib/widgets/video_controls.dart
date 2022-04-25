@@ -1,7 +1,9 @@
 import 'dart:math';
 
+import 'package:chan/services/settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoControls extends StatefulWidget {
@@ -92,9 +94,11 @@ class _VideoControlsState extends State<VideoControls> {
 					onPressed: () async {
 						if (value.volume > 0) {
 							await widget.controller.setVolume(0);
+							context.read<EffectiveSettings>().muteAudio = true;
 						}
 						else {
 							await widget.controller.setVolume(1);
+							context.read<EffectiveSettings>().muteAudio = false;
 						}
 					}
 				),

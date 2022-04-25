@@ -699,33 +699,64 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												),
 												StreamBuilder(
 													stream: _rotationsChanged.mergeWith([_currentAttachmentChanged]),
-													builder: (context, _) => AnimatedSwitcher(
-														duration: const Duration(milliseconds: 300),
-														child: (_rotationAppropriate(currentAttachment) && !_hideRotateButton) ? Align(
-															key: ValueKey<bool>(_rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0),
+													builder: (context, _) {
+														final muted = context.watch<EffectiveSettings>().muteAudio;
+														return Align(
 															alignment: Alignment.bottomRight,
-															child: RotationTransition(
-																turns: _rotationsInProgress.contains(currentAttachment) ? Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController) : const AlwaysStoppedAnimation(0.0),
-																child: CupertinoButton(
-																	padding: const EdgeInsets.all(24),
-																	child: Transform(
-																		alignment: Alignment.center,
-																		transform: _rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0 ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
-																		child: const Icon(CupertinoIcons.rotate_left)
+															child: Row(
+																mainAxisSize: MainAxisSize.min,
+																crossAxisAlignment: CrossAxisAlignment.end,
+																children: [
+																	AnimatedSwitcher(
+																		duration: const Duration(milliseconds: 300),
+																		child: currentController.hasAudio ? Align(
+																			key: ValueKey<bool>(context.watch<EffectiveSettings>().muteAudio),
+																			alignment: Alignment.bottomLeft,
+																			child: CupertinoButton(
+																				padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+																				child: muted ? const Icon(CupertinoIcons.volume_off) : const Icon(CupertinoIcons.volume_up),
+																				onPressed: () {
+																					if (muted) {
+																						currentController.videoPlayerController?.setVolume(1);
+																						context.read<EffectiveSettings>().muteAudio = false;
+																					}
+																					else {
+																						currentController.videoPlayerController?.setVolume(0);
+																						context.read<EffectiveSettings>().muteAudio = true;
+																					}
+																				}
+																			)
+																		) : const SizedBox.shrink()
 																	),
-																	onPressed: () {
-																		if (currentController.quarterTurns == 1) {
-																			currentController.unrotate();
-																		}
-																		else {
-																			_rotate(currentAttachment);
-																		}
-																		_rotationsChanged.add(null);
-																	}
-																)
+																	AnimatedSwitcher(
+																		duration: const Duration(milliseconds: 300),
+																		child: (_rotationAppropriate(currentAttachment) && !_hideRotateButton) ? RotationTransition(
+																				key: ValueKey<bool>(_rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0),
+																				turns: _rotationsInProgress.contains(currentAttachment) ? Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController) : const AlwaysStoppedAnimation(0.0),
+																				child: CupertinoButton(
+																					padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+																					child: Transform(
+																						alignment: Alignment.center,
+																						transform: _rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0 ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
+																						child: const Icon(CupertinoIcons.rotate_left)
+																					),
+																					onPressed: () {
+																						if (currentController.quarterTurns == 1) {
+																							currentController.unrotate();
+																						}
+																						else {
+																							_rotate(currentAttachment);
+																						}
+																						_rotationsChanged.add(null);
+																					}
+																				)
+																			) : const SizedBox.shrink()
+																	),
+																	const SizedBox(width: 8)
+																]
 															)
-														) : Container()
-													)
+														);
+													}
 												),
 												AnimatedBuilder(
 													animation: _shouldShowPosition,

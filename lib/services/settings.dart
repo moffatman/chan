@@ -260,6 +260,8 @@ class SavedSettings extends HiveObject {
 	bool showFlagOnPosts;
 	@HiveField(60)
 	double thumbnailSize;
+	@HiveField(61)
+	bool muteAudio;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -322,6 +324,7 @@ class SavedSettings extends HiveObject {
 		bool? showFileDimensionsOnPosts,
 		bool? showFlagOnPosts,
 		double? thumbnailSize,
+		bool? muteAudio,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -386,7 +389,8 @@ class SavedSettings extends HiveObject {
 		showFilesizeOnPosts = showFilesizeOnPosts ?? false,
 		showFileDimensionsOnPosts = showFileDimensionsOnPosts ?? false,
 		showFlagOnPosts = showFlagOnPosts ?? true,
-		thumbnailSize = thumbnailSize ?? 75;
+		thumbnailSize = thumbnailSize ?? 75,
+		muteAudio = muteAudio ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -889,6 +893,13 @@ class EffectiveSettings extends ChangeNotifier {
 	double get thumbnailSize => _settings.thumbnailSize;
 	set thumbnailSize(double setting) {
 		_settings.thumbnailSize = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get muteAudio => _settings.muteAudio;
+	set muteAudio(bool setting) {
+		_settings.muteAudio = setting;
 		_settings.save();
 		notifyListeners();
 	}
