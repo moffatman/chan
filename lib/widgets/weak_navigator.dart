@@ -45,15 +45,19 @@ class WeakNavigator extends StatefulWidget {
 }
 
 class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMixin {
-  final List<Tuple3<OverlayEntry, AnimationController, Completer>> stack = [];
+  final List<Tuple4<OverlayEntry, AnimationController, AnimationController, Completer>> stack = [];
   final _overlayKey = GlobalKey<OverlayState>();
   late OverlayEntry rootEntry;
+  late final AnimationController rootCoverAnimationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 150));
 
   @override
   void initState() {
     super.initState();
     rootEntry = OverlayEntry(
-      builder: (context) => widget.child,
+      builder: (context) => _AnimatedBlur(
+        animation: rootCoverAnimationController,
+        child: widget.child,
+      ),
       opaque: true,
       maintainState: true
     );
@@ -79,39 +83,85 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
   }
 
   Future<T?> push<T extends Object?>(Widget widget) {
-    final controller = AnimationController(
+    final forwardController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 150)
     );
-    final entry = Tuple3(OverlayEntry(
-      builder: (context) => FadeTransition(
-        opacity: controller,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-          child: widget
+    final coverController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150)
+    );
+    final entry = Tuple4(OverlayEntry(
+      builder: (context) => Opacity(
+        opacity: 0.99,
+        child: FadeTransition(
+          opacity: forwardController,
+          child: _AnimatedBlur(
+            animation: coverController,
+            child: widget
+          )
         )
       ),
       maintainState: true
-    ), controller, Completer<T>());
+    ), forwardController, coverController, Completer<T>());
     stack.add(entry);
     _overlayKey.currentState!.insert(entry.item1);
-    controller.forward();
-    return entry.item3.future;
+    forwardController.forward();
+    if (stack.length > 1) {
+      stack[stack.length - 2].item3.forward();
+    }
+    else {
+      rootCoverAnimationController.forward();
+    }
+    return entry.item4.future;
   }
 
   void pop<T extends Object?>([T? result]) async {
     final entry = stack.removeLast();
+    if (stack.isNotEmpty) {
+      stack.last.item3.reverse();
+    }
+    else {
+      rootCoverAnimationController.reverse();
+    }
     await entry.item2.reverse(from: 1).orCancel;
     entry.item1.remove();
-    entry.item3.complete(result);
+    entry.item4.complete(result);
   }
 
   Future<void> popAllExceptFirst({bool animated = false}) async {
     await Future.wait(stack.map((x) => x.item2.reverse(from: 1)));
+    rootCoverAnimationController.reverse();
     for (final x in stack) {
       x.item1.remove();
-      x.item3.complete();
+      x.item4.complete();
     }
     stack.clear();
+  }
+}
+
+class _AnimatedBlur extends StatelessWidget {
+  final AnimationController animation;
+  final Widget child;
+
+  const _AnimatedBlur({
+    required this.animation,
+    required this.child,
+    Key? key
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) => ImageFiltered(
+        imageFilter: ImageFilter.blur(
+          sigmaX: 5.0 * animation.value,
+          sigmaY: 5.0 * animation.value
+        ),
+        child: child
+      ),
+      child: child
+    );
   }
 }
