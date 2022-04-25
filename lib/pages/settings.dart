@@ -1106,7 +1106,34 @@ class SettingsAppearancePage extends StatelessWidget {
 					)
 				),
 				const SizedBox(height: 32),
-				Text('Two-pane breakpoint: ${settings.twoPaneBreakpoint.round()} pixels'),
+				Row(
+					children: [
+						Text('Two-pane breakpoint: ${settings.twoPaneBreakpoint.round()} pixels'),
+						const SizedBox(width: 8),
+						CupertinoButton(
+							minSize: 0,
+							padding: EdgeInsets.zero,
+							child: const Icon(CupertinoIcons.question_circle),
+							onPressed: () {
+								showCupertinoDialog<bool>(
+									context: context,
+									barrierDismissible: true,
+									builder: (_context) => CupertinoAlertDialog(
+										content: Text('When the screen is at least ${settings.twoPaneBreakpoint.round()} pixels wide, two columns will be used.\nThe board catalog will be on the left and the current thread will be on the right.'),
+										actions: [
+											CupertinoDialogAction(
+												child: const Text('OK'),
+												onPressed: () {
+													Navigator.of(_context).pop();
+												}
+											)
+										]
+									)
+								);
+							}
+						)
+					]
+				),
 				Padding(
 					padding: const EdgeInsets.all(16),
 					child: CupertinoSlider(
