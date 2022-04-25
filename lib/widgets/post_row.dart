@@ -89,7 +89,7 @@ class PostRow extends StatelessWidget {
 		String _makeAttachmentInfo() {
 			String text = '';
 			if (settings.showFilenameOnPosts) {
-				text += ' ${_post.attachment?.filename} ';
+				text += '${_post.attachment?.filename} ';
 			}
 			if (settings.showFilesizeOnPosts || settings.showFileDimensionsOnPosts) {
 				text += '(';
@@ -104,7 +104,7 @@ class PostRow extends StatelessWidget {
 					}
 					text += '${_post.attachment?.width}x${_post.attachment?.height}';
 				}
-				text += ')';
+				text += ') ';
 			}
 			return text;
 		}
@@ -262,8 +262,7 @@ class PostRow extends StatelessWidget {
 																	style: TextStyle(
 																		color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8)
 																	)
-																),
-																const TextSpan(text: ' ')
+																)
 															],
 															if (settings.showPassOnPosts && _post.passSinceYear != null) ...[
 																PassSinceSpan(
