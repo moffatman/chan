@@ -743,7 +743,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											),
 											() {
 												final nextPostWithImage = widget.persistentState.thread?.posts.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.attachment != null, orElse: () {
-													return widget.persistentState.thread!.posts.take(widget.listController.firstVisibleIndex).firstWhere((p) => p.attachment != null);
+													return widget.persistentState.thread!.posts.take(widget.listController.firstVisibleIndex).lastWhere((p) => p.attachment != null);
 												});
 												Navigator.of(context).push(FullWidthCupertinoPageRoute(
 													builder: (context) => ThreadAttachmentsPage(
