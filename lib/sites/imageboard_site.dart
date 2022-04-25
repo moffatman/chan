@@ -173,9 +173,11 @@ class ImageboardArchiveSearchResultPage {
 class ImageboardSiteLoginField {
 	final String displayName;
 	final String formKey;
+	final TextInputType? inputType;
 	const ImageboardSiteLoginField({
 		required this.displayName,
-		required this.formKey
+		required this.formKey,
+		this.inputType
 	});
 
 	@override

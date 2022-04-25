@@ -7,6 +7,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 import 'package:html_unescape/html_unescape_small.dart';
@@ -619,7 +620,8 @@ class Site4Chan extends ImageboardSite {
 			),
 			ImageboardSiteLoginField(
 				displayName: 'PIN',
-				formKey: 'pin'
+				formKey: 'pin',
+				inputType: TextInputType.number
 			)
 		];
   }

@@ -1790,7 +1790,8 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 								autofocus: field == fields.keys.first,
 								onChanged: (value) {
 									fields[field] = value;
-								}
+								},
+								keyboardType: field.inputType
 							),
 							const SizedBox(height: 16),
 						]
