@@ -26,6 +26,7 @@ class ThreadAttachmentsPage extends StatefulWidget {
 class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 	final Map<Attachment, AttachmentViewerController> _controllers = {};
 	final _controller = RefreshableListController<Attachment>();
+	AttachmentViewerController? _lastPrimary;
 
 	@override
 	void initState() {
@@ -37,9 +38,15 @@ class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 		}
 		Future.delayed(const Duration(seconds: 1), () {
 			_controller.slowScrollUpdates.listen((_) {
-				final lastItem = _controller.lastVisibleItem;
+				final lastItem = _controller.middleVisibleItem;
 				if (lastItem != null) {
 					widget.onChange?.call(lastItem);
+					final primary = _controllers[lastItem];
+					if (primary != _lastPrimary) {
+						_lastPrimary?.isPrimary = false;
+						_controllers[lastItem]?.isPrimary = true;
+						_lastPrimary = primary;
+					}
 				}
 			});
 		});
@@ -73,13 +80,15 @@ class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 				aspectRatio: (attachment.width ?? 1) / (attachment.height ?? 1),
 				child: GestureDetector(
 					behavior: HitTestBehavior.opaque,
-					onTap: () {
-						showGallery(
+					onTap: () async {
+						_getController(attachment).isPrimary = false;
+						await showGallery(
 							context: context,
 							attachments: attachments,
 							semanticParentIds: [-101],
 							initialAttachment: attachment
 						);
+						_getController(attachment).isPrimary = true;
 					},
 					child: AnimatedBuilder(
 						animation: _getController(attachment),
@@ -93,5 +102,14 @@ class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 				)
 			)
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_controller.dispose();
+		for (final controller in _controllers.values) {
+			controller.dispose();
+		}
 	}
 }

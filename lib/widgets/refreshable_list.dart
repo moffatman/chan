@@ -902,6 +902,19 @@ class RefreshableListController<T> {
 		final index = firstVisibleIndex;
 		return index < 0 ? null : _items[index].item;
 	}
+	T? get middleVisibleItem {
+		if (scrollController?.hasOnePosition ?? false) {
+			int index = _items.indexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! > (scrollController!.position.pixels + (scrollController!.position.viewportDimension / 2))));
+			if (index != -1) {
+				if (index > 0) {
+					// It will be one too far, we want the item which covers the middle pixel row
+					index--;
+				}
+				return _items[index].item;
+			}
+		}
+		return null;
+	}
 	T? get lastVisibleItem {
 		if (scrollController?.hasOnePosition ?? false) {
 			if (_items.isNotEmpty &&
