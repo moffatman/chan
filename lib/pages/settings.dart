@@ -685,7 +685,20 @@ class SettingsAppearancePage extends StatelessWidget {
 					)
 				],
 				const SizedBox(height: 16),
-				const Text('Image thumbnail position'),
+				Text('Thumbnail size: ${settings.thumbnailSize.round()}x${settings.thumbnailSize.round()}'),
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: CupertinoSlider(
+						min: 50,
+						max: 200,
+						divisions: 30,
+						value: settings.thumbnailSize,
+						onChanged: (newValue) {
+							settings.thumbnailSize = newValue;
+						}
+					)
+				),
+				const Text('Thumbnail location'),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<bool>(
 					children: const {

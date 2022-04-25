@@ -36,20 +36,22 @@ class AttachmentSemanticLocation {
 class AttachmentThumbnail extends StatelessWidget {
 	final ThreadIdentifier? thread;
 	final Attachment attachment;
-	final double width;
-	final double height;
+	final double? width;
+	final double? height;
 	final BoxFit fit;
 	final Object? hero;
 	final int quarterTurns;
 	final Function(Object?, StackTrace?)? onLoadError;
+	final Alignment alignment;
 	final bool gaplessPlayback;
 
 	const AttachmentThumbnail({
 		required this.attachment,
 		this.thread,
-		this.width = 75,
-		this.height = 75,
+		this.width,
+		this.height,
 		this.fit = BoxFit.contain,
+		this.alignment = Alignment.center,
 		this.hero,
 		this.quarterTurns = 0,
 		this.onLoadError,
@@ -60,6 +62,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
+		final settings = context.watch<EffectiveSettings>();
 		ImageProvider image = ExtendedNetworkImageProvider(
 			attachment.spoiler ? site.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString(),
 			cache: true,
@@ -68,17 +71,20 @@ class AttachmentThumbnail extends StatelessWidget {
 		if (quarterTurns != 0) {
 			image = RotatingImageProvider(parent: image, quarterTurns: quarterTurns);
 		}
+		final _width = width ?? settings.thumbnailSize;
+		final _height = height ?? settings.thumbnailSize;
 		Widget child = ExtendedImage(
 			image: image,
-			width: width,
-			height: height,
+			width: _width,
+			height: _height,
 			fit: fit,
+			alignment: alignment,
 			gaplessPlayback: gaplessPlayback,
 			loadStateChanged: (loadstate) {
 				if (loadstate.extendedImageLoadState == LoadState.loading) {
 					return SizedBox(
-						width: width,
-						height: height,
+						width: _width,
+						height: _height,
 						child: const Center(
 							child: CupertinoActivityIndicator()
 						)
@@ -87,8 +93,8 @@ class AttachmentThumbnail extends StatelessWidget {
 				else if (loadstate.extendedImageLoadState == LoadState.failed) {
 					onLoadError?.call(loadstate.lastException, loadstate.lastStack);
 					return SizedBox(
-						width: width,
-						height: height,
+						width: _width,
+						height: _height,
 						child: const Center(
 							child: Icon(CupertinoIcons.exclamationmark_triangle_fill)
 						)
@@ -97,7 +103,7 @@ class AttachmentThumbnail extends StatelessWidget {
 				return null;
 			}
 		);
-		if (context.watch<EffectiveSettings>().blurThumbnails) {
+		if (settings.blurThumbnails) {
 			child = ClipRect(
 				child: ImageFiltered(
 					imageFilter: ImageFilter.blur(

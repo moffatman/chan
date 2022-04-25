@@ -162,8 +162,8 @@ class PostRow extends StatelessWidget {
 										)
 									),
 									if (_post.attachment?.type == AttachmentType.webm) SizedBox(
-										width: 75,
-										height: 75,
+										width: settings.thumbnailSize,
+										height: settings.thumbnailSize,
 										child: Center(
 											child: AspectRatio(
 												aspectRatio: (_post.attachment!.width ?? 1) / (_post.attachment!.height ?? 1),
