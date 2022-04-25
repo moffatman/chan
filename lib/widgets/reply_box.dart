@@ -499,7 +499,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			if (_filenameController.text.isNotEmpty && attachment != null) {
 				overrideAttachmentFilename = _filenameController.text + '.' + attachmentExt!;
 			}
-			if (settings.randomizeFilenames) {
+			if (settings.randomizeFilenames && attachment != null) {
 				const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
 				overrideAttachmentFilename = List.generate(12, (i) => _chars[random.nextInt(_chars.length)]).join('') + '.' + attachmentExt!;
 			}
