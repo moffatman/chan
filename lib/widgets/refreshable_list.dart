@@ -337,7 +337,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 						controller: widget.controller?.scrollController,
 						child: CustomScrollView(
 							key: _scrollViewKey,
-							//cacheExtent: 2500,
+							cacheExtent: 1000,
 							controller: widget.controller?.scrollController,
 							physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
 							slivers: [
