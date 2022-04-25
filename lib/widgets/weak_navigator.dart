@@ -130,8 +130,10 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
   }
 
   Future<void> popAllExceptFirst({bool animated = false}) async {
-    await Future.wait(stack.map((x) => x.item2.reverse(from: 1)));
-    rootCoverAnimationController.reverse();
+    await Future.wait([
+      rootCoverAnimationController.reverse(),
+      ...stack.map((x) => x.item2.reverse(from: 1))
+    ]);
     for (final x in stack) {
       x.item1.remove();
       x.item4.complete();
