@@ -885,7 +885,7 @@ class RefreshableListController<T> {
 			finalDestination = finalDestination.clamp(0, scrollController!.position.maxScrollExtent);
 		}
 		await scrollController!.animateTo(
-			finalDestination,
+			max(0, finalDestination),
 			duration: Duration(milliseconds: max(1, d.inMilliseconds)),
 			curve: Curves.easeOut
 		);
