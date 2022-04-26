@@ -71,7 +71,7 @@ class PostRow extends StatelessWidget {
 				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color ?? Colors.red, width: 10)
 			);
 		}
-		if (zone.threadState?.replyIdsToYou(Filter.of(context))?.contains(post.id) ?? false) {
+		else if (zone.threadState?.replyIdsToYou(Filter.of(context))?.contains(post.id) ?? false) {
 			border = Border(
 				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color?.towardsBlack(0.5) ?? const Color.fromARGB(255, 90, 30, 30), width: 10)
 			);
