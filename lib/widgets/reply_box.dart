@@ -529,7 +529,7 @@ class ReplyBoxState extends State<ReplyBox> {
 					context: context,
 					builder: (_context) => CupertinoAlertDialog(
 						title: const Text('Contribute captcha solutions?'),
-						content: const Text('The captcha images you solve will be collected to train an automated solver'),
+						content: const Text('The captcha images you solve will be collected to improve the automated solver'),
 						actions: [
 							CupertinoDialogAction(
 								child: const Text('No'),

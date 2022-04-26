@@ -1229,7 +1229,7 @@ class SettingsDataPage extends StatelessWidget {
 									context: context,
 									barrierDismissible: true,
 									builder: (_context) => CupertinoAlertDialog(
-										content: const Text('Send the captcha images you solve to a database to train an automated solver. No other information about your posts will be collected.'),
+										content: const Text('Send the captcha images you solve to a database to improve the automated solver. No other information about your posts will be collected.'),
 										actions: [
 											CupertinoDialogAction(
 												child: const Text('OK'),
