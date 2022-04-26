@@ -350,7 +350,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 									),
 									bottom: false
 								),
-								if (values.first.item1 is Filterable) SliverToBoxAdapter(
+								if (list?.first is Filterable) SliverToBoxAdapter(
 									child: Container(
 										height: kMinInteractiveDimensionCupertino,
 										padding: const EdgeInsets.all(4),
