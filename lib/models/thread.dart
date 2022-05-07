@@ -131,7 +131,7 @@ class Thread implements Filterable {
 	@override
 	List<int> get repliedToIds => [];
 
-	ThreadIdentifier get identifier => ThreadIdentifier(board: board, id: id);
+	ThreadIdentifier get identifier => ThreadIdentifier(board, id);
 }
 
 @HiveType(typeId: 23)
@@ -140,10 +140,7 @@ class ThreadIdentifier {
 	final String board;
 	@HiveField(1)
 	final int id;
-	ThreadIdentifier({
-		required this.board,
-		required this.id
-	});
+	ThreadIdentifier(this.board, this.id);
 
 	@override
 	String toString() => 'ThreadIdentifier: /$board/$id';

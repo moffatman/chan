@@ -127,7 +127,7 @@ class Post implements Filterable {
 	@override
 	List<int> get repliedToIds => span.referencedPostIds(board);
 
-	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board: board, id: threadId);
+	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board, threadId);
 
 	String get globalId => '${board}_${threadId}_$id';
 

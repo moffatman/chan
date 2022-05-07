@@ -373,6 +373,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}
 	Future<void> clearLoginCookies();
 	List<ImageboardEmote> getEmotes();
+	String get siteType;
+	String get siteData;
 }
 
 ImageboardSite makeSite(BuildContext context, dynamic data) {

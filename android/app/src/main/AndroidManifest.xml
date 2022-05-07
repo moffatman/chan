@@ -12,6 +12,9 @@
         android:label="Chance"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_clover" />
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
@@ -22,6 +25,11 @@
             <meta-data
                 android:name="flutterEmbedding"
                 android:value="2" />
+            <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
+            <intent-filter>
+                <action android:name="FLUTTER_NOTIFICATION_CLICK" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

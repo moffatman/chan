@@ -9,12 +9,15 @@ import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:uuid/uuid.dart';
 part 'persistence.g.dart';
 
 class UriAdapter extends TypeAdapter<Uri> {
@@ -82,6 +85,8 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(SavedPostAdapter());
 		Hive.registerAdapter(ThreadIdentifierAdapter());
 		Hive.registerAdapter(PersistentBrowserTabAdapter());
+		Hive.registerAdapter(ThreadWatchAdapter());
+		Hive.registerAdapter(NewThreadWatchAdapter());
 		Hive.registerAdapter(PersistentBrowserStateAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
@@ -121,7 +126,10 @@ class Persistence extends ChangeNotifier {
 			favouriteBoards: [],
 			autosavedIds: {},
 			hiddenImageMD5s: [],
-			loginFields: {}
+			loginFields: {},
+			threadWatches: [],
+			newThreadWatches: [],
+			notificationsMigrated: true
 		));
 		if (await Hive.boxExists('boards_$id')) {
 			print('Migrating boards box');
@@ -151,13 +159,26 @@ class Persistence extends ChangeNotifier {
 		}
 		settings.savedPostsBySite.putIfAbsent(id, () => {});
 		// Cleanup expanding lists
-		for (final browserState in settings.browserStateBySite.values) {
-			for (final list in browserState.autosavedIds.values) {
-				list.removeRange(0, max(0, list.length - _maxAutosavedIdsPerBoard));
+		for (final list in browserState.autosavedIds.values) {
+			list.removeRange(0, max(0, list.length - _maxAutosavedIdsPerBoard));
+		}
+		for (final list in browserState.hiddenIds.values) {
+			list.removeRange(0, max(0, list.length - _maxHiddenIdsPerBoard));
+		}
+		if (!browserState.notificationsMigrated) {
+			browserState.threadWatches.clear();
+			for (final threadState in threadStateBox.values) {
+				if (threadState.savedTime != null && threadState.thread?.isArchived == false) {
+					browserState.threadWatches.add(ThreadWatch(
+						board: threadState.board,
+						threadId: threadState.id,
+						youIds: threadState.youIds,
+						yousOnly: true,
+						lastSeenId: threadState.thread?.posts.last.id ?? threadState.id
+					));
+				}
 			}
-			for (final list in browserState.hiddenIds.values) {
-				list.removeRange(0, max(0, list.length - _maxHiddenIdsPerBoard));
-			}
+			browserState.notificationsMigrated = true;
 		}
 		await settings.save();
 	}
@@ -418,7 +439,7 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		}
 	}
 
-	ThreadIdentifier get identifier => ThreadIdentifier(board: board, id: id);
+	ThreadIdentifier get identifier => ThreadIdentifier(board, id);
 }
 
 @HiveType(typeId: 4)
@@ -497,6 +518,8 @@ class PersistentBrowserTab {
 	String draftThread;
 	@HiveField(3, defaultValue: '')
 	String draftSubject;
+	// Do not persist
+	RefreshableListController<Post>? threadController;
 	PersistentBrowserTab({
 		this.board,
 		this.thread,
@@ -524,6 +547,14 @@ class PersistentBrowserState {
 	Map<String, String> loginFields;
 	// Do not persist
 	bool enableHistory = true;
+	@HiveField(8)
+	String notificationsId;
+	@HiveField(10, defaultValue: [])
+	List<ThreadWatch> threadWatches;
+	@HiveField(11, defaultValue: [])
+	List<NewThreadWatch> newThreadWatches;
+	@HiveField(12, defaultValue: false)
+	bool notificationsMigrated;
 	
 	PersistentBrowserState({
 		required this.tabs,
@@ -532,8 +563,12 @@ class PersistentBrowserState {
 		required this.favouriteBoards,
 		required this.autosavedIds,
 		required List<String> hiddenImageMD5s,
-		required this.loginFields
-	}) : hiddenImageMD5s = hiddenImageMD5s.toSet();
+		required this.loginFields,
+		String? notificationsId,
+		required this.threadWatches,
+		required this.newThreadWatches,
+		required this.notificationsMigrated
+	}) : hiddenImageMD5s = hiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};
 	Filter getCatalogFilter(String board) {

@@ -504,7 +504,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				overrideAttachmentFilename = List.generate(12, (i) => _chars[random.nextInt(_chars.length)]).join('') + '.' + attachmentExt!;
 			}
 			final receipt = (widget.threadId != null) ? (await site.postReply(
-				thread: ThreadIdentifier(board: widget.board, id: widget.threadId!),
+				thread: ThreadIdentifier(widget.board, widget.threadId!),
 				name: _nameFieldController.text,
 				options: _optionsFieldController.text,
 				captchaSolution: _captchaSolution!,
@@ -584,8 +584,8 @@ class ReplyBoxState extends State<ReplyBox> {
 			print(receipt);
 			_textFocusNode.unfocus();
 			final threadState = persistence.getThreadState((widget.threadId != null) ?
-				ThreadIdentifier(board: widget.board, id: widget.threadId!) :
-				ThreadIdentifier(board: widget.board, id: receipt.id));
+				ThreadIdentifier(widget.board, widget.threadId!) :
+				ThreadIdentifier(widget.board, receipt.id));
 			threadState.receipts = [...threadState.receipts, receipt];
 			threadState.save();
 			showToast(context: context, message: 'Post successful', icon: CupertinoIcons.check_mark);

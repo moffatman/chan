@@ -30,7 +30,7 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 		return RefreshableList<Thread>(
 			gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
 			listUpdater: () async {
-				final thread = await widget.site.getThread(ThreadIdentifier(board: 'g', id: 85712241));
+				final thread = await widget.site.getThread(ThreadIdentifier('g', 85712241));
 				return List.generate(150, (i) => thread);
 			},
 			id: 'debugging frame drops',

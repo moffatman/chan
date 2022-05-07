@@ -140,6 +140,11 @@ class WrappedArchive extends ImageboardSite {
   List<ImageboardEmote> getEmotes() {
     return [];
   }
+
+  @override
+  String get siteType => 'debugging';
+  @override
+  String get siteData => '';
 }
 
 class ArchiveDebuggingPage extends StatelessWidget {
@@ -162,7 +167,7 @@ class ArchiveDebuggingPage extends StatelessWidget {
           child: CupertinoButton(
             child: Text(site.archives[i].name),
             onPressed: () {
-              final t = ThreadIdentifier(board: 'g', id: 72382464);
+              final t = ThreadIdentifier('g', 72382464);
               context.read<Persistence>().getThreadStateIfExists(t)?.delete();
               Navigator.of(context).push(CupertinoPageRoute(
                 builder: (context) => Provider<ImageboardSite>.value(

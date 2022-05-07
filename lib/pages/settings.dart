@@ -130,7 +130,7 @@ class SettingsPage extends StatelessWidget {
 					alignment: Alignment.topCenter,
 					child: FutureBuilder<List<Thread>>(
 						future: context.read<ImageboardSite>().getCatalog('chance'),
-						initialData: context.read<StickyThreadWatcher>().lastCatalog,
+						initialData: context.read<ThreadWatcher>().peekLastCatalog('chance'),
 						builder: (context, snapshot) {
 							if (!snapshot.hasData) {
 								return const SizedBox(

@@ -7,6 +7,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/thread_attachments.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
@@ -192,6 +193,7 @@ class _ThreadPageState extends State<ThreadPage> {
 				}
 			}
 		});
+		context.read<PersistentBrowserTab?>()?.threadController = _listController;
 		_blockAndScrollToPostIfNeeded();
 	}
 
@@ -278,6 +280,8 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread?.isArchived ?? false) {
 			title += ' (Archived)';
 		}
+		final notifications = context.watch<Notifications>();
+		final watch = notifications.getThreadWatch(widget.thread);
 		return FilterZone(
 			filter: persistentState.threadFilter,
 			child: Provider.value(
@@ -290,6 +294,66 @@ class _ThreadPageState extends State<ThreadPage> {
 						trailing: Row(
 							mainAxisSize: MainAxisSize.min,
 							children: [
+								CupertinoButton(
+									padding: EdgeInsets.zero,
+									child: Stack(
+										children: [
+											Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill),
+											Positioned.fill(
+												child: (watch?.yousOnly ?? true) ? const SizedBox.shrink() : const Align(
+													alignment: Alignment.topRight,
+													child: Padding(
+														padding: EdgeInsets.only(top: 1, right: 1),
+														child: Icon(CupertinoIcons.circle_fill, size: 11)
+													)
+												)
+											),
+											Positioned.fill(
+												child: (watch?.yousOnly ?? true) ? const SizedBox.shrink() : Align(
+													alignment: Alignment.topRight,
+													child: Icon(CupertinoIcons.asterisk_circle_fill, size: 12, color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)
+												)
+											)
+										]
+									),
+									onPressed: () async {
+										await promptForPushNotificationsIfNeeded(context);
+										if (watch != null) {
+											notifications.unsubscribeFromThread(widget.thread);
+										}
+										else if (persistentState.youIds.isEmpty) {
+											notifications.subscribeToThread(widget.thread, persistentState.thread?.posts.last.id ?? 0, false, []);
+										}
+										else {
+											// User is not subscribed but they have posts marked as (you)
+											// Ask what to do
+											final choice = await showCupertinoDialog<bool>(
+												context: context,
+												builder: (_context) => CupertinoAlertDialog(
+													title: const Text('When to notify?'),
+													actions: [
+														CupertinoDialogAction(
+															child: const Text('Only (You)s'),
+															onPressed: () {
+																Navigator.of(_context).pop(true);
+															}
+														),
+														CupertinoDialogAction(
+															child: const Text('All Posts'),
+															onPressed: () {
+																Navigator.of(_context).pop(false);
+															}
+														)
+													]
+												)
+											);
+											if (choice != null) {
+												notifications.subscribeToThread(widget.thread, persistentState.thread?.posts.last.id ?? 0, choice, persistentState.youIds);
+											}
+										}
+										setState(() {});
+									}
+								),
 								CupertinoButton(
 									padding: EdgeInsets.zero,
 									child: Icon(persistentState.savedTime == null ? CupertinoIcons.bookmark : CupertinoIcons.bookmark_fill),
@@ -543,9 +607,9 @@ class _ThreadPageState extends State<ThreadPage> {
 										_saveThreadStateDuringEditingTimer?.cancel();
 										_saveThreadStateDuringEditingTimer = Timer(const Duration(seconds: 3), () => persistentState.save());
 									},
-									onReplyPosted: (receipt) {
-										persistentState.savedTime = DateTime.now();
-										persistentState.save();
+									onReplyPosted: (receipt) async {
+										await promptForPushNotificationsIfNeeded(context);
+										context.read<Notifications>().subscribeToThread(widget.thread, receipt.id, context.read<Notifications>().getThreadWatch(widget.thread)?.yousOnly ?? true, persistentState.youIds);
 										_listController.update();
 									},
 									onVisibilityChanged: () {

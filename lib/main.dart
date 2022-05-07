@@ -8,7 +8,9 @@ import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/settings.dart';
 import 'package:chan/pages/saved.dart';
+import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -38,6 +40,7 @@ void main() async {
 	imageHttpClient.idleTimeout = const Duration(seconds: 10);
 	imageHttpClient.maxConnectionsPerHost = 10;
 	await Persistence.initializeStatic();
+	await Notifications.initializeStatic();
 	runApp(const ChanApp());
 }
 
@@ -51,12 +54,13 @@ class ChanApp extends StatefulWidget {
 class _ChanAppState extends State<ChanApp> {
 	ImageboardSite? site;
 	Persistence? persistence;
-	SavedThreadWatcher? threadWatcher;
+	ThreadWatcher? threadWatcher;
 	final settings = EffectiveSettings();
 	late dynamic _lastSite;
 	final Map<String, GlobalKey> _siteKeys = {};
 	String? siteSetupError;
 	String? siteSetupStackTrace;
+	Notifications? notifications;
 
 	@override
 	void initState() {
@@ -83,6 +87,11 @@ class _ChanAppState extends State<ChanApp> {
 			if (_persistence == null || site?.name != _site.name) {
 				_persistence = Persistence(_site.name);
 				await _persistence.initialize();
+				notifications = Notifications(
+					persistence: _persistence,
+					site: _site
+				);
+				await notifications?.initialize();
 				// Only try to reauth on wifi
 				Future.microtask(() async {
 					final savedFields = await _site.getSavedLoginFields();
@@ -106,11 +115,13 @@ class _ChanAppState extends State<ChanApp> {
 			site = _site;
 			persistence = _persistence;
 			final oldThreadWatcher = threadWatcher;
-			threadWatcher = SavedThreadWatcher(
+			threadWatcher = ThreadWatcher(
 				site: _site,
 				persistence: _persistence,
-				settings: settings
+				settings: settings,
+				notifications: notifications!
 			);
+			notifications?.localWatcher = threadWatcher!;
 			setState(() {});
 			await Future.delayed(const Duration(seconds: 5));
 			oldThreadWatcher?.dispose();
@@ -149,7 +160,8 @@ class _ChanAppState extends State<ChanApp> {
 					if (threadWatcher != null) ...[
 						Provider<ImageboardSite>.value(value: site!),
 						ChangeNotifierProvider<Persistence>.value(value: persistence!),
-						ChangeNotifierProvider<SavedThreadWatcher>.value(value: threadWatcher!)
+						ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher!),
+						Provider<Notifications>.value(value: notifications!)
 					]
 				],
 				child: SettingsSystemListener(
@@ -244,7 +256,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _tabListController = ScrollController();
 	ImageboardSite? devSite;
 	Persistence? devPersistence;
-	StickyThreadWatcher? devThreadWatcher;
+	ThreadWatcher? devThreadWatcher;
+	Notifications? devNotifications;
 	Timer? _saveBrowserTabsDuringDraftEditingTimer;
 	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
 	final _tabletWillPopZones = <int, WillPopZone>{};
@@ -275,16 +288,43 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		return false;
 	}
 
+	void _onDevNotificationTapped(ThreadOrPostIdentifier id) {
+		_tabController.index = 4;
+		setState(() {
+			tabletIndex = _tabController.index;
+		});
+		_settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
+		_settingsNavigatorKey.currentState?.push(
+			FullWidthCupertinoPageRoute(
+				builder: (context) => ThreadPage(
+					thread: id.threadIdentifier,
+					initialPostId: id.postId,
+					boardSemanticId: -1
+				),
+				showAnimations: context.read<EffectiveSettings>().showAnimations
+			)
+		);
+	}
+
 	void _setupDevSite() async {
 		devSite = makeSite(context, defaultSite);
 		devPersistence = Persistence('devsite');
 		await devPersistence!.initialize();
-		devThreadWatcher = StickyThreadWatcher(
+		devNotifications = Notifications(
+			site: devSite!,
+			persistence: devPersistence!
+		);
+		await devNotifications!.initialize();
+		devNotifications!.tapStream.listen(_onDevNotificationTapped);
+		devThreadWatcher = ThreadWatcher(
 			persistence: devPersistence!,
 			site: devSite!,
 			settings: context.read<EffectiveSettings>(),
-			board: 'chance'
+			notifications: devNotifications!,
+			watchForStickyOnBoards: ['chance'],
+			interval: const Duration(minutes: 10)
 		);
+		devNotifications?.localWatcher = devThreadWatcher!;
 		setState(() {});
 	}
 
@@ -317,8 +357,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			if (threadLink != null) {
 				_addNewTab(
 					withThread: ThreadIdentifier(
-						board: threadLink.group(1)!,
-						id: int.parse(threadLink.group(2)!)
+						threadLink.group(1)!,
+						int.parse(threadLink.group(2)!)
 					),
 					activate: true
 				);
@@ -327,6 +367,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				alertError(context, 'Unrecognized link\n$link');
 			}
 		}
+	}
+
+	void _onNotificationTapped(ThreadOrPostIdentifier notification) {
+		_goToPost(
+			notification.board,
+			notification.threadId,
+			notification.postId
+		);
 	}
 
 	@override
@@ -341,9 +389,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_setupDevSite();
 		getInitialLink().then(_onNewLink);
 		linkStream.listen(_onNewLink);
+		context.read<Notifications>().tapStream.listen(_onNotificationTapped);
 	}
 
-	void _addNewTab({
+	PersistentBrowserTab _addNewTab({
 		int? atPosition,
 		ThreadIdentifier? withThread,
 		bool activate = false
@@ -366,6 +415,32 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_didUpdateBrowserState();
 		setState(() {});
 		Future.delayed(const Duration(milliseconds: 100), () => _tabListController.animateTo((_tabListController.position.maxScrollExtent / tabs.length) * (pos + 1), duration: const Duration(milliseconds: 500), curve: Curves.ease));
+		return tab;
+	}
+
+	void _goToPost(
+		String board,
+		int threadId,
+		[int? postId]
+	) async {
+		PersistentBrowserTab? tab = browserState.tabs.tryFirstWhere((tab) => tab.thread?.board == board && tab.thread?.id == threadId);
+		tab ??= _addNewTab(
+			activate: false,
+			withThread: ThreadIdentifier(board, threadId)
+		);
+		final index = browserState.tabs.indexOf(tab);
+		_tabController.index = 0;
+		tabletIndex = 0;
+		activeBrowserTab.value = index;
+		browserState.currentTab = index;
+		_didUpdateBrowserState();
+		setState(() {});
+		if (postId != null) {
+			if (!(tab.threadController?.items.any((p) => p.id == postId) ?? false)) {
+				await tab.threadController?.update();
+			}
+			tab.threadController?.animateTo((p) => p.id == postId);
+		}
 	}
 
 	Widget _buildTab(BuildContext context, int index, bool active) {
@@ -414,14 +489,17 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						id: -1 * (i + 10)
 					);
 					return Provider.value(
-						value: _tabletWillPopZones.putIfAbsent(index, () => WillPopZone()),
-						child: ValueListenableBuilder(
-							valueListenable: activeBrowserTab,
-							builder: (context, int activeIndex, child) {
-								return i == activeIndex ? tab : PrimaryScrollController.none(
-									child: tab
-								);
-							}
+						value: tabs[i].item1,
+						child: Provider.value(
+							value: _tabletWillPopZones.putIfAbsent(index, () => WillPopZone()),
+							child: ValueListenableBuilder(
+								valueListenable: activeBrowserTab,
+								builder: (context, int activeIndex, child) {
+									return i == activeIndex ? tab : PrimaryScrollController.none(
+										child: tab
+									);
+								}
+							)
 						)
 					);
 				}
@@ -476,7 +554,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							providers: [
 								Provider.value(value: devSite!),
 								ChangeNotifierProvider.value(value: devPersistence!),
-								ChangeNotifierProvider.value(value: devThreadWatcher!)
+								ChangeNotifierProvider.value(value: devThreadWatcher!),
+								Provider.value(value: devNotifications!)
 							],
 							child: ClipRect(
 								child: Navigator(
@@ -778,8 +857,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 															_buildTabletIcon(1, const Icon(CupertinoIcons.bookmark), hideTabletLayoutLabels ? null : 'Saved',
 																opacityParentBuilder: (context, child) => NotifyingIcon(
 																	icon: child,
-																	primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
-																	secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
+																	primaryCount: context.watch<ThreadWatcher>().unseenYouCount,
+																	secondaryCount: context.watch<ThreadWatcher>().unseenCount
 																)
 															),
 															_buildTabletIcon(2, browserState.enableHistory ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History'),
@@ -788,7 +867,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 																opacityParentBuilder: (context, child) => NotifyingIcon(
 																	icon: child,
 																	primaryCount: devThreadWatcher?.unseenYouCount ?? ValueNotifier(0),
-																	secondaryCount: devThreadWatcher?.unseenStickyThreadCount ?? ValueNotifier(0),
+																	secondaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0),
 																)
 															)
 														]
@@ -848,8 +927,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											icon: Builder(
 												builder: (context) => NotifyingIcon(
 													icon: const Icon(CupertinoIcons.bookmark, size: 28),
-													primaryCount: context.watch<SavedThreadWatcher>().unseenYouCount,
-													secondaryCount: context.watch<SavedThreadWatcher>().unseenCount
+													primaryCount: context.watch<ThreadWatcher>().unseenYouCount,
+													secondaryCount: context.watch<ThreadWatcher>().unseenCount
 												)
 											),
 											label: 'Saved'
@@ -866,7 +945,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											icon: NotifyingIcon(
 												icon: const Icon(CupertinoIcons.settings, size: 28),
 												primaryCount: devThreadWatcher?.unseenYouCount ?? ValueNotifier(0),
-												secondaryCount: devThreadWatcher?.unseenStickyThreadCount ?? ValueNotifier(0),
+												secondaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0),
 											),
 											label: 'Settings'
 										)

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -10,105 +11,99 @@ import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:mutex/mutex.dart';
 
-const _normalInterval = Duration(seconds: 90);
-const _errorInterval = Duration(seconds: 180);
+part 'thread_watcher.g.dart';
 
-class StickyThreadWatcher extends ChangeNotifier {
-	final ImageboardSite site;
-	final Persistence persistence;
-	final String board;
-	final Duration interval;
-	final EffectiveSettings settings;
-	StreamSubscription<BoxEvent>? _boxSubscription;
-	final Map<ThreadIdentifier, int> cachedUnseenYous = {};
-	Timer? nextUpdateTimer;
-	List<Thread> unseenStickyThreads = [];
-	bool disposed = false;
-
-	final unseenStickyThreadCount = ValueNotifier<int>(0);
-	final unseenYouCount = ValueNotifier<int>(0);
-	List<Thread>? lastCatalog;
-
-	StickyThreadWatcher({
-		required this.site,
-		required this.persistence,
-		required this.board,
-		required this.settings,
-		this.interval = const Duration(minutes: 10)
-	}) {
-		_boxSubscription = persistence.threadStateBox.watch().listen(_threadUpdated);
-		update();
-	}
-
-	Filter get __filter => FilterGroup([settings.filter, persistence.browserState.imageMD5Filter]);
-	late final FilterCache _filter = FilterCache(__filter);
-
-	void _threadUpdated(BoxEvent event) {
-		if (event.value is PersistentThreadState) {
-			final newThreadState = event.value as PersistentThreadState;
-			unseenStickyThreads.removeWhere((t) => t.identifier == newThreadState.thread?.identifier);
-			unseenStickyThreadCount.value = unseenStickyThreads.length;
-			_filter.setFilter(__filter);
-			cachedUnseenYous[newThreadState.thread!.identifier] = newThreadState.unseenReplyIdsToYou(_filter)?.length ?? 0;
-			if (!disposed) {
-				unseenYouCount.value = cachedUnseenYous.values.reduce((a, b) => a + b);
-				notifyListeners();
-			}
-		}
-	}
-
-	Future<void> update() async {
-		try {
-			lastCatalog = await site.getCatalog(board);
-			unseenStickyThreads = lastCatalog!.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).toList();
-			unseenStickyThreadCount.value = unseenStickyThreads.length;
-			// Update sticky threads for (you)s
-			final stickyThreadStates = persistence.threadStateBox.values.where((s) => s.thread != null && s.thread!.isSticky);
-			for (final threadState in stickyThreadStates) {
-				if (threadState.youIds.isNotEmpty) {
-					try {
-						final newThread = await site.getThread(threadState.thread!.identifier);
-						if (newThread != threadState.thread) {
-							threadState.thread = newThread;
-							await threadState.save();
-						}
-					}
-					on ThreadNotFoundException {
-						threadState.thread?.isSticky = false;
-						await threadState.save();
-					}
-				}
-			}
-		}
-		catch (e, st) {
-			print(e);
-			print(st);
-		}
-		nextUpdateTimer = Timer(interval, update);
-		if (disposed) {
-			nextUpdateTimer?.cancel();
-			_boxSubscription?.cancel();
-		}
-		else {
-			notifyListeners();
-		}
-	}
-
-	@override
-	void dispose() {
-		disposed = true;
-		nextUpdateTimer?.cancel();
-		nextUpdateTimer = null;
-		_boxSubscription?.cancel();
-		_boxSubscription = null;
-		super.dispose();
-	}
+enum WatchAction {
+	notify,
+	save
 }
 
-class SavedThreadWatcher extends ChangeNotifier {
+abstract class Watch {
+	int get lastSeenId;
+	set lastSeenId(int id);
+	String get _type;
+	Map<String, dynamic> toMap() {
+		return {
+			'type': _type,
+			'lastSeenId': lastSeenId,
+			..._toMap()
+		};
+	}
+	Map<String, dynamic> _toMap();
+	@override
+	String toString() => 'Watch(${toMap()})';
+}
+
+@HiveType(typeId: 28)
+class ThreadWatch extends Watch {
+	@HiveField(0)
+	final String board;
+	@HiveField(1)
+	final int threadId;
+	@HiveField(2)
+	@override
+	int lastSeenId;
+	@HiveField(3, defaultValue: true)
+	bool yousOnly;
+	@HiveField(4, defaultValue: [])
+	List<int> youIds;
+	ThreadWatch({
+		required this.board,
+		required this.threadId,
+		required this.lastSeenId,
+		required this.yousOnly,
+		required this.youIds
+	});
+	static const type = 'thread';
+	@override
+	String get _type => type;
+	@override
+	Map<String, dynamic> _toMap() => {
+		'board': board,
+		'threadId': threadId.toString(),
+		'yousOnly': yousOnly,
+		'youIds': youIds
+	};
+	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board, threadId);
+}
+
+@HiveType(typeId: 29)
+class NewThreadWatch extends Watch {
+	@HiveField(0)
+	String board;
+	@HiveField(1)
+	String filter;
+	@HiveField(2)
+	@override
+	int lastSeenId;
+	@HiveField(3)
+	bool allStickies;
+	@HiveField(4)
+	String uniqueId;
+	NewThreadWatch({
+		required this.board,
+		required this.filter,
+		required this.lastSeenId,
+		required this.allStickies,
+		required this.uniqueId
+	});
+	static const type = 'newThread';
+	@override
+	String get _type => type;
+	@override
+	Map<String, dynamic> _toMap() => {
+		'board': board,
+		'filter': filter,
+		'allStickies': allStickies,
+		'uniqueId': uniqueId
+	};
+}
+
+class ThreadWatcher extends ChangeNotifier {
 	final ImageboardSite site;
 	final Persistence persistence;
 	final EffectiveSettings settings;
+	final Notifications notifications;
 	final Map<ThreadIdentifier, int> cachedUnseen = {};
 	final Map<ThreadIdentifier, int> cachedUnseenYous = {};
 	StreamSubscription<BoxEvent>? _boxSubscription;
@@ -120,6 +115,11 @@ class SavedThreadWatcher extends ChangeNotifier {
 	final fixBrokenLock = Mutex();
 	final Set<ThreadIdentifier> fixedThreads = {};
 	bool disposed = false;
+	final Duration interval;
+	final Duration errorInterval;
+	final List<String> watchForStickyOnBoards;
+	final Map<String, List<Thread>> _lastCatalogs = {};
+	final List<ThreadIdentifier> _unseenStickyThreads = [];
 
 	final unseenCount = ValueNotifier<int>(0);
 	final unseenYouCount = ValueNotifier<int>(0);
@@ -127,48 +127,83 @@ class SavedThreadWatcher extends ChangeNotifier {
 	Filter get __filter => FilterGroup([settings.filter, persistence.browserState.imageMD5Filter]);
 	late final FilterCache _filter = FilterCache(__filter);
 	
-	SavedThreadWatcher({
+	ThreadWatcher({
 		required this.site,
 		required this.persistence,
-		required this.settings
-	}) {
+		required this.settings,
+		required this.notifications,
+		this.interval = const Duration(seconds: 90),
+		this.watchForStickyOnBoards = const []
+	}) : errorInterval = interval * 2 {
 		_boxSubscription = persistence.threadStateBox.watch().listen(_threadUpdated);
-		final liveSavedThreads = persistence.threadStateBox.values.where((s) => s.thread != null && s.savedTime != null);
-		for (final liveSavedThread in liveSavedThreads) {
-			cachedUnseen[liveSavedThread.thread!.identifier] = liveSavedThread.unseenReplyCount(_filter) ?? 0;
-			cachedUnseenYous[liveSavedThread.thread!.identifier] = (liveSavedThread.unseenReplyIdsToYou(_filter) ?? []).length;
+		// Set initial counts
+		for (final watch in persistence.browserState.threadWatches) {
+			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYou(_filter)?.length ?? 0;
+			if (!watch.yousOnly) {
+				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
+			}
 		}
-		if (liveSavedThreads.isNotEmpty) {
-			_updateCounts();
-		}
+		_updateCounts();
 		update();
 	}
 
 	void _updateCounts() {
 		if (cachedUnseen.isNotEmpty) {
-			unseenCount.value = cachedUnseen.values.reduce((a, b) => a + b);
+			unseenCount.value = cachedUnseen.values.reduce((a, b) => a + b) + _unseenStickyThreads.length;
 			unseenYouCount.value = cachedUnseenYous.values.reduce((a, b) => a + b);
 		}
 	}
 
+	void onWatchUpdated(Watch watch) {
+		if (watch is ThreadWatch) {
+			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYou(_filter)?.length ?? 0;
+			if (!watch.yousOnly) {
+				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
+			}
+			_updateCounts();
+		}
+		else if (watch is NewThreadWatch) {
+
+		}
+	}
+
+	void onWatchRemoved(Watch watch) {
+		if (watch is ThreadWatch) {
+			cachedUnseenYous.remove(watch.threadIdentifier);
+			cachedUnseen.remove(watch.threadIdentifier);
+			_updateCounts();
+		}
+		else if (watch is NewThreadWatch) {
+
+		}
+	}
+
 	void _threadUpdated(BoxEvent event) {
+		// Update notification counters when last-seen-id is saved to disk
 		if (event.value is PersistentThreadState) {
 			final newThreadState = event.value as PersistentThreadState;
 			if (newThreadState.thread != null) {
-				if (newThreadState.savedTime != null) {
-					_filter.setFilter(__filter);
-					final newUnseen = newThreadState.unseenReplyCount(_filter) ?? newThreadState.thread!.replyCount;
-					final newUnseenYous = newThreadState.unseenReplyIdsToYou(_filter)!.length;
-					if (cachedUnseen[newThreadState.thread!.identifier] != newUnseen || cachedUnseenYous[newThreadState.thread!.identifier] != newUnseenYous) {
-						cachedUnseen[newThreadState.thread!.identifier] = newUnseen;
-						cachedUnseenYous[newThreadState.thread!.identifier] = newUnseenYous;
-						_updateCounts();
-					}
-				}
-				else {
-					cachedUnseen.remove(newThreadState.thread!.identifier);
-					cachedUnseenYous.remove(newThreadState.thread!.identifier);
+				if (_unseenStickyThreads.contains(newThreadState.identifier)) {
+					_unseenStickyThreads.remove(newThreadState.identifier);
 					_updateCounts();
+				}
+				final watch = persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == newThreadState.identifier);
+				if (watch != null) {
+					cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYou(_filter)?.length ?? 0;
+					if (!watch.yousOnly) {
+						cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
+					}
+					_updateCounts();
+					if (newThreadState.thread!.isArchived) {
+						notifications.removeThreadWatch(watch);
+					}
+					if (!listEquals(watch.youIds, newThreadState.youIds)) {
+						watch.youIds = newThreadState.youIds;
+						notifications.didUpdateThreadWatch(watch);
+					}
+					if (watch.lastSeenId < newThreadState.thread!.posts.last.id) {
+						notifications.updateLastKnownId(watch, newThreadState.thread!.posts.last.id);
+					}
 				}
 			}
 		}
@@ -197,20 +232,42 @@ class SavedThreadWatcher extends ChangeNotifier {
 
 	Future<void> update() async {
 		try {
-			final liveThreadStates = persistence.threadStateBox.values.where((s) => s.thread != null && !s.thread!.isArchived && s.savedTime != null);
-			for (final threadState in liveThreadStates) {
-				await _updateThread(threadState);
+			for (final watch in persistence.browserState.threadWatches) {
+				await _updateThread(persistence.getThreadState(watch.threadIdentifier));
+			}
+			_lastCatalogs.clear();
+			_unseenStickyThreads.clear();
+			for (final board in watchForStickyOnBoards) {
+				_lastCatalogs[board] ??= await site.getCatalog(board);
+				_unseenStickyThreads.addAll(_lastCatalogs[board]!.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).map((t) => t.identifier).toList());
+				// Update sticky threads for (you)s
+				final stickyThreadStates = persistence.threadStateBox.values.where((s) => s.board == board && s.thread != null && s.thread!.isSticky);
+				for (final threadState in stickyThreadStates) {
+					if (threadState.youIds.isNotEmpty) {
+						try {
+							final newThread = await site.getThread(threadState.thread!.identifier);
+							if (newThread != threadState.thread) {
+								threadState.thread = newThread;
+								await threadState.save();
+							}
+						}
+						on ThreadNotFoundException {
+							threadState.thread?.isSticky = false;
+							await threadState.save();
+						}
+					}
+				}
 			}
 			_updateCounts();
 			lastUpdate = DateTime.now();
-			nextUpdate = lastUpdate!.add(_normalInterval);
-			nextUpdateTimer = Timer(_normalInterval, update);
+			nextUpdate = lastUpdate!.add(interval);
+			nextUpdateTimer = Timer(interval, update);
 		}
 		catch (e) {
 			updateErrorMessage = e.toStringDio();
 			lastUpdate = DateTime.now();
-			nextUpdate = lastUpdate!.add(_errorInterval);
-			nextUpdateTimer = Timer(_errorInterval, update);
+			nextUpdate = lastUpdate!.add(errorInterval);
+			nextUpdateTimer = Timer(errorInterval, update);
 		}
 		if (disposed) {
 			nextUpdateTimer?.cancel();
@@ -241,6 +298,8 @@ class SavedThreadWatcher extends ChangeNotifier {
 			}
 		});
 	}
+
+	List<Thread>? peekLastCatalog(String board) => _lastCatalogs[board];
 
 	@override
 	void dispose() {

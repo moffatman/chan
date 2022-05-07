@@ -273,7 +273,7 @@ class SiteLainchan extends ImageboardSite {
 					}
 				}
 				else {
-					for (final post in (await getThread(ThreadIdentifier(board: board, id: threadId))).posts) {
+					for (final post in (await getThread(ThreadIdentifier(board, threadId))).posts) {
 						if (post.text == text && (post.time.compareTo(now) >= 0)) {
 							newPostId = post.id;
 						}
@@ -431,4 +431,9 @@ class SiteLainchan extends ImageboardSite {
 	List<ImageboardEmote> getEmotes() {
 		return [];
 	}
+
+	@override
+	String get siteType => 'lainchan';
+	@override
+	String get siteData => baseUrl;
 }

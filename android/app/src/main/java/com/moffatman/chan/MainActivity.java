@@ -1,11 +1,14 @@
 package com.moffatman.chan;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
+import android.service.notification.StatusBarNotification;
 import android.webkit.MimeTypeMap;
+import android.util.Log;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree;
@@ -17,13 +20,15 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Map;
 
 import io.flutter.embedding.android.FlutterFragmentActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.MethodChannel;
 
 public class MainActivity extends FlutterFragmentActivity {
-    private static final String CHANNEL = "com.moffatman.chan/storage";
+    private static final String STORAGE_CHANNEL = "com.moffatman.chan/storage";
+    private static final String NOTIFICATIONS_CHANNEL = "com.moffatman.chan/notifications";
     private MethodChannel.Result result;
 
     @Override
@@ -46,7 +51,7 @@ public class MainActivity extends FlutterFragmentActivity {
             }
         });
         super.configureFlutterEngine(flutterEngine);
-        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), CHANNEL).setMethodCallHandler(
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), STORAGE_CHANNEL).setMethodCallHandler(
                 (call, result) -> {
                     if (call.method.equals("pickDirectory")) {
                         System.out.println(getContentResolver().getPersistedUriPermissions());
@@ -80,6 +85,20 @@ public class MainActivity extends FlutterFragmentActivity {
                         catch (IOException e) {
                             result.error("IOException", e.getMessage(), null);
                         }
+                    }
+                    else {
+                        result.notImplemented();
+                    }
+                }
+        );
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), NOTIFICATIONS_CHANNEL).setMethodCallHandler(
+                (call, result) -> {
+                    if (call.method.equals("clearNotificationsWithProperties")) {
+                        // Seems to be no way to find the notifications after they are posted
+                        // Unfortunately have to cancel everything
+                        NotificationManager nm = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+                        nm.cancelAll();
+                        result.success(null);
                     }
                     else {
                         result.notImplemented();

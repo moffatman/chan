@@ -298,8 +298,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return Future.wait((response.data as Map<dynamic, dynamic>).keys.where((threadIdStr) {
 			return response.data[threadIdStr]['op'] != null;
 		}).map((threadIdStr) => _makeThread(ThreadIdentifier(
-			board: board,
-			id: int.parse(threadIdStr)
+			board,
+			int.parse(threadIdStr)
 		), response.data)).toList());
 	}
 	Future<List<ImageboardBoard>> _getBoards() async {
@@ -327,8 +327,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (data['op'] == '1') {
 			return ImageboardArchiveSearchResult(
 				thread: await _makeThread(ThreadIdentifier(
-					board: data['board']['shortname'],
-					id: int.parse(data['num'])
+					data['board']['shortname'],
+					int.parse(data['num'])
 				), {
 					data['num']: {
 						'op': data

@@ -58,6 +58,32 @@ import Flutter
         result(FlutterMethodNotImplemented)
       }
     })
+    let notificationsChannel = FlutterMethodChannel(name: "com.moffatman.chan/notifications", binaryMessenger: controller.binaryMessenger)
+    notificationsChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      if (call.method == "clearNotificationsWithProperties") {
+        if let args = call.arguments as? Dictionary<String, Any> {
+          let nc = UNUserNotificationCenter.current()
+          nc.getDeliveredNotifications { (list: [UNNotification]) in
+            nc.removeDeliveredNotifications(withIdentifiers: list.filter { item in
+              for k in args.keys {
+                if (String(describing: item.request.content.userInfo[k] as? AnyHashable) != String(describing: args[k] as? AnyHashable)) {
+                  return false
+                }
+              }
+              return true
+            }.map({$0.request.identifier}))
+            result(nil)
+          }
+        }
+        else {
+          result(FlutterError.init(code: "BAD_ARGS", message: "Bad Arguments", details: nil))
+        }
+      }
+      else {
+        result(FlutterMethodNotImplemented)
+      }
+    })
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

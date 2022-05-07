@@ -52,7 +52,8 @@ class PostRow extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
 		final persistence = context.watch<Persistence>();
-		Post _post = persistence.getSavedPost(post)?.post ?? post;
+		final savedPost = persistence.getSavedPost(post);
+		Post _post = savedPost?.post ?? post;
 		if (_post.attachment?.url != post.attachment?.url) {
 			_post.attachment = post.attachment;
 			context.watch<Persistence>().didUpdateSavedPost();
@@ -360,7 +361,7 @@ class PostRow extends StatelessWidget {
 									)
 								)
 							),
-							if (context.watch<Persistence>().getSavedPost(post) != null) Positioned.fill(
+							if (savedPost != null) Positioned.fill(
 								child: Align(
 									alignment: Alignment.topRight,
 									child: Container(
@@ -391,7 +392,7 @@ class PostRow extends StatelessWidget {
 					trailingIcon: CupertinoIcons.return_icon,
 					onPressed: () => zone.onNeedScrollToPost!(_post)
 				),
-				if (context.watch<Persistence>().getSavedPost(post) == null) ContextMenuAction(
+				if (savedPost == null) ContextMenuAction(
 					child: const Text('Save Post'),
 					trailingIcon: CupertinoIcons.bookmark,
 					onPressed: () {

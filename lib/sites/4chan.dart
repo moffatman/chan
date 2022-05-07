@@ -668,4 +668,9 @@ class Site4Chan extends ImageboardSite {
 	List<ImageboardEmote> getEmotes() {
 		return [];
 	}
+
+	@override
+	String get siteType => '4chan';
+	@override
+	String get siteData => apiUrl;
 }

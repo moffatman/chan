@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "500583514678",
+    "project_id": "chan-329813",
+    "storage_bucket": "chan-329813.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:500583514678:android:d297a3fbce272458018e97",
+        "android_client_info": {
+          "package_name": "com.moffatman.chan"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "500583514678-mf1rekgnefaas480gggqgcq97gt1j17o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzoSVsIO4VmCJNBAOFEvXJMjpJ_CX6ruE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "500583514678-mf1rekgnefaas480gggqgcq97gt1j17o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

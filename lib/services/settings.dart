@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:chan/models/board.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:dio/dio.dart';
@@ -262,6 +263,8 @@ class SavedSettings extends HiveObject {
 	double thumbnailSize;
 	@HiveField(61)
 	bool muteAudio;
+	@HiveField(62)
+	bool? usePushNotifications;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -325,6 +328,7 @@ class SavedSettings extends HiveObject {
 		bool? showFlagOnPosts,
 		double? thumbnailSize,
 		bool? muteAudio,
+		bool? notificationsMigrated,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -902,6 +906,14 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.muteAudio = setting;
 		_settings.save();
 		notifyListeners();
+	}
+	
+	bool? get usePushNotifications => _settings.usePushNotifications;
+	set usePushNotifications(bool? setting) {
+		_settings.usePushNotifications = setting;
+		_settings.save();
+		notifyListeners();
+		Notifications.didUpdateUsePushNotificationsSetting();
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];

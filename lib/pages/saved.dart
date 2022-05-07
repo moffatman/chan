@@ -1,9 +1,11 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -64,6 +66,7 @@ class SavedPage extends StatefulWidget {
 }
 
 class _SavedPageState extends State<SavedPage> {
+	final _watchedListController = RefreshableListController<ThreadWatch>();
 	final _threadListController = RefreshableListController<PersistentThreadState>();
 	final _postListController = RefreshableListController<SavedPost>();
 
@@ -118,9 +121,113 @@ class _SavedPageState extends State<SavedPage> {
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
 		final persistence = context.watch<Persistence>();
+		final notifications = context.watch<Notifications>();
 		return MultiMasterDetailPage(
 			id: 'saved',
 			paneCreator: () => [
+				MultiMasterPane<ThreadWatch>(
+					navigationBar: _navigationBar('Watched Threads'),
+					icon: CupertinoIcons.bell_fill,
+					masterBuilder: (context, selected, setter) {
+						return SafeArea(
+							child: Column(
+								children: [
+									ThreadWatcherControls(
+										isActive: widget.isActive
+									),
+									Divider(
+										thickness: 1,
+										height: 0,
+										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+									),
+									Expanded(
+										child: AnimatedBuilder(
+											animation: persistence,
+											builder: (context, _) {
+												return RefreshableList<ThreadWatch>(
+													controller: _watchedListController,
+													listUpdater: () => throw UnimplementedError(),
+													id: 'saved',
+													disableUpdates: true,
+													initialList: persistence.browserState.threadWatches,
+													itemBuilder: (context, watch) => ContextMenu(
+														maxHeight: 125,
+														child: GestureDetector(
+															behavior: HitTestBehavior.opaque,
+															child: ValueListenableBuilder(
+																valueListenable: persistence.listenForPersistentThreadStateChanges(watch.threadIdentifier),
+																builder: (context, box, child) {
+																	final thread = persistence.getThreadStateIfExists(watch.threadIdentifier)?.thread;
+																	if (thread == null) {
+																		return const SizedBox.shrink();
+																	}
+																	else {
+																		return ThreadRow(
+																			thread: thread,
+																			isSelected: watch == selected,
+																			showBoardName: true,
+																			onThumbnailLoadError: (error, stackTrace) {
+																				context.read<ThreadWatcher>().fixBrokenThread(watch.threadIdentifier);
+																			},
+																			semanticParentIds: const [-4],
+																			onThumbnailTap: (initialAttachment) {
+																				final attachments = _threadListController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
+																				showGallery(
+																					context: context,
+																					attachments: attachments,
+																					replyCounts: {
+																						for (final item in _threadListController.items.where((_) => _.thread?.attachment != null)) item.thread!.attachment!: item.thread!.replyCount
+																					},
+																					initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+																					onChange: (attachment) {
+																						_threadListController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
+																					},
+																					semanticParentIds: [-4]
+																				);
+																			}
+																		);
+																	}
+																}
+															),
+															onTap: () => setter(watch)
+														),
+														actions: [
+															if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+																child: const Text('Open in new tab'),
+																trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+																onPressed: () {
+																	widget.onWantOpenThreadInNewTab?.call(watch.threadIdentifier);
+																}
+															),
+															ContextMenuAction(
+																child: const Text('Unwatch'),
+																onPressed: () {
+																	notifications.removeThreadWatch(watch);
+																},
+																trailingIcon: CupertinoIcons.xmark,
+																isDestructiveAction: true
+															)
+														]
+													),
+													filterHint: 'Search watched threads'
+												);
+											}
+										)
+									)
+								]
+							)
+						);
+					},
+					detailBuilder: (selectedThread, poppedOut) {
+						return BuiltDetailPane(
+							widget: selectedThread != null ? ThreadPage(
+								thread: selectedThread.threadIdentifier,
+								boardSemanticId: -4
+							) : _placeholder('Select a thread'),
+							pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
+						);
+					}
+				),
 				MultiMasterPane<ThreadIdentifier>(
 					navigationBar: _navigationBar('Saved Threads'),
 					icon: CupertinoIcons.tray_full,
@@ -149,7 +256,7 @@ class _SavedPageState extends State<SavedPage> {
 											isSelected: state.thread!.identifier == selectedThread,
 											showBoardName: true,
 											onThumbnailLoadError: (error, stackTrace) {
-												context.read<SavedThreadWatcher>().fixBrokenThread(state.thread!.identifier);
+												context.read<ThreadWatcher>().fixBrokenThread(state.thread!.identifier);
 											},
 											semanticParentIds: const [-4],
 											onThumbnailTap: (initialAttachment) {
@@ -216,26 +323,10 @@ class _SavedPageState extends State<SavedPage> {
 								)
 							);
 						}
-						return SafeArea(
-							child: Column(
-								children: [
-									ThreadWatcherControls(
-										isActive: widget.isActive
-									),
-									Divider(
-										thickness: 1,
-										height: 0,
-										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
-									),
-									Expanded(
-										child: widget.isActive ? ValueListenableBuilder(
-											valueListenable: persistence.threadStateBox.listenable(),
-											builder: _masterBuilder
-										) : _masterBuilder(context, persistence.threadStateBox, null)
-									)
-								]
-							)
-						);
+						return widget.isActive ? ValueListenableBuilder(
+							valueListenable: persistence.threadStateBox.listenable(),
+							builder: _masterBuilder
+						) : _masterBuilder(context, persistence.threadStateBox, null);
 					},
 					detailBuilder: (selectedThread, poppedOut) {
 						return BuiltDetailPane(
@@ -453,7 +544,8 @@ class ThreadWatcherControls extends StatefulWidget {
 class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 	@override
 	Widget build(BuildContext context) {
-		final watcher = context.watch<SavedThreadWatcher>();
+		final watcher = context.watch<ThreadWatcher>();
+		final settings = context.watch<EffectiveSettings>();
 		return AnimatedSize(
 			duration: const Duration(milliseconds: 300),
 			child: Container(
@@ -469,7 +561,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 										mainAxisSize: MainAxisSize.min,
 										crossAxisAlignment: CrossAxisAlignment.center,
 										children: [
-											const Text('Thread Watcher'),
+											const AutoSizeText('Local Watcher', maxLines: 1),
 											const SizedBox(height: 8),
 											if (watcher.nextUpdate != null && watcher.lastUpdate != null) ClipRRect(
 												borderRadius: const BorderRadius.all(Radius.circular(8)),
@@ -504,6 +596,19 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 										else {
 											watcher.cancel();
 										}
+									}
+								)
+							]
+						),
+						Row(
+							children: [
+								const SizedBox(width: 16),
+								const AutoSizeText('Push Notifications'),
+								const Spacer(),
+								CupertinoSwitch(
+									value: settings.usePushNotifications ?? false,
+									onChanged: (val) {
+										settings.usePushNotifications = val;
 									}
 								)
 							]

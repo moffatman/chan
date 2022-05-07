@@ -245,10 +245,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
 			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 				builder: (ctx) => ThreadPage(
-					thread: ThreadIdentifier(
-						board: board,
-						id: threadId!
-					),
+					thread: ThreadIdentifier(board, threadId!),
 					initialPostId: postId,
 					initiallyUseArchive: dead,
 					boardSemanticId: -1

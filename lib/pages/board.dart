@@ -6,6 +6,7 @@ import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -193,12 +194,11 @@ class _BoardPageState extends State<BoardPage> {
 												onSubjectChanged: (subject) {
 													widget.onDraftSubjectChanged?.call(subject);
 												},
-												onReplyPosted: (receipt) {
-													final persistentState = persistence.getThreadState(ThreadIdentifier(board: board!.name, id: receipt.id));
-													persistentState.savedTime = DateTime.now();
-													persistentState.save();
+												onReplyPosted: (receipt) async {
+													await promptForPushNotificationsIfNeeded(context);
+													context.read<Notifications>().subscribeToThread(ThreadIdentifier(board!.name, receipt.id), receipt.id, false, [receipt.id]);
 													_listController.update();
-													widget.onThreadSelected?.call(ThreadIdentifier(board: board!.name, id: receipt.id));
+													widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
 													Navigator.of(context).pop();
 												}
 											)
@@ -470,12 +470,11 @@ class _BoardPageState extends State<BoardPage> {
 								onSubjectChanged: (subject) {
 									widget.onDraftSubjectChanged?.call(subject);
 								},
-								onReplyPosted: (receipt) {
-									final persistentState = persistence.getThreadState(ThreadIdentifier(board: board!.name, id: receipt.id));
-									persistentState.savedTime = DateTime.now();
-									persistentState.save();
+								onReplyPosted: (receipt) async {
+									await promptForPushNotificationsIfNeeded(context);
+									context.read<Notifications>().subscribeToThread(ThreadIdentifier(board!.name, receipt.id), receipt.id, false, [receipt.id]);
 									_listController.update();
-									widget.onThreadSelected?.call(ThreadIdentifier(board: board!.name, id: receipt.id));
+									widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
 								}
 							)
 						)
