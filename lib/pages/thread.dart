@@ -836,7 +836,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 													button.item2
 												]
 											),
-											onPressed: button.item3
+											onPressed: button.item3 == null ? null : () {
+												button.item3?.call();
+												_buttonsAnimationController.reverse();
+											}
 										),
 									)
 								]
