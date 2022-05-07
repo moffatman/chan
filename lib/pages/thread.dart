@@ -847,75 +847,78 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 						)
 					)
 				),
-				CupertinoButton(
-					padding: EdgeInsets.zero,
-					child: Builder(
-						builder: (context) => Row(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								if (_redCount > 0) Container(
-									decoration: BoxDecoration(
-										borderRadius: const BorderRadius.only(topLeft: radius, bottomLeft: radius),
-										color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
-									),
-									padding: const EdgeInsets.all(8),
-									margin: EdgeInsets.only(bottom: 16, right: (_whiteCount == 0 && _greyCount == 0) ? 16 : 0),
-									child: Text(
-										_redCount.toString(),
-										textAlign: TextAlign.center
-									)
-								),
-								if (_whiteCount == 0 || _greyCount > 0) Container(
-									decoration: BoxDecoration(
-										borderRadius: (_redCount > 0) ? (_whiteCount > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (_whiteCount > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
-										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
-									),
-									padding: const EdgeInsets.all(8),
-									margin: EdgeInsets.only(bottom: 16, right: _whiteCount > 0 ? 0 : 16),
-									child: Container(
-										constraints: BoxConstraints(
-											minWidth: 24 * MediaQuery.of(context).textScaleFactor
+				GestureDetector(
+					onLongPress: scrollToBottom,
+					child: CupertinoButton(
+						padding: EdgeInsets.zero,
+						child: Builder(
+							builder: (context) => Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									if (_redCount > 0) Container(
+										decoration: BoxDecoration(
+											borderRadius: const BorderRadius.only(topLeft: radius, bottomLeft: radius),
+											color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
 										),
+										padding: const EdgeInsets.all(8),
+										margin: EdgeInsets.only(bottom: 16, right: (_whiteCount == 0 && _greyCount == 0) ? 16 : 0),
 										child: Text(
-											_greyCount.toString(),
-											style: TextStyle(
-												color: CupertinoTheme.of(context).scaffoldBackgroundColor
-											),
+											_redCount.toString(),
 											textAlign: TextAlign.center
 										)
-									)
-								),
-								if (_whiteCount > 0) Container(
-									decoration: BoxDecoration(
-										borderRadius: _greyCount <= 0 ? radiusAlone : const BorderRadius.only(topRight: radius, bottomRight: radius),
-										color: CupertinoTheme.of(context).primaryColor
 									),
-									padding: const EdgeInsets.all(8),
-									margin: const EdgeInsets.only(bottom: 16, right: 16),
-									child: Container(
-										constraints: BoxConstraints(
-											minWidth: 24 * MediaQuery.of(context).textScaleFactor
+									if (_whiteCount == 0 || _greyCount > 0) Container(
+										decoration: BoxDecoration(
+											borderRadius: (_redCount > 0) ? (_whiteCount > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (_whiteCount > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
+											color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
 										),
-										child: Text(
-											_whiteCount.toString(),
-											style: TextStyle(
-												color: CupertinoTheme.of(context).scaffoldBackgroundColor
+										padding: const EdgeInsets.all(8),
+										margin: EdgeInsets.only(bottom: 16, right: _whiteCount > 0 ? 0 : 16),
+										child: Container(
+											constraints: BoxConstraints(
+												minWidth: 24 * MediaQuery.of(context).textScaleFactor
 											),
-											textAlign: TextAlign.center
+											child: Text(
+												_greyCount.toString(),
+												style: TextStyle(
+													color: CupertinoTheme.of(context).scaffoldBackgroundColor
+												),
+												textAlign: TextAlign.center
+											)
+										)
+									),
+									if (_whiteCount > 0) Container(
+										decoration: BoxDecoration(
+											borderRadius: _greyCount <= 0 ? radiusAlone : const BorderRadius.only(topRight: radius, bottomRight: radius),
+											color: CupertinoTheme.of(context).primaryColor
+										),
+										padding: const EdgeInsets.all(8),
+										margin: const EdgeInsets.only(bottom: 16, right: 16),
+										child: Container(
+											constraints: BoxConstraints(
+												minWidth: 24 * MediaQuery.of(context).textScaleFactor
+											),
+											child: Text(
+												_whiteCount.toString(),
+												style: TextStyle(
+													color: CupertinoTheme.of(context).scaffoldBackgroundColor
+												),
+												textAlign: TextAlign.center
+											)
 										)
 									)
-								)
-							]
-						)
-					),
-					onPressed: () {
-						if (_buttonsAnimation.value > 0.5) {
-							_buttonsAnimationController.reverse();
+								]
+							)
+						),
+						onPressed: () {
+							if (_buttonsAnimation.value > 0.5) {
+								_buttonsAnimationController.reverse();
+							}
+							else {
+								_buttonsAnimationController.forward();
+							}
 						}
-						else {
-							_buttonsAnimationController.forward();
-						}
-					}
+					)
 				)
 			]
 		);
