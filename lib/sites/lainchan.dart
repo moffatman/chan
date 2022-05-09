@@ -364,22 +364,12 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<Post> getPostFromArchive(String board, int id) {
-		throw UnimplementedError();
-	}
-
-	@override
 	Uri getPostReportUrl(String board, int id) {
 		return Uri.https(baseUrl, '/report.php?post=delete_$id&board=$board');
 	}
 
 	@override
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
-		throw UnimplementedError();
-	}
-
-	@override
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? validate}) {
 		throw UnimplementedError();
 	}
 
@@ -400,11 +390,6 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	Uri get passIconUrl => Uri.https('callum.crabdance.com', '/minileaf.gif');
-
-	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page}) {
-		throw UnimplementedError();
-	}
 
   @override
   List<ImageboardSiteLoginField> getLoginFields() {

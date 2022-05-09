@@ -215,10 +215,19 @@ class ThreadWatcher extends ChangeNotifier {
 			newThread = await site.getThread(threadState.thread!.identifier);
 		}
 		on ThreadNotFoundException {
+			final watch = persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == threadState.identifier);
+			if (watch != null) {
+				print('Removing watch for ${threadState.identifier} since it is in 404 state');
+				notifications.removeThreadWatch(watch);
+			}
 			try {
 				newThread = await site.getThreadFromArchive(threadState.thread!.identifier);
 			}
 			on ThreadNotFoundException {
+				return false;
+			}
+			on BoardNotFoundException {
+				// Board not archived
 				return false;
 			}
 		}
@@ -232,7 +241,9 @@ class ThreadWatcher extends ChangeNotifier {
 
 	Future<void> update() async {
 		try {
-			for (final watch in persistence.browserState.threadWatches) {
+			// Could be concurrently-modified
+			final watches = persistence.browserState.threadWatches.toList();
+			for (final watch in watches) {
 				await _updateThread(persistence.getThreadState(watch.threadIdentifier));
 			}
 			_lastCatalogs.clear();
@@ -263,7 +274,9 @@ class ThreadWatcher extends ChangeNotifier {
 			nextUpdate = lastUpdate!.add(interval);
 			nextUpdateTimer = Timer(interval, update);
 		}
-		catch (e) {
+		catch (e, st) {
+			print(e);
+			print(st);
 			updateErrorMessage = e.toStringDio();
 			lastUpdate = DateTime.now();
 			nextUpdate = lastUpdate!.add(errorInterval);

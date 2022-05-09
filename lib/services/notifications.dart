@@ -150,8 +150,7 @@ class Notifications {
 					'siteData': siteData
 				}));
 				final String digest = response.data['digest'];
-				print('Server returned digest $digest');
-				print('Our digest is ${_calculateDigest()}');
+				print('Server returned digest $digest, whereas our digest is ${_calculateDigest()} for $id');
 				if (digest != _calculateDigest()) {
 					print('Need to resync notifications $id');
 					await Dio().put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
