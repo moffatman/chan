@@ -145,6 +145,9 @@ class WrappedArchive extends ImageboardSite {
   String get siteType => 'debugging';
   @override
   String get siteData => '';
+  
+  @override
+  ThreadOrPostIdentifier? decodeUrl(String url) => null;
 }
 
 class ArchiveDebuggingPage extends StatelessWidget {

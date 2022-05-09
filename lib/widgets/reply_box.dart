@@ -7,6 +7,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/overscroll_modal.dart';
+import 'package:chan/services/clipboard_image.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
@@ -29,6 +30,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
+import 'package:native_drag_n_drop/native_drag_n_drop.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
 
@@ -87,6 +89,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	CaptchaSolution? _captchaSolution;
 	Timer? _autoPostTimer;
 	bool spoiler = false;
+	bool _dropLoading = false;
 
 	bool get _haveValidCaptcha {
 		if (_captchaSolution == null) {
@@ -295,93 +298,98 @@ class ReplyBoxState extends State<ReplyBox> {
 	Future<void> _selectAttachment() async {
 		File? file = await pickAttachment(context: context);
 		if (file != null) {
-			try {
-				final board = context.read<Persistence>().getBoard(widget.board);
-				print(file);
-				print(file.path);
-				String ext = file.path.split('.').last.toLowerCase();
-				if (ext == 'jpg' || ext == 'jpeg' || ext == 'heic') {
-					file = await FlutterExifRotation.rotateImage(path: file.path);
+			await setAttachment(file);
+		}
+	}
+
+	Future<void> setAttachment(File newAttachment) async {
+		File? file = newAttachment;
+		try {
+			final board = context.read<Persistence>().getBoard(widget.board);
+			print(file);
+			print(file.path);
+			String ext = file.path.split('.').last.toLowerCase();
+			if (ext == 'jpg' || ext == 'jpeg' || ext == 'heic') {
+				file = await FlutterExifRotation.rotateImage(path: file.path);
+			}
+			if (ext == 'heic') {
+				final heicPath = await HeicToJpg.convert(file.path);
+				if (heicPath == null) {
+					throw Exception('Failed to convert HEIC image to JPEG');
 				}
-				if (ext == 'heic') {
-					final heicPath = await HeicToJpg.convert(file.path);
-					if (heicPath == null) {
-						throw Exception('Failed to convert HEIC image to JPEG');
-					}
-					file = File(heicPath);
-					ext = 'jpg';
-				}
-				else if (ext == 'webp') {
-					file = await convertToJpg(file);
-					ext = 'jpg';
-				}
-				final size = (await file.stat()).size;
-				if ((ext == 'jpg' || ext == 'jpeg' || ext == 'png')) {
-					if (board.maxImageSizeBytes != null && (size > board.maxImageSizeBytes!)) {
-						file = await _showTranscodeWindow(
-							source: file,
-							size: size,
-							maximumSize: board.maxImageSizeBytes,
-							transcode: MediaConversion.toJpg(
-								file.uri,
-								maximumSizeInBytes: board.maxImageSizeBytes,
-							)
-						);
-					}
-				}
-				else if (ext == 'gif') {
-					if ((board.maxImageSizeBytes != null) && (size > board.maxImageSizeBytes!)) {
-						throw Exception('GIF is too large, and automatic re-encoding of GIFs is not supported');
-					}
-				}
-				else if (ext == 'webm') {
-					final scan = await MediaScan.scan(file.uri);
+				file = File(heicPath);
+				ext = 'jpg';
+			}
+			else if (ext == 'webp') {
+				file = await convertToJpg(file);
+				ext = 'jpg';
+			}
+			final size = (await file.stat()).size;
+			if ((ext == 'jpg' || ext == 'jpeg' || ext == 'png')) {
+				if (board.maxImageSizeBytes != null && (size > board.maxImageSizeBytes!)) {
 					file = await _showTranscodeWindow(
 						source: file,
-						audioAllowed: board.webmAudioAllowed,
-						audioPresent: scan.hasAudio,
 						size: size,
-						maximumSize: board.maxWebmSizeBytes,
-						durationInSeconds: scan.duration?.inSeconds,
-						maximumDurationInSeconds: board.maxWebmDurationSeconds,
-						transcode: MediaConversion.toWebm(
+						maximumSize: board.maxImageSizeBytes,
+						transcode: MediaConversion.toJpg(
 							file.uri,
-							stripAudio: !board.webmAudioAllowed,
-							maximumSizeInBytes: board.maxWebmSizeBytes,
-							maximumDurationInSeconds: board.maxWebmDurationSeconds
+							maximumSizeInBytes: board.maxImageSizeBytes,
 						)
 					);
 				}
-				else if (ext == 'mp4' || ext == 'mov') {
-					final scan = await MediaScan.scan(file.uri);
-					file = await _showTranscodeWindow(
-						source: file,
-						audioAllowed: board.webmAudioAllowed,
-						audioPresent: scan.hasAudio,
-						durationInSeconds: scan.duration?.inSeconds,
-						maximumDurationInSeconds: board.maxWebmDurationSeconds,
-						transcode: MediaConversion.toWebm(
-							file.uri,
-							stripAudio: !board.webmAudioAllowed,
-							maximumSizeInBytes: board.maxWebmSizeBytes,
-							maximumDurationInSeconds: board.maxWebmDurationSeconds
-						)
-					);
-				}
-				else {
-					throw Exception('Unsupported file type: $ext');
-				}
-				if (file != null) {
-					setState(() {
-						attachment = file;
-					});
+			}
+			else if (ext == 'gif') {
+				if ((board.maxImageSizeBytes != null) && (size > board.maxImageSizeBytes!)) {
+					throw Exception('GIF is too large, and automatic re-encoding of GIFs is not supported');
 				}
 			}
-			catch (e, st) {
-				print(e);
-				print(st);
-				alertError(context, e.toStringDio());
+			else if (ext == 'webm') {
+				final scan = await MediaScan.scan(file.uri);
+				file = await _showTranscodeWindow(
+					source: file,
+					audioAllowed: board.webmAudioAllowed,
+					audioPresent: scan.hasAudio,
+					size: size,
+					maximumSize: board.maxWebmSizeBytes,
+					durationInSeconds: scan.duration?.inSeconds,
+					maximumDurationInSeconds: board.maxWebmDurationSeconds,
+					transcode: MediaConversion.toWebm(
+						file.uri,
+						stripAudio: !board.webmAudioAllowed,
+						maximumSizeInBytes: board.maxWebmSizeBytes,
+						maximumDurationInSeconds: board.maxWebmDurationSeconds
+					)
+				);
 			}
+			else if (ext == 'mp4' || ext == 'mov') {
+				final scan = await MediaScan.scan(file.uri);
+				file = await _showTranscodeWindow(
+					source: file,
+					audioAllowed: board.webmAudioAllowed,
+					audioPresent: scan.hasAudio,
+					durationInSeconds: scan.duration?.inSeconds,
+					maximumDurationInSeconds: board.maxWebmDurationSeconds,
+					transcode: MediaConversion.toWebm(
+						file.uri,
+						stripAudio: !board.webmAudioAllowed,
+						maximumSizeInBytes: board.maxWebmSizeBytes,
+						maximumDurationInSeconds: board.maxWebmDurationSeconds
+					)
+				);
+			}
+			else {
+				throw Exception('Unsupported file type: $ext');
+			}
+			if (file != null) {
+				setState(() {
+					attachment = file;
+				});
+			}
+		}
+		catch (e, st) {
+			print(e);
+			print(st);
+			alertError(context, e.toStringDio());
 		}
 	}
 
@@ -816,19 +824,34 @@ class ReplyBoxState extends State<ReplyBox> {
 									]
 								)
 							]
-						) : Center(
-							child: CupertinoButton(
-								child: Wrap(
-									alignment: WrapAlignment.center,
-									crossAxisAlignment: WrapCrossAlignment.center,
-									spacing: 8.0,
-									runSpacing: 4.0,
-									children: const [
-										Icon(CupertinoIcons.photo),
-										Text('Select file', textAlign: TextAlign.center),
-									]
-								),
-								onPressed: _selectAttachment
+						) : NativeDropView(
+							loading: (loading) {
+								setState(() {
+									_dropLoading = loading;
+								});
+							},
+							allowedTotal: 1,
+							allowedDropDataTypes: const [DropDataType.image, DropDataType.video],
+							dataReceived: (files) {
+								if (files.isNotEmpty && files.last.dropFile != null) {
+									setAttachment(files.last.dropFile!);
+								}
+							},
+							receiveNonAllowedItems: false,
+							child: Center(
+								child: _dropLoading ? const CupertinoActivityIndicator() : CupertinoButton(
+									child: Wrap(
+										alignment: WrapAlignment.center,
+										crossAxisAlignment: WrapCrossAlignment.center,
+										spacing: 8.0,
+										runSpacing: 4.0,
+										children: const [
+											Icon(CupertinoIcons.photo),
+											Text('Select file', textAlign: TextAlign.center),
+										]
+									),
+									onPressed: _selectAttachment
+								)
 							)
 						)
 					),
@@ -848,7 +871,20 @@ class ReplyBoxState extends State<ReplyBox> {
 		final board = context.watch<Persistence>().getBoard(widget.board);
 		return CallbackShortcuts(
 			bindings: {
-				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter): _submit
+				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter): _submit,
+				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyV): () async {
+					if (await doesClipboardContainImage()) {
+						try {
+							final image = await getClipboardImageAsFile();
+							if (image != null) {
+								setAttachment(image);
+							}
+						}
+						catch (e) {
+							alertError(context, e.toStringDio());
+						}
+					}
+				}
 			},
 			child: Container(
 				padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
@@ -871,6 +907,7 @@ class ReplyBoxState extends State<ReplyBox> {
 									CupertinoTextField(
 										enabled: !loading,
 										controller: _textFieldController,
+										selectionControls: CupertinoTextSelectionControlsWithClipboardImage(this),
 										placeholder: 'Comment',
 										maxLines: null,
 										minLines: 100,

@@ -73,14 +73,22 @@
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>com.moffatman.chan</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>chance</string>
-			</array>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLName</key>
+				<string>com.moffatman.chan</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>chance</string>
+				</array>
+			</dict>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>ShareMedia-com.moffatman.chan</string>
+				</array>
 			</dict>
 		</array>
 		<key>FIREBASE_ANALYTICS_COLLECTION_ENABLED</key>

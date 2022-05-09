@@ -12,6 +12,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/util.dart';
@@ -32,6 +33,10 @@ import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/sticky_media_query.dart';
 import 'package:uni_links/uni_links.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+
+bool _initialLinkConsumed = false;
+bool _initialMediaConsumed = false;
 
 void main() async {
 	WidgetsFlutterBinding.ensureInitialized();
@@ -351,7 +356,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _onNewLink(String? link) {
-		if (link != null) {
+		if (link != null && link.startsWith('chance:')) {
 			print(link);
 			final threadLink = RegExp(r'chance:\/\/([^\/]+)\/thread\/(\d+)').firstMatch(link);
 			if (threadLink != null) {
@@ -377,6 +382,28 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 	}
 
+	void _consumeLink(String? link) {
+		if (link != null) {
+			final dest = context.read<ImageboardSite>().decodeUrl(link);
+			if (dest != null) {
+				_onNotificationTapped(dest);
+			}
+		}
+	}
+
+	void _consumeFiles(List<SharedMediaFile> files) {
+		if (files.isNotEmpty) {
+			showToast(
+				context: context,
+				message: (files.length > 1 ? 'Files' : 'File') + ' added to upload selector',
+				icon: CupertinoIcons.paperclip
+			);
+			for (final file in files) {
+				receivedFilePaths.add(file.path);
+			}
+		}
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -390,6 +417,16 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		getInitialLink().then(_onNewLink);
 		linkStream.listen(_onNewLink);
 		context.read<Notifications>().tapStream.listen(_onNotificationTapped);
+		if (!_initialLinkConsumed) {
+			ReceiveSharingIntent.getInitialText().then(_consumeLink);
+		}
+		if (!_initialMediaConsumed) {
+			ReceiveSharingIntent.getInitialMedia().then(_consumeFiles).then((_) {
+				_initialMediaConsumed = true;
+			});
+		}
+		ReceiveSharingIntent.getMediaStream().listen(_consumeFiles);
+		ReceiveSharingIntent.getTextStream().listen(_consumeLink);
 	}
 
 	PersistentBrowserTab _addNewTab({

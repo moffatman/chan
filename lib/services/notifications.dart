@@ -70,16 +70,6 @@ Future<void> handleBackgroundMessage(RemoteMessage message) async {
 
 const _notificationSettingsApiRoot = 'https://notifications.moffatman.com';
 
-class ThreadOrPostIdentifier {
-	final String board;
-	final int threadId;
-	final int? postId;
-	ThreadOrPostIdentifier(this.board, this.threadId, [this.postId]);
-	@override
-	String toString() => '/$board/$threadId/$postId';
-	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board, threadId);
-}
-
 class Notifications {
 	static final Map<String, Notifications> _children = {};
 	final tapStream = BehaviorSubject<ThreadOrPostIdentifier>();

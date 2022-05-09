@@ -1,6 +1,5 @@
 // ignore_for_file: file_names
 import 'dart:io';
-import 'dart:math';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
@@ -673,4 +672,21 @@ class Site4Chan extends ImageboardSite {
 	String get siteType => '4chan';
 	@override
 	String get siteData => apiUrl;
+
+	ThreadOrPostIdentifier? _decodeUrl(String base, String url) {
+		final pattern = RegExp(r'https?:\/\/' + base.replaceAll('.', r'\.') + r'\/([^\/]+)\/thread\/(\d+)(#p(\d+))?');
+		final match = pattern.firstMatch(url);
+		if (match != null) {
+			return ThreadOrPostIdentifier(match.group(1)!, int.parse(match.group(2)!), int.tryParse(match.group(4) ?? ''));
+		}
+		return null;
+	}
+	
+	@override
+	ThreadOrPostIdentifier? decodeUrl(String url) {
+		if (baseUrl.contains('chan')) {
+			return _decodeUrl(baseUrl, url) ?? _decodeUrl(baseUrl.replaceFirst('chan', 'channel'), url);
+		}
+		return _decodeUrl(baseUrl, url);
+	}
 }

@@ -1,12 +1,13 @@
 package com.moffatman.chan;
 
 import android.app.NotificationManager;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
-import android.service.notification.StatusBarNotification;
 import android.webkit.MimeTypeMap;
 import android.util.Log;
 
@@ -20,7 +21,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Map;
+import java.io.InputStream;
 
 import io.flutter.embedding.android.FlutterFragmentActivity;
 import io.flutter.embedding.engine.FlutterEngine;
@@ -29,7 +30,8 @@ import io.flutter.plugin.common.MethodChannel;
 public class MainActivity extends FlutterFragmentActivity {
     private static final String STORAGE_CHANNEL = "com.moffatman.chan/storage";
     private static final String NOTIFICATIONS_CHANNEL = "com.moffatman.chan/notifications";
-    private MethodChannel.Result result;
+    private static final String CLIPBOARD_CHANNEL = "com.moffatman.chan/clipboard";
+    private MethodChannel.Result folderResult;
 
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
@@ -46,8 +48,8 @@ public class MainActivity extends FlutterFragmentActivity {
             }
         }, uri -> {
             getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            if (result != null) {
-                result.success(uri.toString());
+            if (folderResult != null) {
+                folderResult.success(uri.toString());
             }
         });
         super.configureFlutterEngine(flutterEngine);
@@ -55,7 +57,7 @@ public class MainActivity extends FlutterFragmentActivity {
                 (call, result) -> {
                     if (call.method.equals("pickDirectory")) {
                         System.out.println(getContentResolver().getPersistedUriPermissions());
-                        this.result = result;
+                        this.folderResult = result;
                         getFolder.launch(Uri.fromFile(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)));
                     }
                     else if (call.method.equals("saveFile")) {
@@ -99,6 +101,42 @@ public class MainActivity extends FlutterFragmentActivity {
                         NotificationManager nm = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
                         nm.cancelAll();
                         result.success(null);
+                    }
+                    else {
+                        result.notImplemented();
+                    }
+                }
+        );
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), CLIPBOARD_CHANNEL).setMethodCallHandler(
+                (call, result) -> {
+                    if (call.method.equals("doesClipboardContainImage")) {
+                        ClipboardManager cm = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+                        ClipData.Item item = cm.getPrimaryClip().getItemAt(0);
+                        if (item.getUri() != null) {
+                            String[] parts = item.getUri().toString().split("\\.");
+                            String ext = parts[parts.length - 1];
+                            result.success(ext.equals("jpg") || ext.equals("jpeg") || ext.equals("png") || ext.equals("gif"));
+                        }
+                        else {
+                            result.success(false);
+                        }
+                    }
+                    else if (call.method.equals("getClipboardImage")) {
+                        ClipboardManager cm = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+                        ClipData.Item item = cm.getPrimaryClip().getItemAt(0);
+                        if (item.getUri() != null) {
+                            try {
+                                InputStream stream = getContentResolver().openInputStream(item.getUri());
+                                byte[] data = new byte[stream.available()];
+                                stream.read(data);
+                                result.success(data);
+                            } catch (IOException e) {
+                                result.error("FILE_ERROR", "Could not open file for reading", null);
+                            }
+                        }
+                        else {
+                            result.success(null);
+                        }
                     }
                     else {
                         result.notImplemented();

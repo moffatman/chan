@@ -5,8 +5,10 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:chan/services/clipboard_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -15,13 +17,16 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 
+final List<String> receivedFilePaths = [];
+
 Future<File?> pickAttachment({
 	required BuildContext context
-}) {
+}) async {
 	final picker = ImagePicker();
 	final savedAttachments = context.read<Persistence>().savedAttachments.values.toList();
 	savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
 	final sources = (Platform.isIOS || Platform.isAndroid || kIsWeb) ? [
+		if ((Platform.isIOS || Platform.isAndroid) && (await doesClipboardContainImage())) Tuple3('Clipboard', CupertinoIcons.doc_on_clipboard, () => getClipboardImageAsFile().then((x) => x?.path)),
 		Tuple3('Pick photo', CupertinoIcons.photo, () => FilePicker.platform.pickFiles(type: FileType.image).then((x) => x?.files.single.path)),
 		Tuple3('Pick video', CupertinoIcons.play_rectangle, () => FilePicker.platform.pickFiles(type: FileType.video).then((x) => x?.files.single.path)),
 		Tuple3('Pick file', CupertinoIcons.doc, () => FilePicker.platform.pickFiles(type: FileType.any).then((x) => x?.files.single.path)),
@@ -52,7 +57,7 @@ Future<File?> pickAttachment({
 								),
 								shrinkWrap: true,
 								physics: const NeverScrollableScrollPhysics(),
-								itemCount: sources.length + savedAttachments.length,
+								itemCount: sources.length + receivedFilePaths.length + savedAttachments.length,
 								itemBuilder: (context, i) {
 									if (i < sources.length) {
 										final entry = sources[i];
@@ -60,11 +65,18 @@ Future<File?> pickAttachment({
 											onTap: () async {
 												loadingPick = true;
 												setPickerDialogState(() {});
-												final path = await entry.item3();
-												loadingPick = false;
-												setPickerDialogState(() {});
-												if (path != null) {
-													Navigator.of(context).pop<File>(File(path));
+												try {
+													final path = await entry.item3();
+													loadingPick = false;
+													setPickerDialogState(() {});
+													if (path != null) {
+														Navigator.of(context).pop<File>(File(path));
+													}
+												}
+												catch (e) {
+													alertError(context, e.toStringDio());
+													loadingPick = false;
+													setPickerDialogState(() {});
 												}
 											},
 											child: Container(
@@ -85,8 +97,21 @@ Future<File?> pickAttachment({
 											)
 										);
 									}
+									else if (i < (sources.length + receivedFilePaths.length)) {
+										// Reverse order
+										final file = File(receivedFilePaths[(receivedFilePaths.length - 1) - (i - sources.length)]);
+										return GestureDetector(
+											onTap: () {
+												Navigator.of(context).pop(file);
+											},
+											child: ClipRRect(
+												borderRadius: BorderRadius.circular(8),
+												child: SavedAttachmentThumbnail(file: file, fit: BoxFit.cover)
+											)
+										);
+									}
 									else {
-										final attachment = savedAttachments[i - sources.length];
+										final attachment = savedAttachments[i - sources.length - receivedFilePaths.length];
 										return GestureDetector(
 											onTap: () {
 												Navigator.of(context).pop(attachment.file);

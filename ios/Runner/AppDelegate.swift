@@ -1,5 +1,6 @@
 import UIKit
 import Flutter
+import Foundation
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
@@ -78,6 +79,42 @@ import Flutter
         }
         else {
           result(FlutterError.init(code: "BAD_ARGS", message: "Bad Arguments", details: nil))
+        }
+      }
+      else {
+        result(FlutterMethodNotImplemented)
+      }
+    })
+    let clipboardChannel = FlutterMethodChannel(name: "com.moffatman.chan/clipboard", binaryMessenger: controller.binaryMessenger)
+    clipboardChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      if (call.method == "doesClipboardContainImage") {
+        result(UIPasteboard.general.hasImages)
+      }
+      else if (call.method == "getClipboardImage") {
+        // Browsers copy GIF by putting one frame in image variable
+        // and putting a link to the full GIF in the html section
+        let pattern = #"<img[^<]+src="([^"]+\.gif[^"]*)"#
+        let regex = try! NSRegularExpression(pattern: pattern, options: .anchorsMatchLines)
+        let html = String(data: UIPasteboard.general.data(forPasteboardType: "public.html") ?? Data.init(), encoding: .utf8) ?? ""
+        let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html))
+        if let match = match {
+          let url = (html as NSString).substring(with: match.range(at: 1))
+          let task = URLSession.shared.dataTask(with: URL(string: url)!) { data, response, error in
+            if error != nil {
+              result(FlutterError.init(code: "NETWORK", message: "Could not get GIF from URL", details: nil))
+              return
+            }
+            guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+              result(FlutterError.init(code: "NETWORK", message: "Could not get GIF from URL", details: nil))
+              return
+            }
+            result(data)
+          }
+          task.resume()
+        }
+        else {
+          result(UIPasteboard.general.image?.jpegData(compressionQuality: 0.9))
         }
       }
       else {

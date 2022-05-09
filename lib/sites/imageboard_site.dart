@@ -375,6 +375,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	List<ImageboardEmote> getEmotes();
 	String get siteType;
 	String get siteData;
+	ThreadOrPostIdentifier? decodeUrl(String url);
 }
 
 ImageboardSite makeSite(BuildContext context, dynamic data) {

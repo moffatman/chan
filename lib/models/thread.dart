@@ -150,3 +150,13 @@ class ThreadIdentifier {
 	@override
 	int get hashCode => board.hashCode * 31 + id.hashCode;
 }
+
+class ThreadOrPostIdentifier {
+	final String board;
+	final int threadId;
+	final int? postId;
+	ThreadOrPostIdentifier(this.board, this.threadId, [this.postId]);
+	@override
+	String toString() => '/$board/$threadId/$postId';
+	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board, threadId);
+}

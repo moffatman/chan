@@ -710,12 +710,12 @@ packages:
     source: hosted
     version: "1.7.0"
   mime:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: mime
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.1"
+    version: "1.0.2"
   mutex:
     dependency: "direct main"
     description:
@@ -723,6 +723,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.0"
+  native_drag_n_drop:
+    dependency: "direct main"
+    description:
+      name: native_drag_n_drop
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.0.4"
   nested:
     dependency: transitive
     description:
@@ -891,6 +898,15 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.1+1"
+  receive_sharing_intent:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: HEAD
+      resolved-ref: d7c125caa686353e2a5c5910c5be272ca4709ddc
+      url: "https://github.com/krabbenprgr/receive_sharing_intent"
+    source: git
+    version: "1.4.5"
   rxdart:
     dependency: "direct main"
     description:

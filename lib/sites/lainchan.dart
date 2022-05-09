@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/persistence.dart';
@@ -436,4 +435,14 @@ class SiteLainchan extends ImageboardSite {
 	String get siteType => 'lainchan';
 	@override
 	String get siteData => baseUrl;
+	
+	@override
+	ThreadOrPostIdentifier? decodeUrl(String url) {
+		final pattern = RegExp(r'https?:\/\/' + baseUrl.replaceAll('.', r'\.') + r'\/([^\/]+)\/res\/(\d+)\.html(#q(\d+))?');
+		final match = pattern.firstMatch(url);
+		if (match != null) {
+			return ThreadOrPostIdentifier(match.group(1)!, int.parse(match.group(2)!), int.tryParse(match.group(4) ?? ''));
+		}
+		return null;
+	}
 }
