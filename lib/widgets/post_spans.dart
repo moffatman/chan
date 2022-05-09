@@ -170,13 +170,16 @@ class PostNodeSpan extends PostSpan {
 
 class PostTextSpan extends PostSpan {
 	final String text;
-	PostTextSpan(this.text);
+	final bool underlined;
+	PostTextSpan(this.text, {this.underlined = false});
 
 	@override
 	InlineSpan build(context, options) {
 		return TextSpan(
 			text: context.read<EffectiveSettings>().filterProfanity(text),
-			style: options.baseTextStyle,
+			style: underlined ? options.baseTextStyle.copyWith(
+				decoration: TextDecoration.underline
+			) : options.baseTextStyle,
 			recognizer: options.recognizer,
 			onEnter: options.onEnter,
 			onExit: options.onExit
@@ -810,6 +813,70 @@ class PostBoldSpan extends PostSpan {
 	}
 	@override
 	buildText() => child.buildText();
+}
+
+class PostPopupSpan extends PostSpan {
+	final PostSpan popup;
+	final String title;
+	PostPopupSpan({
+		required this.popup,
+		required this.title
+	});
+	@override
+	build(context, options) {
+		return TextSpan(
+			text: 'Show $title',
+			style: options.baseTextStyle.copyWith(
+				decoration: TextDecoration.underline
+			),
+			recognizer: options.overridingRecognizer ?? TapGestureRecognizer()..onTap = () {
+				showCupertinoModalPopup(
+					context: context,
+					barrierDismissible: true,
+					builder: (context) => CupertinoActionSheet(
+						title: Text(title),
+						message: Text.rich(
+							popup.build(context, options),
+							textAlign: TextAlign.left,
+						),
+						actions: [
+							CupertinoActionSheetAction(
+								child: const Text('Close'),
+								onPressed: () {
+									Navigator.of(context).pop(true);
+								}
+							)
+						]
+					)
+				);
+			}
+		);
+	}
+
+	@override
+	buildText() => title + '\n' + popup.buildText();
+}
+
+class PostTableSpan extends PostSpan {
+	final List<List<String>> rows;
+	PostTableSpan(this.rows);
+	@override
+	build(context, options) {
+		return WidgetSpan(
+			child: Table(
+				children: rows.map((row) => TableRow(
+					children: row.map((col) => TableCell(
+						child: Text(
+							col,
+							textAlign: TextAlign.left
+						)
+					)).toList()
+				)).toList()
+			)
+		);
+	}
+	@override
+	buildText() => rows.map((r) => r.join(', ')).join('\n');
 }
 
 class PostSpanZone extends StatelessWidget {

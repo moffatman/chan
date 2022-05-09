@@ -94,7 +94,8 @@ class Site4Chan extends ImageboardSite {
 		}));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
-		for (final node in doc.body!.nodes) {
+		for (int i = 0; i < doc.body!.nodes.length; i++) {
+			final node = doc.body!.nodes[i];
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
 					elements.add(PostLineBreakSpan());
@@ -170,6 +171,38 @@ class Site4Chan extends ImageboardSite {
 						else {
 							elements.add(makeSpan(board, threadId, node.innerHtml));
 						}
+					}
+					else if (node.classes.contains('abbr') &&
+									(i + 2 < doc.body!.nodes.length) &&
+									(doc.body!.nodes[i + 1] is dom.Element) &&
+									((doc.body!.nodes[i + 1] as dom.Element).localName == 'br') &&
+									(doc.body!.nodes[i + 1] is dom.Element) &&
+									((doc.body!.nodes[i + 2] as dom.Element).localName == 'table')) {
+							final tableRows = <PostSpan>[];
+							List<List<String>> subtable = [];
+							for (final row in (doc.body!.nodes[i + 2] as dom.Element).firstChild!.children) {
+								if (row.firstChild?.attributes['colspan'] == '2') {
+									if (tableRows.isNotEmpty) {
+										tableRows.add(PostLineBreakSpan());
+									}
+									tableRows.add(PostTextSpan(row.firstChild!.text!, underlined: true));
+									if (subtable.isNotEmpty) {
+										tableRows.add(PostTableSpan(subtable));
+										subtable = [];
+									}
+								}
+								else {
+									subtable.add(row.children.map((c) => c.text).toList());
+								}
+							}
+							if (subtable.isNotEmpty) {
+								tableRows.add(PostTableSpan(subtable));
+							}
+							i += 2;
+							elements.add(PostPopupSpan(
+								title: 'EXIF Data',
+								popup: PostNodeSpan(tableRows)
+							));
 					}
 					else {
 						elements.add(PostTextSpan(node.text));
