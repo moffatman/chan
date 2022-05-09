@@ -614,6 +614,11 @@ class Site4Chan extends ImageboardSite {
 		if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode!);
 		}
+		final document = parse(response.data);
+		final errSpan = document.querySelector('#errmsg');
+		if (errSpan != null) {
+			throw DeletionFailedException(errSpan.text);
+		}
 	}
 
 	@override
