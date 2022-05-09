@@ -10,6 +10,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
@@ -122,12 +123,26 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 					else if (node.classes.contains('spoiler')) {
 						elements.add(PostSpoilerSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml), spoilerSpanId++));
 					}
+					else if (node.classes.contains('fortune')) {
+						final css = {
+							for (final pair in (node.attributes['style']?.split(';') ?? [])) pair.split(':').first.trim(): pair.split(':').last.trim()
+						};
+						if (css['color'] != null) {
+							elements.add(PostColorSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml), colorToHex(css['color'])));
+						}
+						else {
+							elements.add(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml));
+						}
+					}
 					else {
 						elements.addAll(Site4Chan.parsePlaintext(node.text));
 					}
 				}
 				else if (node.localName == 'a' && node.classes.contains('backlink')) {
 					processQuotelink(node);
+				}
+				else if (node.localName == 'strong') {
+					elements.add(PostBoldSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml)));
 				}
 				else {
 					elements.addAll(Site4Chan.parsePlaintext(node.text));

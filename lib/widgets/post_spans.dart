@@ -62,14 +62,15 @@ class PostSpanRenderOptions {
 	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 
 	PostSpanRenderOptions copyWith({
-		bool? ownLine
+		bool? ownLine,
+		TextStyle? baseTextStyle
 	}) => PostSpanRenderOptions(
 		recognizer: recognizer,
 		overrideRecognizer: overrideRecognizer,
 		overrideTextColor: overrideTextColor,
 		showCrossThreadLabel: showCrossThreadLabel,
 		addExpandingPosts: addExpandingPosts,
-		baseTextStyle: baseTextStyle,
+		baseTextStyle: baseTextStyle ?? this.baseTextStyle,
 		showRawSource: showRawSource,
 		avoidBuggyClippers: avoidBuggyClippers,
 		onEnter: onEnter,
@@ -780,6 +781,35 @@ class PostInlineImageSpan extends PostSpan {
 	}
 	@override
 	String buildText() => '';
+}
+
+class PostColorSpan extends PostSpan {
+	final PostSpan child;
+	final Color color;
+	
+	PostColorSpan(this.child, this.color);
+	@override
+	build(context, options) {
+		return child.build(context, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(color: color)
+		));
+	}
+	@override
+	buildText() => child.buildText();
+}
+
+class PostBoldSpan extends PostSpan {
+	final PostSpan child;
+
+	PostBoldSpan(this.child);
+	@override
+	build(context, options) {
+		return child.build(context, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(fontWeight: FontWeight.bold)
+		));
+	}
+	@override
+	buildText() => child.buildText();
 }
 
 class PostSpanZone extends StatelessWidget {

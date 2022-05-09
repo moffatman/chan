@@ -64,7 +64,7 @@ class SiteLainchan extends ImageboardSite {
 					}
 				}
 				else if (node.localName == 'span') {
-					if (node.attributes['class']?.contains('quote') ?? false) {
+					if (node.classes.contains('quote')) {
 						elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
 					}
 					else {

@@ -5,6 +5,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:html/parser.dart' show parse;
@@ -148,7 +149,7 @@ class Site4Chan extends ImageboardSite {
 					}
 				}
 				else if (node.localName == 'span') {
-					if (node.attributes['class']?.contains('deadlink') ?? false) {
+					if (node.classes.contains('deadlink')) {
 						final parts = node.innerHtml.replaceAll('&gt;', '').split('/');
 						elements.add(PostQuoteLinkSpan(
 							board: (parts.length > 2) ? parts[1] : board,
@@ -156,8 +157,19 @@ class Site4Chan extends ImageboardSite {
 							dead: true
 						));
 					}
-					else if (node.attributes['class']?.contains('quote') ?? false) {
+					else if (node.classes.contains('quote')) {
 						elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
+					}
+					else if (node.classes.contains('fortune')) {
+						final css = {
+							for (final pair in (node.attributes['style']?.split(';') ?? [])) pair.split(':').first: pair.split(':').last
+						};
+						if (css['color'] != null) {
+							elements.add(PostColorSpan(makeSpan(board, threadId, node.innerHtml), colorToHex(css['color'])));
+						}
+						else {
+							elements.add(makeSpan(board, threadId, node.innerHtml));
+						}
 					}
 					else {
 						elements.add(PostTextSpan(node.text));
@@ -168,6 +180,9 @@ class Site4Chan extends ImageboardSite {
 				}
 				else if (node.localName == 'pre') {
 					elements.add(PostCodeSpan(unescape.convert(node.innerHtml.replaceFirst(RegExp(r'<br>$'), '').replaceAll('<br>', '\n'))));
+				}
+				else if (node.localName == 'b') {
+					elements.add(PostBoldSpan(makeSpan(board, threadId, node.innerHtml)));
 				}
 				else {
 					elements.addAll(parsePlaintext(node.text));
