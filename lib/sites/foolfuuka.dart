@@ -177,7 +177,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			for (final match in postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
 				final board = match.group(1)!;
 				final postId = int.parse(match.group(2)!);
-				linkedPostThreadIds['$board/$postId'] = await _getPostThreadId(board, postId);
+				final threadId = await _getPostThreadId(board, postId);
+				if (threadId != null) {
+					linkedPostThreadIds['$board/$postId'] = threadId;
+				}
 			}
 		}
 		int? passSinceYear;
@@ -219,17 +222,25 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		);
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
-				return Future.error(PostNotFoundException(board, id));
+				throw PostNotFoundException(board, id);
 			}
-			return Future.error(HTTPStatusException(response.statusCode!));
+			throw HTTPStatusException(response.statusCode!);
 		}
 		if (response.data['error'] != null) {
+			if (response.data['error'] == 'Post not found.') {
+				throw PostNotFoundException(board, id);
+			}
 			throw FoolFuukaException(response.data['error']);
 		}
 		return response.data;
 	}
-	Future<int> _getPostThreadId(String board, int postId) async {
-		return int.parse((await _getPostJson(board, postId))['thread_num']);
+	Future<int?> _getPostThreadId(String board, int postId) async {
+		try {
+			return int.parse((await _getPostJson(board, postId))['thread_num']);
+		}
+		on PostNotFoundException {
+			return null;
+		}
 	}
 	@override
 	Future<Post> getPost(String board, int id) async {		
