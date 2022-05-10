@@ -249,7 +249,7 @@ Future<void> openBrowser(BuildContext context, Uri url) async {
 		);
 	}
 	else {
-		if (await isOnMac()) {
+		if (await isOnMac() || !context.read<EffectiveSettings>().useInternalBrowser) {
 			launch(url.toString(), forceSafariVC: false);
 		}
 		else {

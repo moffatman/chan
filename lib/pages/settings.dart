@@ -403,6 +403,19 @@ class SettingsBehaviorPage extends StatelessWidget {
 						settings.useNewCaptchaForm = newValue;
 					}
 				),
+				const SizedBox(height: 32),
+				const Text('Use internal web browser'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('No'),
+						true: Text('Yes')
+					},
+					groupValue: settings.useInternalBrowser,
+					onValueChanged: (newValue) {
+						settings.useInternalBrowser = newValue;
+					}
+				),
 				const SizedBox(height: 32)
 			]
 		);

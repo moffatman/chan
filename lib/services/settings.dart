@@ -267,6 +267,8 @@ class SavedSettings extends HiveObject {
 	bool? usePushNotifications;
 	@HiveField(63)
 	bool useEmbeds;
+	@HiveField(64)
+	bool useInternalBrowser;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -332,6 +334,7 @@ class SavedSettings extends HiveObject {
 		bool? muteAudio,
 		bool? notificationsMigrated,
 		bool? useEmbeds,
+		bool? useInternalBrowser,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -398,7 +401,8 @@ class SavedSettings extends HiveObject {
 		showFlagOnPosts = showFlagOnPosts ?? true,
 		thumbnailSize = thumbnailSize ?? 75,
 		muteAudio = muteAudio ?? false,
-		useEmbeds = useEmbeds ?? true;
+		useEmbeds = useEmbeds ?? true,
+		useInternalBrowser = useInternalBrowser ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -923,6 +927,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get useEmbeds => _settings.useEmbeds;
 	set useEmbeds(bool setting) {
 		_settings.useEmbeds = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get useInternalBrowser => _settings.useInternalBrowser;
+	set useInternalBrowser(bool setting) {
+		_settings.useInternalBrowser = setting;
 		_settings.save();
 		notifyListeners();
 	}
