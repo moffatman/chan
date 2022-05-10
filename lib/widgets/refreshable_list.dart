@@ -731,7 +731,13 @@ class RefreshableListController<T> {
 		if (item.hasGoodState) {
 			final RenderObject object = item.context!.findRenderObject()!;
 			item.cachedHeight = object.semanticBounds.height;
-			item.cachedOffset = _getOffset(object);
+			final newOffset = _getOffset(object);
+			if (item.cachedOffset != null && item.cachedOffset != newOffset) {
+				for (final item in _items.skip(index + 1)) {
+					item.cachedOffset = null;
+				}
+			}
+			item.cachedOffset = newOffset;
 			final keys = _itemCacheCallbacks.keys.toList();
 			for (final position in keys) {
 				if (position.item2 && index >= position.item1) {
@@ -797,7 +803,19 @@ class RefreshableListController<T> {
 		_itemCacheCallbacks.clear();
 	}
 	void setItems(List<T> items) {
-		_items = items.map((item) => _RefreshableListItem(item)).toList();
+		if (items.isNotEmpty && _items.isNotEmpty && items.first == _items.first.item) {
+			for (int i = 0; i < items.length; i++) {
+				if (i < _items.length) {
+					_items[i].item = items[i];
+				}
+				else {
+					_items.add(_RefreshableListItem(items[i]));
+				}
+			}
+		}
+		else {
+			_items = items.map((item) => _RefreshableListItem(item)).toList();
+		}
 	}
 	void registerItem(int index, T item, BuildContext context) {
 		_items[index].item = item;
