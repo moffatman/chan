@@ -1256,6 +1256,52 @@ class SettingsDataPage extends StatelessWidget {
 					}
 				),
 				const SizedBox(height: 16),
+				Row(
+					children: [
+						const Text('Show rich links when possible'),
+						const SizedBox(width: 8),
+						CupertinoButton(
+							minSize: 0,
+							padding: EdgeInsets.zero,
+							child: const Icon(CupertinoIcons.question_circle),
+							onPressed: () {
+								showCupertinoDialog<bool>(
+									context: context,
+									barrierDismissible: true,
+									builder: (_context) => CupertinoAlertDialog(
+										content: const Text('Links to sites such as YouTube will show the thumbnail and title of the page instead of the link URL.'),
+										actions: [
+											CupertinoDialogAction(
+												child: const Text('OK'),
+												onPressed: () {
+													Navigator.of(_context).pop();
+												}
+											)
+										]
+									)
+								);
+							}
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('No')
+						),
+						true: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Yes')
+						)
+					},
+					groupValue: context.watch<EffectiveSettings>().useEmbeds,
+					onValueChanged: (setting) {
+						context.read<EffectiveSettings>().useEmbeds = setting;
+					}
+				),
+				const SizedBox(height: 16),
 				const Text('Cached media'),
 				const SettingsCachePanel(),
 				const SizedBox(height: 16),

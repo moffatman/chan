@@ -265,6 +265,8 @@ class SavedSettings extends HiveObject {
 	bool muteAudio;
 	@HiveField(62)
 	bool? usePushNotifications;
+	@HiveField(63)
+	bool useEmbeds;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -329,6 +331,7 @@ class SavedSettings extends HiveObject {
 		double? thumbnailSize,
 		bool? muteAudio,
 		bool? notificationsMigrated,
+		bool? useEmbeds,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -394,7 +397,8 @@ class SavedSettings extends HiveObject {
 		showFileDimensionsOnPosts = showFileDimensionsOnPosts ?? false,
 		showFlagOnPosts = showFlagOnPosts ?? true,
 		thumbnailSize = thumbnailSize ?? 75,
-		muteAudio = muteAudio ?? false;
+		muteAudio = muteAudio ?? false,
+		useEmbeds = useEmbeds ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -914,6 +918,13 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.save();
 		notifyListeners();
 		Notifications.didUpdateUsePushNotificationsSetting();
+	}
+
+	bool get useEmbeds => _settings.useEmbeds;
+	set useEmbeds(bool setting) {
+		_settings.useEmbeds = setting;
+		_settings.save();
+		notifyListeners();
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];

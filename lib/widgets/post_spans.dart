@@ -595,7 +595,8 @@ class PostLinkSpan extends PostSpan {
 	@override
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
-		if (!options.showRawSource) {
+		final settings = context.watch<EffectiveSettings>();
+		if (!options.showRawSource && settings.useEmbeds) {
 			final check = zone.getFutureForComputation(
 				id: 'embedcheck $url',
 				work: () => embedPossible(
