@@ -282,342 +282,351 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 		final notifications = context.watch<Notifications>();
 		final watch = notifications.getThreadWatch(widget.thread);
-		return FilterZone(
-			filter: persistentState.threadFilter,
-			child: Provider.value(
-				value: _replyBoxKey,
-				child: CupertinoPageScaffold(
-					resizeToAvoidBottomInset: false,
-					navigationBar: CupertinoNavigationBar(
-						transitionBetweenRoutes: false,
-						middle: AutoSizeText(title),
-						trailing: Row(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								CupertinoButton(
-									padding: EdgeInsets.zero,
-									child: Stack(
-										children: [
-											Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill),
-											Positioned.fill(
-												child: (watch?.yousOnly ?? true) ? const SizedBox.shrink() : const Align(
-													alignment: Alignment.topRight,
-													child: Padding(
-														padding: EdgeInsets.only(top: 1, right: 1),
-														child: Icon(CupertinoIcons.circle_fill, size: 11)
+		return WillPopScope(
+			onWillPop: () async {
+				if (_replyBoxKey.currentState?.show ?? false) {
+					_replyBoxKey.currentState?.hideReplyBox();
+					return false;
+				}
+				return true;
+			},
+			child: FilterZone(
+				filter: persistentState.threadFilter,
+				child: Provider.value(
+					value: _replyBoxKey,
+					child: CupertinoPageScaffold(
+						resizeToAvoidBottomInset: false,
+						navigationBar: CupertinoNavigationBar(
+							transitionBetweenRoutes: false,
+							middle: AutoSizeText(title),
+							trailing: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									CupertinoButton(
+										padding: EdgeInsets.zero,
+										child: Stack(
+											children: [
+												Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill),
+												Positioned.fill(
+													child: (watch?.yousOnly ?? true) ? const SizedBox.shrink() : const Align(
+														alignment: Alignment.topRight,
+														child: Padding(
+															padding: EdgeInsets.only(top: 1, right: 1),
+															child: Icon(CupertinoIcons.circle_fill, size: 11)
+														)
+													)
+												),
+												Positioned.fill(
+													child: (watch?.yousOnly ?? true) ? const SizedBox.shrink() : Align(
+														alignment: Alignment.topRight,
+														child: Icon(CupertinoIcons.asterisk_circle_fill, size: 12, color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)
 													)
 												)
-											),
-											Positioned.fill(
-												child: (watch?.yousOnly ?? true) ? const SizedBox.shrink() : Align(
-													alignment: Alignment.topRight,
-													child: Icon(CupertinoIcons.asterisk_circle_fill, size: 12, color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)
-												)
-											)
-										]
-									),
-									onPressed: () async {
-										await promptForPushNotificationsIfNeeded(context);
-										if (watch != null) {
-											notifications.unsubscribeFromThread(widget.thread);
-										}
-										else if (persistentState.youIds.isEmpty) {
-											notifications.subscribeToThread(widget.thread, persistentState.thread?.posts.last.id ?? 0, false, []);
-										}
-										else {
-											// User is not subscribed but they have posts marked as (you)
-											// Ask what to do
-											final choice = await showCupertinoDialog<bool>(
-												context: context,
-												builder: (_context) => CupertinoAlertDialog(
-													title: const Text('When to notify?'),
-													actions: [
-														CupertinoDialogAction(
-															child: const Text('Only (You)s'),
-															onPressed: () {
-																Navigator.of(_context).pop(true);
-															}
-														),
-														CupertinoDialogAction(
-															child: const Text('All Posts'),
-															onPressed: () {
-																Navigator.of(_context).pop(false);
-															}
-														)
-													]
-												)
-											);
-											if (choice != null) {
-												notifications.subscribeToThread(widget.thread, persistentState.thread?.posts.last.id ?? 0, choice, persistentState.youIds);
+											]
+										),
+										onPressed: () async {
+											await promptForPushNotificationsIfNeeded(context);
+											if (watch != null) {
+												notifications.unsubscribeFromThread(widget.thread);
 											}
-										}
-										setState(() {});
-									}
-								),
-								CupertinoButton(
-									padding: EdgeInsets.zero,
-									child: Icon(persistentState.savedTime == null ? CupertinoIcons.bookmark : CupertinoIcons.bookmark_fill),
-									onPressed: () {
-										if (persistentState.savedTime != null) {
-											persistentState.savedTime = null;
-										}
-										else {
-											persistentState.savedTime = DateTime.now();
-										}
-										persistentState.save();
-										setState(() {});
-									}
-								),
-								CupertinoButton(
-									key: _shareButtonKey,
-									padding: EdgeInsets.zero,
-									child: const Icon(CupertinoIcons.share),
-									onPressed: () {
-										final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-										final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-										shareOne(
-											text: context.read<ImageboardSite>().getWebUrl(widget.thread.board, widget.thread.id),
-											type: "text",
-											sharePositionOrigin: (offset != null && size != null) ? offset & size : null
-										);
-									}
-								),
-								CupertinoButton(
-									padding: EdgeInsets.zero,
-									child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply),
-									onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
-										_replyBoxKey.currentState?.toggleReplyBox();
-									}
-								)
-							]
-						)
-					),
-					child: Column(
-						children: [
-							Flexible(
-								flex: 1,
-								child: Shortcuts(
-									shortcuts: {
-										LogicalKeySet(LogicalKeyboardKey.keyG): const OpenGalleryIntent()
-									},
-									child: Actions(
-										actions: {
-											OpenGalleryIntent: CallbackAction<OpenGalleryIntent>(
-												onInvoke: (i) {
-													if (context.read<EffectiveSettings>().showImages(context, widget.thread.board)) {
-														final nextPostWithImage = persistentState.thread?.posts.skip(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null, orElse: () {
-															return persistentState.thread!.posts.take(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null);
-														});
-														if (nextPostWithImage != null) {
-															_showGallery(initialAttachment: nextPostWithImage.attachment);
-														}
-													}
-													return null;
+											else if (persistentState.youIds.isEmpty) {
+												notifications.subscribeToThread(widget.thread, persistentState.thread?.posts.last.id ?? 0, false, []);
+											}
+											else {
+												// User is not subscribed but they have posts marked as (you)
+												// Ask what to do
+												final choice = await showCupertinoDialog<bool>(
+													context: context,
+													builder: (_context) => CupertinoAlertDialog(
+														title: const Text('When to notify?'),
+														actions: [
+															CupertinoDialogAction(
+																child: const Text('Only (You)s'),
+																onPressed: () {
+																	Navigator.of(_context).pop(true);
+																}
+															),
+															CupertinoDialogAction(
+																child: const Text('All Posts'),
+																onPressed: () {
+																	Navigator.of(_context).pop(false);
+																}
+															)
+														]
+													)
+												);
+												if (choice != null) {
+													notifications.subscribeToThread(widget.thread, persistentState.thread?.posts.last.id ?? 0, choice, persistentState.youIds);
 												}
-											)
+											}
+											setState(() {});
+										}
+									),
+									CupertinoButton(
+										padding: EdgeInsets.zero,
+										child: Icon(persistentState.savedTime == null ? CupertinoIcons.bookmark : CupertinoIcons.bookmark_fill),
+										onPressed: () {
+											if (persistentState.savedTime != null) {
+												persistentState.savedTime = null;
+											}
+											else {
+												persistentState.savedTime = DateTime.now();
+											}
+											persistentState.save();
+											setState(() {});
+										}
+									),
+									CupertinoButton(
+										key: _shareButtonKey,
+										padding: EdgeInsets.zero,
+										child: const Icon(CupertinoIcons.share),
+										onPressed: () {
+											final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+											final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+											shareOne(
+												text: context.read<ImageboardSite>().getWebUrl(widget.thread.board, widget.thread.id),
+												type: "text",
+												sharePositionOrigin: (offset != null && size != null) ? offset & size : null
+											);
+										}
+									),
+									CupertinoButton(
+										padding: EdgeInsets.zero,
+										child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply),
+										onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
+											_replyBoxKey.currentState?.toggleReplyBox();
+										}
+									)
+								]
+							)
+						),
+						child: Column(
+							children: [
+								Flexible(
+									flex: 1,
+									child: Shortcuts(
+										shortcuts: {
+											LogicalKeySet(LogicalKeyboardKey.keyG): const OpenGalleryIntent()
 										},
-										child: Focus(
-											autofocus: true,
-											child: WeakNavigator(
-												key: _weakNavigatorKey,
-												child: Stack(
-													fit: StackFit.expand,
-													children: [
-														ChangeNotifierProvider<PostSpanZoneData>.value(
-															value: zone,
-															child: NotificationListener<ScrollNotification>(
-																onNotification: (notification) {
-																	if (notification is ScrollEndNotification) {
-																		Future.delayed(const Duration(milliseconds: 300), () {
-																			if (!(_listController.scrollController?.position.isScrollingNotifier.value ?? false) && _saveQueued) {
-																				persistentState.save();
-																				_saveQueued = false;
-																			}
-																		});
-																	}
-																	return false;
-																},
-																child: RefreshableList<Post>(
-																	key: _listKey,
-																	id: '/${widget.thread.board}/${widget.thread.id}',
-																	disableUpdates: persistentState.thread?.isArchived ?? false,
-																	autoUpdateDuration: const Duration(seconds: 60),
-																	initialList: persistentState.thread?.posts,
-																	footer: Container(
-																		padding: const EdgeInsets.all(16),
-																		child: (persistentState.thread == null) ? null : Opacity(
-																			opacity: persistentState.thread?.isArchived == true ? 0.5 : 1,
-																			child: Row(
-																				children: [
-																					const Spacer(),
-																					const Icon(CupertinoIcons.reply),
-																					const SizedBox(width: 8),
-																					_limitCounter(persistentState.thread!.replyCount, context.watch<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
-																					const Spacer(),
-																					const Icon(CupertinoIcons.photo),
-																					const SizedBox(width: 8),
-																					_limitCounter(persistentState.thread!.imageCount, context.watch<Persistence>().getBoard(widget.thread.board).threadImageLimit),
-																					const Spacer(),
-																					if (persistentState.thread!.uniqueIPCount != null) ...[
-																						const Icon(CupertinoIcons.person),
-																						const SizedBox(width: 8),
-																						Text('${persistentState.thread!.uniqueIPCount}'),
-																						const Spacer(),
-																					],
-																					if (persistentState.thread!.currentPage != null) ...[
-																						const Icon(CupertinoIcons.doc),
-																						const SizedBox(width: 8),
-																						_limitCounter(persistentState.thread!.currentPage!, context.watch<Persistence>().getBoard(widget.thread.board).pageCount),
-																						const Spacer()
-																					],
-																					if (persistentState.thread!.isArchived) ...[
-																						GestureDetector(
-																							behavior: HitTestBehavior.opaque,
-																							child: Row(
-																								children: const [
-																									Icon(CupertinoIcons.archivebox),
-																									SizedBox(width: 8),
-																									Text('Archived')
-																								]
-																							),
-																							onTap: _switchToLive
-																						),
-																						const Spacer()
-																					]
-																				]
-																			)
-																		)
-																	),
-																	remedies: {
-																		ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
-																			child: const Text('Try archive'),
-																			onPressed: () {
-																				persistentState.useArchive = true;
-																				persistentState.save();
-																				updater();
-																			}
-																		)
-																	},
-																	listUpdater: () async {
-																		final _persistentState = persistentState;
-																		lastPageNumber = persistentState.thread?.currentPage;
-																		// The thread might switch in this interval
-																		final _thread = _persistentState.useArchive ?
-																			await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
-																			await context.read<ImageboardSite>().getThread(widget.thread);
-																		final bool firstLoad = _persistentState.thread == null;
-																		bool shouldScroll = false;
-																		if (_thread != _persistentState.thread) {
-																			_persistentState.thread = _thread;
-																			if (persistentState == _persistentState) {
-																				zone.thread = _thread;
-																				if (firstLoad) shouldScroll = true;
-																			}
-																			await _persistentState.save();
-																			setState(() {});
-																			Future.delayed(const Duration(milliseconds: 100), () {
-																				if (persistentState == _persistentState && !_unnaturallyScrolling) {
-																					final lastItem = _listController.lastVisibleItem;
-																					if (lastItem != null) {
-																						_persistentState.lastSeenPostId = max(_persistentState.lastSeenPostId ?? 0, lastItem.id);
-																						_persistentState.save();
-																						setState(() {});
-																					}
-																					else {
-																						print('Failed to find last visible post after an update in $_persistentState');
-																					}
+										child: Actions(
+											actions: {
+												OpenGalleryIntent: CallbackAction<OpenGalleryIntent>(
+													onInvoke: (i) {
+														if (context.read<EffectiveSettings>().showImages(context, widget.thread.board)) {
+															final nextPostWithImage = persistentState.thread?.posts.skip(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null, orElse: () {
+																return persistentState.thread!.posts.take(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null);
+															});
+															if (nextPostWithImage != null) {
+																_showGallery(initialAttachment: nextPostWithImage.attachment);
+															}
+														}
+														return null;
+													}
+												)
+											},
+											child: Focus(
+												autofocus: true,
+												child: WeakNavigator(
+													key: _weakNavigatorKey,
+													child: Stack(
+														fit: StackFit.expand,
+														children: [
+															ChangeNotifierProvider<PostSpanZoneData>.value(
+																value: zone,
+																child: NotificationListener<ScrollNotification>(
+																	onNotification: (notification) {
+																		if (notification is ScrollEndNotification) {
+																			Future.delayed(const Duration(milliseconds: 300), () {
+																				if (!(_listController.scrollController?.position.isScrollingNotifier.value ?? false) && _saveQueued) {
+																					persistentState.save();
+																					_saveQueued = false;
 																				}
 																			});
 																		}
-																		else if (_thread.currentPage != lastPageNumber) {
-																			setState(() {
-																				lastPageNumber = _thread.currentPage;
-																			});
-																		}
-																		if (shouldScroll) _blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500));
-																		// Don't show data if the thread switched
-																		if (persistentState == _persistentState) {
-																			return _thread.posts;
-																		}
-																		return null;
+																		return false;
 																	},
-																	controller: _listController,
-																	itemBuilder: (context, post) {
-																		return PostRow(
-																			post: post,
-																			onThumbnailTap: (attachment) {
-																				_showGallery(initialAttachment: attachment);
-																			},
-																			onRequestArchive: _switchToArchive
-																		);
-																	},
-																	filteredItemBuilder: (context, post, resetPage) {
-																		return PostRow(
-																			post: post,
-																			onThumbnailTap: (attachment) {
-																				_showGallery(initialAttachment: attachment);
-																			},
-																			onRequestArchive: _switchToArchive,
-																			onTap: () {
-																				resetPage();
-																				Future.delayed(const Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
+																	child: RefreshableList<Post>(
+																		key: _listKey,
+																		id: '/${widget.thread.board}/${widget.thread.id}',
+																		disableUpdates: persistentState.thread?.isArchived ?? false,
+																		autoUpdateDuration: const Duration(seconds: 60),
+																		initialList: persistentState.thread?.posts,
+																		footer: Container(
+																			padding: const EdgeInsets.all(16),
+																			child: (persistentState.thread == null) ? null : Opacity(
+																				opacity: persistentState.thread?.isArchived == true ? 0.5 : 1,
+																				child: Row(
+																					children: [
+																						const Spacer(),
+																						const Icon(CupertinoIcons.reply),
+																						const SizedBox(width: 8),
+																						_limitCounter(persistentState.thread!.replyCount, context.watch<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
+																						const Spacer(),
+																						const Icon(CupertinoIcons.photo),
+																						const SizedBox(width: 8),
+																						_limitCounter(persistentState.thread!.imageCount, context.watch<Persistence>().getBoard(widget.thread.board).threadImageLimit),
+																						const Spacer(),
+																						if (persistentState.thread!.uniqueIPCount != null) ...[
+																							const Icon(CupertinoIcons.person),
+																							const SizedBox(width: 8),
+																							Text('${persistentState.thread!.uniqueIPCount}'),
+																							const Spacer(),
+																						],
+																						if (persistentState.thread!.currentPage != null) ...[
+																							const Icon(CupertinoIcons.doc),
+																							const SizedBox(width: 8),
+																							_limitCounter(persistentState.thread!.currentPage!, context.watch<Persistence>().getBoard(widget.thread.board).pageCount),
+																							const Spacer()
+																						],
+																						if (persistentState.thread!.isArchived) ...[
+																							GestureDetector(
+																								behavior: HitTestBehavior.opaque,
+																								child: Row(
+																									children: const [
+																										Icon(CupertinoIcons.archivebox),
+																										SizedBox(width: 8),
+																										Text('Archived')
+																									]
+																								),
+																								onTap: _switchToLive
+																							),
+																							const Spacer()
+																						]
+																					]
+																				)
+																			)
+																		),
+																		remedies: {
+																			ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
+																				child: const Text('Try archive'),
+																				onPressed: () {
+																					persistentState.useArchive = true;
+																					persistentState.save();
+																					updater();
+																				}
+																			)
+																		},
+																		listUpdater: () async {
+																			final _persistentState = persistentState;
+																			lastPageNumber = persistentState.thread?.currentPage;
+																			// The thread might switch in this interval
+																			final _thread = _persistentState.useArchive ?
+																				await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
+																				await context.read<ImageboardSite>().getThread(widget.thread);
+																			final bool firstLoad = _persistentState.thread == null;
+																			bool shouldScroll = false;
+																			if (_thread != _persistentState.thread) {
+																				_persistentState.thread = _thread;
+																				if (persistentState == _persistentState) {
+																					zone.thread = _thread;
+																					if (firstLoad) shouldScroll = true;
+																				}
+																				await _persistentState.save();
+																				setState(() {});
+																				Future.delayed(const Duration(milliseconds: 100), () {
+																					if (persistentState == _persistentState && !_unnaturallyScrolling) {
+																						final lastItem = _listController.lastVisibleItem;
+																						if (lastItem != null) {
+																							_persistentState.lastSeenPostId = max(_persistentState.lastSeenPostId ?? 0, lastItem.id);
+																							_persistentState.save();
+																							setState(() {});
+																						}
+																						else {
+																							print('Failed to find last visible post after an update in $_persistentState');
+																						}
+																					}
+																				});
 																			}
-																		);
-																	},
-																	filterHint: 'Search in thread'
+																			else if (_thread.currentPage != lastPageNumber) {
+																				setState(() {
+																					lastPageNumber = _thread.currentPage;
+																				});
+																			}
+																			if (shouldScroll) _blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500));
+																			// Don't show data if the thread switched
+																			if (persistentState == _persistentState) {
+																				return _thread.posts;
+																			}
+																			return null;
+																		},
+																		controller: _listController,
+																		itemBuilder: (context, post) {
+																			return PostRow(
+																				post: post,
+																				onThumbnailTap: (attachment) {
+																					_showGallery(initialAttachment: attachment);
+																				},
+																				onRequestArchive: _switchToArchive
+																			);
+																		},
+																		filteredItemBuilder: (context, post, resetPage) {
+																			return PostRow(
+																				post: post,
+																				onThumbnailTap: (attachment) {
+																					_showGallery(initialAttachment: attachment);
+																				},
+																				onRequestArchive: _switchToArchive,
+																				onTap: () {
+																					resetPage();
+																					Future.delayed(const Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
+																				}
+																			);
+																		},
+																		filterHint: 'Search in thread'
+																	)
+																)
+															),
+															SafeArea(
+																child: Align(
+																	alignment: Alignment.bottomRight,
+																	child: ThreadPositionIndicator(
+																		persistentState: persistentState,
+																		thread: persistentState.thread,
+																		listController: _listController,
+																		zone: zone,
+																		filter: Filter.of(context)
+																	)
+																)
+															),
+															if (blocked) Builder(
+																builder: (context) => Container(
+																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																	child: const Center(
+																		child: CupertinoActivityIndicator()
+																	)
 																)
 															)
-														),
-														SafeArea(
-															child: Align(
-																alignment: Alignment.bottomRight,
-																child: ThreadPositionIndicator(
-																	persistentState: persistentState,
-																	thread: persistentState.thread,
-																	listController: _listController,
-																	zone: zone,
-																	filter: Filter.of(context)
-																)
-															)
-														),
-														if (blocked) Builder(
-															builder: (context) => Container(
-																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																child: const Center(
-																	child: CupertinoActivityIndicator()
-																)
-															)
-														)
-													]
+														]
+													)
 												)
 											)
 										)
 									)
+								),
+								RepaintBoundary(
+									child: ReplyBox(
+										key: _replyBoxKey,
+										board: widget.thread.board,
+										threadId: widget.thread.id,
+										isArchived: persistentState.thread?.isArchived ?? false,
+										initialText: persistentState.draftReply,
+										onTextChanged: (text) {
+											persistentState.draftReply = text;
+											_saveThreadStateDuringEditingTimer?.cancel();
+											_saveThreadStateDuringEditingTimer = Timer(const Duration(seconds: 3), () => persistentState.save());
+										},
+										onReplyPosted: (receipt) async {
+											await promptForPushNotificationsIfNeeded(context);
+											context.read<Notifications>().subscribeToThread(widget.thread, receipt.id, context.read<Notifications>().getThreadWatch(widget.thread)?.yousOnly ?? true, persistentState.youIds);
+											_listController.update();
+										},
+										onVisibilityChanged: () {
+											setState(() {});
+										}
+									)
 								)
-							),
-							RepaintBoundary(
-								child: ReplyBox(
-									key: _replyBoxKey,
-									board: widget.thread.board,
-									threadId: widget.thread.id,
-									isArchived: persistentState.thread?.isArchived ?? false,
-									initialText: persistentState.draftReply,
-									onTextChanged: (text) {
-										persistentState.draftReply = text;
-										_saveThreadStateDuringEditingTimer?.cancel();
-										_saveThreadStateDuringEditingTimer = Timer(const Duration(seconds: 3), () => persistentState.save());
-									},
-									onReplyPosted: (receipt) async {
-										await promptForPushNotificationsIfNeeded(context);
-										context.read<Notifications>().subscribeToThread(widget.thread, receipt.id, context.read<Notifications>().getThreadWatch(widget.thread)?.yousOnly ?? true, persistentState.youIds);
-										_listController.update();
-									},
-									onVisibilityChanged: () {
-										setState(() {});
-									}
-								)
-							)
-						]
+							]
+						)
 					)
 				)
 			)

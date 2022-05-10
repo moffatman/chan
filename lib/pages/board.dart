@@ -218,267 +218,277 @@ class _BoardPageState extends State<BoardPage> {
 				child: Text('No Board Selected')
 			) : FilterZone(
 				filter: persistence.browserState.getCatalogFilter(board!.name),
-				child: Column(
-					children: [
-						Flexible(
-							child: CallbackShortcuts(
-								bindings: {
-									LogicalKeySet(LogicalKeyboardKey.keyG): () {
-										if (board != null && context.read<EffectiveSettings>().showImages(context, board!.name)) {
-											final nextThreadWithImage = _listController.items.skip(_listController.firstVisibleIndex).firstWhere((t) => t.attachment != null, orElse: () {
-												return _listController.items.firstWhere((t) => t.attachment != null);
-											});
-											final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
-											showGallery(
-												context: context,
-												attachments: attachments,
-												replyCounts: {
-													for (final thread in _listController.items.where((_) => _.attachment != null)) thread.attachment!: thread.replyCount
-												},
-												initialAttachment: attachments.firstWhere((a) => a.id == nextThreadWithImage.attachment!.id),
-												onChange: (attachment) {
-													_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
-												},
-												semanticParentIds: [widget.semanticId]
-											);
-										}
-									}
-								},
-								child: Stack(
-									fit: StackFit.expand,
-									children: [
-										RefreshableList<Thread>(
-											initialFilter: widget.initialSearch,
-											allowReordering: true,
-											onWantAutosave: (thread) async {
-												if (persistence.browserState.autosavedIds[thread.board]?.contains(thread.id) ?? false) {
-													// Already saw this thread
-													return;
-												}
-												final threadState = persistence.getThreadState(thread.identifier);
-												threadState.savedTime = DateTime.now();
-												threadState.thread = thread;
-												persistence.browserState.autosavedIds.putIfAbsent(thread.board, () => []).add(thread.id);
-												await threadState.save();
-												await persistence.didUpdateBrowserState();
-											},
-											gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
-											controller: _listController,
-											listUpdater: () => site.getCatalog(board!.name).then((list) {
-												final now = DateTime.now();
-												if (settings.hideOldStickiedThreads && list.length > 100) {
-													list = list.where((thread) {
-														return !thread.isSticky || now.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
-													}).toList();
-												}
-												switch (settings.catalogSortingMethod) {
-													case ThreadSortingMethod.replyCount:
-														list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
-														break;
-													case ThreadSortingMethod.threadPostTime:
-														list.sort((a, b) => b.id.compareTo(a.id));
-														break;
-													case ThreadSortingMethod.postsPerMinute:
-														list.sort((a, b) => -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds));
-														break;
-													case ThreadSortingMethod.lastReplyTime:
-														list.sort((a, b) => b.posts.last.id.compareTo(a.posts.last.id));
-														break;
-													case ThreadSortingMethod.imageCount:
-														list.sort((a, b) => b.imageCount.compareTo(a.imageCount));
-														break;
-													// Some methods only used for saved posts
-													case ThreadSortingMethod.savedTime:
-													case ThreadSortingMethod.lastPostTime:
-													case ThreadSortingMethod.unsorted:
-														break;
-												}
-												Future.delayed(const Duration(milliseconds: 100), () => _loadCompleter?.complete());
-												return settings.reverseCatalogSorting ? list.reversed.toList() : list;
-											}),
-											id: '/${board!.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
-											itemBuilder: (context, thread) {
-												final browserState = persistence.browserState;
-												return ContextMenu(
-													actions: [
-														if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
-															child: const Text('Open in new tab'),
-															trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
-															onPressed: () {
-																widget.onWantOpenThreadInNewTab?.call(thread.identifier);
-															}
-														),
-														if (persistence.getThreadStateIfExists(thread.identifier)?.savedTime != null) ContextMenuAction(
-															child: const Text('Un-save thread'),
-															trailingIcon: CupertinoIcons.bookmark_fill,
-															onPressed: () {
-																final threadState = persistence.getThreadState(thread.identifier);
-																threadState.savedTime = null;
-																threadState.save();
-																setState(() {});
-															}
-														)
-														else ContextMenuAction(
-															child: const Text('Save thread'),
-															trailingIcon: CupertinoIcons.bookmark,
-															onPressed: () {
-																final threadState = persistence.getThreadState(thread.identifier);
-																threadState.thread = thread;
-																threadState.savedTime = DateTime.now();
-																threadState.save();
-																setState(() {});
-															}
-														),
-														if (browserState.isThreadHidden(thread.board, thread.id)) ContextMenuAction(
-															child: const Text('Unhide thread'),
-															trailingIcon: CupertinoIcons.eye_slash_fill,
-															onPressed: () {
-																browserState.unHideThread(thread.board, thread.id);
-																persistence.didUpdateBrowserState();
-																setState(() {});
-															}
-														)
-														else ContextMenuAction(
-															child: const Text('Hide thread'),
-															trailingIcon: CupertinoIcons.eye_slash,
-															onPressed: () {
-																browserState.hideThread(thread.board, thread.id);
-																persistence.didUpdateBrowserState();
-																setState(() {});
-															}
-														),
-														if (thread.attachment?.md5 != null && browserState.isMD5Hidden(thread.attachment?.md5)) ContextMenuAction(
-															child: const Text('Unhide by image'),
-															trailingIcon: CupertinoIcons.eye_slash_fill,
-															onPressed: () {
-																browserState.unHideByMD5(thread.attachment!.md5);
-																persistence.didUpdateBrowserState();
-																setState(() {});
-															}
-														)
-														else if (thread.attachment?.md5 != null) ContextMenuAction(
-															child: const Text('Hide by image'),
-															trailingIcon: CupertinoIcons.eye_slash,
-															onPressed: () {
-																browserState.hideByMD5(thread.attachment!.md5);
-																persistence.didUpdateBrowserState();
-																setState(() {});
-															}
-														)
-													],
-													maxHeight: 125,
-													child:  GestureDetector(
-														child: ThreadRow(
-															contentFocus: settings.useCatalogGrid,
-															thread: thread,
-															isSelected: thread.identifier == widget.selectedThread,
-															semanticParentIds: [widget.semanticId],
-															onThumbnailTap: (initialAttachment) {
-																final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
-																showGallery(
-																	context: context,
-																	attachments: attachments,
-																	replyCounts: {
-																		for (final thread in _listController.items.where((_) => _.attachment != null)) thread.attachment!: thread.replyCount
-																	},
-																	initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-																	onChange: (attachment) {
-																		_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
-																	},
-																	semanticParentIds: [widget.semanticId]
-																);
-															}
-														),
-														onTap: () {
-															if (widget.onThreadSelected != null) {
-																widget.onThreadSelected!(thread.identifier);
-															}
-															else {
-																Navigator.of(context).push(FullWidthCupertinoPageRoute(
-																	builder: (ctx) => ThreadPage(
-																		thread: thread.identifier,
-																		boardSemanticId: widget.semanticId,
-																	),
-																	showAnimations: context.read<EffectiveSettings>().showAnimations
-																));
-															}
-														}
-													)
+				child: WillPopScope(
+					onWillPop: () async {
+						if (_replyBoxKey.currentState?.show ?? false) {
+							_replyBoxKey.currentState?.hideReplyBox();
+							setState(() {});
+							return false;
+						}
+						return true;
+					},
+					child: Column(
+						children: [
+							Flexible(
+								child: CallbackShortcuts(
+									bindings: {
+										LogicalKeySet(LogicalKeyboardKey.keyG): () {
+											if (board != null && context.read<EffectiveSettings>().showImages(context, board!.name)) {
+												final nextThreadWithImage = _listController.items.skip(_listController.firstVisibleIndex).firstWhere((t) => t.attachment != null, orElse: () {
+													return _listController.items.firstWhere((t) => t.attachment != null);
+												});
+												final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
+												showGallery(
+													context: context,
+													attachments: attachments,
+													replyCounts: {
+														for (final thread in _listController.items.where((_) => _.attachment != null)) thread.attachment!: thread.replyCount
+													},
+													initialAttachment: attachments.firstWhere((a) => a.id == nextThreadWithImage.attachment!.id),
+													onChange: (attachment) {
+														_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
+													},
+													semanticParentIds: [widget.semanticId]
 												);
-											},
-											filterHint: 'Search in board'
-										),
-										RepaintBoundary(
-											child: StreamBuilder(
-												stream: _listController.slowScrollUpdates,
-												builder: (context, _) {
-													final page = _listController.firstVisibleItem?.currentPage;
-													_scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-													return (page == null || page == 0 || _listController.firstVisibleIndex == 0 || ((_listController.scrollController?.position.pixels ?? 1) < 0)) ? Container() : SafeArea(
-														child: Align(
-															alignment: Alignment.topRight,
-															child: Row(
-																mainAxisSize: MainAxisSize.min,
-																children: [
-																	GestureDetector(
-																		onTap: _scrollToTop,
-																		child: Container(
-																			decoration: BoxDecoration(
-																				color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
-																				borderRadius: const BorderRadius.all(Radius.circular(8))
-																			),
-																			padding: const EdgeInsets.all(8),
-																			margin: const EdgeInsets.only(top: 16, right: 16),
-																			child: Row(
-																				mainAxisSize: MainAxisSize.min,
-																				children: [
-																					Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
-																					SizedBox(
-																						width: 25,
-																						child: Text(
-																							page.toString(),
-																							textAlign: TextAlign.center,
-																							style: TextStyle(
-																								color: CupertinoTheme.of(context).scaffoldBackgroundColor
-																							)
-																						)
-																					)
-																				]
-																			)
-																		)
-																	)
-																]
+											}
+										}
+									},
+									child: Stack(
+										fit: StackFit.expand,
+										children: [
+											RefreshableList<Thread>(
+												initialFilter: widget.initialSearch,
+												allowReordering: true,
+												onWantAutosave: (thread) async {
+													if (persistence.browserState.autosavedIds[thread.board]?.contains(thread.id) ?? false) {
+														// Already saw this thread
+														return;
+													}
+													final threadState = persistence.getThreadState(thread.identifier);
+													threadState.savedTime = DateTime.now();
+													threadState.thread = thread;
+													persistence.browserState.autosavedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+													await threadState.save();
+													await persistence.didUpdateBrowserState();
+												},
+												gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
+												controller: _listController,
+												listUpdater: () => site.getCatalog(board!.name).then((list) {
+													final now = DateTime.now();
+													if (settings.hideOldStickiedThreads && list.length > 100) {
+														list = list.where((thread) {
+															return !thread.isSticky || now.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
+														}).toList();
+													}
+													switch (settings.catalogSortingMethod) {
+														case ThreadSortingMethod.replyCount:
+															list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
+															break;
+														case ThreadSortingMethod.threadPostTime:
+															list.sort((a, b) => b.id.compareTo(a.id));
+															break;
+														case ThreadSortingMethod.postsPerMinute:
+															list.sort((a, b) => -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds));
+															break;
+														case ThreadSortingMethod.lastReplyTime:
+															list.sort((a, b) => b.posts.last.id.compareTo(a.posts.last.id));
+															break;
+														case ThreadSortingMethod.imageCount:
+															list.sort((a, b) => b.imageCount.compareTo(a.imageCount));
+															break;
+														// Some methods only used for saved posts
+														case ThreadSortingMethod.savedTime:
+														case ThreadSortingMethod.lastPostTime:
+														case ThreadSortingMethod.unsorted:
+															break;
+													}
+													Future.delayed(const Duration(milliseconds: 100), () => _loadCompleter?.complete());
+													return settings.reverseCatalogSorting ? list.reversed.toList() : list;
+												}),
+												id: '/${board!.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
+												itemBuilder: (context, thread) {
+													final browserState = persistence.browserState;
+													return ContextMenu(
+														actions: [
+															if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+																child: const Text('Open in new tab'),
+																trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+																onPressed: () {
+																	widget.onWantOpenThreadInNewTab?.call(thread.identifier);
+																}
+															),
+															if (persistence.getThreadStateIfExists(thread.identifier)?.savedTime != null) ContextMenuAction(
+																child: const Text('Un-save thread'),
+																trailingIcon: CupertinoIcons.bookmark_fill,
+																onPressed: () {
+																	final threadState = persistence.getThreadState(thread.identifier);
+																	threadState.savedTime = null;
+																	threadState.save();
+																	setState(() {});
+																}
 															)
+															else ContextMenuAction(
+																child: const Text('Save thread'),
+																trailingIcon: CupertinoIcons.bookmark,
+																onPressed: () {
+																	final threadState = persistence.getThreadState(thread.identifier);
+																	threadState.thread = thread;
+																	threadState.savedTime = DateTime.now();
+																	threadState.save();
+																	setState(() {});
+																}
+															),
+															if (browserState.isThreadHidden(thread.board, thread.id)) ContextMenuAction(
+																child: const Text('Unhide thread'),
+																trailingIcon: CupertinoIcons.eye_slash_fill,
+																onPressed: () {
+																	browserState.unHideThread(thread.board, thread.id);
+																	persistence.didUpdateBrowserState();
+																	setState(() {});
+																}
+															)
+															else ContextMenuAction(
+																child: const Text('Hide thread'),
+																trailingIcon: CupertinoIcons.eye_slash,
+																onPressed: () {
+																	browserState.hideThread(thread.board, thread.id);
+																	persistence.didUpdateBrowserState();
+																	setState(() {});
+																}
+															),
+															if (thread.attachment?.md5 != null && browserState.isMD5Hidden(thread.attachment?.md5)) ContextMenuAction(
+																child: const Text('Unhide by image'),
+																trailingIcon: CupertinoIcons.eye_slash_fill,
+																onPressed: () {
+																	browserState.unHideByMD5(thread.attachment!.md5);
+																	persistence.didUpdateBrowserState();
+																	setState(() {});
+																}
+															)
+															else if (thread.attachment?.md5 != null) ContextMenuAction(
+																child: const Text('Hide by image'),
+																trailingIcon: CupertinoIcons.eye_slash,
+																onPressed: () {
+																	browserState.hideByMD5(thread.attachment!.md5);
+																	persistence.didUpdateBrowserState();
+																	setState(() {});
+																}
+															)
+														],
+														maxHeight: 125,
+														child:  GestureDetector(
+															child: ThreadRow(
+																contentFocus: settings.useCatalogGrid,
+																thread: thread,
+																isSelected: thread.identifier == widget.selectedThread,
+																semanticParentIds: [widget.semanticId],
+																onThumbnailTap: (initialAttachment) {
+																	final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
+																	showGallery(
+																		context: context,
+																		attachments: attachments,
+																		replyCounts: {
+																			for (final thread in _listController.items.where((_) => _.attachment != null)) thread.attachment!: thread.replyCount
+																		},
+																		initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+																		onChange: (attachment) {
+																			_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
+																		},
+																		semanticParentIds: [widget.semanticId]
+																	);
+																}
+															),
+															onTap: () {
+																if (widget.onThreadSelected != null) {
+																	widget.onThreadSelected!(thread.identifier);
+																}
+																else {
+																	Navigator.of(context).push(FullWidthCupertinoPageRoute(
+																		builder: (ctx) => ThreadPage(
+																			thread: thread.identifier,
+																			boardSemanticId: widget.semanticId,
+																		),
+																		showAnimations: context.read<EffectiveSettings>().showAnimations
+																	));
+																}
+															}
 														)
 													);
-												}
+												},
+												filterHint: 'Search in board'
+											),
+											RepaintBoundary(
+												child: StreamBuilder(
+													stream: _listController.slowScrollUpdates,
+													builder: (context, _) {
+														final page = _listController.firstVisibleItem?.currentPage;
+														_scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+														return (page == null || page == 0 || _listController.firstVisibleIndex == 0 || ((_listController.scrollController?.position.pixels ?? 1) < 0)) ? Container() : SafeArea(
+															child: Align(
+																alignment: Alignment.topRight,
+																child: Row(
+																	mainAxisSize: MainAxisSize.min,
+																	children: [
+																		GestureDetector(
+																			onTap: _scrollToTop,
+																			child: Container(
+																				decoration: BoxDecoration(
+																					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
+																					borderRadius: const BorderRadius.all(Radius.circular(8))
+																				),
+																				padding: const EdgeInsets.all(8),
+																				margin: const EdgeInsets.only(top: 16, right: 16),
+																				child: Row(
+																					mainAxisSize: MainAxisSize.min,
+																					children: [
+																						Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+																						SizedBox(
+																							width: 25,
+																							child: Text(
+																								page.toString(),
+																								textAlign: TextAlign.center,
+																								style: TextStyle(
+																									color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																								)
+																							)
+																						)
+																					]
+																				)
+																			)
+																		)
+																	]
+																)
+															)
+														);
+													}
+												)
 											)
-										)
-									]
+										]
+									)
+								)
+							),
+							RepaintBoundary(
+								child: ReplyBox(
+									key: _replyBoxKey,
+									board: board!.name,
+									initialText: widget.getInitialDraftText?.call() ?? '',
+									onTextChanged: (text) {
+										widget.onDraftTextChanged?.call(text);
+									},
+									initialSubject: widget.getInitialDraftSubject?.call() ?? '',
+									onSubjectChanged: (subject) {
+										widget.onDraftSubjectChanged?.call(subject);
+									},
+									onReplyPosted: (receipt) async {
+										await promptForPushNotificationsIfNeeded(context);
+										context.read<Notifications>().subscribeToThread(ThreadIdentifier(board!.name, receipt.id), receipt.id, false, [receipt.id]);
+										_listController.update();
+										widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
+									}
 								)
 							)
-						),
-						RepaintBoundary(
-							child: ReplyBox(
-								key: _replyBoxKey,
-								board: board!.name,
-								initialText: widget.getInitialDraftText?.call() ?? '',
-								onTextChanged: (text) {
-									widget.onDraftTextChanged?.call(text);
-								},
-								initialSubject: widget.getInitialDraftSubject?.call() ?? '',
-								onSubjectChanged: (subject) {
-									widget.onDraftSubjectChanged?.call(subject);
-								},
-								onReplyPosted: (receipt) async {
-									await promptForPushNotificationsIfNeeded(context);
-									context.read<Notifications>().subscribeToThread(ThreadIdentifier(board!.name, receipt.id), receipt.id, false, [receipt.id]);
-									_listController.update();
-									widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
-								}
-							)
-						)
-					]
+						]
+					)
 				)
 			)
 		);
