@@ -611,13 +611,17 @@ class RefreshableListFooter extends StatelessWidget {
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							if (errorMessage != null) Text(
-								errorMessage!,
-								textAlign: TextAlign.center
-							),
-							if (!updatingNow && remedy != null) ...[
+							if (errorMessage != null) ...[
 								const SizedBox(height: 16),
-								remedy!
+								Text(
+									errorMessage!,
+									textAlign: TextAlign.center
+								),
+								const SizedBox(height: 16)
+							],
+							if (!updatingNow && remedy != null) ...[
+								remedy!,
+								const SizedBox(height: 16)
 							],
 							if (overscrollFactor != null) SizedBox(
 								height: updatingNow ? 64 : 0,
