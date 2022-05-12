@@ -87,9 +87,6 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 		widget.controller?.attach(this);
 		widget.controller?.newContentId(widget.id);
 		list = widget.initialList;
-		if (list != null) {
-			widget.controller?.setItems(list!);
-		}
 		if (!widget.disableUpdates) {
 			update();
 			resetTimer();
@@ -106,9 +103,6 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			_scrollViewKey = GlobalKey();
 			_closeSearch();
 			setState(() {
-				if (widget.initialList != null) {
-					widget.controller?.setItems(widget.initialList!);
-				}
 				list = widget.initialList;
 				errorMessage = null;
 				errorType = null;
@@ -124,11 +118,8 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 				resetTimer();
 			}
 		}
-		else if (oldWidget.initialList != widget.initialList) {
+		else if (!listEquals(oldWidget.initialList, widget.initialList)) {
 			list = widget.initialList;
-			if (list != null) {
-				widget.controller?.setItems(list!);
-			}
 			setState(() {});
 		}
 	}
@@ -174,7 +165,6 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			resetTimer();
 			lastUpdateTime = DateTime.now();
 			if (newData != null) {
-				widget.controller?.setItems(newData);
 				list = newData;
 			}
 		}
@@ -808,6 +798,9 @@ class RefreshableListController<T> {
 	}
 	void setItems(List<T> items) {
 		if (items.isNotEmpty && _items.isNotEmpty && items.first == _items.first.item) {
+			if (items.length < _items.length) {
+				_items = _items.sublist(0, items.length);
+			}
 			for (int i = 0; i < items.length; i++) {
 				if (i < _items.length) {
 					_items[i].item = items[i];
