@@ -271,6 +271,8 @@ class SavedSettings extends HiveObject {
 	bool useInternalBrowser;
 	@HiveField(65)
 	int automaticCacheClearDays;
+	@HiveField(66)
+	bool alwaysAutoloadTappedAttachment;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -338,6 +340,7 @@ class SavedSettings extends HiveObject {
 		bool? useEmbeds,
 		bool? useInternalBrowser,
 		int? automaticCacheClearDays,
+		bool? alwaysAutoloadTappedAttachment,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -406,7 +409,8 @@ class SavedSettings extends HiveObject {
 		muteAudio = muteAudio ?? false,
 		useEmbeds = useEmbeds ?? true,
 		useInternalBrowser = useInternalBrowser ?? true,
-		automaticCacheClearDays = automaticCacheClearDays ?? 60;
+		automaticCacheClearDays = automaticCacheClearDays ?? 60,
+		alwaysAutoloadTappedAttachment = alwaysAutoloadTappedAttachment ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -945,6 +949,13 @@ class EffectiveSettings extends ChangeNotifier {
 	int get automaticCacheClearDays => _settings.automaticCacheClearDays;
 	set automaticCacheClearDays(int setting) {
 		_settings.automaticCacheClearDays = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get alwaysAutoloadTappedAttachment => _settings.alwaysAutoloadTappedAttachment;
+	set alwaysAutoloadTappedAttachment(bool setting) {
+		_settings.alwaysAutoloadTappedAttachment = setting;
 		_settings.save();
 		notifyListeners();
 	}
