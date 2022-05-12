@@ -1,5 +1,6 @@
 import 'package:chan/pages/selectable_post.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -419,9 +420,10 @@ class PostRow extends StatelessWidget {
 					else ContextMenuAction(
 							child: const Text('Mark as You'),
 							trailingIcon: CupertinoIcons.person_badge_plus,
-							onPressed: () {
+							onPressed: () async {
 								zone.threadState!.postsMarkedAsYou.add(_post.id);
-								zone.threadState!.savedTime ??= DateTime.now();
+								await promptForPushNotificationsIfNeeded(context);
+								context.read<Notifications>().subscribeToThread(zone.threadState!.identifier, zone.threadState!.thread?.posts.last.id ?? _post.id, context.read<Notifications>().getThreadWatch(zone.threadState!.identifier)?.yousOnly ?? true, zone.threadState!.youIds);
 								zone.threadState!.save();
 							}
 						),
