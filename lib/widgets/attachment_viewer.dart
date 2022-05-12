@@ -612,7 +612,7 @@ class AttachmentViewer extends StatelessWidget {
 								)
 							);
 						}
-						else if (controller.showLoadingProgress) {
+						if (controller.showLoadingProgress || !controller.isFullResolution) {
 							_child = _centeredLoader(
 								active: controller.isFullResolution,
 								value: loadingValue
