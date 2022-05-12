@@ -229,7 +229,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					if (_isDisposed) {
 						return;
 					}
-					if (context.read<EffectiveSettings>().muteAudio) {
+					if (context.read<EffectiveSettings>().muteAudio.value) {
 						await _videoPlayerController?.setVolume(0);
 						if (_isDisposed) {
 							return;
@@ -261,7 +261,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					if (_isDisposed) {
 						return;
 					}
-					if (context.read<EffectiveSettings>().muteAudio) {
+					if (context.read<EffectiveSettings>().muteAudio.value) {
 						await _videoPlayerController?.setVolume(0);
 						if (_isDisposed) {
 							return;

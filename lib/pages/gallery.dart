@@ -700,33 +700,35 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												StreamBuilder(
 													stream: _rotationsChanged.mergeWith([_currentAttachmentChanged]),
 													builder: (context, _) {
-														final muted = context.watch<EffectiveSettings>().muteAudio;
 														return Align(
 															alignment: Alignment.bottomRight,
 															child: Row(
 																mainAxisSize: MainAxisSize.min,
 																crossAxisAlignment: CrossAxisAlignment.end,
 																children: [
-																	AnimatedSwitcher(
-																		duration: const Duration(milliseconds: 300),
-																		child: currentController.hasAudio ? Align(
-																			key: ValueKey<bool>(context.watch<EffectiveSettings>().muteAudio),
-																			alignment: Alignment.bottomLeft,
-																			child: CupertinoButton(
-																				padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-																				child: muted ? const Icon(CupertinoIcons.volume_off) : const Icon(CupertinoIcons.volume_up),
-																				onPressed: () {
-																					if (muted) {
-																						currentController.videoPlayerController?.setVolume(1);
-																						context.read<EffectiveSettings>().muteAudio = false;
+																	ValueListenableBuilder<bool>(
+																		valueListenable: context.watch<EffectiveSettings>().muteAudio,
+																		builder: (context, muted, _) => AnimatedSwitcher(
+																			duration: const Duration(milliseconds: 300),
+																			child: currentController.hasAudio ? Align(
+																				key: ValueKey<bool>(muted),
+																				alignment: Alignment.bottomLeft,
+																				child: CupertinoButton(
+																					padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+																					child: muted ? const Icon(CupertinoIcons.volume_off) : const Icon(CupertinoIcons.volume_up),
+																					onPressed: () {
+																						if (muted) {
+																							currentController.videoPlayerController?.setVolume(1);
+																							context.read<EffectiveSettings>().setMuteAudio(false);
+																						}
+																						else {
+																							currentController.videoPlayerController?.setVolume(0);
+																							context.read<EffectiveSettings>().setMuteAudio(true);
+																						}
 																					}
-																					else {
-																						currentController.videoPlayerController?.setVolume(0);
-																						context.read<EffectiveSettings>().muteAudio = true;
-																					}
-																				}
-																			)
-																		) : const SizedBox.shrink()
+																				)
+																			) : const SizedBox.shrink()
+																		)																		
 																	),
 																	AnimatedSwitcher(
 																		duration: const Duration(milliseconds: 300),

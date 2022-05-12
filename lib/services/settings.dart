@@ -913,11 +913,11 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	bool get muteAudio => _settings.muteAudio;
-	set muteAudio(bool setting) {
+	final muteAudio = ValueNotifier<bool>(true);
+	void setMuteAudio(bool setting) {
 		_settings.muteAudio = setting;
 		_settings.save();
-		notifyListeners();
+		muteAudio.value = setting;
 	}
 	
 	bool? get usePushNotifications => _settings.usePushNotifications;
@@ -965,6 +965,7 @@ class EffectiveSettings extends ChangeNotifier {
 		if (_settings.supportMouse == TristateSystemSetting.b) {
 			supportMouse.value = true;
 		}
+		muteAudio.value = _settings.muteAudio;
 		_tryToSetupFilter();
 		embedRegexes = _settings.embedRegexes.map((x) => RegExp(x)).toList();
 		updateEmbedRegexes();

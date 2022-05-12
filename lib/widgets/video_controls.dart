@@ -88,19 +88,22 @@ class _VideoControlsState extends State<VideoControls> {
 					)
 				),
 				Text(_formatDuration(value.duration), style: const TextStyle(color: Colors.white)),
-				if (widget.hasAudio) CupertinoButton(
-					child: Icon(value.volume > 0 ? CupertinoIcons.volume_up : CupertinoIcons.volume_off),
-					padding: EdgeInsets.zero,
-					onPressed: () async {
-						if (value.volume > 0) {
-							await widget.controller.setVolume(0);
-							context.read<EffectiveSettings>().muteAudio = true;
+				if (widget.hasAudio) AnimatedBuilder(
+					animation: context.read<EffectiveSettings>().muteAudio,
+					builder: (context, _) => CupertinoButton(
+						child: Icon(value.volume > 0 ? CupertinoIcons.volume_up : CupertinoIcons.volume_off),
+						padding: EdgeInsets.zero,
+						onPressed: () async {
+							if (value.volume > 0) {
+								await widget.controller.setVolume(0);
+								context.read<EffectiveSettings>().setMuteAudio(true);
+							}
+							else {
+								await widget.controller.setVolume(1);
+								context.read<EffectiveSettings>().setMuteAudio(false);
+							}
 						}
-						else {
-							await widget.controller.setVolume(1);
-							context.read<EffectiveSettings>().muteAudio = false;
-						}
-					}
+					)
 				),
 				CupertinoButton(
 					child: Icon(value.isPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_arrow_solid),
