@@ -20,6 +20,13 @@ import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
 part 'persistence.g.dart';
 
+const _knownCacheDirs = {
+	cacheImageFolderName: 'Images',
+	'webmcache': 'Converted WEBM files',
+	'sharecache': 'Media exported for sharing',
+	'webpickercache': 'Images picked from web'
+};
+
 class UriAdapter extends TypeAdapter<Uri> {
 	@override
 	final typeId = 12;
@@ -97,6 +104,64 @@ class Persistence extends ChangeNotifier {
 		await Directory('${documentsDirectory.path}/$_savedAttachmentThumbnailsDir').create(recursive: true);
 		final settingsBox = await Hive.openBox<SavedSettings>('settings');
 		settings = settingsBox.get('settings', defaultValue: SavedSettings())!;
+		if (settings.automaticCacheClearDays < 100000) {
+			await clearFilesystemCaches(Duration(days: settings.automaticCacheClearDays));
+		}
+	}
+
+	static Future<Map<String, int>> getFilesystemCacheSizes() async {
+		final folderSizes = <String, int>{};
+		final systemTempDirectory = Persistence.temporaryDirectory;
+		await for (final directory in systemTempDirectory.list()) {
+			int size = 0;
+			final stat = directory.statSync();
+			if (stat.type == FileSystemEntityType.directory) {
+				await for (final subentry in Directory(directory.path).list(recursive: true)) {
+					size += subentry.statSync().size;
+				}
+			}
+			else {
+				size = stat.size;
+			}
+			folderSizes.update(_knownCacheDirs[directory.path.split('/').last] ?? 'Other', (total) => total + size, ifAbsent: () => size);
+		}
+		return folderSizes;
+	}
+
+	static Future<void> clearFilesystemCaches(Duration? olderThan) async {
+		await clearDiskCachedImages(duration: olderThan);
+		DateTime? deadline;
+		if (olderThan != null) {
+			deadline = DateTime.now().subtract(olderThan);
+		}
+		int deletedSize = 0;
+		int deletedCount = 0;
+		await for (final child in temporaryDirectory.list(recursive: true)) {
+			final stat = child.statSync();
+			if (stat.type == FileSystemEntityType.file) {
+				// Probably something from file_pickers
+				if (deadline == null || stat.accessed.compareTo(deadline) < 0) {
+					deletedSize += stat.size;
+					deletedCount++;
+					try {
+						await child.delete();
+					}
+					catch (e) {
+						print('Error deleting file: $e');
+					}
+				}
+			}
+		}
+		print('Deleted $deletedCount files totalling ${(deletedSize / 1000000).toStringAsFixed(1)} MB');
+	}
+
+	Future<void> cleanupThreads(Duration olderThan) async {
+		final deadline = DateTime.now().subtract(olderThan);
+		final toDelete = threadStateBox.keys.where((key) {
+			return (threadStateBox.get(key)?.youIds.isNotEmpty ?? false) && ((threadStateBox.get(key)?.lastOpenedTime.compareTo(deadline) ?? 0) < 0);
+		});
+		print('Deleting ${toDelete.length} threads');
+		await threadStateBox.deleteAll(toDelete);
 	}
 
 	Future<void> initialize() async {
@@ -179,6 +244,9 @@ class Persistence extends ChangeNotifier {
 				}
 			}
 			browserState.notificationsMigrated = true;
+		}
+		if (settings.automaticCacheClearDays < 100000) {
+			await cleanupThreads(Duration(days: settings.automaticCacheClearDays));
 		}
 		await settings.save();
 	}

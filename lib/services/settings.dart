@@ -269,6 +269,8 @@ class SavedSettings extends HiveObject {
 	bool useEmbeds;
 	@HiveField(64)
 	bool useInternalBrowser;
+	@HiveField(65)
+	int automaticCacheClearDays;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -335,6 +337,7 @@ class SavedSettings extends HiveObject {
 		bool? notificationsMigrated,
 		bool? useEmbeds,
 		bool? useInternalBrowser,
+		int? automaticCacheClearDays,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -402,7 +405,8 @@ class SavedSettings extends HiveObject {
 		thumbnailSize = thumbnailSize ?? 75,
 		muteAudio = muteAudio ?? false,
 		useEmbeds = useEmbeds ?? true,
-		useInternalBrowser = useInternalBrowser ?? true;
+		useInternalBrowser = useInternalBrowser ?? true,
+		automaticCacheClearDays = automaticCacheClearDays ?? 60;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -934,6 +938,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get useInternalBrowser => _settings.useInternalBrowser;
 	set useInternalBrowser(bool setting) {
 		_settings.useInternalBrowser = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	int get automaticCacheClearDays => _settings.automaticCacheClearDays;
+	set automaticCacheClearDays(int setting) {
+		_settings.automaticCacheClearDays = setting;
 		_settings.save();
 		notifyListeners();
 	}

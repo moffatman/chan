@@ -28,7 +28,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tuple/tuple.dart';
 import 'package:provider/provider.dart';
-import 'package:extended_image_library/extended_image_library.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
@@ -1315,6 +1314,38 @@ class SettingsDataPage extends StatelessWidget {
 					}
 				),
 				const SizedBox(height: 16),
+				const Text('Automatically clear caches older than...'),
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: CupertinoSegmentedControl<int>(
+						children: const {
+							7: Padding(
+								padding: EdgeInsets.all(8),
+								child: Text('7 days')
+							),
+							14: Padding(
+								padding: EdgeInsets.all(8),
+								child: Text('14 days')
+							),
+							30: Padding(
+								padding: EdgeInsets.all(8),
+								child: Text('30 days')
+							),
+							60: Padding(
+								padding: EdgeInsets.all(8),
+								child: Text('60 days')
+							),
+							100000: Padding(
+								padding: EdgeInsets.all(8),
+								child: Text('Never')
+							)
+						},
+						groupValue: context.watch<EffectiveSettings>().automaticCacheClearDays,
+						onValueChanged: (setting) {
+							context.read<EffectiveSettings>().automaticCacheClearDays = setting;
+						}
+					)
+				),
 				const Text('Cached media'),
 				const SettingsCachePanel(),
 				const SizedBox(height: 16),
@@ -1346,13 +1377,6 @@ class SettingsCachePanel extends StatefulWidget {
 	createState() => _SettingsCachePanelState();
 }
 
-const _knownCacheDirs = {
-	cacheImageFolderName: 'Images',
-	'webmcache': 'Converted WEBM files',
-	'sharecache': 'Media exported for sharing',
-	'webpickercache': 'Images picked from web'
-};
-
 class _SettingsCachePanelState extends State<SettingsCachePanel> {
 	Map<String, int>? folderSizes;
 	bool clearing = false;
@@ -1364,18 +1388,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 	}
 
 	Future<void> _readFilesystemInfo() async {
-		folderSizes = {};
-		final systemTempDirectory = Persistence.temporaryDirectory;
-		for (final dirName in _knownCacheDirs.keys) {
-			final directory = Directory(systemTempDirectory.path + '/' + dirName);
-			if (await directory.exists()) {
-				int size = 0;
-				await for (final subentry in directory.list(recursive: true)) {
-					size += subentry.statSync().size;
-				}
-				folderSizes![directory.path.split('/').last] = size;
-			}
-		}
+		folderSizes = await Persistence.getFilesystemCacheSizes();
 		setState(() {});
 	}
 
@@ -1383,14 +1396,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 		setState(() {
 			clearing = true;
 		});
-		await clearDiskCachedImages();
-		final systemTempDirectory = Persistence.temporaryDirectory;
-		for (final dirName in _knownCacheDirs.keys) {
-			final directory = Directory(systemTempDirectory.path + '/' + dirName);
-			if (await directory.exists()) {
-				await directory.delete(recursive: true);
-			}
-		}
+		await Persistence.clearFilesystemCaches(null);
 		await _readFilesystemInfo();
 		setState(() {
 			clearing = false;
@@ -1422,7 +1428,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 								children: [
 									Padding(
 										padding: const EdgeInsets.only(bottom: 8),
-										child: Text(_knownCacheDirs[entry.key]!, textAlign: TextAlign.left)
+										child: Text(entry.key, textAlign: TextAlign.left)
 									),
 									Text(megabytes.toStringAsFixed(1) + ' MB', textAlign: TextAlign.right)
 								]
