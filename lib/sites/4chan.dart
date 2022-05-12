@@ -182,14 +182,14 @@ class Site4Chan extends ImageboardSite {
 							List<List<String>> subtable = [];
 							for (final row in (doc.body!.nodes[i + 2] as dom.Element).firstChild!.children) {
 								if (row.firstChild?.attributes['colspan'] == '2') {
-									if (tableRows.isNotEmpty) {
-										tableRows.add(PostLineBreakSpan());
-									}
-									tableRows.add(PostTextSpan(row.firstChild!.text!, underlined: true));
 									if (subtable.isNotEmpty) {
 										tableRows.add(PostTableSpan(subtable));
 										subtable = [];
 									}
+									if (tableRows.isNotEmpty) {
+										tableRows.add(PostLineBreakSpan());
+									}
+									tableRows.add(PostTextSpan(row.firstChild!.text!, underlined: true));
 								}
 								else {
 									subtable.add(row.children.map((c) => c.text).toList());
