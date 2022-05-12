@@ -206,7 +206,25 @@ class _SavedPageState extends State<SavedPage> {
 																},
 																trailingIcon: CupertinoIcons.xmark,
 																isDestructiveAction: true
+															),
+															if (persistence.getThreadStateIfExists(watch.threadIdentifier)?.savedTime != null) ContextMenuAction(
+																child: const Text('Un-save thread'),
+																trailingIcon: CupertinoIcons.bookmark_fill,
+																onPressed: () {
+																	final threadState = persistence.getThreadState(watch.threadIdentifier);
+																	threadState.savedTime = null;
+																	threadState.save();
+																}
 															)
+															else ContextMenuAction(
+																child: const Text('Save thread'),
+																trailingIcon: CupertinoIcons.bookmark,
+																onPressed: () {
+																	final threadState = persistence.getThreadState(watch.threadIdentifier);
+																	threadState.savedTime = DateTime.now();
+																	threadState.save();
+																}
+															),
 														]
 													),
 													filterHint: 'Search watched threads'
