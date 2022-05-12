@@ -51,7 +51,7 @@ dependencies:
   file_picker: ^4.2.3
   flutter_colorpicker: ^1.0.3
   photo_manager: ^2.0.0-dev.6
-  flutter_tex: ^4.0.3+1
+  flutter_tex: ^4.0.3+4
   uni_links: ^0.5.1
   crypto: ^3.0.1
   fluttertoast: ^8.0.8
