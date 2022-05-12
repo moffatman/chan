@@ -47,12 +47,15 @@ class ThreadWatch extends Watch {
 	bool yousOnly;
 	@HiveField(4, defaultValue: [])
 	List<int> youIds;
+	@HiveField(5, defaultValue: false)
+	bool zombie;
 	ThreadWatch({
 		required this.board,
 		required this.threadId,
 		required this.lastSeenId,
 		required this.yousOnly,
-		required this.youIds
+		required this.youIds,
+		this.zombie = false
 	});
 	static const type = 'thread';
 	@override
@@ -195,7 +198,7 @@ class ThreadWatcher extends ChangeNotifier {
 					}
 					_updateCounts();
 					if (newThreadState.thread!.isArchived) {
-						notifications.removeThreadWatch(watch);
+						notifications.zombifyThreadWatch(watch);
 					}
 					if (!listEquals(watch.youIds, newThreadState.youIds)) {
 						watch.youIds = newThreadState.youIds;
@@ -212,7 +215,7 @@ class ThreadWatcher extends ChangeNotifier {
 	Future<bool> _updateThread(PersistentThreadState threadState) async {
 		Thread? newThread;
 		try {
-			newThread = await site.getThread(threadState.thread!.identifier);
+			newThread = await site.getThread(threadState.identifier);
 		}
 		on ThreadNotFoundException {
 			final watch = persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == threadState.identifier);
@@ -221,7 +224,7 @@ class ThreadWatcher extends ChangeNotifier {
 				notifications.removeThreadWatch(watch);
 			}
 			try {
-				newThread = await site.getThreadFromArchive(threadState.thread!.identifier);
+				newThread = await site.getThreadFromArchive(threadState.identifier);
 			}
 			on ThreadNotFoundException {
 				return false;
@@ -244,6 +247,9 @@ class ThreadWatcher extends ChangeNotifier {
 			// Could be concurrently-modified
 			final watches = persistence.browserState.threadWatches.toList();
 			for (final watch in watches) {
+				if (watch.zombie) {
+					continue;
+				}
 				await _updateThread(persistence.getThreadState(watch.threadIdentifier));
 			}
 			_lastCatalogs.clear();

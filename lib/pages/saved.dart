@@ -21,6 +21,7 @@ import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -126,7 +127,10 @@ class _SavedPageState extends State<SavedPage> {
 			id: 'saved',
 			paneCreator: () => [
 				MultiMasterPane<ThreadWatch>(
-					navigationBar: _navigationBar('Watched Threads'),
+					navigationBar: const CupertinoNavigationBar(
+						transitionBetweenRoutes: false,
+						middle: Text('Watched Threads')
+					),
 					icon: CupertinoIcons.bell_fill,
 					masterBuilder: (context, selected, setter) {
 						return SafeArea(
@@ -144,12 +148,28 @@ class _SavedPageState extends State<SavedPage> {
 										child: AnimatedBuilder(
 											animation: persistence,
 											builder: (context, _) {
+												final watches = persistence.browserState.threadWatches;
+												final d = DateTime(2000);
+												mergeSort<ThreadWatch>(watches, compare: (a, b) {
+													return (persistence.getThreadStateIfExists(b.threadIdentifier)?.thread?.posts.last.time ?? d).compareTo(persistence.getThreadStateIfExists(a.threadIdentifier)?.thread?.posts.last.time ?? d);
+												});
+												mergeSort<ThreadWatch>(watches, compare: (a, b) {
+													if (a.zombie == b.zombie) {
+														return 0;
+													}
+													else if (a.zombie) {
+														return 1;
+													}
+													else {
+														return -1;
+													}
+												});
 												return RefreshableList<ThreadWatch>(
 													controller: _watchedListController,
 													listUpdater: () => throw UnimplementedError(),
 													id: 'saved',
 													disableUpdates: true,
-													initialList: persistence.browserState.threadWatches,
+													initialList: watches,
 													itemBuilder: (context, watch) => ContextMenu(
 														maxHeight: 125,
 														child: GestureDetector(
@@ -162,29 +182,32 @@ class _SavedPageState extends State<SavedPage> {
 																		return const SizedBox.shrink();
 																	}
 																	else {
-																		return ThreadRow(
-																			thread: thread,
-																			isSelected: watch == selected,
-																			showBoardName: true,
-																			onThumbnailLoadError: (error, stackTrace) {
-																				context.read<ThreadWatcher>().fixBrokenThread(watch.threadIdentifier);
-																			},
-																			semanticParentIds: const [-4],
-																			onThumbnailTap: (initialAttachment) {
-																				final attachments = _threadListController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
-																				showGallery(
-																					context: context,
-																					attachments: attachments,
-																					replyCounts: {
-																						for (final item in _threadListController.items.where((_) => _.thread?.attachment != null)) item.thread!.attachment!: item.thread!.replyCount
-																					},
-																					initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-																					onChange: (attachment) {
-																						_threadListController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
-																					},
-																					semanticParentIds: [-4]
-																				);
-																			}
+																		return Opacity(
+																			opacity: watch.zombie ? 0.5 : 1.0,
+																			child: ThreadRow(
+																				thread: thread,
+																				isSelected: watch == selected,
+																				showBoardName: true,
+																				onThumbnailLoadError: (error, stackTrace) {
+																					context.read<ThreadWatcher>().fixBrokenThread(watch.threadIdentifier);
+																				},
+																				semanticParentIds: const [-4],
+																				onThumbnailTap: (initialAttachment) {
+																					final attachments = _threadListController.items.where((_) => _.thread?.attachment != null).map((_) => _.thread!.attachment!).toList();
+																					showGallery(
+																						context: context,
+																						attachments: attachments,
+																						replyCounts: {
+																							for (final item in _threadListController.items.where((_) => _.thread?.attachment != null)) item.thread!.attachment!: item.thread!.replyCount
+																						},
+																						initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+																						onChange: (attachment) {
+																							_threadListController.animateTo((p) => p.thread?.attachment?.id == attachment.id);
+																						},
+																						semanticParentIds: [-4]
+																					);
+																				}
+																			)
 																		);
 																	}
 																}
@@ -227,7 +250,29 @@ class _SavedPageState extends State<SavedPage> {
 															),
 														]
 													),
-													filterHint: 'Search watched threads'
+													filterHint: 'Search watched threads',
+													footer: Container(
+														padding: const EdgeInsets.all(16),
+														child: CupertinoButton(
+															padding: const EdgeInsets.all(8),
+															child: Row(
+																mainAxisSize: MainAxisSize.min,
+																children: const [
+																	Icon(CupertinoIcons.xmark),
+																	SizedBox(width: 8),
+																	Flexible(
+																		child: Text('Remove archived', textAlign: TextAlign.center)
+																	)
+																]
+															),
+															onPressed: (watches.any((w) => w.zombie)) ? () {
+																final toRemove = watches.where((w) => w.zombie).toList();
+																for (final watch in toRemove) {
+																	notifications.removeThreadWatch(watch);
+																}
+															} : null
+														)
+													)
 												);
 											}
 										)
@@ -314,31 +359,7 @@ class _SavedPageState extends State<SavedPage> {
 										)
 									]
 								),
-								filterHint: 'Search saved threads',
-								footer: Container(
-									padding: const EdgeInsets.all(16),
-									child: CupertinoButton.filled(
-										padding: const EdgeInsets.all(8),
-										child: Row(
-											mainAxisSize: MainAxisSize.min,
-											children: const [
-												Icon(CupertinoIcons.delete),
-												SizedBox(width: 8),
-												Flexible(
-													child: Text('Remove all archived threads', textAlign: TextAlign.center)
-												)
-											]
-										),
-										onPressed: (states.any((s) => s.thread?.isArchived ?? false)) ? () {
-											final stateEntriesToRemove = box.toMap().entries.where((s) {
-												return s.value.savedTime != null && (s.value.thread?.isArchived ?? false);
-											}).toList();
-											for (final entry in stateEntriesToRemove) {
-												box.delete(entry.key);
-											}
-										} : null
-									)
-								)
+								filterHint: 'Search saved threads'
 							);
 						}
 						return widget.isActive ? ValueListenableBuilder(

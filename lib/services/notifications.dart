@@ -133,7 +133,7 @@ class Notifications {
 
 	String _calculateDigest() {
 		final boards = [
-			...threadWatches.map((w) => w.board),
+			...threadWatches.where((w) => !w.zombie).map((w) => w.board),
 			...newThreadWatches.map((w) => w.board)
 		];
 		boards.sort((a, b) => a.compareTo(b));
@@ -155,7 +155,7 @@ class Notifications {
 					print('Need to resync notifications $id');
 					await Dio().put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
 						'watches': [
-							...threadWatches,
+							...threadWatches.where((w) => !w.zombie),
 							...newThreadWatches
 						].map((w) => w.toMap()).toList()
 					}));
@@ -222,6 +222,15 @@ class Notifications {
 		if (Persistence.settings.usePushNotifications == true) {
 			_replace(watch);
 		}
+		localWatcher?.onWatchUpdated(watch);
+		persistence.didUpdateBrowserState();
+	}
+
+	void zombifyThreadWatch(ThreadWatch watch) {
+		if (Persistence.settings.usePushNotifications == true) {
+			_delete(watch);
+		}
+		watch.zombie = true;
 		localWatcher?.onWatchUpdated(watch);
 		persistence.didUpdateBrowserState();
 	}
