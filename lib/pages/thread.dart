@@ -325,14 +325,15 @@ class _ThreadPageState extends State<ThreadPage> {
 											]
 										),
 										onPressed: () async {
-											await promptForPushNotificationsIfNeeded(context);
 											if (watch != null) {
 												notifications.unsubscribeFromThread(widget.thread);
 											}
 											else if (persistentState.youIds.isEmpty) {
+												await promptForPushNotificationsIfNeeded(context);
 												notifications.subscribeToThread(widget.thread, persistentState.thread?.posts.last.id ?? 0, false, []);
 											}
 											else {
+												await promptForPushNotificationsIfNeeded(context);
 												// User is not subscribed but they have posts marked as (you)
 												// Ask what to do
 												final choice = await showCupertinoDialog<bool>(
