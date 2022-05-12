@@ -179,6 +179,10 @@ class _SavedPageState extends State<SavedPage> {
 																builder: (context, box, child) {
 																	final thread = persistence.getThreadStateIfExists(watch.threadIdentifier)?.thread;
 																	if (thread == null) {
+																		// Probably the thread was deleted during a cleanup
+																		Future.delayed(const Duration(seconds: 1), () {
+																			notifications.removeThreadWatch(watch);
+																		});
 																		return const SizedBox.shrink();
 																	}
 																	else {
