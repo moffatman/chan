@@ -489,31 +489,32 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				currentTabIndex: activeBrowserTab.value,
 				tabCount: tabs.length,
 				tabBuilder: (context, i) {
+					final tabObject = tabs[i];
 					final tab = ImageboardTab(
-						key: tabs[i].item2,
-						initialBoard: tabs[i].item1.board,
-						initialThread: tabs[i].item1.thread,
+						key: tabObject.item2,
+						initialBoard: tabObject.item1.board,
+						initialThread: tabObject.item1.thread,
 						onBoardChanged: (newBoard) {
-							tabs[i].item1.board = newBoard;
+							tabObject.item1.board = newBoard;
 							// Don't run I/O during the animation
 							Future.delayed(const Duration(seconds: 1), () => _didUpdateBrowserState());
 							setState(() {});
 						},
 						onThreadChanged: (newThread) {
-							tabs[i].item1.thread = newThread;
+							tabObject.item1.thread = newThread;
 							// Don't run I/O during the animation
 							Future.delayed(const Duration(seconds: 1), () => _didUpdateBrowserState());
 							setState(() {});
 						},
-						getInitialThreadDraftText: () => tabs[i].item1.draftThread,
+						getInitialThreadDraftText: () => tabObject.item1.draftThread,
 						onThreadDraftTextChanged: (newText) {
-							tabs[i].item1.draftThread = newText;
+							tabObject.item1.draftThread = newText;
 							_saveBrowserTabsDuringDraftEditingTimer?.cancel();
 							_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), () => _didUpdateBrowserState());
 						},
-						getInitialThreadDraftSubject: () => tabs[i].item1.draftSubject,
+						getInitialThreadDraftSubject: () => tabObject.item1.draftSubject,
 						onThreadDraftSubjectChanged: (newSubject) {
-							tabs[i].item1.draftSubject = newSubject;
+							tabObject.item1.draftSubject = newSubject;
 							_saveBrowserTabsDuringDraftEditingTimer?.cancel();
 							_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), () => _didUpdateBrowserState());
 						},
@@ -526,7 +527,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						id: -1 * (i + 10)
 					);
 					return Provider.value(
-						value: tabs[i].item1,
+						value: tabObject.item1,
 						child: Provider.value(
 							value: _tabletWillPopZones.putIfAbsent(index, () => WillPopZone()),
 							child: ValueListenableBuilder(
