@@ -167,7 +167,7 @@ class _SavedPageState extends State<SavedPage> {
 												return RefreshableList<ThreadWatch>(
 													controller: _watchedListController,
 													listUpdater: () => throw UnimplementedError(),
-													id: 'saved',
+													id: 'watched',
 													disableUpdates: true,
 													initialList: watches,
 													itemBuilder: (context, watch) => ContextMenu(
