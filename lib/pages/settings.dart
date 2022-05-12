@@ -1321,23 +1321,23 @@ class SettingsDataPage extends StatelessWidget {
 						children: const {
 							7: Padding(
 								padding: EdgeInsets.all(8),
-								child: Text('7 days')
+								child: Text('7 days', textAlign: TextAlign.center)
 							),
 							14: Padding(
 								padding: EdgeInsets.all(8),
-								child: Text('14 days')
+								child: Text('14 days', textAlign: TextAlign.center)
 							),
 							30: Padding(
 								padding: EdgeInsets.all(8),
-								child: Text('30 days')
+								child: Text('30 days', textAlign: TextAlign.center)
 							),
 							60: Padding(
 								padding: EdgeInsets.all(8),
-								child: Text('60 days')
+								child: Text('60 days', textAlign: TextAlign.center)
 							),
 							100000: Padding(
 								padding: EdgeInsets.all(8),
-								child: Text('Never')
+								child: Text('Never', textAlign: TextAlign.center)
 							)
 						},
 						groupValue: context.watch<EffectiveSettings>().automaticCacheClearDays,
