@@ -815,9 +815,11 @@ class RefreshableListController<T> {
 		}
 	}
 	void registerItem(int index, T item, BuildContext context) {
-		_items[index].item = item;
-		_items[index].context = context;
-		_tryCachingItem(index, _items[index]);
+		if (index < _items.length) {
+			_items[index].item = item;
+			_items[index].context = context;
+			_tryCachingItem(index, _items[index]);
+		}
 	}
 	double _getOffset(RenderObject object) {
 		return RenderAbstractViewport.of(object)!.getOffsetToReveal(object, 0.0).offset;
