@@ -33,7 +33,7 @@ class _HistoryPageState extends State<HistoryPage> {
 		return MasterDetailPage<ThreadIdentifier>(
 			id: 'history',
 			masterBuilder: (context, selectedThread, threadSetter) {
-				Widget _masterBuilder(BuildContext context, Box<PersistentThreadState> box, Widget? child) {
+				Widget innerMasterBuilder(BuildContext context, Box<PersistentThreadState> box, Widget? child) {
 					final states = box.toMap().values.where((s) => s.thread != null).toList();
 					states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
 					return RefreshableList<PersistentThreadState>(
@@ -44,6 +44,21 @@ class _HistoryPageState extends State<HistoryPage> {
 						initialList: states,
 						itemBuilder: (context, state) => ContextMenu(
 							maxHeight: 125,
+							actions: [
+								if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+									child: const Text('Open in new tab'),
+									trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+									onPressed: () {
+										widget.onWantOpenThreadInNewTab?.call(state.identifier);
+									}
+								),
+								ContextMenuAction(
+									child: const Text('Remove'),
+									onPressed: state.delete,
+									trailingIcon: CupertinoIcons.xmark,
+									isDestructiveAction: true
+								)
+							],
 							child: GestureDetector(
 								behavior: HitTestBehavior.opaque,
 								child: ThreadRow(
@@ -68,22 +83,7 @@ class _HistoryPageState extends State<HistoryPage> {
 									}
 								),
 								onTap: () => threadSetter(state.thread!.identifier)
-							),
-							actions: [
-								if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
-									child: const Text('Open in new tab'),
-									trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
-									onPressed: () {
-										widget.onWantOpenThreadInNewTab?.call(state.identifier);
-									}
-								),
-								ContextMenuAction(
-									child: const Text('Remove'),
-									onPressed: state.delete,
-									trailingIcon: CupertinoIcons.xmark,
-									isDestructiveAction: true
-								)
-							]
+							)
 						),
 						filterHint: 'Search history'
 					);
@@ -111,8 +111,8 @@ class _HistoryPageState extends State<HistoryPage> {
 					),
 					child: widget.isActive ? ValueListenableBuilder(
 						valueListenable: persistence.threadStateBox.listenable(),
-						builder: _masterBuilder
-					) : _masterBuilder(context, persistence.threadStateBox, null)
+						builder: innerMasterBuilder
+					) : innerMasterBuilder(context, persistence.threadStateBox, null)
 				);
 			},
 			detailBuilder: (selectedThread, poppedOut) {

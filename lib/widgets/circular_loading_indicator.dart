@@ -125,12 +125,12 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 	}
 
 	Tuple2<AnimationController, Future<void>> _constantVelocityAnimation(double from, double to, {bool reversed = false}) {
-		double _to = reversed ? to : (to >= from) ? to : to + 1;
+		double dest = reversed ? to : (to >= from) ? to : to + 1;
 		final a = AnimationController(
 			vsync: this,
-			duration: Duration(milliseconds: ((_to - from).abs() * _periodMs).round()),
-			lowerBound: reversed ? _to : from,
-			upperBound: reversed ? from : _to
+			duration: Duration(milliseconds: ((dest - from).abs() * _periodMs).round()),
+			lowerBound: reversed ? dest : from,
+			upperBound: reversed ? from : dest
 		);
 		a.reset();
 		return Tuple2(

@@ -196,7 +196,7 @@ class MediaConversion {
 		}
 		final filename = inputFile.pathSegments.last;
 		final fileExtension = inputFile.pathSegments.last.split('.').last;
-		return File(Persistence.temporaryDirectory.path + '/webmcache/' + subdir + '/' + filename.replaceFirst('.$fileExtension', '.$outputFileExtension'));
+		return File('${Persistence.temporaryDirectory.path}/webmcache/$subdir/${filename.replaceFirst('.$fileExtension', '.$outputFileExtension')}');
 	}
 
 	Future<MediaConversionResult?> getDestinationIfSatisfiesConstraints() async {
@@ -286,7 +286,7 @@ class MediaConversion {
 							passedFirstEvent = true;
 						}
 					});
-					final bitrateString = (outputBitrate / 1000).floor().toString() + 'K';
+					final bitrateString = '${(outputBitrate / 1000).floor()}K';
 					final ffmpegCompleter = Completer<Session>();
 					_session = await FFmpegKit.executeWithArgumentsAsync([
 						'-hwaccel', 'auto',
@@ -339,7 +339,7 @@ Future<File> convertToJpg(File input) async {
 		if (image == null) {
 			throw Exception('Failed to decode image');
 		}
-		final outputFile = File(param.temporaryDirectoryPath + '/' + param.inputPath.split('/').last.replaceAll(RegExp(r'\.[^.]+$'), '.jpg'));
+		final outputFile = File('${param.temporaryDirectoryPath}/${param.inputPath.split('/').last.replaceAll(RegExp(r'\.[^.]+$'), '.jpg')}');
 		await outputFile.writeAsBytes(encodeJpg(image));
 		return outputFile.path;
 	}, _ConvertParam(

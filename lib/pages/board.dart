@@ -198,6 +198,7 @@ class _BoardPageState extends State<BoardPage> {
 													},
 													onReplyPosted: (receipt) async {
 														await promptForPushNotificationsIfNeeded(ctx);
+														if (!mounted) return;
 														ctx.read<Notifications>().subscribeToThread(ThreadIdentifier(board!.name, receipt.id), receipt.id, false, [receipt.id]);
 														_listController.update();
 														widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
@@ -425,7 +426,7 @@ class _BoardPageState extends State<BoardPage> {
 													stream: _listController.slowScrollUpdates,
 													builder: (context, _) {
 														final page = _listController.firstVisibleItem?.currentPage;
-														_scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+														scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
 														return (page == null || page == 0 || _listController.firstVisibleIndex == 0 || ((_listController.scrollController?.position.pixels ?? 1) < 0)) ? Container() : SafeArea(
 															child: Align(
 																alignment: Alignment.topRight,
@@ -433,7 +434,7 @@ class _BoardPageState extends State<BoardPage> {
 																	mainAxisSize: MainAxisSize.min,
 																	children: [
 																		GestureDetector(
-																			onTap: _scrollToTop,
+																			onTap: scrollToTop,
 																			child: Container(
 																				decoration: BoxDecoration(
 																					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
@@ -484,6 +485,7 @@ class _BoardPageState extends State<BoardPage> {
 									},
 									onReplyPosted: (receipt) async {
 										await promptForPushNotificationsIfNeeded(context);
+										if (!mounted) return;
 										context.read<Notifications>().subscribeToThread(ThreadIdentifier(board!.name, receipt.id), receipt.id, false, [receipt.id]);
 										_listController.update();
 										widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));

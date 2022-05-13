@@ -172,6 +172,41 @@ class _SavedPageState extends State<SavedPage> {
 													initialList: watches,
 													itemBuilder: (context, watch) => ContextMenu(
 														maxHeight: 125,
+														actions: [
+															if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+																child: const Text('Open in new tab'),
+																trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+																onPressed: () {
+																	widget.onWantOpenThreadInNewTab?.call(watch.threadIdentifier);
+																}
+															),
+															ContextMenuAction(
+																child: const Text('Unwatch'),
+																onPressed: () {
+																	notifications.removeThreadWatch(watch);
+																},
+																trailingIcon: CupertinoIcons.xmark,
+																isDestructiveAction: true
+															),
+															if (persistence.getThreadStateIfExists(watch.threadIdentifier)?.savedTime != null) ContextMenuAction(
+																child: const Text('Un-save thread'),
+																trailingIcon: CupertinoIcons.bookmark_fill,
+																onPressed: () {
+																	final threadState = persistence.getThreadState(watch.threadIdentifier);
+																	threadState.savedTime = null;
+																	threadState.save();
+																}
+															)
+															else ContextMenuAction(
+																child: const Text('Save thread'),
+																trailingIcon: CupertinoIcons.bookmark,
+																onPressed: () {
+																	final threadState = persistence.getThreadState(watch.threadIdentifier);
+																	threadState.savedTime = DateTime.now();
+																	threadState.save();
+																}
+															),
+														],
 														child: GestureDetector(
 															behavior: HitTestBehavior.opaque,
 															child: ValueListenableBuilder(
@@ -217,48 +252,19 @@ class _SavedPageState extends State<SavedPage> {
 																}
 															),
 															onTap: () => setter(watch)
-														),
-														actions: [
-															if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
-																child: const Text('Open in new tab'),
-																trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
-																onPressed: () {
-																	widget.onWantOpenThreadInNewTab?.call(watch.threadIdentifier);
-																}
-															),
-															ContextMenuAction(
-																child: const Text('Unwatch'),
-																onPressed: () {
-																	notifications.removeThreadWatch(watch);
-																},
-																trailingIcon: CupertinoIcons.xmark,
-																isDestructiveAction: true
-															),
-															if (persistence.getThreadStateIfExists(watch.threadIdentifier)?.savedTime != null) ContextMenuAction(
-																child: const Text('Un-save thread'),
-																trailingIcon: CupertinoIcons.bookmark_fill,
-																onPressed: () {
-																	final threadState = persistence.getThreadState(watch.threadIdentifier);
-																	threadState.savedTime = null;
-																	threadState.save();
-																}
-															)
-															else ContextMenuAction(
-																child: const Text('Save thread'),
-																trailingIcon: CupertinoIcons.bookmark,
-																onPressed: () {
-																	final threadState = persistence.getThreadState(watch.threadIdentifier);
-																	threadState.savedTime = DateTime.now();
-																	threadState.save();
-																}
-															),
-														]
+														)
 													),
 													filterHint: 'Search watched threads',
 													footer: Container(
 														padding: const EdgeInsets.all(16),
 														child: CupertinoButton(
 															padding: const EdgeInsets.all(8),
+															onPressed: (watches.any((w) => w.zombie)) ? () {
+																final toRemove = watches.where((w) => w.zombie).toList();
+																for (final watch in toRemove) {
+																	notifications.removeThreadWatch(watch);
+																}
+															} : null,
 															child: Row(
 																mainAxisSize: MainAxisSize.min,
 																children: const [
@@ -268,13 +274,7 @@ class _SavedPageState extends State<SavedPage> {
 																		child: Text('Remove archived', textAlign: TextAlign.center)
 																	)
 																]
-															),
-															onPressed: (watches.any((w) => w.zombie)) ? () {
-																final toRemove = watches.where((w) => w.zombie).toList();
-																for (final watch in toRemove) {
-																	notifications.removeThreadWatch(watch);
-																}
-															} : null
+															)
 														)
 													)
 												);
@@ -299,7 +299,7 @@ class _SavedPageState extends State<SavedPage> {
 					navigationBar: _navigationBar('Saved Threads'),
 					icon: CupertinoIcons.tray_full,
 					masterBuilder: (context, selectedThread, threadSetter) {
-						Widget _masterBuilder(BuildContext context, Box<PersistentThreadState> box, Widget? child) {
+						Widget innerMasterBuilder(BuildContext context, Box<PersistentThreadState> box, Widget? child) {
 							final states = box.toMap().values.where((s) => s.savedTime != null).toList();
 							if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
 								states.sort((a, b) => b.savedTime!.compareTo(a.savedTime!));
@@ -316,6 +316,24 @@ class _SavedPageState extends State<SavedPage> {
 								initialList: states,
 								itemBuilder: (context, state) => ContextMenu(
 									maxHeight: 125,
+									actions: [
+										if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+											child: const Text('Open in new tab'),
+											trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+											onPressed: () {
+												widget.onWantOpenThreadInNewTab?.call(state.identifier);
+											}
+										),
+										ContextMenuAction(
+											child: const Text('Unsave'),
+											onPressed: () {
+												state.savedTime = null;
+												state.save();
+											},
+											trailingIcon: CupertinoIcons.xmark,
+											isDestructiveAction: true
+										)
+									],
 									child: GestureDetector(
 										behavior: HitTestBehavior.opaque,
 										child: ThreadRow(
@@ -343,33 +361,15 @@ class _SavedPageState extends State<SavedPage> {
 											}
 										),
 										onTap: () => threadSetter(state.identifier)
-									),
-									actions: [
-										if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
-											child: const Text('Open in new tab'),
-											trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
-											onPressed: () {
-												widget.onWantOpenThreadInNewTab?.call(state.identifier);
-											}
-										),
-										ContextMenuAction(
-											child: const Text('Unsave'),
-											onPressed: () {
-												state.savedTime = null;
-												state.save();
-											},
-											trailingIcon: CupertinoIcons.xmark,
-											isDestructiveAction: true
-										)
-									]
+									)
 								),
 								filterHint: 'Search saved threads'
 							);
 						}
 						return widget.isActive ? ValueListenableBuilder(
 							valueListenable: persistence.threadStateBox.listenable(),
-							builder: _masterBuilder
-						) : _masterBuilder(context, persistence.threadStateBox, null);
+							builder: innerMasterBuilder
+						) : innerMasterBuilder(context, persistence.threadStateBox, null);
 					},
 					detailBuilder: (selectedThread, poppedOut) {
 						return BuiltDetailPane(
@@ -388,7 +388,7 @@ class _SavedPageState extends State<SavedPage> {
 					),
 					icon: CupertinoIcons.pencil,
 					masterBuilder: (context, selected, setter) {
-						Widget _masterBuilder(BuildContext context, Box<PersistentThreadState> box, Widget? child) {
+						Widget innerMasterBuilder(BuildContext context, Box<PersistentThreadState> box, Widget? child) {
 							final replies = <_PostThreadCombo>[];
 							for (final s in box.values) {
 								if (s.thread != null) {
@@ -425,8 +425,8 @@ class _SavedPageState extends State<SavedPage> {
 						}
 						return widget.isActive ? ValueListenableBuilder(
 							valueListenable: persistence.threadStateBox.listenable(),
-							builder: _masterBuilder
-						) : _masterBuilder(context, persistence.threadStateBox, null);
+							builder: innerMasterBuilder
+						) : innerMasterBuilder(context, persistence.threadStateBox, null);
 					},
 					detailBuilder: (selected, poppedOut) => BuiltDetailPane(
 						widget: selected == null ? _placeholder('Select a post') : ThreadPage(
@@ -627,8 +627,8 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 								),
 								const SizedBox(width: 16),
 								CupertinoButton(
-									child: const Icon(CupertinoIcons.refresh),
-									onPressed: watcher.update
+									onPressed: watcher.update,
+									child: const Icon(CupertinoIcons.refresh)
 								),
 								CupertinoSwitch(
 									value: watcher.active,

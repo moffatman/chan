@@ -428,10 +428,10 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	final FilterCache _filterCache = FilterCache(const DummyFilter());
 	List<int>? replyIdsToYou(Filter filter) {
 		_filterCache.setFilter(FilterGroup([filter, threadFilter]));
-		final _youIds = youIds;
+		final tmpYouIds = youIds;
 		return thread?.posts.where((p) {
 			return (_filterCache.filter(p)?.type != FilterResultType.hide) &&
-						 p.span.referencedPostIds(thread!.board).any((id) => _youIds.contains(id));
+						 p.span.referencedPostIds(thread!.board).any((id) => tmpYouIds.contains(id));
 		}).map((p) => p.id).toList();
 	}
 	List<int>? unseenReplyIdsToYou(Filter filter) => replyIdsToYou(filter)?.where((id) => id > lastSeenPostId!).toList();
@@ -678,9 +678,9 @@ class PersistentBrowserState {
 		hiddenImageMD5s.addAll(md5s.map((md5) {
 			switch (md5.length % 3) {
 				case 1:
-					return md5 + '==';
+					return '$md5==';
 				case 2:
-					return md5 + '=';
+					return '$md5=';
 			}
 			return md5;
 		}));

@@ -87,42 +87,42 @@ class _ChanAppState extends State<ChanApp> {
 			siteSetupError = null;
 		});
 		try {
-			final _site = makeSite(context, data);
-			Persistence? _persistence = persistence;
-			if (_persistence == null || site?.name != _site.name) {
-				_persistence = Persistence(_site.name);
-				await _persistence.initialize();
+			final tmpSite = makeSite(context, data);
+			Persistence? tmpPersistence = persistence;
+			if (tmpPersistence == null || site?.name != tmpSite.name) {
+				tmpPersistence = Persistence(tmpSite.name);
+				await tmpPersistence.initialize();
 				notifications = Notifications(
-					persistence: _persistence,
-					site: _site
+					persistence: tmpPersistence,
+					site: tmpSite
 				);
 				await notifications?.initialize();
 				// Only try to reauth on wifi
 				Future.microtask(() async {
-					final savedFields = await _site.getSavedLoginFields();
+					final savedFields = await tmpSite.getSavedLoginFields();
 					if (savedFields != null && settings.connectivity == ConnectivityResult.wifi) {
 						try {
-							await _site.login(savedFields);
+							await tmpSite.login(savedFields);
 							print('Auto-logged in');
 						}
 						catch (e) {
 							showToast(
 								context: context,
 								icon: CupertinoIcons.exclamationmark_triangle,
-								message: 'Failed to log in to ${_site.getLoginSystemName()}'
+								message: 'Failed to log in to ${tmpSite.getLoginSystemName()}'
 							);
 							print('Problem auto-logging in: $e');
 						}
 					}
 				});
 			}
-			_site.persistence = _persistence;
-			site = _site;
-			persistence = _persistence;
+			tmpSite.persistence = tmpPersistence;
+			site = tmpSite;
+			persistence = tmpPersistence;
 			final oldThreadWatcher = threadWatcher;
 			threadWatcher = ThreadWatcher(
-				site: _site,
-				persistence: _persistence,
+				site: tmpSite,
+				persistence: tmpPersistence,
 				settings: settings,
 				notifications: notifications!
 			);
@@ -132,7 +132,7 @@ class _ChanAppState extends State<ChanApp> {
 			oldThreadWatcher?.dispose();
 		}
 		catch (e, st) {
-			siteSetupError = 'Fatal setup error\n' + e.toStringDio();
+			siteSetupError = 'Fatal setup error\n${e.toStringDio()}';
 			siteSetupStackTrace = st.toStringDio();
 			print(e);
 			print(st);
@@ -211,7 +211,7 @@ class _ChanAppState extends State<ChanApp> {
 																				settings.updateContentSettings();
 																			},
 																			'Edit content preferences': () {
-																				launch(settings.contentSettingsUrl, forceSafariVC: false);
+																				launchUrl(Uri.parse(settings.contentSettingsUrl), mode: LaunchMode.externalApplication);
 																				settings.addAppResumeCallback(() async {
 																					await Future.delayed(const Duration(seconds: 1));
 																					settings.updateContentSettings();
@@ -312,6 +312,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _setupDevSite() async {
+		final settings = context.read<EffectiveSettings>();
 		devSite = makeSite(context, defaultSite);
 		devPersistence = Persistence('devsite');
 		await devPersistence!.initialize();
@@ -324,7 +325,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		devThreadWatcher = ThreadWatcher(
 			persistence: devPersistence!,
 			site: devSite!,
-			settings: context.read<EffectiveSettings>(),
+			settings: settings,
 			notifications: devNotifications!,
 			watchForStickyOnBoards: ['chance'],
 			interval: const Duration(minutes: 10)
@@ -334,12 +335,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _setupBoards() async {
+		final persistence = context.read<Persistence>();
 		try {
 			setState(() {
 				boardFetchErrorMessage = null;
 			});
 			final freshBoards = await context.read<ImageboardSite>().getBoards();
-			await context.read<Persistence>().reinitializeBoards(freshBoards);
+			await persistence.reinitializeBoards(freshBoards);
 			setState(() {
 				initialized = true;
 			});
@@ -395,7 +397,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		if (files.isNotEmpty) {
 			showToast(
 				context: context,
-				message: (files.length > 1 ? 'Files' : 'File') + ' added to upload selector',
+				message: '${(files.length > 1 ? 'Files' : 'File')} added to upload selector',
 				icon: CupertinoIcons.paperclip
 			);
 			for (final file in files) {
@@ -663,11 +665,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											}
 										),
 										CupertinoDialogAction(
-											child: const Text('Yes'),
 											isDestructiveAction: true,
 											onPressed: () {
 												Navigator.of(context).pop(true);
-											}
+											},
+											child: const Text('Yes')
 										)
 									]
 								)
@@ -748,7 +750,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			},
 			itemCount: tabs.length,
 			itemBuilder: (context, i) {
-				const _icon = SizedBox(
+				const blankIcon = SizedBox(
 					width: 30,
 					height: 30,
 					child: Icon(CupertinoIcons.rectangle_stack)
@@ -761,7 +763,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							final threadState = context.read<Persistence>().getThreadStateIfExists(tabs[i].item1.thread!);
 							Future.microtask(() => tabs[i].item3.value = threadState?.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
 							final attachment = threadState?.thread?.attachment;
-							_build() => _buildTabletIcon(i * -1, attachment == null ? _icon : ClipRRect(
+							buildIcon() => _buildTabletIcon(i * -1, attachment == null ? blankIcon : ClipRRect(
 									borderRadius: const BorderRadius.all(Radius.circular(4)),
 									child: AttachmentThumbnail(
 										gaplessPlayback: true,
@@ -783,16 +785,16 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							if (threadState != null) {
 								return ValueListenableBuilder(
 									valueListenable: threadState.lastSeenPostIdNotifier,
-									builder: (context, _, __) => _build()
+									builder: (context, _, __) => buildIcon()
 								);
 							}
-							return _build();
+							return buildIcon();
 						}
 					);
 				}
 				else {
 					Future.microtask(() => tabs[i].item3.value = 0);
-					child = _buildTabletIcon(i * -1, _icon, tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'None', reorderable: false, axis: axis);
+					child = _buildTabletIcon(i * -1, blankIcon, tabs[i].item1.board != null ? '/${tabs[i].item1.board?.name}/' : 'None', reorderable: false, axis: axis);
 				}
 				return ReorderableDelayedDragStartListener(
 					index: i,
@@ -817,11 +819,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						}
 					),
 					CupertinoDialogAction(
-						child: const Text('Exit'),
 						isDestructiveAction: true,
 						onPressed: () {
 							Navigator.of(context).pop(true);
-						}
+						},
+						child: const Text('Exit')
 					)
 				]
 			)

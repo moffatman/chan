@@ -62,6 +62,7 @@ class _PostsPageState extends State<PostsPage> {
 					post: postForBackground,
 					isSelected: true
 				),
+				heightEstimate: 100.0 * (widget.postsIdsToShow.length - 1),
 				child: Builder(
 					builder: (ctx) => ListView(
 						shrinkWrap: true,
@@ -96,8 +97,7 @@ class _PostsPageState extends State<PostsPage> {
 							);
 						}).toList()
 					)
-				),
-				heightEstimate: 100.0 * (widget.postsIdsToShow.length - 1)
+				)
 			)
 		);
 	}

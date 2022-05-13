@@ -55,7 +55,7 @@ class _VideoControlsState extends State<VideoControls> {
 	}
 
 	String _formatDuration(Duration d) {
-		return d.inMinutes.toString() + ':' + (d.inSeconds % 60).toString().padLeft(2, '0');
+		return '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
 	}
 
 	@override
@@ -91,23 +91,24 @@ class _VideoControlsState extends State<VideoControls> {
 				if (widget.hasAudio) AnimatedBuilder(
 					animation: context.read<EffectiveSettings>().muteAudio,
 					builder: (context, _) => CupertinoButton(
-						child: Icon(value.volume > 0 ? CupertinoIcons.volume_up : CupertinoIcons.volume_off),
 						padding: EdgeInsets.zero,
+						child: Icon(value.volume > 0 ? CupertinoIcons.volume_up : CupertinoIcons.volume_off),
 						onPressed: () async {
+							final settings = context.read<EffectiveSettings>();
 							if (value.volume > 0) {
 								await widget.controller.setVolume(0);
-								context.read<EffectiveSettings>().setMuteAudio(true);
+								settings.setMuteAudio(true);
 							}
 							else {
 								await widget.controller.setVolume(1);
-								context.read<EffectiveSettings>().setMuteAudio(false);
+								settings.setMuteAudio(false);
 							}
 						}
 					)
 				),
 				CupertinoButton(
-					child: Icon(value.isPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_arrow_solid),
 					padding: EdgeInsets.zero,
+					child: Icon(value.isPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_arrow_solid),
 					onPressed: () async {
 						if (value.isPlaying) {
 							await widget.controller.pause();

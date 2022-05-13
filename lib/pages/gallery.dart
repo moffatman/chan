@@ -309,11 +309,11 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 						}
 					),
 					CupertinoDialogAction(
-						child: const Text('Yes'),
 						isDefaultAction: true,
+						child: const Text('Yes'),
 						onPressed: () {
 							Navigator.of(context).pop(true);
-						}
+						},
 					)
 				]
 			)
@@ -341,8 +341,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 					),
 					actions: [
 						CupertinoDialogAction(
-							child: const Text('Cancel'),
 							isDestructiveAction: true,
+							child: const Text('Cancel'),
 							onPressed: () {
 								cancel = true;
 								Navigator.of(context).pop();
@@ -357,7 +357,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				await _getController(attachment).download();
 				loadingStream.value = loadingStream.value + 1;
 			}
-			if (!cancel) Navigator.of(context, rootNavigator: true).pop();
+			if (!cancel && mounted) Navigator.of(context, rootNavigator: true).pop();
 		}
 	}
 
@@ -460,14 +460,14 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														return Center(
 															child: CupertinoButton.filled(
 																padding: const EdgeInsets.all(8),
+																onPressed: _downloadAll,
 																child: Column(
 																	mainAxisSize: MainAxisSize.min,
 																	children: const [
 																		Icon(CupertinoIcons.cloud_download, size: 50),
 																		Text('Download all')
 																	]
-																),
-																onPressed: _downloadAll
+																)
 															)
 														);
 													}
@@ -552,7 +552,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 						transitionBetweenRoutes: false,
 						middle: StreamBuilder(
 							stream: _currentAttachmentChanged,
-							builder: (context, _) => AutoSizeText("${currentAttachment.filename} (${currentAttachment.width}x${currentAttachment.height}" + (currentAttachment.sizeInBytes == null ? ')' : ', ${(currentAttachment.sizeInBytes! / 1024).round()} KB)'))
+							builder: (context, _) => AutoSizeText("${currentAttachment.filename} (${currentAttachment.width}x${currentAttachment.height}${currentAttachment.sizeInBytes == null ? ')' : ', ${(currentAttachment.sizeInBytes! / 1024).round()} KB)'}")
 						),
 						backgroundColor: Colors.black38,
 						trailing: StreamBuilder(
@@ -565,11 +565,11 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 										children: [
 											CupertinoButton(
 												padding: EdgeInsets.zero,
-												child: const Icon(CupertinoIcons.cloud_download),
 												onPressed: currentController.canShare && !currentController.isDownloaded ? () async {
 													await currentController.download();
 													showToast(context: context, message: 'Downloaded ${currentAttachment.filename}', icon: CupertinoIcons.cloud_download);
-												} : null
+												} : null,
+												child: const Icon(CupertinoIcons.cloud_download)
 											),
 											StreamBuilder(
 												stream: context.watch<Persistence>().savedAttachmentsNotifier,
@@ -577,7 +577,6 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment) != null;
 													return CupertinoButton(
 														padding: EdgeInsets.zero,
-														child: Icon(currentlySaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark),
 														onPressed: currentController.canShare ? () async {
 															if (currentlySaved) {
 																context.read<Persistence>().deleteSavedAttachment(currentAttachment);
@@ -585,19 +584,20 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 															else {
 																context.read<Persistence>().saveAttachment(currentAttachment, await currentController.getFile());
 															}
-														} : null
+														} : null,
+														child: Icon(currentlySaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark)
 													);
 												}
 											),
 											CupertinoButton(
 												key: _shareButtonKey,
 												padding: EdgeInsets.zero,
-												child: const Icon(CupertinoIcons.share),
 												onPressed: currentController.canShare ? () {
 													final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 													final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
 													currentController.share((offset != null && size != null) ? offset & size : null);
-												} : null
+												} : null,
+												child: const Icon(CupertinoIcons.share)
 											)
 										]
 									);
@@ -670,6 +670,9 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																child: AnimatedBuilder(
 																	animation: _getController(attachment),
 																	builder: (context, _) => GestureDetector(
+																		onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
+																			_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
+																		},
 																		child: AttachmentViewer(
 																			controller: _getController(attachment),
 																			onScaleChanged: (scale) {
@@ -689,10 +692,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																				_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
 																			},
 																			allowContextMenu: widget.allowContextMenu,
-																		),
-																		onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
-																			_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
-																		}
+																		)
 																	)
 																)
 															);
@@ -843,7 +843,7 @@ Future<Attachment?> showGallery({
 	ValueChanged<Attachment>? onChange,
 }) async {
 	final lastSelected = await Navigator.of(context, rootNavigator: true).push(TransparentRoute<Attachment>(
-		builder: (BuildContext _context) {
+		builder: (BuildContext context) {
 			return GalleryPage(
 				attachments: attachments,
 				replyCounts: replyCounts,

@@ -178,7 +178,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (!widget.isArchived) {
 			showReplyBox();
 			_insertText('>>$fromId');
-			_insertText('>' + text.replaceAll('\n', '\n>'));
+			_insertText('>${text.replaceAll('\n', '\n>')}');
 		}
 	}
 
@@ -238,6 +238,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				return existingResult.file;
 			}
 		}
+		if (!mounted) return null;
 		return await Navigator.of(context).push<Future<File>>(TransparentRoute(
 			builder: (context) => OverscrollModalPage(
 				child: Container(
@@ -245,7 +246,7 @@ class ReplyBoxState extends State<ReplyBox> {
 					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 					padding: const EdgeInsets.all(16),
 					child: StatefulBuilder(
-						builder: (context, _setState) => Column(
+						builder: (context, setTranscodeState) => Column(
 							mainAxisSize: MainAxisSize.min,
 							crossAxisAlignment: CrossAxisAlignment.center,
 							children: [
@@ -260,23 +261,24 @@ class ReplyBoxState extends State<ReplyBox> {
 								const SizedBox(height: 32),
 								...problems.expand((p) => [Text(p), const SizedBox(height: 16)]),
 								CupertinoButton(
-									child: loading ? const Text('Transcoding...') : const Text('Start'),
 									onPressed: loading ? null : () async {
-										_setState(() {
+										setTranscodeState(() {
 											loading = true;
 										});
 										transcode.start();
-										_setState(() {
+										setTranscodeState(() {
 											progress = transcode.progress;
 										});
 										try {
 											final result = await transcode.result;
+											if (!mounted) return;
 											Navigator.of(context).pop(Future.value(result.file));
 										}
 										catch (e) {
 											Navigator.of(context).pop(Future<File>.error(e));
 										}
-									}
+									},
+									child: loading ? const Text('Transcoding...') : const Text('Start')
 								),
 								if (loading) ValueListenableBuilder(
 									valueListenable: progress,
@@ -402,32 +404,32 @@ class ReplyBoxState extends State<ReplyBox> {
 			if (!shouldAutoLogin) {
 				settings.autoLoginOnMobileNetwork ??= await showCupertinoDialog<bool>(
 					context: context,
-					builder: (_context) => CupertinoAlertDialog(
+					builder: (context) => CupertinoAlertDialog(
 						title: Text('Use ${site.getLoginSystemName()} on mobile networks?'),
 						actions: [
 							CupertinoDialogAction(
 								child: const Text('Never'),
 								onPressed: () {
-									Navigator.of(_context).pop(false);
+									Navigator.of(context).pop(false);
 								}
 							),
 							CupertinoDialogAction(
 								child: const Text('Not now'),
 								onPressed: () {
-									Navigator.of(_context).pop();
+									Navigator.of(context).pop();
 								}
 							),
 							CupertinoDialogAction(
 								child: const Text('Just once'),
 								onPressed: () {
 									shouldAutoLogin = true;
-									Navigator.of(_context).pop();
+									Navigator.of(context).pop();
 								}
 							),
 							CupertinoDialogAction(
 								child: const Text('Always'),
 								onPressed: () {
-									Navigator.of(_context).pop(true);
+									Navigator.of(context).pop(true);
 								}
 							)
 						]
@@ -454,6 +456,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				await site.clearLoginCookies();
 			}
 		}
+		if (!mounted) return;
 		final captchaRequest = site.getCaptchaRequest(widget.board, widget.threadId);
 		if (captchaRequest is RecaptchaRequest) {
 			hideReplyBox();
@@ -500,16 +503,17 @@ class ReplyBoxState extends State<ReplyBox> {
 			});
 			return;
 		}
+		if (!mounted) return;
 		try {
 			final persistence = context.read<Persistence>();
 			final settings = context.read<EffectiveSettings>();
 			String? overrideAttachmentFilename;
 			if (_filenameController.text.isNotEmpty && attachment != null) {
-				overrideAttachmentFilename = _filenameController.text + '.' + attachmentExt!;
+				overrideAttachmentFilename = '${_filenameController.text}.${attachmentExt!}';
 			}
 			if (settings.randomizeFilenames && attachment != null) {
-				const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
-				overrideAttachmentFilename = List.generate(12, (i) => _chars[random.nextInt(_chars.length)]).join('') + '.' + attachmentExt!;
+				const alphanumericCharacters = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+				overrideAttachmentFilename = '${List.generate(12, (i) => alphanumericCharacters[random.nextInt(alphanumericCharacters.length)]).join('')}.${attachmentExt!}';
 			}
 			final receipt = (widget.threadId != null) ? (await site.postReply(
 				thread: ThreadIdentifier(widget.board, widget.threadId!),
@@ -535,20 +539,20 @@ class ReplyBoxState extends State<ReplyBox> {
 				final solution = (_captchaSolution as Chan4CustomCaptchaSolution);
 				settings.contributeCaptchas ??= await showCupertinoDialog<bool>(
 					context: context,
-					builder: (_context) => CupertinoAlertDialog(
+					builder: (context) => CupertinoAlertDialog(
 						title: const Text('Contribute captcha solutions?'),
 						content: const Text('The captcha images you solve will be collected to improve the automated solver'),
 						actions: [
 							CupertinoDialogAction(
 								child: const Text('No'),
 								onPressed: () {
-									Navigator.of(_context).pop(false);
+									Navigator.of(context).pop(false);
 								}
 							),
 							CupertinoDialogAction(
 								child: const Text('Yes'),
 								onPressed: () {
-									Navigator.of(_context).pop(true);
+									Navigator.of(context).pop(true);
 								}
 							)
 						]
@@ -619,7 +623,7 @@ class ReplyBoxState extends State<ReplyBox> {
 					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 					padding: const EdgeInsets.all(16),
 					child: StatefulBuilder(
-						builder: (context, _setState) => Column(
+						builder: (context, setEmotePickerState) => Column(
 							mainAxisSize: MainAxisSize.min,
 							crossAxisAlignment: CrossAxisAlignment.center,
 							children: [
@@ -840,6 +844,7 @@ class ReplyBoxState extends State<ReplyBox> {
 							receiveNonAllowedItems: false,
 							child: Center(
 								child: _dropLoading ? const CupertinoActivityIndicator() : CupertinoButton(
+									onPressed: _selectAttachment,
 									child: Wrap(
 										alignment: WrapAlignment.center,
 										crossAxisAlignment: WrapCrossAlignment.center,
@@ -849,17 +854,16 @@ class ReplyBoxState extends State<ReplyBox> {
 											Icon(CupertinoIcons.photo),
 											Text('Select file', textAlign: TextAlign.center),
 										]
-									),
-									onPressed: _selectAttachment
+									)
 								)
 							)
 						)
 					),
 					if (context.read<ImageboardSite>().getEmotes().isNotEmpty) Center(
 						child: CupertinoButton(
-							child: const Icon(CupertinoIcons.smiley),
 							padding: EdgeInsets.zero,
-							onPressed: _pickEmote
+							onPressed: _pickEmote,
+							child: const Icon(CupertinoIcons.smiley)
 						)
 					)
 				]
@@ -951,6 +955,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				if (!showOptions && attachment != null) CupertinoButton(
 					alignment: Alignment.center,
 					padding: EdgeInsets.zero,
+					onPressed: expandAction,
 					child: ClipRRect(
 						borderRadius: BorderRadius.circular(4),
 						child: ConstrainedBox(
@@ -960,13 +965,12 @@ class ReplyBoxState extends State<ReplyBox> {
 							),
 							child: SavedAttachmentThumbnail(file: attachment!, fontSize: 12)
 						)
-					),
-					onPressed: expandAction
+					)
 				)
 				else CupertinoButton(
-					child: const Icon(CupertinoIcons.paperclip),
 					padding: EdgeInsets.zero,
-					onPressed: expandAction
+					onPressed: expandAction,
+					child: const Icon(CupertinoIcons.paperclip)
 				),
 				TimedRebuilder(
 					interval: const Duration(seconds: 1),
@@ -1014,9 +1018,9 @@ class ReplyBoxState extends State<ReplyBox> {
 							}
 						}
 						return CupertinoButton(
-							child: const Icon(CupertinoIcons.paperplane),
 							padding: EdgeInsets.zero,
-							onPressed: loading ? null : _submit
+							onPressed: loading ? null : _submit,
+							child: const Icon(CupertinoIcons.paperplane)
 						);
 					}
 				)
@@ -1069,10 +1073,11 @@ class ReplyBoxState extends State<ReplyBox> {
 								padding: const EdgeInsets.all(4),
 								child: const Text('Use suggested image', textAlign: TextAlign.center),
 								onPressed: () async {
+									final site = context.read<ImageboardSite>();
 									try {
-										final dir = await (Directory(Persistence.temporaryDirectory.path + '/sharecache')).create(recursive: true);
-										final data = await context.read<ImageboardSite>().client.get(_proposedAttachmentUrl!, options: dio.Options(responseType: dio.ResponseType.bytes));
-										final newFile = File(dir.path + DateTime.now().millisecondsSinceEpoch.toString() + '_' + _proposedAttachmentUrl!.split('/').last);
+										final dir = await (Directory('${Persistence.temporaryDirectory.path}/sharecache')).create(recursive: true);
+										final data = await site.client.get(_proposedAttachmentUrl!, options: dio.Options(responseType: dio.ResponseType.bytes));
+										final newFile = File('${dir.path}${DateTime.now().millisecondsSinceEpoch}_${_proposedAttachmentUrl!.split('/').last}');
 										await newFile.writeAsBytes(data.data);
 										attachment = newFile;
 										_filenameController.text = _proposedAttachmentUrl!.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');

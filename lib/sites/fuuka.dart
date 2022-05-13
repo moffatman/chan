@@ -108,8 +108,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 				filename: fileDetailsMatch.group(3)!,
 				ext: ext,
 				type: ext == '.webm' ? AttachmentType.webm : AttachmentType.image,
-				url: Uri.parse('https:' + url),
-				thumbnailUrl: Uri.parse('https:' + element.querySelector('.thumb')!.attributes['src']!),
+				url: Uri.parse('https:$url'),
+				thumbnailUrl: Uri.parse('https:${element.querySelector('.thumb')!.attributes['src']!}'),
 				md5: element.parent!.querySelectorAll('a').firstWhere((x) => x.text == 'View same').attributes['href']!.split('/').last,
 				spoiler: false,
 				width: int.parse(fileDetailsMatch.group(1)!),
@@ -132,7 +132,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 				final response = await client.head(Uri.https(baseUrl, link.attributes['href']!).toString(), options: Options(
 					validateStatus: (x) => true
 				));
-				linkedPostThreadIds[linkMatches.group(1)! + '/' + linkMatches.group(2)!] = int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!);
+				linkedPostThreadIds['${linkMatches.group(1)!}/${linkMatches.group(2)!}'] = int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!);
 			}
 		}
 		return Post(

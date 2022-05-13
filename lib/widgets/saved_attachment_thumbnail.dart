@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chan/services/media.dart';
 import 'package:chan/widgets/video_image_provider.dart';
 import 'package:extended_image/extended_image.dart';

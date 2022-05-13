@@ -252,7 +252,7 @@ class SettingsPage extends StatelessWidget {
 									]
 								),
 								onPressed: () {
-									launch(settings.contentSettingsUrl, forceSafariVC: false);
+									launchUrl(Uri.parse(settings.contentSettingsUrl), mode: LaunchMode.externalApplication);
 									settings.addAppResumeCallback(() async {
 										await Future.delayed(const Duration(seconds: 1));
 										settings.updateContentSettings();
@@ -563,17 +563,17 @@ class SettingsAppearancePage extends StatelessWidget {
 						const Text('Interface scale'),
 						const Spacer(),
 						CupertinoButton(
-							child: const Icon(CupertinoIcons.minus),
 							onPressed: settings.interfaceScale <= 0.5 ? null : () {
 								settings.interfaceScale -= 0.05;
-							}
+							},
+							child: const Icon(CupertinoIcons.minus)
 						),
 						Text('${(settings.interfaceScale * 100).round()}%'),
 						CupertinoButton(
-							child: const Icon(CupertinoIcons.plus),
 							onPressed: settings.interfaceScale >= 2.0 ? null : () {
 								settings.interfaceScale += 0.05;
-							}
+							},
+							child: const Icon(CupertinoIcons.plus)
 						),
 						const SizedBox(width: 16)
 					]
@@ -756,13 +756,13 @@ class SettingsAppearancePage extends StatelessWidget {
 						onPressed: () async {
 							await showCupertinoModalPopup(
 								context: context,
-								builder: (_context) => StatefulBuilder(
+								builder: (context) => StatefulBuilder(
 									builder: (context, setDialogState) => CupertinoActionSheet(
 										title: const Text('Edit post details'),
 										actions: [
 											CupertinoButton(
 												child: const Text('Close'),
-												onPressed: () => Navigator.pop(_context)
+												onPressed: () => Navigator.pop(context)
 											)
 										],
 										message: DefaultTextStyle(
@@ -918,13 +918,13 @@ class SettingsAppearancePage extends StatelessWidget {
 							Size size = Size(settings.catalogGridWidth, settings.catalogGridHeight);
 							await showCupertinoModalPopup(
 								context: context,
-								builder: (_context) => StatefulBuilder(
+								builder: (context) => StatefulBuilder(
 									builder: (context, setDialogState) => CupertinoActionSheet(
 										title: const Text('Resize catalog grid item'),
 										actions: [
 											CupertinoButton(
 												child: const Text('Close'),
-												onPressed: () => Navigator.pop(_context)
+												onPressed: () => Navigator.pop(context)
 											)
 										],
 										message: DefaultTextStyle(
@@ -952,21 +952,21 @@ class SettingsAppearancePage extends StatelessWidget {
 																		),
 																		CupertinoButton(
 																			padding: EdgeInsets.zero,
-																			child: const Icon(CupertinoIcons.minus),
 																			onPressed: size.width <= 100 ? null : () {
 																				setDialogState(() {
 																					size = Size(size.width - 1, size.height);
 																				});
-																			}
+																			},
+																			child: const Icon(CupertinoIcons.minus)
 																		),
 																		CupertinoButton(
 																			padding: EdgeInsets.zero,
-																			child: const Icon(CupertinoIcons.plus),
 																			onPressed: size.width >= 600 ? null : () {
 																				setDialogState(() {
 																					size = Size(size.width + 1, size.height);
 																				});
-																			}
+																			},
+																			child: const Icon(CupertinoIcons.plus)
 																		)
 																	]
 																),
@@ -986,21 +986,21 @@ class SettingsAppearancePage extends StatelessWidget {
 																		),
 																		CupertinoButton(
 																			padding: EdgeInsets.zero,
-																			child: const Icon(CupertinoIcons.minus),
 																			onPressed: size.height <= 100 ? null : () {
 																				setDialogState(() {
 																					size = Size(size.width, size.height - 1);
 																				});
-																			}
+																			},
+																			child: const Icon(CupertinoIcons.minus)
 																		),
 																		CupertinoButton(
 																			padding: EdgeInsets.zero,
-																			child: const Icon(CupertinoIcons.plus),
 																			onPressed: size.height >= 600 ? null : () {
 																				setDialogState(() {
 																					size = Size(size.width, size.height + 1);
 																				});
-																			}
+																			},
+																			child: const Icon(CupertinoIcons.plus)
 																		)
 																	]
 																)
@@ -1040,13 +1040,13 @@ class SettingsAppearancePage extends StatelessWidget {
 						onPressed: () async {
 							await showCupertinoModalPopup(
 								context: context,
-								builder: (_context) => StatefulBuilder(
+								builder: (context) => StatefulBuilder(
 									builder: (context, setDialogState) => CupertinoActionSheet(
 										title: const Text('Edit catalog item details'),
 										actions: [
 											CupertinoButton(
 												child: const Text('Close'),
-												onPressed: () => Navigator.pop(_context)
+												onPressed: () => Navigator.pop(context)
 											)
 										],
 										message: DefaultTextStyle(
@@ -1157,13 +1157,13 @@ class SettingsAppearancePage extends StatelessWidget {
 								showCupertinoDialog<bool>(
 									context: context,
 									barrierDismissible: true,
-									builder: (_context) => CupertinoAlertDialog(
+									builder: (context) => CupertinoAlertDialog(
 										content: Text('When the screen is at least ${settings.twoPaneBreakpoint.round()} pixels wide, two columns will be used.\nThe board catalog will be on the left and the current thread will be on the right.'),
 										actions: [
 											CupertinoDialogAction(
 												child: const Text('OK'),
 												onPressed: () {
-													Navigator.of(_context).pop();
+													Navigator.of(context).pop();
 												}
 											)
 										]
@@ -1234,7 +1234,7 @@ class SettingsDataPage extends StatelessWidget {
 				if (Platform.isAndroid) ...[
 					const SizedBox(height: 16),
 					CupertinoButton(
-						child: Text((settings.androidGallerySavePath == null ? 'Set' : 'Change') + ' media save directory'),
+						child: Text('${settings.androidGallerySavePath == null ? 'Set' : 'Change'} media save directory'),
 						onPressed: () async {
 							settings.androidGallerySavePath = await pickDirectory();
 						}
@@ -1253,13 +1253,13 @@ class SettingsDataPage extends StatelessWidget {
 								showCupertinoDialog<bool>(
 									context: context,
 									barrierDismissible: true,
-									builder: (_context) => CupertinoAlertDialog(
+									builder: (context) => CupertinoAlertDialog(
 										content: const Text('Send the captcha images you solve to a database to improve the automated solver. No other information about your posts will be collected.'),
 										actions: [
 											CupertinoDialogAction(
 												child: const Text('OK'),
 												onPressed: () {
-													Navigator.of(_context).pop();
+													Navigator.of(context).pop();
 												}
 											)
 										]
@@ -1293,13 +1293,13 @@ class SettingsDataPage extends StatelessWidget {
 								showCupertinoDialog<bool>(
 									context: context,
 									barrierDismissible: true,
-									builder: (_context) => CupertinoAlertDialog(
+									builder: (context) => CupertinoAlertDialog(
 										content: const Text('Links to sites such as YouTube will show the thumbnail and title of the page instead of the link URL.'),
 										actions: [
 											CupertinoDialogAction(
 												child: const Text('OK'),
 												onPressed: () {
-													Navigator.of(_context).pop();
+													Navigator.of(context).pop();
 												}
 											)
 										]
@@ -1443,7 +1443,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 										padding: const EdgeInsets.only(bottom: 8),
 										child: Text(entry.key, textAlign: TextAlign.left)
 									),
-									Text(megabytes.toStringAsFixed(1) + ' MB', textAlign: TextAlign.right)
+									Text('${megabytes.toStringAsFixed(1)} MB', textAlign: TextAlign.right)
 								]
 							);
 						}).toList()
@@ -1454,13 +1454,13 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 						children: [
 							CupertinoButton.filled(
 								padding: const EdgeInsets.all(16),
-								child: const Text('Recalculate'),
-								onPressed: _readFilesystemInfo
+								onPressed: _readFilesystemInfo,
+								child: const Text('Recalculate')
 							),
 							CupertinoButton.filled(
 								padding: const EdgeInsets.all(16),
-								child: Text(clearing ? 'Deleting...' : 'Delete all'),
-								onPressed: (folderSizes?.isEmpty ?? true) ? null : (clearing ? null : _clearCaches)
+								onPressed: (folderSizes?.isEmpty ?? true) ? null : (clearing ? null : _clearCaches),
+								child: Text(clearing ? 'Deleting...' : 'Delete all')
 							)
 						]
 					)
@@ -1493,22 +1493,22 @@ class SettingsThreadsPanel extends StatelessWidget {
 				confirmDelete(List<PersistentThreadState> toDelete) async {
 					final confirmed = await showCupertinoDialog<bool>(
 						context: context,
-						builder: (_context) => CupertinoAlertDialog(
+						builder: (context) => CupertinoAlertDialog(
 							title: const Text('Confirm deletion'),
 							content: Text('${describeCount(toDelete.length, 'thread')} will be deleted'),
 							actions: [
 								CupertinoDialogAction(
 									child: const Text('Cancel'),
 									onPressed: () {
-										Navigator.of(_context).pop();
+										Navigator.of(context).pop();
 									}
 								),
 								CupertinoDialogAction(
-									child: const Text('Confirm'),
 									isDestructiveAction: true,
 									onPressed: () {
-										Navigator.of(_context).pop(true);
-									}
+										Navigator.of(context).pop(true);
+									},
+									child: const Text('Confirm')
 								)
 							]
 						)
@@ -1538,8 +1538,8 @@ class SettingsThreadsPanel extends StatelessWidget {
 									Text(threadStateBox.values.where((t) => t.savedTime != null).length.toString(), textAlign: TextAlign.right),
 									const CupertinoButton(
 										padding: EdgeInsets.zero,
-										child: Text('Delete'),
-										onPressed: null
+										onPressed: null,
+										child: Text('Delete')
 									)
 								]
 							),
@@ -1550,8 +1550,8 @@ class SettingsThreadsPanel extends StatelessWidget {
 										Text(entry.item2.length.toString(), textAlign: TextAlign.right),
 										CupertinoButton(
 											padding: EdgeInsets.zero,
-											child: const Text('Delete'),
-											onPressed: entry.item2.isEmpty ? null : () => confirmDelete(entry.item2)
+											onPressed: entry.item2.isEmpty ? null : () => confirmDelete(entry.item2),
+											child: const Text('Delete')
 										)
 									]
 								);
@@ -1858,7 +1858,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 		final cont = await showCupertinoDialog<bool>(
 			context: context,
 			builder: (context) => CupertinoAlertDialog(
-				title: Text(widget.site.getLoginSystemName()! + ' Login'),
+				title: Text('${widget.site.getLoginSystemName()!} Login'),
 				content: ListBody(
 					children: [
 						const SizedBox(height: 8),
@@ -1899,6 +1899,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 				widget.site.persistence?.didUpdateBrowserState();
 			}
 			catch (e) {
+				if (!mounted) return;
 				alertError(context, e.toStringDio());
 			}
 			await _updateStatus();

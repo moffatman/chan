@@ -64,25 +64,24 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			mainAxisAlignment: MainAxisAlignment.spaceAround,
 			children: [
 				CupertinoButton(
-					child: const Text('1'),
 					onPressed: (loading || result.data?.page == 1) ? null : () {
 						page = 1;
 						_runQuery();
 						onChange();
-					}
+					},
+					child: const Text('1')
 				),
 				const Spacer(),
 				CupertinoButton(
-					child: const Icon(CupertinoIcons.chevron_left),
 					onPressed: (loading || result.data?.page == 1) ? null : () {
 						page = page! - 1;
 						_runQuery();
 						onChange();
-					}
+					},
+					child: const Icon(CupertinoIcons.chevron_left)
 				),
 				CupertinoButton(
 					padding: EdgeInsets.zero,
-					child: Text('Page $page'),
 					onPressed: (loading || result.data?.maxPage == 1) ? null : () async {
 						final controller = TextEditingController();
 						final selectedPage = await showCupertinoDialog<int>(
@@ -109,11 +108,11 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										}
 									),
 									CupertinoDialogAction(
-										child: const Text('OK'),
 										isDefaultAction: true,
 										onPressed: () {
 											Navigator.of(context).pop(int.tryParse(controller.text));
-										}
+										},
+										child: const Text('OK')
 									)
 								]
 							)
@@ -123,24 +122,25 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 							_runQuery();
 							onChange();
 						}
-					}
+					},
+					child: Text('Page $page')
 				),
 				CupertinoButton(
-					child: const Icon(CupertinoIcons.chevron_right),
 					onPressed: (loading || result.data?.page == result.data?.maxPage) ? null : () {
 						page = page! + 1;
 						_runQuery();
 						onChange();
-					}
+					},
+					child: const Icon(CupertinoIcons.chevron_right)
 				),
 				const Spacer(),
 				CupertinoButton(
-					child: Text('${result.data?.maxPage}'),
 					onPressed: (loading || result.data?.page == result.data?.maxPage) ? null : () {
 						page = result.data?.maxPage;
 						_runQuery();
 						onChange();
-					}
+					},
+					child: Text('${result.data?.maxPage}')
 				),
 			]
 		);
@@ -154,8 +154,8 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					children: [
 						ErrorMessageCard(result.error!.toStringDio()),
 						CupertinoButton(
-							child: const Text('Retry'),
-							onPressed: _runQuery
+							onPressed: _runQuery,
+							child: const Text('Retry')
 						)
 					]
 				)

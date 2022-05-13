@@ -83,7 +83,7 @@ enum _MediaFilter {
 	withSpecificMedia
 }
 
-extension ConvertToPublic on _MediaFilter {
+extension _ConvertToPublic on _MediaFilter {
 	MediaFilter? get value {
 		switch (this) {
 			case _MediaFilter.none:
@@ -98,7 +98,7 @@ extension ConvertToPublic on _MediaFilter {
 	}
 }
 
-extension ConvertToPrivate on MediaFilter {
+extension _ConvertToPrivate on MediaFilter {
 	_MediaFilter? get value {
 		switch (this) {
 			case MediaFilter.none:

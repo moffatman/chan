@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/models/search.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
@@ -93,7 +92,7 @@ class SiteLainchan extends ImageboardSite {
 				ext: ext,
 				board: board,
 				url: Uri.https(baseUrl, '/$board/src/$id$ext'),
-				thumbnailUrl: Uri.https(baseUrl, '/$board/thumb/$id' + (data['ext'] == '.webm' ? '.jpg' : '.png')),
+				thumbnailUrl: Uri.https(baseUrl, '/$board/thumb/$id${data['ext'] == '.webm' ? '.jpg' : '.png'}'),
 				md5: data['md5'],
 				spoiler: data['spoiler'] == 1,
 				width: data['w'],
@@ -379,7 +378,7 @@ class SiteLainchan extends ImageboardSite {
 		if (threadId != null) {
 			threadUrl += 'res/$threadId.html';
 			if (postId != null) {
-				threadUrl + '#q$postId';
+				threadUrl += '#q$postId';
 			}
 		}
 		return threadUrl;

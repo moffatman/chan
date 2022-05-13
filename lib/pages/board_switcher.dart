@@ -62,40 +62,40 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 
 	List<ImageboardBoard> getFilteredBoards() {
 		final settings = context.read<EffectiveSettings>();
-		List<ImageboardBoard> _filteredBoards = boards.where((board) {
+		List<ImageboardBoard> filteredBoards = boards.where((board) {
 			return board.name.toLowerCase().contains(searchString) || board.title.toLowerCase().contains(searchString);
 		}).toList();
 		if (searchString.isNotEmpty) {
-			mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
+			mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
 				return a.name.length - b.name.length;
 			});
 		}
-		mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
+		mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
 			return a.name.indexOf(searchString) - b.name.indexOf(searchString);
 		});
-		mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
+		mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
 			return (b.name.contains(searchString) ? 1 : 0) - (a.name.contains(searchString) ? 1 : 0);
 		});
 		if (searchString.isEmpty) {
 			final favsList = context.read<Persistence>().browserState.favouriteBoards;
 			if (widget.currentlyPickingFavourites) {
-				_filteredBoards.removeWhere((b) => favsList.contains(b.name));
+				filteredBoards.removeWhere((b) => favsList.contains(b.name));
 			}
 			else {
 				final favs = {
 					for (final pair in favsList.asMap().entries)
 						pair.value: pair.key
 				};
-				mergeSort<ImageboardBoard>(_filteredBoards, compare: (a, b) {
+				mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
 					return (favs[a.name] ?? favs.length) - (favs[b.name] ?? favs.length);
 				});
 			}
 		}
-		_filteredBoards = _filteredBoards.where((b) => settings.showBoard(context, b.name)).toList();
+		filteredBoards = filteredBoards.where((b) => settings.showBoard(context, b.name)).toList();
 		if (settings.onlyShowFavouriteBoardsInSwitcher) {
-			_filteredBoards = _filteredBoards.where((b) => context.read<Persistence>().browserState.favouriteBoards.contains(b.name)).toList();
+			filteredBoards = filteredBoards.where((b) => context.read<Persistence>().browserState.favouriteBoards.contains(b.name)).toList();
 		}
-		return _filteredBoards;
+		return filteredBoards;
 	}
 
 	void _afterScroll() {
@@ -115,7 +115,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		final settings = context.watch<EffectiveSettings>();
 		_backgroundColor.value ??= CupertinoTheme.of(context).scaffoldBackgroundColor;
 		final browserState = context.watch<Persistence>().browserState;
-		final _filteredBoards = getFilteredBoards();
+		final filteredBoards = getFilteredBoards();
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
 			backgroundColor: Colors.transparent,
@@ -136,17 +136,17 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									scrollController.jumpTo(scrollController.position.pixels);
 								},
 								onSubmitted: (String board) {
-									final _filteredBoards = getFilteredBoards();
-									if (_filteredBoards.isNotEmpty) {
-										Navigator.of(context).pop(_filteredBoards.first);
+									final currentBoards = getFilteredBoards();
+									if (currentBoards.isNotEmpty) {
+										Navigator.of(context).pop(currentBoards.first);
 									}
 									else {
 										_focusNode.requestFocus();
 									}
 								},
-								onChanged: (String _searchString) {
+								onChanged: (String newSearchString) {
 									setState(() {
-										searchString = _searchString;
+										searchString = newSearchString;
 									});
 								}
 							)
@@ -157,6 +157,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 					padding: EdgeInsets.zero,
 					child: const Icon(CupertinoIcons.gear),
 					onPressed: () async {
+						final persistence = context.read<Persistence>();
 						await showCupertinoDialog(
 							barrierDismissible: true,
 							context: context,
@@ -279,7 +280,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								]
 							)
 						);
-						context.read<Persistence>().didUpdateBrowserState();
+						persistence.didUpdateBrowserState();
 						setState(() {});
 					}
 				)
@@ -307,7 +308,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								color: color
 							)
 						),
-						(_filteredBoards.isEmpty) ? const Center(
+						(filteredBoards.isEmpty) ? const Center(
 							child: Text('No matching boards')
 						) : SafeArea(
 							child: settings.useBoardSwitcherList ? ListView.separated(
@@ -315,9 +316,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								controller: scrollController,
 								padding: const EdgeInsets.only(top: 4, bottom: 4),
 								separatorBuilder: (context, i) => const SizedBox(height: 2),
-								itemCount: _filteredBoards.length,
+								itemCount: filteredBoards.length,
 								itemBuilder: (context, i) {
-									final board = _filteredBoards[i];
+									final board = filteredBoards[i];
 									return GestureDetector(
 										child: Container(
 											padding: const EdgeInsets.all(4),
@@ -364,7 +365,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								mainAxisSpacing: 4,
 								childAspectRatio: 1.2,
 								crossAxisSpacing: 4,
-								children: _filteredBoards.map((board) {
+								children: filteredBoards.map((board) {
 									return GestureDetector(
 										child: Container(
 											padding: const EdgeInsets.all(4),

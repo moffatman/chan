@@ -153,11 +153,11 @@ class AttachmentViewerController extends ChangeNotifier {
 					if (post == null) {
 						throw AttachmentNotFoundException(attachment);
 					}
-					final _check = await site.client.head(post.attachment!.url.toString(), options: Options(
+					final check = await site.client.head(post.attachment!.url.toString(), options: Options(
 						validateStatus: (_) => true,
 						headers: context.read<ImageboardSite>().getHeaders(post.attachment!.url)
 					));
-					if (_check.statusCode != 200) {
+					if (check.statusCode != 200) {
 						throw AttachmentNotArchivedException(attachment);
 					}
 				});
@@ -182,6 +182,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (attachment.type == AttachmentType.webm && ((videoPlayerController != null && !force) || _ongoingConversion != null)) {
 			return;
 		}
+		final settings = context.read<EffectiveSettings>();
 		_errorMessage = null;
 		videoLoadingProgress.value = null;
 		_goodImageSource = null;
@@ -208,7 +209,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					await ExtendedNetworkImageProvider(
 						goodImageSource.toString(),
 						cache: true,
-						headers: context.read<ImageboardSite>().getHeaders(goodImageSource!)
+						headers: site.getHeaders(goodImageSource!)
 					).getNetworkImageData();
 					final file = await getCachedImageFile(goodImageSource.toString());
 					if (file != null && _cachedFile?.path != file.path) {
@@ -229,7 +230,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					if (_isDisposed) {
 						return;
 					}
-					if (context.read<EffectiveSettings>().muteAudio.value) {
+					if (settings.muteAudio.value) {
 						await _videoPlayerController?.setVolume(0);
 						if (_isDisposed) {
 							return;
@@ -261,7 +262,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					if (_isDisposed) {
 						return;
 					}
-					if (context.read<EffectiveSettings>().muteAudio.value) {
+					if (settings.muteAudio.value) {
 						await _videoPlayerController?.setVolume(0);
 						if (_isDisposed) {
 							return;
@@ -388,8 +389,8 @@ class AttachmentViewerController extends ChangeNotifier {
 				responseType: ResponseType.bytes
 			));
 			final systemTempDirectory = Persistence.temporaryDirectory;
-			final directory = await (Directory(systemTempDirectory.path + '/webmcache')).create(recursive: true);
-			return await File(directory.path + attachment.id.toString() + '.webm').writeAsBytes(response.data);
+			final directory = await (Directory('${systemTempDirectory.path}/webmcache')).create(recursive: true);
+			return await File('${directory.path}${attachment.id}.webm').writeAsBytes(response.data);
 		}
 		else {
 			throw Exception('No file available');
@@ -398,10 +399,10 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<File> _moveToShareCache() async {
 		final systemTempDirectory = Persistence.temporaryDirectory;
-		final shareDirectory = await (Directory(systemTempDirectory.path + '/sharecache')).create(recursive: true);
+		final shareDirectory = await (Directory('${systemTempDirectory.path}/sharecache')).create(recursive: true);
 		final newFilename = attachment.id.toString() + attachment.ext.replaceFirst('webm', Platform.isAndroid ? 'webm' : 'mp4');
 		File? originalFile = await getFile();
-		return await originalFile.copy(shareDirectory.path.toString() + '/' + newFilename);
+		return await originalFile.copy('${shareDirectory.path}/$newFilename');
 	}
 
 	Future<void> share(Rect? sharePosition) async {
@@ -415,6 +416,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<void> download() async {
 		if (_isDownloaded) return;
+		final settings = context.read<EffectiveSettings>();
 		try {
 			if (Platform.isIOS) {
 				final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common, filterOption: FilterOptionGroup(containsEmptyAlbum: true));
@@ -428,15 +430,12 @@ class AttachmentViewerController extends ChangeNotifier {
 				_isDownloaded = true;
 			}
 			else if (Platform.isAndroid) {
-				if (context.read<EffectiveSettings>().androidGallerySavePath == null) {
-					// pick the path
-					context.read<EffectiveSettings>().androidGallerySavePath = await pickDirectory();
-				}
-				if (context.read<EffectiveSettings>().androidGallerySavePath != null) {
+				settings.androidGallerySavePath ??= await pickDirectory();
+				if (settings.androidGallerySavePath != null) {
 					File source = (await getFile());
 					await saveFile(
 						sourcePath: source.path,
-						destinationDir: context.read<EffectiveSettings>().androidGallerySavePath!,
+						destinationDir: settings.androidGallerySavePath!,
 						destinationName: attachment.id.toString() + attachment.ext
 					);
 					_isDownloaded = true;
@@ -538,7 +537,7 @@ class AttachmentViewer extends StatelessWidget {
 				}
 			});
 		}
-		void _onDoubleTap(ExtendedImageGestureState state) {
+		void onDoubleTap(ExtendedImageGestureState state) {
 			final old = state.gestureDetails!;
 			if ((old.totalScale ?? 1) > 1) {
 				state.gestureDetails = GestureDetails(
@@ -564,7 +563,7 @@ class AttachmentViewer extends StatelessWidget {
 				);
 			}
 		}
-		_buildChild(bool useRealGestureKey) => ExtendedImage(
+		buildChild(bool useRealGestureKey) => ExtendedImage(
 			image: image,
 			extendedImageGestureKey: useRealGestureKey ? controller.gestureKey : null,
 			color: const Color.fromRGBO(238, 242, 255, 1),
@@ -602,9 +601,9 @@ class AttachmentViewer extends StatelessWidget {
 					}
 					loadstate.returnLoadStateChangedWidget = true;
 					buildContent(context, _) {
-						Widget _child = Container();
+						Widget child = Container();
 						if (controller.errorMessage != null) {
-							_child = Center(
+							child = Center(
 								child: ErrorMessageCard(controller.errorMessage!, remedies: {
 										'Retry': () => controller.reloadFullAttachment(),
 										if (!controller.checkArchives) 'Try archives': () => controller.tryArchives()
@@ -613,25 +612,25 @@ class AttachmentViewer extends StatelessWidget {
 							);
 						}
 						if (controller.showLoadingProgress || !controller.isFullResolution) {
-							_child = _centeredLoader(
+							child = _centeredLoader(
 								active: controller.isFullResolution,
 								value: loadingValue
 							);
 						}
 						final Rect? rect = controller.gestureKey.currentState?.gestureDetails?.destinationRect;
-						final Widget __child = Transform.scale(
+						child = Transform.scale(
 							scale: (controller.gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (controller.gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
-							child: _child
+							child: child
 						);
 						if (rect == null) {
 							return Positioned.fill(
-								child: __child
+								child: child
 							);
 						}
 						else {
 							return Positioned.fromRect(
 								rect: rect,
-								child: __child
+								child: child
 							);
 						}
 					}
@@ -684,61 +683,62 @@ class AttachmentViewer extends StatelessWidget {
 			},
 			onDoubleTapDragEnd: (details) {
 				if (details.localOffsetFromOrigin.distance < 1) {
-					_onDoubleTap(controller.gestureKey.currentState!);
+					onDoubleTap(controller.gestureKey.currentState!);
 				}
 				controller._gestureDetailsOnDoubleTapDragStart = null;
 			},
-			child: !allowContextMenu ? _buildChild(true) : CupertinoContextMenu(
+			child: !allowContextMenu ? buildChild(true) : CupertinoContextMenu(
 				actions: [
 						CupertinoContextMenuAction(
-							child: const Text('Download'),
 							trailingIcon: CupertinoIcons.cloud_download,
 							onPressed: () async {
 								Navigator.of(context, rootNavigator: true).pop();
 								await controller.download();
 								showToast(context: context, message: 'Downloaded ${controller.attachment.filename}', icon: CupertinoIcons.cloud_download);
-							}
+							},
+							child: const Text('Download')
 						),
 						CupertinoContextMenuAction(
-							child: const Text('Share'),
 							trailingIcon: CupertinoIcons.share,
 							onPressed: () async {
 								final offset = (controller.contextMenuShareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 								final size = controller.contextMenuShareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
 								await controller.share((offset != null && size != null) ? offset & size : null);
+								// ignore: use_build_context_synchronously
 								Navigator.of(context, rootNavigator: true).pop();
 							},
-							key: controller.contextMenuShareButtonKey
+							key: controller.contextMenuShareButtonKey,
+							child: const Text('Share')
 						),
 						CupertinoContextMenuAction(
-							child: const Text('Search archives'),
 							trailingIcon: Icons.image_search,
 							onPressed: () {
 								openSearch(context: context, query: ImageboardArchiveSearchQuery(boards: [attachment.board], md5: attachment.md5));
-							}
+							},
+							child: const Text('Search archives')
 						),
 						CupertinoContextMenuAction(
-							child: const Text('Search Google'),
 							trailingIcon: Icons.image_search,
 							onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
 								'image_url': attachment.url.toString(),
 								'safe': 'off'
-							}))
+							})),
+							child: const Text('Search Google')
 						),
 						CupertinoContextMenuAction(
-							child: const Text('Search Yandex'),
 							trailingIcon: Icons.image_search,
 							onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
 								'rpt': 'imageview',
 								'url': attachment.url.toString()
-							}))
+							})),
+							child: const Text('Search Yandex')
 						)
 				],
-				child: _buildChild(true),
+				child: buildChild(true),
 				previewBuilder: (context, animation, child) => IgnorePointer(
 					child: AspectRatio(
 						aspectRatio: (attachment.width != null && attachment.height != null) ? (attachment.width! / attachment.height!) : 1,
-						child: _buildChild(false)
+						child: buildChild(false)
 					)
 				)
 			)

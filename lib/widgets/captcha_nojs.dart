@@ -118,7 +118,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			throw CaptchaNoJSException('Image missing from challenge');
 		}
 		final challengeImageCompleter = Completer<ui.Image>();
-		NetworkImage('https://www.google.com' + img.attributes['src']!).resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
+		NetworkImage('https://www.google.com${img.attributes['src']!}').resolve(const ImageConfiguration()).addListener(ImageStreamListener((info, isSynchronous) {
 			challengeImageCompleter.complete(info.image);
 		}, onError: (e, st) {
 			challengeImageCompleter.completeError(e);
@@ -201,7 +201,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			queryParameters: {
 				'k': widget.request.key
 			},
-			data: 'c=${chal.responseKey}' + chal.subimages.expand((r) => r).where((s) => s.selected).map((s) => '&response=${s.id}').join(),
+			data: 'c=${chal.responseKey}${chal.subimages.expand((r) => r).where((s) => s.selected).map((s) => '&response=${s.id}').join()}',
 			options: Options(
 				contentType: Headers.formUrlEncodedContentType,
 				headers: {
@@ -248,8 +248,8 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 					children: [
 						Text(errorMessage!),
 						CupertinoButton(
-							child: const Text('Retry'),
-							onPressed: _tryRequestChallenge
+							onPressed: _tryRequestChallenge,
+							child: const Text('Retry')
 						)
 					]
 				)
@@ -302,13 +302,13 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 						mainAxisSize: MainAxisSize.min,
 						children: [
 							CupertinoButton(
-								child: const Text('Refresh'),
-								onPressed: _tryRequestChallenge
+								onPressed: _tryRequestChallenge,
+								child: const Text('Refresh')
 							),
 							const SizedBox(width: 32),
 							CupertinoButton(
-								child: const Text('Submit'),
-								onPressed: _trySubmitChallenge
+								onPressed: _trySubmitChallenge,
+								child: const Text('Submit')
 							)
 						]
 					)

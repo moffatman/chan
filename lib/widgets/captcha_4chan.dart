@@ -109,7 +109,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_greyOutPickers = true;
 		});
 		try {
-			final _guess = await guess(
+			final bestGuess = await guess(
 				await _screenshotImage(),
 				onProgress: (progress) {
 					setState(() {
@@ -117,15 +117,15 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					});
 				}
 			);
-			_solutionController.text = _guess.guess;
-			_lastGuessText = _guess.guess;
-			_guessConfidences = _guess.confidences;
+			_solutionController.text = bestGuess.guess;
+			_lastGuessText = bestGuess.guess;
+			_guessConfidences = bestGuess.confidences;
 		}
 		catch (e, st) {
 			print(e);
 			print(st);
 		}
-		if (context.read<EffectiveSettings>().supportMouse.value) {
+		if (mounted && context.read<EffectiveSettings>().supportMouse.value) {
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
 			_solutionNode.requestFocus();
 		}
@@ -175,6 +175,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	}
 
 	void _tryRequestChallenge() async {
+		final settings = context.read<EffectiveSettings>();
 		try {
 			setState(() {
 				errorMessage = null;
@@ -201,7 +202,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			if (challenge!.backgroundImage != null) {
 				await _alignImage();
 			}
-			if (context.read<EffectiveSettings>().useNewCaptchaForm) {
+			if (settings.useNewCaptchaForm) {
 				_solutionController.text = "00000";
 				setState(() {});
 				await _animateGuess();
@@ -363,6 +364,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				builder: (context) {
 					final seconds = tryAgainAt!.difference(DateTime.now()).inSeconds;
 					return CupertinoButton(
+						onPressed: seconds > 0 ? null : _tryRequestChallenge,
 						child: Row(
 							mainAxisSize: MainAxisSize.min,
 							children: [
@@ -373,15 +375,14 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									child: seconds > 0 ? Text('$seconds') : Container()
 								)
 							]
-						),
-						onPressed: seconds > 0 ? null : _tryRequestChallenge
+						)
 					);
 				}
 			);
 		}
 		return CupertinoButton(
-			child: const Icon(CupertinoIcons.refresh),
-			onPressed: _tryRequestChallenge
+			onPressed: _tryRequestChallenge,
+			child: const Icon(CupertinoIcons.refresh)
 		);
 	}
 
@@ -596,7 +597,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																	crossAxisAlignment: CrossAxisAlignment.stretch,
 																	children: [
 																		GestureDetector(
-																			child:const SizedBox(height: 75),
 																			behavior: HitTestBehavior.translucent,
 																			onTap: () {
 																				_letterPickerControllers[i].animateToItem(
@@ -604,18 +604,18 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																					duration: const Duration(milliseconds: 100),
 																					curve: Curves.ease
 																				);
-																			}
+																			},
+																			child:const SizedBox(height: 75)
 																		),
 																		GestureDetector(
-																			child: const SizedBox(height: 50),
 																			behavior: HitTestBehavior.translucent,
 																			onTap: () {
 																				_solutionController.selection = TextSelection(baseOffset: i, extentOffset: i + 1);
 																				_solutionNode.requestFocus();
-																			}
+																			},
+																			child: const SizedBox(height: 50)
 																		),
 																		GestureDetector(
-																			child: const SizedBox(height: 75),
 																			behavior: HitTestBehavior.translucent,
 																			onTap: () {
 																				_letterPickerControllers[i].animateToItem(
@@ -623,7 +623,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																					duration: const Duration(milliseconds: 100),
 																					curve: Curves.ease
 																				);
-																			}
+																			},
+																			child: const SizedBox(height: 75)
 																		)
 																	]
 																)
@@ -649,6 +650,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									),
 									CupertinoButton(
 										padding: EdgeInsets.zero,
+										onPressed: _greyOutPickers ? null : () {
+											_submit(_solutionController.text);
+										},
 										child: SizedBox(
 											height: 50,
 											child: Center(
@@ -660,10 +664,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 													)
 												)
 											)
-										),
-										onPressed: _greyOutPickers ? null : () {
-											_submit(_solutionController.text);
-										}
+										)
 									)
 								]
 							)

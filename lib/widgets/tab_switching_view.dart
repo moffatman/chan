@@ -13,7 +13,7 @@ class TabSwitchingView extends StatefulWidget {
   final IndexedWidgetBuilder tabBuilder;
 
   @override
-  _TabSwitchingViewState createState() => _TabSwitchingViewState();
+  createState() => _TabSwitchingViewState();
 }
 
 class _TabSwitchingViewState extends State<TabSwitchingView> {

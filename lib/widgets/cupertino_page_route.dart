@@ -160,8 +160,8 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 			return CupertinoFullscreenDialogTransition(
 				primaryRouteAnimation: animation,
 				secondaryRouteAnimation: secondaryAnimation,
-				child: child,
 				linearTransition: linearTransition,
+				child: child
 			);
 		} else {
 			return CupertinoPageTransition(

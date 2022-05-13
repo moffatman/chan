@@ -67,7 +67,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 					onSubmitted: (value) {
 						var url = Uri.parse(value);
 						if (url.scheme.isEmpty) {
-							url = Uri.parse("https://www.google.com/search?tbm=isch&q=" + value);
+							url = Uri.parse("https://www.google.com/search?tbm=isch&q=$value");
 						}
 						webViewController?.loadUrl(urlRequest: URLRequest(url: url));
 					},
@@ -177,7 +177,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										results.removeWhere((r) => r['src'].isEmpty);
 										results.sort((a, b) => a['left'].compareTo(b['left']));
 										mergeSort<dynamic>(results, compare: (a, b) => a['top'].compareTo(b['top']));
-										_makeGrid(BuildContext context, List<dynamic> images) => GridView.builder(
+										makeGrid(BuildContext context, List<dynamic> images) => GridView.builder(
 											gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
 												maxCrossAxisExtent: 150,
 												mainAxisSpacing: 16,
@@ -207,6 +207,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												return GestureDetector(
 													onTap: () async {
 														final png = await eState?.extendedImageInfo?.image.toByteData(format: ImageByteFormat.png);
+														if (!mounted) return;
 														Navigator.of(context).pop(png);
 													},
 													child: Column(
@@ -215,7 +216,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																child: imageWidget
 															),
 															const SizedBox(height: 4),
-															Text(image['width'].round().toString() + 'x' + image['height'].round().toString(), style: const TextStyle(
+															Text('${image['width'].round()}x${image['height'].round()}', style: const TextStyle(
 																fontSize: 16
 															))
 														]
@@ -225,6 +226,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										);
 										final fullImages = results.where((r) => r['width'] * r['height'] >= 10201).toList();
 										final thumbnails = results.where((r) => r['width'] * r['height'] < 10201).toList();
+										if (!mounted) return;
 										final pickedBytes = await Navigator.of(context).push<ByteData>(TransparentRoute(
 											builder: (context) => OverscrollModalPage(
 												child: Container(
@@ -235,7 +237,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 														children: [
 															const Text('Images'),
 															const SizedBox(height: 16),
-															_makeGrid(context, fullImages),
+															makeGrid(context, fullImages),
 															if (thumbnails.isNotEmpty) ...[
 																const SizedBox(height: 16),
 																CupertinoButton(
@@ -251,14 +253,14 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																						children: [
 																							const Text('Thumbnails'),
 																							const SizedBox(height: 16),
-																							_makeGrid(innerContext, thumbnails)
+																							makeGrid(innerContext, thumbnails)
 																						]
 																					)
 																				)
 																			),
 																			showAnimations: context.read<EffectiveSettings>().showAnimations
 																		));
-																		if (selectedThumbnail != null) {
+																		if (selectedThumbnail != null && mounted) {
 																			Navigator.of(context).pop(selectedThumbnail);
 																		}
 																	}
@@ -271,10 +273,12 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											showAnimations: context.read<EffectiveSettings>().showAnimations
 										));
 										if (pickedBytes != null) {
-											final f = File(Persistence.temporaryDirectory.path + '/webpickercache/' + DateTime.now().millisecondsSinceEpoch.toString() + '.png');
+											final f = File('${Persistence.temporaryDirectory.path}/webpickercache/${DateTime.now().millisecondsSinceEpoch}.png');
 											await f.create(recursive: true);
 											await f.writeAsBytes(pickedBytes.buffer.asUint8List());
-											Navigator.of(context).pop(f);
+											if (mounted) {
+												Navigator.of(context).pop(f);
+											}
 										}
 									}
 								),

@@ -8,8 +8,8 @@ import 'package:share_extend/share_extend.dart';
 import 'package:share_plus/share_plus.dart';
 
 extension SafeWhere<T> on Iterable<T> {
-	T? tryFirstWhere(bool Function(T v) f) => cast<T?>().firstWhere((v) => f(v!), orElse: () => null);
-	T? tryLastWhere(bool Function(T v) f) => cast<T?>().lastWhere((v) => f(v!), orElse: () => null);
+	T? tryFirstWhere(bool Function(T v) f) => cast<T?>().firstWhere((v) => f(v as T), orElse: () => null);
+	T? tryLastWhere(bool Function(T v) f) => cast<T?>().lastWhere((v) => f(v as T), orElse: () => null);
 }
 
 extension BinarySafeWhere<T> on List<T> {
@@ -105,7 +105,7 @@ class ExpiringMutexResource<T> {
 				return;
 			}
 			if (_resource != null) {
-				_deinitializer(_resource!);
+				_deinitializer(_resource as T);
 				_resource = null;
 			}
 		});

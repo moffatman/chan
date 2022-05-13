@@ -169,7 +169,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				board: data['board']['shortname'],
 				id: int.parse(serverFilenameParts.first),
 				filename: data['media']['media_filename'],
-				ext: '.' + serverFilenameParts.last,
+				ext: '.${serverFilenameParts.last}',
 				type: serverFilenameParts.last == 'webm' ? AttachmentType.webm : AttachmentType.image,
 				url: url,
 				thumbnailUrl: thumbnailUrl,

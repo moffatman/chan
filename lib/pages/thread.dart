@@ -91,17 +91,17 @@ class _ThreadPageState extends State<ThreadPage> {
 			setState(() {});
 		}
 		if (persistentState.thread != lastThread) {
-			final _persistentState = persistentState;
+			final tmpPersistentState = persistentState;
 			Future.delayed(const Duration(milliseconds: 100), () {
-				if (persistentState == _persistentState && !_unnaturallyScrolling) {
+				if (persistentState == tmpPersistentState && !_unnaturallyScrolling) {
 					final lastItem = _listController.lastVisibleItem;
 					if (lastItem != null) {
-						_persistentState.lastSeenPostId = max(_persistentState.lastSeenPostId ?? 0, lastItem.id);
-						_persistentState.save();
+						tmpPersistentState.lastSeenPostId = max(tmpPersistentState.lastSeenPostId ?? 0, lastItem.id);
+						tmpPersistentState.save();
 						setState(() {});
 					}
 					else {
-						print('Failed to find last visible post after an update in $_persistentState');
+						print('Failed to find last visible post after an update in $tmpPersistentState');
 					}
 				}
 			});
@@ -272,7 +272,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	Widget build(BuildContext context) {
 		String title = '/${widget.thread.board}/';
 		if (persistentState.thread?.title != null) {
-			title += ' - ' + context.read<EffectiveSettings>().filterProfanity(persistentState.thread!.title!);
+			title += ' - ${context.read<EffectiveSettings>().filterProfanity(persistentState.thread!.title!)}';
 		}
 		else {
 			title += widget.thread.id.toString();
@@ -338,19 +338,19 @@ class _ThreadPageState extends State<ThreadPage> {
 												// Ask what to do
 												final choice = await showCupertinoDialog<bool>(
 													context: context,
-													builder: (_context) => CupertinoAlertDialog(
+													builder: (context) => CupertinoAlertDialog(
 														title: const Text('When to notify?'),
 														actions: [
 															CupertinoDialogAction(
 																child: const Text('Only (You)s'),
 																onPressed: () {
-																	Navigator.of(_context).pop(true);
+																	Navigator.of(context).pop(true);
 																}
 															),
 															CupertinoDialogAction(
 																child: const Text('All Posts'),
 																onPressed: () {
-																	Navigator.of(_context).pop(false);
+																	Navigator.of(context).pop(false);
 																}
 															)
 														]
@@ -393,10 +393,10 @@ class _ThreadPageState extends State<ThreadPage> {
 									),
 									CupertinoButton(
 										padding: EdgeInsets.zero,
-										child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply),
 										onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
 											_replyBoxKey.currentState?.toggleReplyBox();
-										}
+										},
+										child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply)
 									)
 								]
 							)
@@ -482,14 +482,14 @@ class _ThreadPageState extends State<ThreadPage> {
 																						if (persistentState.thread!.isArchived) ...[
 																							GestureDetector(
 																								behavior: HitTestBehavior.opaque,
+																								onTap: _switchToLive,
 																								child: Row(
 																									children: const [
 																										Icon(CupertinoIcons.archivebox),
 																										SizedBox(width: 8),
 																										Text('Archived')
 																									]
-																								),
-																								onTap: _switchToLive
+																								)
 																							),
 																							const Spacer()
 																						]
@@ -508,45 +508,45 @@ class _ThreadPageState extends State<ThreadPage> {
 																			)
 																		},
 																		listUpdater: () async {
-																			final _persistentState = persistentState;
+																			final tmpPersistentState = persistentState;
 																			lastPageNumber = persistentState.thread?.currentPage;
 																			// The thread might switch in this interval
-																			final _thread = _persistentState.useArchive ?
+																			final newThread = tmpPersistentState.useArchive ?
 																				await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
 																				await context.read<ImageboardSite>().getThread(widget.thread);
-																			final bool firstLoad = _persistentState.thread == null;
+																			final bool firstLoad = tmpPersistentState.thread == null;
 																			bool shouldScroll = false;
-																			if (_thread != _persistentState.thread) {
-																				_persistentState.thread = _thread;
-																				if (persistentState == _persistentState) {
-																					zone.thread = _thread;
+																			if (newThread != tmpPersistentState.thread) {
+																				tmpPersistentState.thread = newThread;
+																				if (persistentState == tmpPersistentState) {
+																					zone.thread = newThread;
 																					if (firstLoad) shouldScroll = true;
 																				}
-																				await _persistentState.save();
+																				await tmpPersistentState.save();
 																				setState(() {});
 																				Future.delayed(const Duration(milliseconds: 100), () {
-																					if (persistentState == _persistentState && !_unnaturallyScrolling) {
+																					if (persistentState == tmpPersistentState && !_unnaturallyScrolling) {
 																						final lastItem = _listController.lastVisibleItem;
 																						if (lastItem != null) {
-																							_persistentState.lastSeenPostId = max(_persistentState.lastSeenPostId ?? 0, lastItem.id);
-																							_persistentState.save();
+																							tmpPersistentState.lastSeenPostId = max(tmpPersistentState.lastSeenPostId ?? 0, lastItem.id);
+																							tmpPersistentState.save();
 																							setState(() {});
 																						}
 																						else {
-																							print('Failed to find last visible post after an update in $_persistentState');
+																							print('Failed to find last visible post after an update in $tmpPersistentState');
 																						}
 																					}
 																				});
 																			}
-																			else if (_thread.currentPage != lastPageNumber) {
+																			else if (newThread.currentPage != lastPageNumber) {
 																				setState(() {
-																					lastPageNumber = _thread.currentPage;
+																					lastPageNumber = newThread.currentPage;
 																				});
 																			}
 																			if (shouldScroll) _blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500));
 																			// Don't show data if the thread switched
-																			if (persistentState == _persistentState) {
-																				return _thread.posts;
+																			if (persistentState == tmpPersistentState) {
+																				return newThread.posts;
 																			}
 																			return null;
 																		},
@@ -618,6 +618,7 @@ class _ThreadPageState extends State<ThreadPage> {
 										},
 										onReplyPosted: (receipt) async {
 											await promptForPushNotificationsIfNeeded(context);
+											if (!mounted) return;
 											context.read<Notifications>().subscribeToThread(widget.thread, receipt.id, context.read<Notifications>().getThreadWatch(widget.thread)?.yousOnly ?? true, persistentState.youIds);
 											_listController.update();
 										},
@@ -838,6 +839,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											disabledColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.4),
 											padding: const EdgeInsets.all(8),
 											minSize: 0,
+											onPressed: button.item3 == null ? null : () {
+												button.item3?.call();
+												_buttonsAnimationController.reverse();
+											},
 											child: Row(
 												mainAxisSize: MainAxisSize.min,
 												children: [
@@ -845,11 +850,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 													const SizedBox(width: 8),
 													button.item2
 												]
-											),
-											onPressed: button.item3 == null ? null : () {
-												button.item3?.call();
-												_buttonsAnimationController.reverse();
-											}
+											)
 										),
 									)
 								]

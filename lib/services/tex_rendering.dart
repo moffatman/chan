@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_tex/flutter_tex.dart';
+// ignore: implementation_imports
 import 'package:flutter_tex/src/utils/core_utils.dart';
 import 'package:mime/mime.dart';
 
@@ -101,12 +102,12 @@ class TeXRendering {
 		final imageCompleter = Completer<Uint8List>();
 		_webView.runWithResource((combo) async {
 			_renderCallbackCompleter = Completer<String>();
-			await combo.webView.webViewController.evaluateJavascript(source: 'var jsonData = ' + getRawData(TeXView(
+			await combo.webView.webViewController.evaluateJavascript(source: 'var jsonData = ${getRawData(TeXView(
 				child: TeXViewDocument('\$\$${tex.replaceAll('<br>', '')}\$\$'),
 				style: TeXViewStyle(
 					fontStyle: TeXViewFontStyle(fontSize: 18)
 				)
-			)) + ';initView(jsonData);');
+			))};initView(jsonData);');
 			final returnData = await Future.any([Future<String?>.delayed(const Duration(seconds: 10)), _renderCallbackCompleter!.future]);
 			if (returnData == null) {
 				throw StateError('Timed out rendering $tex');

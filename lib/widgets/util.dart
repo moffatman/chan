@@ -16,7 +16,7 @@ import 'package:url_launcher/url_launcher.dart';
 Future<void> alertError(BuildContext context, String error) async {
 	await showCupertinoDialog(
 		context: context,
-		builder: (_context) {
+		builder: (context) {
 			return CupertinoAlertDialog(
 				title: const Text('Error'),
 				content: Text(error),
@@ -24,7 +24,7 @@ Future<void> alertError(BuildContext context, String error) async {
 					CupertinoDialogAction(
 						child: const Text('OK'),
 						onPressed: () {
-							Navigator.of(_context).pop();
+							Navigator.of(context).pop();
 						}
 					)
 				]
@@ -64,13 +64,13 @@ String formatTime(DateTime time) {
 	const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 	if (notToday) {
 		if (now.difference(time).inDays > 7) {
-			prefix = time.year.toString() + '-' + time.month.toString().padLeft(2, '0') + '-' + time.day.toString().padLeft(2, '0') + ' ';
+			prefix = '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} ';
 		}
 		else {
-			prefix = days[time.weekday] + ' ';
+			prefix = '${days[time.weekday]} ';
 		}
 	}
-	return prefix + time.hour.toString().padLeft(2, '0') + ':' + time.minute.toString().padLeft(2, '0') + ':' + time.second.toString().padLeft(2, '0');
+	return '$prefix${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
 }
 
 String formatRelativeTime(DateTime time) {
@@ -213,10 +213,10 @@ class ErrorMessageCard extends StatelessWidget {
 						const SizedBox(height: 8),
 						CupertinoButton(
 							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+							onPressed: remedy.value,
 							child: Text(remedy.key, style: TextStyle(
 								color: CupertinoTheme.of(context).primaryColor
-							), textAlign: TextAlign.center),
-							onPressed: remedy.value
+							), textAlign: TextAlign.center)
 						)
 					]
 				]
@@ -250,7 +250,7 @@ Future<void> openBrowser(BuildContext context, Uri url) async {
 	}
 	else {
 		if (await isOnMac() || !context.read<EffectiveSettings>().useInternalBrowser) {
-			launch(url.toString(), forceSafariVC: false);
+			launchUrl(url, mode: LaunchMode.externalApplication);
 		}
 		else {
 			return ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
@@ -556,8 +556,8 @@ class MaybeCupertinoScrollbar extends StatelessWidget {
 	Widget build(BuildContext context) {
 		if (context.watch<EffectiveSettings>().showScrollbars) {
 			return CupertinoScrollbar(
-				child: child,
-				controller: controller
+				controller: controller,
+				child: child
 			);
 		}
 		return child;

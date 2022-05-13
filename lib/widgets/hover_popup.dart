@@ -39,7 +39,7 @@ class HoverPopup<T> extends StatefulWidget {
 	}) : super(key: key);
 	
 	@override
-	_HoverPopupState<T> createState() => _HoverPopupState<T>();
+	createState() => _HoverPopupState<T>();
 }
 
 class _HoverPopupState<T> extends State<HoverPopup<T>> {
@@ -71,7 +71,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		if (_touchEntry != null) {
 			return;
 		}
-		final RenderBox? childBox = context.findRenderObject() as RenderBox;
+		final RenderBox? childBox = context.findRenderObject() as RenderBox?;
 		if (childBox == null || !childBox.attached) {
 			return;
 		}
@@ -91,8 +91,8 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 				child: IgnorePointer(
 					child: Center(
 						child: _ScalerBlurrer(
-							child: (widget.popupBuilder?.call(_value, true) ?? widget.popup)!,
-							key: _touchGlobalKey
+							key: _touchGlobalKey,
+							child: (widget.popupBuilder?.call(_value, true) ?? widget.popup)!
 						)
 					)
 				)
@@ -132,7 +132,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 					if (_entry != null) {
 						return;
 					}
-					final RenderBox? childBox = context.findRenderObject() as RenderBox;
+					final RenderBox? childBox = context.findRenderObject() as RenderBox?;
 					if (childBox == null || !childBox.attached) {
 						return;
 					}
@@ -177,9 +177,9 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 								child: _FloatingHoverPopup(
 									key: _globalKey,
 									scale: scale,
-									child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!,
 									anchor: widget.anchor,
 									initialMousePosition: event.position,
+									child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!
 								)
 							)
 						);
@@ -305,13 +305,9 @@ class _FloatingHoverPopupLayoutDelegate extends SingleChildLayoutDelegate {
 
 class _ScalerBlurrer extends StatefulWidget {
 	final Widget child;
-	final double initialScale;
-	final double initialBlur;
 
 	const _ScalerBlurrer({
 		required this.child,
-		this.initialScale = 0.1,
-		this.initialBlur = 50.0,
 		Key? key
 	}) : super(key: key);
 
@@ -320,8 +316,8 @@ class _ScalerBlurrer extends StatefulWidget {
 }
 
 class _ScalerBlurrerState extends State<_ScalerBlurrer> {
-	late double blur = widget.initialBlur;
-	late double scale = widget.initialScale;
+	double blur = 50.0;
+	double scale = 0.1;
 
 	void setScale({
 		required double blur,

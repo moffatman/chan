@@ -84,7 +84,7 @@ class _SliderBuilderState extends State<SliderBuilder> {
 				tween: Tween<double>(begin: 0, end: factor),
 				curve: Curves.easeOutQuart,
 				duration: const Duration(milliseconds: 50),
-				builder: (context, _factor, child) => widget.builder(context, _factor)
+				builder: (context, smoothedFactor, child) => widget.builder(context, smoothedFactor)
 			),
 			onPointerDown: (e) {
 				_recognizingRecognizer.addPointer(e);

@@ -52,9 +52,9 @@ class ThreadRow extends StatelessWidget {
 
 	Widget _build(BuildContext context, PersistentThreadState? threadState) {
 		final settings = context.watch<EffectiveSettings>();
-		final _thread = threadState?.thread ?? thread;
-		final int latestReplyCount = max(thread.replyCount, _thread.replyCount);
-		final int latestImageCount = max(thread.imageCount, _thread.imageCount);
+		final latestThread = threadState?.thread ?? thread;
+		final int latestReplyCount = max(thread.replyCount, latestThread.replyCount);
+		final int latestImageCount = max(thread.imageCount, latestThread.imageCount);
 		int unseenReplyCount = 0;
 		int unseenYouCount = 0;
 		int unseenImageCount = 0;
@@ -63,17 +63,17 @@ class ThreadRow extends StatelessWidget {
 		Color? imageCountColor;
 		Color? otherMetadataColor;
 		if (threadState?.lastSeenPostId != null) {
-			final _filter = Filter.of(context);
-			unseenReplyCount = (threadState?.unseenReplyCount(_filter) ?? 0) + ((latestReplyCount + 1) - _thread.posts.length);
-			unseenYouCount = threadState?.unseenReplyIdsToYou(_filter)?.length ?? 0;
-			unseenImageCount = (threadState?.unseenImageCount(_filter) ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.where((x) => x.attachment != null).length ?? 0));
+			final filter = Filter.of(context);
+			unseenReplyCount = (threadState?.unseenReplyCount(filter) ?? 0) + ((latestReplyCount + 1) - latestThread.posts.length);
+			unseenYouCount = threadState?.unseenReplyIdsToYou(filter)?.length ?? 0;
+			unseenImageCount = (threadState?.unseenImageCount(filter) ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.where((x) => x.attachment != null).length ?? 0));
 			replyCountColor = unseenReplyCount == 0 ? grey : null;
 			imageCountColor = unseenImageCount == 0 ? grey : null;
 			otherMetadataColor = unseenReplyCount == 0 && unseenImageCount == 0 ? grey : null;
 		}
 		final notifications = context.watch<Notifications>();
 		final watch = notifications.getThreadWatch(thread.identifier);
-		Widget _makeCounters() => Container(
+		Widget makeCounters() => Container(
 			decoration: BoxDecoration(
 				borderRadius: const BorderRadius.only(topLeft: Radius.circular(8)),
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
@@ -87,11 +87,11 @@ class ThreadRow extends StatelessWidget {
 				crossAxisAlignment: WrapCrossAlignment.center,
 				children: [
 					const SizedBox(width: 4),
-					if (_thread.isSticky) ... [
+					if (latestThread.isSticky) ... [
 						Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
 						const SizedBox(width: 4),
 					],
-					if (_thread.isArchived) ... [
+					if (latestThread.isArchived) ... [
 						Icon(CupertinoIcons.archivebox, color: grey, size: 18),
 						const SizedBox(width: 4),
 					],
@@ -149,16 +149,16 @@ class ThreadRow extends StatelessWidget {
 		final headerRow = [
 			if (settings.showNameInCatalog) ...[
 				TextSpan(
-					text: settings.filterProfanity(_thread.posts[0].name),
+					text: settings.filterProfanity(latestThread.posts[0].name),
 					style: const TextStyle(fontWeight: FontWeight.w600)
 				),
 				const TextSpan(text: ' ')
 			],
-			if (settings.showFlagInCatalogHeader && _thread.flag != null) ...[
-				FlagSpan(_thread.flag!),
+			if (settings.showFlagInCatalogHeader && latestThread.flag != null) ...[
+				FlagSpan(latestThread.flag!),
 				const TextSpan(text: ' '),
 				TextSpan(
-					text: _thread.flag!.name,
+					text: latestThread.flag!.name,
 					style: const TextStyle(
 						fontStyle: FontStyle.italic
 					)
@@ -167,14 +167,14 @@ class ThreadRow extends StatelessWidget {
 			],
 			if (settings.showTimeInCatalogHeader) ...[
 				TextSpan(
-					text: formatTime(_thread.time)
+					text: formatTime(latestThread.time)
 				),
 				const TextSpan(text: ' ')
 			],
 			if (showBoardName || settings.showIdInCatalogHeader) TextSpan(
 				text: showBoardName ?
-					'/${_thread.board}/${_thread.id}' :
-					_thread.id.toString(),
+					'/${latestThread.board}/${latestThread.id}' :
+					latestThread.id.toString(),
 				style: const TextStyle(color: Colors.grey)
 			)
 		];
@@ -183,15 +183,15 @@ class ThreadRow extends StatelessWidget {
 				headerRow.add(const TextSpan(text: '\n'));
 			}
 			headerRow.add(TextSpan(
-				text: settings.filterProfanity(_thread.title!),
+				text: settings.filterProfanity(latestThread.title!),
 				style: const TextStyle(fontWeight: FontWeight.bold)
 			));
 		}
 		List<Widget> rowChildren() => [
-			if (_thread.attachment != null && settings.showImages(context, _thread.board)) Padding(
+			if (latestThread.attachment != null && settings.showImages(context, latestThread.board)) Padding(
 				padding: const EdgeInsets.only(top: 8, bottom: 8),
 				child: PopupAttachment(
-					attachment: _thread.attachment!,
+					attachment: latestThread.attachment!,
 					child: GestureDetector(
 						child: Stack(
 							alignment: Alignment.center,
@@ -199,19 +199,19 @@ class ThreadRow extends StatelessWidget {
 							children: [
 								AttachmentThumbnail(
 									onLoadError: onThumbnailLoadError,
-									attachment: _thread.attachment!,
-									thread: _thread.identifier,
+									attachment: latestThread.attachment!,
+									thread: latestThread.identifier,
 									hero: AttachmentSemanticLocation(
-										attachment: _thread.attachment!,
+										attachment: latestThread.attachment!,
 										semanticParents: semanticParentIds
 									)
 								),
-								if (_thread.attachment?.type == AttachmentType.webm) SizedBox(
+								if (latestThread.attachment?.type == AttachmentType.webm) SizedBox(
 									width: 75,
 									height: 75,
 									child: Center(
 										child: AspectRatio(
-											aspectRatio: (_thread.attachment!.width ?? 1) / (_thread.attachment!.height ?? 1),
+											aspectRatio: (latestThread.attachment!.width ?? 1) / (latestThread.attachment!.height ?? 1),
 											child: Align(
 												alignment: Alignment.bottomRight,
 												child: Container(
@@ -229,11 +229,11 @@ class ThreadRow extends StatelessWidget {
 								)
 							]
 						),
-						onTap: () => onThumbnailTap?.call(_thread.attachment!)
+						onTap: () => onThumbnailTap?.call(latestThread.attachment!)
 					)
 				)
 			)
-			else if (_thread.attachmentDeleted) const Center(
+			else if (latestThread.attachmentDeleted) const Center(
 				child: SizedBox(
 					width: 75,
 					height: 75,
@@ -246,14 +246,14 @@ class ThreadRow extends StatelessWidget {
 					padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 					child: ChangeNotifierProvider<PostSpanZoneData>(
 						create: (ctx) => PostSpanRootZoneData(
-							thread: _thread,
+							thread: latestThread,
 							site: context.watch<ImageboardSite>()
 						),
 						child: Builder(
 							builder: (ctx) => IgnorePointer(
 								child: LayoutBuilder(
 									builder: (context, constraints) => ClippingBox(
-										child: _thread.posts[0].span.buildWidget(
+										child: latestThread.posts[0].span.buildWidget(
 											ctx,
 											PostSpanRenderOptions(
 												avoidBuggyClippers: true,
@@ -271,7 +271,7 @@ class ThreadRow extends StatelessWidget {
 													maintainState: true,
 													maintainAnimation: true,
 													maintainSize: true,
-													child: _makeCounters()
+													child: makeCounters()
 												)
 											)
 										)
@@ -290,30 +290,30 @@ class ThreadRow extends StatelessWidget {
 					Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							if (_thread.attachment != null) Flexible(
+							if (latestThread.attachment != null) Flexible(
 								child: LayoutBuilder(
 									builder: (context, constraints) {
 										return PopupAttachment(
-											attachment: _thread.attachment!,
+											attachment: latestThread.attachment!,
 											child: Stack(
 												children: [
 													HoverPopup(
 														style: HoverPopupStyle.floating,
+														popup: ExtendedImage.network(
+															latestThread.attachment!.url.toString(),
+															cache: true
+														),
 														child: AttachmentThumbnail(
 															width: constraints.maxWidth,
 															height: constraints.maxHeight,
 															fit: BoxFit.cover,
-															attachment: _thread.attachment!,
-															thread: _thread.identifier,
+															attachment: latestThread.attachment!,
+															thread: latestThread.identifier,
 															onLoadError: onThumbnailLoadError,
 															hero: null
-														),
-														popup: ExtendedImage.network(
-															_thread.attachment!.url.toString(),
-															cache: true
 														)
 													),
-													if (_thread.attachment?.type == AttachmentType.webm) Positioned(
+													if (latestThread.attachment?.type == AttachmentType.webm) Positioned(
 														bottom: 0,
 														right: 0,
 														child: Container(
@@ -338,20 +338,20 @@ class ThreadRow extends StatelessWidget {
 									padding: const EdgeInsets.all(8),
 									child: ChangeNotifierProvider<PostSpanZoneData>(
 										create: (ctx) => PostSpanRootZoneData(
-											thread: _thread,
+											thread: latestThread,
 											site: context.watch<ImageboardSite>()
 										),
 										child: Builder(
 											builder: (ctx) => IgnorePointer(
 												child: ClippingBox(
-													child: _thread.posts[0].span.buildWidget(
+													child: latestThread.posts[0].span.buildWidget(
 														ctx,
 														PostSpanRenderOptions(
 															avoidBuggyClippers: true
 														),
 														preInjectRow: (thread.title == null) ? null : Text.rich(
 															TextSpan(
-																text: settings.filterProfanity(_thread.title!),
+																text: settings.filterProfanity(latestThread.title!),
 																style: const TextStyle(fontWeight: FontWeight.bold)
 															)
 														),
@@ -361,7 +361,7 @@ class ThreadRow extends StatelessWidget {
 																maintainState: true,
 																maintainAnimation: true,
 																maintainSize: true,
-																child: _makeCounters()
+																child: makeCounters()
 															)
 														)
 													)
@@ -382,7 +382,7 @@ class ThreadRow extends StatelessWidget {
 				Positioned.fill(
 					child: Align(
 						alignment: Alignment.bottomRight,
-						child: _makeCounters()
+						child: makeCounters()
 					)
 				),
 				if (watch != null || threadState?.savedTime != null) Positioned.fill(

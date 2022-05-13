@@ -104,13 +104,13 @@ class _ContextMenuState extends State<ContextMenu> {
 			child: LayoutBuilder(
 				builder: (context, originalConstraints) => CupertinoContextMenu(
 					actions: widget.actions.map((action) => CupertinoContextMenuAction(
-						child: action.child,
 						trailingIcon: action.trailingIcon,
 						onPressed: () {
 							action.onPressed();
 							Navigator.of(context, rootNavigator: true).pop();
 						},
-						isDestructiveAction: action.isDestructiveAction
+						isDestructiveAction: action.isDestructiveAction,
+						child: action.child
 					)).toList(),
 					previewBuilder: (context, animation, child) => LayoutBuilder(
 						builder: (context, newConstraints) {

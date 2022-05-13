@@ -372,8 +372,8 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 												),
 												if (_searchTapped) CupertinoButton(
 													padding: const EdgeInsets.only(left: 8),
-													child: const Text('Cancel'),
-													onPressed: _closeSearch
+													onPressed: _closeSearch,
+													child: const Text('Cancel')
 												)
 											]
 										)
@@ -462,7 +462,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 																child: Container(
 																	padding: const EdgeInsets.all(4),
 																	color: CupertinoTheme.of(context).primaryColor,
-																	child: Text('Filter reason:\n' + filteredValues[i ~/ 2].item2, style: TextStyle(
+																	child: Text('Filter reason:\n${filteredValues[i ~/ 2].item2}', style: TextStyle(
 																		color: CupertinoTheme.of(context).scaffoldBackgroundColor
 																	))
 																)
@@ -552,8 +552,8 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 					children: [
 						ErrorMessageCard(errorMessage.toString()),
 						CupertinoButton(
-							child: const Text('Retry'),
-							onPressed: update
+							onPressed: update,
+							child: const Text('Retry')
 						),
 						if (widget.remedies[errorType] != null) widget.remedies[errorType]!(context, update)
 					]
@@ -723,6 +723,7 @@ class RefreshableListController<T> {
 	Future<void> _tryCachingItem(int index, _RefreshableListItem<T> item) async {
 		await SchedulerBinding.instance.endOfFrame;
 		if (item.hasGoodState) {
+			// ignore: use_build_context_synchronously
 			final RenderObject object = item.context!.findRenderObject()!;
 			item.cachedHeight = object.semanticBounds.height;
 			final newOffset = _getOffset(object);

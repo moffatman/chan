@@ -5,9 +5,8 @@
 // This file is a modified copy of Flutter's cupertino `route.dart`
 // allowing to change the width of area where back swipe gesture is accepted
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:vector_math/vector_math_64.dart';
+import 'package:flutter/rendering.dart';
 
 enum _DragState {
 	ready,

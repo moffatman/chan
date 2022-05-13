@@ -74,6 +74,9 @@ class IDSpan extends WidgetSpan {
 		required VoidCallback? onPressed
 	}) : super(
 		child: CupertinoButton(
+			padding: EdgeInsets.zero,
+			minSize: 0,
+			onPressed: onPressed,
 			child: Container(
 				decoration: BoxDecoration(
 					color: _calculateIdColor(id).background,
@@ -86,10 +89,7 @@ class IDSpan extends WidgetSpan {
 						color: _calculateIdColor(id).foreground
 					)
 				)
-			),
-			padding: EdgeInsets.zero,
-			minSize: 0,
-			onPressed: onPressed
+			)
 		),
 		alignment: PlaceholderAlignment.middle
 	);

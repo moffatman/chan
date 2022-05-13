@@ -102,63 +102,63 @@ class PostNodeSpan extends PostSpan {
 
 	@override
 	InlineSpan build(context, options) {
-		final _children = <InlineSpan>[];
+		final renderChildren = <InlineSpan>[];
 		int lines = 0;
 		for (int i = 0; i < children.length && lines < options.maxLines; i++) {
 			if ((i == 0 || children[i - 1] is PostLineBreakSpan) && (i == children.length - 1 || children[i + 1] is PostLineBreakSpan)) {
-				_children.add(children[i].build(context, options.copyWith(ownLine: true)));
+				renderChildren.add(children[i].build(context, options.copyWith(ownLine: true)));
 			}
 			else {
-				_children.add(children[i].build(context, options));
+				renderChildren.add(children[i].build(context, options));
 			}
 			if (children[i] is PostLineBreakSpan) {
 				lines++;
 			}
 		}
 		return TextSpan(
-			children: _children
+			children: renderChildren
 		);
 	}
 
 	Widget buildWidget(BuildContext context, PostSpanRenderOptions options, {Widget? preInjectRow, InlineSpan? postInject}) {
-		final _rows = <List<InlineSpan>>[[]];
+		final rows = <List<InlineSpan>>[[]];
 		int lines = preInjectRow != null ? 2 : 1;
 		for (int i = 0; i < children.length && lines < options.maxLines; i++) {
 			if (children[i] is PostLineBreakSpan) {
-				_rows.add([]);
+				rows.add([]);
 				lines++;
 			}
 			else if ((i == 0 || children[i - 1] is PostLineBreakSpan) && (i == children.length - 1 || children[i + 1] is PostLineBreakSpan)) {
-				_rows.last.add(children[i].build(context, options.copyWith(ownLine: true)));
+				rows.last.add(children[i].build(context, options.copyWith(ownLine: true)));
 			}
 			else {
-				_rows.last.add(children[i].build(context, options));
+				rows.last.add(children[i].build(context, options));
 			}
 		}
 		if (postInject != null) {
-			_rows.last.add(postInject);
+			rows.last.add(postInject);
 		}
-		if (_rows.last.isEmpty) {
-			_rows.removeLast();
+		if (rows.last.isEmpty) {
+			rows.removeLast();
 		}
-		final _columnChildren = <Widget>[
+		final widgetRows = <Widget>[
 			if (preInjectRow != null) preInjectRow
 		];
-		for (final row in _rows) {
+		for (final row in rows) {
 			if (row.isEmpty) {
-				_columnChildren.add(const Text.rich(TextSpan(text: '')));
+				widgetRows.add(const Text.rich(TextSpan(text: '')));
 			}
 			else if (row.length == 1) {
-				_columnChildren.add(Text.rich(row.first));
+				widgetRows.add(Text.rich(row.first));
 			}
 			else {
-				_columnChildren.add(Text.rich(TextSpan(children: row)));
+				widgetRows.add(Text.rich(TextSpan(children: row)));
 			}
 		}
 		return Column(
 			mainAxisSize: MainAxisSize.min,
 			crossAxisAlignment: CrossAxisAlignment.start,
-			children: _columnChildren
+			children: widgetRows
 		);
 	}
 
@@ -359,10 +359,6 @@ class PostQuoteLinkSpan extends PostSpan {
 				final popup = HoverPopup(
 					style: HoverPopupStyle.floating,
 					anchor: const Offset(30, -80),
-					child: Text.rich(
-						span.item1,
-						textScaleFactor: 1
-					),
 					popup: ChangeNotifierProvider.value(
 						value: zone,
 						child: DecoratedBox(
@@ -375,6 +371,10 @@ class PostQuoteLinkSpan extends PostSpan {
 								shrinkWrap: true
 							)
 						)
+					),
+					child: Text.rich(
+						span.item1,
+						textScaleFactor: 1
 					)
 				);
 				return Tuple2(WidgetSpan(
@@ -397,14 +397,14 @@ class PostQuoteLinkSpan extends PostSpan {
 	@override
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
-		final _span = _build(context, options);
+		final pair = _build(context, options);
 		final span = (options.ownLine && !options.shrinkWrap) ? TextSpan(
 			children: [
-				_span.item1,
+				pair.item1,
 				WidgetSpan(child: Row())
 			],
-			recognizer: _span.item2
-		) : _span.item1;
+			recognizer: pair.item2
+		) : pair.item1;
 		if (options.addExpandingPosts && (threadId == zone.thread.id && board == zone.thread.board)) {
 			return TextSpan(
 				children: [
@@ -488,11 +488,11 @@ class PostCodeSpan extends PostSpan {
 				}
 				const theme = atomOneDarkReasonableTheme;
 				final nodes = highlight.parse(text.replaceAll('\t', ' ' * 4), language: language ?? 'plaintext').nodes!;
-				final List<TextSpan> _spans = [];
-				List<TextSpan> currentSpans = _spans;
+				final List<TextSpan> spans = [];
+				List<TextSpan> currentSpans = spans;
 				List<List<TextSpan>> stack = [];
 
-				_traverse(Node node) {
+				traverse(Node node) {
 					if (node.value != null) {
 						currentSpans.add(node.className == null
 								? TextSpan(text: node.value)
@@ -504,19 +504,19 @@ class PostCodeSpan extends PostSpan {
 						currentSpans = tmp;
 
 						for (final n in node.children!) {
-							_traverse(n);
+							traverse(n);
 							if (n == node.children!.last) {
-								currentSpans = stack.isEmpty ? _spans : stack.removeLast();
+								currentSpans = stack.isEmpty ? spans : stack.removeLast();
 							}
 						}
 					}
 				}
 
 				for (var node in nodes) {
-					_traverse(node);
+					traverse(node);
 				}
 
-				return _spans;
+				return spans;
 			}
 		);
 		final child = RichText(
@@ -545,7 +545,7 @@ class PostCodeSpan extends PostSpan {
 
 	@override
 	String buildText() {
-		return '[code]' + text + '[/code]';
+		return '[code]$text[/code]';
 	}
 }
 
@@ -585,7 +585,7 @@ class PostSpoilerSpan extends PostSpan {
 
 	@override
 	String buildText() {
-		return '[spoiler]' + child.buildText() + '[/spoiler]';
+		return '[spoiler]${child.buildText()}[/spoiler]';
 	}
 }
 
@@ -612,7 +612,7 @@ class PostLinkSpan extends PostSpan {
 						url: url
 					)
 				);
-				Widget _build(List<Widget> _children) => Padding(
+				Widget buildEmbed(List<Widget> children) => Padding(
 					padding: const EdgeInsets.only(top: 8, bottom: 8),
 					child: ClipRRect(
 						borderRadius: const BorderRadius.all(Radius.circular(8)),
@@ -622,14 +622,14 @@ class PostLinkSpan extends PostSpan {
 							child: Row(
 								crossAxisAlignment: CrossAxisAlignment.center,
 								mainAxisSize: MainAxisSize.min,
-								children: _children
+								children: children
 							)
 						)
 					)
 				);
 				Widget? tapChild;
 				if (snapshot.connectionState == ConnectionState.waiting) {
-					tapChild = _build([
+					tapChild = buildEmbed([
 						const SizedBox(
 							width: 75,
 							height: 75,
@@ -647,7 +647,7 @@ class PostLinkSpan extends PostSpan {
 					byline = byline == null ? snapshot.data?.author : '${snapshot.data?.author} - $byline';
 				}
 				if (snapshot.data?.thumbnailUrl != null) {
-					tapChild = _build([
+					tapChild = buildEmbed([
 						ClipRRect(
 							borderRadius: const BorderRadius.all(Radius.circular(8)),
 							child: ExtendedImage.network(
@@ -855,7 +855,7 @@ class PostPopupSpan extends PostSpan {
 	}
 
 	@override
-	buildText() => title + '\n' + popup.buildText();
+	buildText() => '$title\n${popup.buildText()}';
 }
 
 class PostTableSpan extends PostSpan {

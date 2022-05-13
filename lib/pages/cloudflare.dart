@@ -43,6 +43,7 @@ class CloudflareLoginPage extends StatelessWidget {
 							newCookie.secure = cookie.isSecure ?? false;
 							return newCookie;
 						}).toList());
+						// ignore: use_build_context_synchronously
 						Navigator.of(context).pop(await controller.getHtml());
 					}
 				}

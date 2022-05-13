@@ -14,7 +14,7 @@ class AttachmentSemanticLocation {
 	AttachmentSemanticLocation({
 		required Iterable<int> semanticParents,
 		required Attachment attachment
-	}) : _tag = semanticParents.join('/') + '/' + attachment.id.toString();
+	}) : _tag = '${semanticParents.join('/')}/${attachment.id}';
 
 	@override
 	bool operator == (Object other) {
@@ -71,20 +71,20 @@ class AttachmentThumbnail extends StatelessWidget {
 		if (quarterTurns != 0) {
 			image = RotatingImageProvider(parent: image, quarterTurns: quarterTurns);
 		}
-		final _width = width ?? settings.thumbnailSize;
-		final _height = height ?? settings.thumbnailSize;
+		final effectiveWidth = width ?? settings.thumbnailSize;
+		final effectiveHeight = height ?? settings.thumbnailSize;
 		Widget child = ExtendedImage(
 			image: image,
-			width: _width,
-			height: _height,
+			width: effectiveWidth,
+			height: effectiveHeight,
 			fit: fit,
 			alignment: alignment,
 			gaplessPlayback: gaplessPlayback,
 			loadStateChanged: (loadstate) {
 				if (loadstate.extendedImageLoadState == LoadState.loading) {
 					return SizedBox(
-						width: _width,
-						height: _height,
+						width: effectiveWidth,
+						height: effectiveHeight,
 						child: const Center(
 							child: CupertinoActivityIndicator()
 						)
@@ -93,8 +93,8 @@ class AttachmentThumbnail extends StatelessWidget {
 				else if (loadstate.extendedImageLoadState == LoadState.failed) {
 					onLoadError?.call(loadstate.lastException, loadstate.lastStack);
 					return SizedBox(
-						width: _width,
-						height: _height,
+						width: effectiveWidth,
+						height: effectiveHeight,
 						child: const Center(
 							child: Icon(CupertinoIcons.exclamationmark_triangle_fill)
 						)

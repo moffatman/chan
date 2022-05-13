@@ -37,27 +37,27 @@ int _floodFillBuffer({
 	required int seedY,
 	required int fillColor
 }) {
-	final int _startColor = buffer[(width * seedY) + seedX];
-	final List<bool> _pixelsChecked = List<bool>.filled(width * height, false);
-	final Queue<_FloodFillRange> _ranges = Queue<_FloodFillRange>();
+	final int startColor = buffer[(width * seedY) + seedX];
+	final List<bool> pixelsChecked = List<bool>.filled(width * height, false);
+	final Queue<_FloodFillRange> ranges = Queue<_FloodFillRange>();
 	int pixelsChanged = 0;
 
-	bool _checkPixel(int x, int y) {
-    return buffer[(y * width) + x] == _startColor;
+	bool checkPixel(int x, int y) {
+    return buffer[(y * width) + x] == startColor;
   }
 
-	void _linearFill(int x, int y) {
+	void linearFill(int x, int y) {
     int lFillLoc = x;
     int pxIdx = (width * y) + x;
     while (true) {
 			buffer[(y * width) + x] = fillColor;
 			pixelsChanged++;
-      _pixelsChecked[pxIdx] = true;
+      pixelsChecked[pxIdx] = true;
       lFillLoc--;
       pxIdx--;
       if (lFillLoc < 0 ||
-          (_pixelsChecked[pxIdx]) ||
-          !_checkPixel(lFillLoc, y)) {
+          (pixelsChecked[pxIdx]) ||
+          !checkPixel(lFillLoc, y)) {
         break;
       }
     }
@@ -67,36 +67,36 @@ int _floodFillBuffer({
     while (true) {
       buffer[(y * width) + x] = fillColor;
 			pixelsChanged++;
-      _pixelsChecked[pxIdx] = true;
+      pixelsChecked[pxIdx] = true;
       rFillLoc++;
       pxIdx++;
       if (rFillLoc >= width ||
-          _pixelsChecked[pxIdx] ||
-          !_checkPixel(rFillLoc, y)) {
+          pixelsChecked[pxIdx] ||
+          !checkPixel(rFillLoc, y)) {
         break;
       }
     }
     rFillLoc--;
     _FloodFillRange r = _FloodFillRange(lFillLoc, rFillLoc, y);
-    _ranges.add(r);
+    ranges.add(r);
   }
 
-	_linearFill(seedX, seedY);
+	linearFill(seedX, seedY);
 	_FloodFillRange range;
-	while (_ranges.isNotEmpty) {
-		range = _ranges.removeFirst();
+	while (ranges.isNotEmpty) {
+		range = ranges.removeFirst();
 		int downPxIdx = (width * (range.y + 1)) + range.startX;
 		int upPxIdx = (width * (range.y - 1)) + range.startX;
 		int upY = range.y - 1;
 		int downY = range.y + 1;
 		for (int i = range.startX; i <= range.endX; i++) {
-			if (range.y > 0 && (!_pixelsChecked[upPxIdx]) && _checkPixel(i, upY)) {
-				_linearFill(i, upY);
+			if (range.y > 0 && (!pixelsChecked[upPxIdx]) && checkPixel(i, upY)) {
+				linearFill(i, upY);
 			}
 			if (range.y < (height - 1) &&
-					(!_pixelsChecked[downPxIdx]) &&
-					_checkPixel(i, downY)) {
-				_linearFill(i, downY);
+					(!pixelsChecked[downPxIdx]) &&
+					checkPixel(i, downY)) {
+				linearFill(i, downY);
 			}
 			downPxIdx++;
 			upPxIdx++;
@@ -167,7 +167,7 @@ class _ScoreArrayForLetterParam {
 
 List<_LetterScore> _scoreArrayForLetter(_ScoreArrayForLetterParam param) {
 	final scores = <_LetterScore>[];
-	for (final subimage in captchaLetterImages[param.letter]!) {
+	for (final subimage in _captchaLetterImages[param.letter]!) {
 		final maxY = (param.height * 0.9).toInt() - subimage.height;
 		final maxX = param.width - subimage.width;
 		for (int y = param.height ~/ 5; y < maxY; y++) {
@@ -258,13 +258,13 @@ void _guess(_GuessParam param) async {
 	}
 	final scores = (await Future.wait(letterFutures)).expand((x) => x).toList();
 	// Pick best set of letters
-	List<_LetterScore> __guess({
+	List<_LetterScore> guess({
 		List<_LetterScore> deadAnswers = const []
 	}) {
 		final answers = <_LetterScore>[];
 		final deadXes = List.filled(width, 0);
 		final xAdjustments = <int, List<double>>{};
-		final possibleSubimageWidths = captchaLetterImages.values.expand((x) => x).map((x) => x.width).toSet().toList();
+		final possibleSubimageWidths = _captchaLetterImages.values.expand((x) => x).map((x) => x.width).toSet().toList();
 		for (final possibleWidth in possibleSubimageWidths) {
 			xAdjustments[possibleWidth] = List.filled(width, 0);
 		}
@@ -300,7 +300,7 @@ void _guess(_GuessParam param) async {
 		}
 		return answers;
 	}
-	final answersBest = __guess();
+	final answersBest = guess();
 	answersBest.sort((a, b) => a.x - b.x);
 	/*final answers2 = __guess(deadAnswers: answersBest);
 	final answers3 = __guess(deadAnswers: answersBest.followedBy(answers2).toList());

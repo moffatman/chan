@@ -53,19 +53,20 @@ class PostRow extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
 		final persistence = context.watch<Persistence>();
+		final notifications = context.watch<Notifications>();
 		final savedPost = persistence.getSavedPost(post);
-		Post _post = savedPost?.post ?? post;
-		if (_post.attachment?.url != post.attachment?.url) {
-			_post.attachment = post.attachment;
+		Post latestPost = savedPost?.post ?? post;
+		if (latestPost.attachment?.url != post.attachment?.url) {
+			latestPost.attachment = post.attachment;
 			context.watch<Persistence>().didUpdateSavedPost();
 		}
-		else if (_post.replyIds.length != post.replyIds.length) {
-			_post.replyIds = post.replyIds;
+		else if (latestPost.replyIds.length != post.replyIds.length) {
+			latestPost.replyIds = post.replyIds;
 			context.watch<Persistence>().didUpdateSavedPost();
 		}
 		final zone = context.watch<PostSpanZoneData>();
 		final settings = context.watch<EffectiveSettings>();
-		final receipt = zone.threadState?.receipts.tryFirstWhere((r) => r.id == _post.id);
+		final receipt = zone.threadState?.receipts.tryFirstWhere((r) => r.id == latestPost.id);
 		final isYourPost = receipt != null || (zone.threadState?.postsMarkedAsYou.contains(post.id) ?? false);
 		Border? border;
 		if (isYourPost) {
@@ -78,7 +79,7 @@ class PostRow extends StatelessWidget {
 				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color?.towardsBlack(0.5) ?? const Color.fromARGB(255, 90, 30, 30), width: 10)
 			);
 		}
-		final replyIds = _post.replyIds.toList();
+		final replyIds = latestPost.replyIds.toList();
 		replyIds.removeWhere((id) {
 			final replyPost = zone.thread.posts.tryFirstWhere((p) => p.id == id);
 			if (replyPost != null) {
@@ -88,23 +89,23 @@ class PostRow extends StatelessWidget {
 			}
 			return false;
 		});
-		String _makeAttachmentInfo() {
+		String makeAttachmentInfo() {
 			String text = '';
 			if (settings.showFilenameOnPosts) {
-				text += '${_post.attachment?.filename} ';
+				text += '${latestPost.attachment?.filename} ';
 			}
 			if (settings.showFilesizeOnPosts || settings.showFileDimensionsOnPosts) {
 				text += '(';
 				bool firstItemPassed = false;
 				if (settings.showFilesizeOnPosts) {
-					text += '${((_post.attachment?.sizeInBytes ?? 0) / 1024).round()} KB';
+					text += '${((latestPost.attachment?.sizeInBytes ?? 0) / 1024).round()} KB';
 					firstItemPassed = true;
 				}
 				if (settings.showFileDimensionsOnPosts) {
 					if (firstItemPassed) {
 						text += ', ';
 					}
-					text += '${_post.attachment?.width}x${_post.attachment?.height}';
+					text += '${latestPost.attachment?.width}x${latestPost.attachment?.height}';
 				}
 				text += ') ';
 			}
@@ -114,14 +115,14 @@ class PostRow extends StatelessWidget {
 			if (replyIds.isNotEmpty) {
 				WeakNavigator.push(context, PostsPage(
 						postsIdsToShow: replyIds,
-						postIdForBackground: _post.id,
-						zone: zone.childZoneFor(_post.id)
+						postIdForBackground: latestPost.id,
+						zone: zone.childZoneFor(latestPost.id)
 					)
 				);
 			}
 		}
 		content(double factor) => PostSpanZone(
-			postId: _post.id,
+			postId: latestPost.id,
 			builder: (ctx) => Padding(
 				padding: const EdgeInsets.all(8),
 				child: IgnorePointer(
@@ -145,30 +146,30 @@ class PostRow extends StatelessWidget {
 		innerChild(BuildContext context, double slideFactor) {
 			final mainRow = [
 				const SizedBox(width: 8),
-				if (_post.attachment != null && settings.showImages(context, _post.board)) Padding(
+				if (latestPost.attachment != null && settings.showImages(context, latestPost.board)) Padding(
 					padding: (settings.imagesOnRight && replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32) : EdgeInsets.zero,
 					child: PopupAttachment(
-						attachment: _post.attachment!,
+						attachment: latestPost.attachment!,
 						child: GestureDetector(
 							child: Stack(
 								alignment: Alignment.center,
 								fit: StackFit.loose,
 								children: [
 									AttachmentThumbnail(
-										attachment: _post.attachment!,
-										thread: _post.threadIdentifier,
+										attachment: latestPost.attachment!,
+										thread: latestPost.threadIdentifier,
 										onLoadError: onThumbnailLoadError,
 										hero: AttachmentSemanticLocation(
-											attachment: _post.attachment!,
+											attachment: latestPost.attachment!,
 											semanticParents: zone.stackIds
 										)
 									),
-									if (_post.attachment?.type == AttachmentType.webm) SizedBox(
+									if (latestPost.attachment?.type == AttachmentType.webm) SizedBox(
 										width: settings.thumbnailSize,
 										height: settings.thumbnailSize,
 										child: Center(
 											child: AspectRatio(
-												aspectRatio: (_post.attachment!.width ?? 1) / (_post.attachment!.height ?? 1),
+												aspectRatio: (latestPost.attachment!.width ?? 1) / (latestPost.attachment!.height ?? 1),
 												child: Align(
 													alignment: Alignment.bottomRight,
 													child: Container(
@@ -187,19 +188,19 @@ class PostRow extends StatelessWidget {
 								]
 							),
 							onTap: () {
-								onThumbnailTap?.call(_post.attachment!);
+								onThumbnailTap?.call(latestPost.attachment!);
 							}
 						)
 					)
 				)
-				else if (_post.attachmentDeleted) Center(
+				else if (latestPost.attachmentDeleted) Center(
 					child: SizedBox(
 						width: 75,
 						height: 75,
 						child: GestureDetector(
 							behavior: HitTestBehavior.opaque,
-							child: const Icon(CupertinoIcons.question_square, size: 36),
-							onTap: onRequestArchive
+							onTap: onRequestArchive,
+							child: const Icon(CupertinoIcons.question_square, size: 36)
 						)
 					)
 				),
@@ -229,79 +230,79 @@ class PostRow extends StatelessWidget {
 									Padding(
 										padding: const EdgeInsets.only(left: 8, right: 8),
 										child: PostSpanZone(
-											postId: _post.id,
+											postId: latestPost.id,
 											builder: (ctx) => ValueListenableBuilder<bool>(
 												valueListenable: settings.supportMouse,
 												builder: (context, supportMouse, child) => Text.rich(
 													TextSpan(
 														children: [
 															if (settings.showNameOnPosts) TextSpan(
-																text: context.read<EffectiveSettings>().filterProfanity(_post.name) + (isYourPost ? ' (You)' : ''),
+																text: context.read<EffectiveSettings>().filterProfanity(latestPost.name) + (isYourPost ? ' (You)' : ''),
 																style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
 															)
 															else if (isYourPost) TextSpan(
 																text: '(You)',
 																style: TextStyle(fontWeight: FontWeight.w600, color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)
 															),
-															if (settings.showTripOnPosts && _post.trip != null) TextSpan(
-																text: context.read<EffectiveSettings>().filterProfanity(_post.trip!) + ' ',
+															if (settings.showTripOnPosts && latestPost.trip != null) TextSpan(
+																text: '${context.read<EffectiveSettings>().filterProfanity(latestPost.trip!)} ',
 																style: TextStyle(color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
 															)
 															else if (settings.showNameOnPosts || isYourPost) const TextSpan(text: ' '),
-															if (_post.posterId != null) ...[
+															if (latestPost.posterId != null) ...[
 																IDSpan(
-																	id: _post.posterId!,
+																	id: latestPost.posterId!,
 																	onPressed: () => WeakNavigator.push(context, PostsPage(
-																		postsIdsToShow: zone.thread.posts.where((p) => p.posterId == _post.posterId).map((p) => p.id).toList(),
+																		postsIdsToShow: zone.thread.posts.where((p) => p.posterId == latestPost.posterId).map((p) => p.id).toList(),
 																		zone: zone
 																	))
 																),
 																const TextSpan(text: ' ')
 															],
-															if (_post.attachment != null) ...[
+															if (latestPost.attachment != null) ...[
 																TextSpan(
-																	text: _makeAttachmentInfo(),
+																	text: makeAttachmentInfo(),
 																	style: TextStyle(
 																		color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8)
 																	)
 																)
 															],
-															if (settings.showPassOnPosts && _post.passSinceYear != null) ...[
+															if (settings.showPassOnPosts && latestPost.passSinceYear != null) ...[
 																PassSinceSpan(
-																	sinceYear: _post.passSinceYear!,
+																	sinceYear: latestPost.passSinceYear!,
 																	site: site
 																),
 																const TextSpan(text: ' ')
 															],
-															if (_post.flag != null) ...[
+															if (latestPost.flag != null) ...[
 																if (settings.showFlagOnPosts) ...[
-																	FlagSpan(_post.flag!),
+																	FlagSpan(latestPost.flag!),
 																	const TextSpan(text: ' ')
 																],
 																if (settings.showCountryNameOnPosts) TextSpan(
-																	text: _post.flag!.name + ' ',
+																	text: '${latestPost.flag!.name} ',
 																	style: const TextStyle(
 																		fontStyle: FontStyle.italic
 																	)
 																)
 															],
 															if (settings.showAbsoluteTimeOnPosts)	TextSpan(
-																text: formatTime(_post.time) + ' '
+																text: '${formatTime(latestPost.time)} '
 															),
 															if (settings.showRelativeTimeOnPosts) TextSpan(
-																text: formatRelativeTime(_post.time) + ' ago '
+																text: '${formatRelativeTime(latestPost.time)} ago '
 															),
 															TextSpan(
-																text: _post.id.toString(),
+																text: latestPost.id.toString(),
 																style: TextStyle(color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)),
 																recognizer: TapGestureRecognizer()..onTap = () {
-																	ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(_post.id);
+																	ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(latestPost.id);
 																}
 															),
 															if (supportMouse) ...[
 																...replyIds.map((id) => PostQuoteLinkSpan(
-																	board: _post.board,
-																	threadId: _post.threadId,
+																	board: latestPost.board,
+																	threadId: latestPost.threadId,
 																	postId: id,
 																	dead: false
 																).build(ctx, PostSpanRenderOptions(
@@ -336,6 +337,7 @@ class PostRow extends StatelessWidget {
 									child: CupertinoButton(
 										alignment: Alignment.bottomRight,
 										padding: const EdgeInsets.only(bottom: 8, right: 16),
+										onPressed: openReplies,
 										child: Transform.scale(
 											alignment: Alignment.bottomRight,
 											scale: 1 + slideFactor.clamp(0, 1),
@@ -357,8 +359,7 @@ class PostRow extends StatelessWidget {
 													)
 												]
 											)
-										),
-										onPressed: openReplies
+										)
 									)
 								)
 							),
@@ -391,13 +392,13 @@ class PostRow extends StatelessWidget {
 				if (zone.stackIds.length > 2 && zone.onNeedScrollToPost != null) ContextMenuAction(
 					child: const Text('Scroll to post'),
 					trailingIcon: CupertinoIcons.return_icon,
-					onPressed: () => zone.onNeedScrollToPost!(_post)
+					onPressed: () => zone.onNeedScrollToPost!(latestPost)
 				),
 				if (savedPost == null) ContextMenuAction(
 					child: const Text('Save Post'),
 					trailingIcon: CupertinoIcons.bookmark,
 					onPressed: () {
-						context.read<Persistence>().savePost(_post, zone.thread);
+						context.read<Persistence>().savePost(latestPost, zone.thread);
 					}
 				)
 				else ContextMenuAction(
@@ -412,8 +413,8 @@ class PostRow extends StatelessWidget {
 							child: const Text('Unmark as You'),
 							trailingIcon: CupertinoIcons.person_badge_minus,
 							onPressed: () {
-								zone.threadState!.receipts.removeWhere((r) => r.id == _post.id);
-								zone.threadState!.postsMarkedAsYou.remove(_post.id);
+								zone.threadState!.receipts.removeWhere((r) => r.id == latestPost.id);
+								zone.threadState!.postsMarkedAsYou.remove(latestPost.id);
 								zone.threadState!.save();
 							}
 						)
@@ -421,17 +422,17 @@ class PostRow extends StatelessWidget {
 							child: const Text('Mark as You'),
 							trailingIcon: CupertinoIcons.person_badge_plus,
 							onPressed: () async {
-								zone.threadState!.postsMarkedAsYou.add(_post.id);
+								zone.threadState!.postsMarkedAsYou.add(latestPost.id);
 								await promptForPushNotificationsIfNeeded(context);
-								context.read<Notifications>().subscribeToThread(zone.threadState!.identifier, zone.threadState!.thread?.posts.last.id ?? _post.id, context.read<Notifications>().getThreadWatch(zone.threadState!.identifier)?.yousOnly ?? true, zone.threadState!.youIds);
+								notifications.subscribeToThread(zone.threadState!.identifier, zone.threadState!.thread?.posts.last.id ?? latestPost.id, notifications.getThreadWatch(zone.threadState!.identifier)?.yousOnly ?? true, zone.threadState!.youIds);
 								zone.threadState!.save();
 							}
 						),
-					if (zone.threadState!.hiddenPostIds.contains(_post.id)) ContextMenuAction(
+					if (zone.threadState!.hiddenPostIds.contains(latestPost.id)) ContextMenuAction(
 						child: const Text('Unhide post'),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
-							zone.threadState!.unHidePost(_post.id);
+							zone.threadState!.unHidePost(latestPost.id);
 							zone.threadState!.save();
 						}
 					)
@@ -440,7 +441,7 @@ class PostRow extends StatelessWidget {
 							child: const Text('Hide post'),
 							trailingIcon: CupertinoIcons.eye_slash,
 							onPressed: () {
-								zone.threadState!.hidePost(_post.id);
+								zone.threadState!.hidePost(latestPost.id);
 								zone.threadState!.save();
 							}
 						),
@@ -448,51 +449,51 @@ class PostRow extends StatelessWidget {
 							child: const Text('Hide post and replies'),
 							trailingIcon: CupertinoIcons.eye_slash,
 							onPressed: () {
-								zone.threadState!.hidePost(_post.id, tree: true);
+								zone.threadState!.hidePost(latestPost.id, tree: true);
 								zone.threadState!.save();
 							}
 						),
 					],
-					if (_post.posterId != null && zone.threadState!.hiddenPosterIds.contains(_post.posterId)) ContextMenuAction(
+					if (latestPost.posterId != null && zone.threadState!.hiddenPosterIds.contains(latestPost.posterId)) ContextMenuAction(
 						child: RichText(text: TextSpan(
 							children: [
 								const TextSpan(text: 'Unhide from '),
-								IDSpan(id: _post.posterId!, onPressed: null)
+								IDSpan(id: latestPost.posterId!, onPressed: null)
 							]
 						)),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
-							zone.threadState!.unHidePosterId(_post.posterId!);
+							zone.threadState!.unHidePosterId(latestPost.posterId!);
 							zone.threadState!.save();
 						}
 					)
-					else if (_post.posterId != null) ContextMenuAction(
+					else if (latestPost.posterId != null) ContextMenuAction(
 						child: RichText(text: TextSpan(
 							children: [
 								const TextSpan(text: 'Hide from '),
-								IDSpan(id: _post.posterId!, onPressed: null)
+								IDSpan(id: latestPost.posterId!, onPressed: null)
 							]
 						)),
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () {
-							zone.threadState!.hidePosterId(_post.posterId!);
+							zone.threadState!.hidePosterId(latestPost.posterId!);
 							zone.threadState!.save();
 						}
 					),
-					if (_post.attachment?.md5 != null && persistence.browserState.isMD5Hidden(_post.attachment?.md5)) ContextMenuAction(
+					if (latestPost.attachment?.md5 != null && persistence.browserState.isMD5Hidden(latestPost.attachment?.md5)) ContextMenuAction(
 						child: const Text('Unhide by image'),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
-							persistence.browserState.unHideByMD5(_post.attachment!.md5);
+							persistence.browserState.unHideByMD5(latestPost.attachment!.md5);
 							persistence.didUpdateBrowserState();
 							zone.threadState!.save();
 						}
 					)
-					else if (_post.attachment?.md5 != null) ContextMenuAction(
+					else if (latestPost.attachment?.md5 != null) ContextMenuAction(
 						child: const Text('Hide by image'),
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () {
-							persistence.browserState.hideByMD5(_post.attachment!.md5);
+							persistence.browserState.hideByMD5(latestPost.attachment!.md5);
 							persistence.didUpdateBrowserState();
 							zone.threadState!.save();
 						}
@@ -503,9 +504,9 @@ class PostRow extends StatelessWidget {
 					trailingIcon: CupertinoIcons.selection_pin_in_out,
 					onPressed: () {
 						WeakNavigator.push(context, SelectablePostPage(
-							post: _post,
+							post: latestPost,
 							zone: zone,
-							onQuoteText: (text) => context.read<GlobalKey<ReplyBoxState>>().currentState?.onQuoteText(text, fromId: _post.id)
+							onQuoteText: (text) => context.read<GlobalKey<ReplyBoxState>>().currentState?.onQuoteText(text, fromId: latestPost.id)
 						));
 					}
 				),
@@ -516,7 +517,7 @@ class PostRow extends StatelessWidget {
 						final offset = (context.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 						final size = context.findRenderObject()?.semanticBounds.size;
 						shareOne(
-							text: site.getWebUrl(_post.board, _post.threadId, _post.id),
+							text: site.getWebUrl(latestPost.board, latestPost.threadId, latestPost.id),
 							type: "text",
 							sharePositionOrigin: (offset != null && size != null) ? offset & size : null
 						);
@@ -526,7 +527,7 @@ class PostRow extends StatelessWidget {
 					child: const Text('Report Post'),
 					trailingIcon: CupertinoIcons.exclamationmark_octagon,
 					onPressed: () {
-						openBrowser(context, context.read<ImageboardSite>().getPostReportUrl(_post.board, _post.id));
+						openBrowser(context, context.read<ImageboardSite>().getPostReportUrl(latestPost.board, latestPost.id));
 					}
 				),
 				if (receipt != null) ContextMenuAction(
@@ -535,27 +536,27 @@ class PostRow extends StatelessWidget {
 					isDestructiveAction: true,
 					onPressed: () async {
 						try {
-							await site.deletePost(_post.board, receipt);
-							showToast(context: context, message: 'Deleted post /${_post.board}/${receipt.id}', icon: CupertinoIcons.delete);
+							await site.deletePost(latestPost.board, receipt);
+							showToast(context: context, message: 'Deleted post /${latestPost.board}/${receipt.id}', icon: CupertinoIcons.delete);
 						}
 						catch (error) {
 							alertError(context, error.toStringDio());
 						}
 					}
 				),
-				if (_post.attachment != null) ...[
+				if (latestPost.attachment != null) ...[
 					ContextMenuAction(
 						child: const Text('Search archives'),
 						trailingIcon: Icons.image_search,
 						onPressed: () {
-							openSearch(context: context, query: ImageboardArchiveSearchQuery(boards: [_post.board], md5: _post.attachment!.md5));
+							openSearch(context: context, query: ImageboardArchiveSearchQuery(boards: [latestPost.board], md5: latestPost.attachment!.md5));
 						}
 					),
 					ContextMenuAction(
 						child: const Text('Search Google'),
 						trailingIcon: Icons.image_search,
 						onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
-							'image_url': _post.attachment!.url.toString(),
+							'image_url': latestPost.attachment!.url.toString(),
 							'safe': 'off'
 						}))
 					),
@@ -564,7 +565,7 @@ class PostRow extends StatelessWidget {
 						trailingIcon: Icons.image_search,
 						onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
 							'rpt': 'imageview',
-							'url': _post.attachment!.url.toString()
+							'url': latestPost.attachment!.url.toString()
 						}))
 					)
 				]
@@ -572,8 +573,8 @@ class PostRow extends StatelessWidget {
 			child: (replyIds.isNotEmpty) ? SliderBuilder(
 				popup: PostsPage(
 					postsIdsToShow: replyIds,
-					postIdForBackground: _post.id,
-					zone: zone.childZoneFor(_post.id)
+					postIdForBackground: latestPost.id,
+					zone: zone.childZoneFor(latestPost.id)
 				),
 				builder: innerChild
 			) : innerChild(context, 0.0)
