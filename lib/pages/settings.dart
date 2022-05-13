@@ -363,7 +363,7 @@ class SettingsBehaviorPage extends StatelessWidget {
 					),
 					const SizedBox(height: 32)
 				],
-				const Text('Automatically load adjacent attachments in gallery'),
+				const Text('Automatically load attachments in gallery'),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
 					children: const {
@@ -377,7 +377,7 @@ class SettingsBehaviorPage extends StatelessWidget {
 					}
 				),
 				const SizedBox(height: 32),
-				const Text('Automatically load tapped attachments'),
+				const Text('Always automatically load tapped attachment'),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<bool>(
 					children: const {

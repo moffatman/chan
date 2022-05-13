@@ -122,7 +122,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		pageController.addListener(_onPageControllerUpdate);
 		_scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
 		final attachment = widget.attachments[currentIndex];
-		if (context.read<EffectiveSettings>().alwaysAutoloadTappedAttachment) {
+		if (context.read<EffectiveSettings>().autoloadAttachments || context.read<EffectiveSettings>().alwaysAutoloadTappedAttachment) {
 			_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
 		}
 	}
