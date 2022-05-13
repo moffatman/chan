@@ -181,26 +181,29 @@ class _BoardPageState extends State<BoardPage> {
 								if (context.read<MasterDetailHint?>()?.twoPane == true && _replyBoxKey.currentState?.show != true) {
 									showCupertinoModalPopup(
 										context: context,
-										builder: (context) => Container(
-											color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-											child: ReplyBox(
-												fullyExpanded: true,
-												board: board!.name,
-												initialText: widget.getInitialDraftText?.call() ?? '',
-												onTextChanged: (text) {
-													widget.onDraftTextChanged?.call(text);
-												},
-												initialSubject: widget.getInitialDraftSubject?.call() ?? '',
-												onSubjectChanged: (subject) {
-													widget.onDraftSubjectChanged?.call(subject);
-												},
-												onReplyPosted: (receipt) async {
-													await promptForPushNotificationsIfNeeded(context);
-													context.read<Notifications>().subscribeToThread(ThreadIdentifier(board!.name, receipt.id), receipt.id, false, [receipt.id]);
-													_listController.update();
-													widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
-													Navigator.of(context).pop();
-												}
+										builder: (ctx) => Padding(
+											padding: MediaQuery.of(context).viewInsets,
+											child: Container(
+												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+												child: ReplyBox(
+													fullyExpanded: true,
+													board: board!.name,
+													initialText: widget.getInitialDraftText?.call() ?? '',
+													onTextChanged: (text) {
+														widget.onDraftTextChanged?.call(text);
+													},
+													initialSubject: widget.getInitialDraftSubject?.call() ?? '',
+													onSubjectChanged: (subject) {
+														widget.onDraftSubjectChanged?.call(subject);
+													},
+													onReplyPosted: (receipt) async {
+														await promptForPushNotificationsIfNeeded(ctx);
+														ctx.read<Notifications>().subscribeToThread(ThreadIdentifier(board!.name, receipt.id), receipt.id, false, [receipt.id]);
+														_listController.update();
+														widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
+														Navigator.of(ctx).pop();
+													}
+												)
 											)
 										)
 									);
