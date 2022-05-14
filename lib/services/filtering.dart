@@ -257,6 +257,7 @@ Filter _makeFilter(String configuration) {
 		configuration: configuration,
 		pattern: RegExp(match.group(1)!, multiLine: true, caseSensitive: match.group(2) != 'i')
 	);
+	final separator = RegExp(r':|,');
 	int i = 4;
 	while (true) {
 		final s = match.group(i);
@@ -273,13 +274,13 @@ Filter _makeFilter(String configuration) {
 			filter.outputType = FilterResultType.autoSave;	
 		}
 		else if (s.startsWith('type:')) {
-			filter.patternFields = s.split(':').skip(1).toList();
+			filter.patternFields = s.split(separator).skip(1).toList();
 		}
 		else if (s.startsWith('boards:')) {
-			filter.boards = s.split(':').skip(1).toList();
+			filter.boards = s.split(separator).skip(1).toList();
 		}
 		else if (s.startsWith('exclude:')) {
-			filter.excludeBoards = s.split(':').skip(1).toList();
+			filter.excludeBoards = s.split(separator).skip(1).toList();
 		}
 		else if (s == 'file:only') {
 			filter.hasFile = true;
