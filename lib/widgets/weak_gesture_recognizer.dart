@@ -96,7 +96,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 	Offset _getDeltaForDetails(Offset delta);
 	double? _getPrimaryValueFromOffset(Offset value);
   _DragDirection? _getPrimaryDragAxis() => null;
-	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop);
+	double _calculateAcceptFactor(PointerEvent event, double? deviceTouchSlop);
 
 	final Map<int, VelocityTracker> _velocityTrackers = <int, VelocityTracker>{};
   final Map<int, Offset> _moveDeltaBeforeFrame = <int, Offset>{};
@@ -414,9 +414,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
           untransformedDelta: movedLocally,
           untransformedEndPosition: event.localPosition,
         );
-        if (_hasSufficientGlobalDistanceToAccept(event, gestureSettings?.touchSlop)) {
-          resolve(GestureDisposition.accepted);
-				}
+        resolve(GestureDisposition.accepted, bid: _calculateAcceptFactor(event, gestureSettings?.touchSlop));
       }
       _recordMoveDeltaForMultitouch(event.pointer, event.localDelta);
     }
@@ -447,9 +445,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
           untransformedDelta: movedLocally,
           untransformedEndPosition: event.localPosition + event.pan
         );
-        if (_hasSufficientGlobalDistanceToAccept(event, gestureSettings?.touchSlop)) {
-          resolve(GestureDisposition.accepted);
-				}
+        resolve(GestureDisposition.accepted, bid: _calculateAcceptFactor(event, gestureSettings?.touchSlop));
       }
       _recordMoveDeltaForMultitouch(event.pointer, event.panDelta);
     }
@@ -463,6 +459,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 
 	@override
 	void acceptGesture(int pointer) {
+		super.acceptGesture(pointer);
 		assert(!_acceptedActivePointers.contains(pointer));
 		_acceptedActivePointers.add(pointer);
     _activePointer = pointer;
@@ -508,6 +505,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 
 	@override
 	void rejectGesture(int pointer) {
+		super.rejectGesture(pointer);
 		_giveUpPointer(pointer);
 	}
 
@@ -665,11 +663,14 @@ class WeakVerticalDragGestureRecognizer extends WeakDragGestureRecognizer {
   }
 
 	@override
-	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop) {
-		return (sign != null && _globalDistanceMoved.sign == sign!.sign) &&  _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind, gestureSettings)) || (
-			(_globalDistanceMoved.abs() > computeHitSlop(event.kind, gestureSettings)) &&
-			_hasSufficientDurationToAccept(event)
-		);
+	double _calculateAcceptFactor(PointerEvent event, double? deviceTouchSlop) {
+		if (_globalDistanceMoved.sign != sign?.sign) {
+			return 0;
+		}
+		if (_hasSufficientDurationToAccept(event)) {
+			return _globalDistanceMoved.abs() / computeHitSlop(event.kind, gestureSettings);
+		}
+		return _globalDistanceMoved.abs() / (weakness * computeHitSlop(event.kind, gestureSettings));
 	}
 
 	@override
@@ -717,11 +718,14 @@ class WeakHorizontalDragGestureRecognizer extends WeakDragGestureRecognizer {
   }
 
 	@override
-	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop) {
-		return (sign != null && _globalDistanceMoved.sign == sign!.sign) &&  _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind, gestureSettings)) || (
-			(_globalDistanceMoved.abs() > computeHitSlop(event.kind, gestureSettings)) &&
-			_hasSufficientDurationToAccept(event)
-		);
+	double _calculateAcceptFactor(PointerEvent event, double? deviceTouchSlop) {
+		if (_globalDistanceMoved.sign != sign?.sign) {
+			return 0;
+		}
+		if (_hasSufficientDurationToAccept(event)) {
+			return _globalDistanceMoved.abs() / computeHitSlop(event.kind, gestureSettings);
+		}
+		return _globalDistanceMoved.abs() / (weakness * computeHitSlop(event.kind, gestureSettings));
 	}
 
 	@override
@@ -794,11 +798,14 @@ class WeakPanGestureRecognizer extends WeakDragGestureRecognizer {
   }
 
 	@override
-	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop) {
-		return allowedToAccept && _globalMovementDirectionIsOK() && _globalDistanceMoved.abs() > (weakness * computePanSlop(event.kind, gestureSettings)) || (
-			(_globalDistanceMoved.abs() > computePanSlop(event.kind, gestureSettings)) &&
-			_hasSufficientDurationToAccept(event)
-		);
+	double _calculateAcceptFactor(PointerEvent event, double? deviceTouchSlop) {
+		if (!allowedToAccept || !_globalMovementDirectionIsOK()) {
+			return 0;
+		}
+		if (_hasSufficientDurationToAccept(event)) {
+			return _globalDistanceMoved.abs() / computeHitSlop(event.kind, gestureSettings);
+		}
+		return _globalDistanceMoved.abs() / (weakness * computeHitSlop(event.kind, gestureSettings));
 	}
 
 	@override
