@@ -767,8 +767,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 					animation: _buttonsAnimationController,
 					builder: (context, child) => Transform(
 						transform: Matrix4.translationValues(0, 100 - _buttonsAnimation.value * 100, 0),
-						child: Opacity(
-							opacity: _buttonsAnimation.value,
+						child: FadeTransition(
+							opacity: _buttonsAnimation,
 							child: IgnorePointer(
 								ignoring: _buttonsAnimation.value < 0.5,
 								child: child
