@@ -93,5 +93,7 @@
 		</array>
 		<key>FIREBASE_ANALYTICS_COLLECTION_ENABLED</key>
 		<false/>
+		<key>UIApplicationSupportsIndirectInputEvents</key>
+		<true/>
 	</dict>
 </plist>
