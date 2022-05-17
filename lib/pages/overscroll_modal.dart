@@ -178,38 +178,45 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 								}
 							},
 							onPointerPanZoomEnd: (event) => _onPointerUp(),
-							child: Actions(
-								actions: {
-									DismissIntent: CallbackAction<DismissIntent>(
-										onInvoke: (i) => WeakNavigator.pop(context)
-									)
+							child: GestureDetector(
+								onTap: () {
+									if (_controller.position.userScrollDirection != ScrollDirection.idle && _pointerDownCount == 0) {
+										_controller.jumpTo(_controller.position.pixels);
+									}
 								},
-								child: Focus(
-									autofocus: true,
-									child: MaybeCupertinoScrollbar(
-										controller: _controller,
-										child: CustomScrollView(
+								child: Actions(
+									actions: {
+										DismissIntent: CallbackAction<DismissIntent>(
+											onInvoke: (i) => WeakNavigator.pop(context)
+										)
+									},
+									child: Focus(
+										autofocus: true,
+										child: MaybeCupertinoScrollbar(
 											controller: _controller,
-											physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
-											slivers: [
-												SliverToBoxAdapter(
-													child: ConstrainedBox(
-														constraints: BoxConstraints(
-															minHeight: constraints.maxHeight
-														),
-														child: SafeArea(
-															child: Center(
-																key: _scrollKey,
-																child: Opacity(
-																	key: _childKey,
-																	opacity: _opacity,
-																	child: widget.child
+											child: CustomScrollView(
+												controller: _controller,
+												physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
+												slivers: [
+													SliverToBoxAdapter(
+														child: ConstrainedBox(
+															constraints: BoxConstraints(
+																minHeight: constraints.maxHeight
+															),
+															child: SafeArea(
+																child: Center(
+																	key: _scrollKey,
+																	child: Opacity(
+																		key: _childKey,
+																		opacity: _opacity,
+																		child: widget.child
+																	)
 																)
 															)
 														)
 													)
-												)
-											]
+												]
+											)
 										)
 									)
 								)
