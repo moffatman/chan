@@ -723,9 +723,8 @@ class RefreshableListController<T> {
 	final Map<Tuple2<int, bool>, Completer<void>> _itemCacheCallbacks = {};
 	int? currentTargetIndex;
 	RefreshableListController() {
-		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onScroll);
-		slowScrollUpdates.listen(_onSlowScroll);
-		SchedulerBinding.instance.endOfFrame.then((_) => _onScroll([]));
+		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onSlowScroll);
+		SchedulerBinding.instance.endOfFrame.then((_) => _onScrollControllerNotification());
 	}
 	Future<void> _tryCachingItem(int index, _RefreshableListItem<T> item) async {
 		await SchedulerBinding.instance.endOfFrame;
@@ -768,16 +767,14 @@ class RefreshableListController<T> {
 				_tryCachingItem(i, _items[i]);
 			}
 		}
-	}
-	void _onScroll(List<void> notifications) {
-		if ((scrollController?.hasClients ?? false)) {
-			final overscrollAmount = scrollController!.position.pixels - scrollController!.position.maxScrollExtent;
-			overscrollFactor.value = (overscrollAmount / _overscrollTriggerThreshold).clamp(0, 1);
-		}
 		slowScrollUpdates.add(null);
 	}
 	void _onScrollControllerNotification() {
 		_scrollStream.add(null);
+		if ((scrollController?.hasClients ?? false)) {
+			final overscrollAmount = scrollController!.position.pixels - scrollController!.position.maxScrollExtent;
+			overscrollFactor.value = (overscrollAmount / _overscrollTriggerThreshold).clamp(0, 1);
+		}
 	}
 	void attach(RefreshableListState<T> list) {
 		state = list;
