@@ -168,6 +168,8 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 													src: img.src,
 													width: img.naturalWidth,
 													height: img.naturalHeight,
+													displayWidth: rect.width,
+													displayHeight: rect.height,
 													top: rect.top,
 													left: rect.left,
 													alt: img.alt
@@ -175,6 +177,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											})'''
 										);
 										final results = [...returnedResults];
+										results.removeWhere((r) => r['displayWidth'] * r['displayHeight'] == 0);
 										results.removeWhere((r) => r['src'].endsWith('.svg'));
 										results.removeWhere((r) => r['src'].isEmpty);
 										results.sort((a, b) => a['left'].compareTo(b['left']));
@@ -245,7 +248,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 															makeGrid(context, fullImages),
 															if (thumbnails.isNotEmpty) ...[
 																const SizedBox(height: 16),
-																CupertinoButton(
+																CupertinoButton.filled(
 																	child: const Text('Thumbnails'),
 																	onPressed: () async {
 																		final selectedThumbnail = await Navigator.of(context).push(TransparentRoute(
