@@ -10,10 +10,10 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
-import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -385,6 +385,7 @@ class _ThreadPageState extends State<ThreadPage> {
 											final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 											final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
 											shareOne(
+												context: context,
 												text: context.read<ImageboardSite>().getWebUrl(widget.thread.board, widget.thread.id),
 												type: "text",
 												sharePositionOrigin: (offset != null && size != null) ? offset & size : null

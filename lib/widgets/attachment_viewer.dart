@@ -8,6 +8,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/search_query.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/rotating_image_provider.dart';
 import 'package:chan/services/settings.dart';
@@ -407,6 +408,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<void> share(Rect? sharePosition) async {
 		await shareOne(
+			context: context,
 			text: (await _moveToShareCache()).path,
 			subject: attachment.filename,
 			type: "file",

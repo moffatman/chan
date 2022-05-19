@@ -2,6 +2,7 @@ import 'package:chan/pages/selectable_post.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
@@ -51,6 +52,7 @@ class PostRow extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		final rootContext = context;
 		final site = context.watch<ImageboardSite>();
 		final persistence = context.watch<Persistence>();
 		final notifications = context.watch<Notifications>();
@@ -514,9 +516,10 @@ class PostRow extends StatelessWidget {
 					child: const Text('Share link'),
 					trailingIcon: CupertinoIcons.share,
 					onPressed: () {
-						final offset = (context.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-						final size = context.findRenderObject()?.semanticBounds.size;
+						final offset = (rootContext.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+						final size = rootContext.findRenderObject()?.semanticBounds.size;
 						shareOne(
+							context: context,
 							text: site.getWebUrl(latestPost.board, latestPost.threadId, latestPost.id),
 							type: "text",
 							sharePositionOrigin: (offset != null && size != null) ? offset & size : null
