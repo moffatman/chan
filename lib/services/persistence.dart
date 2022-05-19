@@ -129,7 +129,6 @@ class Persistence extends ChangeNotifier {
 	}
 
 	static Future<void> clearFilesystemCaches(Duration? olderThan) async {
-		await clearDiskCachedImages(duration: olderThan);
 		DateTime? deadline;
 		if (olderThan != null) {
 			deadline = DateTime.now().subtract(olderThan);
