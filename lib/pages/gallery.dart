@@ -552,7 +552,13 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 						transitionBetweenRoutes: false,
 						middle: StreamBuilder(
 							stream: _currentAttachmentChanged,
-							builder: (context, _) => AutoSizeText("${currentAttachment.filename} (${currentAttachment.width}x${currentAttachment.height}${currentAttachment.sizeInBytes == null ? ')' : ', ${(currentAttachment.sizeInBytes! / 1024).round()} KB)'}")
+							builder: (context, _) => Padding(
+								padding: const EdgeInsets.only(bottom: 4),
+								child: AutoSizeText(
+									"${currentAttachment.filename} (${currentAttachment.width}x${currentAttachment.height}${currentAttachment.sizeInBytes == null ? ')' : ', ${(currentAttachment.sizeInBytes! / 1024).round()} KB)'}",
+									minFontSize: 8
+								)
+							)
 						),
 						backgroundColor: Colors.black38,
 						trailing: StreamBuilder(
