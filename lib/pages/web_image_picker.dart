@@ -1,17 +1,19 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-import 'dart:ui';
 
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:mime/mime.dart';
 import 'package:provider/provider.dart';
 
 extension ToCssRgba on Color {
@@ -188,27 +190,30 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											itemCount: images.length,
 											itemBuilder: (context, i) {
 												final image = images[i];
-												ExtendedImageState? eState;
-												handleLoadState(ExtendedImageState state) {
-													eState = state;
-												}
 												Widget imageWidget = ExtendedImage.network(
 													image['src'],
-													fit: BoxFit.contain,
-													loadStateChanged: handleLoadState
+													fit: BoxFit.contain
 												);
+												Uint8List? data;
 												if (image['src'].startsWith('data:')) {
+													data = base64Decode(image['src'].split(',')[1]);
 													imageWidget = ExtendedImage.memory(
-														base64Decode(image['src'].split(',')[1]),
-														fit: BoxFit.contain,
-														loadStateChanged: handleLoadState
+														data,
+														fit: BoxFit.contain
 													);
 												}
 												return GestureDetector(
 													onTap: () async {
-														final png = await eState?.extendedImageInfo?.image.toByteData(format: ImageByteFormat.png);
-														if (!mounted) return;
-														Navigator.of(context).pop(png);
+														if (data != null) {
+															Navigator.of(context).pop(data);
+														}
+														else {
+															final response = await context.read<ImageboardSite>().client.get(image['src'], options: Options(
+																responseType: ResponseType.bytes
+															));
+															if (!mounted) return;
+															Navigator.of(context).pop(response.data);
+														}
 													},
 													child: Column(
 														children: [
@@ -227,7 +232,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										final fullImages = results.where((r) => r['width'] * r['height'] >= 10201).toList();
 										final thumbnails = results.where((r) => r['width'] * r['height'] < 10201).toList();
 										if (!mounted) return;
-										final pickedBytes = await Navigator.of(context).push<ByteData>(TransparentRoute(
+										final pickedBytes = await Navigator.of(context).push<Uint8List>(TransparentRoute(
 											builder: (context) => OverscrollModalPage(
 												child: Container(
 													width: double.infinity,
@@ -273,11 +278,17 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											showAnimations: context.read<EffectiveSettings>().showAnimations
 										));
 										if (pickedBytes != null) {
-											final f = File('${Persistence.temporaryDirectory.path}/webpickercache/${DateTime.now().millisecondsSinceEpoch}.png');
-											await f.create(recursive: true);
-											await f.writeAsBytes(pickedBytes.buffer.asUint8List());
-											if (mounted) {
-												Navigator.of(context).pop(f);
+											String? ext = lookupMimeType('', headerBytes: pickedBytes)?.split('/').last;
+											if (ext == 'jpeg') {
+												ext = 'jpg';
+											}
+											if (ext != null) {
+												final f = File('${Persistence.temporaryDirectory.path}/webpickercache/${DateTime.now().millisecondsSinceEpoch}.$ext');
+												await f.create(recursive: true);
+												await f.writeAsBytes(pickedBytes, flush: true);
+												if (mounted) {
+													Navigator.of(context).pop(f);
+												}
 											}
 										}
 									}
