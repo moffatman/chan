@@ -3,6 +3,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -63,40 +64,41 @@ class _PostsPageState extends State<PostsPage> {
 					isSelected: true
 				),
 				heightEstimate: 100.0 * (widget.postsIdsToShow.length - 1),
-				child: Builder(
-					builder: (ctx) => ListView(
-						shrinkWrap: true,
-						primary: false,
-						physics: const NeverScrollableScrollPhysics(),
-						children: replies.map((reply) {
-							return Builder(
-								builder: (context) {
-									postContexts[reply] = context;
-									return PostRow(
-										post: reply,
-										onTap: widget.onTap == null ? null : () => widget.onTap!(reply),
-										onThumbnailTap: (attachment) {
-											showGallery(
-												context: context,
-												attachments: attachments,
-												replyCounts: {
-													for (final reply in replies.where((_) => _.attachment != null)) reply.attachment!: reply.replyIds.length
-												},
-												initialAttachment: attachment,
-												semanticParentIds: ctx.read<PostSpanZoneData>().stackIds,
-												onChange: (attachment) {
-													final match = postContexts.entries.tryFirstWhere((p) =>  p.key.attachment == attachment);
-													if (match != null) {
-														Scrollable.ensureVisible(match.value, alignment: 0.5, duration: const Duration(milliseconds: 200));
-													}
-												}
-											);
+				child: ListView.separated(
+					shrinkWrap: true,
+					primary: false,
+					physics: const NeverScrollableScrollPhysics(),
+					separatorBuilder: (context, i) => Divider(
+						thickness: 1,
+						height: 0,
+						color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+					),
+					itemCount: replies.length,
+					itemBuilder: (context, i) {
+						final reply = replies[i];
+						postContexts[reply] = context;
+						return PostRow(
+							post: reply,
+							onTap: widget.onTap == null ? null : () => widget.onTap!(reply),
+							onThumbnailTap: (attachment) {
+								showGallery(
+									context: context,
+									attachments: attachments,
+									replyCounts: {
+										for (final reply in replies.where((_) => _.attachment != null)) reply.attachment!: reply.replyIds.length
+									},
+									initialAttachment: attachment,
+									semanticParentIds: context.read<PostSpanZoneData>().stackIds,
+									onChange: (attachment) {
+										final match = postContexts.entries.tryFirstWhere((p) =>  p.key.attachment == attachment);
+										if (match != null) {
+											Scrollable.ensureVisible(match.value, alignment: 0.5, duration: const Duration(milliseconds: 200));
 										}
-									);
-								}
-							);
-						}).toList()
-					)
+									}
+								);
+							}
+						);
+					}
 				)
 			)
 		);
