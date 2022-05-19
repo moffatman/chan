@@ -463,14 +463,16 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 														return Stack(
 															children: [
 																_itemBuilder(context, filteredValues[i ~/ 2].item1),
-																Align(
-																	alignment: Alignment.topRight,
-																	child: Container(
-																		padding: const EdgeInsets.all(4),
-																		color: CupertinoTheme.of(context).primaryColor,
-																		child: Text('Filter reason:\n${filteredValues[i ~/ 2].item2}', style: TextStyle(
-																			color: CupertinoTheme.of(context).scaffoldBackgroundColor
-																		))
+																IgnorePointer(
+																	child: Align(
+																		alignment: Alignment.topRight,
+																		child: Container(
+																			padding: const EdgeInsets.all(4),
+																			color: CupertinoTheme.of(context).primaryColor,
+																			child: Text('Filter reason:\n${filteredValues[i ~/ 2].item2}', style: TextStyle(
+																				color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																			))
+																		)
 																	)
 																)
 															]
