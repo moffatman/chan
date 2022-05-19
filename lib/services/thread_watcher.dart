@@ -153,7 +153,15 @@ class ThreadWatcher extends ChangeNotifier {
 	void _updateCounts() {
 		if (cachedUnseen.isNotEmpty) {
 			unseenCount.value = cachedUnseen.values.reduce((a, b) => a + b) + _unseenStickyThreads.length;
+		}
+		else {
+			unseenCount.value = 0;
+		}
+		if (cachedUnseenYous.isNotEmpty) {
 			unseenYouCount.value = cachedUnseenYous.values.reduce((a, b) => a + b);
+		}
+		else {
+			unseenYouCount.value = 0;
 		}
 	}
 
