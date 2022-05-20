@@ -203,6 +203,17 @@ class ImageboardEmote {
 	});
 }
 
+class ImageboardBoardFlag {
+	final String code;
+	final String name;
+	final Uri image;
+	const ImageboardBoardFlag({
+		required this.code,
+		required this.name,
+		required this.image
+	});
+}
+
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	BuildContext? _context;
@@ -260,7 +271,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		required CaptchaSolution captchaSolution,
 		File? file,
 		bool? spoiler,
-		String? overrideFilename
+		String? overrideFilename,
+		ImageboardBoardFlag? flag
 	});
 	Future<PostReceipt> postReply({
 		required ThreadIdentifier thread,
@@ -270,7 +282,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		required CaptchaSolution captchaSolution,
 		File? file,
 		bool? spoiler,
-		String? overrideFilename
+		String? overrideFilename,
+		ImageboardBoardFlag? flag
 	});
 	DateTime? getActionAllowedTime(String board, ImageboardAction action);
 	Future<void> deletePost(String board, PostReceipt receipt);
@@ -373,6 +386,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}
 	Future<void> clearLoginCookies();
 	List<ImageboardEmote> getEmotes();
+	Future<List<ImageboardBoardFlag>> getBoardFlags(String board);
 	String get siteType;
 	String get siteData;
 	ThreadOrPostIdentifier? decodeUrl(String url);

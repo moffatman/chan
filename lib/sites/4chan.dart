@@ -1,6 +1,7 @@
 // ignore_for_file: file_names
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/services/persistence.dart';
@@ -480,7 +481,8 @@ class Site4Chan extends ImageboardSite {
 		required CaptchaSolution captchaSolution,
 		File? file,
 		bool? spoiler,
-		String? overrideFilename
+		String? overrideFilename,
+		ImageboardBoardFlag? flag
 	}) async {
 		final password = List.generate(64, (i) => random.nextInt(16).toRadixString(16)).join();
 		final response = await client.post(
@@ -499,7 +501,8 @@ class Site4Chan extends ImageboardSite {
 					't-response': captchaSolution.response
 				},
 				if (file != null) 'upfile': await MultipartFile.fromFile(file.path, filename: overrideFilename),
-				if (spoiler == true) 'spoiler': 'on'
+				if (spoiler == true) 'spoiler': 'on',
+				if (flag != null) 'flag': flag.code
 			}),
 			options: Options(
 				responseType: ResponseType.plain
@@ -544,7 +547,8 @@ class Site4Chan extends ImageboardSite {
 		required CaptchaSolution captchaSolution,
 		File? file,
 		bool? spoiler,
-		String? overrideFilename
+		String? overrideFilename,
+		ImageboardBoardFlag? flag
 	}) => _post(
 		board: board,
 		name: name,
@@ -554,7 +558,8 @@ class Site4Chan extends ImageboardSite {
 		captchaSolution: captchaSolution,
 		file: file,
 		spoiler: spoiler,
-		overrideFilename: overrideFilename
+		overrideFilename: overrideFilename,
+		flag: flag
 	);
 
 	@override
@@ -566,7 +571,8 @@ class Site4Chan extends ImageboardSite {
 		required CaptchaSolution captchaSolution,
 		File? file,
 		bool? spoiler,
-		String? overrideFilename
+		String? overrideFilename,
+		ImageboardBoardFlag? flag
 	}) => _post(
 		board: thread.board,
 		threadId: thread.id,
@@ -576,7 +582,8 @@ class Site4Chan extends ImageboardSite {
 		captchaSolution: captchaSolution,
 		file: file,
 		spoiler: spoiler,
-		overrideFilename: overrideFilename
+		overrideFilename: overrideFilename,
+		flag: flag
 	);
 
 	@override
@@ -741,5 +748,19 @@ class Site4Chan extends ImageboardSite {
 			return _decodeUrl(baseUrl, url) ?? _decodeUrl(baseUrl.replaceFirst('chan', 'channel'), url);
 		}
 		return _decodeUrl(baseUrl, url);
+	}
+	
+	final Map<String, AsyncMemoizer<List<ImageboardBoardFlag>>> _boardFlags = {};
+	@override
+	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) {
+		return _boardFlags.putIfAbsent(board, () => AsyncMemoizer<List<ImageboardBoardFlag>>()).runOnce(() async {
+			final response = await client.get(Uri.https(baseUrl, '/$board/').toString());
+			final doc = parse(response.data);
+			return doc.querySelector('select[name="flag"]')?.querySelectorAll('option').map((e) => ImageboardBoardFlag(
+				code: e.attributes['value'] ?? '0',
+				name: e.text,
+				image: Uri.https(staticUrl, '/image/flags/$board/${e.attributes['value']?.toLowerCase()}.gif')
+			)).toList() ?? [];
+		});
 	}
 }

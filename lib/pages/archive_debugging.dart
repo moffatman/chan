@@ -33,7 +33,7 @@ class WrappedArchive extends ImageboardSite {
   Dio get client => archive.client;
 
   @override
-  Future<PostReceipt> createThread({required String board, String name = '', String options = '', String subject = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename}) {
+  Future<PostReceipt> createThread({required String board, String name = '', String options = '', String subject = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
     throw UnimplementedError();
   }
 
@@ -107,7 +107,7 @@ class WrappedArchive extends ImageboardSite {
   String get name => archive.name;
 
   @override
-  Future<PostReceipt> postReply({required ThreadIdentifier thread, String name = '', String options = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename}) {
+  Future<PostReceipt> postReply({required ThreadIdentifier thread, String name = '', String options = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
     throw UnimplementedError();
   }
 
@@ -148,6 +148,11 @@ class WrappedArchive extends ImageboardSite {
   
   @override
   ThreadOrPostIdentifier? decodeUrl(String url) => null;
+
+  @override
+  Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async {
+    return [];
+  }
 }
 
 class ArchiveDebuggingPage extends StatelessWidget {

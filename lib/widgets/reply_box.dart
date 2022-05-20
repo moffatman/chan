@@ -90,6 +90,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	Timer? _autoPostTimer;
 	bool spoiler = false;
 	bool _dropLoading = false;
+	List<ImageboardBoardFlag> _flags = [];
+	ImageboardBoardFlag? flag;
 
 	bool get _haveValidCaptcha {
 		if (_captchaSolution == null) {
@@ -137,6 +139,11 @@ class ReplyBoxState extends State<ReplyBox> {
 		_subjectFieldController.addListener(() {
 			widget.onSubjectChanged?.call(_subjectFieldController.text);
 		});
+		context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
+			setState(() {
+				_flags = flags;
+			});
+		});
 	}
 
 	@override
@@ -147,6 +154,14 @@ class ReplyBoxState extends State<ReplyBox> {
 			_subjectFieldController.text = widget.initialSubject;
 			attachment = null;
 			spoiler = false;
+			flag = null;
+		}
+		if (oldWidget.board != widget.board) {
+			context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
+				setState(() {
+					_flags = flags;
+				});
+			});
 		}
 	}
 
@@ -523,7 +538,8 @@ class ReplyBoxState extends State<ReplyBox> {
 				text: _textFieldController.text,
 				file: attachment,
 				spoiler: spoiler,
-				overrideFilename: overrideAttachmentFilename
+				overrideFilename: overrideAttachmentFilename,
+				flag: flag
 			)) : (await site.createThread(
 				board: widget.board,
 				name: _nameFieldController.text,
@@ -533,7 +549,8 @@ class ReplyBoxState extends State<ReplyBox> {
 				file: attachment,
 				spoiler: spoiler,
 				overrideFilename: overrideAttachmentFilename,
-				subject: _subjectFieldController.text
+				subject: _subjectFieldController.text,
+				flag: flag
 			));
 			if (_captchaSolution is Chan4CustomCaptchaSolution) {
 				final solution = (_captchaSolution as Chan4CustomCaptchaSolution);
@@ -664,6 +681,64 @@ class ReplyBoxState extends State<ReplyBox> {
 		));
 		if (pickedEmote != null) {
 			_insertText(pickedEmote.code, addNewlineIfAtEnd: false);
+		}
+	}
+
+	void _pickFlag() async {
+		final pickedFlag = await Navigator.of(context).push<ImageboardBoardFlag>(TransparentRoute(
+			builder: (context) => OverscrollModalPage(
+				child: Container(
+					width: MediaQuery.of(context).size.width,
+					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+					padding: const EdgeInsets.all(16),
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						crossAxisAlignment: CrossAxisAlignment.center,
+						children: [
+							const Text('Select flag'),
+							const SizedBox(height: 16),
+							ListView.builder(
+								itemCount: _flags.length,
+								itemBuilder: (context, i) {
+									final flag = _flags[i];
+									return CupertinoButton(
+										onPressed: () {
+											Navigator.of(context).pop(flag);
+										},
+										child: Row(
+											children: [
+												if (flag.code == '0') const SizedBox(width: 16)
+												else ExtendedImage.network(
+													flag.image.toString(),
+													fit: BoxFit.contain,
+													cache: true
+												),
+												const SizedBox(width: 8),
+												Text(flag.name)
+											]
+										)
+									);
+								},
+								shrinkWrap: true,
+								physics: const NeverScrollableScrollPhysics(),
+							)
+						]
+					)
+				)
+			),
+			showAnimations: context.read<EffectiveSettings>().showAnimations
+		));
+		if (pickedFlag != null) {
+			if (pickedFlag.code == '0') {
+				setState(() {
+					flag = null;
+				});
+			}
+			else {
+				setState(() {
+					flag = pickedFlag;
+				});
+			}
 		}
 	}
 
@@ -856,6 +931,18 @@ class ReplyBoxState extends State<ReplyBox> {
 										]
 									)
 								)
+							)
+						)
+					),
+					if (_flags.isNotEmpty) Center(
+						child: CupertinoButton(
+							padding: EdgeInsets.zero,
+							onPressed: _pickFlag,
+							child: IgnorePointer(
+								child: flag != null ? ExtendedImage.network(
+									flag!.image.toString(),
+									cache: true,
+								) : const Icon(CupertinoIcons.flag)
 							)
 						)
 					),

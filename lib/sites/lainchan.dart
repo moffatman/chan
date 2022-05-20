@@ -209,7 +209,8 @@ class SiteLainchan extends ImageboardSite {
 		required CaptchaSolution captchaSolution,
 		File? file,
 		bool? spoiler,
-		String? overrideFilename
+		String? overrideFilename,
+		ImageboardBoardFlag? flag
 	}) async {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
 		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
@@ -295,7 +296,8 @@ class SiteLainchan extends ImageboardSite {
 		required CaptchaSolution captchaSolution,
 		File? file,
 		bool? spoiler,
-		String? overrideFilename
+		String? overrideFilename,
+		ImageboardBoardFlag? flag
 	}) => _post(
 		board: board,
 		name: name,
@@ -305,7 +307,8 @@ class SiteLainchan extends ImageboardSite {
 		captchaSolution: captchaSolution,
 		file: file,
 		spoiler: spoiler,
-		overrideFilename: overrideFilename
+		overrideFilename: overrideFilename,
+		flag: flag
 	);
 
 	@override
@@ -317,7 +320,8 @@ class SiteLainchan extends ImageboardSite {
 		required CaptchaSolution captchaSolution,
 		File? file,
 		bool? spoiler,
-		String? overrideFilename
+		String? overrideFilename,
+		ImageboardBoardFlag? flag
 	}) => _post(
 		board: thread.board,
 		threadId: thread.id,
@@ -327,7 +331,8 @@ class SiteLainchan extends ImageboardSite {
 		captchaSolution: captchaSolution,
 		file: file,
 		spoiler: spoiler,
-		overrideFilename: overrideFilename
+		overrideFilename: overrideFilename,
+		flag: flag
 	);
 
 	@override
@@ -428,5 +433,10 @@ class SiteLainchan extends ImageboardSite {
 			return ThreadOrPostIdentifier(match.group(1)!, int.parse(match.group(2)!), int.tryParse(match.group(4) ?? ''));
 		}
 		return null;
+	}
+
+	@override
+	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async {
+		return [];
 	}
 }
