@@ -105,7 +105,8 @@ class Persistence extends ChangeNotifier {
 		final settingsBox = await Hive.openBox<SavedSettings>('settings');
 		settings = settingsBox.get('settings', defaultValue: SavedSettings())!;
 		if (settings.automaticCacheClearDays < 100000) {
-			await clearFilesystemCaches(Duration(days: settings.automaticCacheClearDays));
+			// Don't await
+			clearFilesystemCaches(Duration(days: settings.automaticCacheClearDays));
 		}
 	}
 
