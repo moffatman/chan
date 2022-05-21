@@ -663,7 +663,9 @@ class PostLinkSpan extends PostSpan {
 							child: Column(
 								crossAxisAlignment: CrossAxisAlignment.start,
 								children: [
-									if (snapshot.data?.title != null) Text(snapshot.data!.title!),
+									if (snapshot.data?.title != null) Text(snapshot.data!.title!, style: TextStyle(
+										color: CupertinoTheme.of(context).primaryColor
+									)),
 									if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey))
 								]
 							)

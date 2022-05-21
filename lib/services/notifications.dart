@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:chan/main.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -73,6 +74,7 @@ const _notificationSettingsApiRoot = 'https://notifications.moffatman.com';
 class Notifications {
 	static final Map<String, Notifications> _children = {};
 	final tapStream = BehaviorSubject<ThreadOrPostIdentifier>();
+	final foregroundStream = BehaviorSubject<ThreadOrPostIdentifier>();
 	final Persistence persistence;
 	ThreadWatcher? localWatcher;
 	final String siteType;
@@ -96,11 +98,22 @@ class Notifications {
 		if (Persistence.settings.usePushNotifications == true) {
 			await messaging.requestPermission();
 		}
-		FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+		FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
 			print('onMessage');
 			print(message);
 			print(message.data);
-			print(message.messageId);
+			if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
+				if (!_children.containsKey(message.data['userId'])) {
+					print('Opened via message with unknown userId: ${message.data}');
+				}
+				final identifier = ThreadOrPostIdentifier(
+					message.data['board'],
+					int.parse(message.data['threadId']),
+					int.tryParse(message.data['postId'] ?? '')
+				);
+				await _children[message.data['userId']]?.localWatcher?.updateThread(identifier.threadIdentifier);
+				_children[message.data['userId']]?.foregroundStream.add(identifier);
+			}
 		});
 		FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
 		FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
@@ -251,6 +264,7 @@ class Notifications {
 	Future<void> updateLastKnownId(Watch watch, int lastKnownId) async {
 		if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
 			clearNotifications(this, watch);
+			clearOverlayNotifications(this, watch);
 		}
 		watch.lastSeenId = lastKnownId;
 		if (Persistence.settings.usePushNotifications == true) {

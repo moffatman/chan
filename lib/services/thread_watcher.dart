@@ -220,6 +220,10 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 	}
 
+	Future<void> updateThread(ThreadIdentifier identifier) async {
+		await _updateThread(persistence.getThreadState(identifier));
+	}
+
 	Future<bool> _updateThread(PersistentThreadState threadState) async {
 		Thread? newThread;
 		try {
