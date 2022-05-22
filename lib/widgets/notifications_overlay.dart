@@ -8,6 +8,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class OverlayNotification {
@@ -45,7 +46,20 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 	final Map<Notifications, StreamSubscription<ThreadOrPostIdentifier>> subscriptions = {};
 	final List<OverlayNotification> shown = [];
 
-	void _newNotification(Notifications notifications, ThreadOrPostIdentifier target) {
+	void _checkAutoclose() {
+		if (shown.isEmpty) {
+			return;
+		}
+		final n = shown.first;
+		if (n.autoCloseAnimation.isAnimating) {
+			return;
+		}
+		if (!(n.notifications.persistence.getThreadStateIfExists(n.target.threadIdentifier)?.youIds.contains(n.target.postId) ?? false)) {
+			n.autoCloseAnimation.forward().then((_) => closeNotification(n));
+		}
+	}
+
+	void _newNotification(Notifications notifications, ThreadOrPostIdentifier target) async {
 		final autoCloseAnimation = AnimationController(
 			vsync: this,
 			duration: widget.fadeTime
@@ -56,19 +70,22 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 			autoCloseAnimation: autoCloseAnimation
 		);
 		shown.add(notification);
-		if (!(notifications.persistence.getThreadStateIfExists(target.threadIdentifier)?.youIds.contains(target.postId) ?? false)) {
-			autoCloseAnimation.forward().then((_) => closeNotification(notification));
-		}
 		setState(() {});
+		await Future.delayed(const Duration(seconds: 1));
+		_checkAutoclose();
 	}
 
 	Future<void> closeNotification(OverlayNotification notification) async {
+		if (!shown.contains(notification)) {
+			return;
+		}
 		notification.closed = true;
 		setState(() {});
 		await Future.delayed(const Duration(seconds: 1));
 		notification.autoCloseAnimation.dispose();
 		shown.remove(notification);
 		setState(() {});
+		_checkAutoclose();
 	}
 
 	void _notificationTapped(OverlayNotification notification) {
@@ -107,7 +124,7 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 				if (widget.onePane) ...shown.reversed.map((notification) => Align(
 					alignment: Alignment.topCenter,
 					child: Padding(
-						padding: const EdgeInsets.only(top: 64),
+						padding: EdgeInsets.only(top: 44 + MediaQuery.of(context).padding.top),
 						child: TopNotification(
 							notification: notification,
 							onTap: () => _notificationTapped(notification),
@@ -121,7 +138,7 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 						crossAxisAlignment: CrossAxisAlignment.end,
 						children: [
 							const SizedBox(height: 50),
-							...shown.reversed.map((notification) => CornerNotification(
+							...shown.map((notification) => CornerNotification(
 								key: ValueKey(notification),
 								notification: notification,
 								onTap: () => _notificationTapped(notification),
@@ -186,17 +203,18 @@ class NotificationContent extends StatelessWidget {
 				),
 				builder: (context, _) => ConstrainedBox(
 					constraints: constraints,
-					child: Text.rich(
+					child: post == null ? Text('New post in /${notification.board}/${notification.threadId}       ', style: const TextStyle(
+						fontWeight: FontWeight.bold
+					)) : Text.rich(
 						TextSpan(
 							children: [
-								TextSpan(text: 'New ${isYou ? 'reply' : 'post'} in /${notification.board}/${notification.threadId}\n', style: const TextStyle(
+								TextSpan(text: 'New ${isYou ? 'reply' : 'post'} in /${notification.board}/${notification.threadId}       \n', style: const TextStyle(
 									fontWeight: FontWeight.bold
 								)),
-								if (post != null) post.span.build(context, PostSpanRenderOptions(
+								post.span.build(context, PostSpanRenderOptions(
 									shrinkWrap: true,
 									avoidBuggyClippers: true
 								))
-								else TextSpan(text: '$notification')
 							]
 						),
 						overflow: TextOverflow.fade
@@ -237,11 +255,12 @@ class TopNotification extends StatelessWidget {
 									borderRadius: BorderRadius.zero,
 									alignment: Alignment.topLeft,
 									onPressed: onTap,
+									padding: const EdgeInsets.only(top: 16, right: 16, left: 16),
 									child: NotificationContent(
 										notification: notification.target,
 										constraints:const  BoxConstraints(
-											maxHeight: 64,
-											minHeight: 64
+											maxHeight: 80,
+											minHeight: 80
 										)
 									)
 								)
@@ -249,8 +268,23 @@ class TopNotification extends StatelessWidget {
 							CupertinoButton.filled(
 								padding: const EdgeInsets.all(16),
 								borderRadius: BorderRadius.zero,
+								alignment: Alignment.topCenter,
 								onPressed: onTapClose,
-								child: const Icon(CupertinoIcons.xmark)
+								child: Stack(
+									alignment: Alignment.center,
+									children: [
+										const Icon(CupertinoIcons.xmark),
+										IgnorePointer(
+											child: AnimatedBuilder(
+												animation: notification.autoCloseAnimation,
+												builder: (context, _) => CircularProgressIndicator(
+													value: notification.autoCloseAnimation.value,
+													color: CupertinoTheme.of(context).scaffoldBackgroundColor
+												)
+											)
+										)
+									]
+								)
 							)
 						]
 					)
@@ -278,7 +312,7 @@ class CornerNotification extends StatelessWidget {
 			duration: const Duration(milliseconds: 500),
 			curve: Curves.ease,
 			child: notification.closed ? const SizedBox.shrink() : Padding(
-				padding: const EdgeInsets.all(8),
+				padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 				child: Stack(
 					children: [
 						Padding(
@@ -300,11 +334,29 @@ class CornerNotification extends StatelessWidget {
 								alignment: Alignment.topRight,
 								child: CupertinoButton(
 									minSize: 0,
-									padding: const EdgeInsets.all(4),
+									padding: EdgeInsets.zero,
 									borderRadius: BorderRadius.circular(100),
 									color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
 									onPressed: onTapClose,
-									child: Icon(CupertinoIcons.xmark, size: 17, color: CupertinoTheme.of(context).primaryColor)
+									child: Stack(
+										alignment: Alignment.center,
+										children: [
+											Icon(CupertinoIcons.xmark, size: 17, color: CupertinoTheme.of(context).primaryColor),
+											IgnorePointer(
+												child: AnimatedBuilder(
+													animation: notification.autoCloseAnimation,
+													builder: (context, _) => Transform.scale(
+														scale: 0.8,
+														child: CircularProgressIndicator(
+															value: notification.autoCloseAnimation.value,
+															color: CupertinoTheme.of(context).primaryColor,
+															strokeWidth: 4,
+														)
+													)
+												)
+											)
+										]
+									)
 								)
 							)
 						)

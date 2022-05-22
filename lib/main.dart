@@ -244,7 +244,7 @@ class _ChanAppState extends State<ChanApp> {
 
 final notificationsOverlayKey = GlobalKey<NotificationsOverlayState>();
 void clearOverlayNotifications(Notifications notifications, Watch watch) {
-	final overlay = notificationsOverlayKey.currentState;
+	/*final overlay = notificationsOverlayKey.currentState;
 	if (overlay != null) {
 		for (final n in overlay.shown.toList()) {
 			if (n.notifications != notifications) {
@@ -254,7 +254,7 @@ void clearOverlayNotifications(Notifications notifications, Watch watch) {
 				overlay.closeNotification(n);
 			}
 		}
-	}
+	}*/
 }
 
 class ChanHomePage extends StatefulWidget {
@@ -495,6 +495,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				await tab.threadController?.update();
 			}
 			tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0);
+			if (tab.threadController == null) {
+				await Future.delayed(const Duration(seconds: 1));
+				tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0);
+			}
 		}
 	}
 
