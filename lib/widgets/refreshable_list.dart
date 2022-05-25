@@ -68,6 +68,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 	DateTime? nextUpdateTime;
 	Timer? autoUpdateTimer;
 	GlobalKey _scrollViewKey = GlobalKey();
+	GlobalKey _sliverListKey = GlobalKey();
 	int _pointerDownCount = 0;
 	bool _showFilteredValues = false;
 	bool _searchTapped = false;
@@ -101,6 +102,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			autoUpdateTimer = null;
 			widget.controller?.newContentId(widget.id);
 			_scrollViewKey = GlobalKey();
+			_sliverListKey = GlobalKey();
 			_closeSearch();
 			setState(() {
 				list = widget.initialList;
@@ -403,7 +405,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 											)
 										)
 										else SliverList(
-											key: PageStorageKey('list for ${widget.id}'),
+											key: _sliverListKey,
 											delegate: SliverChildBuilderDelegate(
 												(context, i) {
 													if (i % 2 == 0) {

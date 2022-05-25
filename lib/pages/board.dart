@@ -106,7 +106,6 @@ class _BoardPageState extends State<BoardPage> {
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
 		final settings = context.watch<EffectiveSettings>();
-		final persistence = context.watch<Persistence>();
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
 			navigationBar: CupertinoNavigationBar(
@@ -221,7 +220,7 @@ class _BoardPageState extends State<BoardPage> {
 			child: board == null ? const Center(
 				child: Text('No Board Selected')
 			) : FilterZone(
-				filter: persistence.browserState.getCatalogFilter(board!.name),
+				filter: context.select<Persistence, Filter>((p) => p.browserState.getCatalogFilter(board!.name)),
 				child: WillPopScope(
 					onWillPop: () async {
 						if (_replyBoxKey.currentState?.show ?? false) {
@@ -264,6 +263,7 @@ class _BoardPageState extends State<BoardPage> {
 												initialFilter: widget.initialSearch,
 												allowReordering: true,
 												onWantAutosave: (thread) async {
+													final persistence = context.read<Persistence>();
 													if (persistence.browserState.autosavedIds[thread.board]?.contains(thread.id) ?? false) {
 														// Already saw this thread
 														return;
@@ -311,7 +311,9 @@ class _BoardPageState extends State<BoardPage> {
 												}),
 												id: '/${board!.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
 												itemBuilder: (context, thread) {
-													final browserState = persistence.browserState;
+													final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
+													final isThreadHidden = context.select<Persistence, bool>((p) => p.browserState.isThreadHidden(thread.board, thread.id));
+													final isImageHidden = thread.attachment?.md5 != null && context.select<Persistence, bool>((p) => p.browserState.isMD5Hidden(thread.attachment?.md5));
 													return ContextMenu(
 														actions: [
 															if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
@@ -321,11 +323,11 @@ class _BoardPageState extends State<BoardPage> {
 																	widget.onWantOpenThreadInNewTab?.call(thread.identifier);
 																}
 															),
-															if (persistence.getThreadStateIfExists(thread.identifier)?.savedTime != null) ContextMenuAction(
+															if (isSaved) ContextMenuAction(
 																child: const Text('Un-save thread'),
 																trailingIcon: CupertinoIcons.bookmark_fill,
 																onPressed: () {
-																	final threadState = persistence.getThreadState(thread.identifier);
+																	final threadState = context.read<Persistence>().getThreadState(thread.identifier);
 																	threadState.savedTime = null;
 																	threadState.save();
 																	setState(() {});
@@ -335,19 +337,19 @@ class _BoardPageState extends State<BoardPage> {
 																child: const Text('Save thread'),
 																trailingIcon: CupertinoIcons.bookmark,
 																onPressed: () {
-																	final threadState = persistence.getThreadState(thread.identifier);
+																	final threadState = context.read<Persistence>().getThreadState(thread.identifier);
 																	threadState.thread = thread;
 																	threadState.savedTime = DateTime.now();
 																	threadState.save();
 																	setState(() {});
 																}
 															),
-															if (browserState.isThreadHidden(thread.board, thread.id)) ContextMenuAction(
+															if (isThreadHidden) ContextMenuAction(
 																child: const Text('Unhide thread'),
 																trailingIcon: CupertinoIcons.eye_slash_fill,
 																onPressed: () {
-																	browserState.unHideThread(thread.board, thread.id);
-																	persistence.didUpdateBrowserState();
+																	context.read<Persistence>().browserState.unHideThread(thread.board, thread.id);
+																	context.read<Persistence>().didUpdateBrowserState();
 																	setState(() {});
 																}
 															)
@@ -355,17 +357,17 @@ class _BoardPageState extends State<BoardPage> {
 																child: const Text('Hide thread'),
 																trailingIcon: CupertinoIcons.eye_slash,
 																onPressed: () {
-																	browserState.hideThread(thread.board, thread.id);
-																	persistence.didUpdateBrowserState();
+																	context.read<Persistence>().browserState.hideThread(thread.board, thread.id);
+																	context.read<Persistence>().didUpdateBrowserState();
 																	setState(() {});
 																}
 															),
-															if (thread.attachment?.md5 != null && browserState.isMD5Hidden(thread.attachment?.md5)) ContextMenuAction(
+															if (isImageHidden) ContextMenuAction(
 																child: const Text('Unhide by image'),
 																trailingIcon: CupertinoIcons.eye_slash_fill,
 																onPressed: () {
-																	browserState.unHideByMD5(thread.attachment!.md5);
-																	persistence.didUpdateBrowserState();
+																	context.read<Persistence>().browserState.unHideByMD5(thread.attachment!.md5);
+																	context.read<Persistence>().didUpdateBrowserState();
 																	setState(() {});
 																}
 															)
@@ -373,8 +375,8 @@ class _BoardPageState extends State<BoardPage> {
 																child: const Text('Hide by image'),
 																trailingIcon: CupertinoIcons.eye_slash,
 																onPressed: () {
-																	browserState.hideByMD5(thread.attachment!.md5);
-																	persistence.didUpdateBrowserState();
+																	context.read<Persistence>().browserState.hideByMD5(thread.attachment!.md5);
+																	context.read<Persistence>().didUpdateBrowserState();
 																	setState(() {});
 																}
 															)

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:mutex/mutex.dart';
 
 extension SafeWhere<T> on Iterable<T> {
@@ -125,4 +126,36 @@ extension ToStringDio on Object {
 			return toString();
 		}
 	}
+}
+
+extension Filtering on Listenable {
+	Listenable filter(bool Function() filter) {
+		return FilteringListenable(this, filter);
+	}
+}
+
+class FilteringListenable extends ChangeNotifier {
+  FilteringListenable(this._child, this._filter) {
+		_child.addListener(_listen);
+	}
+
+  final Listenable _child;
+	final bool Function() _filter;
+
+	void _listen() {
+		if (_filter()) {
+			notifyListeners();
+		}
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_child.removeListener(_listen);
+	}
+
+  @override
+  String toString() {
+    return 'FilteringListenable(child: $_child, filter: $_filter)';
+  }
 }

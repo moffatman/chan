@@ -202,11 +202,11 @@ class _ThreadPageState extends State<ThreadPage> {
 		super.didUpdateWidget(old);
 		if (widget.thread != old.thread) {
 			_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
-			_threadStateListenable = context.watch<Persistence>().listenForPersistentThreadStateChanges(widget.thread);
+			_threadStateListenable = context.read<Persistence>().listenForPersistentThreadStateChanges(widget.thread);
 			_threadStateListenable.addListener(_onThreadStateListenableUpdate);
 			_weakNavigatorKey.currentState!.popAllExceptFirst();
 			persistentState.save(); // Save old state in case it had pending scroll update to save
-			persistentState = context.watch<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
+			persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
 			persistentState.useArchive |= widget.initiallyUseArchive;
 			final oldZone = zone;
 			Future.delayed(const Duration(milliseconds: 100), () => oldZone.dispose());
@@ -462,11 +462,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																						const Spacer(),
 																						const Icon(CupertinoIcons.reply),
 																						const SizedBox(width: 8),
-																						_limitCounter(persistentState.thread!.replyCount, context.watch<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
+																						_limitCounter(persistentState.thread!.replyCount, context.read<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
 																						const Spacer(),
 																						const Icon(CupertinoIcons.photo),
 																						const SizedBox(width: 8),
-																						_limitCounter(persistentState.thread!.imageCount, context.watch<Persistence>().getBoard(widget.thread.board).threadImageLimit),
+																						_limitCounter(persistentState.thread!.imageCount, context.read<Persistence>().getBoard(widget.thread.board).threadImageLimit),
 																						const Spacer(),
 																						if (persistentState.thread!.uniqueIPCount != null) ...[
 																							const Icon(CupertinoIcons.person),
@@ -477,7 +477,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																						if (persistentState.thread!.currentPage != null) ...[
 																							const Icon(CupertinoIcons.doc),
 																							const SizedBox(width: 8),
-																							_limitCounter(persistentState.thread!.currentPage!, context.watch<Persistence>().getBoard(widget.thread.board).pageCount),
+																							_limitCounter(persistentState.thread!.currentPage!, context.read<Persistence>().getBoard(widget.thread.board).pageCount),
 																							const Spacer()
 																						],
 																						if (persistentState.thread!.isArchived) ...[

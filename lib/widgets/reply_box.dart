@@ -743,7 +743,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	Widget _buildAttachmentOptions(BuildContext context) {
-		final board = context.watch<Persistence>().getBoard(widget.board);
+		final board = context.read<Persistence>().getBoard(widget.board);
 		return Container(
 			decoration: BoxDecoration(
 				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
@@ -959,7 +959,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	Widget _buildTextField(BuildContext context) {
-		final board = context.watch<Persistence>().getBoard(widget.board);
+		final board = context.read<Persistence>().getBoard(widget.board);
 		return CallbackShortcuts(
 			bindings: {
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter): _submit,

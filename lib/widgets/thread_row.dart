@@ -425,16 +425,16 @@ class ThreadRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return ValueListenableBuilder(
-			valueListenable: context.watch<Persistence>().listenForPersistentThreadStateChanges(thread.identifier),
+			valueListenable: context.read<Persistence>().listenForPersistentThreadStateChanges(thread.identifier),
 			builder: (context, box, child) {
-				final threadState = context.watch<Persistence>().getThreadStateIfExists(thread.identifier);
+				final threadState = context.read<Persistence>().getThreadStateIfExists(thread.identifier);
 				if (threadState == null) {
 					return _build(context, threadState);
 				}
 				else {
 					return ValueListenableBuilder(
 						valueListenable: threadState.lastSeenPostIdNotifier,
-						builder: (context, _, __) => _build(context, context.watch<Persistence>().getThreadStateIfExists(thread.identifier))
+						builder: (context, _, __) => _build(context, context.read<Persistence>().getThreadStateIfExists(thread.identifier))
 					);
 				}
 			}

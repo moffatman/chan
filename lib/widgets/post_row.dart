@@ -54,17 +54,16 @@ class PostRow extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final rootContext = context;
 		final site = context.watch<ImageboardSite>();
-		final persistence = context.watch<Persistence>();
 		final notifications = context.watch<Notifications>();
-		final savedPost = persistence.getSavedPost(post);
+		final savedPost = context.select<Persistence, SavedPost?>((p) => p.getSavedPost(post));
 		Post latestPost = savedPost?.post ?? post;
 		if (latestPost.attachment?.url != post.attachment?.url) {
 			latestPost.attachment = post.attachment;
-			context.watch<Persistence>().didUpdateSavedPost();
+			context.read<Persistence>().didUpdateSavedPost();
 		}
 		else if (latestPost.replyIds.length != post.replyIds.length) {
 			latestPost.replyIds = post.replyIds;
-			context.watch<Persistence>().didUpdateSavedPost();
+			context.read<Persistence>().didUpdateSavedPost();
 		}
 		final zone = context.watch<PostSpanZoneData>();
 		final settings = context.watch<EffectiveSettings>();
@@ -482,12 +481,12 @@ class PostRow extends StatelessWidget {
 							zone.threadState!.save();
 						}
 					),
-					if (latestPost.attachment?.md5 != null && persistence.browserState.isMD5Hidden(latestPost.attachment?.md5)) ContextMenuAction(
+					if (latestPost.attachment?.md5 != null && context.select<Persistence, bool>((p) => p.browserState.isMD5Hidden(latestPost.attachment?.md5))) ContextMenuAction(
 						child: const Text('Unhide by image'),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
-							persistence.browserState.unHideByMD5(latestPost.attachment!.md5);
-							persistence.didUpdateBrowserState();
+							context.read<Persistence>().browserState.unHideByMD5(latestPost.attachment!.md5);
+							context.read<Persistence>().didUpdateBrowserState();
 							zone.threadState!.save();
 						}
 					)
@@ -495,8 +494,8 @@ class PostRow extends StatelessWidget {
 						child: const Text('Hide by image'),
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () {
-							persistence.browserState.hideByMD5(latestPost.attachment!.md5);
-							persistence.didUpdateBrowserState();
+							context.read<Persistence>().browserState.hideByMD5(latestPost.attachment!.md5);
+							context.read<Persistence>().didUpdateBrowserState();
 							zone.threadState!.save();
 						}
 					)

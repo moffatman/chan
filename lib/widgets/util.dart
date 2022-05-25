@@ -425,8 +425,8 @@ class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
 
 	@override
 	void dispose() {
-		super.dispose();
 		animation.dispose();
+		super.dispose();
 	}
 }
 
