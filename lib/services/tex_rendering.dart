@@ -98,14 +98,14 @@ class TeXRendering {
 		await combo.server.close();
 	}
 
-	Future<Uint8List> renderTex(String tex) async {
+	Future<Uint8List> renderTex(String tex, {double textScaleFactor = 1.0}) async {
 		final imageCompleter = Completer<Uint8List>();
 		_webView.runWithResource((combo) async {
 			_renderCallbackCompleter = Completer<String>();
 			await combo.webView.webViewController.evaluateJavascript(source: 'var jsonData = ${getRawData(TeXView(
 				child: TeXViewDocument('\$\$${tex.replaceAll('<br>', '')}\$\$'),
 				style: TeXViewStyle(
-					fontStyle: TeXViewFontStyle(fontSize: 18)
+					fontStyle: TeXViewFontStyle(fontSize: (16 * textScaleFactor).round())
 				)
 			))};initView(jsonData);');
 			final returnData = await Future.any([Future<String?>.delayed(const Duration(seconds: 10)), _renderCallbackCompleter!.future]);
@@ -141,19 +141,21 @@ class TeXRendering {
 
 class TeXImageProvider extends ImageProvider<TeXImageProvider> {
 	final String tex;
+	final double textScaleFactor;
 
-	TeXImageProvider(this.tex);
+	TeXImageProvider(this.tex, {this.textScaleFactor = 1.0});
 
 	@override
 	ImageStreamCompleter load(TeXImageProvider key, DecoderCallback decode) {
 		return MultiFrameImageStreamCompleter(
 			codec: _loadAsync(decode),
+			chunkEvents: Stream.fromIterable([const ImageChunkEvent(cumulativeBytesLoaded: 0, expectedTotalBytes: 1)]),
 			scale: 2.0
 		);
 	}
 
 	Future<Codec> _loadAsync(DecoderCallback decode) async {
-		final image = await TeXRendering.getInstance().renderTex(tex);
+		final image = await TeXRendering.getInstance().renderTex(tex, textScaleFactor: textScaleFactor);
 		return await decode(image);
 	}
 

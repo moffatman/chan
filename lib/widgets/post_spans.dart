@@ -202,11 +202,9 @@ class PostQuoteSpan extends PostSpan {
 
 	@override
 	InlineSpan build(context, options) {
-		return TextSpan(
-			children: [child.build(context, options)],
-			style: options.baseTextStyle.copyWith(color: options.overrideTextColor ?? context.read<EffectiveSettings>().theme.quoteColor),
-			recognizer: options.recognizer
-		);
+		return child.build(context, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(color: context.read<EffectiveSettings>().theme.quoteColor)
+		));
 	}
 
 	@override
@@ -748,12 +746,17 @@ class PostTeXSpan extends PostSpan {
 	PostTeXSpan(this.tex);
 	@override
 	build(context, options) {
+		final child = TexWidget(
+			tex: tex,
+			color: options.overrideTextColor ?? options.baseTextStyle.color
+		);
 		return options.showRawSource ? TextSpan(
 			text: buildText()
 		) : WidgetSpan(
 			alignment: PlaceholderAlignment.middle,
-			child: TexWidget(
-				tex: tex,
+			child: options.avoidBuggyClippers ? child : SingleChildScrollView(
+				scrollDirection: Axis.horizontal,
+				child: child
 			)
 		);
 	}
