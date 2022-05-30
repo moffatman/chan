@@ -28,7 +28,16 @@ Future<File?> pickAttachment({
 	final savedAttachments = context.read<Persistence>().savedAttachments.values.toList();
 	savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
 	final sources = (Platform.isIOS || Platform.isAndroid || kIsWeb) ? [
-		if ((Platform.isIOS || Platform.isAndroid) && (await doesClipboardContainImage())) Tuple3('Clipboard', CupertinoIcons.doc_on_clipboard, () => getClipboardImageAsFile().then((x) => x?.path)),
+		if ((Platform.isAndroid) || (Platform.isIOS && await doesClipboardContainImage())) Tuple3('Clipboard', CupertinoIcons.doc_on_clipboard, () => getClipboardImageAsFile().then((x) {
+			if (x == null) {
+				showToast(
+					context: context,
+					message: 'No image in clipboard',
+					icon: CupertinoIcons.xmark
+				);
+			}
+			return x?.path;
+		})),
 		Tuple3('Pick photo', CupertinoIcons.photo, () => FilePicker.platform.pickFiles(type: FileType.image).then((x) => x?.files.single.path)),
 		Tuple3('Pick video', CupertinoIcons.play_rectangle, () => FilePicker.platform.pickFiles(type: FileType.video).then((x) => x?.files.single.path)),
 		Tuple3('Pick file', CupertinoIcons.doc, () => FilePicker.platform.pickFiles(type: FileType.any).then((x) => x?.files.single.path)),

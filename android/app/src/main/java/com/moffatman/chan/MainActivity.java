@@ -109,37 +109,38 @@ public class MainActivity extends FlutterFragmentActivity {
         );
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), CLIPBOARD_CHANNEL).setMethodCallHandler(
                 (call, result) -> {
-                    if (call.method.equals("doesClipboardContainImage")) {
-                        ClipboardManager cm = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
-                        ClipData.Item item = cm.getPrimaryClip().getItemAt(0);
-                        if (item.getUri() != null) {
-                            String[] parts = item.getUri().toString().split("\\.");
-                            String ext = parts[parts.length - 1];
-                            result.success(ext.equals("jpg") || ext.equals("jpeg") || ext.equals("png") || ext.equals("gif"));
-                        }
-                        else {
-                            result.success(false);
-                        }
-                    }
-                    else if (call.method.equals("getClipboardImage")) {
-                        ClipboardManager cm = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
-                        ClipData.Item item = cm.getPrimaryClip().getItemAt(0);
-                        if (item.getUri() != null) {
-                            try {
-                                InputStream stream = getContentResolver().openInputStream(item.getUri());
-                                byte[] data = new byte[stream.available()];
-                                stream.read(data);
-                                result.success(data);
-                            } catch (IOException e) {
-                                result.error("FILE_ERROR", "Could not open file for reading", null);
+                    try {
+                        if (call.method.equals("doesClipboardContainImage")) {
+                            ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                            ClipData.Item item = cm.getPrimaryClip().getItemAt(0);
+                            if (item.getUri() != null) {
+                                String[] parts = item.getUri().toString().split("\\.");
+                                String ext = parts[parts.length - 1];
+                                result.success(ext.equals("jpg") || ext.equals("jpeg") || ext.equals("png") || ext.equals("gif"));
+                            } else {
+                                result.success(false);
                             }
-                        }
-                        else {
-                            result.success(null);
+                        } else if (call.method.equals("getClipboardImage")) {
+                            ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                            ClipData.Item item = cm.getPrimaryClip().getItemAt(0);
+                            if (item.getUri() != null) {
+                                try {
+                                    InputStream stream = getContentResolver().openInputStream(item.getUri());
+                                    byte[] data = new byte[stream.available()];
+                                    stream.read(data);
+                                    result.success(data);
+                                } catch (IOException e) {
+                                    result.error("FILE_ERROR", "Could not open file for reading", null);
+                                }
+                            } else {
+                                result.success(null);
+                            }
+                        } else {
+                            result.notImplemented();
                         }
                     }
-                    else {
-                        result.notImplemented();
+                    catch (Exception e) {
+                        result.error("JAVA_EXCEPTION", e.getMessage(), null);
                     }
                 }
         );

@@ -13,7 +13,7 @@ Future<bool> doesClipboardContainImage() async {
 	try {
 		return await _platform.invokeMethod('doesClipboardContainImage');
 	}
-	on MissingPluginException {
+	on Exception {
 		return false;
 	}
 }
