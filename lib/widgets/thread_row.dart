@@ -38,6 +38,8 @@ class ThreadRow extends StatelessWidget {
 	final bool contentFocus;
 	final bool showBoardName;
 	final bool countsUnreliable;
+	final PostSpanRenderOptions? baseOptions;
+
 	const ThreadRow({
 		required this.thread,
 		required this.isSelected,
@@ -47,6 +49,7 @@ class ThreadRow extends StatelessWidget {
 		this.showBoardName = false,
 		this.countsUnreliable = false,
 		this.semanticParentIds = const [],
+		this.baseOptions,
 		Key? key
 	}) : super(key: key);
 
@@ -255,7 +258,7 @@ class ThreadRow extends StatelessWidget {
 									builder: (context, constraints) => ClippingBox(
 										child: latestThread.posts[0].span.buildWidget(
 											ctx,
-											PostSpanRenderOptions(
+											(baseOptions ?? PostSpanRenderOptions()).copyWith(
 												avoidBuggyClippers: true,
 												maxLines: ((constraints.maxHeight - (DefaultTextStyle.of(context).style.fontSize ?? 17)) / (DefaultTextStyle.of(context).style.fontSize ?? 17)).lazyCeil()
 											),
@@ -346,7 +349,7 @@ class ThreadRow extends StatelessWidget {
 												child: ClippingBox(
 													child: latestThread.posts[0].span.buildWidget(
 														ctx,
-														PostSpanRenderOptions(
+														(baseOptions ?? PostSpanRenderOptions()).copyWith(
 															avoidBuggyClippers: true
 														),
 														preInjectRow: (thread.title == null) ? null : Text.rich(

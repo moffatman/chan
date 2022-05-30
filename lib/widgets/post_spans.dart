@@ -44,6 +44,7 @@ class PostSpanRenderOptions {
 	final bool ownLine;
 	final bool shrinkWrap;
 	final int maxLines;
+	final String? highlightString;
 	PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -57,26 +58,34 @@ class PostSpanRenderOptions {
 		this.onExit,
 		this.ownLine = false,
 		this.shrinkWrap = false,
-		this.maxLines = 999999
+		this.maxLines = 999999,
+		this.highlightString
 	});
 	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 
 	PostSpanRenderOptions copyWith({
 		bool? ownLine,
-		TextStyle? baseTextStyle
+		TextStyle? baseTextStyle,
+		bool? showCrossThreadLabel,
+		bool? shrinkWrap,
+		bool? addExpandingPosts,
+		bool? avoidBuggyClippers,
+		int? maxLines
 	}) => PostSpanRenderOptions(
 		recognizer: recognizer,
 		overrideRecognizer: overrideRecognizer,
 		overrideTextColor: overrideTextColor,
-		showCrossThreadLabel: showCrossThreadLabel,
-		addExpandingPosts: addExpandingPosts,
+		showCrossThreadLabel: showCrossThreadLabel ?? this.showCrossThreadLabel,
+		addExpandingPosts: addExpandingPosts ?? this.addExpandingPosts,
 		baseTextStyle: baseTextStyle ?? this.baseTextStyle,
 		showRawSource: showRawSource,
-		avoidBuggyClippers: avoidBuggyClippers,
+		avoidBuggyClippers: avoidBuggyClippers ?? this.avoidBuggyClippers,
 		onEnter: onEnter,
 		onExit: onExit,
 		ownLine: ownLine ?? this.ownLine,
-		shrinkWrap: shrinkWrap
+		shrinkWrap: shrinkWrap ?? this.shrinkWrap,
+		highlightString: highlightString,
+		maxLines: maxLines ?? this.maxLines
 	);
 }
 
@@ -175,8 +184,31 @@ class PostTextSpan extends PostSpan {
 
 	@override
 	InlineSpan build(context, options) {
+		final children = <TextSpan>[];
+		final str = context.read<EffectiveSettings>().filterProfanity(text);
+		if (options.highlightString != null) {
+			final escapedHighlight = options.highlightString!.replaceAllMapped(r'[.*+?^${}()|[\]\\]', (m) => '\\${m.group(0)}');
+			final nonHighlightedParts = str.split(RegExp(escapedHighlight, caseSensitive: false));
+			int pos = 0;
+			for (int i = 0; i < nonHighlightedParts.length; i++) {
+				pos += nonHighlightedParts[i].length;
+				children.add(TextSpan(text: nonHighlightedParts[i]));
+				if ((i + 1) < nonHighlightedParts.length) {
+					children.add(TextSpan(text: str.substring(pos, pos + options.highlightString!.length), style: const TextStyle(
+						color: Colors.black,
+						backgroundColor: Colors.yellow
+					)));
+					pos += options.highlightString!.length;
+				}
+			}
+		}
+		else {
+			children.add(TextSpan(
+				text: str
+			));
+		}
 		return TextSpan(
-			text: context.read<EffectiveSettings>().filterProfanity(text),
+			children: children,
 			style: underlined ? options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline
 			) : options.baseTextStyle,

@@ -197,7 +197,10 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 								showCrossThreadLabel: false,
 								allowTappingLinks: false,
 								isSelected: currentValue == row,
-								onTap: () => setValue(row)
+								onTap: () => setValue(row),
+								baseOptions: PostSpanRenderOptions(
+									highlightString: widget.query.query
+								),
 							)
 						);
 					}
@@ -212,7 +215,10 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									semanticParentIds: [-7]
 								),
 								isSelected: currentValue == row,
-								countsUnreliable: true
+								countsUnreliable: true,
+								baseOptions: PostSpanRenderOptions(
+									highlightString: widget.query.query.isEmpty ? null : widget.query.query
+								),
 							)
 						);
 					}

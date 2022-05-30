@@ -36,6 +36,7 @@ class PostRow extends StatelessWidget {
 	final bool shrinkWrap;
 	final bool isSelected;
 	final Function(Object?, StackTrace?)? onThumbnailLoadError;
+	final PostSpanRenderOptions? baseOptions;
 
 	const PostRow({
 		required this.post,
@@ -47,6 +48,7 @@ class PostRow extends StatelessWidget {
 		this.allowTappingLinks = true,
 		this.shrinkWrap = false,
 		this.isSelected = false,
+		this.baseOptions,
 		Key? key
 	}) : super(key: key);
 
@@ -131,9 +133,9 @@ class PostRow extends StatelessWidget {
 					child: ClippingBox(
 						child: post.span.buildWidget(
 							ctx,
-							PostSpanRenderOptions(
+							(baseOptions ?? PostSpanRenderOptions()).copyWith(
 								showCrossThreadLabel: showCrossThreadLabel,
-								shrinkWrap: shrinkWrap,
+								shrinkWrap: shrinkWrap
 							),
 							postInject: (replyIds.isEmpty) ? null : TextSpan(
 								text: List.filled(replyIds.length.toString().length + 4, '1').join(),
@@ -306,7 +308,7 @@ class PostRow extends StatelessWidget {
 																	threadId: latestPost.threadId,
 																	postId: id,
 																	dead: false
-																).build(ctx, PostSpanRenderOptions(
+																).build(ctx, (baseOptions ?? PostSpanRenderOptions()).copyWith(
 																	showCrossThreadLabel: showCrossThreadLabel,
 																	addExpandingPosts: false,
 																	shrinkWrap: shrinkWrap
