@@ -1822,6 +1822,32 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 	}
 }
 
+enum _NullSafeOptional {
+	null_,
+	false_,
+	true_
+}
+
+extension _ToBool on _NullSafeOptional {
+	bool? get value {
+		switch (this) {
+			case _NullSafeOptional.null_: return null;
+			case _NullSafeOptional.false_: return false;
+			case _NullSafeOptional.true_: return true;
+		}
+	}
+}
+
+extension _ToNullSafeOptional on bool? {
+	_NullSafeOptional get value {
+		switch (this) {
+			case true: return _NullSafeOptional.true_;
+			case false: return _NullSafeOptional.false_;
+			default: return _NullSafeOptional.null_;
+		}
+	}
+}
+
 class SettingsLoginPanel extends StatefulWidget {
 	final ImageboardSite site;
 	const SettingsLoginPanel({
@@ -1961,20 +1987,24 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 					)
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
+				CupertinoSegmentedControl<_NullSafeOptional>(
 					children: const {
-						false: Padding(
+						_NullSafeOptional.false_: Padding(
 							padding: EdgeInsets.all(8),
 							child: Text('No')
 						),
-						true: Padding(
+						_NullSafeOptional.null_: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Ask')
+						),
+						_NullSafeOptional.true_: Padding(
 							padding: EdgeInsets.all(8),
 							child: Text('Yes')
 						)
 					},
-					groupValue: context.watch<EffectiveSettings>().autoLoginOnMobileNetwork,
+					groupValue: context.watch<EffectiveSettings>().autoLoginOnMobileNetwork.value,
 					onValueChanged: (setting) {
-						context.read<EffectiveSettings>().autoLoginOnMobileNetwork = setting;
+						context.read<EffectiveSettings>().autoLoginOnMobileNetwork = setting.value;
 					}
 				)
 			]
