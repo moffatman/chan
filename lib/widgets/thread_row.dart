@@ -298,15 +298,10 @@ class ThreadRow extends StatelessWidget {
 									builder: (context, constraints) {
 										return PopupAttachment(
 											attachment: latestThread.attachment!,
-											child: Stack(
-												children: [
-													HoverPopup(
-														style: HoverPopupStyle.floating,
-														popup: ExtendedImage.network(
-															latestThread.attachment!.url.toString(),
-															cache: true
-														),
-														child: AttachmentThumbnail(
+											child: GestureDetector(
+												child: Stack(
+													children: [
+														AttachmentThumbnail(
 															width: constraints.maxWidth,
 															height: constraints.maxHeight,
 															fit: BoxFit.cover,
@@ -314,22 +309,23 @@ class ThreadRow extends StatelessWidget {
 															thread: latestThread.identifier,
 															onLoadError: onThumbnailLoadError,
 															hero: null
+														),
+														if (latestThread.attachment?.type == AttachmentType.webm) Positioned(
+															bottom: 0,
+															right: 0,
+															child: Container(
+																decoration: BoxDecoration(
+																	borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																	border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+																),
+																padding: const EdgeInsets.all(2),
+																child: const Icon(CupertinoIcons.play_arrow_solid)
+															)
 														)
-													),
-													if (latestThread.attachment?.type == AttachmentType.webm) Positioned(
-														bottom: 0,
-														right: 0,
-														child: Container(
-															decoration: BoxDecoration(
-																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-															),
-															padding: const EdgeInsets.all(2),
-															child: const Icon(CupertinoIcons.play_arrow_solid)
-														)
-													)
-												]
+													]
+												),
+												onTap: () => onThumbnailTap?.call(latestThread.attachment!)
 											)
 										);
 									}
