@@ -55,10 +55,12 @@ class _PostThreadCombo implements Filterable {
 class SavedPage extends StatefulWidget {
 	final bool isActive;
 	final ValueChanged<ThreadIdentifier>? onWantOpenThreadInNewTab;
+	final Key? masterDetailKey;
 
 	const SavedPage({
 		required this.isActive,
 		this.onWantOpenThreadInNewTab,
+		this.masterDetailKey,
 		Key? key
 	}) : super(key: key);
 
@@ -125,6 +127,7 @@ class _SavedPageState extends State<SavedPage> {
 		final notifications = context.watch<Notifications>();
 		return MultiMasterDetailPage(
 			id: 'saved',
+			key: widget.masterDetailKey,
 			paneCreator: () => [
 				MultiMasterPane<ThreadWatch>(
 					navigationBar: const CupertinoNavigationBar(

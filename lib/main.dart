@@ -297,6 +297,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
 	bool _queuedUpdateBrowserState = false;
 	bool _isScrolling = false;
+	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
+	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
 
 	void _didUpdateBrowserState() {
 		if (_isScrolling) {
@@ -323,6 +325,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	void _onDevNotificationTapped(ThreadOrPostIdentifier id) {
 		_tabController.index = 4;
+		_lastIndex = 4;
 		_settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
 		_settingsNavigatorKey.currentState?.push(
 			FullWidthCupertinoPageRoute(
@@ -334,6 +337,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				showAnimations: context.read<EffectiveSettings>().showAnimations
 			)
 		);
+		if (showTabPopup) {
+			setState(() {
+				showTabPopup = false;
+			});
+		}
 	}
 
 	void _setupDevSite() async {
@@ -401,12 +409,39 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
+	void _animateTabToPost(PersistentBrowserTab tab, int postId) async {
+		if (!(tab.threadController?.items.any((p) => p.id == postId) ?? false)) {
+			await tab.threadController?.update();
+		}
+		tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0);
+		if (tab.threadController == null) {
+			await Future.delayed(const Duration(seconds: 1));
+			tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0);
+		}
+	}
+
 	void _onNotificationTapped(ThreadOrPostIdentifier notification) {
-		_goToPost(
-			notification.board,
-			notification.threadId,
-			notification.postId
-		);
+		if (!_goToPost(
+			board: notification.board,
+			threadId: notification.threadId,
+			postId: notification.postId,
+			openNewTabIfNeeded: false
+		)) {
+			final watch = context.read<Persistence>().browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == notification.threadIdentifier);
+			if (watch != null) {
+				_tabController.index = 1;
+				_lastIndex = 1;
+				_savedMasterDetailKey.currentState?.setValue(0, watch);
+				if (showTabPopup) {
+					setState(() {
+						showTabPopup = false;
+					});
+				}
+				if (notification.postId != null) {
+					_animateTabToPost(_savedFakeTab, notification.postId!);
+				}
+			}
+		}
 	}
 
 	void _consumeLink(String? link) {
@@ -481,32 +516,32 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		return tab;
 	}
 
-	void _goToPost(
-		String board,
-		int threadId,
-		[int? postId]
-	) async {
+	bool _goToPost({
+		required String board,
+		required int threadId,
+		int? postId,
+		required bool openNewTabIfNeeded
+	}) {
 		PersistentBrowserTab? tab = browserState.tabs.tryFirstWhere((tab) => tab.thread?.board == board && tab.thread?.id == threadId);
-		tab ??= _addNewTab(
-			activate: false,
-			withThread: ThreadIdentifier(board, threadId)
-		);
-		final index = browserState.tabs.indexOf(tab);
-		_tabController.index = 0;
-		activeBrowserTab.value = index;
-		browserState.currentTab = index;
-		_didUpdateBrowserState();
-		setState(() {});
-		if (postId != null) {
-			if (!(tab.threadController?.items.any((p) => p.id == postId) ?? false)) {
-				await tab.threadController?.update();
-			}
-			tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0);
-			if (tab.threadController == null) {
-				await Future.delayed(const Duration(seconds: 1));
-				tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0);
-			}
+		if (openNewTabIfNeeded) {
+			tab ??= _addNewTab(
+				activate: false,
+				withThread: ThreadIdentifier(board, threadId)
+			);
 		}
+		if (tab != null) {
+			final index = browserState.tabs.indexOf(tab);
+			_tabController.index = 0;
+			activeBrowserTab.value = index;
+			browserState.currentTab = index;
+			_didUpdateBrowserState();
+			setState(() {});
+			if (postId != null) {
+				_animateTabToPost(tab, postId);
+			}
+			return true;
+		}
+		return false;
 	}
 
 	Widget _buildTab(BuildContext context, int index, bool active) {
@@ -577,14 +612,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			);
 		}
 		else if (index == 1) {
-			child = SavedPage(
-				isActive: active,
-				onWantOpenThreadInNewTab: (thread) {
-					_addNewTab(
-						withThread: thread,
-						activate: true
-					);
-				}
+			child = Provider.value(
+				value: _savedFakeTab,
+				child: SavedPage(
+					isActive: active,
+					masterDetailKey: _savedMasterDetailKey,
+					onWantOpenThreadInNewTab: (thread) {
+						_addNewTab(
+							withThread: thread,
+							activate: true
+						);
+					}
+				)
 			);
 		}
 		else if (index == 2) {

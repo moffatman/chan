@@ -138,10 +138,10 @@ class MultiMasterDetailPage extends StatefulWidget {
 	}) : super(key: key);
 
 	@override
-	createState() => _MultiMasterDetailPageState();
+	createState() => MultiMasterDetailPageState();
 }
 
-class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with TickerProviderStateMixin {
+class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with TickerProviderStateMixin {
 	late TabController _tabController;
 	late GlobalKey<NavigatorState> _masterKey;
 	late GlobalKey<PrimaryScrollControllerInjectingNavigatorState> _masterInterceptorKey;
@@ -183,9 +183,9 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 	}
 
 	@override
-	void didUpdateWidget(MultiMasterDetailPage old) {
-		super.didUpdateWidget(old);
-		if (old.id != widget.id) {
+	void didUpdateWidget(MultiMasterDetailPage oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (oldWidget.id != widget.id) {
 			int newIndex = _tabController.index;
 			panes = widget.paneCreator();
 			if (_tabController.index >= panes.length) {
@@ -202,9 +202,19 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 		}
 	}
 
+	void setValue(int index, dynamic value) {
+		if (panes[index].currentValue.value == value) {
+			return;
+		}
+		panes[index].currentValue.value = value;
+		panes[index].onValueChanged?.call(value);
+		_onNewValue(panes[index]);
+	}
+
 	void _onNewValue<T> (MultiMasterPane<T> pane) {
 		if (onePane) {
 			if (pane.currentValue.value != null) {
+				_masterKey.currentState?.popUntil((route) => route.isFirst);
 				_masterKey.currentState!.push(pane.buildDetailRoute(context.read<EffectiveSettings>().showAnimations)).then(pane.onPushReturn);
 			}
 		}

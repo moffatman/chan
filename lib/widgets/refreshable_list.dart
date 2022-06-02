@@ -884,8 +884,8 @@ class RefreshableListController<T> {
 			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 20 && targetIndex == currentTargetIndex) {
 				c = Curves.linear;
 			}
-			if (initialContentId != contentId) throw Exception('List was hijacked');
-			if (currentTargetIndex != targetIndex) throw Exception('animateTo was hijacked');
+			if (initialContentId != contentId) throw Exception('List was hijacked ($initialContentId -> $contentId)');
+			if (currentTargetIndex != targetIndex) throw Exception('animateTo was hijacked ($targetIndex -> $currentTargetIndex)');
 			Duration timeLeft = duration - DateTime.now().difference(start);
 			if (timeLeft.inMilliseconds.isNegative) {
 				d = duration ~/ 4;
