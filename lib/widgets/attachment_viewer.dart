@@ -734,6 +734,13 @@ class AttachmentViewer extends StatelessWidget {
 							'url': attachment.url.toString()
 						})),
 						child: const Text('Search Yandex')
+					),
+					CupertinoContextMenuAction(
+						trailingIcon: Icons.image_search,
+						onPressed: () => openBrowser(context, Uri.https('saucenao.com', '/search.php', {
+							'url': attachment.url.toString()
+						})),
+						child: const Text('Search SauceNAO')
 					)
 				],
 				child: buildChild(true),

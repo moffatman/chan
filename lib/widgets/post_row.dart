@@ -571,6 +571,13 @@ class PostRow extends StatelessWidget {
 							'rpt': 'imageview',
 							'url': latestPost.attachment!.url.toString()
 						}))
+					),
+					ContextMenuAction(
+						child: const Text('Search SauceNAO'),
+						trailingIcon: Icons.image_search,
+						onPressed: () => openBrowser(context, Uri.https('saucenao.com', '/search.php', {
+							'url': latestPost.attachment!.url.toString()
+						}))
 					)
 				]
 			],
