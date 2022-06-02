@@ -518,6 +518,12 @@ class _ThreadPageState extends State<ThreadPage> {
 																				await context.read<ImageboardSite>().getThread(widget.thread);
 																			final bool firstLoad = tmpPersistentState.thread == null;
 																			bool shouldScroll = false;
+																			if (watch != null && newThread.identifier == widget.thread && mounted) {
+																				final masterDetailHint = context.read<MasterDetailHint?>();
+																				final foreground = masterDetailHint == null // Dev board in settings
+																													 || masterDetailHint.primaryInterceptorKey.currentState?.primaryScrollControllerTracker.value != null;
+																				notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: foreground);
+																			}
 																			if (newThread != tmpPersistentState.thread) {
 																				tmpPersistentState.thread = newThread;
 																				if (persistentState == tmpPersistentState) {
@@ -525,9 +531,6 @@ class _ThreadPageState extends State<ThreadPage> {
 																					if (firstLoad) shouldScroll = true;
 																				}
 																				await tmpPersistentState.save();
-																				if (watch != null && mounted) {
-																					notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: context.read<MasterDetailHint?>()?.primaryInterceptorKey.currentState?.primaryScrollControllerTracker.value != null);
-																				}
 																				setState(() {});
 																				Future.delayed(const Duration(milliseconds: 100), () {
 																					if (persistentState == tmpPersistentState && !_unnaturallyScrolling) {
