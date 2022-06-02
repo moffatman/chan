@@ -98,6 +98,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		final ancestor = context.findRenderObject();
 		return LayoutBuilder(
 			builder: (context, constraints) => Stack(
 				fit: StackFit.expand,
@@ -117,10 +118,10 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 										double childBoxTopDiff = 0;
 										double childBoxBottomDiff = 0;
 										try {
-											scrollBoxTop = scrollBox?.localToGlobal(scrollBox.semanticBounds.topCenter).dy ?? 0;
-											scrollBoxBottom = scrollBox?.localToGlobal(scrollBox.semanticBounds.bottomCenter).dy ?? 0;
-											childBoxTopDiff = (childBox?.localToGlobal(childBox.semanticBounds.topCenter).dy ?? scrollBoxTop) - scrollBoxTop;
-											childBoxBottomDiff = scrollBoxBottom - (childBox?.localToGlobal(childBox.semanticBounds.bottomCenter).dy ?? scrollBoxBottom);
+											scrollBoxTop = scrollBox?.localToGlobal(scrollBox.semanticBounds.topCenter, ancestor: ancestor).dy ?? 0;
+											scrollBoxBottom = scrollBox?.localToGlobal(scrollBox.semanticBounds.bottomCenter, ancestor: ancestor).dy ?? 0;
+											childBoxTopDiff = (childBox?.localToGlobal(childBox.semanticBounds.topCenter, ancestor: ancestor).dy ?? scrollBoxTop) - scrollBoxTop;
+											childBoxBottomDiff = scrollBoxBottom - (childBox?.localToGlobal(childBox.semanticBounds.bottomCenter, ancestor: ancestor).dy ?? scrollBoxBottom);
 										}
 										catch (e) {
 											// Maybe the box didn't have a size yet
@@ -159,7 +160,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 								_pointerDownCount++;
 								final RenderBox childBox = _childKey.currentContext!.findRenderObject()! as RenderBox;
 								_pointerDownPosition = event.position;
-								_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter).dy;
+								_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter, ancestor: ancestor).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter, ancestor: ancestor).dy;
 							},
 							onPointerMove: (event) {
 								if (_pointerInSpacer) {
