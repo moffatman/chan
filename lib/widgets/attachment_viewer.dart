@@ -691,50 +691,50 @@ class AttachmentViewer extends StatelessWidget {
 			},
 			child: !allowContextMenu ? buildChild(true) : CupertinoContextMenu(
 				actions: [
-						CupertinoContextMenuAction(
-							trailingIcon: CupertinoIcons.cloud_download,
-							onPressed: () async {
-								Navigator.of(context, rootNavigator: true).pop();
-								await controller.download();
-								showToast(context: context, message: 'Downloaded ${controller.attachment.filename}', icon: CupertinoIcons.cloud_download);
-							},
-							child: const Text('Download')
-						),
-						CupertinoContextMenuAction(
-							trailingIcon: CupertinoIcons.share,
-							onPressed: () async {
-								final offset = (controller.contextMenuShareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-								final size = controller.contextMenuShareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-								await controller.share((offset != null && size != null) ? offset & size : null);
-								// ignore: use_build_context_synchronously
-								Navigator.of(context, rootNavigator: true).pop();
-							},
-							key: controller.contextMenuShareButtonKey,
-							child: const Text('Share')
-						),
-						CupertinoContextMenuAction(
-							trailingIcon: Icons.image_search,
-							onPressed: () {
-								openSearch(context: context, query: ImageboardArchiveSearchQuery(boards: [attachment.board], md5: attachment.md5));
-							},
-							child: const Text('Search archives')
-						),
-						CupertinoContextMenuAction(
-							trailingIcon: Icons.image_search,
-							onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
-								'image_url': attachment.url.toString(),
-								'safe': 'off'
-							})),
-							child: const Text('Search Google')
-						),
-						CupertinoContextMenuAction(
-							trailingIcon: Icons.image_search,
-							onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
-								'rpt': 'imageview',
-								'url': attachment.url.toString()
-							})),
-							child: const Text('Search Yandex')
-						)
+					CupertinoContextMenuAction(
+						trailingIcon: CupertinoIcons.cloud_download,
+						onPressed: () async {
+							Navigator.of(context, rootNavigator: true).pop();
+							await controller.download();
+							showToast(context: context, message: 'Downloaded ${controller.attachment.filename}', icon: CupertinoIcons.cloud_download);
+						},
+						child: const Text('Download')
+					),
+					CupertinoContextMenuAction(
+						trailingIcon: CupertinoIcons.share,
+						onPressed: () async {
+							final offset = (controller.contextMenuShareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+							final size = controller.contextMenuShareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+							await controller.share((offset != null && size != null) ? offset & size : null);
+							// ignore: use_build_context_synchronously
+							Navigator.of(context, rootNavigator: true).pop();
+						},
+						key: controller.contextMenuShareButtonKey,
+						child: const Text('Share')
+					),
+					CupertinoContextMenuAction(
+						trailingIcon: Icons.image_search,
+						onPressed: () {
+							openSearch(context: context, query: ImageboardArchiveSearchQuery(boards: [attachment.board], md5: attachment.md5));
+						},
+						child: const Text('Search archives')
+					),
+					CupertinoContextMenuAction(
+						trailingIcon: Icons.image_search,
+						onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
+							'image_url': attachment.url.toString(),
+							'safe': 'off'
+						})),
+						child: const Text('Search Google')
+					),
+					CupertinoContextMenuAction(
+						trailingIcon: Icons.image_search,
+						onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
+							'rpt': 'imageview',
+							'url': attachment.url.toString()
+						})),
+						child: const Text('Search Yandex')
+					)
 				],
 				child: buildChild(true),
 				previewBuilder: (context, animation, child) => IgnorePointer(
