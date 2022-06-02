@@ -261,13 +261,14 @@ class Notifications {
 		return newThreadWatches.where((w) => w.board == board).toList();
 	}
 
-	Future<void> updateLastKnownId(Watch watch, int lastKnownId) async {
-		if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+	Future<void> updateLastKnownId(Watch watch, int lastKnownId, {bool foreground = false}) async {
+		if (foreground && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
 			clearNotifications(this, watch);
 			clearOverlayNotifications(this, watch);
 		}
+		final couldUpdate = watch.lastSeenId != lastKnownId;
 		watch.lastSeenId = lastKnownId;
-		if (Persistence.settings.usePushNotifications == true) {
+		if (couldUpdate && Persistence.settings.usePushNotifications == true) {
 			_update(watch);
 		}
 	}

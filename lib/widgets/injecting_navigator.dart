@@ -61,22 +61,22 @@ class PrimaryScrollControllerInjectingNavigator extends StatefulWidget {
 		Key? key
 	}) : super(key: key);
 	@override
-	createState() => _PrimaryScrollControllerInjectingNavigatorState();
+	createState() => PrimaryScrollControllerInjectingNavigatorState();
 }
 
-class _PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScrollControllerInjectingNavigator> {
-	final _primaryScrollControllerTracker = ValueNotifier<ScrollController?>(null);
+class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScrollControllerInjectingNavigator> {
+	final primaryScrollControllerTracker = ValueNotifier<ScrollController?>(null);
 	late InjectingNavigator _navigator;
 
 	Widget _injectController(BuildContext context, Route? route, WidgetBuilder childBuilder) {
 		final topRoute = ((widget.navigatorKey.currentState) as _InjectingNavigatorState?)?.topRoute;
 		return AnimatedBuilder(
 			animation: Listenable.merge([
-				_primaryScrollControllerTracker,
+				primaryScrollControllerTracker,
 				topRoute
 			]),
 			builder: (context, child) {
-				final bestController = _primaryScrollControllerTracker.value;
+				final bestController = primaryScrollControllerTracker.value;
 				final automaticController = PrimaryScrollController.of(context)!;
 				return PrimaryScrollController(
 					controller: (route != topRoute?.value || bestController == null) ? automaticController : bestController,
@@ -88,7 +88,7 @@ class _PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScrol
 	}
 
 	InjectingNavigator _makeNavigator() => InjectingNavigator(
-		animation: _primaryScrollControllerTracker,
+		animation: primaryScrollControllerTracker,
 		injector: _injectController,
 		initialRoute: '/',
 		observers: widget.observers,
@@ -118,7 +118,7 @@ class _PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScrol
 
 	@override
 	Widget build(BuildContext context) {
-		_primaryScrollControllerTracker.value = PrimaryScrollController.of(context);
+		primaryScrollControllerTracker.value = PrimaryScrollController.of(context);
 		return _navigator;
 	}
 }

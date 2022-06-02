@@ -15,9 +15,11 @@ PageRoute transparentPageRouteBuilder(WidgetBuilder builder, bool showAnimations
 
 class MasterDetailHint {
 	final bool twoPane;
+	final GlobalKey<PrimaryScrollControllerInjectingNavigatorState> primaryInterceptorKey;
 
 	const MasterDetailHint({
-		required this.twoPane
+		required this.twoPane,
+		required this.primaryInterceptorKey
 	});
 }
 
@@ -142,10 +144,10 @@ class MultiMasterDetailPage extends StatefulWidget {
 class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with TickerProviderStateMixin {
 	late TabController _tabController;
 	late GlobalKey<NavigatorState> _masterKey;
-	late GlobalKey _masterInterceptorKey;
+	late GlobalKey<PrimaryScrollControllerInjectingNavigatorState> _masterInterceptorKey;
 	late GlobalKey _masterContentKey;
 	late GlobalKey<NavigatorState> _detailKey;
-	late GlobalKey _detailInterceptorKey;
+	late GlobalKey<PrimaryScrollControllerInjectingNavigatorState> _detailInterceptorKey;
 	late GlobalKey _detailContentKey;
 	List<MultiMasterPane> panes = [];
  	bool? lastOnePane;
@@ -330,7 +332,8 @@ class _MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Tick
 		context.watch<WillPopZone?>()?.callback = _onWillPop;
 		return Provider.value(
 			value: MasterDetailHint(
-				twoPane: !onePane
+				twoPane: !onePane,
+				primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey
 			),
 			child: WillPopScope(
 				onWillPop: _onWillPop,

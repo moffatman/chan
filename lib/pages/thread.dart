@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/thread_attachments.dart';
 import 'package:chan/services/filtering.dart';
@@ -524,6 +525,9 @@ class _ThreadPageState extends State<ThreadPage> {
 																					if (firstLoad) shouldScroll = true;
 																				}
 																				await tmpPersistentState.save();
+																				if (watch != null && mounted) {
+																					notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: context.read<MasterDetailHint?>()?.primaryInterceptorKey.currentState?.primaryScrollControllerTracker.value != null);
+																				}
 																				setState(() {});
 																				Future.delayed(const Duration(milliseconds: 100), () {
 																					if (persistentState == tmpPersistentState && !_unnaturallyScrolling) {
