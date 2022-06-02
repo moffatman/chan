@@ -210,17 +210,9 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			child = widget.itemBuilder(context, value);
 		}
 		if (highlighted) {
-			return Stack(
-				children: [
-					child,
-					Positioned.fill(
-							child: IgnorePointer(
-							child: Container(
-								color: CupertinoTheme.of(context).textTheme.actionTextStyle.color?.withOpacity(0.2)
-							)
-						)
-					)
-				]
+			return ColorFiltered(
+				colorFilter: ColorFilter.mode(CupertinoTheme.of(context).textTheme.actionTextStyle.color?.withOpacity(0.2) ?? Colors.white.withOpacity(0.2), BlendMode.srcOver),
+				child: child
 			);
 		}
 		return child;
