@@ -212,7 +212,7 @@ class ThreadRow extends StatelessWidget {
 									height: 75,
 									child: Center(
 										child: AspectRatio(
-											aspectRatio: (latestThread.attachment!.width ?? 1) / (latestThread.attachment!.height ?? 1),
+											aspectRatio: latestThread.attachment!.spoiler ? 1 : ((latestThread.attachment!.width ?? 1) / (latestThread.attachment!.height ?? 1)),
 											child: Align(
 												alignment: Alignment.bottomRight,
 												child: Container(

@@ -172,7 +172,7 @@ class PostRow extends StatelessWidget {
 										height: settings.thumbnailSize,
 										child: Center(
 											child: AspectRatio(
-												aspectRatio: (latestPost.attachment!.width ?? 1) / (latestPost.attachment!.height ?? 1),
+												aspectRatio: latestPost.attachment!.spoiler ? 1 : (latestPost.attachment!.width ?? 1) / (latestPost.attachment!.height ?? 1),
 												child: Align(
 													alignment: Alignment.bottomRight,
 													child: Container(

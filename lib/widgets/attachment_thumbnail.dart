@@ -44,6 +44,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final Function(Object?, StackTrace?)? onLoadError;
 	final Alignment alignment;
 	final bool gaplessPlayback;
+	final bool revealSpoilers;
 
 	const AttachmentThumbnail({
 		required this.attachment,
@@ -56,6 +57,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.quarterTurns = 0,
 		this.onLoadError,
 		this.gaplessPlayback = false,
+		this.revealSpoilers = false,
 		Key? key
 	}) : super(key: key);
 
@@ -64,7 +66,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		final site = context.watch<ImageboardSite>();
 		final settings = context.watch<EffectiveSettings>();
 		ImageProvider image = ExtendedNetworkImageProvider(
-			attachment.spoiler ? site.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString(),
+			(attachment.spoiler && !revealSpoilers) ? site.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString(),
 			cache: true,
 			headers: site.getHeaders(attachment.thumbnailUrl)
 		);

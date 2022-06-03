@@ -772,7 +772,8 @@ class AttachmentViewer extends StatelessWidget {
 							width: double.infinity,
 							height: double.infinity,
 							quarterTurns: controller.quarterTurns,
-							gaplessPlayback: true
+							gaplessPlayback: true,
+							revealSpoilers: true
 						),
 						if (controller.errorMessage != null) Center(
 							child: ErrorMessageCard(controller.errorMessage!, remedies: {
