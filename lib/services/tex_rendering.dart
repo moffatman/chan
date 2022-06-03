@@ -146,7 +146,7 @@ class TeXImageProvider extends ImageProvider<TeXImageProvider> {
 	TeXImageProvider(this.tex, {this.textScaleFactor = 1.0});
 
 	@override
-	ImageStreamCompleter load(TeXImageProvider key, DecoderCallback decode) {
+	ImageStreamCompleter loadBuffer(TeXImageProvider key, DecoderBufferCallback decode) {
 		return MultiFrameImageStreamCompleter(
 			codec: _loadAsync(decode),
 			chunkEvents: Stream.fromIterable([const ImageChunkEvent(cumulativeBytesLoaded: 0, expectedTotalBytes: 1)]),
@@ -154,9 +154,9 @@ class TeXImageProvider extends ImageProvider<TeXImageProvider> {
 		);
 	}
 
-	Future<Codec> _loadAsync(DecoderCallback decode) async {
+	Future<Codec> _loadAsync(DecoderBufferCallback decode) async {
 		final image = await TeXRendering.getInstance().renderTex(tex, textScaleFactor: textScaleFactor);
-		return await decode(image);
+		return await decode(await ImmutableBuffer.fromUint8List(image));
 	}
 
 	@override

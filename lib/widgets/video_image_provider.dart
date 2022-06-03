@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:chan/services/media.dart';
 import 'package:flutter/foundation.dart';
@@ -14,7 +15,7 @@ class VideoImageProvider extends ImageProvider<VideoImageProvider> {
 	});
 
 	@override
-	ImageStreamCompleter load(VideoImageProvider key, DecoderCallback decode) {
+	ImageStreamCompleter loadBuffer(VideoImageProvider key, DecoderBufferCallback decode) {
 		return MultiFrameImageStreamCompleter(
 			codec: () async {
 				assert(key == this);
@@ -22,7 +23,7 @@ class VideoImageProvider extends ImageProvider<VideoImageProvider> {
 				conversion.start();
 				final result = await conversion.result;
 				final bytes = await result.file.readAsBytes();
-				return await decode(bytes);
+				return await decode(await ImmutableBuffer.fromUint8List(bytes));
 			}(),
 			scale: key.scale
 		);
@@ -35,7 +36,7 @@ class VideoImageProvider extends ImageProvider<VideoImageProvider> {
 	bool operator == (dynamic other) => (other is VideoImageProvider) && (other.video.path == video.path) && (other.scale == scale);
 
 	@override
-	int get hashCode => hashValues(video.path, scale);
+	int get hashCode => Object.hash(video.path, scale);
 
 	@override
 	String toString() => 'VideoImageProvider(video: $video, scale; $scale)';

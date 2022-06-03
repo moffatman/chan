@@ -11,7 +11,6 @@ import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_session.dart';
 import 'package:ffmpeg_kit_flutter_full_gpl/ffprobe_kit.dart';
 import 'package:ffmpeg_kit_flutter_full_gpl/session.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/rendering.dart';
 import 'package:image/image.dart';
 import 'package:mutex/mutex.dart';
 
@@ -52,7 +51,7 @@ class _MediaScanCacheEntry {
 	bool operator == (dynamic o) => (o is _MediaScanCacheEntry) && (o.file == file) && (o.size == size);
 
 	@override
-	int get hashCode => hashValues(file, size);
+	int get hashCode => Object.hash(file, size);
 }
 
 class MediaScan {

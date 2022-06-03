@@ -33,13 +33,13 @@ class _StickyMediaQueryState extends State<StickyMediaQuery> {
 					top: widget.top ? old.item1.top : 0,
 					right: widget.right ? old.item1.right : 0,
 					bottom: widget.bottom ? old.item1.bottom : 0
-				), const EdgeInsets.all(double.nan)).resolve(TextDirection.ltr),
+				), const EdgeInsets.all(double.infinity)).resolve(TextDirection.ltr),
 				MediaQuery.of(context).padding.clamp(EdgeInsets.only(
 					left: widget.left ? old.item2.left : 0,
 					top: widget.top ? old.item2.top : 0,
 					right: widget.right ? old.item2.right : 0,
 					bottom: widget.bottom ? old.item2.bottom : 0
-				), const EdgeInsets.all(double.nan)).resolve(TextDirection.ltr)
+				), const EdgeInsets.all(double.infinity)).resolve(TextDirection.ltr)
 			);
 		}, ifAbsent: () => Tuple2(MediaQuery.of(context).padding, MediaQuery.of(context).viewPadding));
 		return MediaQuery(

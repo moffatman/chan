@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:isolate';
 import 'dart:typed_data';
+import 'dart:ui' show ImmutableBuffer;
 
 import 'package:flutter/rendering.dart';
 import 'package:image/image.dart' as image;
@@ -19,7 +20,7 @@ class RotatedImageKey {
 	bool operator == (dynamic other) => other is RotatedImageKey && (other.parentKey == parentKey) && (other.quarterTurns == quarterTurns);
 
 	@override
-	int get hashCode => hashValues(parentKey, quarterTurns);
+	int get hashCode => Object.hash(parentKey, quarterTurns);
 }
 
 class _RotateIsolateParam {
@@ -61,12 +62,12 @@ class RotatingImageProvider extends ImageProvider<RotatedImageKey> {
 	});
 
 	@override
-	ImageStreamCompleter load(RotatedImageKey key, DecoderCallback decode) {
+	ImageStreamCompleter loadBuffer(RotatedImageKey key, DecoderBufferCallback decode) {
 		return parent.load(key.parentKey, (data, {bool allowUpscaling = false, int? cacheHeight, int? cacheWidth}) async {
 			final receivePort = ReceivePort();
 			await Isolate.spawn(_rotateImageIsolate, _RotateIsolateParam(data, quarterTurns, receivePort.sendPort));
 			final outData = await receivePort.first as Uint8List;
-			final result = await decode(outData, allowUpscaling: allowUpscaling, cacheHeight: cacheHeight, cacheWidth: cacheWidth);
+			final result = await decode(await ImmutableBuffer.fromUint8List(outData), allowUpscaling: allowUpscaling, cacheHeight: cacheHeight, cacheWidth: cacheWidth);
 			onLoaded?.call();
 			return result;
 		});
@@ -84,5 +85,5 @@ class RotatingImageProvider extends ImageProvider<RotatedImageKey> {
 	bool operator == (dynamic other) => (other is RotatingImageProvider) && (other.parent == parent) && (other.quarterTurns == quarterTurns);
 
 	@override
-	int get hashCode => hashValues(parent, quarterTurns);
+	int get hashCode => Object.hash(parent, quarterTurns);
 }
