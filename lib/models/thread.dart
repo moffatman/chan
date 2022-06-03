@@ -107,17 +107,17 @@ class Thread implements Filterable {
 			case 'subject':
 				return title;
 			case 'name':
-				return posts.first.name;
+				return posts_.first.name;
 			case 'filename':
 				return attachment?.filename;
 			case 'text':
-				return posts.first.span.buildText();
+				return posts_.first.span.buildText();
 			case 'postID':
 				return id.toString();
 			case 'posterID':
-				return posts.first.posterId;
+				return posts_.first.posterId;
 			case 'flag':
-				return posts.first.flag?.name;
+				return posts_.first.flag?.name;
 			case 'md5':
 				return attachment?.md5;
 			default:
