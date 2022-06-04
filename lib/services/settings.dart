@@ -143,6 +143,53 @@ class SavedTheme {
 	});
 }
 
+@HiveType(typeId: 30)
+enum PostDisplayField {
+	@HiveField(0)
+	name,
+	@HiveField(1)
+	posterId,
+	@HiveField(2)
+	attachmentInfo,
+	@HiveField(3)
+	pass,
+	@HiveField(4)
+	flag,
+	@HiveField(5)
+	countryName,
+	@HiveField(6)
+	absoluteTime,
+	@HiveField(7)
+	relativeTime,
+	@HiveField(8)
+	postId,
+}
+
+extension PostDisplayFieldName on PostDisplayField {
+	String get displayName {
+		switch (this) {
+			case PostDisplayField.name:
+				return 'Name';
+			case PostDisplayField.posterId:
+				return 'Poster ID';
+			case PostDisplayField.attachmentInfo:
+				return 'File Details';
+			case PostDisplayField.pass:
+				return 'Pass';
+			case PostDisplayField.flag:
+				return 'Flag';
+			case PostDisplayField.countryName:
+				return 'Country Name';
+			case PostDisplayField.absoluteTime:
+				return 'Exact Time';
+			case PostDisplayField.relativeTime:
+				return 'Relative Time';
+			case PostDisplayField.postId:
+				return 'Post ID';
+		}
+	}
+}
+
 @HiveType(typeId: 0)
 class SavedSettings extends HiveObject {
 	@HiveField(0)
@@ -273,6 +320,8 @@ class SavedSettings extends HiveObject {
 	int automaticCacheClearDays;
 	@HiveField(66)
 	bool alwaysAutoloadTappedAttachment;
+	@HiveField(67)
+	List<PostDisplayField> postDisplayFieldOrder;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -342,6 +391,7 @@ class SavedSettings extends HiveObject {
 		bool? useInternalBrowser,
 		int? automaticCacheClearDays,
 		bool? alwaysAutoloadTappedAttachment,
+		List<PostDisplayField>? postDisplayFieldOrder,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -411,7 +461,18 @@ class SavedSettings extends HiveObject {
 		useEmbeds = useEmbeds ?? true,
 		useInternalBrowser = useInternalBrowser ?? true,
 		automaticCacheClearDays = automaticCacheClearDays ?? 60,
-		alwaysAutoloadTappedAttachment = alwaysAutoloadTappedAttachment ?? true;
+		alwaysAutoloadTappedAttachment = alwaysAutoloadTappedAttachment ?? true,
+		postDisplayFieldOrder = postDisplayFieldOrder ?? [
+			PostDisplayField.name,
+			PostDisplayField.posterId,
+			PostDisplayField.attachmentInfo,
+			PostDisplayField.pass,
+			PostDisplayField.flag,
+			PostDisplayField.countryName,
+			PostDisplayField.absoluteTime,
+			PostDisplayField.relativeTime,
+			PostDisplayField.postId
+		];
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -957,6 +1018,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get alwaysAutoloadTappedAttachment => _settings.alwaysAutoloadTappedAttachment;
 	set alwaysAutoloadTappedAttachment(bool setting) {
 		_settings.alwaysAutoloadTappedAttachment = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	List<PostDisplayField> get postDisplayFieldOrder => _settings.postDisplayFieldOrder;
+	set postDisplayFieldOrder(List<PostDisplayField> setting) {
+		_settings.postDisplayFieldOrder = setting;
 		_settings.save();
 		notifyListeners();
 	}

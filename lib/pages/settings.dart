@@ -874,6 +874,70 @@ class SettingsAppearancePage extends StatelessWidget {
 																onChanged: (d) => settings.showRelativeTimeOnPosts = d
 															)
 														]
+													),
+													CupertinoButton.filled(
+														child: const Text('Adjust order'),
+														onPressed: () async {
+															await showCupertinoDialog(
+																barrierDismissible: true,
+																context: context,
+																builder: (context) => StatefulBuilder(
+																	builder: (context, setDialogState) => CupertinoAlertDialog(
+																		title: const Text('Reorder post details'),
+																		actions: [
+																			CupertinoButton(
+																				child: const Text('Close'),
+																				onPressed: () => Navigator.pop(context)
+																			)
+																		],
+																		content: SizedBox(
+																			width: 100,
+																			height: 350,
+																			child: ReorderableListView(
+																				children: context.select<EffectiveSettings, List<PostDisplayField>>((s) => s.postDisplayFieldOrder).asMap().entries.map((pair) {
+																					final disabled = (pair.value == PostDisplayField.name && !settings.showNameOnPosts && !settings.showTripOnPosts) ||
+																						(pair.value == PostDisplayField.attachmentInfo && !settings.showFilenameOnPosts && !settings.showFilesizeOnPosts && !settings.showFileDimensionsOnPosts) ||
+																						(pair.value == PostDisplayField.pass && !settings.showPassOnPosts) ||
+																						(pair.value == PostDisplayField.flag && !settings.showFlagOnPosts) ||
+																						(pair.value == PostDisplayField.countryName && !settings.showCountryNameOnPosts) ||
+																						(pair.value == PostDisplayField.absoluteTime && !settings.showAbsoluteTimeOnPosts) ||
+																						(pair.value == PostDisplayField.relativeTime && !settings.showRelativeTimeOnPosts);
+																					return ReorderableDragStartListener(
+																						index: pair.key,
+																						key: ValueKey(pair.key),
+																						child: Container(
+																							decoration: BoxDecoration(
+																								borderRadius: const BorderRadius.all(Radius.circular(4)),
+																								color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+																							),
+																							margin: const EdgeInsets.symmetric(vertical: 2),
+																							padding: const EdgeInsets.all(8),
+																							alignment: Alignment.center,
+																							child: Text(
+																								pair.value.displayName,
+																								style: disabled ? TextStyle(
+																									color: CupertinoTheme.of(context).primaryColorWithBrightness(0.5)
+																								) : null
+																							)
+																						)
+																					);
+																				}).toList(),
+																				onReorder: (oldIndex, newIndex) {
+																					if (oldIndex < newIndex) {
+																						newIndex -= 1;
+																					}
+																					final settings = context.read<EffectiveSettings>();
+																					final list = settings.postDisplayFieldOrder.toList();
+																					final item = list.removeAt(oldIndex);
+																					list.insert(newIndex, item);
+																					settings.postDisplayFieldOrder = list;
+																				}
+																			)
+																		)
+																	)
+																)
+															);
+														}
 													)
 												]
 											)

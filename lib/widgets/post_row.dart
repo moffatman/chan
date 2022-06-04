@@ -239,69 +239,68 @@ class PostRow extends StatelessWidget {
 												builder: (context, supportMouse, child) => Text.rich(
 													TextSpan(
 														children: [
-															if (settings.showNameOnPosts) TextSpan(
-																text: context.read<EffectiveSettings>().filterProfanity(latestPost.name) + (isYourPost ? ' (You)' : ''),
-																style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
-															)
-															else if (isYourPost) TextSpan(
-																text: '(You)',
-																style: TextStyle(fontWeight: FontWeight.w600, color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)
-															),
-															if (settings.showTripOnPosts && latestPost.trip != null) TextSpan(
-																text: '${context.read<EffectiveSettings>().filterProfanity(latestPost.trip!)} ',
-																style: TextStyle(color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
-															)
-															else if (settings.showNameOnPosts || isYourPost) const TextSpan(text: ' '),
-															if (latestPost.posterId != null) ...[
-																IDSpan(
-																	id: latestPost.posterId!,
-																	onPressed: () => WeakNavigator.push(context, PostsPage(
-																		postsIdsToShow: zone.thread.posts.where((p) => p.posterId == latestPost.posterId).map((p) => p.id).toList(),
-																		zone: zone
-																	))
-																),
-																const TextSpan(text: ' ')
-															],
-															if (latestPost.attachment != null) ...[
-																TextSpan(
+															for (final field in settings.postDisplayFieldOrder)
+																if (field == PostDisplayField.name) ...[
+																	if (settings.showNameOnPosts) TextSpan(
+																		text: context.read<EffectiveSettings>().filterProfanity(latestPost.name) + (isYourPost ? ' (You)' : ''),
+																		style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
+																	)
+																	else if (isYourPost) TextSpan(
+																		text: '(You)',
+																		style: TextStyle(fontWeight: FontWeight.w600, color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)
+																	),
+																	if (settings.showTripOnPosts && latestPost.trip != null) TextSpan(
+																		text: '${context.read<EffectiveSettings>().filterProfanity(latestPost.trip!)} ',
+																		style: TextStyle(color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
+																	)
+																	else if (settings.showNameOnPosts || isYourPost) const TextSpan(text: ' '),
+																]
+																else if (field == PostDisplayField.posterId && latestPost.posterId != null) ...[
+																	IDSpan(
+																		id: latestPost.posterId!,
+																		onPressed: () => WeakNavigator.push(context, PostsPage(
+																			postsIdsToShow: zone.thread.posts.where((p) => p.posterId == latestPost.posterId).map((p) => p.id).toList(),
+																			zone: zone
+																		))
+																	),
+																	const TextSpan(text: ' ')
+																]
+																else if (field == PostDisplayField.attachmentInfo && latestPost.attachment != null) TextSpan(
 																	text: makeAttachmentInfo(),
 																	style: TextStyle(
 																		color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8)
 																	)
 																)
-															],
-															if (settings.showPassOnPosts && latestPost.passSinceYear != null) ...[
-																PassSinceSpan(
-																	sinceYear: latestPost.passSinceYear!,
-																	site: site
-																),
-																const TextSpan(text: ' ')
-															],
-															if (latestPost.flag != null) ...[
-																if (settings.showFlagOnPosts) ...[
+																else if (field == PostDisplayField.pass && settings.showPassOnPosts && latestPost.passSinceYear != null) ...[
+																	PassSinceSpan(
+																		sinceYear: latestPost.passSinceYear!,
+																		site: site
+																	),
+																	const TextSpan(text: ' ')
+																]
+																else if (field == PostDisplayField.flag && settings.showFlagOnPosts && latestPost.flag != null) ...[
 																	FlagSpan(latestPost.flag!),
 																	const TextSpan(text: ' ')
-																],
-																if (settings.showCountryNameOnPosts) TextSpan(
+																]
+																else if (field == PostDisplayField.countryName && settings.showCountryNameOnPosts && latestPost.flag != null) TextSpan(
 																	text: '${latestPost.flag!.name} ',
 																	style: const TextStyle(
 																		fontStyle: FontStyle.italic
 																	)
 																)
-															],
-															if (settings.showAbsoluteTimeOnPosts)	TextSpan(
-																text: '${formatTime(latestPost.time)} '
-															),
-															if (settings.showRelativeTimeOnPosts) TextSpan(
-																text: '${formatRelativeTime(latestPost.time)} ago '
-															),
-															TextSpan(
-																text: latestPost.id.toString(),
-																style: TextStyle(color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)),
-																recognizer: TapGestureRecognizer()..onTap = () {
-																	ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(latestPost.id);
-																}
-															),
+																else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) TextSpan(
+																	text: '${formatTime(latestPost.time)} '
+																)
+																else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts) TextSpan(
+																	text: '${formatRelativeTime(latestPost.time)} ago '
+																)
+																else if (field == PostDisplayField.postId) TextSpan(
+																	text: '${latestPost.id} ',
+																	style: TextStyle(color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)),
+																	recognizer: TapGestureRecognizer()..onTap = () {
+																		ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(latestPost.id);
+																	}
+																),
 															if (supportMouse) ...[
 																...replyIds.map((id) => PostQuoteLinkSpan(
 																	board: latestPost.board,
@@ -316,7 +315,7 @@ class PostRow extends StatelessWidget {
 																...replyIds.map((id) => WidgetSpan(
 																	child: ExpandingPost(id: id),
 																))
-															].expand((span) => [const TextSpan(text: ' '), span])
+															].expand((span) => [span, const TextSpan(text: ' ')])
 														]
 													)
 												)

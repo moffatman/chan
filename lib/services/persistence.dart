@@ -72,6 +72,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(AutoloadAttachmentsSettingAdapter());
 		Hive.registerAdapter(ThreadSortingMethodAdapter());
 		Hive.registerAdapter(ContentSettingsAdapter());
+		Hive.registerAdapter(PostDisplayFieldAdapter());
 		Hive.registerAdapter(SavedSettingsAdapter());
 		Hive.registerAdapter(UriAdapter());
 		Hive.registerAdapter(AttachmentTypeAdapter());
