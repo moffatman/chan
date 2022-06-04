@@ -230,6 +230,9 @@ class ReplyBoxState extends State<ReplyBox> {
 		bool? audioAllowed,
 		int? durationInSeconds,
 		int? maximumDurationInSeconds,
+		int? width,
+		int? height,
+		int? maximumDimension,
 		required MediaConversion transcode
 	}) async {
 		final ext = source.path.split('.').last.toLowerCase();
@@ -241,6 +244,11 @@ class ReplyBoxState extends State<ReplyBox> {
 			if (audioPresent == true && audioAllowed == false) 'Audio track needs to be removed',
 			if (durationInSeconds != null && maximumDurationInSeconds != null && (durationInSeconds > maximumDurationInSeconds)) 'Duration needs to be clipped at $maximumDurationInSeconds seconds'
 		];
+		print('$width $height $maximumDimension');
+		if (width != null && height != null && maximumDimension != null && (width > maximumDimension || height > maximumDimension)) {
+			final size = applyBoxFit(BoxFit.contain, Size(width.toDouble(), height.toDouble()), Size.square(maximumDimension.toDouble())).destination;
+			problems.add('Dimensions need to be reduced from ${width}x$height to ${size.width.round()}x${size.height.round()}');
+		}
 		if (problems.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm'].contains(ext)) {
 			return source;
 		}
@@ -321,6 +329,7 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	Future<void> setAttachment(File newAttachment) async {
 		File? file = newAttachment;
+		final settings = context.read<EffectiveSettings>();
 		try {
 			final board = context.read<Persistence>().getBoard(widget.board);
 			print(file);
@@ -343,17 +352,20 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 			final size = (await file.stat()).size;
 			if ((ext == 'jpg' || ext == 'jpeg' || ext == 'png')) {
-				if (board.maxImageSizeBytes != null && (size > board.maxImageSizeBytes!)) {
-					file = await _showTranscodeWindow(
-						source: file,
-						size: size,
-						maximumSize: board.maxImageSizeBytes,
-						transcode: MediaConversion.toJpg(
-							file.uri,
-							maximumSizeInBytes: board.maxImageSizeBytes,
-						)
-					);
-				}
+				final scan = await MediaScan.scan(file.uri);
+				file = await _showTranscodeWindow(
+					source: file,
+					size: size,
+					maximumSize: board.maxImageSizeBytes,
+					width: scan.width,
+					height: scan.height,
+					maximumDimension: settings.maximumImageUploadDimension,
+					transcode: MediaConversion.toJpg(
+						file.uri,
+						maximumSizeInBytes: board.maxImageSizeBytes,
+						maximumDimension: settings.maximumImageUploadDimension
+					)
+				);
 			}
 			else if (ext == 'gif') {
 				if ((board.maxImageSizeBytes != null) && (size > board.maxImageSizeBytes!)) {
@@ -370,11 +382,15 @@ class ReplyBoxState extends State<ReplyBox> {
 					maximumSize: board.maxWebmSizeBytes,
 					durationInSeconds: scan.duration?.inSeconds,
 					maximumDurationInSeconds: board.maxWebmDurationSeconds,
+					width: scan.width,
+					height: scan.height,
+					maximumDimension: settings.maximumImageUploadDimension,
 					transcode: MediaConversion.toWebm(
 						file.uri,
 						stripAudio: !board.webmAudioAllowed,
 						maximumSizeInBytes: board.maxWebmSizeBytes,
-						maximumDurationInSeconds: board.maxWebmDurationSeconds
+						maximumDurationInSeconds: board.maxWebmDurationSeconds,
+						maximumDimension: settings.maximumImageUploadDimension
 					)
 				);
 			}
@@ -386,11 +402,15 @@ class ReplyBoxState extends State<ReplyBox> {
 					audioPresent: scan.hasAudio,
 					durationInSeconds: scan.duration?.inSeconds,
 					maximumDurationInSeconds: board.maxWebmDurationSeconds,
+					width: scan.width,
+					height: scan.height,
+					maximumDimension: settings.maximumImageUploadDimension,
 					transcode: MediaConversion.toWebm(
 						file.uri,
 						stripAudio: !board.webmAudioAllowed,
 						maximumSizeInBytes: board.maxWebmSizeBytes,
-						maximumDurationInSeconds: board.maxWebmDurationSeconds
+						maximumDurationInSeconds: board.maxWebmDurationSeconds,
+						maximumDimension: settings.maximumImageUploadDimension
 					)
 				);
 			}

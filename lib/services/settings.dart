@@ -322,6 +322,8 @@ class SavedSettings extends HiveObject {
 	bool alwaysAutoloadTappedAttachment;
 	@HiveField(67)
 	List<PostDisplayField> postDisplayFieldOrder;
+	@HiveField(68)
+	int? maximumImageUploadDimension;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -392,6 +394,7 @@ class SavedSettings extends HiveObject {
 		int? automaticCacheClearDays,
 		bool? alwaysAutoloadTappedAttachment,
 		List<PostDisplayField>? postDisplayFieldOrder,
+		this.maximumImageUploadDimension,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1025,6 +1028,13 @@ class EffectiveSettings extends ChangeNotifier {
 	List<PostDisplayField> get postDisplayFieldOrder => _settings.postDisplayFieldOrder;
 	set postDisplayFieldOrder(List<PostDisplayField> setting) {
 		_settings.postDisplayFieldOrder = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	int? get maximumImageUploadDimension => _settings.maximumImageUploadDimension;
+	set maximumImageUploadDimension(int? setting) {
+		_settings.maximumImageUploadDimension = setting;
 		_settings.save();
 		notifyListeners();
 	}

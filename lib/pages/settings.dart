@@ -428,6 +428,58 @@ class SettingsBehaviorPage extends StatelessWidget {
 						settings.useInternalBrowser = newValue;
 					}
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Text('Limit uploaded file dimensions'),
+						const Spacer(),
+						CupertinoButton.filled(
+							padding: const EdgeInsets.all(16),
+							onPressed: () async {
+								final controller = TextEditingController(text: settings.maximumImageUploadDimension?.toString());
+								await showCupertinoDialog(
+									context: context,
+									barrierDismissible: true,
+									builder: (context) => CupertinoAlertDialog(
+										title: const Text('Set maximum file upload dimension'),
+										actions: [
+											CupertinoButton(
+												child: const Text('Clear'),
+												onPressed: () {
+													controller.text = '';
+													Navigator.pop(context);
+												}
+											),
+											CupertinoButton(
+												child: const Text('Close'),
+												onPressed: () => Navigator.pop(context)
+											)
+										],
+										content: Row(
+											children: [
+												Expanded(
+													child: CupertinoTextField(
+														autofocus: true,
+														controller: controller,
+														onSubmitted: (s) {
+															Navigator.pop(context);
+														}
+													)
+												),
+												const SizedBox(width: 16),
+												const Text('px')
+											]
+										)
+									)
+								);
+								settings.maximumImageUploadDimension = int.tryParse(controller.text);
+								controller.dispose();
+							},
+							child: Text(settings.maximumImageUploadDimension == null ? 'No limit' : '${settings.maximumImageUploadDimension} px')
+						),
+						const SizedBox(width: 16)
+					]
+				),
 				const SizedBox(height: 32)
 			]
 		);

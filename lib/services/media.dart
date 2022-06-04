@@ -11,8 +11,10 @@ import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_session.dart';
 import 'package:ffmpeg_kit_flutter_full_gpl/ffprobe_kit.dart';
 import 'package:ffmpeg_kit_flutter_full_gpl/session.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
 import 'package:image/image.dart';
 import 'package:mutex/mutex.dart';
+import 'package:tuple/tuple.dart';
 
 extension HandleSpacesInPath on Uri {
 	String toStringFFMPEG() {
@@ -134,6 +136,7 @@ class MediaConversion {
 	int? maximumSizeInBytes;
 	int? maximumDurationInSeconds;
 	bool stripAudio;
+	int? maximumDimension;
 
 	FFmpegSession? _session;
 
@@ -142,6 +145,7 @@ class MediaConversion {
 		required this.outputFileExtension,
 		this.maximumSizeInBytes,
 		this.maximumDurationInSeconds,
+		this.maximumDimension,
 		this.stripAudio = false,
 		this.extraOptions = const []
 	});
@@ -161,22 +165,29 @@ class MediaConversion {
 		);
 	}
 
-	static MediaConversion toWebm(Uri inputFile, {int? maximumSizeInBytes, int? maximumDurationInSeconds, required bool stripAudio}) {
+	static MediaConversion toWebm(Uri inputFile, {
+		int? maximumSizeInBytes,
+		int? maximumDurationInSeconds,
+		required bool stripAudio,
+		int? maximumDimension
+	}) {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'webm',
 			maximumSizeInBytes: maximumSizeInBytes,
 			maximumDurationInSeconds: maximumDurationInSeconds,
+			maximumDimension: maximumDimension,
 			stripAudio: stripAudio,
 			extraOptions: ['-c:a', 'libvorbis', '-c:v', 'libvpx', '-cpu-used', '2']
 		);
 	}
 
-	static MediaConversion toJpg(Uri inputFile, {int? maximumSizeInBytes}) {
+	static MediaConversion toJpg(Uri inputFile, {int? maximumSizeInBytes, int? maximumDimension}) {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'jpg',
-			maximumSizeInBytes: maximumSizeInBytes
+			maximumSizeInBytes: maximumSizeInBytes,
+			maximumDimension: maximumDimension
 		);
 	}
 
@@ -257,14 +268,14 @@ class MediaConversion {
 							outputBitrate = min(outputBitrate, (8 * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round());
 						}
 					}
-					String? filter;
+					Tuple2<int, int>? newSize;
 					if (scan.width != null && scan.height != null) {
 						if (outputFileExtension != 'jpg') {
 							double scaleDownFactorSq = outputBitrate/(2 * scan.width! * scan.height!);
 							if (scaleDownFactorSq < 1) {
 								final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
 								final newHeight = (scan.height! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
-								filter = 'scale=$newWidth:$newHeight';
+								newSize = Tuple2(newWidth, newHeight);
 							}
 						}
 						else if (maximumSizeInBytes != null) {
@@ -272,7 +283,13 @@ class MediaConversion {
 							if (scaleDownFactor > 1) {
 								final newWidth = ((scan.width! / scaleDownFactor) / 2).round() * 2;
 								final newHeight = ((scan.height! / scaleDownFactor) / 2).round() * 2;
-								filter = 'scale=$newWidth:$newHeight';
+								newSize = Tuple2(newWidth, newHeight);
+							}
+						}
+						if (maximumDimension != null) {
+							final fittedSize = applyBoxFit(BoxFit.contain, Size(scan.width!.toDouble(), scan.height!.toDouble()), Size.square(maximumDimension!.toDouble())).destination;
+							if (newSize == null || fittedSize.width < newSize.item1) {
+								newSize = Tuple2(fittedSize.width.round(), fittedSize.height.round());
 							}
 						}
 					}
@@ -296,7 +313,7 @@ class MediaConversion {
 						if (outputFileExtension == 'jpg') ...['-qscale:v', '5']
 						else ...['-b:v', bitrateString],
 						if (outputFileExtension == 'webm') ...['-crf', '10'],
-						if (filter != null) ...['-vf', filter],
+						if (newSize != null) ...['-vf', 'scale=${newSize.item1}:${newSize.item2}'],
 						if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
 						convertedFile.path
 					], (c) => ffmpegCompleter.complete(c));
