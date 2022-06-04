@@ -337,6 +337,7 @@ class SavedSettings extends HiveObject {
 		double? thumbnailSize,
 		bool? muteAudio,
 		bool? notificationsMigrated,
+		this.usePushNotifications,
 		bool? useEmbeds,
 		bool? useInternalBrowser,
 		int? automaticCacheClearDays,
