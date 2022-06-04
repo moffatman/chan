@@ -130,6 +130,10 @@ class Persistence extends ChangeNotifier {
 	}
 
 	static Future<void> clearFilesystemCaches(Duration? olderThan) async {
+		if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+			// The temporary directory is shared between applications, it's not safe to clear it. 
+			return;
+		}
 		DateTime? deadline;
 		if (olderThan != null) {
 			deadline = DateTime.now().subtract(olderThan);
