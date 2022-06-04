@@ -192,19 +192,27 @@ class PostTextSpan extends PostSpan {
 			int pos = 0;
 			for (int i = 0; i < nonHighlightedParts.length; i++) {
 				pos += nonHighlightedParts[i].length;
-				children.add(TextSpan(text: nonHighlightedParts[i]));
+				children.add(TextSpan(
+					text: nonHighlightedParts[i],
+					recognizer: options.recognizer
+				));
 				if ((i + 1) < nonHighlightedParts.length) {
-					children.add(TextSpan(text: str.substring(pos, pos + options.highlightString!.length), style: const TextStyle(
-						color: Colors.black,
-						backgroundColor: Colors.yellow
-					)));
+					children.add(TextSpan(
+						text: str.substring(pos, pos + options.highlightString!.length),
+						style: const TextStyle(
+							color: Colors.black,
+							backgroundColor: Colors.yellow
+						),
+						recognizer: options.recognizer
+					));
 					pos += options.highlightString!.length;
 				}
 			}
 		}
 		else {
 			children.add(TextSpan(
-				text: str
+				text: str,
+				recognizer: options.recognizer
 			));
 		}
 		return TextSpan(
