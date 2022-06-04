@@ -90,47 +90,52 @@ class Notifications {
 		siteData = site.siteData;
 
 	static Future<void> initializeStatic() async {
-		await Firebase.initializeApp(
-    	options: DefaultFirebaseOptions.currentPlatform,
-  	);
-		FirebaseMessaging messaging = FirebaseMessaging.instance;
-		print('Token: ${await messaging.getToken()}');
-		if (Persistence.settings.usePushNotifications == true) {
-			await messaging.requestPermission();
+		try {
+			await Firebase.initializeApp(
+				options: DefaultFirebaseOptions.currentPlatform,
+			);
+			FirebaseMessaging messaging = FirebaseMessaging.instance;
+			print('Token: ${await messaging.getToken()}');
+			if (Persistence.settings.usePushNotifications == true) {
+				await messaging.requestPermission();
+			}
+			FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+				print('onMessage');
+				print(message);
+				print(message.data);
+				if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
+					if (!_children.containsKey(message.data['userId'])) {
+						print('Opened via message with unknown userId: ${message.data}');
+					}
+					final identifier = ThreadOrPostIdentifier(
+						message.data['board'],
+						int.parse(message.data['threadId']),
+						int.tryParse(message.data['postId'] ?? '')
+					);
+					await _children[message.data['userId']]?.localWatcher?.updateThread(identifier.threadIdentifier);
+					_children[message.data['userId']]?.foregroundStream.add(identifier);
+				}
+			});
+			FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
+			FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+				print('onMessageOpenedApp');
+				print(message);
+				print(message.data);
+				if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
+					if (!_children.containsKey(message.data['userId'])) {
+						print('Opened via message with unknown userId: ${message.data}');
+					}
+					_children[message.data['userId']]?.tapStream.add(ThreadOrPostIdentifier(
+						message.data['board'],
+						int.parse(message.data['threadId']),
+						int.tryParse(message.data['postId'] ?? '')
+					));
+				}
+			});
 		}
-		FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-			print('onMessage');
-			print(message);
-			print(message.data);
-			if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
-				if (!_children.containsKey(message.data['userId'])) {
-					print('Opened via message with unknown userId: ${message.data}');
-				}
-				final identifier = ThreadOrPostIdentifier(
-					message.data['board'],
-					int.parse(message.data['threadId']),
-					int.tryParse(message.data['postId'] ?? '')
-				);
-				await _children[message.data['userId']]?.localWatcher?.updateThread(identifier.threadIdentifier);
-				_children[message.data['userId']]?.foregroundStream.add(identifier);
-			}
-		});
-		FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
-		FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-			print('onMessageOpenedApp');
-			print(message);
-			print(message.data);
-			if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
-				if (!_children.containsKey(message.data['userId'])) {
-					print('Opened via message with unknown userId: ${message.data}');
-				}
-				_children[message.data['userId']]?.tapStream.add(ThreadOrPostIdentifier(
-					message.data['board'],
-					int.parse(message.data['threadId']),
-					int.tryParse(message.data['postId'] ?? '')
-				));
-			}
-		});
+		catch (e) {
+			print('Error initializing notifications: $e');
+		}
 	}
 
 	static Future<void> didUpdateUsePushNotificationsSetting() async {
