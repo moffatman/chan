@@ -14,6 +14,16 @@ enum _DragState {
 	accepted,
 }
 
+/// Device types that scrollables should accept drag gestures from by default.
+const Set<PointerDeviceKind> _kTouchLikeDeviceTypes = <PointerDeviceKind>{
+  PointerDeviceKind.touch,
+  PointerDeviceKind.stylus,
+  PointerDeviceKind.invertedStylus,
+  PointerDeviceKind.trackpad,
+  // The VoiceAccess sends pointer events with unknown type when scrolling
+  // scrollables.
+  PointerDeviceKind.unknown,
+};
 
 const _weakSlowAcceptTime = Duration(milliseconds: 50);
 abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
@@ -399,7 +409,7 @@ class WeakVerticalDragGestureRecognizer extends WeakDragGestureRecognizer {
 		required this.weakness,
 		this.sign,
 		Object? debugOwner,
-		Set<PointerDeviceKind>? supportedDevices
+		Set<PointerDeviceKind>? supportedDevices = _kTouchLikeDeviceTypes
 	}) : super(debugOwner: debugOwner, supportedDevices: supportedDevices);
 
 	@override
@@ -435,7 +445,7 @@ class WeakHorizontalDragGestureRecognizer extends WeakDragGestureRecognizer {
 		required this.weakness,
 		this.sign,
 		Object? debugOwner,
-		Set<PointerDeviceKind>? supportedDevices
+		Set<PointerDeviceKind>? supportedDevices = _kTouchLikeDeviceTypes
 	}) : super(debugOwner: debugOwner, supportedDevices: supportedDevices);
 
 	@override
@@ -472,8 +482,9 @@ class WeakPanGestureRecognizer extends WeakDragGestureRecognizer {
 		required this.weakness,
 		this.allowedToAccept = true,
 		this.sign,
+		Set<PointerDeviceKind>? supportedDevices = _kTouchLikeDeviceTypes,
 		Object? debugOwner
-	}) : super(debugOwner: debugOwner);
+	}) : super(debugOwner: debugOwner, supportedDevices: supportedDevices);
 
 	@override
 	bool isFlingGesture(VelocityEstimate estimate, PointerDeviceKind kind) {
