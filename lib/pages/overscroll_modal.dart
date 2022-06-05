@@ -160,7 +160,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 								_pointerDownCount++;
 								final RenderBox childBox = _childKey.currentContext!.findRenderObject()! as RenderBox;
 								_pointerDownPosition = event.position;
-								_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter, ancestor: ancestor).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter, ancestor: ancestor).dy;
+								_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter).dy;
 							},
 							onPointerMove: (event) {
 								if (_pointerInSpacer) {
