@@ -89,6 +89,22 @@ class Notifications {
 	}) : siteType = site.siteType,
 		siteData = site.siteData;
 
+	static void _onMessageOpenedApp(RemoteMessage message) {
+		print('onMessageOpenedApp');
+		print(message);
+		print(message.data);
+		if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
+			if (!_children.containsKey(message.data['userId'])) {
+				print('Opened via message with unknown userId: ${message.data}');
+			}
+			_children[message.data['userId']]?.tapStream.add(ThreadOrPostIdentifier(
+				message.data['board'],
+				int.parse(message.data['threadId']),
+				int.tryParse(message.data['postId'] ?? '')
+			));
+		}
+	}
+
 	static Future<void> initializeStatic() async {
 		try {
 			await Firebase.initializeApp(
@@ -98,6 +114,10 @@ class Notifications {
 			print('Token: ${await messaging.getToken()}');
 			if (Persistence.settings.usePushNotifications == true) {
 				await messaging.requestPermission();
+			}
+			final initialMessage = await messaging.getInitialMessage();
+			if (initialMessage != null) {
+				_onMessageOpenedApp(initialMessage);
 			}
 			FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
 				print('onMessage');
@@ -117,21 +137,7 @@ class Notifications {
 				}
 			});
 			FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
-			FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-				print('onMessageOpenedApp');
-				print(message);
-				print(message.data);
-				if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
-					if (!_children.containsKey(message.data['userId'])) {
-						print('Opened via message with unknown userId: ${message.data}');
-					}
-					_children[message.data['userId']]?.tapStream.add(ThreadOrPostIdentifier(
-						message.data['board'],
-						int.parse(message.data['threadId']),
-						int.tryParse(message.data['postId'] ?? '')
-					));
-				}
-			});
+			FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
 		}
 		catch (e) {
 			print('Error initializing notifications: $e');
