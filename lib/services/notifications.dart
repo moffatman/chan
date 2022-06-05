@@ -82,6 +82,7 @@ class Notifications {
 	String get id => persistence.browserState.notificationsId;
 	List<ThreadWatch> get threadWatches => persistence.browserState.threadWatches;
 	List<NewThreadWatch> get newThreadWatches => persistence.browserState.newThreadWatches;
+	static final Map<String, List<RemoteMessage>> _unrecognizedByUserId = {};
 
 	Notifications({
 		required ImageboardSite site,
@@ -96,6 +97,7 @@ class Notifications {
 		if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
 			if (!_children.containsKey(message.data['userId'])) {
 				print('Opened via message with unknown userId: ${message.data}');
+				_unrecognizedByUserId.update(message.data['userId'], (list) => list..add(message), ifAbsent: () => [message]);
 			}
 			_children[message.data['userId']]?.tapStream.add(ThreadOrPostIdentifier(
 				message.data['board'],
@@ -201,6 +203,10 @@ class Notifications {
 						'watches': []
 					}));
 				}
+			}
+			if (_unrecognizedByUserId.containsKey(id)) {
+				_unrecognizedByUserId[id]?.forEach(_onMessageOpenedApp);
+				_unrecognizedByUserId[id]?.clear();
 			}
 		}
 		catch (e) {
