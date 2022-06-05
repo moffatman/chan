@@ -327,8 +327,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_tabController.index = 4;
 		_lastIndex = 4;
 		final settings = context.read<EffectiveSettings>();
-		if (_settingsNavigatorKey.currentState == null) {
-			await Future.delayed(const Duration(milliseconds: 100));
+		for (int i = 0; i < 200 && _settingsNavigatorKey.currentState == null; i++) {
+			await Future.delayed(const Duration(milliseconds: 50));
 		}
 		_settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
 		_settingsNavigatorKey.currentState?.push(
@@ -435,8 +435,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			if (watch != null) {
 				_tabController.index = 1;
 				_lastIndex = 1;
-				if (_savedMasterDetailKey.currentState == null) {
-					await Future.delayed(const Duration(milliseconds: 100));
+				for (int i = 0; i < 200 && _savedMasterDetailKey.currentState == null; i++) {
+					await Future.delayed(const Duration(milliseconds: 50));
 				}
 				_savedMasterDetailKey.currentState?.setValue(0, watch);
 				if (showTabPopup) {
