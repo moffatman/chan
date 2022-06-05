@@ -323,9 +323,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		return false;
 	}
 
-	void _onDevNotificationTapped(ThreadOrPostIdentifier id) {
+	void _onDevNotificationTapped(ThreadOrPostIdentifier id) async {
 		_tabController.index = 4;
 		_lastIndex = 4;
+		final settings = context.read<EffectiveSettings>();
+		if (_settingsNavigatorKey.currentState == null) {
+			await Future.delayed(const Duration(milliseconds: 100));
+		}
 		_settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
 		_settingsNavigatorKey.currentState?.push(
 			FullWidthCupertinoPageRoute(
@@ -334,7 +338,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					initialPostId: id.postId,
 					boardSemanticId: -1
 				),
-				showAnimations: context.read<EffectiveSettings>().showAnimations
+				showAnimations: settings.showAnimations
 			)
 		);
 		if (showTabPopup) {
@@ -420,7 +424,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
-	void _onNotificationTapped(ThreadOrPostIdentifier notification) {
+	void _onNotificationTapped(ThreadOrPostIdentifier notification) async {
 		if (!_goToPost(
 			board: notification.board,
 			threadId: notification.threadId,
@@ -431,6 +435,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			if (watch != null) {
 				_tabController.index = 1;
 				_lastIndex = 1;
+				if (_savedMasterDetailKey.currentState == null) {
+					await Future.delayed(const Duration(milliseconds: 100));
+				}
 				_savedMasterDetailKey.currentState?.setValue(0, watch);
 				if (showTabPopup) {
 					setState(() {
