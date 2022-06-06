@@ -27,6 +27,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'sites/imageboard_site.dart';
 import 'package:chan/pages/tab.dart';
@@ -39,14 +40,54 @@ bool _initialLinkConsumed = false;
 bool _initialMediaConsumed = false;
 
 void main() async {
-	WidgetsFlutterBinding.ensureInitialized();
-	final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
-	imageHttpClient.connectionTimeout = const Duration(seconds: 10);
-	imageHttpClient.idleTimeout = const Duration(seconds: 10);
-	imageHttpClient.maxConnectionsPerHost = 10;
-	await Persistence.initializeStatic();
-	await Notifications.initializeStatic();
-	runApp(const ChanApp());
+	try {
+		WidgetsFlutterBinding.ensureInitialized();
+		final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
+		imageHttpClient.connectionTimeout = const Duration(seconds: 10);
+		imageHttpClient.idleTimeout = const Duration(seconds: 10);
+		imageHttpClient.maxConnectionsPerHost = 10;
+		await Persistence.initializeStatic();
+		await Notifications.initializeStatic();
+		runApp(const ChanApp());
+	}
+	catch (e, st) {
+		runApp(ChanFailedApp(e, st));
+	}
+}
+
+class ChanFailedApp extends StatelessWidget {
+	final Object error;
+	final StackTrace stackTrace;
+	const ChanFailedApp(this.error, this.stackTrace, {Key? key}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		return CupertinoApp(
+			theme: const CupertinoThemeData(
+				primaryColor: Colors.white,
+				brightness: Brightness.dark
+			),
+			home: Center(
+				child: ErrorMessageCard(
+					'Sorry, an unrecoverable error has occured:\n${error.toStringDio()}\n$stackTrace',
+					remedies: {
+						'Report via Email': () {
+							FlutterEmailSender.send(Email(
+								subject: 'Unrecoverable Chance Error',
+								recipients: ['callum@moffatman.com'],
+								isHTML: true,
+								body: '''<p>Hi Callum,</p>
+												 <p>Chance isn't starting and is giving the following error:</p>
+												 <p>$error</p>
+												 <p>$stackTrace</p>
+												 <p>Thanks!</p>'''
+							));
+						}
+					}
+				)
+			)
+		);
+	}
 }
 
 class ChanApp extends StatefulWidget {

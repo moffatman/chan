@@ -71,6 +71,7 @@ dependencies:
   firebase_messaging: ^11.2.14
   path_provider: ^2.0.10
   async: ^2.9.0
+  flutter_email_sender: ^5.1.0
   flutter:
     sdk: flutter
 

@@ -208,7 +208,14 @@ class ErrorMessageCard extends StatelessWidget {
 				children: [
 					Icon(CupertinoIcons.exclamationmark_triangle_fill, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
 					const SizedBox(height: 8),
-					Text(message, maxLines: 20, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor), textAlign: TextAlign.center),
+					Flexible(
+						child: Text(
+							message,
+							style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+							textAlign: TextAlign.center,
+							overflow: TextOverflow.fade
+						)
+					),
 					for (final remedy in remedies.entries) ...[
 						const SizedBox(height: 8),
 						CupertinoButton(
