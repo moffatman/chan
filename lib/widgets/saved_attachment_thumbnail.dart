@@ -1,8 +1,7 @@
 import 'dart:io';
 
 import 'package:chan/services/media.dart';
-import 'package:chan/widgets/video_image_provider.dart';
-import 'package:extended_image/extended_image.dart';
+import 'package:chan/widgets/thumbnail_image_provider.dart';
 import 'package:flutter/material.dart';
 
 class SavedAttachmentThumbnail extends StatefulWidget {
@@ -66,8 +65,8 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 					fit: StackFit.passthrough,
 					children: [
 						Image(
-							image: VideoImageProvider(
-								video: widget.file
+							image: ThumbnailImageProvider(
+								file: widget.file
 							),
 							fit: widget.fit
 						),
@@ -87,7 +86,10 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 			);
 		 }
 		 else {
-			 return ExtendedImage.file(widget.file, fit: widget.fit, imageCacheName: 'asdf');
+			 return Image(
+				 image: ThumbnailImageProvider(file: widget.file),
+				 fit: widget.fit
+			 );
 		 }
 	}
 }

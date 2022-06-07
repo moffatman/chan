@@ -137,6 +137,7 @@ class MediaConversion {
 	int? maximumDurationInSeconds;
 	bool stripAudio;
 	int? maximumDimension;
+	final String cacheKey;
 
 	FFmpegSession? _session;
 
@@ -147,7 +148,8 @@ class MediaConversion {
 		this.maximumDurationInSeconds,
 		this.maximumDimension,
 		this.stripAudio = false,
-		this.extraOptions = const []
+		this.extraOptions = const [],
+		this.cacheKey = ''
 	});
 
 	static MediaConversion toMp4(Uri inputFile) {
@@ -195,7 +197,9 @@ class MediaConversion {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'jpg',
-			extraOptions: ['-frames:v', '1']
+			maximumDimension: 250,
+			extraOptions: ['-frames:v', '1'],
+			cacheKey: 'thumb'
 		);
 	}
 
@@ -206,7 +210,7 @@ class MediaConversion {
 		}
 		final filename = inputFile.pathSegments.last;
 		final fileExtension = inputFile.pathSegments.last.split('.').last;
-		return File('${Persistence.temporaryDirectory.path}/webmcache/$subdir/${filename.replaceFirst('.$fileExtension', '.$outputFileExtension')}');
+		return File('${Persistence.temporaryDirectory.path}/webmcache/$subdir/${filename.replaceFirst('.$fileExtension', '$cacheKey.$outputFileExtension')}');
 	}
 
 	Future<MediaConversionResult?> getDestinationIfSatisfiesConstraints() async {

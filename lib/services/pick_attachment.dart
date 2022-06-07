@@ -66,6 +66,8 @@ Future<File?> pickAttachment({
 									crossAxisSpacing: 16,
 									childAspectRatio: 1
 								),
+								addAutomaticKeepAlives: false,
+								addRepaintBoundaries: false,
 								shrinkWrap: true,
 								physics: const NeverScrollableScrollPhysics(),
 								itemCount: sources.length + receivedFilePaths.length + savedAttachments.length,
