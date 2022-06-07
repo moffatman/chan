@@ -322,6 +322,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 							if (widget.controller?.scrollController != null && (widget.controller!.scrollController!.position.userScrollDirection != ScrollDirection.idle) && _pointerDownCount == 0) {
 								widget.controller!.scrollController!.jumpTo(widget.controller!.scrollController!.position.pixels);
 							}
+							widget.controller?.cancelCurrentAnimation();
 						},
 						child: MaybeCupertinoScrollbar(
 							controller: widget.controller?.scrollController,
@@ -853,6 +854,7 @@ class RefreshableListController<T> {
 				throw StateError('No matching item to scroll to');
 			}
 		}
+		print('$contentId animating to $targetIndex');
 		currentTargetIndex = targetIndex;
 		Duration d = duration;
 		Curve c = Curves.easeIn;
@@ -873,7 +875,7 @@ class RefreshableListController<T> {
 		bool usingKnownGoodValue = true;
 		if (_items[targetIndex].cachedOffset == null) {
 			usingKnownGoodValue = false;
-			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 20 && targetIndex == currentTargetIndex) {
+			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 5 && targetIndex == currentTargetIndex) {
 				c = Curves.linear;
 			}
 			if (initialContentId != contentId) throw Exception('List was hijacked ($initialContentId -> $contentId)');
@@ -908,6 +910,9 @@ class RefreshableListController<T> {
 			curve: Curves.easeOut
 		);
 		await SchedulerBinding.instance.endOfFrame;
+	}
+	void cancelCurrentAnimation() {
+		currentTargetIndex = null;
 	}
 	int get firstVisibleIndex {
 		if (scrollController?.hasOnePosition ?? false) {

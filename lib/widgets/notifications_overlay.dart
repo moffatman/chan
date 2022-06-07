@@ -22,6 +22,9 @@ class OverlayNotification {
 		required this.target,
 		required this.autoCloseAnimation
 	});
+
+	@override
+	String toString() => 'OverlayNotification(notifications; $notifications, target: $target)';
 }
 
 class NotificationsOverlay extends StatefulWidget {

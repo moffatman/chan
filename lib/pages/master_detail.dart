@@ -211,10 +211,16 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		_onNewValue(panes[index]);
 	}
 
+	dynamic getValue(int index) {
+		return panes[index].currentValue.value;
+	}
+
 	void _onNewValue<T> (MultiMasterPane<T> pane) {
 		if (onePane) {
 			if (pane.currentValue.value != null) {
-				_masterKey.currentState?.popUntil((route) => route.isFirst);
+				while (_masterKey.currentState?.canPop() ?? false) {
+					_masterKey.currentState?.pop(false);
+				}
 				_masterKey.currentState!.push(pane.buildDetailRoute(context.read<EffectiveSettings>().showAnimations)).then(pane.onPushReturn);
 			}
 		}

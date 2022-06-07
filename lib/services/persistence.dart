@@ -593,6 +593,8 @@ class PersistentBrowserTab {
 	String draftSubject;
 	// Do not persist
 	RefreshableListController<Post>? threadController;
+	// Do not persist
+	final Map<ThreadIdentifier, int> initialPostId = {};
 	PersistentBrowserTab({
 		this.board,
 		this.thread,

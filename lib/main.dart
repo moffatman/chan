@@ -340,6 +340,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool _isScrolling = false;
 	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
+	Notifications? _lastNotifications;
+	StreamSubscription<ThreadOrPostIdentifier>? _lastNotificationsSubscription;
 
 	void _didUpdateBrowserState() {
 		if (_isScrolling) {
@@ -454,15 +456,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
-	void _animateTabToPost(PersistentBrowserTab tab, int postId) async {
+	void _scrollExistingTab(PersistentBrowserTab tab, int postId) async {
 		if (!(tab.threadController?.items.any((p) => p.id == postId) ?? false)) {
 			await tab.threadController?.update();
 		}
 		tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0);
-		if (tab.threadController == null) {
-			await Future.delayed(const Duration(seconds: 1));
-			tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0);
-		}
 	}
 
 	void _onNotificationTapped(ThreadOrPostIdentifier notification) async {
@@ -479,14 +477,19 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				for (int i = 0; i < 200 && _savedMasterDetailKey.currentState == null; i++) {
 					await Future.delayed(const Duration(milliseconds: 50));
 				}
-				_savedMasterDetailKey.currentState?.setValue(0, watch);
+				if (_savedMasterDetailKey.currentState?.getValue(0) == watch && notification.postId != null) {
+					_scrollExistingTab(_savedFakeTab, notification.postId!);
+				}
+				else {
+					if (notification.postId != null) {
+						_savedFakeTab.initialPostId[notification.threadIdentifier] = notification.postId!;
+					}
+					_savedMasterDetailKey.currentState?.setValue(0, watch);
+				}
 				if (showTabPopup) {
 					setState(() {
 						showTabPopup = false;
 					});
-				}
-				if (notification.postId != null) {
-					_animateTabToPost(_savedFakeTab, notification.postId!);
 				}
 			}
 		}
@@ -526,7 +529,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_setupDevSite();
 		getInitialLink().then(_onNewLink);
 		linkStream.listen(_onNewLink);
-		context.read<Notifications>().tapStream.listen(_onNotificationTapped);
 		if (!_initialLinkConsumed) {
 			ReceiveSharingIntent.getInitialText().then(_consumeLink);
 		}
@@ -542,13 +544,17 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	PersistentBrowserTab _addNewTab({
 		int? atPosition,
 		ThreadIdentifier? withThread,
-		bool activate = false
+		bool activate = false,
+		int? withInitialPostId
 	}) {
 		final pos = atPosition ?? tabs.length;
 		final tab = withThread == null ? PersistentBrowserTab() : PersistentBrowserTab(
 			board: context.read<Persistence>().getBoard(withThread.board),
 			thread: withThread
 		);
+		if (withThread != null && withInitialPostId != null) {
+			tab.initialPostId[withThread] = withInitialPostId;
+		}
 		browserState.tabs.insert(pos, tab);
 		tabs.insert(pos, _ChanBrowseTab(tab));
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.unseen)]);
@@ -571,10 +577,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		required bool openNewTabIfNeeded
 	}) {
 		PersistentBrowserTab? tab = browserState.tabs.tryFirstWhere((tab) => tab.thread?.board == board && tab.thread?.id == threadId);
+		final tabAlreadyExisted = tab != null;
 		if (openNewTabIfNeeded) {
 			tab ??= _addNewTab(
 				activate: false,
-				withThread: ThreadIdentifier(board, threadId)
+				withThread: ThreadIdentifier(board, threadId),
+				withInitialPostId: postId
 			);
 		}
 		if (tab != null) {
@@ -584,8 +592,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			browserState.currentTab = index;
 			_didUpdateBrowserState();
 			setState(() {});
-			if (postId != null) {
-				_animateTabToPost(tab, postId);
+			if (tabAlreadyExisted && postId != null) {
+				_scrollExistingTab(tab, postId);
 			}
 			return true;
 		}
@@ -952,6 +960,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Widget build(BuildContext context) {
 		final isInTabletLayout = (MediaQuery.of(context).size.width - 85) > (MediaQuery.of(context).size.height - 50);
 		final hideTabletLayoutLabels = MediaQuery.of(context).size.height < 600;
+		final notifications = context.watch<Notifications>();
+		if (notifications != _lastNotifications) {
+			_lastNotificationsSubscription?.cancel();
+			_lastNotificationsSubscription = notifications.tapStream.listen(_onNotificationTapped);
+			_lastNotifications = notifications;
+		}
 		if (!initialized) {
 			if (boardFetchErrorMessage != null) {
 				return Center(

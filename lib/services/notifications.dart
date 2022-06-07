@@ -90,6 +90,9 @@ class Notifications {
 	}) : siteType = site.siteType,
 		siteData = site.siteData;
 
+	@override
+	String toString() => 'Notifications(siteType: $siteType, id: $id, tapStream: $tapStream)';
+
 	static void _onMessageOpenedApp(RemoteMessage message) {
 		print('onMessageOpenedApp');
 		print(message);

@@ -135,7 +135,8 @@ class _ThreadPageState extends State<ThreadPage> {
 	);
 
 	Future<void> _blockAndScrollToPostIfNeeded([Duration delayBeforeScroll = Duration.zero]) async {
-		final int? scrollToId = widget.initialPostId ?? persistentState.lastSeenPostId;
+		final int? scrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread] ?? persistentState.lastSeenPostId;
+		context.read<PersistentBrowserTab?>()?.initialPostId.remove(widget.thread);
 		if (persistentState.thread != null && scrollToId != null) {
 			setState(() {
 				blocked = true;
