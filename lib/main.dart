@@ -457,10 +457,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _scrollExistingTab(PersistentBrowserTab tab, int postId) async {
-		if (!(tab.threadController?.items.any((p) => p.id == postId) ?? false)) {
-			await tab.threadController?.update();
+		if (tab.threadController?.items.any((p) => p.id == postId) == false) {
+			await Future.any([tab.threadController!.update(), Future.delayed(const Duration(milliseconds: 500))]);
 		}
-		tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0);
+		tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0, orElseLast: (p) => true);
 	}
 
 	void _onNotificationTapped(ThreadOrPostIdentifier notification) async {
