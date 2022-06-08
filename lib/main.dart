@@ -759,16 +759,19 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		Axis axis = Axis.vertical,
 		Widget Function(BuildContext, Widget)? opacityParentBuilder
 	}) {
-		final content = Opacity(
-			opacity: (index <= 0 ? (_tabController.index == 0 && index == -1 * activeBrowserTab.value) : index == _tabController.index) ? 1.0 : 0.5,
-			child: Column(
-				children: [
-					icon,
-					if (label != null) ...[
-						const SizedBox(height: 4),
-						Text(label, style: const TextStyle(fontSize: 15))
+		final content = AnimatedBuilder(
+			animation: _tabController,
+			builder: (context, _) => Opacity(
+				opacity: (index <= 0 ? (_tabController.index == 0 && index == -1 * activeBrowserTab.value) : index == _tabController.index) ? 1.0 : 0.5,
+				child: Column(
+					children: [
+						icon,
+						if (label != null) ...[
+							const SizedBox(height: 4),
+							Text(label, style: const TextStyle(fontSize: 15))
+						]
 					]
-				]
+				)
 			)
 		);
 		final child = CupertinoButton(
