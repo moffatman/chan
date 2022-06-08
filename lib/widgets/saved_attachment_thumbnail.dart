@@ -27,7 +27,7 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 	Future<void> _scan() async {
 		if (ext == 'webm' || ext == 'mp4' || ext == 'mov') {
 			scan = await MediaScan.scan(widget.file.uri);
-			setState(() {});
+			if (mounted) setState(() {});
 		}
 	}
 
