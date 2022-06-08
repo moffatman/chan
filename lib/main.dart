@@ -821,7 +821,16 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						_didUpdateBrowserState();
 					}
 				}
+				else if (index == _lastIndex) {
+					if (index == 4) {
+						_settingsNavigatorKey.currentState?.maybePop();
+					}
+					else {
+						_tabletWillPopZones[index]?.callback?.call();
+					}
+				}
 				_tabController.index = max(0, index);
+				_lastIndex = index;
 			}
 		);
 		if (reorderable) {
