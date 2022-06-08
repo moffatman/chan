@@ -15,6 +15,7 @@ import 'package:flutter/rendering.dart';
 import 'package:image/image.dart';
 import 'package:mutex/mutex.dart';
 import 'package:tuple/tuple.dart';
+import 'package:pool/pool.dart';
 
 extension HandleSpacesInPath on Uri {
 	String toStringFFMPEG() {
@@ -140,6 +141,8 @@ class MediaConversion {
 	final String cacheKey;
 
 	FFmpegSession? _session;
+
+	static final pool = Pool(Platform.numberOfProcessors);
 
 	MediaConversion({
 		required this.inputFile,
@@ -308,19 +311,21 @@ class MediaConversion {
 					});
 					final bitrateString = '${(outputBitrate / 1000).floor()}K';
 					final ffmpegCompleter = Completer<Session>();
-					_session = await FFmpegKit.executeWithArgumentsAsync([
-						'-hwaccel', 'auto',
-						'-i', inputFile.toStringFFMPEG(),
-						'-max_muxing_queue_size', '9999',
-						...extraOptions,
-						if (stripAudio) '-an',
-						if (outputFileExtension == 'jpg') ...['-qscale:v', '5']
-						else ...['-b:v', bitrateString],
-						if (outputFileExtension == 'webm') ...['-crf', '10'],
-						if (newSize != null) ...['-vf', 'scale=${newSize.item1}:${newSize.item2}'],
-						if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
-						convertedFile.path
-					], (c) => ffmpegCompleter.complete(c));
+					_session = await pool.withResource(() {
+						return FFmpegKit.executeWithArgumentsAsync([
+							'-hwaccel', 'auto',
+							'-i', inputFile.toStringFFMPEG(),
+							'-max_muxing_queue_size', '9999',
+							...extraOptions,
+							if (stripAudio) '-an',
+							if (outputFileExtension == 'jpg') ...['-qscale:v', '5']
+							else ...['-b:v', bitrateString],
+							if (outputFileExtension == 'webm') ...['-crf', '10'],
+							if (newSize != null) ...['-vf', 'scale=${newSize.item1}:${newSize.item2}'],
+							if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
+							convertedFile.path
+						], (c) => ffmpegCompleter.complete(c));
+					});
 					final results = await ffmpegCompleter.future;
 					final returnCode = await results.getReturnCode();
 					if (!(returnCode?.isValueSuccess() ?? false)) {
