@@ -834,21 +834,56 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	Widget _buildNewTabIcon({bool hideLabel = false}) {
-		return CupertinoButton(
-			padding: const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8),
-			child: Opacity(
-				opacity: 0.5,
-				child: Column(
-					children: [
-						const Icon(CupertinoIcons.add),
-						if (!hideLabel) ...[
-							const SizedBox(height: 4),
-							const Text("New", style: TextStyle(fontSize: 15))
+		return GestureDetector(
+			onLongPress: () async {
+				final shouldCloseOthers = await showCupertinoDialog<bool>(
+					context: context,
+					barrierDismissible: true,
+					builder: (context) => CupertinoAlertDialog(
+						title: const Text('Close all other tabs?'),
+						actions: [
+							CupertinoDialogAction(
+								onPressed: () => Navigator.of(context).pop(false),
+								child: const Text('No')
+							),
+							CupertinoDialogAction(
+								onPressed: () => Navigator.of(context).pop(true),
+								isDestructiveAction: true,
+								child: const Text('Yes')
+							)
 						]
-					]
-				)
-			),
-			onPressed: () => _addNewTab(activate: true)
+					)
+				);
+				if (shouldCloseOthers == true) {
+					final tabToPreserve = tabs[activeBrowserTab.value];
+					final persistentTabToPreserve = browserState.tabs[activeBrowserTab.value];
+					tabs.clear();
+					tabs.add(tabToPreserve);
+					browserState.tabs.clear();
+					browserState.tabs.add(persistentTabToPreserve);
+					browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.unseen)]);
+					activeBrowserTab.value = 0;
+					browserState.currentTab = 0;
+					_didUpdateBrowserState();
+					setState(() {});
+				}
+			},
+			child: CupertinoButton(
+				padding: const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8),
+				child: Opacity(
+					opacity: 0.5,
+					child: Column(
+						children: [
+							const Icon(CupertinoIcons.add),
+							if (!hideLabel) ...[
+								const SizedBox(height: 4),
+								const Text("New", style: TextStyle(fontSize: 15))
+							]
+						]
+					)
+				),
+				onPressed: () => _addNewTab(activate: true)
+			)
 		);
 	}
 
