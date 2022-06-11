@@ -643,7 +643,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							},
 							onWantOpenThreadInNewTab: (thread) {
 								_addNewTab(
-									atPosition: i + 1,
+									atPosition: tabs.indexOf(tabObject) + 1,
 									withThread: thread
 								);
 							},
