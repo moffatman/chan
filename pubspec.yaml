@@ -150,3 +150,7 @@ dependency_overrides:
       url: https://github.com/moffatman/ffmpeg-kit.git
       ref: full_gpl_temp
       path: flutter/flutter/
+  dio:
+    git:
+      url: https://github.com/moffatman/dio.git
+      path: dio

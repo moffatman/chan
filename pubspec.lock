@@ -256,9 +256,11 @@ packages:
   dio:
     dependency: "direct main"
     description:
-      name: dio
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: dio
+      ref: HEAD
+      resolved-ref: b29045eb5fbd7ee62c2bab16e6eafeeacfedd7b5
+      url: "https://github.com/moffatman/dio.git"
+    source: git
     version: "4.0.6"
   dio_cookie_manager:
     dependency: "direct main"
