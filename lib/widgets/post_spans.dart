@@ -187,7 +187,7 @@ class PostTextSpan extends PostSpan {
 		final children = <TextSpan>[];
 		final str = context.read<EffectiveSettings>().filterProfanity(text);
 		if (options.highlightString != null) {
-			final escapedHighlight = options.highlightString!.replaceAllMapped(r'[.*+?^${}()|[\]\\]', (m) => '\\${m.group(0)}');
+			final escapedHighlight = options.highlightString!.replaceAllMapped(RegExp(r'[.*+?^${}()|[\]\\]'), (m) => '\\${m.group(0)}');
 			final nonHighlightedParts = str.split(RegExp(escapedHighlight, caseSensitive: false));
 			int pos = 0;
 			for (int i = 0; i < nonHighlightedParts.length; i++) {
