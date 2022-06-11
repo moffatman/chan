@@ -196,6 +196,15 @@ class MediaConversion {
 		);
 	}
 
+	static MediaConversion toPng(Uri inputFile, {int? maximumSizeInBytes, int? maximumDimension}) {
+		return MediaConversion(
+			inputFile: inputFile,
+			outputFileExtension: 'png',
+			maximumSizeInBytes: maximumSizeInBytes,
+			maximumDimension: maximumDimension
+		);
+	}
+
 	static MediaConversion extractThumbnail(Uri inputFile) {
 		return MediaConversion(
 			inputFile: inputFile,
@@ -223,7 +232,7 @@ class MediaConversion {
 		}
 		final stat = await file.stat();
 		MediaScan? scan;
-		if (outputFileExtension != 'jpg') {
+		if (outputFileExtension != 'jpg' && outputFileExtension != 'png') {
 			try {
 				scan = await MediaScan.scan(file.uri);
 			}
@@ -277,7 +286,7 @@ class MediaConversion {
 					}
 					Tuple2<int, int>? newSize;
 					if (scan.width != null && scan.height != null) {
-						if (outputFileExtension != 'jpg') {
+						if (outputFileExtension != 'jpg' && outputFileExtension != 'png') {
 							double scaleDownFactorSq = outputBitrate/(2 * scan.width! * scan.height!);
 							if (scaleDownFactorSq < 1) {
 								final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
@@ -286,7 +295,7 @@ class MediaConversion {
 							}
 						}
 						else if (maximumSizeInBytes != null) {
-							double scaleDownFactor = (scan.width! * scan.height!) / (maximumSizeInBytes! * 6);
+							double scaleDownFactor = (scan.width! * scan.height!) / (maximumSizeInBytes! * (outputFileExtension == 'jpg' ? 6 : 1.5));
 							if (scaleDownFactor > 1) {
 								final newWidth = ((scan.width! / scaleDownFactor) / 2).round() * 2;
 								final newHeight = ((scan.height! / scaleDownFactor) / 2).round() * 2;

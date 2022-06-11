@@ -351,7 +351,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				ext = 'jpg';
 			}
 			final size = (await file.stat()).size;
-			if ((ext == 'jpg' || ext == 'jpeg' || ext == 'png')) {
+			if (ext == 'jpg' || ext == 'jpeg') {
 				final scan = await MediaScan.scan(file.uri);
 				file = await _showTranscodeWindow(
 					source: file,
@@ -361,6 +361,22 @@ class ReplyBoxState extends State<ReplyBox> {
 					height: scan.height,
 					maximumDimension: settings.maximumImageUploadDimension,
 					transcode: MediaConversion.toJpg(
+						file.uri,
+						maximumSizeInBytes: board.maxImageSizeBytes,
+						maximumDimension: settings.maximumImageUploadDimension
+					)
+				);
+			}
+			else if (ext == 'png') {
+				final scan = await MediaScan.scan(file.uri);
+				file = await _showTranscodeWindow(
+					source: file,
+					size: size,
+					maximumSize: board.maxImageSizeBytes,
+					width: scan.width,
+					height: scan.height,
+					maximumDimension: settings.maximumImageUploadDimension,
+					transcode: MediaConversion.toPng(
 						file.uri,
 						maximumSizeInBytes: board.maxImageSizeBytes,
 						maximumDimension: settings.maximumImageUploadDimension
