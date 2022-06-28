@@ -5,12 +5,14 @@ import 'dart:ui';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/status_bar.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
@@ -848,9 +850,12 @@ Future<Attachment?> showGallery({
 	bool allowContextMenu = true,
 	ValueChanged<Attachment>? onChange,
 }) async {
+	final imageboardKey = context.read<Imageboard>().key;
+	final showAnimations = context.read<EffectiveSettings>().showAnimations;
 	final lastSelected = await Navigator.of(context, rootNavigator: true).push(TransparentRoute<Attachment>(
-		builder: (BuildContext context) {
-			return GalleryPage(
+		builder: (ctx) => ImageboardScope(
+			imageboardKey: imageboardKey,
+			child: GalleryPage(
 				attachments: attachments,
 				replyCounts: replyCounts,
 				overrideSources: overrideSources,
@@ -860,9 +865,9 @@ Future<Attachment?> showGallery({
 				semanticParentIds: semanticParentIds,
 				allowChrome: allowChrome,
 				allowContextMenu: allowContextMenu,
-			);
-		},
-		showAnimations: context.read<EffectiveSettings>().showAnimations
+			)
+		),
+		showAnimations: showAnimations
 	));
 	try {
 		await HomeIndicator.show();

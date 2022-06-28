@@ -275,4 +275,10 @@ class FuukaArchive extends ImageboardSiteArchive {
 		required this.name,
 		this.boards
 	});
+
+	@override
+	bool operator == (Object other) => (other is FuukaArchive) && (other.name == name) && (other.baseUrl == baseUrl);
+
+	@override
+	int get hashCode => Object.hash(name, baseUrl);
 }

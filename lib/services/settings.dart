@@ -28,6 +28,9 @@ const defaultSite = {
 	'name': 'testchan',
 	'baseUrl': 'callum.crabdance.com'
 };
+const defaultSites = {
+	'testchan': defaultSite
+};
 final defaultLightTheme = SavedTheme(
 	primaryColor: Colors.black,
 	secondaryColor: Colors.red,
@@ -92,16 +95,16 @@ class ContentSettings {
 	bool nsfwImages;
 	@HiveField(3)
 	bool nsfwText;
-	@HiveField(4)
-	dynamic site;
+	@HiveField(5)
+	Map<String, dynamic> sites;
 
 	ContentSettings({
 		this.images = false,
 		this.nsfwBoards = false,
 		this.nsfwImages = false,
 		this.nsfwText = false,
-		dynamic site
-	}) : site = site ?? defaultSite;
+		Map<String, dynamic>? sites,
+	}) : sites = sites ?? defaultSites;
 }
 
 class ColorAdapter extends TypeAdapter<Color> {
@@ -221,7 +224,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(16)
 	SavedTheme darkTheme;
 	@HiveField(17)
-	Map<String, PersistentRecentSearches> recentSearchesBySite;
+	Map<String, PersistentRecentSearches> deprecatedRecentSearchesBySite;
 	@HiveField(18)
 	Map<String, PersistentBrowserState> browserStateBySite;
 	@HiveField(19)
@@ -324,6 +327,12 @@ class SavedSettings extends HiveObject {
 	List<PostDisplayField> postDisplayFieldOrder;
 	@HiveField(68)
 	int? maximumImageUploadDimension;
+	@HiveField(69)
+	List<PersistentBrowserTab> tabs;
+	@HiveField(70)
+	int currentTabIndex;
+	@HiveField(71)
+	PersistentRecentSearches recentSearches;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -342,7 +351,7 @@ class SavedSettings extends HiveObject {
 		bool? boardSwitcherHasKeyboardFocus,
 		SavedTheme? lightTheme,
 		SavedTheme? darkTheme,
-		Map<String, PersistentRecentSearches>? recentSearchesBySite,
+		Map<String, PersistentRecentSearches>? deprecatedRecentSearchesBySite,
 		Map<String, PersistentBrowserState>? browserStateBySite,
 		Map<String, Map<String, SavedPost>>? savedPostsBySite,
 		Map<String, Map<String, SavedAttachment>>? savedAttachmentsBySite,
@@ -395,6 +404,9 @@ class SavedSettings extends HiveObject {
 		bool? alwaysAutoloadTappedAttachment,
 		List<PostDisplayField>? postDisplayFieldOrder,
 		this.maximumImageUploadDimension,
+		List<PersistentBrowserTab>? tabs,
+		int? currentTabIndex,
+		PersistentRecentSearches? recentSearches,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -419,7 +431,7 @@ class SavedSettings extends HiveObject {
 			barColor: defaultDarkTheme.barColor,
 			backgroundColor: defaultDarkTheme.backgroundColor
 		),
-		recentSearchesBySite = recentSearchesBySite ?? {},
+		deprecatedRecentSearchesBySite = deprecatedRecentSearchesBySite ?? {},
 		browserStateBySite = browserStateBySite ?? {},
 		savedPostsBySite = savedPostsBySite ?? {},
 		savedAttachmentsBySite = savedAttachmentsBySite ?? {},
@@ -475,7 +487,12 @@ class SavedSettings extends HiveObject {
 			PostDisplayField.absoluteTime,
 			PostDisplayField.relativeTime,
 			PostDisplayField.postId
-		];
+		],
+		tabs = tabs ?? [
+			PersistentBrowserTab()
+		],
+		currentTabIndex = currentTabIndex ?? 0,
+		recentSearches = recentSearches ?? PersistentRecentSearches();
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -565,14 +582,14 @@ class EffectiveSettings extends ChangeNotifier {
 			if (Platform.isIOS && (await isDevelopmentBuild())) {
 				platform += '-dev';
 			}
-			final response = await Dio().get('$contentSettingsApiRoot/user/${_settings.userId}', queryParameters: {
+			final response = await Dio().get('$contentSettingsApiRoot/user2/${_settings.userId}', queryParameters: {
 				'platform': platform
 			});
 			_settings.contentSettings.images = response.data['images'];
 			_settings.contentSettings.nsfwBoards = response.data['nsfwBoards'];
 			_settings.contentSettings.nsfwImages = response.data['nsfwImages'];
 			_settings.contentSettings.nsfwText = response.data['nsfwText'];
-			_settings.contentSettings.site = response.data['site'] ?? defaultSite;
+			_settings.contentSettings.sites = response.data['sites'];
 			await _settings.save();
 			notifyListeners();
 		}

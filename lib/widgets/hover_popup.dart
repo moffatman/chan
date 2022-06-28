@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
@@ -86,13 +88,16 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		_touchStart = details.globalPosition;
 		final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
 		_touchEntry = OverlayEntry(
-			builder: (context) => RootCustomScale(
-				scale: scale,
-				child: IgnorePointer(
-					child: Center(
-						child: _ScalerBlurrer(
-							key: _touchGlobalKey,
-							child: (widget.popupBuilder?.call(_value, true) ?? widget.popup)!
+			builder: (_) => ImageboardScope(
+				imageboardKey: context.read<Imageboard>().key,
+				child: RootCustomScale(
+					scale: scale,
+					child: IgnorePointer(
+						child: Center(
+							child: _ScalerBlurrer(
+								key: _touchGlobalKey,
+								child: (widget.popupBuilder?.call(_value, true) ?? widget.popup)!
+							)
 						)
 					)
 				)
@@ -151,7 +156,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 						final left = childBox.localToGlobal(Offset.zero).dx;
 						final cblg = childBox.localToGlobal(Offset(childBox.size.width, 0)).dx;
 						_entry = OverlayEntry(
-							builder: (context) {
+							builder: (_) {
 								final showOnRight = childCenterHorizontal > (MediaQuery.of(context).size.width / 2);
 								return Positioned(
 									right: showOnRight ? (MediaQuery.of(context).size.width - cblg) : null,
@@ -162,7 +167,10 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 										constraints: BoxConstraints(
 											maxWidth: MediaQuery.of(context).size.width / 2
 										),
-										child: widget.popupBuilder?.call(_value, false) ?? widget.popup
+										child: ImageboardScope(
+											imageboardKey: context.read<Imageboard>().key,
+											child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!
+										)
 									)
 								);
 							}
@@ -172,14 +180,17 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 						_globalKey = GlobalKey();
 						final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
 						_entry = OverlayEntry(
-							builder: (context) => RootCustomScale(
+							builder: (_) => RootCustomScale(
 								scale: scale,
 								child: _FloatingHoverPopup(
 									key: _globalKey,
 									scale: scale,
 									anchor: widget.anchor,
 									initialMousePosition: event.position,
-									child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!
+									child: ImageboardScope(
+										imageboardKey: context.read<Imageboard>().key,
+										child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!
+									)
 								)
 							)
 						);

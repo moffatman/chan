@@ -3,18 +3,19 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:flutter/cupertino.dart';
 
 class ImageboardTab extends StatelessWidget {
 	final ImageboardBoard? initialBoard;
-	final ValueChanged<ImageboardBoard>? onBoardChanged;
+	final ValueChanged<ImageboardScoped<ImageboardBoard>>? onBoardChanged;
 	final ThreadIdentifier? initialThread;
 	final ValueChanged<ThreadIdentifier?>? onThreadChanged;
 	final String Function()? getInitialThreadDraftText;
 	final ValueChanged<String>? onThreadDraftTextChanged;
 	final String Function()? getInitialThreadDraftSubject;
 	final ValueChanged<String>? onThreadDraftSubjectChanged;
-	final ValueChanged<ThreadIdentifier>? onWantOpenThreadInNewTab;
+	final void Function(String, ThreadIdentifier)? onWantOpenThreadInNewTab;
 	final int id;
 	final Key? boardKey;
 	const ImageboardTab({

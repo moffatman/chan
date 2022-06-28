@@ -8,12 +8,14 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
@@ -55,14 +57,21 @@ class Persistence extends ChangeNotifier {
 	Map<String, ImageboardBoard> get boards => settings.boardsBySite[id]!;
 	Map<String, SavedAttachment> get savedAttachments => settings.savedAttachmentsBySite[id]!;
 	Map<String, SavedPost> get savedPosts => settings.savedPostsBySite[id]!;
-	PersistentRecentSearches get recentSearches => settings.recentSearchesBySite[id]!;
+	static PersistentRecentSearches get recentSearches => settings.recentSearches;
 	PersistentBrowserState get browserState => settings.browserStateBySite[id]!;
+	static List<PersistentBrowserTab> get tabs => settings.tabs;
+	static int get currentTabIndex => settings.currentTabIndex;
+	static set currentTabIndex(int setting) {
+		settings.currentTabIndex = setting;
+	}
 	final savedAttachmentsNotifier = PublishSubject<void>();
 	final savedPostsNotifier = PublishSubject<void>();
 	static late final SavedSettings settings;
 	static late final Directory temporaryDirectory;
 	static late final Directory documentsDirectory;
 	static late final PersistCookieJar cookies;
+	// Do not persist
+	static bool enableHistory = true;
 
 	static Future<void> initializeStatic() async {
 		await Hive.initFlutter();
@@ -176,11 +185,17 @@ class Persistence extends ChangeNotifier {
 			final searchesBox = await Hive.openBox<PersistentRecentSearches>('searches_$id');
 			final existingRecentSearches = searchesBox.get('recentSearches');
 			if (existingRecentSearches != null) {
-				settings.recentSearchesBySite[id] = existingRecentSearches;
+				settings.deprecatedRecentSearchesBySite[id] = existingRecentSearches;
 			}
 			await searchesBox.deleteFromDisk();
 		}
-		settings.recentSearchesBySite.putIfAbsent(id, () => PersistentRecentSearches());
+		if (settings.deprecatedRecentSearchesBySite[id]?.entries.isNotEmpty == true) {
+			print('Migrating recent searches');
+			for (final search in settings.deprecatedRecentSearchesBySite[id]!.entries) {
+				Persistence.recentSearches.add(search..imageboardKey = id);
+			}
+		}
+		settings.deprecatedRecentSearchesBySite.remove(id);
 		if (await Hive.boxExists('browserStates_$id')) {
 			print('Migrating browser states box');
 			final browserStateBox = await Hive.openBox<PersistentBrowserState>('browserStates_$id');
@@ -191,7 +206,6 @@ class Persistence extends ChangeNotifier {
 			await browserStateBox.deleteFromDisk();
 		}
 		settings.browserStateBySite.putIfAbsent(id, () => PersistentBrowserState(
-			tabs: [PersistentBrowserTab(board: null)],
 			hiddenIds: {},
 			favouriteBoards: [],
 			autosavedIds: {},
@@ -201,6 +215,15 @@ class Persistence extends ChangeNotifier {
 			newThreadWatches: [],
 			notificationsMigrated: true
 		));
+		if (browserState.deprecatedTabs.isNotEmpty) {
+			print('Migrating tabs');
+			for (final deprecatedTab in browserState.deprecatedTabs) {
+				Persistence.tabs.add(deprecatedTab..imageboardKey = id);
+			}
+			browserState.deprecatedTabs.clear();
+			didUpdateBrowserState();
+			Persistence.didUpdateTabs();
+		}
 		if (await Hive.boxExists('boards_$id')) {
 			print('Migrating boards box');
 			final boardBox = await Hive.openBox<ImageboardBoard>('boards_$id');
@@ -260,7 +283,8 @@ class Persistence extends ChangeNotifier {
 		return threadStateBox.get('${thread.board}/${thread.id}');
 	}
 
-	final Map<ThreadIdentifier, PersistentThreadState> _cachedEphemeralThreadStates = {};
+	static final Map<String, Map<ThreadIdentifier, PersistentThreadState>> _cachedEphemeralThreadStatesById = {};
+	Map<ThreadIdentifier, PersistentThreadState> get _cachedEphemeralThreadStates => _cachedEphemeralThreadStatesById.putIfAbsent(id, () => {});
 	PersistentThreadState getThreadState(ThreadIdentifier thread, {bool updateOpenedTime = false}) {
 		final existingState = threadStateBox.get('${thread.board}/${thread.id}');
 		if (existingState != null) {
@@ -270,7 +294,7 @@ class Persistence extends ChangeNotifier {
 			}
 			return existingState;
 		}
-		else if (browserState.enableHistory) {
+		else if (enableHistory) {
 			final newState = PersistentThreadState();
 			threadStateBox.put('${thread.board}/${thread.id}', newState);
 			return newState;
@@ -344,8 +368,6 @@ class Persistence extends ChangeNotifier {
 		savedPostsNotifier.add(null);
 	}
 
-	String get currentBoardName => browserState.tabs[browserState.currentTab].board?.name ?? 'tv';
-
 	ValueListenable<Box<PersistentThreadState>> listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
 		return threadStateBox.listenable(keys: ['${thread.board}/${thread.id}']);
 	}
@@ -357,12 +379,16 @@ class Persistence extends ChangeNotifier {
 		});
 	}
 
+	static Future<void> didUpdateTabs() async {
+		await settings.save();
+	}
+
 	Future<void> didUpdateBrowserState() async {
 		await settings.save();
 		notifyListeners();
 	}
 
-	Future<void> didUpdateRecentSearches() async {
+	static Future<void> didUpdateRecentSearches() async {
 		await settings.save();
 	}
 
@@ -371,9 +397,8 @@ class Persistence extends ChangeNotifier {
 		savedPostsNotifier.add(null);
 	}
 
-	void didChangeBrowserHistoryStatus() {
-		_cachedEphemeralThreadStates.clear();
-		notifyListeners();
+	static void didChangeBrowserHistoryStatus() {
+		_cachedEphemeralThreadStatesById.clear();
 	}
 }
 
@@ -582,7 +607,7 @@ class SavedPost implements Filterable {
 }
 
 @HiveType(typeId: 21)
-class PersistentBrowserTab {
+class PersistentBrowserTab extends ChangeNotifier {
 	@HiveField(0)
 	ImageboardBoard? board;
 	@HiveField(1)
@@ -591,24 +616,37 @@ class PersistentBrowserTab {
 	String draftThread;
 	@HiveField(3, defaultValue: '')
 	String draftSubject;
+	@HiveField(4)
+	String? imageboardKey;
+	Imageboard? get imageboard => imageboardKey == null ? null :  ImageboardRegistry.instance.getImageboard(imageboardKey!);
 	// Do not persist
 	RefreshableListController<Post>? threadController;
 	// Do not persist
 	final Map<ThreadIdentifier, int> initialPostId = {};
+	// Do not persist
+	final tabKey = GlobalKey();
+	// Do not persist
+	final boardKey = GlobalKey();
+	// Do not persist
+	final unseen = ValueNotifier(0);
+
 	PersistentBrowserTab({
 		this.board,
 		this.thread,
 		this.draftThread = '',
-		this.draftSubject = ''
+		this.draftSubject = '',
+		this.imageboardKey
 	});
+
+	void didUpdate() {
+		notifyListeners();
+	}
 }
 
 @HiveType(typeId: 22)
 class PersistentBrowserState {
 	@HiveField(0)
-	List<PersistentBrowserTab> tabs;
-	@HiveField(1)
-	int currentTab;
+	List<PersistentBrowserTab> deprecatedTabs;
 	@HiveField(2, defaultValue: {})
 	final Map<String, List<int>> hiddenIds;
 	@HiveField(3, defaultValue: [])
@@ -620,8 +658,6 @@ class PersistentBrowserState {
 	Persistence? persistence;
 	@HiveField(7, defaultValue: {})
 	Map<String, String> loginFields;
-	// Do not persist
-	bool enableHistory = true;
 	@HiveField(8)
 	String notificationsId;
 	@HiveField(10, defaultValue: [])
@@ -632,8 +668,7 @@ class PersistentBrowserState {
 	bool notificationsMigrated;
 	
 	PersistentBrowserState({
-		required this.tabs,
-		this.currentTab = 0,
+		this.deprecatedTabs = const [],
 		required this.hiddenIds,
 		required this.favouriteBoards,
 		required this.autosavedIds,

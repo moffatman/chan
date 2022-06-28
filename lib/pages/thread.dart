@@ -8,6 +8,7 @@ import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/thread_attachments.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -16,6 +17,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
@@ -300,7 +302,21 @@ class _ThreadPageState extends State<ThreadPage> {
 						resizeToAvoidBottomInset: false,
 						navigationBar: CupertinoNavigationBar(
 							transitionBetweenRoutes: false,
-							middle: AutoSizeText(title),
+							middle: Row(
+								mainAxisAlignment: MainAxisAlignment.center,
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									if (ImageboardRegistry.instance.count > 1) Padding(
+										padding: const EdgeInsets.only(right: 6),
+										child: ImageboardIcon(
+											imageboardKey: context.read<Imageboard>().key
+										)
+									),
+									Flexible(
+										child: AutoSizeText(title)
+									)
+								]
+							),
 							trailing: Row(
 								mainAxisSize: MainAxisSize.min,
 								children: [
@@ -565,6 +581,10 @@ class _ThreadPageState extends State<ThreadPage> {
 																				post: post,
 																				onThumbnailTap: (attachment) {
 																					_showGallery(initialAttachment: attachment);
+																				},
+																				onThumbnailLoadError: (a, b) {
+																					print(a);
+																					print(b);
 																				},
 																				onRequestArchive: _switchToArchive
 																			);

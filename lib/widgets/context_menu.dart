@@ -1,5 +1,10 @@
 import 'dart:math';
 
+import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/notifications.dart';
+import 'package:chan/services/persistence.dart';
+import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +44,13 @@ class _ContextMenuState extends State<ContextMenu> {
 
 	@override
 	Widget build(BuildContext context) {
-		final zone = context.watch<PostSpanZoneData?>();
+		// Using select to only rebuild when object changes, not on its updates
+		final zone = context.select<PostSpanZoneData?, PostSpanZoneData?>((z) => z);
+		final imageboard = context.select<Imageboard?, Imageboard?>((i) => i);
+		final site = context.watch<ImageboardSite?>();
+		final persistence = context.select<Persistence?, Persistence?>((p) => p);
+		final threadWatcher = context.select<ThreadWatcher?, ThreadWatcher?>((w) => w);
+		final notifications = context.watch<Notifications?>();
 		final child = GestureDetector(
 			onSecondaryTapUp: (event) {
 				final topOfUsableSpace = MediaQuery.of(context).size.height * 0.8;
@@ -139,8 +150,15 @@ class _ContextMenuState extends State<ContextMenu> {
 							);
 						}
 					),
-					child: (zone == null) ? widget.child : ChangeNotifierProvider.value(
-						value: zone,
+					child: MultiProvider(
+						providers: [
+							if (zone != null) ChangeNotifierProvider<PostSpanZoneData>.value(value: zone),
+							if (imageboard != null) ChangeNotifierProvider<Imageboard>.value(value: imageboard),
+							if (site != null) Provider<ImageboardSite>.value(value: site),
+							if (persistence != null) ChangeNotifierProvider<Persistence>.value(value: persistence),
+							if (threadWatcher != null) ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher),
+							if (notifications != null) Provider<Notifications>.value(value: notifications)
+						],
 						child: widget.child
 					)
 				)

@@ -3,14 +3,17 @@ import 'dart:math';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/board_switcher.dart';
+import 'package:chan/pages/imageboard_switcher.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/thread_row.dart';
@@ -31,7 +34,7 @@ class BoardPage extends StatefulWidget {
 	final int semanticId;
 	final ImageboardBoard? initialBoard;
 	final bool allowChangingBoard;
-	final ValueChanged<ImageboardBoard>? onBoardChanged;
+	final ValueChanged<ImageboardScoped<ImageboardBoard>>? onBoardChanged;
 	final ValueChanged<ThreadIdentifier>? onThreadSelected;
 	final ThreadIdentifier? selectedThread;
 	final String? initialSearch;
@@ -39,7 +42,7 @@ class BoardPage extends StatefulWidget {
 	final ValueChanged<String>? onDraftTextChanged;
 	final String Function()? getInitialDraftSubject;
 	final ValueChanged<String>? onDraftSubjectChanged;
-	final ValueChanged<ThreadIdentifier>? onWantOpenThreadInNewTab;
+	final void Function(String, ThreadIdentifier)? onWantOpenThreadInNewTab;
 	const BoardPage({
 		required this.initialBoard,
 		this.allowChangingBoard = true,
@@ -89,14 +92,19 @@ class _BoardPageState extends State<BoardPage> {
 	}
 
 	void _selectBoard() async {
-		final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(
-			builder: (ctx) => const BoardSwitcherPage(),
+		final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+			builder: (ctx) => ImageboardSwitcherPage(
+				initialImageboardKey: context.read<Imageboard?>()?.key,
+				builder: (ctx) => BoardSwitcherPage(
+					key: UniqueKey()
+				)
+			),
 			showAnimations: context.read<EffectiveSettings>().showAnimations
 		));
 		if (newBoard != null) {
 			widget.onBoardChanged?.call(newBoard);
 			setState(() {
-				board = newBoard;
+				board = newBoard.item;
 				_listController.scrollController?.jumpTo(0);
 			});
 		}
@@ -104,7 +112,8 @@ class _BoardPageState extends State<BoardPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final site = context.watch<ImageboardSite>();
+		final imageboard = context.watch<Imageboard?>();
+		final site = context.watch<ImageboardSite?>();
 		final settings = context.watch<EffectiveSettings>();
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
@@ -122,8 +131,17 @@ class _BoardPageState extends State<BoardPage> {
 					child: Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							if (board != null) Text('/${board!.name}/')
-							else const Text('Select Board'),
+							if (imageboard != null) ...[
+								if (ImageboardRegistry.instance.count > 1) ...[
+									ImageboardIcon(
+										imageboardKey: imageboard.key
+									),
+									const Text(' ')
+								],
+								if (board != null) Text('/${board!.name}/')
+								else const Text('Select Board')
+							]
+							else const Text('Select Imageboard'),
 							if (widget.allowChangingBoard) const Icon(Icons.arrow_drop_down)
 						]
 					)
@@ -256,7 +274,9 @@ class _BoardPageState extends State<BoardPage> {
 											}
 										}
 									},
-									child: Stack(
+									child: site == null ? const Center(
+										child: ErrorMessageCard('No imageboard selected')
+									) : Stack(
 										fit: StackFit.expand,
 										children: [
 											RefreshableList<Thread>(
@@ -320,7 +340,7 @@ class _BoardPageState extends State<BoardPage> {
 																child: const Text('Open in new tab'),
 																trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
 																onPressed: () {
-																	widget.onWantOpenThreadInNewTab?.call(thread.identifier);
+																	widget.onWantOpenThreadInNewTab?.call(imageboard!.key, thread.identifier);
 																}
 															),
 															if (isSaved) ContextMenuAction(

@@ -430,4 +430,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			client: client
 		));
 	}
+
+	@override
+	bool operator == (Object other) => (other is FoolFuukaArchive) && (other.name == name) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl);
+
+	@override
+	int get hashCode => Object.hash(name, baseUrl, staticUrl);
 }

@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/flag.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html_unescape/html_unescape_small.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
@@ -49,7 +51,7 @@ class SiteLainchan extends ImageboardSite {
 					elements.add(PostLineBreakSpan());
 				}
 				else if (node.localName == 'a' && node.attributes['href'] != null) {
-					final match = RegExp(r'^\/(\w+)\/res\/(\d+).html#(\d+)').firstMatch(node.attributes['href']!);
+					final match = RegExp(r'^\/(\w+)\/\/?res\/(\d+).html#(\d+)').firstMatch(node.attributes['href']!);
 					if (match != null) {
 						elements.add(PostQuoteLinkSpan(
 							board: match.group(1)!,
@@ -81,18 +83,34 @@ class SiteLainchan extends ImageboardSite {
 		return PostNodeSpan(elements);
 	}
 
+	@protected
+	Uri getAttachmentUrl(String board, String filename) => Uri.https(baseUrl, '/$board/src/$filename');
+
+	@protected
+	Uri getThumbnailUrl(String board, String filename) => Uri.https(baseUrl, '/$board/thumb/$filename');
+
+	@protected
+	String? get imageThumbnailExtension => '.png';
+
 	Attachment? _makeAttachment(String board, int threadId, dynamic data) {
 		if (data['tim'] != null) {
-			final id = int.parse(data['tim']);
+			final id = int.tryParse(data['tim']) ?? int.tryParse(data['tim'].split('-').first) ?? data['time'];
 			final String ext = data['ext'];
+			AttachmentType type = AttachmentType.image;
+			if (ext == '.webm') {
+				type = AttachmentType.webm;
+			}
+			else if (ext == '.mp4') {
+				type = AttachmentType.mp4;
+			}
 			return Attachment(
 				id: id,
-				type: data['ext'] == '.webm' ? AttachmentType.webm : AttachmentType.image,
+				type: type,
 				filename: _unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
 				ext: ext,
 				board: board,
-				url: Uri.https(baseUrl, '/$board/src/$id$ext'),
-				thumbnailUrl: Uri.https(baseUrl, '/$board/thumb/$id${data['ext'] == '.webm' ? '.jpg' : '.png'}'),
+				url: getAttachmentUrl(board, '${data['tim']}$ext'),
+				thumbnailUrl: getThumbnailUrl(board, '${data['tim']}${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}'),
 				md5: data['md5'],
 				spoiler: data['spoiler'] == 1,
 				width: data['w'],
@@ -103,6 +121,19 @@ class SiteLainchan extends ImageboardSite {
 		}
 		return null;
 	}
+
+	ImageboardFlag? _makeFlag(dynamic data) {
+		if (data['country'] != null && data['country_name'] != null) {
+			return ImageboardFlag(
+				name: data['country_name'],
+				imageUrl: Uri.https(baseUrl, '/static/flags/${data['country'].toLowerCase()}.png').toString(),
+				imageWidth: 16,
+				imageHeight: 11
+			);
+		}
+		return null;
+	}
+
 	Post _makePost(String board, int threadId, dynamic data) {
 		return Post(
 			board: board,
@@ -114,7 +145,8 @@ class SiteLainchan extends ImageboardSite {
 			attachment: _makeAttachment(board, threadId, data),
 			attachmentDeleted: data['filedeleted'] == 1,
 			spanFormat: PostSpanFormat.lainchan,
-			posterId: data['id']
+			posterId: data['id'],
+			flag: _makeFlag(data)
 		);
 	}
 
@@ -135,6 +167,10 @@ class SiteLainchan extends ImageboardSite {
 		}
 		final firstPost = response.data['posts'][0];
 		final List<Post> posts = (response.data['posts'] ?? []).map<Post>((postData) => _makePost(thread.board, thread.id, postData)).toList();
+		if (posts.first.attachment != null) {
+			await ensureCookiesMemoized(posts.first.attachment!.url);
+			await ensureCookiesMemoized(posts.first.attachment!.thumbnailUrl);
+		}
 		return Thread(
 			board: thread.board,
 			id: thread.id,
@@ -144,7 +180,8 @@ class SiteLainchan extends ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(firstPost['time'] * 1000),
 			replyCount: posts.length - 1,
 			imageCount: posts.where((p) => p.attachment != null).length - 1,
-			posts_: posts
+			posts_: posts,
+			flag: posts.first.flag
 		);
 	}
 	@override
@@ -174,7 +211,8 @@ class SiteLainchan extends ImageboardSite {
 					imageCount: threadData['images'],
 					isSticky: threadData['sticky'] == 1,
 					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
-					currentPage: page['page']
+					currentPage: page['page'],
+					flag: _makeFlag(threadData)
 				);
 				threads.add(thread);
 			}
@@ -182,7 +220,8 @@ class SiteLainchan extends ImageboardSite {
 		return threads;
 	}
 
-	Future<List<ImageboardBoard>> _getBoards() async {
+	@protected
+	Future<List<ImageboardBoard>> getBoardsOnce() async {
 		final response = await client.get(Uri.https(baseUrl, '/boards.json').toString(), options: Options(
 			responseType: ResponseType.json
 		));
@@ -193,9 +232,10 @@ class SiteLainchan extends ImageboardSite {
 			webmAudioAllowed: board['webm_audio'] == 1
 		)).toList();
 	}
+
 	@override
 	Future<List<ImageboardBoard>> getBoards() async {
-		_boards ??= await _getBoards();
+		_boards ??= await getBoardsOnce();
 		return _boards!;
 	}
 
@@ -239,6 +279,10 @@ class SiteLainchan extends ImageboardSite {
 		if (options.isNotEmpty) {
 			fields['email'] = options;
 		}
+		if (captchaSolution is SecurimageCaptchaSolution) {
+			fields['captcha_cookie'] = captchaSolution.cookie;
+			fields['captcha_text'] = captchaSolution.response;
+		}
 		final response = await client.post(
 			Uri.https(baseUrl, '/post.php').toString(),
 			data: FormData.fromMap(fields),
@@ -250,7 +294,7 @@ class SiteLainchan extends ImageboardSite {
 				}
 			)
 		);
-		if (response.statusCode == 500) {
+		if (response.statusCode == 500 || response.statusCode == 400) {
 			throw PostFailedException(parse(response.data).querySelector('h2')?.text ?? 'Unknown error');
 		}
 		if (response.isRedirect ?? false) {
@@ -439,4 +483,13 @@ class SiteLainchan extends ImageboardSite {
 	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async {
 		return [];
 	}
+
+	@override
+	bool operator ==(Object other) => (other is SiteLainchan) && (other.name == name) && (other.baseUrl == baseUrl);
+
+	@override
+	int get hashCode => Object.hash(name, baseUrl);
+	
+	@override
+	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
 }

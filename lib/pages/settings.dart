@@ -9,6 +9,7 @@ import 'package:chan/pages/board.dart';
 import 'package:chan/pages/licenses.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
@@ -108,11 +109,7 @@ class _SettingsPageButton extends StatelessWidget {
 }
 
 class SettingsPage extends StatelessWidget {
-	final Persistence realPersistence;
-	final ImageboardSite realSite;
 	const SettingsPage({
-		required this.realPersistence,
-		required this.realSite,
 		Key? key
 	}) : super(key: key);
 
@@ -205,8 +202,8 @@ class SettingsPage extends StatelessWidget {
 						children: [
 							TableRow(
 								children: [
-									const Text('Imageboard'),
-									Text(realSite.name, textAlign: TextAlign.right)
+									const Text('Imageboard(s)'),
+									Text(ImageboardRegistry.instance.imageboards.map((b) => b.key).join(', '), textAlign: TextAlign.right)
 								]
 							),
 								...{
@@ -268,10 +265,7 @@ class SettingsPage extends StatelessWidget {
 				),
 				_SettingsPageButton(
 					title: 'Behavior Settings',
-					pageBuilder: (context) => SettingsBehaviorPage(
-						realSite: realSite,
-						realPersistence: realPersistence
-					)
+					pageBuilder: (context) => const SettingsBehaviorPage()
 				),
 				Divider(
 					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
@@ -285,9 +279,7 @@ class SettingsPage extends StatelessWidget {
 				),
 				_SettingsPageButton(
 					title: 'Data Settings',
-					pageBuilder: (context) => SettingsDataPage(
-						realPersistence: realPersistence
-					)
+					pageBuilder: (context) => const SettingsDataPage()
 				),
 				Divider(
 					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
@@ -311,11 +303,7 @@ class SettingsPage extends StatelessWidget {
 }
 
 class SettingsBehaviorPage extends StatelessWidget {
-	final ImageboardSite realSite;
-	final Persistence realPersistence;
 	const SettingsBehaviorPage({
-		required this.realSite,
-		required this.realPersistence,
 		Key? key
 	}) : super(key: key);
 
@@ -329,39 +317,41 @@ class SettingsBehaviorPage extends StatelessWidget {
 					initialConfiguration: settings.filterConfiguration,
 				),
 				const SizedBox(height: 16),
-				const Text('Image filter'),
-				Padding(
-					padding: const EdgeInsets.all(16),
-					child: Row(
-						children: [
-							Text('Ignoring ${describeCount(realPersistence.browserState.hiddenImageMD5s.length, 'image')}'),
-							const Spacer(),
-							CupertinoButton.filled(
-								padding: const EdgeInsets.all(16),
-								onPressed: () async {
-									final md5sBefore = realPersistence.browserState.hiddenImageMD5s;
-									await Navigator.of(context).push(FullWidthCupertinoPageRoute(
-										showAnimations: settings.showAnimations,
-										builder: (context) => SettingsImageFilterPage(
-											browserState: realPersistence.browserState
-										)
-									));
-									if (!setEquals(md5sBefore, realPersistence.browserState.hiddenImageMD5s)) {
-										realPersistence.didUpdateBrowserState();
-									}
-								},
-								child: const Text('Configure')
-							)
-						]
-					)
-				),
-				if (realSite.getLoginSystemName() != null) ...[
-					Text(realSite.getLoginSystemName()!),
-					const SizedBox(height: 16),
-					SettingsLoginPanel(
-						site: realSite
+				for (final imageboard in ImageboardRegistry.instance.imageboards) ...[
+					Text('Image filter - ${imageboard.key}'),
+					Padding(
+						padding: const EdgeInsets.all(16),
+						child: Row(
+							children: [
+								Text('Ignoring ${describeCount(imageboard.persistence.browserState.hiddenImageMD5s.length, 'image')}'),
+								const Spacer(),
+								CupertinoButton.filled(
+									padding: const EdgeInsets.all(16),
+									onPressed: () async {
+										final md5sBefore = imageboard.persistence.browserState.hiddenImageMD5s;
+										await Navigator.of(context).push(FullWidthCupertinoPageRoute(
+											showAnimations: settings.showAnimations,
+											builder: (context) => SettingsImageFilterPage(
+												browserState: imageboard.persistence.browserState
+											)
+										));
+										if (!setEquals(md5sBefore, imageboard.persistence.browserState.hiddenImageMD5s)) {
+											imageboard.persistence.didUpdateBrowserState();
+										}
+									},
+									child: const Text('Configure')
+								)
+							]
+						)
 					),
-					const SizedBox(height: 32)
+					if (imageboard.site.getLoginSystemName() != null) ...[
+						Text(imageboard.site.getLoginSystemName()!),
+						const SizedBox(height: 16),
+						SettingsLoginPanel(
+							site: imageboard.site
+						),
+						const SizedBox(height: 32)
+					],
 				],
 				const Text('Automatically load attachments in gallery'),
 				const SizedBox(height: 16),
@@ -1335,9 +1325,7 @@ class SettingsAppearancePage extends StatelessWidget {
 }
 
 class SettingsDataPage extends StatelessWidget {
-	final Persistence realPersistence;
 	const SettingsDataPage({
-		required this.realPersistence,
 		Key? key
 	}) : super(key: key);
 
@@ -1478,11 +1466,13 @@ class SettingsDataPage extends StatelessWidget {
 				const Text('Cached media'),
 				const SettingsCachePanel(),
 				const SizedBox(height: 16),
-				const Text('Cached threads and history'),
-				SettingsThreadsPanel(
-					persistence: realPersistence
-				),
-				const SizedBox(height: 16),
+				for (final imageboard in ImageboardRegistry.instance.imageboards) ...[
+					Text('Cached threads and history - ${imageboard.key}'),
+					SettingsThreadsPanel(
+						persistence: imageboard.persistence
+					),
+					const SizedBox(height: 16),
+				],
 				Center(
 					child: CupertinoButton.filled(
 						child: const Text('Clear API cookies'),

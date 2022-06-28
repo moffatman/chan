@@ -24,12 +24,6 @@ class WrappedArchive extends ImageboardSite {
   List<ImageboardSiteArchive> get archives => [];
 
   @override
-  BuildContext get context => archive.context;
-
-  @override
-  set context(BuildContext value) => archive.context = value;
-
-  @override
   Dio get client => archive.client;
 
   @override
@@ -153,6 +147,9 @@ class WrappedArchive extends ImageboardSite {
   Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async {
     return [];
   }
+
+  @override
+  Uri get iconUrl => Uri.https('google.com', '/favicon.ico');
 }
 
 class ArchiveDebuggingPage extends StatelessWidget {

@@ -6,6 +6,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/search_query.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/share.dart';
@@ -218,15 +219,18 @@ class AttachmentViewerController extends ChangeNotifier {
 					}
 				}
 			}
-			else if (attachment.type == AttachmentType.webm) {
+			else if (attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4) {
 				final url = await _getGoodSource();
-				if (Platform.isAndroid) {
-					final scan = await MediaScan.scan(url);
+				if (Platform.isAndroid || attachment.type == AttachmentType.mp4) {
+					final scan = await MediaScan.scan(url, headers: site.getHeaders(url) ?? {});
 					_hasAudio = scan.hasAudio;
 					if (_isDisposed) {
 						return;
 					}
-					_videoPlayerController = VideoPlayerController.network(url.toString());
+					_videoPlayerController = VideoPlayerController.network(
+						url.toString(),
+						httpHeaders: site.getHeaders(url) ?? {}
+					);
 					await _videoPlayerController!.initialize();
 					if (_isDisposed) {
 						return;
@@ -250,7 +254,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					notifyListeners();
 				}
 				else {
-					_ongoingConversion = MediaConversion.toMp4(url);
+					_ongoingConversion = MediaConversion.toMp4(url, headers: site.getHeaders(url) ?? {});
 					_ongoingConversion!.progress.addListener(_onConversionProgressUpdate);
 					_ongoingConversion!.start();
 					final result = await _ongoingConversion!.result;
@@ -715,7 +719,11 @@ class AttachmentViewer extends StatelessWidget {
 					CupertinoContextMenuAction(
 						trailingIcon: Icons.image_search,
 						onPressed: () {
-							openSearch(context: context, query: ImageboardArchiveSearchQuery(boards: [attachment.board], md5: attachment.md5));
+							openSearch(context: context, query: ImageboardArchiveSearchQuery(
+								imageboardKey: context.read<Imageboard>().key,
+								boards: [attachment.board],
+								md5: attachment.md5)
+							);
 						},
 						child: const Text('Search archives')
 					),

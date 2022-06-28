@@ -2,14 +2,17 @@ import 'dart:convert';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/models/search.dart';
+import 'package:chan/pages/imageboard_switcher.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search_query.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_thin_button.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/cupertino.dart';
@@ -42,11 +45,20 @@ class _SearchPageState extends State<SearchPage> {
 						Navigator.of(context).push(FullWidthCupertinoPageRoute(
 							builder: (context) => ValueListenableBuilder(
 								valueListenable: _valueInjector,
-								builder: (context, ImageboardArchiveSearchResult? selectedResult, child) => SearchQueryPage(
-									query: query,
-									selectedResult: _valueInjector.value,
-									onResultSelected: setValue
-								)
+								builder: (context, ImageboardArchiveSearchResult? selectedResult, child) {
+									final child = SearchQueryPage(
+										query: query,
+										selectedResult: _valueInjector.value,
+										onResultSelected: setValue
+									);
+									if (query.imageboardKey == null) {
+										return child;
+									}
+									return ImageboardScope(
+										imageboardKey: query.imageboardKey!,
+										child: child
+									);
+								}
 							),
 							showAnimations: context.read<EffectiveSettings>().showAnimations,
 							settings: dontAutoPopSettings
@@ -132,13 +144,20 @@ class _SearchComposePageState extends State<SearchComposePage> {
 	DateTime? _chosenDate;
 	bool _searchFocused = false;
 	bool _showingPicker = false;
-	late String _lastBoardName;
+	late String? _lastImageboardKey;
+	late String? _lastBoardName;
 
 	@override
 	void initState() {
 		super.initState();
-		_lastBoardName = context.read<Persistence>().currentBoardName;
-		query = ImageboardArchiveSearchQuery(boards: [_lastBoardName]);
+		_lastImageboardKey = Persistence.tabs[Persistence.currentTabIndex].imageboardKey;
+		_lastBoardName = Persistence.tabs[Persistence.currentTabIndex].board?.name;
+		query = ImageboardArchiveSearchQuery(
+			imageboardKey: _lastImageboardKey,
+			boards: [
+				if (_lastBoardName != null) _lastBoardName!
+			]
+		);
 		_focusNode.addListener(() {
 			final bool isFocused = _focusNode.hasFocus;
 			if (mounted && (isFocused != _searchFocused) && !_showingPicker) {
@@ -195,9 +214,9 @@ class _SearchComposePageState extends State<SearchComposePage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final currentBoardName = context.watch<Persistence>().currentBoardName;
+		final currentBoardName = Persistence.tabs[Persistence.currentTabIndex].board?.name ?? 'tv';
 		if (currentBoardName != _lastBoardName) {
-			if (query.boards.first == _lastBoardName) {
+			if (query.boards.isEmpty || query.boards.first == _lastBoardName) {
 				query.boards = [currentBoardName];
 			}
 			_lastBoardName = currentBoardName;
@@ -221,13 +240,16 @@ class _SearchComposePageState extends State<SearchComposePage> {
 											color: Colors.white
 										)),
 										onPressed: () async {
-											final newBoard = await Navigator.of(context).push<ImageboardBoard>(TransparentRoute(
-												builder: (ctx) => const BoardSwitcherPage(),
+											final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+												builder: (ctx) => ImageboardSwitcherPage(
+													builder: (ctx) => const BoardSwitcherPage()
+												),
 												showAnimations: context.read<EffectiveSettings>().showAnimations
 											));
 											if (newBoard != null) {
 												setState(() {
-													query.boards = [newBoard.name];
+													query.imageboardKey = newBoard.imageboard.key;
+													query.boards = [newBoard.item.name];
 												});
 											}
 										}
@@ -269,8 +291,8 @@ class _SearchComposePageState extends State<SearchComposePage> {
 													onSubmitted: (String q) {
 														_controller.clear();
 														FocusManager.instance.primaryFocus!.unfocus();
-														context.read<Persistence>().recentSearches.add(query.clone());
-														context.read<Persistence>().didUpdateRecentSearches();
+														Persistence.recentSearches.add(query.clone());
+														Persistence.didUpdateRecentSearches();
 														widget.onSearchComposed(query);
 													},
 													onSuffixTap: () {
@@ -293,7 +315,10 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										FocusManager.instance.primaryFocus!.unfocus();
 										_controller.clear();
 										_searchFocused = false;
-										query = ImageboardArchiveSearchQuery(boards: query.boards);
+										query = ImageboardArchiveSearchQuery(
+											imageboardKey: query.imageboardKey,
+											boards: query.boards
+										);
 										setState(() {});
 									}
 								)
@@ -436,12 +461,12 @@ class _SearchComposePageState extends State<SearchComposePage> {
 					]
 				) : ListView(
 					key: const ValueKey(false),
-					children: context.watch<Persistence>().recentSearches.entries.map((q) {
+					children: Persistence.recentSearches.entries.map((q) {
 						return GestureDetector(
 							behavior: HitTestBehavior.opaque,
 							onTap: () {
-								context.read<Persistence>().recentSearches.bump(q);
-								context.read<Persistence>().didUpdateRecentSearches();
+								Persistence.recentSearches.bump(q);
+								Persistence.didUpdateRecentSearches();
 								widget.onSearchComposed(q);
 							},
 							child: Container(
@@ -462,8 +487,8 @@ class _SearchComposePageState extends State<SearchComposePage> {
 											padding: EdgeInsets.zero,
 											child: const Icon(CupertinoIcons.xmark),
 											onPressed: () {
-												context.read<Persistence>().recentSearches.remove(q);
-												context.read<Persistence>().didUpdateRecentSearches();
+												Persistence.recentSearches.remove(q);
+												Persistence.didUpdateRecentSearches();
 												setState(() {});
 											}
 										)

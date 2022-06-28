@@ -7,7 +7,9 @@ enum AttachmentType {
 	@HiveField(0)
 	image,
 	@HiveField(1)
-	webm
+	webm,
+	@HiveField(2)
+	mp4
 }
 
 @HiveType(typeId: 9)
@@ -25,7 +27,7 @@ class Attachment {
 	@HiveField(5)
 	final Uri url;
 	@HiveField(6)
-	final Uri thumbnailUrl;
+	Uri thumbnailUrl;
 	@HiveField(7)
 	final String md5;
 	@HiveField(8)

@@ -10,8 +10,10 @@ import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/foolfuuka.dart';
+import 'package:chan/sites/frenschan.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:chan/sites/soyjak.dart';
 import 'package:chan/util.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/widgets.dart';
@@ -19,7 +21,7 @@ import 'package:flutter/widgets.dart';
 import '../models/thread.dart';
 
 import 'package:dio/dio.dart';
-const userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/605.1.15 (KHTML, like Gecko)';
+const userAgent = 'Mdozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/605.1.15 (KHTML, like Gecko)';
 
 class PostNotFoundException implements Exception {
 	String board;
@@ -71,6 +73,20 @@ class ImageboardArchiveException implements Exception {
 	String toString() => archiveErrors.entries.map((e) => '${e.key}: ${e.value}').join('\n');
 }
 
+class UnknownSiteTypeException implements Exception {
+	final String siteType;
+	const UnknownSiteTypeException(this.siteType);
+	@override
+	String toString() => 'Unknown site type "$siteType"\nAn app update might be required.';
+}
+
+class UnknownArchiveTypeException implements Exception {
+	final String siteType;
+	const UnknownArchiveTypeException(this.siteType);
+	@override
+	String toString() => 'Unknown archive type "$siteType"\nAn app update might be required.';
+}
+
 enum ImageboardAction {
 	postThread,
 	postReply,
@@ -103,6 +119,15 @@ class Chan4CustomCaptchaRequest extends CaptchaRequest {
 	});
 	@override
 	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl)';
+}
+
+class SecurimageCaptchaRequest extends CaptchaRequest {
+	final Uri challengeUrl;
+	SecurimageCaptchaRequest({
+		required this.challengeUrl
+	});
+	@override
+	String toString() => 'SecurimageCaptchaRequest(challengeUrl: $challengeUrl)';
 }
 
 abstract class CaptchaSolution {
@@ -139,6 +164,20 @@ class Chan4CustomCaptchaSolution extends CaptchaSolution {
 	});
 	@override
 	String toString() => 'Chan4CustomCaptchaSolution(challenge: $challenge, response: $response)';
+}
+
+class SecurimageCaptchaSolution extends CaptchaSolution {
+	final String cookie;
+	final String response;
+	@override
+	final DateTime expiresAt;
+	SecurimageCaptchaSolution({
+		required this.cookie,
+		required this.response,
+		required this.expiresAt
+	});
+	@override
+	String toString() => 'SecurimageCaptchaSolution(cookie: $cookie, response: $response)';
 }
 
 class ImageboardArchiveSearchResult {
@@ -216,11 +255,6 @@ class ImageboardBoardFlag {
 
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
-	BuildContext? _context;
-	BuildContext get context => _context!;
-	set context(BuildContext value) {
-		_context = value;
-	}
 	ImageboardSiteArchive() {
 		client.interceptors.add(CookieManager(Persistence.cookies));
 		client.interceptors.add(InterceptorsWrapper(
@@ -229,7 +263,7 @@ abstract class ImageboardSiteArchive {
 				handler.next(options);
 			}
 		));
-		client.interceptors.add(CloudflareInterceptor(this));
+		client.interceptors.add(CloudflareInterceptor());
 	}
 	String get name;
 	Future<Post> getPost(String board, int id);
@@ -252,15 +286,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Map<String, String>? getHeaders(Uri url) {
 		return memoizedHeaders[url.host];
 	}
-	@override
-	set context(BuildContext value) {
-		super.context = value;
-		for (final archive in archives) {
-			archive.context = value;
-		}
-	}
 	Uri get passIconUrl;
 	String get imageUrl;
+	Uri get iconUrl;
 	CaptchaRequest getCaptchaRequest(String board, [int? threadId]);
 	Future<PostReceipt> createThread({
 		required String board,
@@ -392,9 +420,21 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	ThreadOrPostIdentifier? decodeUrl(String url);
 }
 
-ImageboardSite makeSite(BuildContext context, dynamic data) {
+ImageboardSite makeSite(dynamic data) {
 	if (data['type'] == 'lainchan') {
 		return SiteLainchan(
+			name: data['name'],
+			baseUrl: data['baseUrl']
+		);
+	}
+	else if (data['type'] == 'soyjak') {
+		return SiteSoyjak(
+			name: data['name'],
+			baseUrl: data['baseUrl']
+		);
+	}
+	else if (data['type'] == 'frenschan') {
+		return SiteFrenschan(
 			name: data['name'],
 			baseUrl: data['baseUrl']
 		);
@@ -432,13 +472,13 @@ ImageboardSite makeSite(BuildContext context, dynamic data) {
 				}
 				else {
 					print(archive);
-					throw UnsupportedError('Unknown archive type "${archive['type']}"');
+					throw UnknownArchiveTypeException(data['type']);
 				}
 			}).toList()
 		);
 	}
 	else {
 		print(data);
-		throw UnsupportedError('Unknown site type "${data['type']}"');
+		throw UnknownSiteTypeException(data['type']);
 	}
 }

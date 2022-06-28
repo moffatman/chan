@@ -75,10 +75,27 @@ class MediaScan {
 	static final Map<_MediaScanCacheEntry, MediaScan> _mediaScanCache = {};
 	static final _ffprobeLock = Mutex();
 
-	static Future<MediaScan> _scan(Uri file) async {
+	static Future<MediaScan> _scan(Uri file, {
+		Map<String, String> headers = const {}
+	}) async {
 		return await _ffprobeLock.protect<MediaScan>(() async {
 			final completer = Completer<MediaScan>();
-			FFprobeKit.getMediaInformationAsync(file.toStringFFMPEG(), (session) async {
+			FFprobeKit.getMediaInformationFromCommandArgumentsAsync([
+				"-v",
+				"error",
+				"-hide_banner",
+				"-print_format",
+				"json",
+				"-show_format",
+				"-show_streams",
+				"-show_chapters",
+				if (headers.isNotEmpty) ...[
+					"-headers",
+					headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
+				],
+				"-i",
+				file.toStringFFMPEG(),
+			], (session) async {
 				try {
 					final output = await session.getOutput();
 					if (output == null) {
@@ -101,15 +118,17 @@ class MediaScan {
 						height: height == 0 ? null : height
 					));
 				}
-				catch (e) {
-					completer.completeError(e);
+				catch (e, st) {
+					completer.completeError(e, st);
 				}
 			});
 			return completer.future;
 		});
 	}
 
-	static Future<MediaScan> scan(Uri file) async {
+	static Future<MediaScan> scan(Uri file, {
+		Map<String, String> headers = const {}
+	}) async {
 		if (file.scheme == 'file') {
 			final size = (await File(file.path).stat()).size;
 			final entry = _MediaScanCacheEntry(file: file, size: size);
@@ -119,7 +138,7 @@ class MediaScan {
 			return _mediaScanCache[entry]!;
 		}
 		else {
-			return _scan(file);
+			return _scan(file, headers: headers);
 		}
 	}
 
@@ -139,6 +158,7 @@ class MediaConversion {
 	bool stripAudio;
 	int? maximumDimension;
 	final String cacheKey;
+	final Map<String, String> headers;
 
 	FFmpegSession? _session;
 
@@ -152,10 +172,13 @@ class MediaConversion {
 		this.maximumDimension,
 		this.stripAudio = false,
 		this.extraOptions = const [],
-		this.cacheKey = ''
+		this.cacheKey = '',
+		this.headers = const {}
 	});
 
-	static MediaConversion toMp4(Uri inputFile) {
+	static MediaConversion toMp4(Uri inputFile, {
+		Map<String, String> headers = const {}
+	}) {
 		List<String> extraOptions = [];
 		if (Platform.isIOS && !RegExp(r'Version 15\.[01]').hasMatch(Platform.operatingSystemVersion)) {
 			extraOptions = ['-vcodec', 'h264_videotoolbox'];
@@ -166,7 +189,8 @@ class MediaConversion {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'mp4',
-			extraOptions: extraOptions
+			extraOptions: extraOptions,
+			headers: headers
 		);
 	}
 
@@ -234,7 +258,7 @@ class MediaConversion {
 		MediaScan? scan;
 		if (outputFileExtension != 'jpg' && outputFileExtension != 'png') {
 			try {
-				scan = await MediaScan.scan(file.uri);
+				scan = await MediaScan.scan(file.uri, headers: headers);
 			}
 			catch (e, st) {
 				print('Error scanning existing file: $e');
@@ -273,7 +297,7 @@ class MediaConversion {
 					throw Exception('Media conversions disabled on desktop');
 				}
 				else {
-					final scan = await MediaScan.scan(inputFile);
+					final scan = await MediaScan.scan(inputFile, headers: headers);
 					int outputBitrate = scan.bitrate ?? 2000000;
 					int? outputDurationInMilliseconds = scan.duration?.inMilliseconds;
 					if (outputFileExtension == 'webm' || outputFileExtension == 'mp4') {
@@ -323,6 +347,10 @@ class MediaConversion {
 					_session = await pool.withResource(() {
 						return FFmpegKit.executeWithArgumentsAsync([
 							'-hwaccel', 'auto',
+							if (headers.isNotEmpty) ...[
+								"-headers",
+								headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
+							],
 							'-i', inputFile.toStringFFMPEG(),
 							'-max_muxing_queue_size', '9999',
 							...extraOptions,

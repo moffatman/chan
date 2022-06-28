@@ -10,6 +10,7 @@ import 'package:chan/pages/settings.dart';
 import 'package:chan/pages/saved.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
@@ -18,18 +19,18 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/notifications_overlay.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'sites/imageboard_site.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/widgets/sticky_media_query.dart';
@@ -98,85 +99,40 @@ class ChanApp extends StatefulWidget {
 }
 
 class _ChanAppState extends State<ChanApp> {
-	ImageboardSite? site;
-	Persistence? persistence;
-	ThreadWatcher? threadWatcher;
 	final settings = EffectiveSettings();
-	late dynamic _lastSite;
-	final Map<String, GlobalKey> _siteKeys = {};
-	String? siteSetupError;
-	String? siteSetupStackTrace;
-	Notifications? notifications;
+	late Map<String, dynamic> _lastSites;
+
+	void _onImageboardRegistryUpdate() {
+		setState(() {});
+	}
 
 	@override
 	void initState() {
 		super.initState();
-		_lastSite = settings.contentSettings.site;
-		setSite(_lastSite);
+		_lastSites = settings.contentSettings.sites;
+		ImageboardRegistry.instance.addListener(_onImageboardRegistryUpdate);
+		ImageboardRegistry.instance.handleSites(
+			settings: settings,
+			context: context,
+			data: _lastSites
+		);
 		settings.addListener(_onSettingsUpdate);
 	}
 
-	void _onSettingsUpdate() {
-		if (settings.contentSettings.site != _lastSite) {
-			_lastSite = settings.contentSettings.site;
-			setSite(_lastSite);
-		}
+	@override
+	void dispose() {
+		super.dispose();
+		ImageboardRegistry.instance.removeListener(_onImageboardRegistryUpdate);
 	}
 
-	Future<void> setSite(dynamic data) async {
-		setState(() {
-			siteSetupError = null;
-		});
-		try {
-			final tmpSite = makeSite(context, data);
-			Persistence? tmpPersistence = persistence;
-			if (tmpPersistence == null || site?.name != tmpSite.name) {
-				tmpPersistence = Persistence(tmpSite.name);
-				await tmpPersistence.initialize();
-				notifications = Notifications(
-					persistence: tmpPersistence,
-					site: tmpSite
-				);
-				await notifications?.initialize();
-				// Only try to reauth on wifi
-				Future.microtask(() async {
-					final savedFields = await tmpSite.getSavedLoginFields();
-					if (savedFields != null && settings.connectivity == ConnectivityResult.wifi) {
-						try {
-							await tmpSite.login(savedFields);
-							print('Auto-logged in');
-						}
-						catch (e) {
-							showToast(
-								context: context,
-								icon: CupertinoIcons.exclamationmark_triangle,
-								message: 'Failed to log in to ${tmpSite.getLoginSystemName()}'
-							);
-							print('Problem auto-logging in: $e');
-						}
-					}
-				});
-			}
-			tmpSite.persistence = tmpPersistence;
-			site = tmpSite;
-			persistence = tmpPersistence;
-			final oldThreadWatcher = threadWatcher;
-			threadWatcher = ThreadWatcher(
-				site: tmpSite,
-				persistence: tmpPersistence,
+	void _onSettingsUpdate() {
+		if (settings.contentSettings.sites != _lastSites) {
+			_lastSites = settings.contentSettings.sites;
+			ImageboardRegistry.instance.handleSites(
 				settings: settings,
-				notifications: notifications!
+				context: context,
+				data: _lastSites
 			);
-			notifications?.localWatcher = threadWatcher!;
-			setState(() {});
-			await Future.delayed(const Duration(seconds: 5));
-			oldThreadWatcher?.dispose();
-		}
-		catch (e, st) {
-			siteSetupError = 'Fatal setup error\n${e.toStringDio()}';
-			siteSetupStackTrace = st.toStringDio();
-			print(e);
-			print(st);
 		}
 	}
 
@@ -202,13 +158,7 @@ class _ChanAppState extends State<ChanApp> {
 			},
 			child: MultiProvider(
 				providers: [
-					ChangeNotifierProvider.value(value: settings),
-					if (threadWatcher != null) ...[
-						Provider<ImageboardSite>.value(value: site!),
-						ChangeNotifierProvider<Persistence>.value(value: persistence!),
-						ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher!),
-						Provider<Notifications>.value(value: notifications!)
-					]
+					ChangeNotifierProvider.value(value: settings)
 				],
 				child: SettingsSystemListener(
 					child: MediaQuery.fromWindow(
@@ -233,22 +183,19 @@ class _ChanAppState extends State<ChanApp> {
 												filter: settings.filter,
 												child: Builder(
 													builder: (BuildContext context) {
-														site?.context = context;
+														ImageboardRegistry.instance.context = context;
 														return DefaultTextStyle(
 															style: CupertinoTheme.of(context).textTheme.textStyle,
 															child: RootCustomScale(
 																scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
-																child: threadWatcher != null ? ChanHomePage(key: _siteKeys.putIfAbsent(site!.name, () => GlobalKey())) : Container(
+																child: ImageboardRegistry.instance.initialized ? const ChanHomePage() : Container(
 																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 																	child: Center(
-																		child: siteSetupError != null ? ErrorMessageCard(siteSetupError!, remedies: {
-																			if (siteSetupStackTrace != null) 'More details': () {
-																				alertError(context, siteSetupStackTrace!);
+																		child: ImageboardRegistry.instance.setupError != null ? ErrorMessageCard(ImageboardRegistry.instance.setupError!, remedies: {
+																			if (ImageboardRegistry.instance.setupStackTrace != null) 'More details': () {
+																				alertError(context, ImageboardRegistry.instance.setupStackTrace!);
 																			},
 																			'Resynchronize': () {
-																				setState(() {
-																					siteSetupError = null;
-																				});
 																				settings.updateContentSettings();
 																			},
 																			'Edit content preferences': () {
@@ -297,19 +244,6 @@ void clearOverlayNotifications(Notifications notifications, Watch watch) {
 	}*/
 }
 
-class _ChanBrowseTab extends ChangeNotifier {
-	final PersistentBrowserTab tab;
-	final tabKey = GlobalKey();
-	final boardKey = GlobalKey();
-	final unseen = ValueNotifier(0);
-
-	_ChanBrowseTab(this.tab);
-
-	void didUpdate() {
-		notifyListeners();
-	}
-}
-
 class ChanHomePage extends StatefulWidget {
 	const ChanHomePage({Key? key}) : super(key: key);
 
@@ -317,38 +251,30 @@ class ChanHomePage extends StatefulWidget {
 	createState() => _ChanHomePageState();
 }
 class _ChanHomePageState extends State<ChanHomePage> {
-	bool initialized = false;
-	String? boardFetchErrorMessage;
 	int _lastIndex = 0;
 	final _keys = <int, GlobalKey>{};
 	final _tabController = CupertinoTabController();
 	bool showTabPopup = false;
-	late final PersistentBrowserState browserState;
-	final tabs = <_ChanBrowseTab>[];
 	late Listenable browseCountListenable;
 	final activeBrowserTab = ValueNotifier<int>(0);
 	final _tabListController = ScrollController();
-	ImageboardSite? devSite;
-	Persistence? devPersistence;
-	ThreadWatcher? devThreadWatcher;
-	Notifications? devNotifications;
+	Imageboard? devImageboard;
 	Timer? _saveBrowserTabsDuringDraftEditingTimer;
 	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
 	final _tabletWillPopZones = <int, WillPopZone>{};
 	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
-	bool _queuedUpdateBrowserState = false;
+	bool _queuedUpdateTabs = false;
 	bool _isScrolling = false;
 	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
-	Notifications? _lastNotifications;
-	StreamSubscription<ThreadOrPostIdentifier>? _lastNotificationsSubscription;
+	final Map<String, StreamSubscription<ThreadOrPostIdentifier>> _notificationsSubscriptions = {};
 
-	void _didUpdateBrowserState() {
+	void _didUpdateTabs() {
 		if (_isScrolling) {
-			_queuedUpdateBrowserState = true;
+			_queuedUpdateTabs = true;
 		}
 		else {
-			context.read<Persistence>().didUpdateBrowserState();
+			Persistence.didUpdateTabs();
 		}
 	}
 
@@ -358,9 +284,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 		else if (notification is ScrollEndNotification) {
 			_isScrolling = false;
-			if (_queuedUpdateBrowserState) {
-				context.read<Persistence>().didUpdateBrowserState();
-				_queuedUpdateBrowserState = false;
+			if (_queuedUpdateTabs) {
+				Persistence.didUpdateTabs();
 			}
 		}
 		return false;
@@ -393,48 +318,19 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	void _setupDevSite() async {
 		final settings = context.read<EffectiveSettings>();
-		devSite = makeSite(context, defaultSite);
-		devPersistence = Persistence('devsite');
-		await devPersistence!.initialize();
-		devNotifications = Notifications(
-			site: devSite!,
-			persistence: devPersistence!
+		final tmpDevImageboard = Imageboard(
+			key: 'dev',
+			siteData: defaultSite,
+			settings: settings
 		);
-		await devNotifications!.initialize();
-		devNotifications!.tapStream.listen(_onDevNotificationTapped);
-		devThreadWatcher = ThreadWatcher(
-			persistence: devPersistence!,
-			site: devSite!,
-			settings: settings,
-			notifications: devNotifications!,
-			watchForStickyOnBoards: ['chance'],
-			interval: const Duration(minutes: 10)
+		await tmpDevImageboard.initialize(
+			threadWatcherInterval: const Duration(minutes: 10),
+			threadWatcherWatchForStickyOnBoards: ['chance']
 		);
-		devNotifications?.localWatcher = devThreadWatcher!;
-		setState(() {});
-	}
-
-	void _setupBoards() async {
-		final persistence = context.read<Persistence>();
-		try {
-			setState(() {
-				boardFetchErrorMessage = null;
-			});
-			final freshBoards = await context.read<ImageboardSite>().getBoards();
-			await persistence.reinitializeBoards(freshBoards);
-			setState(() {
-				initialized = true;
-			});
-		}
-		catch (error, st) {
-			print(error);
-			print(st);
-			if (!initialized) {
-				setState(() {
-					boardFetchErrorMessage = error.toStringDio();
-				});
-			}
-		}
+		tmpDevImageboard.notifications.tapStream.listen(_onDevNotificationTapped);
+		setState(() {
+			devImageboard = tmpDevImageboard;
+		});
 	}
 
 	void _onNewLink(String? link) {
@@ -463,14 +359,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0, orElseLast: (p) => true);
 	}
 
-	void _onNotificationTapped(ThreadOrPostIdentifier notification) async {
+	void _onNotificationTapped(Imageboard imageboard, ThreadOrPostIdentifier notification) async {
 		if (!_goToPost(
 			board: notification.board,
 			threadId: notification.threadId,
 			postId: notification.postId,
 			openNewTabIfNeeded: false
 		)) {
-			final watch = context.read<Persistence>().browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == notification.threadIdentifier);
+			final watch = imageboard.persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == notification.threadIdentifier);
 			if (watch != null) {
 				_tabController.index = 1;
 				_lastIndex = 1;
@@ -496,10 +392,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _consumeLink(String? link) {
-		if (link != null) {
-			final dest = context.read<ImageboardSite>().decodeUrl(link);
-			if (dest != null) {
-				_onNotificationTapped(dest);
+		for (final imageboard in ImageboardRegistry.instance.imageboards) {
+			if (link != null) {
+				final dest = imageboard.site.decodeUrl(link);
+				if (dest != null) {
+					_onNotificationTapped(imageboard, dest);
+					return;
+				}
 			}
 		}
 	}
@@ -520,12 +419,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	@override
 	void initState() {
 		super.initState();
-		initialized = context.read<Persistence>().boards.isNotEmpty;
-		browserState = context.read<Persistence>().browserState;
-		tabs.addAll(browserState.tabs.map((tab) => _ChanBrowseTab(tab)));
-		browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.unseen)]);
-		activeBrowserTab.value = browserState.currentTab;
-		_setupBoards();
+		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
+		activeBrowserTab.value = Persistence.currentTabIndex;
 		_setupDevSite();
 		getInitialLink().then(_onNewLink);
 		linkStream.listen(_onNewLink);
@@ -542,31 +437,34 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	PersistentBrowserTab _addNewTab({
+		String? withImageboardKey,
 		int? atPosition,
 		ThreadIdentifier? withThread,
 		bool activate = false,
 		int? withInitialPostId
 	}) {
-		final pos = atPosition ?? tabs.length;
-		final tab = withThread == null ? PersistentBrowserTab() : PersistentBrowserTab(
+		final pos = atPosition ?? Persistence.tabs.length;
+		final tab = withThread == null ? PersistentBrowserTab(
+			imageboardKey: withImageboardKey
+		) : PersistentBrowserTab(
+			imageboardKey: withImageboardKey,
 			board: context.read<Persistence>().getBoard(withThread.board),
 			thread: withThread
 		);
 		if (withThread != null && withInitialPostId != null) {
 			tab.initialPostId[withThread] = withInitialPostId;
 		}
-		browserState.tabs.insert(pos, tab);
-		tabs.insert(pos, _ChanBrowseTab(tab));
-		browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.unseen)]);
+		Persistence.tabs.insert(pos, tab);
+		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 		if (activate) {
 			_tabController.index = 0;
 			activeBrowserTab.value = pos;
-			browserState.currentTab = pos;
+			Persistence.currentTabIndex = pos;
 		}
 		showTabPopup = true;
-		_didUpdateBrowserState();
+		Persistence.didUpdateTabs();
 		setState(() {});
-		Future.delayed(const Duration(milliseconds: 100), () => _tabListController.animateTo((_tabListController.position.maxScrollExtent / tabs.length) * (pos + 1), duration: const Duration(milliseconds: 500), curve: Curves.ease));
+		Future.delayed(const Duration(milliseconds: 100), () => _tabListController.animateTo((_tabListController.position.maxScrollExtent / Persistence.tabs.length) * (pos + 1), duration: const Duration(milliseconds: 500), curve: Curves.ease));
 		return tab;
 	}
 
@@ -576,7 +474,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		int? postId,
 		required bool openNewTabIfNeeded
 	}) {
-		PersistentBrowserTab? tab = browserState.tabs.tryFirstWhere((tab) => tab.thread?.board == board && tab.thread?.id == threadId);
+		PersistentBrowserTab? tab = Persistence.tabs.tryFirstWhere((tab) => tab.thread?.board == board && tab.thread?.id == threadId);
 		final tabAlreadyExisted = tab != null;
 		if (openNewTabIfNeeded) {
 			tab ??= _addNewTab(
@@ -586,11 +484,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			);
 		}
 		if (tab != null) {
-			final index = browserState.tabs.indexOf(tab);
+			final index = Persistence.tabs.indexOf(tab);
 			_tabController.index = 0;
 			activeBrowserTab.value = index;
-			browserState.currentTab = index;
-			_didUpdateBrowserState();
+			Persistence.currentTabIndex = index;
+			Persistence.didUpdateTabs();
 			setState(() {});
 			if (tabAlreadyExisted && postId != null) {
 				_scrollExistingTab(tab, postId);
@@ -601,80 +499,92 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	Widget _buildTab(BuildContext context, int index, bool active) {
-		final site = context.watch<ImageboardSite>();
-		final persistence = context.select<Persistence, Persistence>((p) => p);
 		Widget child;
 		if (index <= 0) {
 			child = AnimatedBuilder(
 				animation: activeBrowserTab,
 				builder: (context, _) => TabSwitchingView(
 					currentTabIndex: activeBrowserTab.value,
-					tabCount: tabs.length,
+					tabCount: Persistence.tabs.length,
 					tabBuilder: (context, i) {
-						final tabObject = tabs[i];
-						final tab = ImageboardTab(
-							key: tabObject.tabKey,
-							boardKey: tabObject.boardKey,
-							initialBoard: tabObject.tab.board,
-							initialThread: tabObject.tab.thread,
-							onBoardChanged: (newBoard) {
-								tabObject.tab.board = newBoard;
-								// Don't run I/O during the animation
-								Future.delayed(const Duration(seconds: 1), () => _didUpdateBrowserState());
-								tabObject.didUpdate();
-							},
-							onThreadChanged: (newThread) {
-								tabObject.tab.thread = newThread;
-								// Don't run I/O during the animation
-								Future.delayed(const Duration(seconds: 1), () => _didUpdateBrowserState());
-								tabObject.didUpdate();
-							},
-							getInitialThreadDraftText: () => tabObject.tab.draftThread,
-							onThreadDraftTextChanged: (newText) {
-								tabObject.tab.draftThread = newText;
-								_saveBrowserTabsDuringDraftEditingTimer?.cancel();
-								_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), () => _didUpdateBrowserState());
-							},
-							getInitialThreadDraftSubject: () => tabObject.tab.draftSubject,
-							onThreadDraftSubjectChanged: (newSubject) {
-								tabObject.tab.draftSubject = newSubject;
-								_saveBrowserTabsDuringDraftEditingTimer?.cancel();
-								_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), () => _didUpdateBrowserState());
-							},
-							onWantOpenThreadInNewTab: (thread) {
-								_addNewTab(
-									atPosition: tabs.indexOf(tabObject) + 1,
-									withThread: thread
-								);
-							},
-							id: -1 * (i + 10)
-						);
-						return ChangeNotifierProvider.value(
-							value: tabObject,
-							child: Provider.value(
-								value: _tabletWillPopZones.putIfAbsent(index, () => WillPopZone()),
-								child: ValueListenableBuilder(
-									valueListenable: activeBrowserTab,
-									builder: (context, int activeIndex, child) {
-										return i == activeIndex ? tab : PrimaryScrollController.none(
-											child: tab
+						final tabObject = Persistence.tabs[i];
+						return AnimatedBuilder(
+							animation: tabObject,
+							builder: (context, _) {
+								final tab = ImageboardTab(
+									key: tabObject.tabKey,
+									boardKey: tabObject.boardKey,
+									initialBoard: tabObject.board,
+									initialThread: tabObject.thread,
+									onBoardChanged: (newBoard) {
+										tabObject.board = newBoard.item;
+										tabObject.imageboardKey = newBoard.imageboard.key;
+										// Don't run I/O during the animation
+										Future.delayed(const Duration(seconds: 1), Persistence.didUpdateTabs);
+										tabObject.didUpdate();
+									},
+									onThreadChanged: (newThread) {
+										tabObject.thread = newThread;
+										// Don't run I/O during the animation
+										Future.delayed(const Duration(seconds: 1), Persistence.didUpdateTabs);
+										tabObject.didUpdate();
+									},
+									getInitialThreadDraftText: () => tabObject.draftThread,
+									onThreadDraftTextChanged: (newText) {
+										tabObject.draftThread = newText;
+										_saveBrowserTabsDuringDraftEditingTimer?.cancel();
+										_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), Persistence.didUpdateTabs);
+									},
+									getInitialThreadDraftSubject: () => tabObject.draftSubject,
+									onThreadDraftSubjectChanged: (newSubject) {
+										tabObject.draftSubject = newSubject;
+										_saveBrowserTabsDuringDraftEditingTimer?.cancel();
+										_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), Persistence.didUpdateTabs);
+									},
+									onWantOpenThreadInNewTab: (imageboardKey, thread) {
+										_addNewTab(
+											withImageboardKey: imageboardKey,
+											atPosition: Persistence.tabs.indexOf(tabObject) + 1,
+											withThread: thread
 										);
-									}
-								)
-							)
+									},
+									id: -1 * (i + 10)
+								);
+								return Provider.value(
+									value: _tabletWillPopZones.putIfAbsent(index, () => WillPopZone()),
+									child: ValueListenableBuilder(
+										valueListenable: activeBrowserTab,
+										builder: (context, int activeIndex, child) {
+											return i == activeIndex ? child! : PrimaryScrollController.none(
+												child: child!
+											);
+										},
+										child: tabObject.imageboardKey == null ? tab : ImageboardScope(
+											imageboardKey: tabObject.imageboardKey!,
+											child: Builder(
+												builder: (context) => FilterZone(
+													filter: context.select<Persistence, Filter>((p) => p.browserState.imageMD5Filter),
+													child: tab
+												)
+											)
+										)
+									),
+								);
+							}
 						);
 					}
 				)
 			);
 		}
 		else if (index == 1) {
-			child = Provider.value(
+			child = ChangeNotifierProvider.value(
 				value: _savedFakeTab,
 				child: SavedPage(
 					isActive: active,
 					masterDetailKey: _savedMasterDetailKey,
-					onWantOpenThreadInNewTab: (thread) {
+					onWantOpenThreadInNewTab: (imageboardKey, thread) {
 						_addNewTab(
+							withImageboardKey: imageboardKey,
 							withThread: thread,
 							activate: true
 						);
@@ -685,8 +595,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		else if (index == 2) {
 			child = HistoryPage(
 				isActive: active,
-				onWantOpenThreadInNewTab: (thread) {
+				onWantOpenThreadInNewTab: (imageboardKey, thread) {
 					_addNewTab(
+						withImageboardKey: imageboardKey,
 						withThread: thread,
 						activate: true
 					);
@@ -697,7 +608,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			child = const SearchPage();
 		}
 		else {
-			if (devThreadWatcher == null) {
+			if (devImageboard?.threadWatcher == null) {
 				child = const Center(
 					child: CupertinoActivityIndicator()
 				);
@@ -718,20 +629,17 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						},
 						child: MultiProvider(
 							providers: [
-								Provider.value(value: devSite!),
-								ChangeNotifierProvider.value(value: devPersistence!),
-								ChangeNotifierProvider.value(value: devThreadWatcher!),
-								Provider.value(value: devNotifications!)
+								Provider.value(value: devImageboard!.site),
+								ChangeNotifierProvider.value(value: devImageboard!.persistence),
+								ChangeNotifierProvider.value(value: devImageboard!.threadWatcher),
+								Provider.value(value: devImageboard!.notifications)
 							],
 							child: ClipRect(
 								child: Navigator(
 									key: _settingsNavigatorKey,
 									initialRoute: '/',
 									onGenerateRoute: (settings) => FullWidthCupertinoPageRoute(
-										builder: (_) => SettingsPage(
-											realPersistence: persistence,
-											realSite: site
-										),
+										builder: (_) => const SettingsPage(),
 										showAnimations: context.read<EffectiveSettings>().showAnimations
 									)
 								)
@@ -757,7 +665,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Widget _buildTabletIcon(int index, Widget icon, String? label, {
 		bool reorderable = false,
 		Axis axis = Axis.vertical,
-		Widget Function(BuildContext, Widget)? opacityParentBuilder
+		Widget? preLabelInjection
 	}) {
 		final content = AnimatedBuilder(
 			animation: _tabController,
@@ -768,7 +676,20 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						icon,
 						if (label != null) ...[
 							const SizedBox(height: 4),
-							Text(label, style: const TextStyle(fontSize: 15))
+							FittedBox(
+								fit: BoxFit.contain,
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									mainAxisAlignment: MainAxisAlignment.center,
+									children: [
+										if (preLabelInjection != null) ...[
+											preLabelInjection,
+											const SizedBox(width: 4)
+										],
+										Text(label, style: const TextStyle(fontSize: 15))
+									]
+								)
+							)
 						]
 					]
 				)
@@ -776,11 +697,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 		final child = CupertinoButton(
 			padding: axis == Axis.vertical ? const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8) : const EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
-			child: opacityParentBuilder != null ? opacityParentBuilder(context, content) : content,
+			child: content,
 			onPressed: () async {
 				if (index <= 0) {
 					if (activeBrowserTab.value == -1 * index && _tabController.index == 0) {
-						if (tabs.length > 1) {
+						if (Persistence.tabs.length > 1) {
 							final shouldClose = await showCupertinoDialog<bool>(
 								context: context,
 								barrierDismissible: true,
@@ -804,21 +725,20 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								)
 							);
 							if (shouldClose == true) {
-								tabs.removeAt(-1 * index);
-								browserState.tabs.removeAt(-1 * index);
-								browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.unseen)]);
-								final newActiveTabIndex = min(activeBrowserTab.value, tabs.length - 1);
+								Persistence.tabs.removeAt(-1 * index);
+								browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
+								final newActiveTabIndex = min(activeBrowserTab.value, Persistence.tabs.length - 1);
 								activeBrowserTab.value = newActiveTabIndex;
-								browserState.currentTab = newActiveTabIndex;
-								_didUpdateBrowserState();
+								Persistence.currentTabIndex = newActiveTabIndex;
+								_didUpdateTabs();
 								setState(() {});
 							}
 						}
 					}
 					else {
 						activeBrowserTab.value = -1 * index;
-						browserState.currentTab = -1 * index;
-						_didUpdateBrowserState();
+						Persistence.currentTabIndex = -1 * index;
+						_didUpdateTabs();
 					}
 				}
 				else if (index == _lastIndex) {
@@ -867,16 +787,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					)
 				);
 				if (shouldCloseOthers == true) {
-					final tabToPreserve = tabs[activeBrowserTab.value];
-					final persistentTabToPreserve = browserState.tabs[activeBrowserTab.value];
-					tabs.clear();
-					tabs.add(tabToPreserve);
-					browserState.tabs.clear();
-					browserState.tabs.add(persistentTabToPreserve);
-					browseCountListenable = Listenable.merge([activeBrowserTab, ...tabs.map((x) => x.unseen)]);
+					final tabToPreserve = Persistence.tabs[activeBrowserTab.value];
+					Persistence.tabs.clear();
+					Persistence.tabs.add(tabToPreserve);
+					browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 					activeBrowserTab.value = 0;
-					browserState.currentTab = 0;
-					_didUpdateBrowserState();
+					Persistence.currentTabIndex = 0;
+					_didUpdateTabs();
 					setState(() {});
 				}
 			},
@@ -905,20 +822,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			scrollDirection: axis,
 			physics: const BouncingScrollPhysics(),
 			onReorder: (oldIndex, newIndex) {
-				final currentTab = tabs[activeBrowserTab.value];
+				final currentTab = Persistence.tabs[activeBrowserTab.value];
 				if (oldIndex < newIndex) {
 					newIndex -= 1;
 				}
-				final tab = tabs.removeAt(oldIndex);
-				tabs.insert(newIndex, tab);
-				browserState.tabs.removeAt(oldIndex);
-				browserState.tabs.insert(newIndex, tab.tab);
-				activeBrowserTab.value = tabs.indexOf(currentTab);
-				browserState.currentTab = activeBrowserTab.value;
-				_didUpdateBrowserState();
+				final tab = Persistence.tabs.removeAt(oldIndex);
+				Persistence.tabs.insert(newIndex, tab);
+				activeBrowserTab.value = Persistence.tabs.indexOf(currentTab);
+				Persistence.currentTabIndex = activeBrowserTab.value;
+				_didUpdateTabs();
 				setState(() {});
 			},
-			itemCount: tabs.length,
+			itemCount: Persistence.tabs.length,
 			itemBuilder: (context, i) {
 				const blankIcon = SizedBox(
 					width: 30,
@@ -929,16 +844,17 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					index: i,
 					key: ValueKey(i),
 					child: AnimatedBuilder(
-						animation: tabs[i],
+						animation: Persistence.tabs[i],
 						builder: (context, _) {
-							if (tabs[i].tab.thread != null) {
-								return AnimatedBuilder(
-									animation: context.read<Persistence>().listenForPersistentThreadStateChanges(tabs[i].tab.thread!),
+							if (Persistence.tabs[i].thread != null) {
+								final child = AnimatedBuilder(
+									animation: Persistence.tabs[i].imageboard?.persistence.listenForPersistentThreadStateChanges(Persistence.tabs[i].thread!) ?? const AlwaysStoppedAnimation(0),
 									builder: (context, _) {
-										final threadState = context.read<Persistence>().getThreadStateIfExists(tabs[i].tab.thread!);
-										Future.microtask(() => tabs[i].unseen.value = threadState?.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
+										final threadState = Persistence.tabs[i].imageboard?.persistence.getThreadStateIfExists(Persistence.tabs[i].thread!);
+										Future.microtask(() => Persistence.tabs[i].unseen.value = threadState?.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
 										final attachment = threadState?.thread?.attachment;
-										buildIcon() => _buildTabletIcon(i * -1, attachment == null ? blankIcon : ClipRRect(
+										buildIcon() => _buildTabletIcon(i * -1, StationaryNotifyingIcon(
+												icon: attachment == null ? blankIcon : ClipRRect(
 												borderRadius: const BorderRadius.all(Radius.circular(4)),
 												child: AttachmentThumbnail(
 													gaplessPlayback: true,
@@ -948,14 +864,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 													height: 30
 												)
 											),
-											tabs[i].tab.board != null ? '/${tabs[i].tab.board?.name}/' : 'None',
-											reorderable: false,
-											axis: axis,
-											opacityParentBuilder: (context, child) => StationaryNotifyingIcon(
-											icon: child,
 												primary: threadState?.unseenReplyIdsToYou(Filter.of(context))?.length ?? 0,
 												secondary: threadState?.unseenReplyCount(Filter.of(context)) ?? 0
-											)
+											),
+											Persistence.tabs[i].board != null ? '/${Persistence.tabs[i].board?.name}/' : 'None',
+											reorderable: false,
+											axis: axis,
+											preLabelInjection: (ImageboardRegistry.instance.count < 2 || Persistence.tabs[i].imageboardKey == null) ? null : ImageboardIcon(imageboardKey: Persistence.tabs[i].imageboardKey!)
 										);
 										if (threadState != null) {
 											return ValueListenableBuilder(
@@ -966,10 +881,29 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										return buildIcon();
 									}
 								);
+								if (Persistence.tabs[i].imageboardKey == null) {
+									return child;
+								}
+								if (ImageboardRegistry.instance.getImageboard(Persistence.tabs[i].imageboardKey!) == null) {
+									return _buildTabletIcon(
+										i * -1,
+										const SizedBox(
+											width: 30,
+											height: 30,
+											child: Icon(CupertinoIcons.exclamationmark_triangle_fill)
+										),
+										Persistence.tabs[i].imageboardKey,
+										axis: axis
+									);
+								}
+								return ImageboardScope(
+									imageboardKey: Persistence.tabs[i].imageboardKey!,
+									child: child
+								);
 							}
 							else {
-								Future.microtask(() => tabs[i].unseen.value = 0);
-								return _buildTabletIcon(i * -1, blankIcon, tabs[i].tab.board != null ? '/${tabs[i].tab.board?.name}/' : 'None', reorderable: false, axis: axis);
+								Future.microtask(() => Persistence.tabs[i].unseen.value = 0);
+								return _buildTabletIcon(i * -1, blankIcon, Persistence.tabs[i].board != null ? '/${Persistence.tabs[i].board?.name}/' : 'None', reorderable: false, axis: axis);
 							}
 						}
 					)
@@ -1007,30 +941,19 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Widget build(BuildContext context) {
 		final isInTabletLayout = (MediaQuery.of(context).size.width - 85) > (MediaQuery.of(context).size.height - 50);
 		final hideTabletLayoutLabels = MediaQuery.of(context).size.height < 600;
-		final notifications = context.watch<Notifications>();
-		if (notifications != _lastNotifications) {
-			_lastNotificationsSubscription?.cancel();
-			_lastNotificationsSubscription = notifications.tapStream.listen(_onNotificationTapped);
-			_lastNotifications = notifications;
+		if (!ImageboardRegistry.instance.initialized) {
+			return const Center(
+				child: CupertinoActivityIndicator()
+			);
 		}
-		if (!initialized) {
-			if (boardFetchErrorMessage != null) {
-				return Center(
-					child: Column(
-						mainAxisSize: MainAxisSize.min,
-						children: [
-							ErrorMessageCard(boardFetchErrorMessage!, remedies: {
-								'Retry': _setupBoards
-							})
-						]
-					)
-				);
+		for (final board in ImageboardRegistry.instance.imageboards) {
+			if (!board.initialized) {
+				continue;
 			}
-			else {
-				return const Center(
-					child: CupertinoActivityIndicator()
-				);
-			}
+			_notificationsSubscriptions[board.key]?.cancel();
+			_notificationsSubscriptions[board.key] = board.notifications.tapStream.listen((target) {
+				_onNotificationTapped(board, target);
+			});
 		}
 		final child = isInTabletLayout ? NotificationListener<ScrollNotification>(
 			onNotification: _onScrollNotification,
@@ -1073,21 +996,27 @@ class _ChanHomePageState extends State<ChanHomePage> {
 															]
 														)
 													),
-													_buildTabletIcon(1, const Icon(CupertinoIcons.bookmark), hideTabletLayoutLabels ? null : 'Saved',
-														opacityParentBuilder: (context, child) => NotifyingIcon(
-															icon: child,
-															primaryCount: context.read<ThreadWatcher>().unseenYouCount,
-															secondaryCount: context.read<ThreadWatcher>().unseenCount
-														)
+													_buildTabletIcon(1, NotifyingIcon(
+															icon: const Icon(CupertinoIcons.bookmark),
+															primaryCount: CombiningValueListenable<int>(
+																children: ImageboardRegistry.instance.imageboards.where((x) => x.initialized).map((x) => x.threadWatcher.unseenYouCount).toList(),
+																combine: (a, b) => a + b,
+																noChildrenValue: 0
+															),
+															secondaryCount: CombiningValueListenable<int>(
+																children: ImageboardRegistry.instance.imageboards.where((x) => x.initialized).map((x) => x.threadWatcher.unseenCount).toList(),
+																combine: (a, b) => a + b,
+																noChildrenValue: 0
+															)
+														), hideTabletLayoutLabels ? null : 'Saved',
 													),
-													_buildTabletIcon(2, browserState.enableHistory ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History'),
+													_buildTabletIcon(2, Persistence.enableHistory ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History'),
 													_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
-													_buildTabletIcon(4, const Icon(CupertinoIcons.settings), hideTabletLayoutLabels ? null : 'Settings',
-														opacityParentBuilder: (context, child) => NotifyingIcon(
-															icon: child,
-															primaryCount: devThreadWatcher?.unseenYouCount ?? ValueNotifier(0),
-															secondaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0),
-														)
+													_buildTabletIcon(4, NotifyingIcon(
+															icon: const Icon(CupertinoIcons.settings),
+															primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? ValueNotifier(0),
+															secondaryCount: devImageboard?.threadWatcher.unseenCount ?? ValueNotifier(0),
+														), hideTabletLayoutLabels ? null : 'Settings'
 													)
 												]
 											)
@@ -1134,7 +1063,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										builder: (context, child) => StationaryNotifyingIcon(
 											icon: const Icon(CupertinoIcons.rectangle_stack, size: 28),
 											primary: 0,
-											secondary: (tabs.length == 1) ? 0 : tabs.asMap().entries.where((x) => x.key != activeBrowserTab.value || _tabController.index > 0).map((x) => x.value.unseen.value).reduce((a, b) => a + b)
+											secondary: (Persistence.tabs.length == 1) ? 0 : Persistence.tabs.asMap().entries.where((x) => x.key != activeBrowserTab.value || _tabController.index > 0).map((x) => x.value.unseen.value).reduce((a, b) => a + b)
 										)
 									),
 									label: 'Browse'
@@ -1143,14 +1072,22 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									icon: Builder(
 										builder: (context) => NotifyingIcon(
 											icon: const Icon(CupertinoIcons.bookmark, size: 28),
-											primaryCount: context.read<ThreadWatcher>().unseenYouCount,
-											secondaryCount: context.read<ThreadWatcher>().unseenCount
+											primaryCount: CombiningValueListenable<int>(
+												children: ImageboardRegistry.instance.imageboards.where((x) => x.initialized).map((x) => x.threadWatcher.unseenYouCount).toList(),
+												combine: (a, b) => a + b,
+												noChildrenValue: 0
+											),
+											secondaryCount: CombiningValueListenable<int>(
+												children: ImageboardRegistry.instance.imageboards.where((x) => x.initialized).map((x) => x.threadWatcher.unseenCount).toList(),
+												combine: (a, b) => a + b,
+												noChildrenValue: 0
+											)
 										)
 									),
 									label: 'Saved'
 								),
 								BottomNavigationBarItem(
-									icon: browserState.enableHistory ? const Icon(CupertinoIcons.archivebox, size: 28) : const Icon(CupertinoIcons.eye_slash, size: 28),
+									icon: Persistence.enableHistory ? const Icon(CupertinoIcons.archivebox, size: 28) : const Icon(CupertinoIcons.eye_slash, size: 28),
 									label: 'History'
 								),
 								const BottomNavigationBarItem(
@@ -1160,8 +1097,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								BottomNavigationBarItem(
 									icon: NotifyingIcon(
 										icon: const Icon(CupertinoIcons.settings, size: 28),
-										primaryCount: devThreadWatcher?.unseenYouCount ?? ValueNotifier(0),
-										secondaryCount: devThreadWatcher?.unseenCount ?? ValueNotifier(0),
+										primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? ValueNotifier(0),
+										secondaryCount: devImageboard?.threadWatcher.unseenCount ?? ValueNotifier(0),
 									),
 									label: 'Settings'
 								)
@@ -1229,13 +1166,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			onePane: !isInTabletLayout,
 			key: notificationsOverlayKey,
 			notifications: [
-				context.watch<Notifications>(),
-				if (devNotifications != null) devNotifications!
+				...ImageboardRegistry.instance.imageboards.where((x) => x.initialized).map((x) => x.notifications),
+				if (devImageboard?.notifications != null) devImageboard!.notifications
 			],
-			child: FilterZone(
-				filter: context.select<Persistence, Filter>((p) => p.browserState.imageMD5Filter),
-				child: child
-			)
+			child: child
 		);
 	}
 }

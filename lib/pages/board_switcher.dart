@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:chan/models/board.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -138,7 +139,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								onSubmitted: (String board) {
 									final currentBoards = getFilteredBoards();
 									if (currentBoards.isNotEmpty) {
-										Navigator.of(context).pop(currentBoards.first);
+										Navigator.of(context).pop(ImageboardScoped(
+											item: currentBoards.first,
+											imageboard: context.read<Imageboard>()
+										));
 									}
 									else {
 										_focusNode.requestFocus();
@@ -334,12 +338,15 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 														crossAxisAlignment: CrossAxisAlignment.center,
 														children: [
 															const SizedBox(width: 16),
-															AutoSizeText(
-																'/${board.name}/ - ${board.title}',
-																maxFontSize: 20,
-																maxLines: 2,
-																textAlign: TextAlign.left
-															)
+															Flexible(
+																child: AutoSizeText(
+																	'/${board.name}/ - ${board.title}',
+																	maxFontSize: 20,
+																	maxLines: 1,
+																	textAlign: TextAlign.left
+																)
+															),
+															const SizedBox(width: 16)
 														]
 													),
 													if (browserState.favouriteBoards.contains(board.name)) const Align(
@@ -353,7 +360,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											)
 										),
 										onTap: () {
-											Navigator.of(context).pop(board);
+											Navigator.of(context).pop(ImageboardScoped(
+												item: board,
+												imageboard: context.read<Imageboard>()
+											));
 										}
 									);
 								}
@@ -408,7 +418,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											)
 										),
 										onTap: () {
-											Navigator.of(context).pop(board);
+											Navigator.of(context).pop(ImageboardScoped(
+												item: board,
+												imageboard: context.read<Imageboard>()
+											));
 										}
 									);
 								}).toList()

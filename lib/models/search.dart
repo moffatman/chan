@@ -50,6 +50,8 @@ class ImageboardArchiveSearchQuery {
 	String? md5;
 	@HiveField(7, defaultValue: PostDeletionStatusFilter.none)
 	PostDeletionStatusFilter deletionStatusFilter;
+	@HiveField(8)
+	String? imageboardKey;
 	ImageboardArchiveSearchQuery({
 		this.query = '',
 		this.mediaFilter = MediaFilter.none,
@@ -58,7 +60,8 @@ class ImageboardArchiveSearchQuery {
 		this.endDate,
 		List<String>? boards,
 		this.md5,
-		this.deletionStatusFilter = PostDeletionStatusFilter.none
+		this.deletionStatusFilter = PostDeletionStatusFilter.none,
+		required this.imageboardKey
 	}) : boards = boards ?? [];
 
 	ImageboardArchiveSearchQuery clone() {
@@ -70,7 +73,8 @@ class ImageboardArchiveSearchQuery {
 			endDate: (endDate != null) ? DateTime.fromMillisecondsSinceEpoch(endDate!.millisecondsSinceEpoch) : null,
 			boards: [...boards],
 			md5: md5,
-			deletionStatusFilter: deletionStatusFilter
+			deletionStatusFilter: deletionStatusFilter,
+			imageboardKey: imageboardKey
 		);
 	}
 }

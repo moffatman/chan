@@ -2,10 +2,12 @@ import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -34,6 +36,7 @@ class ThreadRow extends StatelessWidget {
 	final ValueChanged<Attachment>? onThumbnailTap;
 	final Iterable<int> semanticParentIds;
 	final bool contentFocus;
+	final bool showSiteIcon;
 	final bool showBoardName;
 	final bool countsUnreliable;
 	final PostSpanRenderOptions? baseOptions;
@@ -44,6 +47,7 @@ class ThreadRow extends StatelessWidget {
 		this.onThumbnailLoadError,
 		this.onThumbnailTap,
 		this.contentFocus = false,
+		this.showSiteIcon = false,
 		this.showBoardName = false,
 		this.countsUnreliable = false,
 		this.semanticParentIds = const [],
@@ -172,6 +176,12 @@ class ThreadRow extends StatelessWidget {
 				),
 				const TextSpan(text: ' ')
 			],
+			if (showSiteIcon) WidgetSpan(
+				alignment: PlaceholderAlignment.middle,
+				child: ImageboardIcon(
+					imageboardKey: context.read<Imageboard>().key
+				)
+			),
 			if (showBoardName || settings.showIdInCatalogHeader) TextSpan(
 				text: showBoardName ?
 					'/${latestThread.board}/${latestThread.id}' :

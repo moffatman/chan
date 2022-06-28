@@ -3,18 +3,31 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class FlagSpan extends WidgetSpan {
-	FlagSpan(ImageboardFlag flag) : super(
-		child: SizedBox(
+class _Flag extends StatelessWidget {
+	final ImageboardFlag flag;
+
+	const _Flag(this.flag);
+
+	@override
+	Widget build(BuildContext context) {
+		return SizedBox(
 			width: flag.imageWidth,
 			height: flag.imageHeight,
 			child: ExtendedImage.network(
 				flag.imageUrl,
 				cache: true,
-				enableLoadState: false
+				enableLoadState: false,
+				headers: context.read<ImageboardSite>().getHeaders(Uri.parse(flag.imageUrl))
 			)
-		),
+		);
+	}
+}
+
+class FlagSpan extends WidgetSpan {
+	FlagSpan(ImageboardFlag flag) : super(
+		child: _Flag(flag),
 		alignment: PlaceholderAlignment.middle
 	);
 }

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/persistence.dart';

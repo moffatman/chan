@@ -1,5 +1,6 @@
 import 'package:chan/pages/selectable_post.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/share.dart';
@@ -552,7 +553,11 @@ class PostRow extends StatelessWidget {
 						child: const Text('Search archives'),
 						trailingIcon: Icons.image_search,
 						onPressed: () {
-							openSearch(context: context, query: ImageboardArchiveSearchQuery(boards: [latestPost.board], md5: latestPost.attachment!.md5));
+							openSearch(context: context, query: ImageboardArchiveSearchQuery(
+								imageboardKey: context.read<Imageboard>().key,
+								boards: [latestPost.board],
+								md5: latestPost.attachment!.md5)
+							);
 						}
 					),
 					ContextMenuAction(

@@ -18,6 +18,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
+import 'package:chan/widgets/captcha_securimage.dart';
 import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
@@ -527,6 +528,19 @@ class ReplyBoxState extends State<ReplyBox> {
 			_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
 				builder: (context) => OverscrollModalPage(
 					child: Captcha4ChanCustom(
+						request: captchaRequest,
+						onCaptchaSolved: (key) => Navigator.of(context).pop(key)
+					)
+				),
+				showAnimations: context.read<EffectiveSettings>().showAnimations
+			));
+			showReplyBox();
+		}
+		else if (captchaRequest is SecurimageCaptchaRequest) {
+			hideReplyBox();
+			_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
+				builder: (context) => OverscrollModalPage(
+					child: CaptchaSecurimage(
 						request: captchaRequest,
 						onCaptchaSolved: (key) => Navigator.of(context).pop(key)
 					)

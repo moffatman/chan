@@ -8,6 +8,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
@@ -763,4 +764,13 @@ class Site4Chan extends ImageboardSite {
 			)).toList() ?? [];
 		});
 	}
+
+	@override
+	bool operator ==(Object other) => (other is Site4Chan) && (other.name == name) && (other.imageUrl == imageUrl) && (other.captchaKey == captchaKey) && (other.apiUrl == apiUrl) && (other.sysUrl == sysUrl) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && listEquals(other.archives, archives);
+
+	@override
+	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, archives);
+	
+	 @override
+	 Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
 }

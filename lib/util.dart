@@ -159,3 +159,33 @@ class FilteringListenable extends ChangeNotifier {
     return 'FilteringListenable(child: $_child, filter: $_filter)';
   }
 }
+
+class CombiningValueListenable<T> extends ChangeNotifier implements ValueListenable<T> {
+	final List<ValueListenable<T>> children;
+	final T Function(T, T) combine;
+	final T noChildrenValue;
+	CombiningValueListenable({
+		required this.children,
+		required this.combine,
+		required this.noChildrenValue
+	}) {
+		for (final child in children) {
+			child.addListener(_listen);
+		}
+	}
+
+	void _listen() {
+		notifyListeners();
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		for (final child in children) {
+			child.removeListener(_listen);
+		}
+	}
+
+	@override
+	T get value => children.isEmpty ? noChildrenValue : children.map((c) => c.value).reduce(combine);
+}
