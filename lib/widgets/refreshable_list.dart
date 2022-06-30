@@ -312,11 +312,6 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 					onPointerPanZoomEnd: (e) {
 						_pointerDownCount--;
 					},
-					onPointerHover: (e) {
-						if (widget.controller?.scrollController != null && (widget.controller!.scrollController!.position.userScrollDirection != ScrollDirection.idle) && _pointerDownCount == 0) {
-							widget.controller!.scrollController!.jumpTo(widget.controller!.scrollController!.position.pixels);
-						}
-					},
 					child: GestureDetector(
 						onTap: () {
 							if (widget.controller?.scrollController != null && (widget.controller!.scrollController!.position.userScrollDirection != ScrollDirection.idle) && _pointerDownCount == 0) {

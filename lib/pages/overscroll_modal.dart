@@ -173,11 +173,6 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 							onPointerCancel: (event) {
 								_pointerDownCount--;
 							},
-							onPointerHover: (event) {
-								if (_controller.position.userScrollDirection != ScrollDirection.idle && _pointerDownCount == 0) {
-									_controller.jumpTo(_controller.position.pixels);
-								}
-							},
 							onPointerPanZoomEnd: (event) => _onPointerUp(),
 							child: GestureDetector(
 								onTap: () {
