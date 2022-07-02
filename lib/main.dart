@@ -1022,12 +1022,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											)
 										),
 										Expanded(
-											child: AnimatedBuilder(
-												animation: _tabController,
-												builder: (context, _) => TabSwitchingView(
-													currentTabIndex: _tabController.index,
-													tabCount: 5,
-													tabBuilder: (context, i) => _buildTab(context, i, i == _tabController.index)
+											child: Container(
+												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+												child: AnimatedBuilder(
+													animation: _tabController,
+													builder: (context, _) => TabSwitchingView(
+														currentTabIndex: _tabController.index,
+														tabCount: 5,
+														tabBuilder: (context, i) => _buildTab(context, i, i == _tabController.index)
+													)
 												)
 											)
 										)
