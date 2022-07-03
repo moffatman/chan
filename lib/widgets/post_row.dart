@@ -1,4 +1,5 @@
 import 'package:chan/pages/selectable_post.dart';
+import 'package:chan/pages/translated_post.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
@@ -525,6 +526,16 @@ class PostRow extends StatelessWidget {
 							type: "text",
 							sharePositionOrigin: (offset != null && size != null) ? offset & size : null
 						);
+					}
+				),
+				ContextMenuAction(
+					child: const Text('Translate'),
+					trailingIcon: Icons.translate,
+					onPressed: () {
+						WeakNavigator.push(context, TranslatedPostPage(
+							post: latestPost,
+							zone: zone
+						));
 					}
 				),
 				ContextMenuAction(
