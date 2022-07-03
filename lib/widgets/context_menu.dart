@@ -152,6 +152,7 @@ class _ContextMenuState extends State<ContextMenu> {
 					),
 					child: MultiProvider(
 						providers: [
+							Provider<bool>.value(value: false), // Dummy, at least one provider is required
 							if (zone != null) ChangeNotifierProvider<PostSpanZoneData>.value(value: zone),
 							if (imageboard != null) ChangeNotifierProvider<Imageboard>.value(value: imageboard),
 							if (site != null) Provider<ImageboardSite>.value(value: site),
