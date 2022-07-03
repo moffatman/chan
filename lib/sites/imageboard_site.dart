@@ -418,6 +418,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get siteType;
 	String get siteData;
 	ThreadOrPostIdentifier? decodeUrl(String url);
+	String get defaultUsername;
 }
 
 ImageboardSite makeSite(dynamic data) {

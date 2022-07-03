@@ -771,6 +771,9 @@ class Site4Chan extends ImageboardSite {
 	@override
 	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, archives);
 	
-	 @override
-	 Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
+	@override
+	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
+
+	@override
+	String get defaultUsername => 'Anonymous';
 }

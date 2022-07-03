@@ -75,4 +75,7 @@ class SiteFrenschan extends SiteSoyjak {
 
 	@override
 	int get hashCode => Object.hash(name, baseUrl);
+	
+	@override
+	String get defaultUsername => 'Fren';
 }

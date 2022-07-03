@@ -492,4 +492,7 @@ class SiteLainchan extends ImageboardSite {
 	
 	@override
 	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
+
+	@override
+	String get defaultUsername => 'Anonymous';
 }

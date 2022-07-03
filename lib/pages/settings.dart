@@ -830,6 +830,16 @@ class SettingsAppearancePage extends StatelessWidget {
 													),
 													Row(
 														children: [
+															const Text('Hide default names'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.hideDefaultNamesOnPosts,
+																onChanged: (d) => settings.hideDefaultNamesOnPosts = d
+															)
+														]
+													),
+													Row(
+														children: [
 															const Text('Show trip'),
 															const Spacer(),
 															CupertinoSwitch(

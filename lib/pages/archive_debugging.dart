@@ -150,6 +150,9 @@ class WrappedArchive extends ImageboardSite {
 
   @override
   Uri get iconUrl => Uri.https('google.com', '/favicon.ico');
+  
+  @override
+  String get defaultUsername => '';
 }
 
 class ArchiveDebuggingPage extends StatelessWidget {

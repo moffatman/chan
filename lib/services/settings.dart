@@ -333,6 +333,8 @@ class SavedSettings extends HiveObject {
 	int currentTabIndex;
 	@HiveField(71)
 	PersistentRecentSearches recentSearches;
+	@HiveField(72)
+	bool hideDefaultNamesOnPosts;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -407,6 +409,7 @@ class SavedSettings extends HiveObject {
 		List<PersistentBrowserTab>? tabs,
 		int? currentTabIndex,
 		PersistentRecentSearches? recentSearches,
+		bool? hideDefaultNamesOnPosts,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -492,7 +495,8 @@ class SavedSettings extends HiveObject {
 			PersistentBrowserTab()
 		],
 		currentTabIndex = currentTabIndex ?? 0,
-		recentSearches = recentSearches ?? PersistentRecentSearches();
+		recentSearches = recentSearches ?? PersistentRecentSearches(),
+		hideDefaultNamesOnPosts = hideDefaultNamesOnPosts ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1052,6 +1056,13 @@ class EffectiveSettings extends ChangeNotifier {
 	int? get maximumImageUploadDimension => _settings.maximumImageUploadDimension;
 	set maximumImageUploadDimension(int? setting) {
 		_settings.maximumImageUploadDimension = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get hideDefaultNamesOnPosts => _settings.hideDefaultNamesOnPosts;
+	set hideDefaultNamesOnPosts(bool setting) {
+		_settings.hideDefaultNamesOnPosts = setting;
 		_settings.save();
 		notifyListeners();
 	}

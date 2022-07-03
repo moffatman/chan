@@ -243,7 +243,7 @@ class PostRow extends StatelessWidget {
 														children: [
 															for (final field in settings.postDisplayFieldOrder)
 																if (field == PostDisplayField.name) ...[
-																	if (settings.showNameOnPosts) TextSpan(
+																	if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && latestPost.name == site.defaultUsername)) TextSpan(
 																		text: context.read<EffectiveSettings>().filterProfanity(latestPost.name) + (isYourPost ? ' (You)' : ''),
 																		style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
 																	)

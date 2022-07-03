@@ -43,4 +43,7 @@ class SiteSoyjak extends SiteLainchan {
 
 	@override
 	int get hashCode => Object.hash(name, baseUrl);
+
+	@override
+	String get defaultUsername => 'Chud';
 }
