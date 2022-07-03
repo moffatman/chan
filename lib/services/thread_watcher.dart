@@ -103,6 +103,7 @@ class NewThreadWatch extends Watch {
 }
 
 class ThreadWatcher extends ChangeNotifier {
+	final String imageboardKey;
 	final ImageboardSite site;
 	final Persistence persistence;
 	final EffectiveSettings settings;
@@ -131,6 +132,7 @@ class ThreadWatcher extends ChangeNotifier {
 	late final FilterCache _filter = FilterCache(__filter);
 	
 	ThreadWatcher({
+		required this.imageboardKey,
 		required this.site,
 		required this.persistence,
 		required this.settings,
@@ -263,6 +265,15 @@ class ThreadWatcher extends ChangeNotifier {
 					continue;
 				}
 				await _updateThread(persistence.getThreadState(watch.threadIdentifier));
+			}
+			for (final tab in Persistence.tabs) {
+				if (tab.imageboardKey == imageboardKey && tab.threadController == null && tab.thread != null) {
+					// Thread page widget hasn't yet been instantiated
+					final threadState = persistence.getThreadStateIfExists(tab.thread!);
+					if (threadState != null) {
+						await _updateThread(threadState);
+					}
+				}
 			}
 			_lastCatalogs.clear();
 			_unseenStickyThreads.clear();

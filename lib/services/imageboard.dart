@@ -68,6 +68,7 @@ class Imageboard extends ChangeNotifier {
 			);
 			await notifications.initialize();
 			threadWatcher = ThreadWatcher(
+				imageboardKey: key,
 				site: site,
 				persistence: persistence,
 				settings: settings,

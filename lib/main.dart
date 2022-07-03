@@ -550,8 +550,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									},
 									id: -1 * (i + 10)
 								);
-								return Provider.value(
-									value: _tabletWillPopZones.putIfAbsent(index, () => WillPopZone()),
+								return MultiProvider(
+									providers: [
+										Provider.value(
+											value: _tabletWillPopZones.putIfAbsent(index, () => WillPopZone())
+										),
+										ChangeNotifierProvider.value(value: tabObject)
+									],
 									child: ValueListenableBuilder(
 										valueListenable: activeBrowserTab,
 										builder: (context, int activeIndex, child) {
