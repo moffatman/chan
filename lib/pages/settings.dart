@@ -798,6 +798,7 @@ class SettingsAppearancePage extends StatelessWidget {
 						onPressed: () async {
 							await showCupertinoModalPopup(
 								context: context,
+								useRootNavigator: false,
 								builder: (context) => StatefulBuilder(
 									builder: (context, setDialogState) => CupertinoActionSheet(
 										title: const Text('Edit post details'),
@@ -1024,6 +1025,7 @@ class SettingsAppearancePage extends StatelessWidget {
 							Size size = Size(settings.catalogGridWidth, settings.catalogGridHeight);
 							await showCupertinoModalPopup(
 								context: context,
+								useRootNavigator: false,
 								builder: (context) => StatefulBuilder(
 									builder: (context, setDialogState) => CupertinoActionSheet(
 										title: const Text('Resize catalog grid item'),
@@ -1146,6 +1148,7 @@ class SettingsAppearancePage extends StatelessWidget {
 						onPressed: () async {
 							await showCupertinoModalPopup(
 								context: context,
+								useRootNavigator: false,
 								builder: (context) => StatefulBuilder(
 									builder: (context, setDialogState) => CupertinoActionSheet(
 										title: const Text('Edit catalog item details'),
