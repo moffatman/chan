@@ -335,6 +335,8 @@ class SavedSettings extends HiveObject {
 	PersistentRecentSearches recentSearches;
 	@HiveField(72)
 	bool hideDefaultNamesOnPosts;
+	@HiveField(73)
+	bool showThumbnailsInGallery;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -410,6 +412,7 @@ class SavedSettings extends HiveObject {
 		int? currentTabIndex,
 		PersistentRecentSearches? recentSearches,
 		bool? hideDefaultNamesOnPosts,
+		bool? showThumbnailsInGallery,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -496,7 +499,8 @@ class SavedSettings extends HiveObject {
 		],
 		currentTabIndex = currentTabIndex ?? 0,
 		recentSearches = recentSearches ?? PersistentRecentSearches(),
-		hideDefaultNamesOnPosts = hideDefaultNamesOnPosts ?? false;
+		hideDefaultNamesOnPosts = hideDefaultNamesOnPosts ?? false,
+		showThumbnailsInGallery = showThumbnailsInGallery ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1063,6 +1067,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get hideDefaultNamesOnPosts => _settings.hideDefaultNamesOnPosts;
 	set hideDefaultNamesOnPosts(bool setting) {
 		_settings.hideDefaultNamesOnPosts = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showThumbnailsInGallery => _settings.showThumbnailsInGallery;
+	set showThumbnailsInGallery(bool setting) {
+		_settings.showThumbnailsInGallery = setting;
 		_settings.save();
 		notifyListeners();
 	}

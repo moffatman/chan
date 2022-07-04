@@ -108,10 +108,12 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	late final AnimationController _rotateButtonAnimationController;
 	final Map<Attachment, AttachmentViewerController> _controllers = {};
 	final _shouldShowPosition = ValueNotifier<bool>(false);
-	Widget? scrollSheetChild;
-	ScrollController? scrollSheetController;
 	final _currentAttachmentChanged = BehaviorSubject<void>();
 	final _rotationsChanged = BehaviorSubject<void>();
+	Widget? _cachedScrollSheetChild;
+	ScrollController? _cachedScrollSheetController;
+	final _scrollSheetController = DraggableScrollableController();
+	final _draggableScrollableSheetKey = GlobalKey();
 
 	@override
 	void initState() {
@@ -374,6 +376,18 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		return offset.distance / threshold;
 	}
 
+	double get _maxScrollSheetSize => 1 - (((currentController.videoPlayerController == null ? -44 : 0) + kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top) / MediaQuery.of(context).size.height);
+
+	double get _minScrollSheetSize {
+		if (context.read<EffectiveSettings>().showThumbnailsInGallery) {
+			return 0.2;
+		}
+		if (currentController.videoPlayerController != null) {
+			return 44 / MediaQuery.of(context).size.height;
+		}
+		return 0.0;
+	}
+
 	Widget _buildScrollSheetChild(ScrollController controller) {
 		return StreamBuilder(
 			stream: _currentAttachmentChanged,
@@ -388,6 +402,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 								child: CustomScrollView(
 									cacheExtent: 500,
 									controller: controller,
+									physics: const ClampingScrollPhysics(),
 									slivers: [
 										if (currentController.videoPlayerController != null) SliverToBoxAdapter(
 											child: VideoControls(
@@ -476,7 +491,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													final attachment = widget.attachments[index];
 													return GestureDetector(
 														onTap: () {
-															DraggableScrollableActuator.reset(context);
+															_scrollSheetController.reset();
 															Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
 														},
 														child: Container(
@@ -532,6 +547,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 
 	@override
 	Widget build(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
@@ -547,7 +563,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				return ((details?.pointerCount ?? 0) == 0) && widget.allowScroll && (a >= 0.25 && a <= 0.75);
 			},
 			child: CupertinoTheme(
-				data: context.watch<EffectiveSettings>().makeDarkTheme(context),
+				data: settings.makeDarkTheme(context),
 				child: CupertinoPageScaffold(
 					backgroundColor: Colors.transparent,
 					navigationBar: showChrome ? CupertinoNavigationBar(
@@ -571,6 +587,17 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 									return Row(
 										mainAxisSize: MainAxisSize.min,
 										children: [
+											if (!settings.showThumbnailsInGallery) CupertinoButton(
+												padding: EdgeInsets.zero,
+												onPressed: () {
+													_scrollSheetController.animateTo(
+														_scrollSheetController.size > 0.5 ? 0 : _maxScrollSheetSize,
+														duration: const Duration(milliseconds: 250),
+														curve: Curves.ease
+													);
+												},
+												child: const Icon(CupertinoIcons.rectangle_grid_2x2)
+											),
 											CupertinoButton(
 												padding: EdgeInsets.zero,
 												onPressed: currentController.canShare && !currentController.isDownloaded ? () async {
@@ -662,7 +689,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												KeyedSubtree(
 													key: _pageControllerKey,
 													child: ExtendedImageGesturePageView.builder(
-														physics: context.read<EffectiveSettings>().showAnimations ? null : const _FasterSnappingPageScrollPhysics(),
+														physics: settings.showAnimations ? null : const _FasterSnappingPageScrollPhysics(),
 														canScrollPage: (x) => widget.allowScroll,
 														onPageChanged: _onPageChanged,
 														controller: pageController,
@@ -717,7 +744,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																crossAxisAlignment: CrossAxisAlignment.end,
 																children: [
 																	ValueListenableBuilder<bool>(
-																		valueListenable: context.watch<EffectiveSettings>().muteAudio,
+																		valueListenable: settings.muteAudio,
 																		builder: (context, muted, _) => AnimatedSwitcher(
 																			duration: const Duration(milliseconds: 300),
 																			child: currentController.hasAudio ? Align(
@@ -729,11 +756,11 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																					onPressed: () {
 																						if (muted) {
 																							currentController.videoPlayerController?.setVolume(1);
-																							context.read<EffectiveSettings>().setMuteAudio(false);
+																							settings.setMuteAudio(false);
 																						}
 																						else {
 																							currentController.videoPlayerController?.setVolume(0);
-																							context.read<EffectiveSettings>().setMuteAudio(true);
+																							settings.setMuteAudio(true);
 																						}
 																					}
 																				)
@@ -776,7 +803,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														alignment: Alignment.bottomLeft,
 														child: Container(
 															margin: showChrome ? EdgeInsets.only(
-																bottom: MediaQuery.of(context).size.height * 0.2 + 16 - (currentController.videoPlayerController == null ? 44 : 0),
+																bottom: (settings.showThumbnailsInGallery ? MediaQuery.of(context).size.height * 0.2 : 44) + 16 - (currentController.videoPlayerController == null ? 44 : 0),
 																left: 16
 															) : const EdgeInsets.all(16),
 															padding: const EdgeInsets.all(8),
@@ -800,18 +827,21 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													maintainState: true,
 													maintainSize: true,
 													maintainAnimation: true,
-													child: DraggableScrollableActuator(
-														child: DraggableScrollableSheet(
+													child: AnimatedBuilder(
+														animation: currentController,
+														builder: (context, _) => DraggableScrollableSheet(
+															key: _draggableScrollableSheetKey,
 															snap: true,
-															initialChildSize: 0.20,
-															maxChildSize: 1 - ((kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top) / MediaQuery.of(context).size.height),
-															minChildSize: 0.20,
+															initialChildSize: _minScrollSheetSize,
+															maxChildSize: _maxScrollSheetSize,
+															minChildSize: _minScrollSheetSize,
+															controller: _scrollSheetController,
 															builder: (context, controller) {
-																if (scrollSheetChild == null || controller != scrollSheetController) {
-																	scrollSheetController = controller;
-																	scrollSheetChild = _buildScrollSheetChild(controller);
+																if (_cachedScrollSheetChild == null || controller != _cachedScrollSheetController) {
+																	_cachedScrollSheetController = controller;
+																	_cachedScrollSheetChild = _buildScrollSheetChild(controller);
 																}
-																return scrollSheetChild!;
+																return _cachedScrollSheetChild!;
 															}
 														)
 													)
