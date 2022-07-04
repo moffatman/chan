@@ -408,14 +408,15 @@ class SettingsBehaviorPage extends StatelessWidget {
 				const SizedBox(height: 32),
 				const Text('Use internal web browser'),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
+				CupertinoSegmentedControl<_NullSafeOptional>(
 					children: const {
-						false: Text('No'),
-						true: Text('Yes')
+						_NullSafeOptional.false_: Text('No'),
+						_NullSafeOptional.null_: Text('Ask'),
+						_NullSafeOptional.true_: Text('Yes')
 					},
-					groupValue: settings.useInternalBrowser,
+					groupValue: settings.useInternalBrowser.value,
 					onValueChanged: (newValue) {
-						settings.useInternalBrowser = newValue;
+						settings.useInternalBrowser = newValue.value;
 					}
 				),
 				const SizedBox(height: 32),

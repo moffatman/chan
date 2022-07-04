@@ -54,7 +54,7 @@ Future<void> shareOne({
 							child: const Text('Open in internal browser'),
 							onPressed: () {
 								Navigator.of(context, rootNavigator: true).pop();
-								openBrowser(rootContext, Uri.parse(text));
+								openBrowser(rootContext, Uri.parse(text), fromShareOne: true);
 							}
 						),
 						CupertinoActionSheetAction(

@@ -4,6 +4,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
@@ -232,7 +233,7 @@ class ErrorMessageCard extends StatelessWidget {
 	}
 }
 
-Future<void> openBrowser(BuildContext context, Uri url) async {
+Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = false}) async {
 	final webmMatcher = RegExp('https?://${context.read<ImageboardSite>().imageUrl}/([^/]+)/([0-9]+).webm');
 	final match = webmMatcher.firstMatch(url.toString());
 	if (match != null) {
@@ -256,7 +257,15 @@ Future<void> openBrowser(BuildContext context, Uri url) async {
 		);
 	}
 	else {
-		if (await isOnMac() || !context.read<EffectiveSettings>().useInternalBrowser) {
+		if (context.read<EffectiveSettings>().useInternalBrowser == null && !fromShareOne) {
+			shareOne(
+				context: context,
+				text: url.toString(),
+				type: "text",
+				sharePositionOrigin: null
+			);
+		}
+		else if (await isOnMac() || context.read<EffectiveSettings>().useInternalBrowser == false) {
 			launchUrl(url, mode: LaunchMode.externalApplication);
 		}
 		else {

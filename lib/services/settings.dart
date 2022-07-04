@@ -318,7 +318,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(63)
 	bool useEmbeds;
 	@HiveField(64)
-	bool useInternalBrowser;
+	bool? useInternalBrowser;
 	@HiveField(65)
 	int automaticCacheClearDays;
 	@HiveField(66)
@@ -1029,8 +1029,8 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	bool get useInternalBrowser => _settings.useInternalBrowser;
-	set useInternalBrowser(bool setting) {
+	bool? get useInternalBrowser => _settings.useInternalBrowser;
+	set useInternalBrowser(bool? setting) {
 		_settings.useInternalBrowser = setting;
 		_settings.save();
 		notifyListeners();
