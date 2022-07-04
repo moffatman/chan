@@ -13,10 +13,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class Captcha4ChanCustom extends StatefulWidget {
+	final ImageboardSite site;
 	final Chan4CustomCaptchaRequest request;
 	final ValueChanged<Chan4CustomCaptchaSolution> onCaptchaSolved;
 
 	const Captcha4ChanCustom({
+		required this.site,
 		required this.request,
 		required this.onCaptchaSolved,
 		Key? key
@@ -135,7 +137,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	}
 
 	Future<Captcha4ChanCustomChallenge> _requestChallenge() async {
-		final challengeResponse = await context.read<ImageboardSite>().client.get(widget.request.challengeUrl.toString());
+		final challengeResponse = await widget.site.client.get(widget.request.challengeUrl.toString());
 		if (challengeResponse.statusCode != 200) {
 			throw Captcha4ChanCustomException('Got status code ${challengeResponse.statusCode}');
 		}

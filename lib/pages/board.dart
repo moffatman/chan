@@ -14,6 +14,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/thread_row.dart';
@@ -277,29 +278,32 @@ class _BoardPageState extends State<BoardPage> {
 								if (context.read<MasterDetailHint?>()?.twoPane == true && _replyBoxKey.currentState?.show != true) {
 									showCupertinoModalPopup(
 										context: context,
-										builder: (ctx) => Padding(
-											padding: MediaQuery.of(context).viewInsets,
-											child: Container(
-												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-												child: ReplyBox(
-													fullyExpanded: true,
-													board: board!.name,
-													initialText: widget.getInitialDraftText?.call() ?? '',
-													onTextChanged: (text) {
-														widget.onDraftTextChanged?.call(text);
-													},
-													initialSubject: widget.getInitialDraftSubject?.call() ?? '',
-													onSubjectChanged: (subject) {
-														widget.onDraftSubjectChanged?.call(subject);
-													},
-													onReplyPosted: (receipt) async {
-														await promptForPushNotificationsIfNeeded(ctx);
-														if (!mounted) return;
-														ctx.read<Notifications>().subscribeToThread(ThreadIdentifier(board!.name, receipt.id), receipt.id, false, [receipt.id]);
-														_listController.update();
-														widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
-														Navigator.of(ctx).pop();
-													}
+										builder: (ctx) => ImageboardScope(
+											imageboardKey: imageboard!.key,
+											child: Padding(
+												padding: MediaQuery.of(context).viewInsets,
+												child: Container(
+													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+													child: ReplyBox(
+														fullyExpanded: true,
+														board: board!.name,
+														initialText: widget.getInitialDraftText?.call() ?? '',
+														onTextChanged: (text) {
+															widget.onDraftTextChanged?.call(text);
+														},
+														initialSubject: widget.getInitialDraftSubject?.call() ?? '',
+														onSubjectChanged: (subject) {
+															widget.onDraftSubjectChanged?.call(subject);
+														},
+														onReplyPosted: (receipt) async {
+															await promptForPushNotificationsIfNeeded(ctx);
+															if (!mounted) return;
+															ctx.read<Notifications>().subscribeToThread(ThreadIdentifier(board!.name, receipt.id), receipt.id, false, [receipt.id]);
+															_listController.update();
+															widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
+															Navigator.of(ctx).pop();
+														}
+													)
 												)
 											)
 										)

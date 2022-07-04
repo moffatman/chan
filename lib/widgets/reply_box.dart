@@ -528,6 +528,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
 				builder: (context) => OverscrollModalPage(
 					child: Captcha4ChanCustom(
+						site: site,
 						request: captchaRequest,
 						onCaptchaSolved: (key) => Navigator.of(context).pop(key)
 					)
