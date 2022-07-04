@@ -634,6 +634,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						},
 						child: MultiProvider(
 							providers: [
+								ChangeNotifierProvider.value(value: devImageboard!),
 								Provider.value(value: devImageboard!.site),
 								ChangeNotifierProvider.value(value: devImageboard!.persistence),
 								ChangeNotifierProvider.value(value: devImageboard!.threadWatcher),
