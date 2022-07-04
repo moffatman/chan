@@ -51,7 +51,14 @@ void showToast({
 				children: [
 					Icon(icon, color: CupertinoTheme.of(context).primaryColor),
 					const SizedBox(width: 12),
-					Text(message, style: TextStyle(color: CupertinoTheme.of(context).primaryColor))
+					Flexible(
+						child: Text(
+							message,
+							style: TextStyle(
+								color: CupertinoTheme.of(context).primaryColor
+							)
+						)
+					)
 				]
 			)
 		)
