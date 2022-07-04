@@ -353,6 +353,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
 			_solutionController.addListener(_onSolutionControllerUpdate);
 		}
+		else {
+			_greyOutPickers = false;
+		}
 		_tryRequestChallenge();
 	}
 
