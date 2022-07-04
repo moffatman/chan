@@ -30,6 +30,12 @@ import 'package:chan/pages/gallery.dart';
 
 const _oldThreadThreshold = Duration(days: 7);
 
+enum _ThreadSortingMethodScope {
+	global,
+	board,
+	temporary
+}
+
 class BoardPage extends StatefulWidget {
 	final int semanticId;
 	final ImageboardBoard? initialBoard;
@@ -68,6 +74,8 @@ class _BoardPageState extends State<BoardPage> {
 	final _listController = RefreshableListController<Thread>();
 	final _replyBoxKey = GlobalKey<ReplyBoxState>();
 	Completer<void>? _loadCompleter;
+	ThreadSortingMethod? _temporarySortingMethod;
+	bool _temporaryReverseSorting = false;
 
 	@override
 	void initState() {
@@ -106,6 +114,8 @@ class _BoardPageState extends State<BoardPage> {
 			setState(() {
 				board = newBoard.item;
 				_listController.scrollController?.jumpTo(0);
+				_temporarySortingMethod = null;
+				_temporaryReverseSorting = false;
 			});
 		}
 	}
@@ -115,6 +125,17 @@ class _BoardPageState extends State<BoardPage> {
 		final imageboard = context.watch<Imageboard?>();
 		final site = context.watch<ImageboardSite?>();
 		final settings = context.watch<EffectiveSettings>();
+		final persistence = context.watch<Persistence?>();
+		ThreadSortingMethod sortingMethod = settings.catalogSortingMethod;
+		bool reverseSorting = settings.reverseCatalogSorting;
+		if (persistence?.browserState.boardSortingMethods[board?.name] != null) {
+			sortingMethod = persistence!.browserState.boardSortingMethods[board?.name]!;
+			reverseSorting = persistence.browserState.boardReverseSortings[board?.name] ?? false;
+		}
+		if (_temporarySortingMethod != null) {
+			sortingMethod = _temporarySortingMethod!;
+			reverseSorting = _temporaryReverseSorting;
+		}
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
 			navigationBar: CupertinoNavigationBar(
@@ -153,7 +174,7 @@ class _BoardPageState extends State<BoardPage> {
 							padding: EdgeInsets.zero,
 							child: Transform(
 								alignment: Alignment.center,
-								transform: settings.reverseCatalogSorting ? Matrix4.rotationX(pi) : Matrix4.identity(),
+								transform: reverseSorting ? Matrix4.rotationX(pi) : Matrix4.identity(),
 								child: const Icon(CupertinoIcons.sort_down)
 							),
 							onPressed: () {
@@ -167,20 +188,78 @@ class _BoardPageState extends State<BoardPage> {
 											ThreadSortingMethod.threadPostTime: 'Creation Date',
 											ThreadSortingMethod.postsPerMinute: 'Reply Rate',
 											ThreadSortingMethod.lastReplyTime: 'Last Reply',
-											ThreadSortingMethod.imageCount: 'Image Count'
+											ThreadSortingMethod.imageCount: 'Image Count',
+											if (_temporarySortingMethod != null) null: 'Clear temporary method'
+											else if (persistence?.browserState.boardSortingMethods[board?.name] != null) null: 'Clear board method'
 										}.entries.map((entry) => CupertinoActionSheetAction(
 											child: Text(entry.value, style: TextStyle(
-												fontWeight: entry.key == settings.catalogSortingMethod ? FontWeight.bold : null
+												fontWeight: (entry.key == sortingMethod || entry.key == null) ? FontWeight.bold : null
 											)),
 											onPressed: () {
-												if (settings.catalogSortingMethod == entry.key) {
-													settings.reverseCatalogSorting = !settings.reverseCatalogSorting;
-												}
-												else {
-													settings.reverseCatalogSorting = false;
-													settings.catalogSortingMethod = entry.key;
-												}
 												Navigator.of(context, rootNavigator: true).pop();
+												final method = entry.key;
+												if (method == null) {
+													if (_temporarySortingMethod != null) {
+														_temporarySortingMethod = null;
+													}
+													else {
+														persistence?.browserState.boardSortingMethods.remove(board?.name);
+														persistence?.browserState.boardReverseSortings.remove(board?.name);
+													}
+													setState(() {});
+													return;
+												}
+												showCupertinoModalPopup<DateTime>(
+													context: context,
+													builder: (context) => CupertinoActionSheet(
+														title: const Text('Sorting method scope'),
+														actions: {
+															_ThreadSortingMethodScope.global: 'For All Boards',
+															_ThreadSortingMethodScope.board: 'For Current Board',
+															_ThreadSortingMethodScope.temporary: 'Temporarily',
+														}.entries.map((entry) => CupertinoActionSheetAction(
+															child: Text(entry.value),
+															onPressed: () {
+																switch (entry.key) {
+																	case _ThreadSortingMethodScope.global:
+																		if (settings.catalogSortingMethod == method) {
+																			settings.reverseCatalogSorting = !settings.reverseCatalogSorting;
+																		}
+																		else {
+																			settings.reverseCatalogSorting = false;
+																			settings.catalogSortingMethod = method;
+																		}
+																		break;
+																	case _ThreadSortingMethodScope.board:
+																		if (persistence?.browserState.boardSortingMethods[board!.name] == method) {
+																			persistence?.browserState.boardReverseSortings[board!.name] = !(persistence.browserState.boardReverseSortings[board!.name] ?? false);
+																		}
+																		else {
+																			persistence?.browserState.boardReverseSortings[board!.name] = false;
+																			persistence?.browserState.boardSortingMethods[board!.name] = method;
+																		}
+																		persistence?.didUpdateBrowserState();
+																		break;
+																	case _ThreadSortingMethodScope.temporary:
+																		if (_temporarySortingMethod == method) {
+																			_temporaryReverseSorting = !_temporaryReverseSorting;
+																		}
+																		else {
+																			_temporaryReverseSorting = false;
+																			_temporarySortingMethod = method;
+																		}
+																		setState(() {});
+																		break;
+																}
+																Navigator.of(context, rootNavigator: true).pop();
+															}
+														)).toList(),
+														cancelButton: CupertinoActionSheetAction(
+															child: const Text('Cancel'),
+															onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+														)
+													)
+												);
 											}
 										)).toList(),
 										cancelButton: CupertinoActionSheetAction(
@@ -304,7 +383,7 @@ class _BoardPageState extends State<BoardPage> {
 															return !thread.isSticky || now.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
 														}).toList();
 													}
-													switch (settings.catalogSortingMethod) {
+													switch (sortingMethod) {
 														case ThreadSortingMethod.replyCount:
 															list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
 															break;
@@ -327,9 +406,9 @@ class _BoardPageState extends State<BoardPage> {
 															break;
 													}
 													Future.delayed(const Duration(milliseconds: 100), () => _loadCompleter?.complete());
-													return settings.reverseCatalogSorting ? list.reversed.toList() : list;
+													return reverseSorting ? list.reversed.toList() : list;
 												}),
-												id: '/${board!.name}/ ${settings.catalogSortingMethod} ${settings.reverseCatalogSorting}',
+												id: '/${board!.name}/ $sortingMethod $reverseSorting',
 												itemBuilder: (context, thread) {
 													final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
 													final isThreadHidden = context.select<Persistence, bool>((p) => p.browserState.isThreadHidden(thread.board, thread.id));

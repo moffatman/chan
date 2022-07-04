@@ -213,7 +213,9 @@ class Persistence extends ChangeNotifier {
 			loginFields: {},
 			threadWatches: [],
 			newThreadWatches: [],
-			notificationsMigrated: true
+			notificationsMigrated: true,
+			boardSortingMethods: {},
+			boardReverseSortings: {}
 		));
 		if (browserState.deprecatedTabs.isNotEmpty) {
 			print('Migrating tabs');
@@ -666,6 +668,10 @@ class PersistentBrowserState {
 	List<NewThreadWatch> newThreadWatches;
 	@HiveField(12, defaultValue: false)
 	bool notificationsMigrated;
+	@HiveField(13, defaultValue: {})
+	final Map<String, ThreadSortingMethod> boardSortingMethods;
+	@HiveField(14, defaultValue: {})
+	final Map<String, bool> boardReverseSortings;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -677,7 +683,9 @@ class PersistentBrowserState {
 		String? notificationsId,
 		required this.threadWatches,
 		required this.newThreadWatches,
-		required this.notificationsMigrated
+		required this.notificationsMigrated,
+		required this.boardSortingMethods,
+		required this.boardReverseSortings
 	}) : hiddenImageMD5s = hiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};
