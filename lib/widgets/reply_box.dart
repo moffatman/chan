@@ -240,7 +240,9 @@ class ReplyBoxState extends State<ReplyBox> {
 		bool loading = false;
 		ValueNotifier<double?> progress = ValueNotifier<double?>(null);
 		final problems = [
-			if (ext != transcode.outputFileExtension) 'File type needs to be converted to .${transcode.outputFileExtension} from .$ext',
+			if (ext != transcode.outputFileExtension &&
+					!(ext == 'jpeg' && transcode.outputFileExtension == 'jpg') &&
+					!(ext == 'jpg' && transcode.outputFileExtension == 'jpeg')) 'File type needs to be converted to .${transcode.outputFileExtension} from .$ext',
 			if (size != null && maximumSize != null && (size > maximumSize)) 'Size needs to be reduced from ${(size / 1e6).toStringAsFixed(1)} MB to below ${(maximumSize / 1e6).toStringAsFixed(1)} MB',
 			if (audioPresent == true && audioAllowed == false) 'Audio track needs to be removed',
 			if (durationInSeconds != null && maximumDurationInSeconds != null && (durationInSeconds > maximumDurationInSeconds)) 'Duration needs to be clipped at $maximumDurationInSeconds seconds'
