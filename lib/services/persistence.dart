@@ -125,10 +125,10 @@ class Persistence extends ChangeNotifier {
 		final systemTempDirectory = Persistence.temporaryDirectory;
 		await for (final directory in systemTempDirectory.list()) {
 			int size = 0;
-			final stat = directory.statSync();
+			final stat = await directory.stat();
 			if (stat.type == FileSystemEntityType.directory) {
 				await for (final subentry in Directory(directory.path).list(recursive: true)) {
-					size += subentry.statSync().size;
+					size += (await subentry.stat()).size;
 				}
 			}
 			else {
