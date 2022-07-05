@@ -465,7 +465,7 @@ InlineSpan buildFakeMarkdown(BuildContext context, String input) {
 	);
 }
 
-class RootCustomScale extends StatelessWidget {
+class RootCustomScale extends StatefulWidget {
 	final double scale;
 	final Widget child;
 	const RootCustomScale({
@@ -473,23 +473,34 @@ class RootCustomScale extends StatelessWidget {
 		required this.child,
 		Key? key
 	}) : super(key: key);
+
+	@override
+	createState() => _RootCustomScaleState();
+}
+
+class _RootCustomScaleState extends State<RootCustomScale> {
+	final _childKey = GlobalKey();
 	@override
 	Widget build(BuildContext context) {
-		if (scale == 1) {
+		final child = KeyedSubtree(
+			key: _childKey,
+			child: widget.child
+		);
+		if (widget.scale == 1) {
 			return child;
 		}
 		final mq = MediaQuery.of(context);
     return FractionallySizedBox(
-      widthFactor: 1 * scale,
-      heightFactor: 1 * scale,
+      widthFactor: 1 * widget.scale,
+      heightFactor: 1 * widget.scale,
       child: Transform.scale(
-        scale: 1 / scale,
+        scale: 1 / widget.scale,
         child: MediaQuery(
 					data: mq.copyWith(
-						viewInsets: mq.viewInsets * scale,
-						systemGestureInsets: mq.systemGestureInsets * scale,
-						viewPadding: mq.viewPadding * scale,
-						padding: mq.padding * scale
+						viewInsets: mq.viewInsets * widget.scale,
+						systemGestureInsets: mq.systemGestureInsets * widget.scale,
+						viewPadding: mq.viewPadding * widget.scale,
+						padding: mq.padding * widget.scale
 					),
 					child: child
 				)
