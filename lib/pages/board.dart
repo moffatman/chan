@@ -281,7 +281,7 @@ class _BoardPageState extends State<BoardPage> {
 										builder: (ctx) => ImageboardScope(
 											imageboardKey: imageboard!.key,
 											child: Padding(
-												padding: MediaQuery.of(context).viewInsets,
+												padding: MediaQuery.of(ctx).viewInsets,
 												child: Container(
 													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 													child: ReplyBox(
