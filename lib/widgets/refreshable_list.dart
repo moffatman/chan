@@ -149,6 +149,12 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 		});
 	}
 
+	void _focusSearch() {
+		_searchFocusNode.requestFocus();
+		_searchTapped = true;
+		setState(() {});
+	}
+
 	Future<void> update() async {
 		if (updatingNow) {
 			return;
@@ -772,6 +778,9 @@ class RefreshableListController<T> {
 	}
 	void attach(RefreshableListState<T> list) {
 		state = list;
+	}
+	void focusSearch() {
+		state?._focusSearch();
 	}
 	void reportPrimaryScrollController(ScrollController? controller) {
 		if (scrollController != controller) {
