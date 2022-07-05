@@ -380,7 +380,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					if (notification.postId != null) {
 						_savedFakeTab.initialPostId[notification.threadIdentifier] = notification.postId!;
 					}
-					_savedMasterDetailKey.currentState?.setValue(0, watch);
+					_savedMasterDetailKey.currentState?.setValue(0, ImageboardScoped(
+						imageboard: imageboard,
+						item: watch
+					));
 				}
 				if (showTabPopup) {
 					setState(() {
@@ -1174,9 +1177,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		return NotificationsOverlay(
 			onePane: !isInTabletLayout,
 			key: notificationsOverlayKey,
-			notifications: [
-				...ImageboardRegistry.instance.imageboards.where((x) => x.initialized).map((x) => x.notifications),
-				if (devImageboard?.notifications != null) devImageboard!.notifications
+			imageboards: [
+				...ImageboardRegistry.instance.imageboards.where((x) => x.initialized),
+				if (devImageboard?.notifications != null) devImageboard!
 			],
 			child: child
 		);

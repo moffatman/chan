@@ -428,7 +428,13 @@ class PostRow extends StatelessWidget {
 							onPressed: () async {
 								zone.threadState!.postsMarkedAsYou.add(latestPost.id);
 								await promptForPushNotificationsIfNeeded(context);
-								notifications.subscribeToThread(zone.threadState!.identifier, zone.threadState!.thread?.posts.last.id ?? latestPost.id, notifications.getThreadWatch(zone.threadState!.identifier)?.yousOnly ?? true, zone.threadState!.youIds);
+								notifications.subscribeToThread(
+									thread: zone.threadState!.identifier,
+									lastSeenId: zone.threadState!.thread?.posts.last.id ?? latestPost.id,
+									localYousOnly: notifications.getThreadWatch(zone.threadState!.identifier)?.localYousOnly ?? true,
+									pushYousOnly: notifications.getThreadWatch(zone.threadState!.identifier)?.localYousOnly ?? true,
+									youIds: zone.threadState!.youIds
+								);
 								zone.threadState!.save();
 							}
 						),

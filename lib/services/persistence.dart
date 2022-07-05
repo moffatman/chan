@@ -268,7 +268,8 @@ class Persistence extends ChangeNotifier {
 						board: threadState.board,
 						threadId: threadState.id,
 						youIds: threadState.youIds,
-						yousOnly: true,
+						localYousOnly: true,
+						pushYousOnly: true,
 						lastSeenId: threadState.thread?.posts.last.id ?? threadState.id
 					));
 				}

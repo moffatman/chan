@@ -7,12 +7,14 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/thread_attachments.dart';
+import 'package:chan/pages/thread_watch_controls.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
@@ -285,6 +287,12 @@ class _ThreadPageState extends State<ThreadPage> {
 		await _listController.blockAndUpdate();
 	}
 
+	Future<void> _showWatchMenu() async {
+		await _weakNavigatorKey.currentState?.push(ThreadWatchControlsPage(
+			thread: widget.thread
+		));
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		String title = '/${widget.thread.board}/';
@@ -298,7 +306,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			title += ' (Archived)';
 		}
 		final notifications = context.watch<Notifications>();
-		final watch = notifications.getThreadWatch(widget.thread);
+		final watch = context.select<Persistence, ThreadWatch?>((_) => notifications.getThreadWatch(widget.thread));
 		return WillPopScope(
 			onWillPop: () async {
 				if (_replyBoxKey.currentState?.show ?? false) {
@@ -335,64 +343,8 @@ class _ThreadPageState extends State<ThreadPage> {
 								children: [
 									CupertinoButton(
 										padding: EdgeInsets.zero,
-										child: Stack(
-											children: [
-												Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill),
-												Positioned.fill(
-													child: (watch?.yousOnly ?? true) ? const SizedBox.shrink() : const Align(
-														alignment: Alignment.topRight,
-														child: Padding(
-															padding: EdgeInsets.only(top: 1, right: 1),
-															child: Icon(CupertinoIcons.circle_fill, size: 11)
-														)
-													)
-												),
-												Positioned.fill(
-													child: (watch?.yousOnly ?? true) ? const SizedBox.shrink() : Align(
-														alignment: Alignment.topRight,
-														child: Icon(CupertinoIcons.asterisk_circle_fill, size: 12, color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)
-													)
-												)
-											]
-										),
-										onPressed: () async {
-											if (watch != null) {
-												notifications.unsubscribeFromThread(widget.thread);
-											}
-											else if (persistentState.youIds.isEmpty) {
-												await promptForPushNotificationsIfNeeded(context);
-												notifications.subscribeToThread(widget.thread, persistentState.thread?.posts.last.id ?? 0, false, []);
-											}
-											else {
-												await promptForPushNotificationsIfNeeded(context);
-												// User is not subscribed but they have posts marked as (you)
-												// Ask what to do
-												final choice = await showCupertinoDialog<bool>(
-													context: context,
-													builder: (context) => CupertinoAlertDialog(
-														title: const Text('When to notify?'),
-														actions: [
-															CupertinoDialogAction(
-																child: const Text('Only (You)s'),
-																onPressed: () {
-																	Navigator.of(context).pop(true);
-																}
-															),
-															CupertinoDialogAction(
-																child: const Text('All Posts'),
-																onPressed: () {
-																	Navigator.of(context).pop(false);
-																}
-															)
-														]
-													)
-												);
-												if (choice != null) {
-													notifications.subscribeToThread(widget.thread, persistentState.thread?.posts.last.id ?? 0, choice, persistentState.youIds);
-												}
-											}
-											setState(() {});
-										}
+										onPressed: _showWatchMenu,
+										child: Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill)
 									),
 									CupertinoButton(
 										padding: EdgeInsets.zero,
@@ -661,7 +613,13 @@ class _ThreadPageState extends State<ThreadPage> {
 										onReplyPosted: (receipt) async {
 											await promptForPushNotificationsIfNeeded(context);
 											if (!mounted) return;
-											context.read<Notifications>().subscribeToThread(widget.thread, receipt.id, context.read<Notifications>().getThreadWatch(widget.thread)?.yousOnly ?? true, persistentState.youIds);
+											context.read<Notifications>().subscribeToThread(
+												thread: widget.thread,
+												lastSeenId: receipt.id,
+												localYousOnly: context.read<Notifications>().getThreadWatch(widget.thread)?.localYousOnly ?? true,
+												pushYousOnly: context.read<Notifications>().getThreadWatch(widget.thread)?.pushYousOnly ?? true,
+												youIds: persistentState.youIds
+											);
 											_listController.update();
 										},
 										onVisibilityChanged: () {

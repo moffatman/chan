@@ -5,17 +5,19 @@ import 'package:provider/provider.dart';
 
 class ImageboardScope extends StatelessWidget {
 	final Widget child;
-	final String imageboardKey;
+	final String? imageboardKey;
+	final Imageboard? imageboard;
 
 	const ImageboardScope({
 		required this.child,
 		required this.imageboardKey,
+		this.imageboard,
 		Key? key
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
-		final b = ImageboardRegistry.instance.getImageboardUnsafe(imageboardKey);
+		final b = imageboard ?? ImageboardRegistry.instance.getImageboardUnsafe(imageboardKey!);
 		if (b == null) {
 			return Center(
 				child: ErrorMessageCard(

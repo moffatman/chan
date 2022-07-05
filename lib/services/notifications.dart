@@ -221,10 +221,18 @@ class Notifications {
 		return threadWatches.tryFirstWhere((w) => w.board == thread.board && w.threadId == thread.id);
 	}
 
-	void subscribeToThread(ThreadIdentifier thread, int lastSeenId, bool yousOnly, List<int> youIds) {
+	void subscribeToThread({
+		required ThreadIdentifier thread,
+		required int lastSeenId,
+		required bool localYousOnly,
+		required bool pushYousOnly,
+		bool push = false,
+		required List<int> youIds
+	}) {
 		final existingWatch = threadWatches.tryFirstWhere((w) => w.threadIdentifier == thread);
 		if (existingWatch != null) {
-			existingWatch.yousOnly = yousOnly;
+			existingWatch.localYousOnly = localYousOnly;
+			existingWatch.pushYousOnly = pushYousOnly;
 			didUpdateThreadWatch(existingWatch);
 		}
 		else {
@@ -232,11 +240,13 @@ class Notifications {
 				board: thread.board,
 				threadId: thread.id,
 				lastSeenId: lastSeenId,
-				yousOnly: yousOnly,
-				youIds: youIds
+				localYousOnly: localYousOnly,
+				pushYousOnly: pushYousOnly,
+				youIds: youIds,
+				push: push
 			);
 			threadWatches.add(watch);
-			if (Persistence.settings.usePushNotifications == true) {
+			if (Persistence.settings.usePushNotifications == true && watch.push) {
 				_create(watch);
 			}
 			localWatcher?.onWatchUpdated(watch);
@@ -252,7 +262,7 @@ class Notifications {
 	}
 
 	void didUpdateThreadWatch(ThreadWatch watch) {
-		if (Persistence.settings.usePushNotifications == true) {
+		if (Persistence.settings.usePushNotifications == true && watch.push) {
 			_replace(watch);
 		}
 		localWatcher?.onWatchUpdated(watch);
@@ -260,7 +270,7 @@ class Notifications {
 	}
 
 	void zombifyThreadWatch(ThreadWatch watch) {
-		if (Persistence.settings.usePushNotifications == true) {
+		if (Persistence.settings.usePushNotifications == true && watch.push) {
 			_delete(watch);
 		}
 		watch.zombie = true;
@@ -269,7 +279,7 @@ class Notifications {
 	}
 
 	void removeThreadWatch(ThreadWatch watch) {
-		if (Persistence.settings.usePushNotifications == true) {
+		if (Persistence.settings.usePushNotifications == true && watch.push) {
 			_delete(watch);
 		}
 		threadWatches.remove(watch);
@@ -288,7 +298,7 @@ class Notifications {
 		}
 		final couldUpdate = watch.lastSeenId != lastKnownId;
 		watch.lastSeenId = lastKnownId;
-		if (couldUpdate && Persistence.settings.usePushNotifications == true) {
+		if (couldUpdate && Persistence.settings.usePushNotifications == true && watch.push) {
 			_update(watch);
 		}
 	}
@@ -301,10 +311,15 @@ class Notifications {
 	}
 
 	Future<void> _replace(Watch watch) async {
-		await Dio().put(
-			'$_notificationSettingsApiRoot/user/$id/watch',
-			data: jsonEncode(watch.toMap())
-		);
+		if (watch.push) {
+			await Dio().put(
+				'$_notificationSettingsApiRoot/user/$id/watch',
+				data: jsonEncode(watch.toMap())
+			);
+		}
+		else {
+			await _delete(watch);
+		}
 	}
 
 	Future<void> _update(Watch watch) async {

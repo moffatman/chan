@@ -32,6 +32,7 @@ abstract class Watch {
 	Map<String, dynamic> _toMap();
 	@override
 	String toString() => 'Watch(${toMap()})';
+	bool get push => true;
 }
 
 @HiveType(typeId: 28)
@@ -44,19 +45,26 @@ class ThreadWatch extends Watch {
 	@override
 	int lastSeenId;
 	@HiveField(3, defaultValue: true)
-	bool yousOnly;
+	bool localYousOnly;
 	@HiveField(4, defaultValue: [])
 	List<int> youIds;
 	@HiveField(5, defaultValue: false)
 	bool zombie;
+	@HiveField(6, defaultValue: true)
+	bool pushYousOnly;
+	@HiveField(7, defaultValue: true)
+	@override
+	bool push;
 	ThreadWatch({
 		required this.board,
 		required this.threadId,
 		required this.lastSeenId,
-		required this.yousOnly,
+		required this.localYousOnly,
 		required this.youIds,
-		this.zombie = false
-	});
+		this.zombie = false,
+		bool? pushYousOnly,
+		this.push = true
+	}) : pushYousOnly = pushYousOnly ?? localYousOnly;
 	static const type = 'thread';
 	@override
 	String get _type => type;
@@ -64,7 +72,7 @@ class ThreadWatch extends Watch {
 	Map<String, dynamic> _toMap() => {
 		'board': board,
 		'threadId': threadId.toString(),
-		'yousOnly': yousOnly,
+		'yousOnly': pushYousOnly,
 		'youIds': youIds
 	};
 	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board, threadId);
@@ -144,7 +152,7 @@ class ThreadWatcher extends ChangeNotifier {
 		// Set initial counts
 		for (final watch in persistence.browserState.threadWatches) {
 			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYou(_filter)?.length ?? 0;
-			if (!watch.yousOnly) {
+			if (!watch.localYousOnly) {
 				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
 			}
 		}
@@ -170,7 +178,10 @@ class ThreadWatcher extends ChangeNotifier {
 	void onWatchUpdated(Watch watch) {
 		if (watch is ThreadWatch) {
 			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYou(_filter)?.length ?? 0;
-			if (!watch.yousOnly) {
+			if (watch.localYousOnly) {
+				cachedUnseen.remove(watch.threadIdentifier);
+			}
+			else {
 				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
 			}
 			_updateCounts();
@@ -203,7 +214,7 @@ class ThreadWatcher extends ChangeNotifier {
 				final watch = persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == newThreadState.identifier);
 				if (watch != null) {
 					cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYou(_filter)?.length ?? 0;
-					if (!watch.yousOnly) {
+					if (!watch.localYousOnly) {
 						cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
 					}
 					_updateCounts();

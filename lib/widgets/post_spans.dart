@@ -8,11 +8,13 @@ import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/hover_popup.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/tex.dart';
@@ -286,11 +288,14 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
 			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
-				builder: (ctx) => ThreadPage(
-					thread: ThreadIdentifier(board, threadId!),
-					initialPostId: postId,
-					initiallyUseArchive: dead,
-					boardSemanticId: -1
+				builder: (ctx) => ImageboardScope(
+					imageboardKey: context.read<Imageboard>().key,
+					child: ThreadPage(
+						thread: ThreadIdentifier(board, threadId!),
+						initialPostId: postId,
+						initiallyUseArchive: dead,
+						boardSemanticId: -1
+					)
 				),
 				showAnimations: context.read<EffectiveSettings>().showAnimations
 			));
@@ -475,9 +480,12 @@ class PostBoardLink extends PostSpan {
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
 				(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
-					builder: (ctx) => BoardPage(
-						initialBoard: context.read<Persistence>().getBoard(board),
-						semanticId: -1
+					builder: (ctx) => ImageboardScope(
+					imageboardKey: context.read<Imageboard>().key,
+						child: BoardPage(
+							initialBoard: context.read<Persistence>().getBoard(board),
+							semanticId: -1
+						)
 					),
 					showAnimations: context.read<EffectiveSettings>().showAnimations
 				));
@@ -763,10 +771,13 @@ class PostCatalogSearchSpan extends PostSpan {
 				color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
 			),
 			recognizer: TapGestureRecognizer()..onTap = () => (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
-				builder: (ctx) => BoardPage(
-					initialBoard: context.read<Persistence>().getBoard(board),
-					initialSearch: query,
-					semanticId: -1
+				builder: (ctx) => ImageboardScope(
+					imageboardKey: context.read<Imageboard>().key,
+					child: BoardPage(
+						initialBoard: context.read<Persistence>().getBoard(board),
+						initialSearch: query,
+						semanticId: -1
+					)
 				),
 				showAnimations: context.read<EffectiveSettings>().showAnimations
 			)),

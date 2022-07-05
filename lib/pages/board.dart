@@ -298,7 +298,13 @@ class _BoardPageState extends State<BoardPage> {
 														onReplyPosted: (receipt) async {
 															await promptForPushNotificationsIfNeeded(ctx);
 															if (!mounted) return;
-															ctx.read<Notifications>().subscribeToThread(ThreadIdentifier(board!.name, receipt.id), receipt.id, false, [receipt.id]);
+															ctx.read<Notifications>().subscribeToThread(
+																thread: ThreadIdentifier(board!.name, receipt.id),
+																lastSeenId: receipt.id,
+																localYousOnly: false,
+																pushYousOnly: false,
+																youIds: [receipt.id]
+															);
 															_listController.update();
 															widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
 															Navigator.of(ctx).pop();
@@ -513,9 +519,12 @@ class _BoardPageState extends State<BoardPage> {
 																}
 																else {
 																	Navigator.of(context).push(FullWidthCupertinoPageRoute(
-																		builder: (ctx) => ThreadPage(
-																			thread: thread.identifier,
-																			boardSemanticId: widget.semanticId,
+																		builder: (ctx) => ImageboardScope(
+																			imageboardKey: context.read<Imageboard>().key,
+																			child: ThreadPage(
+																				thread: thread.identifier,
+																				boardSemanticId: widget.semanticId,
+																			)
 																		),
 																		showAnimations: context.read<EffectiveSettings>().showAnimations
 																	));
@@ -591,7 +600,13 @@ class _BoardPageState extends State<BoardPage> {
 									onReplyPosted: (receipt) async {
 										await promptForPushNotificationsIfNeeded(context);
 										if (!mounted) return;
-										context.read<Notifications>().subscribeToThread(ThreadIdentifier(board!.name, receipt.id), receipt.id, false, [receipt.id]);
+										context.read<Notifications>().subscribeToThread(
+											thread: ThreadIdentifier(board!.name, receipt.id),
+											lastSeenId: receipt.id,
+											localYousOnly: false, 
+											pushYousOnly: false,
+											youIds: [receipt.id]
+										);
 										_listController.update();
 										widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
 									}
