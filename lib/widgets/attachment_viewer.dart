@@ -762,6 +762,18 @@ class AttachmentViewer extends StatelessWidget {
 		);
 	}
 
+	double get aspectRatio {
+		final videoPlayerAspectRatio = controller.videoPlayerController?.value.aspectRatio;
+		if (videoPlayerAspectRatio != null && videoPlayerAspectRatio != 1) {
+			// Sometimes 1.00 is returned when player is not yet loaded
+			return videoPlayerAspectRatio;
+		}
+		if (attachment.width != null && attachment.height != null) {
+			return attachment.width! / attachment.height!;
+		}
+		return 1;
+	}
+
 	Widget _buildVideo(BuildContext context, Size? size) {
 		return ExtendedImageSlidePageHandler(
 			heroBuilderForSlidingPage: (Widget result) {
@@ -798,7 +810,7 @@ class AttachmentViewer extends StatelessWidget {
 								child: RotatedBox(
 									quarterTurns: controller.quarterTurns,
 									child: AspectRatio(
-										aspectRatio: controller.videoPlayerController!.value.aspectRatio,
+										aspectRatio: aspectRatio,
 										child: VideoPlayer(controller.videoPlayerController!)
 									)
 								)
