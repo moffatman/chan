@@ -217,7 +217,7 @@ class Persistence extends ChangeNotifier {
 			boardSortingMethods: {},
 			boardReverseSortings: {}
 		));
-		if (browserState.deprecatedTabs.isNotEmpty) {
+		if (browserState.deprecatedTabs.isNotEmpty && ImageboardRegistry.instance.getImageboardUnsafe(id) != null) {
 			print('Migrating tabs');
 			for (final deprecatedTab in browserState.deprecatedTabs) {
 				if (Persistence.tabs.length == 1 && Persistence.tabs.first.imageboardKey == null) {

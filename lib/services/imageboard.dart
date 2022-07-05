@@ -175,7 +175,13 @@ class ImageboardRegistry extends ChangeNotifier {
 						}
 					});
 				}
-				_sites.removeWhere((k, v) => siteKeysToRemove.contains(k));
+				for (final key in siteKeysToRemove) {
+					_sites.remove(key);
+					Persistence.tabs.removeWhere((t) => t.imageboardKey == key);
+				}
+				if (Persistence.tabs.isEmpty) {
+					Persistence.tabs.add(PersistentBrowserTab());
+				}
 			}
 			catch (e, st) {
 				setupError = 'Fatal setup error\n${e.toStringDio()}';
