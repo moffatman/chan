@@ -322,7 +322,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	void _setupDevSite() async {
 		final settings = context.read<EffectiveSettings>();
 		final tmpDevImageboard = Imageboard(
-			key: 'dev',
+			key: 'devsite',
 			siteData: defaultSite,
 			settings: settings
 		);
