@@ -341,6 +341,8 @@ class SavedSettings extends HiveObject {
 	bool showThumbnailsInGallery;
 	@HiveField(74)
 	ThreadSortingMethod watchedThreadsSortingMethod;
+	@HiveField(75)
+	bool closeTabSwitcherAfterUse;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -418,6 +420,7 @@ class SavedSettings extends HiveObject {
 		bool? hideDefaultNamesOnPosts,
 		bool? showThumbnailsInGallery,
 		ThreadSortingMethod? watchedThreadsSortingMethod,
+		bool? closeTabSwitcherAfterUse,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -506,7 +509,8 @@ class SavedSettings extends HiveObject {
 		recentSearches = recentSearches ?? PersistentRecentSearches(),
 		hideDefaultNamesOnPosts = hideDefaultNamesOnPosts ?? false,
 		showThumbnailsInGallery = showThumbnailsInGallery ?? true,
-		watchedThreadsSortingMethod = watchedThreadsSortingMethod ?? ThreadSortingMethod.unsorted;
+		watchedThreadsSortingMethod = watchedThreadsSortingMethod ?? ThreadSortingMethod.unsorted,
+		closeTabSwitcherAfterUse = closeTabSwitcherAfterUse ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1087,6 +1091,13 @@ class EffectiveSettings extends ChangeNotifier {
 	ThreadSortingMethod get watchedThreadsSortingMethod => _settings.watchedThreadsSortingMethod;
 	set watchedThreadsSortingMethod(ThreadSortingMethod setting) {
 		_settings.watchedThreadsSortingMethod = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get closeTabSwitcherAfterUse => _settings.closeTabSwitcherAfterUse;
+	set closeTabSwitcherAfterUse(bool setting) {
+		_settings.closeTabSwitcherAfterUse = setting;
 		_settings.save();
 		notifyListeners();
 	}

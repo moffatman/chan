@@ -471,6 +471,19 @@ class SettingsBehaviorPage extends StatelessWidget {
 						const SizedBox(width: 16)
 					]
 				),
+				const SizedBox(height: 32),
+				const Text('Close tab switcher after use'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('No'),
+						true: Text('Yes')
+					},
+					groupValue: settings.closeTabSwitcherAfterUse,
+					onValueChanged: (newValue) {
+						settings.closeTabSwitcherAfterUse = newValue;
+					}
+				),
 				const SizedBox(height: 32)
 			]
 		);

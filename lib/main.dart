@@ -451,7 +451,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			imageboardKey: withImageboardKey
 		) : PersistentBrowserTab(
 			imageboardKey: withImageboardKey,
-			board: context.read<Persistence>().getBoard(withThread.board),
+			board: withImageboardKey == null ? null : ImageboardRegistry.instance.getImageboard(withImageboardKey)?.persistence.getBoard(withThread.board),
 			thread: withThread
 		);
 		if (withThread != null && withInitialPostId != null) {
@@ -464,7 +464,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			activeBrowserTab.value = pos;
 			Persistence.currentTabIndex = pos;
 		}
-		showTabPopup = true;
+		showTabPopup = !activate || !Persistence.settings.closeTabSwitcherAfterUse;
 		Persistence.didUpdateTabs();
 		setState(() {});
 		Future.delayed(const Duration(milliseconds: 100), () => _tabListController.animateTo((_tabListController.position.maxScrollExtent / Persistence.tabs.length) * (pos + 1), duration: const Duration(milliseconds: 500), curve: Curves.ease));
@@ -740,6 +740,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								activeBrowserTab.value = newActiveTabIndex;
 								Persistence.currentTabIndex = newActiveTabIndex;
 								_didUpdateTabs();
+								if (Persistence.settings.closeTabSwitcherAfterUse) {
+									showTabPopup = false;
+								}
 								setState(() {});
 							}
 						}
@@ -747,6 +750,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					else {
 						activeBrowserTab.value = -1 * index;
 						Persistence.currentTabIndex = -1 * index;
+						if (Persistence.settings.closeTabSwitcherAfterUse) {
+							setState(() {
+								showTabPopup = false;
+							});
+						}
 						_didUpdateTabs();
 					}
 				}
@@ -803,6 +811,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					activeBrowserTab.value = 0;
 					Persistence.currentTabIndex = 0;
 					_didUpdateTabs();
+					if (Persistence.settings.closeTabSwitcherAfterUse) {
+						showTabPopup = false;
+					}
 					setState(() {});
 				}
 			},
