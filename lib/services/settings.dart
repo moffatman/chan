@@ -82,7 +82,9 @@ enum ThreadSortingMethod {
 	@HiveField(6)
 	lastReplyTime,
 	@HiveField(7)
-	imageCount
+	imageCount,
+	@HiveField(8)
+	lastReplyByYouTime
 }
 
 @HiveType(typeId: 20)
@@ -337,6 +339,8 @@ class SavedSettings extends HiveObject {
 	bool hideDefaultNamesOnPosts;
 	@HiveField(73)
 	bool showThumbnailsInGallery;
+	@HiveField(74)
+	ThreadSortingMethod watchedThreadsSortingMethod;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -413,6 +417,7 @@ class SavedSettings extends HiveObject {
 		PersistentRecentSearches? recentSearches,
 		bool? hideDefaultNamesOnPosts,
 		bool? showThumbnailsInGallery,
+		ThreadSortingMethod? watchedThreadsSortingMethod,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -500,7 +505,8 @@ class SavedSettings extends HiveObject {
 		currentTabIndex = currentTabIndex ?? 0,
 		recentSearches = recentSearches ?? PersistentRecentSearches(),
 		hideDefaultNamesOnPosts = hideDefaultNamesOnPosts ?? false,
-		showThumbnailsInGallery = showThumbnailsInGallery ?? true;
+		showThumbnailsInGallery = showThumbnailsInGallery ?? true,
+		watchedThreadsSortingMethod = watchedThreadsSortingMethod ?? ThreadSortingMethod.unsorted;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1074,6 +1080,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showThumbnailsInGallery => _settings.showThumbnailsInGallery;
 	set showThumbnailsInGallery(bool setting) {
 		_settings.showThumbnailsInGallery = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	ThreadSortingMethod get watchedThreadsSortingMethod => _settings.watchedThreadsSortingMethod;
+	set watchedThreadsSortingMethod(ThreadSortingMethod setting) {
+		_settings.watchedThreadsSortingMethod = setting;
 		_settings.save();
 		notifyListeners();
 	}

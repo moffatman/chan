@@ -89,7 +89,43 @@ class _SavedPageState extends State<SavedPage> {
 		);
 	}
 
-	ObstructingPreferredSizeWidget _navigationBar(String title) {
+ObstructingPreferredSizeWidget _watchedNavigationBar() {
+		final settings = context.watch<EffectiveSettings>();
+		return CupertinoNavigationBar(
+			transitionBetweenRoutes: false,
+			middle: const Text('Watched Threads'),
+			trailing: CupertinoButton(
+				padding: EdgeInsets.zero,
+				child: const Icon(CupertinoIcons.sort_down),
+				onPressed: () {
+					showCupertinoModalPopup<DateTime>(
+						context: context,
+						builder: (context) => CupertinoActionSheet(
+							title: const Text('Sort by...'),
+							actions: {
+								ThreadSortingMethod.lastPostTime: 'Last Reply',
+								ThreadSortingMethod.lastReplyByYouTime: 'Last Reply by You',
+							}.entries.map((entry) => CupertinoActionSheetAction(
+								child: Text(entry.value, style: TextStyle(
+									fontWeight: entry.key == settings.watchedThreadsSortingMethod ? FontWeight.bold : null
+								)),
+								onPressed: () {
+									settings.watchedThreadsSortingMethod = entry.key;
+									Navigator.of(context, rootNavigator: true).pop();
+								}
+							)).toList(),
+							cancelButton: CupertinoActionSheetAction(
+								child: const Text('Cancel'),
+								onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+							)
+						)
+					);
+				}
+			)
+		);
+	}
+
+	ObstructingPreferredSizeWidget _savedNavigationBar(String title) {
 		final settings = context.watch<EffectiveSettings>();
 		return CupertinoNavigationBar(
 			transitionBetweenRoutes: false,
@@ -137,10 +173,7 @@ class _SavedPageState extends State<SavedPage> {
 			key: widget.masterDetailKey,
 			paneCreator: () => [
 				MultiMasterPane<ImageboardScoped<ThreadWatch>>(
-					navigationBar: const CupertinoNavigationBar(
-						transitionBetweenRoutes: false,
-						middle: Text('Watched Threads')
-					),
+					navigationBar: _watchedNavigationBar(),
 					icon: CupertinoIcons.bell_fill,
 					masterBuilder: (context, selected, setter) {
 						return SafeArea(
@@ -163,9 +196,26 @@ class _SavedPageState extends State<SavedPage> {
 													item: w
 												))).toList();
 												final d = DateTime(2000);
-												mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
-													return (b.imageboard.persistence.getThreadStateIfExists(b.item.threadIdentifier)?.thread?.posts.last.time ?? d).compareTo(a.imageboard.persistence.getThreadStateIfExists(a.item.threadIdentifier)?.thread?.posts.last.time ?? d);
-												});
+												if (settings.watchedThreadsSortingMethod == ThreadSortingMethod.lastReplyByYouTime) {
+													mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
+														final ta = a.imageboard.persistence.getThreadStateIfExists(a.item.threadIdentifier);
+														final tb = b.imageboard.persistence.getThreadStateIfExists(b.item.threadIdentifier);
+														Post? pa;
+														Post? pb;
+														if (ta?.youIds.isNotEmpty == true) {
+															pa = tb!.thread?.posts_.tryFirstWhere((p) => p.id == tb.youIds.last);
+														}
+														if (tb?.youIds.isNotEmpty == true) {
+															pb = tb!.thread?.posts_.tryFirstWhere((p) => p.id == tb.youIds.last);
+														}
+														return (pb?.time ?? d).compareTo(pa?.time ?? d);
+													});
+												}
+												else if (settings.watchedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
+													mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
+														return (b.imageboard.persistence.getThreadStateIfExists(b.item.threadIdentifier)?.thread?.posts.last.time ?? d).compareTo(a.imageboard.persistence.getThreadStateIfExists(a.item.threadIdentifier)?.thread?.posts.last.time ?? d);
+													});
+												}
 												mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
 													if (a.item.zombie == b.item.zombie) {
 														return 0;
@@ -248,16 +298,21 @@ class _SavedPageState extends State<SavedPage> {
 																					},
 																					semanticParentIds: const [-4],
 																					onThumbnailTap: (initialAttachment) {
-																						final attachments = _threadListController.items.where((_) => _.item.thread?.attachment != null).map((_) => _.item.thread!.attachment!).toList();
+																						final attachments = {
+																							for (final w in _watchedListController.items)
+																								if (w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)?.thread?.attachment != null)
+																									w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)!: w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)!.thread!.attachment!
+																							};
 																						showGallery(
 																							context: context,
-																							attachments: attachments,
+																							attachments: attachments.values.toList(),
 																							replyCounts: {
-																								for (final item in _threadListController.items.where((_) => _.item.thread?.attachment != null)) item.item.thread!.attachment!: item.item.thread!.replyCount
+																								for (final item in attachments.entries) item.value: item.key.thread!.replyCount
 																							},
-																							initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+																							initialAttachment: attachments.values.firstWhere((a) => a.id == initialAttachment.id),
 																							onChange: (attachment) {
-																								_threadListController.animateTo((p) => p.item.thread?.attachment?.id == attachment.id);
+																								final threadId = attachments.entries.firstWhere((_) => _.value.id == attachment.id).key.identifier;
+																								_watchedListController.animateTo((p) => p.item.threadIdentifier == threadId);
 																							},
 																							semanticParentIds: [-4]
 																						);
@@ -316,7 +371,7 @@ class _SavedPageState extends State<SavedPage> {
 					}
 				),
 				MultiMasterPane<ImageboardScoped<ThreadIdentifier>>(
-					navigationBar: _navigationBar('Saved Threads'),
+					navigationBar: _savedNavigationBar('Saved Threads'),
 					icon: CupertinoIcons.tray_full,
 					masterBuilder: (context, selectedThread, threadSetter) {
 						Widget innerMasterBuilder(BuildContext context, Widget? child) {
@@ -361,30 +416,32 @@ class _SavedPageState extends State<SavedPage> {
 										],
 										child: GestureDetector(
 											behavior: HitTestBehavior.opaque,
-											child: ThreadRow(
-												thread: state.item.thread!,
-												isSelected: state.imageboard == selectedThread?.imageboard && state.item.thread!.identifier == selectedThread?.item,
-												showBoardName: true,
-												showSiteIcon: true,
-												onThumbnailLoadError: (error, stackTrace) {
-													state.imageboard.threadWatcher.fixBrokenThread(state.item.thread!.identifier);
-												},
-												semanticParentIds: const [-4],
-												onThumbnailTap: (initialAttachment) {
-													final attachments = _threadListController.items.where((_) => _.item.thread?.attachment != null).map((_) => _.item.thread!.attachment!).toList();
-													showGallery(
-														context: context,
-														attachments: attachments,
-														replyCounts: {
-															for (final item in _threadListController.items.where((_) => _.item.thread?.attachment != null)) item.item.thread!.attachment!: item.item.thread!.replyCount
-														},
-														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-														onChange: (attachment) {
-															_threadListController.animateTo((p) => p.item.thread?.attachment?.id == attachment.id);
-														},
-														semanticParentIds: [-4]
-													);
-												}
+											child: Builder(
+												builder: (context) => ThreadRow(
+													thread: state.item.thread!,
+													isSelected: state.imageboard == selectedThread?.imageboard && state.item.thread!.identifier == selectedThread?.item,
+													showBoardName: true,
+													showSiteIcon: true,
+													onThumbnailLoadError: (error, stackTrace) {
+														state.imageboard.threadWatcher.fixBrokenThread(state.item.thread!.identifier);
+													},
+													semanticParentIds: const [-4],
+													onThumbnailTap: (initialAttachment) {
+														final attachments = _threadListController.items.where((_) => _.item.thread?.attachment != null).map((_) => _.item.thread!.attachment!).toList();
+														showGallery(
+															context: context,
+															attachments: attachments,
+															replyCounts: {
+																for (final item in _threadListController.items.where((_) => _.item.thread?.attachment != null)) item.item.thread!.attachment!: item.item.thread!.replyCount
+															},
+															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+															onChange: (attachment) {
+																_threadListController.animateTo((p) => p.item.thread?.attachment?.id == attachment.id);
+															},
+															semanticParentIds: [-4]
+														);
+													}
+												)
 											),
 											onTap: () => threadSetter(ImageboardScoped(
 												imageboard: state.imageboard,
@@ -482,7 +539,7 @@ class _SavedPageState extends State<SavedPage> {
 					)
 				),
 				MultiMasterPane<ImageboardScoped<SavedPost>>(
-					navigationBar: _navigationBar('Saved Posts'),
+					navigationBar: _savedNavigationBar('Saved Posts'),
 					icon: CupertinoIcons.reply,
 					masterBuilder: (context, selected, setter) => StreamBuilder(
 						stream: savedPostNotifiersAnimation,
@@ -511,44 +568,46 @@ class _SavedPageState extends State<SavedPage> {
 											thread: savedPost.item.thread,
 											semanticRootIds: [-2]
 										),
-										child: PostRow(
-											post: savedPost.item.post,
-											isSelected: savedPost == selected,
-											onTap: () => setter(savedPost),
-											onThumbnailLoadError: (e, st) async {
-												Thread? newThread;
-												bool hadToUseArchive = false;
-												try {
-													newThread = await savedPost.imageboard.site.getThread(savedPost.item.thread.identifier);
+										child: Builder(
+											builder: (context) => PostRow(
+												post: savedPost.item.post,
+												isSelected: savedPost == selected,
+												onTap: () => setter(savedPost),
+												onThumbnailLoadError: (e, st) async {
+													Thread? newThread;
+													bool hadToUseArchive = false;
+													try {
+														newThread = await savedPost.imageboard.site.getThread(savedPost.item.thread.identifier);
+													}
+													on ThreadNotFoundException {
+														newThread = await savedPost.imageboard.site.getThreadFromArchive(savedPost.item.thread.identifier);
+														hadToUseArchive = true;
+													}
+													if (newThread != savedPost.item.thread || hadToUseArchive) {
+														savedPost.item.thread = newThread;
+														final state = savedPost.imageboard.persistence.getThreadStateIfExists(savedPost.item.thread.identifier);
+														state?.thread = newThread;
+														await state?.save();
+														savedPost.item.post = newThread.posts.firstWhere((p) => p.id == savedPost.item.post.id);
+														savedPost.imageboard.persistence.didUpdateSavedPost();
+													}
+												},
+												onThumbnailTap: (initialAttachment) {
+													final attachments = _postListController.items.where((_) => _.item.post.attachment != null).map((_) => _.item.post.attachment!).toList();
+													showGallery(
+														context: context,
+														attachments: attachments,
+														replyCounts: {
+															for (final item in _postListController.items.where((_) => _.item.post.attachment != null)) item.item.post.attachment!: item.item.post.replyIds.length
+														},
+														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+														onChange: (attachment) {
+															_postListController.animateTo((p) => p.item.thread.attachment?.id == attachment.id);
+														},
+														semanticParentIds: [-2]
+													);
 												}
-												on ThreadNotFoundException {
-													newThread = await savedPost.imageboard.site.getThreadFromArchive(savedPost.item.thread.identifier);
-													hadToUseArchive = true;
-												}
-												if (newThread != savedPost.item.thread || hadToUseArchive) {
-													savedPost.item.thread = newThread;
-													final state = savedPost.imageboard.persistence.getThreadStateIfExists(savedPost.item.thread.identifier);
-													state?.thread = newThread;
-													await state?.save();
-													savedPost.item.post = newThread.posts.firstWhere((p) => p.id == savedPost.item.post.id);
-													savedPost.imageboard.persistence.didUpdateSavedPost();
-												}
-											},
-											onThumbnailTap: (initialAttachment) {
-												final attachments = _postListController.items.where((_) => _.item.post.attachment != null).map((_) => _.item.post.attachment!).toList();
-												showGallery(
-													context: context,
-													attachments: attachments,
-													replyCounts: {
-														for (final item in _postListController.items.where((_) => _.item.post.attachment != null)) item.item.post.attachment!: item.item.post.replyIds.length
-													},
-													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-													onChange: (attachment) {
-														_postListController.animateTo((p) => p.item.thread.attachment?.id == attachment.id);
-													},
-													semanticParentIds: [-2]
-												);
-											}
+											)
 										)
 									)
 								),
