@@ -220,6 +220,10 @@ class Persistence extends ChangeNotifier {
 		if (browserState.deprecatedTabs.isNotEmpty) {
 			print('Migrating tabs');
 			for (final deprecatedTab in browserState.deprecatedTabs) {
+				if (Persistence.tabs.length == 1 && Persistence.tabs.first.imageboardKey == null) {
+					// It's the dummy tab
+					Persistence.tabs.clear();
+				}
 				Persistence.tabs.add(deprecatedTab..imageboardKey = id);
 			}
 			browserState.deprecatedTabs.clear();
