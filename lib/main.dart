@@ -173,7 +173,10 @@ class _ChanAppState extends State<ChanApp> {
 										theme = settings.makeDarkTheme(context);
 									}
 									return MediaQuery(
-										data: mq.copyWith(boldText: false),
+										data: mq.copyWith(
+											boldText: false,
+											textScaleFactor: mq.textScaleFactor * settings.textScale
+										),
 										child: CupertinoApp(
 											title: 'Chance',
 											useInheritedMediaQuery: true,

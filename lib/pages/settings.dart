@@ -635,6 +635,27 @@ class SettingsAppearancePage extends StatelessWidget {
 					]
 				),
 				const SizedBox(height: 16),
+				Row(
+					children: [
+						const Text('Font scale'),
+						const Spacer(),
+						CupertinoButton(
+							onPressed: settings.textScale <= 0.5 ? null : () {
+								settings.textScale -= 0.05;
+							},
+							child: const Icon(CupertinoIcons.minus)
+						),
+						Text('${(settings.textScale * 100).round()}%'),
+						CupertinoButton(
+							onPressed: settings.textScale >= 2.0 ? null : () {
+								settings.textScale += 0.05;
+							},
+							child: const Icon(CupertinoIcons.plus)
+						),
+						const SizedBox(width: 16)
+					]
+				),
+				const SizedBox(height: 16),
 				const Text('Interface Style'),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<TristateSystemSetting>(

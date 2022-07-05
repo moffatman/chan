@@ -343,6 +343,8 @@ class SavedSettings extends HiveObject {
 	ThreadSortingMethod watchedThreadsSortingMethod;
 	@HiveField(75)
 	bool closeTabSwitcherAfterUse;
+	@HiveField(76)
+	double textScale;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -421,6 +423,7 @@ class SavedSettings extends HiveObject {
 		bool? showThumbnailsInGallery,
 		ThreadSortingMethod? watchedThreadsSortingMethod,
 		bool? closeTabSwitcherAfterUse,
+		double? textScale,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -510,7 +513,8 @@ class SavedSettings extends HiveObject {
 		hideDefaultNamesOnPosts = hideDefaultNamesOnPosts ?? false,
 		showThumbnailsInGallery = showThumbnailsInGallery ?? true,
 		watchedThreadsSortingMethod = watchedThreadsSortingMethod ?? ThreadSortingMethod.unsorted,
-		closeTabSwitcherAfterUse = closeTabSwitcherAfterUse ?? false;
+		closeTabSwitcherAfterUse = closeTabSwitcherAfterUse ?? false,
+		textScale = textScale ?? 1.0;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1098,6 +1102,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get closeTabSwitcherAfterUse => _settings.closeTabSwitcherAfterUse;
 	set closeTabSwitcherAfterUse(bool setting) {
 		_settings.closeTabSwitcherAfterUse = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	double get textScale => _settings.textScale;
+	set textScale(double setting) {
+		_settings.textScale = setting;
 		_settings.save();
 		notifyListeners();
 	}
