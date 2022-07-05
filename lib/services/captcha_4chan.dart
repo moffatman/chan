@@ -14,11 +14,13 @@ part 'captcha_4chan.data.dart';
 
 class Chan4CustomCaptchaGuess {
 	final String guess;
+	final int numLetters;
 	final List<List<String>> alternatives;
 	final double confidence;
 	final List<double> confidences;
 	const Chan4CustomCaptchaGuess({
 		required this.guess,
+		required this.numLetters,
 		required this.alternatives,
 		required this.confidence,
 		required this.confidences
@@ -102,6 +104,56 @@ int _floodFillBuffer({
 		}
 	}
 	return pixelsChanged;
+}
+
+Uint8List _fixCuts({
+	required Uint8List buffer,
+	required int width,
+	required int height
+}) {
+	final out1 = Uint8List.fromList(buffer);
+	// dilate
+	for (int y = 1; y < height - 1; y++) {
+		for (int x = 1; x < width - 1; x++) {
+			final pos = y * width + x;
+			if (buffer[pos + 1] == 0 || buffer[pos - 1] == 0 || buffer[pos + width] == 0 || buffer[pos - width] == 0) {
+				out1[pos] = 0;
+			}
+		}
+	}
+	final out2 = Uint8List.fromList(out1);
+	// erode
+	for (int y = 1; y < height - 1; y++) {
+		for (int x = 1; x < width - 1; x++) {
+			final pos = y * width + x;
+			if (out1[pos + 1] == 0xFF || out1[pos - 1] == 0xFF || out1[pos + width] == 0xFF || out1[pos - width] == 0xFF) {
+				out2[pos] = 0;
+			}
+		}
+	}
+	return out2;
+}
+
+int _estimateNumLetters({
+	required Uint8List buffer,
+	required int width,
+	required int height
+}) {
+	final cols = List.generate(width, (i) => 0, growable: false);
+	for (int x = 0; x < width; x++) {
+		for (int y = 0; y < height; y++) {
+			if (buffer[y * width + x] == 0xFF) {
+				cols[x] += 1;
+			}
+		}
+	}
+	cols.sort();
+	print(cols);
+	if (cols[(cols.length * 0.8).floor()] == height) {
+		// at least 20% (by columns) is all white
+		return 5;
+	}
+	return 6;
 }
 
 class _FloodFillRange {
@@ -206,6 +258,11 @@ void _guess(_GuessParam param) async {
 	Uint8List captcha = await _getRedChannelOnly(param.rgbaData);
 	final width = param.width;
 	final height = param.height;
+	captcha = _fixCuts(
+		buffer: captcha,
+		width: width,
+		height: height
+	);
 	// Threshold
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
@@ -256,6 +313,11 @@ void _guess(_GuessParam param) async {
 		}));
 	}
 	final scores = (await Future.wait(letterFutures)).expand((x) => x).toList();
+	final numLetters = param.numLetters ?? _estimateNumLetters(
+		buffer: captcha,
+		width: width,
+		height: height
+	);
 	// Pick best set of letters
 	List<_LetterScore> guess({
 		List<_LetterScore> deadAnswers = const []
@@ -273,7 +335,7 @@ void _guess(_GuessParam param) async {
 				deadLetters[x].add(deadAnswer.letter);
 			}
 		}
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < numLetters; i++) {
 			_LetterScore bestScore = scores.first;
 			for (final score in scores) {
 				if (deadLetters[score.x].contains(score.letter)) {
@@ -317,6 +379,7 @@ void _guess(_GuessParam param) async {
 	param.sendPort.send(1.0);
 	param.sendPort.send(Chan4CustomCaptchaGuess(
 		guess: answersBest.map((x) => x.letter).join(''),
+		numLetters: numLetters,
 		//alternatives: alternatives,
 		alternatives: [[], [], [], [], []],
 		confidence: (1 - Normal.cdf(
@@ -342,11 +405,13 @@ void _guess(_GuessParam param) async {
 
 class _GuessParam {
 	final ByteData rgbaData;
+	final int? numLetters;
 	final int width;
 	final int height;
 	final SendPort sendPort;
 	const _GuessParam({
 		required this.rgbaData,
+		required this.numLetters,
 		required this.width,
 		required this.height,
 		required this.sendPort
@@ -354,11 +419,13 @@ class _GuessParam {
 }
 
 Future<Chan4CustomCaptchaGuess> guess(ui.Image image, {
+	required int? numLetters,
 	ValueChanged<double>? onProgress
 }) async {
 	final receivePort = ReceivePort();
 	await Isolate.spawn(_guess, _GuessParam(
 		rgbaData: (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!,
+		numLetters: numLetters,
 		width: image.width,
 		height: image.height,
 		sendPort: receivePort.sendPort

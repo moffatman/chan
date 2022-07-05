@@ -98,11 +98,12 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	int backgroundSlide = 0;
 	final _solutionNode = FocusNode();
 	final _solutionController = TextEditingController();
-	final _letterPickerControllers = List.generate(5, (i) => FixedExtentScrollController());
-	List<double> _guessConfidences = List.generate(5, (i) => 1.0);
+	final _letterPickerControllers = List.generate(6, (i) => FixedExtentScrollController());
+	List<double> _guessConfidences = List.generate(6, (i) => 1.0);
 	String _lastGuessText = "";
 	bool _greyOutPickers = true;
-	final _pickerKeys = List.generate(5, (i) => GlobalKey());
+	int numLetters = 6;
+	final _pickerKeys = List.generate(6, (i) => GlobalKey());
 	double _guessingProgress = 0.0;
 
 	Future<void> _animateGuess() async {
@@ -113,12 +114,15 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		try {
 			final bestGuess = await guess(
 				await _screenshotImage(),
+				numLetters: numLetters,
 				onProgress: (progress) {
 					setState(() {
 						_guessingProgress = progress;
 					});
 				}
 			);
+			numLetters = bestGuess.numLetters;
+			setState(() {});
 			_solutionController.text = bestGuess.guess;
 			_lastGuessText = bestGuess.guess;
 			_guessConfidences = bestGuess.confidences;
@@ -288,17 +292,17 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		return recorder.endRecording().toImage(width, height);
 	}
 
-	String _previousText = "00000";
+	String _previousText = "000000";
 	TextSelection _previousSelection = const TextSelection(baseOffset: 0, extentOffset: 1);
 	bool _modifyingFromPicker = false;
 
 	void _onSolutionControllerUpdate() {
 		final selection = _solutionController.selection;
 		final newText = _solutionController.text;
-		if (_solutionController.text.length != 5) {
-			_solutionController.text = _solutionController.text.substring(0, min(5, _solutionController.text.length)).padRight(5, ' ');
+		if (_solutionController.text.length != numLetters) {
+			_solutionController.text = _solutionController.text.substring(0, min(numLetters, _solutionController.text.length)).padRight(numLetters, ' ');
 		}
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < numLetters; i++) {
 			final char = _solutionController.text[i].toUpperCase();
 			if (!captchaLetters.contains(char)) {
 				const remap = {
@@ -317,18 +321,20 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				}
 			}
 		}
-		int start = selection.baseOffset % 5;
+		int start = selection.baseOffset % numLetters;
 		if (selection.isCollapsed) {
 			if (_previousSelection.baseOffset == selection.baseOffset && _previousText == newText) {
 				// Left-arrow was pressed
-				start = (start - 1) % 5;
+				start = (start - 1) % numLetters;
 			}
 			_solutionController.selection = TextSelection(baseOffset: start, extentOffset: start + 1);
 		}
 		if (!_modifyingFromPicker && _previousText != _solutionController.text) {
-			for (int i = 0; i < 5; i++) {
-				if (_previousText[i] != _solutionController.text[i]) {
-					_guessConfidences[i] = 1;
+			for (int i = 0; i < numLetters; i++) {
+				if (i >= _previousText.length || _previousText[i] != _solutionController.text[i]) {
+					if (i < _guessConfidences.length ) {
+						_guessConfidences[i] = 1;
+					}
 					_letterPickerControllers[i].animateToItem(captchaLetters.indexOf(newText[i].toUpperCase()), duration: const Duration(milliseconds: 250), curve: Curves.elasticIn);
 					setState(() {});
 				}
@@ -351,7 +357,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	void initState() {
 		super.initState();
 		if (context.read<EffectiveSettings>().useNewCaptchaForm) {
-			_solutionController.text = "00000";
+			_solutionController.text = "000000";
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
 			_solutionController.addListener(_onSolutionControllerUpdate);
 		}
@@ -538,106 +544,132 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 								ignoring: _greyOutPickers,
 								child: Opacity(
 									opacity: _greyOutPickers ? 0.5 : 1.0,
-									child: Row(
-										mainAxisAlignment: MainAxisAlignment.center,
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
 										children: [
-											for (int i = 0; i < 5; i++) ...[
-												Flexible(
-													flex: 1,
-													fit: FlexFit.tight,
-													child: SizedBox(
-														height: 200,
-														child: Stack(
-															fit: StackFit.expand,
-															children: [
-																NotificationListener(
-																	onNotification: (notification) {
-																		if (notification is ScrollEndNotification && notification.metrics is FixedExtentMetrics) {
-																			_modifyingFromPicker = true;
-																			final selection = _solutionController.selection;
-																			_solutionController.text = _solutionController.text.replaceRange(i, i + 1, captchaLetters[(notification.metrics as FixedExtentMetrics).itemIndex]);
-																			_solutionController.selection = selection;
-																			if (_guessConfidences[i] != 1) {
-																				setState(() {
-																					_guessConfidences[i] = 1;
-																				});
-																			}
-																			_modifyingFromPicker = false;
-																			return true;
-																		}
-																		return false;
-																	},
-																	child: CupertinoPicker.builder(
-																		key: _pickerKeys[i],
-																		scrollController: _letterPickerControllers[i],
-																		selectionOverlay: AnimatedBuilder(
-																			animation: _solutionController,
-																			builder: (context, child) => CupertinoPickerDefaultSelectionOverlay(
-																				background: ColorTween(
-																					begin: CupertinoColors.tertiarySystemFill.resolveFrom(context),
-																					end: CupertinoTheme.of(context).primaryColor
-																				).transform((_solutionNode.hasFocus && (_solutionController.selection.baseOffset <= i) && (i < _solutionController.selection.extentOffset)) ? 0.5 : 0)!
-																			)
-																		),
-																		childCount: captchaLetters.length,
-																		itemBuilder: (context, l) => Padding(
-																			padding: const EdgeInsets.all(6),
-																			child: Center(
-																				child: Text(captchaLetters[l],
-																					style: TextStyle(
-																						fontSize: 34,
-																						color:  ColorTween(
-																							begin: CupertinoTheme.of(context).primaryColor,
-																							end: const Color.fromARGB(255, 241, 190, 19)).transform(1 - _guessConfidences[i]
-																						)!
-																					)
-																				)
-																			)
-																		),
-																		itemExtent: 50,
-																		onSelectedItemChanged: null
-																	)
-																),
-																Column(
-																	crossAxisAlignment: CrossAxisAlignment.stretch,
+											CupertinoSegmentedControl<int>(
+												children: const {
+													5: Padding(
+														padding: EdgeInsets.all(8),
+														child: Text('5 letters')
+													),
+													6: Padding(
+														padding: EdgeInsets.all(8),
+														child: Text('6 letters')
+													)
+												},
+												groupValue: numLetters,
+												onValueChanged: (x) {
+													if (x != numLetters) {
+														setState(() {
+															numLetters = x;
+														});
+														_animateGuess();
+													}
+												}
+											),
+											Row(
+												mainAxisAlignment: MainAxisAlignment.center,
+												children: [
+													for (int i = 0; i < numLetters; i++) ...[
+														Flexible(
+															flex: 1,
+															fit: FlexFit.tight,
+															child: SizedBox(
+																height: 200,
+																child: Stack(
+																	fit: StackFit.expand,
 																	children: [
-																		GestureDetector(
-																			behavior: HitTestBehavior.translucent,
-																			onTap: () {
-																				_letterPickerControllers[i].animateToItem(
-																					_letterPickerControllers[i].selectedItem - 1,
-																					duration: const Duration(milliseconds: 100),
-																					curve: Curves.ease
-																				);
+																		NotificationListener(
+																			onNotification: (notification) {
+																				if (notification is ScrollEndNotification && notification.metrics is FixedExtentMetrics) {
+																					_modifyingFromPicker = true;
+																					final selection = _solutionController.selection;
+																					_solutionController.text = _solutionController.text.replaceRange(i, i + 1, captchaLetters[(notification.metrics as FixedExtentMetrics).itemIndex]);
+																					_solutionController.selection = selection;
+																					if (_guessConfidences[i] != 1) {
+																						setState(() {
+																							_guessConfidences[i] = 1;
+																						});
+																					}
+																					_modifyingFromPicker = false;
+																					return true;
+																				}
+																				return false;
 																			},
-																			child:const SizedBox(height: 75)
+																			child: CupertinoPicker.builder(
+																				key: _pickerKeys[i],
+																				scrollController: _letterPickerControllers[i],
+																				selectionOverlay: AnimatedBuilder(
+																					animation: _solutionController,
+																					builder: (context, child) => CupertinoPickerDefaultSelectionOverlay(
+																						background: ColorTween(
+																							begin: CupertinoColors.tertiarySystemFill.resolveFrom(context),
+																							end: CupertinoTheme.of(context).primaryColor
+																						).transform((_solutionNode.hasFocus && (_solutionController.selection.baseOffset <= i) && (i < _solutionController.selection.extentOffset)) ? 0.5 : 0)!
+																					)
+																				),
+																				childCount: captchaLetters.length,
+																				itemBuilder: (context, l) => Padding(
+																					padding: const EdgeInsets.all(6),
+																					child: Center(
+																						child: Text(captchaLetters[l],
+																							style: TextStyle(
+																								fontSize: 34,
+																								color:  ColorTween(
+																									begin: CupertinoTheme.of(context).primaryColor,
+																									end: const Color.fromARGB(255, 241, 190, 19)).transform(1 - _guessConfidences[min(_guessConfidences.length - 1, i)]
+																								)!
+																							)
+																						)
+																					)
+																				),
+																				itemExtent: 50,
+																				onSelectedItemChanged: null
+																			)
 																		),
-																		GestureDetector(
-																			behavior: HitTestBehavior.translucent,
-																			onTap: () {
-																				_solutionController.selection = TextSelection(baseOffset: i, extentOffset: i + 1);
-																				_solutionNode.requestFocus();
-																			},
-																			child: const SizedBox(height: 50)
-																		),
-																		GestureDetector(
-																			behavior: HitTestBehavior.translucent,
-																			onTap: () {
-																				_letterPickerControllers[i].animateToItem(
-																					_letterPickerControllers[i].selectedItem + 1,
-																					duration: const Duration(milliseconds: 100),
-																					curve: Curves.ease
-																				);
-																			},
-																			child: const SizedBox(height: 75)
+																		Column(
+																			crossAxisAlignment: CrossAxisAlignment.stretch,
+																			children: [
+																				GestureDetector(
+																					behavior: HitTestBehavior.translucent,
+																					onTap: () {
+																						_letterPickerControllers[i].animateToItem(
+																							_letterPickerControllers[i].selectedItem - 1,
+																							duration: const Duration(milliseconds: 100),
+																							curve: Curves.ease
+																						);
+																					},
+																					child:const SizedBox(height: 75)
+																				),
+																				GestureDetector(
+																					behavior: HitTestBehavior.translucent,
+																					onTap: () {
+																						_solutionController.selection = TextSelection(baseOffset: i, extentOffset: i + 1);
+																						_solutionNode.requestFocus();
+																					},
+																					child: const SizedBox(height: 50)
+																				),
+																				GestureDetector(
+																					behavior: HitTestBehavior.translucent,
+																					onTap: () {
+																						_letterPickerControllers[i].animateToItem(
+																							_letterPickerControllers[i].selectedItem + 1,
+																							duration: const Duration(milliseconds: 100),
+																							curve: Curves.ease
+																						);
+																					},
+																					child: const SizedBox(height: 75)
+																				)
+																			]
 																		)
 																	]
 																)
-															]
-														)
-													)
-												),
-											]
+															)
+														),
+													]
+												]
+											)
 										]
 									)
 								)
