@@ -122,6 +122,17 @@ class AttachmentViewerController extends ChangeNotifier {
 				_onCoalescedLongPressUpdate(x.last);
 			}
 		});
+		// optimistic
+		if (attachment.type == AttachmentType.image) {
+			getCachedImageFile(attachment.url.toString()).then((file) {
+				if (file != null && _cachedFile == null) {
+					_cachedFile = file;
+					_goodImageSource = attachment.url;
+					_isFullResolution = true;
+					notifyListeners();
+				}
+			});
+		}
 	}
 
 	set isPrimary(bool val) {
