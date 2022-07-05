@@ -535,6 +535,10 @@ class _ThreadPageState extends State<ThreadPage> {
 																			}
 																			if (shouldScroll) _blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500));
 																			// Don't show data if the thread switched
+																			Future.delayed(const Duration(milliseconds: 30), () {
+																				// Trigger update of counts in case new post is drawn fully onscreen
+																				_listController.slowScrollUpdates.add(null);
+																			});
 																			if (persistentState == tmpPersistentState) {
 																				return newThread.posts;
 																			}
@@ -620,6 +624,12 @@ class _ThreadPageState extends State<ThreadPage> {
 												pushYousOnly: context.read<Notifications>().getThreadWatch(widget.thread)?.pushYousOnly ?? true,
 												youIds: persistentState.youIds
 											);
+											if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
+												// If already at the bottom, pre-mark the created post as seen
+												persistentState.lastSeenPostId = receipt.id;
+												persistentState.lastSeenPostIdNotifier.value = receipt.id;
+												_saveQueued = true;
+											}
 											_listController.update();
 										},
 										onVisibilityChanged: () {
@@ -640,6 +650,9 @@ class _ThreadPageState extends State<ThreadPage> {
 		super.dispose();
 		_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
 		_listController.dispose();
+		if (_saveQueued) {
+			persistentState.save();
+		}
 	}
 }
 
@@ -901,7 +914,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 									),
 									if (_whiteCount > 0) Container(
 										decoration: BoxDecoration(
-											borderRadius: _greyCount <= 0 ? radiusAlone : const BorderRadius.only(topRight: radius, bottomRight: radius),
+											borderRadius: (_redCount <= 0 && _greyCount <= 0) ? radiusAlone : const BorderRadius.only(topRight: radius, bottomRight: radius),
 											color: CupertinoTheme.of(context).primaryColor
 										),
 										padding: const EdgeInsets.all(8),
