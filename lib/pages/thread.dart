@@ -166,12 +166,24 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
+	void _maybeUpdateWatch() {
+		final notifications = context.read<Notifications>();
+		final threadWatch = notifications.getThreadWatch(widget.thread);
+		if (threadWatch != null && persistentState.thread != null) {
+			final masterDetailHint = context.read<MasterDetailHint?>();
+			final foreground = masterDetailHint == null // Dev board in settings
+													|| masterDetailHint.primaryInterceptorKey.currentState?.primaryScrollControllerTracker.value != null;
+			notifications.updateLastKnownId(threadWatch, persistentState.thread!.posts.last.id, foreground: foreground);
+		}
+	}
+
 	@override
 	void initState() {
 		super.initState();
 		persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
 		persistentState.useArchive |= widget.initiallyUseArchive;
 		persistentState.save();
+		_maybeUpdateWatch();
 		zone = PostSpanRootZoneData(
 			thread: persistentState.thread ?? _nullThread,
 			site: context.read<ImageboardSite>(),
@@ -221,6 +233,7 @@ class _ThreadPageState extends State<ThreadPage> {
 				onNeedScrollToPost: oldZone.onNeedScrollToPost,
 				semanticRootIds: [widget.boardSemanticId, 0]
 			);
+			_maybeUpdateWatch();
 			persistentState.save();
 			_blockAndScrollToPostIfNeeded(const Duration(milliseconds: 100));
 			setState(() {});
