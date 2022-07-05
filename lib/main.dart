@@ -893,7 +893,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											Persistence.tabs[i].board != null ? '/${Persistence.tabs[i].board?.name}/' : 'None',
 											reorderable: false,
 											axis: axis,
-											preLabelInjection: (ImageboardRegistry.instance.count < 2 || Persistence.tabs[i].imageboardKey == null) ? null : ImageboardIcon(imageboardKey: Persistence.tabs[i].imageboardKey!)
+											preLabelInjection: (ImageboardRegistry.instance.count < 2 || Persistence.tabs[i].imageboardKey == null) ? null : const ImageboardIcon()
 										);
 										if (threadState != null) {
 											return ValueListenableBuilder(

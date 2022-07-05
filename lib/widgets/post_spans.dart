@@ -289,7 +289,8 @@ class PostQuoteLinkSpan extends PostSpan {
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
 			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 				builder: (ctx) => ImageboardScope(
-					imageboardKey: context.read<Imageboard>().key,
+					imageboardKey: null,
+					imageboard: context.read<Imageboard>(),
 					child: ThreadPage(
 						thread: ThreadIdentifier(board, threadId!),
 						initialPostId: postId,
@@ -481,7 +482,8 @@ class PostBoardLink extends PostSpan {
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
 				(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 					builder: (ctx) => ImageboardScope(
-					imageboardKey: context.read<Imageboard>().key,
+					imageboardKey: null,
+					imageboard: context.read<Imageboard>(),
 						child: BoardPage(
 							initialBoard: context.read<Persistence>().getBoard(board),
 							semanticId: -1
@@ -772,7 +774,8 @@ class PostCatalogSearchSpan extends PostSpan {
 			),
 			recognizer: TapGestureRecognizer()..onTap = () => (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 				builder: (ctx) => ImageboardScope(
-					imageboardKey: context.read<Imageboard>().key,
+					imageboardKey: null,
+					imageboard: context.read<Imageboard>(),
 					child: BoardPage(
 						initialBoard: context.read<Persistence>().getBoard(board),
 						initialSearch: query,

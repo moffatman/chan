@@ -89,7 +89,8 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
 		_touchEntry = OverlayEntry(
 			builder: (_) => ImageboardScope(
-				imageboardKey: context.read<Imageboard>().key,
+				imageboardKey: null,
+				imageboard: context.read<Imageboard>(),
 				child: RootCustomScale(
 					scale: scale,
 					child: IgnorePointer(
@@ -168,7 +169,8 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 											maxWidth: MediaQuery.of(context).size.width / 2
 										),
 										child: ImageboardScope(
-											imageboardKey: context.read<Imageboard>().key,
+											imageboardKey: null,
+											imageboard: context.read<Imageboard>(),
 											child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!
 										)
 									)
@@ -188,7 +190,8 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 									anchor: widget.anchor,
 									initialMousePosition: event.position,
 									child: ImageboardScope(
-										imageboardKey: context.read<Imageboard>().key,
+										imageboardKey: null,
+										imageboard: context.read<Imageboard>(),
 										child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!
 									)
 								)

@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/filtering.dart';
-import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -176,11 +175,9 @@ class ThreadRow extends StatelessWidget {
 				),
 				const TextSpan(text: ' ')
 			],
-			if (showSiteIcon) WidgetSpan(
+			if (showSiteIcon) const WidgetSpan(
 				alignment: PlaceholderAlignment.middle,
-				child: ImageboardIcon(
-					imageboardKey: context.read<Imageboard>().key
-				)
+				child: ImageboardIcon()
 			),
 			if (showBoardName || settings.showIdInCatalogHeader) TextSpan(
 				text: showBoardName ?

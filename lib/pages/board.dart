@@ -155,9 +155,7 @@ class _BoardPageState extends State<BoardPage> {
 						children: [
 							if (imageboard != null) ...[
 								if (ImageboardRegistry.instance.count > 1) ...[
-									ImageboardIcon(
-										imageboardKey: imageboard.key
-									),
+									const ImageboardIcon(),
 									const Text(' ')
 								],
 								if (board != null) Text('/${board!.name}/')
@@ -279,7 +277,8 @@ class _BoardPageState extends State<BoardPage> {
 									showCupertinoModalPopup(
 										context: context,
 										builder: (ctx) => ImageboardScope(
-											imageboardKey: imageboard!.key,
+											imageboardKey: null,
+											imageboard: imageboard!,
 											child: Padding(
 												padding: MediaQuery.of(ctx).viewInsets,
 												child: Container(
@@ -521,7 +520,8 @@ class _BoardPageState extends State<BoardPage> {
 																else {
 																	Navigator.of(context).push(FullWidthCupertinoPageRoute(
 																		builder: (ctx) => ImageboardScope(
-																			imageboardKey: context.read<Imageboard>().key,
+																			imageboardKey: null,
+																			imageboard: context.read<Imageboard>(),
 																			child: ThreadPage(
 																				thread: thread.identifier,
 																				boardSemanticId: widget.semanticId,

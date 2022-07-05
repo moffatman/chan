@@ -30,7 +30,8 @@ class _ImageboardSwitcherPageState extends State<ImageboardSwitcherPage> {
 			controller: _controller,
 			itemCount: imageboards.length,
 			itemBuilder: (context, i) => ImageboardScope(
-				imageboardKey: imageboards[i].key,
+				imageboardKey: null,
+				imageboard: imageboards[i],
 				child: Stack(
 					children: [
 						Builder(

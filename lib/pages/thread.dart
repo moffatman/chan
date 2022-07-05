@@ -327,11 +327,9 @@ class _ThreadPageState extends State<ThreadPage> {
 								mainAxisAlignment: MainAxisAlignment.center,
 								mainAxisSize: MainAxisSize.min,
 								children: [
-									if (ImageboardRegistry.instance.count > 1) Padding(
-										padding: const EdgeInsets.only(right: 6),
-										child: ImageboardIcon(
-											imageboardKey: context.read<Imageboard>().key
-										)
+									if (ImageboardRegistry.instance.count > 1) const Padding(
+										padding: EdgeInsets.only(right: 6),
+										child: ImageboardIcon()
 									),
 									Flexible(
 										child: AutoSizeText(title)
