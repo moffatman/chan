@@ -412,6 +412,7 @@ class _BoardPageState extends State<BoardPage> {
 														// Some methods only used for saved posts
 														case ThreadSortingMethod.savedTime:
 														case ThreadSortingMethod.lastPostTime:
+														case ThreadSortingMethod.lastReplyByYouTime:
 														case ThreadSortingMethod.unsorted:
 															break;
 													}
