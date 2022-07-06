@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -27,8 +29,13 @@ class WeakNavigator extends StatefulWidget {
       return WeakNavigator.of(context)!.push(widget);
     }
     else {
+      final imageboard = context.read<Imageboard?>();
       return Navigator.of(context).push(TransparentRoute(
-        builder: (context) => widget,
+        builder: (context) => imageboard == null ? widget : ImageboardScope(
+          imageboardKey: null,
+          imageboard: imageboard,
+          child: widget
+        ),
         showAnimations: context.read<EffectiveSettings>().showAnimations
       ));
     }
