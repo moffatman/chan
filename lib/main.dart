@@ -585,12 +585,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										},
 										child: tabObject.imageboardKey == null ? tab : ImageboardScope(
 											imageboardKey: tabObject.imageboardKey!,
-											child: Builder(
-												builder: (context) => FilterZone(
-													filter: context.select<Persistence, Filter>((p) => p.browserState.imageMD5Filter),
-													child: tab
-												)
-											)
+											child: tab
 										)
 									),
 								);
