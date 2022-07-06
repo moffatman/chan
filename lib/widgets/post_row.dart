@@ -433,6 +433,7 @@ class PostRow extends StatelessWidget {
 									lastSeenId: zone.threadState!.thread?.posts.last.id ?? latestPost.id,
 									localYousOnly: notifications.getThreadWatch(zone.threadState!.identifier)?.localYousOnly ?? true,
 									pushYousOnly: notifications.getThreadWatch(zone.threadState!.identifier)?.localYousOnly ?? true,
+									push: true,
 									youIds: zone.threadState!.youIds
 								);
 								zone.threadState!.save();

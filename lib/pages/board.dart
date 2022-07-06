@@ -302,6 +302,7 @@ class _BoardPageState extends State<BoardPage> {
 																lastSeenId: receipt.id,
 																localYousOnly: false,
 																pushYousOnly: false,
+																push: true,
 																youIds: [receipt.id]
 															);
 															_listController.update();
@@ -606,6 +607,7 @@ class _BoardPageState extends State<BoardPage> {
 											lastSeenId: receipt.id,
 											localYousOnly: false, 
 											pushYousOnly: false,
+											push: true,
 											youIds: [receipt.id]
 										);
 										_listController.update();

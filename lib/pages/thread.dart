@@ -620,6 +620,7 @@ class _ThreadPageState extends State<ThreadPage> {
 												lastSeenId: receipt.id,
 												localYousOnly: context.read<Notifications>().getThreadWatch(widget.thread)?.localYousOnly ?? true,
 												pushYousOnly: context.read<Notifications>().getThreadWatch(widget.thread)?.pushYousOnly ?? true,
+												push: true,
 												youIds: persistentState.youIds
 											);
 											if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {

@@ -226,7 +226,7 @@ class Notifications {
 		required int lastSeenId,
 		required bool localYousOnly,
 		required bool pushYousOnly,
-		bool push = false,
+		required bool push,
 		required List<int> youIds
 	}) {
 		final existingWatch = threadWatches.tryFirstWhere((w) => w.threadIdentifier == thread);
