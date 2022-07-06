@@ -885,11 +885,12 @@ Future<Attachment?> showGallery({
 	bool allowContextMenu = true,
 	ValueChanged<Attachment>? onChange,
 }) async {
-	final imageboardKey = context.read<Imageboard>().key;
+	final imageboard = context.read<Imageboard>();
 	final showAnimations = context.read<EffectiveSettings>().showAnimations;
 	final lastSelected = await Navigator.of(context, rootNavigator: true).push(TransparentRoute<Attachment>(
 		builder: (ctx) => ImageboardScope(
-			imageboardKey: imageboardKey,
+			imageboardKey: null,
+			imageboard: imageboard,
 			child: GalleryPage(
 				attachments: attachments,
 				replyCounts: replyCounts,
