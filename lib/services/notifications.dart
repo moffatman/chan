@@ -261,9 +261,12 @@ class Notifications {
 		}
 	}
 
-	void didUpdateThreadWatch(ThreadWatch watch) {
+	void didUpdateThreadWatch(ThreadWatch watch, {bool possiblyDisabledPush = false}) {
 		if (Persistence.settings.usePushNotifications == true && watch.push) {
 			_replace(watch);
+		}
+		else if (possiblyDisabledPush) {
+			_delete(watch);
 		}
 		localWatcher?.onWatchUpdated(watch);
 		persistence.didUpdateBrowserState();

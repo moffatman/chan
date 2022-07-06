@@ -148,7 +148,7 @@ class ThreadWatchControlsPage extends StatelessWidget {
 													watch.pushYousOnly = false;
 													break;
 											}
-											notifications.didUpdateThreadWatch(watch);
+											notifications.didUpdateThreadWatch(watch, possiblyDisabledPush: true);
 										}
 									}
 								)
