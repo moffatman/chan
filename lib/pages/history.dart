@@ -38,7 +38,7 @@ class _HistoryPageState extends State<HistoryPage> {
 					final states = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.threadStateBox.toMap().values.map((s) => ImageboardScoped(
 						imageboard: i,
 						item: s
-					))).toList();
+					))).where((i) => i.item.thread != null).toList();
 					states.sort((a, b) => b.item.lastOpenedTime.compareTo(a.item.lastOpenedTime));
 					return RefreshableList<ImageboardScoped<PersistentThreadState>>(
 						controller: _listController,
