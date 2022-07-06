@@ -685,7 +685,7 @@ class PostLinkSpan extends PostSpan {
 						),
 						const SizedBox(width: 16),
 						Flexible(
-							child: Text(url, style: const TextStyle(decoration: TextDecoration.underline))
+							child: Text(url, style: const TextStyle(decoration: TextDecoration.underline), textScaleFactor: 1)
 						),
 						const SizedBox(width: 16)
 					]);
@@ -713,8 +713,8 @@ class PostLinkSpan extends PostSpan {
 								children: [
 									if (snapshot.data?.title != null) Text(snapshot.data!.title!, style: TextStyle(
 										color: CupertinoTheme.of(context).primaryColor
-									)),
-									if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey))
+									), textScaleFactor: 1),
+									if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey), textScaleFactor: 1)
 								]
 							)
 						),
@@ -928,7 +928,8 @@ class PostTableSpan extends PostSpan {
 					children: row.map((col) => TableCell(
 						child: Text(
 							col,
-							textAlign: TextAlign.left
+							textAlign: TextAlign.left,
+							textScaleFactor: 1
 						)
 					)).toList()
 				)).toList()
