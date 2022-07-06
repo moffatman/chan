@@ -267,8 +267,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	Future<Thread> _makeThread(ThreadIdentifier thread, dynamic data) async {
 		final op = data[thread.id.toString()]['op'];
 		var replies = data[thread.id.toString()]['posts'] ?? [];
-		if (replies is! Iterable) {
-			replies = replies.values;
+		if (replies is Map) {
+			replies = replies.entries.where((e) => int.tryParse(e.key) != null).map((e) => e.value);
 		}
 		final posts = (await Future.wait([op, ...replies].map(_makePost))).toList();
 		final String? title = op['title'];
