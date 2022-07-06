@@ -279,26 +279,29 @@ openSearch({
 	required ImageboardArchiveSearchQuery query
 }) {
 	Navigator.of(context).push(FullWidthCupertinoPageRoute(
-		builder: (context) => SearchQueryPage(
-			query: query,
-			onResultSelected: (result) {
-				if (result != null) {
-					Navigator.of(context).push(FullWidthCupertinoPageRoute(
-						builder: (context) => ImageboardScope(
-							imageboardKey: null,
-							imageboard: result.imageboard,
-							child: ThreadPage(
-								thread: result.item.threadIdentifier,
-								initialPostId: result.item.id,
-								initiallyUseArchive: true,
-								boardSemanticId: -1
-							)
-						),
-						showAnimations: context.read<EffectiveSettings>().showAnimations
-					));
-				}
-			},
-			selectedResult: null
+		builder: (context) => ImageboardScope(
+			imageboardKey: query.imageboardKey,
+			child: SearchQueryPage(
+				query: query,
+				onResultSelected: (result) {
+					if (result != null) {
+						Navigator.of(context).push(FullWidthCupertinoPageRoute(
+							builder: (context) => ImageboardScope(
+								imageboardKey: null,
+								imageboard: result.imageboard,
+								child: ThreadPage(
+									thread: result.item.threadIdentifier,
+									initialPostId: result.item.id,
+									initiallyUseArchive: true,
+									boardSemanticId: -1
+								)
+							),
+							showAnimations: context.read<EffectiveSettings>().showAnimations
+						));
+					}
+				},
+				selectedResult: null
+			)
 		),
 		showAnimations: context.read<EffectiveSettings>().showAnimations
 	));
