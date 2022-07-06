@@ -68,6 +68,7 @@ class GalleryPage extends StatefulWidget {
 	final bool allowScroll;
 	final bool allowContextMenu;
 	final bool allowChrome;
+	final bool updateOverlays;
 
 	const GalleryPage({
 		required this.attachments,
@@ -80,6 +81,7 @@ class GalleryPage extends StatefulWidget {
 		this.allowScroll = true,
 		this.allowChrome = true,
 		this.allowContextMenu = true,
+		this.updateOverlays = true,
 		Key? key
 	}) : super(key: key);
 
@@ -175,6 +177,9 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	}
 
 	void _updateOverlays(bool show) async {
+		if (!widget.updateOverlays) {
+			return;
+		}
 		if (show && !showingOverlays) {
 			try {
 				await HomeIndicator.show();

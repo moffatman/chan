@@ -680,7 +680,8 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 									selectedValue.item.attachment: selectedValue.item.file.uri
 								},
 								semanticParentIds: poppedOut ? [-5] : [-6],
-								allowScroll: poppedOut
+								allowScroll: poppedOut,
+								updateOverlays: false
 							)
 						),
 						pageRouteBuilder: transparentPageRouteBuilder
