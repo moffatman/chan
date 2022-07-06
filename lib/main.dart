@@ -30,6 +30,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
+import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
@@ -270,7 +271,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool _isScrolling = false;
 	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
-	final Map<String, StreamSubscription<ThreadOrPostIdentifier>> _notificationsSubscriptions = {};
+	final Map<String, Tuple2<Notifications, StreamSubscription<ThreadOrPostIdentifier>>> _notificationsSubscriptions = {};
 
 	void _didUpdateTabs() {
 		if (_isScrolling) {
@@ -364,13 +365,23 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	void _onNotificationTapped(Imageboard imageboard, ThreadOrPostIdentifier notification) async {
 		if (!_goToPost(
+			imageboardKey: imageboard.key,
 			board: notification.board,
 			threadId: notification.threadId,
 			postId: notification.postId,
 			openNewTabIfNeeded: false
 		)) {
 			final watch = imageboard.persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == notification.threadIdentifier);
-			if (watch != null) {
+			if (watch == null) {
+				_goToPost(
+					imageboardKey: imageboard.key,
+					board: notification.board,
+					threadId: notification.threadId,
+					postId: notification.postId,
+					openNewTabIfNeeded: true
+				);
+			}
+			else {
 				_tabController.index = 1;
 				_lastIndex = 1;
 				for (int i = 0; i < 200 && _savedMasterDetailKey.currentState == null; i++) {
@@ -475,16 +486,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	bool _goToPost({
+		required String imageboardKey,
 		required String board,
 		required int threadId,
 		int? postId,
 		required bool openNewTabIfNeeded
 	}) {
-		PersistentBrowserTab? tab = Persistence.tabs.tryFirstWhere((tab) => tab.thread?.board == board && tab.thread?.id == threadId);
+		PersistentBrowserTab? tab = Persistence.tabs.tryFirstWhere((tab) => tab.imageboardKey == imageboardKey && tab.thread?.board == board && tab.thread?.id == threadId);
 		final tabAlreadyExisted = tab != null;
 		if (openNewTabIfNeeded) {
 			tab ??= _addNewTab(
 				activate: false,
+				withImageboardKey: imageboardKey,
 				withThread: ThreadIdentifier(board, threadId),
 				withInitialPostId: postId
 			);
@@ -973,10 +986,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			if (!board.initialized) {
 				continue;
 			}
-			_notificationsSubscriptions[board.key]?.cancel();
-			_notificationsSubscriptions[board.key] = board.notifications.tapStream.listen((target) {
-				_onNotificationTapped(board, target);
-			});
+			if (_notificationsSubscriptions[board.key]?.item1 != board.notifications) {
+				_notificationsSubscriptions[board.key]?.item2.cancel();
+				_notificationsSubscriptions[board.key] = Tuple2(board.notifications, board.notifications.tapStream.listen((target) {
+					_onNotificationTapped(board, target);
+				}));
+			}
 		}
 		final child = isInTabletLayout ? NotificationListener<ScrollNotification>(
 			onNotification: _onScrollNotification,
