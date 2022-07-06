@@ -216,7 +216,7 @@ class Site4Chan extends ImageboardSite {
 				else if (node.localName == 'pre') {
 					elements.add(PostCodeSpan(unescape.convert(node.innerHtml.replaceFirst(RegExp(r'<br>$'), '').replaceAll('<br>', '\n'))));
 				}
-				else if (node.localName == 'b') {
+				else if (node.localName == 'b' || node.localName == 'strong') {
 					elements.add(PostBoldSpan(makeSpan(board, threadId, node.innerHtml)));
 				}
 				else {
