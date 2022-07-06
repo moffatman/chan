@@ -31,10 +31,10 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-	final _valueInjector = ValueNotifier<ImageboardArchiveSearchResult?>(null);
+	final _valueInjector = ValueNotifier<ImageboardScoped<ImageboardArchiveSearchResult>?>(null);
 	@override
 	Widget build(BuildContext context) {
-		return MasterDetailPage<ImageboardArchiveSearchResult>(
+		return MasterDetailPage<ImageboardScoped<ImageboardArchiveSearchResult>>(
 			id: 'search',
 			masterBuilder: (context, currentValue, setValue) {
 				WidgetsBinding.instance.addPostFrameCallback((_){
@@ -45,7 +45,7 @@ class _SearchPageState extends State<SearchPage> {
 						Navigator.of(context).push(FullWidthCupertinoPageRoute(
 							builder: (context) => ValueListenableBuilder(
 								valueListenable: _valueInjector,
-								builder: (context, ImageboardArchiveSearchResult? selectedResult, child) {
+								builder: (context, ImageboardScoped<ImageboardArchiveSearchResult>? selectedResult, child) {
 									final child = SearchQueryPage(
 										query: query,
 										selectedResult: _valueInjector.value,
@@ -67,11 +67,15 @@ class _SearchPageState extends State<SearchPage> {
 				);
 			},
 			detailBuilder: (post, poppedOut) => BuiltDetailPane(
-				widget: post != null ? ThreadPage(
-					thread: post.threadIdentifier,
-					initialPostId: post.id,
-					initiallyUseArchive: true,
-					boardSemanticId: -1
+				widget: post != null ? ImageboardScope(
+					imageboardKey: null,
+					imageboard: post.imageboard,
+					child: ThreadPage(
+						thread: post.item.threadIdentifier,
+						initialPostId: post.item.id,
+						initiallyUseArchive: true,
+						boardSemanticId: -1
+					)
 				) : Builder(
 					builder: (context) => Container(
 						decoration: BoxDecoration(

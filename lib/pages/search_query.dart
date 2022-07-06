@@ -3,10 +3,12 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/thread_row.dart';
@@ -18,8 +20,8 @@ import 'package:provider/provider.dart';
 
 class SearchQueryPage extends StatefulWidget {
 	final ImageboardArchiveSearchQuery query;
-	final ImageboardArchiveSearchResult? selectedResult;
-	final ValueChanged<ImageboardArchiveSearchResult?> onResultSelected;
+	final ImageboardScoped<ImageboardArchiveSearchResult>? selectedResult;
+	final ValueChanged<ImageboardScoped<ImageboardArchiveSearchResult>?> onResultSelected;
 	const SearchQueryPage({
 		required this.query,
 		required this.selectedResult,
@@ -146,7 +148,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		);
 	}
 
-	Widget _build(BuildContext context, ImageboardArchiveSearchResult? currentValue, ValueChanged<ImageboardArchiveSearchResult?> setValue) {
+	Widget _build(BuildContext context, ImageboardScoped<ImageboardArchiveSearchResult>? currentValue, ValueChanged<ImageboardScoped<ImageboardArchiveSearchResult>?> setValue) {
 		if (result.error != null) {
 			return Center(
 				child: Column(
@@ -196,8 +198,11 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 								),
 								showCrossThreadLabel: false,
 								allowTappingLinks: false,
-								isSelected: currentValue == row,
-								onTap: () => setValue(row),
+								isSelected: currentValue?.item == row,
+								onTap: () => setValue(ImageboardScoped(
+									imageboard: context.read<Imageboard>(),
+									item: row
+								)),
 								baseOptions: PostSpanRenderOptions(
 									highlightString: widget.query.query
 								),
@@ -206,7 +211,10 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					}
 					else {
 						return GestureDetector(
-							onTap: () => setValue(row),
+							onTap: () => setValue(ImageboardScoped(
+								imageboard: context.read<Imageboard>(),
+								item: row
+							)),
 							child: ThreadRow(
 								thread: row.thread!,
 								onThumbnailTap: (attachment) => showGallery(
@@ -214,7 +222,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									attachments: [attachment],
 									semanticParentIds: [-7]
 								),
-								isSelected: currentValue == row,
+								isSelected: currentValue?.item == row,
 								countsUnreliable: true,
 								baseOptions: PostSpanRenderOptions(
 									highlightString: widget.query.query.isEmpty ? null : widget.query.query
@@ -276,11 +284,15 @@ openSearch({
 			onResultSelected: (result) {
 				if (result != null) {
 					Navigator.of(context).push(FullWidthCupertinoPageRoute(
-						builder: (context) => ThreadPage(
-							thread: result.threadIdentifier,
-							initialPostId: result.id,
-							initiallyUseArchive: true,
-							boardSemanticId: -1
+						builder: (context) => ImageboardScope(
+							imageboardKey: null,
+							imageboard: result.imageboard,
+							child: ThreadPage(
+								thread: result.item.threadIdentifier,
+								initialPostId: result.item.id,
+								initiallyUseArchive: true,
+								boardSemanticId: -1
+							)
 						),
 						showAnimations: context.read<EffectiveSettings>().showAnimations
 					));
