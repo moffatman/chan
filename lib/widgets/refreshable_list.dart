@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
@@ -11,6 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:tuple/tuple.dart';
 
@@ -344,7 +346,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 									),
 									if ((list?.isNotEmpty ?? false) && list?.first is Filterable) SliverToBoxAdapter(
 										child: Container(
-											height: kMinInteractiveDimensionCupertino,
+											height: kMinInteractiveDimensionCupertino * context.select<EffectiveSettings, double>((s) => s.textScale),
 											padding: const EdgeInsets.all(4),
 											child: Row(
 												mainAxisSize: MainAxisSize.min,
