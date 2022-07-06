@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -51,6 +52,7 @@ class _ContextMenuState extends State<ContextMenu> {
 		final persistence = context.select<Persistence?, Persistence?>((p) => p);
 		final threadWatcher = context.select<ThreadWatcher?, ThreadWatcher?>((w) => w);
 		final notifications = context.watch<Notifications?>();
+		final iconSize = 24 * context.select<EffectiveSettings, double>((s) => s.textScale);
 		final child = GestureDetector(
 			onSecondaryTapUp: (event) {
 				final topOfUsableSpace = MediaQuery.of(context).size.height * 0.8;
@@ -93,7 +95,7 @@ class _ContextMenuState extends State<ContextMenu> {
 															children: [
 																action.child,
 																const Spacer(),
-																Icon(action.trailingIcon)
+																Icon(action.trailingIcon, size: iconSize)
 															]
 														)
 													),
