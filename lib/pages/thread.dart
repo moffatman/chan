@@ -20,6 +20,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
@@ -833,11 +834,16 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												final nextPostWithImage = widget.persistentState.thread?.posts.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.attachment != null, orElse: () {
 													return widget.persistentState.thread!.posts.take(widget.listController.firstVisibleIndex).lastWhere((p) => p.attachment != null);
 												});
+												final imageboard = context.read<Imageboard>();
 												Navigator.of(context).push(FullWidthCupertinoPageRoute(
-													builder: (context) => ThreadAttachmentsPage(
-														thread: widget.persistentState.thread!,
-														initialAttachment: nextPostWithImage?.attachment,
-														//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
+													builder: (context) => ImageboardScope(
+														imageboardKey: null,
+														imageboard: imageboard,
+														child: ThreadAttachmentsPage(
+															thread: widget.persistentState.thread!,
+															initialAttachment: nextPostWithImage?.attachment,
+															//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
+														)
 													),
 													showAnimations: context.read<EffectiveSettings>().showAnimations)
 												);
