@@ -770,7 +770,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					}
 				}
 				_tabController.index = max(0, index);
-				_lastIndex = index;
+				_lastIndex = max(0, index);
 			}
 		);
 		if (reorderable) {
