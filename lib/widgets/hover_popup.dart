@@ -86,19 +86,15 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		}
 		_touchGlobalKey = GlobalKey();
 		_touchStart = details.globalPosition;
-		final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
 		_touchEntry = OverlayEntry(
 			builder: (_) => ImageboardScope(
 				imageboardKey: null,
 				imageboard: context.read<Imageboard>(),
-				child: RootCustomScale(
-					scale: scale,
-					child: IgnorePointer(
-						child: Center(
-							child: _ScalerBlurrer(
-								key: _touchGlobalKey,
-								child: (widget.popupBuilder?.call(_value, true) ?? widget.popup)!
-							)
+				child:IgnorePointer(
+					child: Center(
+						child: _ScalerBlurrer(
+							key: _touchGlobalKey,
+							child: (widget.popupBuilder?.call(_value, true) ?? widget.popup)!
 						)
 					)
 				)
@@ -182,18 +178,15 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 						_globalKey = GlobalKey();
 						final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
 						_entry = OverlayEntry(
-							builder: (_) => RootCustomScale(
+							builder: (_) => _FloatingHoverPopup(
+								key: _globalKey,
 								scale: scale,
-								child: _FloatingHoverPopup(
-									key: _globalKey,
-									scale: scale,
-									anchor: widget.anchor,
-									initialMousePosition: event.position,
-									child: ImageboardScope(
-										imageboardKey: null,
-										imageboard: context.read<Imageboard>(),
-										child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!
-									)
+								anchor: widget.anchor,
+								initialMousePosition: event.position,
+								child: ImageboardScope(
+									imageboardKey: null,
+									imageboard: context.read<Imageboard>(),
+									child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!
 								)
 							)
 						);

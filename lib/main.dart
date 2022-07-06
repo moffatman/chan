@@ -178,20 +178,20 @@ class _ChanAppState extends State<ChanApp> {
 											boldText: false,
 											textScaleFactor: mq.textScaleFactor * settings.textScale
 										),
-										child: CupertinoApp(
-											title: 'Chance',
-											useInheritedMediaQuery: true,
-											debugShowCheckedModeBanner: false,
-											theme: theme,
-											home: FilterZone(
-												filter: settings.filter,
-												child: Builder(
-													builder: (BuildContext context) {
-														ImageboardRegistry.instance.context = context;
-														return DefaultTextStyle(
-															style: CupertinoTheme.of(context).textTheme.textStyle,
-															child: RootCustomScale(
-																scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
+										child: RootCustomScale(
+											scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
+											child: CupertinoApp(
+												title: 'Chance',
+												useInheritedMediaQuery: true,
+												debugShowCheckedModeBanner: false,
+												theme: theme,
+												home: FilterZone(
+													filter: settings.filter,
+													child: Builder(
+														builder: (BuildContext context) {
+															ImageboardRegistry.instance.context = context;
+															return DefaultTextStyle(
+																style: CupertinoTheme.of(context).textTheme.textStyle,
 																child: ImageboardRegistry.instance.initialized ? const ChanHomePage() : Container(
 																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 																	child: Center(
@@ -212,15 +212,15 @@ class _ChanAppState extends State<ChanApp> {
 																		}) : const CupertinoActivityIndicator()
 																	)
 																)
-															)
-														);
-													}
-												)
-											),
-											localizationsDelegates: const [
-												DefaultCupertinoLocalizations.delegate,
-												DefaultMaterialLocalizations.delegate
-											]
+															);
+														}
+													)
+												),
+												localizationsDelegates: const [
+													DefaultCupertinoLocalizations.delegate,
+													DefaultMaterialLocalizations.delegate
+												]
+											)
 										)
 									);
 								}
