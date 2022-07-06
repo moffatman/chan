@@ -203,7 +203,7 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 														Post? pa;
 														Post? pb;
 														if (ta?.youIds.isNotEmpty == true) {
-															pa = tb!.thread?.posts_.tryFirstWhere((p) => p.id == tb.youIds.last);
+															pa = ta!.thread?.posts_.tryFirstWhere((p) => p.id == ta.youIds.last);
 														}
 														if (tb?.youIds.isNotEmpty == true) {
 															pb = tb!.thread?.posts_.tryFirstWhere((p) => p.id == tb.youIds.last);
