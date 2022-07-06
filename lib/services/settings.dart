@@ -512,7 +512,7 @@ class SavedSettings extends HiveObject {
 		recentSearches = recentSearches ?? PersistentRecentSearches(),
 		hideDefaultNamesOnPosts = hideDefaultNamesOnPosts ?? false,
 		showThumbnailsInGallery = showThumbnailsInGallery ?? true,
-		watchedThreadsSortingMethod = watchedThreadsSortingMethod ?? ThreadSortingMethod.unsorted,
+		watchedThreadsSortingMethod = watchedThreadsSortingMethod ?? ThreadSortingMethod.lastPostTime,
 		closeTabSwitcherAfterUse = closeTabSwitcherAfterUse ?? false,
 		textScale = textScale ?? 1.0;
 }
