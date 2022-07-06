@@ -215,12 +215,25 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		return panes[index].currentValue.value;
 	}
 
+	void _popMasterValueRoutes() {
+		bool continuePopping = true;
+		while ((_masterKey.currentState?.canPop() ?? false) && continuePopping) {
+			// Hack to peek at top route
+			// Need to pop with value=false so can't just use popUntil
+			_masterKey.currentState?.popUntil((route) {
+				continuePopping = route.settings != dontAutoPopSettings;
+				if (continuePopping) {
+					_masterKey.currentState?.pop(false);
+				}
+				return true;
+			});
+		}
+	}
+
 	void _onNewValue<T> (MultiMasterPane<T> pane) {
 		if (onePane) {
 			if (pane.currentValue.value != null) {
-				while (_masterKey.currentState?.canPop() ?? false) {
-					_masterKey.currentState?.pop(false);
-				}
+				_popMasterValueRoutes();
 				_masterKey.currentState!.push(pane.buildDetailRoute(context.read<EffectiveSettings>().showAnimations)).then(pane.onPushReturn);
 			}
 		}
@@ -327,18 +340,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 				_masterKey.currentState!.push(pane.buildDetailRoute(context.read<EffectiveSettings>().showAnimations)).then(pane.onPushReturn);
 			}
 			else {
-				bool continuePopping = true;
-				while ((_masterKey.currentState?.canPop() ?? false) && continuePopping) {
-					// Hack to peek at top route
-					// Need to pop with value=false so can't just use popUntil
-					_masterKey.currentState?.popUntil((route) {
-						continuePopping = route.settings != dontAutoPopSettings;
-						if (continuePopping) {
-							_masterKey.currentState?.pop(false);
-						}
-						return true;
-					});
-				}
+				_popMasterValueRoutes();
 				while (_detailKey.currentState?.canPop() ?? false) {
 					_detailKey.currentState?.pop(false);
 				}
