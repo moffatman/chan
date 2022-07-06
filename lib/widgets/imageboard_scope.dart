@@ -19,11 +19,14 @@ class ImageboardScope extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final b = imageboard ?? ImageboardRegistry.instance.getImageboardUnsafe(imageboardKey!);
+		final b = imageboard ?? ImageboardRegistry.instance.getImageboardUnsafe(imageboardKey ?? 'null');
 		if (b == null) {
 			return Center(
 				child: ErrorMessageCard(
-					'No such imageboard: $imageboardKey'
+					'No such imageboard: $imageboardKey',
+					remedies: {
+						if (Navigator.of(context).canPop()) 'Close': Navigator.of(context).pop
+					}
 				)
 			);
 		}
