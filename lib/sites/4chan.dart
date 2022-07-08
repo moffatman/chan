@@ -272,7 +272,8 @@ class Site4Chan extends ImageboardSite {
 			spanFormat: PostSpanFormat.chan4,
 			flag: _makeFlag(data, board),
 			posterId: data['id'],
-			passSinceYear: data['since4pass']
+			passSinceYear: data['since4pass'],
+			capcode: data['capcode']
 		);
 	}
 	Attachment? _makeAttachment(String board, int threadId, dynamic data) {

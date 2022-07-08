@@ -256,6 +256,10 @@ class PostRow extends StatelessWidget {
 																		style: TextStyle(color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
 																	)
 																	else if (settings.showNameOnPosts || isYourPost) const TextSpan(text: ' '),
+																	if (latestPost.capcode != null) TextSpan(
+																		text: '## ${latestPost.capcode} ## ',
+																		style: TextStyle(fontWeight: FontWeight.w600, color: settings.theme.quoteColor.shiftHue(200).shiftSaturation(-0.3))
+																	)
 																]
 																else if (field == PostDisplayField.posterId && latestPost.posterId != null) ...[
 																	IDSpan(
