@@ -41,6 +41,7 @@ class _HistoryPageState extends State<HistoryPage> {
 					))).where((i) => i.item.thread != null).toList();
 					states.sort((a, b) => b.item.lastOpenedTime.compareTo(a.item.lastOpenedTime));
 					return RefreshableList<ImageboardScoped<PersistentThreadState>>(
+						filterableAdapter: (t) => t.item,
 						controller: _listController,
 						listUpdater: () => throw UnimplementedError(),
 						id: 'history',

@@ -370,6 +370,7 @@ class _BoardPageState extends State<BoardPage> {
 										children: [
 											RefreshableList<Thread>(
 												initialFilter: widget.initialSearch,
+												filterableAdapter: (t) => t,
 												allowReordering: true,
 												onWantAutosave: (thread) async {
 													final persistence = context.read<Persistence>();

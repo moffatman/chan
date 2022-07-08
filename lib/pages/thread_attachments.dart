@@ -71,6 +71,7 @@ class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 	Widget build(BuildContext context) {
 		final attachments = widget.thread.posts.where((p) => p.attachment != null).map((p) => p.attachment!).toList();
 		return RefreshableList<Attachment>(
+			filterableAdapter: null,
 			id: '${widget.thread.identifier} attachments',
 			controller: _controller,
 			listUpdater: () => throw UnimplementedError(),

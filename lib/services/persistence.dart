@@ -585,7 +585,7 @@ class SavedAttachment {
 }
 
 @HiveType(typeId: 19)
-class SavedPost implements Filterable {
+class SavedPost {
 	@HiveField(0)
 	Post post;
 	@HiveField(1)
@@ -598,19 +598,6 @@ class SavedPost implements Filterable {
 		required this.savedTime,
 		required this.thread
 	});
-
-	@override
-	String get board => post.board;
-	@override
-	int get id => post.id;
-	@override
-	String? getFilterFieldText(String fieldName) => post.getFilterFieldText(fieldName);
-	@override
-	bool get hasFile => post.hasFile;
-	@override
-	bool get isThread => false;
-	@override
-	List<int> get repliedToIds => post.repliedToIds;
 }
 
 @HiveType(typeId: 21)

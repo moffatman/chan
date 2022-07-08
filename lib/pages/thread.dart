@@ -430,6 +430,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																		return false;
 																	},
 																	child: RefreshableList<Post>(
+																		filterableAdapter: (t) => t,
 																		key: _listKey,
 																		id: '/${widget.thread.board}/${widget.thread.id}',
 																		disableUpdates: persistentState.thread?.isArchived ?? false,

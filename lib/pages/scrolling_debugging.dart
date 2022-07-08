@@ -47,6 +47,7 @@ class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
 				)
 			),
 			child: RefreshableList<FakeItem>(
+				filterableAdapter: null,
 				id: 'debuggingList',
 				controller: controller,
 				itemBuilder: (context, item) => ExpensiveWidget(id: item.id),

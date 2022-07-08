@@ -29,6 +29,7 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 		final settings = context.watch<EffectiveSettings>();
 		return RefreshableList<Thread>(
 			gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
+			filterableAdapter: (t) => t,
 			listUpdater: () async {
 				final thread = await widget.site.getThread(ThreadIdentifier('g', 85712241));
 				return List.generate(150, (i) => thread);

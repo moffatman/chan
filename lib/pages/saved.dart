@@ -5,7 +5,6 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
-import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -28,7 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
-class _PostThreadCombo implements Filterable {
+class _PostThreadCombo {
 	final Imageboard imageboard;
 	final Post post;
 	final Thread thread;
@@ -42,19 +41,6 @@ class _PostThreadCombo implements Filterable {
 	bool operator == (dynamic o) => (o is _PostThreadCombo) && (o.post.id == post.id) && (o.thread.identifier == thread.identifier);
 	@override
 	int get hashCode => post.hashCode * 31 + thread.hashCode;
-
-	@override
-	String get board => post.board;
-	@override
-	int get id => post.id;
-	@override
-	String? getFilterFieldText(String fieldName) => post.getFilterFieldText(fieldName);
-	@override
-	bool get hasFile => post.hasFile;
-	@override
-	bool get isThread => false;
-	@override
-	List<int> get repliedToIds => [];
 }
 
 class SavedPage extends StatefulWidget {
@@ -228,6 +214,7 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 													}
 												});
 												return RefreshableList<ImageboardScoped<ThreadWatch>>(
+													filterableAdapter: null,
 													controller: _watchedListController,
 													listUpdater: () => throw UnimplementedError(),
 													id: 'watched',
@@ -387,6 +374,7 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 								states.sort((a, b) => (b.item.thread?.posts.last.time ?? noDate).compareTo(a.item.thread?.posts.last.time ?? noDate));
 							}
 							return RefreshableList<ImageboardScoped<PersistentThreadState>>(
+								filterableAdapter: (t) => t.item,
 								controller: _threadListController,
 								listUpdater: () => throw UnimplementedError(),
 								id: 'saved',
@@ -500,6 +488,7 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 							}
 							replies.sort((a, b) => b.post.time.compareTo(a.post.time));
 							return RefreshableList<_PostThreadCombo>(
+								filterableAdapter: (t) => t.post,
 								listUpdater: () => throw UnimplementedError(),
 								id: 'yourPosts',
 								disableUpdates: true,
@@ -555,6 +544,7 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 								savedPosts.sort((a, b) => b.item.post.time.compareTo(a.item.post.time));
 							}
 							return RefreshableList<ImageboardScoped<SavedPost>>(
+								filterableAdapter: (t) => t.item.post,
 								controller: _postListController,
 								listUpdater: () => throw UnimplementedError(),
 								id: 'saved',

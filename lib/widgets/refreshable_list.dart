@@ -34,6 +34,7 @@ class RefreshableList<T> extends StatefulWidget {
 	final String? initialFilter;
 	final bool allowReordering;
 	final ValueChanged<T>? onWantAutosave;
+	final Filterable Function(T)? filterableAdapter;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -51,6 +52,7 @@ class RefreshableList<T> extends StatefulWidget {
 		this.initialFilter,
 		this.allowReordering = false,
 		this.onWantAutosave,
+		required this.filterableAdapter,
 		Key? key
 	}) : super(key: key);
 
@@ -242,7 +244,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			for (final item in list!) {
 				bool handled = false;
 				for (final filter in filters) {
-					final result = item is Filterable ? filter.filter(item) : null;
+					final result = widget.filterableAdapter != null ? filter.filter(widget.filterableAdapter!(item)) : null;
 					if (result != null) {
 						switch (result.type) {
 							case FilterResultType.hide:
@@ -344,7 +346,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 										),
 										bottom: false
 									),
-									if ((list?.isNotEmpty ?? false) && list?.first is Filterable) SliverToBoxAdapter(
+									if ((list?.isNotEmpty ?? false) && widget.filterableAdapter != null) SliverToBoxAdapter(
 										child: Container(
 											height: kMinInteractiveDimensionCupertino * context.select<EffectiveSettings, double>((s) => s.textScale),
 											padding: const EdgeInsets.all(4),

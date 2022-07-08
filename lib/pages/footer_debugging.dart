@@ -25,6 +25,7 @@ class _FooterDebuggingPageState extends State<FooterDebuggingPage> {
 			),
 			child: RefreshableList<FakeItem>(
 				id: 'debuggingList',
+				filterableAdapter: null,
 				controller: controller,
 				itemBuilder: (context, item) => SizedBox(height: 150, child: Text(item.id.toString())),
 				listUpdater: () async {
