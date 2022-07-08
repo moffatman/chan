@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/reply_box.dart';

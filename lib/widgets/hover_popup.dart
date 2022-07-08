@@ -5,7 +5,6 @@ import 'dart:ui';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
-import 'package:chan/widgets/util.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
