@@ -19,7 +19,7 @@
         document.body.appendChild(button)
         button.innerHTML = 'Open in Chance'
         button.onclick = () => {
-            document.location = 'chance:/' + document.location.pathname
+            document.location = 'chance://4chan' + document.location.pathname
         }
         button.style.position = 'fixed'
         button.style.right = '10px';

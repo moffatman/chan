@@ -340,12 +340,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	void _onNewLink(String? link) {
 		if (link != null && link.startsWith('chance:')) {
 			print(link);
-			final threadLink = RegExp(r'chance:\/\/([^\/]+)\/thread\/(\d+)').firstMatch(link);
+			final threadLink = RegExp(r'chance:\/\/([^\/]+)\/([^\/]+)\/thread\/(\d+)').firstMatch(link);
 			if (threadLink != null) {
 				_addNewTab(
+					withImageboardKey: threadLink.group(1)!,
 					withThread: ThreadIdentifier(
-						threadLink.group(1)!,
-						int.parse(threadLink.group(2)!)
+						threadLink.group(2)!,
+						int.parse(threadLink.group(3)!)
 					),
 					activate: true
 				);
