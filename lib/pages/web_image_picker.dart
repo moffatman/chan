@@ -20,7 +20,10 @@ extension ToCssRgba on Color {
 }
 
 class WebImagePickerPage extends StatefulWidget {
+	final ImageboardSite? site;
+
 	const WebImagePickerPage({
+		required this.site,
 		Key? key
 	}) : super(key: key);
 
@@ -210,7 +213,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 															Navigator.of(context).pop(data);
 														}
 														else {
-															final response = await context.read<ImageboardSite>().client.get(image['src'], options: Options(
+															final response = await (widget.site?.client ?? Dio()).get(image['src'], options: Options(
 																responseType: ResponseType.bytes
 															));
 															if (!mounted) return;

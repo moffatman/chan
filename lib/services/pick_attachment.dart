@@ -7,6 +7,7 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/util.dart';
@@ -44,7 +45,9 @@ Future<File?> pickAttachment({
 		Tuple3('Take photo', CupertinoIcons.camera, () => picker.pickImage(source: ImageSource.camera).then((x) => x?.path)),
 		Tuple3('Take video', CupertinoIcons.videocam, () => picker.pickVideo(source: ImageSource.camera).then((x) => x?.path)),
 		Tuple3('Web search', Icons.image_search, () => Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
-			builder: (context) => const WebImagePickerPage()
+			builder: (_) => WebImagePickerPage(
+				site: context.read<ImageboardSite?>()
+			)
 		)).then((x) => x?.path))
 	] : [
 		Tuple3('Pick file', CupertinoIcons.doc, () => FilePicker.platform.pickFiles().then((x) => x?.files.single.path))
