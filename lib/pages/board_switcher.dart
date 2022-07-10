@@ -6,6 +6,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -161,7 +162,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 					padding: EdgeInsets.zero,
 					child: const Icon(CupertinoIcons.gear),
 					onPressed: () async {
-						final persistence = context.read<Persistence>();
+						final imageboard = context.read<Imageboard>();
 						await showCupertinoDialog(
 							barrierDismissible: true,
 							context: context,
@@ -235,12 +236,16 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																				]
 																			),
 																			onPressed: () async {
-																				final board = await Navigator.push<ImageboardBoard>(context, TransparentRoute(
-																					builder: (context) => const BoardSwitcherPage(currentlyPickingFavourites: true),
+																				final board = await Navigator.push<ImageboardScoped<ImageboardBoard>>(context, TransparentRoute(
+																					builder: (ctx) => ImageboardScope(
+																						imageboardKey: null,
+																						imageboard: imageboard,
+																						child: const BoardSwitcherPage(currentlyPickingFavourites: true)
+																					),
 																					showAnimations: settings.showAnimations
 																				));
-																				if (board != null && !browserState.favouriteBoards.contains(board.name)) {
-																					browserState.favouriteBoards.add(board.name);
+																				if (board != null && !browserState.favouriteBoards.contains(board.item.name)) {
+																					browserState.favouriteBoards.add(board.item.name);
 																					setDialogState(() {});
 																				}
 																			}
@@ -284,7 +289,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								]
 							)
 						);
-						persistence.didUpdateBrowserState();
+						imageboard.persistence.didUpdateBrowserState();
 						setState(() {});
 					}
 				)
