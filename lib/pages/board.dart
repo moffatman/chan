@@ -297,7 +297,7 @@ class _BoardPageState extends State<BoardPage> {
 														onReplyPosted: (receipt) async {
 															await promptForPushNotificationsIfNeeded(ctx);
 															if (!mounted) return;
-															ctx.read<Notifications>().subscribeToThread(
+															imageboard.notifications.subscribeToThread(
 																thread: ThreadIdentifier(board!.name, receipt.id),
 																lastSeenId: receipt.id,
 																localYousOnly: false,
@@ -603,7 +603,7 @@ class _BoardPageState extends State<BoardPage> {
 									onReplyPosted: (receipt) async {
 										await promptForPushNotificationsIfNeeded(context);
 										if (!mounted) return;
-										context.read<Notifications>().subscribeToThread(
+										imageboard?.notifications.subscribeToThread(
 											thread: ThreadIdentifier(board!.name, receipt.id),
 											lastSeenId: receipt.id,
 											localYousOnly: false, 
