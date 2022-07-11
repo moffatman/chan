@@ -297,10 +297,27 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	bool _modifyingFromPicker = false;
 
 	void _onSolutionControllerUpdate() {
-		final selection = _solutionController.selection;
+		TextSelection selection = _solutionController.selection;
 		final newText = _solutionController.text;
 		if (_solutionController.text.length != numLetters) {
-			_solutionController.text = _solutionController.text.substring(0, min(numLetters, _solutionController.text.length)).padRight(numLetters, ' ');
+			if (_previousText.length == numLetters && _solutionController.text.length == numLetters - 1 && selection.isCollapsed) {
+				final index = selection.baseOffset;
+				if ((_previousText.substring(0, index) == _solutionController.text.substring(0, index)) &&
+						(_previousText.substring(index + 1) == _solutionController.text.substring(index))) {
+					// backspace was pressed
+					_solutionController.text = _previousText;
+					if (index > 0) {
+						_solutionController.selection = TextSelection(baseOffset: index - 1, extentOffset: index);
+					}
+					else {
+						_solutionController.selection = TextSelection(baseOffset: numLetters - 1, extentOffset: numLetters);
+					}
+					selection = _solutionController.selection;
+				}
+			}
+			else {
+				_solutionController.text = _solutionController.text.substring(0, min(numLetters, _solutionController.text.length)).padRight(numLetters, ' ');
+			}
 		}
 		for (int i = 0; i < numLetters; i++) {
 			final char = _solutionController.text[i].toUpperCase();
