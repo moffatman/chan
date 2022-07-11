@@ -264,19 +264,22 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 																child: ValueListenableBuilder(
 																	valueListenable: watch.imageboard.persistence.listenForPersistentThreadStateChanges(watch.item.threadIdentifier),
 																	builder: (context, box, child) {
-																		final thread = watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier)?.thread;
-																		if (thread == null) {
-																			// Probably the thread was deleted during a cleanup
-																			Future.delayed(const Duration(seconds: 1), () {
-																				watch.imageboard.notifications.removeThreadWatch(watch.item);
-																			});
+																		final threadState = watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier);
+																		if (threadState?.thread == null) {
+																			// Make sure this isn't a newly-created thread/watch
+																			if (threadState != null && (DateTime.now().difference(threadState.lastOpenedTime) > const Duration(days: 30))) {
+																				// Probably the thread was deleted during a cleanup
+																				Future.delayed(const Duration(seconds: 1), () {
+																					watch.imageboard.notifications.removeThreadWatch(watch.item);
+																				});
+																			}
 																			return const SizedBox.shrink();
 																		}
 																		else {
 																			return Opacity(
 																				opacity: watch.item.zombie ? 0.5 : 1.0,
 																				child: ThreadRow(
-																					thread: thread,
+																					thread: threadState!.thread!,
 																					isSelected: watch == selected,
 																					showBoardName: true,
 																					showSiteIcon: true,

@@ -244,7 +244,8 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 		on ThreadNotFoundException {
 			final watch = persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == threadState.identifier);
-			if (watch != null) {
+			// Ensure that the thread has been loaded at least once to avoid deleting upon creation due to a race condition
+			if (watch != null && threadState.thread != null) {
 				print('Removing watch for ${threadState.identifier} since it is in 404 state');
 				notifications.removeThreadWatch(watch);
 			}
