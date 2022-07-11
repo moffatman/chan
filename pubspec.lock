@@ -339,19 +339,19 @@ packages:
     source: hosted
     version: "1.18.0"
   firebase_core_platform_interface:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: firebase_core_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.4.3"
+    version: "4.4.1"
   firebase_core_web:
     dependency: transitive
     description:
       name: firebase_core_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.6.6"
+    version: "1.6.5"
   firebase_messaging:
     dependency: "direct main"
     description:
@@ -372,7 +372,7 @@ packages:
       name: firebase_messaging_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.4"
+    version: "2.4.3"
   fixnum:
     dependency: transitive
     description:

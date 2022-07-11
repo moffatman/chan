@@ -69,6 +69,7 @@ dependencies:
   cupertino_icons: ^1.0.0
   firebase_core: 1.18.0
   firebase_messaging: 11.4.2
+  firebase_core_platform_interface: 4.4.1
   path_provider: ^2.0.10
   path_provider_ios: 2.0.9
   async: ^2.9.0
