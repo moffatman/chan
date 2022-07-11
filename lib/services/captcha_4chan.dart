@@ -168,15 +168,25 @@ Future<Uint8List> _getRedChannelOnly(ByteData rgbaData) async {
 	return Uint8List.fromList(rgba.map((p) => p & 0xFF).toList());
 }
 
+class _Letter {
+	final double adjustment;
+	final Map<_LetterImageType, List<_LetterImage>> images;
+	_Letter({
+		required this.adjustment,
+		required this.images
+	});
+
+	@override
+	String toString() => '_Letter(adjustment: $adjustment)';
+}
+
 class _LetterImage {
 	final int width;
 	final int height;
-	final double adjustment;
 	final Uint8List bytes;
 	_LetterImage({
 		required this.width,
 		required this.height,
-		required this.adjustment,
 		required String data
 	}) : bytes = Uint8List.fromList(ZLibCodec().decode(base64Decode(data)));
 
@@ -202,23 +212,30 @@ class _LetterScore {
 	String toString() => '_LetterScore(letter: $letter, score: $score, x: $x, y: $y, letterImageWidth: $letterImageWidth)';
 }
 
+enum _LetterImageType {
+	primary,
+	secondary
+}
+
 class _ScoreArrayForLetterParam {
 	final String letter;
 	final Uint8List captcha;
 	final int width;
 	final int height;
+	final _LetterImageType type;
 
 	const _ScoreArrayForLetterParam({
 		required this.letter,
 		required this.captcha,
 		required this.width,
-		required this.height
+		required this.height,
+		required this.type
 	});
 }
 
 List<_LetterScore> _scoreArrayForLetter(_ScoreArrayForLetterParam param) {
 	final scores = <_LetterScore>[];
-	for (final subimage in _captchaLetterImages[param.letter]!) {
+	for (final subimage in _captchaLetterImages[param.letter]!.images[param.type]!) {
 		final maxY = (param.height * 0.9).toInt() - subimage.height;
 		final maxX = param.width - subimage.width;
 		for (int y = param.height ~/ 5; y < maxY; y++) {
@@ -237,7 +254,7 @@ List<_LetterScore> _scoreArrayForLetter(_ScoreArrayForLetterParam param) {
 					}
 				}
 				score /= (subimage.width / 10) * (subimage.height / 10);
-				score += subimage.adjustment;
+				score += _captchaLetterImages[param.letter]!.adjustment;
 				scores.add(_LetterScore(
 					score: score,
 					letterImageWidth: subimage.width,
@@ -290,42 +307,47 @@ void _guess(_GuessParam param) async {
 			height: height,
 			fillColor: 255
 		);
-		if ((count / captcha.length) < 0.02) {
+		if ((count / captcha.length) < 0.015) {
 			captcha = filled;
 		}
 	}
 	param.sendPort.send(_preprocessProportion);
 	// Create score array
-	final pool = Pool(Platform.numberOfProcessors);
-	final letterFutures = <Future<List<_LetterScore>>>[];
-	int lettersDone = 0;
-	for (final letter in captchaLetters) {
-		letterFutures.add(pool.withResource(() async {
-			final data = await compute(_scoreArrayForLetter, _ScoreArrayForLetterParam(
-				captcha: captcha,
-				letter: letter,
-				width: width,
-				height: height
-			));
-			lettersDone++;
-			param.sendPort.send(_preprocessProportion + (_scoreArrayProportion * (lettersDone / captchaLetters.length)));
-			return data;
-		}));
+	Future<List<_LetterScore>> createScoreArray(_LetterImageType type) async {
+		final pool = Pool(Platform.numberOfProcessors);
+		final letterFutures = <Future<List<_LetterScore>>>[];
+		int lettersDone = 0;
+		for (final letter in captchaLetters) {
+			letterFutures.add(pool.withResource(() async {
+				final data = await compute(_scoreArrayForLetter, _ScoreArrayForLetterParam(
+					captcha: captcha,
+					letter: letter,
+					width: width,
+					height: height,
+					type: _LetterImageType.primary
+				));
+				lettersDone++;
+				param.sendPort.send(_preprocessProportion + (_scoreArrayProportion * (lettersDone / captchaLetters.length)));
+				return data;
+			}));
+		}
+		return (await Future.wait(letterFutures)).expand((x) => x).toList();
 	}
-	final scores = (await Future.wait(letterFutures)).expand((x) => x).toList();
+	final primaryScores = await createScoreArray(_LetterImageType.primary);
+	List<_LetterScore>? secondaryScores;
 	final numLetters = param.numLetters ?? _estimateNumLetters(
 		buffer: captcha,
 		width: width,
 		height: height
 	);
 	// Pick best set of letters
-	List<_LetterScore> guess({
+	Future<List<_LetterScore>> guess({
 		List<_LetterScore> deadAnswers = const []
-	}) {
+	}) async {
 		final answers = <_LetterScore>[];
 		final deadXes = List.filled(width, 0);
 		final xAdjustments = <int, List<double>>{};
-		final possibleSubimageWidths = _captchaLetterImages.values.expand((x) => x).map((x) => x.width).toSet().toList();
+		final possibleSubimageWidths = _captchaLetterImages.values.expand((x) => x.images.values.expand((i) => i)).map((x) => x.width).toSet().toList();
 		for (final possibleWidth in possibleSubimageWidths) {
 			xAdjustments[possibleWidth] = List.filled(width, 0);
 		}
@@ -336,13 +358,24 @@ void _guess(_GuessParam param) async {
 			}
 		}
 		for (int i = 0; i < numLetters; i++) {
-			_LetterScore bestScore = scores.first;
-			for (final score in scores) {
+			_LetterScore bestScore = primaryScores.first;
+			for (final score in primaryScores) {
 				if (deadLetters[score.x].contains(score.letter)) {
 					continue;
 				}
 				if ((score.score + (i > 0 ? xAdjustments[score.letterImageWidth]![score.x] : 0)) < bestScore.score) {
 					bestScore = score;
+				}
+			}
+			if (bestScore.score > 30) {
+				secondaryScores ??= await createScoreArray(_LetterImageType.secondary);
+				for (final score in secondaryScores!) {
+					if (deadLetters[score.x].contains(score.letter)) {
+						continue;
+					}
+					if ((score.score + (i > 0 ? xAdjustments[score.letterImageWidth]![score.x] : 0)) < bestScore.score) {
+						bestScore = score;
+					}
 				}
 			}
 			final subimageEndX = bestScore.x + bestScore.letterImageWidth;
@@ -361,7 +394,7 @@ void _guess(_GuessParam param) async {
 		}
 		return answers;
 	}
-	final answersBest = guess();
+	final answersBest = await guess();
 	answersBest.sort((a, b) => a.x - b.x);
 	/*final answers2 = __guess(deadAnswers: answersBest);
 	final answers3 = __guess(deadAnswers: answersBest.followedBy(answers2).toList());
@@ -384,21 +417,21 @@ void _guess(_GuessParam param) async {
 		alternatives: [[], [], [], [], []],
 		confidence: (1 - Normal.cdf(
 			maxScore,
-			mean: 30.55783844401451,
-			variance: 6.323088406300931
+			mean: 31.99121650969569,
+			variance: 5.6186633357112274
 		)) * (1 - Normal.cdf(
 			maxScore,
-			mean: 41.35456627422233,
-			variance: 11.558336881463264
+			mean: 39.019931473509175,
+			variance: 8.9437836310256
 		)),
 		confidences: answersBest.map((x) => (1 - Normal.cdf(
 			x.score,
-			mean: 21.52257188598484,
-			variance: 6.898344986831822
+			mean: 22.030712707662314,
+			variance: 6.6035697391139445
 		)) * (1 - Normal.cdf(
 			x.score,
-			mean: 30.55783844401451,
-			variance: 13.318595396725442
+			mean: 32.892141079395095,
+			variance: 11.419233352647126
 		))).toList()
 	));
 }
