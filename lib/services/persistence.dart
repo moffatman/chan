@@ -45,6 +45,12 @@ class UriAdapter extends TypeAdapter<Uri> {
 	}
 }
 
+class EasyListenable extends ChangeNotifier {
+	void didUpdate() {
+		notifyListeners();
+	}
+}
+
 const _savedAttachmentThumbnailsDir = 'saved_attachments_thumbs';
 const _savedAttachmentsDir = 'saved_attachments';
 const _maxAutosavedIdsPerBoard = 250;
@@ -72,6 +78,7 @@ class Persistence extends ChangeNotifier {
 	static late final PersistCookieJar cookies;
 	// Do not persist
 	static bool enableHistory = true;
+	static final browserHistoryStatusListenable = EasyListenable();
 
 	static Future<void> initializeStatic() async {
 		await Hive.initFlutter();
@@ -406,6 +413,7 @@ class Persistence extends ChangeNotifier {
 
 	static void didChangeBrowserHistoryStatus() {
 		_cachedEphemeralThreadStatesById.clear();
+		browserHistoryStatusListenable.didUpdate();
 	}
 }
 
@@ -601,7 +609,7 @@ class SavedPost {
 }
 
 @HiveType(typeId: 21)
-class PersistentBrowserTab extends ChangeNotifier {
+class PersistentBrowserTab extends EasyListenable {
 	@HiveField(0)
 	ImageboardBoard? board;
 	@HiveField(1)
@@ -631,10 +639,6 @@ class PersistentBrowserTab extends ChangeNotifier {
 		this.draftSubject = '',
 		this.imageboardKey
 	});
-
-	void didUpdate() {
-		notifyListeners();
-	}
 }
 
 @HiveType(typeId: 22)

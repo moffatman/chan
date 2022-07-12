@@ -439,6 +439,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		super.initState();
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 		activeBrowserTab.value = Persistence.currentTabIndex;
+		Persistence.browserHistoryStatusListenable.addListener(() {
+			if (mounted) setState(() {});
+		});
 		_setupDevSite();
 		getInitialLink().then(_onNewLink);
 		linkStream.listen(_onNewLink);

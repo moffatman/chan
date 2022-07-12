@@ -106,19 +106,22 @@ class _HistoryPageState extends State<HistoryPage> {
 					navigationBar: CupertinoNavigationBar(
 						transitionBetweenRoutes: false,
 						middle: const Text('History'),
-						trailing: CupertinoButton(
-							padding: EdgeInsets.zero,
-							child: Icon(Persistence.enableHistory ? CupertinoIcons.stop : CupertinoIcons.play),
-							onPressed: () {
-								Persistence.enableHistory = !Persistence.enableHistory;
-								Persistence.didChangeBrowserHistoryStatus();
-								threadSetter(selectedThread);
-								showToast(
-									context: context,
-									message: Persistence.enableHistory ? 'History resumed' : 'History stopped',
-									icon: Persistence.enableHistory ? CupertinoIcons.play : CupertinoIcons.stop
-								);
-							}
+						trailing: AnimatedBuilder(
+							animation: Persistence.browserHistoryStatusListenable,
+							builder: (context, _) => CupertinoButton(
+								padding: EdgeInsets.zero,
+								child: Icon(Persistence.enableHistory ? CupertinoIcons.stop : CupertinoIcons.play),
+								onPressed: () {
+									Persistence.enableHistory = !Persistence.enableHistory;
+									Persistence.didChangeBrowserHistoryStatus();
+									threadSetter(selectedThread);
+									showToast(
+										context: context,
+										message: Persistence.enableHistory ? 'History resumed' : 'History stopped',
+										icon: Persistence.enableHistory ? CupertinoIcons.play : CupertinoIcons.stop
+									);
+								}
+							)
 						)
 					),
 					child: widget.isActive ? AnimatedBuilder(
