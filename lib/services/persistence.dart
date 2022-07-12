@@ -120,7 +120,9 @@ class Persistence extends ChangeNotifier {
 		await Directory('${documentsDirectory.path}/$_savedAttachmentsDir').create(recursive: true);
 		await Directory('${documentsDirectory.path}/$_savedAttachmentThumbnailsDir').create(recursive: true);
 		final settingsBox = await Hive.openBox<SavedSettings>('settings');
-		settings = settingsBox.get('settings', defaultValue: SavedSettings())!;
+		settings = settingsBox.get('settings', defaultValue: SavedSettings(
+			useInternalBrowser: true
+		))!;
 		if (settings.automaticCacheClearDays < 100000) {
 			// Don't await
 			clearFilesystemCaches(Duration(days: settings.automaticCacheClearDays));

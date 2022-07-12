@@ -415,7 +415,7 @@ class SavedSettings extends HiveObject {
 		bool? notificationsMigrated,
 		this.usePushNotifications,
 		bool? useEmbeds,
-		bool? useInternalBrowser,
+		this.useInternalBrowser,
 		int? automaticCacheClearDays,
 		bool? alwaysAutoloadTappedAttachment,
 		List<PostDisplayField>? postDisplayFieldOrder,
@@ -497,7 +497,6 @@ class SavedSettings extends HiveObject {
 		thumbnailSize = thumbnailSize ?? 75,
 		muteAudio = muteAudio ?? false,
 		useEmbeds = useEmbeds ?? true,
-		useInternalBrowser = useInternalBrowser ?? true,
 		automaticCacheClearDays = automaticCacheClearDays ?? 60,
 		alwaysAutoloadTappedAttachment = alwaysAutoloadTappedAttachment ?? true,
 		postDisplayFieldOrder = postDisplayFieldOrder ?? [
