@@ -631,7 +631,7 @@ final Map<String, _Letter> _captchaLetterImages = {
 		},
 	),
 	"8": _Letter(
-		adjustment: -3.5,
+		adjustment: -2,
 		images: {
 			_LetterImageType.primary: [
 				_LetterImage(
@@ -840,7 +840,7 @@ final Map<String, _Letter> _captchaLetterImages = {
 		},
 	),
 	"A": _Letter(
-		adjustment: 5.5,
+		adjustment: 4.5,
 		images: {
 			_LetterImageType.primary: [
 				_LetterImage(
@@ -1676,7 +1676,7 @@ final Map<String, _Letter> _captchaLetterImages = {
 		},
 	),
 	"J": _Letter(
-		adjustment: 7,
+		adjustment: 6.5,
 		images: {
 			_LetterImageType.primary: [
 				_LetterImage(
@@ -1885,7 +1885,7 @@ final Map<String, _Letter> _captchaLetterImages = {
 		},
 	),
 	"K": _Letter(
-		adjustment: -2,
+		adjustment: -1,
 		images: {
 			_LetterImageType.primary: [
 				_LetterImage(
@@ -2094,7 +2094,7 @@ final Map<String, _Letter> _captchaLetterImages = {
 		},
 	),
 	"M": _Letter(
-		adjustment: 0,
+		adjustment: 1,
 		images: {
 			_LetterImageType.primary: [
 				_LetterImage(
@@ -2721,7 +2721,7 @@ final Map<String, _Letter> _captchaLetterImages = {
 		},
 	),
 	"R": _Letter(
-		adjustment: -0.5,
+		adjustment: -1.5,
 		images: {
 			_LetterImageType.primary: [
 				_LetterImage(
@@ -3348,7 +3348,7 @@ final Map<String, _Letter> _captchaLetterImages = {
 		},
 	),
 	"V": _Letter(
-		adjustment: 2,
+		adjustment: 3,
 		images: {
 			_LetterImageType.primary: [
 				_LetterImage(
