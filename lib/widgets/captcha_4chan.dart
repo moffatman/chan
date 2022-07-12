@@ -123,7 +123,12 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			);
 			numLetters = bestGuess.numLetters;
 			setState(() {});
+			final selection = _solutionController.selection;
 			_solutionController.text = bestGuess.guess;
+			_solutionController.selection = TextSelection(
+				baseOffset: min(numLetters - 1, selection.baseOffset),
+				extentOffset: min(numLetters, selection.extentOffset)
+			);
 			_lastGuessText = bestGuess.guess;
 			_guessConfidences = bestGuess.confidences;
 		}
