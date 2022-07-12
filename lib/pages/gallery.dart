@@ -387,7 +387,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 			return 0.2;
 		}
 		if (currentController.videoPlayerController != null) {
-			return 44 / MediaQuery.of(context).size.height;
+			return (44 + MediaQuery.of(context).padding.bottom) / MediaQuery.of(context).size.height;
 		}
 		return 0.0;
 	}
@@ -807,7 +807,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														alignment: Alignment.bottomLeft,
 														child: Container(
 															margin: showChrome ? EdgeInsets.only(
-																bottom: (settings.showThumbnailsInGallery ? MediaQuery.of(context).size.height * 0.2 : 44) + 16 - (currentController.videoPlayerController == null ? 44 : 0),
+																bottom: (settings.showThumbnailsInGallery ? MediaQuery.of(context).size.height * 0.2 : (44 + MediaQuery.of(context).padding.bottom)) + 16 - (currentController.videoPlayerController == null ? 44 : 0),
 																left: 16
 															) : const EdgeInsets.all(16),
 															padding: const EdgeInsets.all(8),
