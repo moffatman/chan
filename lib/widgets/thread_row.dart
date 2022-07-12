@@ -291,93 +291,113 @@ class ThreadRow extends StatelessWidget {
 				)
 			)
 		];
-		final child = Stack(
-			fit: StackFit.passthrough,
-			children: [
-				if (contentFocus) ...[
+		List<Widget> buildContentFocused() {
+			final att = LayoutBuilder(
+				builder: (context, constraints) {
+					return PopupAttachment(
+						attachment: latestThread.attachment!,
+						child: GestureDetector(
+							child: Stack(
+								children: [
+									AttachmentThumbnail(
+										width: constraints.maxWidth,
+										height: constraints.maxHeight,
+										fit: BoxFit.cover,
+										attachment: latestThread.attachment!,
+										thread: latestThread.identifier,
+										onLoadError: onThumbnailLoadError,
+										hero: null
+									),
+									if (latestThread.attachment?.type == AttachmentType.webm) Positioned(
+										bottom: 0,
+										right: 0,
+										child: Container(
+											decoration: BoxDecoration(
+												borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+												border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+											),
+											padding: const EdgeInsets.all(2),
+											child: const Icon(CupertinoIcons.play_arrow_solid)
+										)
+									)
+								]
+							),
+							onTap: () => onThumbnailTap?.call(latestThread.attachment!)
+						)
+					);
+				}
+			);
+			final txt = Padding(
+				padding: const EdgeInsets.all(8),
+				child: ChangeNotifierProvider<PostSpanZoneData>(
+					create: (ctx) => PostSpanRootZoneData(
+						thread: latestThread,
+						site: context.watch<ImageboardSite>()
+					),
+					child: Builder(
+						builder: (ctx) => IgnorePointer(
+							child: Text.rich(
+								TextSpan(
+									children: [
+										if (thread.title != null) TextSpan(
+											text: '${settings.filterProfanity(latestThread.title!)}\n',
+											style: const TextStyle(fontWeight: FontWeight.bold),
+										),
+										latestThread.posts.first.span.build(ctx, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+											avoidBuggyClippers: true
+										)),
+										WidgetSpan(
+											child: Visibility(
+												visible: false,
+												maintainState: true,
+												maintainAnimation: true,
+												maintainSize: true,
+												child: makeCounters()
+											)
+										)
+									]
+								),
+								maxLines: settings.catalogGridModeTextLinesLimit
+							)
+						)
+					)
+				)
+			);
+			if (settings.catalogGridModeAttachmentInBackground) {
+				return [
+					att,
+					Align(
+						alignment: Alignment.bottomCenter,
+						child: Container(
+							color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.5),
+							width: double.infinity,
+							child: txt
+						)
+					)
+				];
+			}
+			else {
+				return [
 					Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							if (latestThread.attachment != null) Flexible(
-								child: LayoutBuilder(
-									builder: (context, constraints) {
-										return PopupAttachment(
-											attachment: latestThread.attachment!,
-											child: GestureDetector(
-												child: Stack(
-													children: [
-														AttachmentThumbnail(
-															width: constraints.maxWidth,
-															height: constraints.maxHeight,
-															fit: BoxFit.cover,
-															attachment: latestThread.attachment!,
-															thread: latestThread.identifier,
-															onLoadError: onThumbnailLoadError,
-															hero: null
-														),
-														if (latestThread.attachment?.type == AttachmentType.webm) Positioned(
-															bottom: 0,
-															right: 0,
-															child: Container(
-																decoration: BoxDecoration(
-																	borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																	border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-																),
-																padding: const EdgeInsets.all(2),
-																child: const Icon(CupertinoIcons.play_arrow_solid)
-															)
-														)
-													]
-												),
-												onTap: () => onThumbnailTap?.call(latestThread.attachment!)
-											)
-										);
-									}
-								)
+							if (latestThread.attachment != null) Expanded(
+								child: att
 							),
-							Expanded(
-								child: Container(
-									constraints: const BoxConstraints(minHeight: 25),
-									padding: const EdgeInsets.all(8),
-									child: ChangeNotifierProvider<PostSpanZoneData>(
-										create: (ctx) => PostSpanRootZoneData(
-											thread: latestThread,
-											site: context.watch<ImageboardSite>()
-										),
-										child: Builder(
-											builder: (ctx) => IgnorePointer(
-												child: ClippingBox(
-													child: latestThread.posts[0].span.buildWidget(
-														ctx,
-														(baseOptions ?? PostSpanRenderOptions()).copyWith(
-															avoidBuggyClippers: true
-														),
-														preInjectRow: (thread.title == null) ? null : Text.rich(
-															TextSpan(
-																text: settings.filterProfanity(latestThread.title!),
-																style: const TextStyle(fontWeight: FontWeight.bold)
-															)
-														),
-														postInject: WidgetSpan(
-															child: Visibility(
-																visible: false,
-																maintainState: true,
-																maintainAnimation: true,
-																maintainSize: true,
-																child: makeCounters()
-															)
-														)
-													)
-												)
-											)
-										)
-									)
-								)
+							ConstrainedBox(
+								constraints: BoxConstraints(minHeight: 25, maxHeight: (settings.catalogGridHeight / 2) - 20),
+								child: txt
 							)
 						]
 					)
-				]
+				];
+			}
+		}
+		final child = Stack(
+			fit: StackFit.passthrough,
+			children: [
+				if (contentFocus) ...buildContentFocused()
 				else Row(
 					crossAxisAlignment: CrossAxisAlignment.start,
 					mainAxisSize: MainAxisSize.max,

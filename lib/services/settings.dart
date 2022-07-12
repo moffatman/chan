@@ -345,6 +345,10 @@ class SavedSettings extends HiveObject {
 	bool closeTabSwitcherAfterUse;
 	@HiveField(76)
 	double textScale;
+	@HiveField(77)
+	int? catalogGridModeTextLinesLimit;
+	@HiveField(78)
+	bool catalogGridModeAttachmentInBackground;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -424,6 +428,8 @@ class SavedSettings extends HiveObject {
 		ThreadSortingMethod? watchedThreadsSortingMethod,
 		bool? closeTabSwitcherAfterUse,
 		double? textScale,
+		this.catalogGridModeTextLinesLimit,
+		bool? catalogGridModeAttachmentInBackground,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -514,7 +520,8 @@ class SavedSettings extends HiveObject {
 		showThumbnailsInGallery = showThumbnailsInGallery ?? true,
 		watchedThreadsSortingMethod = watchedThreadsSortingMethod ?? ThreadSortingMethod.lastPostTime,
 		closeTabSwitcherAfterUse = closeTabSwitcherAfterUse ?? false,
-		textScale = textScale ?? 1.0;
+		textScale = textScale ?? 1.0,
+		catalogGridModeAttachmentInBackground = catalogGridModeAttachmentInBackground ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1109,6 +1116,20 @@ class EffectiveSettings extends ChangeNotifier {
 	double get textScale => _settings.textScale;
 	set textScale(double setting) {
 		_settings.textScale = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	int? get catalogGridModeTextLinesLimit => _settings.catalogGridModeTextLinesLimit;
+	set catalogGridModeTextLinesLimit(int? setting) {
+		_settings.catalogGridModeTextLinesLimit = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get catalogGridModeAttachmentInBackground => _settings.catalogGridModeAttachmentInBackground;
+	set catalogGridModeAttachmentInBackground(bool setting) {
+		_settings.catalogGridModeAttachmentInBackground = setting;
 		_settings.save();
 		notifyListeners();
 	}
