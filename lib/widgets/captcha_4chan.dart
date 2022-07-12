@@ -305,7 +305,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		TextSelection selection = _solutionController.selection;
 		final newText = _solutionController.text;
 		if (_solutionController.text.length != numLetters) {
-			if (_previousText.length == numLetters && _solutionController.text.length == numLetters - 1 && selection.isCollapsed) {
+			if (_previousText.length == numLetters && _solutionController.text.length == numLetters - 1 && selection.isCollapsed && selection.isValid) {
 				final index = selection.baseOffset;
 				if ((_previousText.substring(0, index) == _solutionController.text.substring(0, index)) &&
 						(_previousText.substring(index + 1) == _solutionController.text.substring(index))) {
