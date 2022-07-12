@@ -644,6 +644,11 @@ class PostLinkSpan extends PostSpan {
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
 		final settings = context.watch<EffectiveSettings>();
+		// Remove trailing bracket or other punctuation
+		final cleanedUrl = url.replaceAllMapped(
+			RegExp(r'(\.[A-Za-z]+)[^A-Za-z\.\/?]+$'),
+			(m) => m.group(1)!
+		);
 		if (!options.showRawSource && settings.useEmbeds) {
 			final check = zone.getFutureForComputation(
 				id: 'embedcheck $url',
@@ -724,7 +729,7 @@ class PostLinkSpan extends PostSpan {
 
 				if (tapChild != null) {
 					onTap() {
-						openBrowser(context, Uri.parse(url));
+						openBrowser(context, Uri.parse(cleanedUrl));
 					}
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
@@ -745,7 +750,7 @@ class PostLinkSpan extends PostSpan {
 			style: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline
 			),
-			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(url))),
+			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(cleanedUrl))),
 			onEnter: options.onEnter,
 			onExit: options.onExit
 		);
