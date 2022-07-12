@@ -68,7 +68,7 @@ class _VideoControlsState extends State<VideoControls> {
 				Expanded(
 					child: CupertinoSlider(
 						value: sliderValue,
-						max: max(1, value.duration.inMilliseconds).toDouble(),
+						max: max(sliderValue, value.duration.inMilliseconds).toDouble(),
 						onChangeStart: (newSliderValue) {
 							wasAlreadyPlaying = value.isPlaying;
 							widget.controller.pause();
