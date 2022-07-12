@@ -589,6 +589,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										},
 										child: tabObject.imageboardKey == null ? tab : ImageboardScope(
 											imageboardKey: tabObject.imageboardKey!,
+											loaderOffset: isInTabletLayout ? const Offset(-42.5, 0) : const Offset(0, 25),
 											child: tab
 										)
 									),
@@ -972,9 +973,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		) ?? false);
 	}
 
+	bool get isInTabletLayout => (MediaQuery.of(context).size.width - 85) > (MediaQuery.of(context).size.height - 50);
+
 	@override
 	Widget build(BuildContext context) {
-		final isInTabletLayout = (MediaQuery.of(context).size.width - 85) > (MediaQuery.of(context).size.height - 50);
 		final hideTabletLayoutLabels = MediaQuery.of(context).size.height < 600;
 		if (!ImageboardRegistry.instance.initialized) {
 			return const Center(

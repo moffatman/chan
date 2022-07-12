@@ -9,11 +9,13 @@ class ImageboardScope extends StatelessWidget {
 	final Widget child;
 	final String? imageboardKey;
 	final Imageboard? imageboard;
+	final Offset loaderOffset;
 
 	const ImageboardScope({
 		required this.child,
 		required this.imageboardKey,
 		this.imageboard,
+		this.loaderOffset = Offset.zero,
 		Key? key
 	}) : super(key: key);
 
@@ -34,8 +36,11 @@ class ImageboardScope extends StatelessWidget {
 			animation: b,
 			builder: (context, child) {
 				if (b.boardsLoading) {
-					return const Center(
-						child: CupertinoActivityIndicator()
+					return Center(
+						child: Transform(
+							transform: Matrix4.translationValues(loaderOffset.dx, loaderOffset.dy, 0),
+							child: const CupertinoActivityIndicator()
+						)
 					);
 				}
 				else if (b.setupErrorMessage != null) {
