@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:ui' as ui show Image, PictureRecorder;
 
+import 'package:async/async.dart';
 import 'package:chan/services/captcha_4chan.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -105,6 +106,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	int numLetters = 6;
 	final _pickerKeys = List.generate(6, (i) => GlobalKey());
 	double _guessingProgress = 0.0;
+	CancelableOperation<Chan4CustomCaptchaGuess>? _guessInProgress;
 
 	Future<void> _animateGuess() async {
 		setState(() {
@@ -112,7 +114,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_greyOutPickers = true;
 		});
 		try {
-			final bestGuess = await guess(
+			_guessInProgress?.cancel();
+			_guessInProgress = guess(
 				await _screenshotImage(),
 				numLetters: numLetters,
 				onProgress: (progress) {
@@ -121,6 +124,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					});
 				}
 			);
+			final bestGuess = await _guessInProgress!.value;
 			numLetters = bestGuess.numLetters;
 			setState(() {});
 			final selection = _solutionController.selection;
@@ -562,171 +566,168 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									)
 								)
 							),
-							if (context.read<EffectiveSettings>().useNewCaptchaForm) IgnorePointer(
-								ignoring: _greyOutPickers,
-								child: Opacity(
-									opacity: _greyOutPickers ? 0.5 : 1.0,
-									child: Column(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											CupertinoSegmentedControl<int>(
-												children: const {
-													5: Padding(
-														padding: EdgeInsets.all(8),
-														child: Text('5 letters')
-													),
-													6: Padding(
-														padding: EdgeInsets.all(8),
-														child: Text('6 letters')
-													)
-												},
-												groupValue: numLetters,
-												onValueChanged: (x) {
-													if (x != numLetters) {
-														setState(() {
-															numLetters = x;
-														});
-														_animateGuess();
-													}
-												}
-											),
-											Row(
-												mainAxisAlignment: MainAxisAlignment.center,
-												children: [
-													for (int i = 0; i < numLetters; i++) ...[
-														Flexible(
-															flex: 1,
-															fit: FlexFit.tight,
-															child: SizedBox(
-																height: 200,
-																child: Stack(
-																	fit: StackFit.expand,
-																	children: [
-																		NotificationListener(
-																			onNotification: (notification) {
-																				if (notification is ScrollEndNotification && notification.metrics is FixedExtentMetrics) {
-																					_modifyingFromPicker = true;
-																					final selection = _solutionController.selection;
-																					_solutionController.text = _solutionController.text.replaceRange(i, i + 1, captchaLetters[(notification.metrics as FixedExtentMetrics).itemIndex]);
-																					_solutionController.selection = selection;
-																					if (_guessConfidences[i] != 1) {
-																						setState(() {
-																							_guessConfidences[i] = 1;
-																						});
-																					}
-																					_modifyingFromPicker = false;
-																					return true;
+							if (context.read<EffectiveSettings>().useNewCaptchaForm) ...[
+								CupertinoSegmentedControl<int>(
+									children: const {
+										5: Padding(
+											padding: EdgeInsets.all(8),
+											child: Text('5 letters')
+										),
+										6: Padding(
+											padding: EdgeInsets.all(8),
+											child: Text('6 letters')
+										)
+									},
+									groupValue: numLetters,
+									onValueChanged: (x) {
+										if (x != numLetters) {
+											setState(() {
+												numLetters = x;
+											});
+											_animateGuess();
+										}
+									}
+								),
+								IgnorePointer(
+									ignoring: _greyOutPickers,
+									child: Opacity(
+										opacity: _greyOutPickers ? 0.5 : 1.0,
+										child: Row(
+											mainAxisAlignment: MainAxisAlignment.center,
+											children: [
+												for (int i = 0; i < numLetters; i++) ...[
+													Flexible(
+														flex: 1,
+														fit: FlexFit.tight,
+														child: SizedBox(
+															height: 200,
+															child: Stack(
+																fit: StackFit.expand,
+																children: [
+																	NotificationListener(
+																		onNotification: (notification) {
+																			if (notification is ScrollEndNotification && notification.metrics is FixedExtentMetrics) {
+																				_modifyingFromPicker = true;
+																				final selection = _solutionController.selection;
+																				_solutionController.text = _solutionController.text.replaceRange(i, i + 1, captchaLetters[(notification.metrics as FixedExtentMetrics).itemIndex]);
+																				_solutionController.selection = selection;
+																				if (_guessConfidences[i] != 1) {
+																					setState(() {
+																						_guessConfidences[i] = 1;
+																					});
 																				}
-																				return false;
-																			},
-																			child: CupertinoPicker.builder(
-																				key: _pickerKeys[i],
-																				scrollController: _letterPickerControllers[i],
-																				selectionOverlay: AnimatedBuilder(
-																					animation: _solutionController,
-																					builder: (context, child) => CupertinoPickerDefaultSelectionOverlay(
-																						background: ColorTween(
-																							begin: CupertinoColors.tertiarySystemFill.resolveFrom(context),
-																							end: CupertinoTheme.of(context).primaryColor
-																						).transform((_solutionNode.hasFocus && (_solutionController.selection.baseOffset <= i) && (i < _solutionController.selection.extentOffset)) ? 0.5 : 0)!
-																					)
-																				),
-																				childCount: captchaLetters.length,
-																				itemBuilder: (context, l) => Padding(
-																					padding: const EdgeInsets.all(6),
-																					child: Center(
-																						child: Text(captchaLetters[l],
-																							style: TextStyle(
-																								fontSize: 34,
-																								color:  ColorTween(
-																									begin: CupertinoTheme.of(context).primaryColor,
-																									end: const Color.fromARGB(255, 241, 190, 19)).transform(1 - _guessConfidences[min(_guessConfidences.length - 1, i)]
-																								)!
-																							)
+																				_modifyingFromPicker = false;
+																				return true;
+																			}
+																			return false;
+																		},
+																		child: CupertinoPicker.builder(
+																			key: _pickerKeys[i],
+																			scrollController: _letterPickerControllers[i],
+																			selectionOverlay: AnimatedBuilder(
+																				animation: _solutionController,
+																				builder: (context, child) => CupertinoPickerDefaultSelectionOverlay(
+																					background: ColorTween(
+																						begin: CupertinoColors.tertiarySystemFill.resolveFrom(context),
+																						end: CupertinoTheme.of(context).primaryColor
+																					).transform((_solutionNode.hasFocus && (_solutionController.selection.baseOffset <= i) && (i < _solutionController.selection.extentOffset)) ? 0.5 : 0)!
+																				)
+																			),
+																			childCount: captchaLetters.length,
+																			itemBuilder: (context, l) => Padding(
+																				padding: const EdgeInsets.all(6),
+																				child: Center(
+																					child: Text(captchaLetters[l],
+																						style: TextStyle(
+																							fontSize: 34,
+																							color:  ColorTween(
+																								begin: CupertinoTheme.of(context).primaryColor,
+																								end: const Color.fromARGB(255, 241, 190, 19)).transform(1 - _guessConfidences[min(_guessConfidences.length - 1, i)]
+																							)!
 																						)
 																					)
-																				),
-																				itemExtent: 50,
-																				onSelectedItemChanged: null
-																			)
-																		),
-																		Column(
-																			crossAxisAlignment: CrossAxisAlignment.stretch,
-																			children: [
-																				GestureDetector(
-																					behavior: HitTestBehavior.translucent,
-																					onTap: () {
-																						_letterPickerControllers[i].animateToItem(
-																							_letterPickerControllers[i].selectedItem - 1,
-																							duration: const Duration(milliseconds: 100),
-																							curve: Curves.ease
-																						);
-																					},
-																					child:const SizedBox(height: 75)
-																				),
-																				GestureDetector(
-																					behavior: HitTestBehavior.translucent,
-																					onTap: () {
-																						_solutionController.selection = TextSelection(baseOffset: i, extentOffset: i + 1);
-																						_solutionNode.requestFocus();
-																					},
-																					child: const SizedBox(height: 50)
-																				),
-																				GestureDetector(
-																					behavior: HitTestBehavior.translucent,
-																					onTap: () {
-																						_letterPickerControllers[i].animateToItem(
-																							_letterPickerControllers[i].selectedItem + 1,
-																							duration: const Duration(milliseconds: 100),
-																							curve: Curves.ease
-																						);
-																					},
-																					child: const SizedBox(height: 75)
 																				)
-																			]
+																			),
+																			itemExtent: 50,
+																			onSelectedItemChanged: null
 																		)
-																	]
-																)
+																	),
+																	Column(
+																		crossAxisAlignment: CrossAxisAlignment.stretch,
+																		children: [
+																			GestureDetector(
+																				behavior: HitTestBehavior.translucent,
+																				onTap: () {
+																					_letterPickerControllers[i].animateToItem(
+																						_letterPickerControllers[i].selectedItem - 1,
+																						duration: const Duration(milliseconds: 100),
+																						curve: Curves.ease
+																					);
+																				},
+																				child:const SizedBox(height: 75)
+																			),
+																			GestureDetector(
+																				behavior: HitTestBehavior.translucent,
+																				onTap: () {
+																					_solutionController.selection = TextSelection(baseOffset: i, extentOffset: i + 1);
+																					_solutionNode.requestFocus();
+																				},
+																				child: const SizedBox(height: 50)
+																			),
+																			GestureDetector(
+																				behavior: HitTestBehavior.translucent,
+																				onTap: () {
+																					_letterPickerControllers[i].animateToItem(
+																						_letterPickerControllers[i].selectedItem + 1,
+																						duration: const Duration(milliseconds: 100),
+																						curve: Curves.ease
+																					);
+																				},
+																				child: const SizedBox(height: 75)
+																			)
+																		]
+																	)
+																]
 															)
-														),
-													]
+														)
+													),
 												]
-											)
-										]
-									)
-								)
-							),
-							if (context.read<EffectiveSettings>().useNewCaptchaForm) Stack(
-								children: [
-									ClipRRect(
-										borderRadius: BorderRadius.circular(8),
-										child: LinearProgressIndicator(
-											value: _guessingProgress,
-											minHeight: 50,
-											valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
-											backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.3)
+											]
 										)
-									),
-									CupertinoButton(
-										padding: EdgeInsets.zero,
-										onPressed: _greyOutPickers ? null : () {
-											_submit(_solutionController.text);
-										},
-										child: SizedBox(
-											height: 50,
-											child: Center(
-												child: Text(
-													'Submit',
-													style: TextStyle(
-														fontSize: 20,
-														color: CupertinoTheme.of(context).scaffoldBackgroundColor
+									)
+								),
+								Stack(
+									children: [
+										ClipRRect(
+											borderRadius: BorderRadius.circular(8),
+											child: LinearProgressIndicator(
+												value: _guessingProgress,
+												minHeight: 50,
+												valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
+												backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.3)
+											)
+										),
+										CupertinoButton(
+											padding: EdgeInsets.zero,
+											onPressed: _greyOutPickers ? null : () {
+												_submit(_solutionController.text);
+											},
+											child: SizedBox(
+												height: 50,
+												child: Center(
+													child: Text(
+														'Submit',
+														style: TextStyle(
+															fontSize: 20,
+															color: CupertinoTheme.of(context).scaffoldBackgroundColor
+														)
 													)
 												)
 											)
 										)
-									)
-								]
-							)
+									]
+								)
+							]
 						]
 					)
 				)

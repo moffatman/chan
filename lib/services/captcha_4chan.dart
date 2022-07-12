@@ -5,6 +5,7 @@ import 'dart:isolate';
 import 'dart:math';
 import 'dart:ui' as ui;
 
+import 'package:async/async.dart';
 import 'package:chan/services/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:normal/normal.dart';
@@ -451,25 +452,33 @@ class _GuessParam {
 	});
 }
 
-Future<Chan4CustomCaptchaGuess> guess(ui.Image image, {
+CancelableOperation<Chan4CustomCaptchaGuess> guess(ui.Image image, {
 	required int? numLetters,
 	ValueChanged<double>? onProgress
-}) async {
-	final receivePort = ReceivePort();
-	await Isolate.spawn(_guess, _GuessParam(
-		rgbaData: (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!,
-		numLetters: numLetters,
-		width: image.width,
-		height: image.height,
-		sendPort: receivePort.sendPort
-	));
-	await for (final datum in receivePort) {
-		if (datum is double) {
-			onProgress?.call(datum);
+}) {
+	Isolate? isolate;
+	return CancelableOperation.fromFuture(
+		() async {
+			final receivePort = ReceivePort();
+			isolate = await Isolate.spawn(_guess, _GuessParam(
+				rgbaData: (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!,
+				numLetters: numLetters,
+				width: image.width,
+				height: image.height,
+				sendPort: receivePort.sendPort
+			));
+			await for (final datum in receivePort) {
+				if (datum is double) {
+					onProgress?.call(datum);
+				}
+				else if (datum is Chan4CustomCaptchaGuess) {
+					return datum;
+				}
+			}
+			throw Exception('Computation failed');
+		}(),
+		onCancel: () {
+			isolate?.kill();
 		}
-		else if (datum is Chan4CustomCaptchaGuess) {
-			return datum;
-		}
-	}
-	throw Exception('Computation failed');
+	);
 }
