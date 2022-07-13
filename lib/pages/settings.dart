@@ -1086,7 +1086,7 @@ class SettingsAppearancePage extends StatelessWidget {
 								useRootNavigator: false,
 								builder: (context) => StatefulBuilder(
 									builder: (context, setDialogState) => CupertinoActionSheet(
-										title: const Text('Resize catalog grid item'),
+										title: const Text('Edit catalog grid item layout'),
 										actions: [
 											CupertinoButton(
 												child: const Text('Close'),
@@ -1096,158 +1096,133 @@ class SettingsAppearancePage extends StatelessWidget {
 										message: DefaultTextStyle(
 											style: DefaultTextStyle.of(context).style,
 											child: Column(
+												crossAxisAlignment: CrossAxisAlignment.start,
 												children: [
-													FittedBox(
-														fit: BoxFit.contain,
-														child: Column(
-															mainAxisSize: MainAxisSize.min,
-															children: [
-																Row(
-																	mainAxisAlignment: MainAxisAlignment.spaceBetween,
-																	children: [
-																		SizedBox(
-																			width: 150,
-																			child: Text('Width: ${size.width.round()}px')
-																		),
-																		CupertinoSlider(
-																			value: size.width,
-																			min: 100,
-																			max: 600,
-																			onChanged: (d) {
-																				setDialogState(() {
-																					size = Size(d, size.height);
-																				});
-																			}
-																		),
-																		CupertinoButton(
-																			padding: EdgeInsets.zero,
-																			onPressed: size.width <= 100 ? null : () {
-																				setDialogState(() {
-																					size = Size(size.width - 1, size.height);
-																				});
-																			},
-																			child: const Icon(CupertinoIcons.minus)
-																		),
-																		CupertinoButton(
-																			padding: EdgeInsets.zero,
-																			onPressed: size.width >= 600 ? null : () {
-																				setDialogState(() {
-																					size = Size(size.width + 1, size.height);
-																				});
-																			},
-																			child: const Icon(CupertinoIcons.plus)
-																		)
-																	]
-																),
-																Row(
-																	mainAxisAlignment: MainAxisAlignment.spaceBetween,
-																	children: [
-																		SizedBox(
-																			width: 150,
-																			child: Text('Height: ${size.height.round()}px')
-																		),
-																		CupertinoSlider(
-																			value: size.height,
-																			min: 100,
-																			max: 600,
-																			onChanged: (d) {
-																				setDialogState(() {
-																					size = Size(size.width, d);
-																				});
-																			}
-																		),
-																		CupertinoButton(
-																			padding: EdgeInsets.zero,
-																			onPressed: size.height <= 100 ? null : () {
-																				setDialogState(() {
-																					size = Size(size.width, size.height - 1);
-																				});
-																			},
-																			child: const Icon(CupertinoIcons.minus)
-																		),
-																		CupertinoButton(
-																			padding: EdgeInsets.zero,
-																			onPressed: size.height >= 600 ? null : () {
-																				setDialogState(() {
-																					size = Size(size.width, size.height + 1);
-																				});
-																			},
-																			child: const Icon(CupertinoIcons.plus)
-																		)
-																	]
-																),
-																Row(
-																	mainAxisAlignment: MainAxisAlignment.spaceBetween,
-																	children: [
-																		SizedBox(
-																			width: 250,
-																			child: Text('Maximum text lines: ${settings.catalogGridModeTextLinesLimit?.toString() ?? 'Unlimited'}')
-																		),
-																		SizedBox(
-																			width: 76,
-																			child: CupertinoButton(
-																				padding: EdgeInsets.zero,
-																				onPressed: settings.catalogGridModeTextLinesLimit == null ? null : () {
-																					setDialogState(() {
-																						settings.catalogGridModeTextLinesLimit = null;
-																					});
-																				},
-																				child: const Text('Reset')
-																			)
-																		),
-																		CupertinoButton(
-																			padding: EdgeInsets.zero,
-																			onPressed: (settings.catalogGridModeTextLinesLimit ?? 2) <= 1 ? null : () {
-																				setDialogState(() {
-																					settings.catalogGridModeTextLinesLimit = (settings.catalogGridModeTextLinesLimit ?? (settings.catalogGridHeight / (2 * 14 * MediaQuery.of(context).textScaleFactor)).round()) - 1;
-																				});
-																			},
-																			child: const Icon(CupertinoIcons.minus)
-																		),
-																		CupertinoButton(
-																			padding: EdgeInsets.zero,
-																			onPressed: () {
-																				setDialogState(() {
-																					settings.catalogGridModeTextLinesLimit = (settings.catalogGridModeTextLinesLimit ?? 0) + 1;
-																				});
-																			},
-																			child: const Icon(CupertinoIcons.plus)
-																		)
-																	]
-																),
-																Row(
-																	mainAxisAlignment: MainAxisAlignment.spaceBetween,
-																	children: [
-																		const SizedBox(
-																			width: 358,
-																			child: Text('Thumbnail behind text')
-																		),
-																		CupertinoSwitch(
-																			value: settings.catalogGridModeAttachmentInBackground,
-																			onChanged: (v) {
-																				setDialogState(() {
-																					settings.catalogGridModeAttachmentInBackground = v;
-																				});
-																			}
-																		)
-																	]
-																)
-															]
-														)
-													),
-													SizedBox(
-														width: 600,
-														height: 600,
-														child: Align(
-															alignment: Alignment.topLeft,
-															child: SizedBox.fromSize(
-																size: size,
-																child: ThreadRow(
-																	contentFocus: true,
-																	isSelected: false,
-																	thread: _makeFakeThread()
-																)
+													Text('Width: ${size.width.round()}px'),
+													Row(
+														mainAxisAlignment: MainAxisAlignment.end,
+														children: [
+															CupertinoSlider(
+																value: size.width,
+																min: 100,
+																max: 600,
+																onChanged: (d) {
+																	setDialogState(() {
+																		size = Size(d, size.height);
+																	});
+																}
+															),
+															CupertinoButton(
+																padding: EdgeInsets.zero,
+																onPressed: size.width <= 100 ? null : () {
+																	setDialogState(() {
+																		size = Size(size.width - 1, size.height);
+																	});
+																},
+																child: const Icon(CupertinoIcons.minus)
+															),
+															CupertinoButton(
+																padding: EdgeInsets.zero,
+																onPressed: size.width >= 600 ? null : () {
+																	setDialogState(() {
+																		size = Size(size.width + 1, size.height);
+																	});
+																},
+																child: const Icon(CupertinoIcons.plus)
 															)
+														]
+													),
+													const SizedBox(height: 8),
+													Text('Height: ${size.height.round()}px'),
+													Row(
+														mainAxisAlignment: MainAxisAlignment.end,
+														children: [
+															CupertinoSlider(
+																value: size.height,
+																min: 100,
+																max: 600,
+																onChanged: (d) {
+																	setDialogState(() {
+																		size = Size(size.width, d);
+																	});
+																}
+															),
+															CupertinoButton(
+																padding: EdgeInsets.zero,
+																onPressed: size.height <= 100 ? null : () {
+																	setDialogState(() {
+																		size = Size(size.width, size.height - 1);
+																	});
+																},
+																child: const Icon(CupertinoIcons.minus)
+															),
+															CupertinoButton(
+																padding: EdgeInsets.zero,
+																onPressed: size.height >= 600 ? null : () {
+																	setDialogState(() {
+																		size = Size(size.width, size.height + 1);
+																	});
+																},
+																child: const Icon(CupertinoIcons.plus)
+															)
+														]
+													),
+													const SizedBox(height: 8),
+													Text('Maximum text lines: ${settings.catalogGridModeTextLinesLimit?.toString() ?? 'Unlimited'}'),
+													Row(
+														mainAxisAlignment: MainAxisAlignment.end,
+														children: [
+															CupertinoButton(
+																padding: const EdgeInsets.only(left: 8, right: 8),
+																onPressed: settings.catalogGridModeTextLinesLimit == null ? null : () {
+																	setDialogState(() {
+																		settings.catalogGridModeTextLinesLimit = null;
+																	});
+																},
+																child: const Text('Reset')
+															),
+															CupertinoButton(
+																padding: EdgeInsets.zero,
+																onPressed: (settings.catalogGridModeTextLinesLimit ?? 2) <= 1 ? null : () {
+																	setDialogState(() {
+																		settings.catalogGridModeTextLinesLimit = (settings.catalogGridModeTextLinesLimit ?? (settings.catalogGridHeight / (2 * 14 * MediaQuery.of(context).textScaleFactor)).round()) - 1;
+																	});
+																},
+																child: const Icon(CupertinoIcons.minus)
+															),
+															CupertinoButton(
+																padding: EdgeInsets.zero,
+																onPressed: () {
+																	setDialogState(() {
+																		settings.catalogGridModeTextLinesLimit = (settings.catalogGridModeTextLinesLimit ?? 0) + 1;
+																	});
+																},
+																child: const Icon(CupertinoIcons.plus)
+															)
+														]
+													),
+													const SizedBox(height: 8),
+													Row(
+														mainAxisAlignment: MainAxisAlignment.spaceBetween,
+														children: [
+															const Text('Thumbnail behind text'),
+															CupertinoSwitch(
+																value: settings.catalogGridModeAttachmentInBackground,
+																onChanged: (v) {
+																	setDialogState(() {
+																		settings.catalogGridModeAttachmentInBackground = v;
+																	});
+																}
+															)
+														]
+													),
+													const SizedBox(height: 8),
+													SizedBox.fromSize(
+														size: size,
+														child: ThreadRow(
+															contentFocus: true,
+															isSelected: false,
+															thread: _makeFakeThread()
 														)
 													)
 												]
