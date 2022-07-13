@@ -240,7 +240,8 @@ class AttachmentViewerController extends ChangeNotifier {
 					}
 					_videoPlayerController = VideoPlayerController.network(
 						url.toString(),
-						httpHeaders: site.getHeaders(url) ?? {}
+						httpHeaders: site.getHeaders(url) ?? {},
+						videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true)
 					);
 					await _videoPlayerController!.initialize();
 					if (_isDisposed) {
