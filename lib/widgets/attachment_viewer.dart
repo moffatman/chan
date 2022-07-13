@@ -45,6 +45,9 @@ class AttachmentNotArchivedException implements Exception {
 	String toString() => 'Attachment not archived';
 }
 
+const _maxVp9Controllers = 5;
+final List<AttachmentViewerController> _vp9Controllers = [];
+
 class AttachmentViewerController extends ChangeNotifier {
 	// Parameters
 	final BuildContext context;
@@ -188,6 +191,15 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
+	void goToThumbnail() {
+		_isFullResolution = false;
+		_showLoadingProgress = false;
+		_videoPlayerController?.dispose();
+		_videoPlayerController = null;
+		_goodImageSource = null;
+		notifyListeners();
+	}
+
 	Future<void> _loadFullAttachment(bool startImageDownload, {bool force = false}) async {
 		if (attachment.type == AttachmentType.image && goodImageSource != null && !force) {
 			return;
@@ -235,6 +247,12 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (Platform.isAndroid || attachment.type == AttachmentType.mp4) {
 					final scan = await MediaScan.scan(url, headers: site.getHeaders(url) ?? {});
 					_hasAudio = scan.hasAudio;
+					if (scan.codec == 'vp9') {
+						_vp9Controllers.add(this);
+						if (_vp9Controllers.length > _maxVp9Controllers) {
+							_vp9Controllers.removeAt(0).goToThumbnail();
+						}
+					}
 					if (_isDisposed) {
 						return;
 					}
@@ -478,6 +496,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		_ongoingConversion?.cancel();
 		videoPlayerController?.pause().then((_) => videoPlayerController?.dispose());
 		_longPressFactorStream.close();
+		_vp9Controllers.remove(this);
 	}
 
 	@override

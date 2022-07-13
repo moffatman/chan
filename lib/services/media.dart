@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/util.dart';
 import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_kit_config.dart';
 import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_session.dart';
@@ -63,13 +64,15 @@ class MediaScan {
 	final int? bitrate;
 	final int? width;
 	final int? height;
+	final String? codec;
 
 	MediaScan({
 		required this.hasAudio,
 		required this.duration,
 		required this.bitrate,
 		required this.width,
-		required this.height
+		required this.height,
+		required this.codec
 	});
 
 	static final Map<_MediaScanCacheEntry, MediaScan> _mediaScanCache = {};
@@ -115,7 +118,8 @@ class MediaScan {
 						duration: seconds == null ? null : Duration(milliseconds: (1000 * seconds).round()),
 						bitrate: int.tryParse(data['format']?['bit_rate'] ?? ''),
 						width: width == 0 ? null : width,
-						height: height == 0 ? null : height
+						height: height == 0 ? null : height,
+						codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name']
 					));
 				}
 				catch (e, st) {
