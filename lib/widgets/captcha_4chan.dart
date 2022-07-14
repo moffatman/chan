@@ -402,16 +402,18 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					final seconds = tryAgainAt!.difference(DateTime.now()).inSeconds;
 					return CupertinoButton(
 						onPressed: seconds > 0 ? null : _tryRequestChallenge,
-						child: Row(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								const Icon(CupertinoIcons.refresh),
-								const SizedBox(width: 16),
-								SizedBox(
-									width: 32,
-									child: seconds > 0 ? Text('$seconds') : Container()
-								)
-							]
+						child: FittedBox(
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									const Icon(CupertinoIcons.refresh),
+									const SizedBox(width: 16),
+									SizedBox(
+										width: 32,
+										child: seconds > 0 ? Text('$seconds') : Container()
+									)
+								]
+							)
 						)
 					);
 				}
@@ -498,25 +500,27 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									Flexible(
 										flex: 1,
 										fit: FlexFit.tight,
-										child: Row(
-											mainAxisAlignment: MainAxisAlignment.end,
-											children: [
-												const Icon(CupertinoIcons.timer),
-												const SizedBox(width: 16),
-												SizedBox(
-													width: 60,
-													child: TimedRebuilder(
-														enabled: true,
-														interval: const Duration(seconds: 1),
-														builder: (context) {
-															final seconds = challenge!.expiresAt.difference(DateTime.now()).inSeconds;
-															return Text(
-																seconds > 0 ? '$seconds' : 'Expired'
-															);
-														}
+										child: FittedBox(
+											child: Row(
+												mainAxisAlignment: MainAxisAlignment.end,
+												children: [
+													const Icon(CupertinoIcons.timer),
+													const SizedBox(width: 16),
+													SizedBox(
+														width: 60,
+														child: TimedRebuilder(
+															enabled: true,
+															interval: const Duration(seconds: 1),
+															builder: (context) {
+																final seconds = challenge!.expiresAt.difference(DateTime.now()).inSeconds;
+																return Text(
+																	seconds > 0 ? '$seconds' : 'Expired'
+																);
+															}
+														)
 													)
-												)
-											]
+												]
+											)
 										)
 									)
 								]
