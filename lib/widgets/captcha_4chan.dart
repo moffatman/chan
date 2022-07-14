@@ -10,8 +10,118 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:provider/provider.dart';
+
+class _ModifiedBouncingScrollSimulation extends Simulation {
+  _ModifiedBouncingScrollSimulation({
+    required double position,
+    required double velocity,
+    required this.leadingExtent,
+    required this.trailingExtent,
+    required this.spring,
+    Tolerance tolerance = Tolerance.defaultTolerance,
+  }): assert(leadingExtent <= trailingExtent), super(tolerance: tolerance) {
+    if (position < leadingExtent) {
+      _springSimulation = _underscrollSimulation(position, velocity);
+      _springTime = double.negativeInfinity;
+    } else if (position > trailingExtent) {
+      _springSimulation = _overscrollSimulation(position, velocity);
+      _springTime = double.negativeInfinity;
+    } else {
+      // Modified to increase friction
+      _frictionSimulation = FrictionSimulation(0.0004, position, velocity);
+      final double finalX = _frictionSimulation.finalX;
+      if (velocity > 0.0 && finalX > trailingExtent) {
+        _springTime = _frictionSimulation.timeAtX(trailingExtent);
+        _springSimulation = _overscrollSimulation(
+          trailingExtent,
+          min(_frictionSimulation.dx(_springTime), maxSpringTransferVelocity),
+        );
+        assert(_springTime.isFinite);
+      } else if (velocity < 0.0 && finalX < leadingExtent) {
+        _springTime = _frictionSimulation.timeAtX(leadingExtent);
+        _springSimulation = _underscrollSimulation(
+          leadingExtent,
+          min(_frictionSimulation.dx(_springTime), maxSpringTransferVelocity),
+        );
+        assert(_springTime.isFinite);
+      } else {
+        _springTime = double.infinity;
+      }
+    }
+  }
+
+  static const double maxSpringTransferVelocity = 5000.0;
+
+  final double leadingExtent;
+
+  final double trailingExtent;
+
+  final SpringDescription spring;
+
+  late FrictionSimulation _frictionSimulation;
+  late Simulation _springSimulation;
+  late double _springTime;
+  double _timeOffset = 0.0;
+
+  Simulation _underscrollSimulation(double x, double dx) {
+    return ScrollSpringSimulation(spring, x, leadingExtent, dx);
+  }
+
+  Simulation _overscrollSimulation(double x, double dx) {
+    return ScrollSpringSimulation(spring, x, trailingExtent, dx);
+  }
+
+  Simulation _simulation(double time) {
+    final Simulation simulation;
+    if (time > _springTime) {
+      _timeOffset = _springTime.isFinite ? _springTime : 0.0;
+      simulation = _springSimulation;
+    } else {
+      _timeOffset = 0.0;
+      simulation = _frictionSimulation;
+    }
+    return simulation..tolerance = tolerance;
+  }
+
+  @override
+  double x(double time) => _simulation(time).x(time - _timeOffset);
+
+  @override
+  double dx(double time) => _simulation(time).dx(time - _timeOffset);
+
+  @override
+  bool isDone(double time) => _simulation(time).isDone(time - _timeOffset);
+
+  @override
+  String toString() {
+    return '${objectRuntimeType(this, '_ModifiedBouncingScrollSimulation')}(leadingExtent: $leadingExtent, trailingExtent: $trailingExtent)';
+  }
+}
+
+class _ModifiedBouncingScrollPhysics extends BouncingScrollPhysics {
+  @override
+  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
+    final Tolerance tolerance = this.tolerance;
+    if (velocity.abs() >= tolerance.velocity || position.outOfRange) {
+      return _ModifiedBouncingScrollSimulation(
+        spring: spring,
+        position: position.pixels,
+        velocity: velocity,
+        leadingExtent: position.minScrollExtent,
+        trailingExtent: position.maxScrollExtent,
+        tolerance: tolerance,
+      );
+    }
+    return null;
+  }
+
+	@override
+	String toString() => '_ModifiedBouncingScrollPhysics()';
+}
 
 class Captcha4ChanCustom extends StatefulWidget {
 	final ImageboardSite site;
@@ -625,35 +735,40 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																			}
 																			return false;
 																		},
-																		child: CupertinoPicker.builder(
-																			key: _pickerKeys[i],
-																			scrollController: _letterPickerControllers[i],
-																			selectionOverlay: AnimatedBuilder(
-																				animation: _solutionController,
-																				builder: (context, child) => CupertinoPickerDefaultSelectionOverlay(
-																					background: ColorTween(
-																						begin: CupertinoColors.tertiarySystemFill.resolveFrom(context),
-																						end: CupertinoTheme.of(context).primaryColor
-																					).transform((_solutionNode.hasFocus && (_solutionController.selection.baseOffset <= i) && (i < _solutionController.selection.extentOffset)) ? 0.5 : 0)!
-																				)
+																		child: ScrollConfiguration(
+																			behavior: ScrollConfiguration.of(context).copyWith(
+																				physics: _ModifiedBouncingScrollPhysics()
 																			),
-																			childCount: captchaLetters.length,
-																			itemBuilder: (context, l) => Padding(
-																				padding: const EdgeInsets.all(6),
-																				child: Center(
-																					child: Text(captchaLetters[l],
-																						style: TextStyle(
-																							fontSize: 34,
-																							color:  ColorTween(
-																								begin: CupertinoTheme.of(context).primaryColor,
-																								end: const Color.fromARGB(255, 241, 190, 19)).transform(1 - _guessConfidences[min(_guessConfidences.length - 1, i)]
-																							)!
+																			child: CupertinoPicker.builder(
+																				key: _pickerKeys[i],
+																				scrollController: _letterPickerControllers[i],
+																				selectionOverlay: AnimatedBuilder(
+																					animation: _solutionController,
+																					builder: (context, child) => CupertinoPickerDefaultSelectionOverlay(
+																						background: ColorTween(
+																							begin: CupertinoColors.tertiarySystemFill.resolveFrom(context),
+																							end: CupertinoTheme.of(context).primaryColor
+																						).transform((_solutionNode.hasFocus && (_solutionController.selection.baseOffset <= i) && (i < _solutionController.selection.extentOffset)) ? 0.5 : 0)!
+																					)
+																				),
+																				childCount: captchaLetters.length,
+																				itemBuilder: (context, l) => Padding(
+																					padding: const EdgeInsets.all(6),
+																					child: Center(
+																						child: Text(captchaLetters[l],
+																							style: TextStyle(
+																								fontSize: 34,
+																								color:  ColorTween(
+																									begin: CupertinoTheme.of(context).primaryColor,
+																									end: const Color.fromARGB(255, 241, 190, 19)).transform(1 - _guessConfidences[min(_guessConfidences.length - 1, i)]
+																								)!
+																							)
 																						)
 																					)
-																				)
-																			),
-																			itemExtent: 50,
-																			onSelectedItemChanged: null
+																				),
+																				itemExtent: 50,
+																				onSelectedItemChanged: null
+																			)
 																		)
 																	),
 																	Column(
