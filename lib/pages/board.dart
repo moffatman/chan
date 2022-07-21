@@ -101,12 +101,12 @@ class _BoardPageState extends State<BoardPage> {
 	}
 
 	void _selectBoard() async {
-		final key = GlobalKey();
+		final keys = <String, GlobalKey>{};
 		final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 			builder: (ctx) => ImageboardSwitcherPage(
 				initialImageboardKey: context.read<Imageboard?>()?.key,
 				builder: (ctx) => BoardSwitcherPage(
-					key: key
+					key: keys.putIfAbsent(ctx.read<Imageboard?>()?.key ?? 'null', () => GlobalKey())
 				)
 			),
 			showAnimations: context.read<EffectiveSettings>().showAnimations
