@@ -13,6 +13,7 @@ import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/frenschan.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:chan/sites/lainchan_org.dart';
 import 'package:chan/sites/soyjak.dart';
 import 'package:chan/util.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
@@ -436,6 +437,12 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == 'frenschan') {
 		return SiteFrenschan(
+			name: data['name'],
+			baseUrl: data['baseUrl']
+		);
+	}
+	else if (data['type'] == 'lainchan_org') {
+		return SiteLainchanOrg(
 			name: data['name'],
 			baseUrl: data['baseUrl']
 		);

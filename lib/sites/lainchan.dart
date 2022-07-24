@@ -51,7 +51,7 @@ class SiteLainchan extends ImageboardSite {
 					elements.add(PostLineBreakSpan());
 				}
 				else if (node.localName == 'a' && node.attributes['href'] != null) {
-					final match = RegExp(r'^\/(\w+)\/\/?res\/(\d+).html#(\d+)').firstMatch(node.attributes['href']!);
+					final match = RegExp(r'^\/([^\/]+)\/\/?res\/(\d+).html#(\d+)').firstMatch(node.attributes['href']!);
 					if (match != null) {
 						elements.add(PostQuoteLinkSpan(
 							board: match.group(1)!,
