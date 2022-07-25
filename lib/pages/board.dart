@@ -493,7 +493,7 @@ class _BoardPageState extends State<BoardPage> {
 																}
 															)
 														],
-														maxHeight: 125,
+														maxHeight: settings.maxCatalogRowHeight,
 														child:  GestureDetector(
 															child: ThreadRow(
 																contentFocus: settings.useCatalogGrid,

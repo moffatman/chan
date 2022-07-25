@@ -1077,7 +1077,7 @@ class SettingsAppearancePage extends StatelessWidget {
 				),
 				const SizedBox(height: 16),
 				Center(
-					child: CupertinoButton.filled(
+					child: settings.useCatalogGrid ? CupertinoButton.filled(
 						child: const Text('Edit catalog grid item layout'),
 						onPressed: () async {
 							Size size = Size(settings.catalogGridWidth, settings.catalogGridHeight);
@@ -1233,6 +1233,76 @@ class SettingsAppearancePage extends StatelessWidget {
 							);
 							settings.catalogGridHeight = size.height;
 							settings.catalogGridWidth = size.width;
+						}
+					) : CupertinoButton.filled(
+						child: const Text('Edit catalog row item height'),
+						onPressed: () async {
+							await showCupertinoModalPopup(
+								context: context,
+								useRootNavigator: false,
+								builder: (context) => StatefulBuilder(
+									builder: (context, setDialogState) => CupertinoActionSheet(
+										title: const Text('Edit catalog grid item layout'),
+										actions: [
+											CupertinoButton(
+												child: const Text('Close'),
+												onPressed: () => Navigator.pop(context)
+											)
+										],
+										message: DefaultTextStyle(
+											style: DefaultTextStyle.of(context).style,
+											child: Column(
+												crossAxisAlignment: CrossAxisAlignment.start,
+												children: [
+													SizedBox(
+														height: settings.maxCatalogRowHeight,
+														child: ThreadRow(
+															contentFocus: false,
+															isSelected: false,
+															thread: _makeFakeThread()
+														)
+													),
+													const SizedBox(height: 8),
+													Text('Height: ${settings.maxCatalogRowHeight.round()}px'),
+													Row(
+														mainAxisAlignment: MainAxisAlignment.end,
+														children: [
+															CupertinoSlider(
+																value: settings.maxCatalogRowHeight,
+																min: 100,
+																max: 600,
+																onChanged: (d) {
+																	setDialogState(() {
+																		settings.maxCatalogRowHeight = d;
+																	});
+																}
+															),
+															CupertinoButton(
+																padding: EdgeInsets.zero,
+																onPressed: settings.maxCatalogRowHeight <= 100 ? null : () {
+																	setDialogState(() {
+																		settings.maxCatalogRowHeight--;
+																	});
+																},
+																child: const Icon(CupertinoIcons.minus)
+															),
+															CupertinoButton(
+																padding: EdgeInsets.zero,
+																onPressed: settings.maxCatalogRowHeight >= 600 ? null : () {
+																	setDialogState(() {
+																		settings.maxCatalogRowHeight++;
+																	});
+																},
+																child: const Icon(CupertinoIcons.plus)
+															)
+														]
+													)
+												]
+											)
+										)
+									)
+								)
+							);
 						}
 					)
 				),

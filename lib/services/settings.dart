@@ -349,6 +349,8 @@ class SavedSettings extends HiveObject {
 	int? catalogGridModeTextLinesLimit;
 	@HiveField(78)
 	bool catalogGridModeAttachmentInBackground;
+	@HiveField(79)
+	double maxCatalogRowHeight;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -430,6 +432,7 @@ class SavedSettings extends HiveObject {
 		double? textScale,
 		this.catalogGridModeTextLinesLimit,
 		bool? catalogGridModeAttachmentInBackground,
+		double? maxCatalogRowHeight,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -520,7 +523,8 @@ class SavedSettings extends HiveObject {
 		watchedThreadsSortingMethod = watchedThreadsSortingMethod ?? ThreadSortingMethod.lastPostTime,
 		closeTabSwitcherAfterUse = closeTabSwitcherAfterUse ?? false,
 		textScale = textScale ?? 1.0,
-		catalogGridModeAttachmentInBackground = catalogGridModeAttachmentInBackground ?? false;
+		catalogGridModeAttachmentInBackground = catalogGridModeAttachmentInBackground ?? false,
+		maxCatalogRowHeight = maxCatalogRowHeight ?? 125;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1129,6 +1133,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get catalogGridModeAttachmentInBackground => _settings.catalogGridModeAttachmentInBackground;
 	set catalogGridModeAttachmentInBackground(bool setting) {
 		_settings.catalogGridModeAttachmentInBackground = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	double get maxCatalogRowHeight => _settings.maxCatalogRowHeight;
+	set maxCatalogRowHeight(double setting) {
+		_settings.maxCatalogRowHeight = setting;
 		_settings.save();
 		notifyListeners();
 	}
