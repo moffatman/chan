@@ -1,10 +1,7 @@
-import 'package:chan/models/board.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/sites/lainchan.dart';
-import 'package:dio/dio.dart';
-import 'package:html/parser.dart';
+import 'package:chan/sites/lainchan_org.dart';
 
-class SiteSoyjak extends SiteLainchan {
+class SiteSoyjak extends SiteLainchanOrg {
 	SiteSoyjak({
 		required String baseUrl,
 		required String name,
@@ -14,20 +11,6 @@ class SiteSoyjak extends SiteLainchan {
 		name: name,
 		archives: archives
 	);
-
-	@override
-	Future<List<ImageboardBoard>> getBoardsOnce() async {
-		final response = await client.get(Uri.https(baseUrl).toString(), options: Options(
-			responseType: ResponseType.plain
-		));
-		final document = parse(response.data);
-		return document.querySelectorAll('fieldset a').map((elem) => ImageboardBoard(
-			name: elem.attributes['href']!.split('/').lastWhere((s) => s.isNotEmpty),
-			title: elem.text,
-			isWorksafe: false,
-			webmAudioAllowed: true
-		)).toList();
-	}
 
 	@override
 	String? get imageThumbnailExtension => null;
