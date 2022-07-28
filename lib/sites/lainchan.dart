@@ -146,7 +146,8 @@ class SiteLainchan extends ImageboardSite {
 			attachmentDeleted: data['filedeleted'] == 1,
 			spanFormat: PostSpanFormat.lainchan,
 			posterId: data['id'],
-			flag: _makeFlag(data)
+			flag: _makeFlag(data),
+			capcode: data['capcode']
 		);
 	}
 
