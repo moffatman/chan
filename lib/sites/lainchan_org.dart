@@ -35,4 +35,10 @@ class SiteLainchanOrg extends SiteLainchan {
 	String get siteType => 'lainchan_org';
 	@override
 	String get siteData => baseUrl;
+
+	@override
+	bool operator ==(Object other) => (other is SiteLainchanOrg) && (other.name == name) && (other.baseUrl == baseUrl);
+
+	@override
+	int get hashCode => Object.hash(name, baseUrl);
 } 
