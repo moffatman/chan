@@ -749,7 +749,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																key: ValueKey(i),
 																child: SizedBox(
 																	height: 200,
-																	width: min(constraints.maxWidth, 375) / numLetters,
+																	width: min(constraints.maxWidth, 500) / numLetters,
 																	child: Stack(
 																		fit: StackFit.expand,
 																		children: [
