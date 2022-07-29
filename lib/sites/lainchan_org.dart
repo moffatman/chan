@@ -24,8 +24,8 @@ class SiteLainchanOrg extends SiteLainchan {
 		return document.querySelectorAll('.boardlist a').where((e) => e.attributes['title'] != null).map((e) => ImageboardBoard(
 			name: e.attributes['href']!.split('/')[1],
 			title: e.attributes['title']!,
-			maxWebmSizeBytes: 25000,
-			maxImageSizeBytes: 25000,
+			maxWebmSizeBytes: 25000000,
+			maxImageSizeBytes: 25000000,
 			isWorksafe: false,
 			webmAudioAllowed: true
 		)).toList();
