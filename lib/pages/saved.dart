@@ -507,7 +507,9 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 										child: PostRow(
 											post: item.post,
 											isSelected: item == selected,
-											onTap: () => setter(item)
+											onTap: () => setter(item),
+											showBoardName: true,
+											showSiteIcon: true
 										)
 									)
 								)
@@ -566,6 +568,8 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 												post: savedPost.item.post,
 												isSelected: savedPost == selected,
 												onTap: () => setter(savedPost),
+												showBoardName: true,
+												showSiteIcon: true,
 												onThumbnailLoadError: (e, st) async {
 													Thread? newThread;
 													bool hadToUseArchive = false;

@@ -5,6 +5,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
@@ -39,6 +40,8 @@ class PostRow extends StatelessWidget {
 	final bool isSelected;
 	final Function(Object?, StackTrace?)? onThumbnailLoadError;
 	final PostSpanRenderOptions? baseOptions;
+	final bool showSiteIcon;
+	final bool showBoardName;
 
 	const PostRow({
 		required this.post,
@@ -50,6 +53,8 @@ class PostRow extends StatelessWidget {
 		this.allowTappingLinks = true,
 		this.shrinkWrap = false,
 		this.isSelected = false,
+		this.showSiteIcon = false,
+		this.showBoardName = false,
 		this.baseOptions,
 		Key? key
 	}) : super(key: key);
@@ -300,13 +305,19 @@ class PostRow extends StatelessWidget {
 																else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts) TextSpan(
 																	text: '${formatRelativeTime(latestPost.time)} ago '
 																)
-																else if (field == PostDisplayField.postId) TextSpan(
-																	text: '${latestPost.id} ',
-																	style: TextStyle(color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)),
-																	recognizer: TapGestureRecognizer()..onTap = () {
-																		ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(latestPost.id);
-																	}
-																),
+																else if (field == PostDisplayField.postId) ...[
+																	if (showSiteIcon) const WidgetSpan(
+																		alignment: PlaceholderAlignment.middle,
+																		child: ImageboardIcon()
+																	),
+																	TextSpan(
+																		text: '${showBoardName ? '/${latestPost.board}/' : ''}${latestPost.id} ',
+																		style: TextStyle(color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)),
+																		recognizer: TapGestureRecognizer()..onTap = () {
+																			ctx.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(latestPost.id);
+																		}
+																	)
+																],
 															if (supportMouse) ...[
 																...replyIds.map((id) => PostQuoteLinkSpan(
 																	board: latestPost.board,
