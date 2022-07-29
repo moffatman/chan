@@ -169,6 +169,24 @@ class Notifications {
 		return base64Encode(md5.convert(boards.join(',').codeUnits).bytes);
 	}
 
+	Future<void> deleteAllNotificationsFromServer() async {
+		final response = await Dio().patch('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
+			'token': await Notifications.getToken(),
+			'siteType': siteType,
+			'siteData': siteData
+		}));
+		final String digest = response.data['digest'];
+		print('Server returned digest $digest');
+		final emptyDigest = base64Encode(md5.convert(''.codeUnits).bytes);
+		print('Our digest is $emptyDigest');
+		if (digest != emptyDigest) {
+			print('Need to resync notifications $id');
+			await Dio().put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
+				'watches': []
+			}));
+		}
+	}
+
 	Future<void> initialize() async {
 		_children[id] = this;
 		try {
@@ -191,21 +209,7 @@ class Notifications {
 				}
 			}
 			else {
-				final response = await Dio().patch('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
-					'token': await Notifications.getToken(),
-					'siteType': siteType,
-					'siteData': siteData
-				}));
-				final String digest = response.data['digest'];
-				print('Server returned digest $digest');
-				final emptyDigest = base64Encode(md5.convert(''.codeUnits).bytes);
-				print('Our digest is $emptyDigest');
-				if (digest != emptyDigest) {
-					print('Need to resync notifications $id');
-					await Dio().put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
-						'watches': []
-					}));
-				}
+				await deleteAllNotificationsFromServer();
 			}
 			if (_unrecognizedByUserId.containsKey(id)) {
 				_unrecognizedByUserId[id]?.forEach(_onMessageOpenedApp);

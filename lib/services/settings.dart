@@ -14,11 +14,62 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:linkify/linkify.dart';
 import 'package:profanity_filter/profanity_filter.dart';
 import 'package:provider/provider.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 part 'settings.g.dart';
+
+class ChanceLinkifier extends Linkifier {
+  const ChanceLinkifier();
+
+  @override
+  List<LinkifyElement> parse(elements, options) {
+    final list = <LinkifyElement>[];
+
+    for (final element in elements) {
+      if (element is TextElement) {
+        var match = RegExp(r'^(.*?)((?:chance:\/\/|www\.)[^\s/$.?#].[^\s]*)').firstMatch(element.text);
+
+        if (match == null) {
+          list.add(element);
+        } else {
+          final text = element.text.replaceFirst(match.group(0)!, '');
+
+          if (match.group(1)?.isNotEmpty == true) {
+            list.add(TextElement(match.group(1)!));
+          }
+
+          if (match.group(2)?.isNotEmpty == true) {
+            var originalUrl = match.group(2)!;
+            String? end;
+
+            if ((options.excludeLastPeriod) &&
+                originalUrl[originalUrl.length - 1] == ".") {
+              end = ".";
+              originalUrl = originalUrl.substring(0, originalUrl.length - 1);
+            }
+
+            list.add(UrlElement(originalUrl));
+
+            if (end != null) {
+              list.add(TextElement(end));
+            }
+          }
+
+          if (text.isNotEmpty) {
+            list.addAll(parse([TextElement(text)], options));
+          }
+        }
+      } else {
+        list.add(element);
+      }
+    }
+
+    return list;
+  }
+}
 
 const contentSettingsApiRoot = 'https://us-central1-chan-329813.cloudfunctions.net/preferences';
 final _punctuationRegex = RegExp('(\\W+|s\\W)');
@@ -608,7 +659,7 @@ class EffectiveSettings extends ChangeNotifier {
 	ContentSettings get contentSettings => _settings.contentSettings;
 	String get contentSettingsUrl => '$contentSettingsApiRoot/user/${_settings.userId}/edit';
 
-	void updateContentSettings() async {
+	Future<void> updateContentSettings() async {
 		try {
 			String platform = Platform.operatingSystem;
 			if (Platform.isIOS && (await isDevelopmentBuild())) {

@@ -5,6 +5,7 @@ import 'package:async/async.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -59,6 +60,7 @@ class _CatalogCache {
 class Site4Chan extends ImageboardSite {
 	@override
 	final String name;
+	@override
 	final String baseUrl;
 	final String staticUrl;
 	final String sysUrl;
@@ -78,7 +80,7 @@ class Site4Chan extends ImageboardSite {
 	};
 
 	static List<PostSpan> parsePlaintext(String text) {
-		return linkify(text, linkifiers: [const UrlLinkifier()]).map((elem) {
+		return linkify(text, linkifiers: const [UrlLinkifier(), ChanceLinkifier()]).map((elem) {
 			if (elem is UrlElement) {
 				return PostLinkSpan(elem.url);
 			}

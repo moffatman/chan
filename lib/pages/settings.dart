@@ -22,6 +22,7 @@ import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -237,6 +238,57 @@ class SettingsPage extends StatelessWidget {
 								),
 								onPressed: () {
 									settings.updateContentSettings();
+								}
+							),
+							if (settings.contentSettings.sites.length > 1) CupertinoButton.filled(
+								padding: const EdgeInsets.all(8),
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: const [
+										Text('Remove site '),
+										Icon(CupertinoIcons.delete, size: 16)
+									]
+								),
+								onPressed: () async {
+									try {
+										final imageboards = {
+											for (final i in ImageboardRegistry.instance.imageboards) i.key: i.site.name
+										};
+										final toDelete = await showCupertinoDialog<String>(
+											context: context,
+											barrierDismissible: true,
+											builder: (context) => CupertinoAlertDialog(
+												title: const Text('Which site?'),
+												actions: [
+													for (final i in imageboards.entries) CupertinoDialogAction(
+														isDestructiveAction: true,
+														onPressed: () {
+															Navigator.of(context).pop(i.key);
+														},
+														child: Text(i.value)
+													),
+													CupertinoDialogAction(
+														isDefaultAction: true,
+														child: const Text('Cancel'),
+														onPressed: () {
+															Navigator.of(context).pop();
+														},
+													)
+												]
+											)
+										);
+										if (toDelete != null) {
+											ImageboardRegistry.instance.getImageboard(toDelete)?.deleteAllData();
+											final response = await Dio().delete('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$toDelete');
+											if (response.data['error'] != null) {
+												throw Exception(response.data['error']);
+											}
+											await settings.updateContentSettings();
+										}
+									}
+									catch (e) {
+										alertError(context, e.toStringDio());
+									}
 								}
 							),
 							CupertinoButton.filled(

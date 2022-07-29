@@ -699,11 +699,11 @@ class PostLinkSpan extends PostSpan {
 				if (snapshot.data?.author != null && !(snapshot.data?.title != null && snapshot.data!.title!.contains(snapshot.data!.author!))) {
 					byline = byline == null ? snapshot.data?.author : '${snapshot.data?.author} - $byline';
 				}
-				if (snapshot.data?.thumbnailUrl != null) {
+				if (snapshot.data?.thumbnailWidget != null || snapshot.data?.thumbnailUrl != null) {
 					tapChild = buildEmbed([
 						ClipRRect(
 							borderRadius: const BorderRadius.all(Radius.circular(8)),
-							child: ExtendedImage.network(
+							child: snapshot.data?.thumbnailWidget ?? ExtendedImage.network(
 								snapshot.data!.thumbnailUrl!,
 								cache: true,
 								width: 75,

@@ -79,6 +79,7 @@ class Persistence extends ChangeNotifier {
 	// Do not persist
 	static bool enableHistory = true;
 	static final browserHistoryStatusListenable = EasyListenable();
+	static final tabsListenable = EasyListenable();
 
 	static Future<void> initializeStatic() async {
 		await Hive.initFlutter();
@@ -185,6 +186,13 @@ class Persistence extends ChangeNotifier {
 		});
 		print('Deleting ${toDelete.length} threads');
 		await threadStateBox.deleteAll(toDelete);
+	}
+
+	Future<void> deleteAllData() async {
+		settings.boardsBySite.remove(id);
+		settings.savedPostsBySite.remove(id);
+		settings.browserStateBySite.remove(id);
+		await threadStateBox.deleteFromDisk();
 	}
 
 	Future<void> initialize() async {
@@ -397,6 +405,7 @@ class Persistence extends ChangeNotifier {
 
 	static Future<void> didUpdateTabs() async {
 		await settings.save();
+		tabsListenable.didUpdate();
 	}
 
 	Future<void> didUpdateBrowserState() async {

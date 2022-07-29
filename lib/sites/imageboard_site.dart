@@ -288,6 +288,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		return memoizedHeaders[url.host];
 	}
 	Uri get passIconUrl;
+	String get baseUrl;
 	String get imageUrl;
 	Uri get iconUrl;
 	CaptchaRequest getCaptchaRequest(String board, [int? threadId]);

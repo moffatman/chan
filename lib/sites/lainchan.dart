@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
@@ -18,6 +19,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
 
 class SiteLainchan extends ImageboardSite {
+	@override
 	final String baseUrl;
 	@override
 	final String name;
@@ -32,7 +34,7 @@ class SiteLainchan extends ImageboardSite {
 	}) : super(archives);
 
 	static List<PostSpan> parsePlaintext(String text) {
-		return linkify(text, linkifiers: [const UrlLinkifier()]).map((elem) {
+		return linkify(text, linkifiers: const [UrlLinkifier(), ChanceLinkifier()]).map((elem) {
 			if (elem is UrlElement) {
 				return PostLinkSpan(elem.url);
 			}

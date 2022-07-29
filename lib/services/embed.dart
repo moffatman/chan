@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
 class _EmbedParam {
@@ -19,6 +21,9 @@ Future<bool> embedPossible({
 	required String url,
 	required BuildContext context
 }) async {
+	if (url.startsWith('chance://site/')) {
+		return true;
+	}
 	if (kDebugMode) {
 		return context.read<EffectiveSettings>().embedRegexes.any((regex) => regex.hasMatch(url));
 	}
@@ -51,33 +56,62 @@ class EmbedData {
 	final String? provider;
 	final String? author;
 	final String? thumbnailUrl;
+	final Widget? thumbnailWidget;
 
 	const EmbedData({
 		required this.title,
 		required this.provider,
 		required this.author,
-		required this.thumbnailUrl
+		required this.thumbnailUrl,
+		this.thumbnailWidget
 	});
 
 	@override
-	String toString() => 'EmbedData(title: $title, provider: $provider, author: $author, thumbnailUrl: $thumbnailUrl)';
+	String toString() => 'EmbedData(title: $title, provider: $provider, author: $author, thumbnailUrl: $thumbnailUrl, thumbnailWidget: $thumbnailWidget)';
 }
 
 Future<EmbedData?> loadEmbedData({
 	required String url,
 	required BuildContext context
 }) async {
-	final response = await context.read<ImageboardSite>().client.get('https://noembed.com/embed', queryParameters: {
-		'url': url
-	});
-	if (response.data != null) {
-		final data = jsonDecode(response.data);
-		return EmbedData(
-			title: data['title'],
-			provider: data['provider_name'],
-			author: data['author_name'],
-			thumbnailUrl: data['thumbnail_url']
-		);
+	if (url.startsWith('chance://site/')) {
+		try {
+			final response = await Dio().get(url.replaceFirst('chance://', '$contentSettingsApiRoot/'));
+			print(response);
+			if (response.data['data'] == null) {
+				throw Exception(response.data['error'] ?? 'Unknown error');
+			}
+			final site = makeSite(response.data['data']);
+			return EmbedData(
+				title: site.name,
+				provider: site.baseUrl,
+				author: null,
+				thumbnailUrl: site.iconUrl.toString()
+			);
+		}
+		catch (e) {
+			return EmbedData(
+				title: 'Unsupported site: ${url.substring(14)}',
+				provider: e.toStringDio(),
+				author: null,
+				thumbnailUrl: null,
+				thumbnailWidget: const Icon(CupertinoIcons.exclamationmark_triangle_fill)
+			);
+		}
+	}
+	else {
+		final response = await context.read<ImageboardSite>().client.get('https://noembed.com/embed', queryParameters: {
+			'url': url
+		});
+		if (response.data != null) {
+			final data = jsonDecode(response.data);
+			return EmbedData(
+				title: data['title'],
+				provider: data['provider_name'],
+				author: data['author_name'],
+				thumbnailUrl: data['thumbnail_url']
+			);
+		}
 	}
 	return null;
 }

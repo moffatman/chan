@@ -1,5 +1,7 @@
 
 
+import 'dart:math';
+
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -85,6 +87,11 @@ class Imageboard extends ChangeNotifier {
 			setupErrorMessage = e.toStringDio();
 		}
 		notifyListeners();
+	}
+
+	Future<void> deleteAllData() async {
+		await notifications.deleteAllNotificationsFromServer();
+		await persistence.deleteAllData();
 	}
 
 	Future<void> setupBoards() async {
@@ -175,12 +182,26 @@ class ImageboardRegistry extends ChangeNotifier {
 						}
 					});
 				}
+				final initialTabsLength = Persistence.tabs.length;
+				final initialTab = Persistence.tabs[Persistence.currentTabIndex];
+				final initialTabIndex = Persistence.currentTabIndex;
 				for (final key in siteKeysToRemove) {
+					_sites[key]?.dispose();
 					_sites.remove(key);
 					Persistence.tabs.removeWhere((t) => t.imageboardKey == key);
 				}
-				if (Persistence.tabs.isEmpty) {
+				if (Persistence.tabs.contains(initialTab)) {
+					Persistence.currentTabIndex = Persistence.tabs.indexOf(initialTab);
+				}
+				else if (Persistence.tabs.isEmpty) {
 					Persistence.tabs.add(PersistentBrowserTab());
+					Persistence.currentTabIndex = 0;
+				}
+				else {
+					Persistence.currentTabIndex = min(Persistence.tabs.length - 1, initialTabIndex);
+				}
+				if (initialTabsLength != Persistence.tabs.length) {
+					Persistence.didUpdateTabs();
 				}
 			}
 			catch (e, st) {

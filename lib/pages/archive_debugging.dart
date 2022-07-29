@@ -153,6 +153,9 @@ class WrappedArchive extends ImageboardSite {
   
   @override
   String get defaultUsername => '';
+  
+  @override
+  String get baseUrl => 'www.example.com';
 }
 
 class ArchiveDebuggingPage extends StatelessWidget {

@@ -25,6 +25,7 @@ import 'package:chan/widgets/notifications_overlay.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -124,6 +125,7 @@ class _ChanAppState extends State<ChanApp> {
 	void dispose() {
 		super.dispose();
 		ImageboardRegistry.instance.removeListener(_onImageboardRegistryUpdate);
+		settings.removeListener(_onSettingsUpdate);
 	}
 
 	void _onSettingsUpdate() {
@@ -272,6 +274,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
 	final Map<String, Tuple2<Notifications, StreamSubscription<ThreadOrPostIdentifier>>> _notificationsSubscriptions = {};
+	late StreamSubscription<String?> _linkSubscription;
+	late StreamSubscription<List<SharedMediaFile>> _sharedFilesSubscription;
+	late StreamSubscription<String> _sharedTextSubscription;
 
 	void _didUpdateTabs() {
 		if (_isScrolling) {
@@ -337,7 +342,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		});
 	}
 
-	void _onNewLink(String? link) {
+	Future<void> _onNewLink(String? link) async {
+		final settings = context.read<EffectiveSettings>();
 		if (link != null && link.startsWith('chance:')) {
 			print(link);
 			final threadLink = RegExp(r'chance:\/\/([^\/]+)\/([^\/]+)\/thread\/(\d+)').firstMatch(link);
@@ -350,10 +356,56 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					),
 					activate: true
 				);
+				return;
 			}
-			else {
-				alertError(context, 'Unrecognized link\n$link');
+			final siteLink = RegExp(r'chance:\/\/site\/([^\/]+)').firstMatch(link);
+			if (siteLink != null) {
+				final siteKey = siteLink.group(1)!;
+				try {
+					if (ImageboardRegistry.instance.getImageboard(siteKey) == null) {
+						final consent = await showCupertinoDialog<bool>(
+							context: context,
+							barrierDismissible: true,
+							builder: (context) => CupertinoAlertDialog(
+								title: Text('Add site $siteKey?'),
+								actions: [
+									CupertinoDialogAction(
+										child: const Text('Cancel'),
+										onPressed: () {
+											Navigator.of(context).pop();
+										}
+									),
+									CupertinoDialogAction(
+										isDefaultAction: true,
+										onPressed: () {
+											Navigator.of(context).pop(true);
+										},
+										child: const Text('OK')
+									)
+								]
+							)
+						);
+						if (consent != true) {
+							return;
+						}
+						final response = await Dio().put('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$siteKey');
+						if (response.data['error'] != null) {
+							throw Exception(response.data['error']);
+						}
+						await settings.updateContentSettings();
+						await Future.delayed(const Duration(milliseconds: 500)); // wait for rebuild of ChanHomePage
+					}
+					_addNewTab(
+						withImageboardKey: siteKey,
+						activate: true
+					);
+				}
+				catch (e) {
+					alertError(context, 'Error adding site: $e');
+				}
+				return;
 			}
+			alertError(context, 'Unrecognized link\n$link');
 		}
 	}
 
@@ -434,17 +486,28 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
+	void _browserHistoryStatusListener() {
+		if (mounted) {
+			setState(() {});
+		}
+	}
+
+	void _tabsListener() {
+		if (mounted) {
+			activeBrowserTab.value = Persistence.currentTabIndex;
+		}
+	}
+
 	@override
 	void initState() {
 		super.initState();
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 		activeBrowserTab.value = Persistence.currentTabIndex;
-		Persistence.browserHistoryStatusListenable.addListener(() {
-			if (mounted) setState(() {});
-		});
+		Persistence.browserHistoryStatusListenable.addListener(_browserHistoryStatusListener);
+		Persistence.tabsListenable.addListener(_tabsListener);
 		_setupDevSite();
 		getInitialLink().then(_onNewLink);
-		linkStream.listen(_onNewLink);
+		_linkSubscription = linkStream.listen(_onNewLink);
 		if (!_initialLinkConsumed) {
 			ReceiveSharingIntent.getInitialText().then(_consumeLink);
 		}
@@ -453,8 +516,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				_initialMediaConsumed = true;
 			});
 		}
-		ReceiveSharingIntent.getMediaStream().listen(_consumeFiles);
-		ReceiveSharingIntent.getTextStream().listen(_consumeLink);
+		_sharedFilesSubscription = ReceiveSharingIntent.getMediaStream().listen(_consumeFiles);
+		_sharedTextSubscription = ReceiveSharingIntent.getTextStream().listen(_consumeLink);
 	}
 
 	PersistentBrowserTab _addNewTab({
@@ -1213,5 +1276,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			],
 			child: child
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		Persistence.browserHistoryStatusListenable.removeListener(_browserHistoryStatusListener);
+		Persistence.tabsListenable.removeListener(_tabsListener);
+		_linkSubscription.cancel();
+		_sharedFilesSubscription.cancel();
+		_sharedTextSubscription.cancel();
 	}
 }
