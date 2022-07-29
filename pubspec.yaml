@@ -48,7 +48,7 @@ dependencies:
   highlight: ^0.7.0
   flutter_highlight: ^0.7.0
   google_fonts: ^3.0.1
-  file_picker: ^4.2.3
+  file_picker: ^5.0.0
   flutter_colorpicker: ^1.0.3
   photo_manager: ^2.0.0-dev.6
   flutter_tex: ^4.0.3+4
