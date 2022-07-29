@@ -36,7 +36,8 @@ class _InjectingNavigatorState extends NavigatorState {
 			return super.push(FullWidthCupertinoPageRoute<T>(
 				settings: route.settings,
 				builder: (context) => (widget as InjectingNavigator).injector(context, route, route.builder),
-				showAnimations: context.read<EffectiveSettings>().showAnimations
+				showAnimationsForward: route.showAnimationsForward,
+				showAnimations: route.showAnimations
 			));
 		}
 		return super.push(route);

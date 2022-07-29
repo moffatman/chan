@@ -10,8 +10,8 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/subjects.dart';
 
-PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder, bool showAnimations) => FullWidthCupertinoPageRoute(builder: builder, showAnimations: showAnimations);
-PageRoute transparentPageRouteBuilder(WidgetBuilder builder, bool showAnimations) => TransparentRoute(builder: builder, showAnimations: showAnimations);
+PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder, {required bool showAnimations, required bool? showAnimationsForward}) => FullWidthCupertinoPageRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
+PageRoute transparentPageRouteBuilder(WidgetBuilder builder, {required bool showAnimations, required bool? showAnimationsForward}) => TransparentRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 
 class MasterDetailHint {
 	final bool twoPane;
@@ -33,14 +33,14 @@ class WillPopZone {
 
 class BuiltDetailPane {
 	final Widget widget;
-	final PageRoute Function(WidgetBuilder builder, bool showAnimations) pageRouteBuilder;
+	final PageRoute Function(WidgetBuilder builder, {required bool showAnimations, required bool? showAnimationsForward}) pageRouteBuilder;
 
 	BuiltDetailPane({
 		required this.widget,
 		required this.pageRouteBuilder
 	});
 
-	PageRoute pageRoute(bool showAnimations) => pageRouteBuilder((context) => widget, showAnimations);
+	PageRoute pageRoute({required bool showAnimations, required bool? showAnimationsForward}) => pageRouteBuilder((context) => widget, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 }
 
 class MasterDetailPage<T> extends StatelessWidget {
@@ -120,8 +120,8 @@ class MultiMasterPane<T> {
 		);
 	}
 
-	PageRoute buildDetailRoute(bool showAnimations) {
-		return detailBuilder(currentValue.value, true).pageRoute(showAnimations);
+	PageRoute buildDetailRoute({required bool showAnimations, required bool? showAnimationsForward}) {
+		return detailBuilder(currentValue.value, true).pageRoute(showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 	}
 }
 
@@ -175,9 +175,9 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		_tabController = TabController(length: panes.length, vsync: this);
 		_tabController.addListener(_onPaneChanged);
 		_initGlobalKeys();
-		Future.delayed(const Duration(milliseconds: 100), () {
+		WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
 			if (panes[_tabController.index].currentValue.value != null) {
-				_onNewValue(panes[_tabController.index]);
+				_onNewValue(panes[_tabController.index], showAnimationsForward: false);
 			}
 		});
 	}
@@ -230,11 +230,14 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		}
 	}
 
-	void _onNewValue<T> (MultiMasterPane<T> pane) {
+	void _onNewValue<T> (MultiMasterPane<T> pane, {bool? showAnimationsForward}) {
 		if (onePane) {
 			if (pane.currentValue.value != null) {
 				_popMasterValueRoutes();
-				_masterKey.currentState!.push(pane.buildDetailRoute(context.read<EffectiveSettings>().showAnimations)).then(pane.onPushReturn);
+				_masterKey.currentState!.push(pane.buildDetailRoute(
+					showAnimations: context.read<EffectiveSettings>().showAnimations,
+					showAnimationsForward: showAnimationsForward
+				)).then(pane.onPushReturn);
 			}
 		}
 		else {
@@ -337,7 +340,10 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		if (lastOnePane != null && lastOnePane != onePane) {
 			final pane = panes[_tabController.index];
 			if (onePane && pane.currentValue.value != null) {
-				_masterKey.currentState!.push(pane.buildDetailRoute(context.read<EffectiveSettings>().showAnimations)).then(pane.onPushReturn);
+				_masterKey.currentState!.push(pane.buildDetailRoute(
+					showAnimations: context.read<EffectiveSettings>().showAnimations,
+					showAnimationsForward: null
+				)).then(pane.onPushReturn);
 			}
 			else {
 				_popMasterValueRoutes();
