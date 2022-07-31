@@ -189,14 +189,72 @@ class SavedTheme {
 	Color secondaryColor;
 	@HiveField(4, defaultValue: _defaultQuoteColor)
 	Color quoteColor;
+	@HiveField(5)
+	SavedTheme? copiedFrom;
 
 	SavedTheme({
 		required this.backgroundColor,
 		required this.barColor,
 		required this.primaryColor,
 		required this.secondaryColor,
-		this.quoteColor = _defaultQuoteColor
+		this.quoteColor = _defaultQuoteColor,
+		this.copiedFrom
 	});
+
+	factory SavedTheme.decode(String data) {
+		final b = base64Url.decode(data);
+		if (b.length < 15) {
+			throw Exception('Data has been truncated');
+		}
+		final theme = SavedTheme(
+			backgroundColor: Color.fromARGB(255, b[0], b[1], b[2]),
+			barColor: Color.fromARGB(255, b[3], b[4], b[5]),
+			primaryColor: Color.fromARGB(255, b[6], b[7], b[8]),
+			secondaryColor: Color.fromARGB(255, b[9], b[10], b[11]),
+			quoteColor: Color.fromARGB(255, b[12], b[13], b[14])
+		);
+		return SavedTheme.copyFrom(theme);
+	}
+
+	String encode() {
+		return base64Url.encode([
+			backgroundColor.red,
+			backgroundColor.green,
+			backgroundColor.blue,
+			barColor.red,
+			barColor.green,
+			barColor.blue,
+			primaryColor.red,
+			primaryColor.green,
+			primaryColor.blue,
+			secondaryColor.red,
+			secondaryColor.green,
+			secondaryColor.blue,
+			quoteColor.red,
+			quoteColor.green,
+			quoteColor.blue
+		]);
+	}
+
+	SavedTheme.copyFrom(SavedTheme original) :
+		backgroundColor = original.backgroundColor,
+		barColor = original.barColor,
+		primaryColor = original.primaryColor,
+		secondaryColor = original.secondaryColor,
+		quoteColor = original.quoteColor,
+		copiedFrom = original;
+	
+	@override
+	bool operator ==(dynamic other) => (other is SavedTheme) &&
+		backgroundColor == other.backgroundColor &&
+		barColor == other.barColor &&
+		primaryColor == other.primaryColor &&
+		secondaryColor == other.secondaryColor &&
+		quoteColor == other.quoteColor;// &&
+		//copiedFrom == other.copiedFrom;
+
+	@override
+	int get hashCode => Object.hash(backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, copiedFrom);
 }
 
 @HiveType(typeId: 30)
@@ -273,9 +331,9 @@ class SavedSettings extends HiveObject {
 	@HiveField(14)
 	bool boardSwitcherHasKeyboardFocus;
 	@HiveField(15)
-	SavedTheme lightTheme;
+	SavedTheme deprecatedLightTheme;
 	@HiveField(16)
-	SavedTheme darkTheme;
+	SavedTheme deprecatedDarkTheme;
 	@HiveField(17)
 	Map<String, PersistentRecentSearches> deprecatedRecentSearchesBySite;
 	@HiveField(18)
@@ -402,6 +460,12 @@ class SavedSettings extends HiveObject {
 	bool catalogGridModeAttachmentInBackground;
 	@HiveField(79)
 	double maxCatalogRowHeight;
+	@HiveField(80)
+	Map<String, SavedTheme> themes;
+	@HiveField(81)
+	String lightThemeKey;
+	@HiveField(83)
+	String darkThemeKey;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -418,8 +482,8 @@ class SavedSettings extends HiveObject {
 		int? boardCatalogColumns,
 		String? filterConfiguration,
 		bool? boardSwitcherHasKeyboardFocus,
-		SavedTheme? lightTheme,
-		SavedTheme? darkTheme,
+		SavedTheme? deprecatedLightTheme,
+		SavedTheme? deprecatedDarkTheme,
 		Map<String, PersistentRecentSearches>? deprecatedRecentSearchesBySite,
 		Map<String, PersistentBrowserState>? browserStateBySite,
 		Map<String, Map<String, SavedPost>>? savedPostsBySite,
@@ -484,6 +548,9 @@ class SavedSettings extends HiveObject {
 		this.catalogGridModeTextLinesLimit,
 		bool? catalogGridModeAttachmentInBackground,
 		double? maxCatalogRowHeight,
+		Map<String, SavedTheme>? themes,
+		String? lightThemeKey,
+		String? darkThemeKey,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -496,13 +563,13 @@ class SavedSettings extends HiveObject {
 		contentSettings = contentSettings ?? ContentSettings(),
 		filterConfiguration = filterConfiguration ?? '',
 		boardSwitcherHasKeyboardFocus = boardSwitcherHasKeyboardFocus ?? true,
-		lightTheme = lightTheme ?? SavedTheme(
+		deprecatedLightTheme = deprecatedLightTheme ?? SavedTheme(
 			primaryColor: defaultLightTheme.primaryColor,
 			secondaryColor: defaultLightTheme.secondaryColor,
 			barColor: defaultLightTheme.barColor,
 			backgroundColor: defaultLightTheme.backgroundColor
 		),
-		darkTheme = darkTheme ?? SavedTheme(
+		deprecatedDarkTheme = deprecatedDarkTheme ?? SavedTheme(
 			primaryColor: defaultDarkTheme.primaryColor,
 			secondaryColor: defaultDarkTheme.secondaryColor,
 			barColor: defaultDarkTheme.barColor,
@@ -575,7 +642,25 @@ class SavedSettings extends HiveObject {
 		closeTabSwitcherAfterUse = closeTabSwitcherAfterUse ?? false,
 		textScale = textScale ?? 1.0,
 		catalogGridModeAttachmentInBackground = catalogGridModeAttachmentInBackground ?? false,
-		maxCatalogRowHeight = maxCatalogRowHeight ?? 125;
+		maxCatalogRowHeight = maxCatalogRowHeight ?? 125,
+		themes = themes ?? {
+			'Light': SavedTheme(
+				primaryColor: (deprecatedLightTheme ?? defaultLightTheme).primaryColor,
+				secondaryColor: (deprecatedLightTheme ?? defaultLightTheme).secondaryColor,
+				barColor: (deprecatedLightTheme ?? defaultLightTheme).barColor,
+				backgroundColor: (deprecatedLightTheme ?? defaultLightTheme).backgroundColor,
+				copiedFrom: defaultLightTheme
+			),
+			'Dark': SavedTheme(
+				primaryColor: (deprecatedDarkTheme ?? defaultDarkTheme).primaryColor,
+				secondaryColor: (deprecatedDarkTheme ?? defaultDarkTheme).secondaryColor,
+				barColor: (deprecatedDarkTheme ?? defaultDarkTheme).barColor,
+				backgroundColor: (deprecatedDarkTheme ?? defaultDarkTheme).backgroundColor,
+				copiedFrom: defaultDarkTheme
+			)
+		},
+		lightThemeKey = lightThemeKey ?? 'Light',
+		darkThemeKey = darkThemeKey ?? 'Dark';
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -747,9 +832,19 @@ class EffectiveSettings extends ChangeNotifier {
 		// notifyListeners();
 	}
 	
-	SavedTheme get lightTheme => _settings.lightTheme;
-	SavedTheme get darkTheme => _settings.darkTheme;
+	SavedTheme get lightTheme => _settings.themes[_settings.lightThemeKey] ?? defaultLightTheme;
+	SavedTheme get darkTheme => _settings.themes[_settings.darkThemeKey] ?? defaultDarkTheme;
 	SavedTheme get theme => whichTheme == Brightness.dark ? darkTheme : lightTheme;
+	String addTheme(String name, SavedTheme theme) {
+		String proposedName = name;
+		int copyNumber = 0;
+		do {
+			copyNumber++;
+			proposedName = '$name ($copyNumber)';
+		} while (themes.containsKey(proposedName));
+		themes[proposedName] = SavedTheme.copyFrom(theme);
+		return proposedName;
+	}
 	void handleThemesAltered() {
 		_settings.save();
 		notifyListeners();
@@ -761,6 +856,7 @@ class EffectiveSettings extends ChangeNotifier {
 			scaffoldBackgroundColor: lightTheme.backgroundColor,
 			barBackgroundColor: lightTheme.barColor,
 			primaryColor: lightTheme.primaryColor,
+			primaryContrastingColor: lightTheme.backgroundColor,
 			textTheme: CupertinoTextThemeData(
 				textStyle: TextStyle(
 					fontFamily: '.SF Pro Text',
@@ -780,6 +876,7 @@ class EffectiveSettings extends ChangeNotifier {
 			scaffoldBackgroundColor: darkTheme.backgroundColor,
 			barBackgroundColor: darkTheme.barColor,
 			primaryColor: darkTheme.primaryColor,
+			primaryContrastingColor: darkTheme.backgroundColor,
 			textTheme: CupertinoTextThemeData(
 				textStyle: TextStyle(
 					fontFamily: '.SF Pro Text',
@@ -1194,6 +1291,18 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.save();
 		notifyListeners();
 	}
+
+	String get lightThemeKey => _settings.lightThemeKey;
+	set lightThemeKey(String setting) {
+		_settings.lightThemeKey = setting;
+		_settings.save();
+	}
+	String get darkThemeKey => _settings.darkThemeKey;
+	set darkThemeKey(String setting) {
+		_settings.darkThemeKey = setting;
+		_settings.save();
+	}
+	Map<String, SavedTheme> get themes => _settings.themes;
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

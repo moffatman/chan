@@ -23,6 +23,7 @@ import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/notifications_overlay.dart';
 import 'package:chan/widgets/notifying_icon.dart';
+import 'package:chan/widgets/saved_theme_thumbnail.dart';
 import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -345,22 +346,94 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Future<void> _onNewLink(String? link) async {
 		final settings = context.read<EffectiveSettings>();
 		if (link != null && link.startsWith('chance:')) {
-			print(link);
-			final threadLink = RegExp(r'chance:\/\/([^\/]+)\/([^\/]+)\/thread\/(\d+)').firstMatch(link);
-			if (threadLink != null) {
+			final uri = Uri.parse(link);
+			if (uri.host == 'theme') {
+				final name = uri.queryParameters['name']!;
+				final theme = SavedTheme.decode(uri.queryParameters['data']!);
+				final match = settings.themes.entries.tryFirstWhere((e) => e.value == theme);
+				await showCupertinoDialog(
+					context: context,
+					barrierDismissible: true,
+					builder: (dialogContext) => CupertinoAlertDialog(
+						title: Text('Import $name?'),
+						content: DefaultTextStyle(
+							style: DefaultTextStyle.of(context).style,
+							child: Column(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									const SizedBox(height: 16),
+									ClipRRect(
+										borderRadius: BorderRadius.circular(8),
+										child: SizedBox(
+											height: 150,
+											child: SavedThemeThumbnail(
+												theme: theme
+											)
+										)
+									),
+									const SizedBox(height: 16),
+									if (match?.key == name) const Text('This theme has already been added.')
+									else if (match != null) Text('This theme has already been added as ${match.key}.')
+								]
+							)
+						),
+						actions: [
+							CupertinoDialogAction(
+								isDefaultAction: settings.whichTheme == Brightness.light,
+								onPressed: settings.lightTheme == theme ? null : () {
+									String effectiveName = name;
+									if (match == null) {
+										effectiveName = settings.addTheme(name, theme);
+									}
+									settings.lightThemeKey = match?.key ?? effectiveName;
+									settings.handleThemesAltered();
+									Navigator.of(dialogContext).pop();
+								},
+								child: const Text('Use as light theme')
+							),
+							CupertinoDialogAction(
+								isDefaultAction: settings.whichTheme == Brightness.dark,
+								onPressed: settings.darkTheme == theme ? null : () {
+									String effectiveName = name;
+									if (match == null) {
+										effectiveName = settings.addTheme(name, theme);
+									}
+									settings.darkThemeKey = match?.key ?? effectiveName;
+									settings.handleThemesAltered();
+									Navigator.of(dialogContext).pop();
+								},
+								child: const Text('Use as dark theme')
+							),
+							CupertinoDialogAction(
+								onPressed: match != null ? null : () {
+									settings.addTheme(name, theme);
+									settings.handleThemesAltered();
+									Navigator.of(dialogContext).pop();
+								},
+								child: const Text('Just import')
+							),
+							CupertinoDialogAction(
+								child: const Text('Cancel'),
+								onPressed: () {
+									Navigator.of(dialogContext).pop();
+								}
+							),
+						]
+					)
+				);
+			}
+			else if (uri.pathSegments[0] == 'thread') {
 				_addNewTab(
-					withImageboardKey: threadLink.group(1)!,
+					withImageboardKey: uri.pathSegments[0],
 					withThread: ThreadIdentifier(
-						threadLink.group(2)!,
-						int.parse(threadLink.group(3)!)
+						uri.pathSegments[1],
+						int.parse(uri.pathSegments[2])
 					),
 					activate: true
 				);
-				return;
 			}
-			final siteLink = RegExp(r'chance:\/\/site\/([^\/]+)').firstMatch(link);
-			if (siteLink != null) {
-				final siteKey = siteLink.group(1)!;
+			else if (uri.host == 'site') {
+				final siteKey = uri.pathSegments[0];
 				try {
 					if (ImageboardRegistry.instance.getImageboard(siteKey) == null) {
 						final consent = await showCupertinoDialog<bool>(
@@ -403,9 +476,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				catch (e) {
 					alertError(context, 'Error adding site: $e');
 				}
-				return;
 			}
-			alertError(context, 'Unrecognized link\n$link');
+			else {
+				alertError(context, 'Unrecognized link\n$link');
+			}
+		}
+		else {
+			_consumeLink(link);
 		}
 	}
 

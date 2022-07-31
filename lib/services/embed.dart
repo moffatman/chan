@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/saved_theme_thumbnail.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -21,7 +22,7 @@ Future<bool> embedPossible({
 	required String url,
 	required BuildContext context
 }) async {
-	if (url.startsWith('chance://site/')) {
+	if (url.startsWith('chance://site/') || url.startsWith('chance://theme')) {
 		return true;
 	}
 	if (kDebugMode) {
@@ -98,6 +99,23 @@ Future<EmbedData?> loadEmbedData({
 				thumbnailWidget: const Icon(CupertinoIcons.exclamationmark_triangle_fill)
 			);
 		}
+	}
+	else if (url.startsWith('chance://theme')) {
+		final uri = Uri.parse(url);
+		final theme = SavedTheme.decode(uri.queryParameters['data']!);
+		return EmbedData(
+			title: uri.queryParameters['name']!,
+			provider: 'Chance Theme',
+			author: null,
+			thumbnailUrl: null,
+			thumbnailWidget: SizedBox(
+				width: 75,
+				height: 75,
+				child: SavedThemeThumbnail(
+					theme: theme
+				)
+			)
+		);
 	}
 	else {
 		final response = await context.read<ImageboardSite>().client.get('https://noembed.com/embed', queryParameters: {

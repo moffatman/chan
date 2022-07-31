@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
@@ -26,6 +27,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tuple/tuple.dart';
@@ -749,12 +751,222 @@ class SettingsAppearancePage extends StatelessWidget {
 					}
 				),
 				for (final theme in [
-					Tuple3('Light Theme Colors', settings.lightTheme, defaultLightTheme),
-					Tuple3('Dark Theme Colors', settings.darkTheme, defaultDarkTheme)
+					Tuple4('light theme', settings.lightTheme, settings.lightThemeKey, (key) {
+						settings.lightThemeKey = key;
+						settings.handleThemesAltered();
+					}),
+					Tuple4('dark theme', settings.darkTheme, settings.darkThemeKey, (key) {
+						settings.darkThemeKey = key;
+						settings.handleThemesAltered();
+					})
 				]) ... [
-					Padding(
-						padding: const EdgeInsets.only(top: 16, bottom: 16),
-						child: Text(theme.item1)
+					Row(
+						children: [
+							const SizedBox(width: 16),
+							Text(theme.item3),
+							const Spacer(),
+							Padding(
+								padding: const EdgeInsets.all(16),
+								child: CupertinoButton.filled(
+									padding: const EdgeInsets.all(8),
+									onPressed: () async {
+										final selectedKey = await showCupertinoDialog<String>(
+											barrierDismissible: true,
+											context: context,
+											builder: (context) => CupertinoAlertDialog(
+												title: Padding(
+													padding: const EdgeInsets.only(bottom: 16),
+													child: Row(
+														mainAxisAlignment: MainAxisAlignment.center,
+														children: [
+															const Icon(CupertinoIcons.paintbrush),
+															const SizedBox(width: 8),
+															Text('Picking ${theme.item1}')
+														]
+													)
+												),
+												content: StatefulBuilder(
+													builder: (context, setDialogState) {
+														final themeNames = settings.themes.keys.toList();
+														themeNames.sort();
+														return SizedBox(
+															width: 200,
+															height: 350,
+															child: ListView.separated(
+																itemCount: themeNames.length,
+																separatorBuilder: (context, i) => const SizedBox(height: 16),
+																itemBuilder: (context, i) => GestureDetector(
+																	onTap: () {
+																		Navigator.pop(context, themeNames[i]);
+																	},
+																	child: CupertinoTheme(
+																		data: CupertinoTheme.of(context).copyWith(
+																			primaryColor: settings.themes[themeNames[i]]?.primaryColor,
+																			primaryContrastingColor: settings.themes[themeNames[i]]?.backgroundColor,
+																			brightness: (settings.themes[themeNames[i]]?.primaryColor.computeLuminance() ?? 0) > 0.5 ? Brightness.dark : Brightness.light
+																		),
+																		child: Container(
+																			decoration: BoxDecoration(
+																				borderRadius: const BorderRadius.all(Radius.circular(8)),
+																				color: settings.themes[themeNames[i]]?.backgroundColor
+																			),
+																			child: Column(
+																				mainAxisSize: MainAxisSize.min,
+																				children: [
+																					Padding(
+																						padding: const EdgeInsets.all(16),
+																						child: AutoSizeText(themeNames[i], style: TextStyle(
+																							fontSize: 18,
+																							color: settings.themes[themeNames[i]]?.primaryColor,
+																							fontWeight: themeNames[i] == theme.item3 ? FontWeight.bold : null
+																						))
+																					),
+																					Container(
+																						//margin: const EdgeInsets.all(4),
+																						decoration: BoxDecoration(
+																							color: settings.themes[themeNames[i]]?.barColor,
+																							borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8))
+																						),
+																						child: Row(
+																							mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+																							children: [
+																								CupertinoButton(
+																									child: const Icon(CupertinoIcons.share),
+																									onPressed: () {
+																										Clipboard.setData(ClipboardData(
+																											text: Uri(
+																												scheme: 'chance',
+																												host: 'theme',
+																												queryParameters: {
+																													'name': themeNames[i],
+																													'data': settings.themes[themeNames[i]]!.encode()
+																												}
+																											).toString()
+																										));
+																										showToast(
+																											context: context,
+																											message: 'Copied ${themeNames[i]} to clipboard',
+																											icon: CupertinoIcons.doc_on_clipboard
+																										);
+																									}
+																								),
+																								CupertinoButton(
+																									child: const Icon(CupertinoIcons.textformat),
+																									onPressed: () async {
+																										final controller = TextEditingController(text: themeNames[i]);
+																										controller.selection = TextSelection(baseOffset: 0, extentOffset: themeNames[i].length);
+																										final newName = await showCupertinoDialog<String>(
+																											context: context,
+																											barrierDismissible: true,
+																											builder: (context) => CupertinoAlertDialog(
+																												title: const Text('Enter new name'),
+																												content: CupertinoTextField(
+																													autofocus: true,
+																													controller: controller,
+																													onSubmitted: (s) => Navigator.pop(context, s)
+																												),
+																												actions: [
+																													CupertinoDialogAction(
+																														child: const Text('Cancel'),
+																														onPressed: () => Navigator.pop(context)
+																													),
+																													CupertinoDialogAction(
+																														isDefaultAction: true,
+																														child: const Text('Rename'),
+																														onPressed: () => Navigator.pop(context, controller.text)
+																													)
+																												]
+																											)
+																										);
+																										if (newName != null) {
+																											settings.themes[newName] = settings.themes[themeNames[i]]!;
+																											settings.themes.remove(themeNames[i]);
+																											if (settings.lightThemeKey == themeNames[i]) {
+																												settings.lightThemeKey = newName;
+																											}
+																											if (settings.darkThemeKey == themeNames[i]) {
+																												settings.darkThemeKey = newName;
+																											}
+																											settings.handleThemesAltered();
+																											setDialogState(() {});
+																										}
+																									}
+																								),
+																								CupertinoButton(
+																									child: const Icon(CupertinoIcons.doc_on_doc),
+																									onPressed: () {
+																										settings.addTheme(themeNames[i], settings.themes[themeNames[i]]!);
+																										settings.handleThemesAltered();
+																										setDialogState(() {});
+																									}
+																								),
+																								CupertinoButton(
+																									onPressed: (themeNames[i] == settings.darkThemeKey || themeNames[i] == settings.lightThemeKey) ? null : () async {
+																										final consent = await showCupertinoDialog<bool>(
+																											context: context,
+																											barrierDismissible: true,
+																											builder: (context) => CupertinoAlertDialog(
+																												title: Text('Delete ${themeNames[i]}?'),
+																												actions: [
+																													CupertinoDialogAction(
+																														child: const Text('Cancel'),
+																														onPressed: () {
+																															Navigator.of(context).pop();
+																														}
+																													),
+																													CupertinoDialogAction(
+																														isDestructiveAction: true,
+																														onPressed: () {
+																															Navigator.of(context).pop(true);
+																														},
+																														child: const Text('Delete')
+																													)
+																												]
+																											)
+																										);
+																										if (consent == true) {
+																											settings.themes.remove(themeNames[i]);
+																											settings.handleThemesAltered();
+																											setDialogState(() {});
+																										}
+																									},
+																									child: const Icon(CupertinoIcons.delete)
+																								)
+																							]
+																						)
+																					)
+																				]
+																			)
+																		)
+																	)
+																)
+															)
+														);
+													}
+												),
+												actions: [
+													CupertinoDialogAction(
+														child: const Text('Close'),
+														onPressed: () => Navigator.pop(context)
+													)
+												]
+											)
+										);
+										if (selectedKey != null) {
+											theme.item4(selectedKey);
+										}
+									},
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											const Icon(CupertinoIcons.paintbrush),
+											const SizedBox(width: 8),
+											Text('Pick ${theme.item1}')
+										]
+									)
+								)
+							)
+						]
 					),
 					Container(
 						margin: const EdgeInsets.only(left: 16, right: 16),
@@ -765,12 +977,12 @@ class SettingsAppearancePage extends StatelessWidget {
 						child: SingleChildScrollView(
 							scrollDirection: Axis.horizontal,
 							child: Row(
-								children: <Tuple4<String, Color, ValueChanged<Color>, Color>>[
-									Tuple4('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c, theme.item3.primaryColor),
-									Tuple4('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c, theme.item3.secondaryColor),
-									Tuple4('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c, theme.item3.barColor),
-									Tuple4('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c, theme.item3.backgroundColor),
-									Tuple4('Quote', theme.item2.quoteColor, (c) => theme.item2.quoteColor = c, theme.item3.quoteColor)
+								children: <Tuple4<String, Color, ValueChanged<Color>, Color?>>[
+									Tuple4('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c, theme.item2.copiedFrom?.primaryColor),
+									Tuple4('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c, theme.item2.copiedFrom?.secondaryColor),
+									Tuple4('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c, theme.item2.copiedFrom?.barColor),
+									Tuple4('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c, theme.item2.copiedFrom?.backgroundColor),
+									Tuple4('Quote', theme.item2.quoteColor, (c) => theme.item2.quoteColor = c, theme.item2.copiedFrom?.quoteColor)
 								].map((color) => Column(
 									mainAxisSize: MainAxisSize.min,
 									children: [
@@ -803,16 +1015,30 @@ class SettingsAppearancePage extends StatelessWidget {
 															),
 															child: Padding(
 																padding: MediaQuery.of(context).viewInsets,
-																child: Material(
-																	color: Colors.transparent,
-																	child: ColorPicker(
-																		pickerColor: color.item2,
-																		onColorChanged: color.item3,
-																		enableAlpha: false,
-																		portraitOnly: true,
-																		displayThumbColor: true,
-																		hexInputBar: true
-																	)
+																child: Column(
+																	mainAxisSize: MainAxisSize.min,
+																	children: [
+																		Material(
+																			color: Colors.transparent,
+																			child: ColorPicker(
+																				pickerColor: color.item2,
+																				onColorChanged: color.item3,
+																				enableAlpha: false,
+																				portraitOnly: true,
+																				displayThumbColor: true,
+																				hexInputBar: true
+																			)
+																		),
+																		CupertinoButton(
+																			padding: const EdgeInsets.all(8),
+																			color: color.item4,
+																			onPressed: color.item2 == color.item4 ? null : () {
+																				color.item3(color.item4!);
+																				settings.handleThemesAltered();
+																			},
+																			child: Text('Reset to original color', style: TextStyle(color: (color.item4?.computeLuminance() ?? 0) > 0.5 ? Colors.black : Colors.white))
+																		)
+																	]
 																)
 															)
 														)
@@ -821,18 +1047,7 @@ class SettingsAppearancePage extends StatelessWidget {
 												settings.handleThemesAltered();
 											}
 										),
-										Padding(
-											padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 16),
-											child: CupertinoButton(
-												padding: const EdgeInsets.all(8),
-												color: theme.item2.primaryColor,
-												child: Text('Reset', style: TextStyle(color: theme.item2.backgroundColor)),
-												onPressed: () {
-													color.item3(color.item4);
-													settings.handleThemesAltered();
-												}
-											)
-										),
+										const SizedBox(width: 88, height: 24)
 									]
 								)).toList()
 							)
