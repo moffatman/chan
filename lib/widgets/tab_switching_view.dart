@@ -1,4 +1,6 @@
+import 'package:chan/pages/master_detail.dart';
 import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 
 class TabSwitchingView extends StatefulWidget {
   const TabSwitchingView({
@@ -25,6 +27,8 @@ class _TabSwitchingViewState extends State<TabSwitchingView> {
   // disposed of, so when they are no longer needed, we move them to this list,
   // and dispose of them when we dispose of this widget.
   final List<FocusScopeNode> discardedNodes = <FocusScopeNode>[];
+
+  final List<WillPopZone> willPopZones = <WillPopZone>[];
 
   @override
   void initState() {
@@ -63,12 +67,19 @@ class _TabSwitchingViewState extends State<TabSwitchingView> {
       if (tabFocusNodes.length > widget.tabCount) {
         discardedNodes.addAll(tabFocusNodes.sublist(widget.tabCount));
         tabFocusNodes.removeRange(widget.tabCount, tabFocusNodes.length);
+        willPopZones.removeRange(widget.tabCount, willPopZones.length);
       } else {
         tabFocusNodes.addAll(
           List<FocusScopeNode>.generate(
             widget.tabCount - tabFocusNodes.length,
               (int index) => FocusScopeNode(debugLabel: 'TabSwitchingView Tab ${index + tabFocusNodes.length}'),
           ),
+        );
+        willPopZones.addAll(
+          List<WillPopZone>.generate(
+            widget.tabCount - willPopZones.length,
+              (int index) => WillPopZone()
+          )
         );
       }
     }
@@ -91,8 +102,13 @@ class _TabSwitchingViewState extends State<TabSwitchingView> {
     super.dispose();
   }
 
+  Future<bool> _onWillPop() async {
+    return (await willPopZones[widget.currentTabIndex].callback?.call()) ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    context.watch<WillPopZone?>()?.callback = _onWillPop;
     return Stack(
       fit: StackFit.expand,
       children: List<Widget>.generate(widget.tabCount, (int index) {
@@ -107,9 +123,12 @@ class _TabSwitchingViewState extends State<TabSwitchingView> {
               enabled: active,
               child: FocusScope(
                 node: tabFocusNodes[index],
-                child: Builder(builder: (BuildContext context) {
-                  return shouldBuildTab[index] ? widget.tabBuilder(context, index) : Container();
-                }),
+                child: Provider.value(
+                  value: willPopZones[index],
+                  child: Builder(builder: (BuildContext context) {
+                    return shouldBuildTab[index] ? widget.tabBuilder(context, index) : Container();
+                  }),
+                ),
               ),
             ),
           ),
