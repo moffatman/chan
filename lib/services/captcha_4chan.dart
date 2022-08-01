@@ -239,8 +239,9 @@ List<_LetterScore> _scoreArrayForLetter(_ScoreArrayForLetterParam param) {
 	for (final subimage in _captchaLetterImages[param.letter]!.images[param.type]!) {
 		final maxY = (param.height * 0.9).toInt() - subimage.height;
 		final maxX = param.width - subimage.width;
-		for (int y = param.height ~/ 5; y < maxY; y++) {
-			for (int x = 0; x < maxX; x++) {
+		// Increment by 2 to speed up, the images are high-enough resolution that this doesn't really affect accuracy
+		for (int y = param.height ~/ 5; y < maxY; y += 2) {
+			for (int x = 0; x < maxX; x += 2) {
 				double score = 0;
 				for (int y_ = 0; y_ < subimage.height; y_++) {
 					for (int x_ = 0; x_ < subimage.width; x_++) {
@@ -269,8 +270,10 @@ List<_LetterScore> _scoreArrayForLetter(_ScoreArrayForLetterParam param) {
 	return scores;
 }
 
-const _preprocessProportion = 0.3;
-const _scoreArrayProportion = 0.55;
+const _preprocessProportion = 0.4;
+const _scoreArrayProportion = 0.45;
+const _guessProportion = 0.15;
+const _floodFillIterations = 10000;
 
 void _guess(_GuessParam param) async {
 	Uint8List captcha = await _getRedChannelOnly(param.rgbaData);
@@ -293,10 +296,11 @@ void _guess(_GuessParam param) async {
 		}
 	}
 	// Preprocess
-	for (int i = 0; i < 10000; i++) {
+	Uint8List filling = Uint8List.fromList(captcha);
+	for (int i = 0; i < _floodFillIterations; i++) {
 		final seedX = random.nextInt(width);
 		final seedY = random.nextInt(height);
-		if (captcha[(seedY * width) + seedX] == 255) {
+		if (filling[(seedY * width) + seedX] == 255) {
 			continue;
 		}
 		final filled = Uint8List.fromList(captcha);
@@ -310,6 +314,20 @@ void _guess(_GuessParam param) async {
 		);
 		if ((count / captcha.length) < 0.015) {
 			captcha = filled;
+		}
+		else {
+			// Write into a parallel image to prevent rechecking this same blob
+			_floodFillBuffer(
+				buffer: filling,
+				seedX: seedX,
+				seedY: seedY,
+				width: width,
+				height: height,
+				fillColor: 255
+			);
+		}
+		if (i % 100 == 0) {
+			param.sendPort.send(_preprocessProportion * i / _floodFillIterations);
 		}
 	}
 	param.sendPort.send(_preprocessProportion);
@@ -343,7 +361,8 @@ void _guess(_GuessParam param) async {
 	);
 	// Pick best set of letters
 	Future<List<_LetterScore>> guess({
-		List<_LetterScore> deadAnswers = const []
+		List<_LetterScore> deadAnswers = const [],
+		bool sendUpdates = false
 	}) async {
 		final answers = <_LetterScore>[];
 		final deadXes = List.filled(width, 0);
@@ -392,10 +411,13 @@ void _guess(_GuessParam param) async {
 				}
 			}
 			answers.add(bestScore);
+			if (sendUpdates) {
+				param.sendPort.send(_preprocessProportion + _scoreArrayProportion + _guessProportion * ((i + 1) / numLetters));
+			}
 		}
 		return answers;
 	}
-	final answersBest = await guess();
+	final answersBest = await guess(sendUpdates: true);
 	answersBest.sort((a, b) => a.x - b.x);
 	/*final answers2 = __guess(deadAnswers: answersBest);
 	final answers3 = __guess(deadAnswers: answersBest.followedBy(answers2).toList());
