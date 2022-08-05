@@ -220,6 +220,7 @@ class PostTextSpan extends PostSpan {
 		return TextSpan(
 			children: children,
 			style: underlined ? options.baseTextStyle.copyWith(
+				color: options.overrideTextColor,
 				decoration: TextDecoration.underline
 			) : options.baseTextStyle,
 			recognizer: options.recognizer,
