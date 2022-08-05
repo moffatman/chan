@@ -20,6 +20,6 @@ Future<void> hideStatusBar() async {
 		await _platform.invokeMethod('hideStatusBar');
 	}
 	else {
-		await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+		await SystemChrome.setEnabledSystemUIMode((Platform.environment['BOOTCLASSPATH'] ?? '').contains('miui-framework') ? SystemUiMode.edgeToEdge : SystemUiMode.immersive);
 	}
 }
