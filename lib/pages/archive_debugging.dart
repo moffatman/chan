@@ -156,6 +156,9 @@ class WrappedArchive extends ImageboardSite {
   
   @override
   String get baseUrl => 'www.example.com';
+  
+  @override
+  List<ImageboardSnippet> getBoardSnippets(String board) => [];
 }
 
 class ArchiveDebuggingPage extends StatelessWidget {

@@ -16,6 +16,7 @@ import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/lainchan_org.dart';
 import 'package:chan/sites/soyjak.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/widgets.dart';
 
@@ -254,6 +255,21 @@ class ImageboardBoardFlag {
 	});
 }
 
+class ImageboardSnippet {
+	final IconData icon;
+	final String name;
+	final String start;
+	final String end;
+	final PostSpan Function(String text)? previewBuilder;
+	const ImageboardSnippet({
+		required this.icon,
+		required this.name,
+		required this.start,
+		required this.end,
+		this.previewBuilder
+	});
+}
+
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	ImageboardSiteArchive() {
@@ -421,6 +437,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get siteData;
 	ThreadOrPostIdentifier? decodeUrl(String url);
 	String get defaultUsername;
+	List<ImageboardSnippet> getBoardSnippets(String board);
 }
 
 ImageboardSite makeSite(dynamic data) {

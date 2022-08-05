@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/web_image_picker.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -14,22 +15,66 @@ import 'package:chan/widgets/util.dart';
 import 'package:chan/services/clipboard_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:tuple/tuple.dart';
 
 final List<String> receivedFilePaths = [];
+final attachmentSourceNotifier = EasyListenable();
 
-Future<File?> pickAttachment({
+class AttachmentPickingSource {
+	final String name;
+	final IconData icon;
+	final Future<String?> Function() pick;
+
+	const AttachmentPickingSource({
+		required this.name,
+		required this.icon,
+		required this.pick
+	});
+}
+
+List<AttachmentPickingSource> getAttachmentSources({
 	required BuildContext context
-}) async {
+}) {
+	final gallery = AttachmentPickingSource(
+		name: 'Image Gallery',
+		icon: CupertinoIcons.photo,
+		pick: () => FilePicker.platform.pickFiles(type: FileType.image).then((x) => x?.files.single.path)
+	);
+	final videoGallery = AttachmentPickingSource(
+		name: 'Video Gallery',
+		icon: CupertinoIcons.play_rectangle,
+		pick: () => FilePicker.platform.pickFiles(type: FileType.video).then((x) => x?.files.single.path)
+	);
 	final picker = ImagePicker();
-	final savedAttachments = context.read<Persistence>().savedAttachments.values.toList();
-	savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
-	final sources = (Platform.isIOS || Platform.isAndroid || kIsWeb) ? [
-		if ((Platform.isAndroid) || (Platform.isIOS && await doesClipboardContainImage())) Tuple3('Clipboard', CupertinoIcons.doc_on_clipboard, () => getClipboardImageAsFile().then((x) {
+	final camera = AttachmentPickingSource(
+		name: 'Camera',
+		icon: CupertinoIcons.camera,
+		pick: () => picker.pickImage(source: ImageSource.camera).then((x) => x?.path)
+	);
+	final videoCamera = AttachmentPickingSource(
+		name: 'Video Camera',
+		icon: CupertinoIcons.videocam,
+		pick: () => picker.pickVideo(source: ImageSource.camera).then((x) => x?.path)
+	);
+	final web = AttachmentPickingSource(
+		name: 'Web',
+		icon: CupertinoIcons.globe,
+		pick: () => Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
+			builder: (_) => WebImagePickerPage(
+				site: context.read<ImageboardSite?>()
+			)
+		)).then((x) => x?.path)
+	);
+	final file = AttachmentPickingSource(
+		name: 'File',
+		icon: CupertinoIcons.folder,
+		pick: () => FilePicker.platform.pickFiles(type: FileType.any).then((x) => x?.files.single.path)
+	);
+	final clipboard = AttachmentPickingSource(
+		name: 'Clipboard',
+		icon: CupertinoIcons.doc_on_clipboard,
+		pick: () => getClipboardImageAsFile().then((x) {
 			if (x == null) {
 				showToast(
 					context: context,
@@ -38,20 +83,87 @@ Future<File?> pickAttachment({
 				);
 			}
 			return x?.path;
-		})),
-		Tuple3('Pick photo', CupertinoIcons.photo, () => FilePicker.platform.pickFiles(type: FileType.image).then((x) => x?.files.single.path)),
-		Tuple3('Pick video', CupertinoIcons.play_rectangle, () => FilePicker.platform.pickFiles(type: FileType.video).then((x) => x?.files.single.path)),
-		Tuple3('Pick file', CupertinoIcons.doc, () => FilePicker.platform.pickFiles(type: FileType.any).then((x) => x?.files.single.path)),
-		Tuple3('Take photo', CupertinoIcons.camera, () => picker.pickImage(source: ImageSource.camera).then((x) => x?.path)),
-		Tuple3('Take video', CupertinoIcons.videocam, () => picker.pickVideo(source: ImageSource.camera).then((x) => x?.path)),
-		Tuple3('Web search', Icons.image_search, () => Navigator.of(context, rootNavigator: true).push<File>(CupertinoModalPopupRoute(
-			builder: (_) => WebImagePickerPage(
-				site: context.read<ImageboardSite?>()
-			)
-		)).then((x) => x?.path))
-	] : [
-		Tuple3('Pick file', CupertinoIcons.doc, () => FilePicker.platform.pickFiles().then((x) => x?.files.single.path))
-	];
+		})
+	);
+	final anySaved = context.read<Persistence>().savedAttachments.isNotEmpty;
+	final saved = AttachmentPickingSource(
+		name: 'Saved Attachments',
+		icon: CupertinoIcons.bookmark,
+		pick: () {
+			final savedAttachments = context.read<Persistence>().savedAttachments.values.toList();
+			savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
+			return Navigator.of(context).push<String>(TransparentRoute(
+				builder: (context) => OverscrollModalPage(
+					child: Container(
+						width: double.infinity,
+						padding: const EdgeInsets.all(16),
+						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+						child: GridView.builder(
+							gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+								maxCrossAxisExtent: 100,
+								mainAxisSpacing: 16,
+								crossAxisSpacing: 16,
+								childAspectRatio: 1
+							),
+							addAutomaticKeepAlives: false,
+							addRepaintBoundaries: false,
+							shrinkWrap: true,
+							physics: const NeverScrollableScrollPhysics(),
+							itemCount: savedAttachments.length,
+							itemBuilder: (context, i) {
+								final attachment = savedAttachments[i];
+								return GestureDetector(
+									onTap: () {
+										Navigator.of(context).pop(attachment.file.path);
+									},
+									child: ClipRRect(
+										borderRadius: BorderRadius.circular(8),
+										child: SavedAttachmentThumbnail(file: attachment.file, fit: BoxFit.cover)
+									)
+								);
+							}
+						)
+					)
+				),
+				showAnimations: context.read<EffectiveSettings>().showAnimations
+			));
+		}
+	);
+	if (Platform.isIOS) {
+		return [
+			if (anySaved) saved,
+			gallery,
+			videoGallery,
+			file,
+			if (!isOnMac) ...[
+				camera,
+				videoCamera,
+			],
+			web,
+			clipboard,
+		];
+	}
+	else if (Platform.isAndroid) {
+		return [
+			if (anySaved) saved,
+			file,
+			clipboard,
+			camera,
+			videoCamera,
+			web,
+		];
+	}
+	else {
+		return [
+			file
+		];
+	}
+}
+
+Future<File?> pickAttachment({
+	required BuildContext context
+}) async {
+	final sources = getAttachmentSources(context: context);
 	bool loadingPick = false;
 	return Navigator.of(context).push<File>(TransparentRoute(
 		builder: (context) => StatefulBuilder(
@@ -73,7 +185,7 @@ Future<File?> pickAttachment({
 								addRepaintBoundaries: false,
 								shrinkWrap: true,
 								physics: const NeverScrollableScrollPhysics(),
-								itemCount: sources.length + receivedFilePaths.length + savedAttachments.length,
+								itemCount: sources.length + receivedFilePaths.length,
 								itemBuilder: (context, i) {
 									if (i < sources.length) {
 										final entry = sources[i];
@@ -82,7 +194,7 @@ Future<File?> pickAttachment({
 												loadingPick = true;
 												setPickerDialogState(() {});
 												try {
-													final path = await entry.item3();
+													final path = await entry.pick();
 													loadingPick = false;
 													setPickerDialogState(() {});
 													if (path != null) {
@@ -104,16 +216,16 @@ Future<File?> pickAttachment({
 												child: Column(
 													mainAxisAlignment: MainAxisAlignment.center,
 													children: [
-														Icon(entry.item2, size: 40, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+														Icon(entry.icon, size: 40, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
 														Flexible(
-															child: AutoSizeText(entry.item1, minFontSize: 5, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor), textAlign: TextAlign.center)
+															child: AutoSizeText(entry.name, minFontSize: 5, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor), textAlign: TextAlign.center)
 														)
 													]
 												)
 											)
 										);
 									}
-									else if (i < (sources.length + receivedFilePaths.length)) {
+									else {
 										// Reverse order
 										final file = File(receivedFilePaths[(receivedFilePaths.length - 1) - (i - sources.length)]);
 										return GestureDetector(
@@ -123,18 +235,6 @@ Future<File?> pickAttachment({
 											child: ClipRRect(
 												borderRadius: BorderRadius.circular(8),
 												child: SavedAttachmentThumbnail(file: file, fit: BoxFit.cover)
-											)
-										);
-									}
-									else {
-										final attachment = savedAttachments[i - sources.length - receivedFilePaths.length];
-										return GestureDetector(
-											onTap: () {
-												Navigator.of(context).pop(attachment.file);
-											},
-											child: ClipRRect(
-												borderRadius: BorderRadius.circular(8),
-												child: SavedAttachmentThumbnail(file: attachment.file, fit: BoxFit.cover)
 											)
 										);
 									}

@@ -9,6 +9,7 @@ import 'package:chan/pages/search.dart';
 import 'package:chan/pages/settings.dart';
 import 'package:chan/pages/saved.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
@@ -40,12 +41,13 @@ import 'package:chan/widgets/sticky_media_query.dart';
 import 'package:uni_links/uni_links.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
-bool _initialLinkConsumed = false;
-bool _initialMediaConsumed = false;
+bool _initialConsume = false;
 
 void main() async {
 	try {
 		WidgetsFlutterBinding.ensureInitialized();
+		await initializeIsDevelopmentBuild();
+		await initializeIsOnMac();
 		final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
 		imageHttpClient.connectionTimeout = const Duration(seconds: 10);
 		imageHttpClient.idleTimeout = const Duration(seconds: 10);
@@ -559,6 +561,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			);
 			for (final file in files) {
 				receivedFilePaths.add(file.path);
+				attachmentSourceNotifier.didUpdate();
 			}
 		}
 	}
@@ -583,18 +586,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		Persistence.browserHistoryStatusListenable.addListener(_browserHistoryStatusListener);
 		Persistence.tabsListenable.addListener(_tabsListener);
 		_setupDevSite();
-		getInitialLink().then(_onNewLink);
-		_linkSubscription = linkStream.listen(_onNewLink);
-		if (!_initialLinkConsumed) {
+		if (!_initialConsume) {
+			getInitialLink().then(_onNewLink);
 			ReceiveSharingIntent.getInitialText().then(_consumeLink);
+			ReceiveSharingIntent.getInitialMedia().then(_consumeFiles);
 		}
-		if (!_initialMediaConsumed) {
-			ReceiveSharingIntent.getInitialMedia().then(_consumeFiles).then((_) {
-				_initialMediaConsumed = true;
-			});
-		}
+		_linkSubscription = linkStream.listen(_onNewLink);
 		_sharedFilesSubscription = ReceiveSharingIntent.getMediaStream().listen(_consumeFiles);
 		_sharedTextSubscription = ReceiveSharingIntent.getTextStream().listen(_consumeLink);
+		_initialConsume = true;
 	}
 
 	PersistentBrowserTab _addNewTab({

@@ -9,8 +9,8 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
 import 'package:html_unescape/html_unescape_small.dart';
@@ -779,4 +779,41 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	String get defaultUsername => 'Anonymous';
+	
+	@override
+	List<ImageboardSnippet> getBoardSnippets(String board) {
+		if (board == 'g') {
+			return const [
+				ImageboardSnippet(
+					icon: CupertinoIcons.chevron_left_slash_chevron_right,
+					name: 'Code',
+					start: '[code]',
+					end: '[/code]',
+					previewBuilder: PostCodeSpan.new
+				)
+			];
+		}
+		else if (board == 'sci') {
+			return const [
+				ImageboardSnippet(
+					icon: CupertinoIcons.function,
+					name: 'Math',
+					start: '[math]',
+					end: '[/math]',
+					previewBuilder: PostTeXSpan.new
+				)
+			];
+		}
+		else if (board == 'tv') {
+			return const [
+				ImageboardSnippet(
+					icon: CupertinoIcons.eye_slash,
+					name: 'Spoiler',
+					start: '[spoiler]',
+					end: '[/spoiler]'
+				)
+			];
+		}
+		return [];
+	}
 }

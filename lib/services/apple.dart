@@ -2,33 +2,31 @@ import 'package:flutter/services.dart';
 
 const _platform = MethodChannel('com.moffatman.chan/apple');
 
-bool? _isOnMac;
-bool? _isDevelopmentBuild;
+bool isOnMac = false;
+bool isDevelopmentBuild = false;
 
-Future<bool> _checkIsOnMac() async {
+Future<void> initializeIsOnMac() async {
   try {
-		return await _platform.invokeMethod('isOnMac');
+		isOnMac = await _platform.invokeMethod('isOnMac');
 	}
 	on MissingPluginException {
-		return false;
+		return;
+	}
+	catch (e, st) {
+		print(e);
+		print(st);
 	}
 }
 
-Future<bool> isOnMac() async {
-	_isOnMac ??= await _checkIsOnMac();
-	return _isOnMac!;
-}
-
-Future<bool> _checkIsDevelopmentBuild() async {
+Future<void> initializeIsDevelopmentBuild() async {
 	try {
-		return await _platform.invokeMethod('isDevelopmentBuild');
+		isDevelopmentBuild = await _platform.invokeMethod('isDevelopmentBuild');
 	}
 	on MissingPluginException {
-		return false;
+		return;
 	}
-}
-
-Future<bool> isDevelopmentBuild() async {
-	_isDevelopmentBuild ??= await _checkIsDevelopmentBuild();
-	return _isDevelopmentBuild!;
+	catch (e, st) {
+		print(e);
+		print(st);
+	}
 }

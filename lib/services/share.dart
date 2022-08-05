@@ -31,6 +31,7 @@ Future<void> shareOne({
 	}
 	else {
 		final rootContext = context;
+		final uri = Uri.tryParse(text);
 		await showCupertinoModalPopup(
 			context: rootContext,
 			builder: (context) => CupertinoActionSheet(
@@ -49,8 +50,8 @@ Future<void> shareOne({
 							);
 						}
 					),
-					if (Uri.tryParse(text) != null) ...[
-						CupertinoActionSheetAction(
+					if (uri != null) ...[
+						if (uri.scheme == 'http' || uri.scheme == 'https') CupertinoActionSheetAction(
 							child: const Text('Open in internal browser'),
 							onPressed: () {
 								Navigator.of(context, rootNavigator: true).pop();

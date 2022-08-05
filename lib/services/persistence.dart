@@ -9,6 +9,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/widgets/refreshable_list.dart';
@@ -361,12 +362,18 @@ class Persistence extends ChangeNotifier {
 		});
 		settings.save();
 		savedAttachmentsNotifier.add(null);
+		if (savedAttachments.length == 1) {
+			attachmentSourceNotifier.didUpdate();
+		}
 	}
 
 	void deleteSavedAttachment(Attachment attachment) {
 		final removed = savedAttachments.remove(attachment.globalId);
 		if (removed != null) {
 			removed.deleteFiles();
+		}
+		if (savedAttachments.isEmpty) {
+			attachmentSourceNotifier.didUpdate();
 		}
 		settings.save();
 		savedAttachmentsNotifier.add(null);

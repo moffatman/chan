@@ -277,7 +277,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 				sharePositionOrigin: null
 			);
 		}
-		else if (await isOnMac() || context.read<EffectiveSettings>().useInternalBrowser == false) {
+		else if (isOnMac || context.read<EffectiveSettings>().useInternalBrowser == false || (url.scheme != 'http' && url.scheme != 'https')) {
 			launchUrl(url, mode: LaunchMode.externalApplication);
 		}
 		else {

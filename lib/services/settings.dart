@@ -747,7 +747,7 @@ class EffectiveSettings extends ChangeNotifier {
 	Future<void> updateContentSettings() async {
 		try {
 			String platform = Platform.operatingSystem;
-			if (Platform.isIOS && (await isDevelopmentBuild())) {
+			if (Platform.isIOS && isDevelopmentBuild) {
 				platform += '-dev';
 			}
 			final response = await Dio().get('$contentSettingsApiRoot/user2/${_settings.userId}', queryParameters: {

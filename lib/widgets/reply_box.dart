@@ -20,6 +20,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/captcha_securimage.dart';
 import 'package:chan/widgets/captcha_nojs.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
@@ -31,7 +32,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
-import 'package:native_drag_n_drop/native_drag_n_drop.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
 
@@ -84,15 +84,17 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _showAttachmentOptions = false;
 	bool get showAttachmentOptions => _showAttachmentOptions && !loading;
 	bool _show = false;
-	bool get show => widget.fullyExpanded || _show;
+	bool get show => widget.fullyExpanded || (_show && !_willHideOnPanEnd);
 	String? _lastFoundUrl;
 	String? _proposedAttachmentUrl;
 	CaptchaSolution? _captchaSolution;
 	Timer? _autoPostTimer;
 	bool spoiler = false;
-	bool _dropLoading = false;
 	List<ImageboardBoardFlag> _flags = [];
 	ImageboardBoardFlag? flag;
+	double _panStartDy = 0;
+	double _replyBoxHeightOffsetAtPanStart = 0;
+	bool _willHideOnPanEnd = false;
 
 	bool get _haveValidCaptcha {
 		if (_captchaSolution == null) {
@@ -321,13 +323,6 @@ class ReplyBoxState extends State<ReplyBox> {
 			),
 			showAnimations: context.read<EffectiveSettings>().showAnimations
 		));
-	}
-
-	Future<void> _selectAttachment() async {
-		File? file = await pickAttachment(context: context);
-		if (file != null) {
-			await setAttachment(file);
-		}
 	}
 
 	Future<void> setAttachment(File newAttachment) async {
@@ -797,68 +792,6 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	Widget _buildAttachmentOptions(BuildContext context) {
 		final board = context.read<Persistence>().getBoard(widget.board);
-		return Container(
-			decoration: BoxDecoration(
-				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
-				color: CupertinoTheme.of(context).scaffoldBackgroundColor
-			),
-			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 10),
-			child: Row(
-				children: [
-					if (board.spoilers == true) Padding(
-						padding: const EdgeInsets.only(right: 8),
-						child: CupertinoButton(
-							padding: EdgeInsets.zero,
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Icon(spoiler ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
-									const Text('Spoiler')
-								]
-							),
-							onPressed: () {
-								setState(() {
-									spoiler = !spoiler;
-								});
-							}
-						)
-					),
-					Flexible(
-						child: CupertinoTextField(
-							enabled: !context.watch<EffectiveSettings>().randomizeFilenames,
-							controller: _filenameController,
-							placeholder: (context.watch<EffectiveSettings>().randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
-							placeholderStyle: TextStyle(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.7)),
-							maxLines: 1,
-							textCapitalization: TextCapitalization.none,
-							autocorrect: false,
-							keyboardAppearance: CupertinoTheme.of(context).brightness
-						)
-					),
-					const SizedBox(width: 8),
-					Text('.$attachmentExt'),
-					const SizedBox(width: 8),
-					CupertinoButton(
-						padding: EdgeInsets.zero,
-						child: Row(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								Icon(context.watch<EffectiveSettings>().randomizeFilenames ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
-								const Text('Random')
-							]
-						),
-						onPressed: () {
-							setState(() {
-								context.read<EffectiveSettings>().randomizeFilenames = !context.read<EffectiveSettings>().randomizeFilenames;
-							});
-						}
-					)
-				]
-			)
-		);
-	}
-
-	Widget _buildOptions(BuildContext context) {
 		final fakeAttachment = Attachment(
 			ext: '.$attachmentExt',
 			url: Uri.https('', ''),
@@ -882,18 +815,62 @@ class ReplyBoxState extends State<ReplyBox> {
 						child: Column(
 							mainAxisAlignment: MainAxisAlignment.spaceAround,
 							children: [
-								CupertinoTextField(
-									maxLines: 1,
-									placeholder: 'Name',
-									keyboardAppearance: CupertinoTheme.of(context).brightness,
-									controller: _nameFieldController
+								Row(
+									children: [
+										Flexible(
+											child: CupertinoTextField(
+												enabled: !context.watch<EffectiveSettings>().randomizeFilenames,
+												controller: _filenameController,
+												placeholder: (context.watch<EffectiveSettings>().randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
+												placeholderStyle: TextStyle(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.7)),
+												maxLines: 1,
+												textCapitalization: TextCapitalization.none,
+												autocorrect: false,
+												keyboardAppearance: CupertinoTheme.of(context).brightness
+											)
+										),
+										const SizedBox(width: 8),
+										Text('.$attachmentExt')
+									]
 								),
-								const SizedBox(height: 8),
-								CupertinoTextField(
-									maxLines: 1,
-									placeholder: 'Options',
-									keyboardAppearance: CupertinoTheme.of(context).brightness,
-									controller: _optionsFieldController
+								//const SizedBox(height: 8),
+								Row(
+									children: [
+										CupertinoButton(
+											padding: EdgeInsets.zero,
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Icon(context.watch<EffectiveSettings>().randomizeFilenames ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
+													const Text('Random')
+												]
+											),
+											onPressed: () {
+												setState(() {
+													context.read<EffectiveSettings>().randomizeFilenames = !context.read<EffectiveSettings>().randomizeFilenames;
+												});
+											}
+										),
+										const SizedBox(width: 8),
+										if (board.spoilers == true) Padding(
+											padding: const EdgeInsets.only(right: 8),
+											child: CupertinoButton(
+												padding: EdgeInsets.zero,
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Icon(spoiler ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
+														const Text('Spoiler')
+													]
+												),
+												onPressed: () {
+													setState(() {
+														spoiler = !spoiler;
+													});
+												}
+											)
+										)
+									]
 								)
 							]
 						)
@@ -911,7 +888,7 @@ class ReplyBoxState extends State<ReplyBox> {
 												attachment: fakeAttachment,
 												semanticParents: [_textFieldController.hashCode]
 											),
-											child: SavedAttachmentThumbnail(file: attachment!)
+											child: SavedAttachmentThumbnail(file: attachment!, fit: BoxFit.contain)
 										),
 										onTap: () async {
 											showGallery(
@@ -928,82 +905,52 @@ class ReplyBoxState extends State<ReplyBox> {
 									)
 								),
 								const SizedBox(width: 8),
-								Column(
-									mainAxisAlignment: MainAxisAlignment.spaceBetween,
-									children: [
-										CupertinoButton(
-											padding: EdgeInsets.zero,
-											minSize: 30,
-											child: const Icon(CupertinoIcons.gear),
-											onPressed: () {
-												setState(() {
-													_showAttachmentOptions = !_showAttachmentOptions;
-												});
-											}
-										),
-										CupertinoButton(
-											padding: EdgeInsets.zero,
-											minSize: 30,
-											child: const Icon(CupertinoIcons.xmark),
-											onPressed: () {
-												setState(() {
-													attachment = null;
-													_showAttachmentOptions = false;
-													_filenameController.clear();
-												});
-											}
-										)
-									]
-								)
-							]
-						) : NativeDropView(
-							loading: (loading) {
-								setState(() {
-									_dropLoading = loading;
-								});
-							},
-							allowedTotal: 1,
-							allowedDropDataTypes: const [DropDataType.image, DropDataType.video],
-							dataReceived: (files) {
-								if (files.isNotEmpty && files.last.dropFile != null) {
-									setAttachment(files.last.dropFile!);
-								}
-							},
-							receiveNonAllowedItems: false,
-							child: Center(
-								child: _dropLoading ? const CupertinoActivityIndicator() : CupertinoButton(
-									onPressed: _selectAttachment,
-									child: Wrap(
-										alignment: WrapAlignment.center,
-										crossAxisAlignment: WrapCrossAlignment.center,
-										spacing: 8.0,
-										runSpacing: 4.0,
-										children: const [
-											Icon(CupertinoIcons.photo),
-											Text('Select file', textAlign: TextAlign.center),
-										]
+								Center(
+									child: CupertinoButton(
+										padding: EdgeInsets.zero,
+										minSize: 30,
+										child: const Icon(CupertinoIcons.xmark),
+										onPressed: () {
+											setState(() {
+												attachment = null;
+												_showAttachmentOptions = false;
+												_filenameController.clear();
+											});
+										}
 									)
 								)
-							)
+							]
+						) : const SizedBox.expand()
+					),
+				]
+			)
+		);
+	}
+
+	Widget _buildOptions(BuildContext context) {
+		return Container(
+			decoration: BoxDecoration(
+				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
+				color: CupertinoTheme.of(context).scaffoldBackgroundColor
+			),
+			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 10),
+			child: Row(
+				children: [
+					Flexible(
+						child: CupertinoTextField(
+							maxLines: 1,
+							placeholder: 'Name',
+							keyboardAppearance: CupertinoTheme.of(context).brightness,
+							controller: _nameFieldController
 						)
 					),
-					if (_flags.isNotEmpty) Center(
-						child: CupertinoButton(
-							padding: EdgeInsets.zero,
-							onPressed: _pickFlag,
-							child: IgnorePointer(
-								child: flag != null ? ExtendedImage.network(
-									flag!.image.toString(),
-									cache: true,
-								) : const Icon(CupertinoIcons.flag)
-							)
-						)
-					),
-					if (context.read<ImageboardSite>().getEmotes().isNotEmpty) Center(
-						child: CupertinoButton(
-							padding: EdgeInsets.zero,
-							onPressed: _pickEmote,
-							child: const Icon(CupertinoIcons.smiley)
+					const SizedBox(width: 8),
+					Flexible(
+						child: CupertinoTextField(
+							maxLines: 1,
+							placeholder: 'Options',
+							keyboardAppearance: CupertinoTheme.of(context).brightness,
+							controller: _optionsFieldController
 						)
 					)
 				]
@@ -1083,34 +1030,180 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	Widget _buildButtons(BuildContext context) {
-		final expandAction = loading ? null : () {
+		final expandAttachmentOptions = loading ? null : () {
+			setState(() {
+				_showAttachmentOptions = !_showAttachmentOptions;
+			});
+		};
+		final expandOptions = loading ? null : () {
 			setState(() {
 				_showOptions = !_showOptions;
 			});
 		};
-		return Column(
-			mainAxisSize: MainAxisSize.min,
-			mainAxisAlignment: MainAxisAlignment.spaceAround,
+		final site = context.read<ImageboardSite>();
+		final defaultTextStyle = DefaultTextStyle.of(context).style;
+		return Row(
+			mainAxisAlignment: MainAxisAlignment.end,
 			children: [
-				if (!showOptions && attachment != null) CupertinoButton(
-					alignment: Alignment.center,
+				for (final snippet in context.read<ImageboardSite>().getBoardSnippets(widget.board)) CupertinoButton(
 					padding: EdgeInsets.zero,
-					onPressed: expandAction,
-					child: ClipRRect(
-						borderRadius: BorderRadius.circular(4),
-						child: ConstrainedBox(
-							constraints: const BoxConstraints(
-								maxWidth: 32,
-								maxHeight: 32
-							),
-							child: SavedAttachmentThumbnail(file: attachment!, fontSize: 12)
+					onPressed: () async {
+						final controller = TextEditingController();
+						final content = await showCupertinoDialog<String>(
+							context: context,
+							barrierDismissible: true,
+							builder: (context) => CupertinoAlertDialog(
+								title: Text('${snippet.name} block'),
+								content: Padding(
+									padding: const EdgeInsets.only(top: 16),
+									child: CupertinoTextField(
+										autofocus: true,
+										minLines: 5,
+										maxLines: 5,
+										controller: controller,
+										onSubmitted: (s) => Navigator.pop(context, s)
+									)
+								),
+								actions: [
+									CupertinoDialogAction(
+										child: const Text('Cancel'),
+										onPressed: () => Navigator.pop(context)
+									),
+									if (snippet.previewBuilder != null) CupertinoDialogAction(
+										child: const Text('Preview'),
+										onPressed: () {
+											showCupertinoDialog<bool>(
+												context: context,
+												barrierDismissible: true,
+												builder: (context) => CupertinoAlertDialog(
+													title: Text('${snippet.name} preview'),
+													content: ChangeNotifierProvider<PostSpanZoneData>(
+														create: (context) => PostSpanRootZoneData(
+															site: site,
+															thread: Thread(posts_: [], replyCount: 0, imageCount: 0, id: 0, board: '', title: '', isSticky: false, time: DateTime.now()),
+															semanticRootIds: [-14]
+														),
+														builder: (context, _) => DefaultTextStyle(
+															style: defaultTextStyle,
+															child: Text.rich(
+																snippet.previewBuilder!(controller.text).build(context, PostSpanRenderOptions())
+															)
+														)
+													),
+													actions: [
+														CupertinoDialogAction(
+															isDefaultAction: true,
+															child: const Text('Close'),
+															onPressed: () => Navigator.pop(context)
+														)
+													]
+												)
+											);
+										}
+									),
+									CupertinoDialogAction(
+										isDefaultAction: true,
+										onPressed: () => Navigator.pop(context, controller.text),
+										child: const Text('Insert')
+									)
+								]
+							)
+						);
+						if (content != null) {
+							_insertText(snippet.start + content + snippet.end, addNewlineIfAtEnd: false);
+						}
+					},
+					child: Icon(snippet.icon)
+				),
+				if (_flags.isNotEmpty) Center(
+					child: CupertinoButton(
+						padding: EdgeInsets.zero,
+						onPressed: _pickFlag,
+						child: IgnorePointer(
+							child: flag != null ? ExtendedImage.network(
+								flag!.image.toString(),
+								cache: true,
+							) : const Icon(CupertinoIcons.flag)
 						)
 					)
-				)
-				else CupertinoButton(
+				),
+				if (context.read<ImageboardSite>().getEmotes().isNotEmpty) Center(
+					child: CupertinoButton(
+						padding: EdgeInsets.zero,
+						onPressed: _pickEmote,
+						child: const Icon(CupertinoIcons.smiley)
+					)
+				),
+				Expanded(
+					child: Align(
+						alignment: Alignment.centerRight,
+						child: AnimatedSize(
+							alignment: Alignment.centerLeft,
+							duration: const Duration(milliseconds: 250),
+							curve: Curves.ease,
+							child: attachment != null ? CupertinoButton(
+								padding: const EdgeInsets.only(left: 8, right: 8),
+								onPressed: expandAttachmentOptions,
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										showAttachmentOptions ? const Icon(CupertinoIcons.chevron_down) : const Icon(CupertinoIcons.chevron_up),
+										const SizedBox(width: 8),
+										ClipRRect(
+											borderRadius: BorderRadius.circular(4),
+											child: ConstrainedBox(
+												constraints: const BoxConstraints(
+													maxWidth: 32,
+													maxHeight: 32
+												),
+												child: SavedAttachmentThumbnail(file: attachment!, fontSize: 12)
+											)
+										),
+									]
+								)
+							) : AnimatedBuilder(
+								animation: attachmentSourceNotifier,
+								builder: (context, _) => ListView(
+									shrinkWrap: true,
+									scrollDirection: Axis.horizontal,
+									children: [
+										for (final file in receivedFilePaths) CupertinoButton(
+											alignment: Alignment.center,
+											padding: EdgeInsets.zero,
+											onPressed: () => setAttachment(File(file)),
+											child: ClipRRect(
+												borderRadius: BorderRadius.circular(4),
+												child: ConstrainedBox(
+													constraints: const BoxConstraints(
+														maxWidth: 32,
+														maxHeight: 32
+													),
+													child: SavedAttachmentThumbnail(
+														file: File(file)
+													)
+												)
+											)
+										),
+										for (final picker in getAttachmentSources(context: context)) CupertinoButton(
+											padding: EdgeInsets.zero,
+											onPressed: () async {
+												final path = await picker.pick();
+												if (path != null) {
+													await setAttachment(File(path));
+												}
+											},
+											child: Icon(picker.icon)
+										)
+									]
+								)
+							)
+						)
+					)
+				),
+				CupertinoButton(
 					padding: EdgeInsets.zero,
-					onPressed: expandAction,
-					child: const Icon(CupertinoIcons.paperclip)
+					onPressed: expandOptions,
+					child: const Icon(CupertinoIcons.gear)
 				),
 				TimedRebuilder(
 					interval: const Duration(seconds: 1),
@@ -1159,6 +1252,7 @@ class ReplyBoxState extends State<ReplyBox> {
 						}
 						return CupertinoButton(
 							padding: EdgeInsets.zero,
+							alignment: Alignment.center,
 							onPressed: loading ? null : _submit,
 							child: const Icon(CupertinoIcons.paperplane)
 						);
@@ -1175,18 +1269,18 @@ class ReplyBoxState extends State<ReplyBox> {
 			mainAxisSize: MainAxisSize.min,
 			children: [
 				Expander(
-					expanded: showAttachmentOptions && showOptions && show,
+					expanded: showAttachmentOptions && show,
 					bottomSafe: true,
-					height: 55,
+					height: 100,
 					child: Focus(
-						descendantsAreFocusable: showAttachmentOptions && showOptions && show,
+						descendantsAreFocusable: showAttachmentOptions && show,
 						child: _buildAttachmentOptions(context)
 					)
 				),
 				Expander(
 					expanded: showOptions && show,
 					bottomSafe: true,
-					height: 100,
+					height: 55,
 					child: Focus(
 						descendantsAreFocusable: showOptions && show,
 						child: _buildOptions(context)
@@ -1251,19 +1345,45 @@ class ReplyBoxState extends State<ReplyBox> {
 						children: [
 							GestureDetector(
 								behavior: HitTestBehavior.opaque,
+								supportedDevices: const {
+									PointerDeviceKind.mouse,
+									PointerDeviceKind.stylus,
+									PointerDeviceKind.invertedStylus,
+									PointerDeviceKind.touch,
+									PointerDeviceKind.unknown
+								},
+								onPanStart: (event) {
+									_replyBoxHeightOffsetAtPanStart = settings.replyBoxHeightOffset;
+									_panStartDy = event.globalPosition.dy;
+								},
 								onPanUpdate: (event) {
+									final r = WidgetsBinding.instance.window.devicePixelRatio;
 									setState(() {
-										settings.replyBoxHeightOffset = min(MediaQuery.of(context).size.height / 2, max(0, settings.replyBoxHeightOffset - event.delta.dy));
+										_willHideOnPanEnd = ((WidgetsBinding.instance.window.physicalSize.height / r) - event.globalPosition.dy) < (WidgetsBinding.instance.window.viewInsets.bottom / r);
+										if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= 0)) {
+											// touch not above keyboard
+											settings.replyBoxHeightOffset = min(MediaQuery.of(context).size.height / 2, max(0, settings.replyBoxHeightOffset - event.delta.dy));
+										}
 									});
 								},
 								onPanEnd: (event) {
-									settings.finalizeReplyBoxHeightOffset();
+									if (_willHideOnPanEnd) {
+										Future.delayed(const Duration(milliseconds: 350), () {
+											settings.replyBoxHeightOffset = _replyBoxHeightOffsetAtPanStart;
+										});
+										hideReplyBox();
+										_willHideOnPanEnd = false;
+									}
+									else {
+										settings.finalizeReplyBoxHeightOffset();
+									}
 								},
 								child: Container(
 									decoration: BoxDecoration(
 										border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)))
 									),
-									height: 10
+									height: 40,
+									child: _buildButtons(context),
 								)
 							),
 							Flexible(
@@ -1271,14 +1391,11 @@ class ReplyBoxState extends State<ReplyBox> {
 									color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 									child: Stack(
 										children: [
-											Row(
-												crossAxisAlignment: CrossAxisAlignment.stretch,
+											Column(
+												mainAxisSize: MainAxisSize.min,
 												children: [
-													Expanded(
-														child: _buildTextField(context)
-													),
-													_buildButtons(context),
-													const SizedBox(width: 4)
+													
+													Expanded(child: _buildTextField(context)),
 												]
 											),
 											if (loading) Positioned.fill(

@@ -498,4 +498,7 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	String get defaultUsername => 'Anonymous';
+
+	@override
+	List<ImageboardSnippet> getBoardSnippets(String board) => [];
 }

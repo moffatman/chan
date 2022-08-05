@@ -976,17 +976,38 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	ValueChanged<Post>? get onNeedScrollToPost;
 	bool disposed = false;
 
-	bool shouldExpandPost(int id) => false;
-	void toggleExpansionOfPost(int id) => throw UnimplementedError();
+	final Map<int, bool> _shouldExpandPost = {};
+	bool shouldExpandPost(int id) {
+		return _shouldExpandPost[id] ?? false;
+	}
+	void toggleExpansionOfPost(int id) {
+		_shouldExpandPost[id] = !shouldExpandPost(id);
+		if (!_shouldExpandPost[id]!) {
+			_children[id]?.unExpandAllPosts();
+		}
+		notifyListeners();
+	}
 	void unExpandAllPosts() => throw UnimplementedError();
 	bool isLoadingPostFromArchive(int id) => false;
 	Future<void> loadPostFromArchive(int id) => throw UnimplementedError();
 	Post? postFromArchive(int id) => null;
 	String? postFromArchiveError(int id) => null;
-	bool shouldShowSpoiler(int id) => false;
-	void showSpoiler(int id) => throw UnimplementedError();
-	void hideSpoiler(int id) => throw UnimplementedError();
-	void toggleShowingOfSpoiler(int id) => throw UnimplementedError();
+	final Map<int, bool> _shouldShowSpoiler = {};
+	bool shouldShowSpoiler(int id) {
+		return _shouldShowSpoiler[id] ?? false;
+	}
+	void showSpoiler(int id) {
+		_shouldShowSpoiler[id] = true;
+		notifyListeners();
+	}
+	void hideSpoiler(int id) {
+		_shouldShowSpoiler[id] = false;
+		notifyListeners();
+	}
+	void toggleShowingOfSpoiler(int id) {
+		_shouldShowSpoiler[id] = !shouldShowSpoiler(id);
+		notifyListeners();
+	}
 
 	final Map<String, AsyncSnapshot> _futures = {};
 	static final Map<String, AsyncSnapshot> _globalFutures = {};
@@ -1045,9 +1066,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 
 class PostSpanChildZoneData extends PostSpanZoneData {
 	final int postId;
-	final Map<int, bool> _shouldExpandPost = {};
 	final PostSpanZoneData parent;
-	final Map<int, bool> _shouldShowSpoiler = {};
 
 	PostSpanChildZoneData({
 		required this.parent,
@@ -1072,48 +1091,11 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	}
 
 	@override
-	bool shouldExpandPost(int id) {
-		return _shouldExpandPost[id] ?? false;
-	}
-
-	@override
-	void toggleExpansionOfPost(int id) {
-		_shouldExpandPost[id] = !shouldExpandPost(id);
-		if (!_shouldExpandPost[id]!) {
-			_children[id]?.unExpandAllPosts();
-		}
-		notifyListeners();
-	}
-
-	@override
 	void unExpandAllPosts() {
 		_shouldExpandPost.updateAll((key, value) => false);
 		for (final child in _children.values) {
 			child.unExpandAllPosts();
 		}
-		notifyListeners();
-	}
-
-	@override
-	bool shouldShowSpoiler(int id) {
-		return _shouldShowSpoiler[id] ?? false;
-	}
-
-	@override
-	void showSpoiler(int id) {
-		_shouldShowSpoiler[id] = true;
-		notifyListeners();
-	}
-
-	@override
-	void hideSpoiler(int id) {
-		_shouldShowSpoiler[id] = false;
-		notifyListeners();
-	}
-
-	@override
-	void toggleShowingOfSpoiler(int id) {
-		_shouldShowSpoiler[id] = !shouldShowSpoiler(id);
 		notifyListeners();
 	}
 

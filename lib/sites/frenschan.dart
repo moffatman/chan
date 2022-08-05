@@ -78,4 +78,7 @@ class SiteFrenschan extends SiteSoyjak {
 	
 	@override
 	String get defaultUsername => 'Fren';
+
+	@override
+	List<ImageboardSnippet> getBoardSnippets(String board) => [];
 }
