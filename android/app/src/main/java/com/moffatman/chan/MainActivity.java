@@ -112,29 +112,35 @@ public class MainActivity extends FlutterFragmentActivity {
                     try {
                         if (call.method.equals("doesClipboardContainImage")) {
                             ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                            ClipData.Item item = cm.getPrimaryClip().getItemAt(0);
-                            if (item.getUri() != null) {
-                                String[] parts = item.getUri().toString().split("\\.");
-                                String ext = parts[parts.length - 1];
-                                result.success(ext.equals("jpg") || ext.equals("jpeg") || ext.equals("png") || ext.equals("gif"));
-                            } else {
-                                result.success(false);
+                            ClipData primaryClip = cm.getPrimaryClip();
+                            if (primaryClip != null) {
+                                ClipData.Item item = primaryClip.getItemAt(0);
+                                if (item.getUri() != null) {
+                                    String[] parts = item.getUri().toString().split("\\.");
+                                    String ext = parts[parts.length - 1];
+                                    result.success(ext.equals("jpg") || ext.equals("jpeg") || ext.equals("png") || ext.equals("gif"));
+                                    return;
+                                }
                             }
+                            result.success(null);
                         } else if (call.method.equals("getClipboardImage")) {
                             ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                            ClipData.Item item = cm.getPrimaryClip().getItemAt(0);
-                            if (item.getUri() != null) {
-                                try {
-                                    InputStream stream = getContentResolver().openInputStream(item.getUri());
-                                    byte[] data = new byte[stream.available()];
-                                    stream.read(data);
-                                    result.success(data);
-                                } catch (IOException e) {
-                                    result.error("FILE_ERROR", "Could not open file for reading", null);
+                            ClipData primaryClip = cm.getPrimaryClip();
+                            if (primaryClip != null) {
+                                ClipData.Item item = primaryClip.getItemAt(0);
+                                if (item.getUri() != null) {
+                                    try {
+                                        InputStream stream = getContentResolver().openInputStream(item.getUri());
+                                        byte[] data = new byte[stream.available()];
+                                        stream.read(data);
+                                        result.success(data);
+                                    } catch (IOException e) {
+                                        result.error("FILE_ERROR", "Could not open file for reading", null);
+                                    }
+                                    return;
                                 }
-                            } else {
-                                result.success(null);
                             }
+                            result.success(null);
                         } else {
                             result.notImplemented();
                         }
