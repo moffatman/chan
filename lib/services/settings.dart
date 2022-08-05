@@ -838,10 +838,10 @@ class EffectiveSettings extends ChangeNotifier {
 	String addTheme(String name, SavedTheme theme) {
 		String proposedName = name;
 		int copyNumber = 0;
-		do {
+		while (themes.containsKey(proposedName)) {
 			copyNumber++;
 			proposedName = '$name ($copyNumber)';
-		} while (themes.containsKey(proposedName));
+		}
 		themes[proposedName] = SavedTheme.copyFrom(theme);
 		return proposedName;
 	}
