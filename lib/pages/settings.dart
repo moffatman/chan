@@ -879,13 +879,13 @@ class SettingsAppearancePage extends StatelessWidget {
 																											)
 																										);
 																										if (newName != null) {
-																											settings.themes[newName] = settings.themes[themeNames[i]]!;
+																											final effectiveName = settings.addTheme(newName, settings.themes[themeNames[i]]!);
 																											settings.themes.remove(themeNames[i]);
 																											if (settings.lightThemeKey == themeNames[i]) {
-																												settings.lightThemeKey = newName;
+																												settings.lightThemeKey = effectiveName;
 																											}
 																											if (settings.darkThemeKey == themeNames[i]) {
-																												settings.darkThemeKey = newName;
+																												settings.darkThemeKey = effectiveName;
 																											}
 																											settings.handleThemesAltered();
 																											setDialogState(() {});
