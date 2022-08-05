@@ -408,6 +408,17 @@ class PostRow extends StatelessWidget {
 					trailingIcon: CupertinoIcons.reply,
 					onPressed: () => context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.id)
 				),
+				ContextMenuAction(
+					child: const Text('Select text'),
+					trailingIcon: CupertinoIcons.selection_pin_in_out,
+					onPressed: () {
+						WeakNavigator.push(context, SelectablePostPage(
+							post: latestPost,
+							zone: zone,
+							onQuoteText: (text) => context.read<GlobalKey<ReplyBoxState>>().currentState?.onQuoteText(text, fromId: latestPost.id)
+						));
+					}
+				),
 				if (zone.stackIds.length > 2 && zone.onNeedScrollToPost != null) ContextMenuAction(
 					child: const Text('Scroll to post'),
 					trailingIcon: CupertinoIcons.return_icon,
@@ -525,17 +536,6 @@ class PostRow extends StatelessWidget {
 						}
 					)
 				],
-				ContextMenuAction(
-					child: const Text('Select text'),
-					trailingIcon: CupertinoIcons.selection_pin_in_out,
-					onPressed: () {
-						WeakNavigator.push(context, SelectablePostPage(
-							post: latestPost,
-							zone: zone,
-							onQuoteText: (text) => context.read<GlobalKey<ReplyBoxState>>().currentState?.onQuoteText(text, fromId: latestPost.id)
-						));
-					}
-				),
 				ContextMenuAction(
 					child: const Text('Share link'),
 					trailingIcon: CupertinoIcons.share,
