@@ -175,7 +175,7 @@ class PostNodeSpan extends PostSpan {
 
 	@override
 	String buildText() {
-		return children.map((x) => x.buildText()).join(' ');
+		return children.map((x) => x.buildText()).join('');
 	}
 }
 

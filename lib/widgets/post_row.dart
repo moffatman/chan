@@ -419,6 +419,20 @@ class PostRow extends StatelessWidget {
 						));
 					}
 				),
+				ContextMenuAction(
+					child: const Text('Share text'),
+					trailingIcon: CupertinoIcons.share,
+					onPressed: () {
+						final offset = (rootContext.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+						final size = rootContext.findRenderObject()?.semanticBounds.size;
+						shareOne(
+							context: context,
+							text: latestPost.span.buildText(),
+							type: "text",
+							sharePositionOrigin: (offset != null && size != null) ? offset & size : null
+						);
+					}
+				),
 				if (zone.stackIds.length > 2 && zone.onNeedScrollToPost != null) ContextMenuAction(
 					child: const Text('Scroll to post'),
 					trailingIcon: CupertinoIcons.return_icon,
