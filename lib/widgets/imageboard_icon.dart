@@ -4,14 +4,16 @@ import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
 class ImageboardIcon extends StatelessWidget {
+	final String? imageboardKey;
 
 	const ImageboardIcon({
+		this.imageboardKey,
 		Key? key
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
-		final imageboard = context.read<Imageboard?>();
+		final imageboard = context.read<Imageboard?>() ?? ImageboardRegistry.instance.getImageboard(imageboardKey ?? '');
 		if (imageboard == null) {
 			return const Icon(CupertinoIcons.exclamationmark_triangle_fill);
 		}

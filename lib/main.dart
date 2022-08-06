@@ -1030,15 +1030,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										final attachment = threadState?.thread?.attachment;
 										buildIcon() => _buildTabletIcon(i * -1, StationaryNotifyingIcon(
 												icon: attachment == null ? blankIcon : ClipRRect(
-												borderRadius: const BorderRadius.all(Radius.circular(4)),
-												child: AttachmentThumbnail(
-													gaplessPlayback: true,
-													fit: BoxFit.cover,
-													attachment: attachment,
-													width: 30,
-													height: 30
-												)
-											),
+													borderRadius: const BorderRadius.all(Radius.circular(4)),
+													child: AttachmentThumbnail(
+														gaplessPlayback: true,
+														fit: BoxFit.cover,
+														attachment: attachment,
+														width: 30,
+														height: 30
+													)
+												),
 												primary: threadState?.unseenReplyIdsToYou(Filter.of(context))?.length ?? 0,
 												secondary: threadState?.unseenReplyCount(Filter.of(context)) ?? 0
 											),
@@ -1068,7 +1068,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											child: Icon(CupertinoIcons.exclamationmark_triangle_fill)
 										),
 										Persistence.tabs[i].imageboardKey,
-										axis: axis
+										axis: axis,
 									);
 								}
 								return ImageboardScope(
@@ -1078,7 +1078,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							}
 							else {
 								Future.microtask(() => Persistence.tabs[i].unseen.value = 0);
-								return _buildTabletIcon(i * -1, blankIcon, Persistence.tabs[i].board != null ? '/${Persistence.tabs[i].board?.name}/' : 'None', reorderable: false, axis: axis);
+								return _buildTabletIcon(
+									i * -1,
+									blankIcon,
+									Persistence.tabs[i].board != null ? '/${Persistence.tabs[i].board?.name}/' : 'None',
+									reorderable: false,
+									axis: axis,
+									preLabelInjection: (ImageboardRegistry.instance.count < 2 || Persistence.tabs[i].imageboardKey == null) ? null : ImageboardIcon(imageboardKey: Persistence.tabs[i].imageboardKey)
+								);
 							}
 						}
 					)
