@@ -33,6 +33,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
+import 'package:native_drag_n_drop/native_drag_n_drop.dart';
 import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:chan/pages/tab.dart';
@@ -552,17 +553,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
-	void _consumeFiles(List<SharedMediaFile> files) {
-		if (files.isNotEmpty) {
+	void _consumeFiles(List<String> paths) {
+		if (paths.isNotEmpty) {
 			showToast(
 				context: context,
-				message: '${(files.length > 1 ? 'Files' : 'File')} added to upload selector',
+				message: '${(paths.length > 1 ? 'Files' : 'File')} added to upload selector',
 				icon: CupertinoIcons.paperclip
 			);
-			for (final file in files) {
-				receivedFilePaths.add(file.path);
-				attachmentSourceNotifier.didUpdate();
-			}
+			receivedFilePaths.addAll(paths);
+			attachmentSourceNotifier.didUpdate();
 		}
 	}
 
@@ -589,10 +588,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		if (!_initialConsume) {
 			getInitialLink().then(_onNewLink);
 			ReceiveSharingIntent.getInitialText().then(_consumeLink);
-			ReceiveSharingIntent.getInitialMedia().then(_consumeFiles);
+			ReceiveSharingIntent.getInitialMedia().then((f) => _consumeFiles(f.map((x) => x.path).toList()));
 		}
 		_linkSubscription = linkStream.listen(_onNewLink);
-		_sharedFilesSubscription = ReceiveSharingIntent.getMediaStream().listen(_consumeFiles);
+		_sharedFilesSubscription = ReceiveSharingIntent.getMediaStream().listen((f) => _consumeFiles(f.map((x) => x.path).toList()));
 		_sharedTextSubscription = ReceiveSharingIntent.getTextStream().listen(_consumeLink);
 		_initialConsume = true;
 	}
@@ -1134,7 +1133,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				}));
 			}
 		}
-		final child = isInTabletLayout ? NotificationListener<ScrollNotification>(
+		Widget child = isInTabletLayout ? NotificationListener<ScrollNotification>(
 			onNotification: _onScrollNotification,
 			child: Actions(
 				actions: {
@@ -1344,7 +1343,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				)
 			)
 		);
-		return NotificationsOverlay(
+		child = NotificationsOverlay(
 			onePane: !isInTabletLayout,
 			key: notificationsOverlayKey,
 			imageboards: [
@@ -1353,6 +1352,31 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			],
 			child: child
 		);
+		if (isOnMac) {
+			child = NativeDropView(
+				loading: (_) {
+
+				},
+				dataReceived: (data) {
+					final List<String> paths = [];
+					for (final datum in data) {
+						if (datum.dropFile != null) {
+							paths.add(datum.dropFile!.path);
+						}
+						else if (datum.dropText != null) {
+							_consumeLink(datum.dropText);
+						}
+					}
+					if (paths.isNotEmpty) {
+						_consumeFiles(paths);
+					}
+				},
+				allowedDropDataTypes: const [DropDataType.url, DropDataType.image, DropDataType.video],
+				receiveNonAllowedItems: false,
+				child: child
+			);
+		}
+		return child;
 	}
 
 	@override
