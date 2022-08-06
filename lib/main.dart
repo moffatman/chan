@@ -1080,11 +1080,17 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								Future.microtask(() => Persistence.tabs[i].unseen.value = 0);
 								return _buildTabletIcon(
 									i * -1,
-									blankIcon,
+									(ImageboardRegistry.instance.count < 2 || Persistence.tabs[i].imageboardKey == null) ? blankIcon : SizedBox(
+										width: 30,
+										height: 30,
+										child: FittedBox(
+											fit: BoxFit.contain,
+											child: ImageboardIcon(imageboardKey: Persistence.tabs[i].imageboardKey)
+										)
+									),
 									Persistence.tabs[i].board != null ? '/${Persistence.tabs[i].board?.name}/' : 'None',
 									reorderable: false,
-									axis: axis,
-									preLabelInjection: (ImageboardRegistry.instance.count < 2 || Persistence.tabs[i].imageboardKey == null) ? null : ImageboardIcon(imageboardKey: Persistence.tabs[i].imageboardKey)
+									axis: axis
 								);
 							}
 						}
