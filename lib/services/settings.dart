@@ -466,6 +466,8 @@ class SavedSettings extends HiveObject {
 	String lightThemeKey;
 	@HiveField(83)
 	String darkThemeKey;
+	@HiveField(84)
+	List<String> hostsToOpenExternally;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -551,6 +553,7 @@ class SavedSettings extends HiveObject {
 		Map<String, SavedTheme>? themes,
 		String? lightThemeKey,
 		String? darkThemeKey,
+		List<String>? hostsToOpenExternally,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -660,7 +663,11 @@ class SavedSettings extends HiveObject {
 			)
 		},
 		lightThemeKey = lightThemeKey ?? 'Light',
-		darkThemeKey = darkThemeKey ?? 'Dark';
+		darkThemeKey = darkThemeKey ?? 'Dark',
+		hostsToOpenExternally = hostsToOpenExternally ?? [
+			'youtube.com',
+			'youtu.be'
+		];
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1303,6 +1310,12 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.save();
 	}
 	Map<String, SavedTheme> get themes => _settings.themes;
+
+	List<String> get hostsToOpenExternally => _settings.hostsToOpenExternally;
+	void didUpdateHostsToOpenExternally() {
+		_settings.save();
+		notifyListeners();
+	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

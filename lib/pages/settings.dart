@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
@@ -472,6 +473,168 @@ class SettingsBehaviorPage extends StatelessWidget {
 					onValueChanged: (newValue) {
 						settings.useInternalBrowser = newValue.value;
 					}
+				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Text('Always open links externally'),
+						const Spacer(),
+						CupertinoButton.filled(
+							padding: const EdgeInsets.all(16),
+							onPressed: () async {
+								await showCupertinoDialog(
+									barrierDismissible: true,
+									context: context,
+									builder: (context) => CupertinoAlertDialog(
+										title: const Padding(
+											padding: EdgeInsets.only(bottom: 16),
+											child: Text('Sites to open externally')
+										),
+										content: StatefulBuilder(
+											builder: (context, setDialogState) => SizedBox(
+												width: 100,
+												height: 350,
+												child: Stack(
+													children: [
+														ListView.builder(
+															padding: const EdgeInsets.only(bottom: 128),
+															itemCount: settings.hostsToOpenExternally.length,
+															itemBuilder: (context, i) => Padding(
+																padding: const EdgeInsets.all(4),
+																child: GestureDetector(
+																	onTap: () async {
+																		final controller = TextEditingController(text: settings.hostsToOpenExternally[i]);
+																		controller.selection = TextSelection(baseOffset: 0, extentOffset: settings.hostsToOpenExternally[i].length);
+																		final newSite = await showCupertinoDialog<String>(
+																			context: context,
+																			barrierDismissible: true,
+																			builder: (context) => CupertinoAlertDialog(
+																				title: const Text('Edit site'),
+																				content: CupertinoTextField(
+																					autofocus: true,
+																					autocorrect: false,
+																					controller: controller,
+																					onSubmitted: (s) => Navigator.pop(context, s)
+																				),
+																				actions: [
+																					CupertinoDialogAction(
+																						child: const Text('Cancel'),
+																						onPressed: () => Navigator.pop(context)
+																					),
+																					CupertinoDialogAction(
+																						isDefaultAction: true,
+																						child: const Text('Change'),
+																						onPressed: () => Navigator.pop(context, controller.text)
+																					)
+																				]
+																			)
+																		);
+																		if (newSite != null) {
+																			settings.hostsToOpenExternally[i] = newSite;
+																			setDialogState(() {});
+																			settings.didUpdateHostsToOpenExternally();
+																		}
+																	},
+																	child: Container(
+																		decoration: BoxDecoration(
+																			borderRadius: const BorderRadius.all(Radius.circular(4)),
+																			color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+																		),
+																		padding: const EdgeInsets.only(left: 16),
+																		child: Row(
+																			children: [
+																				Expanded(
+																					child: Text(settings.hostsToOpenExternally[i], style: const TextStyle(fontSize: 15), textAlign: TextAlign.left)
+																				),
+																				CupertinoButton(
+																					child: const Icon(CupertinoIcons.delete),
+																					onPressed: () {
+																						settings.hostsToOpenExternally.removeAt(i);
+																						setDialogState(() {});
+																						settings.didUpdateHostsToOpenExternally();
+																					}
+																				)
+																			]
+																		)
+																	)
+																)
+															)
+														),
+														Align(
+															alignment: Alignment.bottomCenter,
+															child: ClipRect(
+																child: BackdropFilter(
+																	filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+																		child: Container(
+																		color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.1),
+																		child: Column(
+																			mainAxisSize: MainAxisSize.min,
+																			crossAxisAlignment: CrossAxisAlignment.stretch,
+																			children: [
+																				CupertinoButton(
+																					child: Row(
+																						mainAxisAlignment: MainAxisAlignment.center,
+																						children: const [
+																							Icon(CupertinoIcons.add),
+																							Text(' Add site')
+																						]
+																					),
+																					onPressed: () async {
+																						final controller = TextEditingController();
+																						final newSite = await showCupertinoDialog<String>(
+																							context: context,
+																							barrierDismissible: true,
+																							builder: (context) => CupertinoAlertDialog(
+																								title: const Text('New site'),
+																								content: CupertinoTextField(
+																									autofocus: true,
+																									controller: controller,
+																									autocorrect: false,
+																									onSubmitted: (s) => Navigator.pop(context, s)
+																								),
+																								actions: [
+																									CupertinoDialogAction(
+																										child: const Text('Cancel'),
+																										onPressed: () => Navigator.pop(context)
+																									),
+																									CupertinoDialogAction(
+																										isDefaultAction: true,
+																										child: const Text('Add'),
+																										onPressed: () => Navigator.pop(context, controller.text)
+																									)
+																								]
+																							)
+																						);
+																						if (newSite != null) {
+																							settings.hostsToOpenExternally.add(newSite);
+																							settings.didUpdateHostsToOpenExternally();
+																							setDialogState(() {});
+																						}
+																					}
+																				)
+																			]
+																		)
+																	)
+																)
+															)
+														)
+													]
+												)
+											)
+										),
+										actions: [
+											CupertinoDialogAction(
+												child: const Text('Close'),
+												onPressed: () => Navigator.pop(context)
+											)
+										]
+									)
+								);
+							},
+							child: Text('For ${describeCount(settings.hostsToOpenExternally.length, 'site')}')
+						),
+						const SizedBox(width: 16)
+					]
 				),
 				const SizedBox(height: 32),
 				Row(

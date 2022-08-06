@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -269,7 +270,12 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 		);
 	}
 	else {
-		if (context.read<EffectiveSettings>().useInternalBrowser == null && !fromShareOne) {
+		if (Persistence.settings.hostsToOpenExternally.any((s) => url.host.endsWith(s))) {
+			if (!await launchUrl(url, mode: LaunchMode.externalNonBrowserApplication)) {
+				launchUrl(url, mode: LaunchMode.externalApplication);
+			}
+		}
+		else if (context.read<EffectiveSettings>().useInternalBrowser == null && !fromShareOne) {
 			shareOne(
 				context: context,
 				text: url.toString(),

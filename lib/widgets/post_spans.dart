@@ -650,6 +650,7 @@ class PostLinkSpan extends PostSpan {
 			RegExp(r'(\.[A-Za-z]+)[^A-Za-z\.\/?]+$'),
 			(m) => m.group(1)!
 		);
+		final cleanedUri = Uri.tryParse(cleanedUrl);
 		if (!options.showRawSource && settings.useEmbeds) {
 			final check = zone.getFutureForComputation(
 				id: 'embedcheck $url',
@@ -724,13 +725,17 @@ class PostLinkSpan extends PostSpan {
 								]
 							)
 						),
+						if (cleanedUri != null && settings.hostsToOpenExternally.any((s) => cleanedUri.host.endsWith(s))) const Padding(
+							padding: EdgeInsets.only(left: 16),
+							child: Icon(Icons.launch_rounded)
+						),
 						const SizedBox(width: 16)
 					]);
 				}
 
 				if (tapChild != null) {
 					onTap() {
-						openBrowser(context, Uri.parse(cleanedUrl));
+						openBrowser(context, cleanedUri!);
 					}
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
