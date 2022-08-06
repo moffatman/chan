@@ -425,14 +425,14 @@ class PostRow extends StatelessWidget {
 					onPressed: () => zone.onNeedScrollToPost!(latestPost)
 				),
 				if (savedPost == null) ContextMenuAction(
-					child: const Text('Save Post'),
+					child: const Text('Save post'),
 					trailingIcon: CupertinoIcons.bookmark,
 					onPressed: () {
 						context.read<Persistence>().savePost(latestPost, zone.thread);
 					}
 				)
 				else ContextMenuAction(
-					child: const Text('Unsave Post'),
+					child: const Text('Unsave post'),
 					trailingIcon: CupertinoIcons.bookmark_fill,
 					onPressed: () {
 						context.read<Persistence>().unsavePost(post);
@@ -561,14 +561,14 @@ class PostRow extends StatelessWidget {
 					}
 				),
 				ContextMenuAction(
-					child: const Text('Report Post'),
+					child: const Text('Report post'),
 					trailingIcon: CupertinoIcons.exclamationmark_octagon,
 					onPressed: () {
 						openBrowser(context, context.read<ImageboardSite>().getPostReportUrl(latestPost.board, latestPost.id));
 					}
 				),
 				if (receipt != null) ContextMenuAction(
-					child: const Text('Delete Post'),
+					child: const Text('Delete post'),
 					trailingIcon: CupertinoIcons.delete,
 					isDestructiveAction: true,
 					onPressed: () async {
