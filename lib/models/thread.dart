@@ -85,8 +85,8 @@ class Thread implements Filterable {
 	bool operator == (dynamic other) {
 		return (other is Thread)
 			&& (other.id == id)
-			&& (other.posts.length == posts.length)
-			&& other.posts.last == posts.last
+			&& (other.posts_.length == posts_.length)
+			&& other.posts_.last == posts_.last
 			&& other.currentPage == currentPage
 			&& other.isArchived == isArchived
 			&& other.isDeleted == isDeleted
