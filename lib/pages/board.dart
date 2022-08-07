@@ -15,6 +15,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/thread_row.dart';
@@ -145,6 +146,124 @@ class _BoardPageState extends State<BoardPage> {
 		if (_temporarySortingMethod != null) {
 			sortingMethod = _temporarySortingMethod!;
 			reverseSorting = _temporaryReverseSorting;
+		}
+		Widget itemBuilder(BuildContext context, Thread thread, {String? highlightString}) {
+			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
+			final isThreadHidden = context.select<Persistence, bool>((p) => p.browserState.isThreadHidden(thread.board, thread.id));
+			final isImageHidden = thread.attachment?.md5 != null && context.select<Persistence, bool>((p) => p.browserState.isMD5Hidden(thread.attachment?.md5));
+			return ContextMenu(
+				actions: [
+					if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+						child: const Text('Open in new tab'),
+						trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+						onPressed: () {
+							widget.onWantOpenThreadInNewTab?.call(imageboard!.key, thread.identifier);
+						}
+					),
+					if (isSaved) ContextMenuAction(
+						child: const Text('Un-save thread'),
+						trailingIcon: CupertinoIcons.bookmark_fill,
+						onPressed: () {
+							final threadState = context.read<Persistence>().getThreadState(thread.identifier);
+							threadState.savedTime = null;
+							threadState.save();
+							setState(() {});
+						}
+					)
+					else ContextMenuAction(
+						child: const Text('Save thread'),
+						trailingIcon: CupertinoIcons.bookmark,
+						onPressed: () {
+							final threadState = context.read<Persistence>().getThreadState(thread.identifier);
+							threadState.thread = thread;
+							threadState.savedTime = DateTime.now();
+							threadState.save();
+							setState(() {});
+						}
+					),
+					if (isThreadHidden) ContextMenuAction(
+						child: const Text('Unhide thread'),
+						trailingIcon: CupertinoIcons.eye_slash_fill,
+						onPressed: () {
+							context.read<Persistence>().browserState.unHideThread(thread.board, thread.id);
+							context.read<Persistence>().didUpdateBrowserState();
+							setState(() {});
+						}
+					)
+					else ContextMenuAction(
+						child: const Text('Hide thread'),
+						trailingIcon: CupertinoIcons.eye_slash,
+						onPressed: () {
+							context.read<Persistence>().browserState.hideThread(thread.board, thread.id);
+							context.read<Persistence>().didUpdateBrowserState();
+							setState(() {});
+						}
+					),
+					if (isImageHidden) ContextMenuAction(
+						child: const Text('Unhide by image'),
+						trailingIcon: CupertinoIcons.eye_slash_fill,
+						onPressed: () {
+							context.read<Persistence>().browserState.unHideByMD5(thread.attachment!.md5);
+							context.read<Persistence>().didUpdateBrowserState();
+							setState(() {});
+						}
+					)
+					else if (thread.attachment?.md5 != null) ContextMenuAction(
+						child: const Text('Hide by image'),
+						trailingIcon: CupertinoIcons.eye_slash,
+						onPressed: () {
+							context.read<Persistence>().browserState.hideByMD5(thread.attachment!.md5);
+							context.read<Persistence>().didUpdateBrowserState();
+							setState(() {});
+						}
+					)
+				],
+				maxHeight: settings.maxCatalogRowHeight,
+				child:  GestureDetector(
+					child: ThreadRow(
+						contentFocus: settings.useCatalogGrid,
+						thread: thread,
+						isSelected: thread.identifier == widget.selectedThread,
+						semanticParentIds: [widget.semanticId],
+						onThumbnailTap: (initialAttachment) {
+							final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
+							showGallery(
+								context: context,
+								attachments: attachments,
+								replyCounts: {
+									for (final thread in _listController.items.where((_) => _.attachment != null)) thread.attachment!: thread.replyCount
+								},
+								initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+								onChange: (attachment) {
+									_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
+								},
+								semanticParentIds: [widget.semanticId]
+							);
+						},
+						baseOptions: PostSpanRenderOptions(
+							highlightString: highlightString
+						)
+					),
+					onTap: () {
+						if (widget.onThreadSelected != null) {
+							widget.onThreadSelected!(thread.identifier);
+						}
+						else {
+							Navigator.of(context).push(FullWidthCupertinoPageRoute(
+								builder: (ctx) => ImageboardScope(
+									imageboardKey: null,
+									imageboard: context.read<Imageboard>(),
+									child: ThreadPage(
+										thread: thread.identifier,
+										boardSemanticId: widget.semanticId,
+									)
+								),
+								showAnimations: context.read<EffectiveSettings>().showAnimations
+							));
+						}
+					}
+				)
+			);
 		}
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
@@ -438,121 +557,8 @@ class _BoardPageState extends State<BoardPage> {
 													return reverseSorting ? list.reversed.toList() : list;
 												}),
 												id: '/${board!.name}/ $sortingMethod $reverseSorting',
-												itemBuilder: (context, thread) {
-													final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
-													final isThreadHidden = context.select<Persistence, bool>((p) => p.browserState.isThreadHidden(thread.board, thread.id));
-													final isImageHidden = thread.attachment?.md5 != null && context.select<Persistence, bool>((p) => p.browserState.isMD5Hidden(thread.attachment?.md5));
-													return ContextMenu(
-														actions: [
-															if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
-																child: const Text('Open in new tab'),
-																trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
-																onPressed: () {
-																	widget.onWantOpenThreadInNewTab?.call(imageboard!.key, thread.identifier);
-																}
-															),
-															if (isSaved) ContextMenuAction(
-																child: const Text('Un-save thread'),
-																trailingIcon: CupertinoIcons.bookmark_fill,
-																onPressed: () {
-																	final threadState = context.read<Persistence>().getThreadState(thread.identifier);
-																	threadState.savedTime = null;
-																	threadState.save();
-																	setState(() {});
-																}
-															)
-															else ContextMenuAction(
-																child: const Text('Save thread'),
-																trailingIcon: CupertinoIcons.bookmark,
-																onPressed: () {
-																	final threadState = context.read<Persistence>().getThreadState(thread.identifier);
-																	threadState.thread = thread;
-																	threadState.savedTime = DateTime.now();
-																	threadState.save();
-																	setState(() {});
-																}
-															),
-															if (isThreadHidden) ContextMenuAction(
-																child: const Text('Unhide thread'),
-																trailingIcon: CupertinoIcons.eye_slash_fill,
-																onPressed: () {
-																	context.read<Persistence>().browserState.unHideThread(thread.board, thread.id);
-																	context.read<Persistence>().didUpdateBrowserState();
-																	setState(() {});
-																}
-															)
-															else ContextMenuAction(
-																child: const Text('Hide thread'),
-																trailingIcon: CupertinoIcons.eye_slash,
-																onPressed: () {
-																	context.read<Persistence>().browserState.hideThread(thread.board, thread.id);
-																	context.read<Persistence>().didUpdateBrowserState();
-																	setState(() {});
-																}
-															),
-															if (isImageHidden) ContextMenuAction(
-																child: const Text('Unhide by image'),
-																trailingIcon: CupertinoIcons.eye_slash_fill,
-																onPressed: () {
-																	context.read<Persistence>().browserState.unHideByMD5(thread.attachment!.md5);
-																	context.read<Persistence>().didUpdateBrowserState();
-																	setState(() {});
-																}
-															)
-															else if (thread.attachment?.md5 != null) ContextMenuAction(
-																child: const Text('Hide by image'),
-																trailingIcon: CupertinoIcons.eye_slash,
-																onPressed: () {
-																	context.read<Persistence>().browserState.hideByMD5(thread.attachment!.md5);
-																	context.read<Persistence>().didUpdateBrowserState();
-																	setState(() {});
-																}
-															)
-														],
-														maxHeight: settings.maxCatalogRowHeight,
-														child:  GestureDetector(
-															child: ThreadRow(
-																contentFocus: settings.useCatalogGrid,
-																thread: thread,
-																isSelected: thread.identifier == widget.selectedThread,
-																semanticParentIds: [widget.semanticId],
-																onThumbnailTap: (initialAttachment) {
-																	final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
-																	showGallery(
-																		context: context,
-																		attachments: attachments,
-																		replyCounts: {
-																			for (final thread in _listController.items.where((_) => _.attachment != null)) thread.attachment!: thread.replyCount
-																		},
-																		initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-																		onChange: (attachment) {
-																			_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
-																		},
-																		semanticParentIds: [widget.semanticId]
-																	);
-																}
-															),
-															onTap: () {
-																if (widget.onThreadSelected != null) {
-																	widget.onThreadSelected!(thread.identifier);
-																}
-																else {
-																	Navigator.of(context).push(FullWidthCupertinoPageRoute(
-																		builder: (ctx) => ImageboardScope(
-																			imageboardKey: null,
-																			imageboard: context.read<Imageboard>(),
-																			child: ThreadPage(
-																				thread: thread.identifier,
-																				boardSemanticId: widget.semanticId,
-																			)
-																		),
-																		showAnimations: context.read<EffectiveSettings>().showAnimations
-																	));
-																}
-															}
-														)
-													);
-												},
+												itemBuilder: (context, thread) => itemBuilder(context, thread),
+												filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
 												filterHint: 'Search in board'
 											),
 											RepaintBoundary(

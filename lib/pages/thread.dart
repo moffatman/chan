@@ -558,7 +558,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																				onRequestArchive: _switchToArchive
 																			);
 																		},
-																		filteredItemBuilder: (context, post, resetPage) {
+																		filteredItemBuilder: (context, post, resetPage, filterText) {
 																			return PostRow(
 																				post: post,
 																				onThumbnailTap: (attachment) {
@@ -568,7 +568,10 @@ class _ThreadPageState extends State<ThreadPage> {
 																				onTap: () {
 																					resetPage();
 																					Future.delayed(const Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
-																				}
+																				},
+																				baseOptions: PostSpanRenderOptions(
+																					highlightString: filterText
+																				),
 																			);
 																		},
 																		filterHint: 'Search in thread'

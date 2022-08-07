@@ -25,7 +25,7 @@ class RefreshableList<T> extends StatefulWidget {
 	final String id;
 	final RefreshableListController? controller;
 	final String? filterHint;
-	final Widget Function(BuildContext context, T value, VoidCallback resetPage)? filteredItemBuilder;
+	final Widget Function(BuildContext context, T value, VoidCallback resetPage, String filter)? filteredItemBuilder;
 	final Duration? autoUpdateDuration;
 	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
 	final bool disableUpdates;
@@ -64,7 +64,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 	List<T>? list;
 	String? errorMessage;
 	Type? errorType;
-	Filter? _searchFilter;
+	SearchFilter? _searchFilter;
 	bool updatingNow = false;
 	final _searchController = TextEditingController();
 	final _searchFocusNode = FocusNode();
@@ -214,7 +214,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 	Widget _itemBuilder(BuildContext context, T value, {bool highlighted = false}) {
 		Widget child;
 		if (_searchFilter != null && widget.filteredItemBuilder!= null) {
-			child = widget.filteredItemBuilder!(context, value, _closeSearch);
+			child = widget.filteredItemBuilder!(context, value, _closeSearch, _searchFilter!.text);
 		}
 		else {
 			child = widget.itemBuilder(context, value);
