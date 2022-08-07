@@ -614,7 +614,8 @@ class _BoardPageState extends State<BoardPage> {
 										);
 										_listController.update();
 										widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
-									}
+									},
+									onVisibilityChanged: () => setState(() {}),
 								)
 							)
 						]
