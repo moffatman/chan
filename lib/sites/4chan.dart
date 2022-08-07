@@ -158,7 +158,7 @@ class Site4Chan extends ImageboardSite {
 						final parts = node.innerHtml.replaceAll('&gt;', '').split('/');
 						elements.add(PostQuoteLinkSpan(
 							board: (parts.length > 2) ? parts[1] : board,
-							postId: int.parse(parts.last),
+							postId: int.tryParse(parts.last) ?? -1,
 							dead: true
 						));
 					}
