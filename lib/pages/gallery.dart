@@ -694,7 +694,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 													key: _pageControllerKey,
 													child: ExtendedImageGesturePageView.builder(
 														physics: settings.showAnimations ? null : const _FasterSnappingPageScrollPhysics(),
-														canScrollPage: (x) => widget.allowScroll,
+														canScrollPage: (x) => settings.allowSwipingInGallery && widget.allowScroll,
 														onPageChanged: _onPageChanged,
 														controller: pageController,
 														itemCount: widget.attachments.length,

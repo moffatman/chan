@@ -471,7 +471,9 @@ class SavedSettings extends HiveObject {
 	@HiveField(85)
 	bool useFullWidthForCatalogCounters;
 	@HiveField(86)
-	bool alwaysStartVideosMuted; 
+	bool alwaysStartVideosMuted;
+	@HiveField(87)
+	bool allowSwipingInGallery;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -560,6 +562,7 @@ class SavedSettings extends HiveObject {
 		List<String>? hostsToOpenExternally,
 		bool? useFullWidthForCatalogCounters,
 		bool? alwaysStartVideosMuted,
+		bool? allowSwipingInGallery,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -675,7 +678,8 @@ class SavedSettings extends HiveObject {
 			'youtu.be'
 		],
 		useFullWidthForCatalogCounters = useFullWidthForCatalogCounters ?? false,
-		alwaysStartVideosMuted = alwaysStartVideosMuted ?? false;
+		alwaysStartVideosMuted = alwaysStartVideosMuted ?? false,
+		allowSwipingInGallery = allowSwipingInGallery ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1335,6 +1339,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get alwaysStartVideosMuted => _settings.alwaysStartVideosMuted;
 	set alwaysStartVideosMuted(bool setting) {
 		_settings.alwaysStartVideosMuted = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get allowSwipingInGallery => _settings.allowSwipingInGallery;
+	set allowSwipingInGallery(bool setting) {
+		_settings.allowSwipingInGallery = setting;
 		_settings.save();
 		notifyListeners();
 	}

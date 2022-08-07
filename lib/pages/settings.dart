@@ -408,6 +408,19 @@ class SettingsBehaviorPage extends StatelessWidget {
 						const SizedBox(height: 32)
 					],
 				],
+				const Text('Allow swiping to change page in gallery'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('No'),
+						true: Text('Yes')
+					},
+					groupValue: settings.allowSwipingInGallery,
+					onValueChanged: (newValue) {
+						settings.allowSwipingInGallery = newValue;
+					}
+				),
+				const SizedBox(height: 32),
 				const Text('Automatically load attachments in gallery'),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
