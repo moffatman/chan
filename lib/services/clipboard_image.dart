@@ -1,8 +1,6 @@
 import 'dart:io';
 
 import 'package:chan/services/persistence.dart';
-import 'package:chan/widgets/reply_box.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:mime/mime.dart';
 
@@ -36,19 +34,4 @@ Future<File?> getClipboardImageAsFile() async {
 		}
 	}
 	return null;
-}
-
-class CupertinoTextSelectionControlsWithClipboardImage extends CupertinoTextSelectionControls {
-	final ReplyBoxState replyBox;
-
-	CupertinoTextSelectionControlsWithClipboardImage(this.replyBox);
-
-	@override
-	Future<void> handlePaste(TextSelectionDelegate delegate) async {
-		await super.handlePaste(delegate);
-		final file = await getClipboardImageAsFile();
-		if (file != null) {			
-			replyBox.setAttachment(file);
-		}
-	}
 }

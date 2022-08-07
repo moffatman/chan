@@ -34,7 +34,8 @@ class AttachmentPickingSource {
 }
 
 List<AttachmentPickingSource> getAttachmentSources({
-	required BuildContext context
+	required BuildContext context,
+	required bool includeClipboard
 }) {
 	final gallery = AttachmentPickingSource(
 		name: 'Image Gallery',
@@ -140,14 +141,14 @@ List<AttachmentPickingSource> getAttachmentSources({
 				videoCamera,
 			],
 			web,
-			clipboard,
+			if (includeClipboard) clipboard,
 		];
 	}
 	else if (Platform.isAndroid) {
 		return [
 			if (anySaved) saved,
 			file,
-			clipboard,
+			if (includeClipboard) clipboard,
 			camera,
 			videoCamera,
 			web,
@@ -163,7 +164,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 Future<File?> pickAttachment({
 	required BuildContext context
 }) async {
-	final sources = getAttachmentSources(context: context);
+	final sources = getAttachmentSources(context: context, includeClipboard: true);
 	bool loadingPick = false;
 	return Navigator.of(context).push<File>(TransparentRoute(
 		builder: (context) => StatefulBuilder(

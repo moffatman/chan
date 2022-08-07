@@ -27,6 +27,8 @@ import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:extended_image/extended_image.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +38,198 @@ import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
 
 const _captchaContributionServer = 'https://captcha.moffatman.com';
+
+const double _kArrowScreenPadding = 26.0;
+
+class _ImagePastingTextSelectionControlsToolbar extends StatefulWidget {
+	const _ImagePastingTextSelectionControlsToolbar({
+		Key? key,
+		required this.clipboardStatus,
+		required this.endpoints,
+		required this.globalEditableRegion,
+		required this.handleCopy,
+		required this.handleCut,
+		required this.handlePaste,
+		required this.handleSelectAll,
+		required this.selectionMidpoint,
+		required this.textLineHeight,
+		required this.handleImagePaste,
+	}) : super(key: key);
+
+	final ValueListenable<ClipboardStatus>? clipboardStatus;
+	final List<TextSelectionPoint> endpoints;
+	final Rect globalEditableRegion;
+	final VoidCallback? handleCopy;
+	final VoidCallback? handleCut;
+	final VoidCallback? handlePaste;
+	final VoidCallback? handleSelectAll;
+	final Offset selectionMidpoint;
+	final double textLineHeight;
+	final VoidCallback? handleImagePaste;
+
+	@override
+	_ImagePastingTextSelectionControlsToolbarState createState() => _ImagePastingTextSelectionControlsToolbarState();
+}
+
+class _ImagePastingTextSelectionControlsToolbarState extends State<_ImagePastingTextSelectionControlsToolbar> {
+	void _onChangedClipboardStatus() {
+		setState(() {
+			// Inform the widget that the value of clipboardStatus has changed.
+		});
+	}
+
+	@override
+	void initState() {
+		super.initState();
+		widget.clipboardStatus?.addListener(_onChangedClipboardStatus);
+	}
+
+	@override
+	void didUpdateWidget(_ImagePastingTextSelectionControlsToolbar oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (oldWidget.clipboardStatus != widget.clipboardStatus) {
+			oldWidget.clipboardStatus?.removeListener(_onChangedClipboardStatus);
+      widget.clipboardStatus?.addListener(_onChangedClipboardStatus);
+		}
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		widget.clipboardStatus?.removeListener(_onChangedClipboardStatus);
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		// Don't render the menu until the state of the clipboard is known.
+		if (widget.handlePaste != null && widget.clipboardStatus?.value == ClipboardStatus.unknown) {
+			return const SizedBox(width: 0.0, height: 0.0);
+		}
+
+		assert(debugCheckHasMediaQuery(context));
+		final MediaQueryData mediaQuery = MediaQuery.of(context);
+
+		// The toolbar should appear below the TextField when there is not enough
+		// space above the TextField to show it, assuming there's always enough
+		// space at the bottom in this case.
+		final double anchorX = (widget.selectionMidpoint.dx + widget.globalEditableRegion.left).clamp(
+			_kArrowScreenPadding + mediaQuery.padding.left,
+			mediaQuery.size.width - mediaQuery.padding.right - _kArrowScreenPadding,
+		);
+
+		// The y-coordinate has to be calculated instead of directly quoting
+		// selectionMidpoint.dy, since the caller
+		// (TextSelectionOverlay._buildToolbar) does not know whether the toolbar is
+		// going to be facing up or down.
+		final Offset anchorAbove = Offset(
+			anchorX,
+			widget.endpoints.first.point.dy - widget.textLineHeight + widget.globalEditableRegion.top,
+		);
+		final Offset anchorBelow = Offset(
+			anchorX,
+			widget.endpoints.last.point.dy + widget.globalEditableRegion.top,
+		);
+
+		final List<Widget> items = <Widget>[];
+		final CupertinoLocalizations localizations = CupertinoLocalizations.of(context);
+		final Widget onePhysicalPixelVerticalDivider =
+				SizedBox(width: 1.0 / MediaQuery.of(context).devicePixelRatio);
+
+		void addToolbarButton(
+			String text,
+			VoidCallback onPressed,
+		) {
+			if (items.isNotEmpty) {
+				items.add(onePhysicalPixelVerticalDivider);
+			}
+
+			items.add(CupertinoTextSelectionToolbarButton.text(
+				onPressed: onPressed,
+				text: text,
+			));
+		}
+
+		if (widget.handleCut != null) {
+			addToolbarButton(localizations.cutButtonLabel, widget.handleCut!);
+		}
+		if (widget.handleCopy != null) {
+			addToolbarButton(localizations.copyButtonLabel, widget.handleCopy!);
+		}
+		if (widget.handlePaste != null
+        && widget.clipboardStatus?.value == ClipboardStatus.pasteable) {
+			addToolbarButton(localizations.pasteButtonLabel, widget.handlePaste!);
+		}
+		if (widget.handleSelectAll != null) {
+			addToolbarButton(localizations.selectAllButtonLabel, widget.handleSelectAll!);
+		}
+		if (widget.handleImagePaste != null) {
+			addToolbarButton('Paste image', widget.handleImagePaste!);
+		}
+
+		// If there is no option available, build an empty widget.
+		if (items.isEmpty) {
+			return const SizedBox(width: 0.0, height: 0.0);
+		}
+
+		return CupertinoTextSelectionToolbar(
+			anchorAbove: anchorAbove,
+			anchorBelow: anchorBelow,
+			children: items,
+		);
+	}
+}
+
+class _ImagePastingEditingControls extends CupertinoTextSelectionControls {
+	final ReplyBoxState replyBox;
+
+	_ImagePastingEditingControls(this.replyBox) : super();
+
+	Future<void> _handleImagePaste(TextSelectionDelegate delegate, {bool manual = true}) async {
+		final file = await getClipboardImageAsFile();
+		if (file != null) {
+			replyBox.setAttachment(file);
+		}
+		else if (manual) {
+			showToast(
+				context: replyBox.context,
+				message: 'No image in clipboard',
+				icon: CupertinoIcons.xmark
+			);
+			delegate.hideToolbar();
+		}
+	}
+
+	@override
+	Future<void> handlePaste(TextSelectionDelegate delegate) async {
+		await super.handlePaste(delegate);
+		await _handleImagePaste(delegate, manual: false);
+	}
+
+	@override
+	Widget buildToolbar(
+		BuildContext context,
+		Rect globalEditableRegion,
+		double textLineHeight,
+		Offset selectionMidpoint,
+		List<TextSelectionPoint> endpoints,
+		TextSelectionDelegate delegate,
+		ValueListenable<ClipboardStatus>? clipboardStatus,
+		Offset? lastSecondaryTapDownPosition,
+	) {
+		return _ImagePastingTextSelectionControlsToolbar(
+			clipboardStatus: clipboardStatus,
+			endpoints: endpoints,
+			globalEditableRegion: globalEditableRegion,
+			handleCut: canCut(delegate) ? () => handleCut(delegate) : null,
+      handleCopy: canCopy(delegate) ? () => handleCopy(delegate) : null,
+			handlePaste: canPaste(delegate) ? () => handlePaste(delegate) : null,
+			handleSelectAll: canSelectAll(delegate) ? () => handleSelectAll(delegate) : null,
+			handleImagePaste: () => _handleImagePaste(delegate),
+			selectionMidpoint: selectionMidpoint,
+			textLineHeight: textLineHeight,
+		);
+	}
+}
 
 class ReplyBox extends StatefulWidget {
 	final String board;
@@ -1042,7 +1236,7 @@ class ReplyBoxState extends State<ReplyBox> {
 									CupertinoTextField(
 										enabled: !loading,
 										controller: _textFieldController,
-										selectionControls: CupertinoTextSelectionControlsWithClipboardImage(this),
+										selectionControls: _ImagePastingEditingControls(this),
 										placeholder: 'Comment',
 										maxLines: null,
 										minLines: 100,
@@ -1228,7 +1422,7 @@ class ReplyBoxState extends State<ReplyBox> {
 												)
 											)
 										),
-										for (final picker in getAttachmentSources(context: context)) CupertinoButton(
+										for (final picker in getAttachmentSources(context: context, includeClipboard: false)) CupertinoButton(
 											padding: EdgeInsets.zero,
 											onPressed: () async {
 												final path = await picker.pick();
