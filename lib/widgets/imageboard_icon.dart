@@ -22,6 +22,7 @@ class ImageboardIcon extends StatelessWidget {
 			headers: imageboard.site.getHeaders(imageboard.site.iconUrl),
 			cache: true,
 			enableLoadState: false,
+			filterQuality: FilterQuality.high,
 			width: 16,
 			height: 16,
 			cacheWidth: 32,
