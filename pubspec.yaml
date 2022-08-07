@@ -74,6 +74,7 @@ dependencies:
   path_provider_ios: 2.0.9
   async: ^2.9.0
   flutter_email_sender: ^5.1.0
+  device_info_plus: ^4.0.1
   flutter:
     sdk: flutter
 
