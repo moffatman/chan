@@ -16,6 +16,10 @@ class ImageboardTab extends StatelessWidget {
 	final String Function()? getInitialThreadDraftSubject;
 	final ValueChanged<String>? onThreadDraftSubjectChanged;
 	final void Function(String, ThreadIdentifier)? onWantOpenThreadInNewTab;
+	final String Function()? getInitialThreadDraftOptions;
+	final ValueChanged<String>? onThreadDraftOptionsChanged;
+	final String? Function()? getInitialThreadDraftFilePath;
+	final ValueChanged<String?>? onThreadDraftFilePathChanged;
 	final int id;
 	final Key? boardKey;
 	const ImageboardTab({
@@ -28,6 +32,10 @@ class ImageboardTab extends StatelessWidget {
 		this.getInitialThreadDraftSubject,
 		this.onThreadDraftSubjectChanged,
 		this.onWantOpenThreadInNewTab,
+		this.getInitialThreadDraftOptions,
+		this.onThreadDraftOptionsChanged,
+		this.getInitialThreadDraftFilePath,
+		this.onThreadDraftFilePathChanged,
 		this.id = -1,
 		this.boardKey,
 		required Key key
@@ -51,6 +59,10 @@ class ImageboardTab extends StatelessWidget {
 					getInitialDraftSubject: getInitialThreadDraftSubject,
 					onDraftSubjectChanged: onThreadDraftSubjectChanged,
 					onWantOpenThreadInNewTab: onWantOpenThreadInNewTab,
+					getInitialThreadDraftOptions: getInitialThreadDraftOptions,
+					onThreadDraftOptionsChanged: onThreadDraftOptionsChanged,
+					getInitialThreadDraftFilePath: getInitialThreadDraftFilePath,
+					onThreadDraftFilePathChanged: onThreadDraftFilePathChanged,
 					semanticId: id
 				);
 			},

@@ -50,6 +50,10 @@ class BoardPage extends StatefulWidget {
 	final String Function()? getInitialDraftSubject;
 	final ValueChanged<String>? onDraftSubjectChanged;
 	final void Function(String, ThreadIdentifier)? onWantOpenThreadInNewTab;
+	final String Function()? getInitialThreadDraftOptions;
+	final ValueChanged<String>? onThreadDraftOptionsChanged;
+	final String? Function()? getInitialThreadDraftFilePath;
+	final ValueChanged<String?>? onThreadDraftFilePathChanged;
 	const BoardPage({
 		required this.initialBoard,
 		this.allowChangingBoard = true,
@@ -62,6 +66,10 @@ class BoardPage extends StatefulWidget {
 		this.getInitialDraftSubject,
 		this.onDraftSubjectChanged,
 		this.onWantOpenThreadInNewTab,
+		this.getInitialThreadDraftOptions,
+		this.onThreadDraftOptionsChanged,
+		this.getInitialThreadDraftFilePath,
+		this.onThreadDraftFilePathChanged,
 		required this.semanticId,
 		Key? key
 	}) : super(key: key);
@@ -294,6 +302,14 @@ class _BoardPageState extends State<BoardPage> {
 														initialSubject: widget.getInitialDraftSubject?.call() ?? '',
 														onSubjectChanged: (subject) {
 															widget.onDraftSubjectChanged?.call(subject);
+														},
+														initialOptions: widget.getInitialThreadDraftOptions?.call() ?? '',
+														onOptionsChanged: (options) {
+															widget.onThreadDraftOptionsChanged?.call(options);
+														},
+														initialFilePath: widget.getInitialThreadDraftFilePath?.call() ?? '',
+														onFilePathChanged: (filePath) {
+															widget.onThreadDraftFilePathChanged?.call(filePath);
 														},
 														onReplyPosted: (receipt) async {
 															await promptForPushNotificationsIfNeeded(ctx);
@@ -600,6 +616,14 @@ class _BoardPageState extends State<BoardPage> {
 									initialSubject: widget.getInitialDraftSubject?.call() ?? '',
 									onSubjectChanged: (subject) {
 										widget.onDraftSubjectChanged?.call(subject);
+									},
+									initialOptions: widget.getInitialThreadDraftOptions?.call() ?? '',
+									onOptionsChanged: (options) {
+										widget.onThreadDraftOptionsChanged?.call(options);
+									},
+									initialFilePath: widget.getInitialThreadDraftFilePath?.call() ?? '',
+									onFilePathChanged: (filePath) {
+										widget.onThreadDraftFilePathChanged?.call(filePath);
 									},
 									onReplyPosted: (receipt) async {
 										await promptForPushNotificationsIfNeeded(context);

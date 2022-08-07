@@ -48,6 +48,10 @@ class ReplyBox extends StatefulWidget {
 	final VoidCallback? onVisibilityChanged;
 	final bool isArchived;
 	final bool fullyExpanded;
+	final String initialOptions;
+	final ValueChanged<String>? onOptionsChanged;
+	final String? initialFilePath;
+	final ValueChanged<String?>? onFilePathChanged;
 
 	const ReplyBox({
 		required this.board,
@@ -60,6 +64,10 @@ class ReplyBox extends StatefulWidget {
 		this.onVisibilityChanged,
 		this.isArchived = false,
 		this.fullyExpanded = false,
+		this.initialOptions = '',
+		this.onOptionsChanged,
+		this.initialFilePath,
+		this.onFilePathChanged,
 		Key? key
 	}) : super(key: key);
 
@@ -71,9 +79,9 @@ final _imageUrlPattern = RegExp(r'https?:\/\/[^. ]\.[^ ]+\.(jpg|jpeg|png|gif)');
 
 class ReplyBoxState extends State<ReplyBox> {
 	late final TextEditingController _textFieldController;
-	final _nameFieldController = TextEditingController();
+	late final TextEditingController _nameFieldController;
 	late final TextEditingController _subjectFieldController;
-	final _optionsFieldController = TextEditingController();
+	late final TextEditingController _optionsFieldController;
 	final _filenameController = TextEditingController();
 	final _textFocusNode = FocusNode();
 	bool loading = false;
@@ -137,6 +145,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	void initState() {
 		_textFieldController = TextEditingController(text: widget.initialText);
 		_subjectFieldController = TextEditingController(text: widget.initialSubject);
+		_optionsFieldController = TextEditingController(text: widget.initialOptions);
+		_nameFieldController = TextEditingController(text: context.read<Persistence>().browserState.postingName);
 		super.initState();
 		_textFieldController.addListener(_onTextChanged);
 		_subjectFieldController.addListener(() {
@@ -147,6 +157,10 @@ class ReplyBoxState extends State<ReplyBox> {
 				_flags = flags;
 			});
 		});
+		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty) {
+			_showOptions = true;
+		}
+		_tryUsingInitialFile();
 	}
 
 	@override
@@ -155,6 +169,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		if (oldWidget.board != widget.board || oldWidget.threadId != widget.threadId) {
 			_textFieldController.text = widget.initialText;
 			_subjectFieldController.text = widget.initialSubject;
+			_optionsFieldController.text = widget.initialOptions;
 			attachment = null;
 			spoiler = false;
 			flag = null;
@@ -165,6 +180,23 @@ class ReplyBoxState extends State<ReplyBox> {
 					_flags = flags;
 				});
 			});
+		}
+	}
+
+	void _tryUsingInitialFile() async {
+		if (widget.initialFilePath?.isNotEmpty == true) {
+			final file = File(widget.initialFilePath!);
+			if (await file.exists()) {
+				setAttachment(file);
+			}
+			else {
+				showToast(
+					context: context,
+					icon: Icons.broken_image,
+					message: 'Previously-selected file is no longer accessible'
+				);
+			}
+			widget.onFilePathChanged?.call(null);
 		}
 	}
 
@@ -201,6 +233,10 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void showReplyBox() {
+		if (_nameFieldController.text.isEmpty && context.read<Persistence>().browserState.postingName.isNotEmpty) {
+			_nameFieldController.text = context.read<Persistence>().browserState.postingName;
+			_showOptions = true;
+		}
 		setState(() {
 			_show = true;
 		});
@@ -435,6 +471,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				setState(() {
 					attachment = file;
 				});
+				widget.onFilePathChanged?.call(file.path);
 			}
 		}
 		catch (e, st) {
@@ -941,7 +978,11 @@ class ReplyBoxState extends State<ReplyBox> {
 							maxLines: 1,
 							placeholder: 'Name',
 							keyboardAppearance: CupertinoTheme.of(context).brightness,
-							controller: _nameFieldController
+							controller: _nameFieldController,
+							onChanged: (s) {
+								context.read<Persistence>().browserState.postingName = s;
+								context.read<Persistence>().didUpdateBrowserState();
+							}
 						)
 					),
 					const SizedBox(width: 8),
@@ -950,7 +991,10 @@ class ReplyBoxState extends State<ReplyBox> {
 							maxLines: 1,
 							placeholder: 'Options',
 							keyboardAppearance: CupertinoTheme.of(context).brightness,
-							controller: _optionsFieldController
+							controller: _optionsFieldController,
+							onChanged: (s) {
+								widget.onOptionsChanged?.call(s);
+							}
 						)
 					)
 				]
@@ -1313,7 +1357,7 @@ class ReplyBoxState extends State<ReplyBox> {
 										final data = await site.client.get(_proposedAttachmentUrl!, options: dio.Options(responseType: dio.ResponseType.bytes));
 										final newFile = File('${dir.path}${DateTime.now().millisecondsSinceEpoch}_${_proposedAttachmentUrl!.split('/').last}');
 										await newFile.writeAsBytes(data.data);
-										attachment = newFile;
+										setAttachment(newFile);
 										_filenameController.text = _proposedAttachmentUrl!.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
 										_proposedAttachmentUrl = null;
 										setState(() {});

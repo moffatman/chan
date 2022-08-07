@@ -703,6 +703,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										_saveBrowserTabsDuringDraftEditingTimer?.cancel();
 										_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), Persistence.didUpdateTabs);
 									},
+									getInitialThreadDraftOptions: () => tabObject.draftOptions,
+									onThreadDraftOptionsChanged: (newOptions) {
+										tabObject.draftOptions = newOptions;
+										_saveBrowserTabsDuringDraftEditingTimer?.cancel();
+										_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), Persistence.didUpdateTabs);
+									},
+									getInitialThreadDraftFilePath: () => tabObject.draftFilePath,
+									onThreadDraftFilePathChanged: (newFilePath) {
+										tabObject.draftFilePath = newFilePath;
+										_saveBrowserTabsDuringDraftEditingTimer?.cancel();
+										_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), Persistence.didUpdateTabs);
+									},
 									onWantOpenThreadInNewTab: (imageboardKey, thread) {
 										_addNewTab(
 											withImageboardKey: imageboardKey,

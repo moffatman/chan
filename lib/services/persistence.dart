@@ -649,13 +649,19 @@ class PersistentBrowserTab extends EasyListenable {
 	final boardKey = GlobalKey();
 	// Do not persist
 	final unseen = ValueNotifier(0);
+	@HiveField(5, defaultValue: '')
+	String draftOptions;
+	@HiveField(6)
+	String? draftFilePath;
 
 	PersistentBrowserTab({
 		this.board,
 		this.thread,
 		this.draftThread = '',
 		this.draftSubject = '',
-		this.imageboardKey
+		this.imageboardKey,
+		this.draftOptions = '',
+		this.draftFilePath
 	});
 }
 
@@ -686,6 +692,8 @@ class PersistentBrowserState {
 	final Map<String, ThreadSortingMethod> boardSortingMethods;
 	@HiveField(14, defaultValue: {})
 	final Map<String, bool> boardReverseSortings;
+	@HiveField(15, defaultValue: '')
+	String postingName;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -699,7 +707,8 @@ class PersistentBrowserState {
 		required this.newThreadWatches,
 		required this.notificationsMigrated,
 		required this.boardSortingMethods,
-		required this.boardReverseSortings
+		required this.boardReverseSortings,
+		this.postingName = ''
 	}) : hiddenImageMD5s = hiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};
