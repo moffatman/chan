@@ -27,67 +27,83 @@ class SearchPage extends StatefulWidget {
 	}) : super(key: key);
 
 	@override
-	createState() => _SearchPageState();
+	createState() => SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> {
+class SearchPageState extends State<SearchPage> {
+	final _masterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	final _valueInjector = ValueNotifier<ImageboardScoped<ImageboardArchiveSearchResult>?>(null);
+
+	void onSearchComposed(ImageboardArchiveSearchQuery query) {
+		print('$this onsearchcomposed $query');
+		print(_masterDetailKey);
+		print(_masterDetailKey.currentState);
+		print(_masterDetailKey.currentState?.masterKey.currentState);
+		_masterDetailKey.currentState!.masterKey.currentState!.push(FullWidthCupertinoPageRoute(
+			builder: (context) => ValueListenableBuilder(
+				valueListenable: _valueInjector,
+				builder: (context, ImageboardScoped<ImageboardArchiveSearchResult>? selectedResult, child) {
+					final child = SearchQueryPage(
+						query: query,
+						selectedResult: _valueInjector.value,
+						onResultSelected: (result) {
+							_masterDetailKey.currentState!.setValue(0, result);
+						}
+					);
+					if (query.imageboardKey == null) {
+						return child;
+					}
+					return ImageboardScope(
+						imageboardKey: query.imageboardKey!,
+						child: child
+					);
+				}
+			),
+			showAnimations: context.read<EffectiveSettings>().showAnimations,
+			settings: dontAutoPopSettings
+		));
+	}
+
 	@override
 	Widget build(BuildContext context) {
-		return MasterDetailPage<ImageboardScoped<ImageboardArchiveSearchResult>>(
+		return MultiMasterDetailPage(
 			id: 'search',
-			masterBuilder: (context, currentValue, setValue) {
-				WidgetsBinding.instance.addPostFrameCallback((_){
-					_valueInjector.value = currentValue;
-				});
-				return SearchComposePage(
-					onSearchComposed: (query) {
-						Navigator.of(context).push(FullWidthCupertinoPageRoute(
-							builder: (context) => ValueListenableBuilder(
-								valueListenable: _valueInjector,
-								builder: (context, ImageboardScoped<ImageboardArchiveSearchResult>? selectedResult, child) {
-									final child = SearchQueryPage(
-										query: query,
-										selectedResult: _valueInjector.value,
-										onResultSelected: setValue
-									);
-									if (query.imageboardKey == null) {
-										return child;
-									}
-									return ImageboardScope(
-										imageboardKey: query.imageboardKey!,
-										child: child
-									);
-								}
-							),
-							showAnimations: context.read<EffectiveSettings>().showAnimations,
-							settings: dontAutoPopSettings
-						));
+			key: _masterDetailKey,
+			showChrome: false,
+			paneCreator: () => [
+				MultiMasterPane<ImageboardScoped<ImageboardArchiveSearchResult>>(
+					masterBuilder: (context, currentValue, setValue) {
+						WidgetsBinding.instance.addPostFrameCallback((_){
+							_valueInjector.value = currentValue;
+						});
+						return SearchComposePage(
+							onSearchComposed: onSearchComposed
+						);
 					},
-				);
-			},
-			detailBuilder: (post, poppedOut) => BuiltDetailPane(
-				widget: post != null ? ImageboardScope(
-					imageboardKey: null,
-					imageboard: post.imageboard,
-					child: ThreadPage(
-						thread: post.item.threadIdentifier,
-						initialPostId: post.item.id,
-						initiallyUseArchive: true,
-						boardSemanticId: -1
-					)
-				) : Builder(
-					builder: (context) => Container(
-						decoration: BoxDecoration(
-							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+					detailBuilder: (post, poppedOut) => BuiltDetailPane(
+						widget: post != null ? ImageboardScope(
+							imageboardKey: null,
+							imageboard: post.imageboard,
+							child: ThreadPage(
+								thread: post.item.threadIdentifier,
+								initialPostId: post.item.id,
+								initiallyUseArchive: true,
+								boardSemanticId: -1
+							)
+						) : Builder(
+							builder: (context) => Container(
+								decoration: BoxDecoration(
+									color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+								),
+								child: const Center(
+									child: Text('Select a search result')
+								)
+							)
 						),
-						child: const Center(
-							child: Text('Select a search result')
-						)
+						pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
 					)
-				),
-				pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
-			)
+				)
+			]
 		);
 	}
 }

@@ -143,10 +143,10 @@ class MultiMasterDetailPage extends StatefulWidget {
 
 class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with TickerProviderStateMixin {
 	late TabController _tabController;
-	late GlobalKey<NavigatorState> _masterKey;
+	late GlobalKey<NavigatorState> masterKey;
 	late GlobalKey<PrimaryScrollControllerInjectingNavigatorState> _masterInterceptorKey;
 	late GlobalKey _masterContentKey;
-	late GlobalKey<NavigatorState> _detailKey;
+	late GlobalKey<NavigatorState> detailKey;
 	late GlobalKey<PrimaryScrollControllerInjectingNavigatorState> _detailInterceptorKey;
 	late GlobalKey _detailContentKey;
 	List<MultiMasterPane> panes = [];
@@ -160,10 +160,10 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 	}
 
 	void _initGlobalKeys() {
-		_masterKey = GlobalKey<NavigatorState>(debugLabel: '${widget.id} _masterKey');
+		masterKey = GlobalKey<NavigatorState>(debugLabel: '${widget.id} masterKey');
 		_masterInterceptorKey = GlobalKey(debugLabel: '${widget.id} _masterInterceptorKey');
 		_masterContentKey = GlobalKey(debugLabel: '${widget.id} _masterContentKey');
-		_detailKey = GlobalKey<NavigatorState>(debugLabel: '${widget.id} _detailKey}');
+		detailKey = GlobalKey<NavigatorState>(debugLabel: '${widget.id} detailKey}');
 		_detailInterceptorKey = GlobalKey(debugLabel: '${widget.id} _detailInterceptorKey');
 		_detailContentKey = GlobalKey(debugLabel: '${widget.id} _detailContentKey');
 	}
@@ -217,13 +217,13 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 
 	void _popMasterValueRoutes() {
 		bool continuePopping = true;
-		while ((_masterKey.currentState?.canPop() ?? false) && continuePopping) {
+		while ((masterKey.currentState?.canPop() ?? false) && continuePopping) {
 			// Hack to peek at top route
 			// Need to pop with value=false so can't just use popUntil
-			_masterKey.currentState?.popUntil((route) {
+			masterKey.currentState?.popUntil((route) {
 				continuePopping = route.settings != dontAutoPopSettings;
 				if (continuePopping) {
-					_masterKey.currentState?.pop(false);
+					masterKey.currentState?.pop(false);
 				}
 				return true;
 			});
@@ -234,27 +234,27 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		if (onePane) {
 			if (pane.currentValue.value != null) {
 				_popMasterValueRoutes();
-				_masterKey.currentState!.push(pane.buildDetailRoute(
+				masterKey.currentState!.push(pane.buildDetailRoute(
 					showAnimations: context.read<EffectiveSettings>().showAnimations,
 					showAnimationsForward: showAnimationsForward
 				)).then(pane.onPushReturn);
 			}
 		}
 		else {
-			_detailKey.currentState?.popUntil((route) => route.isFirst);
+			detailKey.currentState?.popUntil((route) => route.isFirst);
 		}
 		setState(() {});
 	}
 
 	Future<bool> _onWillPop() async {
 		if (onePane) {
-			return !(await _masterKey.currentState?.maybePop() ?? false);
+			return !(await masterKey.currentState?.maybePop() ?? false);
 		}
 		else {
-			if (await _detailKey.currentState?.maybePop() ?? false) {
+			if (await detailKey.currentState?.maybePop() ?? false) {
 				return false;
 			}
-			return !(await _masterKey.currentState?.maybePop() ?? false);
+			return !(await masterKey.currentState?.maybePop() ?? false);
 		}
 	}
 
@@ -263,11 +263,11 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		final settings = context.watch<EffectiveSettings>();
 		onePane = MediaQuery.of(context).size.width < settings.twoPaneBreakpoint;
 		final masterNavigator = Provider.value(
-			value: _masterKey,
+			value: masterKey,
 			child: ClipRect(
 				child: PrimaryScrollControllerInjectingNavigator(
 					key: _masterInterceptorKey,
-					navigatorKey: _masterKey,
+					navigatorKey: masterKey,
 					observers: [HeroController()],
 					buildRoot: (context) => StreamBuilder(
 						stream: _rebuild,
@@ -322,11 +322,11 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 			)
 		);
 		final detailNavigator = Provider.value(
-			value: _detailKey,
+			value: detailKey,
 			child: ClipRect(
 				child: PrimaryScrollControllerInjectingNavigator(
 					key: _detailInterceptorKey,
-					navigatorKey: _detailKey,
+					navigatorKey: detailKey,
 					buildRoot: (context) => StreamBuilder(
 						stream: _rebuild,
 						builder: (context, _) => KeyedSubtree(
@@ -340,15 +340,15 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		if (lastOnePane != null && lastOnePane != onePane) {
 			final pane = panes[_tabController.index];
 			if (onePane && pane.currentValue.value != null) {
-				_masterKey.currentState!.push(pane.buildDetailRoute(
+				masterKey.currentState!.push(pane.buildDetailRoute(
 					showAnimations: context.read<EffectiveSettings>().showAnimations,
 					showAnimationsForward: null
 				)).then(pane.onPushReturn);
 			}
 			else {
 				_popMasterValueRoutes();
-				while (_detailKey.currentState?.canPop() ?? false) {
-					_detailKey.currentState?.pop(false);
+				while (detailKey.currentState?.canPop() ?? false) {
+					detailKey.currentState?.pop(false);
 				}
 			}
 		}

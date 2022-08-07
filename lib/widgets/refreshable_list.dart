@@ -18,6 +18,16 @@ import 'package:tuple/tuple.dart';
 
 const double _overscrollTriggerThreshold = 100;
 
+class FilterAlternative {
+	final String name;
+	final void Function(String) handler;
+
+	const FilterAlternative({
+		required this.name,
+		required this.handler
+	});
+}
+
 class RefreshableList<T> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
 	final List<T>? initialList;
@@ -35,6 +45,7 @@ class RefreshableList<T> extends StatefulWidget {
 	final bool allowReordering;
 	final ValueChanged<T>? onWantAutosave;
 	final Filterable Function(T)? filterableAdapter;
+	final FilterAlternative? filterAlternative;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -53,6 +64,7 @@ class RefreshableList<T> extends StatefulWidget {
 		this.allowReordering = false,
 		this.onWantAutosave,
 		required this.filterableAdapter,
+		this.filterAlternative,
 		Key? key
 	}) : super(key: key);
 
@@ -384,6 +396,27 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 														child: const Text('Cancel')
 													)
 												]
+											)
+										)
+									),
+									if (filteredValues.isNotEmpty && widget.filterAlternative != null) SliverToBoxAdapter(
+										child: Container(
+											decoration: BoxDecoration(
+												border: Border(
+													top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)),
+													bottom: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+												)
+											),
+											child: CupertinoButton(
+												padding: const EdgeInsets.all(16),
+												onPressed: () => widget.filterAlternative!.handler(_searchFilter!.text),
+												child: Row(
+													children: [
+														const Icon(CupertinoIcons.search),
+														const SizedBox(width: 8),
+														Text('Search ${widget.filterAlternative?.name}')
+													]
+												)
 											)
 										)
 									),

@@ -55,6 +55,7 @@ class BoardPage extends StatefulWidget {
 	final ValueChanged<String>? onThreadDraftOptionsChanged;
 	final String? Function()? getInitialThreadDraftFilePath;
 	final ValueChanged<String?>? onThreadDraftFilePathChanged;
+	final void Function(String, String, String)? onWantArchiveSearch;
 	const BoardPage({
 		required this.initialBoard,
 		this.allowChangingBoard = true,
@@ -71,6 +72,7 @@ class BoardPage extends StatefulWidget {
 		this.onThreadDraftOptionsChanged,
 		this.getInitialThreadDraftFilePath,
 		this.onThreadDraftFilePathChanged,
+		this.onWantArchiveSearch,
 		required this.semanticId,
 		Key? key
 	}) : super(key: key);
@@ -559,7 +561,13 @@ class _BoardPageState extends State<BoardPage> {
 												id: '/${board!.name}/ $sortingMethod $reverseSorting',
 												itemBuilder: (context, thread) => itemBuilder(context, thread),
 												filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
-												filterHint: 'Search in board'
+												filterHint: 'Search in board',
+												filterAlternative: widget.onWantArchiveSearch == null ? null : FilterAlternative(
+													name: '/${board?.name}/ archives',
+													handler: (s) {
+														widget.onWantArchiveSearch!(imageboard!.key, board!.name, s);
+													}
+												)
 											),
 											RepaintBoundary(
 												child: StreamBuilder(

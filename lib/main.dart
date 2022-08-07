@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/history.dart';
 import 'package:chan/pages/master_detail.dart';
@@ -281,6 +282,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	late StreamSubscription<String?> _linkSubscription;
 	late StreamSubscription<List<SharedMediaFile>> _sharedFilesSubscription;
 	late StreamSubscription<String> _sharedTextSubscription;
+	final _searchPageKey = GlobalKey<SearchPageState>();
 
 	void _didUpdateTabs() {
 		if (_isScrolling) {
@@ -722,6 +724,21 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											withThread: thread
 										);
 									},
+									onWantArchiveSearch: (imageboardKey, board, query) async {
+										print(imageboardKey);
+										print(board);
+										print(query);
+										_tabController.index = 3;
+										_lastIndex = 3;
+										for (int i = 0; i < 200 && _searchPageKey.currentState == null; i++) {
+											await Future.delayed(const Duration(milliseconds: 50));
+										}
+										_searchPageKey.currentState?.onSearchComposed(ImageboardArchiveSearchQuery(
+											imageboardKey: imageboardKey,
+											boards: [board],
+											query: query
+										));
+									},
 									id: -1 * (i + 10)
 								);
 								return MultiProvider(
@@ -780,7 +797,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			);
 		}
 		else if (index == 3) {
-			child = const SearchPage();
+			child = SearchPage(
+				key: _searchPageKey
+			);
 		}
 		else {
 			if (devImageboard?.threadWatcher == null) {

@@ -20,6 +20,7 @@ class ImageboardTab extends StatelessWidget {
 	final ValueChanged<String>? onThreadDraftOptionsChanged;
 	final String? Function()? getInitialThreadDraftFilePath;
 	final ValueChanged<String?>? onThreadDraftFilePathChanged;
+	final void Function(String, String, String)? onWantArchiveSearch;
 	final int id;
 	final Key? boardKey;
 	const ImageboardTab({
@@ -36,6 +37,7 @@ class ImageboardTab extends StatelessWidget {
 		this.onThreadDraftOptionsChanged,
 		this.getInitialThreadDraftFilePath,
 		this.onThreadDraftFilePathChanged,
+		this.onWantArchiveSearch,
 		this.id = -1,
 		this.boardKey,
 		required Key key
@@ -63,6 +65,7 @@ class ImageboardTab extends StatelessWidget {
 					onThreadDraftOptionsChanged: onThreadDraftOptionsChanged,
 					getInitialThreadDraftFilePath: getInitialThreadDraftFilePath,
 					onThreadDraftFilePathChanged: onThreadDraftFilePathChanged,
+					onWantArchiveSearch: onWantArchiveSearch,
 					semanticId: id
 				);
 			},
