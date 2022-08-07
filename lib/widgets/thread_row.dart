@@ -79,74 +79,79 @@ class ThreadRow extends StatelessWidget {
 		final watch = notifications.getThreadWatch(thread.identifier);
 		Widget makeCounters() => Container(
 			decoration: BoxDecoration(
-				borderRadius: const BorderRadius.only(topLeft: Radius.circular(8)),
+				borderRadius: settings.useFullWidthForCatalogCounters ? null : const BorderRadius.only(topLeft: Radius.circular(8)),
 				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-				border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+				border:  settings.useFullWidthForCatalogCounters ? Border(
+					top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)),
+				) : Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 			),
-			padding: const EdgeInsets.all(2),
-			child: Wrap(
-				verticalDirection: VerticalDirection.up,
-				alignment: WrapAlignment.end,
-				runSpacing: 4,
-				crossAxisAlignment: WrapCrossAlignment.center,
-				children: [
-					const SizedBox(width: 4),
-					if (latestThread.isSticky) ... [
-						Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
+			padding: settings.useFullWidthForCatalogCounters ? const EdgeInsets.all(4) : const EdgeInsets.all(2),
+			child: SizedBox(
+				width: settings.useFullWidthForCatalogCounters ? double.infinity : null,
+				child: Wrap(
+					verticalDirection: VerticalDirection.up,
+					alignment: WrapAlignment.end,
+					runSpacing: 4,
+					crossAxisAlignment: WrapCrossAlignment.center,
+					children: [
 						const SizedBox(width: 4),
-					],
-					if (latestThread.isArchived) ... [
-						Icon(CupertinoIcons.archivebox, color: grey, size: 18),
-						const SizedBox(width: 4),
-					],
-					if (settings.showTimeInCatalogStats) FittedBox(
-						fit: BoxFit.contain,
-							child: Row(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								if (settings.showClockIconInCatalog) ...[
-									Icon(CupertinoIcons.clock, color: otherMetadataColor, size: 18),
-									const SizedBox(width: 4)
-								],
-								Text(formatRelativeTime(thread.time), style: TextStyle(color: otherMetadataColor)),
-								const SizedBox(width: 4),
-							]
-						)
-					),
-					FittedBox(
-						fit: BoxFit.contain,
-						child: Row(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
-								const SizedBox(width: 4),
-								if ((latestReplyCount - unseenReplyCount) == 0 && countsUnreliable) const Text('--')
-								else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
-								if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
-								if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)),
-								const SizedBox(width: 2),
-							]
-						)
-					),
-					if (settings.showImageCountInCatalog) FittedBox(
-						fit: BoxFit.contain,
-						child: Row(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								const SizedBox(width: 6),
-								Icon(CupertinoIcons.photo, size: 18, color: imageCountColor),
-								const SizedBox(width: 4),
-								if (latestImageCount > unseenImageCount) ...[
-									Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
-									if (unseenImageCount > 0) Text('+$unseenImageCount'),
+						if (latestThread.isSticky) ... [
+							Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
+							const SizedBox(width: 4),
+						],
+						if (latestThread.isArchived) ... [
+							Icon(CupertinoIcons.archivebox, color: grey, size: 18),
+							const SizedBox(width: 4),
+						],
+						if (settings.showTimeInCatalogStats) FittedBox(
+							fit: BoxFit.contain,
+								child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									if (settings.showClockIconInCatalog) ...[
+										Icon(CupertinoIcons.clock, color: otherMetadataColor, size: 18),
+										const SizedBox(width: 4)
+									],
+									Text(formatRelativeTime(thread.time), style: TextStyle(color: otherMetadataColor)),
+									const SizedBox(width: 4),
 								]
-								else if (unseenImageCount == 0 && countsUnreliable) const Text('--')
-								else Text('$unseenImageCount', style: TextStyle(color: threadState?.lastSeenPostId != null ? grey : null)),
-								const SizedBox(width: 2)
-							]
+							)
+						),
+						FittedBox(
+							fit: BoxFit.contain,
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
+									const SizedBox(width: 4),
+									if ((latestReplyCount - unseenReplyCount) == 0 && countsUnreliable) const Text('--')
+									else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
+									if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
+									if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)),
+									const SizedBox(width: 2),
+								]
+							)
+						),
+						if (settings.showImageCountInCatalog) FittedBox(
+							fit: BoxFit.contain,
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									const SizedBox(width: 6),
+									Icon(CupertinoIcons.photo, size: 18, color: imageCountColor),
+									const SizedBox(width: 4),
+									if (latestImageCount > unseenImageCount) ...[
+										Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
+										if (unseenImageCount > 0) Text('+$unseenImageCount'),
+									]
+									else if (unseenImageCount == 0 && countsUnreliable) const Text('--')
+									else Text('$unseenImageCount', style: TextStyle(color: threadState?.lastSeenPostId != null ? grey : null)),
+									const SizedBox(width: 2)
+								]
+							)
 						)
-					)
-				]
+					]
+				)
 			)
 		);
 		final borderRadius = contentFocus ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
@@ -196,6 +201,7 @@ class ThreadRow extends StatelessWidget {
 			));
 		}
 		List<Widget> rowChildren() => [
+			const SizedBox(width: 8),
 			if (latestThread.attachment != null && settings.showImages(context, latestThread.board)) Padding(
 				padding: const EdgeInsets.only(top: 8, bottom: 8),
 				child: PopupAttachment(
@@ -215,8 +221,8 @@ class ThreadRow extends StatelessWidget {
 									)
 								),
 								if (latestThread.attachment?.type == AttachmentType.webm) SizedBox(
-									width: 75,
-									height: 75,
+									width: settings.thumbnailSize,
+									height: settings.thumbnailSize,
 									child: Center(
 										child: AspectRatio(
 											aspectRatio: latestThread.attachment!.spoiler ? 1 : ((latestThread.attachment!.width ?? 1) / (latestThread.attachment!.height ?? 1)),
@@ -241,16 +247,16 @@ class ThreadRow extends StatelessWidget {
 					)
 				)
 			)
-			else if (latestThread.attachmentDeleted) const Center(
+			else if (latestThread.attachmentDeleted) Center(
 				child: SizedBox(
-					width: 75,
-					height: 75,
-					child: Icon(CupertinoIcons.xmark_square, size: 36)
+					width: settings.thumbnailSize,
+					height: settings.thumbnailSize,
+					child: const Icon(CupertinoIcons.xmark_square, size: 36)
 				)
 			),
 			Expanded(
 				child: Container(
-					constraints: const BoxConstraints(minHeight: 75),
+					constraints: BoxConstraints(minHeight: settings.thumbnailSize),
 					padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 					child: ChangeNotifierProvider<PostSpanZoneData>(
 						create: (ctx) => PostSpanRootZoneData(
@@ -406,7 +412,17 @@ class ThreadRow extends StatelessWidget {
 				Positioned.fill(
 					child: Align(
 						alignment: Alignment.bottomRight,
-						child: makeCounters()
+						child: Row(
+							children: [
+								if (!contentFocus) SizedBox(width: settings.thumbnailSize + 8 + 4),
+								Expanded(
+									child: Align(
+										alignment: Alignment.bottomRight,
+										child: makeCounters()
+									)
+								)
+							]
+						)
 					)
 				),
 				if (watch != null || threadState?.savedTime != null) Positioned.fill(
@@ -437,7 +453,6 @@ class ThreadRow extends StatelessWidget {
 				border: contentFocus ? Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)) : null,
 				borderRadius: borderRadius
 			),
-			padding: contentFocus ? null : const EdgeInsets.only(left: 8),
 			margin: contentFocus ? const EdgeInsets.all(4) : null,
 			child: borderRadius != BorderRadius.zero ? ClipRRect(
 				borderRadius: borderRadius,

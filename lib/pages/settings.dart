@@ -1771,6 +1771,16 @@ class SettingsAppearancePage extends StatelessWidget {
 													),
 													Row(
 														children: [
+															const Text('Show counters in their own row'),
+															const Spacer(),
+															CupertinoSwitch(
+																value: settings.useFullWidthForCatalogCounters,
+																onChanged: (d) => settings.useFullWidthForCatalogCounters = d
+															)
+														]
+													),
+													Row(
+														children: [
 															const Text('Show image count'),
 															const Spacer(),
 															CupertinoSwitch(

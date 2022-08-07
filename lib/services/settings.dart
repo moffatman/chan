@@ -468,6 +468,8 @@ class SavedSettings extends HiveObject {
 	String darkThemeKey;
 	@HiveField(84)
 	List<String> hostsToOpenExternally;
+	@HiveField(85)
+	bool useFullWidthForCatalogCounters;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -554,6 +556,7 @@ class SavedSettings extends HiveObject {
 		String? lightThemeKey,
 		String? darkThemeKey,
 		List<String>? hostsToOpenExternally,
+		bool? useFullWidthForCatalogCounters,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -667,7 +670,8 @@ class SavedSettings extends HiveObject {
 		hostsToOpenExternally = hostsToOpenExternally ?? [
 			'youtube.com',
 			'youtu.be'
-		];
+		],
+		useFullWidthForCatalogCounters = useFullWidthForCatalogCounters ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1313,6 +1317,13 @@ class EffectiveSettings extends ChangeNotifier {
 
 	List<String> get hostsToOpenExternally => _settings.hostsToOpenExternally;
 	void didUpdateHostsToOpenExternally() {
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get useFullWidthForCatalogCounters => _settings.useFullWidthForCatalogCounters;
+	set useFullWidthForCatalogCounters(bool setting) {
+		_settings.useFullWidthForCatalogCounters = setting;
 		_settings.save();
 		notifyListeners();
 	}
