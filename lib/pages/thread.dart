@@ -324,18 +324,26 @@ class _ThreadPageState extends State<ThreadPage> {
 						resizeToAvoidBottomInset: false,
 						navigationBar: CupertinoNavigationBar(
 							transitionBetweenRoutes: false,
-							middle: Row(
-								mainAxisAlignment: MainAxisAlignment.center,
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									if (ImageboardRegistry.instance.count > 1) const Padding(
-										padding: EdgeInsets.only(right: 6),
-										child: ImageboardIcon()
-									),
-									Flexible(
-										child: AutoSizeText(title)
-									)
-								]
+							middle: Padding(
+								padding: const EdgeInsets.only(top: 8, bottom: 8),
+								child: Row(
+									mainAxisAlignment: MainAxisAlignment.center,
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										if (ImageboardRegistry.instance.count > 1) const Padding(
+											padding: EdgeInsets.only(right: 6),
+											child: ImageboardIcon()
+										),
+										Flexible(
+											child: AutoSizeText(
+												title,
+												minFontSize: 6,
+												maxLines: 4,
+												overflow: TextOverflow.ellipsis,
+											)
+										)
+									]
+								)
 							),
 							trailing: Row(
 								mainAxisSize: MainAxisSize.min,
