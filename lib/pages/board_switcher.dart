@@ -396,7 +396,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 														children: [
 															Flexible(
 																child: Center(
-																	child: Text(
+																	child: AutoSizeText(
 																		'/${board.name}/',
 																		style: const TextStyle(
 																			fontSize: 24
