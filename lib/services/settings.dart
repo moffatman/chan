@@ -470,6 +470,8 @@ class SavedSettings extends HiveObject {
 	List<String> hostsToOpenExternally;
 	@HiveField(85)
 	bool useFullWidthForCatalogCounters;
+	@HiveField(86)
+	bool alwaysStartVideosMuted; 
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -557,6 +559,7 @@ class SavedSettings extends HiveObject {
 		String? darkThemeKey,
 		List<String>? hostsToOpenExternally,
 		bool? useFullWidthForCatalogCounters,
+		bool? alwaysStartVideosMuted,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -671,7 +674,8 @@ class SavedSettings extends HiveObject {
 			'youtube.com',
 			'youtu.be'
 		],
-		useFullWidthForCatalogCounters = useFullWidthForCatalogCounters ?? false;
+		useFullWidthForCatalogCounters = useFullWidthForCatalogCounters ?? false,
+		alwaysStartVideosMuted = alwaysStartVideosMuted ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1324,6 +1328,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get useFullWidthForCatalogCounters => _settings.useFullWidthForCatalogCounters;
 	set useFullWidthForCatalogCounters(bool setting) {
 		_settings.useFullWidthForCatalogCounters = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get alwaysStartVideosMuted => _settings.alwaysStartVideosMuted;
+	set alwaysStartVideosMuted(bool setting) {
+		_settings.alwaysStartVideosMuted = setting;
 		_settings.save();
 		notifyListeners();
 	}

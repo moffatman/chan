@@ -265,7 +265,10 @@ class AttachmentViewerController extends ChangeNotifier {
 					if (_isDisposed) {
 						return;
 					}
-					if (settings.muteAudio.value) {
+					if (settings.muteAudio.value || settings.alwaysStartVideosMuted) {
+						if (!settings.muteAudio.value) {
+							settings.setMuteAudio(true);
+						}
 						await _videoPlayerController?.setVolume(0);
 						if (_isDisposed) {
 							return;
@@ -297,7 +300,10 @@ class AttachmentViewerController extends ChangeNotifier {
 					if (_isDisposed) {
 						return;
 					}
-					if (settings.muteAudio.value) {
+					if (settings.muteAudio.value || settings.alwaysStartVideosMuted) {
+						if (!settings.muteAudio.value) {
+							settings.setMuteAudio(true);
+						}
 						await _videoPlayerController?.setVolume(0);
 						if (_isDisposed) {
 							return;

@@ -435,6 +435,19 @@ class SettingsBehaviorPage extends StatelessWidget {
 					}
 				),
 				const SizedBox(height: 32),
+				const Text('Always start videos with sound muted'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('No'),
+						true: Text('Yes')
+					},
+					groupValue: settings.alwaysStartVideosMuted,
+					onValueChanged: (newValue) {
+						settings.alwaysStartVideosMuted = newValue;
+					}
+				),
+				const SizedBox(height: 32),
 				const Text('Hide old stickied threads'),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<bool>(
