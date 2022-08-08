@@ -110,7 +110,8 @@ class AttachmentThumbnail extends StatelessWidget {
 				child: ImageFiltered(
 					imageFilter: ImageFilter.blur(
 						sigmaX: 7.0,
-						sigmaY: 7.0
+						sigmaY: 7.0,
+						tileMode: TileMode.decal
 					),
 					child: child
 				)

@@ -1159,6 +1159,46 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		) ?? false);
 	}
 
+	void _runSettingsQuickAction() {
+		final settings = context.read<EffectiveSettings>();
+		switch (settings.settingsQuickAction) {
+			case SettingsQuickAction.toggleTheme:
+				settings.themeSetting = settings.whichTheme == Brightness.light ? TristateSystemSetting.b : TristateSystemSetting.a;
+				showToast(
+					context: context,
+					icon: CupertinoIcons.paintbrush,
+					message: settings.whichTheme == Brightness.light ? 'Switched to light theme' : 'Switched to dark theme'
+				);
+				break;
+			case SettingsQuickAction.toggleBlurredThumbnails:
+				settings.blurThumbnails = !settings.blurThumbnails;
+				showToast(
+					context: context,
+					icon: CupertinoIcons.paintbrush,
+					message: settings.blurThumbnails ? 'Blurred thumbnails enabled' : 'Blurred thumbnails disabled'
+				);
+				break;
+			case SettingsQuickAction.toggleCatalogLayout:
+				settings.useCatalogGrid = !settings.useCatalogGrid;
+				showToast(
+					context: context,
+					icon: CupertinoIcons.rectangle_stack,
+					message: settings.useCatalogGrid ? 'Switched to catalog grid' : 'Switched to catalog rows'
+				);
+				break;
+			case SettingsQuickAction.toggleInterfaceStyle:
+				settings.supportMouseSetting = settings.supportMouse.value ? TristateSystemSetting.a : TristateSystemSetting.b;
+				showToast(
+					context: context,
+					icon: settings.supportMouse.value ? Icons.mouse : CupertinoIcons.hand_draw,
+					message: settings.supportMouse.value ? 'Switched to mouse layout' : 'Switched to touch layout'
+				);
+				break;
+			case null:
+				break;
+		}
+	}
+
 	bool get isInTabletLayout => (MediaQuery.of(context).size.width - 85) > (MediaQuery.of(context).size.height - 50);
 
 	@override
@@ -1237,11 +1277,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 													),
 													_buildTabletIcon(2, Persistence.enableHistory ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History'),
 													_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
-													_buildTabletIcon(4, NotifyingIcon(
-															icon: const Icon(CupertinoIcons.settings),
-															primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? ValueNotifier(0),
-															secondaryCount: devImageboard?.threadWatcher.unseenCount ?? ValueNotifier(0),
-														), hideTabletLayoutLabels ? null : 'Settings'
+													GestureDetector(
+														onLongPress: _runSettingsQuickAction,
+														child: _buildTabletIcon(4, NotifyingIcon(
+																icon: const Icon(CupertinoIcons.settings),
+																primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? ValueNotifier(0),
+																secondaryCount: devImageboard?.threadWatcher.unseenCount ?? ValueNotifier(0),
+															), hideTabletLayoutLabels ? null : 'Settings'
+														)
 													)
 												]
 											)
@@ -1323,10 +1366,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									label: 'Search'
 								),
 								BottomNavigationBarItem(
-									icon: NotifyingIcon(
-										icon: const Icon(CupertinoIcons.settings, size: 28),
-										primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? ValueNotifier(0),
-										secondaryCount: devImageboard?.threadWatcher.unseenCount ?? ValueNotifier(0),
+									icon: GestureDetector(
+										onLongPress: _runSettingsQuickAction,
+										child: NotifyingIcon(
+											icon: const Icon(CupertinoIcons.settings, size: 28),
+											primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? ValueNotifier(0),
+											secondaryCount: devImageboard?.threadWatcher.unseenCount ?? ValueNotifier(0),
+										)
 									),
 									label: 'Settings'
 								)

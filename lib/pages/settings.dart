@@ -730,6 +730,46 @@ class SettingsBehaviorPage extends StatelessWidget {
 						settings.closeTabSwitcherAfterUse = newValue;
 					}
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Text('Settings icon action'),
+						Expanded(
+							child: Align(
+								alignment: Alignment.centerRight,
+								child: CupertinoButton.filled(
+									padding: const EdgeInsets.all(16),
+									onPressed: () async {
+										bool tapped = false;
+										final newAction = await showCupertinoDialog<SettingsQuickAction>(
+											context: context,
+											barrierDismissible: true,
+											builder: (context) => CupertinoAlertDialog(
+												title: const Text('Pick Settings icon long-press action'),
+												actions: [
+													...SettingsQuickAction.values,
+													null
+												].map((action) => CupertinoDialogAction(
+													isDefaultAction: action == settings.settingsQuickAction,
+													onPressed: () {
+														tapped = true;
+														Navigator.pop(context, action);
+													},
+													child: Text(action.name)
+												)).toList()
+											)
+										);
+										if (tapped) {
+											settings.settingsQuickAction = newAction;
+										}
+									},
+									child: AutoSizeText(settings.settingsQuickAction.name, maxLines: 1)
+								)
+							)
+						),
+						const SizedBox(width: 16)
+					]
+				),
 				const SizedBox(height: 32)
 			]
 		);

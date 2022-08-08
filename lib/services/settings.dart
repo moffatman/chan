@@ -304,6 +304,35 @@ extension PostDisplayFieldName on PostDisplayField {
 	}
 }
 
+@HiveType(typeId: 31)
+enum SettingsQuickAction {
+	@HiveField(0)
+	toggleTheme,
+	@HiveField(1)
+	toggleBlurredThumbnails,
+	@HiveField(2)
+	toggleCatalogLayout,
+	@HiveField(3)
+	toggleInterfaceStyle,
+}
+
+extension SettingsQuickActionName on SettingsQuickAction? {
+	String get name {
+		switch (this) {
+			case SettingsQuickAction.toggleTheme:
+				return 'Toggle theme';
+			case SettingsQuickAction.toggleBlurredThumbnails:
+				return 'Toggle blurred thumbnails';
+			case SettingsQuickAction.toggleCatalogLayout:
+				return 'Toggle catalog layout';
+			case SettingsQuickAction.toggleInterfaceStyle:
+				return 'Toggle interface style';
+			case null:
+				return 'None';
+		}
+	}
+}
+
 @HiveType(typeId: 0)
 class SavedSettings extends HiveObject {
 	@HiveField(0)
@@ -474,6 +503,8 @@ class SavedSettings extends HiveObject {
 	bool alwaysStartVideosMuted;
 	@HiveField(87)
 	bool allowSwipingInGallery;
+	@HiveField(88)
+	SettingsQuickAction? settingsQuickAction;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -563,6 +594,7 @@ class SavedSettings extends HiveObject {
 		bool? useFullWidthForCatalogCounters,
 		bool? alwaysStartVideosMuted,
 		bool? allowSwipingInGallery,
+		SettingsQuickAction? settingsQuickAction,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -679,7 +711,8 @@ class SavedSettings extends HiveObject {
 		],
 		useFullWidthForCatalogCounters = useFullWidthForCatalogCounters ?? false,
 		alwaysStartVideosMuted = alwaysStartVideosMuted ?? false,
-		allowSwipingInGallery = allowSwipingInGallery ?? true;
+		allowSwipingInGallery = allowSwipingInGallery ?? true,
+		settingsQuickAction = settingsQuickAction ?? SettingsQuickAction.toggleTheme;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1346,6 +1379,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get allowSwipingInGallery => _settings.allowSwipingInGallery;
 	set allowSwipingInGallery(bool setting) {
 		_settings.allowSwipingInGallery = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	SettingsQuickAction? get settingsQuickAction => _settings.settingsQuickAction;
+	set settingsQuickAction(SettingsQuickAction? setting) {
+		_settings.settingsQuickAction = setting;
 		_settings.save();
 		notifyListeners();
 	}
