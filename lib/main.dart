@@ -1199,6 +1199,16 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
+	void _toggleHistory() {
+		Persistence.enableHistory = !Persistence.enableHistory;
+		Persistence.didChangeBrowserHistoryStatus();
+		showToast(
+			context: context,
+			message: Persistence.enableHistory ? 'History resumed' : 'History stopped',
+			icon: Persistence.enableHistory ? CupertinoIcons.play : CupertinoIcons.stop
+		);
+	}
+
 	bool get isInTabletLayout => (MediaQuery.of(context).size.width - 85) > (MediaQuery.of(context).size.height - 50);
 
 	@override
@@ -1275,7 +1285,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 															)
 														), hideTabletLayoutLabels ? null : 'Saved',
 													),
-													_buildTabletIcon(2, Persistence.enableHistory ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History'),
+													GestureDetector(
+														onLongPress: _toggleHistory,
+														child: _buildTabletIcon(2, Persistence.enableHistory ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History')
+													),
 													_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
 													GestureDetector(
 														onLongPress: _runSettingsQuickAction,
@@ -1358,7 +1371,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									label: 'Saved'
 								),
 								BottomNavigationBarItem(
-									icon: Persistence.enableHistory ? const Icon(CupertinoIcons.archivebox, size: 28) : const Icon(CupertinoIcons.eye_slash, size: 28),
+									icon: GestureDetector(
+										onLongPress: _toggleHistory,
+										child: Persistence.enableHistory ? const Icon(CupertinoIcons.archivebox, size: 28) : const Icon(CupertinoIcons.eye_slash, size: 28)
+									),
 									label: 'History'
 								),
 								const BottomNavigationBarItem(
