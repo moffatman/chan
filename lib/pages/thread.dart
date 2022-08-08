@@ -8,6 +8,7 @@ import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/posts.dart';
 import 'package:chan/pages/thread_attachments.dart';
 import 'package:chan/pages/thread_watch_controls.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
@@ -80,6 +81,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	int lastReceiptsLength = 0;
 	int lastTreeHiddenIdsLength = 0;
 	int lastHiddenPosterIdsLength = 0;
+	bool _foreground = false;
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -173,11 +175,15 @@ class _ThreadPageState extends State<ThreadPage> {
 		final notifications = context.read<Notifications>();
 		final threadWatch = notifications.getThreadWatch(widget.thread);
 		if (threadWatch != null && persistentState.thread != null) {
-			final masterDetailHint = context.read<MasterDetailHint?>();
-			final foreground = masterDetailHint == null // Dev board in settings
-													|| masterDetailHint.primaryInterceptorKey.currentState?.primaryScrollControllerTracker.value != null;
-			notifications.updateLastKnownId(threadWatch, persistentState.thread!.posts.last.id, foreground: foreground);
+			_checkForeground();
+			notifications.updateLastKnownId(threadWatch, persistentState.thread!.posts.last.id, foreground: _foreground);
 		}
+	}
+
+	void _checkForeground() {
+		final masterDetailHint = context.read<MasterDetailHint?>();
+		_foreground = masterDetailHint == null // Dev board in settings
+				 	|| masterDetailHint.primaryInterceptorKey.currentState?.primaryScrollControllerTracker.value != null;
 	}
 
 	@override
@@ -244,6 +250,13 @@ class _ThreadPageState extends State<ThreadPage> {
 		else if (widget.initialPostId != old.initialPostId && widget.initialPostId != null) {
 			_listController.animateTo((post) => post.id == widget.initialPostId!, orElseLast: (post) => post.id <= widget.initialPostId!, alignment: 0.0, duration: const Duration(milliseconds: 500));
 		}
+	}
+
+	@override
+	void didChangeDependencies() {
+		super.didChangeDependencies();
+		_checkForeground();
+		setHandoffUrl(_foreground ? context.read<ImageboardSite>().getWebUrl(widget.thread.board, widget.thread.id) : null);
 	}
 
 	void _showGallery({bool initiallyShowChrome = false, Attachment? initialAttachment}) {
@@ -509,10 +522,8 @@ class _ThreadPageState extends State<ThreadPage> {
 																			final bool firstLoad = tmpPersistentState.thread == null;
 																			bool shouldScroll = false;
 																			if (watch != null && newThread.identifier == widget.thread && mounted) {
-																				final masterDetailHint = context.read<MasterDetailHint?>();
-																				final foreground = masterDetailHint == null // Dev board in settings
-																													 || masterDetailHint.primaryInterceptorKey.currentState?.primaryScrollControllerTracker.value != null;
-																				notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: foreground);
+																				_checkForeground();
+																				notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: _foreground);
 																			}
 																			if (newThread != tmpPersistentState.thread) {
 																				tmpPersistentState.thread = newThread;
@@ -664,6 +675,9 @@ class _ThreadPageState extends State<ThreadPage> {
 		_listController.dispose();
 		if (_saveQueued) {
 			persistentState.save();
+		}
+		if (_foreground) {
+			setHandoffUrl(null);
 		}
 	}
 }

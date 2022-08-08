@@ -10,6 +10,7 @@ import Foundation
   ) -> Bool {
     let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
     let statusBarChannel = FlutterMethodChannel(name: "com.moffatman.chan/statusBar", binaryMessenger: controller.binaryMessenger)
+    var currentActivity: NSUserActivity?
     statusBarChannel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "showStatusBar") {
@@ -54,6 +55,22 @@ import Foundation
           result(false)
         }
         #endif
+      }
+      else if (call.method == "setHandoffUrl") {
+        if let args = call.arguments as? Dictionary<String, Any> {
+          let newUrl = URL.init(string: ((args["url"] as? String?) ?? nil) ?? "")
+          if newUrl == nil {
+            currentActivity?.resignCurrent()
+            currentActivity = nil
+          }
+          else if currentActivity?.webpageURL != newUrl  {
+            currentActivity?.resignCurrent()
+            currentActivity = NSUserActivity(activityType:"com.moffatman.chan.thread")
+            currentActivity!.webpageURL = newUrl
+            currentActivity!.becomeCurrent()
+          }
+        }
+        result(nil)
       }
       else {
         result(FlutterMethodNotImplemented)
