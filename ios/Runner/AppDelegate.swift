@@ -4,6 +4,7 @@ import Foundation
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
+  var appleChannel: FlutterMethodChannel?
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -25,8 +26,8 @@ import Foundation
         result(FlutterMethodNotImplemented)
       }
     })
-    let isOnMacChannel = FlutterMethodChannel(name: "com.moffatman.chan/apple", binaryMessenger: controller.binaryMessenger)
-    isOnMacChannel.setMethodCallHandler({
+    appleChannel = FlutterMethodChannel(name: "com.moffatman.chan/apple", binaryMessenger: controller.binaryMessenger)
+    appleChannel!.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if (call.method == "isOnMac") {
         #if targetEnvironment(macCatalyst)
@@ -140,5 +141,23 @@ import Foundation
     })
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+  
+  override func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+    if let fvc = application.keyWindow?.rootViewController as? FlutterViewController {
+      restorationHandler([fvc])
+      if userActivity.activityType == "com.moffatman.chan.thread" {
+        appleChannel?.invokeMethod("receivedHandoffUrl", arguments: [
+          "url": userActivity.webpageURL?.absoluteString
+        ])
+      }
+      else {
+        NSLog("Unknown activity type: \(userActivity.activityType)")
+      }
+      return true
+    }
+    else {
+      return false
+    }
   }
 }

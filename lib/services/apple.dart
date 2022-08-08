@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:chan/main.dart';
 import 'package:flutter/services.dart';
 
 const _platform = MethodChannel('com.moffatman.chan/apple');
@@ -33,10 +35,23 @@ Future<void> initializeIsDevelopmentBuild() async {
 	}
 }
 
+Future<void> initializeHandoff() async {
+	if (!Platform.isIOS) {
+		return;
+	}
+	_platform.setMethodCallHandler((call) async {
+		if (call.method == 'receivedHandoffUrl') {
+			final url = call.arguments['url'];
+			if (url is String) {
+				fakeLinkStream.add(url);
+			}
+		}
+	});
+}
+
 Timer? _nullUrlTimer;
 
 Future<void> setHandoffUrl(String? url) async {
-	print('setHandoffUrl $url');
 	try {
 		if (url != null) {
 			_nullUrlTimer?.cancel();
@@ -45,10 +60,8 @@ Future<void> setHandoffUrl(String? url) async {
 				'url': url
 			});
 		}
-		else if (_nullUrlTimer == null) {
-			print('arming null url timer');
-			_nullUrlTimer = Timer(const Duration(seconds: 1), () {
-				print('firing null url timer');
+		else {
+			_nullUrlTimer ??= Timer(const Duration(seconds: 1), () {
 				_platform.invokeMethod('setHandoffUrl');
 				_nullUrlTimer = null;
 			});

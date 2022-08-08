@@ -17,6 +17,7 @@ import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -36,6 +37,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:native_drag_n_drop/native_drag_n_drop.dart';
+import 'package:rxdart/subjects.dart';
 import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:chan/pages/tab.dart';
@@ -44,6 +46,7 @@ import 'package:chan/widgets/sticky_media_query.dart';
 import 'package:uni_links/uni_links.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
+final fakeLinkStream = PublishSubject<String?>();
 bool _initialConsume = false;
 
 void main() async {
@@ -51,6 +54,7 @@ void main() async {
 		WidgetsFlutterBinding.ensureInitialized();
 		await initializeIsDevelopmentBuild();
 		await initializeIsOnMac();
+		await initializeHandoff();
 		final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
 		imageHttpClient.connectionTimeout = const Duration(seconds: 10);
 		imageHttpClient.idleTimeout = const Duration(seconds: 10);
@@ -281,6 +285,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
 	final Map<String, Tuple2<Notifications, StreamSubscription<ThreadOrPostIdentifier>>> _notificationsSubscriptions = {};
 	late StreamSubscription<String?> _linkSubscription;
+	late StreamSubscription<String?> _fakeLinkSubscription;
 	late StreamSubscription<List<SharedMediaFile>> _sharedFilesSubscription;
 	late StreamSubscription<String> _sharedTextSubscription;
 	final _searchPageKey = GlobalKey<SearchPageState>();
@@ -349,9 +354,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		});
 	}
 
-	Future<void> _onNewLink(String? link) async {
+	Future<void> _consumeLink(String? link) async {
 		final settings = context.read<EffectiveSettings>();
-		if (link != null && link.startsWith('chance:')) {
+		if (link == null) {
+			return;
+		}
+		if (link.startsWith('chance:')) {
 			final uri = Uri.parse(link);
 			if (uri.host == 'theme') {
 				try {
@@ -493,7 +501,44 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			}
 		}
 		else {
-			_consumeLink(link);
+			for (final imageboard in ImageboardRegistry.instance.imageboards) {
+				final dest = imageboard.site.decodeUrl(link);
+				if (dest != null) {
+					_onNotificationTapped(imageboard, dest);
+					return;
+				}
+			}
+			final dest = devImageboard?.site.decodeUrl(link);
+			if (dest != null) {
+				_onDevNotificationTapped(dest);
+				return;
+			}
+			final open = await showCupertinoDialog<bool>(
+				context: context,
+				barrierDismissible: true,
+				builder: (context) => CupertinoAlertDialog(
+					title: const Text('Unrecognized link'),
+					content: Text('No site supports opening "$link"'),
+					actions: [
+						CupertinoDialogAction(
+							onPressed: () => Navigator.pop(context, true),
+							child: const Text('Open in browser')
+						),
+						CupertinoDialogAction(
+							onPressed: () => Navigator.pop(context, false),
+							child: const Text('Close')
+						)
+					]
+				)
+			);
+			if (open == true) {
+				await shareOne(
+					context: context,
+					type: 'text',
+					text: link,
+					sharePositionOrigin: null
+				);
+			}
 		}
 	}
 
@@ -549,18 +594,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
-	void _consumeLink(String? link) {
-		for (final imageboard in ImageboardRegistry.instance.imageboards) {
-			if (link != null) {
-				final dest = imageboard.site.decodeUrl(link);
-				if (dest != null) {
-					_onNotificationTapped(imageboard, dest);
-					return;
-				}
-			}
-		}
-	}
-
 	void _consumeFiles(List<String> paths) {
 		if (paths.isNotEmpty) {
 			showToast(
@@ -594,11 +627,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		Persistence.tabsListenable.addListener(_tabsListener);
 		_setupDevSite();
 		if (!_initialConsume) {
-			getInitialLink().then(_onNewLink);
+			getInitialLink().then(_consumeLink);
 			ReceiveSharingIntent.getInitialText().then(_consumeLink);
 			ReceiveSharingIntent.getInitialMedia().then((f) => _consumeFiles(f.map((x) => x.path).toList()));
 		}
-		_linkSubscription = linkStream.listen(_onNewLink);
+		_linkSubscription = linkStream.listen(_consumeLink);
+		_fakeLinkSubscription = fakeLinkStream.listen(_consumeLink);
 		_sharedFilesSubscription = ReceiveSharingIntent.getMediaStream().listen((f) => _consumeFiles(f.map((x) => x.path).toList()));
 		_sharedTextSubscription = ReceiveSharingIntent.getTextStream().listen(_consumeLink);
 		_initialConsume = true;
@@ -1494,6 +1528,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		Persistence.browserHistoryStatusListenable.removeListener(_browserHistoryStatusListener);
 		Persistence.tabsListenable.removeListener(_tabsListener);
 		_linkSubscription.cancel();
+		_fakeLinkSubscription.cancel();
 		_sharedFilesSubscription.cancel();
 		_sharedTextSubscription.cancel();
 	}
