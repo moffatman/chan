@@ -23,6 +23,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/notifications_overlay.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/saved_theme_thumbnail.dart';
@@ -830,13 +831,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								Provider.value(value: devImageboard!.notifications)
 							],
 							child: ClipRect(
-								child: Navigator(
-									key: _settingsNavigatorKey,
-									initialRoute: '/',
-									onGenerateRoute: (settings) => FullWidthCupertinoPageRoute(
-										builder: (_) => const SettingsPage(),
-										showAnimations: context.read<EffectiveSettings>().showAnimations
-									)
+								child: PrimaryScrollControllerInjectingNavigator(
+									navigatorKey: _settingsNavigatorKey,
+									observers: [HeroController()],
+									buildRoot: (context) => const SettingsPage()
 								)
 							)
 						)
