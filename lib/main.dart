@@ -354,79 +354,84 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		if (link != null && link.startsWith('chance:')) {
 			final uri = Uri.parse(link);
 			if (uri.host == 'theme') {
-				final name = uri.queryParameters['name']!;
-				final theme = SavedTheme.decode(uri.queryParameters['data']!);
-				final match = settings.themes.entries.tryFirstWhere((e) => e.value == theme);
-				await showCupertinoDialog(
-					context: context,
-					barrierDismissible: true,
-					builder: (dialogContext) => CupertinoAlertDialog(
-						title: Text('Import $name?'),
-						content: DefaultTextStyle(
-							style: DefaultTextStyle.of(context).style,
-							child: Column(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									const SizedBox(height: 16),
-									ClipRRect(
-										borderRadius: BorderRadius.circular(8),
-										child: SizedBox(
-											height: 150,
-											child: SavedThemeThumbnail(
-												theme: theme
+				try {
+					final name = uri.queryParameters['name']!;
+					final theme = SavedTheme.decode(uri.queryParameters['data']!);
+					final match = settings.themes.entries.tryFirstWhere((e) => e.value == theme);
+					await showCupertinoDialog(
+						context: context,
+						barrierDismissible: true,
+						builder: (dialogContext) => CupertinoAlertDialog(
+							title: Text('Import $name?'),
+							content: DefaultTextStyle(
+								style: DefaultTextStyle.of(context).style,
+								child: Column(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										const SizedBox(height: 16),
+										ClipRRect(
+											borderRadius: BorderRadius.circular(8),
+											child: SizedBox(
+												height: 150,
+												child: SavedThemeThumbnail(
+													theme: theme
+												)
 											)
-										)
-									),
-									const SizedBox(height: 16),
-									if (match?.key == name) const Text('This theme has already been added.')
-									else if (match != null) Text('This theme has already been added as ${match.key}.')
-								]
-							)
-						),
-						actions: [
-							CupertinoDialogAction(
-								isDefaultAction: settings.whichTheme == Brightness.light,
-								onPressed: settings.lightTheme == theme ? null : () {
-									String effectiveName = name;
-									if (match == null) {
-										effectiveName = settings.addTheme(name, theme);
+										),
+										const SizedBox(height: 16),
+										if (match?.key == name) const Text('This theme has already been added.')
+										else if (match != null) Text('This theme has already been added as ${match.key}.')
+									]
+								)
+							),
+							actions: [
+								CupertinoDialogAction(
+									isDefaultAction: settings.whichTheme == Brightness.light,
+									onPressed: settings.lightTheme == theme ? null : () {
+										String effectiveName = name;
+										if (match == null) {
+											effectiveName = settings.addTheme(name, theme);
+										}
+										settings.lightThemeKey = match?.key ?? effectiveName;
+										settings.handleThemesAltered();
+										Navigator.of(dialogContext).pop();
+									},
+									child: const Text('Use as light theme')
+								),
+								CupertinoDialogAction(
+									isDefaultAction: settings.whichTheme == Brightness.dark,
+									onPressed: settings.darkTheme == theme ? null : () {
+										String effectiveName = name;
+										if (match == null) {
+											effectiveName = settings.addTheme(name, theme);
+										}
+										settings.darkThemeKey = match?.key ?? effectiveName;
+										settings.handleThemesAltered();
+										Navigator.of(dialogContext).pop();
+									},
+									child: const Text('Use as dark theme')
+								),
+								CupertinoDialogAction(
+									onPressed: match != null ? null : () {
+										settings.addTheme(name, theme);
+										settings.handleThemesAltered();
+										Navigator.of(dialogContext).pop();
+									},
+									child: const Text('Just import')
+								),
+								CupertinoDialogAction(
+									child: const Text('Cancel'),
+									onPressed: () {
+										Navigator.of(dialogContext).pop();
 									}
-									settings.lightThemeKey = match?.key ?? effectiveName;
-									settings.handleThemesAltered();
-									Navigator.of(dialogContext).pop();
-								},
-								child: const Text('Use as light theme')
-							),
-							CupertinoDialogAction(
-								isDefaultAction: settings.whichTheme == Brightness.dark,
-								onPressed: settings.darkTheme == theme ? null : () {
-									String effectiveName = name;
-									if (match == null) {
-										effectiveName = settings.addTheme(name, theme);
-									}
-									settings.darkThemeKey = match?.key ?? effectiveName;
-									settings.handleThemesAltered();
-									Navigator.of(dialogContext).pop();
-								},
-								child: const Text('Use as dark theme')
-							),
-							CupertinoDialogAction(
-								onPressed: match != null ? null : () {
-									settings.addTheme(name, theme);
-									settings.handleThemesAltered();
-									Navigator.of(dialogContext).pop();
-								},
-								child: const Text('Just import')
-							),
-							CupertinoDialogAction(
-								child: const Text('Cancel'),
-								onPressed: () {
-									Navigator.of(dialogContext).pop();
-								}
-							),
-						]
-					)
-				);
+								),
+							]
+						)
+					);
+				}
+				catch (e) {
+					alertError(context, 'Error adding theme: $e');
+				}
 			}
 			else if (uri.pathSegments[0] == 'thread') {
 				_addNewTab(
