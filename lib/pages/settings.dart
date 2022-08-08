@@ -9,6 +9,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
 import 'package:chan/pages/licenses.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
@@ -64,7 +65,7 @@ class _SettingsPageState extends State<_SettingsPage> {
 				child: MaybeCupertinoScrollbar(
 					child: SingleChildScrollView(
 						key: scrollKey,
-						physics: const BouncingScrollPhysics(),
+						physics: isOnMac ? const BouncingScrollPhysics(decelerationRate: ScrollDecelerationRate.fast) : const BouncingScrollPhysics(),
 						child: Align(
 							alignment: Alignment.center,
 							child: ConstrainedBox(
