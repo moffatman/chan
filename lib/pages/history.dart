@@ -12,6 +12,8 @@ import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+final _appLaunchTime = DateTime.now();
+
 class HistoryPage extends StatefulWidget {
 	final bool isActive;
 	final void Function(String, ThreadIdentifier)? onWantOpenThreadInNewTab;
@@ -106,22 +108,121 @@ class _HistoryPageState extends State<HistoryPage> {
 					navigationBar: CupertinoNavigationBar(
 						transitionBetweenRoutes: false,
 						middle: const Text('History'),
-						trailing: AnimatedBuilder(
-							animation: Persistence.browserHistoryStatusListenable,
-							builder: (context, _) => CupertinoButton(
-								padding: EdgeInsets.zero,
-								child: Icon(Persistence.enableHistory ? CupertinoIcons.stop : CupertinoIcons.play),
-								onPressed: () {
-									Persistence.enableHistory = !Persistence.enableHistory;
-									Persistence.didChangeBrowserHistoryStatus();
-									threadSetter(selectedThread);
-									showToast(
-										context: context,
-										message: Persistence.enableHistory ? 'History resumed' : 'History stopped',
-										icon: Persistence.enableHistory ? CupertinoIcons.play : CupertinoIcons.stop
-									);
-								}
-							)
+						trailing: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								CupertinoButton(
+									padding: EdgeInsets.zero,
+									onPressed: () async {
+										bool includeThreadsYouRepliedTo = false;
+										await showCupertinoDialog(
+											context: context,
+											barrierDismissible: true,
+											builder: (context) => StatefulBuilder(
+												builder: (context, setDialogState) {
+													final states = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.threadStateBox.toMap().values.map((s) => ImageboardScoped(
+														imageboard: i,
+														item: s
+													))).where((i) => i.item.savedTime == null && i.item.thread != null && (includeThreadsYouRepliedTo || i.item.youIds.isEmpty)).toList();
+													final thisSessionStates = states.where((s) => s.item.lastOpenedTime.compareTo(_appLaunchTime) >= 0).toList();
+													final now = DateTime.now();
+													final lastDayStates = states.where((s) => now.difference(s.item.lastOpenedTime).inDays < 1);
+													final lastWeekStates = states.where((s) => now.difference(s.item.lastOpenedTime).inDays < 7);
+													return CupertinoAlertDialog(
+														title: const Text('Clear history'),
+														content: Column(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																const Text('Saved threads will not be deleted'),
+																const SizedBox(height: 16),
+																Row(
+																	children: [
+																		const Expanded(
+																			child: Text('Include threads with your posts')
+																		),
+																		CupertinoSwitch(
+																			value: includeThreadsYouRepliedTo,
+																			onChanged: (v) {
+																				setDialogState(() {
+																					includeThreadsYouRepliedTo = v;
+																				});
+																			}
+																		)
+																	]
+																)
+															]
+														),
+														actions: [
+															CupertinoDialogAction(
+																onPressed: () async {
+																	Navigator.pop(context);
+																	for (final state in thisSessionStates) {
+																		await state.item.delete();
+																	}
+																},
+																isDestructiveAction: true,
+																child: Text('This session (${thisSessionStates.length})')
+															),
+															CupertinoDialogAction(
+																onPressed: () async {
+																	Navigator.pop(context);
+																	for (final state in lastDayStates) {
+																		await state.item.delete();
+																	}
+																},
+																isDestructiveAction: true,
+																child: Text('Today (${lastDayStates.length})')
+															),
+															CupertinoDialogAction(
+																onPressed: () async {
+																	Navigator.pop(context);
+																	for (final state in lastWeekStates) {
+																		await state.item.delete();
+																	}
+																},
+																isDestructiveAction: true,
+																child: Text('This week (${lastWeekStates.length})')
+															),
+															CupertinoDialogAction(
+																onPressed: () async {
+																	Navigator.pop(context);
+																	for (final state in states) {
+																		await state.item.delete();
+																	}
+																},
+																isDestructiveAction: true,
+																child: Text('All time (${states.length})')
+															),
+															CupertinoDialogAction(
+																onPressed: () => Navigator.pop(context),
+																child: const Text('Cancel')
+															)
+														]
+													);
+												}
+											)
+										);
+									},
+									child: const Icon(CupertinoIcons.delete)
+								),
+								AnimatedBuilder(
+									animation: Persistence.browserHistoryStatusListenable,
+									builder: (context, _) => CupertinoButton(
+										padding: EdgeInsets.zero,
+										child: Icon(Persistence.enableHistory ? CupertinoIcons.stop : CupertinoIcons.play),
+										onPressed: () {
+											Persistence.enableHistory = !Persistence.enableHistory;
+											Persistence.didChangeBrowserHistoryStatus();
+											threadSetter(selectedThread);
+											showToast(
+												context: context,
+												message: Persistence.enableHistory ? 'History resumed' : 'History stopped',
+												icon: Persistence.enableHistory ? CupertinoIcons.play : CupertinoIcons.stop
+											);
+										}
+									)
+								)
+							]
 						)
 					),
 					child: widget.isActive ? AnimatedBuilder(
