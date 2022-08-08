@@ -225,10 +225,9 @@ class SettingsPage extends StatelessWidget {
 					)
 				),
 				const SizedBox(height: 16),
-				Center(
-					child: Wrap(
-						spacing: 16,
-						runSpacing: 16,
+				FittedBox(
+					fit: BoxFit.scaleDown,
+					child: Row(
 						children: [
 							CupertinoButton.filled(
 								padding: const EdgeInsets.all(8),
@@ -243,57 +242,61 @@ class SettingsPage extends StatelessWidget {
 									settings.updateContentSettings();
 								}
 							),
-							if (settings.contentSettings.sites.length > 1) CupertinoButton.filled(
-								padding: const EdgeInsets.all(8),
-								child: Row(
-									mainAxisSize: MainAxisSize.min,
-									children: const [
-										Text('Remove site '),
-										Icon(CupertinoIcons.delete, size: 16)
-									]
-								),
-								onPressed: () async {
-									try {
-										final imageboards = {
-											for (final i in ImageboardRegistry.instance.imageboards) i.key: i.site.name
-										};
-										final toDelete = await showCupertinoDialog<String>(
-											context: context,
-											barrierDismissible: true,
-											builder: (context) => CupertinoAlertDialog(
-												title: const Text('Which site?'),
-												actions: [
-													for (final i in imageboards.entries) CupertinoDialogAction(
-														isDestructiveAction: true,
-														onPressed: () {
-															Navigator.of(context).pop(i.key);
-														},
-														child: Text(i.value)
-													),
-													CupertinoDialogAction(
-														isDefaultAction: true,
-														child: const Text('Cancel'),
-														onPressed: () {
-															Navigator.of(context).pop();
-														},
-													)
-												]
-											)
-										);
-										if (toDelete != null) {
-											ImageboardRegistry.instance.getImageboard(toDelete)?.deleteAllData();
-											final response = await Dio().delete('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$toDelete');
-											if (response.data['error'] != null) {
-												throw Exception(response.data['error']);
+							if (settings.contentSettings.sites.length > 1) ...[
+								const SizedBox(width: 16),
+								CupertinoButton.filled(
+									padding: const EdgeInsets.all(8),
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: const [
+											Text('Remove site '),
+											Icon(CupertinoIcons.delete, size: 16)
+										]
+									),
+									onPressed: () async {
+										try {
+											final imageboards = {
+												for (final i in ImageboardRegistry.instance.imageboards) i.key: i.site.name
+											};
+											final toDelete = await showCupertinoDialog<String>(
+												context: context,
+												barrierDismissible: true,
+												builder: (context) => CupertinoAlertDialog(
+													title: const Text('Which site?'),
+													actions: [
+														for (final i in imageboards.entries) CupertinoDialogAction(
+															isDestructiveAction: true,
+															onPressed: () {
+																Navigator.of(context).pop(i.key);
+															},
+															child: Text(i.value)
+														),
+														CupertinoDialogAction(
+															isDefaultAction: true,
+															child: const Text('Cancel'),
+															onPressed: () {
+																Navigator.of(context).pop();
+															},
+														)
+													]
+												)
+											);
+											if (toDelete != null) {
+												ImageboardRegistry.instance.getImageboard(toDelete)?.deleteAllData();
+												final response = await Dio().delete('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$toDelete');
+												if (response.data['error'] != null) {
+													throw Exception(response.data['error']);
+												}
+												await settings.updateContentSettings();
 											}
-											await settings.updateContentSettings();
+										}
+										catch (e) {
+											alertError(context, e.toStringDio());
 										}
 									}
-									catch (e) {
-										alertError(context, e.toStringDio());
-									}
-								}
-							),
+								)
+							],
+							const SizedBox(width: 16),
 							CupertinoButton.filled(
 								padding: const EdgeInsets.all(8),
 								child: Row(
