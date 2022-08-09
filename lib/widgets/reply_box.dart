@@ -1211,6 +1211,7 @@ class ReplyBoxState extends State<ReplyBox> {
 							}
 						}
 						catch (e) {
+							if (!mounted) return;
 							alertError(context, e.toStringDio());
 						}
 					}
