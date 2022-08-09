@@ -27,6 +27,8 @@ class SiteLainchan extends ImageboardSite {
 
 	final _unescape = HtmlUnescape();
 
+	bool _adminEnabled = false;
+
 	SiteLainchan({
 		required this.baseUrl,
 		required this.name,
@@ -257,7 +259,8 @@ class SiteLainchan extends ImageboardSite {
 	}) async {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
 		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
-		final page = await client.get(getWebUrl(board, threadId));
+		final referer = _getWebUrl(board, threadId: threadId, mod: _adminEnabled);
+		final page = await client.get(referer, options: Options(validateStatus: (x) => true));
 		final Map<String, dynamic> fields = {
 			for (final field in parse(page.data).querySelector('form[name="post"]')!.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea'))
 				field.attributes['name']!: field.attributes['value'] ?? field.text
@@ -293,7 +296,7 @@ class SiteLainchan extends ImageboardSite {
 				responseType: ResponseType.plain,
 				validateStatus: (x) => true,
 				headers: {
-					'Referer': getWebUrl(board, threadId)
+					'Referer': referer
 				}
 			)
 		);
@@ -424,9 +427,8 @@ class SiteLainchan extends ImageboardSite {
 		throw UnimplementedError();
 	}
 
-	@override
-	String getWebUrl(String board, [int? threadId, int? postId]) {
-		String threadUrl = Uri.https(baseUrl, '/$board/').toString();
+	String _getWebUrl(String board, {int? threadId, int? postId, bool mod = false}) {
+		String threadUrl = 'https://$baseUrl/${mod ? 'mod.php?/' : ''}$board/';
 		if (threadId != null) {
 			threadUrl += 'res/$threadId.html';
 			if (postId != null) {
@@ -437,6 +439,11 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
+	String getWebUrl(String board, [int? threadId, int? postId]) {
+		return _getWebUrl(board, threadId: threadId, postId: postId);
+	}
+
+	@override
 	String get imageUrl => baseUrl;
 
 	@override
@@ -444,22 +451,50 @@ class SiteLainchan extends ImageboardSite {
 
   @override
   List<ImageboardSiteLoginField> getLoginFields() {
-    return [];
+    return const [
+			ImageboardSiteLoginField(
+				displayName: 'Username',
+				formKey: 'username'
+			),
+			ImageboardSiteLoginField(
+				displayName: 'Password',
+				formKey: 'password'
+			)
+		];
   }
 
   @override
   Future<void> clearLoginCookies() async {
-		
+		await Persistence.cookies.delete(Uri.https(baseUrl, '/'), true);
+		await Persistence.cookies.delete(Uri.https(baseUrl, '/mod.php'), true);
+		_adminEnabled = false;
   }
 
   @override
-  Future<void> login(Map<ImageboardSiteLoginField, String> fields) {
-    throw UnimplementedError();
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
+    final response = await client.post(
+			'https://$baseUrl/mod.php?/',
+			data: {
+				for (final field in fields.entries) field.key.formKey: field.value,
+				'login': 'Continue'
+			},
+			options: Options(
+				contentType: Headers.formUrlEncodedContentType,
+				followRedirects: false,
+				validateStatus: (x) => true
+			),
+		);
+		final document = parse(response.data);
+		if (document.querySelector('h2') != null) {
+			await clearLoginCookies();
+			throw ImageboardSiteLoginException(document.querySelector('h2')!.text);
+		}
+		_adminEnabled = true;
   }
 
   @override
   String? getLoginSystemName() {
-    return null;
+    return 'Administrator';
   }
 	
 	@override

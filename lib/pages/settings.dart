@@ -119,11 +119,25 @@ class SettingsPage extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		final site = context.watch<ImageboardSite>();
 		final settings = context.watch<EffectiveSettings>();
 		return _SettingsPage(
 			title: 'Settings',
 			children: [
-				const Text('Development News'),
+				GestureDetector(
+					onDoubleTap: () {
+						showCupertinoDialog(
+							context: context,
+							barrierDismissible: true,
+							builder: (context) => CupertinoAlertDialog(
+								content: SettingsLoginPanel(
+									site: site
+								)
+							)
+						);
+					},
+					child: const Text('Development News')
+				),
 				AnimatedSize(
 					duration: const Duration(milliseconds: 250),
 					curve: Curves.ease,

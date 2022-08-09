@@ -262,7 +262,7 @@ class PostRow extends StatelessWidget {
 																	)
 																	else if (settings.showNameOnPosts || isYourPost) const TextSpan(text: ' '),
 																	if (latestPost.capcode != null) TextSpan(
-																		text: '## ${latestPost.capcode} ## ',
+																		text: '## ${latestPost.capcode} ',
 																		style: TextStyle(fontWeight: FontWeight.w600, color: settings.theme.quoteColor.shiftHue(200).shiftSaturation(-0.3))
 																	)
 																]
