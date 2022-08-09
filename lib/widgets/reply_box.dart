@@ -297,6 +297,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	double _panStartDy = 0;
 	double _replyBoxHeightOffsetAtPanStart = 0;
 	bool _willHideOnPanEnd = false;
+	final _rootFocusNode = FocusNode();
 
 	bool get _haveValidCaptcha {
 		if (_captchaSolution == null) {
@@ -443,7 +444,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_show = false;
 		});
 		widget.onVisibilityChanged?.call();
-		_textFocusNode.unfocus();
+		_rootFocusNode.unfocus();
 	}
 
 	void toggleReplyBox() {
@@ -890,7 +891,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			attachment = null;
 			if (mounted) setState(() {});
 			print(receipt);
-			_textFocusNode.unfocus();
+			_rootFocusNode.unfocus();
 			final threadState = persistence.getThreadState((widget.threadId != null) ?
 				ThreadIdentifier(widget.board, widget.threadId!) :
 				ThreadIdentifier(widget.board, receipt.id));
@@ -1472,7 +1473,7 @@ class ReplyBoxState extends State<ReplyBox> {
 												}
 												if (_haveValidCaptcha) {
 													_autoPostTimer = Timer(timeout.difference(DateTime.now()), _submit);
-													_textFocusNode.unfocus();
+													_rootFocusNode.unfocus();
 												}
 											}
 											else {
@@ -1503,156 +1504,159 @@ class ReplyBoxState extends State<ReplyBox> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		return Column(
-			mainAxisSize: MainAxisSize.min,
-			children: [
-				Expander(
-					expanded: showAttachmentOptions && show,
-					bottomSafe: true,
-					height: 100,
-					child: Focus(
-						descendantsAreFocusable: showAttachmentOptions && show,
-						child: _buildAttachmentOptions(context)
-					)
-				),
-				Expander(
-					expanded: showOptions && show,
-					bottomSafe: true,
-					height: 55,
-					child: Focus(
-						descendantsAreFocusable: showOptions && show,
-						child: _buildOptions(context)
-					)
-				),
-				Expander(
-					expanded: show && _proposedAttachmentUrl != null,
-					bottomSafe: true,
-					height: 100,
-					child: Row(
-						mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-						children: [
-							if (_proposedAttachmentUrl != null) Padding(
-								padding: const EdgeInsets.all(8),
-								child: ClipRRect(
-									borderRadius: const BorderRadius.all(Radius.circular(8)),
-									child: Image.network(
-										_proposedAttachmentUrl!,
-										width: 100
+		return Focus(
+			focusNode: _rootFocusNode,
+			child: Column(
+				mainAxisSize: MainAxisSize.min,
+				children: [
+					Expander(
+						expanded: showAttachmentOptions && show,
+						bottomSafe: true,
+						height: 100,
+						child: Focus(
+							descendantsAreFocusable: showAttachmentOptions && show,
+							child: _buildAttachmentOptions(context)
+						)
+					),
+					Expander(
+						expanded: showOptions && show,
+						bottomSafe: true,
+						height: 55,
+						child: Focus(
+							descendantsAreFocusable: showOptions && show,
+							child: _buildOptions(context)
+						)
+					),
+					Expander(
+						expanded: show && _proposedAttachmentUrl != null,
+						bottomSafe: true,
+						height: 100,
+						child: Row(
+							mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+							children: [
+								if (_proposedAttachmentUrl != null) Padding(
+									padding: const EdgeInsets.all(8),
+									child: ClipRRect(
+										borderRadius: const BorderRadius.all(Radius.circular(8)),
+										child: Image.network(
+											_proposedAttachmentUrl!,
+											width: 100
+										)
 									)
-								)
-							),
-							Flexible(child: CupertinoButton.filled(
-								padding: const EdgeInsets.all(4),
-								child: const Text('Use suggested image', textAlign: TextAlign.center),
-								onPressed: () async {
-									final site = context.read<ImageboardSite>();
-									try {
-										final dir = await (Directory('${Persistence.temporaryDirectory.path}/sharecache')).create(recursive: true);
-										final data = await site.client.get(_proposedAttachmentUrl!, options: dio.Options(responseType: dio.ResponseType.bytes));
-										final newFile = File('${dir.path}${DateTime.now().millisecondsSinceEpoch}_${_proposedAttachmentUrl!.split('/').last}');
-										await newFile.writeAsBytes(data.data);
-										setAttachment(newFile);
-										_filenameController.text = _proposedAttachmentUrl!.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
-										_proposedAttachmentUrl = null;
-										setState(() {});
-									}
-									catch (e, st) {
-										print(e);
-										print(st);
-										alertError(context, e.toStringDio());
-									}
-								}
-							)),
-							CupertinoButton(
-								child: const Icon(CupertinoIcons.xmark),
-								onPressed: () {
-									setState(() {
-										_proposedAttachmentUrl = null;
-									});
-								}
-							)
-						]
-					)
-				),
-				Expander(
-					expanded: show,
-					bottomSafe: !show,
-					height: ((widget.threadId == null) ? 150 : 100) + settings.replyBoxHeightOffset,
-					child: Column(
-						mainAxisSize: MainAxisSize.min,
-						children: [
-							GestureDetector(
-								behavior: HitTestBehavior.opaque,
-								supportedDevices: const {
-									PointerDeviceKind.mouse,
-									PointerDeviceKind.stylus,
-									PointerDeviceKind.invertedStylus,
-									PointerDeviceKind.touch,
-									PointerDeviceKind.unknown
-								},
-								onPanStart: (event) {
-									_replyBoxHeightOffsetAtPanStart = settings.replyBoxHeightOffset;
-									_panStartDy = event.globalPosition.dy;
-								},
-								onPanUpdate: (event) {
-									final r = WidgetsBinding.instance.window.devicePixelRatio;
-									setState(() {
-										_willHideOnPanEnd = ((WidgetsBinding.instance.window.physicalSize.height / r) - event.globalPosition.dy) < (WidgetsBinding.instance.window.viewInsets.bottom / r);
-										if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= 0)) {
-											// touch not above keyboard
-											settings.replyBoxHeightOffset = min(MediaQuery.of(context).size.height / 2, max(0, settings.replyBoxHeightOffset - event.delta.dy));
+								),
+								Flexible(child: CupertinoButton.filled(
+									padding: const EdgeInsets.all(4),
+									child: const Text('Use suggested image', textAlign: TextAlign.center),
+									onPressed: () async {
+										final site = context.read<ImageboardSite>();
+										try {
+											final dir = await (Directory('${Persistence.temporaryDirectory.path}/sharecache')).create(recursive: true);
+											final data = await site.client.get(_proposedAttachmentUrl!, options: dio.Options(responseType: dio.ResponseType.bytes));
+											final newFile = File('${dir.path}${DateTime.now().millisecondsSinceEpoch}_${_proposedAttachmentUrl!.split('/').last}');
+											await newFile.writeAsBytes(data.data);
+											setAttachment(newFile);
+											_filenameController.text = _proposedAttachmentUrl!.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
+											_proposedAttachmentUrl = null;
+											setState(() {});
 										}
-									});
-								},
-								onPanEnd: (event) {
-									if (_willHideOnPanEnd) {
-										Future.delayed(const Duration(milliseconds: 350), () {
-											settings.replyBoxHeightOffset = _replyBoxHeightOffsetAtPanStart;
+										catch (e, st) {
+											print(e);
+											print(st);
+											alertError(context, e.toStringDio());
+										}
+									}
+								)),
+								CupertinoButton(
+									child: const Icon(CupertinoIcons.xmark),
+									onPressed: () {
+										setState(() {
+											_proposedAttachmentUrl = null;
 										});
-										hideReplyBox();
-										_willHideOnPanEnd = false;
 									}
-									else {
-										settings.finalizeReplyBoxHeightOffset();
-									}
-								},
-								child: Container(
-									decoration: BoxDecoration(
-										border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)))
-									),
-									height: 40,
-									child: _buildButtons(context),
 								)
-							),
-							Flexible(
-								child: Container(
-									color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-									child: Stack(
-										children: [
-											Column(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													
-													Expanded(child: _buildTextField(context)),
-												]
-											),
-											if (loading) Positioned.fill(
-													child: Container(
-													alignment: Alignment.bottomCenter,
-													child: LinearProgressIndicator(
-														valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
-														backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.7)
+							]
+						)
+					),
+					Expander(
+						expanded: show,
+						bottomSafe: !show,
+						height: ((widget.threadId == null) ? 150 : 100) + settings.replyBoxHeightOffset,
+						child: Column(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								GestureDetector(
+									behavior: HitTestBehavior.opaque,
+									supportedDevices: const {
+										PointerDeviceKind.mouse,
+										PointerDeviceKind.stylus,
+										PointerDeviceKind.invertedStylus,
+										PointerDeviceKind.touch,
+										PointerDeviceKind.unknown
+									},
+									onPanStart: (event) {
+										_replyBoxHeightOffsetAtPanStart = settings.replyBoxHeightOffset;
+										_panStartDy = event.globalPosition.dy;
+									},
+									onPanUpdate: (event) {
+										final r = WidgetsBinding.instance.window.devicePixelRatio;
+										setState(() {
+											_willHideOnPanEnd = ((WidgetsBinding.instance.window.physicalSize.height / r) - event.globalPosition.dy) < (WidgetsBinding.instance.window.viewInsets.bottom / r);
+											if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= 0)) {
+												// touch not above keyboard
+												settings.replyBoxHeightOffset = min(MediaQuery.of(context).size.height / 2, max(0, settings.replyBoxHeightOffset - event.delta.dy));
+											}
+										});
+									},
+									onPanEnd: (event) {
+										if (_willHideOnPanEnd) {
+											Future.delayed(const Duration(milliseconds: 350), () {
+												settings.replyBoxHeightOffset = _replyBoxHeightOffsetAtPanStart;
+											});
+											hideReplyBox();
+											_willHideOnPanEnd = false;
+										}
+										else {
+											settings.finalizeReplyBoxHeightOffset();
+										}
+									},
+									child: Container(
+										decoration: BoxDecoration(
+											border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)))
+										),
+										height: 40,
+										child: _buildButtons(context),
+									)
+								),
+								Flexible(
+									child: Container(
+										color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+										child: Stack(
+											children: [
+												Column(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														
+														Expanded(child: _buildTextField(context)),
+													]
+												),
+												if (loading) Positioned.fill(
+														child: Container(
+														alignment: Alignment.bottomCenter,
+														child: LinearProgressIndicator(
+															valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
+															backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.7)
+														)
 													)
 												)
-											)
-										]
+											]
+										)
 									)
 								)
-							)
-						]
+							]
+						)
 					)
-				)
-			]
+				]
+			)
 		);
 	}
 }
