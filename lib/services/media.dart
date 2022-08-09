@@ -163,6 +163,7 @@ class MediaConversion {
 	int? maximumDimension;
 	final String cacheKey;
 	final Map<String, String> headers;
+	int _additionalScaleDownFactor = 1;
 
 	FFmpegSession? _session;
 
@@ -282,10 +283,10 @@ class MediaConversion {
 		return MediaConversionResult(file, scan?.hasAudio ?? false);
 	}
 
-	void start() async {
+	Future<void> start() async {
 		try {
 			cancel();
-			_completer = Completer<MediaConversionResult>();
+			_completer ??= Completer<MediaConversionResult>();
 			progress.value = null;
 			final existingResult = await getDestinationIfSatisfiesConstraints();
 			if (existingResult != null) {
@@ -315,7 +316,7 @@ class MediaConversion {
 					Tuple2<int, int>? newSize;
 					if (scan.width != null && scan.height != null) {
 						if (outputFileExtension != 'jpg' && outputFileExtension != 'png') {
-							double scaleDownFactorSq = outputBitrate/(2 * scan.width! * scan.height!);
+							double scaleDownFactorSq = (outputBitrate/(2 * scan.width! * scan.height!)) / _additionalScaleDownFactor;
 							if (scaleDownFactorSq < 1) {
 								final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
 								final newHeight = (scan.height! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
@@ -323,7 +324,7 @@ class MediaConversion {
 							}
 						}
 						else if (maximumSizeInBytes != null) {
-							double scaleDownFactor = (scan.width! * scan.height!) / (maximumSizeInBytes! * (outputFileExtension == 'jpg' ? 6 : 1.5));
+							double scaleDownFactor = ((scan.width! * scan.height!) / (maximumSizeInBytes! * (outputFileExtension == 'jpg' ? 6 : 3))) + _additionalScaleDownFactor;
 							if (scaleDownFactor > 1) {
 								final newWidth = ((scan.width! / scaleDownFactor) / 2).round() * 2;
 								final newHeight = ((scan.height! / scaleDownFactor) / 2).round() * 2;
@@ -349,7 +350,7 @@ class MediaConversion {
 					final bitrateString = '${(outputBitrate / 1000).floor()}K';
 					final ffmpegCompleter = Completer<Session>();
 					_session = await pool.withResource(() {
-						return FFmpegKit.executeWithArgumentsAsync([
+						final args = [
 							'-hwaccel', 'auto',
 							if (headers.isNotEmpty) ...[
 								"-headers",
@@ -360,12 +361,16 @@ class MediaConversion {
 							...extraOptions,
 							if (stripAudio) '-an',
 							if (outputFileExtension == 'jpg') ...['-qscale:v', '5']
-							else ...['-b:v', bitrateString],
+							else if (outputFileExtension != 'png') ...['-b:v', bitrateString],
+							if (outputFileExtension == 'jpg' || outputFileExtension == 'png') ...['-pix_fmt', 'rgba'],
+							if (outputFileExtension == 'png') ...['-pred', 'mixed'],
 							if (outputFileExtension == 'webm') ...['-crf', '10'],
 							if (newSize != null) ...['-vf', 'scale=${newSize.item1}:${newSize.item2}'],
 							if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
 							convertedFile.path
-						], (c) => ffmpegCompleter.complete(c));
+						];
+						print(args);
+						return FFmpegKit.executeWithArgumentsAsync(args, (c) => ffmpegCompleter.complete(c));
 					});
 					final results = await ffmpegCompleter.future;
 					final returnCode = await results.getReturnCode();
@@ -376,7 +381,15 @@ class MediaConversion {
 						throw MediaConversionFFMpegException(returnCode?.getValue() ?? -1);
 					}
 					else {
-						_completer!.complete(MediaConversionResult(convertedFile, scan.hasAudio));
+						if (maximumSizeInBytes != null && (await convertedFile.stat()).size > maximumSizeInBytes!) {
+							_additionalScaleDownFactor += 2;
+							print('Too big, retrying with factor $_additionalScaleDownFactor');
+							await start();
+							return;
+						}
+						else {
+							_completer!.complete(MediaConversionResult(convertedFile, scan.hasAudio));
+						}
 					}
 				}
 			}
