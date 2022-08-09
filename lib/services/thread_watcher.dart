@@ -282,7 +282,7 @@ class ThreadWatcher extends ChangeNotifier {
 				if (tab.imageboardKey == imageboardKey && tab.threadController == null && tab.thread != null) {
 					// Thread page widget hasn't yet been instantiated
 					final threadState = persistence.getThreadStateIfExists(tab.thread!);
-					if (threadState != null) {
+					if (threadState != null && threadState.thread?.isArchived != true) {
 						await _updateThread(threadState);
 					}
 				}
