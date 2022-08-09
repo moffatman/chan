@@ -81,6 +81,7 @@ class Persistence extends ChangeNotifier {
 	static bool enableHistory = true;
 	static final browserHistoryStatusListenable = EasyListenable();
 	static final tabsListenable = EasyListenable();
+	static final recentSearchesListenable = EasyListenable();
 
 	static Future<void> initializeStatic() async {
 		await Hive.initFlutter();
@@ -423,6 +424,7 @@ class Persistence extends ChangeNotifier {
 
 	static Future<void> didUpdateRecentSearches() async {
 		await settings.save();
+		recentSearchesListenable.didUpdate();
 	}
 
 	Future<void> didUpdateSavedPost() async {
@@ -441,6 +443,15 @@ const _maxRecentItems = 50;
 class PersistentRecentSearches {
 	@HiveField(0)
 	List<ImageboardArchiveSearchQuery> entries = [];
+
+	void handleSearch(ImageboardArchiveSearchQuery entry) {
+		if (entries.contains(entry)) {
+			bump(entry);
+		}
+		else {
+			add(entry);
+		}
+	}
 
 	void add(ImageboardArchiveSearchQuery entry) {
 		entries = [entry, ...entries.take(_maxRecentItems)];

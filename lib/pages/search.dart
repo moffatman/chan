@@ -35,10 +35,8 @@ class SearchPageState extends State<SearchPage> {
 	final _valueInjector = ValueNotifier<ImageboardScoped<ImageboardArchiveSearchResult>?>(null);
 
 	void onSearchComposed(ImageboardArchiveSearchQuery query) {
-		print('$this onsearchcomposed $query');
-		print(_masterDetailKey);
-		print(_masterDetailKey.currentState);
-		print(_masterDetailKey.currentState?.masterKey.currentState);
+		Persistence.recentSearches.handleSearch(query.clone());
+		Persistence.didUpdateRecentSearches();
 		_masterDetailKey.currentState!.masterKey.currentState!.push(FullWidthCupertinoPageRoute(
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _valueInjector,
@@ -186,6 +184,11 @@ class _SearchComposePageState extends State<SearchComposePage> {
 				});
 			}
 		});
+		Persistence.recentSearchesListenable.addListener(_onRecentSearchesUpdate);
+	}
+
+	void _onRecentSearchesUpdate() {
+		setState(() {});
 	}
 
 	Future<DateTime?> _getDate(DateTime? initialDate) {
@@ -311,8 +314,6 @@ class _SearchComposePageState extends State<SearchComposePage> {
 													onSubmitted: (String q) {
 														_controller.clear();
 														FocusManager.instance.primaryFocus!.unfocus();
-														Persistence.recentSearches.add(query.clone());
-														Persistence.didUpdateRecentSearches();
 														widget.onSearchComposed(query);
 													},
 													smartQuotesType: SmartQuotesType.disabled,
@@ -486,11 +487,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 					children: Persistence.recentSearches.entries.map((q) {
 						return GestureDetector(
 							behavior: HitTestBehavior.opaque,
-							onTap: () {
-								Persistence.recentSearches.bump(q);
-								Persistence.didUpdateRecentSearches();
-								widget.onSearchComposed(q);
-							},
+							onTap: () => widget.onSearchComposed(q),
 							child: Container(
 								decoration: BoxDecoration(
 									border: Border(bottom: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)))
@@ -522,6 +519,12 @@ class _SearchComposePageState extends State<SearchComposePage> {
 				)
 			)
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		Persistence.recentSearchesListenable.removeListener(_onRecentSearchesUpdate);
 	}
 }
 

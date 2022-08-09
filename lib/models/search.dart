@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 part 'search.g.dart';
@@ -77,4 +78,19 @@ class ImageboardArchiveSearchQuery {
 			imageboardKey: imageboardKey
 		);
 	}
+
+	@override
+	bool operator==(Object other) => (other is ImageboardArchiveSearchQuery)
+																	 && (other.query == query)
+																	 && (other.mediaFilter == mediaFilter)
+																	 && (other.postTypeFilter == postTypeFilter)
+																	 && (other.startDate == startDate)
+																	 && (other.endDate == endDate)
+																	 && (listEquals(other.boards, boards))
+																	 && (other.md5 == md5)
+																	 && (other.deletionStatusFilter == deletionStatusFilter)
+																	 && (other.imageboardKey == imageboardKey);
+
+	@override
+	int get hashCode => Object.hash(query, mediaFilter, postTypeFilter, startDate, endDate, boards, md5, deletionStatusFilter, imageboardKey);
 }
