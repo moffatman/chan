@@ -238,8 +238,13 @@ class SettingsPage extends StatelessWidget {
 										Icon(Icons.sync_rounded, size: 16)
 									]
 								),
-								onPressed: () {
-									settings.updateContentSettings();
+								onPressed: () async {
+									await settings.updateContentSettings();
+									showToast(
+										context: context,
+										icon: CupertinoIcons.check_mark,
+										message: 'Synchronized'
+									);
 								}
 							),
 							if (settings.contentSettings.sites.length > 1) ...[
