@@ -207,7 +207,7 @@ class SettingsPage extends StatelessWidget {
 							TableRow(
 								children: [
 									const Text('Imageboard(s)'),
-									Text(ImageboardRegistry.instance.imageboards.map((b) => b.key).join(', '), textAlign: TextAlign.right)
+									Text(ImageboardRegistry.instance.imageboardsIncludingUninitialized.map((b) => b.key).join(', '), textAlign: TextAlign.right)
 								]
 							),
 								...{
@@ -261,7 +261,7 @@ class SettingsPage extends StatelessWidget {
 									onPressed: () async {
 										try {
 											final imageboards = {
-												for (final i in ImageboardRegistry.instance.imageboards) i.key: i.site.name
+												for (final i in ImageboardRegistry.instance.imageboardsIncludingUninitialized) i.key: i.site.name
 											};
 											final toDelete = await showCupertinoDialog<String>(
 												context: context,

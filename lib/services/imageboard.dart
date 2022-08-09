@@ -132,7 +132,8 @@ class ImageboardRegistry extends ChangeNotifier {
 	String? setupStackTrace;
 	final Map<String, Imageboard> _sites = {};
 	int get count => _sites.length;
-	Iterable<Imageboard> get imageboards => _sites.values;
+	Iterable<Imageboard> get imageboardsIncludingUninitialized => _sites.values;
+	Iterable<Imageboard> get imageboards => _sites.values.where((s) => s.initialized);
 	bool initialized = false;
 	BuildContext? context;
 	final _mutex = Mutex();

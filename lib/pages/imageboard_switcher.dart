@@ -20,12 +20,12 @@ class ImageboardSwitcherPage extends StatefulWidget {
 
 class _ImageboardSwitcherPageState extends State<ImageboardSwitcherPage> {
 	late final PageController _controller = PageController(
-		initialPage: max(0, ImageboardRegistry.instance.imageboards.toList().indexWhere((b) => b.key == widget.initialImageboardKey))
+		initialPage: max(0, ImageboardRegistry.instance.imageboardsIncludingUninitialized.toList().indexWhere((b) => b.key == widget.initialImageboardKey))
 	);
 
 	@override
 	Widget build(BuildContext context) {
-		final imageboards = ImageboardRegistry.instance.imageboards.toList();
+		final imageboards = ImageboardRegistry.instance.imageboardsIncludingUninitialized.toList();
 		return PageView.builder(
 			controller: _controller,
 			itemCount: imageboards.length,

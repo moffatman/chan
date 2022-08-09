@@ -1254,9 +1254,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			);
 		}
 		for (final board in ImageboardRegistry.instance.imageboards) {
-			if (!board.initialized) {
-				continue;
-			}
 			if (_notificationsSubscriptions[board.key]?.item1 != board.notifications) {
 				_notificationsSubscriptions[board.key]?.item2.cancel();
 				_notificationsSubscriptions[board.key] = Tuple2(board.notifications, board.notifications.tapStream.listen((target) {
@@ -1308,12 +1305,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 													_buildTabletIcon(1, NotifyingIcon(
 															icon: const Icon(CupertinoIcons.bookmark),
 															primaryCount: CombiningValueListenable<int>(
-																children: ImageboardRegistry.instance.imageboards.where((x) => x.initialized).map((x) => x.threadWatcher.unseenYouCount).toList(),
+																children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
 																combine: (a, b) => a + b,
 																noChildrenValue: 0
 															),
 															secondaryCount: CombiningValueListenable<int>(
-																children: ImageboardRegistry.instance.imageboards.where((x) => x.initialized).map((x) => x.threadWatcher.unseenCount).toList(),
+																children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
 																combine: (a, b) => a + b,
 																noChildrenValue: 0
 															)
@@ -1391,12 +1388,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										builder: (context) => NotifyingIcon(
 											icon: const Icon(CupertinoIcons.bookmark, size: 28),
 											primaryCount: CombiningValueListenable<int>(
-												children: ImageboardRegistry.instance.imageboards.where((x) => x.initialized).map((x) => x.threadWatcher.unseenYouCount).toList(),
+												children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
 												combine: (a, b) => a + b,
 												noChildrenValue: 0
 											),
 											secondaryCount: CombiningValueListenable<int>(
-												children: ImageboardRegistry.instance.imageboards.where((x) => x.initialized).map((x) => x.threadWatcher.unseenCount).toList(),
+												children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
 												combine: (a, b) => a + b,
 												noChildrenValue: 0
 											)
@@ -1490,7 +1487,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			onePane: !isInTabletLayout,
 			key: notificationsOverlayKey,
 			imageboards: [
-				...ImageboardRegistry.instance.imageboards.where((x) => x.initialized),
+				...ImageboardRegistry.instance.imageboards,
 				if (devImageboard?.notifications != null) devImageboard!
 			],
 			child: child
