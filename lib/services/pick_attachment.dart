@@ -136,11 +136,11 @@ List<AttachmentPickingSource> getAttachmentSources({
 			gallery,
 			videoGallery,
 			file,
+			web,
 			if (!isOnMac) ...[
 				camera,
 				videoCamera,
 			],
-			web,
 			if (includeClipboard) clipboard,
 		];
 	}
@@ -149,9 +149,9 @@ List<AttachmentPickingSource> getAttachmentSources({
 			if (anySaved) saved,
 			file,
 			if (includeClipboard) clipboard,
+			web,
 			camera,
 			videoCamera,
-			web,
 		];
 	}
 	else {
