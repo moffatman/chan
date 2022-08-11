@@ -1458,7 +1458,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										)
 									),
 									Expander(
-										duration: const Duration(milliseconds: 2000),
 										height: 80,
 										bottomSafe: false,
 										expanded: showTabPopup,
