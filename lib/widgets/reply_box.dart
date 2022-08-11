@@ -18,6 +18,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
+import 'package:chan/widgets/captcha_dvach.dart';
 import 'package:chan/widgets/captcha_securimage.dart';
 import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -737,50 +738,71 @@ class ReplyBoxState extends State<ReplyBox> {
 				await site.clearLoginCookies();
 			}
 		}
-		if (!mounted) return;
-		final captchaRequest = site.getCaptchaRequest(widget.board, widget.threadId);
-		if (captchaRequest is RecaptchaRequest) {
-			hideReplyBox();
-			_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
-				builder: (context) => OverscrollModalPage(
-					child: CaptchaNoJS(
-						request: captchaRequest,
-						onCaptchaSolved: (solution) => Navigator.of(context).pop(solution)
-					)
-				),
-				showAnimations: context.read<EffectiveSettings>().showAnimations
-			));
-			showReplyBox();
+		try {
+			final captchaRequest = await site.getCaptchaRequest(widget.board, widget.threadId);
+			if (!mounted) return;
+			if (captchaRequest is RecaptchaRequest) {
+				hideReplyBox();
+				_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
+					builder: (context) => OverscrollModalPage(
+						child: CaptchaNoJS(
+							request: captchaRequest,
+							onCaptchaSolved: (solution) => Navigator.of(context).pop(solution)
+						)
+					),
+					showAnimations: context.read<EffectiveSettings>().showAnimations
+				));
+				showReplyBox();
+			}
+			else if (captchaRequest is Chan4CustomCaptchaRequest) {
+				hideReplyBox();
+				_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
+					builder: (context) => OverscrollModalPage(
+						child: Captcha4ChanCustom(
+							site: site,
+							request: captchaRequest,
+							onCaptchaSolved: (key) => Navigator.of(context).pop(key)
+						)
+					),
+					showAnimations: context.read<EffectiveSettings>().showAnimations
+				));
+				showReplyBox();
+			}
+			else if (captchaRequest is SecurimageCaptchaRequest) {
+				hideReplyBox();
+				_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
+					builder: (context) => OverscrollModalPage(
+						child: CaptchaSecurimage(
+							request: captchaRequest,
+							onCaptchaSolved: (key) => Navigator.of(context).pop(key)
+						)
+					),
+					showAnimations: context.read<EffectiveSettings>().showAnimations
+				));
+				showReplyBox();
+			}
+			else if (captchaRequest is DvachCaptchaRequest) {
+				hideReplyBox();
+				_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
+					builder: (context) => OverscrollModalPage(
+						child: CaptchaDvach(
+							request: captchaRequest,
+							onCaptchaSolved: (key) => Navigator.of(context).pop(key)
+						)
+					),
+					showAnimations: context.read<EffectiveSettings>().showAnimations
+				));
+				showReplyBox();
+			}
+			else if (captchaRequest is NoCaptchaRequest) {
+				_captchaSolution = NoCaptchaSolution();
+			}
 		}
-		else if (captchaRequest is Chan4CustomCaptchaRequest) {
-			hideReplyBox();
-			_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
-				builder: (context) => OverscrollModalPage(
-					child: Captcha4ChanCustom(
-						site: site,
-						request: captchaRequest,
-						onCaptchaSolved: (key) => Navigator.of(context).pop(key)
-					)
-				),
-				showAnimations: context.read<EffectiveSettings>().showAnimations
-			));
-			showReplyBox();
-		}
-		else if (captchaRequest is SecurimageCaptchaRequest) {
-			hideReplyBox();
-			_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
-				builder: (context) => OverscrollModalPage(
-					child: CaptchaSecurimage(
-						request: captchaRequest,
-						onCaptchaSolved: (key) => Navigator.of(context).pop(key)
-					)
-				),
-				showAnimations: context.read<EffectiveSettings>().showAnimations
-			));
-			showReplyBox();
-		}
-		else if (captchaRequest is NoCaptchaRequest) {
-			_captchaSolution = NoCaptchaSolution();
+		catch (e, st) {
+			print(e);
+			print(st);
+			if (!mounted) return;
+			alertError(context, 'Error getting captcha request:\n${e.toStringDio()}');
 		}
 	}
 
@@ -1029,10 +1051,14 @@ class ReplyBoxState extends State<ReplyBox> {
 			url: Uri.https('', ''),
 			type: attachmentExt == 'webm' || attachmentExt == 'mp4' ? AttachmentType.webm : AttachmentType.image,
 			md5: '',
-			id: attachment?.uri.hashCode ?? -1,
+			id: attachment?.uri.toString() ?? 'zz',
 			filename: attachment?.uri.pathSegments.last ?? '',
 			thumbnailUrl: Uri.https('', ''),
-			board: widget.board
+			board: widget.board,
+			width: null,
+			height: null,
+			sizeInBytes: null,
+			threadId: null
 		);
 		return Container(
 			decoration: BoxDecoration(
@@ -1320,7 +1346,7 @@ class ReplyBoxState extends State<ReplyBox> {
 													content: ChangeNotifierProvider<PostSpanZoneData>(
 														create: (context) => PostSpanRootZoneData(
 															site: site,
-															thread: Thread(posts_: [], replyCount: 0, imageCount: 0, id: 0, board: '', title: '', isSticky: false, time: DateTime.now()),
+															thread: Thread(posts_: [], attachments: [], replyCount: 0, imageCount: 0, id: 0, board: '', title: '', isSticky: false, time: DateTime.now()),
 															semanticRootIds: [-14]
 														),
 														builder: (context, _) => DefaultTextStyle(

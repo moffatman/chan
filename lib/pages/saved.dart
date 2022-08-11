@@ -1,5 +1,6 @@
 import 'package:async/async.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
@@ -290,8 +291,8 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 																					onThumbnailTap: (initialAttachment) {
 																						final attachments = {
 																							for (final w in _watchedListController.items)
-																								if (w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)?.thread?.attachment != null)
-																									w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)!: w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)!.thread!.attachment!
+																								for (final attachment in w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
+																									w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)!: attachment
 																							};
 																						showGallery(
 																							context: context,
@@ -418,16 +419,18 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 													},
 													semanticParentIds: const [-4],
 													onThumbnailTap: (initialAttachment) {
-														final attachments = _threadListController.items.where((_) => _.item.thread?.attachment != null).map((_) => _.item.thread!.attachment!).toList();
+														final attachments = _threadListController.items.expand((_) => _.item.thread!.attachments).toList();
 														showGallery(
 															context: context,
 															attachments: attachments,
 															replyCounts: {
-																for (final item in _threadListController.items.where((_) => _.item.thread?.attachment != null)) item.item.thread!.attachment!: item.item.thread!.replyCount
+																for (final state in _threadListController.items)
+																	for (final attachment in state.item.thread!.attachments)
+																		attachment: state.item.thread!.replyCount
 															},
 															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 															onChange: (attachment) {
-																_threadListController.animateTo((p) => p.item.thread?.attachment?.id == attachment.id);
+																_threadListController.animateTo((p) => p.item.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 															},
 															semanticParentIds: [-4]
 														);
@@ -590,16 +593,18 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 													}
 												},
 												onThumbnailTap: (initialAttachment) {
-													final attachments = _postListController.items.where((_) => _.item.post.attachment != null).map((_) => _.item.post.attachment!).toList();
+													final attachments = _postListController.items.expand((_) => _.item.post.attachments).toList();
 													showGallery(
 														context: context,
 														attachments: attachments,
 														replyCounts: {
-															for (final item in _postListController.items.where((_) => _.item.post.attachment != null)) item.item.post.attachment!: item.item.post.replyIds.length
+															for (final state in _postListController.items)
+																for (final attachment in state.item.thread.attachments)
+																	attachment: state.item.thread.replyCount
 														},
 														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 														onChange: (attachment) {
-															_postListController.animateTo((p) => p.item.thread.attachment?.id == attachment.id);
+															_postListController.animateTo((p) => p.item.thread.attachments.any((a) => a.id == attachment.id));
 														},
 														semanticParentIds: [-2]
 													);

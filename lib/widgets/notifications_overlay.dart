@@ -201,6 +201,7 @@ class NotificationContent extends StatelessWidget {
 						imageCount: -1,
 						time: DateTime.fromMicrosecondsSinceEpoch(0),
 						posts_: [],
+						attachments: []
 					),
 					threadState: context.read<Persistence>().getThreadStateIfExists(notification.threadIdentifier),
 					semanticRootIds: [-10]

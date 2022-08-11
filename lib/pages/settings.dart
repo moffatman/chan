@@ -850,7 +850,7 @@ class SettingsAppearancePage extends StatelessWidget {
 		final attachment = Attachment(
 			type: AttachmentType.image,
 			board: 'tv',
-			id: 99999,
+			id: '99999',
 			ext: '.png',
 			width: 800,
 			height: 800,
@@ -858,10 +858,11 @@ class SettingsAppearancePage extends StatelessWidget {
 			md5: '',
 			sizeInBytes: 150634,
 			url: Uri.parse('https://picsum.photos/800'),
-			thumbnailUrl: Uri.parse('https://picsum.photos/200')
+			thumbnailUrl: Uri.parse('https://picsum.photos/200'),
+			threadId: 99999
 		);
 		return Thread(
-			attachment: attachment,
+			attachments: [attachment],
 			board: 'tv',
 			replyCount: 300,
 			imageCount: 30,
@@ -881,7 +882,7 @@ class SettingsAppearancePage extends StatelessWidget {
 					id: 99999,
 					passSinceYear: 2020,
 					flag: flag,
-					attachment: attachment,
+					attachments: [attachment],
 					spanFormat: PostSpanFormat.chan4
 				)
 			]
@@ -2532,6 +2533,9 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 	List<int> get repliedToIds => [];
 
 	@override
+	Iterable<String> get md5s => [];
+
+	@override
 	String? getFilterFieldText(String fieldName) {
 		switch (fieldName) {
 			case 'subject':
@@ -2720,11 +2724,11 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 			print(fields);
 			try {
 				await widget.site.login(fields);
-				widget.site.persistence?.browserState.loginFields.clear();
-				widget.site.persistence?.browserState.loginFields.addAll({
+				widget.site.persistence.browserState.loginFields.clear();
+				widget.site.persistence.browserState.loginFields.addAll({
 					for (final field in fields.entries) field.key.formKey: field.value
 				});
-				widget.site.persistence?.didUpdateBrowserState();
+				widget.site.persistence.didUpdateBrowserState();
 			}
 			catch (e) {
 				if (!mounted) return;

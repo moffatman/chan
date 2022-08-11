@@ -47,7 +47,7 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  CaptchaRequest getCaptchaRequest(String board, [int? threadId]) {
+  Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
     throw UnimplementedError();
   }
 

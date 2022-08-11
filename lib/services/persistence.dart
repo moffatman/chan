@@ -405,11 +405,14 @@ class Persistence extends ChangeNotifier {
 		return threadStateBox.listenable(keys: ['${thread.board}/${thread.id}']);
 	}
 
-	Future<void> reinitializeBoards(List<ImageboardBoard> newBoards) async {
-		boards.clear();
-		boards.addAll({
-			for (final board in newBoards) board.name: board
-		});
+	Future<void> storeBoards(List<ImageboardBoard> newBoards) async {
+		final deadline = DateTime.now().subtract(const Duration(days: 3));
+		boards.removeWhere((k, v) => v.additionalDataTime == null || v.additionalDataTime!.isBefore(deadline));
+		for (final newBoard in newBoards) {
+			if (boards[newBoard.name] == null || newBoard.additionalDataTime != null) {
+				boards[newBoard.name] = newBoard;
+			}
+		}
 	}
 
 	static Future<void> didUpdateTabs() async {
@@ -523,11 +526,12 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	int? unseenImageCount(Filter filter) {
 		if (lastSeenPostId != null) {
 			_filterCache.setFilter(FilterGroup([filter, threadFilter]));
-			return thread?.posts.where((p) {
-				return (p.id > lastSeenPostId!) &&
-							 (p.attachment != null) &&
-							 (_filterCache.filter(p)?.type != FilterResultType.hide);
-			}).length;
+			return thread?.posts.map((p) {
+				if (p.id <= lastSeenPostId! || _filterCache.filter(p)?.type == FilterResultType.hide) {
+					return 0;
+				}
+				return p.attachments.length;
+			}).fold<int>(0, (a, b) => a + b);
 		}
 		return null;
 	}
@@ -547,6 +551,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	bool get isThread => true;
 	@override
 	List<int> get repliedToIds => [];
+	@override
+	Iterable<String> get md5s => thread?.md5s ?? [];
 
 	late Filter threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
 	void hidePost(int id, {bool tree = false}) {
@@ -742,9 +748,13 @@ class PersistentBrowserState {
 		hiddenIds[board]?.remove(id);
 	}
 
-	bool isMD5Hidden(String? md5) {
-		if (md5 == null) return false;
-		return hiddenImageMD5s.contains(md5);
+	bool areMD5sHidden(Iterable<String> md5s) {
+		for (final md5 in md5s) {
+			if (hiddenImageMD5s.contains(md5)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	late Filter imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
@@ -753,8 +763,8 @@ class PersistentBrowserState {
 		imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
 	}
 
-	void unHideByMD5(String md5) {
-		hiddenImageMD5s.remove(md5);
+	void unHideByMD5s(Iterable<String> md5s) {
+		hiddenImageMD5s.removeAll(md5s);
 		imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
 	}
 

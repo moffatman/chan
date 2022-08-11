@@ -77,16 +77,18 @@ class _HistoryPageState extends State<HistoryPage> {
 										showSiteIcon: ImageboardRegistry.instance.count > 1,
 										showBoardName: true,
 										onThumbnailTap: (initialAttachment) {
-											final attachments = _listController.items.where((_) => _.item.thread?.attachment != null).map((_) => _.item.thread!.attachment!).toList();
+											final attachments = _listController.items.expand((_) => _.item.thread!.attachments).toList();
 											showGallery(
 												context: context,
 												attachments: attachments,
 												replyCounts: {
-													for (final item in _listController.items.where((_) => _.item.thread?.attachment != null)) item.item.thread!.attachment!: item.item.thread!.replyCount
+													for (final state in _listController.items)
+														for (final attachment in state.item.thread!.attachments)
+															attachment: state.item.thread!.replyCount
 												},
 												initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 												onChange: (attachment) {
-													_listController.animateTo((p) => p.item.thread?.attachment?.id == attachment.id);
+													_listController.animateTo((p) => p.item.thread!.attachments.any((a) => a.id == attachment.id));
 												},
 												semanticParentIds: [-3]
 											);

@@ -68,7 +68,6 @@ class Site4Chan extends ImageboardSite {
 	@override
 	final String imageUrl;
 	final String captchaKey;
-	List<ImageboardBoard>? _boards;
 	static final unescape = HtmlUnescape();
 	final Map<String, _ThreadCacheEntry> _threadCache = {};
 	final Map<String, _CatalogCache> _catalogCaches = {};
@@ -261,6 +260,7 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	Post _makePost(String board, int threadId, dynamic data) {
+		final a = _makeAttachment(board, threadId, data);
 		return Post(
 			board: board,
 			text: data['com'] ?? '',
@@ -269,7 +269,7 @@ class Site4Chan extends ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
 			id: data['no'],
 			threadId: threadId,
-			attachment: _makeAttachment(board, threadId, data),
+			attachments: a == null ? [] : [a],
 			attachmentDeleted: data['filedeleted'] == 1,
 			spanFormat: PostSpanFormat.chan4,
 			flag: _makeFlag(data, board),
@@ -283,8 +283,8 @@ class Site4Chan extends ImageboardSite {
 			final int id = data['tim'];
 			final String ext = data['ext'];
 			return Attachment(
-				id: id,
-				type: data['ext'] == '.webm' ? AttachmentType.webm : AttachmentType.image,
+				id: id.toString(),
+				type: data['ext'] == '.webm' ? AttachmentType.webm : (data['ext'] == '.pdf' ? AttachmentType.pdf : AttachmentType.image),
 				filename: unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
 				ext: ext,
 				board: board,
@@ -351,6 +351,7 @@ class Site4Chan extends ImageboardSite {
 		if (response.statusCode == 200) {
 			final data = response.data;
 			final String? title = data['posts']?[0]?['sub'];
+			final a = _makeAttachment(thread.board, thread.id, data['posts'][0]);
 			final output = Thread(
 				board: thread.board,
 				isDeleted: false,
@@ -361,7 +362,7 @@ class Site4Chan extends ImageboardSite {
 					return _makePost(thread.board, thread.id, postData);
 				}).toList(),
 				id: data['posts'][0]['no'],
-				attachment: _makeAttachment(thread.board, thread.id, data['posts'][0]),
+				attachments: a == null ? [] : [a],
 				attachmentDeleted: data['posts'][0]['filedeleted'] == 1,
 				title: (title == null) ? null : unescape.convert(title),
 				isSticky: data['posts'][0]['sticky'] == 1,
@@ -375,9 +376,9 @@ class Site4Chan extends ImageboardSite {
 				thread: output,
 				lastModified: response.headers.value('last-modified')!
 			);
-			if (output.attachment != null) {
-				await ensureCookiesMemoized(output.attachment!.url);
-				await ensureCookiesMemoized(output.attachment!.thumbnailUrl);
+			for (final attachment in output.attachments) {
+				await ensureCookiesMemoized(attachment.url);
+				await ensureCookiesMemoized(attachment.thumbnailUrl);
 			}
 		}
 		else if (!(response.statusCode == 304 && headers != null)) {
@@ -415,12 +416,13 @@ class Site4Chan extends ImageboardSite {
 				final int threadId = threadData['no'];
 				final Post threadAsPost = _makePost(board, threadId, threadData);
 				final List<Post> lastReplies = ((threadData['last_replies'] ?? []) as List<dynamic>).map((postData) => _makePost(board, threadId, postData)).toList();
+				final a = _makeAttachment(board, threadId, threadData);
 				Thread thread = Thread(
 					board: board,
 					id: threadId,
 					replyCount: threadData['replies'],
 					imageCount: threadData['images'],
-					attachment: _makeAttachment(board, threadId, threadData),
+					attachments: a == null ? [] : [a],
 					posts_: [threadAsPost, ...lastReplies],
 					title: (title == null) ? null : unescape.convert(title),
 					isSticky: threadData['sticky'] == 1,
@@ -433,7 +435,8 @@ class Site4Chan extends ImageboardSite {
 		}
 		return threads;
 	}
-	Future<List<ImageboardBoard>> _getBoards() async {
+	@override
+	Future<List<ImageboardBoard>> getBoards() async {
 		final response = await client.get(Uri.https(apiUrl, '/boards.json').toString());
 		return (response.data['boards'] as List<dynamic>).map((board) {
 			return ImageboardBoard(
@@ -455,14 +458,9 @@ class Site4Chan extends ImageboardSite {
 			);
 		}).toList();
 	}
-	@override
-	Future<List<ImageboardBoard>> getBoards() async {
-		_boards ??= await _getBoards();
-		return _boards!;
-	}
 
 	@override
-	CaptchaRequest getCaptchaRequest(String board, [int? threadId]) {
+	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
 		if (_passEnabled) {
 			return NoCaptchaRequest();
 		}
@@ -593,7 +591,7 @@ class Site4Chan extends ImageboardSite {
 	@override
 	DateTime? getActionAllowedTime(String board, ImageboardAction action) {
 		final lastActionTime = _lastActionTime[action]![board];
-		final b = persistence!.getBoard(board);
+		final b = persistence.getBoard(board);
 		int cooldownSeconds = 0;
 		switch (action) {
 			case ImageboardAction.postReply:

@@ -94,7 +94,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 			final ext = urlMatch.group(3)!;
 			RegExpMatch? fileDetailsMatch;
 			for (final span in element.parent!.querySelectorAll('span')) {
-				fileDetailsMatch = RegExp(r'[^ ]+ [^ ]+ [^ ]+ (\d+)x(\d+), (.+)').firstMatch(span.text);
+				fileDetailsMatch = RegExp(r'File: ([^ ]+) ([KMG]?B), (\d+)x(\d+), (.+)').firstMatch(span.text);
 				if (fileDetailsMatch != null) {
 					break;
 				}
@@ -102,18 +102,29 @@ class FuukaArchive extends ImageboardSiteArchive {
 			if (fileDetailsMatch == null) {
 				throw FuukaException('Could not find atttachment details');
 			}
+			int multiplier = 1;
+			if (fileDetailsMatch.group(2) == 'KB') {
+				multiplier = 1024;
+			}
+			else if (fileDetailsMatch.group(2) == 'MB') {
+				multiplier = 1024*1024;
+			}
+			else if (fileDetailsMatch.group(2) == 'GB') {
+				multiplier = 1024*1024*1024;
+			}
 			return Attachment(
 				board: urlMatch.group(1)!,
-				id: int.parse(urlMatch.group(2)!),
-				filename: fileDetailsMatch.group(3)!,
+				id: urlMatch.group(2)!,
+				filename: fileDetailsMatch.group(5)!,
 				ext: ext,
 				type: ext == '.webm' ? AttachmentType.webm : AttachmentType.image,
 				url: Uri.parse('https:$url'),
 				thumbnailUrl: Uri.parse('https:${element.querySelector('.thumb')!.attributes['src']!}'),
 				md5: element.parent!.querySelectorAll('a').firstWhere((x) => x.text == 'View same').attributes['href']!.split('/').last,
 				spoiler: false,
-				width: int.parse(fileDetailsMatch.group(1)!),
-				height: int.parse(fileDetailsMatch.group(2)!),
+				width: int.parse(fileDetailsMatch.group(3)!),
+				height: int.parse(fileDetailsMatch.group(4)!),
+				sizeInBytes: (double.parse(fileDetailsMatch.group(1)!) * multiplier).round(),
 				threadId: threadId
 			);
 		}
@@ -135,6 +146,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 				linkedPostThreadIds['${linkMatches.group(1)!}/${linkMatches.group(2)!}'] = int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!);
 			}
 		}
+		final a = _makeAttachment(element.querySelector('.thumb')?.parent, threadId);
 		return Post(
 			board: board,
 			text: textNode.innerHtml,
@@ -142,7 +154,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 			time: DateTime.fromMillisecondsSinceEpoch(int.parse(element.querySelector('.posttime')!.attributes['title']!)),
 			id: postId ?? threadId,
 			threadId: threadId,
-			attachment: _makeAttachment(element.querySelector('.thumb')?.parent, threadId),
+			attachments: a == null ? [] : [a],
 			spanFormat: PostSpanFormat.fuuka,
 			foolfuukaLinkedPostThreadIds: linkedPostThreadIds
 		);
@@ -168,9 +180,9 @@ class FuukaArchive extends ImageboardSiteArchive {
 			isSticky: false,
 			title: title == 'post' ? null : title,
 			board: board,
-			attachment: posts[0].attachment,
+			attachments: posts[0].attachments,
 			replyCount: posts.length - 1,
-			imageCount: posts.skip(1).where((post) => post.attachment != null).length
+			imageCount: posts.skip(1).expand((post) => post.attachments).length
 		);
 	}
 	Future<Thread> getThreadContainingPost(String board, int id) async {

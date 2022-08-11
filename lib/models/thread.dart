@@ -2,6 +2,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 part 'thread.g.dart';
@@ -25,7 +26,7 @@ class Thread implements Filterable {
 	@HiveField(6)
 	final String board;
 	@HiveField(7)
-	final Attachment? attachment;
+	Attachment? deprecatedAttachment;
 	@HiveField(8)
 	final String? title;
 	@HiveField(9)
@@ -42,6 +43,8 @@ class Thread implements Filterable {
 	int? customSpoilerId;
 	@HiveField(15, defaultValue: false)
 	bool attachmentDeleted;
+	@HiveField(16, defaultValue: [])
+	final List<Attachment> attachments;
 	Thread({
 		required this.posts_,
 		this.isArchived = false,
@@ -49,7 +52,7 @@ class Thread implements Filterable {
 		required this.replyCount,
 		required this.imageCount,
 		required this.id,
-		this.attachment,
+		this.deprecatedAttachment,
 		this.attachmentDeleted = false,
 		required this.board,
 		required this.title,
@@ -58,8 +61,14 @@ class Thread implements Filterable {
 		this.flag,
 		this.currentPage,
 		this.uniqueIPCount,
-		this.customSpoilerId
-	});
+		this.customSpoilerId,
+		required this.attachments
+	}) {
+		if (deprecatedAttachment != null) {
+			attachments.insert(0, deprecatedAttachment!);
+			deprecatedAttachment = null;
+		}
+	}
 	
 	bool _initialized = false;
 	List<Post> get posts {
@@ -91,7 +100,7 @@ class Thread implements Filterable {
 			&& other.isArchived == isArchived
 			&& other.isDeleted == isDeleted
 			&& other.isSticky == isSticky
-			&& other.attachment?.thumbnailUrl == attachment?.thumbnailUrl;
+			&& listEquals(other.attachments, attachments);
 	}
 	@override
 	int get hashCode => id;
@@ -109,7 +118,7 @@ class Thread implements Filterable {
 			case 'name':
 				return posts_.first.name;
 			case 'filename':
-				return attachment?.filename;
+				return attachments.map((a) => a.filename).join(' ');
 			case 'text':
 				return posts_.first.span.buildText();
 			case 'postID':
@@ -119,17 +128,19 @@ class Thread implements Filterable {
 			case 'flag':
 				return posts_.first.flag?.name;
 			case 'md5':
-				return attachment?.md5;
+				return attachments.map((a) => a.md5).join(' ');
 			default:
 				return null;
 		}
 	}
 	@override
-	bool get hasFile => attachment != null;
+	bool get hasFile => attachments.isNotEmpty;
 	@override
 	bool get isThread => true;
 	@override
 	List<int> get repliedToIds => [];
+	@override
+	Iterable<String> get md5s => attachments.map((a) => a.md5);
 
 	ThreadIdentifier get identifier => ThreadIdentifier(board, id);
 }

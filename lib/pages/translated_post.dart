@@ -50,7 +50,7 @@ class _TranslatedPostPageState extends State<TranslatedPostPage> {
 				id: widget.post.id,
 				spanFormat: widget.post.spanFormat,
 				flag: widget.post.flag,
-				attachment: widget.post.attachment,
+				attachments: widget.post.attachments,
 				attachmentDeleted: widget.post.attachmentDeleted,
 				posterId: widget.post.posterId,
 				foolfuukaLinkedPostThreadIds: widget.post.foolfuukaLinkedPostThreadIds,

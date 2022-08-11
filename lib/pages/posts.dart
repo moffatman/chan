@@ -54,7 +54,7 @@ class _PostsPageState extends State<PostsPage> {
 				}
 			}
 		}
-		final attachments = replies.expand<Attachment>((a) => a.attachment == null ? [] : [a.attachment!]).toList();
+		final attachments = replies.expand<Attachment>((a) => a.attachments).toList();
 		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.thread.posts.tryFirstWhere((p) => p.id == widget.postIdForBackground);
 		return ChangeNotifierProvider.value(
 			value: widget.zone,
@@ -85,12 +85,14 @@ class _PostsPageState extends State<PostsPage> {
 									context: context,
 									attachments: attachments,
 									replyCounts: {
-										for (final reply in replies.where((_) => _.attachment != null)) reply.attachment!: reply.replyIds.length
+										for (final reply in replies)
+											for (final attachment in reply.attachments)
+												attachment: reply.replyIds.length
 									},
 									initialAttachment: attachment,
 									semanticParentIds: context.read<PostSpanZoneData>().stackIds,
 									onChange: (attachment) {
-										final match = postContexts.entries.tryFirstWhere((p) =>  p.key.attachment == attachment);
+										final match = postContexts.entries.tryFirstWhere((p) =>  p.key.attachments.contains(attachment));
 										if (match != null) {
 											Scrollable.ensureVisible(match.value, alignment: 0.5, duration: const Duration(milliseconds: 200));
 										}

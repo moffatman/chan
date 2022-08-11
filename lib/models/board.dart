@@ -13,19 +13,19 @@ class ImageboardBoard {
 	@HiveField(3)
 	final bool webmAudioAllowed;
 	@HiveField(4)
-	final int? maxImageSizeBytes;
+	int? maxImageSizeBytes;
 	@HiveField(5)
-	final int? maxWebmSizeBytes;
+	int? maxWebmSizeBytes;
 	@HiveField(6)
 	final int? maxWebmDurationSeconds;
 	@HiveField(7)
-	final int? maxCommentCharacters;
+	int? maxCommentCharacters;
 	@HiveField(8)
-	final int? threadCommentLimit;
+	int? threadCommentLimit;
 	@HiveField(9)
 	final int? threadImageLimit;
 	@HiveField(10)
-	final int? pageCount;
+	int? pageCount;
 	@HiveField(11)
 	final int? threadCooldown;
 	@HiveField(12)
@@ -34,6 +34,8 @@ class ImageboardBoard {
 	final int? imageCooldown;
 	@HiveField(14)
 	final bool? spoilers;
+	@HiveField(15)
+	DateTime? additionalDataTime;
 
 	ImageboardBoard({
 		required this.name,
@@ -50,7 +52,8 @@ class ImageboardBoard {
 		this.threadCooldown,
 		this.replyCooldown,
 		this.imageCooldown,
-		this.spoilers
+		this.spoilers,
+		this.additionalDataTime
 	});
 
 	@override

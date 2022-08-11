@@ -30,17 +30,15 @@ class SiteFrenschan extends SiteSoyjak {
 		final response = await client.get(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html').toString());
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.post-image').map((e) => e.attributes['src']).toList();
-		for (final post in broken.posts_) {
-			if (post.attachment == null) {
-				continue;
-			}
-			final thumbnailUrl = thumbnailUrls.tryFirstWhere((u) => u?.contains(post.attachment!.id.toString()) ?? false);
+		for (final attachment in broken.posts_.expand((p) => p.attachments)) {
+			final thumbnailUrl = thumbnailUrls.tryFirstWhere((u) => u?.contains(attachment.id) ?? false);
 			if (thumbnailUrl != null) {
-				post.attachment?.thumbnailUrl = Uri.https(baseUrl, thumbnailUrl);
+				attachment.thumbnailUrl = Uri.https(baseUrl, thumbnailUrl);
 			}
 		}
-		if (broken.posts_.first.attachment != null) {
-			broken.attachment?.thumbnailUrl = broken.posts_.first.attachment!.thumbnailUrl;
+		// Copy corrected thumbnail URLs to thread from posts_.first
+		for (final a in broken.posts_.first.attachments) {
+			broken.attachments.tryFirstWhere((a2) => a.id == a2.id)?.thumbnailUrl = a.thumbnailUrl;
 		}
 		return broken;
 	}
@@ -51,20 +49,17 @@ class SiteFrenschan extends SiteSoyjak {
 		final response = await client.get(Uri.https(baseUrl, '/$board/catalog.html').toString());
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.thread-image').map((e) => e.attributes['src']).toList();
-		for (final thread in broken) {
-			if (thread.attachment == null) {
-				continue;
-			}
-			final thumbnailUrl = thumbnailUrls.tryFirstWhere((u) => u?.contains(thread.attachment!.id.toString()) ?? false);
+		for (final attachment in broken.expand((t) => t.attachments)) {
+			final thumbnailUrl = thumbnailUrls.tryFirstWhere((u) => u?.contains(attachment.id.toString()) ?? false);
 			if (thumbnailUrl != null) {
-				thread.attachment?.thumbnailUrl = Uri.https(baseUrl, thumbnailUrl);
+				attachment.thumbnailUrl = Uri.https(baseUrl, thumbnailUrl);
 			}
 		}
 		return broken;
 	}
 
 	@override
-	CaptchaRequest getCaptchaRequest(String board, [int? threadId]) {
+	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
 		return SecurimageCaptchaRequest(
 			challengeUrl: Uri.https(baseUrl, '/securimage.php')
 		);

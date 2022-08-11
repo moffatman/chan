@@ -9,6 +9,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/4chan.dart';
+import 'package:chan/sites/dvach.dart';
 import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/frenschan.dart';
 import 'package:chan/sites/fuuka.dart';
@@ -132,6 +133,13 @@ class SecurimageCaptchaRequest extends CaptchaRequest {
 	String toString() => 'SecurimageCaptchaRequest(challengeUrl: $challengeUrl)';
 }
 
+class DvachCaptchaRequest extends CaptchaRequest {
+	final Duration challengeLifetime;
+	DvachCaptchaRequest({
+		required this.challengeLifetime
+	});
+}
+
 abstract class CaptchaSolution {
 	DateTime? get expiresAt;
 }
@@ -180,6 +188,20 @@ class SecurimageCaptchaSolution extends CaptchaSolution {
 	});
 	@override
 	String toString() => 'SecurimageCaptchaSolution(cookie: $cookie, response: $response)';
+}
+
+class DvachCaptchaSolution extends CaptchaSolution {
+	final String id;
+	final String response;
+	@override
+	final DateTime expiresAt;
+	DvachCaptchaSolution({
+		required this.id,
+		required this.response,
+		required this.expiresAt
+	});
+	@override
+	String toString() => 'DvachCaptchaSolution(id: $id, response: $response)';
 }
 
 class ImageboardArchiveSearchResult {
@@ -307,7 +329,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get baseUrl;
 	String get imageUrl;
 	Uri get iconUrl;
-	CaptchaRequest getCaptchaRequest(String board, [int? threadId]);
+	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]);
 	Future<PostReceipt> createThread({
 		required String board,
 		String name = '',
@@ -338,9 +360,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		for (final archive in archives) {
 			try {
 				final post = await archive.getPost(board, id);
-				if (post.attachment != null) {
-					await ensureCookiesMemoized(post.attachment!.thumbnailUrl);
-					await ensureCookiesMemoized(post.attachment!.url);
+				for (final attachment in post.attachments) {
+					await ensureCookiesMemoized(attachment.thumbnailUrl);
+					await ensureCookiesMemoized(attachment.url);
 				}
 				return post;
 			}
@@ -364,9 +386,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		for (final archive in archives) {
 			try {
 				final thread_ = await archive.getThread(thread);
-				if (thread_.attachment != null) {
-					await ensureCookiesMemoized(thread_.attachment!.thumbnailUrl);
-					await ensureCookiesMemoized(thread_.attachment!.url);
+				for (final attachment in thread_.attachments) {
+					await ensureCookiesMemoized(attachment.thumbnailUrl);
+					await ensureCookiesMemoized(attachment.url);
 				}
 				if (validate != null) {
 					await validate(thread_);
@@ -408,15 +430,15 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
 	Uri getPostReportUrl(String board, int id);
-	Persistence? persistence;
+	late Persistence persistence;
 	String? getLoginSystemName();
 	List<ImageboardSiteLoginField> getLoginFields();
 	Future<void> login(Map<ImageboardSiteLoginField, String> fields);
 	Future<Map<ImageboardSiteLoginField, String>?> getSavedLoginFields() async {
-		 if ((persistence?.browserState.loginFields.length ?? 0) > 0) {
+		 if (persistence.browserState.loginFields.isNotEmpty) {
 			 try {
 					final savedFields = {
-						for (final field in getLoginFields()) field: persistence!.browserState.loginFields[field.formKey]!
+						for (final field in getLoginFields()) field: persistence.browserState.loginFields[field.formKey]!
 					};
 					return savedFields;
 			 }
@@ -427,8 +449,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		 return null;
 	}
 	Future<void> clearSavedLoginFields() async {
-		persistence?.browserState.loginFields.clear();
-		await persistence?.didUpdateBrowserState();
+		persistence.browserState.loginFields.clear();
+		await persistence.didUpdateBrowserState();
 	}
 	Future<void> clearLoginCookies();
 	List<ImageboardEmote> getEmotes();
@@ -461,6 +483,12 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == 'lainchan_org') {
 		return SiteLainchanOrg(
+			name: data['name'],
+			baseUrl: data['baseUrl']
+		);
+	}
+	else if (data['type'] == 'dvach') {
+		return SiteDvach(
 			name: data['name'],
 			baseUrl: data['baseUrl']
 		);

@@ -6,6 +6,7 @@ import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
@@ -62,12 +63,20 @@ class PostRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final rootContext = context;
+		final imageboard = context.watch<Imageboard>();
 		final site = context.watch<ImageboardSite>();
 		final notifications = context.watch<Notifications>();
 		final savedPost = context.select<Persistence, SavedPost?>((p) => p.getSavedPost(post));
 		Post latestPost = savedPost?.post ?? post;
-		if (latestPost.attachment?.url != post.attachment?.url) {
-			latestPost.attachment = post.attachment;
+		bool didUpdateAttachments = false;
+		for (int i = 0; i < latestPost.attachments.length; i++) {
+			final attachment = post.attachments.tryFirstWhere((a) => a.id == latestPost.attachments[i].id);
+			if (attachment?.url != latestPost.attachments[i].url) {
+				latestPost.attachments[i] = attachment!;
+				didUpdateAttachments = true;
+			}
+		}
+		if (didUpdateAttachments) {
 			context.read<Persistence>().didUpdateSavedPost();
 		}
 		else if (latestPost.replyIds.length != post.replyIds.length) {
@@ -101,23 +110,25 @@ class PostRow extends StatelessWidget {
 		});
 		String makeAttachmentInfo() {
 			String text = '';
-			if (settings.showFilenameOnPosts) {
-				text += '${latestPost.attachment?.filename} ';
-			}
-			if (settings.showFilesizeOnPosts || settings.showFileDimensionsOnPosts) {
-				text += '(';
-				bool firstItemPassed = false;
-				if (settings.showFilesizeOnPosts) {
-					text += '${((latestPost.attachment?.sizeInBytes ?? 0) / 1024).round()} KB';
-					firstItemPassed = true;
+			for (final attachment in latestPost.attachments) {
+				if (settings.showFilenameOnPosts) {
+					text += '${attachment.filename} ';
 				}
-				if (settings.showFileDimensionsOnPosts) {
-					if (firstItemPassed) {
-						text += ', ';
+				if (settings.showFilesizeOnPosts || settings.showFileDimensionsOnPosts) {
+					text += '(';
+					bool firstItemPassed = false;
+					if (settings.showFilesizeOnPosts) {
+						text += '${((attachment.sizeInBytes ?? 0) / 1024).round()} KB';
+						firstItemPassed = true;
 					}
-					text += '${latestPost.attachment?.width}x${latestPost.attachment?.height}';
+					if (settings.showFileDimensionsOnPosts) {
+						if (firstItemPassed) {
+							text += ', ';
+						}
+						text += '${attachment.width}x${attachment.height}';
+					}
+					text += ') ';
 				}
-				text += ') ';
 			}
 			return text;
 		}
@@ -156,51 +167,54 @@ class PostRow extends StatelessWidget {
 		innerChild(BuildContext context, double slideFactor) {
 			final mainRow = [
 				const SizedBox(width: 8),
-				if (latestPost.attachment != null && settings.showImages(context, latestPost.board)) Padding(
+				if (latestPost.attachments.isNotEmpty && settings.showImages(context, latestPost.board)) Padding(
 					padding: (settings.imagesOnRight && replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32) : EdgeInsets.zero,
-					child: PopupAttachment(
-						attachment: latestPost.attachment!,
-						child: GestureDetector(
-							child: Stack(
-								alignment: Alignment.center,
-								fit: StackFit.loose,
-								children: [
-									AttachmentThumbnail(
-										attachment: latestPost.attachment!,
-										thread: latestPost.threadIdentifier,
-										onLoadError: onThumbnailLoadError,
-										hero: AttachmentSemanticLocation(
-											attachment: latestPost.attachment!,
-											semanticParents: zone.stackIds
-										)
-									),
-									if (latestPost.attachment?.type == AttachmentType.webm) SizedBox(
-										width: settings.thumbnailSize,
-										height: settings.thumbnailSize,
-										child: Center(
-											child: AspectRatio(
-												aspectRatio: latestPost.attachment!.spoiler ? 1 : (latestPost.attachment!.width ?? 1) / (latestPost.attachment!.height ?? 1),
-												child: Align(
-													alignment: Alignment.bottomRight,
-													child: Container(
-														decoration: BoxDecoration(
-															borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-															color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-															border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-														),
-														padding: const EdgeInsets.all(2),
-														child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: latestPost.attachments.map((attachment) => PopupAttachment(
+							attachment: attachment,
+							child: GestureDetector(
+								child: Stack(
+									alignment: Alignment.center,
+									fit: StackFit.loose,
+									children: [
+										AttachmentThumbnail(
+											attachment: attachment,
+											thread: latestPost.threadIdentifier,
+											onLoadError: onThumbnailLoadError,
+											hero: AttachmentSemanticLocation(
+												attachment: attachment,
+												semanticParents: zone.stackIds
+											)
+										),
+										if (attachment.type == AttachmentType.webm) SizedBox(
+											width: settings.thumbnailSize,
+											height: settings.thumbnailSize,
+											child: Center(
+												child: AspectRatio(
+													aspectRatio: attachment.spoiler ? 1 : (attachment.width ?? 1) / (attachment.height ?? 1),
+													child: Align(
+														alignment: Alignment.bottomRight,
+														child: Container(
+															decoration: BoxDecoration(
+																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+															),
+															padding: const EdgeInsets.all(2),
+															child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
+														)
 													)
 												)
 											)
 										)
-									)
-								]
-							),
-							onTap: () {
-								onThumbnailTap?.call(latestPost.attachment!);
-							}
-						)
+									]
+								),
+								onTap: () {
+									onThumbnailTap?.call(attachment);
+								}
+							)
+						)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
 					)
 				)
 				else if (latestPost.attachmentDeleted) Center(
@@ -276,7 +290,7 @@ class PostRow extends StatelessWidget {
 																	),
 																	const TextSpan(text: ' ')
 																]
-																else if (field == PostDisplayField.attachmentInfo && latestPost.attachment != null) TextSpan(
+																else if (field == PostDisplayField.attachmentInfo && latestPost.attachments.isNotEmpty) TextSpan(
 																	text: makeAttachmentInfo(),
 																	style: TextStyle(
 																		color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8)
@@ -397,6 +411,37 @@ class PostRow extends StatelessWidget {
 								)
 							)
 						]
+					)
+				)
+			);
+		}
+		Future<Attachment?> whichAttachment() async {
+			if (latestPost.attachments.isEmpty) {
+				return null;
+			}
+			else if (latestPost.attachments.length == 1) {
+				return latestPost.attachments.first;
+			}
+			return await showCupertinoDialog(
+				context: context,
+				barrierDismissible: true,
+				builder: (context) => CupertinoAlertDialog(
+					title: const Text('Which file?'),
+					content: ImageboardScope(
+						imageboardKey: null,
+						imageboard: imageboard,
+						child: SizedBox(
+							height: 350,
+							child: GridView(
+								gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 1),
+								children: latestPost.attachments.map((a) => CupertinoButton(
+									child: AttachmentThumbnail(
+										attachment: a
+									),
+									onPressed: () => Navigator.pop(context, a)
+								)).toList()
+							)
+						)
 					)
 				)
 			);
@@ -531,21 +576,26 @@ class PostRow extends StatelessWidget {
 							zone.threadState!.save();
 						}
 					),
-					if (latestPost.attachment?.md5 != null && context.select<Persistence, bool>((p) => p.browserState.isMD5Hidden(latestPost.attachment?.md5))) ContextMenuAction(
-						child: const Text('Unhide by image'),
+					if (context.select<Persistence, bool>((p) => p.browserState.areMD5sHidden(latestPost.md5s))) ContextMenuAction(
+						child: Text('Unhide by image${latestPost.attachments.length != 1 ? 's' : ''}'),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
-							context.read<Persistence>().browserState.unHideByMD5(latestPost.attachment!.md5);
+							context.read<Persistence>().browserState.unHideByMD5s(latestPost.md5s);
 							context.read<Persistence>().didUpdateBrowserState();
 							zone.threadState!.save();
 						}
 					)
-					else if (latestPost.attachment?.md5 != null) ContextMenuAction(
+					else if (latestPost.attachments.isNotEmpty) ContextMenuAction(
 						child: const Text('Hide by image'),
 						trailingIcon: CupertinoIcons.eye_slash,
-						onPressed: () {
-							context.read<Persistence>().browserState.hideByMD5(latestPost.attachment!.md5);
-							context.read<Persistence>().didUpdateBrowserState();
+						onPressed: () async {
+							final persistence = context.read<Persistence>();
+							final attachment = await whichAttachment();
+							if (attachment == null) {
+								return;
+							}
+							persistence.browserState.hideByMD5(attachment.md5);
+							persistence.didUpdateBrowserState();
 							zone.threadState!.save();
 						}
 					)
@@ -586,49 +636,70 @@ class PostRow extends StatelessWidget {
 					trailingIcon: CupertinoIcons.delete,
 					isDestructiveAction: true,
 					onPressed: () async {
-						try {
-							await site.deletePost(latestPost.board, receipt);
-							showToast(context: context, message: 'Deleted post /${latestPost.board}/${receipt.id}', icon: CupertinoIcons.delete);
-						}
-						catch (error) {
-							alertError(context, error.toStringDio());
-						}
+						await site.deletePost(latestPost.board, receipt);
+						showToast(context: context, message: 'Deleted post /${latestPost.board}/${receipt.id}', icon: CupertinoIcons.delete);
 					}
 				),
-				if (latestPost.attachment != null) ...[
+				if (latestPost.attachments.isNotEmpty) ...[
 					ContextMenuAction(
 						child: const Text('Search archives'),
 						trailingIcon: Icons.image_search,
-						onPressed: () {
+						onPressed: () async {
+							final imageboardKey = context.read<Imageboard>().key;
+							final attachment = await whichAttachment();
+							if (attachment == null) {
+								return;
+							}
 							openSearch(context: context, query: ImageboardArchiveSearchQuery(
-								imageboardKey: context.read<Imageboard>().key,
+								imageboardKey: imageboardKey,
 								boards: [latestPost.board],
-								md5: latestPost.attachment!.md5)
-							);
+								md5: attachment.md5
+							));
 						}
 					),
 					ContextMenuAction(
 						child: const Text('Search Google'),
 						trailingIcon: Icons.image_search,
-						onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
-							'image_url': latestPost.attachment!.url.toString(),
-							'safe': 'off'
-						}))
+						onPressed: () async {
+							final attachment = await whichAttachment();
+							if (attachment == null) {
+								return;
+							}
+							// ignore: use_build_context_synchronously
+							openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
+								'image_url': attachment.url.toString(),
+								'safe': 'off'
+							}));
+						}
 					),
 					ContextMenuAction(
 						child: const Text('Search Yandex'),
 						trailingIcon: Icons.image_search,
-						onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
-							'rpt': 'imageview',
-							'url': latestPost.attachment!.url.toString()
-						}))
+						onPressed: () async {
+							final attachment = await whichAttachment();
+							if (attachment == null) {
+								return;
+							}
+							// ignore: use_build_context_synchronously
+							openBrowser(context, Uri.https('yandex.com', '/images/search', {
+								'rpt': 'imageview',
+								'url': attachment.url.toString()
+							}));
+						}
 					),
 					ContextMenuAction(
 						child: const Text('Search SauceNAO'),
 						trailingIcon: Icons.image_search,
-						onPressed: () => openBrowser(context, Uri.https('saucenao.com', '/search.php', {
-							'url': latestPost.attachment!.url.toString()
-						}))
+						onPressed: () async {
+							final attachment = await whichAttachment();
+							if (attachment == null) {
+								return;
+							}
+							// ignore: use_build_context_synchronously
+							openBrowser(context, Uri.https('saucenao.com', '/search.php', {
+								'url': attachment.url.toString()
+							}));
+						}
 					)
 				]
 			],

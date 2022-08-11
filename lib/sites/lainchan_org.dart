@@ -16,7 +16,7 @@ class SiteLainchanOrg extends SiteLainchan {
 	);
 
 	@override
-	Future<List<ImageboardBoard>> getBoardsOnce() async {
+	Future<List<ImageboardBoard>> getBoards() async {
 		final response = await client.get(Uri.https(baseUrl, '/').toString(), options: Options(
 			responseType: ResponseType.plain
 		));

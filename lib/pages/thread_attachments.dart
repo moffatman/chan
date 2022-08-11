@@ -69,7 +69,7 @@ class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final attachments = widget.thread.posts.where((p) => p.attachment != null).map((p) => p.attachment!).toList();
+		final attachments = widget.thread.posts.expand((p) => p.attachments).toList();
 		return RefreshableList<Attachment>(
 			filterableAdapter: null,
 			id: '${widget.thread.identifier} attachments',

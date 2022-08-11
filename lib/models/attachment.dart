@@ -9,7 +9,11 @@ enum AttachmentType {
 	@HiveField(1)
 	webm,
 	@HiveField(2)
-	mp4
+	mp4,
+	@HiveField(3)
+	mp3,
+	@HiveField(4)
+	pdf
 }
 
 @HiveType(typeId: 9)
@@ -17,7 +21,7 @@ class Attachment {
 	@HiveField(0)
 	final String board;
 	@HiveField(1)
-	final int id;
+	final int deprecatedId;
 	@HiveField(2)
 	final String ext;
 	@HiveField(3)
@@ -40,21 +44,28 @@ class Attachment {
 	final int? threadId;
 	@HiveField(12)
 	final int? sizeInBytes;
+	@HiveField(13, defaultValue: '')
+	String id;
 	Attachment({
 		required this.type,
 		required this.board,
 		required this.id,
+		this.deprecatedId = 0,
 		required this.ext,
 		required this.filename,
 		required this.url,
 		required this.thumbnailUrl,
 		required this.md5,
 		bool? spoiler,
-		this.width,
-		this.height,
-		this.threadId,
-		this.sizeInBytes
-	}) : spoiler = spoiler ?? false;
+		required this.width,
+		required this.height,
+		required this.threadId,
+		required this.sizeInBytes
+	}) : spoiler = spoiler ?? false {
+		if (id == '') {
+			id = deprecatedId.toString();
+		}
+	}
 
 	bool? get isLandscape => (width == null || height == null) ? null : width! > height!;
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:chan/services/imageboard.dart';
@@ -6,7 +7,9 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,7 +17,7 @@ import 'package:provider/provider.dart';
 class ContextMenuAction {
 	final Widget child;
 	final IconData trailingIcon;
-	final VoidCallback onPressed;
+	final FutureOr<void> Function() onPressed;
 	final bool isDestructiveAction;
 	ContextMenuAction({
 		required this.child,
@@ -99,9 +102,14 @@ class _ContextMenuState extends State<ContextMenu> {
 															]
 														)
 													),
-													onTap: () {
-														action.onPressed();
+													onTap: () async {
 														_overlayEntry?.remove();
+														try {
+															await action.onPressed();
+														}
+														catch (e) {
+															alertError(context, e.toStringDio());
+														}
 													}
 												);
 											}).toList()
@@ -118,9 +126,14 @@ class _ContextMenuState extends State<ContextMenu> {
 				builder: (context, originalConstraints) => CupertinoContextMenu(
 					actions: widget.actions.map((action) => CupertinoContextMenuAction(
 						trailingIcon: action.trailingIcon,
-						onPressed: () {
+						onPressed: () async {
 							Navigator.of(context, rootNavigator: true).pop();
-							action.onPressed();
+							try {
+								await action.onPressed();
+							}
+							catch (e) {
+								alertError(context, e.toStringDio());
+							}
 						},
 						isDestructiveAction: action.isDestructiveAction,
 						child: action.child

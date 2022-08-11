@@ -7,6 +7,7 @@ import 'package:mutex/mutex.dart';
 extension SafeWhere<T> on Iterable<T> {
 	T? tryFirstWhere(bool Function(T v) f) => cast<T?>().firstWhere((v) => f(v as T), orElse: () => null);
 	T? tryLastWhere(bool Function(T v) f) => cast<T?>().lastWhere((v) => f(v as T), orElse: () => null);
+	T? get tryFirst => isNotEmpty ? first : null;
 }
 
 extension BinarySafeWhere<T> on List<T> {

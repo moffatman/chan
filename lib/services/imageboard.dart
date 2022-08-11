@@ -2,6 +2,7 @@
 
 import 'dart:math';
 
+import 'package:chan/models/board.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -100,7 +101,7 @@ class Imageboard extends ChangeNotifier {
 			boardFetchErrorMessage = null;
 			notifyListeners();
 			final freshBoards = await site.getBoards();
-			await persistence.reinitializeBoards(freshBoards);
+			await persistence.storeBoards(freshBoards);
 		}
 		catch (error, st) {
 			print(error);
@@ -109,6 +110,12 @@ class Imageboard extends ChangeNotifier {
 		}
 		boardsLoading = false;
 		notifyListeners();
+	}
+
+	Future<List<ImageboardBoard>> refreshBoards() async {
+		final freshBoards = await site.getBoards();
+		await persistence.storeBoards(freshBoards);
+		return freshBoards;
 	}
 
 	@override

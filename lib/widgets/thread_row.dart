@@ -70,7 +70,7 @@ class ThreadRow extends StatelessWidget {
 			final filter = Filter.of(context);
 			unseenReplyCount = (threadState?.unseenReplyCount(filter) ?? 0) + ((latestReplyCount + 1) - latestThread.posts.length);
 			unseenYouCount = threadState?.unseenReplyIdsToYou(filter)?.length ?? 0;
-			unseenImageCount = (threadState?.unseenImageCount(filter) ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.where((x) => x.attachment != null).length ?? 0));
+			unseenImageCount = (threadState?.unseenImageCount(filter) ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.expand((x) => x.attachments).length ?? 0));
 			replyCountColor = unseenReplyCount == 0 ? grey : null;
 			imageCountColor = unseenImageCount == 0 ? grey : null;
 			otherMetadataColor = unseenReplyCount == 0 && unseenImageCount == 0 ? grey : null;
@@ -202,48 +202,53 @@ class ThreadRow extends StatelessWidget {
 		}
 		List<Widget> rowChildren() => [
 			const SizedBox(width: 8),
-			if (latestThread.attachment != null && settings.showImages(context, latestThread.board)) Padding(
+			if (latestThread.attachments.isNotEmpty && settings.showImages(context, latestThread.board)) Padding(
 				padding: const EdgeInsets.only(top: 8, bottom: 8),
-				child: PopupAttachment(
-					attachment: latestThread.attachment!,
-					child: GestureDetector(
-						child: Stack(
-							alignment: Alignment.center,
-							fit: StackFit.loose,
-							children: [
-								AttachmentThumbnail(
-									onLoadError: onThumbnailLoadError,
-									attachment: latestThread.attachment!,
-									thread: latestThread.identifier,
-									hero: AttachmentSemanticLocation(
-										attachment: latestThread.attachment!,
-										semanticParents: semanticParentIds
-									)
-								),
-								if (latestThread.attachment?.type == AttachmentType.webm) SizedBox(
-									width: settings.thumbnailSize,
-									height: settings.thumbnailSize,
-									child: Center(
-										child: AspectRatio(
-											aspectRatio: latestThread.attachment!.spoiler ? 1 : ((latestThread.attachment!.width ?? 1) / (latestThread.attachment!.height ?? 1)),
-											child: Align(
-												alignment: Alignment.bottomRight,
-												child: Container(
-													decoration: BoxDecoration(
-														borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-														color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-														border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-													),
-													padding: const EdgeInsets.all(2),
-													child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
+				child: ClippingBox(
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: latestThread.attachments.map((attachment) => PopupAttachment(
+							attachment: attachment,
+							child: GestureDetector(
+								child: Stack(
+									alignment: Alignment.center,
+									fit: StackFit.loose,
+									children: [
+										AttachmentThumbnail(
+											onLoadError: onThumbnailLoadError,
+											attachment: attachment,
+											thread: latestThread.identifier,
+											hero: AttachmentSemanticLocation(
+												attachment: attachment,
+												semanticParents: semanticParentIds
+											)
+										),
+										if (attachment.type == AttachmentType.webm) SizedBox(
+											width: settings.thumbnailSize,
+											height: settings.thumbnailSize,
+											child: Center(
+												child: AspectRatio(
+													aspectRatio: attachment.spoiler ? 1 : ((attachment.width ?? 1) / (attachment.height ?? 1)),
+													child: Align(
+														alignment: Alignment.bottomRight,
+														child: Container(
+															decoration: BoxDecoration(
+																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+															),
+															padding: const EdgeInsets.all(2),
+															child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
+														)
+													)
 												)
 											)
 										)
-									)
-								)
-							]
-						),
-						onTap: () => onThumbnailTap?.call(latestThread.attachment!)
+									]
+								),
+								onTap: () => onThumbnailTap?.call(attachment)
+							)
+						)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
 					)
 				)
 			)
@@ -298,10 +303,10 @@ class ThreadRow extends StatelessWidget {
 			)
 		];
 		List<Widget> buildContentFocused() {
-			final att = LayoutBuilder(
+			final atts = latestThread.attachments.map((attachment) => LayoutBuilder(
 				builder: (context, constraints) {
 					return PopupAttachment(
-						attachment: latestThread.attachment!,
+						attachment: attachment,
 						child: GestureDetector(
 							child: Stack(
 								children: [
@@ -309,12 +314,12 @@ class ThreadRow extends StatelessWidget {
 										width: constraints.maxWidth,
 										height: constraints.maxHeight,
 										fit: BoxFit.cover,
-										attachment: latestThread.attachment!,
+										attachment: attachment,
 										thread: latestThread.identifier,
 										onLoadError: onThumbnailLoadError,
 										hero: null
 									),
-									if (latestThread.attachment?.type == AttachmentType.webm) Positioned(
+									if (attachment.type == AttachmentType.webm) Positioned(
 										bottom: 0,
 										right: 0,
 										child: Container(
@@ -329,11 +334,11 @@ class ThreadRow extends StatelessWidget {
 									)
 								]
 							),
-							onTap: () => onThumbnailTap?.call(latestThread.attachment!)
+							onTap: () => onThumbnailTap?.call(attachment)
 						)
 					);
 				}
-			);
+			)).toList();
 			final txt = Padding(
 				padding: const EdgeInsets.all(8),
 				child: ChangeNotifierProvider<PostSpanZoneData>(
@@ -372,7 +377,11 @@ class ThreadRow extends StatelessWidget {
 			);
 			if (settings.catalogGridModeAttachmentInBackground) {
 				return [
-					att,
+					Column(
+						children: atts.map((a) => Expanded(
+							child: a
+						)).toList()
+					),
 					Align(
 						alignment: Alignment.bottomCenter,
 						child: Container(
@@ -388,7 +397,7 @@ class ThreadRow extends StatelessWidget {
 					Column(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							if (latestThread.attachment != null) Expanded(
+							for (final att in atts) Expanded(
 								child: att
 							),
 							ConstrainedBox(

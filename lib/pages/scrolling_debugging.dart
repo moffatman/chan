@@ -30,6 +30,9 @@ class FakeItem implements Filterable {
 
 	@override
 	List<int> get repliedToIds => [];
+
+	@override
+	Iterable<String> get md5s => [];
 }
 
 class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {

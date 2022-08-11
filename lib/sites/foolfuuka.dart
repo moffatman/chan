@@ -167,7 +167,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			}
 			return Attachment(
 				board: data['board']['shortname'],
-				id: int.parse(serverFilenameParts.first),
+				id: serverFilenameParts.first,
 				filename: data['media']['media_filename'],
 				ext: '.${serverFilenameParts.last}',
 				type: serverFilenameParts.last == 'webm' ? AttachmentType.webm : AttachmentType.image,
@@ -208,6 +208,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				// Malformed EXIF JSON
 			}
 		}
+		final a = _makeAttachment(data);
 		return Post(
 			board: board,
 			text: data['comment_processed'] ?? '',
@@ -216,7 +217,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			time: DateTime.fromMillisecondsSinceEpoch(data['timestamp'] * 1000),
 			id: int.parse(data['num']),
 			threadId: threadId,
-			attachment: _makeAttachment(data),
+			attachments: a == null ? [] : [a],
 			spanFormat: PostSpanFormat.foolFuuka,
 			flag: _makeFlag(data),
 			posterId: data['poster_hash'],
@@ -272,15 +273,16 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}
 		final posts = (await Future.wait([op, ...replies].map(_makePost))).toList();
 		final String? title = op['title'];
+		final a = _makeAttachment(op);
 		return Thread(
 			board: thread.board,
 			isDeleted: false,
 			replyCount: posts.length - 1,
-			imageCount: posts.skip(1).where((post) => post.attachment != null).length,
+			imageCount: posts.skip(1).expand((post) => post.attachments).length,
 			isArchived: true,
 			posts_: posts,
 			id: thread.id,
-			attachment: _makeAttachment(op),
+			attachments: a == null ? [] : [a],
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: op['sticky'] == 1,
 			time: posts.first.time,

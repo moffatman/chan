@@ -251,7 +251,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 	final match = webmMatcher.firstMatch(url.toString());
 	if (match != null) {
 		final String board = match.group(1)!;
-		final int id = int.parse(match.group(2)!);
+		final String id = match.group(2)!;
 		await showGallery(
 			context: context,
 			attachments: [
@@ -263,7 +263,11 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 					filename: '$id.webm',
 					url: url,
 					thumbnailUrl: Uri.https(context.read<ImageboardSite>().imageUrl, '/$board/${id}s.jpg'),
-					md5: ''
+					md5: '',
+					width: null,
+					height: null,
+					sizeInBytes: null,
+					threadId: null
 				)
 			],
 			semanticParentIds: []

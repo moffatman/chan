@@ -23,7 +23,6 @@ class SiteLainchan extends ImageboardSite {
 	final String baseUrl;
 	@override
 	final String name;
-	List<ImageboardBoard>? _boards;
 
 	final _unescape = HtmlUnescape();
 
@@ -96,9 +95,10 @@ class SiteLainchan extends ImageboardSite {
 	@protected
 	String? get imageThumbnailExtension => '.png';
 
-	Attachment? _makeAttachment(String board, int threadId, dynamic data) {
-		if (data['tim'] != null) {
-			final id = int.tryParse(data['tim']) ?? int.tryParse(data['tim'].split('-').first) ?? data['time'];
+	List<Attachment> _makeAttachments(String board, int threadId, dynamic postData) {
+		final ret = <Attachment>[];
+		Attachment makeAttachment(dynamic data) {
+			final id = data['tim'];
 			final String ext = data['ext'];
 			AttachmentType type = AttachmentType.image;
 			if (ext == '.webm') {
@@ -107,14 +107,17 @@ class SiteLainchan extends ImageboardSite {
 			else if (ext == '.mp4') {
 				type = AttachmentType.mp4;
 			}
+			else if (ext == '.mp3') {
+				type = AttachmentType.mp3;
+			}
 			return Attachment(
 				id: id,
 				type: type,
 				filename: _unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
 				ext: ext,
 				board: board,
-				url: getAttachmentUrl(board, '${data['tim']}$ext'),
-				thumbnailUrl: getThumbnailUrl(board, '${data['tim']}${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}'),
+				url: getAttachmentUrl(board, '$id$ext'),
+				thumbnailUrl: type == AttachmentType.mp3 ? Uri.https(baseUrl, '/static/mp3.png') : getThumbnailUrl(board, '$id${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}'),
 				md5: data['md5'],
 				spoiler: data['spoiler'] == 1,
 				width: data['w'],
@@ -123,7 +126,15 @@ class SiteLainchan extends ImageboardSite {
 				sizeInBytes: data['fsize']
 			);
 		}
-		return null;
+		if (postData['tim'] != null) {
+			ret.add(makeAttachment(postData));
+			if (postData['extra_files'] != null) {
+				for (final extraFile in (postData['extra_files'] as List<dynamic>).cast<Map<String, dynamic>>()) {
+					ret.add(makeAttachment(extraFile));
+				}
+			}
+		}
+		return ret;
 	}
 
 	ImageboardFlag? _makeFlag(dynamic data) {
@@ -146,7 +157,7 @@ class SiteLainchan extends ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
 			id: data['no'],
 			threadId: threadId,
-			attachment: _makeAttachment(board, threadId, data),
+			attachments: _makeAttachments(board, threadId, data),
 			attachmentDeleted: data['filedeleted'] == 1,
 			spanFormat: PostSpanFormat.lainchan,
 			posterId: data['id'],
@@ -172,19 +183,19 @@ class SiteLainchan extends ImageboardSite {
 		}
 		final firstPost = response.data['posts'][0];
 		final List<Post> posts = (response.data['posts'] ?? []).map<Post>((postData) => _makePost(thread.board, thread.id, postData)).toList();
-		if (posts.first.attachment != null) {
-			await ensureCookiesMemoized(posts.first.attachment!.url);
-			await ensureCookiesMemoized(posts.first.attachment!.thumbnailUrl);
+		for (final attachment in posts.first.attachments) {
+			await ensureCookiesMemoized(attachment.url);
+			await ensureCookiesMemoized(attachment.thumbnailUrl);
 		}
 		return Thread(
 			board: thread.board,
 			id: thread.id,
 			isSticky: firstPost['sticky'] == 1,
 			title: firstPost['sub'],
-			attachment: posts[0].attachment,
+			attachments: posts[0].attachments,
 			time: DateTime.fromMillisecondsSinceEpoch(firstPost['time'] * 1000),
 			replyCount: posts.length - 1,
-			imageCount: posts.where((p) => p.attachment != null).length - 1,
+			imageCount: posts.skip(1).expand((p) => p.attachments).length,
 			posts_: posts,
 			flag: posts.first.flag
 		);
@@ -211,7 +222,7 @@ class SiteLainchan extends ImageboardSite {
 					id: threadData['no'],
 					title: threadData['sub'],
 					posts_: [threadAsPost],
-					attachment: threadAsPost.attachment,
+					attachments: threadAsPost.attachments,
 					replyCount: threadData['replies'],
 					imageCount: threadData['images'],
 					isSticky: threadData['sticky'] == 1,
@@ -225,8 +236,8 @@ class SiteLainchan extends ImageboardSite {
 		return threads;
 	}
 
-	@protected
-	Future<List<ImageboardBoard>> getBoardsOnce() async {
+	@override
+	Future<List<ImageboardBoard>> getBoards() async {
 		final response = await client.get(Uri.https(baseUrl, '/boards.json').toString(), options: Options(
 			responseType: ResponseType.json
 		));
@@ -236,12 +247,6 @@ class SiteLainchan extends ImageboardSite {
 			isWorksafe: board['ws_board'] == 1,
 			webmAudioAllowed: board['webm_audio'] == 1
 		)).toList();
-	}
-
-	@override
-	Future<List<ImageboardBoard>> getBoards() async {
-		_boards ??= await getBoardsOnce();
-		return _boards!;
 	}
 
 	Future<PostReceipt> _post({
@@ -413,7 +418,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	CaptchaRequest getCaptchaRequest(String board, [int? threadId]) {
+	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
 		return NoCaptchaRequest();
 	}
 

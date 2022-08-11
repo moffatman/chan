@@ -165,19 +165,19 @@ class AttachmentViewerController extends ChangeNotifier {
 					attachment.board,
 					attachment.threadId!
 				), validate: (thread) async {
-					final post = thread.posts.tryFirstWhere((p) => p.attachment?.id == attachment.id);
-					if (post == null) {
+					final newAttachment = thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id);
+					if (newAttachment == null) {
 						throw AttachmentNotFoundException(attachment);
 					}
-					final check = await site.client.head(post.attachment!.url.toString(), options: Options(
+					final check = await site.client.head(newAttachment.url.toString(), options: Options(
 						validateStatus: (_) => true,
-						headers: context.read<ImageboardSite>().getHeaders(post.attachment!.url)
+						headers: context.read<ImageboardSite>().getHeaders(newAttachment.url)
 					));
 					if (check.statusCode != 200) {
 						throw AttachmentNotArchivedException(attachment);
 					}
 				});
-				return archivedThread.posts.tryFirstWhere((p) => p.attachment?.id == attachment.id)!.attachment!.url;
+				return archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)!.url;
 			}
 		}
 		if (result.statusCode == 404) {
@@ -223,14 +223,14 @@ class AttachmentViewerController extends ChangeNotifier {
 			notifyListeners();
 		});
 		try {
-			if (attachment.type == AttachmentType.image) {
+			if (attachment.type == AttachmentType.image || attachment.type == AttachmentType.pdf) {
 				_goodImageSource = await _getGoodSource();
 				if (_goodImageSource?.scheme == 'file') {
 					_cachedFile = File(_goodImageSource!.path);
 				}
 				if (_isDisposed) return;
 				notifyListeners();
-				if (startImageDownload) {
+				if (startImageDownload && attachment.type == AttachmentType.image) {
 					await ExtendedNetworkImageProvider(
 						goodImageSource.toString(),
 						cache: true,
@@ -242,9 +242,9 @@ class AttachmentViewerController extends ChangeNotifier {
 					}
 				}
 			}
-			else if (attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4) {
+			else if (attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
 				final url = await _getGoodSource();
-				if (Platform.isAndroid || attachment.type == AttachmentType.mp4) {
+				if (Platform.isAndroid || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
 					final scan = await MediaScan.scan(url, headers: site.getHeaders(url) ?? {});
 					_hasAudio = scan.hasAudio;
 					if (scan.codec == 'vp9') {
@@ -888,6 +888,46 @@ class AttachmentViewer extends StatelessWidget {
 		);
 	}
 
+	Widget _buildPdf(BuildContext context, Size? size) {
+		return ExtendedImageSlidePageHandler(
+			heroBuilderForSlidingPage: (Widget result) {
+				return Hero(
+					tag: _tag,
+					child: result,
+					flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
+				);
+			},
+			child: SizedBox.fromSize(
+				size: size,
+				child: Stack(
+					children: [
+						AttachmentThumbnail(
+							attachment: attachment,
+							width: double.infinity,
+							height: double.infinity,
+							quarterTurns: controller.quarterTurns,
+							gaplessPlayback: true,
+							revealSpoilers: true
+						),
+						Center(
+							child: ErrorMessageCard(
+								'PDFs not viewable in-app',
+								remedies: {
+									'Open externally': () => shareOne(
+										context: context,
+										text: controller.goodImageSource.toString(),
+										type: 'text',
+										sharePositionOrigin: null
+									)
+								}
+							)
+						)
+					]
+				)
+			)
+		);
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		return FirstBuildDetector(
@@ -901,6 +941,9 @@ class AttachmentViewer extends StatelessWidget {
 						}
 						if (attachment.type == AttachmentType.image) {
 							return _buildImage(context, targetSize, passedFirstBuild);
+						}
+						else if (attachment.type == AttachmentType.pdf) {
+							return _buildPdf(context, targetSize);
 						}
 						else {
 							return _buildVideo(context, targetSize);

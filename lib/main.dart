@@ -1095,7 +1095,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									builder: (context, _) {
 										final threadState = Persistence.tabs[i].imageboard?.persistence.getThreadStateIfExists(Persistence.tabs[i].thread!);
 										Future.microtask(() => Persistence.tabs[i].unseen.value = threadState?.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
-										final attachment = threadState?.thread?.attachment;
+										final attachment = threadState?.thread?.attachments.tryFirst;
 										buildIcon() => _buildTabletIcon(i * -1, StationaryNotifyingIcon(
 												icon: attachment == null ? blankIcon : ClipRRect(
 													borderRadius: const BorderRadius.all(Radius.circular(4)),

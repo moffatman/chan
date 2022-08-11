@@ -152,7 +152,7 @@ class _BoardPageState extends State<BoardPage> {
 		Widget itemBuilder(BuildContext context, Thread thread, {String? highlightString}) {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
 			final isThreadHidden = context.select<Persistence, bool>((p) => p.browserState.isThreadHidden(thread.board, thread.id));
-			final isImageHidden = thread.attachment?.md5 != null && context.select<Persistence, bool>((p) => p.browserState.isMD5Hidden(thread.attachment?.md5));
+			final isImageHidden = context.select<Persistence, bool>((p) => p.browserState.areMD5sHidden(thread.md5s));
 			return ContextMenu(
 				actions: [
 					if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
@@ -205,16 +205,16 @@ class _BoardPageState extends State<BoardPage> {
 						child: const Text('Unhide by image'),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
-							context.read<Persistence>().browserState.unHideByMD5(thread.attachment!.md5);
+							context.read<Persistence>().browserState.unHideByMD5s(thread.md5s);
 							context.read<Persistence>().didUpdateBrowserState();
 							setState(() {});
 						}
 					)
-					else if (thread.attachment?.md5 != null) ContextMenuAction(
+					else if (thread.attachments.isNotEmpty) ContextMenuAction(
 						child: const Text('Hide by image'),
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () {
-							context.read<Persistence>().browserState.hideByMD5(thread.attachment!.md5);
+							thread.md5s.forEach(context.read<Persistence>().browserState.hideByMD5);
 							context.read<Persistence>().didUpdateBrowserState();
 							setState(() {});
 						}
@@ -228,16 +228,18 @@ class _BoardPageState extends State<BoardPage> {
 						isSelected: thread.identifier == widget.selectedThread,
 						semanticParentIds: [widget.semanticId],
 						onThumbnailTap: (initialAttachment) {
-							final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
+							final attachments = _listController.items.expand((_) => _.attachments).toList();
 							showGallery(
 								context: context,
 								attachments: attachments,
 								replyCounts: {
-									for (final thread in _listController.items.where((_) => _.attachment != null)) thread.attachment!: thread.replyCount
+									for (final thread in _listController.items)
+										for (final attachment in thread.attachments)
+											attachment: thread.replyCount
 								},
 								initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 								onChange: (attachment) {
-									_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
+									_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
 								},
 								semanticParentIds: [widget.semanticId]
 							);
@@ -482,19 +484,21 @@ class _BoardPageState extends State<BoardPage> {
 									bindings: {
 										LogicalKeySet(LogicalKeyboardKey.keyG): () {
 											if (board != null && context.read<EffectiveSettings>().showImages(context, board!.name)) {
-												final nextThreadWithImage = _listController.items.skip(_listController.firstVisibleIndex).firstWhere((t) => t.attachment != null, orElse: () {
-													return _listController.items.firstWhere((t) => t.attachment != null);
+												final nextThreadWithImage = _listController.items.skip(_listController.firstVisibleIndex).firstWhere((t) => t.attachments.isNotEmpty, orElse: () {
+													return _listController.items.firstWhere((t) => t.attachments.isNotEmpty);
 												});
-												final attachments = _listController.items.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
+												final attachments = _listController.items.expand((_) => _.attachments).toList();
 												showGallery(
 													context: context,
 													attachments: attachments,
 													replyCounts: {
-														for (final thread in _listController.items.where((_) => _.attachment != null)) thread.attachment!: thread.replyCount
+														for (final thread in _listController.items)
+															for (final attachment in thread.attachments)
+																attachment: thread.replyCount
 													},
-													initialAttachment: attachments.firstWhere((a) => a.id == nextThreadWithImage.attachment!.id),
+													initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.attachments.any((a2) => a2.id == a.id)),
 													onChange: (attachment) {
-														_listController.animateTo((p) => p.attachment?.id == attachment.id, alignment: 0.5);
+														_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
 													},
 													semanticParentIds: [widget.semanticId]
 												);

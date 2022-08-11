@@ -82,6 +82,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			fit: fit,
 			alignment: alignment,
 			gaplessPlayback: gaplessPlayback,
+			//filterQuality: FilterQuality.high,
 			loadStateChanged: (loadstate) {
 				if (loadstate.extendedImageLoadState == LoadState.loading) {
 					return SizedBox(

@@ -21,9 +21,10 @@ abstract class Filterable {
 	String? getFilterFieldText(String fieldName);
 	String get board;
 	int get id;
-	List<int> get repliedToIds;
+	Iterable<int> get repliedToIds;
 	bool get hasFile;
 	bool get isThread;
+	Iterable<String> get md5s;
 }
 
 abstract class Filter {

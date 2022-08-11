@@ -139,6 +139,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		imageCount: -1,
 		time: DateTime.fromMicrosecondsSinceEpoch(0),
 		posts_: [],
+		attachments: []
 	);
 
 	Future<void> _blockAndScrollToPostIfNeeded([Duration delayBeforeScroll = Duration.zero]) async {
@@ -260,17 +261,19 @@ class _ThreadPageState extends State<ThreadPage> {
 	}
 
 	void _showGallery({bool initiallyShowChrome = false, Attachment? initialAttachment}) {
-		final attachments = persistentState.thread!.posts.where((_) => _.attachment != null).map((_) => _.attachment!).toList();
+		final attachments = persistentState.thread!.posts.expand((_) => _.attachments).toList();
 		showGallery(
 			context: context,
 			attachments: attachments,
 			replyCounts: {
-				for (final post in persistentState.thread!.posts.where((_) => _.attachment != null)) post.attachment!: post.replyIds.length
+				for (final post in persistentState.thread!.posts)
+					for (final attachment in post.attachments)
+						attachment: post.replyIds.length
 			},
 			initiallyShowChrome: initiallyShowChrome,
 			initialAttachment: (initialAttachment == null) ? null : attachments.firstWhere((a) => a.id == initialAttachment.id),
 			onChange: (attachment) {
-				_listController.animateTo((p) => p.attachment?.id == attachment.id);
+				_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id));
 			},
 			semanticParentIds: [widget.boardSemanticId, 0]
 		);
@@ -418,11 +421,11 @@ class _ThreadPageState extends State<ThreadPage> {
 												OpenGalleryIntent: CallbackAction<OpenGalleryIntent>(
 													onInvoke: (i) {
 														if (context.read<EffectiveSettings>().showImages(context, widget.thread.board)) {
-															final nextPostWithImage = persistentState.thread?.posts.skip(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null, orElse: () {
-																return persistentState.thread!.posts.take(_listController.firstVisibleIndex).firstWhere((p) => p.attachment != null);
+															final nextPostWithImage = persistentState.thread?.posts.skip(_listController.firstVisibleIndex).firstWhere((p) => p.attachments.isNotEmpty, orElse: () {
+																return persistentState.thread!.posts.take(_listController.firstVisibleIndex).firstWhere((p) => p.attachments.isNotEmpty);
 															});
 															if (nextPostWithImage != null) {
-																_showGallery(initialAttachment: nextPostWithImage.attachment);
+																_showGallery(initialAttachment: nextPostWithImage.attachments.first);
 															}
 														}
 														return null;
@@ -857,8 +860,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19)
 											),
 											() {
-												final nextPostWithImage = widget.persistentState.thread?.posts.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.attachment != null, orElse: () {
-													return widget.persistentState.thread!.posts.take(widget.listController.firstVisibleIndex).lastWhere((p) => p.attachment != null);
+												final nextPostWithImage = widget.persistentState.thread?.posts.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.attachments.isNotEmpty, orElse: () {
+													return widget.persistentState.thread!.posts.take(widget.listController.firstVisibleIndex).lastWhere((p) => p.attachments.isNotEmpty);
 												});
 												final imageboard = context.read<Imageboard>();
 												Navigator.of(context).push(FullWidthCupertinoPageRoute(
@@ -867,7 +870,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 														imageboard: imageboard,
 														child: ThreadAttachmentsPage(
 															thread: widget.persistentState.thread!,
-															initialAttachment: nextPostWithImage?.attachment,
+															initialAttachment: nextPostWithImage?.attachments.first,
 															//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
 														)
 													),

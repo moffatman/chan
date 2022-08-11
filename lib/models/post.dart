@@ -42,7 +42,7 @@ class Post implements Filterable {
 	@HiveField(5)
 	final int id;
 	@HiveField(6)
-	Attachment? attachment;
+	Attachment? deprecatedAttachment;
 	@HiveField(7)
 	final ImageboardFlag? flag;
 	@HiveField(8)
@@ -79,6 +79,8 @@ class Post implements Filterable {
 	int? passSinceYear;
 	@HiveField(15)
 	String? capcode;
+	@HiveField(16, defaultValue: [])
+	final List<Attachment> attachments;
 	Post({
 		required this.board,
 		required this.text,
@@ -89,12 +91,13 @@ class Post implements Filterable {
 		required this.id,
 		required this.spanFormat,
 		this.flag,
-		this.attachment,
+		this.deprecatedAttachment,
 		this.attachmentDeleted = false,
 		this.posterId,
 		this.foolfuukaLinkedPostThreadIds,
 		this.passSinceYear,
-		this.capcode
+		this.capcode,
+		required this.attachments
 	});
 
 	@override
@@ -108,7 +111,7 @@ class Post implements Filterable {
 			case 'name':
 				return name;
 			case 'filename':
-				return attachment?.filename;
+				return attachments.map((a) => a.filename).join(' ');
 			case 'text':
 				return span.buildText();
 			case 'postID':
@@ -118,17 +121,19 @@ class Post implements Filterable {
 			case 'flag':
 				return flag?.name;
 			case 'md5':
-				return attachment?.md5;
+				return attachments.map((a) => a.md5).join(' ');
 			default:
 				return null;
 		}
 	}
 	@override
-	bool get hasFile => attachment != null;
+	bool get hasFile => attachments.isNotEmpty;
 	@override
 	bool get isThread => false;
 	@override
-	List<int> get repliedToIds => span.referencedPostIds(board);
+	Iterable<int> get repliedToIds => span.referencedPostIds(board);
+	@override
+	Iterable<String> get md5s => attachments.map((a) => a.md5);
 
 	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board, threadId);
 
