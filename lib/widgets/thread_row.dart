@@ -69,7 +69,7 @@ class ThreadRow extends StatelessWidget {
 		if (threadState?.lastSeenPostId != null) {
 			final filter = Filter.of(context);
 			unseenReplyCount = (threadState?.unseenReplyCount(filter) ?? 0) + ((latestReplyCount + 1) - latestThread.posts.length);
-			unseenYouCount = threadState?.unseenReplyIdsToYou(filter)?.length ?? 0;
+			unseenYouCount = threadState?.unseenReplyIdsToYouCount(filter) ?? 0;
 			unseenImageCount = (threadState?.unseenImageCount(filter) ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.expand((x) => x.attachments).length ?? 0));
 			replyCountColor = unseenReplyCount == 0 ? grey : null;
 			imageCountColor = unseenImageCount == 0 ? grey : null;

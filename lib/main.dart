@@ -1107,7 +1107,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 														height: 30
 													)
 												),
-												primary: threadState?.unseenReplyIdsToYou(Filter.of(context))?.length ?? 0,
+												primary: threadState?.unseenReplyIdsToYouCount(Filter.of(context)) ?? 0,
 												secondary: threadState?.unseenReplyCount(Filter.of(context)) ?? 0
 											),
 											Persistence.tabs[i].board != null ? '/${Persistence.tabs[i].board?.name}/' : 'None',

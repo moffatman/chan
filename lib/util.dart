@@ -11,7 +11,10 @@ extension SafeWhere<T> on Iterable<T> {
 }
 
 extension BinarySafeWhere<T> on List<T> {
-	int binarySearchTryFirstIndexWhere(bool Function(T v) f) {
+	int binarySearchFirstIndexWhere(bool Function(T v) f) {
+		if (isEmpty) {
+			return -1;
+		}
 		int min = 0;
 		int max = length - 1;
 		while (min < max) {
@@ -30,8 +33,6 @@ extension BinarySafeWhere<T> on List<T> {
 				min = mid + 1;
 			}
 		}
-		print(first);
-		print(f(first));
 		if (f(first)) {
 			return 0;
 		}
@@ -41,13 +42,16 @@ extension BinarySafeWhere<T> on List<T> {
 		return -1;
 	}
 	T? binarySearchTryFirstWhere(bool Function(T v) f) {
-		final index = binarySearchTryFirstIndexWhere(f);
+		final index = binarySearchFirstIndexWhere(f);
 		if (index == -1) {
 			return null;
 		}
 		return this[index];
 	}
-	int binarySearchTryLastIndexWhere(bool Function(T v) f) {
+	int binarySearchLastIndexWhere(bool Function(T v) f) {
+		if (isEmpty) {
+			return -1;
+		}
 		int min = 0;
 		int max = length - 1;
 		while (min < max) {
@@ -75,11 +79,29 @@ extension BinarySafeWhere<T> on List<T> {
 		return -1;
 	}
 	T? binarySearchTryLastWhere(bool Function(T v) f) {
-		final index = binarySearchTryLastIndexWhere(f);
+		final index = binarySearchLastIndexWhere(f);
 		if (index == -1) {
 			return null;
 		}
 		return this[index];
+	}
+	int binarySearchCountBefore(bool Function(T v) f) {
+		final index = binarySearchFirstIndexWhere(f);
+		if (index == -1) {
+			return length;
+		}
+		else {
+			return length - index;
+		}
+	}
+	int binarySearchCountAfter(bool Function(T v) f) {
+		final index = binarySearchFirstIndexWhere(f);
+		if (index == -1) {
+			return 0;
+		}
+		else {
+			return length - index;
+		}
 	}
 }
 

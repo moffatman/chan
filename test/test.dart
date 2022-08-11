@@ -9,7 +9,7 @@ void main() {
       for (int length = 1; length < 90; length++) {
         for (int switchpoint = 0; switchpoint <= length; switchpoint++) {
           final List<bool> list = List.generate(length, (i) => i >= switchpoint);
-          expect(list.binarySearchTryFirstIndexWhere(id), switchpoint == length ? -1 : switchpoint);
+          expect(list.binarySearchFirstIndexWhere(id), switchpoint == length ? -1 : switchpoint);
         }
       }
     });
@@ -17,7 +17,7 @@ void main() {
       for (int length = 1; length < 90; length++) {
         for (int switchpoint = 0; switchpoint <= length; switchpoint++) {
           final List<bool> list = List.generate(length, (i) => i <= switchpoint);
-          expect(list.binarySearchTryLastIndexWhere(id), switchpoint == length ? length - 1 : switchpoint);
+          expect(list.binarySearchLastIndexWhere(id), switchpoint == length ? length - 1 : switchpoint);
         }
       }
     });

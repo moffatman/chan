@@ -21,6 +21,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
+import 'package:chan/util.dart';
 part 'persistence.g.dart';
 
 const _knownCacheDirs = {
@@ -482,7 +483,7 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	@HiveField(3)
 	List<PostReceipt> receipts = [];
 	@HiveField(4)
-	Thread? thread;
+	Thread? _thread;
 	@HiveField(5)
 	bool useArchive = false;
 	@HiveField(7, defaultValue: [])
@@ -502,39 +503,48 @@ class PersistentThreadState extends HiveObject implements Filterable {
 
 	PersistentThreadState({this.ephemeral = false}) : lastOpenedTime = DateTime.now();
 
-	List<int> get youIds => receipts.map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toList();
+	void _invalidate() {
+		_replyIdsToYou.clear();
+		__filteredPosts.clear();
+	}
+
+	Thread? get thread => _thread;
+	set thread(Thread? newThread) {
+		if (newThread != _thread) {
+			_thread = newThread;
+			_youIds = null;
+			_invalidate();
+		}
+	}
+
+	List<int>? _youIds;
+	List<int> get youIds {
+		_youIds ??= receipts.map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toList();
+		return _youIds!;
+	}
 	final FilterCache _filterCache = FilterCache(const DummyFilter());
-	List<int>? replyIdsToYou(Filter filter) {
-		_filterCache.setFilter(FilterGroup([filter, threadFilter]));
-		final tmpYouIds = youIds;
-		return thread?.posts.where((p) {
-			return (_filterCache.filter(p)?.type != FilterResultType.hide) &&
-						 p.span.referencedPostIds(thread!.board).any((id) => tmpYouIds.contains(id));
+	final Map<Filter, List<int>?> _replyIdsToYou = {};
+	List<int>? replyIdsToYou(Filter filter) => _replyIdsToYou.putIfAbsent(filter, () {
+		return _filteredPosts(filter)?.where((p) {
+			return p.span.referencedPostIds(thread!.board).any((id) => youIds.contains(id));
 		}).map((p) => p.id).toList();
-	}
-	List<int>? unseenReplyIdsToYou(Filter filter) => replyIdsToYou(filter)?.where((id) => id > lastSeenPostId!).toList();
-	int? unseenReplyCount(Filter filter) {
-		if (lastSeenPostId != null) {
-			_filterCache.setFilter(FilterGroup([filter, threadFilter]));
-			return thread?.posts.where((p) {
-				return (p.id > lastSeenPostId!) &&
-							 _filterCache.filter(p)?.type != FilterResultType.hide;
-			}).length;
+	});
+
+	int? unseenReplyIdsToYouCount(Filter filter) => replyIdsToYou(filter)?.binarySearchCountAfter((id) => id > lastSeenPostId!);
+	final Map<Filter, List<Post>?> __filteredPosts = {};
+	List<Post>? _filteredPosts(Filter filter) => __filteredPosts.putIfAbsent(filter, () {
+		if (lastSeenPostId == null) {
+			return null;
 		}
-		return null;
-	}
-	int? unseenImageCount(Filter filter) {
-		if (lastSeenPostId != null) {
-			_filterCache.setFilter(FilterGroup([filter, threadFilter]));
-			return thread?.posts.map((p) {
-				if (p.id <= lastSeenPostId! || _filterCache.filter(p)?.type == FilterResultType.hide) {
-					return 0;
-				}
-				return p.attachments.length;
-			}).fold<int>(0, (a, b) => a + b);
+		return thread?.posts.where((p) => _filterCache.filter(p)?.type != FilterResultType.hide).toList();
+	});
+	int? unseenReplyCount(Filter filter) => _filteredPosts(filter)?.binarySearchCountAfter((p) => p.id > lastSeenPostId!);
+	int? unseenImageCount(Filter filter) => _filteredPosts(filter)?.map((p) {
+		if (p.id <= lastSeenPostId! || _filterCache.filter(p)?.type == FilterResultType.hide) {
+			return 0;
 		}
-		return null;
-	}
+		return p.attachments.length;
+	}).fold<int>(0, (a, b) => a + b);
 
 	@override
 	String toString() => 'PersistentThreadState(lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime, useArchive: $useArchive)';
@@ -562,23 +572,27 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		}
 		// invalidate cache
 		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
+		_invalidate();
 	}
 	void unHidePost(int id) {
 		hiddenPostIds.remove(id);
 		treeHiddenPostIds.remove(id);
 		// invalidate cache
 		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
+		_invalidate();
 	}
 
 	void hidePosterId(String id) {
 		hiddenPosterIds.add(id);
 		// invalidate cache
 		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
+		_invalidate();
 	}
 	void unHidePosterId(String id) {
 		hiddenPosterIds.remove(id);
 		// invalidate cache
 		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
+		_invalidate();
 	}
 
 	@override

@@ -151,7 +151,7 @@ class ThreadWatcher extends ChangeNotifier {
 		_boxSubscription = persistence.threadStateBox.watch().listen(_threadUpdated);
 		// Set initial counts
 		for (final watch in persistence.browserState.threadWatches) {
-			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYou(_filter)?.length ?? 0;
+			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount(_filter) ?? 0;
 			if (!watch.localYousOnly) {
 				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
 			}
@@ -177,7 +177,7 @@ class ThreadWatcher extends ChangeNotifier {
 
 	void onWatchUpdated(Watch watch) {
 		if (watch is ThreadWatch) {
-			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYou(_filter)?.length ?? 0;
+			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount(_filter) ?? 0;
 			if (watch.localYousOnly) {
 				cachedUnseen.remove(watch.threadIdentifier);
 			}
@@ -213,7 +213,7 @@ class ThreadWatcher extends ChangeNotifier {
 				}
 				final watch = persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == newThreadState.identifier);
 				if (watch != null) {
-					cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYou(_filter)?.length ?? 0;
+					cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount(_filter) ?? 0;
 					if (!watch.localYousOnly) {
 						cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
 					}
