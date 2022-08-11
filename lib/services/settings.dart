@@ -953,6 +953,7 @@ class EffectiveSettings extends ChangeNotifier {
 					fontFamily: '.SF Pro Text',
 					fontSize: 17.0,
 					letterSpacing: -0.41,
+					fontWeight: FontWeight.w600,
 					color: darkTheme.primaryColor,
 					decoration: TextDecoration.none,
 				)
