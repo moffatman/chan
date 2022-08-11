@@ -14,10 +14,13 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/hover_popup.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/reply_box.dart';
 import 'package:chan/widgets/tex.dart';
+import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -1222,4 +1225,122 @@ class ExpandingPost extends StatelessWidget {
 			)
 		) : const SizedBox.shrink();
 	}
+}
+
+String _makeAttachmentInfo({
+	required Post post,
+	required EffectiveSettings settings
+}) {
+	String text = '';
+	for (final attachment in post.attachments) {
+		if (settings.showFilenameOnPosts) {
+			text += '${attachment.filename} ';
+		}
+		if (settings.showFilesizeOnPosts || settings.showFileDimensionsOnPosts) {
+			text += '(';
+			bool firstItemPassed = false;
+			if (settings.showFilesizeOnPosts) {
+				text += '${((attachment.sizeInBytes ?? 0) / 1024).round()} KB';
+				firstItemPassed = true;
+			}
+			if (settings.showFileDimensionsOnPosts) {
+				if (firstItemPassed) {
+					text += ', ';
+				}
+				text += '${attachment.width}x${attachment.height}';
+			}
+			text += ') ';
+		}
+	}
+	return text;
+}
+
+List<InlineSpan> buildPostInfoRow({
+	required Post post,
+	required bool isYourPost,
+	required bool showSiteIcon,
+	required bool showBoardName,
+	required EffectiveSettings settings,
+	required ImageboardSite site,
+	required BuildContext context,
+	required PostSpanZoneData zone,
+	bool interactive = true
+}) {
+	return [
+		for (final field in settings.postDisplayFieldOrder)
+			if (field == PostDisplayField.name) ...[
+				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername)) TextSpan(
+					text: settings.filterProfanity(post.name) + (isYourPost ? ' (You)' : ''),
+					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
+				)
+				else if (isYourPost) TextSpan(
+					text: '(You)',
+					style: TextStyle(fontWeight: FontWeight.w600, color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)
+				),
+				if (settings.showTripOnPosts && post.trip != null) TextSpan(
+					text: '${settings.filterProfanity(post.trip!)} ',
+					style: TextStyle(color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
+				)
+				else if (settings.showNameOnPosts || isYourPost) const TextSpan(text: ' '),
+				if (post.capcode != null) TextSpan(
+					text: '## ${post.capcode} ',
+					style: TextStyle(fontWeight: FontWeight.w600, color: settings.theme.quoteColor.shiftHue(200).shiftSaturation(-0.3))
+				)
+			]
+			else if (field == PostDisplayField.posterId && post.posterId != null) ...[
+				IDSpan(
+					id: post.posterId!,
+					onPressed: interactive ? () => WeakNavigator.push(context, PostsPage(
+						postsIdsToShow: zone.thread.posts.where((p) => p.posterId == post.posterId).map((p) => p.id).toList(),
+						zone: zone
+					)) : null
+				),
+				const TextSpan(text: ' ')
+			]
+			else if (field == PostDisplayField.attachmentInfo && post.attachments.isNotEmpty) TextSpan(
+				text: _makeAttachmentInfo(
+					post: post,
+					settings: settings
+				),
+				style: TextStyle(
+					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8)
+				)
+			)
+			else if (field == PostDisplayField.pass && settings.showPassOnPosts && post.passSinceYear != null) ...[
+				PassSinceSpan(
+					sinceYear: post.passSinceYear!,
+					site: site
+				),
+				const TextSpan(text: ' ')
+			]
+			else if (field == PostDisplayField.flag && settings.showFlagOnPosts && post.flag != null) ...[
+				FlagSpan(post.flag!),
+				const TextSpan(text: ' ')
+			]
+			else if (field == PostDisplayField.countryName && settings.showCountryNameOnPosts && post.flag != null) TextSpan(
+				text: '${post.flag!.name} ',
+				style: const TextStyle(
+					fontStyle: FontStyle.italic
+				)
+			)
+			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) TextSpan(
+				text: '${formatTime(post.time)} '
+			)
+			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts) TextSpan(
+				text: '${formatRelativeTime(post.time)} ago '
+			)
+			else if (field == PostDisplayField.postId) ...[
+				if (showSiteIcon) const WidgetSpan(
+					alignment: PlaceholderAlignment.middle,
+					child: ImageboardIcon()
+				),
+				TextSpan(
+					text: '${showBoardName ? '/${post.board}/' : ''}${post.id} ',
+					style: TextStyle(color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)),
+					recognizer: interactive ? (TapGestureRecognizer()..onTap = () {
+						context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.id);
+					}) : null
+				)
+			]
+	];
 }
