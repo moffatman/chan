@@ -65,6 +65,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 	Widget build(BuildContext context) {
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
 				middle: CupertinoSearchTextField(
 					focusNode: urlFocusNode,
 					controller: urlController,

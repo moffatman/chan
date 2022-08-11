@@ -21,6 +21,7 @@ class _FooterDebuggingPageState extends State<FooterDebuggingPage> {
 	Widget build(BuildContext context) {
 		return CupertinoPageScaffold(
 			navigationBar: const CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
 				middle: Text('Footer debugging')
 			),
 			child: RefreshableList<FakeItem>(

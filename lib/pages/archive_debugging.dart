@@ -171,6 +171,7 @@ class ArchiveDebuggingPage extends StatelessWidget {
 		final site = context.watch<ImageboardSite>() as Site4Chan;
 		return CupertinoPageScaffold(
 			navigationBar: const CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
 				middle: Text('Archive debugging')
 			),
 			child: ListView.builder(

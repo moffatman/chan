@@ -76,6 +76,7 @@ class CloudflareInterceptor extends Interceptor {
 		return await Navigator.of(ImageboardRegistry.instance.context!).push<String?>(FullWidthCupertinoPageRoute(
 			builder: (context) => CupertinoPageScaffold(
 				navigationBar: const CupertinoNavigationBar(
+					transitionBetweenRoutes: false,
 					middle: Text('Cloudflare Login')
 				),
 				child: InAppWebView(

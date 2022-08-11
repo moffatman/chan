@@ -10,6 +10,7 @@ class SocketDebuggingPage extends StatelessWidget {
 	Widget build(BuildContext context) {
 		return CupertinoPageScaffold(
 			navigationBar: const CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
 				middle: Text('Socket Stress Test')
 			),
 			child: GridView.builder(

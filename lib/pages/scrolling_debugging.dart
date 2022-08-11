@@ -45,6 +45,7 @@ class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
 	Widget build(BuildContext context) {
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
 				middle: const Text('Scrolling debugging'),
 				trailing: Row(
 					mainAxisSize: MainAxisSize.min,

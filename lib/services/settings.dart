@@ -927,6 +927,14 @@ class EffectiveSettings extends ChangeNotifier {
 					fontWeight: FontWeight.w600,
 					color: lightTheme.primaryColor,
 					decoration: TextDecoration.none,
+				),
+				navLargeTitleTextStyle: TextStyle(
+					inherit: false,
+					fontFamily: '.SF Pro Display',
+					fontSize: 34.0,
+					fontWeight: FontWeight.w700,
+					letterSpacing: 0.41,
+					color: lightTheme.primaryColor,
 				)
 			)
 		);
@@ -956,6 +964,14 @@ class EffectiveSettings extends ChangeNotifier {
 					fontWeight: FontWeight.w600,
 					color: darkTheme.primaryColor,
 					decoration: TextDecoration.none,
+				),
+				navLargeTitleTextStyle: TextStyle(
+					inherit: false,
+					fontFamily: '.SF Pro Display',
+					fontSize: 34.0,
+					fontWeight: FontWeight.w700,
+					letterSpacing: 0.41,
+					color: darkTheme.primaryColor,
 				)
 			)
 		);
