@@ -418,7 +418,7 @@ class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
 		animation = AnimationController(
 			value: widget.expanded ? 1.0 : 0.0,
 			vsync: this,
-			duration: const Duration(milliseconds: 300)
+			duration: widget.duration
 		);
 	}
 
@@ -430,6 +430,9 @@ class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
 		}
 		else if (!widget.expanded && oldWidget.expanded) {
 			animation.reverse(from: 1.0);
+		}
+		else if (widget.duration != oldWidget.duration) {
+			animation.duration = widget.duration;
 		}
 	}
 
