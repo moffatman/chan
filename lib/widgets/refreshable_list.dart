@@ -120,12 +120,10 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			_scrollViewKey = GlobalKey();
 			_sliverListKey = GlobalKey();
 			_closeSearch();
-			setState(() {
-				list = widget.initialList;
-				errorMessage = null;
-				errorType = null;
-				lastUpdateTime = null;
-			});
+			list = widget.initialList;
+			errorMessage = null;
+			errorType = null;
+			lastUpdateTime = null;
 			update();
 		}
 		else if (oldWidget.disableUpdates != widget.disableUpdates) {
@@ -136,9 +134,8 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 				resetTimer();
 			}
 		}
-		else if (!listEquals(oldWidget.initialList, widget.initialList)) {
+		else if (widget.disableUpdates && !listEquals(oldWidget.initialList, widget.initialList)) {
 			list = widget.initialList;
-			setState(() {});
 		}
 	}
 
@@ -175,6 +172,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 		if (updatingNow) {
 			return;
 		}
+		List<T>? newList;
 		try {
 			setState(() {
 				errorMessage = null;
@@ -185,12 +183,9 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			if (widget.controller?.scrollController?.positions.length == 1 && (widget.controller!.scrollController!.position.pixels > 0 && (widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent))) {
 				minUpdateDuration = const Duration(seconds: 1);
 			}
-			final newData = (await Future.wait([widget.listUpdater(), Future<List<T>?>.delayed(minUpdateDuration)])).first;
+			newList = (await Future.wait([widget.listUpdater(), Future<List<T>?>.delayed(minUpdateDuration)])).first;
 			resetTimer();
 			lastUpdateTime = DateTime.now();
-			if (newData != null) {
-				list = newData;
-			}
 		}
 		catch (e, st) {
 			errorMessage = e.toStringDio();
@@ -218,8 +213,10 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			widget.controller?.scrollController?.position.isScrollingNotifier.removeListener(listener);
 		}
 		updatingNow = false;
-		if (mounted) {
-			setState(() {});
+		if (mounted && newList != null) {
+			setState(() {
+				list = newList;
+			});
 		}
 	}
 
