@@ -292,6 +292,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 													child: TabBar(
 														controller: _tabController,
+														indicatorColor: CupertinoTheme.of(context).primaryColor,
 														tabs: panes.map((pane) => Tab(
 															icon: Icon(
 																pane.icon,

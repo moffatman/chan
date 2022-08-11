@@ -918,7 +918,16 @@ class EffectiveSettings extends ChangeNotifier {
 					color: lightTheme.primaryColor
 				),
 				actionTextStyle: TextStyle(color: lightTheme.secondaryColor),
-				navActionTextStyle: TextStyle(color: lightTheme.primaryColor)
+				navActionTextStyle: TextStyle(color: lightTheme.primaryColor),
+				navTitleTextStyle: TextStyle(
+  				inherit: false,
+					fontFamily: '.SF Pro Text',
+					fontSize: 17.0,
+					letterSpacing: -0.41,
+					fontWeight: FontWeight.w600,
+					color: lightTheme.primaryColor,
+					decoration: TextDecoration.none,
+				)
 			)
 		);
 	}
@@ -938,7 +947,15 @@ class EffectiveSettings extends ChangeNotifier {
 					color: darkTheme.primaryColor
 				),
 				actionTextStyle: TextStyle(color: darkTheme.secondaryColor),
-				navActionTextStyle: TextStyle(color: darkTheme.primaryColor)
+				navActionTextStyle: TextStyle(color: darkTheme.primaryColor),
+				navTitleTextStyle: TextStyle(
+  				inherit: false,
+					fontFamily: '.SF Pro Text',
+					fontSize: 17.0,
+					letterSpacing: -0.41,
+					color: darkTheme.primaryColor,
+					decoration: TextDecoration.none,
+				)
 			)
 		);
 	}

@@ -1371,6 +1371,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					child: CupertinoTabScaffold(
 						controller: _tabController,
 						tabBar: CupertinoTabBar(
+							inactiveColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.4),
 							items: [
 								BottomNavigationBarItem(
 									icon: AnimatedBuilder(
