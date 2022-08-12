@@ -968,7 +968,7 @@ class RefreshableListController<T> {
 	}
 	int get firstVisibleIndex {
 		if (scrollController?.hasOnePosition ?? false) {
-			return _items.indexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! > scrollController!.position.pixels));
+			return _items.lastIndexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! <= scrollController!.position.pixels));
 		}
 		return -1;
 	}
