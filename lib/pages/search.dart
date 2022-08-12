@@ -12,6 +12,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_thin_button.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:crypto/crypto.dart';
@@ -259,9 +260,18 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										color: CupertinoTheme.of(context).primaryColor.withOpacity(0.3),
 										alignment: Alignment.centerLeft,
 										padding: const EdgeInsets.only(left: 10, right: 20),
-										child: Text('/${query.boards.first}/', style: const TextStyle(
-											color: Colors.white
-										)),
+										child: Row(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												if (ImageboardRegistry.instance.count > 1 && query.imageboardKey != null) ...[
+													ImageboardIcon(imageboardKey: query.imageboardKey),
+													const SizedBox(width: 4),
+												],
+												Text('/${query.boards.first}/', style: const TextStyle(
+													color: Colors.white
+												))
+											]
+										),
 										onPressed: () async {
 											final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 												builder: (ctx) => ImageboardSwitcherPage(
@@ -292,10 +302,18 @@ class _SearchComposePageState extends State<SearchComposePage> {
 									visible: false,
 									child: Container(
 										padding: const EdgeInsets.only(left: 10, right: 5),
-										child: Text('/${query.boards.first}/', style: const TextStyle(
-											color: Colors.black,
-											fontWeight: FontWeight.bold
-										))
+										child: Row(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												if (ImageboardRegistry.instance.count > 1 && query.imageboardKey != null) ...[
+													ImageboardIcon(imageboardKey: query.imageboardKey),
+													const SizedBox(width: 4),
+												],
+												Text('/${query.boards.first}/', style: const TextStyle(
+													color: Colors.white
+												))
+											]
+										)
 									)
 								),
 								Expanded(
@@ -535,6 +553,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 
 List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 	return [
+		if (ImageboardRegistry.instance.count > 1 && q.imageboardKey != null) ImageboardIcon(imageboardKey: q.imageboardKey),
 		...q.boards.map(
 			(board) => _SearchQueryFilterTag('/$board/')
 		),
