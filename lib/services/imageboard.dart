@@ -102,6 +102,9 @@ class Imageboard extends ChangeNotifier {
 			boardFetchErrorMessage = null;
 			notifyListeners();
 			final freshBoards = await site.getBoards();
+			if (freshBoards.isEmpty) {
+				throw('No boards found');
+			}
 			await persistence.storeBoards(freshBoards);
 		}
 		catch (error, st) {
