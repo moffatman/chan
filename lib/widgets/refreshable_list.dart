@@ -175,6 +175,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 		if (updatingNow) {
 			return;
 		}
+		final updatingWithId = widget.id;
 		List<T>? newList;
 		try {
 			setState(() {
@@ -187,6 +188,10 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 				minUpdateDuration = const Duration(seconds: 1);
 			}
 			newList = (await Future.wait([widget.listUpdater(), Future<List<T>?>.delayed(minUpdateDuration)])).first;
+			if (updatingWithId != widget.id) {
+				updatingNow = false;
+				return;
+			}
 			resetTimer();
 			lastUpdateTime = DateTime.now();
 		}
@@ -214,6 +219,10 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			widget.controller!.scrollController!.position.isScrollingNotifier.addListener(listener);
 			await Future.any([completer.future, Future.delayed(const Duration(seconds: 3))]);
 			widget.controller?.scrollController?.position.isScrollingNotifier.removeListener(listener);
+			if (updatingWithId != widget.id) {
+				updatingNow = false;
+				return;
+			}
 		}
 		updatingNow = false;
 		if (mounted && newList != null) {
