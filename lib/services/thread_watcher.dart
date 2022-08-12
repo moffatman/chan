@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -110,6 +111,8 @@ class NewThreadWatch extends Watch {
 	};
 }
 
+const _briefInterval = Duration(seconds: 1);
+
 class ThreadWatcher extends ChangeNotifier {
 	final String imageboardKey;
 	final ImageboardSite site;
@@ -119,20 +122,12 @@ class ThreadWatcher extends ChangeNotifier {
 	final Map<ThreadIdentifier, int> cachedUnseen = {};
 	final Map<ThreadIdentifier, int> cachedUnseenYous = {};
 	StreamSubscription<BoxEvent>? _boxSubscription;
-	DateTime? lastUpdate;
-	Timer? nextUpdateTimer;
-	DateTime? nextUpdate;
-	String? updateErrorMessage;
-	bool get active => nextUpdateTimer?.isActive ?? false;
 	final fixBrokenLock = Mutex();
 	final Set<ThreadIdentifier> fixedThreads = {};
-	bool disposed = false;
-	final Duration interval;
-	final Duration errorInterval;
 	final List<String> watchForStickyOnBoards;
 	final Map<String, List<Thread>> _lastCatalogs = {};
 	final List<ThreadIdentifier> _unseenStickyThreads = [];
-
+	final ThreadWatcherController controller;
 	final unseenCount = ValueNotifier<int>(0);
 	final unseenYouCount = ValueNotifier<int>(0);
 
@@ -145,9 +140,10 @@ class ThreadWatcher extends ChangeNotifier {
 		required this.persistence,
 		required this.settings,
 		required this.notifications,
-		this.interval = const Duration(seconds: 90),
+		required this.controller,
 		this.watchForStickyOnBoards = const []
-	}) : errorInterval = interval * 2 {
+	}) {
+		controller.registerWatcher(this);
 		_boxSubscription = persistence.threadStateBox.watch().listen(_threadUpdated);
 		// Set initial counts
 		for (final watch in persistence.browserState.threadWatches) {
@@ -157,7 +153,6 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 		}
 		_updateCounts();
-		update();
 	}
 
 	void _updateCounts() {
@@ -269,73 +264,50 @@ class ThreadWatcher extends ChangeNotifier {
 	}
 
 	Future<void> update() async {
-		try {
-			// Could be concurrently-modified
-			final watches = persistence.browserState.threadWatches.toList();
-			for (final watch in watches) {
-				if (watch.zombie) {
-					continue;
-				}
-				await _updateThread(persistence.getThreadState(watch.threadIdentifier));
+		if (ImageboardRegistry.instance.getImageboard(imageboardKey)?.seemsOk != true) {
+			return;
+		}
+		// Could be concurrently-modified
+		final watches = persistence.browserState.threadWatches.toList();
+		for (final watch in watches) {
+			if (watch.zombie) {
+				continue;
 			}
-			for (final tab in Persistence.tabs) {
-				if (tab.imageboardKey == imageboardKey && tab.threadController == null && tab.thread != null) {
-					// Thread page widget hasn't yet been instantiated
-					final threadState = persistence.getThreadStateIfExists(tab.thread!);
-					if (threadState != null && threadState.thread?.isArchived != true) {
-						await _updateThread(threadState);
-					}
+			await _updateThread(persistence.getThreadState(watch.threadIdentifier));
+		}
+		for (final tab in Persistence.tabs) {
+			if (tab.imageboardKey == imageboardKey && tab.threadController == null && tab.thread != null) {
+				// Thread page widget hasn't yet been instantiated
+				final threadState = persistence.getThreadStateIfExists(tab.thread!);
+				if (threadState != null && threadState.thread?.isArchived != true) {
+					await _updateThread(threadState);
 				}
 			}
-			_lastCatalogs.clear();
-			_unseenStickyThreads.clear();
-			for (final board in watchForStickyOnBoards) {
-				_lastCatalogs[board] ??= await site.getCatalog(board);
-				_unseenStickyThreads.addAll(_lastCatalogs[board]!.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).map((t) => t.identifier).toList());
-				// Update sticky threads for (you)s
-				final stickyThreadStates = persistence.threadStateBox.values.where((s) => s.board == board && s.thread != null && s.thread!.isSticky);
-				for (final threadState in stickyThreadStates) {
-					if (threadState.youIds.isNotEmpty) {
-						try {
-							final newThread = await site.getThread(threadState.thread!.identifier);
-							if (newThread != threadState.thread) {
-								threadState.thread = newThread;
-								await threadState.save();
-							}
-						}
-						on ThreadNotFoundException {
-							threadState.thread?.isSticky = false;
+		}
+		_lastCatalogs.clear();
+		_unseenStickyThreads.clear();
+		for (final board in watchForStickyOnBoards) {
+			_lastCatalogs[board] ??= await site.getCatalog(board);
+			_unseenStickyThreads.addAll(_lastCatalogs[board]!.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).map((t) => t.identifier).toList());
+			// Update sticky threads for (you)s
+			final stickyThreadStates = persistence.threadStateBox.values.where((s) => s.board == board && s.thread != null && s.thread!.isSticky);
+			for (final threadState in stickyThreadStates) {
+				if (threadState.youIds.isNotEmpty) {
+					try {
+						final newThread = await site.getThread(threadState.thread!.identifier);
+						if (newThread != threadState.thread) {
+							threadState.thread = newThread;
 							await threadState.save();
 						}
 					}
+					on ThreadNotFoundException {
+						threadState.thread?.isSticky = false;
+						await threadState.save();
+					}
 				}
 			}
-			_updateCounts();
-			lastUpdate = DateTime.now();
-			nextUpdate = lastUpdate!.add(interval);
-			nextUpdateTimer = Timer(interval, update);
 		}
-		catch (e, st) {
-			print(e);
-			print(st);
-			updateErrorMessage = e.toStringDio();
-			lastUpdate = DateTime.now();
-			nextUpdate = lastUpdate!.add(errorInterval);
-			nextUpdateTimer = Timer(errorInterval, update);
-		}
-		if (disposed) {
-			nextUpdateTimer?.cancel();
-			_boxSubscription?.cancel();
-		}
-		else {
-			notifyListeners();
-		}
-	}
-
-	void cancel() {
-		nextUpdateTimer?.cancel();
-		nextUpdate = null;
-		notifyListeners();
+		_updateCounts();
 	}
 
 	void fixBrokenThread(ThreadIdentifier thread) {
@@ -357,11 +329,85 @@ class ThreadWatcher extends ChangeNotifier {
 
 	@override
 	void dispose() {
+		controller.unregisterWatcher(this);
+		_boxSubscription?.cancel();
+		_boxSubscription = null;
+		super.dispose();
+	}
+}
+
+class ThreadWatcherController extends ChangeNotifier {
+	final Duration interval;
+	DateTime? lastUpdate;
+	Timer? nextUpdateTimer;
+	DateTime? nextUpdate;
+	bool get active => updatingNow || (nextUpdateTimer?.isActive ?? false);
+	bool disposed = false;
+	final Set<ThreadWatcher> _watchers = {};
+	final Set<ThreadWatcher> _doghouse = {};
+	bool updatingNow = false;
+
+	ThreadWatcherController({
+		this.interval = const Duration(seconds: 90),
+	}) {
+		nextUpdateTimer = Timer(_briefInterval, update);
+	}
+
+	void registerWatcher(ThreadWatcher watcher) {
+		_watchers.add(watcher);
+	}
+	
+	void unregisterWatcher(ThreadWatcher watcher) {
+		_watchers.remove(watcher);
+	}
+
+	Future<void> update() async {
+		updatingNow = true;
+		notifyListeners();
+		if (!ImageboardRegistry.instance.initialized) {
+			lastUpdate = DateTime.now();
+			nextUpdate = lastUpdate!.add(_briefInterval);
+			nextUpdateTimer = Timer(_briefInterval, update);
+		}
+		else {
+			for (final watcher in _watchers) {
+				if (_doghouse.contains(watcher)) {
+					_doghouse.remove(watcher);
+					continue;
+				}
+				try {
+					await watcher.update();
+				}
+				catch (e, st) {
+					print(e);
+					print(st);
+					_doghouse.add(watcher);
+				}
+			}
+			lastUpdate = DateTime.now();
+			nextUpdate = lastUpdate!.add(interval);
+			nextUpdateTimer = Timer(interval, update);
+		}
+		updatingNow = false;
+		if (disposed) {
+			nextUpdateTimer?.cancel();
+		}
+		else {
+			notifyListeners();
+		}
+	}
+
+	void cancel() {
+		nextUpdateTimer?.cancel();
+		nextUpdate = null;
+		notifyListeners();
+	}
+
+	@override
+	void dispose() {
 		disposed = true;
 		nextUpdateTimer?.cancel();
 		nextUpdateTimer = null;
-		_boxSubscription?.cancel();
-		_boxSubscription = null;
 		super.dispose();
 	}
 }

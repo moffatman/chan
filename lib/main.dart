@@ -342,14 +342,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		final tmpDevImageboard = Imageboard(
 			key: 'devsite',
 			siteData: defaultSite,
-			settings: settings
+			settings: settings,
+			threadWatcherController: ThreadWatcherController(interval: const Duration(minutes: 10))
 		);
 		await tmpDevImageboard.initialize(
-			threadWatcherInterval: const Duration(minutes: 10),
 			threadWatcherWatchForStickyOnBoards: ['chance']
 		);
 		tmpDevImageboard.notifications.tapStream.listen(_onDevNotificationTapped);
 		setState(() {
+			devImageboard?.dispose();
 			devImageboard = tmpDevImageboard;
 		});
 	}
@@ -1528,6 +1529,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		super.dispose();
 		Persistence.browserHistoryStatusListenable.removeListener(_browserHistoryStatusListener);
 		Persistence.tabsListenable.removeListener(_tabsListener);
+		devImageboard?.dispose();
+		_tabListController.dispose();
+		_tabController.dispose();
+		activeBrowserTab.dispose();
 		_linkSubscription.cancel();
 		_fakeLinkSubscription.cancel();
 		_sharedFilesSubscription.cancel();

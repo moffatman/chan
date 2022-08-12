@@ -34,11 +34,13 @@ class Imageboard extends ChangeNotifier {
 	bool initialized = false;
 	final String key;
 	bool get seemsOk => initialized && !boardsLoading && setupErrorMessage == null && boardFetchErrorMessage == null;
+	final ThreadWatcherController? threadWatcherController;
 
 	Imageboard({
 		required this.key,
 		required this.settings,
-		required this.siteData
+		required this.siteData,
+		this.threadWatcherController
 	});
 	
 	void updateSiteData(dynamic siteData) {
@@ -57,7 +59,6 @@ class Imageboard extends ChangeNotifier {
 	}
 
 	Future<void> initialize({
-		Duration threadWatcherInterval = const Duration(seconds: 90),
 		List<String> threadWatcherWatchForStickyOnBoards = const []
 	}) async {
 		try {
@@ -77,8 +78,8 @@ class Imageboard extends ChangeNotifier {
 				persistence: persistence,
 				settings: settings,
 				notifications: notifications,
-				interval: threadWatcherInterval,
-				watchForStickyOnBoards: threadWatcherWatchForStickyOnBoards
+				watchForStickyOnBoards: threadWatcherWatchForStickyOnBoards,
+				controller: threadWatcherController ?? ImageboardRegistry.threadWatcherController
 			);
 			notifications.localWatcher = threadWatcher;
 			setupBoards(); // don't await
@@ -148,6 +149,7 @@ class ImageboardRegistry extends ChangeNotifier {
 	bool initialized = false;
 	BuildContext? context;
 	final _mutex = Mutex();
+	static final threadWatcherController = ThreadWatcherController();
 
 	Future<void> handleSites({
 		required EffectiveSettings settings,

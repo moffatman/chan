@@ -709,6 +709,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
+		final w = ImageboardRegistry.threadWatcherController;
 		return AnimatedSize(
 			duration: const Duration(milliseconds: 300),
 			child: Container(
@@ -716,8 +717,8 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 				child: Column(
 					mainAxisSize: MainAxisSize.min,
 					children: [
-						for (final i in ImageboardRegistry.instance.imageboards) AnimatedBuilder(
-							animation: i.threadWatcher,
+						AnimatedBuilder(
+							animation: w,
 							builder: (context, _) => Row(
 								children: [
 									const SizedBox(width: 16),
@@ -726,9 +727,9 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 											mainAxisSize: MainAxisSize.min,
 											crossAxisAlignment: CrossAxisAlignment.center,
 											children: [
-												AutoSizeText(i.site.name, maxLines: 1),
+												const Text('Local Watcher'),
 												const SizedBox(height: 8),
-												if (i.threadWatcher.nextUpdate != null && i.threadWatcher.lastUpdate != null) ClipRRect(
+												if (w.nextUpdate != null && w.lastUpdate != null) ClipRRect(
 													borderRadius: const BorderRadius.all(Radius.circular(8)),
 													child: TimedRebuilder(
 														enabled: widget.isActive,
@@ -736,7 +737,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 														builder: (context) {
 															final now = DateTime.now();
 															return LinearProgressIndicator(
-																value: now.difference(i.threadWatcher.lastUpdate!).inSeconds / i.threadWatcher.nextUpdate!.difference(i.threadWatcher.lastUpdate!).inSeconds,
+																value: w.updatingNow ? null : now.difference(w.lastUpdate!).inSeconds / w.nextUpdate!.difference(w.lastUpdate!).inSeconds,
 																color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
 																backgroundColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.2),
 																minHeight: 8
@@ -749,17 +750,17 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 									),
 									const SizedBox(width: 16),
 									CupertinoButton(
-										onPressed: i.threadWatcher.update,
+										onPressed: w.update,
 										child: const Icon(CupertinoIcons.refresh)
 									),
 									CupertinoSwitch(
-										value: i.threadWatcher.active,
+										value: w.active,
 										onChanged: (val) {
 											if (val) {
-												i.threadWatcher.update();
+												w.update();
 											}
 											else {
-												i.threadWatcher.cancel();
+												w.cancel();
 											}
 										}
 									)
