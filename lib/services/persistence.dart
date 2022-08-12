@@ -31,6 +31,8 @@ const _knownCacheDirs = {
 	'webpickercache': 'Images picked from web'
 };
 
+const _boxPrefix = '';
+
 class UriAdapter extends TypeAdapter<Uri> {
 	@override
 	final typeId = 12;
@@ -124,7 +126,7 @@ class Persistence extends ChangeNotifier {
 		);
 		await Directory('${documentsDirectory.path}/$_savedAttachmentsDir').create(recursive: true);
 		await Directory('${documentsDirectory.path}/$_savedAttachmentThumbnailsDir').create(recursive: true);
-		final settingsBox = await Hive.openBox<SavedSettings>('settings');
+		final settingsBox = await Hive.openBox<SavedSettings>('${_boxPrefix}settings');
 		settings = settingsBox.get('settings', defaultValue: SavedSettings(
 			useInternalBrowser: true
 		))!;
@@ -200,10 +202,10 @@ class Persistence extends ChangeNotifier {
 	}
 
 	Future<void> initialize() async {
-		threadStateBox = await Hive.openBox<PersistentThreadState>('threadStates_$id');
+		threadStateBox = await Hive.openBox<PersistentThreadState>('${_boxPrefix}threadStates_$id');
 		if (await Hive.boxExists('searches_$id')) {
 			print('Migrating searches box');
-			final searchesBox = await Hive.openBox<PersistentRecentSearches>('searches_$id');
+			final searchesBox = await Hive.openBox<PersistentRecentSearches>('${_boxPrefix}searches_$id');
 			final existingRecentSearches = searchesBox.get('recentSearches');
 			if (existingRecentSearches != null) {
 				settings.deprecatedRecentSearchesBySite[id] = existingRecentSearches;
@@ -219,7 +221,7 @@ class Persistence extends ChangeNotifier {
 		settings.deprecatedRecentSearchesBySite.remove(id);
 		if (await Hive.boxExists('browserStates_$id')) {
 			print('Migrating browser states box');
-			final browserStateBox = await Hive.openBox<PersistentBrowserState>('browserStates_$id');
+			final browserStateBox = await Hive.openBox<PersistentBrowserState>('${_boxPrefix}browserStates_$id');
 			final existingBrowserState = browserStateBox.get('browserState');
 			if (existingBrowserState != null) {
 				settings.browserStateBySite[id] = existingBrowserState;
@@ -253,7 +255,7 @@ class Persistence extends ChangeNotifier {
 		}
 		if (await Hive.boxExists('boards_$id')) {
 			print('Migrating boards box');
-			final boardBox = await Hive.openBox<ImageboardBoard>('boards_$id');
+			final boardBox = await Hive.openBox<ImageboardBoard>('${_boxPrefix}boards_$id');
 			settings.boardsBySite[id] = {
 				for (final key in boardBox.keys) key.toString(): boardBox.get(key)!
 			};
@@ -262,7 +264,7 @@ class Persistence extends ChangeNotifier {
 		settings.boardsBySite.putIfAbsent(id, () => {});
 		if (await Hive.boxExists('savedAttachments_$id')) {
 			print('Migrating saved attachments box');
-			final savedAttachmentsBox = await Hive.openBox<SavedAttachment>('savedAttachments_$id');
+			final savedAttachmentsBox = await Hive.openBox<SavedAttachment>('${_boxPrefix}savedAttachments_$id');
 			settings.savedAttachmentsBySite[id] = {
 				for (final key in savedAttachmentsBox.keys) key.toString(): savedAttachmentsBox.get(key)!
 			};
@@ -271,7 +273,7 @@ class Persistence extends ChangeNotifier {
 		settings.savedAttachmentsBySite.putIfAbsent(id, () => {});
 		if (await Hive.boxExists('savedPosts_$id')) {
 			print('Migrating saved posts box');
-			final savedPostsBox = await Hive.openBox<SavedPost>('savedPosts_$id');
+			final savedPostsBox = await Hive.openBox<SavedPost>('${_boxPrefix}savedPosts_$id');
 			settings.savedPostsBySite[id] = {
 				for (final key in savedPostsBox.keys) key.toString(): savedPostsBox.get(key)!
 			};
