@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -63,6 +64,8 @@ class _ImageboardSwitcherPageState extends State<ImageboardSwitcherPage> {
 													},
 													child: const Icon(CupertinoIcons.chevron_left)
 												),
+												const SizedBox(width: 8),
+												ImageboardIcon(imageboardKey: imageboards[i].key),
 												const SizedBox(width: 8),
 												Text(imageboards[i].key),
 												const SizedBox(width: 8),
