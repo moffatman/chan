@@ -671,12 +671,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 											controller: _solutionController,
 											autocorrect: false,
 											placeholder: 'Captcha text',
-											onSubmitted: (text) {
-												if (!context.read<EffectiveSettings>().useNewCaptchaForm || WidgetsBinding.instance.window.viewInsets.bottom < 100) {
-													// Only submit on enter key if on old form or on hardware keyboard
-													_submit(text);
-												}
-											}
+											onSubmitted: _submit
 										)
 									)
 								)
