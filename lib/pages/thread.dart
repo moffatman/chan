@@ -574,10 +574,6 @@ class _ThreadPageState extends State<ThreadPage> {
 																				onThumbnailTap: (attachment) {
 																					_showGallery(initialAttachment: attachment);
 																				},
-																				onThumbnailLoadError: (a, b) {
-																					print(a);
-																					print(b);
-																				},
 																				onRequestArchive: _switchToArchive
 																			);
 																		},

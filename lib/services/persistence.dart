@@ -182,7 +182,9 @@ class Persistence extends ChangeNotifier {
 				}
 			}
 		}
-		print('Deleted $deletedCount files totalling ${(deletedSize / 1000000).toStringAsFixed(1)} MB');
+		if (deletedCount > 0) {
+			print('Deleted $deletedCount files totalling ${(deletedSize / 1000000).toStringAsFixed(1)} MB');
+		}
 	}
 
 	Future<void> cleanupThreads(Duration olderThan) async {
@@ -190,7 +192,9 @@ class Persistence extends ChangeNotifier {
 		final toDelete = threadStateBox.keys.where((key) {
 			return (threadStateBox.get(key)?.youIds.isNotEmpty ?? false) && ((threadStateBox.get(key)?.lastOpenedTime.compareTo(deadline) ?? 0) < 0);
 		});
-		print('Deleting ${toDelete.length} threads');
+		if (toDelete.isNotEmpty) {
+			print('Deleting ${toDelete.length} threads');
+		}
 		await threadStateBox.deleteAll(toDelete);
 	}
 

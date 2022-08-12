@@ -62,7 +62,6 @@ class Imageboard extends ChangeNotifier {
 		List<String> threadWatcherWatchForStickyOnBoards = const []
 	}) async {
 		try {
-			print('Initializing $key');
 			site = makeSite(siteData);
 			persistence = Persistence(key);
 			await persistence.initialize();
@@ -83,11 +82,13 @@ class Imageboard extends ChangeNotifier {
 			);
 			notifications.localWatcher = threadWatcher;
 			setupBoards(); // don't await
-			print('Initialization complete $key');
 			initialized = true;
 		}
-		catch (e) {
+		catch (e, st) {
 			setupErrorMessage = e.toStringDio();
+			print('Error initializing $key');
+			print(e);
+			print(st);
 		}
 		notifyListeners();
 	}
@@ -109,6 +110,7 @@ class Imageboard extends ChangeNotifier {
 			await persistence.storeBoards(freshBoards);
 		}
 		catch (error, st) {
+			print('Error setting up boards for $key');
 			print(error);
 			print(st);
 			boardFetchErrorMessage = error.toStringDio();

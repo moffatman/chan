@@ -65,7 +65,6 @@ Future<void> clearNotifications(Notifications notifications, Watch watch) async 
 
 Future<void> handleBackgroundMessage(RemoteMessage message) async {
 	print('handleBackgroundMessage');
-	print(message);
 	print(message.data);
 }
 
@@ -95,7 +94,6 @@ class Notifications {
 
 	static void _onMessageOpenedApp(RemoteMessage message) {
 		print('onMessageOpenedApp');
-		print(message);
 		print(message.data);
 		if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
 			if (!_children.containsKey(message.data['userId'])) {
@@ -116,7 +114,7 @@ class Notifications {
 				options: DefaultFirebaseOptions.currentPlatform,
 			);
 			FirebaseMessaging messaging = FirebaseMessaging.instance;
-			print('Token: ${await messaging.getToken()}');
+			//print('Token: ${await messaging.getToken()}');
 			if (Persistence.settings.usePushNotifications == true) {
 				await messaging.requestPermission();
 			}
@@ -126,7 +124,7 @@ class Notifications {
 			}
 			FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
 				print('onMessage');
-				print(message);
+				//print(message);
 				print(message.data);
 				if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
 					if (!_children.containsKey(message.data['userId'])) {
@@ -176,9 +174,7 @@ class Notifications {
 			'siteData': siteData
 		}));
 		final String digest = response.data['digest'];
-		print('Server returned digest $digest');
 		final emptyDigest = base64Encode(md5.convert(''.codeUnits).bytes);
-		print('Our digest is $emptyDigest');
 		if (digest != emptyDigest) {
 			print('Need to resync notifications $id');
 			await Dio().put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
@@ -197,7 +193,6 @@ class Notifications {
 					'siteData': siteData
 				}));
 				final String digest = response.data['digest'];
-				print('Server returned digest $digest, whereas our digest is ${_calculateDigest()} for $id');
 				if (digest != _calculateDigest()) {
 					print('Need to resync notifications $id');
 					await Dio().put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({

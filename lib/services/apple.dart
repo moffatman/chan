@@ -10,6 +10,9 @@ bool isOnMac = false;
 bool isDevelopmentBuild = false;
 
 Future<void> initializeIsOnMac() async {
+	if (!Platform.isIOS) {
+		return;
+	}
   try {
 		isOnMac = await _platform.invokeMethod('isOnMac');
 	}
@@ -23,6 +26,9 @@ Future<void> initializeIsOnMac() async {
 }
 
 Future<void> initializeIsDevelopmentBuild() async {
+	if (!Platform.isIOS) {
+		return;
+	}
 	try {
 		isDevelopmentBuild = await _platform.invokeMethod('isDevelopmentBuild');
 	}
@@ -52,6 +58,9 @@ Future<void> initializeHandoff() async {
 Timer? _nullUrlTimer;
 
 Future<void> setHandoffUrl(String? url) async {
+	if (!Platform.isIOS) {
+		return;
+	}
 	try {
 		if (url != null) {
 			_nullUrlTimer?.cancel();

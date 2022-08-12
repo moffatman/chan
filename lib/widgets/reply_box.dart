@@ -481,7 +481,6 @@ class ReplyBoxState extends State<ReplyBox> {
 			if (audioPresent == true && audioAllowed == false) 'Audio track needs to be removed',
 			if (durationInSeconds != null && maximumDurationInSeconds != null && (durationInSeconds > maximumDurationInSeconds)) 'Duration needs to be clipped at $maximumDurationInSeconds seconds'
 		];
-		print('$width $height $maximumDimension');
 		if (width != null && height != null && maximumDimension != null && (width > maximumDimension || height > maximumDimension)) {
 			final size = applyBoxFit(BoxFit.contain, Size(width.toDouble(), height.toDouble()), Size.square(maximumDimension.toDouble())).destination;
 			problems.add('Dimensions need to be reduced from ${width}x$height to ${size.width.round()}x${size.height.round()}');
@@ -562,8 +561,6 @@ class ReplyBoxState extends State<ReplyBox> {
 		final settings = context.read<EffectiveSettings>();
 		try {
 			final board = context.read<Persistence>().getBoard(widget.board);
-			print(file);
-			print(file.path);
 			String ext = file.path.split('.').last.toLowerCase();
 			if (ext == 'jpg' || ext == 'jpeg' || ext == 'heic') {
 				file = await FlutterExifRotation.rotateImage(path: file.path);
