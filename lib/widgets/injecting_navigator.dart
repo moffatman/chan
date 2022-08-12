@@ -49,6 +49,12 @@ class _InjectingNavigatorState extends NavigatorState {
 		topRoute.value = _routeStack.isEmpty ? null : _routeStack.last;
 		super.pop(result);
 	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		topRoute.dispose();
+	}
 }
 
 class PrimaryScrollControllerInjectingNavigator extends StatefulWidget {
@@ -121,5 +127,11 @@ class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScroll
 	Widget build(BuildContext context) {
 		primaryScrollControllerTracker.value = PrimaryScrollController.of(context);
 		return _navigator;
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		primaryScrollControllerTracker.dispose();
 	}
 }

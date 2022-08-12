@@ -143,6 +143,9 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 	void dispose() {
 		super.dispose();
 		autoUpdateTimer?.cancel();
+		_searchController.dispose();
+		_searchFocusNode.dispose();
+		_footerShakeAnimation.dispose();
 	}
 
 	void resetTimer() {

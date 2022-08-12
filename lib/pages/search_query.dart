@@ -124,6 +124,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 							_runQuery();
 							onChange();
 						}
+						controller.dispose();
 					},
 					child: Text('Page $page')
 				),

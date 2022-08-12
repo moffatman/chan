@@ -48,6 +48,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 final fakeLinkStream = PublishSubject<String?>();
 bool _initialConsume = false;
+final zeroValueNotifier = ValueNotifier(0);
 
 void main() async {
 	try {
@@ -274,6 +275,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	late Listenable browseCountListenable;
 	final activeBrowserTab = ValueNotifier<int>(0);
 	final _tabListController = ScrollController();
+	StreamSubscription<ThreadOrPostIdentifier>? _devNotificationsSubscription;
 	Imageboard? devImageboard;
 	Timer? _saveBrowserTabsDuringDraftEditingTimer;
 	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
@@ -348,7 +350,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		await tmpDevImageboard.initialize(
 			threadWatcherWatchForStickyOnBoards: ['chance']
 		);
-		tmpDevImageboard.notifications.tapStream.listen(_onDevNotificationTapped);
+		_devNotificationsSubscription?.cancel();
+		_devNotificationsSubscription = tmpDevImageboard.notifications.tapStream.listen(_onDevNotificationTapped);
 		setState(() {
 			devImageboard?.dispose();
 			devImageboard = tmpDevImageboard;
@@ -1330,8 +1333,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 														onLongPress: _runSettingsQuickAction,
 														child: _buildTabletIcon(4, NotifyingIcon(
 																icon: const Icon(CupertinoIcons.settings),
-																primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? ValueNotifier(0),
-																secondaryCount: devImageboard?.threadWatcher.unseenCount ?? ValueNotifier(0),
+																primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
+																secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
 															), hideTabletLayoutLabels ? null : 'Settings'
 														)
 													)
@@ -1423,8 +1426,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										onLongPress: _runSettingsQuickAction,
 										child: NotifyingIcon(
 											icon: const Icon(CupertinoIcons.settings, size: 28),
-											primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? ValueNotifier(0),
-											secondaryCount: devImageboard?.threadWatcher.unseenCount ?? ValueNotifier(0),
+											primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
+											secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
 										)
 									),
 									label: 'Settings'
@@ -1537,5 +1540,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_fakeLinkSubscription.cancel();
 		_sharedFilesSubscription.cancel();
 		_sharedTextSubscription.cancel();
+		_devNotificationsSubscription?.cancel();
+		for (final subscription in _notificationsSubscriptions.values) {
+			subscription.item2.cancel();
+		}
 	}
 }

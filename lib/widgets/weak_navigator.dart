@@ -134,6 +134,8 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
     await entry.item2.reverse(from: 1).orCancel;
     entry.item1.remove();
     entry.item4.complete(result);
+    entry.item2.dispose();
+    entry.item3.dispose();
   }
 
   Future<void> popAllExceptFirst({bool animated = false}) async {
@@ -144,8 +146,16 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
     for (final x in stack) {
       x.item1.remove();
       x.item4.complete();
+      x.item2.dispose();
+      x.item3.dispose();
     }
     stack.clear();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    rootCoverAnimationController.dispose();
   }
 }
 

@@ -1378,6 +1378,7 @@ class ReplyBoxState extends State<ReplyBox> {
 						if (content != null) {
 							_insertText(snippet.start + content + snippet.end, addNewlineIfAtEnd: false);
 						}
+						controller.dispose();
 					},
 					child: Icon(snippet.icon)
 				),
@@ -1685,5 +1686,17 @@ class ReplyBoxState extends State<ReplyBox> {
 				]
 			)
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_textFieldController.dispose();
+		_nameFieldController.dispose();
+		_subjectFieldController.dispose();
+		_optionsFieldController.dispose();
+		_filenameController.dispose();
+		_textFocusNode.dispose();
+		_rootFocusNode.dispose();
 	}
 }

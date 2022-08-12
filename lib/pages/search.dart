@@ -525,6 +525,8 @@ class _SearchComposePageState extends State<SearchComposePage> {
 	void dispose() {
 		super.dispose();
 		Persistence.recentSearchesListenable.removeListener(_onRecentSearchesUpdate);
+		_controller.dispose();
+		_focusNode.dispose();
 	}
 }
 

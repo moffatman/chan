@@ -332,6 +332,8 @@ class ThreadWatcher extends ChangeNotifier {
 		controller.unregisterWatcher(this);
 		_boxSubscription?.cancel();
 		_boxSubscription = null;
+		unseenCount.dispose();
+		unseenYouCount.dispose();
 		super.dispose();
 	}
 }

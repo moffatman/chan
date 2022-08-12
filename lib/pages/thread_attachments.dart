@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
@@ -27,6 +29,7 @@ class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 	final Map<Attachment, AttachmentViewerController> _controllers = {};
 	final _controller = RefreshableListController<Attachment>();
 	AttachmentViewerController? _lastPrimary;
+	StreamSubscription<void>? _slowScrollUpdatesSubscription;
 
 	@override
 	void initState() {
@@ -37,7 +40,7 @@ class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 			});
 		}
 		Future.delayed(const Duration(seconds: 1), () {
-			_controller.slowScrollUpdates.listen((_) {
+			_slowScrollUpdatesSubscription = _controller.slowScrollUpdates.listen((_) {
 				final lastItem = _controller.middleVisibleItem;
 				if (lastItem != null) {
 					widget.onChange?.call(lastItem);
@@ -112,5 +115,6 @@ class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 		for (final controller in _controllers.values) {
 			controller.dispose();
 		}
+		_slowScrollUpdatesSubscription?.cancel();
 	}
 }

@@ -128,6 +128,7 @@ class Imageboard extends ChangeNotifier {
 		super.dispose();
 		threadWatcher.dispose();
 		persistence.dispose();
+		notifications.dispose();
 	}
 }
 

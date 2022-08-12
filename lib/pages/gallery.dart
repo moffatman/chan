@@ -115,6 +115,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	ScrollController? _cachedScrollSheetController;
 	final _scrollSheetController = DraggableScrollableController();
 	final _draggableScrollableSheetKey = GlobalKey();
+	late StreamSubscription<List<void>> __onPageControllerUpdateSubscription;
 
 	@override
 	void initState() {
@@ -125,7 +126,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
 		pageController = ExtendedPageController(keepPage: true, initialPage: currentIndex);
 		pageController.addListener(_onPageControllerUpdate);
-		_scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
+		__onPageControllerUpdateSubscription = _scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
 		final attachment = widget.attachments[currentIndex];
 		if (context.read<EffectiveSettings>().autoloadAttachments || context.read<EffectiveSettings>().alwaysAutoloadTappedAttachment) {
 			_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
@@ -864,11 +865,18 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	@override
 	void dispose() {
 		super.dispose();
+		pageController.dispose();
+		_scrollCoalescer.close();
+		_currentAttachmentChanged.close();
+		_rotationsChanged.close();
 		thumbnailScrollController.dispose();
 		_slideStream.close();
 		for (final controller in _controllers.values) {
 			controller.dispose();
 		}
+		_shouldShowPosition.dispose();
+		_rotateButtonAnimationController.dispose();
+		__onPageControllerUpdateSubscription.cancel();
 	}
 }
 

@@ -202,4 +202,10 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 			)
 		);
 	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_solutionNode.dispose();
+	}
 }

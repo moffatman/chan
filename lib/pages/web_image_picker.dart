@@ -312,4 +312,11 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 			)
 		);
 	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		urlController.dispose();
+		urlFocusNode.dispose();
+	}
 }

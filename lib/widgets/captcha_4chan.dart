@@ -920,5 +920,6 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		for (final controller in _letterPickerControllers) {
 			controller.dispose();
 		}
+		_guessInProgress?.cancel();
 	}
 }

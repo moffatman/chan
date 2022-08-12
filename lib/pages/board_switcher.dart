@@ -441,5 +441,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	void dispose() {
 		super.dispose();
 		scrollController.dispose();
+		_backgroundColor.dispose();
+		_focusNode.dispose();
 	}
 }

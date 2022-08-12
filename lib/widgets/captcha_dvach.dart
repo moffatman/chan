@@ -209,4 +209,10 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 			)
 		);
 	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_solutionNode.dispose();
+	}
 }

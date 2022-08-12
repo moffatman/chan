@@ -342,4 +342,9 @@ class Notifications {
 			data: jsonEncode(watch.toMap())
 		);
 	}
+
+	void dispose() {
+		tapStream.close();
+		foregroundStream.close();
+	}
 }

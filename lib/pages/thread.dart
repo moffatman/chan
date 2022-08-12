@@ -82,6 +82,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	int lastTreeHiddenIdsLength = 0;
 	int lastHiddenPosterIdsLength = 0;
 	bool _foreground = false;
+	late StreamSubscription<void>? _slowScrollUpdatesSubscription;
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -208,7 +209,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			_threadStateListenable = context.read<Persistence>().listenForPersistentThreadStateChanges(widget.thread);
 			_threadStateListenable.addListener(_onThreadStateListenableUpdate);
 		});
-		_listController.slowScrollUpdates.listen((_) {
+		_slowScrollUpdatesSubscription = _listController.slowScrollUpdates.listen((_) {
 			final lastItem = _listController.lastVisibleItem;
 			if (persistentState.thread != null && !_unnaturallyScrolling && lastItem != null) {
 				final newLastSeen = lastItem.id;
@@ -676,6 +677,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		super.dispose();
 		_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
 		_listController.dispose();
+		_slowScrollUpdatesSubscription?.cancel();
 		if (_saveQueued) {
 			persistentState.save();
 		}
@@ -988,5 +990,6 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		super.dispose();
 		_slowScrollSubscription.cancel();
 		widget.persistentState.lastSeenPostIdNotifier.removeListener(_onLastSeenPostIdNotifier);
+		_buttonsAnimationController.dispose();
 	}
 }

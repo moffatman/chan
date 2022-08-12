@@ -78,6 +78,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _isDisposed = false;
 	bool _isDownloaded = false;
 	GestureDetails? _gestureDetailsOnDoubleTapDragStart;
+	StreamSubscription<List<double>>? _longPressFactorSubscription;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -120,7 +121,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		this.overrideSource,
 		bool isPrimary = false
 	}) : _isPrimary = isPrimary {
-		_longPressFactorStream.bufferTime(const Duration(milliseconds: 50)).listen((x) {
+		_longPressFactorSubscription = _longPressFactorStream.bufferTime(const Duration(milliseconds: 50)).listen((x) {
 			if (x.isNotEmpty) {
 				_onCoalescedLongPressUpdate(x.last);
 			}
@@ -197,6 +198,8 @@ class AttachmentViewerController extends ChangeNotifier {
 		_videoPlayerController?.dispose();
 		_videoPlayerController = null;
 		_goodImageSource = null;
+		_longPressFactorSubscription?.cancel();
+		_longPressFactorStream.close();
 		notifyListeners();
 	}
 
@@ -503,6 +506,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		videoPlayerController?.pause().then((_) => videoPlayerController?.dispose());
 		_longPressFactorStream.close();
 		_vp9Controllers.remove(this);
+		videoLoadingProgress.dispose();
 	}
 
 	@override

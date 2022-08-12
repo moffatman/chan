@@ -582,6 +582,7 @@ class SettingsBehaviorPage extends StatelessWidget {
 																			setDialogState(() {});
 																			settings.didUpdateHostsToOpenExternally();
 																		}
+																		controller.dispose();
 																	},
 																	child: Container(
 																		decoration: BoxDecoration(
@@ -658,6 +659,7 @@ class SettingsBehaviorPage extends StatelessWidget {
 																							settings.didUpdateHostsToOpenExternally();
 																							setDialogState(() {});
 																						}
+																						controller.dispose();
 																					}
 																				)
 																			]
@@ -832,6 +834,12 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 				)
 			]
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		controller.dispose();
 	}
 }
 
@@ -1142,6 +1150,7 @@ class SettingsAppearancePage extends StatelessWidget {
 																											settings.handleThemesAltered();
 																											setDialogState(() {});
 																										}
+																										controller.dispose();
 																									}
 																								),
 																								CupertinoButton(
@@ -2496,6 +2505,13 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 			]
 		);
 	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		regexController.dispose();
+		regexFocusNode.dispose();
+	}
 }
 
 class FilterTestPage extends StatefulWidget {
@@ -2625,6 +2641,19 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 				]
 			]
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_boardController.dispose();
+		_idController.dispose();
+		_textController.dispose();
+		_subjectController.dispose();
+		_nameController.dispose();
+		_filenameController.dispose();
+		_posterIdController.dispose();
+		_flagController.dispose();
 	}
 }
 

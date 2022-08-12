@@ -123,6 +123,10 @@ class MultiMasterPane<T> {
 	PageRoute buildDetailRoute({required bool showAnimations, required bool? showAnimationsForward}) {
 		return detailBuilder(currentValue.value, true).pageRoute(showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 	}
+
+	void dispose() {
+		currentValue.dispose();
+	}
 }
 
 class MultiMasterDetailPage extends StatefulWidget {
@@ -382,5 +386,15 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 				)
 			)
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_tabController.dispose();
+		for (final pane in panes) {
+			pane.dispose();
+		}
+		_rebuild.close();
 	}
 }
