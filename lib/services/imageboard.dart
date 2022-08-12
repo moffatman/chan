@@ -33,6 +33,7 @@ class Imageboard extends ChangeNotifier {
 	bool boardsLoading = false;
 	bool initialized = false;
 	final String key;
+	bool get seemsOk => initialized && !boardsLoading && setupErrorMessage == null && boardFetchErrorMessage == null;
 
 	Imageboard({
 		required this.key,

@@ -1127,10 +1127,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								if (Persistence.tabs[i].imageboardKey == null) {
 									return child;
 								}
-								if (ImageboardRegistry.instance.getImageboard(Persistence.tabs[i].imageboardKey!) == null) {
+								if (ImageboardRegistry.instance.getImageboard(Persistence.tabs[i].imageboardKey!)?.seemsOk != true) {
 									return _buildTabletIcon(
 										i * -1,
-										const SizedBox(
+										ImageboardRegistry.instance.getImageboard(Persistence.tabs[i].imageboardKey!)?.boardsLoading == true ? const SizedBox(
+											width: 30,
+											height: 30,
+											child: CupertinoActivityIndicator()
+										) : const SizedBox(
 											width: 30,
 											height: 30,
 											child: Icon(CupertinoIcons.exclamationmark_triangle_fill)
