@@ -591,7 +591,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 				child: Column(
 					mainAxisAlignment: MainAxisAlignment.center,
 					children: [
-						ErrorMessageCard(errorMessage.toString()),
+						ErrorMessageCard('Error loading ${widget.id}:\n${errorMessage?.toStringDio()}'),
 						CupertinoButton(
 							onPressed: update,
 							child: const Text('Retry')
