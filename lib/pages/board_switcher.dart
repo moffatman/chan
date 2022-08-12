@@ -15,7 +15,10 @@ import 'package:provider/provider.dart';
 
 class BoardSwitcherPage extends StatefulWidget {
 	final bool currentlyPickingFavourites;
+	final FocusNode? searchFocusNode;
+
 	const BoardSwitcherPage({
+		this.searchFocusNode,
 		this.currentlyPickingFavourites = false,
 		Key? key
 	}) : super(key: key);
@@ -25,7 +28,7 @@ class BoardSwitcherPage extends StatefulWidget {
 }
 
 class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
-	final _focusNode = FocusNode();
+	late final FocusNode _focusNode;
 	late List<ImageboardBoard> boards;
 	String searchString = '';
 	String? errorMessage;
@@ -41,6 +44,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	@override
 	void initState() {
 		super.initState();
+		_focusNode = widget.searchFocusNode ?? FocusNode();
 		boards = context.read<Persistence>().boards.values.toList();
 		scrollController.addListener(_onScroll);
 		context.read<Imageboard>().refreshBoards().then((freshBoards) => setState(() {
@@ -442,6 +446,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		super.dispose();
 		scrollController.dispose();
 		_backgroundColor.dispose();
-		_focusNode.dispose();
+		if (_focusNode != widget.searchFocusNode) {
+			_focusNode.dispose();
+		}
 	}
 }

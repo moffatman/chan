@@ -5,7 +5,7 @@ import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:flutter/cupertino.dart';
 
 class ImageboardSwitcherPage extends StatefulWidget {
-	final WidgetBuilder builder;
+	final Widget Function(BuildContext context, FocusNode descendantFocusNode) builder;
 	final String? initialImageboardKey;
 
 	const ImageboardSwitcherPage({
@@ -22,6 +22,7 @@ class _ImageboardSwitcherPageState extends State<ImageboardSwitcherPage> {
 	late final PageController _controller = PageController(
 		initialPage: max(0, ImageboardRegistry.instance.imageboardsIncludingUninitialized.toList().indexWhere((b) => b.key == widget.initialImageboardKey))
 	);
+	final _focusNodes = <int, FocusNode>{};
 
 	@override
 	Widget build(BuildContext context) {
@@ -29,13 +30,16 @@ class _ImageboardSwitcherPageState extends State<ImageboardSwitcherPage> {
 		return PageView.builder(
 			controller: _controller,
 			itemCount: imageboards.length,
+			onPageChanged: (i) {
+				_focusNodes[i]?.requestFocus();
+			},
 			itemBuilder: (context, i) => ImageboardScope(
 				imageboardKey: null,
 				imageboard: imageboards[i],
 				child: Stack(
 					children: [
 						Builder(
-							builder: widget.builder
+							builder: (context) => widget.builder(context, _focusNodes.putIfAbsent(i, () => FocusNode()))
 						),
 						Positioned.fill(
 							child: Align(
@@ -80,5 +84,14 @@ class _ImageboardSwitcherPageState extends State<ImageboardSwitcherPage> {
 				)
 			)
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_controller.dispose();
+		for (final focusNode in _focusNodes.values) {
+			focusNode.dispose();
+		}
 	}
 }

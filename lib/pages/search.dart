@@ -265,7 +265,10 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										onPressed: () async {
 											final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 												builder: (ctx) => ImageboardSwitcherPage(
-													builder: (ctx) => const BoardSwitcherPage()
+													initialImageboardKey: query.imageboardKey,
+													builder: (ctx, focusNode) => BoardSwitcherPage(
+														searchFocusNode: focusNode
+													)
 												),
 												showAnimations: context.read<EffectiveSettings>().showAnimations
 											));

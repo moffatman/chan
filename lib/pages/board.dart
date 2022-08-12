@@ -116,8 +116,9 @@ class _BoardPageState extends State<BoardPage> {
 		final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 			builder: (ctx) => ImageboardSwitcherPage(
 				initialImageboardKey: context.read<Imageboard?>()?.key,
-				builder: (ctx) => BoardSwitcherPage(
-					key: keys.putIfAbsent(ctx.read<Imageboard?>()?.key ?? 'null', () => GlobalKey())
+				builder: (ctx, focusNode) => BoardSwitcherPage(
+					key: keys.putIfAbsent(ctx.read<Imageboard?>()?.key ?? 'null', () => GlobalKey()),
+					searchFocusNode: focusNode
 				)
 			),
 			showAnimations: context.read<EffectiveSettings>().showAnimations
