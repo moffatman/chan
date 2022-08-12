@@ -1071,7 +1071,8 @@ class ReplyBoxState extends State<ReplyBox> {
 					Flexible(
 						flex: 1,
 						child: Column(
-							mainAxisAlignment: MainAxisAlignment.spaceAround,
+							mainAxisAlignment: MainAxisAlignment.spaceBetween,
+							crossAxisAlignment: CrossAxisAlignment.start,
 							children: [
 								Row(
 									children: [
@@ -1091,44 +1092,46 @@ class ReplyBoxState extends State<ReplyBox> {
 										Text('.$attachmentExt')
 									]
 								),
-								//const SizedBox(height: 8),
-								Row(
-									children: [
-										CupertinoButton(
-											padding: EdgeInsets.zero,
-											child: Row(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													Icon(context.watch<EffectiveSettings>().randomizeFilenames ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
-													const Text('Random')
-												]
-											),
-											onPressed: () {
-												setState(() {
-													context.read<EffectiveSettings>().randomizeFilenames = !context.read<EffectiveSettings>().randomizeFilenames;
-												});
-											}
-										),
-										const SizedBox(width: 8),
-										if (board.spoilers == true) Padding(
-											padding: const EdgeInsets.only(right: 8),
-											child: CupertinoButton(
+								FittedBox(
+									fit: BoxFit.contain,
+									child: Row(
+										children: [
+											CupertinoButton(
 												padding: EdgeInsets.zero,
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
 													children: [
-														Icon(spoiler ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
-														const Text('Spoiler')
+														Icon(context.watch<EffectiveSettings>().randomizeFilenames ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
+														const Text('Random')
 													]
 												),
 												onPressed: () {
 													setState(() {
-														spoiler = !spoiler;
+														context.read<EffectiveSettings>().randomizeFilenames = !context.read<EffectiveSettings>().randomizeFilenames;
 													});
 												}
+											),
+											const SizedBox(width: 8),
+											if (board.spoilers == true) Padding(
+												padding: const EdgeInsets.only(right: 8),
+												child: CupertinoButton(
+													padding: EdgeInsets.zero,
+													child: Row(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															Icon(spoiler ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
+															const Text('Spoiler')
+														]
+													),
+													onPressed: () {
+														setState(() {
+															spoiler = !spoiler;
+														});
+													}
+												)
 											)
-										)
-									]
+										]
+									)
 								)
 							]
 						)
