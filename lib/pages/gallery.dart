@@ -473,8 +473,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 											)
 										),
 										SliverGrid(
-											gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-												maxCrossAxisExtent: 200
+											gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+												maxCrossAxisExtent: context.select<EffectiveSettings, double>((s) => s.thumbnailSize) * 1.5
 											),
 											delegate: SliverChildBuilderDelegate(
 												(context, index) {
