@@ -1087,88 +1087,98 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					height: 30,
 					child: Icon(CupertinoIcons.rectangle_stack)
 				);
+				buildStationaryIcon() {
+					Widget icon = blankIcon;
+					if (Persistence.tabs[i].imageboardKey != null) {
+						if (ImageboardRegistry.instance.getImageboard(Persistence.tabs[i].imageboardKey!)?.seemsOk == true) {
+							final threadState = Persistence.tabs[i].imageboard?.persistence.getThreadStateIfExists(Persistence.tabs[i].thread!);
+							Future.microtask(() => Persistence.tabs[i].unseen.value = threadState?.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
+							if (threadState != null) {
+								final attachment = threadState.thread?.attachments.tryFirst;
+								icon = StationaryNotifyingIcon(
+									icon: attachment == null ? blankIcon : ClipRRect(
+										borderRadius: const BorderRadius.all(Radius.circular(4)),
+										child: ImageboardScope(
+											imageboardKey: Persistence.tabs[i].imageboardKey,
+											child: AttachmentThumbnail(
+												gaplessPlayback: true,
+												fit: BoxFit.cover,
+												attachment: attachment,
+												width: 30,
+												height: 30
+											)
+										)
+									),
+									primary: threadState.unseenReplyIdsToYouCount(Filter.of(context)) ?? 0,
+									secondary: threadState.unseenReplyCount(Filter.of(context)) ?? 0
+								);
+							}
+							else {
+								icon = SizedBox(
+									width: 30,
+									height: 30,
+									child: FittedBox(
+										fit: BoxFit.contain,
+										child: ImageboardIcon(imageboardKey: Persistence.tabs[i].imageboardKey)
+									)
+								);
+							}
+						}
+						else {
+							icon = ImageboardRegistry.instance.getImageboard(Persistence.tabs[i].imageboardKey!)?.boardsLoading == true ? const SizedBox(
+								width: 30,
+								height: 30,
+								child: CupertinoActivityIndicator()
+							) : const SizedBox(
+								width: 30,
+								height: 30,
+								child: Icon(CupertinoIcons.exclamationmark_triangle_fill)
+							);
+						}
+					}
+					return _buildTabletIcon(
+						i * -1,
+						icon,
+						Persistence.tabs[i].board != null ? '/${Persistence.tabs[i].board?.name}/' : (Persistence.tabs[i].imageboardKey ?? 'None'),
+						reorderable: false,
+						axis: axis,
+						preLabelInjection: (Persistence.tabs[i].thread == null || ImageboardRegistry.instance.count < 2 || Persistence.tabs[i].imageboardKey == null) ? null : ImageboardIcon(imageboardKey: Persistence.tabs[i].imageboardKey)
+					);
+				}
 				return ReorderableDelayedDragStartListener(
 					index: i,
 					key: ValueKey(i),
 					child: AnimatedBuilder(
 						animation: Persistence.tabs[i],
 						builder: (context, _) {
-							if (Persistence.tabs[i].thread != null) {
-								final child = AnimatedBuilder(
-									animation: Persistence.tabs[i].imageboard?.persistence.listenForPersistentThreadStateChanges(Persistence.tabs[i].thread!) ?? const AlwaysStoppedAnimation(0),
-									builder: (context, _) {
-										final threadState = Persistence.tabs[i].imageboard?.persistence.getThreadStateIfExists(Persistence.tabs[i].thread!);
-										Future.microtask(() => Persistence.tabs[i].unseen.value = threadState?.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
-										final attachment = threadState?.thread?.attachments.tryFirst;
-										buildIcon() => _buildTabletIcon(i * -1, StationaryNotifyingIcon(
-												icon: attachment == null ? blankIcon : ClipRRect(
-													borderRadius: const BorderRadius.all(Radius.circular(4)),
-													child: AttachmentThumbnail(
-														gaplessPlayback: true,
-														fit: BoxFit.cover,
-														attachment: attachment,
-														width: 30,
-														height: 30
-													)
-												),
-												primary: threadState?.unseenReplyIdsToYouCount(Filter.of(context)) ?? 0,
-												secondary: threadState?.unseenReplyCount(Filter.of(context)) ?? 0
-											),
-											Persistence.tabs[i].board != null ? '/${Persistence.tabs[i].board?.name}/' : 'None',
-											reorderable: false,
-											axis: axis,
-											preLabelInjection: (ImageboardRegistry.instance.count < 2 || Persistence.tabs[i].imageboardKey == null) ? null : const ImageboardIcon()
-										);
-										if (threadState != null) {
-											return ValueListenableBuilder(
-												valueListenable: threadState.lastSeenPostIdNotifier,
-												builder: (context, _, __) => buildIcon()
-											);
-										}
-										return buildIcon();
+							final imageboard = Persistence.tabs[i].imageboard;
+							if (imageboard == null) {
+								return buildStationaryIcon();
+							}
+							return AnimatedBuilder(
+								animation: imageboard,
+								builder: (context, _) {
+									final thread = Persistence.tabs[i].thread;
+									if (thread == null) {
+										return buildStationaryIcon();
 									}
-								);
-								if (Persistence.tabs[i].imageboardKey == null) {
-									return child;
-								}
-								if (ImageboardRegistry.instance.getImageboard(Persistence.tabs[i].imageboardKey!)?.seemsOk != true) {
-									return _buildTabletIcon(
-										i * -1,
-										ImageboardRegistry.instance.getImageboard(Persistence.tabs[i].imageboardKey!)?.boardsLoading == true ? const SizedBox(
-											width: 30,
-											height: 30,
-											child: CupertinoActivityIndicator()
-										) : const SizedBox(
-											width: 30,
-											height: 30,
-											child: Icon(CupertinoIcons.exclamationmark_triangle_fill)
-										),
-										Persistence.tabs[i].imageboardKey,
-										axis: axis,
+									return AnimatedBuilder(
+										animation: imageboard.persistence.listenForPersistentThreadStateChanges(thread),
+										builder: (context, _) {
+											final threadState = imageboard.persistence.getThreadStateIfExists(thread);
+											if (threadState == null) {
+												return buildStationaryIcon();
+											}
+											else {
+												return AnimatedBuilder(
+													animation: threadState.lastSeenPostIdNotifier,
+													builder: (context, _) => buildStationaryIcon()
+												);
+											}
+										}
 									);
 								}
-								return ImageboardScope(
-									imageboardKey: Persistence.tabs[i].imageboardKey!,
-									child: child
-								);
-							}
-							else {
-								Future.microtask(() => Persistence.tabs[i].unseen.value = 0);
-								return _buildTabletIcon(
-									i * -1,
-									(ImageboardRegistry.instance.count < 2 || Persistence.tabs[i].imageboardKey == null) ? blankIcon : SizedBox(
-										width: 30,
-										height: 30,
-										child: FittedBox(
-											fit: BoxFit.contain,
-											child: ImageboardIcon(imageboardKey: Persistence.tabs[i].imageboardKey)
-										)
-									),
-									Persistence.tabs[i].board != null ? '/${Persistence.tabs[i].board?.name}/' : 'None',
-									reorderable: false,
-									axis: axis
-								);
-							}
+							);
 						}
 					)
 				);
