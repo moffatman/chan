@@ -908,6 +908,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			builder: (context, _) => Opacity(
 				opacity: (index <= 0 ? (_tabController.index == 0 && index == -1 * activeBrowserTab.value) : index == _tabController.index) ? 1.0 : 0.5,
 				child: Column(
+					mainAxisAlignment: MainAxisAlignment.center,
 					children: [
 						icon,
 						if (label != null) ...[
