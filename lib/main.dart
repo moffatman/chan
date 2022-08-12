@@ -1092,9 +1092,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					Widget icon = blankIcon;
 					if (Persistence.tabs[i].imageboardKey != null) {
 						if (ImageboardRegistry.instance.getImageboard(Persistence.tabs[i].imageboardKey!)?.seemsOk == true) {
-							final threadState = Persistence.tabs[i].imageboard?.persistence.getThreadStateIfExists(Persistence.tabs[i].thread!);
-							Future.microtask(() => Persistence.tabs[i].unseen.value = threadState?.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
+							final threadState = Persistence.tabs[i].thread == null ? null : Persistence.tabs[i].imageboard?.persistence.getThreadStateIfExists(Persistence.tabs[i].thread!);
 							if (threadState != null) {
+							Future.microtask(() => Persistence.tabs[i].unseen.value = threadState.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
 								final attachment = threadState.thread?.attachments.tryFirst;
 								icon = StationaryNotifyingIcon(
 									icon: attachment == null ? blankIcon : ClipRRect(
