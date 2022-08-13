@@ -1363,202 +1363,204 @@ class SettingsAppearancePage extends StatelessWidget {
 								context: context,
 								useRootNavigator: false,
 								builder: (context) => StatefulBuilder(
-									builder: (context, setDialogState) => CupertinoActionSheet(
-										title: const Text('Edit post details'),
-										actions: [
-											CupertinoButton(
-												child: const Text('Close'),
-												onPressed: () => Navigator.pop(context)
-											)
-										],
-										message: DefaultTextStyle(
-											style: DefaultTextStyle.of(context).style,
-											child: Column(
-												children: [
-													SizedBox(
-														 height: 125,
-														 child: IgnorePointer(
-															 child: _buildFakePostRow()
-														 )
+									builder: (context, setDialogState) {
+										final settings = context.watch<EffectiveSettings>();
+										return CupertinoActionSheet(
+											title: const Text('Edit post details'),
+											actions: [
+												CupertinoButton(
+													child: const Text('Close'),
+													onPressed: () => Navigator.pop(context)
+												)
+											],
+											message: DefaultTextStyle(
+												style: DefaultTextStyle.of(context).style,
+												child: Column(
+													children: [
+														SizedBox(
+															height: 175,
+															child: IgnorePointer(
+																child: _buildFakePostRow()
+															)
+															),
+														Row(
+															children: [
+																const Text('Show name'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showNameOnPosts,
+																	onChanged: (d) => settings.showNameOnPosts = d
+																)
+															]
 														),
-													Row(
-														children: [
-															const Text('Show name'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showNameOnPosts,
-																onChanged: (d) => settings.showNameOnPosts = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Hide default names'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.hideDefaultNamesOnPosts,
-																onChanged: (d) => settings.hideDefaultNamesOnPosts = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show trip'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showTripOnPosts,
-																onChanged: (d) => settings.showTripOnPosts = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show filename'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showFilenameOnPosts,
-																onChanged: (d) => settings.showFilenameOnPosts = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show filesize'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showFilesizeOnPosts,
-																onChanged: (d) => settings.showFilesizeOnPosts = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show file dimensions'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showFileDimensionsOnPosts,
-																onChanged: (d) => settings.showFileDimensionsOnPosts = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show pass'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showPassOnPosts,
-																onChanged: (d) => settings.showPassOnPosts = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show flag'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showFlagOnPosts,
-																onChanged: (d) => settings.showFlagOnPosts = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show country name'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showCountryNameOnPosts,
-																onChanged: (d) => settings.showCountryNameOnPosts = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show exact time'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showAbsoluteTimeOnPosts,
-																onChanged: (d) => settings.showAbsoluteTimeOnPosts = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show relative time'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showRelativeTimeOnPosts,
-																onChanged: (d) => settings.showRelativeTimeOnPosts = d
-															)
-														]
-													),
-													CupertinoButton.filled(
-														child: const Text('Adjust order'),
-														onPressed: () async {
-															await showCupertinoDialog(
-																barrierDismissible: true,
-																context: context,
-																builder: (context) => StatefulBuilder(
-																	builder: (context, setDialogState) => CupertinoAlertDialog(
-																		title: const Text('Reorder post details'),
-																		actions: [
-																			CupertinoButton(
-																				child: const Text('Close'),
-																				onPressed: () => Navigator.pop(context)
-																			)
-																		],
-																		content: SizedBox(
-																			width: 100,
-																			height: 350,
-																			child: ReorderableListView(
-																				children: context.select<EffectiveSettings, List<PostDisplayField>>((s) => s.postDisplayFieldOrder).asMap().entries.map((pair) {
-																					final disabled = (pair.value == PostDisplayField.name && !settings.showNameOnPosts && !settings.showTripOnPosts) ||
-																						(pair.value == PostDisplayField.attachmentInfo && !settings.showFilenameOnPosts && !settings.showFilesizeOnPosts && !settings.showFileDimensionsOnPosts) ||
-																						(pair.value == PostDisplayField.pass && !settings.showPassOnPosts) ||
-																						(pair.value == PostDisplayField.flag && !settings.showFlagOnPosts) ||
-																						(pair.value == PostDisplayField.countryName && !settings.showCountryNameOnPosts) ||
-																						(pair.value == PostDisplayField.absoluteTime && !settings.showAbsoluteTimeOnPosts) ||
-																						(pair.value == PostDisplayField.relativeTime && !settings.showRelativeTimeOnPosts);
-																					return ReorderableDragStartListener(
-																						index: pair.key,
-																						key: ValueKey(pair.key),
-																						child: Container(
-																							decoration: BoxDecoration(
-																								borderRadius: const BorderRadius.all(Radius.circular(4)),
-																								color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
-																							),
-																							margin: const EdgeInsets.symmetric(vertical: 2),
-																							padding: const EdgeInsets.all(8),
-																							alignment: Alignment.center,
-																							child: Text(
-																								pair.value.displayName,
-																								style: disabled ? TextStyle(
-																									color: CupertinoTheme.of(context).primaryColorWithBrightness(0.5)
-																								) : null
+														Row(
+															children: [
+																const Text('Hide default names'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.hideDefaultNamesOnPosts,
+																	onChanged: (d) => settings.hideDefaultNamesOnPosts = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show trip'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showTripOnPosts,
+																	onChanged: (d) => settings.showTripOnPosts = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show filename'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showFilenameOnPosts,
+																	onChanged: (d) => settings.showFilenameOnPosts = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show filesize'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showFilesizeOnPosts,
+																	onChanged: (d) => settings.showFilesizeOnPosts = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show file dimensions'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showFileDimensionsOnPosts,
+																	onChanged: (d) => settings.showFileDimensionsOnPosts = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show pass'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showPassOnPosts,
+																	onChanged: (d) => settings.showPassOnPosts = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show flag'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showFlagOnPosts,
+																	onChanged: (d) => settings.showFlagOnPosts = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show country name'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showCountryNameOnPosts,
+																	onChanged: (d) => settings.showCountryNameOnPosts = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show exact time'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showAbsoluteTimeOnPosts,
+																	onChanged: (d) => settings.showAbsoluteTimeOnPosts = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show relative time'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showRelativeTimeOnPosts,
+																	onChanged: (d) => settings.showRelativeTimeOnPosts = d
+																)
+															]
+														),
+														CupertinoButton.filled(
+															child: const Text('Adjust order'),
+															onPressed: () async {
+																await showCupertinoDialog(
+																	barrierDismissible: true,
+																	context: context,
+																	builder: (context) => StatefulBuilder(
+																		builder: (context, setDialogState) => CupertinoAlertDialog(
+																			title: const Text('Reorder post details'),
+																			actions: [
+																				CupertinoButton(
+																					child: const Text('Close'),
+																					onPressed: () => Navigator.pop(context)
+																				)
+																			],
+																			content: SizedBox(
+																				width: 100,
+																				height: 350,
+																				child: ReorderableListView(
+																					children: context.select<EffectiveSettings, List<PostDisplayField>>((s) => s.postDisplayFieldOrder).asMap().entries.map((pair) {
+																						final disabled = (pair.value == PostDisplayField.name && !settings.showNameOnPosts && !settings.showTripOnPosts) ||
+																							(pair.value == PostDisplayField.attachmentInfo && !settings.showFilenameOnPosts && !settings.showFilesizeOnPosts && !settings.showFileDimensionsOnPosts) ||
+																							(pair.value == PostDisplayField.pass && !settings.showPassOnPosts) ||
+																							(pair.value == PostDisplayField.flag && !settings.showFlagOnPosts) ||
+																							(pair.value == PostDisplayField.countryName && !settings.showCountryNameOnPosts) ||
+																							(pair.value == PostDisplayField.absoluteTime && !settings.showAbsoluteTimeOnPosts) ||
+																							(pair.value == PostDisplayField.relativeTime && !settings.showRelativeTimeOnPosts);
+																						return ReorderableDragStartListener(
+																							index: pair.key,
+																							key: ValueKey(pair.key),
+																							child: Container(
+																								decoration: BoxDecoration(
+																									borderRadius: const BorderRadius.all(Radius.circular(4)),
+																									color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+																								),
+																								margin: const EdgeInsets.symmetric(vertical: 2),
+																								padding: const EdgeInsets.all(8),
+																								alignment: Alignment.center,
+																								child: Text(
+																									pair.value.displayName,
+																									style: disabled ? TextStyle(
+																										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.5)
+																									) : null
+																								)
 																							)
-																						)
-																					);
-																				}).toList(),
-																				onReorder: (oldIndex, newIndex) {
-																					if (oldIndex < newIndex) {
-																						newIndex -= 1;
+																						);
+																					}).toList(),
+																					onReorder: (oldIndex, newIndex) {
+																						if (oldIndex < newIndex) {
+																							newIndex -= 1;
+																						}
+																						final list = settings.postDisplayFieldOrder.toList();
+																						final item = list.removeAt(oldIndex);
+																						list.insert(newIndex, item);
+																						settings.postDisplayFieldOrder = list;
 																					}
-																					final settings = context.read<EffectiveSettings>();
-																					final list = settings.postDisplayFieldOrder.toList();
-																					final item = list.removeAt(oldIndex);
-																					list.insert(newIndex, item);
-																					settings.postDisplayFieldOrder = list;
-																				}
+																				)
 																			)
 																		)
 																	)
-																)
-															);
-														}
-													)
-												]
+																);
+															}
+														)
+													]
+												)
 											)
-										)
-									)
+										);
+									}
 								)
 							);
 						}
@@ -1843,114 +1845,117 @@ class SettingsAppearancePage extends StatelessWidget {
 								context: context,
 								useRootNavigator: false,
 								builder: (context) => StatefulBuilder(
-									builder: (context, setDialogState) => CupertinoActionSheet(
-										title: const Text('Edit catalog item details'),
-										actions: [
-											CupertinoButton(
-												child: const Text('Close'),
-												onPressed: () => Navigator.pop(context)
-											)
-										],
-										message: DefaultTextStyle(
-											style: DefaultTextStyle.of(context).style,
-											child: Column(
-												children: [
-													SizedBox(
-														height: 100,
-														child: _buildFakeThreadRow(contentFocus: false)
-													),
-													const SizedBox(height: 16),
-													Align(
-														alignment: Alignment.topLeft,
-														child: SizedBox.fromSize(
-															size: Size(settings.catalogGridWidth, settings.catalogGridHeight),
-															child: _buildFakeThreadRow()
+									builder: (context, setDialogState) {
+										final settings = context.watch<EffectiveSettings>();
+										return CupertinoActionSheet(
+											title: const Text('Edit catalog item details'),
+											actions: [
+												CupertinoButton(
+													child: const Text('Close'),
+													onPressed: () => Navigator.pop(context)
+												)
+											],
+											message: DefaultTextStyle(
+												style: DefaultTextStyle.of(context).style,
+												child: Column(
+													children: [
+														SizedBox(
+															height: 100,
+															child: _buildFakeThreadRow(contentFocus: false)
+														),
+														const SizedBox(height: 16),
+														Align(
+															alignment: Alignment.topLeft,
+															child: SizedBox.fromSize(
+																size: Size(settings.catalogGridWidth, settings.catalogGridHeight),
+																child: _buildFakeThreadRow()
+															)
+														),
+														Row(
+															children: [
+																const Text('Show counters in their own row'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.useFullWidthForCatalogCounters,
+																	onChanged: (d) => settings.useFullWidthForCatalogCounters = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show image count'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showImageCountInCatalog,
+																	onChanged: (d) => settings.showImageCountInCatalog = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show clock icon'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showClockIconInCatalog,
+																	onChanged: (d) => settings.showClockIconInCatalog = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show name'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showNameInCatalog,
+																	onChanged: (d) => settings.showNameInCatalog = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show exact time'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showTimeInCatalogHeader,
+																	onChanged: (d) => settings.showTimeInCatalogHeader = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show relative time'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showTimeInCatalogStats,
+																	onChanged: (d) => settings.showTimeInCatalogStats = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show ID'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showIdInCatalogHeader,
+																	onChanged: (d) => settings.showIdInCatalogHeader = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Show flag'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showFlagInCatalogHeader,
+																	onChanged: (d) => settings.showFlagInCatalogHeader = d
+																)
+															]
 														)
-													),
-													Row(
-														children: [
-															const Text('Show counters in their own row'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.useFullWidthForCatalogCounters,
-																onChanged: (d) => settings.useFullWidthForCatalogCounters = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show image count'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showImageCountInCatalog,
-																onChanged: (d) => settings.showImageCountInCatalog = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show clock icon'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showClockIconInCatalog,
-																onChanged: (d) => settings.showClockIconInCatalog = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show name'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showNameInCatalog,
-																onChanged: (d) => settings.showNameInCatalog = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show exact time'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showTimeInCatalogHeader,
-																onChanged: (d) => settings.showTimeInCatalogHeader = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show relative time'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showTimeInCatalogStats,
-																onChanged: (d) => settings.showTimeInCatalogStats = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show ID'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showIdInCatalogHeader,
-																onChanged: (d) => settings.showIdInCatalogHeader = d
-															)
-														]
-													),
-													Row(
-														children: [
-															const Text('Show flag'),
-															const Spacer(),
-															CupertinoSwitch(
-																value: settings.showFlagInCatalogHeader,
-																onChanged: (d) => settings.showFlagInCatalogHeader = d
-															)
-														]
-													)
-												]
+													]
+												)
 											)
-										)
-									)
+										);
+									}
 								)
 							);
 						}
