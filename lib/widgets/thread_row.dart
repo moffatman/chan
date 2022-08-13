@@ -195,10 +195,9 @@ class ThreadRow extends StatelessWidget {
 			if (headerRow.isNotEmpty) {
 				headerRow.add(const TextSpan(text: '\n'));
 			}
-			headerRow.add(TextSpan(
-				text: settings.filterProfanity(latestThread.title!),
-				style: const TextStyle(fontWeight: FontWeight.bold)
-			));
+			headerRow.add(PostTextSpan(latestThread.title!).build(context, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+				baseTextStyle: const TextStyle(fontWeight: FontWeight.bold)
+			)));
 		}
 		List<Widget> rowChildren() => [
 			const SizedBox(width: 8),
