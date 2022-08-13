@@ -99,14 +99,11 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
       duration: const Duration(milliseconds: 150)
     );
     final entry = Tuple4(OverlayEntry(
-      builder: (context) => Opacity(
-        opacity: 0.99,
-        child: FadeTransition(
-          opacity: forwardController,
-          child: _AnimatedBlur(
-            animation: coverController,
-            child: widget
-          )
+      builder: (context) => FadeTransition(
+        opacity: forwardController,
+        child: _AnimatedBlur(
+          animation: coverController,
+          child: widget
         )
       ),
       maintainState: true
@@ -174,6 +171,7 @@ class _AnimatedBlur extends StatelessWidget {
     return AnimatedBuilder(
       animation: animation,
       builder: (context, child) => ImageFiltered(
+        enabled: animation.value != 0.0,
         imageFilter: ImageFilter.blur(
           sigmaX: 5.0 * animation.value,
           sigmaY: 5.0 * animation.value
