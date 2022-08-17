@@ -852,7 +852,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				);
 			}
 			else {
-				return Actions(
+				child = Actions(
 					actions: {
 						ExtendSelectionToLineBreakIntent: CallbackAction(
 							onInvoke: (intent) {
