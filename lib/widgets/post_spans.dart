@@ -650,7 +650,7 @@ class PostLinkSpan extends PostSpan {
 		final settings = context.watch<EffectiveSettings>();
 		// Remove trailing bracket or other punctuation
 		final cleanedUrl = url.replaceAllMapped(
-			RegExp(r'(\.[A-Za-z]+)[^A-Za-z\.\/?]+$'),
+			RegExp(r'(\.[A-Za-z0-9\-._~]+)[^A-Za-z0-9\-._~\.\/?]+$'),
 			(m) => m.group(1)!
 		);
 		final cleanedUri = Uri.tryParse(cleanedUrl);
