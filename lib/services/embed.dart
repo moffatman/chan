@@ -123,11 +123,15 @@ Future<EmbedData?> loadEmbedData({
 		});
 		if (response.data != null) {
 			final data = jsonDecode(response.data);
+			String? thumbnailUrl = data['thumbnail_url'];
+			if (thumbnailUrl?.startsWith('//') == true) {
+				thumbnailUrl = 'https:$thumbnailUrl';
+			}
 			return EmbedData(
 				title: data['title'],
 				provider: data['provider_name'],
 				author: data['author_name'],
-				thumbnailUrl: data['thumbnail_url']
+				thumbnailUrl: thumbnailUrl
 			);
 		}
 	}
