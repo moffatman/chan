@@ -242,6 +242,16 @@ class ImageboardRegistry extends ChangeNotifier {
 	Imageboard? getImageboardUnsafe(String key) {
 		return _sites[key];
 	}
+
+	Future<void> retryFailedBoardSetup() async {
+		final futures = <Future>[];
+		for (final i in imageboards) {
+			if (i.boardFetchErrorMessage != null) {
+				futures.add(i.setupBoards());
+			}
+		}
+		await Future.wait(futures);
+	}
 }
 
 class ImageboardScoped<T> {

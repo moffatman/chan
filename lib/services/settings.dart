@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:chan/models/board.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
@@ -1472,6 +1473,9 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 		WidgetsBinding.instance.addObserver(this);
 		_checkConnectivity();
 		connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
+			if (context.read<EffectiveSettings>().connectivity == ConnectivityResult.none) {
+				ImageboardRegistry.instance.retryFailedBoardSetup();
+			}
 			context.read<EffectiveSettings>().connectivity = result;
 		});
 		if (isDesktop()) {
