@@ -158,7 +158,7 @@ class ThreadRow extends StatelessWidget {
 		final headerRow = [
 			if (settings.showNameInCatalog) ...[
 				TextSpan(
-					text: settings.filterProfanity(latestThread.posts[0].name),
+					text: settings.filterProfanity(latestThread.posts_.first.name),
 					style: const TextStyle(fontWeight: FontWeight.w600)
 				),
 				const TextSpan(text: ' ')
@@ -270,28 +270,33 @@ class ThreadRow extends StatelessWidget {
 						child: Builder(
 							builder: (ctx) => IgnorePointer(
 								child: LayoutBuilder(
-									builder: (context, constraints) => ClippingBox(
-										child: latestThread.posts[0].span.buildWidget(
-											ctx,
-											(baseOptions ?? PostSpanRenderOptions()).copyWith(
-												avoidBuggyClippers: true,
-												maxLines: ((constraints.maxHeight - (DefaultTextStyle.of(context).style.fontSize ?? 17)) / (DefaultTextStyle.of(context).style.fontSize ?? 17)).lazyCeil()
-											),
-											preInjectRow: headerRow.isEmpty ? null : Text.rich(
-												TextSpan(
-													children: headerRow
+									builder: (context, constraints) => Text.rich(
+										TextSpan(
+											children: [
+												if (headerRow.isNotEmpty) TextSpan(
+													children: [
+														...headerRow,
+														const TextSpan(text: '\n')
+													]
+												),
+												latestThread.posts_.first.span.build(
+													ctx,
+													(baseOptions ?? PostSpanRenderOptions()).copyWith(
+														avoidBuggyClippers: true,
+														maxLines: ((constraints.maxHeight - (DefaultTextStyle.of(context).style.fontSize ?? 17)) / (DefaultTextStyle.of(context).style.fontSize ?? 17)).lazyCeil()
+													)
+												),
+												WidgetSpan(
+													alignment: PlaceholderAlignment.top,
+													child: Visibility(
+														visible: false,
+														maintainState: true,
+														maintainAnimation: true,
+														maintainSize: true,
+														child: makeCounters()
+													)
 												)
-											),
-											postInject: WidgetSpan(
-												alignment: PlaceholderAlignment.top,
-												child: Visibility(
-													visible: false,
-													maintainState: true,
-													maintainAnimation: true,
-													maintainSize: true,
-													child: makeCounters()
-												)
-											)
+											]
 										)
 									)
 								)
@@ -354,7 +359,7 @@ class ThreadRow extends StatelessWidget {
 											text: '${settings.filterProfanity(latestThread.title!)}\n',
 											style: const TextStyle(fontWeight: FontWeight.bold),
 										),
-										latestThread.posts.first.span.build(ctx, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+										latestThread.posts_.first.span.build(ctx, (baseOptions ?? PostSpanRenderOptions()).copyWith(
 											avoidBuggyClippers: true
 										)),
 										WidgetSpan(
