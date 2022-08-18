@@ -530,7 +530,10 @@ class _BoardPageState extends State<BoardPage> {
 												},
 												gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
 												controller: _listController,
-												listUpdater: () => site.getCatalog(board!.name).then((list) {
+												listUpdater: () => site.getCatalog(board!.name).then((list) async {
+													for (final thread in list) {
+														await thread.preinit(catalog: true);
+													}
 													final now = DateTime.now();
 													if (settings.hideOldStickiedThreads && list.length > 100) {
 														list = list.where((thread) {

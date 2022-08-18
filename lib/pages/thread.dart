@@ -195,6 +195,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		persistentState.useArchive |= widget.initiallyUseArchive;
 		persistentState.save();
 		_maybeUpdateWatch();
+		persistentState.thread?.preinit();
 		zone = PostSpanRootZoneData(
 			thread: persistentState.thread ?? _nullThread,
 			site: context.read<ImageboardSite>(),
@@ -530,6 +531,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																				notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: _foreground);
 																			}
 																			if (newThread != tmpPersistentState.thread) {
+																				await newThread.preinit();
 																				tmpPersistentState.thread = newThread;
 																				if (persistentState == tmpPersistentState) {
 																					zone.thread = newThread;

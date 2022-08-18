@@ -5,6 +5,7 @@ import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 import '../widgets/post_spans.dart';
@@ -52,22 +53,32 @@ class Post implements Filterable {
 	PostNodeSpan? _span;
 	@HiveField(12)
 	Map<String, int>? foolfuukaLinkedPostThreadIds;
-	PostNodeSpan get span {
-		if (_span == null) {
-			if (spanFormat == PostSpanFormat.chan4) {
-				_span = Site4Chan.makeSpan(board, threadId, text);
-			}
-			else if (spanFormat == PostSpanFormat.foolFuuka) {
-				_span = FoolFuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
-			}
-			else if (spanFormat == PostSpanFormat.lainchan) {
-				_span = SiteLainchan.makeSpan(board, threadId, text);
-			}
-			else if (spanFormat == PostSpanFormat.fuuka) {
-				_span = FuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
-			}
+	PostNodeSpan _makeSpan() {
+		if (spanFormat == PostSpanFormat.chan4) {
+			return Site4Chan.makeSpan(board, threadId, text);
 		}
+		else if (spanFormat == PostSpanFormat.foolFuuka) {
+			return FoolFuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
+		}
+		else if (spanFormat == PostSpanFormat.lainchan) {
+			return SiteLainchan.makeSpan(board, threadId, text);
+		}
+		else if (spanFormat == PostSpanFormat.fuuka) {
+			return FuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
+		}
+		throw UnimplementedError();
+	}
+	PostNodeSpan get span {
+		_span ??= _makeSpan();
 		return _span!;
+	}
+	Future<void> preinit() async {
+		if (text.length > 500) {
+			_span = await compute<Post, PostNodeSpan>((p) => p._makeSpan(), this);
+		}
+		else {
+			_span = _makeSpan();
+		}
 	}
 	@HiveField(10)
 	List<int> replyIds = [];

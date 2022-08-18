@@ -90,6 +90,17 @@ class Thread implements Filterable {
 		return posts_;
 	}
 
+	Future<void> preinit({bool catalog = false}) async {
+		if (catalog) {
+			await posts_.first.preinit();
+		}
+		else {
+			for (final post in posts_) {
+				await post.preinit();
+			}
+		}
+	}
+
 	@override
 	bool operator == (dynamic other) {
 		return (other is Thread)
