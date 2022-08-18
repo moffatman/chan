@@ -802,7 +802,7 @@ class Site4Chan extends ImageboardSite {
 				)
 			];
 		}
-		else if (board == 'tv') {
+		else if (persistence.getBoard(board).spoilers == true) {
 			return const [
 				ImageboardSnippet(
 					icon: CupertinoIcons.eye_slash,
