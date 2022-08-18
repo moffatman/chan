@@ -813,7 +813,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 							opacity: _buttonsAnimation,
 							child: IgnorePointer(
 								ignoring: _buttonsAnimation.value < 0.5,
-								child: child
+								child: Visibility(
+									visible: _buttonsAnimation.value > 0.1,
+									child: child!
+								)
 							)
 						)
 					),
