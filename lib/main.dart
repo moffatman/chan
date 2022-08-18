@@ -1099,15 +1099,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								icon = StationaryNotifyingIcon(
 									icon: attachment == null ? blankIcon : ClipRRect(
 										borderRadius: const BorderRadius.all(Radius.circular(4)),
-										child: ImageboardScope(
-											imageboardKey: Persistence.tabs[i].imageboardKey,
-											child: AttachmentThumbnail(
-												gaplessPlayback: true,
-												fit: BoxFit.cover,
-												attachment: attachment,
-												width: 30,
-												height: 30
-											)
+										child: AttachmentThumbnail(
+											gaplessPlayback: true,
+											fit: BoxFit.cover,
+											attachment: attachment,
+											width: 30,
+											height: 30,
+											site: Persistence.tabs[i].imageboard?.site
 										)
 									),
 									primary: threadState.unseenReplyIdsToYouCount(Filter.of(context)) ?? 0,

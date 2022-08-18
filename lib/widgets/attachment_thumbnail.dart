@@ -45,6 +45,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final Alignment alignment;
 	final bool gaplessPlayback;
 	final bool revealSpoilers;
+	final ImageboardSite? site;
 
 	const AttachmentThumbnail({
 		required this.attachment,
@@ -58,23 +59,33 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.onLoadError,
 		this.gaplessPlayback = false,
 		this.revealSpoilers = false,
+		this.site,
 		Key? key
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
-		final site = context.watch<ImageboardSite>();
 		final settings = context.watch<EffectiveSettings>();
+		final effectiveWidth = width ?? settings.thumbnailSize;
+		final effectiveHeight = height ?? settings.thumbnailSize;
+		final s = site ?? context.watch<ImageboardSite?>();
+		if (s == null) {
+			return SizedBox(
+				width: effectiveWidth,
+				height: effectiveHeight,
+				child: const Center(
+					child: Icon(CupertinoIcons.exclamationmark_triangle_fill)
+				)
+			);
+		}
 		ImageProvider image = ExtendedNetworkImageProvider(
-			(attachment.spoiler && !revealSpoilers) ? site.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString(),
+			(attachment.spoiler && !revealSpoilers) ? s.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString(),
 			cache: true,
-			headers: site.getHeaders(attachment.thumbnailUrl)
+			headers: s.getHeaders(attachment.thumbnailUrl)
 		);
 		if (quarterTurns != 0) {
 			image = RotatingImageProvider(parent: image, quarterTurns: quarterTurns);
 		}
-		final effectiveWidth = width ?? settings.thumbnailSize;
-		final effectiveHeight = height ?? settings.thumbnailSize;
 		Widget child = ExtendedImage(
 			image: image,
 			width: effectiveWidth,
