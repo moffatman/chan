@@ -249,7 +249,9 @@ class PostTextSpan extends PostSpan {
 			style: underlined ? options.baseTextStyle.copyWith(
 				color: options.overrideTextColor,
 				decoration: TextDecoration.underline
-			) : options.baseTextStyle,
+			) : options.baseTextStyle.copyWith(
+				color: options.overrideTextColor
+			),
 			recognizer: options.recognizer,
 			onEnter: options.onEnter,
 			onExit: options.onExit
