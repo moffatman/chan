@@ -143,7 +143,9 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 													child: Center(
 														child: Visibility(
 															visible: _finishedPopIn,
-															child: child!
+															child: ClippingBox(
+																child: child!
+															)
 														)
 													)
 												)
