@@ -19,6 +19,7 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -707,7 +708,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 
 class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with TickerProviderStateMixin {
 	List<Post>? _filteredPosts;
-	List<Post> _yous = [];
+	List<int> _youIds = [];
 	int? _lastLastVisibleItemId;
 	int _redCount = 0;
 	int _whiteCount = 0;
@@ -726,12 +727,11 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	bool _updateCounts() {
 		final lastVisibleItemId = widget.listController.lastVisibleItem?.id;
 		if (lastVisibleItemId == null || _filteredPosts == null) return false;
-		final youIds = widget.persistentState.youIds;
 		final lastSeenPostId = widget.persistentState.lastSeenPostId ?? widget.persistentState.id;
-		_yous = _filteredPosts!.where((p) => p.span.referencedPostIds(p.board).any((id) => youIds.contains(id))).toList();
-		_redCount = _yous.where((p) => p.id > lastSeenPostId).length;
-		_whiteCount = _filteredPosts!.where((p) => p.id > lastSeenPostId).length;
-		_greyCount = _filteredPosts!.where((p) => p.id > lastVisibleItemId).length - _whiteCount;
+		_youIds = widget.persistentState.replyIdsToYou(widget.filter) ?? [];
+		_redCount = _youIds.binarySearchCountAfter((p) => p > lastSeenPostId);
+		_whiteCount = _filteredPosts!.binarySearchCountAfter((p) => p.id > lastSeenPostId);
+		_greyCount = _filteredPosts!.binarySearchCountAfter((p) => p.id > lastVisibleItemId) - _whiteCount;
 		_lastLastVisibleItemId = lastVisibleItemId;
 		setState(() {});
 		return true;
@@ -845,10 +845,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												)
 											);
 										}),
-										Tuple3(describeCount(_yous.length, '(You)'), const Icon(CupertinoIcons.reply_all, size: 19), _yous.isEmpty ? null : () {
+										Tuple3(describeCount(_youIds.length, '(You)'), const Icon(CupertinoIcons.reply_all, size: 19), _youIds.isEmpty ? null : () {
 												WeakNavigator.push(context, PostsPage(
 													zone: widget.zone,
-													postsIdsToShow: _yous.map((y) => y.id).toList(),
+													postsIdsToShow: _youIds,
 													onTap: (post) {
 														widget.listController.animateTo((p) => p.id == post.id);
 														WeakNavigator.pop(context);
