@@ -158,25 +158,25 @@ class _ContextMenuState extends State<ContextMenu> {
 												minHeight: 0,
 												maxHeight: maxHeight.isNaN ? double.infinity : maxHeight
 											),
-											child: IgnorePointer(child: child)
+											child: MultiProvider(
+												providers: [
+													Provider<bool>.value(value: false), // Dummy, at least one provider is required
+													if (zone != null) ChangeNotifierProvider<PostSpanZoneData>.value(value: zone),
+													if (imageboard != null) ChangeNotifierProvider<Imageboard>.value(value: imageboard),
+													if (site != null) Provider<ImageboardSite>.value(value: site),
+													if (persistence != null) ChangeNotifierProvider<Persistence>.value(value: persistence),
+													if (threadWatcher != null) ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher),
+													if (notifications != null) Provider<Notifications>.value(value: notifications)
+												],
+												child: IgnorePointer(child: child)
+											)
 										)
 									)
 								)
 							);
 						}
 					),
-					child: MultiProvider(
-						providers: [
-							Provider<bool>.value(value: false), // Dummy, at least one provider is required
-							if (zone != null) ChangeNotifierProvider<PostSpanZoneData>.value(value: zone),
-							if (imageboard != null) ChangeNotifierProvider<Imageboard>.value(value: imageboard),
-							if (site != null) Provider<ImageboardSite>.value(value: site),
-							if (persistence != null) ChangeNotifierProvider<Persistence>.value(value: persistence),
-							if (threadWatcher != null) ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher),
-							if (notifications != null) Provider<Notifications>.value(value: notifications)
-						],
-						child: widget.child
-					)
+					child: widget.child
 				)
 			)
 		);
