@@ -205,7 +205,19 @@ class _ChanAppState extends State<ChanApp> {
 															ImageboardRegistry.instance.context = context;
 															return DefaultTextStyle(
 																style: CupertinoTheme.of(context).textTheme.textStyle,
-																child: ImageboardRegistry.instance.initialized ? const ChanHomePage() : Container(
+																child: ImageboardRegistry.instance.initialized ? Stack(
+																	children: [
+																		// For some unexplained reason this improves performance
+																		// Maybe related to querying the framerate each frame?
+																		Positioned(
+																			top: 0,
+																			left: 0,
+																			right: 0,
+																			child: PerformanceOverlay.allEnabled()
+																		),
+																		const ChanHomePage()
+																	]
+																) : Container(
 																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 																	child: Center(
 																		child: ImageboardRegistry.instance.setupError != null ? ErrorMessageCard(ImageboardRegistry.instance.setupError!, remedies: {
