@@ -50,8 +50,8 @@ Future<void> shareOne({
 							);
 						}
 					),
-					if (uri != null) ...[
-						if (uri.scheme == 'http' || uri.scheme == 'https') CupertinoActionSheetAction(
+					if (uri?.host.isNotEmpty == true) ...[
+						if (uri!.scheme == 'http' || uri.scheme == 'https') CupertinoActionSheetAction(
 							child: const Text('Open in internal browser'),
 							onPressed: () {
 								Navigator.of(context, rootNavigator: true).pop();
