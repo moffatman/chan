@@ -123,19 +123,17 @@ class PostRow extends StatelessWidget {
 				child: IgnorePointer(
 					ignoring: !allowTappingLinks,
 					child: Text.rich(
-						TextSpan(children: [
-							post.span.build(
-								ctx,
-								(baseOptions ?? PostSpanRenderOptions()).copyWith(
-									showCrossThreadLabel: showCrossThreadLabel,
-									shrinkWrap: shrinkWrap
+						post.span.build(
+							ctx,
+							(baseOptions ?? PostSpanRenderOptions()).copyWith(
+								showCrossThreadLabel: showCrossThreadLabel,
+								shrinkWrap: shrinkWrap,
+								postInject: replyIds.isEmpty ? null : TextSpan(
+									text: List.filled(replyIds.length.toString().length + 4, '1').join(),
+									style: const TextStyle(color: Colors.transparent)
 								)
-							),
-							if (replyIds.isNotEmpty) TextSpan(
-								text: List.filled(replyIds.length.toString().length + 4, '1').join(),
-								style: const TextStyle(color: Colors.transparent)
 							)
-						])
+						)
 					)
 				)
 			)

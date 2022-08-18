@@ -50,6 +50,7 @@ class PostSpanRenderOptions {
 	final bool shrinkWrap;
 	final int maxLines;
 	final String? highlightString;
+	final InlineSpan? postInject;
 	PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -64,7 +65,8 @@ class PostSpanRenderOptions {
 		this.ownLine = false,
 		this.shrinkWrap = false,
 		this.maxLines = 999999,
-		this.highlightString
+		this.highlightString,
+		this.postInject
 	});
 	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 
@@ -75,7 +77,8 @@ class PostSpanRenderOptions {
 		bool? shrinkWrap,
 		bool? addExpandingPosts,
 		bool? avoidBuggyClippers,
-		int? maxLines
+		int? maxLines,
+		InlineSpan? postInject
 	}) => PostSpanRenderOptions(
 		recognizer: recognizer,
 		overrideRecognizer: overrideRecognizer,
@@ -90,7 +93,8 @@ class PostSpanRenderOptions {
 		ownLine: ownLine ?? this.ownLine,
 		shrinkWrap: shrinkWrap ?? this.shrinkWrap,
 		highlightString: highlightString,
-		maxLines: maxLines ?? this.maxLines
+		maxLines: maxLines ?? this.maxLines,
+		postInject: postInject ?? this.postInject
 	);
 }
 
@@ -101,6 +105,15 @@ abstract class PostSpan {
 	InlineSpan build(BuildContext context, PostSpanRenderOptions options);
 	String buildText();
 	bool willConsumeEntireLine(PostSpanRenderOptions options) => false;
+}
+
+class _PostWrapperSpan extends PostSpan {
+	final InlineSpan span;
+	_PostWrapperSpan(this.span);
+	@override
+	InlineSpan build(BuildContext context, options) => span;
+	@override
+	String buildText() => '';
 }
 
 class PostNodeSpan extends PostSpan {
@@ -117,20 +130,26 @@ class PostNodeSpan extends PostSpan {
 
 	@override
 	InlineSpan build(context, options) {
-		final ownLineOptions = options.copyWith(ownLine: true);
+		PostSpanRenderOptions effectiveOptions = options;
 		final renderChildren = <InlineSpan>[];
+		List<PostSpan> effectiveChildren = children;
+		if (options.postInject != null) {
+			effectiveOptions = options.copyWith(postInject: null);
+			effectiveChildren = children.toList()..add(_PostWrapperSpan(options.postInject!));
+		}
+		final ownLineOptions = effectiveOptions.copyWith(ownLine: true);
 		int lines = 0;
-		for (int i = 0; i < children.length && lines < options.maxLines; i++) {
-			if ((i == 0 || children[i - 1] is PostLineBreakSpan) && (i == children.length - 1 || children[i + 1] is PostLineBreakSpan)) {
-				renderChildren.add(children[i].build(context, ownLineOptions));
-				if (children[i].willConsumeEntireLine(ownLineOptions) && i + 1 < children.length) {
+		for (int i = 0; i < effectiveChildren.length && lines < options.maxLines; i++) {
+			if ((i == 0 || effectiveChildren[i - 1] is PostLineBreakSpan) && (i == effectiveChildren.length - 1 || effectiveChildren[i + 1] is PostLineBreakSpan)) {
+				renderChildren.add(effectiveChildren[i].build(context, ownLineOptions));
+				if (effectiveChildren[i].willConsumeEntireLine(ownLineOptions) && i + 1 < effectiveChildren.length) {
 					i++;
 				}
 			}
 			else {
-				renderChildren.add(children[i].build(context, options));
+				renderChildren.add(effectiveChildren[i].build(context, effectiveOptions));
 			}
-			if (children[i] is PostLineBreakSpan) {
+			if (effectiveChildren[i] is PostLineBreakSpan) {
 				lines++;
 			}
 		}

@@ -283,17 +283,17 @@ class ThreadRow extends StatelessWidget {
 													ctx,
 													(baseOptions ?? PostSpanRenderOptions()).copyWith(
 														avoidBuggyClippers: true,
-														maxLines: ((constraints.maxHeight - (DefaultTextStyle.of(context).style.fontSize ?? 17)) / (DefaultTextStyle.of(context).style.fontSize ?? 17)).lazyCeil()
-													)
-												),
-												WidgetSpan(
-													alignment: PlaceholderAlignment.top,
-													child: Visibility(
-														visible: false,
-														maintainState: true,
-														maintainAnimation: true,
-														maintainSize: true,
-														child: makeCounters()
+														maxLines: ((constraints.maxHeight - (DefaultTextStyle.of(context).style.fontSize ?? 17)) / (DefaultTextStyle.of(context).style.fontSize ?? 17)).lazyCeil(),
+														postInject: WidgetSpan(
+															alignment: PlaceholderAlignment.top,
+															child: Visibility(
+																visible: false,
+																maintainState: true,
+																maintainAnimation: true,
+																maintainSize: true,
+																child: makeCounters()
+															)
+														)
 													)
 												)
 											]
