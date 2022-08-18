@@ -100,6 +100,7 @@ abstract class PostSpan {
 	}
 	InlineSpan build(BuildContext context, PostSpanRenderOptions options);
 	String buildText();
+	bool willConsumeEntireLine(PostSpanRenderOptions options) => false;
 }
 
 class PostNodeSpan extends PostSpan {
@@ -116,11 +117,15 @@ class PostNodeSpan extends PostSpan {
 
 	@override
 	InlineSpan build(context, options) {
+		final ownLineOptions = options.copyWith(ownLine: true);
 		final renderChildren = <InlineSpan>[];
 		int lines = 0;
 		for (int i = 0; i < children.length && lines < options.maxLines; i++) {
 			if ((i == 0 || children[i - 1] is PostLineBreakSpan) && (i == children.length - 1 || children[i + 1] is PostLineBreakSpan)) {
-				renderChildren.add(children[i].build(context, options.copyWith(ownLine: true)));
+				renderChildren.add(children[i].build(context, ownLineOptions));
+				if (children[i].willConsumeEntireLine(ownLineOptions) && i + 1 < children.length) {
+					i++;
+				}
 			}
 			else {
 				renderChildren.add(children[i].build(context, options));
@@ -426,7 +431,7 @@ class PostQuoteLinkSpan extends PostSpan {
 					)
 				);
 				return Tuple2(WidgetSpan(
-					child: (options.ownLine && !options.shrinkWrap) ? IntrinsicHeight(
+					child: willConsumeEntireLine(options) ? IntrinsicHeight(
 						child: Row(
 							children: [
 								popup,
@@ -446,7 +451,7 @@ class PostQuoteLinkSpan extends PostSpan {
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
 		final pair = _build(context, options);
-		final span = (options.ownLine && !options.shrinkWrap) ? TextSpan(
+		final span = willConsumeEntireLine(options) ? TextSpan(
 			children: [
 				pair.item1,
 				WidgetSpan(child: Row())
@@ -470,6 +475,9 @@ class PostQuoteLinkSpan extends PostSpan {
 	String buildText() {
 		return '>>$postId';
 	}
+
+	@override
+	bool willConsumeEntireLine(PostSpanRenderOptions options) => (options.ownLine && !options.shrinkWrap);
 }
 
 class PostBoardLink extends PostSpan {
