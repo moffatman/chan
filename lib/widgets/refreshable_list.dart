@@ -466,7 +466,9 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 														);
 													}
 												},
-												childCount: values.length * 2
+												childCount: values.length * 2,
+												addAutomaticKeepAlives: false,
+												addRepaintBoundaries: false,
 											)
 										),
 									if (values.isEmpty)
