@@ -448,7 +448,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																	onNotification: (notification) {
 																		if (notification is ScrollEndNotification) {
 																			Future.delayed(const Duration(milliseconds: 300), () {
-																				if (!(_listController.scrollController?.position.isScrollingNotifier.value ?? false) && _saveQueued) {
+																				if (!((_listController.scrollController?.hasClients ?? false) && (_listController.scrollController?.position.isScrollingNotifier.value ?? false)) && _saveQueued) {
 																					persistentState.save();
 																					_saveQueued = false;
 																				}
