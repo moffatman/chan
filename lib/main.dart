@@ -518,7 +518,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 		else {
 			for (final imageboard in ImageboardRegistry.instance.imageboards) {
-				final dest = imageboard.site.decodeUrl(link);
+				ThreadOrPostIdentifier? dest = imageboard.site.decodeUrl(link);
+				for (final archive in imageboard.site.archives) {
+					if (dest != null) {
+						break;
+					}
+					dest = archive.decodeUrl(link);
+				}
 				if (dest != null) {
 					_onNotificationTapped(imageboard, dest);
 					return;

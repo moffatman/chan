@@ -311,6 +311,7 @@ abstract class ImageboardSiteArchive {
 	Future<List<ImageboardBoard>> getBoards();
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page});
 	String getWebUrl(String board, [int? threadId, int? postId]);
+	ThreadOrPostIdentifier? decodeUrl(String url);
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
@@ -457,7 +458,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<List<ImageboardBoardFlag>> getBoardFlags(String board);
 	String get siteType;
 	String get siteData;
-	ThreadOrPostIdentifier? decodeUrl(String url);
 	String get defaultUsername;
 	List<ImageboardSnippet> getBoardSnippets(String board);
 }

@@ -422,6 +422,16 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		 return webUrl;
 	}
 
+	@override
+	ThreadOrPostIdentifier? decodeUrl(String url) {
+		final pattern = RegExp(r'https?:\/\/' + baseUrl + r'\/([^\/]+)\/thread\/(\d+)(#p(\d+))?');
+		final match = pattern.firstMatch(url);
+		if (match != null) {
+			return ThreadOrPostIdentifier(match.group(1)!, int.parse(match.group(2)!), int.tryParse(match.group(4) ?? ''));
+		}
+		return null;
+	}
+
 	FoolFuukaArchive({
 		required this.baseUrl,
 		required this.staticUrl,
