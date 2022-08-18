@@ -264,7 +264,7 @@ class ThreadWatcher extends ChangeNotifier {
 	}
 
 	Future<void> update() async {
-		if (ImageboardRegistry.instance.getImageboard(imageboardKey)?.seemsOk != true) {
+		if (ImageboardRegistry.instance.getImageboard(imageboardKey)?.seemsOk == false) {
 			return;
 		}
 		// Could be concurrently-modified
