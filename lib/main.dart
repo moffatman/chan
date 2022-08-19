@@ -303,6 +303,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	late StreamSubscription<List<SharedMediaFile>> _sharedFilesSubscription;
 	late StreamSubscription<String> _sharedTextSubscription;
 	final _searchPageKey = GlobalKey<SearchPageState>();
+	// Sometimes duplicate links are received due to use of multiple link handling packages
+	Tuple2<DateTime, String>? _lastLink;
 
 	void _didUpdateTabs() {
 		if (_isScrolling) {
@@ -375,6 +377,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		if (link == null) {
 			return;
 		}
+		if (_lastLink != null && link == _lastLink?.item2 && DateTime.now().isBefore(_lastLink!.item1.add(const Duration(seconds: 1)))) {
+			return;
+		}
+		_lastLink = Tuple2(DateTime.now(), link);
 		if (link.startsWith('chance:')) {
 			final uri = Uri.parse(link);
 			if (uri.host == 'theme') {
