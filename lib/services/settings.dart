@@ -506,6 +506,8 @@ class SavedSettings extends HiveObject {
 	bool allowSwipingInGallery;
 	@HiveField(88)
 	SettingsQuickAction? settingsQuickAction;
+	@HiveField(89)
+	bool useHapticFeedback;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -596,6 +598,7 @@ class SavedSettings extends HiveObject {
 		bool? alwaysStartVideosMuted,
 		bool? allowSwipingInGallery,
 		SettingsQuickAction? settingsQuickAction,
+		bool? useHapticFeedback,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -713,7 +716,8 @@ class SavedSettings extends HiveObject {
 		useFullWidthForCatalogCounters = useFullWidthForCatalogCounters ?? false,
 		alwaysStartVideosMuted = alwaysStartVideosMuted ?? false,
 		allowSwipingInGallery = allowSwipingInGallery ?? true,
-		settingsQuickAction = settingsQuickAction ?? SettingsQuickAction.toggleTheme;
+		settingsQuickAction = settingsQuickAction ?? SettingsQuickAction.toggleTheme,
+		useHapticFeedback = useHapticFeedback ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1421,6 +1425,13 @@ class EffectiveSettings extends ChangeNotifier {
 	SettingsQuickAction? get settingsQuickAction => _settings.settingsQuickAction;
 	set settingsQuickAction(SettingsQuickAction? setting) {
 		_settings.settingsQuickAction = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get useHapticFeedback => _settings.useHapticFeedback;
+	set useHapticFeedback(bool setting) {
+		_settings.useHapticFeedback = setting;
 		_settings.save();
 		notifyListeners();
 	}

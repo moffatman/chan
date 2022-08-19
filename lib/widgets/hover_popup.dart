@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
@@ -100,6 +101,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 			)
 		);
 		Overlay.of(context, rootOverlay: true)!.insert(_touchEntry!);
+		lightHapticFeedback();
 	}
 
 	void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
@@ -116,6 +118,9 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 			_value = null;
 		});
 		_touchEntry?.remove();
+		if (_touchEntry != null) {
+			lightHapticFeedback();
+		}
 		_touchEntry = null;
 	}
 

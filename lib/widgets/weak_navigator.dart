@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/widgets.dart';
@@ -90,6 +91,7 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
   }
 
   Future<T?> push<T extends Object?>(Widget widget) {
+    lightHapticFeedback();
     final forwardController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 150)
@@ -121,6 +123,7 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
   }
 
   void pop<T extends Object?>([T? result]) async {
+    lightHapticFeedback();
     final entry = stack.removeLast();
     if (stack.isNotEmpty) {
       stack.last.item3.reverse();
@@ -136,6 +139,7 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
   }
 
   Future<void> popAllExceptFirst({bool animated = false}) async {
+    lightHapticFeedback();
     await Future.wait([
       rootCoverAnimationController.reverse(),
       ...stack.map((x) => x.item2.reverse(from: 1))

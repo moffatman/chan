@@ -376,6 +376,7 @@ class _ThreadPageState extends State<ThreadPage> {
 										padding: EdgeInsets.zero,
 										child: Icon(persistentState.savedTime == null ? CupertinoIcons.bookmark : CupertinoIcons.bookmark_fill),
 										onPressed: () {
+											lightHapticFeedback();
 											if (persistentState.savedTime != null) {
 												persistentState.savedTime = null;
 											}
@@ -910,7 +911,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 					)
 				),
 				GestureDetector(
-					onLongPress: scrollToBottom,
+					onLongPress: () {
+						scrollToBottom();
+						mediumHapticFeedback();
+					},
 					child: CupertinoButton(
 						padding: EdgeInsets.zero,
 						child: Builder(
@@ -973,6 +977,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 							)
 						),
 						onPressed: () {
+							lightHapticFeedback();
 							if (_buttonsAnimation.value > 0.5) {
 								_buttonsAnimationController.reverse();
 							}

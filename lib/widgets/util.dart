@@ -6,6 +6,7 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
@@ -40,6 +41,7 @@ void showToast({
 	required String message,
 	required IconData icon
 }) {
+	lightHapticFeedback();
 	FToast().init(context).showToast(
 		child: Container(
 			padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

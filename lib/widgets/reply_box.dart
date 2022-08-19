@@ -454,6 +454,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		else {
 			showReplyBox();
 		}
+		lightHapticFeedback();
 	}
 
 	Future<File?> _showTranscodeWindow({
@@ -1639,6 +1640,7 @@ class ReplyBoxState extends State<ReplyBox> {
 											Future.delayed(const Duration(milliseconds: 350), () {
 												settings.replyBoxHeightOffset = _replyBoxHeightOffsetAtPanStart;
 											});
+											lightHapticFeedback();
 											hideReplyBox();
 											_willHideOnPanEnd = false;
 										}

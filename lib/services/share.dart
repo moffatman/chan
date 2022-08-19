@@ -1,3 +1,4 @@
+import 'package:chan/services/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +13,7 @@ Future<void> shareOne({
 	String? subject,
 	required Rect? sharePositionOrigin
 }) async {
+	lightHapticFeedback();
 	if (type == 'file') {
 		try {
 			await ShareExtend.share(

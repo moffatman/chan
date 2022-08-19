@@ -791,6 +791,19 @@ class SettingsBehaviorPage extends StatelessWidget {
 						const SizedBox(width: 16)
 					]
 				),
+				const SizedBox(height: 32),
+				const Text('Haptic feedback'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('Disabled'),
+						true: Text('Enabled')
+					},
+					groupValue: settings.useHapticFeedback,
+					onValueChanged: (newValue) {
+						settings.useHapticFeedback = newValue;
+					}
+				),
 				const SizedBox(height: 32)
 			]
 		);
