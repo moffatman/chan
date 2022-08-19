@@ -610,6 +610,7 @@ class AttachmentViewer extends StatelessWidget {
 				);
 			}
 		}
+		final layoutInsets = MediaQuery.of(context).padding;
 		buildChild(bool useRealGestureKey) => ExtendedImage(
 			image: image,
 			extendedImageGestureKey: useRealGestureKey ? controller.gestureKey : null,
@@ -623,6 +624,7 @@ class AttachmentViewer extends StatelessWidget {
 			height: size?.height ?? double.infinity,
 			enableLoadState: true,
 			handleLoadingProgress: true,
+			layoutInsets: layoutInsets,
 			loadStateChanged: (loadstate) {
 				// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback
 				if (!controller.cacheCompleted) {
@@ -708,7 +710,14 @@ class AttachmentViewer extends StatelessWidget {
 				return Hero(
 					tag: _tag,
 					child: result,
-					flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
+					flightShuttleBuilder: (ctx, animation, direction, from, to) => AnimatedBuilder(
+						animation: animation,
+						builder: (ctx, child) => Padding(
+							padding: layoutInsets * animation.value,
+							child: child
+						),
+						child: from.widget
+					)
 				);
 			}
 		);

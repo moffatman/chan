@@ -315,11 +315,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: trackpad_gestures
-      resolved-ref: f86b56637bbd80c8000fc3cc4df3512b8ace85a9
+      ref: chan_master
+      resolved-ref: "6392abab37a9e66fd95d974885daeb3a219f8ad3"
       url: "https://github.com/moffatman/extended_image.git"
     source: git
-    version: "6.2.0"
+    version: "6.2.1"
   extended_image_library:
     dependency: "direct main"
     description:
