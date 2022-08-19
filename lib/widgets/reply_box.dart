@@ -908,6 +908,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_show = false;
 			loading = false;
 			attachment = null;
+			_showAttachmentOptions = false;
 			if (mounted) setState(() {});
 			print(receipt);
 			_rootFocusNode.unfocus();
