@@ -699,43 +699,68 @@ class PostLinkSpan extends PostSpan {
 						url: url
 					)
 				);
-				Widget buildEmbed(List<Widget> children) => Padding(
+				Widget buildEmbed({
+					required Widget left,
+					required Widget center,
+					Widget? right
+				}) => Padding(
 					padding: const EdgeInsets.only(top: 8, bottom: 8),
 					child: ClipRRect(
 						borderRadius: const BorderRadius.all(Radius.circular(8)),
 						child: Container(
 							padding: const EdgeInsets.all(8),
 							color: CupertinoTheme.of(context).barBackgroundColor,
-							child: Row(
-								crossAxisAlignment: CrossAxisAlignment.center,
-								mainAxisSize: MainAxisSize.min,
-								children: children
+							child: LayoutBuilder(
+								builder: (context, constraints) => constraints.maxWidth < 250 ? Column(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										Row(
+											children: [
+												left,
+												if (right != null) ...[
+													const Spacer(),
+													right,
+													const SizedBox(width: 8)
+												]
+											]
+										),
+										center
+									]
+								) : Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										left,
+										const SizedBox(width: 16),
+										center,
+										if (right != null) ...[
+											const SizedBox(width: 8),
+											right,
+											const SizedBox(width: 8),
+										]
+									]
+								)
 							)
 						)
 					)
 				);
 				Widget? tapChild;
 				if (snapshot.connectionState == ConnectionState.waiting) {
-					tapChild = buildEmbed([
-						const SizedBox(
+					tapChild = buildEmbed(
+						left: const SizedBox(
 							width: 75,
 							height: 75,
 							child: CupertinoActivityIndicator()
 						),
-						const SizedBox(width: 16),
-						Flexible(
-							child: Text(url, style: const TextStyle(decoration: TextDecoration.underline), textScaleFactor: 1)
-						),
-						const SizedBox(width: 16)
-					]);
+						center: Text(url, style: const TextStyle(decoration: TextDecoration.underline), textScaleFactor: 1)
+					);
 				}
 				String? byline = snapshot.data?.provider;
 				if (snapshot.data?.author != null && !(snapshot.data?.title != null && snapshot.data!.title!.contains(snapshot.data!.author!))) {
 					byline = byline == null ? snapshot.data?.author : '${snapshot.data?.author} - $byline';
 				}
 				if (snapshot.data?.thumbnailWidget != null || snapshot.data?.thumbnailUrl != null) {
-					tapChild = buildEmbed([
-						ClipRRect(
+					tapChild = buildEmbed(
+						left: ClipRRect(
 							borderRadius: const BorderRadius.all(Radius.circular(8)),
 							child: snapshot.data?.thumbnailWidget ?? ExtendedImage.network(
 								snapshot.data!.thumbnailUrl!,
@@ -745,8 +770,7 @@ class PostLinkSpan extends PostSpan {
 								fit: BoxFit.cover
 							)
 						),
-						const SizedBox(width: 16),
-						Flexible(
+						center: Flexible(
 							child: Column(
 								crossAxisAlignment: CrossAxisAlignment.start,
 								children: [
@@ -757,12 +781,8 @@ class PostLinkSpan extends PostSpan {
 								]
 							)
 						),
-						if (cleanedUri != null && settings.hostsToOpenExternally.any((s) => cleanedUri.host.endsWith(s))) const Padding(
-							padding: EdgeInsets.only(left: 16),
-							child: Icon(Icons.launch_rounded)
-						),
-						const SizedBox(width: 16)
-					]);
+						right: (cleanedUri != null && settings.hostsToOpenExternally.any((s) => cleanedUri.host.endsWith(s))) ? const Icon(Icons.launch_rounded) : null
+					);
 				}
 
 				if (tapChild != null) {
