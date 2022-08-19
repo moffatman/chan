@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 const double _kArrowScreenPadding = 26.0;
 
@@ -25,6 +26,7 @@ class _CustomTextSelectionControlsToolbar extends StatefulWidget {
 		required this.selectionMidpoint,
 		required this.textLineHeight,
 		required this.handleQuoteText,
+		required this.handleShare,
 	}) : super(key: key);
 
 	final ValueListenable<ClipboardStatus>? clipboardStatus;
@@ -37,6 +39,7 @@ class _CustomTextSelectionControlsToolbar extends StatefulWidget {
 	final Offset selectionMidpoint;
 	final double textLineHeight;
 	final VoidCallback? handleQuoteText;
+	final VoidCallback? handleShare;
 
 	@override
 	_CustomTextSelectionControlsToolbarState createState() => _CustomTextSelectionControlsToolbarState();
@@ -136,6 +139,9 @@ class _CustomTextSelectionControlsToolbarState extends State<_CustomTextSelectio
 		if (widget.handleQuoteText != null) {
 			addToolbarButton('Quote in reply', widget.handleQuoteText!);
 		}
+		if (widget.handleShare != null) {
+			addToolbarButton('Share', widget.handleShare!);
+		}
 
 		// If there is no option available, build an empty widget.
 		if (items.isEmpty) {
@@ -152,8 +158,10 @@ class _CustomTextSelectionControlsToolbarState extends State<_CustomTextSelectio
 
 class _CustomEditingControls extends CupertinoTextSelectionControls {
 	final ValueChanged<String> onQuoteText;
+	final ValueChanged<String> onShare;
 	_CustomEditingControls({
-		required this.onQuoteText
+		required this.onQuoteText,
+		required this.onShare,
 	}) : super();
 
 	@override
@@ -176,6 +184,7 @@ class _CustomEditingControls extends CupertinoTextSelectionControls {
 			handlePaste: canPaste(delegate) ? () => handlePaste(delegate) : null,
 			handleSelectAll: canSelectAll(delegate) ? () => handleSelectAll(delegate) : null,
 			handleQuoteText: canCopy(delegate) ? () => onQuoteText(delegate.textEditingValue.selection.textInside(delegate.textEditingValue.text)) : null,
+			handleShare: canCopy(delegate) ? () => onShare(delegate.textEditingValue.selection.textInside(delegate.textEditingValue.text)) : null,
 			selectionMidpoint: selectionMidpoint,
 			textLineHeight: textLineHeight,
 		);
@@ -232,7 +241,11 @@ class SelectablePostPage extends StatelessWidget {
 									),
 									scrollPhysics: const NeverScrollableScrollPhysics(),
 									selectionControls: _CustomEditingControls(
-										onQuoteText: onQuoteText
+										onQuoteText: onQuoteText,
+										onShare: (text) => Share.share(
+											text,
+											sharePositionOrigin: null
+										)
 									),
 								),
 								const SizedBox(height: 16),
