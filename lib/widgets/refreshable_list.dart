@@ -418,7 +418,10 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 											),
 											child: CupertinoButton(
 												padding: const EdgeInsets.all(16),
-												onPressed: () => widget.filterAlternative!.handler(_searchFilter!.text),
+												onPressed: () {
+													_searchFocusNode.unfocus();
+													widget.filterAlternative!.handler(_searchFilter!.text);
+												},
 												child: Row(
 													children: [
 														const Icon(CupertinoIcons.search),
