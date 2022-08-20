@@ -540,6 +540,7 @@ class AttachmentViewer extends StatelessWidget {
 	final bool fill;
 	final VoidCallback? onTap;
 	final bool allowContextMenu;
+	final EdgeInsets layoutInsets;
 
 	const AttachmentViewer({
 		required this.controller,
@@ -548,6 +549,7 @@ class AttachmentViewer extends StatelessWidget {
 		this.onTap,
 		this.fill = true,
 		this.allowContextMenu = true,
+		this.layoutInsets = EdgeInsets.zero,
 		Key? key
 	}) : super(key: key);
 
@@ -630,7 +632,6 @@ class AttachmentViewer extends StatelessWidget {
 				);
 			}
 		}
-		final layoutInsets = MediaQuery.of(context).padding;
 		buildChild(bool useRealGestureKey) => ExtendedImage(
 			image: image,
 			extendedImageGestureKey: useRealGestureKey ? controller.gestureKey : null,

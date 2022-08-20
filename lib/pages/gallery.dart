@@ -553,6 +553,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
+		final layoutInsets = MediaQuery.of(context).padding;
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
@@ -731,6 +732,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																			onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
 																				_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
 																			},
+																			layoutInsets: layoutInsets,
 																			allowContextMenu: widget.allowContextMenu,
 																		)
 																	)
