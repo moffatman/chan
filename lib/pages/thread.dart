@@ -356,8 +356,8 @@ class _ThreadPageState extends State<ThreadPage> {
 										Flexible(
 											child: AutoSizeText(
 												title,
-												minFontSize: 6,
-												maxLines: 4,
+												minFontSize: 14,
+												maxLines: 1,
 												overflow: TextOverflow.ellipsis,
 											)
 										)
