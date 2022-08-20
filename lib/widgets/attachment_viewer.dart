@@ -29,6 +29,23 @@ import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:video_player/video_player.dart';
 
+final _domainLoadTimes = <String, List<Duration>>{};
+
+void _recordUrlTime(Uri url, Duration loadTime) {
+	_domainLoadTimes.putIfAbsent(url.host, () => []).add(loadTime);
+}
+
+const _minUrlTime = Duration(milliseconds: 500);
+
+Duration _estimateUrlTime(Uri url) {
+	final times = _domainLoadTimes[url.host] ?? <Duration>[];
+	final time = (times.fold(Duration.zero, (Duration a, b) => a + b) * 1.5) ~/ max(times.length, 1);
+	if (time < _minUrlTime) {
+		return _minUrlTime;
+	}
+	return time;
+}
+
 const deviceGalleryAlbumName = 'Chance';
 
 class AttachmentNotFoundException implements Exception {
@@ -220,7 +237,8 @@ class AttachmentViewerController extends ChangeNotifier {
 		_isFullResolution = true;
 		_showLoadingProgress = false;
 		notifyListeners();
-		Future.delayed(const Duration(milliseconds: 500), () {
+		final startTime = DateTime.now();
+		Future.delayed(_estimateUrlTime(attachment.thumbnailUrl), () {
 			_showLoadingProgress = true;
 			if (_isDisposed) return;
 			notifyListeners();
@@ -228,6 +246,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		try {
 			if (attachment.type == AttachmentType.image || attachment.type == AttachmentType.pdf) {
 				_goodImageSource = await _getGoodSource();
+				_recordUrlTime(_goodImageSource!, DateTime.now().difference(startTime));
 				if (_goodImageSource?.scheme == 'file') {
 					_cachedFile = File(_goodImageSource!.path);
 				}
@@ -247,6 +266,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			}
 			else if (attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
 				final url = await _getGoodSource();
+				_recordUrlTime(url, DateTime.now().difference(startTime));
 				if (Platform.isAndroid || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
 					final scan = await MediaScan.scan(url, headers: site.getHeaders(url) ?? {});
 					_hasAudio = scan.hasAudio;
