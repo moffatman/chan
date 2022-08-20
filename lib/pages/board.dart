@@ -12,6 +12,7 @@ import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -230,15 +231,17 @@ class _BoardPageState extends State<BoardPage> {
 						semanticParentIds: [widget.semanticId],
 						onThumbnailTap: (initialAttachment) {
 							final attachments = _listController.items.expand((_) => _.attachments).toList();
+							// It might not be in the list if the thread has been filtered
+							final initialAttachmentInList = attachments.tryFirstWhere((a) => a.id == initialAttachment.id);
 							showGallery(
 								context: context,
-								attachments: attachments,
+								attachments: initialAttachmentInList == null ? [initialAttachment] : attachments,
 								replyCounts: {
 									for (final thread in _listController.items)
 										for (final attachment in thread.attachments)
 											attachment: thread.replyCount
 								},
-								initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+								initialAttachment: initialAttachmentInList ?? initialAttachment,
 								onChange: (attachment) {
 									_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
 								},
