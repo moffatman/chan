@@ -446,7 +446,9 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 														return _itemBuilder(context, values[i].item1, highlighted: values[i].item2);
 													}
 												),
-												childCount: values.length
+												childCount: values.length,
+												addRepaintBoundaries: false,
+												addAutomaticKeepAlives: false
 											)
 										)
 										else SliverList(
@@ -504,40 +506,90 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 												)
 											),
 										),
-										if (_showFilteredValues) SliverList(
-											key: PageStorageKey('filtered list for ${widget.id}'),
-											delegate: SliverChildBuilderDelegate(
-												(context, i) {
-													if (i % 2 == 0) {
-														return Stack(
-															children: [
-																_itemBuilder(context, filteredValues[i ~/ 2].item1),
-																IgnorePointer(
-																	child: Align(
-																		alignment: Alignment.topRight,
-																		child: Container(
-																			padding: const EdgeInsets.all(4),
-																			color: CupertinoTheme.of(context).primaryColor,
-																			child: Text('Filter reason:\n${filteredValues[i ~/ 2].item2}', style: TextStyle(
-																				color: CupertinoTheme.of(context).scaffoldBackgroundColor
-																			))
-																		)
+										if (_showFilteredValues) 
+											if (widget.gridSize != null) SliverGrid(
+												key: PageStorageKey('filtered grid for ${widget.id}'),
+												gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+													maxCrossAxisExtent: widget.gridSize!.width,
+													childAspectRatio: widget.gridSize!.aspectRatio
+												),
+												delegate: SliverChildBuilderDelegate(
+													(context, i) => Stack(
+														children: [
+															Builder(
+																builder: (context) => _itemBuilder(context, filteredValues[i].item1)
+															),
+															Align(
+																alignment: Alignment.topRight,
+																child: Padding(
+																	padding: const EdgeInsets.only(top: 8, right: 8),
+																	child: CupertinoButton.filled(
+																		padding: EdgeInsets.zero,
+																		child: const Icon(CupertinoIcons.question),
+																		onPressed: () {
+																			showCupertinoDialog(
+																				context: context,
+																				barrierDismissible: true,
+																				builder: (context) => CupertinoAlertDialog(
+																					title: const Text('Filter reason'),
+																					content: Text(filteredValues[i].item2),
+																					actions: [
+																						CupertinoDialogAction(
+																							child: const Text('OK'),
+																							onPressed: () => Navigator.pop(context)
+																						)
+																					]
+																				)
+																			);
+																		}
 																	)
 																)
-															]
-														);
-													}
-													else {
-														return Divider(
-															thickness: 1,
-															height: 0,
-															color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
-														);
-													}
-												},
-												childCount: filteredValues.length * 2
+															)
+														]
+													),
+													childCount: filteredValues.length,
+													addRepaintBoundaries: false,
+													addAutomaticKeepAlives: false
+												)
 											)
-										)
+											else SliverList(
+												key: PageStorageKey('filtered list for ${widget.id}'),
+												delegate: SliverChildBuilderDelegate(
+													(context, i) {
+														if (i % 2 == 0) {
+															return Stack(
+																children: [
+																	Builder(
+																		builder: (context) => _itemBuilder(context, filteredValues[i ~/ 2].item1)
+																	),
+																	IgnorePointer(
+																		child: Align(
+																			alignment: Alignment.topRight,
+																			child: Container(
+																				padding: const EdgeInsets.all(4),
+																				color: CupertinoTheme.of(context).primaryColor,
+																				child: Text('Filter reason:\n${filteredValues[i ~/ 2].item2}', style: TextStyle(
+																					color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																				))
+																			)
+																		)
+																	)
+																]
+															);
+														}
+														else {
+															return Divider(
+																thickness: 1,
+																height: 0,
+																color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+															);
+														}
+													},
+													childCount: filteredValues.length * 2,
+													addRepaintBoundaries: false,
+													addAutomaticKeepAlives: false
+												)
+											)
 									],
 									if (widget.footer != null && widget.disableUpdates) SliverSafeArea(
 										top: false,
