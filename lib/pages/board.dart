@@ -99,8 +99,13 @@ class _BoardPageState extends State<BoardPage> {
 		}
 		if (widget.selectedThread != null) {
 			_loadCompleter = Completer<void>()
-				..future.then((_) {
-					_listController.animateTo((t) => t.identifier == widget.selectedThread);
+				..future.then((_) async {
+					try {
+						await _listController.animateTo((t) => t.identifier == widget.selectedThread);
+					}
+					on StateError {
+						// Ignore, the thread must not be in catalog
+					}
 					_loadCompleter = null;
 				});
 		}
