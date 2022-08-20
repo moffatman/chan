@@ -37,7 +37,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
-class _SettingsPage extends StatelessWidget {
+class _SettingsPage extends StatefulWidget {
 	final String title;
 	final List<Widget> children;
 	const _SettingsPage({
@@ -47,16 +47,24 @@ class _SettingsPage extends StatelessWidget {
 	}) : super(key: key);
 
 	@override
+	createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<_SettingsPage> {
+	final scrollKey = GlobalKey();
+
+	@override
 	Widget build(BuildContext context) {
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
-				middle: Text(title)
+				middle: Text(widget.title)
 			),
 			child: SafeArea(
 				child: MaybeCupertinoScrollbar(
 					child: SingleChildScrollView(
+						key: scrollKey,
 						physics: const BouncingScrollPhysics(),
 						child: Align(
 							alignment: Alignment.center,
@@ -68,7 +76,7 @@ class _SettingsPage extends StatelessWidget {
 									padding: const EdgeInsets.all(16),
 									child: Column(
 										crossAxisAlignment: CrossAxisAlignment.stretch,
-										children: children
+										children: widget.children
 									)
 								)
 							)
