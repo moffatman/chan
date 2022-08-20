@@ -32,6 +32,7 @@ import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -51,22 +52,25 @@ bool _initialConsume = false;
 final zeroValueNotifier = ValueNotifier(0);
 
 void main() async {
-	try {
-		WidgetsFlutterBinding.ensureInitialized();
-		await initializeIsDevelopmentBuild();
-		await initializeIsOnMac();
-		await initializeHandoff();
-		final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
-		imageHttpClient.connectionTimeout = const Duration(seconds: 10);
-		imageHttpClient.idleTimeout = const Duration(seconds: 10);
-		imageHttpClient.maxConnectionsPerHost = 10;
-		await Persistence.initializeStatic();
-		await Notifications.initializeStatic();
-		runApp(const ChanApp());
-	}
-	catch (e, st) {
-		runApp(ChanFailedApp(e, st));
-	}
+	runZonedGuarded<Future<void>>(() async {
+		try {
+			WidgetsFlutterBinding.ensureInitialized();
+			await initializeIsDevelopmentBuild();
+			await initializeIsOnMac();
+			await initializeHandoff();
+			final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
+			imageHttpClient.connectionTimeout = const Duration(seconds: 10);
+			imageHttpClient.idleTimeout = const Duration(seconds: 10);
+			imageHttpClient.maxConnectionsPerHost = 10;
+			await Persistence.initializeStatic();
+			await Notifications.initializeStatic();
+			FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+			runApp(const ChanApp());
+		}
+		catch (e, st) {
+			runApp(ChanFailedApp(e, st));
+		}
+	}, (error, stack) => FirebaseCrashlytics.instance.recordError(error, stack, fatal: true));
 }
 
 class ChanFailedApp extends StatelessWidget {
@@ -664,6 +668,36 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_sharedFilesSubscription = ReceiveSharingIntent.getMediaStream().listen((f) => _consumeFiles(f.map((x) => x.path).toList()));
 		_sharedTextSubscription = ReceiveSharingIntent.getTextStream().listen(_consumeLink);
 		_initialConsume = true;
+		if (!Persistence.settings.promptedAboutCrashlytics) {
+			Future.delayed(const Duration(milliseconds: 300), () async{
+				final choice = await showCupertinoDialog<bool>(
+					context: context,
+					builder: (context) => CupertinoAlertDialog(
+						title: const Text('Contribute crash data?'),
+						content: const Text('Crash stack traces and uncaught exceptions will be used to help fix bugs. No personal information will be collected.'),
+						actions: [
+							CupertinoDialogAction(
+								child: const Text('No'),
+								onPressed: () {
+									Navigator.of(context).pop(false);
+								}
+							),
+							CupertinoDialogAction(
+								child: const Text('Yes'),
+								onPressed: () {
+									Navigator.of(context).pop(true);
+								}
+							)
+						]
+					)
+				);
+				if (choice != null) {
+					FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(choice);
+					if (!mounted) return;
+					context.read<EffectiveSettings>().promptedAboutCrashlytics = true;
+				}
+			});
+		}
 	}
 
 	PersistentBrowserTab _addNewTab({

@@ -25,6 +25,7 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -2048,11 +2049,16 @@ class SettingsAppearancePage extends StatelessWidget {
 	}
 }
 
-class SettingsDataPage extends StatelessWidget {
+class SettingsDataPage extends StatefulWidget {
 	const SettingsDataPage({
 		Key? key
 	}) : super(key: key);
 
+	@override
+	createState() => _SettingsDataPageState();
+}
+
+class _SettingsDataPageState extends State<SettingsDataPage> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
@@ -2106,6 +2112,47 @@ class SettingsDataPage extends StatelessWidget {
 					groupValue: settings.contributeCaptchas,
 					onValueChanged: (setting) {
 						settings.contributeCaptchas = setting;
+					}
+				),
+				const SizedBox(height: 16),
+				Row(
+					children: [
+						const Text('Contribute crash data'),
+						const SizedBox(width: 8),
+						CupertinoButton(
+							minSize: 0,
+							padding: EdgeInsets.zero,
+							child: const Icon(CupertinoIcons.question_circle),
+							onPressed: () {
+								showCupertinoDialog<bool>(
+									context: context,
+									barrierDismissible: true,
+									builder: (context) => CupertinoAlertDialog(
+										content: const Text('Crash stack traces and uncaught exceptions will be used to help fix bugs. No personal information will be collected.'),
+										actions: [
+											CupertinoDialogAction(
+												child: const Text('OK'),
+												onPressed: () {
+													Navigator.of(context).pop();
+												}
+											)
+										]
+									)
+								);
+							}
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						false: Text('No'),
+						true: Text('Yes')
+					},
+					groupValue: FirebaseCrashlytics.instance.isCrashlyticsCollectionEnabled,
+					onValueChanged: (setting) {
+						FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(setting);
+						setState(() {});
 					}
 				),
 				const SizedBox(height: 16),

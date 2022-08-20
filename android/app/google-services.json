@@ -29,6 +29,13 @@
             {
               "client_id": "500583514678-mf1rekgnefaas480gggqgcq97gt1j17o.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "500583514678-mkce6tt2g3cjf59bblmh3ih30i9rp58r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.moffatman.chan"
+              }
             }
           ]
         }

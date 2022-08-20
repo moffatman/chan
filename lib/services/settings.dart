@@ -508,6 +508,8 @@ class SavedSettings extends HiveObject {
 	SettingsQuickAction? settingsQuickAction;
 	@HiveField(89)
 	bool useHapticFeedback;
+	@HiveField(90)
+	bool promptedAboutCrashlytics;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -599,6 +601,7 @@ class SavedSettings extends HiveObject {
 		bool? allowSwipingInGallery,
 		SettingsQuickAction? settingsQuickAction,
 		bool? useHapticFeedback,
+		bool? promptedAboutCrashlytics,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -717,7 +720,8 @@ class SavedSettings extends HiveObject {
 		alwaysStartVideosMuted = alwaysStartVideosMuted ?? false,
 		allowSwipingInGallery = allowSwipingInGallery ?? true,
 		settingsQuickAction = settingsQuickAction ?? SettingsQuickAction.toggleTheme,
-		useHapticFeedback = useHapticFeedback ?? true;
+		useHapticFeedback = useHapticFeedback ?? true,
+		promptedAboutCrashlytics = promptedAboutCrashlytics ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1434,6 +1438,12 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.useHapticFeedback = setting;
 		_settings.save();
 		notifyListeners();
+	}
+
+	bool get promptedAboutCrashlytics => _settings.promptedAboutCrashlytics;
+	set promptedAboutCrashlytics(bool setting) {
+		_settings.promptedAboutCrashlytics = setting;
+		_settings.save();
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];
