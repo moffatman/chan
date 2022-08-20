@@ -369,6 +369,7 @@ class ThreadWatcherController extends ChangeNotifier {
 		if (!ImageboardRegistry.instance.initialized) {
 			lastUpdate = DateTime.now();
 			nextUpdate = lastUpdate!.add(_briefInterval);
+			nextUpdateTimer?.cancel();
 			nextUpdateTimer = Timer(_briefInterval, update);
 		}
 		else {
@@ -388,6 +389,7 @@ class ThreadWatcherController extends ChangeNotifier {
 			}
 			lastUpdate = DateTime.now();
 			nextUpdate = lastUpdate!.add(interval);
+			nextUpdateTimer?.cancel();
 			nextUpdateTimer = Timer(interval, update);
 		}
 		updatingNow = false;
