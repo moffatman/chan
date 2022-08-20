@@ -2158,8 +2158,8 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 						true: Text('Yes')
 					},
 					groupValue: FirebaseCrashlytics.instance.isCrashlyticsCollectionEnabled,
-					onValueChanged: (setting) {
-						FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(setting);
+					onValueChanged: (setting) async {
+						await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(setting);
 						setState(() {});
 					}
 				),
