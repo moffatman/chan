@@ -317,6 +317,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 							double overscroll = widget.controller!.scrollController!.position.pixels - widget.controller!.scrollController!.position.maxScrollExtent;
 							if (overscroll > _overscrollTriggerThreshold && !widget.disableUpdates) {
 								_overscrollEndingNow = true;
+								lightHapticFeedback();
 								update();
 							}
 						}
@@ -602,6 +603,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 											child: GestureDetector(
 												behavior: HitTestBehavior.opaque,
 												onTap: updatingNow ? null : () {
+													lightHapticFeedback();
 													Future.delayed(const Duration(milliseconds: 17), () {
 														widget.controller?.scrollController?.animateTo(
 															widget.controller!.scrollController!.position.maxScrollExtent,
