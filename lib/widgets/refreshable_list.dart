@@ -225,7 +225,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			}
 		}
 		updatingNow = false;
-		if (mounted && newList != null) {
+		if (mounted && newList != null || list == null) {
 			setState(() {
 				list = newList;
 			});
