@@ -291,7 +291,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	late Listenable browseCountListenable;
 	final activeBrowserTab = ValueNotifier<int>(0);
 	final _tabListController = ScrollController();
-	StreamSubscription<ThreadOrPostIdentifier>? _devNotificationsSubscription;
+	StreamSubscription<BoardThreadOrPostIdentifier>? _devNotificationsSubscription;
 	Imageboard? devImageboard;
 	Timer? _saveBrowserTabsDuringDraftEditingTimer;
 	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
@@ -301,7 +301,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool _isScrolling = false;
 	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
-	final Map<String, Tuple2<Notifications, StreamSubscription<ThreadOrPostIdentifier>>> _notificationsSubscriptions = {};
+	final Map<String, Tuple2<Notifications, StreamSubscription<BoardThreadOrPostIdentifier>>> _notificationsSubscriptions = {};
 	late StreamSubscription<String?> _linkSubscription;
 	late StreamSubscription<String?> _fakeLinkSubscription;
 	late StreamSubscription<List<SharedMediaFile>> _sharedFilesSubscription;
@@ -332,7 +332,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		return false;
 	}
 
-	void _onDevNotificationTapped(ThreadOrPostIdentifier id) async {
+	void _onDevNotificationTapped(BoardThreadOrPostIdentifier id) async {
 		_tabController.index = 4;
 		_lastIndex = 4;
 		final settings = context.read<EffectiveSettings>();
@@ -343,7 +343,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_settingsNavigatorKey.currentState?.push(
 			FullWidthCupertinoPageRoute(
 				builder: (context) => ThreadPage(
-					thread: id.threadIdentifier,
+					thread: id.threadIdentifier!,
 					initialPostId: id.postId,
 					boardSemanticId: -1
 				),
@@ -470,10 +470,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			else if (uri.pathSegments[0] == 'thread') {
 				_addNewTab(
 					withImageboardKey: uri.pathSegments[0],
-					withThread: ThreadIdentifier(
-						uri.pathSegments[1],
-						int.parse(uri.pathSegments[2])
-					),
+					withBoard: uri.pathSegments[1],
+					withThreadId: int.parse(uri.pathSegments[2]),
 					activate: true
 				);
 			}
@@ -528,7 +526,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 		else {
 			for (final imageboard in ImageboardRegistry.instance.imageboards) {
-				ThreadOrPostIdentifier? dest = imageboard.site.decodeUrl(link);
+				BoardThreadOrPostIdentifier? dest = imageboard.site.decodeUrl(link);
 				for (final archive in imageboard.site.archives) {
 					if (dest != null) {
 						break;
@@ -581,7 +579,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		tab.threadController?.animateTo((p) => p.id == postId, alignment: 1.0, orElseLast: (p) => true);
 	}
 
-	void _onNotificationTapped(Imageboard imageboard, ThreadOrPostIdentifier notification) async {
+	void _onNotificationTapped(Imageboard imageboard, BoardThreadOrPostIdentifier notification) async {
 		if (!_goToPost(
 			imageboardKey: imageboard.key,
 			board: notification.board,
@@ -610,7 +608,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				}
 				else {
 					if (notification.postId != null) {
-						_savedFakeTab.initialPostId[notification.threadIdentifier] = notification.postId!;
+						_savedFakeTab.initialPostId[notification.threadIdentifier!] = notification.postId!;
 					}
 					_savedMasterDetailKey.currentState?.setValue(0, ImageboardScoped(
 						imageboard: imageboard,
@@ -703,20 +701,19 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	PersistentBrowserTab _addNewTab({
 		String? withImageboardKey,
 		int? atPosition,
-		ThreadIdentifier? withThread,
+		String? withBoard,
+		int? withThreadId,
 		bool activate = false,
 		int? withInitialPostId
 	}) {
 		final pos = atPosition ?? Persistence.tabs.length;
-		final tab = withThread == null ? PersistentBrowserTab(
-			imageboardKey: withImageboardKey
-		) : PersistentBrowserTab(
+		final tab = PersistentBrowserTab(
 			imageboardKey: withImageboardKey,
-			board: withImageboardKey == null ? null : ImageboardRegistry.instance.getImageboard(withImageboardKey)?.persistence.getBoard(withThread.board),
-			thread: withThread
+			board: withImageboardKey == null || withBoard == null ? null : ImageboardRegistry.instance.getImageboard(withImageboardKey)?.persistence.getBoard(withBoard),
+			thread: withThreadId == null ? null : ThreadIdentifier(withBoard!, withThreadId)
 		);
-		if (withThread != null && withInitialPostId != null) {
-			tab.initialPostId[withThread] = withInitialPostId;
+		if (withBoard != null && withThreadId != null && withInitialPostId != null) {
+			tab.initialPostId[ThreadIdentifier(withBoard, withThreadId)] = withInitialPostId;
 		}
 		Persistence.tabs.insert(pos, tab);
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
@@ -735,7 +732,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool _goToPost({
 		required String imageboardKey,
 		required String board,
-		required int threadId,
+		required int? threadId,
 		int? postId,
 		required bool openNewTabIfNeeded
 	}) {
@@ -745,7 +742,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			tab ??= _addNewTab(
 				activate: false,
 				withImageboardKey: imageboardKey,
-				withThread: ThreadIdentifier(board, threadId),
+				withBoard: board,
+				withThreadId: threadId,
 				withInitialPostId: postId
 			);
 		}
@@ -823,7 +821,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										_addNewTab(
 											withImageboardKey: imageboardKey,
 											atPosition: Persistence.tabs.indexOf(tabObject) + 1,
-											withThread: thread
+											withBoard: thread.board,
+											withThreadId: thread.id
 										);
 									},
 									onWantArchiveSearch: (imageboardKey, board, query) async {
@@ -879,7 +878,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					onWantOpenThreadInNewTab: (imageboardKey, thread) {
 						_addNewTab(
 							withImageboardKey: imageboardKey,
-							withThread: thread,
+							withBoard: thread.board,
+							withThreadId: thread.id,
 							activate: true
 						);
 					}
@@ -892,7 +892,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				onWantOpenThreadInNewTab: (imageboardKey, thread) {
 					_addNewTab(
 						withImageboardKey: imageboardKey,
-						withThread: thread,
+						withBoard: thread.board,
+						withThreadId: thread.id,
 						activate: true
 					);
 				}

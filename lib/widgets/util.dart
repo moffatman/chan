@@ -1,19 +1,26 @@
 import 'dart:ui';
 
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/thread.dart';
+import 'package:chan/pages/board.dart';
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/pages/thread.dart';
 import 'package:chan/services/apple.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 Future<void> alertError(BuildContext context, String error) async {
@@ -276,6 +283,40 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 		);
 	}
 	else {
+		Tuple3<Imageboard, BoardThreadOrPostIdentifier, bool>? imageboardTarget;
+		for (final imageboard in ImageboardRegistry.instance.imageboards) {
+			BoardThreadOrPostIdentifier? dest = imageboard.site.decodeUrl(url.toString());
+			bool usedArchive = false;
+			for (final archive in imageboard.site.archives) {
+				if (dest != null) {
+					break;
+				}
+				dest = archive.decodeUrl(url.toString());
+				usedArchive = true;
+			}
+			if (dest != null) {
+				imageboardTarget = Tuple3(imageboard, dest, usedArchive);
+				break;
+			}
+		}
+		openInChance() {
+			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
+				builder: (ctx) => ImageboardScope(
+					imageboardKey: null,
+					imageboard: imageboardTarget!.item1,
+					child: imageboardTarget.item2.threadId == null ? BoardPage(
+						initialBoard: imageboardTarget.item1.persistence.getBoard(imageboardTarget.item2.board),
+						semanticId: -1
+					) : ThreadPage(
+						thread: imageboardTarget.item2.threadIdentifier!,
+						initialPostId: imageboardTarget.item2.postId,
+						initiallyUseArchive: imageboardTarget.item3,
+						boardSemanticId: -1
+					)
+				),
+				showAnimations: context.read<EffectiveSettings>().showAnimations
+			));
+		}
 		if (Persistence.settings.hostsToOpenExternally.any((s) => url.host.endsWith(s))) {
 			if (!await launchUrl(url, mode: LaunchMode.externalNonBrowserApplication)) {
 				launchUrl(url, mode: LaunchMode.externalApplication);
@@ -286,11 +327,17 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 				context: context,
 				text: url.toString(),
 				type: "text",
-				sharePositionOrigin: null
+				sharePositionOrigin: null,
+				additionalOptions: {
+					if (imageboardTarget != null) 'Open in Chance': openInChance
+				}
 			);
 		}
-		else if (isOnMac || context.read<EffectiveSettings>().useInternalBrowser == false || (url.scheme != 'http' && url.scheme != 'https')) {
+		else if ((isOnMac && imageboardTarget == null) || context.read<EffectiveSettings>().useInternalBrowser == false || (url.scheme != 'http' && url.scheme != 'https')) {
 			launchUrl(url, mode: LaunchMode.externalApplication);
+		}
+		else if (imageboardTarget != null && !fromShareOne) {
+			openInChance();
 		}
 		else {
 			return ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(

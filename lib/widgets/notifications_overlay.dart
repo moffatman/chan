@@ -14,7 +14,7 @@ import 'package:provider/provider.dart';
 
 class OverlayNotification {
 	final Imageboard imageboard;
-	final ThreadOrPostIdentifier target;
+	final BoardThreadOrPostIdentifier target;
 	bool closed = false;
 	final AnimationController autoCloseAnimation;
 
@@ -47,7 +47,7 @@ class NotificationsOverlay extends StatefulWidget {
 }
 
 class NotificationsOverlayState extends State<NotificationsOverlay> with TickerProviderStateMixin {
-	final Map<Imageboard, StreamSubscription<ThreadOrPostIdentifier>> subscriptions = {};
+	final Map<Imageboard, StreamSubscription<BoardThreadOrPostIdentifier>> subscriptions = {};
 	final List<OverlayNotification> shown = [];
 
 	void _checkAutoclose() {
@@ -58,12 +58,12 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		if (n.autoCloseAnimation.isAnimating) {
 			return;
 		}
-		if (!(n.imageboard.persistence.getThreadStateIfExists(n.target.threadIdentifier)?.youIds.contains(n.target.postId) ?? false)) {
+		if (!(n.imageboard.persistence.getThreadStateIfExists(n.target.threadIdentifier!)?.youIds.contains(n.target.postId) ?? false)) {
 			n.autoCloseAnimation.forward().then((_) => closeNotification(n));
 		}
 	}
 
-	void _newNotification(Imageboard imageboard, ThreadOrPostIdentifier target) async {
+	void _newNotification(Imageboard imageboard, BoardThreadOrPostIdentifier target) async {
 		final autoCloseAnimation = AnimationController(
 			vsync: this,
 			duration: widget.fadeTime
@@ -165,7 +165,7 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 }
 
 class NotificationContent extends StatelessWidget {
-	final ThreadOrPostIdentifier notification;
+	final BoardThreadOrPostIdentifier notification;
 	final BoxConstraints constraints;
 
 	const NotificationContent({
@@ -176,7 +176,7 @@ class NotificationContent extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final threadState = context.read<Persistence>().getThreadStateIfExists(notification.threadIdentifier);
+		final threadState = context.read<Persistence>().getThreadStateIfExists(notification.threadIdentifier!);
 		final thread = threadState?.thread;
 		Post? post;
 		bool isYou = false;
@@ -192,7 +192,7 @@ class NotificationContent extends StatelessWidget {
 				site: context.read<ImageboardSite>(),
 					thread: thread ?? Thread(
 						board: notification.board,
-						id: notification.threadId,
+						id: notification.threadId!,
 						isDeleted: false,
 						isArchived: false,
 						title: '',
@@ -203,7 +203,7 @@ class NotificationContent extends StatelessWidget {
 						posts_: [],
 						attachments: []
 					),
-					threadState: context.read<Persistence>().getThreadStateIfExists(notification.threadIdentifier),
+					threadState: context.read<Persistence>().getThreadStateIfExists(notification.threadIdentifier!),
 					semanticRootIds: [-10]
 				),
 				builder: (context, _) => ConstrainedBox(

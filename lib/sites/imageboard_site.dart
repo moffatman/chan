@@ -48,6 +48,13 @@ class BoardNotFoundException implements Exception {
 	String toString() => 'Board not found: /$board/';
 }
 
+class BoardNotArchivedException implements Exception {
+	String board;
+	BoardNotArchivedException(this.board);
+	@override
+	String toString() => 'Board not archived: /$board/';
+}
+
 class HTTPStatusException implements Exception {
 	int code;
 	HTTPStatusException(this.code);
@@ -311,7 +318,7 @@ abstract class ImageboardSiteArchive {
 	Future<List<ImageboardBoard>> getBoards();
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page});
 	String getWebUrl(String board, [int? threadId, int? postId]);
-	ThreadOrPostIdentifier? decodeUrl(String url);
+	BoardThreadOrPostIdentifier? decodeUrl(String url);
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
@@ -379,7 +386,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			throw ImageboardArchiveException(errorMessages);
 		}
 		else {
-			throw BoardNotFoundException(board);
+			throw BoardNotArchivedException(board);
 		}
 	}
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? validate}) async {
@@ -407,7 +414,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			throw ImageboardArchiveException(errorMessages);
 		}
 		else {
-			throw BoardNotFoundException(thread.board);
+			throw BoardNotArchivedException(thread.board);
 		}
 	}
 

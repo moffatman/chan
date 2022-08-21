@@ -72,8 +72,8 @@ const _notificationSettingsApiRoot = 'https://notifications.moffatman.com';
 
 class Notifications {
 	static final Map<String, Notifications> _children = {};
-	final tapStream = BehaviorSubject<ThreadOrPostIdentifier>();
-	final foregroundStream = BehaviorSubject<ThreadOrPostIdentifier>();
+	final tapStream = BehaviorSubject<BoardThreadOrPostIdentifier>();
+	final foregroundStream = BehaviorSubject<BoardThreadOrPostIdentifier>();
 	final Persistence persistence;
 	ThreadWatcher? localWatcher;
 	final String siteType;
@@ -100,7 +100,7 @@ class Notifications {
 				print('Opened via message with unknown userId: ${message.data}');
 				_unrecognizedByUserId.update(message.data['userId'], (list) => list..add(message), ifAbsent: () => [message]);
 			}
-			_children[message.data['userId']]?.tapStream.add(ThreadOrPostIdentifier(
+			_children[message.data['userId']]?.tapStream.add(BoardThreadOrPostIdentifier(
 				message.data['board'],
 				int.parse(message.data['threadId']),
 				int.tryParse(message.data['postId'] ?? '')
@@ -130,12 +130,12 @@ class Notifications {
 					if (!_children.containsKey(message.data['userId'])) {
 						print('Opened via message with unknown userId: ${message.data}');
 					}
-					final identifier = ThreadOrPostIdentifier(
+					final identifier = BoardThreadOrPostIdentifier(
 						message.data['board'],
 						int.parse(message.data['threadId']),
 						int.tryParse(message.data['postId'] ?? '')
 					);
-					await _children[message.data['userId']]?.localWatcher?.updateThread(identifier.threadIdentifier);
+					await _children[message.data['userId']]?.localWatcher?.updateThread(identifier.threadIdentifier!);
 					_children[message.data['userId']]?.foregroundStream.add(identifier);
 				}
 			});

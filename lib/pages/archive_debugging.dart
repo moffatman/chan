@@ -141,7 +141,7 @@ class WrappedArchive extends ImageboardSite {
   String get siteData => '';
   
   @override
-  ThreadOrPostIdentifier? decodeUrl(String url) => null;
+  BoardThreadOrPostIdentifier? decodeUrl(String url) => null;
 
   @override
   Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async {

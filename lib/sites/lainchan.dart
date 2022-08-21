@@ -5,6 +5,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -175,7 +176,7 @@ class SiteLainchan extends ImageboardSite {
 		final response = await client.get(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json').toString(), options: Options(
 			validateStatus: (x) => true
 		));
-		if (response.statusCode == 404) {
+		if (response.statusCode == 404 || response.redirects.tryLast?.location.pathSegments.tryLast == '404.html') {
 			throw ThreadNotFoundException(thread);
 		}
 		else if (response.statusCode != 200) {
@@ -513,11 +514,11 @@ class SiteLainchan extends ImageboardSite {
 	String get siteData => baseUrl;
 	
 	@override
-	ThreadOrPostIdentifier? decodeUrl(String url) {
-		final pattern = RegExp(r'https?:\/\/' + baseUrl.replaceAll('.', r'\.') + r'\/([^\/]+)\/res\/(\d+)\.html(#q(\d+))?');
+	BoardThreadOrPostIdentifier? decodeUrl(String url) {
+		final pattern = RegExp(r'https?:\/\/' + baseUrl.replaceAll('.', r'\.') + r'\/([^\/]+)\/(res\/(\d+)\.html(#q(\d+))?)?');
 		final match = pattern.firstMatch(url);
 		if (match != null) {
-			return ThreadOrPostIdentifier(match.group(1)!, int.parse(match.group(2)!), int.tryParse(match.group(4) ?? ''));
+			return BoardThreadOrPostIdentifier(match.group(1)!, int.tryParse(match.group(3) ?? ''), int.tryParse(match.group(5) ?? ''));
 		}
 		return null;
 	}

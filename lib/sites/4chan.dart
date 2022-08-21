@@ -735,17 +735,17 @@ class Site4Chan extends ImageboardSite {
 	@override
 	String get siteData => apiUrl;
 
-	ThreadOrPostIdentifier? _decodeUrl(String base, String url) {
-		final pattern = RegExp(r'https?:\/\/' + base.replaceAll('.', r'\.') + r'\/([^\/]+)\/thread\/(\d+)(#p(\d+))?');
+	BoardThreadOrPostIdentifier? _decodeUrl(String base, String url) {
+		final pattern = RegExp(r'https?:\/\/' + base.replaceAll('.', r'\.') + r'\/([^\/]+)\/(thread\/(\d+)(#p(\d+))?)?');
 		final match = pattern.firstMatch(url);
 		if (match != null) {
-			return ThreadOrPostIdentifier(match.group(1)!, int.parse(match.group(2)!), int.tryParse(match.group(4) ?? ''));
+			return BoardThreadOrPostIdentifier(match.group(1)!, int.tryParse(match.group(3) ?? ''), int.tryParse(match.group(5) ?? ''));
 		}
 		return null;
 	}
 	
 	@override
-	ThreadOrPostIdentifier? decodeUrl(String url) {
+	BoardThreadOrPostIdentifier? decodeUrl(String url) {
 		if (baseUrl.contains('chan')) {
 			return _decodeUrl(baseUrl, url) ?? _decodeUrl(baseUrl.replaceFirst('chan', 'channel'), url);
 		}

@@ -1,3 +1,4 @@
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -11,7 +12,8 @@ Future<void> shareOne({
 	required String text,
 	required String type,
 	String? subject,
-	required Rect? sharePositionOrigin
+	required Rect? sharePositionOrigin,
+	Map<String, VoidCallback> additionalOptions = const {}
 }) async {
 	lightHapticFeedback();
 	if (type == 'file') {
@@ -52,8 +54,15 @@ Future<void> shareOne({
 							);
 						}
 					),
+					for (final option in additionalOptions.entries) CupertinoActionSheetAction(
+						onPressed: () {
+							Navigator.of(context, rootNavigator: true).pop();
+							option.value();
+						},
+						child: Text(option.key)
+					),
 					if (uri?.host.isNotEmpty == true) ...[
-						if (uri!.scheme == 'http' || uri.scheme == 'https') CupertinoActionSheetAction(
+						if (!isOnMac && (uri!.scheme == 'http' || uri.scheme == 'https')) CupertinoActionSheetAction(
 							child: const Text('Open in internal browser'),
 							onPressed: () {
 								Navigator.of(context, rootNavigator: true).pop();
