@@ -254,6 +254,9 @@ class ThreadWatcher extends ChangeNotifier {
 				// Board not archived
 				return false;
 			}
+			on BoardNotArchivedException {
+				return false;
+			}
 		}
 		if (newThread != threadState.thread) {
 			threadState.thread = newThread;
