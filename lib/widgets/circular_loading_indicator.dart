@@ -142,6 +142,7 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 	Future<void> _transitionToFixed(double value, double lastValue) async {
 		if (value < lastValue) {
 			await _transitionToContinuous();
+			if (!mounted) return;
 		}
 		// continue animate both start and end forward
 		// when startAngle reaches 0, stop that motion
@@ -158,7 +159,9 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		}
 		setState(() {});
 		await s?.item2;
+		if (!mounted) return;
 		await e?.item2;
+		if (!mounted) return;
 	}
 
 	Future<void> _transitionToContinuous() async {
@@ -170,12 +173,14 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 			_replaceStartValueController(x.item1);
 			setState(() {});
 			await x.item2;
+			if (!mounted) return;
 		}
 		if (_continuousSweepAngle - _sweepAngle > 0.001) {
 			final x = _constantVelocityAnimation(_endValue, _startValue + _continuousSweepAngle);
 			_replaceEndValueController(x.item1);
 			setState(() {});
 			await x.item2;
+			if (!mounted) return;
 		}
 		if (mounted) {
 			_replaceStartValueController(_continuousAnimation(_startValue));

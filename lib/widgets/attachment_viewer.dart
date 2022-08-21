@@ -96,6 +96,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _isDownloaded = false;
 	GestureDetails? _gestureDetailsOnDoubleTapDragStart;
 	StreamSubscription<List<double>>? _longPressFactorSubscription;
+	bool _loadingProgressHideScheduled = false;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -128,6 +129,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	String? get overlayText => _overlayText;
 	/// Whether the image has already been downloaded
 	bool get isDownloaded => _isDownloaded;
+	/// Key to use for loading spinner
+	final loadingSpinnerKey = GlobalKey();
 
 
 	AttachmentViewerController({
@@ -209,6 +212,15 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
+	void _scheduleHidingOfLoadingProgress() async {
+		if (_loadingProgressHideScheduled) return;
+		_loadingProgressHideScheduled = true;
+		await Future.delayed(const Duration(milliseconds: 500));
+		if (_isDisposed) return;
+		_showLoadingProgress = false;
+		notifyListeners();
+	}
+
 	void goToThumbnail() {
 		_isFullResolution = false;
 		_showLoadingProgress = false;
@@ -239,6 +251,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 		final startTime = DateTime.now();
 		Future.delayed(_estimateUrlTime(attachment.thumbnailUrl), () {
+			if (_loadingProgressHideScheduled) return;
 			_showLoadingProgress = true;
 			if (_isDisposed) return;
 			notifyListeners();
@@ -307,7 +320,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					if (_isDisposed) {
 						return;
 					}
-					notifyListeners();
+					_scheduleHidingOfLoadingProgress();
 				}
 				else {
 					_ongoingConversion = MediaConversion.toMp4(url, headers: site.getHeaders(url) ?? {});
@@ -344,6 +357,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					}
 					_cachedFile = result.file;
 					_hasAudio = result.hasAudio;
+					_scheduleHidingOfLoadingProgress();
 				}
 				if (_isDisposed) return;
 				notifyListeners();
@@ -388,7 +402,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	void onCacheCompleted(File file) {
 		_cachedFile = file;
-		if (_isDisposed) return;
+		_scheduleHidingOfLoadingProgress();
 		notifyListeners();
 	}
 
@@ -567,8 +581,18 @@ class AttachmentViewer extends StatelessWidget {
 		builder: (context) => Center(
 			child: AnimatedSwitcher(
 				duration: const Duration(milliseconds: 300),
-				child: active ? CircularLoadingIndicator(
-					value: value
+				child: active ? TweenAnimationBuilder<double>(
+					tween: Tween(begin: 0, end: (controller.cacheCompleted || controller.videoPlayerController != null) ? 0 : 1),
+					duration: const Duration(milliseconds: 250),
+					curve: Curves.ease,
+					builder: (context, v, child) => Transform.scale(
+						scale: v,
+						child: child
+					),
+					child: CircularLoadingIndicator(
+						key: controller.loadingSpinnerKey,
+						value: value
+					)
 				) : Icon(
 					CupertinoIcons.arrow_down_circle,
 					size: 60,
@@ -648,8 +672,11 @@ class AttachmentViewer extends StatelessWidget {
 			layoutInsets: layoutInsets,
 			loadStateChanged: (loadstate) {
 				// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback
-				if (!controller.cacheCompleted) {
+				if (!controller.cacheCompleted || controller.showLoadingProgress) {
 					double? loadingValue;
+					if (controller.cacheCompleted) {
+						loadingValue = 1;
+					}
 					if (loadstate.loadingProgress?.cumulativeBytesLoaded != null && loadstate.loadingProgress?.expectedTotalBytes != null) {
 						// If we got image download completion, we can check if it's cached
 						loadingValue = loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes!;
@@ -886,8 +913,8 @@ class AttachmentViewer extends StatelessWidget {
 									)
 								)
 							)
-						)
-						else if (controller.showLoadingProgress) ValueListenableBuilder(
+						),
+						if (controller.showLoadingProgress) ValueListenableBuilder(
 							valueListenable: controller.videoLoadingProgress,
 							builder: (context, double? loadingProgress, child) => _centeredLoader(
 								active: controller.isFullResolution,
