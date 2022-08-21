@@ -207,6 +207,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	}
 
 	void __onPageControllerUpdate() {
+		if (!mounted) return;
 		if (pageController.hasClients && pageController.position.pixels != _lastpageControllerPixels) {
 			_lastpageControllerPixels = pageController.position.pixels;
 			final factor = pageController.position.pixels / pageController.position.maxScrollExtent;
