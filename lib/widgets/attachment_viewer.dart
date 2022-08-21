@@ -62,7 +62,7 @@ class AttachmentNotArchivedException implements Exception {
 	String toString() => 'Attachment not archived';
 }
 
-const _maxVp9Controllers = 5;
+const _maxVp9Controllers = 3;
 final List<AttachmentViewerController> _vp9Controllers = [];
 
 class AttachmentViewerController extends ChangeNotifier {
