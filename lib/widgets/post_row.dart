@@ -122,15 +122,20 @@ class PostRow extends StatelessWidget {
 				padding: const EdgeInsets.all(8),
 				child: IgnorePointer(
 					ignoring: !allowTappingLinks,
-					child: Text.rich(
-						post.span.build(
-							ctx,
-							(baseOptions ?? PostSpanRenderOptions()).copyWith(
-								showCrossThreadLabel: showCrossThreadLabel,
-								shrinkWrap: shrinkWrap,
-								postInject: replyIds.isEmpty ? null : TextSpan(
-									text: List.filled(replyIds.length.toString().length + 4, '1').join(),
-									style: const TextStyle(color: Colors.transparent)
+					child: GestureDetector(
+						onTapUp: (d) {
+							ctx.read<PostSpanZoneData>().onTap(d.globalPosition);
+						},
+						child: Text.rich(
+							post.span.build(
+								ctx,
+								(baseOptions ?? PostSpanRenderOptions()).copyWith(
+									showCrossThreadLabel: showCrossThreadLabel,
+									shrinkWrap: shrinkWrap,
+									postInject: replyIds.isEmpty ? null : TextSpan(
+										text: List.filled(replyIds.length.toString().length + 4, '1').join(),
+										style: const TextStyle(color: Colors.transparent)
+									)
 								)
 							)
 						)

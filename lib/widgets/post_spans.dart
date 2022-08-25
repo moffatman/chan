@@ -104,7 +104,6 @@ abstract class PostSpan {
 	}
 	InlineSpan build(BuildContext context, PostSpanRenderOptions options);
 	String buildText();
-	bool willConsumeEntireLine(PostSpanRenderOptions options) => false;
 }
 
 class _PostWrapperSpan extends PostSpan {
@@ -142,9 +141,6 @@ class PostNodeSpan extends PostSpan {
 		for (int i = 0; i < effectiveChildren.length && lines < options.maxLines; i++) {
 			if ((i == 0 || effectiveChildren[i - 1] is PostLineBreakSpan) && (i == effectiveChildren.length - 1 || effectiveChildren[i + 1] is PostLineBreakSpan)) {
 				renderChildren.add(effectiveChildren[i].build(context, ownLineOptions));
-				if (effectiveChildren[i].willConsumeEntireLine(ownLineOptions) && i + 1 < effectiveChildren.length) {
-					i++;
-				}
 			}
 			else {
 				renderChildren.add(effectiveChildren[i].build(context, effectiveOptions));
@@ -452,18 +448,14 @@ class PostQuoteLinkSpan extends PostSpan {
 					)
 				);
 				return Tuple2(WidgetSpan(
-					child: willConsumeEntireLine(options) ? IntrinsicHeight(
-						child: Row(
-							children: [
-								popup,
-								Expanded(
-									child: GestureDetector(
-										onTap: span.item2.onTap
-									)
-								)
-							]
+					child: IntrinsicHeight(
+						child: Builder(
+							builder: (context) {
+								zone.registerLineTapTarget('$board/$threadId/$postId', context, span.item2.onTap ?? () {});
+								return popup;
+							}
 						)
-					) : popup
+					)
 				), span.item2);
 			}
 		}
@@ -472,13 +464,11 @@ class PostQuoteLinkSpan extends PostSpan {
 	build(context, options) {
 		final zone = context.watch<PostSpanZoneData>();
 		final pair = _build(context, options);
-		final span = willConsumeEntireLine(options) ? TextSpan(
+		final span = TextSpan(
 			children: [
-				pair.item1,
-				WidgetSpan(child: Row())
-			],
-			recognizer: pair.item2
-		) : pair.item1;
+				pair.item1
+			]
+		);
 		if (options.addExpandingPosts && (threadId == zone.thread.id && board == zone.thread.board)) {
 			return TextSpan(
 				children: [
@@ -496,9 +486,6 @@ class PostQuoteLinkSpan extends PostSpan {
 	String buildText() {
 		return '>>$postId';
 	}
-
-	@override
-	bool willConsumeEntireLine(PostSpanRenderOptions options) => (options.ownLine && !options.shrinkWrap);
 }
 
 class PostBoardLink extends PostSpan {
@@ -1108,6 +1095,28 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		notifyListeners();
 		for (final child in _children.values) {
 			child.notifyAllListeners();
+		}
+	}
+
+	final Map<String, Tuple2<BuildContext, VoidCallback>> _lineTapCallbacks = {};
+	void registerLineTapTarget(String id, BuildContext context, VoidCallback callback) {
+		_lineTapCallbacks[id] = Tuple2(context, callback);
+	}
+
+	void onTap(Offset position) {
+		for (final pair in _lineTapCallbacks.values) {
+			final box = pair.item1.findRenderObject() as RenderBox?;
+			if (box != null) {
+				final y0 = box.localToGlobal(box.paintBounds.topLeft).dy;
+				if (y0 > position.dy) {
+					continue;
+				}
+				final y1 = box.localToGlobal(box.paintBounds.bottomRight).dy;
+				if (position.dy < y1) {
+					pair.item2();
+					return;
+				}
+			}
 		}
 	}
 
