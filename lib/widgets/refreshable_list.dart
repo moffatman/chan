@@ -973,6 +973,10 @@ class RefreshableListController<T> {
 		Future<bool> attemptResolve() async {
 			final completer = Completer<void>();
 			double estimate = (_estimateOffset(targetIndex) ?? scrollController!.position.maxScrollExtent) - topOffset!;
+			if (_items.last.cachedOffset != null) {
+				// prevent overscroll
+				estimate = max(estimate, scrollController!.position.maxScrollExtent);
+			}
 			_itemCacheCallbacks[Tuple2(targetIndex, estimate > scrollController!.position.pixels)] = completer;
 			final delay = Duration(milliseconds: min(300, max(1, (estimate - scrollController!.position.pixels).abs() ~/ 100)));
 			scrollController!.animateTo(
@@ -983,9 +987,7 @@ class RefreshableListController<T> {
 			await Future.any([completer.future, Future.wait([Future.delayed(const Duration(milliseconds: 32)), Future.delayed(delay ~/ 4)])]);
 			return (_items[targetIndex].cachedOffset != null);
 		}
-		bool usingKnownGoodValue = true;
 		if (_items[targetIndex].cachedOffset == null) {
-			usingKnownGoodValue = false;
 			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 5 && targetIndex == currentTargetIndex) {
 				c = Curves.linear;
 			}
@@ -1011,10 +1013,7 @@ class RefreshableListController<T> {
 		else {
 			atAlignment0 += 1;
 		}
-		double finalDestination = (atAlignment0 - (alignmentSlidingWindow * alignment));
-		if (!usingKnownGoodValue) {
-			finalDestination = finalDestination.clamp(0, scrollController!.position.maxScrollExtent);
-		}
+		double finalDestination = (atAlignment0 - (alignmentSlidingWindow * alignment)).clamp(0, scrollController!.position.maxScrollExtent);
 		await scrollController!.animateTo(
 			max(0, finalDestination),
 			duration: Duration(milliseconds: max(1, d.inMilliseconds)),
