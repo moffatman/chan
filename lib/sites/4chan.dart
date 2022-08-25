@@ -466,6 +466,7 @@ class Site4Chan extends ImageboardSite {
 		}
 		return Chan4CustomCaptchaRequest(
 			challengeUrl: Uri.https(sysUrl, '/captcha', {
+				'framed': '',
 				'board': board,
 				if (threadId != null) 'thread_id': threadId.toString()
 			})

@@ -15,10 +15,10 @@ import 'package:provider/provider.dart';
 
 class CloudflareInterceptor extends Interceptor {
 	bool _responseMatches(Response response) {
-		if ([403, 503].contains(response.statusCode) &&response.headers.value(Headers.contentTypeHeader)!.contains('text/html')) {
+		if ([403, 503].contains(response.statusCode) && response.headers.value(Headers.contentTypeHeader)!.contains('text/html')) {
 			final document = parse(response.data);
 			final title = document.querySelector('title')?.text ?? '';
-			if (title.contains('Cloudflare') || title.contains('Just a moment...')) {
+			if (title.contains('Cloudflare') || title.contains('Just a moment') || title.contains('Please wait')) {
 				return true;
 			}
 		}

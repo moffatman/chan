@@ -265,7 +265,14 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		if (challengeResponse.statusCode != 200) {
 			throw Captcha4ChanCustomException('Got status code ${challengeResponse.statusCode}');
 		}
-		final data = challengeResponse.data;
+		dynamic data = challengeResponse.data;
+		if (data is String) {
+			final match = RegExp(r'window.parent.postMessage\(({.*\}),').firstMatch(data);
+			if (match == null) {
+				throw Captcha4ChanCustomException('Response doesn\'t match, 4chan must have changed their captcha system');
+			}
+			data = jsonDecode(match.group(1)!)['twister'];
+		}
 		if (data['cd'] != null) {
 			tryAgainAt = DateTime.now().add(Duration(seconds: data['cd']));
 		}
@@ -338,7 +345,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				_solutionNode.requestFocus();
 			}
 		}
-		catch(e) {
+		catch(e, st) {
+			print(e);
+			print(st);
 			setState(() {
 				errorMessage = e.toStringDio();
 			});
