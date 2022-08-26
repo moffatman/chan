@@ -14,13 +14,15 @@ import 'package:html/parser.dart';
 import 'package:provider/provider.dart';
 
 class CloudflareInterceptor extends Interceptor {
-	bool _responseMatches(Response response) {
+	static bool _titleMatches(String title) {
+		return title.contains('Cloudflare') || title.contains('Just a moment') || title.contains('Please wait');
+	}
+
+	static bool _responseMatches(Response response) {
 		if ([403, 503].contains(response.statusCode) && response.headers.value(Headers.contentTypeHeader)!.contains('text/html')) {
 			final document = parse(response.data);
 			final title = document.querySelector('title')?.text ?? '';
-			if (title.contains('Cloudflare') || title.contains('Just a moment') || title.contains('Please wait')) {
-				return true;
-			}
+			return _titleMatches(title);
 		}
 		return false;
 	}
@@ -36,7 +38,7 @@ class CloudflareInterceptor extends Interceptor {
 		);
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<String?> callback) => (controller, uri) async {
 			final title = await controller.getTitle() ?? '';
-			if (!(title.contains('Cloudflare') || title.contains('Just a moment...'))) {
+			if (!_titleMatches(title)) {
 				final cookies = await CookieManager.instance().getCookies(url: uri!);
 				Persistence.cookies.saveFromResponse(uri, cookies.map((cookie) {
 					final newCookie = io.Cookie(cookie.name, cookie.value);
