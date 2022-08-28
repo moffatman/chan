@@ -186,6 +186,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	Future<Post> _makePost(dynamic data, {bool resolveIds = true}) async {
 		final String board = data['board']['shortname'];
 		final int threadId = int.parse(data['thread_num']);
+		final int id = int.parse(data['num']);
+		_precachePostThreadId(board, id, threadId);
 		final postLinkMatcher = RegExp('https?://[^ ]+/([^/]+)/post/([0-9]+)/');
 		final Map<String, int> linkedPostThreadIds = {};
 		if (resolveIds) {
@@ -215,7 +217,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			name: data['name'] ?? '',
 			trip: data['trip'],
 			time: DateTime.fromMillisecondsSinceEpoch(data['timestamp'] * 1000),
-			id: int.parse(data['num']),
+			id: id,
 			threadId: threadId,
 			attachments: a == null ? [] : [a],
 			spanFormat: PostSpanFormat.foolFuuka,
@@ -250,13 +252,24 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}
 		return response.data;
 	}
-	Future<int?> _getPostThreadId(String board, int postId) async {
+	final _postThreadIdCache = <String, Map<int, int?>>{};
+	Future<int?> __getPostThreadId(String board, int postId) async {
 		try {
 			return int.parse((await _getPostJson(board, postId))['thread_num']);
 		}
 		on PostNotFoundException {
 			return null;
 		}
+	}
+	Future<int?> _getPostThreadId(String board, int postId) async {
+		_postThreadIdCache[board] ??= {};
+		if (!_postThreadIdCache[board]!.containsKey(postId)) {
+			_postThreadIdCache[board]?[postId] = await __getPostThreadId(board, postId);
+		}
+		return _postThreadIdCache[board]?[postId];
+	}
+	void _precachePostThreadId(String board, int postId, int threadId) async {
+		_postThreadIdCache.putIfAbsent(board, () => {}).putIfAbsent(postId, () => threadId);
 	}
 	@override
 	Future<Post> getPost(String board, int id) async {		
