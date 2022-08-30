@@ -70,29 +70,31 @@ class _HistoryPageState extends State<HistoryPage> {
 								behavior: HitTestBehavior.opaque,
 								child: ImageboardScope(
 									imageboardKey: state.imageboard.key,
-									child: ThreadRow(
-										thread: state.item.thread!,
-										isSelected: state.item.thread!.identifier == selectedThread?.item,
-										semanticParentIds: const [-3],
-										showSiteIcon: ImageboardRegistry.instance.count > 1,
-										showBoardName: true,
-										onThumbnailTap: (initialAttachment) {
-											final attachments = _listController.items.expand((_) => _.item.thread!.attachments).toList();
-											showGallery(
-												context: context,
-												attachments: attachments,
-												replyCounts: {
-													for (final state in _listController.items)
-														for (final attachment in state.item.thread!.attachments)
-															attachment: state.item.thread!.replyCount
-												},
-												initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-												onChange: (attachment) {
-													_listController.animateTo((p) => p.item.thread!.attachments.any((a) => a.id == attachment.id));
-												},
-												semanticParentIds: [-3]
-											);
-										}
+									child: Builder(
+										builder: (context) => ThreadRow(
+											thread: state.item.thread!,
+											isSelected: state.item.thread!.identifier == selectedThread?.item,
+											semanticParentIds: const [-3],
+											showSiteIcon: ImageboardRegistry.instance.count > 1,
+											showBoardName: true,
+											onThumbnailTap: (initialAttachment) {
+												final attachments = _listController.items.expand((_) => _.item.thread!.attachments).toList();
+												showGallery(
+													context: context,
+													attachments: attachments,
+													replyCounts: {
+														for (final state in _listController.items)
+															for (final attachment in state.item.thread!.attachments)
+																attachment: state.item.thread!.replyCount
+													},
+													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+													onChange: (attachment) {
+														_listController.animateTo((p) => p.item.thread!.attachments.any((a) => a.id == attachment.id));
+													},
+													semanticParentIds: [-3]
+												);
+											}
+										)
 									)
 								),
 								onTap: () => threadSetter(ImageboardScoped(

@@ -28,6 +28,7 @@ import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/notifications_overlay.dart';
 import 'package:chan/widgets/notifying_icon.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/saved_theme_thumbnail.dart';
 import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/util.dart';
@@ -726,7 +727,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		showTabPopup = !activate || !Persistence.settings.closeTabSwitcherAfterUse;
 		Persistence.didUpdateTabs();
 		setState(() {});
-		Future.delayed(const Duration(milliseconds: 100), () => _tabListController.animateTo((_tabListController.position.maxScrollExtent / Persistence.tabs.length) * (pos + 1), duration: const Duration(milliseconds: 500), curve: Curves.ease));
+		Future.delayed(const Duration(milliseconds: 100), () {
+			if (!_tabListController.hasOnePosition) {
+				return;
+			}
+			_tabListController.animateTo((_tabListController.position.maxScrollExtent / Persistence.tabs.length) * (pos + 1), duration: const Duration(milliseconds: 500), curve: Curves.ease);
+		});
 		return tab;
 	}
 

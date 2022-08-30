@@ -433,7 +433,10 @@ class _FirstBuildDetectorState extends State<FirstBuildDetector> {
 		Widget child = widget.builder(context, passedFirstBuild);
 		if (!passedFirstBuild) {
 			passedFirstBuild = true;
-			Future.delayed(Duration.zero, () => setState(() {}));
+			Future.delayed(Duration.zero, () {
+				if (!mounted) return;
+				setState(() {});
+			});
 		}
 		return child;
 	}

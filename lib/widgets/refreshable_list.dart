@@ -217,7 +217,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 		if (widget.controller?.scrollController?.positions.length == 1 && widget.controller?.scrollController?.position.isScrollingNotifier.value == true) {
 			final completer = Completer<void>();
 			void listener() {
-				if (widget.controller!.scrollController!.position.isScrollingNotifier.value == false) {
+				if (widget.controller?.scrollController?.position.isScrollingNotifier.value == false) {
 					completer.complete();
 				}
 			}
@@ -882,7 +882,7 @@ class RefreshableListController<T> {
 	}
 	void _onScrollControllerNotification() {
 		_scrollStream.add(null);
-		if ((scrollController?.hasClients ?? false)) {
+		if ((scrollController?.hasOnePosition ?? false)) {
 			final overscrollAmount = scrollController!.position.pixels - scrollController!.position.maxScrollExtent;
 			overscrollFactor.value = (overscrollAmount / _overscrollTriggerThreshold).clamp(0, 1);
 		}
@@ -997,8 +997,14 @@ class RefreshableListController<T> {
 			while (contentId == initialContentId && !(await attemptResolve()) && DateTime.now().difference(start).inSeconds < 5 && targetIndex == currentTargetIndex) {
 				c = Curves.linear;
 			}
-			if (initialContentId != contentId) throw Exception('List was hijacked ($initialContentId -> $contentId)');
-			if (currentTargetIndex != targetIndex) throw Exception('animateTo was hijacked ($targetIndex -> $currentTargetIndex)');
+			if (initialContentId != contentId) {
+				print('List was hijacked ($initialContentId -> $contentId)');
+				return;
+			}
+			if (currentTargetIndex != targetIndex) {
+				print('animateTo was hijacked ($targetIndex -> $currentTargetIndex)');
+				return;
+			}
 			Duration timeLeft = duration - DateTime.now().difference(start);
 			if (timeLeft.inMilliseconds.isNegative) {
 				d = duration ~/ 4;

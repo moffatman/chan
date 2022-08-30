@@ -571,7 +571,11 @@ class _BoardPageState extends State<BoardPage> {
 														case ThreadSortingMethod.unsorted:
 															break;
 													}
-													Future.delayed(const Duration(milliseconds: 100), () => _loadCompleter?.complete());
+													Future.delayed(const Duration(milliseconds: 100), () {
+														if (_loadCompleter?.isCompleted == false) {
+															_loadCompleter?.complete();
+														}
+													});
 													return reverseSorting ? list.reversed.toList() : list;
 												}),
 												id: '/${board!.name}/ $sortingMethod $reverseSorting',

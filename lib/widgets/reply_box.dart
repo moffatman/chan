@@ -348,9 +348,12 @@ class ReplyBoxState extends State<ReplyBox> {
 			widget.onSubjectChanged?.call(_subjectFieldController.text);
 		});
 		context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
+			if (!mounted) return;
 			setState(() {
 				_flags = flags;
 			});
+		}).catchError((e) {
+			print('Error getting flags for ${widget.board}: $e');
 		});
 		if (_nameFieldController.text.isNotEmpty || _optionsFieldController.text.isNotEmpty) {
 			_showOptions = true;

@@ -274,7 +274,7 @@ class _ThreadPageState extends State<ThreadPage> {
 						attachment: post.replyIds.length
 			},
 			initiallyShowChrome: initiallyShowChrome,
-			initialAttachment: (initialAttachment == null) ? null : attachments.firstWhere((a) => a.id == initialAttachment.id),
+			initialAttachment: (initialAttachment == null) ? null : (attachments.tryFirstWhere((a) => a.id == initialAttachment.id) ?? initialAttachment),
 			onChange: (attachment) {
 				_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id));
 			},
@@ -819,7 +819,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	Widget build(BuildContext context) {
 		const radius = Radius.circular(8);
 		const radiusAlone = BorderRadius.all(radius);
-		scrollToBottom() => widget.listController.animateTo((post) => post.id == widget.persistentState.thread!.posts.last.id, alignment: 1.0);
+		scrollToBottom() => widget.listController.animateTo((post) => post.id == widget.persistentState.thread!.posts.last.id, orElseLast: (x) => true, alignment: 1.0);
 		final youIds = widget.persistentState.youIds;
 		return Stack(
 			alignment: Alignment.bottomRight,

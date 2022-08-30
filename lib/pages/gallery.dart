@@ -123,7 +123,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		_rotateButtonAnimationController = AnimationController(duration: const Duration(milliseconds: 5000), vsync: this, upperBound: pi * 2);
 		showChrome = widget.initiallyShowChrome;
 		_updateOverlays(showChrome);
-		currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
+		currentIndex = (widget.initialAttachment != null) ? max(0, widget.attachments.indexOf(widget.initialAttachment!)) : 0;
 		pageController = ExtendedPageController(keepPage: true, initialPage: currentIndex);
 		pageController.addListener(_onPageControllerUpdate);
 		__onPageControllerUpdateSubscription = _scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
@@ -154,7 +154,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	void didUpdateWidget(GalleryPage old) {
 		super.didUpdateWidget(old);
 		if (widget.initialAttachment != old.initialAttachment) {
-			currentIndex = (widget.initialAttachment != null) ? widget.attachments.indexOf(widget.initialAttachment!) : 0;
+			currentIndex = (widget.initialAttachment != null) ? max(0, widget.attachments.indexOf(widget.initialAttachment!)) : 0;
 			if (context.read<EffectiveSettings>().autoloadAttachments) {
 				final attachment = widget.attachments[currentIndex];
 				_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
@@ -223,7 +223,11 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
 		if (context.read<EffectiveSettings>().autoloadAttachments) {
-			_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
+			_getController(attachment).loadFullAttachment().then((x) {
+				if (mounted) {
+					_currentAttachmentChanged.add(null);
+				}
+			});
 		}
 		if (milliseconds == 0) {
 			pageController.jumpToPage(index);

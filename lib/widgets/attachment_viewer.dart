@@ -208,7 +208,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	void _onConversionProgressUpdate() {
-		videoLoadingProgress.value = _ongoingConversion!.progress.value;
+		videoLoadingProgress.value = _ongoingConversion?.progress.value;
 		notifyListeners();
 	}
 
