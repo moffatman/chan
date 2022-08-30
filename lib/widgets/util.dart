@@ -46,9 +46,12 @@ Future<void> alertError(BuildContext context, String error) async {
 void showToast({
 	required BuildContext context,
 	required String message,
-	required IconData icon
+	required IconData icon,
+	bool hapticFeedback = true
 }) {
-	lightHapticFeedback();
+	if (hapticFeedback) {
+		lightHapticFeedback();
+	}
 	FToast().init(context).showToast(
 		child: Container(
 			padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

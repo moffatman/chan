@@ -829,6 +829,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				const alphanumericCharacters = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
 				overrideAttachmentFilename = '${List.generate(12, (i) => alphanumericCharacters[random.nextInt(alphanumericCharacters.length)]).join('')}.${attachmentExt!}';
 			}
+			lightHapticFeedback();
 			final receipt = (widget.threadId != null) ? (await site.postReply(
 				thread: ThreadIdentifier(widget.board, widget.threadId!),
 				name: _nameFieldController.text,
@@ -917,7 +918,8 @@ class ReplyBoxState extends State<ReplyBox> {
 				ThreadIdentifier(widget.board, receipt.id));
 			threadState.receipts = [...threadState.receipts, receipt];
 			threadState.save();
-			showToast(context: context, message: 'Post successful', icon: CupertinoIcons.check_mark);
+			mediumHapticFeedback();
+			showToast(context: context, message: 'Post successful', icon: CupertinoIcons.check_mark, hapticFeedback: false);
 			widget.onReplyPosted(receipt);
 		}
 		catch (e, st) {

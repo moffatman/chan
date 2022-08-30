@@ -19,6 +19,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
@@ -1072,6 +1073,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Widget _buildNewTabIcon({bool hideLabel = false}) {
 		return GestureDetector(
 			onLongPress: () async {
+				lightHapticFeedback();
 				final shouldCloseOthers = await showCupertinoDialog<bool>(
 					context: context,
 					barrierDismissible: true,
@@ -1270,6 +1272,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _runSettingsQuickAction() {
+		mediumHapticFeedback();
 		final settings = context.read<EffectiveSettings>();
 		switch (settings.settingsQuickAction) {
 			case SettingsQuickAction.toggleTheme:
@@ -1310,6 +1313,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _toggleHistory() {
+		mediumHapticFeedback();
 		Persistence.enableHistory = !Persistence.enableHistory;
 		Persistence.didChangeBrowserHistoryStatus();
 		showToast(
@@ -1502,6 +1506,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								)
 							],
 							onTap: (index) {
+								lightHapticFeedback();
 								if (index == _lastIndex && index == 0) {
 									setState(() {
 										showTabPopup = !showTabPopup;
