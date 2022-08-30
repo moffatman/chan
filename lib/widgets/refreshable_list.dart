@@ -199,6 +199,11 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			errorMessage = e.toStringDio();
 			errorType = e.runtimeType;
 			if (mounted) {
+				showToast(
+					context: context,
+					message: 'Error loading ${widget.id}: $errorMessage',
+					icon: CupertinoIcons.exclamationmark_triangle
+				);
 				if (widget.remedies[errorType] == null) {
 					print('Error refreshing list: $e');
 					print(st);
