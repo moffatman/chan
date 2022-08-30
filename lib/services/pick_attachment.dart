@@ -86,7 +86,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 			return x?.path;
 		})
 	);
-	final anySaved = context.read<Persistence>().savedAttachments.isNotEmpty;
+	final anySaved = context.read<Persistence?>()?.savedAttachments.isNotEmpty ?? false;
 	final saved = AttachmentPickingSource(
 		name: 'Saved Attachments',
 		icon: CupertinoIcons.bookmark,

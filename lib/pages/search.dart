@@ -179,7 +179,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 		);
 		_focusNode.addListener(() {
 			final bool isFocused = _focusNode.hasFocus;
-			if (mounted && (isFocused != _searchFocused) && !_showingPicker) {
+			if (mounted && isFocused && !_searchFocused && !_showingPicker) {
 				setState(() {
 					_searchFocused = isFocused;
 				});
