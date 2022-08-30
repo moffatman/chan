@@ -34,5 +34,5 @@ Future<bool> _workaround() async {
 	}
 	final androidInfo = await DeviceInfoPlugin().androidInfo;
 	final version = int.tryParse(androidInfo.version.release ?? '') ?? 0;
-	return version >= 12 && androidInfo.brand == 'Xiaomi';
+	return androidInfo.board == 'alioth' || (version >= 12 && androidInfo.brand == 'Xiaomi');
 }
