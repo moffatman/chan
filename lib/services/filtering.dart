@@ -120,7 +120,6 @@ class CustomFilter implements Filter {
 	}
 
 	factory CustomFilter.fromStringConfiguration(String configuration) {
-		print(configuration);
 		final match = _configurationLinePattern.firstMatch(configuration);
 		if (match == null) {
 			throw FilterException('Invalid syntax: "$configuration"');
