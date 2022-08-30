@@ -268,7 +268,7 @@ class SiteLainchan extends ImageboardSite {
 		final referer = _getWebUrl(board, threadId: threadId, mod: _adminEnabled);
 		final page = await client.get(referer, options: Options(validateStatus: (x) => true));
 		final Map<String, dynamic> fields = {
-			for (final field in parse(page.data).querySelector('form[name="post"]')!.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea'))
+			for (final field in parse(page.data).querySelector('form[name="post"]')?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea') ?? [])
 				field.attributes['name']!: field.attributes['value'] ?? field.text
 		};
 		fields['body'] = text;
@@ -306,8 +306,8 @@ class SiteLainchan extends ImageboardSite {
 				}
 			)
 		);
-		if (response.statusCode == 500 || response.statusCode == 400) {
-			throw PostFailedException(parse(response.data).querySelector('h2')?.text ?? 'Unknown error');
+		if ((response.statusCode ?? 0) >= 400) {
+			throw PostFailedException(parse(response.data).querySelector('h2')?.text ?? 'HTTP Error ${response.statusCode}');
 		}
 		if (response.isRedirect ?? false) {
 			return PostReceipt(
