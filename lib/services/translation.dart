@@ -1,7 +1,7 @@
 
 import 'package:dio/dio.dart';
 
-const _translationApiRoot = 'https://us-central1-chan-329813.cloudfunctions.net/translate';
+const _translationApiRoot = 'https://api.chance.surf/translate';
 
 class TranslationException implements Exception {
 	final String message;

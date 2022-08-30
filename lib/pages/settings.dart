@@ -727,7 +727,7 @@ class SettingsAppearancePage extends StatelessWidget {
 	Thread _makeFakeThread() {
 		final flag = ImageboardFlag(
 			name: 'Canada',
-			imageUrl: 'https://callum.crabdance.com/ca.gif',
+			imageUrl: 'https://boards.chance.surf/ca.gif',
 			imageWidth: 16,
 			imageHeight: 11
 		);

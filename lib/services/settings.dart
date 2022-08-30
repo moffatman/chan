@@ -72,13 +72,13 @@ class ChanceLinkifier extends Linkifier {
   }
 }
 
-const contentSettingsApiRoot = 'https://us-central1-chan-329813.cloudfunctions.net/preferences';
+const contentSettingsApiRoot = 'https://api.chance.surf/preferences';
 final _punctuationRegex = RegExp('(\\W+|s\\W)');
 final _badWords = Set.from(ProfanityFilter().wordsToFilterOutList);
 const defaultSite = {
 	'type': 'lainchan',
 	'name': 'testchan',
-	'baseUrl': 'callum.crabdance.com'
+	'baseUrl': 'boards.chance.surf'
 };
 const defaultSites = {
 	'testchan': defaultSite

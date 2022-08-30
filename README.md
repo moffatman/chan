@@ -1,4 +1,4 @@
-![Screenshot](https://callum.crabdance.com/assets/promo.png)
+![Screenshot](https://boards.chance.surf/assets/promo.png)
 
 # Chance
 

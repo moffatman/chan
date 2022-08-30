@@ -68,7 +68,7 @@ Future<void> handleBackgroundMessage(RemoteMessage message) async {
 	print(message.data);
 }
 
-const _notificationSettingsApiRoot = 'https://notifications.moffatman.com';
+const _notificationSettingsApiRoot = 'https://push.chance.surf';
 
 class Notifications {
 	static final Map<String, Notifications> _children = {};

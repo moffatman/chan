@@ -377,7 +377,7 @@ class SiteDvach extends ImageboardSite {
 	@override
 	String get defaultUsername => 'Аноним';
 	@override
-	Uri get passIconUrl => Uri.https('callum.crabdance.com', '/minileaf.gif');
+	Uri get passIconUrl => Uri.https('boards.chance.surf', '/minileaf.gif');
 
 	@override
 	bool operator ==(Object other) => (other is SiteDvach) && (other.name == name) && (other.baseUrl == baseUrl);

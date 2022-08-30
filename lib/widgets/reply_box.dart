@@ -37,7 +37,7 @@ import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
 
-const _captchaContributionServer = 'https://captcha.moffatman.com';
+const _captchaContributionServer = 'https://captcha.chance.surf';
 
 const double _kArrowScreenPadding = 26.0;
 

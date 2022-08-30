@@ -453,7 +453,7 @@ class SiteLainchan extends ImageboardSite {
 	String get imageUrl => baseUrl;
 
 	@override
-	Uri get passIconUrl => Uri.https('callum.crabdance.com', '/minileaf.gif');
+	Uri get passIconUrl => Uri.https('boards.chance.surf', '/minileaf.gif');
 
   @override
   List<ImageboardSiteLoginField> getLoginFields() {
