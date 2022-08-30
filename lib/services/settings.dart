@@ -510,6 +510,8 @@ class SavedSettings extends HiveObject {
 	bool useHapticFeedback;
 	@HiveField(90)
 	bool promptedAboutCrashlytics;
+	@HiveField(91)
+	bool showCountryNameInCatalogHeader;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -602,6 +604,7 @@ class SavedSettings extends HiveObject {
 		SettingsQuickAction? settingsQuickAction,
 		bool? useHapticFeedback,
 		bool? promptedAboutCrashlytics,
+		bool? showCountryNameInCatalogHeader,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -721,7 +724,8 @@ class SavedSettings extends HiveObject {
 		allowSwipingInGallery = allowSwipingInGallery ?? true,
 		settingsQuickAction = settingsQuickAction ?? SettingsQuickAction.toggleTheme,
 		useHapticFeedback = useHapticFeedback ?? true,
-		promptedAboutCrashlytics = promptedAboutCrashlytics ?? false;
+		promptedAboutCrashlytics = promptedAboutCrashlytics ?? false,
+		showCountryNameInCatalogHeader = showCountryNameInCatalogHeader ?? true;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1137,6 +1141,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showFlagInCatalogHeader => _settings.showFlagInCatalogHeader;
 	set showFlagInCatalogHeader(bool setting) {
 		_settings.showFlagInCatalogHeader = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showCountryNameInCatalogHeader => _settings.showCountryNameInCatalogHeader;
+	set showCountryNameInCatalogHeader(bool setting) {
+		_settings.showCountryNameInCatalogHeader = setting;
 		_settings.save();
 		notifyListeners();
 	}

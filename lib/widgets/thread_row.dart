@@ -166,6 +166,8 @@ class ThreadRow extends StatelessWidget {
 			if (settings.showFlagInCatalogHeader && latestThread.flag != null) ...[
 				FlagSpan(latestThread.flag!),
 				const TextSpan(text: ' '),
+			],
+			if (settings.showCountryNameInCatalogHeader && latestThread.flag != null) ...[
 				TextSpan(
 					text: latestThread.flag!.name,
 					style: const TextStyle(

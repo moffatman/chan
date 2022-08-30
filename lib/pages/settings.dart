@@ -1826,6 +1826,16 @@ class SettingsAppearancePage extends StatelessWidget {
 																	onChanged: (d) => settings.showFlagInCatalogHeader = d
 																)
 															]
+														),
+														Row(
+															children: [
+																const Text('Show country name'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showCountryNameInCatalogHeader,
+																	onChanged: (d) => settings.showCountryNameInCatalogHeader = d
+																)
+															]
 														)
 													]
 												)
