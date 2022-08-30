@@ -343,25 +343,43 @@ class _ThreadPageState extends State<ThreadPage> {
 						resizeToAvoidBottomInset: false,
 						navigationBar: CupertinoNavigationBar(
 							transitionBetweenRoutes: false,
-							middle: Padding(
-								padding: const EdgeInsets.only(top: 8, bottom: 8),
-								child: Row(
-									mainAxisAlignment: MainAxisAlignment.center,
-									mainAxisSize: MainAxisSize.min,
-									children: [
-										if (ImageboardRegistry.instance.count > 1) const Padding(
-											padding: EdgeInsets.only(right: 6),
-											child: ImageboardIcon()
-										),
-										Flexible(
-											child: AutoSizeText(
-												title,
-												minFontSize: 14,
-												maxLines: 1,
-												overflow: TextOverflow.ellipsis,
-											)
+							middle: GestureDetector(
+								onTap: () {
+									showCupertinoDialog(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => CupertinoAlertDialog(
+											title: const Text('Thread title'),
+											content: Text(title),
+											actions: [
+												CupertinoDialogAction(
+													child: const Text('OK'),
+													onPressed: () => Navigator.pop(context)
+												)
+											]
 										)
-									]
+									);
+								},
+								child: Padding(
+									padding: const EdgeInsets.only(top: 8, bottom: 8),
+									child: Row(
+										mainAxisAlignment: MainAxisAlignment.center,
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											if (ImageboardRegistry.instance.count > 1) const Padding(
+												padding: EdgeInsets.only(right: 6),
+												child: ImageboardIcon()
+											),
+											Flexible(
+												child: AutoSizeText(
+													title,
+													minFontSize: 14,
+													maxLines: 1,
+													overflow: TextOverflow.ellipsis,
+												)
+											)
+										]
+									)
 								)
 							),
 							trailing: Row(
