@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
@@ -399,9 +398,7 @@ class SettingsBehaviorPage extends StatelessWidget {
 		return _SettingsPage(
 			title: 'Behavior Settings',
 			children: [
-				SettingsFilterPanel(
-					initialConfiguration: settings.filterConfiguration,
-				),
+				const SettingsFilterPanel(),
 				const SizedBox(height: 16),
 				for (final imageboard in ImageboardRegistry.instance.imageboards) ...[
 					Text('Image filter - ${imageboard.key}'),
@@ -539,156 +536,13 @@ class SettingsBehaviorPage extends StatelessWidget {
 						CupertinoButton.filled(
 							padding: const EdgeInsets.all(16),
 							onPressed: () async {
-								await showCupertinoDialog(
-									barrierDismissible: true,
+								await editStringList(
 									context: context,
-									builder: (context) => CupertinoAlertDialog(
-										title: const Padding(
-											padding: EdgeInsets.only(bottom: 16),
-											child: Text('Sites to open externally')
-										),
-										content: StatefulBuilder(
-											builder: (context, setDialogState) => SizedBox(
-												width: 100,
-												height: 350,
-												child: Stack(
-													children: [
-														ListView.builder(
-															padding: const EdgeInsets.only(bottom: 128),
-															itemCount: settings.hostsToOpenExternally.length,
-															itemBuilder: (context, i) => Padding(
-																padding: const EdgeInsets.all(4),
-																child: GestureDetector(
-																	onTap: () async {
-																		final controller = TextEditingController(text: settings.hostsToOpenExternally[i]);
-																		controller.selection = TextSelection(baseOffset: 0, extentOffset: settings.hostsToOpenExternally[i].length);
-																		final newSite = await showCupertinoDialog<String>(
-																			context: context,
-																			barrierDismissible: true,
-																			builder: (context) => CupertinoAlertDialog(
-																				title: const Text('Edit site'),
-																				content: CupertinoTextField(
-																					autofocus: true,
-																					autocorrect: false,
-																					controller: controller,
-																					onSubmitted: (s) => Navigator.pop(context, s)
-																				),
-																				actions: [
-																					CupertinoDialogAction(
-																						child: const Text('Cancel'),
-																						onPressed: () => Navigator.pop(context)
-																					),
-																					CupertinoDialogAction(
-																						isDefaultAction: true,
-																						child: const Text('Change'),
-																						onPressed: () => Navigator.pop(context, controller.text)
-																					)
-																				]
-																			)
-																		);
-																		if (newSite != null) {
-																			settings.hostsToOpenExternally[i] = newSite;
-																			setDialogState(() {});
-																			settings.didUpdateHostsToOpenExternally();
-																		}
-																		controller.dispose();
-																	},
-																	child: Container(
-																		decoration: BoxDecoration(
-																			borderRadius: const BorderRadius.all(Radius.circular(4)),
-																			color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
-																		),
-																		padding: const EdgeInsets.only(left: 16),
-																		child: Row(
-																			children: [
-																				Expanded(
-																					child: Text(settings.hostsToOpenExternally[i], style: const TextStyle(fontSize: 15), textAlign: TextAlign.left)
-																				),
-																				CupertinoButton(
-																					child: const Icon(CupertinoIcons.delete),
-																					onPressed: () {
-																						settings.hostsToOpenExternally.removeAt(i);
-																						setDialogState(() {});
-																						settings.didUpdateHostsToOpenExternally();
-																					}
-																				)
-																			]
-																		)
-																	)
-																)
-															)
-														),
-														Align(
-															alignment: Alignment.bottomCenter,
-															child: ClipRect(
-																child: BackdropFilter(
-																	filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-																		child: Container(
-																		color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.1),
-																		child: Column(
-																			mainAxisSize: MainAxisSize.min,
-																			crossAxisAlignment: CrossAxisAlignment.stretch,
-																			children: [
-																				CupertinoButton(
-																					child: Row(
-																						mainAxisAlignment: MainAxisAlignment.center,
-																						children: const [
-																							Icon(CupertinoIcons.add),
-																							Text(' Add site')
-																						]
-																					),
-																					onPressed: () async {
-																						final controller = TextEditingController();
-																						final newSite = await showCupertinoDialog<String>(
-																							context: context,
-																							barrierDismissible: true,
-																							builder: (context) => CupertinoAlertDialog(
-																								title: const Text('New site'),
-																								content: CupertinoTextField(
-																									autofocus: true,
-																									controller: controller,
-																									autocorrect: false,
-																									onSubmitted: (s) => Navigator.pop(context, s)
-																								),
-																								actions: [
-																									CupertinoDialogAction(
-																										child: const Text('Cancel'),
-																										onPressed: () => Navigator.pop(context)
-																									),
-																									CupertinoDialogAction(
-																										isDefaultAction: true,
-																										child: const Text('Add'),
-																										onPressed: () => Navigator.pop(context, controller.text)
-																									)
-																								]
-																							)
-																						);
-																						if (newSite != null) {
-																							settings.hostsToOpenExternally.add(newSite);
-																							settings.didUpdateHostsToOpenExternally();
-																							setDialogState(() {});
-																						}
-																						controller.dispose();
-																					}
-																				)
-																			]
-																		)
-																	)
-																)
-															)
-														)
-													]
-												)
-											)
-										),
-										actions: [
-											CupertinoDialogAction(
-												child: const Text('Close'),
-												onPressed: () => Navigator.pop(context)
-											)
-										]
-									)
+									list: settings.hostsToOpenExternally,
+									name: 'site',
+									title: 'Sites to open externally'
 								);
+								settings.didUpdateHostsToOpenExternally();
 							},
 							child: Text('For ${describeCount(settings.hostsToOpenExternally.length, 'site')}')
 						),
@@ -2450,9 +2304,7 @@ class SettingsThreadsPanel extends StatelessWidget {
 }
 
 class SettingsFilterPanel extends StatefulWidget {
-	final String initialConfiguration;
 	const SettingsFilterPanel({
-		required this.initialConfiguration,
 		Key? key
 	}) : super(key: key);
 	@override
@@ -2462,99 +2314,487 @@ class SettingsFilterPanel extends StatefulWidget {
 class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 	final regexController = TextEditingController();
 	final regexFocusNode = FocusNode();
+	bool showRegex = false;
+	bool dirty = false;
 
 	@override
 	void initState() {
 		super.initState();
-		regexController.text = widget.initialConfiguration;
+		regexController.text = context.read<EffectiveSettings>().filterConfiguration;
 	}
 
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
+		final filters = <int, CustomFilter>{};
+		for (final line in settings.filterConfiguration.split('\n').asMap().entries) {
+			if (line.value.isEmpty || line.value.startsWith('#')) {
+				continue;
+			}
+			try {
+				filters[line.key] = CustomFilter.fromStringConfiguration(line.value);
+			}
+			on FilterException {
+				// don't show
+			}
+		}
+		Future<Tuple2<bool, CustomFilter?>?> editFilter(CustomFilter? originalFilter) {
+			final filter = originalFilter ?? CustomFilter(
+				configuration: '',
+				pattern: RegExp('')
+			);
+			final patternController = TextEditingController(text: filter.pattern.pattern);
+			final labelController = TextEditingController(text: filter.label);
+			final patternFields = filter.patternFields.toList();
+			bool? hasFile = filter.hasFile;
+			bool threadOnly = filter.threadOnly;
+			final List<String> boards = filter.boards.toList();
+			final List<String> excludeBoards = filter.excludeBoards.toList();
+			int? minRepliedTo = filter.minRepliedTo;
+			FilterResultType outputType = filter.outputType;
+			const labelStyle = TextStyle(fontWeight: FontWeight.bold);
+			return showCupertinoModalPopup<Tuple2<bool, CustomFilter?>>(
+				context: context,
+				builder: (context) => StatefulBuilder(
+					builder: (context, setInnerState) => CupertinoActionSheet(
+						title: const Text('Edit filter'),
+						message: DefaultTextStyle(
+							style: DefaultTextStyle.of(context).style,
+							child: Column(
+								mainAxisSize: MainAxisSize.min,
+								crossAxisAlignment: CrossAxisAlignment.center,
+								children: [
+									const Text('Label', style: labelStyle),
+									Padding(
+										padding: const EdgeInsets.all(16),
+										child: SizedBox(
+											width: 300,
+											child: CupertinoTextField(
+												controller: labelController
+											)
+										)
+									),
+									const Text('Pattern', style: labelStyle),
+									Padding(
+										padding: const EdgeInsets.all(16),
+										child: SizedBox(
+											width: 300,
+											child: CupertinoTextField(
+												controller: patternController
+											)
+										)
+									),
+									const Text('Search in fields', style: labelStyle),
+									Padding(
+										padding: const EdgeInsets.all(16),
+										child: Column(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												for (final field in allPatternFields) Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														SizedBox(
+															width: 200,
+															child: Text(field)
+														),
+														CupertinoSwitch(
+															value: patternFields.contains(field),
+															onChanged: (v) {
+																if (v) {
+																	patternFields.add(field);
+																}
+																else {
+																	patternFields.remove(field);
+																}
+																setInnerState(() {});
+															}
+														)
+													]
+												)
+											]
+										)
+									),
+									Container(
+										padding: const EdgeInsets.all(16),
+										alignment: Alignment.center,
+										child: CupertinoSegmentedControl<_NullSafeOptional>(
+											groupValue: hasFile.value,
+											onValueChanged: (v) {
+												setInnerState(() {
+													hasFile = v.value;
+												});
+											},
+											children: const {
+												_NullSafeOptional.null_: Padding(
+													padding: EdgeInsets.all(8),
+													child: Text('All posts')
+												),
+												_NullSafeOptional.false_: Padding(
+													padding: EdgeInsets.all(8),
+													child: Text('Without images')
+												),
+												_NullSafeOptional.true_: Padding(
+													padding: EdgeInsets.all(8),
+													child: Text('With images')
+												)
+											}
+										)
+									),
+									Padding(
+										padding: const EdgeInsets.all(16),
+										child: CupertinoSegmentedControl<bool>(
+											groupValue: threadOnly,
+											onValueChanged: (v) {
+												setInnerState(() {
+													threadOnly = v;
+												});
+											},
+											children: const {
+												false: Padding(
+													padding: EdgeInsets.all(8),
+													child: Text('All posts')
+												),
+												true: Padding(
+													padding: EdgeInsets.all(8),
+													child: Text('Threads only')
+												)
+											}
+										)
+									),
+									const SizedBox(height: 16),
+									CupertinoButton.filled(
+										padding: const EdgeInsets.all(16),
+										onPressed: () async {
+											await editStringList(
+												context: context,
+												list: boards,
+												name: 'board',
+												title: 'Edit boards'
+											);
+											setInnerState(() {});
+										},
+										child: Text(boards.isEmpty ? 'All boards' : 'Only on ${boards.map((b) => '/$b/').join(', ')}')
+									),
+									const SizedBox(height: 16),
+									CupertinoButton.filled(
+										padding: const EdgeInsets.all(16),
+										onPressed: () async {
+											await editStringList(
+												context: context,
+												list: excludeBoards,
+												name: 'excluded board',
+												title: 'Edit excluded boards'
+											);
+											setInnerState(() {});
+										},
+										child: Text(excludeBoards.isEmpty ? 'No excluded boards' : 'Exclude ${excludeBoards.map((b) => '/$b/').join(', ')}')
+									),
+									const SizedBox(height: 16),
+									CupertinoButton.filled(
+										padding: const EdgeInsets.all(16),
+										onPressed: () async {
+											final controller = TextEditingController(text: minRepliedTo?.toString());
+											await showCupertinoDialog(
+												context: context,
+												barrierDismissible: true,
+												builder: (context) => CupertinoAlertDialog(
+													title: const Text('Set minimum replied-to posts count'),
+													actions: [
+														CupertinoButton(
+															child: const Text('Clear'),
+															onPressed: () {
+																controller.text = '';
+																Navigator.pop(context);
+															}
+														),
+														CupertinoButton(
+															child: const Text('Close'),
+															onPressed: () => Navigator.pop(context)
+														)
+													],
+													content: Padding(
+														padding: const EdgeInsets.only(top: 16),
+														child: CupertinoTextField(
+															autofocus: true,
+															controller: controller,
+															onSubmitted: (s) {
+																Navigator.pop(context);
+															}
+														)
+													)
+												)
+											);
+											minRepliedTo = int.tryParse(controller.text);
+											controller.dispose();
+											setInnerState(() {});
+										},
+										child: Text(minRepliedTo == null ? 'No replied-to criteria' : 'With at least $minRepliedTo replied-to posts')
+									),
+									const SizedBox(height: 16),
+									const Text('Action', style: labelStyle),
+									Container(
+										padding: const EdgeInsets.all(16),
+										alignment: Alignment.center,
+										child: CupertinoSegmentedControl<FilterResultType>(
+											groupValue: outputType,
+											onValueChanged: (v) {
+												setInnerState(() {
+													outputType = v;
+												});
+											},
+											children: const {
+												FilterResultType.hide: Padding(
+													padding: EdgeInsets.all(8),
+													child: Text('Hide')
+												),
+												FilterResultType.highlight: Padding(
+													padding: EdgeInsets.all(8),
+													child: Text('Highlight')
+												),
+												FilterResultType.pinToTop: Padding(
+													padding: EdgeInsets.all(8),
+													child: Text('Pin-to-top')
+												),
+												FilterResultType.autoSave: Padding(
+													padding: EdgeInsets.all(8),
+													child: Text('Auto-save')
+												)
+											}
+										)
+									)
+								]
+							)
+						),
+						actions: [
+							if (originalFilter != null) CupertinoDialogAction(
+								isDestructiveAction: true,
+								onPressed: () => Navigator.pop(context, const Tuple2(true, null)),
+								child: const Text('Delete')
+							),
+							CupertinoDialogAction(
+								onPressed: () {
+									Navigator.pop(context, Tuple2(false, CustomFilter(
+										pattern: RegExp(patternController.text),
+										patternFields: patternFields,
+										boards: boards,
+										excludeBoards: excludeBoards,
+										hasFile: hasFile,
+										threadOnly: threadOnly,
+										minRepliedTo: minRepliedTo,
+										outputType: outputType,
+										label: labelController.text
+									)));
+								},
+								child: originalFilter == null ? const Text('Add') : const Text('Save')
+							)
+						],
+						cancelButton: CupertinoDialogAction(
+							onPressed: () => Navigator.pop(context),
+							child: const Text('Cancel')
+						)
+					)
+				)
+			);
+		}
 		return Column(
 			mainAxisSize: MainAxisSize.min,
 			crossAxisAlignment: CrossAxisAlignment.stretch,
 			children: [
 				const SizedBox(height: 16),
-				Wrap(
-					crossAxisAlignment: WrapCrossAlignment.center,
-					alignment: WrapAlignment.start,
-					spacing: 16,
-					runSpacing: 16,
+				Row(
 					children: [
-						const Text('RegEx filters'),
-						CupertinoButton(
-							minSize: 0,
-							padding: EdgeInsets.zero,
-							child: const Icon(CupertinoIcons.question_circle),
-							onPressed: () {
-								showCupertinoModalPopup(
-									context: context,
-									builder: (context) => CupertinoActionSheet(
-										message: Text.rich(
-											buildFakeMarkdown(context,
-												'One regular expression per line, lines starting with # will be ignored\n'
-												'Example: `/sneed/` will hide any thread or post containing "sneed"\n'
-												'Example: `/bane/;boards:tv;thread` will hide any thread containing "sneed" in the OP on /tv/\n'
-												'Add `i` after the regex to make it case-insensitive\n'
-												'Example: `/sneed/i` will match `SNEED`\n'
-												'\n'
-												'Qualifiers may be added after the regex:\n'
-												'`;boards:<list>` Only apply on certain boards\n'
-												'Example: `;board:tv,mu` will only apply the filter on /tv/ and /mu/\n'
-												'`;exclude:<list>` Don\'t apply on certain boards\n'
-												'`;highlight` Highlight instead of hiding matches\n'
-												'`;top` Highlight and pin match to top of list instead of hiding\n'
-												'`;save` Automatically save matching threads\n'
-												'`;file:only` Only apply to posts with files\n'
-												'`;file:no` Only apply to posts without files\n'
-												'`;thread` Only apply to threads\n'
-												'`;type:<list>` Only apply regex filter to certain fields\n'
-												'The list of possible fields is `[text, subject, name, filename, postID, posterID, flag]`\n'
-												'The default fields that are searched are `[text, subject, name, filename]`'
-											),
-											textAlign: TextAlign.left,
-											style: const TextStyle(
-												fontSize: 16,
-												height: 1.5
-											)
-										)
-									)
-								);
-							}
-						),
-						AnimatedBuilder(
-							animation: regexFocusNode,
-							builder: (context, child) => regexFocusNode.hasFocus ? child! : const SizedBox(),
-							child: CupertinoButton(
-								padding: EdgeInsets.zero,
-								minSize: 0,
-								child: const Text('Done'),
-								onPressed: () {
-									settings.filterConfiguration = regexController.text;
-									regexFocusNode.unfocus();
-								}
-							)
-						),
-						if (settings.filterError != null) Text('${settings.filterError}', style: const TextStyle(
-							color: Colors.red
-						))
+						const Text('Filters'),
+						const Spacer(),
+						CupertinoSegmentedControl<bool>(
+							groupValue: showRegex,
+							children: const {
+								false: Padding(
+									padding: EdgeInsets.all(8),
+									child: Text('Wizard')
+								),
+								true: Padding(
+									padding: EdgeInsets.all(8),
+									child: Text('Regex')
+								)
+							},
+							onValueChanged: (v) => setState(() {
+								showRegex = v;
+							})
+						)
 					]
 				),
 				const SizedBox(height: 16),
-				Padding(
-					padding: const EdgeInsets.only(left: 16, right: 16),
-					child: StatefulBuilder(
-						builder: (context, setInnerState) {
-							return CupertinoTextField(
-								style: GoogleFonts.ibmPlexMono(),
-								minLines: 5,
-								maxLines: 5,
-								focusNode: regexFocusNode,
-								controller: regexController
-							);
-						}
+				if (settings.filterError != null) Padding(
+					padding: const EdgeInsets.only(bottom: 16),
+					child: Text(
+						settings.filterError!,
+						style: const TextStyle(
+							color: Colors.red
+						)
+					)
+				),
+				AnimatedSize(
+					duration: const Duration(milliseconds: 350),
+					curve: Curves.ease,
+					alignment: Alignment.topCenter,
+					child: AnimatedSwitcher(
+						duration: const Duration(milliseconds: 350),
+						switchInCurve: Curves.ease,
+						switchOutCurve: Curves.ease,
+						child: showRegex ? Column(
+							mainAxisSize: MainAxisSize.min,
+							crossAxisAlignment: CrossAxisAlignment.stretch,
+							children: [
+								Wrap(
+									crossAxisAlignment: WrapCrossAlignment.center,
+									alignment: WrapAlignment.start,
+									spacing: 16,
+									runSpacing: 16,
+									children: [
+										CupertinoButton(
+											minSize: 0,
+											padding: EdgeInsets.zero,
+											child: const Icon(CupertinoIcons.question_circle),
+											onPressed: () {
+												showCupertinoModalPopup(
+													context: context,
+													builder: (context) => CupertinoActionSheet(
+														message: Text.rich(
+															buildFakeMarkdown(context,
+																'One regular expression per line, lines starting with # will be ignored\n'
+																'Example: `/sneed/` will hide any thread or post containing "sneed"\n'
+																'Example: `/bane/;boards:tv;thread` will hide any thread containing "sneed" in the OP on /tv/\n'
+																'Add `i` after the regex to make it case-insensitive\n'
+																'Example: `/sneed/i` will match `SNEED`\n'
+																'You can write text before the opening slash to give the filter a label: `Funposting/bane/i`'
+																'\n'
+																'Qualifiers may be added after the regex:\n'
+																'`;boards:<list>` Only apply on certain boards\n'
+																'Example: `;board:tv,mu` will only apply the filter on /tv/ and /mu/\n'
+																'`;exclude:<list>` Don\'t apply on certain boards\n'
+																'`;highlight` Highlight instead of hiding matches\n'
+																'`;top` Highlight and pin match to top of list instead of hiding\n'
+																'`;save` Automatically save matching threads\n'
+																'`;file:only` Only apply to posts with files\n'
+																'`;file:no` Only apply to posts without files\n'
+																'`;thread` Only apply to threads\n'
+																'`;type:<list>` Only apply regex filter to certain fields\n'
+																'The list of possible fields is $allPatternFields\n'
+																'The default fields that are searched are $defaultPatternFields'
+															),
+															textAlign: TextAlign.left,
+															style: const TextStyle(
+																fontSize: 16,
+																height: 1.5
+															)
+														)
+													)
+												);
+											}
+										),
+										if (dirty) CupertinoButton(
+											padding: EdgeInsets.zero,
+											minSize: 0,
+											child: const Text('Save'),
+											onPressed: () {
+												settings.filterConfiguration = regexController.text;
+												regexFocusNode.unfocus();
+												setState(() {
+													dirty = false;
+												});
+											}
+										)										
+									]
+								),
+								const SizedBox(height: 16),
+								Padding(
+									padding: const EdgeInsets.only(left: 16, right: 16),
+									child: CupertinoTextField(
+										style: GoogleFonts.ibmPlexMono(),
+										minLines: 5,
+										maxLines: 5,
+										focusNode: regexFocusNode,
+										controller: regexController,
+										onChanged: (_) {
+											if (!dirty) {
+												setState(() {
+													dirty = true;
+												});
+											}
+										}
+									)
+								)
+							]
+						) : ClipRRect(
+							borderRadius: BorderRadius.circular(8),
+							child: CupertinoListSection(
+								topMargin: 0,
+								margin: EdgeInsets.zero,
+								children: [
+									...filters.entries.map((filter) {
+										return CupertinoListTile(
+											title: Text(filter.value.label.isNotEmpty ? filter.value.label : '/${filter.value.pattern.pattern}/'),
+											leading: const {
+												FilterResultType.hide: Icon(CupertinoIcons.eye_slash),
+												FilterResultType.highlight: Icon(CupertinoIcons.sun_max_fill),
+												FilterResultType.pinToTop: Icon(CupertinoIcons.arrow_up_to_line),
+												FilterResultType.autoSave: Icon(CupertinoIcons.bookmark_fill)
+											}[filter.value.outputType],
+											additionalInfo: Wrap(
+												children: [
+													if (filter.value.minRepliedTo != null) Text('Replying to >=${filter.value.minRepliedTo}'),
+													if (filter.value.threadOnly) const Text('Threads only'),
+													if (filter.value.hasFile == true) const Icon(CupertinoIcons.doc)
+													else if (filter.value.hasFile == false) Stack(
+														children: const [
+															Icon(CupertinoIcons.doc),
+															Icon(CupertinoIcons.xmark)
+														]
+													),
+													for (final board in filter.value.boards) Text('/$board/'),
+													for (final board in filter.value.excludeBoards) Text('not /$board/'),
+													if (!setEquals(filter.value.patternFields.toSet(), defaultPatternFields.toSet()))
+														for (final field in filter.value.patternFields) Text(field)
+												].expand((x) => [const Text(', '), x]).skip(1).toList()
+											),
+											onTap: () async {
+												final newFilter = await editFilter(filter.value);
+												if (newFilter != null) {
+													final lines = settings.filterConfiguration.split('\n');
+													if (newFilter.item1) {
+														lines.removeAt(filter.key);
+													}
+													else {
+														lines[filter.key] = newFilter.item2!.toStringConfiguration();
+													}
+													settings.filterConfiguration = lines.join('\n');
+													regexController.text = settings.filterConfiguration;
+												}
+											}
+										);
+									}),
+									if (filters.isEmpty) CupertinoListTile(
+										title: const Text('Suggestion: Add a mass-reply filter'),
+										leading: const Icon(CupertinoIcons.lightbulb),
+										onTap: () async {
+											settings.filterConfiguration += '\nMass-reply//;minReplied:10';
+											regexController.text = settings.filterConfiguration;
+										}
+									),
+									CupertinoListTile(
+										title: const Text('New filter'),
+										leading: const Icon(CupertinoIcons.plus),
+										onTap: () async {
+											final newFilter = await editFilter(null);
+											if (newFilter?.item2 != null) {
+												settings.filterConfiguration += '\n${newFilter!.item2!.toStringConfiguration()}';
+												regexController.text = settings.filterConfiguration;
+											}
+										}
+									)
+								]
+							)
+						)
 					)
 				),
 				const SizedBox(height: 16),

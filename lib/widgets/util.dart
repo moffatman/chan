@@ -706,3 +706,158 @@ class ClippingBox extends StatelessWidget {
 		);
 	}
 }
+
+Future<void> editStringList({
+	required BuildContext context,
+	required List<String> list,
+	required String name,
+	required String title
+}) async {
+	await showCupertinoDialog(
+		barrierDismissible: true,
+		context: context,
+		builder: (context) => CupertinoAlertDialog(
+			title: Padding(
+				padding: const EdgeInsets.only(bottom: 16),
+				child: Text(title)
+			),
+			content: StatefulBuilder(
+				builder: (context, setDialogState) => SizedBox(
+					width: 100,
+					height: 350,
+					child: Stack(
+						children: [
+							ListView.builder(
+								padding: const EdgeInsets.only(bottom: 128),
+								itemCount: list.length,
+								itemBuilder: (context, i) => Padding(
+									padding: const EdgeInsets.all(4),
+									child: GestureDetector(
+										onTap: () async {
+											final controller = TextEditingController(text: list[i]);
+											controller.selection = TextSelection(baseOffset: 0, extentOffset: list[i].length);
+											final newItem = await showCupertinoDialog<String>(
+												context: context,
+												barrierDismissible: true,
+												builder: (context) => CupertinoAlertDialog(
+													title: Text('Edit $name'),
+													content: CupertinoTextField(
+														autofocus: true,
+														autocorrect: false,
+														controller: controller,
+														onSubmitted: (s) => Navigator.pop(context, s)
+													),
+													actions: [
+														CupertinoDialogAction(
+															child: const Text('Cancel'),
+															onPressed: () => Navigator.pop(context)
+														),
+														CupertinoDialogAction(
+															isDefaultAction: true,
+															child: const Text('Change'),
+															onPressed: () => Navigator.pop(context, controller.text)
+														)
+													]
+												)
+											);
+											if (newItem != null) {
+												list[i] = newItem;
+												setDialogState(() {});
+											}
+											controller.dispose();
+										},
+										child: Container(
+											decoration: BoxDecoration(
+												borderRadius: const BorderRadius.all(Radius.circular(4)),
+												color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+											),
+											padding: const EdgeInsets.only(left: 16),
+											child: Row(
+												children: [
+													Expanded(
+														child: Text(list[i], style: const TextStyle(fontSize: 15), textAlign: TextAlign.left)
+													),
+													CupertinoButton(
+														child: const Icon(CupertinoIcons.delete),
+														onPressed: () {
+															list.removeAt(i);
+															setDialogState(() {});
+														}
+													)
+												]
+											)
+										)
+									)
+								)
+							),
+							Align(
+								alignment: Alignment.bottomCenter,
+								child: ClipRect(
+									child: BackdropFilter(
+										filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+											child: Container(
+											color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.1),
+											child: Column(
+												mainAxisSize: MainAxisSize.min,
+												crossAxisAlignment: CrossAxisAlignment.stretch,
+												children: [
+													CupertinoButton(
+														child: Row(
+															mainAxisAlignment: MainAxisAlignment.center,
+															children: [
+																const Icon(CupertinoIcons.add),
+																Text(' Add $name')
+															]
+														),
+														onPressed: () async {
+															final controller = TextEditingController();
+															final newItem = await showCupertinoDialog<String>(
+																context: context,
+																barrierDismissible: true,
+																builder: (context) => CupertinoAlertDialog(
+																	title: Text('New $name'),
+																	content: CupertinoTextField(
+																		autofocus: true,
+																		controller: controller,
+																		autocorrect: false,
+																		onSubmitted: (s) => Navigator.pop(context, s)
+																	),
+																	actions: [
+																		CupertinoDialogAction(
+																			child: const Text('Cancel'),
+																			onPressed: () => Navigator.pop(context)
+																		),
+																		CupertinoDialogAction(
+																			isDefaultAction: true,
+																			child: const Text('Add'),
+																			onPressed: () => Navigator.pop(context, controller.text)
+																		)
+																	]
+																)
+															);
+															if (newItem != null) {
+																list.add(newItem);
+																setDialogState(() {});
+															}
+															controller.dispose();
+														}
+													)
+												]
+											)
+										)
+									)
+								)
+							)
+						]
+					)
+				)
+			),
+			actions: [
+				CupertinoDialogAction(
+					child: const Text('Close'),
+					onPressed: () => Navigator.pop(context)
+				)
+			]
+		)
+	);
+}

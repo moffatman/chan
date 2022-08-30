@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
+const allPatternFields = ['text', 'subject', 'name', 'filename', 'postID', 'posterID', 'flag'];
 const defaultPatternFields = ['subject', 'name', 'filename', 'text'];
 
 enum FilterResultType {
@@ -62,33 +63,48 @@ class FilterCache implements Filter {
 }
 
 class CustomFilter implements Filter {
-	final String configuration;
+	late final String configuration;
+	final String label;
 	final RegExp pattern;
 	List<String> patternFields;
 	FilterResultType outputType;
-	List<String>? boards;
-	List<String>? excludeBoards;
+	List<String> boards;
+	List<String> excludeBoards;
 	bool? hasFile;
-	bool? threadOnly;
+	bool threadOnly;
+	int? minRepliedTo;
 	CustomFilter({
-		required this.configuration,
+		String? configuration,
+		this.label = '',
 		required this.pattern,
 		this.patternFields = defaultPatternFields,
-		this.outputType = FilterResultType.hide
-	});
+		this.outputType = FilterResultType.hide,
+		this.boards = const [],
+		this.excludeBoards = const [],
+		this.hasFile,
+		this.threadOnly = false,
+		this.minRepliedTo
+	}) {
+		this.configuration = configuration ?? toStringConfiguration();
+	}
 	@override
 	FilterResult? filter(Filterable item) {
-		bool matches = false;
-		for (final field in patternFields) {
-			if (pattern.hasMatch(item.getFilterFieldText(field) ?? '')) {
-				matches = true;
-				break;
+		if (pattern.pattern.isNotEmpty) {
+			bool matches = false;
+			for (final field in patternFields) {
+				if (pattern.hasMatch(item.getFilterFieldText(field) ?? '')) {
+					matches = true;
+					break;
+				}
+			}
+			if (!matches) {
+				return null;
 			}
 		}
-		if (boards != null && !boards!.contains(item.board)) {
+		if (boards.isNotEmpty && !boards.contains(item.board)) {
 			return null;
 		}
-		if (excludeBoards != null && excludeBoards!.contains(item.board)) {
+		if (excludeBoards.isNotEmpty && excludeBoards.contains(item.board)) {
 			return null;
 		}
 		if (hasFile != null && hasFile != item.hasFile) {
@@ -97,11 +113,112 @@ class CustomFilter implements Filter {
 		if (threadOnly == true && !item.isThread) {
 			return null;
 		}
-		return matches ? FilterResult(outputType, 'Matched "$configuration"') : null;
+		if (minRepliedTo != null && item.repliedToIds.length < minRepliedTo!) {
+			return null;
+		}
+		return FilterResult(outputType, label.isEmpty ? 'Matched "$configuration"' : '$label filter');
+	}
+
+	factory CustomFilter.fromStringConfiguration(String configuration) {
+		print(configuration);
+		final match = _configurationLinePattern.firstMatch(configuration);
+		if (match == null) {
+			throw FilterException('Invalid syntax: "$configuration"');
+		}
+		final filter = CustomFilter(
+			configuration: configuration,
+			label: match.group(1)!,
+			pattern: RegExp(match.group(2)!, multiLine: true, caseSensitive: match.group(3) != 'i')
+		);
+		final separator = RegExp(r':|,');
+		int i = 5;
+		while (true) {
+			final s = match.group(i);
+			if (s == null) {
+				break;
+			}
+			else if (s == 'highlight') {
+				filter.outputType = FilterResultType.highlight;
+			}
+			else if (s == 'top') {
+				filter.outputType = FilterResultType.pinToTop;
+			}
+			else if (s == 'save') {
+				filter.outputType = FilterResultType.autoSave;	
+			}
+			else if (s.startsWith('type:')) {
+				filter.patternFields = s.split(separator).skip(1).toList();
+			}
+			else if (s.startsWith('boards:')) {
+				filter.boards = s.split(separator).skip(1).toList();
+			}
+			else if (s.startsWith('exclude:')) {
+				filter.excludeBoards = s.split(separator).skip(1).toList();
+			}
+			else if (s == 'file:only') {
+				filter.hasFile = true;
+			}
+			else if (s == 'file:no') {
+				filter.hasFile = false;
+			}
+			else if (s == 'thread') {
+				filter.threadOnly = true;
+			}
+			else if (s.startsWith('minReplied')) {
+				filter.minRepliedTo = int.tryParse(s.split(':')[1]);
+				if (filter.minRepliedTo == null) {
+					throw FilterException('Not a valid number for minReplied: "${s.split(':')[1]}"');
+				}
+			}
+			else {
+				throw FilterException('Unknown qualifier "$s"');
+			}
+			i += 2;
+		}
+		return filter;
+	}
+
+	String toStringConfiguration() {
+		final out = StringBuffer();
+		out.write(label);
+		out.write('/');
+		out.write(pattern.pattern);
+		out.write('/');
+		if (outputType == FilterResultType.highlight) {
+			out.write(';highlight');
+		}
+		else if (outputType == FilterResultType.pinToTop) {
+			out.write(';top');
+		}
+		else if (outputType == FilterResultType.autoSave) {
+			out.write(';save');
+		}
+		if (patternFields != defaultPatternFields && patternFields.isNotEmpty) {
+			out.write(';type:${patternFields.join(',')}');
+		}
+		if (boards.isNotEmpty) {
+			out.write(';boards:${boards.join(',')}');
+		}
+		if (excludeBoards.isNotEmpty) {
+			out.write(';exclude:${excludeBoards.join(',')}');
+		}
+		if (hasFile == true) {
+			out.write(';file:only');
+		}
+		else if (hasFile == false) {
+			out.write(';file:no');
+		}
+		if (threadOnly) {
+			out.write(';thread');
+		}
+		if (minRepliedTo != null) {
+			out.write(';minReplied:$minRepliedTo');
+		}
+		return out.toString();
 	}
 
 	@override
-	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadOnly: $threadOnly)';
+	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadOnly: $threadOnly, minRepliedTo: $minRepliedTo)';
 
 	@override
 	operator == (dynamic other) => other is CustomFilter && other.configuration == configuration;
@@ -247,66 +364,15 @@ class FilterException implements Exception {
 	String toString() => 'Filter Error: $message';
 }
 
-final _configurationLinePattern = RegExp(r'^\/(.*)\/(i?)(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?$');
+final _configurationLinePattern = RegExp(r'^([^\/]*)\/(.*)\/(i?)(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?$');
 
-Filter _makeFilter(String configuration) {
-	final match = _configurationLinePattern.firstMatch(configuration);
-	if (match == null) {
-		throw FilterException('Invalid syntax: "$configuration"');
-	}
-	final filter = CustomFilter(
-		configuration: configuration,
-		pattern: RegExp(match.group(1)!, multiLine: true, caseSensitive: match.group(2) != 'i')
-	);
-	final separator = RegExp(r':|,');
-	int i = 4;
-	while (true) {
-		final s = match.group(i);
-		if (s == null) {
-			break;
-		}
-		else if (s == 'highlight') {
-			filter.outputType = FilterResultType.highlight;
-		}
-		else if (s == 'top') {
-			filter.outputType = FilterResultType.pinToTop;
-		}
-		else if (s == 'save') {
-			filter.outputType = FilterResultType.autoSave;	
-		}
-		else if (s.startsWith('type:')) {
-			filter.patternFields = s.split(separator).skip(1).toList();
-		}
-		else if (s.startsWith('boards:')) {
-			filter.boards = s.split(separator).skip(1).toList();
-		}
-		else if (s.startsWith('exclude:')) {
-			filter.excludeBoards = s.split(separator).skip(1).toList();
-		}
-		else if (s == 'file:only') {
-			filter.hasFile = true;
-		}
-		else if (s == 'file:no') {
-			filter.hasFile = false;
-		}
-		else if (s == 'thread') {
-			filter.threadOnly = true;
-		}
-		else {
-			throw FilterException('Unknown qualifier "$s"');
-		}
-		i += 2;
-	}
-	return filter;
-}
-
-Filter makeFilter(String configuration) {
+FilterGroup makeFilter(String configuration) {
 	final filters = <Filter>[];
 	for (final line in configuration.split('\n')) {
 		if (line.startsWith('#') || line.isEmpty) {
 			continue;
 		}
-		filters.add(_makeFilter(line));
+		filters.add(CustomFilter.fromStringConfiguration(line));
 	}
 	return FilterGroup(filters);
 }
