@@ -833,9 +833,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										);
 									},
 									onWantArchiveSearch: (imageboardKey, board, query) async {
-										print(imageboardKey);
-										print(board);
-										print(query);
 										_tabController.index = 3;
 										_lastIndex = 3;
 										for (int i = 0; i < 200 && _searchPageKey.currentState == null; i++) {
