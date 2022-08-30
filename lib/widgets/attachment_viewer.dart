@@ -97,6 +97,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	GestureDetails? _gestureDetailsOnDoubleTapDragStart;
 	StreamSubscription<List<double>>? _longPressFactorSubscription;
 	bool _loadingProgressHideScheduled = false;
+	bool _thumbnailHideScheduled = false;
+	bool _showThumbnailBehindVideo = true;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -131,6 +133,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool get isDownloaded => _isDownloaded;
 	/// Key to use for loading spinner
 	final loadingSpinnerKey = GlobalKey();
+	/// Whether to show thumbnail behind video player
+	bool get showThumbnailBehindVideo => _showThumbnailBehindVideo;
 
 
 	AttachmentViewerController({
@@ -221,9 +225,19 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
+	void _scheduleHidingOfVideoThumbnail() async {
+		if (_thumbnailHideScheduled) return;
+		_thumbnailHideScheduled = true;
+		await Future.delayed(const Duration(milliseconds: 100));
+		if (_isDisposed) return;
+		_showThumbnailBehindVideo = false;
+		notifyListeners();
+	}
+
 	void goToThumbnail() {
 		_isFullResolution = false;
 		_showLoadingProgress = false;
+		_showThumbnailBehindVideo = true;
 		_videoPlayerController?.dispose();
 		_videoPlayerController = null;
 		_goodImageSource = null;
@@ -248,6 +262,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		_cachedFile = null;
 		_isFullResolution = true;
 		_showLoadingProgress = false;
+		_showThumbnailBehindVideo = true;
 		notifyListeners();
 		final startTime = DateTime.now();
 		Future.delayed(_estimateUrlTime(attachment.thumbnailUrl), () {
@@ -321,6 +336,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						return;
 					}
 					_scheduleHidingOfLoadingProgress();
+					_scheduleHidingOfVideoThumbnail();
 				}
 				else {
 					_ongoingConversion = MediaConversion.toMp4(url, headers: site.getHeaders(url) ?? {});
@@ -358,6 +374,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					_cachedFile = result.file;
 					_hasAudio = result.hasAudio;
 					_scheduleHidingOfLoadingProgress();
+					_scheduleHidingOfVideoThumbnail();
 				}
 				if (_isDisposed) return;
 				notifyListeners();
@@ -885,7 +902,7 @@ class AttachmentViewer extends StatelessWidget {
 				size: size,
 				child: Stack(
 					children: [
-						AttachmentThumbnail(
+						if (controller.showThumbnailBehindVideo) AttachmentThumbnail(
 							attachment: attachment,
 							width: double.infinity,
 							height: double.infinity,
