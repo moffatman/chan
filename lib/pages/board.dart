@@ -114,6 +114,9 @@ class _BoardPageState extends State<BoardPage> {
 					_loadCompleter = null;
 				});
 		}
+		else if (context.findAncestorStateOfType<NavigatorState>()?.canPop() == false) {
+			_lastSelectedThread = context.read<PersistentBrowserTab?>()?.thread;
+		}
 	}
 
 	@override
@@ -149,6 +152,27 @@ class _BoardPageState extends State<BoardPage> {
 			_temporarySortingMethod = null;
 			_temporaryReverseSorting = false;
 		});
+	}
+
+	void _onThreadSelected(ThreadIdentifier identifier) {
+		_lastSelectedThread = identifier;
+		setState(() {});
+		if (widget.onThreadSelected != null) {
+			widget.onThreadSelected!(identifier);
+		}
+		else {
+			Navigator.of(context).push(FullWidthCupertinoPageRoute(
+				builder: (ctx) => ImageboardScope(
+					imageboardKey: null,
+					imageboard: context.read<Imageboard>(),
+					child: ThreadPage(
+						thread: identifier,
+						boardSemanticId: widget.semanticId,
+					)
+				),
+				showAnimations: context.read<EffectiveSettings>().showAnimations
+			));
+		}
 	}
 
 	@override
@@ -268,26 +292,7 @@ class _BoardPageState extends State<BoardPage> {
 							highlightString: highlightString
 						)
 					),
-					onTap: () {
-						_lastSelectedThread = thread.identifier;
-						setState(() {});
-						if (widget.onThreadSelected != null) {
-							widget.onThreadSelected!(thread.identifier);
-						}
-						else {
-							Navigator.of(context).push(FullWidthCupertinoPageRoute(
-								builder: (ctx) => ImageboardScope(
-									imageboardKey: null,
-									imageboard: context.read<Imageboard>(),
-									child: ThreadPage(
-										thread: thread.identifier,
-										boardSemanticId: widget.semanticId,
-									)
-								),
-								showAnimations: context.read<EffectiveSettings>().showAnimations
-							));
-						}
-					}
+					onTap: () => _onThreadSelected(thread.identifier)
 				)
 			);
 		}
@@ -468,8 +473,7 @@ class _BoardPageState extends State<BoardPage> {
 																youIds: [receipt.id]
 															);
 															_listController.update();
-															_lastSelectedThread = ThreadIdentifier(board!.name, receipt.id);
-															widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
+															_onThreadSelected(ThreadIdentifier(board!.name, receipt.id));
 															Navigator.of(ctx).pop();
 														}
 													)
@@ -499,7 +503,7 @@ class _BoardPageState extends State<BoardPage> {
 					key: _threadPullTabKey,
 					tab: (widget.selectedThread != null || _lastSelectedThread == null) ? null : PullTabTab(
 						child: Text('Re-open /${_lastSelectedThread!.board}/${_lastSelectedThread!.id}'),
-						onActivation: () => widget.onThreadSelected?.call(_lastSelectedThread!)
+						onActivation: () => _onThreadSelected(_lastSelectedThread!)
 					),
 					position: PullTabPosition.left,
 					child: FilterZone(
@@ -698,8 +702,7 @@ class _BoardPageState extends State<BoardPage> {
 													youIds: [receipt.id]
 												);
 												_listController.update();
-												_lastSelectedThread = ThreadIdentifier(board!.name, receipt.id);
-												widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
+												_onThreadSelected(ThreadIdentifier(board!.name, receipt.id));
 											},
 											onVisibilityChanged: () => setState(() {}),
 										)
