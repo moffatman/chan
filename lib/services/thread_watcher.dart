@@ -276,7 +276,15 @@ class ThreadWatcher extends ChangeNotifier {
 			if (watch.zombie) {
 				continue;
 			}
-			await _updateThread(persistence.getThreadState(watch.threadIdentifier));
+			final threadState = persistence.getThreadState(watch.threadIdentifier);
+			if (threadState.identifier == ThreadIdentifier('', 0)) {
+				print('Cleaning up watch for deleted thread ${persistence.id}/${watch.board}/${watch.threadId}');
+				await threadState.delete();
+				notifications.removeThreadWatch(watch);
+			}
+			else {
+				await _updateThread(threadState);
+			}
 		}
 		for (final tab in Persistence.tabs) {
 			if (tab.imageboardKey == imageboardKey && tab.threadController == null && tab.thread != null) {
