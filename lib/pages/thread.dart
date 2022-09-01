@@ -843,6 +843,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 						padding: const EdgeInsets.only(bottom: 50),
 						child: SingleChildScrollView(
 							reverse: true,
+							primary: false,
 							physics: const BouncingScrollPhysics(),
 							child: Column(
 								crossAxisAlignment: CrossAxisAlignment.end,
