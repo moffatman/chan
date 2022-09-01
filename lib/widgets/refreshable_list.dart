@@ -171,7 +171,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 		setState(() {});
 	}
 
-	Future<void> update() async {
+	Future<void> update({bool hapticFeedback = false}) async {
 		if (updatingNow) {
 			return;
 		}
@@ -231,11 +231,17 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 		}
 		updatingNow = false;
 		if (mounted && newList != null || list == null) {
-			mediumHapticFeedback();
+			if (hapticFeedback) {
+				mediumHapticFeedback();
+			}
 			setState(() {
 				list = newList;
 			});
 		}
+	}
+
+	Future<void> _updateWithHapticFeedback() async {
+		await update(hapticFeedback: true);
 	}
 
 	Widget _itemBuilder(BuildContext context, T value, {bool highlighted = false}) {
@@ -324,7 +330,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 							if (overscroll > _overscrollTriggerThreshold && !widget.disableUpdates) {
 								_overscrollEndingNow = true;
 								lightHapticFeedback();
-								update();
+								_updateWithHapticFeedback();
 							}
 						}
 					}
@@ -369,7 +375,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 										sliver: widget.disableUpdates ? SliverToBoxAdapter(
 											child: Container()
 										) : CupertinoSliverRefreshControl(
-											onRefresh: update,
+											onRefresh: _updateWithHapticFeedback,
 											refreshTriggerPullDistance: 125
 										),
 										bottom: false
@@ -618,7 +624,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 														);
 													});
 													_footerShakeAnimation.forward(from: 0);
-													update();
+													_updateWithHapticFeedback();
 												},
 												child: AnimatedBuilder(
 													animation: shakeAnimation,
@@ -642,12 +648,12 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 										sliver: SliverToBoxAdapter(
 											child: RepaintBoundary(
 												child: RefreshableListFooter(
-													updater: update,
+													updater: _updateWithHapticFeedback,
 													updatingNow: updatingNow,
 													lastUpdateTime: lastUpdateTime,
 													nextUpdateTime: nextUpdateTime,
 													errorMessage: errorMessage,
-													remedy: widget.remedies[errorType]?.call(context, update),
+													remedy: widget.remedies[errorType]?.call(context, _updateWithHapticFeedback),
 													overscrollFactor: widget.controller?.overscrollFactor,
 													pointerDownNow: () {
 														return _pointerDownCount > 0;
@@ -670,10 +676,10 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 					children: [
 						ErrorMessageCard('Error loading ${widget.id}:\n${errorMessage?.toStringDio()}'),
 						CupertinoButton(
-							onPressed: update,
+							onPressed: _updateWithHapticFeedback,
 							child: const Text('Retry')
 						),
-						if (widget.remedies[errorType] != null) widget.remedies[errorType]!(context, update)
+						if (widget.remedies[errorType] != null) widget.remedies[errorType]!(context, _updateWithHapticFeedback)
 					]
 				)
 			);
