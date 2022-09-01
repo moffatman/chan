@@ -259,6 +259,12 @@ class ErrorMessageCard extends StatelessWidget {
 }
 
 Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = false}) async {
+	if (url.host.isEmpty && url.scheme.isEmpty) {
+		url = url.replace(
+			scheme: 'https',
+			host: context.read<Imageboard?>()?.site.baseUrl,
+		);
+	}
 	final webmMatcher = RegExp('https?://${context.read<ImageboardSite>().imageUrl}/([^/]+)/([0-9]+).webm');
 	final match = webmMatcher.firstMatch(url.toString());
 	if (match != null) {
