@@ -59,7 +59,7 @@ class _PullTabState extends State<PullTab> {
 		..team = _team
 		..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
 		_team.captain = _recognizingRecognizer;
-		_claimingRecognizer = WeakHorizontalDragGestureRecognizer(weakness: 2, sign: rtl ? -1 : 1, debugOwner: this)
+		_claimingRecognizer = WeakHorizontalDragGestureRecognizer(weakness: 2.6, sign: rtl ? -1 : 1, debugOwner: this)
 		..onStart = (e) {}
 		..team = _team
 		..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
@@ -92,8 +92,8 @@ class _PullTabState extends State<PullTab> {
 
 	void _handleDragEnd(DragEndDetails details) {
 		if (disabled) return;
-		if ((inActive || details.velocity.pixelsPerSecond.distance > kMinFlingVelocity) &&
-				((rtl && (details.velocity.pixelsPerSecond.direction.abs() > math.pi * 0.75 || details.velocity.pixelsPerSecond.distance == 0)) ||
+		if (inActive || (details.velocity.pixelsPerSecond.distance > kMinFlingVelocity) &&
+				((rtl && (details.velocity.pixelsPerSecond.direction.abs() > math.pi * 0.75)) ||
 				 (!rtl && details.velocity.pixelsPerSecond.direction.abs() < math.pi * 0.25))) {
 			lightHapticFeedback();
 			try {
@@ -127,46 +127,49 @@ class _PullTabState extends State<PullTab> {
 						child: IgnorePointer(
 							child: Transform.translate(
 								offset: Offset((rtl ? width : -width) + dragDistance.clamp(-300, 300), scrollDistance),
-								child: Align(
-									alignment: Alignment.centerRight,
-									child: Container(
-										width: double.infinity,
-										height: 150,
-										alignment: rtl ? Alignment.centerLeft : Alignment.centerRight,
-										padding: const EdgeInsets.symmetric(horizontal: 16),
-										decoration: BoxDecoration(
-											borderRadius: rtl ?
-												const BorderRadius.only(topLeft: Radius.circular(32), bottomLeft: Radius.circular(32)) :
-												const BorderRadius.only(topRight: Radius.circular(32), bottomRight: Radius.circular(32)),
-											color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
-										),
-										child: Row(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												if (rtl) TweenAnimationBuilder<double>(
-													duration: const Duration(milliseconds: 350),
-													curve: Curves.ease,
-													tween: Tween(begin: 0, end: inActive ? math.pi : 0),
-													builder: (context, angle, child) => Transform.rotate(
-														angle: angle,
-														child: child
+								child: Opacity(
+									opacity: (dragDistance.abs() / (width / 6)).clamp(0, 1),
+									child: Align(
+										alignment: Alignment.centerRight,
+										child: Container(
+											width: double.infinity,
+											height: 150,
+											alignment: rtl ? Alignment.centerLeft : Alignment.centerRight,
+											padding: const EdgeInsets.symmetric(horizontal: 16),
+											decoration: BoxDecoration(
+												borderRadius: rtl ?
+													const BorderRadius.only(topLeft: Radius.circular(32), bottomLeft: Radius.circular(32)) :
+													const BorderRadius.only(topRight: Radius.circular(32), bottomRight: Radius.circular(32)),
+												color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
+											),
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													if (rtl) TweenAnimationBuilder<double>(
+														duration: const Duration(milliseconds: 350),
+														curve: Curves.ease,
+														tween: Tween(begin: 0, end: inActive ? math.pi : 0),
+														builder: (context, angle, child) => Transform.rotate(
+															angle: angle,
+															child: child
+														),
+														child: const Icon(Icons.arrow_back)
 													),
-													child: const Icon(Icons.arrow_back)
-												),
-												const SizedBox(width: 16),
-												widget.tab?.child ?? const Text('Pick'),
-												const SizedBox(width: 16),
-												if (!rtl) TweenAnimationBuilder<double>(
-													duration: const Duration(milliseconds: 350),
-													curve: Curves.ease,
-													tween: Tween(begin: 0, end: inActive ? math.pi : 0),
-													builder: (context, angle, child) => Transform.rotate(
-														angle: angle,
-														child: child
-													),
-													child: const Icon(Icons.arrow_forward)
-												)
-											]
+													const SizedBox(width: 16),
+													widget.tab?.child ?? const Text('Pick'),
+													const SizedBox(width: 16),
+													if (!rtl) TweenAnimationBuilder<double>(
+														duration: const Duration(milliseconds: 350),
+														curve: Curves.ease,
+														tween: Tween(begin: 0, end: inActive ? math.pi : 0),
+														builder: (context, angle, child) => Transform.rotate(
+															angle: angle,
+															child: child
+														),
+														child: const Icon(Icons.arrow_forward)
+													)
+												]
+											)
 										)
 									)
 								)
