@@ -24,6 +24,8 @@ class OverlayNotification {
 		required this.autoCloseAnimation
 	});
 
+	bool get isMuted => imageboard.notifications.getThreadWatch(target.threadIdentifier!)?.foregroundMuted ?? false;
+
 	@override
 	String toString() => 'OverlayNotification(imageboard: $imageboard, target: $target)';
 }
@@ -92,6 +94,14 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		_checkAutoclose();
 	}
 
+	Future<void> muteNotification(OverlayNotification notification) async {
+		if (!shown.contains(notification)) {
+			return;
+		}
+		notification.imageboard.notifications.foregroundMuteThread(notification.target.threadIdentifier!);
+		closeNotification(notification);
+	}
+
 	void _notificationTapped(OverlayNotification notification) {
 		notification.imageboard.notifications.tapStream.add(notification.target);
 		closeNotification(notification);
@@ -132,7 +142,8 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 						child: TopNotification(
 							notification: notification,
 							onTap: () => _notificationTapped(notification),
-							onTapClose: () => closeNotification(notification)
+							onTapClose: () => closeNotification(notification),
+							onTapMute: () => muteNotification(notification)
 						)
 					)
 				))
@@ -146,7 +157,8 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 								key: ValueKey(notification),
 								notification: notification,
 								onTap: () => _notificationTapped(notification),
-								onTapClose: () => closeNotification(notification)
+								onTapClose: () => closeNotification(notification),
+								onTapMute: () => muteNotification(notification)
 							))
 						]
 					)
@@ -234,11 +246,13 @@ class TopNotification extends StatelessWidget {
 	final OverlayNotification notification;
 	final VoidCallback onTap;
 	final VoidCallback onTapClose;
+	final VoidCallback onTapMute;
 
 	const TopNotification({
 		required this.notification,
 		required this.onTap,
 		required this.onTapClose,
+		required this.onTapMute,
 		Key? key
 	}) : super(key: key);
 
@@ -274,6 +288,13 @@ class TopNotification extends StatelessWidget {
 									)
 								)
 							),
+							if (!notification.isMuted) CupertinoButton.filled(
+								padding: const EdgeInsets.all(16),
+								borderRadius: BorderRadius.zero,
+								alignment: Alignment.topCenter,
+								onPressed: onTapMute,
+								child: const Icon(CupertinoIcons.bell_slash)
+							),
 							CupertinoButton.filled(
 								padding: const EdgeInsets.all(16),
 								borderRadius: BorderRadius.zero,
@@ -307,11 +328,13 @@ class CornerNotification extends StatelessWidget {
 	final OverlayNotification notification;
 	final VoidCallback onTap;
 	final VoidCallback onTapClose;
+	final VoidCallback onTapMute;
 
 	const CornerNotification({
 		required this.notification,
 		required this.onTap,
 		required this.onTapClose,
+		required this.onTapMute,
 		Key? key
 	}) : super(key: key);
 
@@ -345,31 +368,47 @@ class CornerNotification extends StatelessWidget {
 						Positioned.fill(
 							child: Align(
 								alignment: Alignment.topRight,
-								child: CupertinoButton(
-									minSize: 0,
-									padding: EdgeInsets.zero,
-									borderRadius: BorderRadius.circular(100),
-									color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
-									onPressed: onTapClose,
-									child: Stack(
-										alignment: Alignment.center,
-										children: [
-											Icon(CupertinoIcons.xmark, size: 17, color: CupertinoTheme.of(context).primaryColor),
-											IgnorePointer(
-												child: AnimatedBuilder(
-													animation: notification.autoCloseAnimation,
-													builder: (context, _) => Transform.scale(
-														scale: 0.8,
-														child: CircularProgressIndicator(
-															value: notification.autoCloseAnimation.value,
-															color: CupertinoTheme.of(context).primaryColor,
-															strokeWidth: 4,
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										if (!notification.isMuted) ...[
+											CupertinoButton(
+												minSize: 0,
+												padding: const EdgeInsets.all(8),
+												borderRadius: BorderRadius.circular(100),
+												color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
+												onPressed: onTapMute,
+												child: Icon(CupertinoIcons.bell_slash, size: 20, color: CupertinoTheme.of(context).primaryColor)
+											),
+											const SizedBox(width: 8),
+										],
+										CupertinoButton(
+											minSize: 0,
+											padding: EdgeInsets.zero,
+											borderRadius: BorderRadius.circular(100),
+											color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
+											onPressed: onTapClose,
+											child: Stack(
+												alignment: Alignment.center,
+												children: [
+													Icon(CupertinoIcons.xmark, size: 17, color: CupertinoTheme.of(context).primaryColor),
+													IgnorePointer(
+														child: AnimatedBuilder(
+															animation: notification.autoCloseAnimation,
+															builder: (context, _) => Transform.scale(
+																scale: 0.8,
+																child: CircularProgressIndicator(
+																	value: notification.autoCloseAnimation.value,
+																	color: CupertinoTheme.of(context).primaryColor,
+																	strokeWidth: 4,
+																)
+															)
 														)
 													)
-												)
+												]
 											)
-										]
-									)
+										)
+									]
 								)
 							)
 						)

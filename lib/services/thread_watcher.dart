@@ -56,6 +56,8 @@ class ThreadWatch extends Watch {
 	@HiveField(7, defaultValue: true)
 	@override
 	bool push;
+	@HiveField(8, defaultValue: false)
+	bool foregroundMuted;
 	ThreadWatch({
 		required this.board,
 		required this.threadId,
@@ -64,7 +66,8 @@ class ThreadWatch extends Watch {
 		required this.youIds,
 		this.zombie = false,
 		bool? pushYousOnly,
-		this.push = true
+		this.push = true,
+		this.foregroundMuted = false
 	}) : pushYousOnly = pushYousOnly ?? localYousOnly;
 	static const type = 'thread';
 	@override

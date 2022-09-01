@@ -152,6 +152,46 @@ class ThreadWatchControlsPage extends StatelessWidget {
 										}
 									}
 								)
+							),
+							const SizedBox(height: 16),
+							const Text('In-App Notifications'),
+							Padding(
+								padding: const EdgeInsets.all(16),
+								child: CupertinoSegmentedControl<bool>(
+									children: const {
+										false: Padding(
+											padding: EdgeInsets.all(8),
+											child: Text('Off')
+										),
+										true: Padding(
+											padding: EdgeInsets.all(8),
+											child: Text('On')
+										)
+									},
+									groupValue: !(watch?.foregroundMuted ?? true) && (watch?.push ?? false),
+									onValueChanged: (v) {
+										if (watch == null && v) {
+											final ts = persistence.getThreadStateIfExists(thread);
+											notifications.subscribeToThread(
+												thread: thread,
+												lastSeenId: ts?.lastSeenPostId ?? thread.id,
+												localYousOnly: true,
+												pushYousOnly: true,
+												youIds: ts?.youIds ?? [],
+												push: true
+											);
+										}
+										else if (watch != null) {
+											if (v) {
+												watch.push = true;
+												notifications.foregroundUnmuteThread(watch.threadIdentifier);
+											}
+											else {
+												notifications.foregroundMuteThread(watch.threadIdentifier);
+											}
+										}
+									}
+								)
 							)
 						]
 					)

@@ -127,16 +127,20 @@ class Notifications {
 				//print(message);
 				print(message.data);
 				if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
-					if (!_children.containsKey(message.data['userId'])) {
+					final child = _children[message.data['userId']];
+					if (child == null) {
 						print('Opened via message with unknown userId: ${message.data}');
+						return;
 					}
 					final identifier = BoardThreadOrPostIdentifier(
 						message.data['board'],
 						int.parse(message.data['threadId']),
 						int.tryParse(message.data['postId'] ?? '')
 					);
-					await _children[message.data['userId']]?.localWatcher?.updateThread(identifier.threadIdentifier!);
-					_children[message.data['userId']]?.foregroundStream.add(identifier);
+					await child.localWatcher?.updateThread(identifier.threadIdentifier!);
+					if (child.getThreadWatch(identifier.threadIdentifier!)?.foregroundMuted != true) {
+						child.foregroundStream.add(identifier);
+					}
 				}
 			});
 			FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
@@ -257,6 +261,24 @@ class Notifications {
 		final watch = getThreadWatch(thread);
 		if (watch != null) {
 			removeThreadWatch(watch);
+		}
+	}
+
+	void foregroundMuteThread(ThreadIdentifier thread) {
+		final watch = getThreadWatch(thread);
+		if (watch != null) {
+			watch.foregroundMuted = true;
+			localWatcher?.onWatchUpdated(watch);
+			persistence.didUpdateBrowserState();
+		}
+	}
+
+	void foregroundUnmuteThread(ThreadIdentifier thread) {
+		final watch = getThreadWatch(thread);
+		if (watch != null) {
+			watch.foregroundMuted = false;
+			localWatcher?.onWatchUpdated(watch);
+			persistence.didUpdateBrowserState();
 		}
 	}
 
