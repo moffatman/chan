@@ -438,8 +438,8 @@ class WeakVerticalDragGestureRecognizer extends WeakDragGestureRecognizer {
 }
 
 class WeakHorizontalDragGestureRecognizer extends WeakDragGestureRecognizer {
-	final double weakness;
-	final double? sign;
+	double weakness;
+	double? sign;
 
 	WeakHorizontalDragGestureRecognizer({
 		required this.weakness,

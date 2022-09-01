@@ -19,6 +19,7 @@ import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/reply_box.dart';
+import 'package:chan/widgets/pull_tab.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -89,6 +90,9 @@ class _BoardPageState extends State<BoardPage> {
 	Completer<void>? _loadCompleter;
 	ThreadSortingMethod? _temporarySortingMethod;
 	bool _temporaryReverseSorting = false;
+	ThreadIdentifier? _lastSelectedThread;
+	final _boardsPullTabKey = GlobalKey();
+	final _threadPullTabKey = GlobalKey();
 
 	@override
 	void initState() {
@@ -98,6 +102,7 @@ class _BoardPageState extends State<BoardPage> {
 			Future.delayed(const Duration(milliseconds: 100), _selectBoard);
 		}
 		if (widget.selectedThread != null) {
+			_lastSelectedThread = widget.selectedThread;
 			_loadCompleter = Completer<void>()
 				..future.then((_) async {
 					try {
@@ -114,7 +119,9 @@ class _BoardPageState extends State<BoardPage> {
 	@override
 	void didUpdateWidget(BoardPage oldWidget) {
 		super.didUpdateWidget(oldWidget);
-		setState(() {});
+		if (widget.selectedThread != null) {
+			_lastSelectedThread = widget.selectedThread;
+		}
 	}
 
 	void _selectBoard() async {
@@ -130,14 +137,18 @@ class _BoardPageState extends State<BoardPage> {
 			showAnimations: context.read<EffectiveSettings>().showAnimations
 		));
 		if (newBoard != null) {
-			widget.onBoardChanged?.call(newBoard);
-			setState(() {
-				board = newBoard.item;
-				_listController.scrollController?.jumpTo(0);
-				_temporarySortingMethod = null;
-				_temporaryReverseSorting = false;
-			});
+			_swapBoard(newBoard);
 		}
+	}
+	
+	void _swapBoard(ImageboardScoped<ImageboardBoard> newBoard) {
+		widget.onBoardChanged?.call(newBoard);
+		setState(() {
+			board = newBoard.item;
+			_listController.scrollController?.jumpTo(0);
+			_temporarySortingMethod = null;
+			_temporaryReverseSorting = false;
+		});
 	}
 
 	@override
@@ -258,6 +269,8 @@ class _BoardPageState extends State<BoardPage> {
 						)
 					),
 					onTap: () {
+						_lastSelectedThread = thread.identifier;
+						setState(() {});
 						if (widget.onThreadSelected != null) {
 							widget.onThreadSelected!(thread.identifier);
 						}
@@ -455,6 +468,7 @@ class _BoardPageState extends State<BoardPage> {
 																youIds: [receipt.id]
 															);
 															_listController.update();
+															_lastSelectedThread = ThreadIdentifier(board!.name, receipt.id);
 															widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
 															Navigator.of(ctx).pop();
 														}
@@ -475,208 +489,224 @@ class _BoardPageState extends State<BoardPage> {
 			),
 			child: board == null ? const Center(
 				child: Text('No Board Selected')
-			) : FilterZone(
-				filter: context.select<Persistence, Filter>((p) => p.browserState.getCatalogFilter(board!.name)),
-				child: WillPopScope(
-					onWillPop: () async {
-						if (_replyBoxKey.currentState?.show ?? false) {
-							_replyBoxKey.currentState?.hideReplyBox();
-							setState(() {});
-							return false;
-						}
-						return true;
-					},
-					child: Column(
-						children: [
-							Flexible(
-								child: CallbackShortcuts(
-									bindings: {
-										LogicalKeySet(LogicalKeyboardKey.keyG): () {
-											if (board != null && context.read<EffectiveSettings>().showImages(context, board!.name)) {
-												final nextThreadWithImage = _listController.items.skip(_listController.firstVisibleIndex).firstWhere((t) => t.attachments.isNotEmpty, orElse: () {
-													return _listController.items.firstWhere((t) => t.attachments.isNotEmpty);
-												});
-												final attachments = _listController.items.expand((_) => _.attachments).toList();
-												showGallery(
-													context: context,
-													attachments: attachments,
-													replyCounts: {
-														for (final thread in _listController.items)
-															for (final attachment in thread.attachments)
-																attachment: thread.replyCount
-													},
-													initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.attachments.any((a2) => a2.id == a.id)),
-													onChange: (attachment) {
-														_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
-													},
-													semanticParentIds: [widget.semanticId]
-												);
-											}
-										}
-									},
-									child: site == null ? const Center(
-										child: ErrorMessageCard('No imageboard selected')
-									) : Stack(
-										fit: StackFit.expand,
-										children: [
-											RefreshableList<Thread>(
-												initialFilter: widget.initialSearch,
-												filterableAdapter: (t) => t,
-												allowReordering: true,
-												onWantAutosave: (thread) async {
-													final persistence = context.read<Persistence>();
-													if (persistence.browserState.autosavedIds[thread.board]?.contains(thread.id) ?? false) {
-														// Already saw this thread
-														return;
-													}
-													final threadState = persistence.getThreadState(thread.identifier);
-													threadState.savedTime = DateTime.now();
-													threadState.thread = thread;
-													persistence.browserState.autosavedIds.putIfAbsent(thread.board, () => []).add(thread.id);
-													await threadState.save();
-													await persistence.didUpdateBrowserState();
-												},
-												gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
-												controller: _listController,
-												listUpdater: () => site.getCatalog(board!.name).then((list) async {
-													for (final thread in list) {
-														await thread.preinit(catalog: true);
-													}
-													final now = DateTime.now();
-													if (settings.hideOldStickiedThreads && list.length > 100) {
-														list = list.where((thread) {
-															return !thread.isSticky || now.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
-														}).toList();
-													}
-													switch (sortingMethod) {
-														case ThreadSortingMethod.replyCount:
-															list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
-															break;
-														case ThreadSortingMethod.threadPostTime:
-															list.sort((a, b) => b.id.compareTo(a.id));
-															break;
-														case ThreadSortingMethod.postsPerMinute:
-															list.sort((a, b) => -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds));
-															break;
-														case ThreadSortingMethod.lastReplyTime:
-															list.sort((a, b) => b.posts.last.id.compareTo(a.posts.last.id));
-															break;
-														case ThreadSortingMethod.imageCount:
-															list.sort((a, b) => b.imageCount.compareTo(a.imageCount));
-															break;
-														// Some methods only used for saved posts
-														case ThreadSortingMethod.savedTime:
-														case ThreadSortingMethod.lastPostTime:
-														case ThreadSortingMethod.lastReplyByYouTime:
-														case ThreadSortingMethod.unsorted:
-															break;
-													}
-													Future.delayed(const Duration(milliseconds: 100), () {
-														if (_loadCompleter?.isCompleted == false) {
-															_loadCompleter?.complete();
-														}
-													});
-													return reverseSorting ? list.reversed.toList() : list;
-												}),
-												id: '/${board!.name}/ $sortingMethod $reverseSorting',
-												itemBuilder: (context, thread) => itemBuilder(context, thread),
-												filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
-												filterHint: 'Search in board',
-												filterAlternative: widget.onWantArchiveSearch == null ? null : FilterAlternative(
-													name: '/${board?.name}/ archives',
-													handler: (s) {
-														widget.onWantArchiveSearch!(imageboard!.key, board!.name, s);
-													}
-												)
-											),
-											RepaintBoundary(
-												child: StreamBuilder(
-													stream: _listController.slowScrollUpdates,
-													builder: (context, _) {
-														final page = _listController.firstVisibleItem?.currentPage;
-														scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-														return (page == null || page == 0 || _listController.firstVisibleIndex == 0 || ((_listController.scrollController?.position.pixels ?? 1) < 0)) ? Container() : SafeArea(
-															child: Align(
-																alignment: Alignment.bottomRight,
-																child: Row(
-																	mainAxisSize: MainAxisSize.min,
-																	children: [
-																		GestureDetector(
-																			onTap: scrollToTop,
-																			child: Container(
-																				decoration: BoxDecoration(
-																					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
-																					borderRadius: const BorderRadius.all(Radius.circular(8))
-																				),
-																				padding: const EdgeInsets.all(8),
-																				margin: const EdgeInsets.only(bottom: 16, right: 16),
-																				child: Row(
-																					mainAxisSize: MainAxisSize.min,
-																					children: [
-																						Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
-																						SizedBox(
-																							width: 25,
-																							child: Text(
-																								page.toString(),
-																								textAlign: TextAlign.center,
-																								style: TextStyle(
-																									color: CupertinoTheme.of(context).scaffoldBackgroundColor
-																								)
-																							)
-																						)
-																					]
-																				)
-																			)
-																		)
-																	]
-																)
-															)
+			) : PullTab(
+				key: _boardsPullTabKey,
+				tab: PullTabTab(
+					child: const Text('Open boards'),
+					onActivation: _selectBoard,
+				),
+				child: PullTab(
+					key: _threadPullTabKey,
+					tab: (widget.selectedThread != null || _lastSelectedThread == null) ? null : PullTabTab(
+						child: Text('Re-open /${_lastSelectedThread!.board}/${_lastSelectedThread!.id}'),
+						onActivation: () => widget.onThreadSelected?.call(_lastSelectedThread!)
+					),
+					position: PullTabPosition.left,
+					child: FilterZone(
+						filter: context.select<Persistence, Filter>((p) => p.browserState.getCatalogFilter(board!.name)),
+						child: WillPopScope(
+							onWillPop: () async {
+								if (_replyBoxKey.currentState?.show ?? false) {
+									_replyBoxKey.currentState?.hideReplyBox();
+									setState(() {});
+									return false;
+								}
+								return true;
+							},
+							child: Column(
+								children: [
+									Flexible(
+										child: CallbackShortcuts(
+											bindings: {
+												LogicalKeySet(LogicalKeyboardKey.keyG): () {
+													if (board != null && context.read<EffectiveSettings>().showImages(context, board!.name)) {
+														final nextThreadWithImage = _listController.items.skip(_listController.firstVisibleIndex).firstWhere((t) => t.attachments.isNotEmpty, orElse: () {
+															return _listController.items.firstWhere((t) => t.attachments.isNotEmpty);
+														});
+														final attachments = _listController.items.expand((_) => _.attachments).toList();
+														showGallery(
+															context: context,
+															attachments: attachments,
+															replyCounts: {
+																for (final thread in _listController.items)
+																	for (final attachment in thread.attachments)
+																		attachment: thread.replyCount
+															},
+															initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.attachments.any((a2) => a2.id == a.id)),
+															onChange: (attachment) {
+																_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
+															},
+															semanticParentIds: [widget.semanticId]
 														);
 													}
-												)
+												}
+											},
+											child: site == null ? const Center(
+												child: ErrorMessageCard('No imageboard selected')
+											) : Stack(
+												fit: StackFit.expand,
+												children: [
+													RefreshableList<Thread>(
+														initialFilter: widget.initialSearch,
+														filterableAdapter: (t) => t,
+														allowReordering: true,
+														onWantAutosave: (thread) async {
+															final persistence = context.read<Persistence>();
+															if (persistence.browserState.autosavedIds[thread.board]?.contains(thread.id) ?? false) {
+																// Already saw this thread
+																return;
+															}
+															final threadState = persistence.getThreadState(thread.identifier);
+															threadState.savedTime = DateTime.now();
+															threadState.thread = thread;
+															persistence.browserState.autosavedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+															await threadState.save();
+															await persistence.didUpdateBrowserState();
+														},
+														gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
+														controller: _listController,
+														listUpdater: () => site.getCatalog(board!.name).then((list) async {
+															for (final thread in list) {
+																await thread.preinit(catalog: true);
+															}
+															final now = DateTime.now();
+															if (settings.hideOldStickiedThreads && list.length > 100) {
+																list = list.where((thread) {
+																	return !thread.isSticky || now.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
+																}).toList();
+															}
+															switch (sortingMethod) {
+																case ThreadSortingMethod.replyCount:
+																	list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
+																	break;
+																case ThreadSortingMethod.threadPostTime:
+																	list.sort((a, b) => b.id.compareTo(a.id));
+																	break;
+																case ThreadSortingMethod.postsPerMinute:
+																	list.sort((a, b) => -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds));
+																	break;
+																case ThreadSortingMethod.lastReplyTime:
+																	list.sort((a, b) => b.posts.last.id.compareTo(a.posts.last.id));
+																	break;
+																case ThreadSortingMethod.imageCount:
+																	list.sort((a, b) => b.imageCount.compareTo(a.imageCount));
+																	break;
+																// Some methods only used for saved posts
+																case ThreadSortingMethod.savedTime:
+																case ThreadSortingMethod.lastPostTime:
+																case ThreadSortingMethod.lastReplyByYouTime:
+																case ThreadSortingMethod.unsorted:
+																	break;
+															}
+															Future.delayed(const Duration(milliseconds: 100), () {
+																if (_loadCompleter?.isCompleted == false) {
+																	_loadCompleter?.complete();
+																}
+															});
+															return reverseSorting ? list.reversed.toList() : list;
+														}),
+														id: '/${board!.name}/ $sortingMethod $reverseSorting',
+														itemBuilder: (context, thread) => itemBuilder(context, thread),
+														filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
+														filterHint: 'Search in board',
+														filterAlternative: widget.onWantArchiveSearch == null ? null : FilterAlternative(
+															name: '/${board?.name}/ archives',
+															handler: (s) {
+																widget.onWantArchiveSearch!(imageboard!.key, board!.name, s);
+															}
+														)
+													),
+													RepaintBoundary(
+														child: StreamBuilder(
+															stream: _listController.slowScrollUpdates,
+															builder: (context, _) {
+																final page = _listController.firstVisibleItem?.currentPage;
+																scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+																return (page == null || page == 0 || _listController.firstVisibleIndex == 0 || ((_listController.scrollController?.position.pixels ?? 1) < 0)) ? Container() : SafeArea(
+																	child: Align(
+																		alignment: Alignment.bottomRight,
+																		child: Row(
+																			mainAxisSize: MainAxisSize.min,
+																			children: [
+																				GestureDetector(
+																					onTap: scrollToTop,
+																					child: Container(
+																						decoration: BoxDecoration(
+																							color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
+																							borderRadius: const BorderRadius.all(Radius.circular(8))
+																						),
+																						padding: const EdgeInsets.all(8),
+																						margin: const EdgeInsets.only(bottom: 16, right: 16),
+																						child: Row(
+																							mainAxisSize: MainAxisSize.min,
+																							children: [
+																								Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+																								SizedBox(
+																									width: 25,
+																									child: Text(
+																										page.toString(),
+																										textAlign: TextAlign.center,
+																										style: TextStyle(
+																											color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																										)
+																									)
+																								)
+																							]
+																						)
+																					)
+																				)
+																			]
+																		)
+																	)
+																);
+															}
+														)
+													)
+												]
 											)
-										]
+										)
+									),
+									RepaintBoundary(
+										child: ReplyBox(
+											key: _replyBoxKey,
+											board: board!.name,
+											initialText: widget.getInitialDraftText?.call() ?? '',
+											onTextChanged: (text) {
+												widget.onDraftTextChanged?.call(text);
+											},
+											initialSubject: widget.getInitialDraftSubject?.call() ?? '',
+											onSubjectChanged: (subject) {
+												widget.onDraftSubjectChanged?.call(subject);
+											},
+											initialOptions: widget.getInitialThreadDraftOptions?.call() ?? '',
+											onOptionsChanged: (options) {
+												widget.onThreadDraftOptionsChanged?.call(options);
+											},
+											initialFilePath: widget.getInitialThreadDraftFilePath?.call() ?? '',
+											onFilePathChanged: (filePath) {
+												widget.onThreadDraftFilePathChanged?.call(filePath);
+											},
+											onReplyPosted: (receipt) async {
+												await promptForPushNotificationsIfNeeded(context);
+												if (!mounted) return;
+												imageboard?.notifications.subscribeToThread(
+													thread: ThreadIdentifier(board!.name, receipt.id),
+													lastSeenId: receipt.id,
+													localYousOnly: false,
+													pushYousOnly: false,
+													push: true,
+													youIds: [receipt.id]
+												);
+												_listController.update();
+												_lastSelectedThread = ThreadIdentifier(board!.name, receipt.id);
+												widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
+											},
+											onVisibilityChanged: () => setState(() {}),
+										)
 									)
-								)
-							),
-							RepaintBoundary(
-								child: ReplyBox(
-									key: _replyBoxKey,
-									board: board!.name,
-									initialText: widget.getInitialDraftText?.call() ?? '',
-									onTextChanged: (text) {
-										widget.onDraftTextChanged?.call(text);
-									},
-									initialSubject: widget.getInitialDraftSubject?.call() ?? '',
-									onSubjectChanged: (subject) {
-										widget.onDraftSubjectChanged?.call(subject);
-									},
-									initialOptions: widget.getInitialThreadDraftOptions?.call() ?? '',
-									onOptionsChanged: (options) {
-										widget.onThreadDraftOptionsChanged?.call(options);
-									},
-									initialFilePath: widget.getInitialThreadDraftFilePath?.call() ?? '',
-									onFilePathChanged: (filePath) {
-										widget.onThreadDraftFilePathChanged?.call(filePath);
-									},
-									onReplyPosted: (receipt) async {
-										await promptForPushNotificationsIfNeeded(context);
-										if (!mounted) return;
-										imageboard?.notifications.subscribeToThread(
-											thread: ThreadIdentifier(board!.name, receipt.id),
-											lastSeenId: receipt.id,
-											localYousOnly: false, 
-											pushYousOnly: false,
-											push: true,
-											youIds: [receipt.id]
-										);
-										_listController.update();
-										widget.onThreadSelected?.call(ThreadIdentifier(board!.name, receipt.id));
-									},
-									onVisibilityChanged: () => setState(() {}),
-								)
+								]
 							)
-						]
+						)
 					)
 				)
 			)
