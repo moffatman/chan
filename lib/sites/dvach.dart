@@ -6,6 +6,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/sites/lainchan.dart';
 import 'package:dio/dio.dart';
 import 'package:html/parser.dart';
 
@@ -312,14 +313,7 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	BoardThreadOrPostIdentifier? decodeUrl(String url) {
-		final pattern = RegExp(r'https?:\/\/' + baseUrl.replaceAll('.', r'\.') + r'\/([^\/]+)\/res\/((\d+)\.html(#q(\d+))?)?');
-		final match = pattern.firstMatch(url);
-		if (match != null) {
-			return BoardThreadOrPostIdentifier(match.group(1)!, int.tryParse(match.group(3) ?? ''), int.tryParse(match.group(5) ?? ''));
-		}
-		return null;
-	}
+	BoardThreadOrPostIdentifier? decodeUrl(String url) => SiteLainchan.decodeGenericUrl(baseUrl, url);
 
 	@override
 	Uri getPostReportUrl(String board, int id) {

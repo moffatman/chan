@@ -181,4 +181,9 @@ class BoardThreadOrPostIdentifier {
 	@override
 	String toString() => '/$board/$threadId/$postId';
 	ThreadIdentifier? get threadIdentifier => threadId == null ? null : ThreadIdentifier(board, threadId!);
+
+	@override
+	bool operator == (Object other) => (other is BoardThreadOrPostIdentifier) && (other.board == board) && (other.threadId == threadId) && (other.postId == postId);
+	@override
+	int get hashCode => Object.hash(board, threadId, postId);
 }

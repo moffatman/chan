@@ -512,16 +512,18 @@ class SiteLainchan extends ImageboardSite {
 	String get siteType => 'lainchan';
 	@override
 	String get siteData => baseUrl;
-	
-	@override
-	BoardThreadOrPostIdentifier? decodeUrl(String url) {
-		final pattern = RegExp(r'https?:\/\/' + baseUrl.replaceAll('.', r'\.') + r'\/([^\/]+)\/(res\/(\d+)\.html(#q(\d+))?)?');
+
+	static BoardThreadOrPostIdentifier? decodeGenericUrl(String baseUrl, String url) {
+		final pattern = RegExp(r'https?:\/\/' + baseUrl.replaceAll('.', r'\.') + r'\/([^\/]+)\/((res\/(\d+)\.html(#q(\d+))?.*)|(index\.html))?$');
 		final match = pattern.firstMatch(url);
 		if (match != null) {
-			return BoardThreadOrPostIdentifier(match.group(1)!, int.tryParse(match.group(3) ?? ''), int.tryParse(match.group(5) ?? ''));
+			return BoardThreadOrPostIdentifier(match.group(1)!, int.tryParse(match.group(4) ?? ''), int.tryParse(match.group(6) ?? ''));
 		}
 		return null;
 	}
+	
+	@override
+	BoardThreadOrPostIdentifier? decodeUrl(String url) => decodeGenericUrl(baseUrl, url);
 
 	@override
 	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async {
