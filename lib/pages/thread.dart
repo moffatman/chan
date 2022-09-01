@@ -840,9 +840,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 						)
 					),
 					child: Padding(
-						padding: const EdgeInsets.only(top: 10, bottom: 50),
-						child: FittedBox(
-							fit: BoxFit.contain,
+						padding: const EdgeInsets.only(bottom: 50),
+						child: SingleChildScrollView(
+							reverse: true,
+							physics: const BouncingScrollPhysics(),
 							child: Column(
 								crossAxisAlignment: CrossAxisAlignment.end,
 								mainAxisSize: MainAxisSize.min,
