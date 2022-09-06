@@ -261,7 +261,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	}
 
 	Future<Captcha4ChanCustomChallenge> _requestChallenge() async {
-		final challengeResponse = await widget.site.client.get(widget.request.challengeUrl.toString());
+		final challengeResponse = await widget.site.client.get(widget.request.challengeUrl.replace(
+			queryParameters: {}
+		).toString(), queryParameters: widget.request.challengeUrl.queryParameters);
 		if (challengeResponse.statusCode != 200) {
 			throw Captcha4ChanCustomException('Got status code ${challengeResponse.statusCode}');
 		}

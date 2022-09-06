@@ -1,4 +1,5 @@
 // ignore_for_file: file_names
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:async/async.dart';
@@ -466,7 +467,6 @@ class Site4Chan extends ImageboardSite {
 		}
 		return Chan4CustomCaptchaRequest(
 			challengeUrl: Uri.https(sysUrl, '/captcha', {
-				'framed': '',
 				'board': board,
 				if (threadId != null) 'thread_id': threadId.toString()
 			})
@@ -487,7 +487,7 @@ class Site4Chan extends ImageboardSite {
 		String? overrideFilename,
 		ImageboardBoardFlag? flag
 	}) async {
-		final password = List.generate(64, (i) => random.nextInt(16).toRadixString(16)).join();
+		final password = base64Url.encode(List.generate(66, (i) => random.nextInt(256)));
 		final response = await client.post(
 			Uri.https(sysUrl, '/$board/post').toString(),
 			data: FormData.fromMap({
@@ -508,7 +508,10 @@ class Site4Chan extends ImageboardSite {
 				if (flag != null) 'flag': flag.code
 			}),
 			options: Options(
-				responseType: ResponseType.plain
+				responseType: ResponseType.plain,
+				headers: {
+					'referer': getWebUrl(board, threadId)
+				}
 			)
 		);
 		final document = parse(response.data);
@@ -690,8 +693,12 @@ class Site4Chan extends ImageboardSite {
 
   @override
   Future<void> clearLoginCookies() async {
+		final toSave = (await Persistence.cookies.loadForRequest(Uri.https(sysUrl, '/'))).where((cookie) {
+			return cookie.name == 'cf_clearance';
+		}).toList();
 		await Persistence.cookies.delete(Uri.https(sysUrl, '/'), true);
 		await Persistence.cookies.delete(Uri.https(sysUrl, '/'), true);
+		await Persistence.cookies.saveFromResponse(Uri.https(sysUrl, '/'), toSave);
 		_passEnabled = false;
   }
 

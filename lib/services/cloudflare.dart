@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' as io;
 
 import 'package:chan/services/imageboard.dart';
@@ -34,7 +35,11 @@ class CloudflareInterceptor extends Interceptor {
 			)
 		);
 		final initialUrlRequest = URLRequest(
-			url: desiredUrl
+			url: desiredUrl,
+			headers: {
+				'Cookie': (await Persistence.cookies.loadForRequest(desiredUrl)).join('; ')
+			},
+			iosHttpShouldHandleCookies: false
 		);
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<String?> callback) => (controller, uri) async {
 			final title = await controller.getTitle() ?? '';
@@ -51,8 +56,15 @@ class CloudflareInterceptor extends Interceptor {
 					newCookie.secure = cookie.isSecure ?? false;
 					return newCookie;
 				}).toList());
-				// ignore: use_build_context_synchronously
-				callback(await controller.getHtml());
+				final html = await controller.getHtml() ?? '';
+				final jsonAsHtmlPattern = RegExp(r'<html><head><\/head><body><pre style="word-wrap: break-word; white-space: pre-wrap;">(.*)<\/pre><\/body><\/html>');
+				final jsonAsHtmlMatch = jsonAsHtmlPattern.firstMatch(html);
+				if (jsonAsHtmlMatch != null) {
+					callback(jsonAsHtmlMatch.group(1)!);
+				}
+				else {
+					callback(html);
+				}
 			}
 		};
 		final headlessCompleter = Completer<String?>();
@@ -113,8 +125,17 @@ class CloudflareInterceptor extends Interceptor {
 		if (err.type == DioErrorType.response && err.response != null && _responseMatches(err.response!)) {
 			final response2 = await _useWebview(err.requestOptions.uri);
 			if (response2 != null) {
+				dynamic data = response2;
+				if (response2.startsWith('{')) {
+					try {
+						data = jsonDecode(data);
+					}
+					on FormatException {
+						// ignore
+					}
+				}
 				handler.resolve(Response(
-					data: response2,
+					data: data,
 					statusCode: 200,
 					requestOptions: err.requestOptions
 				));

@@ -24,7 +24,7 @@ import 'package:flutter/widgets.dart';
 import '../models/thread.dart';
 
 import 'package:dio/dio.dart';
-const userAgent = 'Mdozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/605.1.15 (KHTML, like Gecko)';
+const userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6.1 Mobile/15E148 Safari/604.1';
 
 class PostNotFoundException implements Exception {
 	String board;
