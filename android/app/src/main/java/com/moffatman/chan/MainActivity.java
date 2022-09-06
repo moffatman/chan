@@ -47,9 +47,11 @@ public class MainActivity extends FlutterFragmentActivity {
                 return intent;
             }
         }, uri -> {
-            getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            if (folderResult != null) {
-                folderResult.success(uri.toString());
+            if (uri != null) {
+                getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                if (folderResult != null) {
+                    folderResult.success(uri.toString());
+                }
             }
         });
         super.configureFlutterEngine(flutterEngine);

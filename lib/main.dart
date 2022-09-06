@@ -670,6 +670,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_initialConsume = true;
 		if (!Persistence.settings.promptedAboutCrashlytics) {
 			Future.delayed(const Duration(milliseconds: 300), () async{
+				if (!mounted) return;
 				final choice = await showCupertinoDialog<bool>(
 					context: context,
 					builder: (context) => CupertinoAlertDialog(
