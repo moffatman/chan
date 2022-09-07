@@ -190,7 +190,7 @@ class Persistence extends ChangeNotifier {
 	Future<void> cleanupThreads(Duration olderThan) async {
 		final deadline = DateTime.now().subtract(olderThan);
 		final toDelete = threadStateBox.keys.where((key) {
-			return (threadStateBox.get(key)?.youIds.isNotEmpty ?? false) && ((threadStateBox.get(key)?.lastOpenedTime.compareTo(deadline) ?? 0) < 0);
+			return (threadStateBox.get(key)?.youIds.isEmpty ?? false) && (threadStateBox.get(key)?.lastOpenedTime.isBefore(deadline) ?? false);
 		});
 		if (toDelete.isNotEmpty) {
 			print('Deleting ${toDelete.length} threads');
