@@ -746,6 +746,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
 					builder: (context) => OverscrollModalPage(
 						child: CaptchaNoJS(
+							site: site,
 							request: captchaRequest,
 							onCaptchaSolved: (solution) => Navigator.of(context).pop(solution)
 						)
@@ -931,7 +932,54 @@ class ReplyBoxState extends State<ReplyBox> {
 			setState(() {
 				loading = false;
 			});
-			alertError(context, e.toStringDio());
+			final bannedCaptchaRequest = site.getBannedCaptchaRequest();
+			if (e is BannedException && bannedCaptchaRequest != null) {
+				await showCupertinoDialog(
+					context: context,
+					builder: (context) {
+						return CupertinoAlertDialog(
+							title: const Text('Error'),
+							content: Text(e.toString()),
+							actions: [
+								CupertinoDialogAction(
+									child: const Text('See reason'),
+									onPressed: () async {
+										if (bannedCaptchaRequest is RecaptchaRequest) {
+											final solution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
+												builder: (context) => OverscrollModalPage(
+													child: CaptchaNoJS(
+														site: site,
+														request: bannedCaptchaRequest,
+														onCaptchaSolved: (solution) => Navigator.of(context).pop(solution)
+													)
+												),
+												showAnimations: context.read<EffectiveSettings>().showAnimations
+											));
+											if (solution != null) {
+												final reason = await site.getBannedReason(solution);
+												if (!mounted) return;
+												alertError(context, reason);
+											}
+										}
+										else {
+											alertError(context, 'Unexpected captcha request type: ${bannedCaptchaRequest.runtimeType}');
+										}
+									}
+								),
+								CupertinoDialogAction(
+									child: const Text('OK'),
+									onPressed: () {
+										Navigator.of(context).pop();
+									}
+								)
+							]
+						);
+					}
+				);
+			}
+			else {
+				alertError(context, e.toStringDio());
+			}
 		}
 		_captchaSolution = null;
 	}

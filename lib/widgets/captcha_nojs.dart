@@ -7,14 +7,15 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:html/dom.dart' show Document;
-import 'package:provider/provider.dart';
 import 'package:html/parser.dart' show parse;
 
 class CaptchaNoJS extends StatefulWidget {
+	final ImageboardSite site;
 	final RecaptchaRequest request;
 	final ValueChanged<RecaptchaSolution> onCaptchaSolved;
 
 	const CaptchaNoJS({
+		required this.site,
 		required this.request,
 		required this.onCaptchaSolved,
 		Key? key
@@ -149,7 +150,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 	}
 
 	Future<CaptchaNoJSChallenge> _requestChallenge() async {
-		final challengeResponse = await context.read<ImageboardSite>().client.get(
+		final challengeResponse = await widget.site.client.get(
 			Uri.https('www.google.com', '/recaptcha/api/fallback').toString(),
 			queryParameters: {
 				'k': widget.request.key
@@ -196,7 +197,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			errorMessage = null;
 			challenge = null;
 		});
-		final submissionResponse = await context.read<ImageboardSite>().client.post(
+		final submissionResponse = await widget.site.client.post(
 			Uri.https('www.google.com', '/recaptcha/api/fallback').toString(),
 			queryParameters: {
 				'k': widget.request.key

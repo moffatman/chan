@@ -534,6 +534,9 @@ class Site4Chan extends ImageboardSite {
 		else {
 			final errSpan = document.querySelector('#errmsg');
 			if (errSpan != null) {
+				if (errSpan.text.contains('banned')) {
+					throw BannedException(errSpan.text);
+				}
 				throw PostFailedException(errSpan.text);
 			}
 			else {
@@ -541,6 +544,25 @@ class Site4Chan extends ImageboardSite {
 				throw PostFailedException('Unknown error');
 			}
 		}
+	}
+
+	Uri get _bannedUrl => Uri.https('www.4chan.org', '/banned');
+
+	@override
+	CaptchaRequest? getBannedCaptchaRequest() => RecaptchaRequest(
+		key: captchaKey,
+		sourceUrl: _bannedUrl.toString()
+	);
+
+	@override
+	Future<String> getBannedReason(CaptchaSolution captchaSolution) async {
+		final response = await client.postUri(_bannedUrl, data: {
+			if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
+		}, options: Options(
+			contentType: Headers.formUrlEncodedContentType
+		));
+		final document = parse(response.data);
+		return document.querySelector('.boxcontent')?.text ?? 'Unknown: The banned page doesn\'t match expectations';
 	}
 
 	@override

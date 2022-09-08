@@ -69,6 +69,13 @@ class PostFailedException implements Exception {
 	String toString() => 'Posting failed: $reason';
 }
 
+class BannedException implements Exception {
+	String reason;
+	BannedException(this.reason);
+	@override
+	String toString() => 'Posting failed: $reason';
+}
+
 class DeletionFailedException implements Exception {
 	final String reason;
 	const DeletionFailedException(this.reason);
@@ -467,6 +474,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get siteData;
 	String get defaultUsername;
 	List<ImageboardSnippet> getBoardSnippets(String board);
+	CaptchaRequest? getBannedCaptchaRequest() => null;
+	Future<String> getBannedReason(CaptchaSolution captchaSolution) async => 'Unknown';
 }
 
 ImageboardSite makeSite(dynamic data) {
