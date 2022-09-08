@@ -63,11 +63,6 @@ Future<void> clearNotifications(Notifications notifications, Watch watch) async 
 	});
 }
 
-Future<void> handleBackgroundMessage(RemoteMessage message) async {
-	print('handleBackgroundMessage');
-	print(message.data);
-}
-
 const _notificationSettingsApiRoot = 'https://push.chance.surf';
 
 class Notifications {
@@ -143,7 +138,6 @@ class Notifications {
 					}
 				}
 			});
-			FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
 			FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
 		}
 		catch (e) {
