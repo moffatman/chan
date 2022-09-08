@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui show Image;
 
+import 'package:chan/services/cloudflare.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
@@ -79,12 +80,14 @@ class CaptchaNoJSChallenge {
 	String responseKey;
 	ui.Image image;
 	List<List<CaptchaNoJSSubimage>> subimages;
+	final bool cloudflare;
 
 	CaptchaNoJSChallenge({
 		required this.title,
 		required this.responseKey,
 		required this.image,
 		required this.subimages,
+		required this.cloudflare
 	});
 
 	String submitAnswer(Map<int, bool> checkboxes) {
@@ -113,7 +116,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 		});
 	}
 
-	Future<CaptchaNoJSChallenge> _gotChallengePage(Document document) async {
+	Future<CaptchaNoJSChallenge> _gotChallengePage(Document document, bool cloudflare) async {
 		final img = document.querySelector('img.fbc-imageselect-payload');
 		if (img == null) {
 			throw CaptchaNoJSException('Image missing from challenge');
@@ -145,7 +148,8 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			title: document.querySelector('.rc-imageselect-desc-no-canonical')!.text,
 			responseKey: document.querySelector('input[name="c"]')!.attributes['value']!,
 			image: challengeImage,
-			subimages: subimages
+			subimages: subimages,
+			cloudflare: cloudflare
 		);
 	}
 
@@ -160,6 +164,9 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 					'Referer': widget.request.sourceUrl,
 					..._headers
 				},
+				extra: {
+					if (widget.request.cloudflare) 'cloudflare': true
+				},
 				responseType: ResponseType.plain
 			)
 		);
@@ -167,7 +174,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			throw CaptchaNoJSException('Got status code ${challengeResponse.statusCode}');
 		}
 		final document = parse(challengeResponse.data);
-		return _gotChallengePage(document);
+		return _gotChallengePage(document, challengeResponse.cloudflare);
 	}
 
 	void _tryRequestChallenge() async {
@@ -208,6 +215,9 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 				headers: {
 					'Referer': 'https://www.google.com/recaptcha/api/fallback?k=${widget.request.key}',
 					..._headers
+				},
+				extra: {
+					if (widget.request.cloudflare) 'cloudflare': true
 				}
 			)
 		);
@@ -217,10 +227,13 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 		final document = parse(submissionResponse.data);
 		final tokenElement = document.querySelector('.fbc-verification-token textarea');
 		if (tokenElement != null) {
-			widget.onCaptchaSolved(RecaptchaSolution(response: tokenElement.text));
+			widget.onCaptchaSolved(RecaptchaSolution(
+				response: tokenElement.text,
+				cloudflare: challenge!.cloudflare
+			));
 		}
 		else {
-			challenge = await _gotChallengePage(document);
+			challenge = await _gotChallengePage(document, submissionResponse.cloudflare);
 			setState(() {});
 		}
 	}

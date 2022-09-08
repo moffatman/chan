@@ -932,7 +932,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			setState(() {
 				loading = false;
 			});
-			final bannedCaptchaRequest = site.getBannedCaptchaRequest();
+			final bannedCaptchaRequest = site.getBannedCaptchaRequest(_captchaSolution?.cloudflare ?? false);
 			if (e is BannedException && bannedCaptchaRequest != null) {
 				await showCupertinoDialog(
 					context: context,

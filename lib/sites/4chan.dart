@@ -514,7 +514,7 @@ class Site4Chan extends ImageboardSite {
 					'referer': getWebUrl(board, threadId)
 				},
 				extra: {
-					if (captchaSolution is Chan4CustomCaptchaSolution && captchaSolution.cloudflare) 'cloudflare': true
+					if (captchaSolution.cloudflare) 'cloudflare': true
 				}
 			)
 		);
@@ -553,9 +553,10 @@ class Site4Chan extends ImageboardSite {
 	Uri get _bannedUrl => Uri.https('www.4chan.org', '/banned');
 
 	@override
-	CaptchaRequest? getBannedCaptchaRequest() => RecaptchaRequest(
+	CaptchaRequest? getBannedCaptchaRequest(bool cloudflare) => RecaptchaRequest(
 		key: captchaKey,
-		sourceUrl: _bannedUrl.toString()
+		sourceUrl: _bannedUrl.toString(),
+		cloudflare: cloudflare
 	);
 
 	@override
@@ -563,7 +564,10 @@ class Site4Chan extends ImageboardSite {
 		final response = await client.postUri(_bannedUrl, data: {
 			if (captchaSolution is RecaptchaSolution) 'g-recaptcha-response': captchaSolution.response
 		}, options: Options(
-			contentType: Headers.formUrlEncodedContentType
+			contentType: Headers.formUrlEncodedContentType,
+			extra: {
+				if (captchaSolution.cloudflare) 'cloudflare': true
+			}
 		));
 		final document = parse(response.data);
 		return document.querySelector('.boxcontent')?.text ?? 'Unknown: The banned page doesn\'t match expectations';

@@ -121,9 +121,11 @@ class NoCaptchaRequest extends CaptchaRequest {
 class RecaptchaRequest extends CaptchaRequest {
 	final String key;
 	final String sourceUrl;
+	final bool cloudflare;
 	RecaptchaRequest({
 		required this.key,
-		required this.sourceUrl
+		required this.sourceUrl,
+		required this.cloudflare
 	});
 	@override
 	String toString() => 'RecaptchaRequest(sourceUrl: $sourceUrl, key: $key)';
@@ -156,6 +158,7 @@ class DvachCaptchaRequest extends CaptchaRequest {
 
 abstract class CaptchaSolution {
 	DateTime? get expiresAt;
+	bool get cloudflare => false;
 }
 
 class NoCaptchaSolution extends CaptchaSolution {
@@ -165,8 +168,11 @@ class NoCaptchaSolution extends CaptchaSolution {
 
 class RecaptchaSolution extends CaptchaSolution {
 	final String response;
+	@override
+	final bool cloudflare;
 	RecaptchaSolution({
-		required this.response
+		required this.response,
+		required this.cloudflare
 	});
 	@override
 	DateTime? get expiresAt => null;
@@ -180,6 +186,7 @@ class Chan4CustomCaptchaSolution extends CaptchaSolution {
 	@override
 	final DateTime expiresAt;
 	final ui.Image? alignedImage;
+	@override
 	final bool cloudflare;
 	Chan4CustomCaptchaSolution({
 		required this.challenge,
@@ -476,7 +483,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get siteData;
 	String get defaultUsername;
 	List<ImageboardSnippet> getBoardSnippets(String board);
-	CaptchaRequest? getBannedCaptchaRequest() => null;
+	CaptchaRequest? getBannedCaptchaRequest(bool cloudflare) => null;
 	Future<String> getBannedReason(CaptchaSolution captchaSolution) async => 'Unknown';
 }
 
