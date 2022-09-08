@@ -5,6 +5,7 @@ import 'dart:ui' as ui show Image, PictureRecorder;
 
 import 'package:async/async.dart';
 import 'package:chan/services/captcha_4chan.dart';
+import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -152,12 +153,14 @@ class Captcha4ChanCustomChallenge {
 	DateTime expiresAt;
 	ui.Image? foregroundImage;
 	ui.Image? backgroundImage;
+	bool cloudflare;
 
 	Captcha4ChanCustomChallenge({
 		required this.challenge,
 		required this.expiresAt,
 		required this.foregroundImage,
-		required this.backgroundImage
+		required this.backgroundImage,
+		required this.cloudflare
 	});
 
 	void dispose() {
@@ -261,9 +264,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	}
 
 	Future<Captcha4ChanCustomChallenge> _requestChallenge() async {
-		final challengeResponse = await widget.site.client.get(widget.request.challengeUrl.replace(
-			queryParameters: {}
-		).toString(), queryParameters: widget.request.challengeUrl.queryParameters);
+		final challengeResponse = await widget.site.client.getUri(widget.request.challengeUrl);
 		if (challengeResponse.statusCode != 200) {
 			throw Captcha4ChanCustomException('Got status code ${challengeResponse.statusCode}');
 		}
@@ -276,7 +277,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			data = jsonDecode(match.group(1)!)['twister'];
 		}
 		if (data['cd'] != null) {
-			tryAgainAt = DateTime.now().add(Duration(seconds: data['cd']));
+			tryAgainAt = DateTime.now().add(Duration(seconds: data['cd'].toInt()));
 		}
 		if (data['error'] != null) {
 			throw Captcha4ChanCustomException(data['error']);
@@ -303,9 +304,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		final backgroundImage = await backgroundImageCompleter?.future;
 		return Captcha4ChanCustomChallenge(
 			challenge: data['challenge'],
-			expiresAt: DateTime.now().add(Duration(seconds: data['ttl'])),
+			expiresAt: DateTime.now().add(Duration(seconds: data['ttl'].toInt())),
 			foregroundImage: foregroundImage,
-			backgroundImage: backgroundImage
+			backgroundImage: backgroundImage,
+			cloudflare: challengeResponse.cloudflare
 		);
 	}
 
@@ -325,7 +327,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 						challenge: 'noop',
 						response: '',
 						expiresAt: challenge!.expiresAt,
-						alignedImage: null
+						alignedImage: null,
+						cloudflare: challenge!.cloudflare
 					));
 					return;
 				}
@@ -497,7 +500,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			challenge: challenge!.challenge,
 			response: response,
 			expiresAt: challenge!.expiresAt,
-			alignedImage: await _screenshotImage()
+			alignedImage: await _screenshotImage(),
+			cloudflare: challenge!.cloudflare
 		));
 	}
 

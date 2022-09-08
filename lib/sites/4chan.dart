@@ -467,6 +467,7 @@ class Site4Chan extends ImageboardSite {
 		}
 		return Chan4CustomCaptchaRequest(
 			challengeUrl: Uri.https(sysUrl, '/captcha', {
+				'framed': '1',
 				'board': board,
 				if (threadId != null) 'thread_id': threadId.toString()
 			})
@@ -511,6 +512,9 @@ class Site4Chan extends ImageboardSite {
 				responseType: ResponseType.plain,
 				headers: {
 					'referer': getWebUrl(board, threadId)
+				},
+				extra: {
+					if (captchaSolution is Chan4CustomCaptchaSolution && captchaSolution.cloudflare) 'cloudflare': true
 				}
 			)
 		);

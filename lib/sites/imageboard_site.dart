@@ -180,11 +180,13 @@ class Chan4CustomCaptchaSolution extends CaptchaSolution {
 	@override
 	final DateTime expiresAt;
 	final ui.Image? alignedImage;
+	final bool cloudflare;
 	Chan4CustomCaptchaSolution({
 		required this.challenge,
 		required this.response,
 		required this.expiresAt,
-		required this.alignedImage
+		required this.alignedImage,
+		required this.cloudflare
 	});
 	@override
 	String toString() => 'Chan4CustomCaptchaSolution(challenge: $challenge, response: $response)';
