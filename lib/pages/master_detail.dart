@@ -215,8 +215,15 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		_onNewValue(panes[index]);
 	}
 
-	dynamic getValue(int index) {
-		return panes[index].currentValue.value;
+	T? getValue<T>(int index) {
+		dynamic value = panes[index].currentValue.value;
+		if (value is T) {
+			return value;
+		}
+		else if (value != null) {
+			print('Tried to getValue<$T>($index) but found ${value.runtimeType}');
+		}
+		return null;
 	}
 
 	void _popMasterValueRoutes() {

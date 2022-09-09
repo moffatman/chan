@@ -605,7 +605,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				for (int i = 0; i < 200 && _savedMasterDetailKey.currentState == null; i++) {
 					await Future.delayed(const Duration(milliseconds: 50));
 				}
-				if (_savedMasterDetailKey.currentState?.getValue(0) == watch && notification.postId != null) {
+				if (_savedMasterDetailKey.currentState?.getValue<ImageboardScoped<ThreadWatch>>(0)?.item == watch && notification.postId != null) {
 					_scrollExistingTab(_savedFakeTab, notification.postId!);
 				}
 				else {
