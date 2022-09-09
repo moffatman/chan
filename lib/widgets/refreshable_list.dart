@@ -91,6 +91,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 	bool _overscrollEndingNow = false;
 	late final AnimationController _footerShakeAnimation;
 	List<T> _listAfterFiltering = [];
+	DateTime _lastPointerUpTime = DateTime(2000);
 
 	@override
 	void initState() {
@@ -327,7 +328,8 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 						return false;
 					}
 					final bool isScrollEnd = (notification is ScrollEndNotification) || (notification is ScrollUpdateNotification && notification.dragDetails == null);
-					if (widget.controller != null && isScrollEnd) {
+					final bool plausible = DateTime.now().difference(_lastPointerUpTime) < const Duration(milliseconds: 100);
+					if (widget.controller != null && isScrollEnd && plausible) {
 						if (!_overscrollEndingNow) {
 							double overscroll = widget.controller!.scrollController!.position.pixels - widget.controller!.scrollController!.position.maxScrollExtent;
 							if (overscroll > _overscrollTriggerThreshold && !widget.disableUpdates) {
@@ -348,15 +350,18 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 						_pointerDownCount++;
 					},
 					onPointerUp: (e) {
+						_lastPointerUpTime = DateTime.now();
 						_pointerDownCount--;
 					},
 					onPointerCancel: (e) {
+						_lastPointerUpTime = DateTime.now();
 						_pointerDownCount--;
 					},
 					onPointerPanZoomStart: (e) {
 						_pointerDownCount++;
 					},
 					onPointerPanZoomEnd: (e) {
+						_lastPointerUpTime = DateTime.now();
 						_pointerDownCount--;
 					},
 					child: GestureDetector(
