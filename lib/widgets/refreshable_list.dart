@@ -323,6 +323,9 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			return NotificationListener<ScrollNotification>(
 				key: ValueKey(widget.id),
 				onNotification: (notification) {
+					if (updatingNow) {
+						return false;
+					}
 					final bool isScrollEnd = (notification is ScrollEndNotification) || (notification is ScrollUpdateNotification && notification.dragDetails == null);
 					if (widget.controller != null && isScrollEnd) {
 						if (!_overscrollEndingNow) {
