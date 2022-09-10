@@ -99,6 +99,15 @@ import Foundation
           result(FlutterError.init(code: "BAD_ARGS", message: "Bad Arguments", details: nil))
         }
       }
+      else if (call.method == "updateBadge") {
+        let nc = UNUserNotificationCenter.current()
+        nc.getDeliveredNotifications { (list: [UNNotification]) in
+          DispatchQueue.main.async {
+            application.applicationIconBadgeNumber = list.count
+          }
+        }
+        result(nil)
+      }
       else {
         result(FlutterMethodNotImplemented)
       }

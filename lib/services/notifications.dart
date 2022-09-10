@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:chan/main.dart';
 import 'package:chan/models/thread.dart';
@@ -61,6 +62,19 @@ Future<void> clearNotifications(Notifications notifications, Watch watch) async 
 			'threadId': watch.threadId.toString()
 		}
 	});
+}
+
+Future<void> updateNotificationsBadgeCount() async {
+	if (!Platform.isIOS) {
+		return;
+	}
+	try {
+		await _platform.invokeMethod('updateBadge');
+	}
+	catch (e, st) {
+		print(e);
+		print(st);
+	}
 }
 
 const _notificationSettingsApiRoot = 'https://push.chance.surf';
@@ -311,8 +325,9 @@ class Notifications {
 
 	Future<void> updateLastKnownId(Watch watch, int lastKnownId, {bool foreground = false}) async {
 		if (foreground && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-			clearNotifications(this, watch);
+			await clearNotifications(this, watch);
 			clearOverlayNotifications(this, watch);
+			await updateNotificationsBadgeCount();
 		}
 		final couldUpdate = watch.lastSeenId != lastKnownId;
 		watch.lastSeenId = lastKnownId;
