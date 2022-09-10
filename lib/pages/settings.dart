@@ -2187,25 +2187,35 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 			child: Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					if (folderSizes == null) const Text('Calculating...')
-					else if (folderSizes?.isEmpty ?? true) const Text('No cached media'),
-					Table(
-						columnWidths: const {
-							0: FlexColumnWidth(),
-							1: IntrinsicColumnWidth()
-						},
-						children: (folderSizes ?? {}).entries.map((entry) {
-							double megabytes = entry.value / 1000000;
-							return TableRow(
-								children: [
-									Padding(
-										padding: const EdgeInsets.only(bottom: 8),
-										child: Text(entry.key, textAlign: TextAlign.left)
-									),
-									Text('${megabytes.toStringAsFixed(1)} MB', textAlign: TextAlign.right)
-								]
-							);
-						}).toList()
+					SizedBox(
+						height: 160,
+						child: SingleChildScrollView(
+							child: Column(
+								mainAxisSize: MainAxisSize.min,
+									children: [
+										if (folderSizes == null) const Text('Calculating...')
+										else if (folderSizes?.isEmpty ?? true) const Text('No cached media'),
+										Table(
+											columnWidths: const {
+												0: FlexColumnWidth(),
+												1: IntrinsicColumnWidth()
+											},
+											children: (folderSizes ?? {}).entries.map((entry) {
+												double megabytes = entry.value / 1000000;
+												return TableRow(
+													children: [
+														Padding(
+															padding: const EdgeInsets.only(bottom: 8),
+															child: Text(entry.key, textAlign: TextAlign.left)
+														),
+														Text('${megabytes.toStringAsFixed(1)} MB', textAlign: TextAlign.right)
+													]
+												);
+											}).toList()
+										)
+									]
+							)
+						)
 					),
 					const SizedBox(height: 8),
 					Row(
