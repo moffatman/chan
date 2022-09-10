@@ -2457,15 +2457,15 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 											children: const {
 												_NullSafeOptional.null_: Padding(
 													padding: EdgeInsets.all(8),
-													child: Text('All posts')
+													child: Text('All posts', textAlign: TextAlign.center)
 												),
 												_NullSafeOptional.false_: Padding(
 													padding: EdgeInsets.all(8),
-													child: Text('Without images')
+													child: Text('Without images', textAlign: TextAlign.center)
 												),
 												_NullSafeOptional.true_: Padding(
 													padding: EdgeInsets.all(8),
-													child: Text('With images')
+													child: Text('With images', textAlign: TextAlign.center)
 												)
 											}
 										)
@@ -2579,15 +2579,15 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 												),
 												FilterResultType.highlight: Padding(
 													padding: EdgeInsets.all(8),
-													child: Text('Highlight')
+													child: Text('Highlight', textAlign: TextAlign.center)
 												),
 												FilterResultType.pinToTop: Padding(
 													padding: EdgeInsets.all(8),
-													child: Text('Pin-to-top')
+													child: Text('Pin-to-top', textAlign: TextAlign.center)
 												),
 												FilterResultType.autoSave: Padding(
 													padding: EdgeInsets.all(8),
-													child: Text('Auto-save')
+													child: Text('Auto-save', textAlign: TextAlign.center)
 												)
 											}
 										)
