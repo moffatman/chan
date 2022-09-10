@@ -13,6 +13,7 @@ import 'package:chan/services/share.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/rotating_image_provider.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -433,6 +434,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	void _onLongPressStart() {
+		mediumHapticFeedback();
 		_playingBeforeLongPress = videoPlayerController!.value.isPlaying;
 		_millisecondsBeforeLongPress = videoPlayerController!.value.position.inMilliseconds;
 		_currentlyWithinLongPress = true;
