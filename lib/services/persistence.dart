@@ -13,6 +13,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/widgets/refreshable_list.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/foundation.dart';
@@ -22,6 +23,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
 import 'package:chan/util.dart';
+import 'package:chan/main.dart' as main;
 part 'persistence.g.dart';
 
 const _knownCacheDirs = {
@@ -79,7 +81,14 @@ class Persistence extends ChangeNotifier {
 	static late final SavedSettings settings;
 	static late final Directory temporaryDirectory;
 	static late final Directory documentsDirectory;
-	static late final PersistCookieJar cookies;
+	static late final PersistCookieJar wifiCookies;
+	static late final PersistCookieJar cellularCookies;
+	static PersistCookieJar get currentCookies {
+		if (main.settings.connectivity == ConnectivityResult.mobile) {
+			return cellularCookies;
+		}
+		return wifiCookies;
+	}
 	// Do not persist
 	static bool enableHistory = true;
 	static final browserHistoryStatusListenable = EasyListenable();
@@ -121,8 +130,11 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(PersistentBrowserStateAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
-		cookies = PersistCookieJar(
+		wifiCookies = PersistCookieJar(
 			storage: FileStorage(temporaryDirectory.path)
+		);
+		cellularCookies = PersistCookieJar(
+			storage: FileStorage('${temporaryDirectory.path}/cellular')
 		);
 		await Directory('${documentsDirectory.path}/$_savedAttachmentsDir').create(recursive: true);
 		await Directory('${documentsDirectory.path}/$_savedAttachmentThumbnailsDir').create(recursive: true);

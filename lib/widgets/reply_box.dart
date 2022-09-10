@@ -735,7 +735,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				}
 			}
 			else {
-				await site.clearLoginCookies();
+				await site.clearLoginCookies(false);
 			}
 		}
 		try {

@@ -67,7 +67,7 @@ class CloudflareInterceptor extends Interceptor {
 			final title = await controller.getTitle() ?? '';
 			if (!_titleMatches(title)) {
 				final cookies = await CookieManager.instance().getCookies(url: uri!);
-				await Persistence.cookies.saveFromResponse(uri, cookies.map((cookie) {
+				await Persistence.currentCookies.saveFromResponse(uri, cookies.map((cookie) {
 					final newCookie = io.Cookie(cookie.name, cookie.value);
 					newCookie.domain = cookie.domain;
 					if (cookie.expiresDate != null) {

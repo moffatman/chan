@@ -7,6 +7,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:html_unescape/html_unescape_small.dart';
@@ -27,7 +28,7 @@ class SiteLainchan extends ImageboardSite {
 
 	final _unescape = HtmlUnescape();
 
-	bool _adminEnabled = false;
+	final Map<PersistCookieJar, bool> _adminEnabled = {};
 
 	SiteLainchan({
 		required this.baseUrl,
@@ -265,7 +266,7 @@ class SiteLainchan extends ImageboardSite {
 	}) async {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
 		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
-		final referer = _getWebUrl(board, threadId: threadId, mod: _adminEnabled);
+		final referer = _getWebUrl(board, threadId: threadId, mod: _adminEnabled.putIfAbsent(Persistence.currentCookies, () => false));
 		final page = await client.get(referer, options: Options(validateStatus: (x) => true));
 		final Map<String, dynamic> fields = {
 			for (final field in parse(page.data).querySelector('form[name="post"]')?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea') ?? [])
@@ -470,10 +471,18 @@ class SiteLainchan extends ImageboardSite {
   }
 
   @override
-  Future<void> clearLoginCookies() async {
-		await Persistence.cookies.delete(Uri.https(baseUrl, '/'), true);
-		await Persistence.cookies.delete(Uri.https(baseUrl, '/mod.php'), true);
-		_adminEnabled = false;
+  Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
+		final jars = fromBothWifiAndCellular ? [
+			Persistence.wifiCookies,
+			Persistence.cellularCookies
+		] : [
+			Persistence.currentCookies
+		];
+		for (final jar in jars) {
+			await jar.delete(Uri.https(baseUrl, '/'), true);
+			await jar.delete(Uri.https(baseUrl, '/mod.php'), true);
+			_adminEnabled[jar] = false;
+		}
   }
 
   @override
@@ -492,10 +501,10 @@ class SiteLainchan extends ImageboardSite {
 		);
 		final document = parse(response.data);
 		if (document.querySelector('h2') != null) {
-			await clearLoginCookies();
+			await clearLoginCookies(false);
 			throw ImageboardSiteLoginException(document.querySelector('h2')!.text);
 		}
-		_adminEnabled = true;
+		_adminEnabled[Persistence.currentCookies] = true;
   }
 
   @override

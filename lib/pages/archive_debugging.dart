@@ -116,7 +116,7 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<void> clearLoginCookies() async {
+  Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
     
   }
 

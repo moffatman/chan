@@ -9,6 +9,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -72,7 +73,7 @@ class Site4Chan extends ImageboardSite {
 	static final unescape = HtmlUnescape();
 	final Map<String, _ThreadCacheEntry> _threadCache = {};
 	final Map<String, _CatalogCache> _catalogCaches = {};
-	bool _passEnabled = false;
+	final Map<PersistCookieJar, bool> _passEnabled = {};
 	final _lastActionTime = {
 		ImageboardAction.postReply: <String, DateTime>{},
 		ImageboardAction.postReplyWithImage: <String, DateTime>{},
@@ -462,7 +463,7 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		if (_passEnabled) {
+		if (_passEnabled.putIfAbsent(Persistence.currentCookies, () => false)) {
 			return NoCaptchaRequest();
 		}
 		return Chan4CustomCaptchaRequest(
@@ -638,7 +639,7 @@ class Site4Chan extends ImageboardSite {
 				cooldownSeconds = b.threadCooldown ?? 0;
 				break;
 		}
-		if (_passEnabled) {
+		if (_passEnabled.putIfAbsent(Persistence.cellularCookies, () => false)) {
 			cooldownSeconds ~/= 2;
 		}
 		return lastActionTime?.add(Duration(seconds: cooldownSeconds));
@@ -722,14 +723,22 @@ class Site4Chan extends ImageboardSite {
   }
 
   @override
-  Future<void> clearLoginCookies() async {
-		final toSave = (await Persistence.cookies.loadForRequest(Uri.https(sysUrl, '/'))).where((cookie) {
-			return cookie.name == 'cf_clearance';
-		}).toList();
-		await Persistence.cookies.delete(Uri.https(sysUrl, '/'), true);
-		await Persistence.cookies.delete(Uri.https(sysUrl, '/'), true);
-		await Persistence.cookies.saveFromResponse(Uri.https(sysUrl, '/'), toSave);
-		_passEnabled = false;
+  Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
+		final jars = fromBothWifiAndCellular ? [
+			Persistence.wifiCookies,
+			Persistence.cellularCookies
+		] : [
+			Persistence.currentCookies
+		];
+		for (final jar in jars) {
+			final toSave = (await jar.loadForRequest(Uri.https(sysUrl, '/'))).where((cookie) {
+				return cookie.name == 'cf_clearance';
+			}).toList();
+			await jar.delete(Uri.https(sysUrl, '/'), true);
+			await jar.delete(Uri.https(sysUrl, '/'), true);
+			await jar.saveFromResponse(Uri.https(sysUrl, '/'), toSave);
+			_passEnabled[jar] = false;
+		}
   }
 
   @override
@@ -743,16 +752,16 @@ class Site4Chan extends ImageboardSite {
 		final document = parse(response.data);
 		final message = document.querySelector('h2')?.text;
 		if (message == null) {
-			_passEnabled = false;
-			await clearLoginCookies();
+			_passEnabled[Persistence.currentCookies] = false;
+			await clearLoginCookies(false);
 			throw const ImageboardSiteLoginException('Unexpected response, contact developer');
 		}
 		if (!message.contains('Success!')) {
-			_passEnabled = false;
-			await clearLoginCookies();
+			_passEnabled[Persistence.currentCookies] = false;
+			await clearLoginCookies(false);
 			throw ImageboardSiteLoginException(message);
 		}
-		_passEnabled = true;
+		_passEnabled[Persistence.currentCookies] = true;
   }
 
   @override

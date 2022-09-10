@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/cookies.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/dvach.dart';
@@ -18,7 +20,7 @@ import 'package:chan/sites/lainchan_org.dart';
 import 'package:chan/sites/soyjak.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 
 import '../models/thread.dart';
@@ -320,7 +322,10 @@ class ImageboardSnippet {
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	ImageboardSiteArchive() {
-		client.interceptors.add(CookieManager(Persistence.cookies));
+		client.interceptors.add(SeparatedCookieManager(
+			wifiCookieJar: Persistence.wifiCookies,
+			cellularCookieJar: Persistence.cellularCookies
+		));
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
 				options.headers['user-agent'] = userAgent;
@@ -340,16 +345,23 @@ abstract class ImageboardSiteArchive {
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
-	final Map<String, Map<String, String>> memoizedHeaders = {};
+	final Map<String, Map<String, String>> memoizedWifiHeaders = {};
+	final Map<String, Map<String, String>> memoizedCellularHeaders = {};
 	final List<ImageboardSiteArchive> archives;
 	ImageboardSite(this.archives) : super();
 	Future<void> ensureCookiesMemoized(Uri url) async {
-		memoizedHeaders.putIfAbsent(url.host, () => {
+		memoizedWifiHeaders.putIfAbsent(url.host, () => {
 			'user-agent': userAgent
-		})['cookie'] = (await Persistence.cookies.loadForRequest(url)).join('; ');
+		})['cookie'] = (await Persistence.wifiCookies.loadForRequest(url)).join('; ');
+		memoizedCellularHeaders.putIfAbsent(url.host, () => {
+			'user-agent': userAgent
+		})['cookie'] = (await Persistence.cellularCookies.loadForRequest(url)).join('; ');
 	}
 	Map<String, String>? getHeaders(Uri url) {
-		return memoizedHeaders[url.host];
+		if (settings.connectivity == ConnectivityResult.mobile) {
+			return memoizedCellularHeaders[url.host];
+		}
+		return memoizedWifiHeaders[url.host];
 	}
 	Uri get passIconUrl;
 	String get baseUrl;
@@ -478,7 +490,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		persistence.browserState.loginFields.clear();
 		await persistence.didUpdateBrowserState();
 	}
-	Future<void> clearLoginCookies();
+	Future<void> clearLoginCookies(bool fromBothWifiAndCellular);
 	List<ImageboardEmote> getEmotes();
 	Future<List<ImageboardBoardFlag>> getBoardFlags(String board);
 	String get siteType;

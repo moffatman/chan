@@ -2118,9 +2118,18 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 				],
 				Center(
 					child: CupertinoButton.filled(
-						child: const Text('Clear API cookies'),
+						child: const Text('Clear Wi-Fi cookies'),
 						onPressed: () {
-							Persistence.cookies.deleteAll();
+							Persistence.wifiCookies.deleteAll();
+						}
+					)
+				),
+				const SizedBox(height: 16),
+				Center(
+					child: CupertinoButton.filled(
+						child: const Text('Clear cellular cookies'),
+						onPressed: () {
+							Persistence.cellularCookies.deleteAll();
 						}
 					)
 				),
@@ -3112,7 +3121,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 										loading = true;
 									});
 									try {
-										await widget.site.clearLoginCookies();
+										await widget.site.clearLoginCookies(true);
 										await widget.site.clearSavedLoginFields();
 									}
 									catch (e) {

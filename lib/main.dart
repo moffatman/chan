@@ -117,8 +117,8 @@ class ChanApp extends StatefulWidget {
 	createState() => _ChanAppState();
 }
 
+final settings = EffectiveSettings();
 class _ChanAppState extends State<ChanApp> {
-	final settings = EffectiveSettings();
 	late Map<String, dynamic> _lastSites;
 
 	void _onImageboardRegistryUpdate() {
