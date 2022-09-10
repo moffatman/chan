@@ -1000,6 +1000,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			padding: axis == Axis.vertical ? const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8) : const EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
 			child: content,
 			onPressed: () async {
+				lightHapticFeedback();
 				if (index <= 0) {
 					if (activeBrowserTab.value == -1 * index && _tabController.index == 0) {
 						if (Persistence.tabs.length > 1) {
