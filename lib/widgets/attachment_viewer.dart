@@ -296,18 +296,29 @@ class AttachmentViewerController extends ChangeNotifier {
 			else if (attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
 				final url = await _getGoodSource();
 				_recordUrlTime(url, DateTime.now().difference(startTime));
-				if (Platform.isAndroid || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
+				bool transcode = false;
+				if (attachment.type == AttachmentType.webm) {
+					transcode = settings.webmTranscoding == WebmTranscodingSetting.always;
+				}
+				if (!transcode) {
 					final scan = await MediaScan.scan(url, headers: site.getHeaders(url) ?? {});
-					_hasAudio = scan.hasAudio;
-					if (scan.codec == 'vp9') {
-						_vp9Controllers.add(this);
-						if (_vp9Controllers.length > _maxVp9Controllers) {
-							_vp9Controllers.removeAt(0).goToThumbnail();
-						}
-					}
 					if (_isDisposed) {
 						return;
 					}
+					_hasAudio = scan.hasAudio;
+					if (scan.codec == 'vp9') {
+						if (settings.webmTranscoding == WebmTranscodingSetting.vp9) {
+							transcode = true;
+						}
+						else {
+							_vp9Controllers.add(this);
+							if (_vp9Controllers.length > _maxVp9Controllers) {
+								_vp9Controllers.removeAt(0).goToThumbnail();
+							}
+						}
+					}
+				}
+				if (!transcode) {
 					_videoPlayerController = VideoPlayerController.network(
 						url.toString(),
 						httpHeaders: site.getHeaders(url) ?? {},

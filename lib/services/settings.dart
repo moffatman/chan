@@ -317,6 +317,16 @@ enum SettingsQuickAction {
 	toggleInterfaceStyle,
 }
 
+@HiveType(typeId: 32)
+enum WebmTranscodingSetting {
+	@HiveField(0)
+	never,
+	@HiveField(1)
+	vp9,
+	@HiveField(2)
+	always
+}
+
 extension SettingsQuickActionName on SettingsQuickAction? {
 	String get name {
 		switch (this) {
@@ -512,6 +522,8 @@ class SavedSettings extends HiveObject {
 	bool promptedAboutCrashlytics;
 	@HiveField(91)
 	bool showCountryNameInCatalogHeader;
+	@HiveField(92)
+	WebmTranscodingSetting webmTranscoding;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -605,6 +617,7 @@ class SavedSettings extends HiveObject {
 		bool? useHapticFeedback,
 		bool? promptedAboutCrashlytics,
 		bool? showCountryNameInCatalogHeader,
+		WebmTranscodingSetting? webmTranscoding,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -725,7 +738,8 @@ class SavedSettings extends HiveObject {
 		settingsQuickAction = settingsQuickAction ?? SettingsQuickAction.toggleTheme,
 		useHapticFeedback = useHapticFeedback ?? true,
 		promptedAboutCrashlytics = promptedAboutCrashlytics ?? false,
-		showCountryNameInCatalogHeader = showCountryNameInCatalogHeader ?? true;
+		showCountryNameInCatalogHeader = showCountryNameInCatalogHeader ?? true,
+		webmTranscoding = webmTranscoding ?? ((Platform.isIOS || Platform.isMacOS) ? WebmTranscodingSetting.always : WebmTranscodingSetting.never);
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1455,6 +1469,13 @@ class EffectiveSettings extends ChangeNotifier {
 	set promptedAboutCrashlytics(bool setting) {
 		_settings.promptedAboutCrashlytics = setting;
 		_settings.save();
+	}
+
+	WebmTranscodingSetting get webmTranscoding => _settings.webmTranscoding;
+	set webmTranscoding(WebmTranscodingSetting setting) {
+		_settings.webmTranscoding = setting;
+		_settings.save();
+		notifyListeners();
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];

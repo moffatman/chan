@@ -489,6 +489,22 @@ class SettingsBehaviorPage extends StatelessWidget {
 					}
 				),
 				const SizedBox(height: 32),
+				if (Platform.isAndroid) ...[
+					const Text('Transcode WEBMs'),
+					const SizedBox(height: 16),
+					CupertinoSegmentedControl<WebmTranscodingSetting>(
+						children: const {
+							WebmTranscodingSetting.never: Text('Never'),
+							WebmTranscodingSetting.vp9: Text('VP9 only'),
+							WebmTranscodingSetting.always: Text('Always')
+						},
+						groupValue: settings.webmTranscoding,
+						onValueChanged: (newValue) {
+							settings.webmTranscoding = newValue;
+						}
+					),
+					const SizedBox(height: 32),
+				],
 				const Text('Hide old stickied threads'),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<bool>(
