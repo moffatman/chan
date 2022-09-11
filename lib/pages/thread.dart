@@ -327,6 +327,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 		final notifications = context.watch<Notifications>();
 		final watch = context.select<Persistence, ThreadWatch?>((_) => notifications.getThreadWatch(widget.thread));
+		final reverseIndicatorPosition = context.select<EffectiveSettings, bool>((s) => s.showListPositionIndicatorsOnLeft);
 		return WillPopScope(
 			onWillPop: () async {
 				if (_replyBoxKey.currentState?.show ?? false) {
@@ -621,8 +622,9 @@ class _ThreadPageState extends State<ThreadPage> {
 															),
 															SafeArea(
 																child: Align(
-																	alignment: Alignment.bottomRight,
+																	alignment: reverseIndicatorPosition ? Alignment.bottomLeft : Alignment.bottomRight,
 																	child: ThreadPositionIndicator(
+																		reversed: reverseIndicatorPosition,
 																		persistentState: persistentState,
 																		thread: persistentState.thread,
 																		listController: _listController,
@@ -711,6 +713,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 	final RefreshableListController<Post> listController;
 	final Filter filter;
 	final PostSpanZoneData zone;
+	final bool reversed;
 	
 	const ThreadPositionIndicator({
 		required this.persistentState,
@@ -718,6 +721,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 		required this.listController,
 		required this.filter,
 		required this.zone,
+		this.reversed = false,
 		Key? key
 	}) : super(key: key);
 
@@ -819,10 +823,12 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	Widget build(BuildContext context) {
 		const radius = Radius.circular(8);
 		const radiusAlone = BorderRadius.all(radius);
+		final radiusStart = widget.reversed ? const BorderRadius.only(topRight: radius, bottomRight: radius) : const BorderRadius.only(topLeft: radius, bottomLeft: radius);
+		final radiusEnd = widget.reversed ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : const BorderRadius.only(topRight: radius, bottomRight: radius);
 		scrollToBottom() => widget.listController.animateTo((post) => post.id == widget.persistentState.thread!.posts.last.id, orElseLast: (x) => true, alignment: 1.0);
 		final youIds = widget.persistentState.youIds;
 		return Stack(
-			alignment: Alignment.bottomRight,
+			alignment: widget.reversed ? Alignment.bottomLeft : Alignment.bottomRight,
 			children: [
 				AnimatedBuilder(
 					animation: _buttonsAnimationController,
@@ -846,7 +852,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 							primary: false,
 							physics: const BouncingScrollPhysics(),
 							child: Column(
-								crossAxisAlignment: CrossAxisAlignment.end,
+								crossAxisAlignment: widget.reversed ? CrossAxisAlignment.start : CrossAxisAlignment.end,
 								mainAxisSize: MainAxisSize.min,
 								children: [
 									for (final button in [
@@ -906,7 +912,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 										Tuple3('Scroll to last-seen', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), _greyCount <= 0 ? null : () => widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0)),
 										Tuple3('Scroll to bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom)
 									]) Padding(
-										padding: const EdgeInsets.only(bottom: 16, right: 16),
+										padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
 										child: CupertinoButton.filled(
 											disabledColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.4),
 											padding: const EdgeInsets.all(8),
@@ -938,16 +944,14 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 					child: CupertinoButton(
 						padding: EdgeInsets.zero,
 						child: Builder(
-							builder: (context) => Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
+							builder: (context) {
+								List<Widget> children = [
 									if (_redCount > 0) Container(
 										decoration: BoxDecoration(
-											borderRadius: const BorderRadius.only(topLeft: radius, bottomLeft: radius),
+											borderRadius: radiusStart,
 											color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
 										),
 										padding: const EdgeInsets.all(8),
-										margin: EdgeInsets.only(bottom: 16, right: (_whiteCount == 0 && _greyCount == 0) ? 16 : 0),
 										child: Text(
 											_redCount.toString(),
 											textAlign: TextAlign.center
@@ -955,11 +959,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 									),
 									if (_whiteCount == 0 || _greyCount > 0) Container(
 										decoration: BoxDecoration(
-											borderRadius: (_redCount > 0) ? (_whiteCount > 0 ? null : const BorderRadius.only(topRight: radius, bottomRight: radius)) : (_whiteCount > 0 ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : radiusAlone),
+											borderRadius: (_redCount > 0) ? (_whiteCount > 0 ? null : radiusEnd) : (_whiteCount > 0 ? radiusStart : radiusAlone),
 											color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
 										),
 										padding: const EdgeInsets.all(8),
-										margin: EdgeInsets.only(bottom: 16, right: _whiteCount > 0 ? 0 : 16),
 										child: Container(
 											constraints: BoxConstraints(
 												minWidth: 24 * MediaQuery.of(context).textScaleFactor
@@ -975,11 +978,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 									),
 									if (_whiteCount > 0) Container(
 										decoration: BoxDecoration(
-											borderRadius: (_redCount <= 0 && _greyCount <= 0) ? radiusAlone : const BorderRadius.only(topRight: radius, bottomRight: radius),
+											borderRadius: (_redCount <= 0 && _greyCount <= 0) ? radiusAlone : radiusEnd,
 											color: CupertinoTheme.of(context).primaryColor
 										),
 										padding: const EdgeInsets.all(8),
-										margin: const EdgeInsets.only(bottom: 16, right: 16),
 										child: Container(
 											constraints: BoxConstraints(
 												minWidth: 24 * MediaQuery.of(context).textScaleFactor
@@ -993,8 +995,18 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											)
 										)
 									)
-								]
-							)
+								];
+								if (widget.reversed) {
+									children = children.reversed.toList();
+								}
+								return Padding(
+									padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: children
+									)
+								);
+							}
 						),
 						onPressed: () {
 							lightHapticFeedback();

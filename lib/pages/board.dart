@@ -628,7 +628,7 @@ class _BoardPageState extends State<BoardPage> {
 																scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
 																return (page == null || page == 0 || _listController.firstVisibleIndex == 0 || ((_listController.scrollController?.position.pixels ?? 1) < 0)) ? Container() : SafeArea(
 																	child: Align(
-																		alignment: Alignment.bottomRight,
+																		alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
 																		child: Row(
 																			mainAxisSize: MainAxisSize.min,
 																			children: [
@@ -640,7 +640,7 @@ class _BoardPageState extends State<BoardPage> {
 																							borderRadius: const BorderRadius.all(Radius.circular(8))
 																						),
 																						padding: const EdgeInsets.all(8),
-																						margin: const EdgeInsets.only(bottom: 16, right: 16),
+																						margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
 																						child: Row(
 																							mainAxisSize: MainAxisSize.min,
 																							children: [

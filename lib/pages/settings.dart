@@ -1931,7 +1931,20 @@ class SettingsAppearancePage extends StatelessWidget {
 						settings.showScrollbars = newValue;
 					}
 				),
-				const SizedBox(height: 16)
+				const SizedBox(height: 16),
+				const Text('List position indicator location'),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: const {
+						true: Text('Left'),
+						false: Text('Right')
+					},
+					groupValue: settings.showListPositionIndicatorsOnLeft,
+					onValueChanged: (newValue) {
+						settings.showListPositionIndicatorsOnLeft = newValue;
+					}
+				),
+				const SizedBox(height: 16),
 			]
 		);
 	}

@@ -524,6 +524,8 @@ class SavedSettings extends HiveObject {
 	bool showCountryNameInCatalogHeader;
 	@HiveField(92)
 	WebmTranscodingSetting webmTranscoding;
+	@HiveField(93)
+	bool showListPositionIndicatorsOnLeft;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -618,6 +620,7 @@ class SavedSettings extends HiveObject {
 		bool? promptedAboutCrashlytics,
 		bool? showCountryNameInCatalogHeader,
 		WebmTranscodingSetting? webmTranscoding,
+		bool? showListPositionIndicatorsOnLeft,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -739,7 +742,8 @@ class SavedSettings extends HiveObject {
 		useHapticFeedback = useHapticFeedback ?? true,
 		promptedAboutCrashlytics = promptedAboutCrashlytics ?? false,
 		showCountryNameInCatalogHeader = showCountryNameInCatalogHeader ?? true,
-		webmTranscoding = webmTranscoding ?? ((Platform.isIOS || Platform.isMacOS) ? WebmTranscodingSetting.always : WebmTranscodingSetting.never);
+		webmTranscoding = webmTranscoding ?? ((Platform.isIOS || Platform.isMacOS) ? WebmTranscodingSetting.always : WebmTranscodingSetting.never),
+		showListPositionIndicatorsOnLeft = showListPositionIndicatorsOnLeft ?? false;
 }
 
 class EffectiveSettings extends ChangeNotifier {
@@ -1474,6 +1478,13 @@ class EffectiveSettings extends ChangeNotifier {
 	WebmTranscodingSetting get webmTranscoding => _settings.webmTranscoding;
 	set webmTranscoding(WebmTranscodingSetting setting) {
 		_settings.webmTranscoding = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showListPositionIndicatorsOnLeft => _settings.showListPositionIndicatorsOnLeft;
+	set showListPositionIndicatorsOnLeft(bool setting) {
+		_settings.showListPositionIndicatorsOnLeft = setting;
 		_settings.save();
 		notifyListeners();
 	}
