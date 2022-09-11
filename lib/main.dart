@@ -1125,7 +1125,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						]
 					)
 				),
-				onPressed: () => _addNewTab(activate: true)
+				onPressed: () {
+					lightHapticFeedback();
+					_addNewTab(activate: true);
+				}
 			)
 		);
 	}
