@@ -724,6 +724,10 @@ class Site4Chan extends ImageboardSite {
 
   @override
   Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
+		if (!fromBothWifiAndCellular && _passEnabled[Persistence.currentCookies] == false) {
+			// No need to clear
+			return;
+		}
 		final jars = fromBothWifiAndCellular ? [
 			Persistence.wifiCookies,
 			Persistence.cellularCookies
