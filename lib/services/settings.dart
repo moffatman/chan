@@ -741,7 +741,7 @@ class SavedSettings extends HiveObject {
 		settingsQuickAction = settingsQuickAction ?? SettingsQuickAction.toggleTheme,
 		useHapticFeedback = useHapticFeedback ?? true,
 		promptedAboutCrashlytics = promptedAboutCrashlytics ?? false,
-		showCountryNameInCatalogHeader = showCountryNameInCatalogHeader ?? true,
+		showCountryNameInCatalogHeader = showCountryNameInCatalogHeader ?? (showFlagInCatalogHeader ?? true),
 		webmTranscoding = webmTranscoding ?? ((Platform.isIOS || Platform.isMacOS) ? WebmTranscodingSetting.always : WebmTranscodingSetting.never),
 		showListPositionIndicatorsOnLeft = showListPositionIndicatorsOnLeft ?? false;
 }
