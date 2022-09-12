@@ -310,13 +310,16 @@ class Notifications {
 		persistence.didUpdateBrowserState();
 	}
 
-	void removeThreadWatch(ThreadWatch watch) {
+	void removeThreadWatch(ThreadWatch watch) async {
 		if (Persistence.settings.usePushNotifications == true && watch.push) {
 			_delete(watch);
 		}
 		threadWatches.remove(watch);
 		localWatcher?.onWatchRemoved(watch);
 		persistence.didUpdateBrowserState();
+		await clearNotifications(this, watch);
+		clearOverlayNotifications(this, watch);
+		await updateNotificationsBadgeCount();
 	}
 
 	List<NewThreadWatch> getNewThreadWatches(String board) {
