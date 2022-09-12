@@ -11,6 +11,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/context_menu.dart';
@@ -633,7 +634,10 @@ class _BoardPageState extends State<BoardPage> {
 																			mainAxisSize: MainAxisSize.min,
 																			children: [
 																				GestureDetector(
-																					onTap: scrollToTop,
+																					onTap: () {
+																						lightHapticFeedback();
+																						scrollToTop();
+																					},
 																					child: Container(
 																						decoration: BoxDecoration(
 																							color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
