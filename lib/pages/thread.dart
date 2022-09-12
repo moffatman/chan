@@ -918,6 +918,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											padding: const EdgeInsets.all(8),
 											minSize: 0,
 											onPressed: button.item3 == null ? null : () {
+												lightHapticFeedback();
 												button.item3?.call();
 												_buttonsAnimationController.reverse();
 											},
