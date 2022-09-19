@@ -458,7 +458,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			catch (e, st) {
 				if (e is! BoardNotFoundException) {
 					print('Error from ${archive.name}');
-					print(e);
+					print(e.toStringDio());
 					print(st);
 					s += '\n${archive.name}: ${e.toStringDio()}';
 				}
