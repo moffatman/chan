@@ -398,7 +398,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			queryParameters: {
 				'text': query.query,
 				'page': page.toString(),
-				if (query.boards.isNotEmpty) 'boards': query.boards.join('.'),
+				if (query.boards.length == 1) 'board': query.boards.single
+				else if (query.boards.isNotEmpty) 'boards': query.boards.join('.'),
 				if (query.mediaFilter != MediaFilter.none) 'filter': query.mediaFilter == MediaFilter.onlyWithMedia ? 'text' : 'image',
 				if (query.postTypeFilter != PostTypeFilter.none) 'type': query.postTypeFilter == PostTypeFilter.onlyOPs ? 'op' : 'posts',
 				if (query.startDate != null) 'start': '${query.startDate!.year}-${query.startDate!.month}-${query.startDate!.day}',
