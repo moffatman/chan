@@ -150,7 +150,7 @@ class CloudflareInterceptor extends Interceptor {
 						headers: {
 							for (final h in options.headers.entries) h.key: h.value
 						},
-						body: Uint8List.fromList(options.data)
+						body: options.data == null ? null : Uint8List.fromList(options.data)
 					)
 				);
 				if (data != null) {
