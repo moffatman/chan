@@ -436,7 +436,7 @@ class PostRow extends StatelessWidget {
 									localYousOnly: notifications.getThreadWatch(zone.threadState!.identifier)?.localYousOnly ?? true,
 									pushYousOnly: notifications.getThreadWatch(zone.threadState!.identifier)?.localYousOnly ?? true,
 									push: true,
-									youIds: zone.threadState!.youIds
+									youIds: zone.threadState!.freshYouIds()
 								);
 								zone.threadState!.save();
 							}

@@ -536,9 +536,12 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		}
 	}
 
+	List<int> freshYouIds() {
+		return receipts.map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toList();
+	}
 	List<int>? _youIds;
 	List<int> get youIds {
-		_youIds ??= receipts.map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toList();
+		_youIds ??= freshYouIds();
 		return _youIds!;
 	}
 	final FilterCache _filterCache = FilterCache(const DummyFilter());

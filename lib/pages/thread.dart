@@ -669,7 +669,7 @@ class _ThreadPageState extends State<ThreadPage> {
 												localYousOnly: context.read<Notifications>().getThreadWatch(widget.thread)?.localYousOnly ?? true,
 												pushYousOnly: context.read<Notifications>().getThreadWatch(widget.thread)?.pushYousOnly ?? true,
 												push: true,
-												youIds: persistentState.youIds
+												youIds: persistentState.freshYouIds()
 											);
 											if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
 												// If already at the bottom, pre-mark the created post as seen

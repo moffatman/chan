@@ -60,7 +60,7 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		if (n.autoCloseAnimation.isAnimating) {
 			return;
 		}
-		if (!(n.imageboard.persistence.getThreadStateIfExists(n.target.threadIdentifier!)?.youIds.contains(n.target.postId) ?? false)) {
+		if (!(n.imageboard.persistence.getThreadStateIfExists(n.target.threadIdentifier!)?.freshYouIds().contains(n.target.postId) ?? false)) {
 			n.autoCloseAnimation.forward().then((_) => closeNotification(n));
 		}
 	}

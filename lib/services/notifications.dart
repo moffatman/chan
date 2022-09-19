@@ -242,8 +242,8 @@ class Notifications {
 	}) {
 		final existingWatch = threadWatches.tryFirstWhere((w) => w.threadIdentifier == thread);
 		if (existingWatch != null) {
-			existingWatch.localYousOnly = localYousOnly;
-			existingWatch.pushYousOnly = pushYousOnly;
+			existingWatch.youIds = youIds;
+			existingWatch.lastSeenId = lastSeenId;
 			didUpdateThreadWatch(existingWatch);
 		}
 		else {
