@@ -344,7 +344,9 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		), response.data)).toList());
 	}
 	Future<List<ImageboardBoard>> _getBoards() async {
-		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/archives').toString());
+		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/archives').toString(), options: Options(
+			validateStatus: (x) => true
+		));
 		if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode!);
 		}
