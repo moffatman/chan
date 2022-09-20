@@ -120,7 +120,7 @@ class _ContextMenuState extends State<ContextMenu> {
 						);
 					}
 				);
-				Overlay.of(context, rootOverlay: true)!.insert(_overlayEntry!);
+				Overlay.of(context, rootOverlay: true).insert(_overlayEntry!);
 			},
 			child: LayoutBuilder(
 				builder: (context, originalConstraints) => CupertinoContextMenu(

@@ -100,7 +100,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 				)
 			)
 		);
-		Overlay.of(context, rootOverlay: true)!.insert(_touchEntry!);
+		Overlay.of(context, rootOverlay: true).insert(_touchEntry!);
 		lightHapticFeedback();
 	}
 
@@ -195,7 +195,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 							)
 						);
 					}
-					Overlay.of(context, rootOverlay: true)!.insert(_entry!);
+					Overlay.of(context, rootOverlay: true).insert(_entry!);
 				},
 				onHover: (event) {
 					_globalKey?.currentState?.updateMousePosition(event.position);

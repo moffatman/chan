@@ -511,9 +511,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	@override
 	void initState() {
 		super.initState();
-	_solutionNode = FocusNode();
-	_solutionController = TextEditingController();
-	_letterPickerControllers = List.generate(6, (i) => FixedExtentScrollController());
+		_solutionNode = FocusNode();
+		_solutionController = TextEditingController();
+		_letterPickerControllers = List.generate(6, (i) => FixedExtentScrollController());
 		if (context.read<EffectiveSettings>().useNewCaptchaForm) {
 			_solutionController.text = "000000";
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
