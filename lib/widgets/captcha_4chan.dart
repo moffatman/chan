@@ -434,30 +434,29 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	bool _modifyingFromPicker = false;
 
 	void _onSolutionControllerUpdate() {
-		TextSelection selection = _solutionController.selection;
-		final newText = _solutionController.text;
-		if (_solutionController.text.length != numLetters) {
-			if (_previousText.length == numLetters && _solutionController.text.length == numLetters - 1 && selection.isCollapsed && selection.isValid) {
-				final index = selection.baseOffset;
-				if ((_previousText.substring(0, index) == _solutionController.text.substring(0, index)) &&
-						(_previousText.substring(index + 1) == _solutionController.text.substring(index))) {
+		TextSelection newSelection = _solutionController.selection;
+		String newText = _solutionController.text;
+		if (newText.length != numLetters) {
+			if (_previousText.length == numLetters && newText.length == numLetters - 1 && newSelection.isCollapsed && newSelection.isValid) {
+				final index = newSelection.baseOffset;
+				if ((_previousText.substring(0, index) == newText.substring(0, index)) &&
+						(_previousText.substring(index + 1) == newText.substring(index))) {
 					// backspace was pressed
-					_solutionController.text = _previousText;
+					newText = _previousText;
 					if (index > 0) {
-						_solutionController.selection = TextSelection(baseOffset: index - 1, extentOffset: index);
+						newSelection = TextSelection(baseOffset: index - 1, extentOffset: index);
 					}
 					else {
-						_solutionController.selection = TextSelection(baseOffset: numLetters - 1, extentOffset: numLetters);
+						newSelection = TextSelection(baseOffset: numLetters - 1, extentOffset: numLetters);
 					}
-					selection = _solutionController.selection;
 				}
 			}
 			else {
-				_solutionController.text = _solutionController.text.substring(0, min(numLetters, _solutionController.text.length)).padRight(numLetters, ' ');
+				newText = newText.substring(0, min(numLetters, newText.length)).padRight(numLetters, ' ');
 			}
 		}
 		for (int i = 0; i < numLetters; i++) {
-			final char = _solutionController.text[i].toUpperCase();
+			final char = newText[i].toUpperCase();
 			if (!captchaLetters.contains(char)) {
 				const remap = {
 					'B': '8',
@@ -467,25 +466,25 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					'O': '0'
 				};
 				if (remap[char] != null) {
-					_solutionController.text = _solutionController.text.replaceRange(i, i + 1, remap[char]!);
+					newText = newText.replaceRange(i, i + 1, remap[char]!);
 				}
 				else {
-					_solutionController.text = _previousText;
-					_solutionController.selection = TextSelection(baseOffset: i, extentOffset: i + 1);
+					newText = _previousText;
+					newSelection = TextSelection(baseOffset: i, extentOffset: i + 1);
 				}
 			}
 		}
-		int start = selection.baseOffset % numLetters;
-		if (selection.isCollapsed) {
-			if (_previousSelection.baseOffset == selection.baseOffset && _previousText == newText) {
+		int start = newSelection.baseOffset % numLetters;
+		if (newSelection.isCollapsed) {
+			if (_previousSelection.baseOffset == newSelection.baseOffset && _previousText == newText) {
 				// Left-arrow was pressed
 				start = (start - 1) % numLetters;
 			}
-			_solutionController.selection = TextSelection(baseOffset: start, extentOffset: start + 1);
+			newSelection = TextSelection(baseOffset: start, extentOffset: start + 1);
 		}
-		if (!_modifyingFromPicker && _previousText != _solutionController.text) {
+		if (!_modifyingFromPicker && _previousText != newText) {
 			for (int i = 0; i < numLetters; i++) {
-				if (i >= _previousText.length || _previousText[i] != _solutionController.text[i]) {
+				if (i >= _previousText.length || _previousText[i] != newText[i]) {
 					if (i < _guessConfidences.length ) {
 						_guessConfidences[i] = 1;
 					}
@@ -496,6 +495,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 		_previousText = _solutionController.text;
 		_previousSelection = _solutionController.selection;
+		_solutionController.value = _solutionController.value.copyWith(
+			text: newText,
+			selection: newSelection,
+			composing: TextRange.empty
+		);
 	}
 
 	Future<void> _submit(String response) async {
@@ -712,10 +716,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									groupValue: numLetters,
 									onValueChanged: (x) {
 										if (x != numLetters) {
-											setState(() {
-												numLetters = x;
-											});
-											_animateGuess();
+											numLetters = x;
+											setState(() {});
+											WidgetsBinding.instance.addPostFrameCallback((_) => _animateGuess());
 										}
 									}
 								),
@@ -774,9 +777,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																				onNotification: (notification) {
 																					if (notification is ScrollEndNotification && notification.metrics is FixedExtentMetrics) {
 																						_modifyingFromPicker = true;
-																						final selection = _solutionController.selection;
-																						_solutionController.text = _solutionController.text.replaceRange(i, i + 1, captchaLetters[(notification.metrics as FixedExtentMetrics).itemIndex]);
-																						_solutionController.selection = selection;
+																						_solutionController.value = TextEditingValue(
+																							text: _solutionController.text.replaceRange(i, i + 1, captchaLetters[(notification.metrics as FixedExtentMetrics).itemIndex]),
+																							selection: _solutionController.selection,
+																							composing: TextRange.empty
+																						);
 																						if (_guessConfidences[i] != 1) {
 																							setState(() {
 																								_guessConfidences[i] = 1;
