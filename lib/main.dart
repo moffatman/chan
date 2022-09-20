@@ -472,7 +472,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					alertError(context, 'Error adding theme: $e');
 				}
 			}
-			else if (uri.pathSegments[1] == 'thread') {
+			else if (uri.pathSegments.length >= 2 && uri.pathSegments[1] == 'thread') {
 				_addNewTab(
 					withImageboardKey: uri.host,
 					withBoard: uri.pathSegments[0],
