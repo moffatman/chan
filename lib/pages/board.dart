@@ -49,6 +49,7 @@ class BoardPage extends StatefulWidget {
 	final ValueChanged<ThreadIdentifier>? onThreadSelected;
 	final ThreadIdentifier? selectedThread;
 	final String? initialSearch;
+	final ValueChanged<String?>? onSearchChanged;
 	final String Function()? getInitialDraftText;
 	final ValueChanged<String>? onDraftTextChanged;
 	final String Function()? getInitialDraftSubject;
@@ -66,6 +67,7 @@ class BoardPage extends StatefulWidget {
 		this.onThreadSelected,
 		this.selectedThread,
 		this.initialSearch,
+		this.onSearchChanged,
 		this.getInitialDraftText,
 		this.onDraftTextChanged,
 		this.getInitialDraftSubject,
@@ -553,6 +555,7 @@ class _BoardPageState extends State<BoardPage> {
 												children: [
 													RefreshableList<Thread>(
 														initialFilter: widget.initialSearch,
+														onFilterChanged: widget.onSearchChanged,
 														filterableAdapter: (t) => t,
 														allowReordering: true,
 														onWantAutosave: (thread) async {

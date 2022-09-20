@@ -42,6 +42,7 @@ class RefreshableList<T> extends StatefulWidget {
 	final Widget? footer;
 	final Size? gridSize;
 	final String? initialFilter;
+	final ValueChanged<String?>? onFilterChanged;
 	final bool allowReordering;
 	final ValueChanged<T>? onWantAutosave;
 	final Filterable Function(T)? filterableAdapter;
@@ -61,6 +62,7 @@ class RefreshableList<T> extends StatefulWidget {
 		this.gridSize,
 		this.footer,
 		this.initialFilter,
+		this.onFilterChanged,
 		this.allowReordering = false,
 		this.onWantAutosave,
 		required this.filterableAdapter,
@@ -164,6 +166,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			_searchTapped = false;
 			_searchFilter = null;
 		});
+		widget.onFilterChanged?.call(null);
 	}
 
 	void _focusSearch() {
@@ -413,6 +416,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 																	setState(() {
 																		_searchFilter = SearchFilter(searchText.toLowerCase());
 																	});
+																	widget.onFilterChanged?.call(searchText);
 																},
 																controller: _searchController,
 																focusNode: _searchFocusNode,

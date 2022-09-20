@@ -707,6 +707,8 @@ class PersistentBrowserTab extends EasyListenable {
 	String draftOptions;
 	@HiveField(6)
 	String? draftFilePath;
+	@HiveField(7)
+	String? initialSearch;
 
 	PersistentBrowserTab({
 		this.board,
@@ -715,7 +717,8 @@ class PersistentBrowserTab extends EasyListenable {
 		this.draftSubject = '',
 		this.imageboardKey,
 		this.draftOptions = '',
-		this.draftFilePath
+		this.draftFilePath,
+		this.initialSearch
 	});
 }
 

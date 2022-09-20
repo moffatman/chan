@@ -213,3 +213,9 @@ class CombiningValueListenable<T> extends ChangeNotifier implements ValueListena
 	@override
 	T get value => children.isEmpty ? noChildrenValue : children.map((c) => c.value).reduce(combine);
 }
+
+final Map<Function, Timer> _functionIdleTimers = {};
+void runWhenIdle(Duration duration, void Function() function) {
+	_functionIdleTimers[function]?.cancel();
+	_functionIdleTimers[function] = Timer(duration, function);
+}

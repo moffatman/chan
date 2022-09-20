@@ -295,7 +295,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _tabListController = ScrollController();
 	StreamSubscription<BoardThreadOrPostIdentifier>? _devNotificationsSubscription;
 	Imageboard? devImageboard;
-	Timer? _saveBrowserTabsDuringDraftEditingTimer;
 	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
 	final _tabletWillPopZones = <int, WillPopZone>{};
 	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
@@ -784,47 +783,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							animation: tabObject,
 							builder: (context, _) {
 								final tab = ImageboardTab(
+									tab: tabObject,
 									key: tabObject.tabKey,
-									boardKey: tabObject.boardKey,
-									initialBoard: tabObject.board,
-									initialThread: tabObject.thread,
-									onBoardChanged: (newBoard) {
-										tabObject.board = newBoard.item;
-										tabObject.imageboardKey = newBoard.imageboard.key;
-										// Don't run I/O during the animation
-										Future.delayed(const Duration(seconds: 1), Persistence.didUpdateTabs);
-										tabObject.didUpdate();
-									},
-									onThreadChanged: (newThread) {
-										tabObject.thread = newThread;
-										// Don't run I/O during the animation
-										Future.delayed(const Duration(seconds: 1), Persistence.didUpdateTabs);
-										tabObject.didUpdate();
-									},
-									getInitialThreadDraftText: () => tabObject.draftThread,
-									onThreadDraftTextChanged: (newText) {
-										tabObject.draftThread = newText;
-										_saveBrowserTabsDuringDraftEditingTimer?.cancel();
-										_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), Persistence.didUpdateTabs);
-									},
-									getInitialThreadDraftSubject: () => tabObject.draftSubject,
-									onThreadDraftSubjectChanged: (newSubject) {
-										tabObject.draftSubject = newSubject;
-										_saveBrowserTabsDuringDraftEditingTimer?.cancel();
-										_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), Persistence.didUpdateTabs);
-									},
-									getInitialThreadDraftOptions: () => tabObject.draftOptions,
-									onThreadDraftOptionsChanged: (newOptions) {
-										tabObject.draftOptions = newOptions;
-										_saveBrowserTabsDuringDraftEditingTimer?.cancel();
-										_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), Persistence.didUpdateTabs);
-									},
-									getInitialThreadDraftFilePath: () => tabObject.draftFilePath,
-									onThreadDraftFilePathChanged: (newFilePath) {
-										tabObject.draftFilePath = newFilePath;
-										_saveBrowserTabsDuringDraftEditingTimer?.cancel();
-										_saveBrowserTabsDuringDraftEditingTimer = Timer(const Duration(seconds: 3), Persistence.didUpdateTabs);
-									},
 									onWantOpenThreadInNewTab: (imageboardKey, thread) {
 										_addNewTab(
 											withImageboardKey: imageboardKey,

@@ -4,42 +4,20 @@ import 'package:chan/pages/board.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/persistence.dart';
+import 'package:chan/util.dart';
 import 'package:flutter/cupertino.dart';
 
 class ImageboardTab extends StatelessWidget {
-	final ImageboardBoard? initialBoard;
-	final ValueChanged<ImageboardScoped<ImageboardBoard>>? onBoardChanged;
-	final ThreadIdentifier? initialThread;
-	final ValueChanged<ThreadIdentifier?>? onThreadChanged;
-	final String Function()? getInitialThreadDraftText;
-	final ValueChanged<String>? onThreadDraftTextChanged;
-	final String Function()? getInitialThreadDraftSubject;
-	final ValueChanged<String>? onThreadDraftSubjectChanged;
+	final PersistentBrowserTab tab;
 	final void Function(String, ThreadIdentifier)? onWantOpenThreadInNewTab;
-	final String Function()? getInitialThreadDraftOptions;
-	final ValueChanged<String>? onThreadDraftOptionsChanged;
-	final String? Function()? getInitialThreadDraftFilePath;
-	final ValueChanged<String?>? onThreadDraftFilePathChanged;
 	final void Function(String, String, String)? onWantArchiveSearch;
 	final int id;
-	final Key? boardKey;
 	const ImageboardTab({
-		required this.initialBoard,
-		this.onBoardChanged,
-		this.initialThread,
-		this.onThreadChanged,
-		this.getInitialThreadDraftText,
-		this.onThreadDraftTextChanged,
-		this.getInitialThreadDraftSubject,
-		this.onThreadDraftSubjectChanged,
+		required this.tab,
 		this.onWantOpenThreadInNewTab,
-		this.getInitialThreadDraftOptions,
-		this.onThreadDraftOptionsChanged,
-		this.getInitialThreadDraftFilePath,
-		this.onThreadDraftFilePathChanged,
 		this.onWantArchiveSearch,
 		this.id = -1,
-		this.boardKey,
 		required Key key
 	}) : super(key: key);
 
@@ -47,24 +25,51 @@ class ImageboardTab extends StatelessWidget {
 	Widget build(BuildContext context) {
 		return MasterDetailPage<ThreadIdentifier>(
 			id: 'tab_$key',
-			initialValue: initialThread,
-			onValueChanged: onThreadChanged,
+			initialValue: tab.thread,
+			onValueChanged: (thread) {
+				tab.thread = thread;
+				Future.delayed(const Duration(seconds: 1), Persistence.didUpdateTabs);
+				tab.didUpdate();
+			},
 			masterBuilder: (context, selectedThread, threadSetter) {
 				return BoardPage(
-					key: boardKey,
-					initialBoard: initialBoard,
+					key: tab.boardKey,
+					initialBoard: tab.board,
 					selectedThread: selectedThread,
 					onThreadSelected: threadSetter,
-					onBoardChanged: onBoardChanged,
-					getInitialDraftText: getInitialThreadDraftText,
-					onDraftTextChanged: onThreadDraftTextChanged,
-					getInitialDraftSubject: getInitialThreadDraftSubject,
-					onDraftSubjectChanged: onThreadDraftSubjectChanged,
+					onBoardChanged: (board) {
+						tab.board = board.item;
+						tab.imageboardKey = board.imageboard.key;
+						tab.initialSearch = null;
+						Future.delayed(const Duration(seconds: 1), Persistence.didUpdateTabs);
+						tab.didUpdate();
+					},
+					getInitialDraftText: () => tab.draftThread,
+					onDraftTextChanged: (newText) {
+						tab.draftThread = newText;
+						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
+					},
+					getInitialDraftSubject: () => tab.draftSubject,
+					onDraftSubjectChanged: (newSubject) {
+						tab.draftSubject = newSubject;
+						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
+					},
 					onWantOpenThreadInNewTab: onWantOpenThreadInNewTab,
-					getInitialThreadDraftOptions: getInitialThreadDraftOptions,
-					onThreadDraftOptionsChanged: onThreadDraftOptionsChanged,
-					getInitialThreadDraftFilePath: getInitialThreadDraftFilePath,
-					onThreadDraftFilePathChanged: onThreadDraftFilePathChanged,
+					getInitialThreadDraftOptions: () => tab.draftOptions,
+					onThreadDraftOptionsChanged: (newOptions) {
+						tab.draftOptions = newOptions;
+						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
+					},
+					getInitialThreadDraftFilePath: () => tab.draftFilePath,
+					onThreadDraftFilePathChanged: (newFilePath) {
+						tab.draftFilePath = newFilePath;
+						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
+					},
+					initialSearch: tab.initialSearch,
+					onSearchChanged: (newSearch) {
+						tab.initialSearch = newSearch;
+						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
+					},
 					onWantArchiveSearch: onWantArchiveSearch,
 					semanticId: id
 				);
