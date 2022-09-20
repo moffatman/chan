@@ -2371,15 +2371,16 @@ class SettingsFilterPanel extends StatefulWidget {
 }
 
 class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
-	final regexController = TextEditingController();
-	final regexFocusNode = FocusNode();
+	late final TextEditingController regexController;
+	late final FocusNode regexFocusNode;
 	bool showRegex = false;
 	bool dirty = false;
 
 	@override
 	void initState() {
 		super.initState();
-		regexController.text = context.read<EffectiveSettings>().filterConfiguration;
+		regexController = TextEditingController(text: context.read<EffectiveSettings>().filterConfiguration);
+		regexFocusNode = FocusNode();
 	}
 
 	@override
@@ -2896,14 +2897,27 @@ class FilterTestPage extends StatefulWidget {
 }
 
 class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
-	final _boardController = TextEditingController();
-	final _idController = TextEditingController();
-	final _textController = TextEditingController();
-	final _subjectController = TextEditingController();
-	final _nameController = TextEditingController();
-	final _filenameController = TextEditingController();
-	final _posterIdController = TextEditingController();
-	final _flagController = TextEditingController();
+	late final TextEditingController _boardController;
+	late final TextEditingController _idController;
+	late final TextEditingController _textController;
+	late final TextEditingController _subjectController;
+	late final TextEditingController _nameController;
+	late final TextEditingController _filenameController;
+	late final TextEditingController _posterIdController;
+	late final TextEditingController _flagController;
+
+	@override
+	void initState() {
+		super.initState();
+		_boardController = TextEditingController();
+		_idController = TextEditingController();
+		_textController = TextEditingController();
+		_subjectController = TextEditingController();
+		_nameController = TextEditingController();
+		_filenameController = TextEditingController();
+		_posterIdController = TextEditingController();
+		_flagController = TextEditingController();
+	}
 
 	@override
 	String get board => _boardController.text;

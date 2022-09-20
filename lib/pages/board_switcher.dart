@@ -32,8 +32,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	late List<ImageboardBoard> boards;
 	String searchString = '';
 	String? errorMessage;
-	final scrollController = ScrollController();
-	final _backgroundColor = ValueNotifier<Color?>(null);
+	late final ScrollController scrollController;
+	late final ValueNotifier<Color?> _backgroundColor;
 	int _pointersDownCount = 0;
 	bool _popping = false;
 
@@ -44,6 +44,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	@override
 	void initState() {
 		super.initState();
+		scrollController = ScrollController();
+		_backgroundColor = ValueNotifier<Color?>(null);
 		_focusNode = widget.searchFocusNode ?? FocusNode();
 		boards = context.read<Persistence>().boards.values.toList();
 		scrollController.addListener(_onScroll);

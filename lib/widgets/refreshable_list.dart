@@ -80,8 +80,8 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 	Type? errorType;
 	SearchFilter? _searchFilter;
 	bool updatingNow = false;
-	final _searchController = TextEditingController();
-	final _searchFocusNode = FocusNode();
+	late final TextEditingController _searchController;
+	late final FocusNode _searchFocusNode;
 	DateTime? lastUpdateTime;
 	DateTime? nextUpdateTime;
 	Timer? autoUpdateTimer;
@@ -98,6 +98,8 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 	@override
 	void initState() {
 		super.initState();
+		_searchController = TextEditingController();
+		_searchFocusNode = FocusNode();
 		 _footerShakeAnimation = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
 		if (widget.initialFilter != null) {
 			_searchFilter = SearchFilter(widget.initialFilter!);

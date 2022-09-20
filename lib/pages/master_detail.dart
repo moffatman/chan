@@ -156,7 +156,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 	List<MultiMasterPane> panes = [];
  	bool? lastOnePane;
 	late bool onePane;
-	final _rebuild = BehaviorSubject<void>();
+	late final BehaviorSubject<void> _rebuild;
 
 	void _onPaneChanged() {
 		setState(() {});
@@ -175,6 +175,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 	@override
 	void initState() {
 		super.initState();
+		_rebuild = BehaviorSubject();
 		panes = widget.paneCreator();
 		_tabController = TabController(length: panes.length, vsync: this);
 		_tabController.addListener(_onPaneChanged);

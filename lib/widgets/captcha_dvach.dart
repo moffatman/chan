@@ -47,11 +47,12 @@ class CaptchaDvachChallenge {
 class _CaptchaDvachState extends State<CaptchaDvach> {
 	String? errorMessage;
 	CaptchaDvachChallenge? challenge;
-	final _solutionNode = FocusNode();
+	late final FocusNode _solutionNode;
 
 	@override
 	void initState() {
 		super.initState();
+		_solutionNode = FocusNode();
 		_tryRequestChallenge();
 	}
 

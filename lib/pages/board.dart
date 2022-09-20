@@ -88,7 +88,7 @@ class BoardPage extends StatefulWidget {
 
 class _BoardPageState extends State<BoardPage> {
 	late ImageboardBoard? board;
-	final _listController = RefreshableListController<Thread>();
+	late final RefreshableListController<Thread> _listController;
 	final _replyBoxKey = GlobalKey<ReplyBoxState>();
 	Completer<void>? _loadCompleter;
 	ThreadSortingMethod? _temporarySortingMethod;
@@ -100,6 +100,7 @@ class _BoardPageState extends State<BoardPage> {
 	@override
 	void initState() {
 		super.initState();
+		_listController = RefreshableListController();
 		board = widget.initialBoard;
 		if (board == null) {
 			Future.delayed(const Duration(milliseconds: 100), _selectBoard);
@@ -721,5 +722,11 @@ class _BoardPageState extends State<BoardPage> {
 				)
 			)
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_listController.dispose();
 	}
 }

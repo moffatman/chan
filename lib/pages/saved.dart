@@ -61,9 +61,17 @@ class SavedPage extends StatefulWidget {
 }
 
 class _SavedPageState extends State<SavedPage> {
-	final _watchedListController = RefreshableListController<ImageboardScoped<ThreadWatch>>();
-	final _threadListController = RefreshableListController<ImageboardScoped<PersistentThreadState>>();
-	final _postListController = RefreshableListController<ImageboardScoped<SavedPost>>();
+	late final RefreshableListController<ImageboardScoped<ThreadWatch>> _watchedListController;
+	late final RefreshableListController<ImageboardScoped<PersistentThreadState>> _threadListController;
+	late final RefreshableListController<ImageboardScoped<SavedPost>> _postListController;
+
+	@override
+	void initState() {
+		super.initState();
+		_watchedListController = RefreshableListController();
+		_threadListController = RefreshableListController();
+		_postListController = RefreshableListController();
+	}
 
 	Widget _placeholder(String message) {
 		return Container(
@@ -76,7 +84,7 @@ class _SavedPageState extends State<SavedPage> {
 		);
 	}
 
-ObstructingPreferredSizeWidget _watchedNavigationBar() {
+	ObstructingPreferredSizeWidget _watchedNavigationBar() {
 		final settings = context.watch<EffectiveSettings>();
 		return CupertinoNavigationBar(
 			transitionBetweenRoutes: false,
@@ -691,6 +699,14 @@ ObstructingPreferredSizeWidget _watchedNavigationBar() {
 				)
 			]
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_watchedListController.dispose();
+		_threadListController.dispose();
+		_postListController.dispose();
 	}
 }
 

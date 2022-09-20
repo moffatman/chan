@@ -65,7 +65,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	final _replyBoxKey = GlobalKey<ReplyBoxState>();
 	final _listKey = GlobalKey<RefreshableListState>();
 
-	final _listController = RefreshableListController<Post>();
+	late final RefreshableListController<Post> _listController;
 	late PostSpanRootZoneData zone;
 	bool blocked = false;
 	bool _unnaturallyScrolling = false;
@@ -192,6 +192,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	@override
 	void initState() {
 		super.initState();
+		_listController = RefreshableListController();
 		persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
 		persistentState.useArchive |= widget.initiallyUseArchive;
 		persistentState.save();
@@ -739,14 +740,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	int _greyCount = 0;
 	late StreamSubscription<void> _slowScrollSubscription;
 	Timer? _waitForRebuildTimer;
-	late final _buttonsAnimationController = AnimationController(
-		vsync: this,
-		duration: const Duration(milliseconds: 300)
-	);
-	late final _buttonsAnimation = CurvedAnimation(
-		parent: _buttonsAnimationController,
-		curve: Curves.ease
-	);
+	late final AnimationController _buttonsAnimationController;
+	late final Animation<double> _buttonsAnimation;
 
 	bool _updateCounts() {
 		final lastVisibleItemId = widget.listController.lastVisibleItem?.id;
@@ -775,6 +770,14 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	@override
 	void initState() {
 		super.initState();
+		_buttonsAnimationController = AnimationController(
+			vsync: this,
+			duration: const Duration(milliseconds: 300)
+		);
+		_buttonsAnimation = CurvedAnimation(
+			parent: _buttonsAnimationController,
+			curve: Curves.ease
+		);
 		_slowScrollSubscription = widget.listController.slowScrollUpdates.listen(_onSlowScroll);
 		widget.persistentState.lastSeenPostIdNotifier.addListener(_onLastSeenPostIdNotifier);
 		if (widget.thread != null) {

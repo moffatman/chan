@@ -29,7 +29,13 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-	final _listController = RefreshableListController<ImageboardScoped<PersistentThreadState>>();
+	late final RefreshableListController<ImageboardScoped<PersistentThreadState>> _listController;
+
+	@override
+	void initState() {
+		super.initState();
+		_listController = RefreshableListController();
+	}
 
 	@override
 	Widget build(BuildContext context) {
@@ -257,5 +263,11 @@ class _HistoryPageState extends State<HistoryPage> {
 				);
 			}
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_listController.dispose();
 	}
 }

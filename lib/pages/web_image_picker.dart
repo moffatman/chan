@@ -38,12 +38,14 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 	String url = "";
 	bool finishedInitialLoad = false;
 	double progress = 0;
-	final urlController = TextEditingController();
-	final urlFocusNode = FocusNode();
+	late final TextEditingController urlController;
+	late final FocusNode urlFocusNode;
 
 	@override
 	void initState() {
 		super.initState();
+		urlController = TextEditingController();
+		urlFocusNode = FocusNode();
 		pullToRefreshController = PullToRefreshController(
 			options: PullToRefreshOptions(
 				color: Colors.blue,

@@ -276,8 +276,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final TextEditingController _nameFieldController;
 	late final TextEditingController _subjectFieldController;
 	late final TextEditingController _optionsFieldController;
-	final _filenameController = TextEditingController();
-	final _textFocusNode = FocusNode();
+	late final TextEditingController _filenameController;
+	late final FocusNode _textFocusNode;
 	bool loading = false;
 	File? attachment;
 	String? get attachmentExt => attachment?.path.split('.').last.toLowerCase();
@@ -297,7 +297,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	double _panStartDy = 0;
 	double _replyBoxHeightOffsetAtPanStart = 0;
 	bool _willHideOnPanEnd = false;
-	final _rootFocusNode = FocusNode();
+	late final FocusNode _rootFocusNode;
 
 	bool get _haveValidCaptcha {
 		if (_captchaSolution == null) {
@@ -338,11 +338,14 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	@override
 	void initState() {
+		super.initState();
 		_textFieldController = TextEditingController(text: widget.initialText);
 		_subjectFieldController = TextEditingController(text: widget.initialSubject);
 		_optionsFieldController = TextEditingController(text: widget.initialOptions);
+		_filenameController = TextEditingController();
 		_nameFieldController = TextEditingController(text: context.read<Persistence>().browserState.postingName);
-		super.initState();
+		_textFocusNode = FocusNode();
+		_rootFocusNode = FocusNode();
 		_textFieldController.addListener(_onTextChanged);
 		_subjectFieldController.addListener(() {
 			widget.onSubjectChanged?.call(_subjectFieldController.text);

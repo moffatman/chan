@@ -99,27 +99,33 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	bool showingOverlays = true;
 	final Key _pageControllerKey = GlobalKey();
 	final Key _thumbnailsKey = GlobalKey();
-	final BehaviorSubject<void> _scrollCoalescer = BehaviorSubject();
+	late final BehaviorSubject<void> _scrollCoalescer;
 	double? _lastpageControllerPixels;
 	bool _animatingNow = false;
 	final _shareButtonKey = GlobalKey();
-	final _slideStream = BehaviorSubject<void>();
+	late final BehaviorSubject<void> _slideStream;
 	bool _hideRotateButton = false;
 	final Set<Attachment> _rotationsInProgress = {};
 	late final AnimationController _rotateButtonAnimationController;
 	final Map<Attachment, AttachmentViewerController> _controllers = {};
-	final _shouldShowPosition = ValueNotifier<bool>(false);
-	final _currentAttachmentChanged = BehaviorSubject<void>();
-	final _rotationsChanged = BehaviorSubject<void>();
+	late final ValueNotifier<bool> _shouldShowPosition;
+	late final BehaviorSubject<void> _currentAttachmentChanged;
+	late final BehaviorSubject<void> _rotationsChanged;
 	Widget? _cachedScrollSheetChild;
 	ScrollController? _cachedScrollSheetController;
-	final _scrollSheetController = DraggableScrollableController();
+	late final DraggableScrollableController _scrollSheetController;
 	final _draggableScrollableSheetKey = GlobalKey();
 	late StreamSubscription<List<void>> __onPageControllerUpdateSubscription;
 
 	@override
 	void initState() {
 		super.initState();
+		_scrollCoalescer = BehaviorSubject();
+		_slideStream = BehaviorSubject();
+		_shouldShowPosition = ValueNotifier(false);
+		_currentAttachmentChanged = BehaviorSubject();
+		_rotationsChanged = BehaviorSubject();
+		_scrollSheetController = DraggableScrollableController();
 		_rotateButtonAnimationController = AnimationController(duration: const Duration(milliseconds: 5000), vsync: this, upperBound: pi * 2);
 		showChrome = widget.initiallyShowChrome;
 		_updateOverlays(showChrome);

@@ -27,13 +27,14 @@ class ThreadAttachmentsPage extends StatefulWidget {
 
 class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 	final Map<Attachment, AttachmentViewerController> _controllers = {};
-	final _controller = RefreshableListController<Attachment>();
+	late final RefreshableListController<Attachment> _controller;
 	AttachmentViewerController? _lastPrimary;
 	StreamSubscription<void>? _slowScrollUpdatesSubscription;
 
 	@override
 	void initState() {
 		super.initState();
+		_controller = RefreshableListController();
 		if (widget.initialAttachment != null) {
 			Future.delayed(const Duration(milliseconds: 250), () {
 				_controller.animateTo((a) => a.id == widget.initialAttachment?.id);

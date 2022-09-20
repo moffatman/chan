@@ -26,7 +26,13 @@ class InjectingNavigator extends Navigator {
 
 class _InjectingNavigatorState extends NavigatorState {
 	final _routeStack = <Route>[];
-	final topRoute = ValueNotifier<Route?>(null);
+	late final ValueNotifier<Route?> topRoute;
+
+	@override
+	void initState() {
+		super.initState();
+		topRoute = ValueNotifier<Route?>(null);
+	}
 
 	@override
 	Future<T?> push<T extends Object?>(Route<T> route) {
@@ -72,7 +78,7 @@ class PrimaryScrollControllerInjectingNavigator extends StatefulWidget {
 }
 
 class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScrollControllerInjectingNavigator> {
-	final primaryScrollControllerTracker = ValueNotifier<ScrollController?>(null);
+	late final ValueNotifier<ScrollController?> primaryScrollControllerTracker;
 	late InjectingNavigator _navigator;
 
 	Widget _injectController(BuildContext context, Route? route, WidgetBuilder childBuilder) {
@@ -112,6 +118,7 @@ class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScroll
 	@override
 	void initState() {
 		super.initState();
+		primaryScrollControllerTracker = ValueNotifier<ScrollController?>(null);
 		_navigator = _makeNavigator();
 	}
 

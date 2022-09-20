@@ -212,9 +212,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	DateTime? tryAgainAt;
 	Captcha4ChanCustomChallenge? challenge;
 	int backgroundSlide = 0;
-	final _solutionNode = FocusNode();
-	final _solutionController = TextEditingController();
-	final _letterPickerControllers = List.generate(6, (i) => FixedExtentScrollController());
+	late final FocusNode _solutionNode;
+	late final TextEditingController _solutionController;
+	late final List<FixedExtentScrollController> _letterPickerControllers;
 	List<double> _guessConfidences = List.generate(6, (i) => 1.0);
 	String _lastGuessText = "";
 	bool _greyOutPickers = true;
@@ -511,6 +511,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	@override
 	void initState() {
 		super.initState();
+	_solutionNode = FocusNode();
+	_solutionController = TextEditingController();
+	_letterPickerControllers = List.generate(6, (i) => FixedExtentScrollController());
 		if (context.read<EffectiveSettings>().useNewCaptchaForm) {
 			_solutionController.text = "000000";
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);

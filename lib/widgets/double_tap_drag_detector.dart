@@ -22,11 +22,17 @@ class DoubleTapDragDetector extends StatefulWidget {
 }
 
 class _DoubleTapDragDetectorState extends State<DoubleTapDragDetector> {
-	late final recognizer = DoubleTapDragGestureRecognizer()
-		..onDoubleTapDrag = _onUpdate
-		..onDoubleTapDone = _onEnd
-		..onDoubleTapCancel = _onCancel
-		..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
+	late final DoubleTapDragGestureRecognizer recognizer;
+	
+	@override
+	void initState() {
+		super.initState();
+		recognizer = DoubleTapDragGestureRecognizer()
+			..onDoubleTapDrag = _onUpdate
+			..onDoubleTapDone = _onEnd
+			..onDoubleTapCancel = _onCancel
+			..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
+	}
 	
 	void _onCancel() {
 		widget.onSingleTap?.call();
@@ -50,5 +56,11 @@ class _DoubleTapDragDetectorState extends State<DoubleTapDragDetector> {
 			},
 			child: widget.child
 		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		recognizer.dispose();
 	}
 }

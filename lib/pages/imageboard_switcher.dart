@@ -20,10 +20,16 @@ class ImageboardSwitcherPage extends StatefulWidget {
 }
 
 class _ImageboardSwitcherPageState extends State<ImageboardSwitcherPage> {
-	late final PageController _controller = PageController(
-		initialPage: max(0, ImageboardRegistry.instance.imageboardsIncludingUninitialized.toList().indexWhere((b) => b.key == widget.initialImageboardKey))
-	);
+	late final PageController _controller;
 	final _focusNodes = <int, FocusNode>{};
+
+	@override
+	void initState() {
+		super.initState();
+		_controller = PageController(
+			initialPage: max(0, ImageboardRegistry.instance.imageboardsIncludingUninitialized.toList().indexWhere((b) => b.key == widget.initialImageboardKey))
+		);
+	}
 
 	@override
 	Widget build(BuildContext context) {

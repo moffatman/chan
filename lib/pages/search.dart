@@ -33,7 +33,13 @@ class SearchPage extends StatefulWidget {
 
 class SearchPageState extends State<SearchPage> {
 	final _masterDetailKey = GlobalKey<MultiMasterDetailPageState>();
-	final _valueInjector = ValueNotifier<ImageboardScoped<ImageboardArchiveSearchResult>?>(null);
+	late final ValueNotifier<ImageboardScoped<ImageboardArchiveSearchResult>?> _valueInjector;
+
+	@override
+	void initState() {
+		super.initState();
+		_valueInjector = ValueNotifier(null);
+	}
 
 	void onSearchComposed(ImageboardArchiveSearchQuery query) {
 		Persistence.recentSearches.handleSearch(query.clone());
@@ -105,6 +111,12 @@ class SearchPageState extends State<SearchPage> {
 			]
 		);
 	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		_valueInjector.dispose();
+	}
 }
 
 enum _MediaFilter {
@@ -157,8 +169,8 @@ class SearchComposePage extends StatefulWidget {
 }
 
 class _SearchComposePageState extends State<SearchComposePage> {
-	final _controller = TextEditingController();
-	final _focusNode = FocusNode();
+	late final TextEditingController _controller;
+	late final FocusNode _focusNode;
 	late ImageboardArchiveSearchQuery query;
 	DateTime? _chosenDate;
 	bool _searchFocused = false;
@@ -169,6 +181,8 @@ class _SearchComposePageState extends State<SearchComposePage> {
 	@override
 	void initState() {
 		super.initState();
+		_controller = TextEditingController();
+		_focusNode = FocusNode();
 		_lastImageboardKey = Persistence.tabs[Persistence.currentTabIndex].imageboardKey;
 		_lastBoardName = Persistence.tabs[Persistence.currentTabIndex].board?.name;
 		query = ImageboardArchiveSearchQuery(

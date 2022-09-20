@@ -46,11 +46,12 @@ class CaptchaSecurimageChallenge {
 class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 	String? errorMessage;
 	CaptchaSecurimageChallenge? challenge;
-	final _solutionNode = FocusNode();
+	late final FocusNode _solutionNode;
 
 	@override
 	void initState() {
 		super.initState();
+		_solutionNode = FocusNode();
 		_tryRequestChallenge();
 	}
 
