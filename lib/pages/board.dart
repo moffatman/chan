@@ -527,7 +527,7 @@ class _BoardPageState extends State<BoardPage> {
 											bindings: {
 												LogicalKeySet(LogicalKeyboardKey.keyG): () {
 													if (board != null && context.read<EffectiveSettings>().showImages(context, board!.name)) {
-														final nextThreadWithImage = _listController.items.skip(_listController.firstVisibleIndex).firstWhere((t) => t.attachments.isNotEmpty, orElse: () {
+														final nextThreadWithImage = _listController.items.skip(max(0, _listController.firstVisibleIndex)).firstWhere((t) => t.attachments.isNotEmpty, orElse: () {
 															return _listController.items.firstWhere((t) => t.attachments.isNotEmpty);
 														});
 														final attachments = _listController.items.expand((_) => _.attachments).toList();

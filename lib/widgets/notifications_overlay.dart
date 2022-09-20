@@ -16,7 +16,7 @@ class OverlayNotification {
 	final Imageboard imageboard;
 	final BoardThreadOrPostIdentifier target;
 	bool closed = false;
-	final AnimationController autoCloseAnimation;
+	AnimationController? autoCloseAnimation;
 
 	OverlayNotification({
 		required this.imageboard,
@@ -57,11 +57,11 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 			return;
 		}
 		final n = shown.first;
-		if (n.autoCloseAnimation.isAnimating) {
+		if (n.autoCloseAnimation!.isAnimating) {
 			return;
 		}
 		if (!(n.imageboard.persistence.getThreadStateIfExists(n.target.threadIdentifier!)?.freshYouIds().contains(n.target.postId) ?? false)) {
-			n.autoCloseAnimation.forward().then((_) => closeNotification(n));
+			n.autoCloseAnimation!.forward().then((_) => closeNotification(n));
 		}
 	}
 
@@ -88,7 +88,8 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		notification.closed = true;
 		setState(() {});
 		await Future.delayed(const Duration(seconds: 1));
-		notification.autoCloseAnimation.dispose();
+		notification.autoCloseAnimation?.dispose();
+		notification.autoCloseAnimation = null;
 		shown.remove(notification);
 		setState(() {});
 		_checkAutoclose();
@@ -306,9 +307,9 @@ class TopNotification extends StatelessWidget {
 										const Icon(CupertinoIcons.xmark),
 										IgnorePointer(
 											child: AnimatedBuilder(
-												animation: notification.autoCloseAnimation,
+												animation: notification.autoCloseAnimation!,
 												builder: (context, _) => CircularProgressIndicator(
-													value: notification.autoCloseAnimation.value,
+													value: notification.autoCloseAnimation!.value,
 													color: CupertinoTheme.of(context).scaffoldBackgroundColor
 												)
 											)
@@ -394,11 +395,11 @@ class CornerNotification extends StatelessWidget {
 													Icon(CupertinoIcons.xmark, size: 17, color: CupertinoTheme.of(context).primaryColor),
 													IgnorePointer(
 														child: AnimatedBuilder(
-															animation: notification.autoCloseAnimation,
+															animation: notification.autoCloseAnimation!,
 															builder: (context, _) => Transform.scale(
 																scale: 0.8,
 																child: CircularProgressIndicator(
-																	value: notification.autoCloseAnimation.value,
+																	value: notification.autoCloseAnimation!.value,
 																	color: CupertinoTheme.of(context).primaryColor,
 																	strokeWidth: 4,
 																)

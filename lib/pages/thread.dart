@@ -582,6 +582,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																			if (shouldScroll) _blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500));
 																			// Don't show data if the thread switched
 																			Future.delayed(const Duration(milliseconds: 30), () {
+																				if (!mounted) return;
 																				// Trigger update of counts in case new post is drawn fully onscreen
 																				_listController.slowScrollUpdates.add(null);
 																			});

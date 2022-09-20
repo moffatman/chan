@@ -281,7 +281,10 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		if (!_animatingNow) {
 			final settings = context.read<EffectiveSettings>();
 			if (settings.autoloadAttachments) {
-				_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
+				_getController(attachment).loadFullAttachment().then((x) {
+					if (!mounted) return;
+					_currentAttachmentChanged.add(null);
+				});
 				if (index > 0) {
 					final previousAttachment = widget.attachments[index - 1];
 					_getController(previousAttachment).preloadFullAttachment();
@@ -613,6 +616,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												padding: EdgeInsets.zero,
 												onPressed: currentController.canShare && !currentController.isDownloaded ? () async {
 													await currentController.download();
+													if (!mounted) return;
 													showToast(context: context, message: 'Downloaded ${currentAttachment.filename}', icon: CupertinoIcons.cloud_download);
 												} : null,
 												child: const Icon(CupertinoIcons.cloud_download)

@@ -47,9 +47,12 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		_focusNode = widget.searchFocusNode ?? FocusNode();
 		boards = context.read<Persistence>().boards.values.toList();
 		scrollController.addListener(_onScroll);
-		context.read<Imageboard>().refreshBoards().then((freshBoards) => setState(() {
-			boards = freshBoards;
-		}));
+		context.read<Imageboard>().refreshBoards().then((freshBoards) {
+			if (!mounted) return;
+			setState(() {
+				boards = freshBoards;
+			});
+		});
 	}
 
 	double _getOverscroll() {

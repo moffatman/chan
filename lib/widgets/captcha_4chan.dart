@@ -321,6 +321,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				challenge = null;
 			});
 			challenge = await _requestChallenge();
+			if (!mounted) return;
 			if (challenge!.foregroundImage == null && challenge!.backgroundImage == null) {
 				if (challenge!.challenge == 'noop') {
 					widget.onCaptchaSolved(Chan4CustomCaptchaSolution(
@@ -339,6 +340,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			backgroundSlide = 0;
 			if (challenge!.backgroundImage != null) {
 				await _alignImage();
+				if (!mounted) return;
 			}
 			if (settings.useNewCaptchaForm) {
 				_solutionController.text = "00000";
@@ -353,6 +355,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		catch(e, st) {
 			print(e);
 			print(st);
+			if (!mounted) return;
 			setState(() {
 				errorMessage = e.toStringDio();
 			});

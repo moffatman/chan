@@ -369,6 +369,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		await tmpDevImageboard.initialize(
 			threadWatcherWatchForStickyOnBoards: ['chance']
 		);
+		if (!mounted) {
+			tmpDevImageboard.dispose();
+			return;
+		}
 		_devNotificationsSubscription?.cancel();
 		_devNotificationsSubscription = tmpDevImageboard.notifications.tapStream.listen(_onDevNotificationTapped);
 		setState(() {

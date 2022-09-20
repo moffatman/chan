@@ -227,6 +227,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			}
 			widget.controller!.scrollController!.position.isScrollingNotifier.addListener(listener);
 			await Future.any([completer.future, Future.delayed(const Duration(seconds: 3))]);
+			if (!mounted) return;
 			widget.controller?.scrollController?.position.isScrollingNotifier.removeListener(listener);
 			if (updatingWithId != widget.id) {
 				updatingNow = false;
@@ -234,7 +235,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			}
 		}
 		updatingNow = false;
-		if (mounted && newList != null || list == null) {
+		if (mounted && (newList != null || list == null)) {
 			if (hapticFeedback) {
 				mediumHapticFeedback();
 			}
