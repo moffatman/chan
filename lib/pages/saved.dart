@@ -300,17 +300,17 @@ class _SavedPageState extends State<SavedPage> {
 																						final attachments = {
 																							for (final w in _watchedListController.items)
 																								for (final attachment in w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
-																									w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)!: attachment
+																									attachment: w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)!
 																							};
 																						showGallery(
 																							context: context,
-																							attachments: attachments.values.toList(),
+																							attachments: attachments.keys.toList(),
 																							replyCounts: {
-																								for (final item in attachments.entries) item.value: item.key.thread!.replyCount
+																								for (final item in attachments.entries) item.key: item.value.thread!.replyCount
 																							},
-																							initialAttachment: attachments.values.firstWhere((a) => a.id == initialAttachment.id),
+																							initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
 																							onChange: (attachment) {
-																								final threadId = attachments.entries.firstWhere((_) => _.value.id == attachment.id).key.identifier;
+																								final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
 																								_watchedListController.animateTo((p) => p.item.threadIdentifier == threadId);
 																							},
 																							semanticParentIds: [-4]
