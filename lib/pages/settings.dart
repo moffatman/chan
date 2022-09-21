@@ -2388,7 +2388,7 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 		final settings = context.watch<EffectiveSettings>();
 		final filters = <int, CustomFilter>{};
 		for (final line in settings.filterConfiguration.split('\n').asMap().entries) {
-			if (line.value.isEmpty || line.value.startsWith('#')) {
+			if (line.value.isEmpty) {
 				continue;
 			}
 			try {
@@ -2763,7 +2763,7 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 													dirty = false;
 												});
 											}
-										)										
+										)
 									]
 								),
 								const SizedBox(height: 16),
@@ -2792,45 +2792,70 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 								margin: EdgeInsets.zero,
 								children: [
 									...filters.entries.map((filter) {
-										return CupertinoListTile(
-											title: Text(filter.value.label.isNotEmpty ? filter.value.label : '/${filter.value.pattern.pattern}/'),
-											leading: const {
-												FilterResultType.hide: Icon(CupertinoIcons.eye_slash),
-												FilterResultType.highlight: Icon(CupertinoIcons.sun_max_fill),
-												FilterResultType.pinToTop: Icon(CupertinoIcons.arrow_up_to_line),
-												FilterResultType.autoSave: Icon(CupertinoIcons.bookmark_fill)
-											}[filter.value.outputType],
-											additionalInfo: Wrap(
-												children: [
-													if (filter.value.minRepliedTo != null) Text('Replying to >=${filter.value.minRepliedTo}'),
-													if (filter.value.threadOnly) const Text('Threads only'),
-													if (filter.value.hasFile == true) const Icon(CupertinoIcons.doc)
-													else if (filter.value.hasFile == false) Stack(
-														children: const [
-															Icon(CupertinoIcons.doc),
-															Icon(CupertinoIcons.xmark)
-														]
-													),
-													for (final board in filter.value.boards) Text('/$board/'),
-													for (final board in filter.value.excludeBoards) Text('not /$board/'),
-													if (!setEquals(filter.value.patternFields.toSet(), defaultPatternFields.toSet()))
-														for (final field in filter.value.patternFields) Text(field)
-												].expand((x) => [const Text(', '), x]).skip(1).toList()
-											),
-											onTap: () async {
-												final newFilter = await editFilter(filter.value);
-												if (newFilter != null) {
-													final lines = settings.filterConfiguration.split('\n');
-													if (newFilter.item1) {
-														lines.removeAt(filter.key);
-													}
-													else {
-														lines[filter.key] = newFilter.item2!.toStringConfiguration();
-													}
-													settings.filterConfiguration = lines.join('\n');
-													regexController.text = settings.filterConfiguration;
-												}
-											}
+										return Row(
+											children: [
+												Expanded(
+													child: Opacity(
+														opacity: filter.value.disabled ? 0.5 : 1,
+														child: CupertinoListTile(
+															title: Text(filter.value.label.isNotEmpty ? filter.value.label : '/${filter.value.pattern.pattern}/'),
+															leading:  const {
+																FilterResultType.hide: Icon(CupertinoIcons.eye_slash),
+																FilterResultType.highlight: Icon(CupertinoIcons.sun_max_fill),
+																FilterResultType.pinToTop: Icon(CupertinoIcons.arrow_up_to_line),
+																FilterResultType.autoSave: Icon(CupertinoIcons.bookmark_fill)
+															}[filter.value.outputType],
+															additionalInfo: Wrap(
+																children: [
+																	if (filter.value.minRepliedTo != null) Text('Replying to >=${filter.value.minRepliedTo}'),
+																	if (filter.value.threadOnly) const Text('Threads only'),
+																	if (filter.value.hasFile == true) const Icon(CupertinoIcons.doc)
+																	else if (filter.value.hasFile == false) Stack(
+																		children: const [
+																			Icon(CupertinoIcons.doc),
+																			Icon(CupertinoIcons.xmark)
+																		]
+																	),
+																	for (final board in filter.value.boards) Text('/$board/'),
+																	for (final board in filter.value.excludeBoards) Text('not /$board/'),
+																	if (!setEquals(filter.value.patternFields.toSet(), defaultPatternFields.toSet()))
+																		for (final field in filter.value.patternFields) Text(field)
+																].expand((x) => [const Text(', '), x]).skip(1).toList()
+															),
+															onTap: () async {
+																final newFilter = await editFilter(filter.value);
+																if (newFilter != null) {
+																	final lines = settings.filterConfiguration.split('\n');
+																	if (newFilter.item1) {
+																		lines.removeAt(filter.key);
+																	}
+																	else {
+																		lines[filter.key] = newFilter.item2!.toStringConfiguration();
+																	}
+																	settings.filterConfiguration = lines.join('\n');
+																	regexController.text = settings.filterConfiguration;
+																}
+															}
+														)
+													)
+												),
+												Material(
+													type: MaterialType.transparency,
+													child: Checkbox(
+														activeColor: CupertinoTheme.of(context).primaryColor,
+														checkColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
+														fillColor: MaterialStateColor.resolveWith((states) => CupertinoTheme.of(context).primaryColor),
+														value: !filter.value.disabled,
+														onChanged: (value) {
+															filter.value.disabled = !filter.value.disabled;
+															final lines = settings.filterConfiguration.split('\n');
+															lines[filter.key] = filter.value.toStringConfiguration();
+															settings.filterConfiguration = lines.join('\n');
+															regexController.text = settings.filterConfiguration;
+														}
+													)
+												)
+											]
 										);
 									}),
 									if (filters.isEmpty) CupertinoListTile(

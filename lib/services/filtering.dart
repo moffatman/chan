@@ -73,8 +73,10 @@ class CustomFilter implements Filter {
 	bool? hasFile;
 	bool threadOnly;
 	int? minRepliedTo;
+	bool disabled;
 	CustomFilter({
 		String? configuration,
+		this.disabled = false,
 		this.label = '',
 		required this.pattern,
 		this.patternFields = defaultPatternFields,
@@ -89,6 +91,9 @@ class CustomFilter implements Filter {
 	}
 	@override
 	FilterResult? filter(Filterable item) {
+		if (disabled) {
+			return null;
+		}
 		if (pattern.pattern.isNotEmpty) {
 			bool matches = false;
 			for (final field in patternFields) {
@@ -126,6 +131,7 @@ class CustomFilter implements Filter {
 		}
 		final filter = CustomFilter(
 			configuration: configuration,
+			disabled: configuration.startsWith('#'),
 			label: match.group(1)!,
 			pattern: RegExp(match.group(2)!, multiLine: true, caseSensitive: match.group(3) != 'i')
 		);
@@ -179,6 +185,9 @@ class CustomFilter implements Filter {
 
 	String toStringConfiguration() {
 		final out = StringBuffer();
+		if (disabled) {
+			out.write('#');
+		}
 		out.write(label);
 		out.write('/');
 		out.write(pattern.pattern);
@@ -363,15 +372,23 @@ class FilterException implements Exception {
 	String toString() => 'Filter Error: $message';
 }
 
-final _configurationLinePattern = RegExp(r'^([^\/]*)\/(.*)\/(i?)(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?$');
+final _configurationLinePattern = RegExp(r'^#?([^\/]*)\/(.*)\/(i?)(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?$');
 
 FilterGroup makeFilter(String configuration) {
 	final filters = <Filter>[];
 	for (final line in configuration.split('\n')) {
-		if (line.startsWith('#') || line.isEmpty) {
+		if (line.isEmpty) {
 			continue;
 		}
-		filters.add(CustomFilter.fromStringConfiguration(line));
+		try {
+			filters.add(CustomFilter.fromStringConfiguration(line));
+		}
+		on FilterException {
+			// It might be a filter, or it could just be a comment
+			if (!line.startsWith('#')) {
+				rethrow;
+			}
+		}
 	}
 	return FilterGroup(filters);
 }
