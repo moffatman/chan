@@ -211,7 +211,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 					icon: CupertinoIcons.exclamationmark_triangle
 				);
 				if (widget.remedies[errorType] == null) {
-					print('Error refreshing list: $e');
+					print('Error refreshing list: ${e.toStringDio()}');
 					print(st);
 					resetTimer();
 				}
