@@ -144,7 +144,7 @@ class ExpiringMutexResource<T> {
 extension ToStringDio on Object {
 	String toStringDio() {
 		if (this is DioError) {
-			return (this as DioError).message;
+			return '${(this as DioError).message}\nURL: ${(this as DioError).requestOptions.uri}';
 		}
 		else {
 			return toString();
