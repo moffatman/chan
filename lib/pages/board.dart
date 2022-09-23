@@ -152,7 +152,9 @@ class _BoardPageState extends State<BoardPage> {
 		widget.onBoardChanged?.call(newBoard);
 		setState(() {
 			board = newBoard.item;
-			_listController.scrollController?.jumpTo(0);
+			if (_listController.scrollController?.hasOnePosition ?? false) {
+				_listController.scrollController?.jumpTo(0);
+			}
 			_temporarySortingMethod = null;
 			_temporaryReverseSorting = false;
 		});
