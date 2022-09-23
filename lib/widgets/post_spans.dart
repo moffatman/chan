@@ -1301,7 +1301,7 @@ String _makeAttachmentInfo({
 				text += '${((attachment.sizeInBytes ?? 0) / 1024).round()} KB';
 				firstItemPassed = true;
 			}
-			if (settings.showFileDimensionsOnPosts) {
+			if (settings.showFileDimensionsOnPosts && attachment.width != null && attachment.height != null) {
 				if (firstItemPassed) {
 					text += ', ';
 				}
