@@ -1,4 +1,5 @@
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/compress_html.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:test/test.dart';
 import 'package:chan/util.dart';
@@ -34,6 +35,15 @@ void main() {
       expect(SiteLainchan.decodeGenericUrl('example.com', 'https://example.com/board/res/1234.json'), null);
       expect(SiteLainchan.decodeGenericUrl('example.com', 'https://example.com/board/res/1234.html#q1235'), BoardThreadOrPostIdentifier('board', 1234, 1235));
       expect(SiteLainchan.decodeGenericUrl('example.com', 'https://example.com/board/res/1234.html#q1235&also=yes'), BoardThreadOrPostIdentifier('board', 1234, 1235));
+    });
+  });
+
+  group('HTML compressor', () {
+    test('compress', () {
+      const html = '<a href="https://example.com">https://example.com</a><br><span>&gt;&gt;12345678</span>';
+      final compressed = compressHTML(html);
+      expect(compressed.html, '<a><b></b></a><br><c><d></d></c>');
+      expect(compressed.decompressTranslation(compressed.html), html);
     });
   });
 }
