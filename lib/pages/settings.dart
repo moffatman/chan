@@ -283,7 +283,8 @@ class SettingsPage extends StatelessWidget {
 									onPressed: () async {
 										try {
 											final imageboards = {
-												for (final i in ImageboardRegistry.instance.imageboardsIncludingUninitialized) i.key: i.site.name
+												for (final i in ImageboardRegistry.instance.imageboardsIncludingUninitialized)
+													i.key: i.initialized ? i.site.name : i.key
 											};
 											final toDelete = await showCupertinoDialog<String>(
 												context: context,

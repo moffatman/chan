@@ -20,6 +20,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
@@ -509,6 +510,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						if (consent != true) {
 							return;
 						}
+						final siteResponse = await Dio().get('$contentSettingsApiRoot/site/$siteKey');
+						if (siteResponse.data['error'] != null) {
+							throw Exception(siteResponse.data['error']);
+						}
+						makeSite(siteResponse.data['data']);
 						final response = await Dio().put('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$siteKey');
 						if (response.data['error'] != null) {
 							throw Exception(response.data['error']);

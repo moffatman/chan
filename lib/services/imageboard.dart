@@ -32,6 +32,9 @@ class Imageboard extends ChangeNotifier {
 	String? boardFetchErrorMessage;
 	bool boardsLoading = false;
 	bool initialized = false;
+	bool _persistenceInitialized = false;
+	bool _threadWatcherInitialized = false;
+	bool _notificationsInitialized = false;
 	final String key;
 	bool get seemsOk => initialized && !boardsLoading && setupErrorMessage == null && boardFetchErrorMessage == null;
 	final ThreadWatcherController? threadWatcherController;
@@ -66,11 +69,13 @@ class Imageboard extends ChangeNotifier {
 			persistence = Persistence(key);
 			await persistence.initialize();
 			site.persistence = persistence;
+			_persistenceInitialized = true;
 			notifications = Notifications(
 				persistence: persistence,
 				site: site
 			);
 			await notifications.initialize();
+			_notificationsInitialized = true;
 			threadWatcher = ThreadWatcher(
 				imageboardKey: key,
 				site: site,
@@ -81,6 +86,7 @@ class Imageboard extends ChangeNotifier {
 				controller: threadWatcherController ?? ImageboardRegistry.threadWatcherController
 			);
 			notifications.localWatcher = threadWatcher;
+			_threadWatcherInitialized = true;
 			setupBoards(); // don't await
 			initialized = true;
 		}
@@ -128,9 +134,15 @@ class Imageboard extends ChangeNotifier {
 	@override
 	void dispose() {
 		super.dispose();
-		threadWatcher.dispose();
-		persistence.dispose();
-		notifications.dispose();
+		if (_threadWatcherInitialized) {
+			threadWatcher.dispose();
+		}
+		if (_persistenceInitialized) {
+			persistence.dispose();
+		}
+		if (_notificationsInitialized) {
+			notifications.dispose();
+		}
 	}
 }
 
@@ -181,6 +193,9 @@ class ImageboardRegistry extends ChangeNotifier {
 					}
 					// Only try to reauth on wifi
 					Future.microtask(() async {
+						if (!_sites[entry.key]!.initialized) {
+							return;
+						}
 						final site = _sites[entry.key]!.site;
 						final savedFields = await site.getSavedLoginFields();
 						if (savedFields != null && settings.connectivity == ConnectivityResult.wifi) {
