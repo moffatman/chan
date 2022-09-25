@@ -78,6 +78,7 @@ dependencies:
   flutter:
     sdk: flutter
   firebase_crashlytics: ^2.8.3
+  charset_converter: ^2.1.0
 
 dev_dependencies:
   hive_generator: ^1.1.1

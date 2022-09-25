@@ -36,6 +36,8 @@ class ImageboardBoard {
 	final bool? spoilers;
 	@HiveField(15)
 	DateTime? additionalDataTime;
+	@HiveField(16)
+	String? subdomain;
 
 	ImageboardBoard({
 		required this.name,
@@ -53,7 +55,8 @@ class ImageboardBoard {
 		this.replyCooldown,
 		this.imageCooldown,
 		this.spoilers,
-		this.additionalDataTime
+		this.additionalDataTime,
+		this.subdomain
 	});
 
 	@override

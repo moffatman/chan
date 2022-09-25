@@ -14,6 +14,7 @@ import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/dvach.dart';
 import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/frenschan.dart';
+import 'package:chan/sites/futaba.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/lainchan_org.dart';
@@ -530,6 +531,13 @@ ImageboardSite makeSite(dynamic data) {
 		return SiteDvach(
 			name: data['name'],
 			baseUrl: data['baseUrl']
+		);
+	}
+	else if (data['type'] == 'futaba') {
+		return SiteFutaba(
+			name: data['name'],
+			baseUrl: data['baseUrl'],
+			maxUploadSizeBytes: data['maxUploadSizeBytes']
 		);
 	}
 	else if (data['type'] == '4chan') {

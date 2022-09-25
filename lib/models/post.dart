@@ -3,6 +3,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/foolfuuka.dart';
+import 'package:chan/sites/futaba.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:flutter/foundation.dart';
@@ -23,7 +24,9 @@ enum PostSpanFormat {
 	@HiveField(2)
 	lainchan,
 	@HiveField(3)
-	fuuka
+	fuuka,
+	@HiveField(4)
+	futaba
 }
 
 @HiveType(typeId: 11)
@@ -54,19 +57,18 @@ class Post implements Filterable {
 	@HiveField(12)
 	Map<String, int>? foolfuukaLinkedPostThreadIds;
 	PostNodeSpan _makeSpan() {
-		if (spanFormat == PostSpanFormat.chan4) {
-			return Site4Chan.makeSpan(board, threadId, text);
+		switch (spanFormat) {
+			case PostSpanFormat.chan4:
+				return Site4Chan.makeSpan(board, threadId, text);
+			case PostSpanFormat.foolFuuka:
+				return FoolFuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
+			case PostSpanFormat.lainchan:
+				return SiteLainchan.makeSpan(board, threadId, text);
+			case PostSpanFormat.fuuka:
+				return FuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
+			case PostSpanFormat.futaba:
+				return SiteFutaba.makeSpan(board, threadId, text);
 		}
-		else if (spanFormat == PostSpanFormat.foolFuuka) {
-			return FoolFuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
-		}
-		else if (spanFormat == PostSpanFormat.lainchan) {
-			return SiteLainchan.makeSpan(board, threadId, text);
-		}
-		else if (spanFormat == PostSpanFormat.fuuka) {
-			return FuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
-		}
-		throw UnimplementedError();
 	}
 	PostNodeSpan get span {
 		_span ??= _makeSpan();
