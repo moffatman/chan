@@ -73,7 +73,7 @@ class CompressedHTML {
 
 final _compressiblePatterns = [
 	RegExp(r'^https?:\/\/[^ ]+$'), // url
-	RegExp(r'^[^a-zA-Z]+$') // entirely non-alphabetic
+	RegExp(r'^[0-9>]+$') // entirely non-alphabetic
 ];
 
 CompressedHTML compressHTML(String html) {
