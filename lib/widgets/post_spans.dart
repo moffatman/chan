@@ -11,6 +11,7 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/translation.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/hover_popup.dart';
@@ -1128,6 +1129,10 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		super.dispose();
 		disposed = true;
 	}
+
+	AsyncSnapshot<Post>? translatedPost(int postId);
+	Future<void> translatePost(int postId);
+	void clearTranslatedPosts([int? postId]);
 }
 
 class PostSpanChildZoneData extends PostSpanZoneData {
@@ -1173,6 +1178,22 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	Post? postFromArchive(int id) => parent.postFromArchive(id);
 	@override
 	String? postFromArchiveError(int id) => parent.postFromArchiveError(id);
+	@override
+	AsyncSnapshot<Post>? translatedPost(int postId) => parent.translatedPost(postId);
+	@override
+	Future<void> translatePost(int postId) async {
+		try {
+			await parent.translatePost(postId);
+		}
+		finally {
+			notifyListeners();
+		}
+	}
+	@override
+	void clearTranslatedPosts([int? postId]) {
+		parent.clearTranslatedPosts(postId);
+		notifyListeners();
+	}
 }
 
 
@@ -1189,6 +1210,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	final Map<int, Post> _postsFromArchive = {};
 	final Map<int, String> _postFromArchiveErrors = {};
 	final Iterable<int> semanticRootIds;
+	final Map<int, AsyncSnapshot<Post>> _translatedPostSnapshots = {};
 
 	PostSpanRootZoneData({
 		required this.thread,
@@ -1196,7 +1218,14 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		this.threadState,
 		this.onNeedScrollToPost,
 		this.semanticRootIds = const []
-	});
+	}) {
+		if (threadState != null) {
+			_translatedPostSnapshots.addAll({
+				for (final p in threadState!.translatedPosts.values)
+					p.id: AsyncSnapshot.withData(ConnectionState.done, p)
+			});
+		}
+	}
 
 	@override
 	Iterable<int> get stackIds => semanticRootIds;
@@ -1234,6 +1263,56 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	String? postFromArchiveError(int id) {
 		return _postFromArchiveErrors[id];
+	}
+
+	@override
+	AsyncSnapshot<Post>? translatedPost(int postId) => _translatedPostSnapshots[postId];
+	@override
+	Future<void> translatePost(int postId) async {
+		_translatedPostSnapshots[postId] = const AsyncSnapshot.waiting();
+		notifyListeners();
+		try {
+			final post = thread.posts.firstWhere((p) => p.id == postId);
+			final translated = await translateHtml(post.text);
+			final translatedPost = Post(
+				board: post.board,
+				text: translated,
+				name: post.name,
+				time: post.time,
+				trip: post.trip,
+				threadId: post.threadId,
+				id: post.id,
+				spanFormat: post.spanFormat,
+				flag: post.flag,
+				attachments: post.attachments,
+				attachmentDeleted: post.attachmentDeleted,
+				posterId: post.posterId,
+				foolfuukaLinkedPostThreadIds: post.foolfuukaLinkedPostThreadIds,
+				passSinceYear: post.passSinceYear,
+				capcode: post.capcode
+			);
+			_translatedPostSnapshots[postId] = AsyncSnapshot.withData(ConnectionState.done, translatedPost);
+			threadState?.translatedPosts[postId] = translatedPost;
+			threadState?.save();
+		}
+		catch (e, st) {
+			_translatedPostSnapshots[postId] = AsyncSnapshot.withError(ConnectionState.done, e, st);
+			rethrow;
+		}
+		finally {
+			notifyListeners();
+		}
+	}
+
+	@override
+	void clearTranslatedPosts([int? postId]) {
+		if (postId == null) {
+			_translatedPostSnapshots.clear();
+		}
+		else {
+			_translatedPostSnapshots.remove(postId);
+		}
+		notifyListeners();
 	}
 }
 

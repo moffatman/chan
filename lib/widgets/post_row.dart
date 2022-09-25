@@ -1,5 +1,4 @@
 import 'package:chan/pages/selectable_post.dart';
-import 'package:chan/pages/translated_post.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
@@ -82,6 +81,7 @@ class PostRow extends StatelessWidget {
 			context.read<Persistence>().didUpdateSavedPost();
 		}
 		final zone = context.watch<PostSpanZoneData>();
+		final translatedPostSnapshot = zone.translatedPost(post.id);
 		final settings = context.watch<EffectiveSettings>();
 		final receipt = zone.threadState?.receipts.tryFirstWhere((r) => r.id == latestPost.id);
 		final isYourPost = receipt != null || (zone.threadState?.postsMarkedAsYou.contains(post.id) ?? false);
@@ -127,7 +127,7 @@ class PostRow extends StatelessWidget {
 							ctx.read<PostSpanZoneData>().onTap(d.globalPosition);
 						},
 						child: Text.rich(
-							post.span.build(
+							(translatedPostSnapshot?.data ?? latestPost).span.build(
 								ctx,
 								(baseOptions ?? PostSpanRenderOptions()).copyWith(
 									showCrossThreadLabel: showCrossThreadLabel,
@@ -313,7 +313,7 @@ class PostRow extends StatelessWidget {
 									)
 								)
 							),
-							if (savedPost != null) Positioned.fill(
+							if (savedPost != null || translatedPostSnapshot != null) Positioned.fill(
 								child: Align(
 									alignment: Alignment.topRight,
 									child: Container(
@@ -323,7 +323,18 @@ class PostRow extends StatelessWidget {
 											border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 										),
 										padding: const EdgeInsets.only(top: 2, bottom: 2, left: 6, right: 6),
-										child: const Icon(CupertinoIcons.bookmark_fill, size: 18)
+										child: Row(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												if (translatedPostSnapshot != null) const Icon(Icons.translate),
+												if (translatedPostSnapshot?.hasError ?? false) GestureDetector(
+													onTap: () => alertError(context, translatedPostSnapshot?.error?.toStringDio() ?? 'Unknown'),
+													child: const Icon(CupertinoIcons.exclamationmark_triangle)
+												)
+												else if (!(translatedPostSnapshot?.hasData ?? false)) const CupertinoActivityIndicator(),
+												if (savedPost != null) const Icon(CupertinoIcons.bookmark_fill, size: 18)
+											]
+										)
 									)
 								)
 							)
@@ -389,7 +400,7 @@ class PostRow extends StatelessWidget {
 						final size = rootContext.findRenderObject()?.semanticBounds.size;
 						shareOne(
 							context: context,
-							text: latestPost.span.buildText(),
+							text: (translatedPostSnapshot?.data ?? latestPost).span.buildText(),
 							type: "text",
 							sharePositionOrigin: (offset != null && size != null) ? offset & size : null
 						);
@@ -531,14 +542,23 @@ class PostRow extends StatelessWidget {
 						);
 					}
 				),
-				ContextMenuAction(
-					child: const Text('Translate'),
+				if (translatedPostSnapshot?.hasData == true) ContextMenuAction(
+					child: const Text('Original'),
 					trailingIcon: Icons.translate,
 					onPressed: () {
-						WeakNavigator.push(context, TranslatedPostPage(
-							post: latestPost,
-							zone: zone
-						));
+						zone.clearTranslatedPosts(post.id);
+					}
+				)
+				else ContextMenuAction(
+					child: const Text('Translate'),
+					trailingIcon: Icons.translate,
+					onPressed: () async {
+						try {
+							await zone.translatePost(post.id);
+						}
+						catch (e) {
+							alertError(context, e.toStringDio());
+						}
 					}
 				),
 				ContextMenuAction(

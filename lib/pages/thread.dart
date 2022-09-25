@@ -558,6 +558,14 @@ class _ThreadPageState extends State<ThreadPage> {
 																				if (persistentState == tmpPersistentState) {
 																					zone.thread = newThread;
 																					if (firstLoad) shouldScroll = true;
+																					if (persistentState.autoTranslate) {
+																						// Translate new posts
+																						for (final post in newThread.posts) {
+																							if (zone.translatedPost(post.id) == null) {
+																								zone.translatePost(post.id);
+																							}
+																						}
+																					}
 																				}
 																				await tmpPersistentState.save();
 																				setState(() {});
@@ -913,6 +921,28 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											}
 										),
 										Tuple3('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch),
+										if (widget.persistentState.autoTranslate) Tuple3('Original', const Icon(Icons.translate, size: 19), () {
+											widget.persistentState.autoTranslate = false;
+											widget.persistentState.translatedPosts.clear();
+											widget.zone.clearTranslatedPosts();
+											widget.persistentState.save();
+											setState(() {});
+										})
+										else Tuple3('Translate', const Icon(Icons.translate, size: 19), () async {
+											widget.persistentState.autoTranslate = true;
+											for (final post in widget.persistentState.thread?.posts ?? []) {
+												if (widget.zone.translatedPost(post.id) == null) {
+													try {
+														await widget.zone.translatePost(post.id);
+													}
+													catch (e) {
+														// ignore, it will be shown on the post widget anyway
+													}
+												}
+											}
+											widget.persistentState.save();
+											setState(() {});
+										}),
 										Tuple3('Scroll to last-seen', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), _greyCount <= 0 ? null : () => widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0)),
 										Tuple3('Scroll to bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom)
 									]) Padding(
