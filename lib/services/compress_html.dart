@@ -65,7 +65,7 @@ class CompressedHTML {
 	}
 
 	String decompressTranslation(String translation) {
-		final body = parse(translation).body!;
+		final body = parse(translation.replaceAll('<br></br>', '<br>')).body!;
 		_remapChildren(body);
 		return body.innerHtml;
 	}
@@ -143,7 +143,7 @@ CompressedHTML compressHTML(String html) {
 	}
 	mapChildren(body);
 	return CompressedHTML(
-		html: body.innerHtml,
+		html: body.innerHtml.replaceAll('<br>', '<br></br>'),
 		codex: {
 			for (final entry in reverseCodex.entries) entry.value: entry.key
 		}
