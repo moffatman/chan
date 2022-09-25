@@ -96,6 +96,7 @@ class _BoardPageState extends State<BoardPage> {
 	ThreadIdentifier? _lastSelectedThread;
 	final _boardsPullTabKey = GlobalKey();
 	final _threadPullTabKey = GlobalKey();
+	int? _page;
 
 	@override
 	void initState() {
@@ -631,9 +632,9 @@ class _BoardPageState extends State<BoardPage> {
 														child: StreamBuilder(
 															stream: _listController.slowScrollUpdates,
 															builder: (context, _) {
-																final page = _listController.firstVisibleItem?.currentPage;
+																_page = (_listController.firstVisibleItem?.currentPage ?? _page);
 																scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-																return (page == null || page == 0 || _listController.firstVisibleIndex == 0 || ((_listController.scrollController?.position.pixels ?? 1) < 0)) ? Container() : SafeArea(
+																return SafeArea(
 																	child: Align(
 																		alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
 																		child: Row(
@@ -658,7 +659,7 @@ class _BoardPageState extends State<BoardPage> {
 																								SizedBox(
 																									width: 25,
 																									child: Text(
-																										page.toString(),
+																										_page?.toString() ?? '',
 																										textAlign: TextAlign.center,
 																										style: TextStyle(
 																											color: CupertinoTheme.of(context).scaffoldBackgroundColor
