@@ -521,7 +521,7 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	List<String> hiddenPosterIds = [];
 	@HiveField(12, defaultValue: {})
 	Map<int, Post> translatedPosts = {};
-	@HiveField(13)
+	@HiveField(13, defaultValue: false)
 	bool autoTranslate = false;
 
 	PersistentThreadState({this.ephemeral = false}) : lastOpenedTime = DateTime.now();
