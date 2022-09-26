@@ -96,7 +96,7 @@ class _BoardPageState extends State<BoardPage> {
 	ThreadIdentifier? _lastSelectedThread;
 	final _boardsPullTabKey = GlobalKey();
 	final _threadPullTabKey = GlobalKey();
-	int? _page;
+	int _page = 1;
 
 	@override
 	void initState() {
@@ -659,7 +659,7 @@ class _BoardPageState extends State<BoardPage> {
 																								SizedBox(
 																									width: 25,
 																									child: Text(
-																										_page?.toString() ?? '',
+																										_page.toString(),
 																										textAlign: TextAlign.center,
 																										style: TextStyle(
 																											color: CupertinoTheme.of(context).scaffoldBackgroundColor
