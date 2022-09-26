@@ -64,7 +64,6 @@ void main() async {
 			final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
 			imageHttpClient.connectionTimeout = const Duration(seconds: 10);
 			imageHttpClient.idleTimeout = const Duration(seconds: 10);
-			imageHttpClient.maxConnectionsPerHost = 10;
 			await Persistence.initializeStatic();
 			await Notifications.initializeStatic();
 			FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
