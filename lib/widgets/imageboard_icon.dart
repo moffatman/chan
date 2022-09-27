@@ -13,7 +13,10 @@ class ImageboardIcon extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final imageboard = context.watch<Imageboard?>() ?? ImageboardRegistry.instance.getImageboard(imageboardKey ?? '');
+		Imageboard? imageboard = context.watch<Imageboard?>();
+		if (imageboardKey != null) {
+			imageboard = ImageboardRegistry.instance.getImageboard(imageboardKey!);
+		}
 		if (imageboard == null) {
 			return const Icon(CupertinoIcons.exclamationmark_triangle_fill);
 		}

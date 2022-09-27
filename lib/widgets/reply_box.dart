@@ -683,7 +683,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	Future<void> _solveCaptcha() async {
 		final site = context.read<ImageboardSite>();
 		final settings = context.read<EffectiveSettings>();
-		final savedFields = await site.getSavedLoginFields();
+		final savedFields = site.getSavedLoginFields();
 		if (savedFields != null) {
 			bool shouldAutoLogin = settings.connectivity != ConnectivityResult.mobile;
 			if (!shouldAutoLogin) {

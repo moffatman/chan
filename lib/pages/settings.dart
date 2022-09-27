@@ -19,6 +19,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/thread_row.dart';
@@ -140,7 +141,13 @@ class SettingsPage extends StatelessWidget {
 							builder: (context) => CupertinoAlertDialog(
 								content: SettingsLoginPanel(
 									site: site
-								)
+								),
+								actions: [
+									CupertinoDialogAction(
+										onPressed: () => Navigator.pop(context),
+										child: const Text('Close')
+									)
+								]
 							)
 						);
 					},
@@ -388,10 +395,18 @@ class SettingsPage extends StatelessWidget {
 	}
 }
 
-class SettingsBehaviorPage extends StatelessWidget {
+class SettingsBehaviorPage extends StatefulWidget {
 	const SettingsBehaviorPage({
 		Key? key
 	}) : super(key: key);
+
+	@override
+	createState() => _SettingsBehaviorPageState();
+}
+
+class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
+	Imageboard _imageFilterImageboard = ImageboardRegistry.instance.imageboards.first;
+	Imageboard _loginSystemImageboard = ImageboardRegistry.instance.imageboards.first;
 
 	@override
 	Widget build(BuildContext context) {
@@ -401,62 +416,149 @@ class SettingsBehaviorPage extends StatelessWidget {
 			children: [
 				const SettingsFilterPanel(),
 				const SizedBox(height: 16),
-				for (final imageboard in ImageboardRegistry.instance.imageboards) ...[
-					Text('Image filter - ${imageboard.key}'),
-					Padding(
-						padding: const EdgeInsets.all(16),
-						child: Row(
-							children: [
-								Text('Ignoring ${describeCount(imageboard.persistence.browserState.hiddenImageMD5s.length, 'image')}'),
-								const Spacer(),
-								CupertinoButton.filled(
-									padding: const EdgeInsets.all(16),
-									onPressed: () async {
-										final md5sBefore = imageboard.persistence.browserState.hiddenImageMD5s;
-										await Navigator.of(context).push(FullWidthCupertinoPageRoute(
-											showAnimations: settings.showAnimations,
-											builder: (context) => SettingsImageFilterPage(
-												browserState: imageboard.persistence.browserState
-											)
-										));
-										if (!setEquals(md5sBefore, imageboard.persistence.browserState.hiddenImageMD5s)) {
-											imageboard.persistence.didUpdateBrowserState();
-										}
-									},
-									child: const Text('Configure')
-								)
-							]
-						)
-					),
-					if (imageboard.site.getLoginSystemName() != null) ...[
-						Text(imageboard.site.getLoginSystemName()!),
-						const SizedBox(height: 16),
-						SettingsLoginPanel(
-							site: imageboard.site
+				Row(
+					children: [
+						const Icon(Icons.hide_image_outlined),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Image filter')
 						),
-						const SizedBox(height: 32)
-					],
-				],
-				const Text('Allow swiping to change page in gallery'),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('No'),
-						true: Text('Yes')
-					},
-					groupValue: settings.allowSwipingInGallery,
-					onValueChanged: (newValue) {
-						settings.allowSwipingInGallery = newValue;
-					}
+						CupertinoButton.filled(
+							padding: const EdgeInsets.all(8),
+							onPressed: () async {
+								final md5sBefore = _imageFilterImageboard.persistence.browserState.hiddenImageMD5s;
+								await Navigator.of(context).push(FullWidthCupertinoPageRoute(
+									showAnimations: settings.showAnimations,
+									builder: (context) => SettingsImageFilterPage(
+										browserState: _imageFilterImageboard.persistence.browserState
+									)
+								));
+								if (!setEquals(md5sBefore, _imageFilterImageboard.persistence.browserState.hiddenImageMD5s)) {
+									_imageFilterImageboard.persistence.didUpdateBrowserState();
+								}
+							},
+							child: Text('Ignoring ${describeCount(_imageFilterImageboard.persistence.browserState.hiddenImageMD5s.length, 'image')}')
+						),
+						const SizedBox(width: 8),
+						CupertinoButton.filled(
+							padding: const EdgeInsets.all(8),
+							onPressed: () async {
+								final newImageboard = await _pickImageboard(context, _imageFilterImageboard);
+								if (newImageboard != null) {
+									setState(() {
+										_imageFilterImageboard = newImageboard;
+									});
+								}
+							},
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									ImageboardIcon(
+										imageboardKey: _imageFilterImageboard.key
+									),
+									const SizedBox(width: 8),
+									Text(_imageFilterImageboard.site.name)
+								]
+							)
+						)
+					]
 				),
 				const SizedBox(height: 32),
-				const Text('Automatically load attachments in gallery'),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.lock),
+						const SizedBox(width: 8),
+						Expanded(
+							child: Text(_loginSystemImageboard.site.getLoginSystemName() ?? 'No login system')
+						),
+						if (_loginSystemImageboard.site.getLoginSystemName() != null) ...[
+							CupertinoButton.filled(
+								padding: const EdgeInsets.all(8),
+								onPressed: () {
+									showCupertinoDialog(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => CupertinoAlertDialog(
+											content: SettingsLoginPanel(
+												site: _loginSystemImageboard.site
+											),
+											actions: [
+												CupertinoDialogAction(
+													onPressed: () => Navigator.pop(context),
+													child: const Text('Close')
+												)
+											]
+										)
+									);
+								},
+								child: Text(_loginSystemImageboard.site.getSavedLoginFields() == null ? 'Logged out' : 'Logged in')
+							),
+							const SizedBox(width: 8)
+						],
+						CupertinoButton.filled(
+							padding: const EdgeInsets.all(8),
+							onPressed: () async {
+								final newImageboard = await _pickImageboard(context, _loginSystemImageboard);
+								if (newImageboard != null) {
+									setState(() {
+										_loginSystemImageboard = newImageboard;
+									});
+								}
+							},
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									ImageboardIcon(
+										imageboardKey: _loginSystemImageboard.key
+									),
+									const SizedBox(width: 8),
+									Text(_loginSystemImageboard.site.name)
+								]
+							)
+						)
+					]
+				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.arrow_left_right_square_fill),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Allow swiping to change page in gallery')
+						),
+						CupertinoSwitch(
+							value: settings.allowSwipingInGallery,
+							onChanged: (newValue) {
+								settings.allowSwipingInGallery = newValue;
+							}
+						)
+					]
+				),
+				const SizedBox(height: 32),
+				Row(
+					children: const [
+						Icon(CupertinoIcons.cloud_download),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Automatically load attachments in gallery')
+						)
+					]
+				),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
 					children: const {
-						AutoloadAttachmentsSetting.never: Text('Never'),
-						AutoloadAttachmentsSetting.wifi: Text('When on Wi-Fi'),
-						AutoloadAttachmentsSetting.always: Text('Always')
+						AutoloadAttachmentsSetting.never: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Never')
+						),
+						AutoloadAttachmentsSetting.wifi: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('When on Wi-Fi', textAlign: TextAlign.center)
+						),
+						AutoloadAttachmentsSetting.always: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Always')
+						)
 					},
 					groupValue: settings.autoloadAttachmentsSetting,
 					onValueChanged: (newValue) {
@@ -464,30 +566,36 @@ class SettingsBehaviorPage extends StatelessWidget {
 					}
 				),
 				const SizedBox(height: 32),
-				const Text('Always automatically load tapped attachment'),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('No'),
-						true: Text('Yes')
-					},
-					groupValue: settings.alwaysAutoloadTappedAttachment,
-					onValueChanged: (newValue) {
-						settings.alwaysAutoloadTappedAttachment = newValue;
-					}
+				Row(
+					children: [
+						const Icon(Icons.touch_app_outlined),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Always automatically load tapped attachment')
+						),
+						CupertinoSwitch(
+							value: settings.alwaysAutoloadTappedAttachment,
+							onChanged: (newValue) {
+								settings.alwaysAutoloadTappedAttachment = newValue;
+							}
+						)
+					]
 				),
 				const SizedBox(height: 32),
-				const Text('Always start videos with sound muted'),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('No'),
-						true: Text('Yes')
-					},
-					groupValue: settings.alwaysStartVideosMuted,
-					onValueChanged: (newValue) {
-						settings.alwaysStartVideosMuted = newValue;
-					}
+				Row(
+					children: [
+						const Icon(CupertinoIcons.volume_off),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Always start videos with sound muted')
+						),
+						CupertinoSwitch(
+							value: settings.alwaysStartVideosMuted,
+							onChanged: (newValue) {
+								settings.alwaysStartVideosMuted = newValue;
+							}
+						)
+					]
 				),
 				const SizedBox(height: 32),
 				if (Platform.isAndroid) ...[
@@ -506,39 +614,60 @@ class SettingsBehaviorPage extends StatelessWidget {
 					),
 					const SizedBox(height: 32),
 				],
-				const Text('Hide old stickied threads'),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('No'),
-						true: Text('Yes')
-					},
-					groupValue: settings.hideOldStickiedThreads,
-					onValueChanged: (newValue) {
-						settings.hideOldStickiedThreads = newValue;
-					}
+				Row(
+					children: [
+						const Icon(CupertinoIcons.pin_slash),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Hide old stickied threads')
+						),
+						CupertinoSwitch(
+							value: settings.hideOldStickiedThreads,
+							onChanged: (newValue) {
+								settings.hideOldStickiedThreads = newValue;
+							}
+						)
+					]
 				),
 				const SizedBox(height: 32),
-				const Text('Use new captcha interface'),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('No'),
-						true: Text('Yes')
-					},
-					groupValue: settings.useNewCaptchaForm,
-					onValueChanged: (newValue) {
-						settings.useNewCaptchaForm = newValue;
-					}
+				Row(
+					children: [
+						const Icon(CupertinoIcons.keyboard),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Use old captcha interface')
+						),
+						CupertinoSwitch(
+							value: !settings.useNewCaptchaForm,
+							onChanged: (newValue) {
+								settings.useNewCaptchaForm = !newValue;
+							}
+						)
+					]
 				),
 				const SizedBox(height: 32),
-				const Text('Use internal web browser'),
+				Row(
+					children: const [
+						Icon(CupertinoIcons.globe),
+						SizedBox(width: 8),
+						Text('Links open...')
+					]
+				),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<_NullSafeOptional>(
 					children: const {
-						_NullSafeOptional.false_: Text('No'),
-						_NullSafeOptional.null_: Text('Ask'),
-						_NullSafeOptional.true_: Text('Yes')
+						_NullSafeOptional.false_: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Externally')
+						),
+						_NullSafeOptional.null_: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Ask')
+						),
+						_NullSafeOptional.true_: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Internally')
+						)
 					},
 					groupValue: settings.useInternalBrowser.value,
 					onValueChanged: (newValue) {
@@ -548,8 +677,11 @@ class SettingsBehaviorPage extends StatelessWidget {
 				const SizedBox(height: 32),
 				Row(
 					children: [
-						const Text('Always open links externally'),
-						const Spacer(),
+						const Icon(Icons.launch_rounded),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Always open links externally')
+						),
 						CupertinoButton.filled(
 							padding: const EdgeInsets.all(16),
 							onPressed: () async {
@@ -569,8 +701,11 @@ class SettingsBehaviorPage extends StatelessWidget {
 				const SizedBox(height: 32),
 				Row(
 					children: [
-						const Text('Limit uploaded file dimensions'),
-						const Spacer(),
+						const Icon(CupertinoIcons.resize),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Limit uploaded file dimensions')
+						),
 						CupertinoButton.filled(
 							padding: const EdgeInsets.all(16),
 							onPressed: () async {
@@ -619,21 +754,26 @@ class SettingsBehaviorPage extends StatelessWidget {
 					]
 				),
 				const SizedBox(height: 32),
-				const Text('Close tab switcher after use'),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('No'),
-						true: Text('Yes')
-					},
-					groupValue: settings.closeTabSwitcherAfterUse,
-					onValueChanged: (newValue) {
-						settings.closeTabSwitcherAfterUse = newValue;
-					}
+				Row(
+					children: [
+						const Icon(CupertinoIcons.rectangle_stack),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Close tab switcher after use')
+						),
+						CupertinoSwitch(
+							value: settings.closeTabSwitcherAfterUse,
+							onChanged: (newValue) {
+								settings.closeTabSwitcherAfterUse = newValue;
+							}
+						)
+					]
 				),
 				const SizedBox(height: 32),
 				Row(
 					children: [
+						const Icon(CupertinoIcons.settings),
+						const SizedBox(width: 8),
 						const Text('Settings icon action'),
 						Expanded(
 							child: Align(
@@ -672,17 +812,20 @@ class SettingsBehaviorPage extends StatelessWidget {
 					]
 				),
 				const SizedBox(height: 32),
-				const Text('Haptic feedback'),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('Disabled'),
-						true: Text('Enabled')
-					},
-					groupValue: settings.useHapticFeedback,
-					onValueChanged: (newValue) {
-						settings.useHapticFeedback = newValue;
-					}
+				Row(
+					children: [
+						const Icon(Icons.vibration),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Haptic feedback')
+						),
+						CupertinoSwitch(
+							value: settings.useHapticFeedback,
+							onChanged: (newValue) {
+								settings.useHapticFeedback = newValue;
+							}
+						)
+					]
 				),
 				const SizedBox(height: 32)
 			]
@@ -823,9 +966,12 @@ class SettingsAppearancePage extends StatelessWidget {
 				const SizedBox(height: 16),
 				Row(
 					children: [
+						const Icon(CupertinoIcons.zoom_in),
+						const SizedBox(width: 8),
 						const Text('Interface scale'),
 						const Spacer(),
 						CupertinoButton(
+							padding: EdgeInsets.zero,
 							onPressed: settings.interfaceScale <= 0.5 ? null : () {
 								settings.interfaceScale -= 0.05;
 							},
@@ -833,20 +979,23 @@ class SettingsAppearancePage extends StatelessWidget {
 						),
 						Text('${(settings.interfaceScale * 100).round()}%'),
 						CupertinoButton(
+							padding: EdgeInsets.zero,
 							onPressed: settings.interfaceScale >= 2.0 ? null : () {
 								settings.interfaceScale += 0.05;
 							},
 							child: const Icon(CupertinoIcons.plus)
-						),
-						const SizedBox(width: 16)
+						)
 					]
 				),
 				const SizedBox(height: 16),
 				Row(
 					children: [
+						const Icon(CupertinoIcons.textformat_size),
+						const SizedBox(width: 8),
 						const Text('Font scale'),
 						const Spacer(),
 						CupertinoButton(
+							padding: EdgeInsets.zero,
 							onPressed: settings.textScale <= 0.5 ? null : () {
 								settings.textScale -= 0.05;
 							},
@@ -854,22 +1003,53 @@ class SettingsAppearancePage extends StatelessWidget {
 						),
 						Text('${(settings.textScale * 100).round()}%'),
 						CupertinoButton(
+							padding: EdgeInsets.zero,
 							onPressed: settings.textScale >= 2.0 ? null : () {
 								settings.textScale += 0.05;
 							},
 							child: const Icon(CupertinoIcons.plus)
-						),
-						const SizedBox(width: 16)
+						)
 					]
 				),
 				const SizedBox(height: 16),
-				const Text('Interface Style'),
+				Row(
+					children: const [
+						Icon(CupertinoIcons.macwindow),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Interface Style')
+						)
+					]
+				),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<TristateSystemSetting>(
-					children: const {
-						TristateSystemSetting.a: Text('Touchscreen'),
-						TristateSystemSetting.system: Text('Automatic'),
-						TristateSystemSetting.b: Text('Mouse')
+					children: {
+						TristateSystemSetting.a: Padding(
+							padding: const EdgeInsets.all(8),
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: const [
+									Icon(CupertinoIcons.hand_draw),
+									SizedBox(width: 8),
+									Text('Touch')
+								]
+							)
+						),
+						TristateSystemSetting.system: const Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Automatic')
+						),
+						TristateSystemSetting.b: Padding(
+							padding: const EdgeInsets.all(8),
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: const [
+									Icon(Icons.mouse),
+									SizedBox(width: 8),
+									Text('Mouse')
+								]
+							)
+						)
 					},
 					groupValue: settings.supportMouseSetting,
 					onValueChanged: (newValue) {
@@ -877,26 +1057,60 @@ class SettingsAppearancePage extends StatelessWidget {
 					}
 				),
 				const SizedBox(height: 32),
-				const Text('Animations'),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('Disabled'),
-						true: Text('Enabled'),
-					},
-					groupValue: settings.showAnimations,
-					onValueChanged: (newValue) {
-						settings.showAnimations = newValue;
-					}
+				Row(
+					children: [
+						const Icon(CupertinoIcons.wand_rays),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Animations')
+						),
+						CupertinoSwitch(
+							value: settings.showAnimations,
+							onChanged: (newValue) {
+								settings.showAnimations = newValue;
+							}
+						)
+					]
 				),
 				const SizedBox(height: 32),
-				const Text('Active Theme'),
+				Row(
+					children: const [
+						Icon(CupertinoIcons.paintbrush),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Active Theme')
+						)
+					]
+				),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<TristateSystemSetting>(
-					children: const {
-						TristateSystemSetting.a: Text('Light'),
-						TristateSystemSetting.system: Text('Follow System'),
-						TristateSystemSetting.b: Text('Dark')
+					children: {
+						TristateSystemSetting.a: Padding(
+							padding: const EdgeInsets.all(8),
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: const [
+									Icon(CupertinoIcons.sun_max),
+									SizedBox(width: 8),
+									Text('Light')
+								]
+							)
+						),
+						TristateSystemSetting.system: const Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Follow System', textAlign: TextAlign.center)
+						),
+						TristateSystemSetting.b: Padding(
+							padding: const EdgeInsets.all(8),
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: const [
+									Icon(CupertinoIcons.moon),
+									SizedBox(width: 8),
+									Text('Dark')
+								]
+							)
+						)
 					},
 					groupValue: settings.themeSetting,
 					onValueChanged: (newValue) {
@@ -904,18 +1118,20 @@ class SettingsAppearancePage extends StatelessWidget {
 					}
 				),
 				for (final theme in [
-					Tuple4('light theme', settings.lightTheme, settings.lightThemeKey, (key) {
+					Tuple5('light theme', settings.lightTheme, settings.lightThemeKey, (key) {
 						settings.lightThemeKey = key;
 						settings.handleThemesAltered();
-					}),
-					Tuple4('dark theme', settings.darkTheme, settings.darkThemeKey, (key) {
+					}, CupertinoIcons.sun_max),
+					Tuple5('dark theme', settings.darkTheme, settings.darkThemeKey, (key) {
 						settings.darkThemeKey = key;
 						settings.handleThemesAltered();
-					})
+					}, CupertinoIcons.moon)
 				]) ... [
 					Row(
 						children: [
 							const SizedBox(width: 16),
+							Icon(theme.item5),
+							const SizedBox(width: 8),
 							Text(theme.item3),
 							const Spacer(),
 							Padding(
@@ -1110,14 +1326,7 @@ class SettingsAppearancePage extends StatelessWidget {
 											theme.item4(selectedKey);
 										}
 									},
-									child: Row(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											const Icon(CupertinoIcons.paintbrush),
-											const SizedBox(width: 8),
-											Text('Pick ${theme.item1}')
-										]
-									)
+									child: Text('Pick ${theme.item1}')
 								)
 							)
 						]
@@ -1201,15 +1410,23 @@ class SettingsAppearancePage extends StatelessWidget {
 												settings.handleThemesAltered();
 											}
 										),
-										const SizedBox(width: 88, height: 24)
+										SizedBox(width: 88 * settings.textScale, height: 24)
 									]
 								)).toList()
 							)
 						)
 					)
 				],
-				const SizedBox(height: 16),
-				Text('Thumbnail size: ${settings.thumbnailSize.round()}x${settings.thumbnailSize.round()}'),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.resize),
+						const SizedBox(width: 8),
+						Expanded(
+							child: Text('Thumbnail size: ${settings.thumbnailSize.round()}x${settings.thumbnailSize.round()}')
+						)
+					]
+				),
 				Padding(
 					padding: const EdgeInsets.all(16),
 					child: CupertinoSlider(
@@ -1222,12 +1439,26 @@ class SettingsAppearancePage extends StatelessWidget {
 						}
 					)
 				),
-				const Text('Thumbnail location'),
+				Row(
+					children: const [
+						Icon(CupertinoIcons.square_fill_line_vertical_square),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Thumbnail location')
+						)
+					]
+				),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<bool>(
 					children: const {
-						false: Text('Left'),
-						true: Text('Right')
+						false: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Left')
+						),
+						true: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Right')
+						)
 					},
 					groupValue: settings.imagesOnRight,
 					onValueChanged: (newValue) {
@@ -1235,22 +1466,33 @@ class SettingsAppearancePage extends StatelessWidget {
 					}
 				),
 				const SizedBox(height: 32),
-				const Text('Blur image thumbnails'),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('No'),
-						true: Text('Yes')
-					},
-					groupValue: settings.blurThumbnails,
-					onValueChanged: (newValue) {
-						settings.blurThumbnails = newValue;
-					}
+				Row(
+					children: [
+						const Icon(CupertinoIcons.eyeglasses),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Blur image thumbnails')
+						),
+						CupertinoSwitch(
+							value: settings.blurThumbnails,
+							onChanged: (newValue) {
+								settings.blurThumbnails = newValue;
+							}
+						)
+					]
 				),
 				const SizedBox(height: 32),
 				Center(
 					child: CupertinoButton.filled(
-						child: const Text('Edit post details'),
+						padding: const EdgeInsets.all(16),
+						child: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: const [
+								Icon(CupertinoIcons.square_list),
+								SizedBox(width: 8),
+								Text('Edit post details')
+							]
+						),
 						onPressed: () async {
 							await showCupertinoModalPopup(
 								context: context,
@@ -1460,38 +1702,72 @@ class SettingsAppearancePage extends StatelessWidget {
 					)
 				),
 				const SizedBox(height: 32),
-				const Text('Show reply counts in gallery'),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('No'),
-						true: Text('Yes')
-					},
-					groupValue: settings.showReplyCountsInGallery,
-					onValueChanged: (newValue) {
-						settings.showReplyCountsInGallery = newValue;
-					}
+				Row(
+					children: [
+						const Icon(CupertinoIcons.number_square),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Show reply counts in gallery')
+						),
+						CupertinoSwitch(
+							value: settings.showReplyCountsInGallery,
+							onChanged: (newValue) {
+								settings.showReplyCountsInGallery = newValue;
+							}
+						)
+					]
 				),
 				const SizedBox(height: 32),
-				const Text('Show thumbnails in gallery'),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('No'),
-						true: Text('Yes')
-					},
-					groupValue: settings.showThumbnailsInGallery,
-					onValueChanged: (newValue) {
-						settings.showThumbnailsInGallery = newValue;
-					}
+				Row(
+					children: [
+						const Icon(CupertinoIcons.rectangle_grid_2x2),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Show thumbnails in gallery')
+						),
+						CupertinoSwitch(
+							value: settings.showThumbnailsInGallery,
+							onChanged: (newValue) {
+								settings.showThumbnailsInGallery = newValue;
+							}
+						)
+					]
 				),
 				const SizedBox(height: 32),
-				const Text('Catalog Layout'),
+				Row(
+					children: const [
+						Icon(CupertinoIcons.rectangle_stack),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Catalog Layout')
+						)
+					]
+				),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('Rows'),
-						true: Text('Grid'),
+					children: {
+						false: Padding(
+							padding: const EdgeInsets.all(8),
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: const [
+									Icon(CupertinoIcons.rectangle_grid_1x2),
+									SizedBox(width: 8),
+									Text('Rows')
+								]
+							)
+						),
+						true: Padding(
+							padding: const EdgeInsets.all(8),
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: const [
+									Icon(CupertinoIcons.rectangle_split_3x3),
+									SizedBox(width: 8),
+									Text('Grid')
+								]
+							)
+						)
 					},
 					groupValue: settings.useCatalogGrid,
 					onValueChanged: (newValue) {
@@ -1501,7 +1777,15 @@ class SettingsAppearancePage extends StatelessWidget {
 				const SizedBox(height: 16),
 				Center(
 					child: settings.useCatalogGrid ? CupertinoButton.filled(
-						child: const Text('Edit catalog grid item layout'),
+						padding: const EdgeInsets.all(16),
+						child: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: const [
+								Icon(CupertinoIcons.resize),
+								SizedBox(width: 8),
+								Text('Edit catalog grid item layout')
+							]
+						),
 						onPressed: () async {
 							Size size = Size(settings.catalogGridWidth, settings.catalogGridHeight);
 							await showCupertinoModalPopup(
@@ -1658,7 +1942,15 @@ class SettingsAppearancePage extends StatelessWidget {
 							settings.catalogGridWidth = size.width;
 						}
 					) : CupertinoButton.filled(
-						child: const Text('Edit catalog row item height'),
+						padding: const EdgeInsets.all(16),
+						child: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: const [
+								Icon(CupertinoIcons.resize_v),
+								SizedBox(width: 8),
+								Text('Edit catalog row item height')
+							]
+						),
 						onPressed: () async {
 							await showCupertinoModalPopup(
 								context: context,
@@ -1732,7 +2024,15 @@ class SettingsAppearancePage extends StatelessWidget {
 				const SizedBox(height: 16),
 				Center(
 					child: CupertinoButton.filled(
-						child: const Text('Edit catalog item details'),
+						padding: const EdgeInsets.all(16),
+						child: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: const [
+								Icon(CupertinoIcons.square_list),
+								SizedBox(width: 8),
+								Text('Edit catalog item details')
+							]
+						),
 						onPressed: () async {
 							await showCupertinoModalPopup(
 								context: context,
@@ -1868,7 +2168,11 @@ class SettingsAppearancePage extends StatelessWidget {
 				const SizedBox(height: 32),
 				Row(
 					children: [
-						Text('Two-pane breakpoint: ${settings.twoPaneBreakpoint.round()} pixels'),
+						const Icon(CupertinoIcons.sidebar_left),
+						const SizedBox(width: 8),
+						Flexible(
+							child: Text('Two-pane breakpoint: ${settings.twoPaneBreakpoint.round()} pixels')
+						),
 						const SizedBox(width: 8),
 						CupertinoButton(
 							minSize: 0,
@@ -1907,7 +2211,15 @@ class SettingsAppearancePage extends StatelessWidget {
 					)
 				),
 				const SizedBox(height: 16),
-				Text('Two-pane split: ${firstPanePercent.toStringAsFixed(0)}% catalog, ${(100 - firstPanePercent).toStringAsFixed(0)}% thread'),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.sidebar_left),
+						const SizedBox(width: 8),
+						Expanded(
+							child: Text('Two-pane split: ${firstPanePercent.toStringAsFixed(0)}% catalog, ${(100 - firstPanePercent).toStringAsFixed(0)}% thread')
+						)
+					]
+				),
 				Padding(
 					padding: const EdgeInsets.all(16),
 					child: CupertinoSlider(
@@ -1921,25 +2233,67 @@ class SettingsAppearancePage extends StatelessWidget {
 					)
 				),
 				const SizedBox(height: 16),
-				const Text('Show scrollbars'),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('No'),
-						true: Text('Yes')
-					},
-					groupValue: settings.showScrollbars,
-					onValueChanged: (newValue) {
-						settings.showScrollbars = newValue;
-					}
+				Row(
+					children: [
+						const Icon(CupertinoIcons.arrow_up_down),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Show scrollbars')
+						),
+						CupertinoSwitch(
+							value: settings.showScrollbars,
+							onChanged: (newValue) {
+								settings.showScrollbars = newValue;
+							}
+						)
+					]
+				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						Container(
+							decoration: BoxDecoration(
+								borderRadius: const BorderRadius.only(
+									topLeft: Radius.circular(6),
+									bottomLeft: Radius.circular(6),
+								),
+								color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
+							),
+							padding: const EdgeInsets.all(3),
+							width: 13,
+							alignment: Alignment.center,
+							child: Text('1', style: TextStyle(color: settings.theme.backgroundColor, fontSize: 13))
+						),
+						Container(
+							decoration: BoxDecoration(
+								borderRadius: const BorderRadius.only(
+									topRight: Radius.circular(6),
+									bottomRight: Radius.circular(6),
+								),
+								color: CupertinoTheme.of(context).primaryColor
+							),
+							padding: const EdgeInsets.all(3),
+							width: 13,
+							alignment: Alignment.center,
+							child: Text('1', style: TextStyle(color: settings.theme.backgroundColor, fontSize: 13))
+						),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('List position indicator location')
+						)
+					]
 				),
 				const SizedBox(height: 16),
-				const Text('List position indicator location'),
-				const SizedBox(height: 16),
 				CupertinoSegmentedControl<bool>(
 					children: const {
-						true: Text('Left'),
-						false: Text('Right')
+						true: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Left')
+						),
+						false: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Right')
+						)
 					},
 					groupValue: settings.showListPositionIndicatorsOnLeft,
 					onValueChanged: (newValue) {
@@ -1962,6 +2316,8 @@ class SettingsDataPage extends StatefulWidget {
 }
 
 class _SettingsDataPageState extends State<SettingsDataPage> {
+	Imageboard _threadsPanelImageboard = ImageboardRegistry.instance.imageboards.first;
+
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
@@ -1980,6 +2336,8 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 				const SizedBox(height: 16),
 				Row(
 					children: [
+						const Icon(CupertinoIcons.textformat),
+						const SizedBox(width: 8),
 						const Text('Contribute captcha data'),
 						const SizedBox(width: 8),
 						CupertinoButton(
@@ -2003,23 +2361,21 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 									)
 								);
 							}
+						),
+						const Spacer(),
+						CupertinoSwitch(
+							value: settings.contributeCaptchas ?? false,
+							onChanged: (setting) {
+								settings.contributeCaptchas = setting;
+							}
 						)
 					]
 				),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('No'),
-						true: Text('Yes')
-					},
-					groupValue: settings.contributeCaptchas,
-					onValueChanged: (setting) {
-						settings.contributeCaptchas = setting;
-					}
-				),
-				const SizedBox(height: 16),
+				const SizedBox(height: 32),
 				Row(
 					children: [
+						const Icon(CupertinoIcons.burst),
+						const SizedBox(width: 8),
 						const Text('Contribute crash data'),
 						const SizedBox(width: 8),
 						CupertinoButton(
@@ -2043,24 +2399,22 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 									)
 								);
 							}
+						),
+						const Spacer(),
+						CupertinoSwitch(
+							value: FirebaseCrashlytics.instance.isCrashlyticsCollectionEnabled,
+							onChanged: (setting) async {
+								await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(setting);
+								setState(() {});
+							}
 						)
 					]
 				),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Text('No'),
-						true: Text('Yes')
-					},
-					groupValue: FirebaseCrashlytics.instance.isCrashlyticsCollectionEnabled,
-					onValueChanged: (setting) async {
-						await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(setting);
-						setState(() {});
-					}
-				),
-				const SizedBox(height: 16),
+				const SizedBox(height: 32),
 				Row(
 					children: [
+						const Icon(CupertinoIcons.rectangle_paperclip),
+						const SizedBox(width: 8),
 						const Text('Show rich links when possible'),
 						const SizedBox(width: 8),
 						CupertinoButton(
@@ -2084,28 +2438,26 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 									)
 								);
 							}
+						),
+						const Spacer(),
+						CupertinoSwitch(
+							value: settings.useEmbeds,
+							onChanged: (setting) {
+								settings.useEmbeds = setting;
+							}
 						)
 					]
 				),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('No')
-						),
-						true: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Yes')
+				const SizedBox(height: 32),
+				Row(
+					children: const [
+						Icon(CupertinoIcons.calendar),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Automatically clear caches older than...')
 						)
-					},
-					groupValue: context.watch<EffectiveSettings>().useEmbeds,
-					onValueChanged: (setting) {
-						context.read<EffectiveSettings>().useEmbeds = setting;
-					}
+					]
 				),
-				const SizedBox(height: 16),
-				const Text('Automatically clear caches older than...'),
 				Padding(
 					padding: const EdgeInsets.all(16),
 					child: CupertinoSegmentedControl<int>(
@@ -2137,19 +2489,62 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 						}
 					)
 				),
-				const Text('Cached media'),
+				const SizedBox(height: 16),
+				Row(
+					children: const [
+						Icon(CupertinoIcons.photo_on_rectangle),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Cached media')
+						)
+					]
+				),
 				const SettingsCachePanel(),
 				const SizedBox(height: 16),
-				for (final imageboard in ImageboardRegistry.instance.imageboards) ...[
-					Text('Cached threads and history - ${imageboard.key}'),
-					SettingsThreadsPanel(
-						persistence: imageboard.persistence
-					),
-					const SizedBox(height: 16),
-				],
+				Row(
+					children: [
+						const Icon(CupertinoIcons.archivebox),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Cached threads and history')
+						),
+						CupertinoButton.filled(
+							padding: const EdgeInsets.all(8),
+							onPressed: () async {
+								final newImageboard = await _pickImageboard(context, _threadsPanelImageboard);
+								if (newImageboard != null) {
+									setState(() {
+										_threadsPanelImageboard = newImageboard;
+									});
+								}
+							},
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									ImageboardIcon(
+										imageboardKey: _threadsPanelImageboard.key
+									),
+									const SizedBox(width: 8),
+									Text(_threadsPanelImageboard.site.name)
+								]
+							)
+						)
+					]
+				),
+				SettingsThreadsPanel(
+					persistence: _threadsPanelImageboard.persistence
+				),
+				const SizedBox(height: 16),
 				Center(
 					child: CupertinoButton.filled(
-						child: const Text('Clear Wi-Fi cookies'),
+						child: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: const [
+								Icon(CupertinoIcons.wifi),
+								SizedBox(width: 8),
+								Text('Clear Wi-Fi cookies')
+							]
+						),
 						onPressed: () {
 							Persistence.wifiCookies.deleteAll();
 						}
@@ -2158,7 +2553,14 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 				const SizedBox(height: 16),
 				Center(
 					child: CupertinoButton.filled(
-						child: const Text('Clear cellular cookies'),
+						child: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: const [
+								Icon(CupertinoIcons.antenna_radiowaves_left_right),
+								SizedBox(width: 8),
+								Text('Clear cellular cookies')
+							]
+						),
 						onPressed: () {
 							Persistence.cellularCookies.deleteAll();
 						}
@@ -2667,9 +3069,25 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 				const SizedBox(height: 16),
 				Row(
 					children: [
+						const Icon(CupertinoIcons.scope),
+						const SizedBox(width: 8),
 						const Text('Filters'),
 						const Spacer(),
+						CupertinoButton.filled(
+							padding: const EdgeInsets.all(8),
+							borderRadius: BorderRadius.circular(4),
+							minSize: 0,
+							child: const Text('Test filter setup'),
+							onPressed: () {
+								Navigator.of(context).push(FullWidthCupertinoPageRoute(
+									builder: (context) => const FilterTestPage(),
+									showAnimations: settings.showAnimations
+								));
+							}
+						),
+						const SizedBox(width: 8),
 						CupertinoSegmentedControl<bool>(
+							padding: EdgeInsets.zero,
 							groupValue: showRegex,
 							children: const {
 								false: Padding(
@@ -2886,24 +3304,7 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 						)
 					)
 				),
-				const SizedBox(height: 16),
-				Row(
-					mainAxisAlignment: MainAxisAlignment.end,
-					children: [
-						CupertinoButton.filled(
-							padding: const EdgeInsets.all(16),
-							minSize: 0,
-							child: const Text('Test filter setup'),
-							onPressed: () {
-								Navigator.of(context).push(FullWidthCupertinoPageRoute(
-									builder: (context) => const FilterTestPage(),
-									showAnimations: settings.showAnimations
-								));
-							}
-						),
-						const SizedBox(width: 16)
-					]
-				)
+				const SizedBox(height: 16)
 			]
 		);
 	}
@@ -3114,7 +3515,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 	bool loading = true;
 
 	Future<void> _updateStatus() async {
-		final newSavedFields = await widget.site.getSavedLoginFields();
+		final newSavedFields = widget.site.getSavedLoginFields();
 		setState(() {
 			savedFields = newSavedFields;
 			loading = false;
@@ -3260,4 +3661,32 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 			]
 		);
 	}
+}
+
+Future<Imageboard?> _pickImageboard(BuildContext context, Imageboard current) {
+	return showCupertinoModalPopup<Imageboard?>(
+		context: context,
+		builder: (context) => CupertinoActionSheet(
+			title: const Text('Select site'),
+			actions: ImageboardRegistry.instance.imageboards.map((imageboard) => CupertinoActionSheetAction(
+				child: Row(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						ImageboardIcon(imageboardKey: imageboard.key),
+						const SizedBox(width: 8),
+						Text(imageboard.site.name, style: TextStyle(
+							fontWeight: (imageboard == current) ? FontWeight.bold : null
+						))
+					]
+				),
+				onPressed: () {
+					Navigator.of(context, rootNavigator: true).pop(imageboard);
+				}
+			)).toList(),
+			cancelButton: CupertinoActionSheetAction(
+				child: const Text('Cancel'),
+				onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+			)
+		)
+	);
 }

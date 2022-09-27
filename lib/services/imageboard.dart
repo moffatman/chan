@@ -197,7 +197,7 @@ class ImageboardRegistry extends ChangeNotifier {
 							return;
 						}
 						final site = _sites[entry.key]!.site;
-						final savedFields = await site.getSavedLoginFields();
+						final savedFields = site.getSavedLoginFields();
 						if (savedFields != null && settings.connectivity == ConnectivityResult.wifi) {
 							try {
 								await site.login(savedFields);
