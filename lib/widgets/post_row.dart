@@ -124,7 +124,9 @@ class PostRow extends StatelessWidget {
 					ignoring: !allowTappingLinks,
 					child: GestureDetector(
 						onTapUp: (d) {
-							ctx.read<PostSpanZoneData>().onTap(d.globalPosition);
+							if (!ctx.read<PostSpanZoneData>().onTap(d.globalPosition)) {
+								onTap?.call();
+							}
 						},
 						child: Text.rich(
 							(translatedPostSnapshot?.data ?? latestPost).span.build(

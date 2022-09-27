@@ -1104,7 +1104,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		_lineTapCallbacks[id] = Tuple2(context, callback);
 	}
 
-	void onTap(Offset position) {
+	bool onTap(Offset position) {
 		for (final pair in _lineTapCallbacks.values) {
 			final box = pair.item1.findRenderObject() as RenderBox?;
 			if (box != null) {
@@ -1115,10 +1115,11 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 				final y1 = box.localToGlobal(box.paintBounds.bottomRight).dy;
 				if (position.dy < y1) {
 					pair.item2();
-					return;
+					return true;
 				}
 			}
 		}
+		return false;
 	}
 
 	@override
