@@ -66,7 +66,9 @@ void main() async {
 			imageHttpClient.idleTimeout = const Duration(seconds: 10);
 			await Persistence.initializeStatic();
 			await Notifications.initializeStatic();
-			FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+			if (Platform.isAndroid || Platform.isIOS) {
+				FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+			}
 			runApp(const ChanApp());
 		}
 		catch (e, st) {
