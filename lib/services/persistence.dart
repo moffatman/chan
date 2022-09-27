@@ -202,8 +202,11 @@ class Persistence extends ChangeNotifier {
 
 	Future<void> cleanupThreads(Duration olderThan) async {
 		final deadline = DateTime.now().subtract(olderThan);
+		final toPreserve = savedPosts.values.map((v) => '${v.post.board}/${v.post.threadId}').toSet();
 		final toDelete = threadStateBox.keys.where((key) {
-			return (threadStateBox.get(key)?.youIds.isEmpty ?? false) && (threadStateBox.get(key)?.lastOpenedTime.isBefore(deadline) ?? false);
+			return (threadStateBox.get(key)?.youIds.isEmpty ?? false) // no replies
+				&& (threadStateBox.get(key)?.lastOpenedTime.isBefore(deadline) ?? false) // not opened recently
+				&& (!toPreserve.contains(key)); // connect to a saved post
 		});
 		if (toDelete.isNotEmpty) {
 			print('Deleting ${toDelete.length} threads');
@@ -320,6 +323,13 @@ class Persistence extends ChangeNotifier {
 			}
 			browserState.notificationsMigrated = true;
 		}
+		for (final savedPost in savedPosts.values) {
+			if (savedPost.deprecatedThread != null) {
+				print('Migrating saved ${savedPost.post} to ${savedPost.post.threadIdentifier}');
+				getThreadState(savedPost.post.threadIdentifier).thread ??= savedPost.deprecatedThread;
+				savedPost.deprecatedThread = null;
+			}
+		}
 		if (settings.automaticCacheClearDays < 100000) {
 			await cleanupThreads(Duration(days: settings.automaticCacheClearDays));
 		}
@@ -406,10 +416,10 @@ class Persistence extends ChangeNotifier {
 	}
 
 	void savePost(Post post, Thread thread) {
-		savedPosts[post.globalId] = SavedPost(post: post, savedTime: DateTime.now(), thread: thread);
+		savedPosts[post.globalId] = SavedPost(post: post, savedTime: DateTime.now());
 		settings.save();
 		// Likely will force the widget to rebuild
-		getThreadStateIfExists(post.threadIdentifier)?.save();
+		getThreadState(post.threadIdentifier).save();
 		savedPostsNotifier.add(null);
 	}
 
@@ -675,12 +685,11 @@ class SavedPost {
 	@HiveField(1)
 	final DateTime savedTime;
 	@HiveField(2)
-	Thread thread;
+	Thread? deprecatedThread;
 
 	SavedPost({
 		required this.post,
-		required this.savedTime,
-		required this.thread
+		required this.savedTime
 	});
 }
 

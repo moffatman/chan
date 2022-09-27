@@ -566,61 +566,72 @@ class _SavedPageState extends State<SavedPage> {
 								id: 'saved',
 								disableUpdates: true,
 								initialList: savedPosts,
-								itemBuilder: (context, savedPost) => ImageboardScope(
-									imageboardKey: savedPost.imageboard.key,
-									child: ChangeNotifierProvider<PostSpanZoneData>(
-										create: (context) => PostSpanRootZoneData(
-											site: savedPost.imageboard.site,
-											thread: savedPost.item.thread,
-											semanticRootIds: [-2]
-										),
-										child: Builder(
-											builder: (context) => PostRow(
-												post: savedPost.item.post,
-												isSelected: savedPost == selected,
-												onTap: () => setter(savedPost),
-												showBoardName: true,
-												showSiteIcon: true,
-												onThumbnailLoadError: (e, st) async {
-													Thread? newThread;
-													bool hadToUseArchive = false;
-													try {
-														newThread = await savedPost.imageboard.site.getThread(savedPost.item.thread.identifier);
+								itemBuilder: (context, savedPost) {
+									final threadState = savedPost.imageboard.persistence.getThreadStateIfExists(savedPost.item.post.threadIdentifier);
+									if (threadState?.thread == null) {
+										// Probably the thread was deleted during a cleanup
+										Future.delayed(const Duration(seconds: 1), () {
+											print('cleaning up ${savedPost.item.post}');
+											savedPost.imageboard.persistence.unsavePost(savedPost.item.post);
+										});
+										return const SizedBox.shrink();
+									}
+									return ImageboardScope(
+										imageboardKey: savedPost.imageboard.key,
+										child: ChangeNotifierProvider<PostSpanZoneData>(
+											create: (context) => PostSpanRootZoneData(
+												site: savedPost.imageboard.site,
+												thread: threadState!.thread!,
+												semanticRootIds: [-2]
+											),
+											child: Builder(
+												builder: (context) => PostRow(
+													post: savedPost.item.post,
+													isSelected: savedPost == selected,
+													onTap: () => setter(savedPost),
+													showBoardName: true,
+													showSiteIcon: true,
+													onThumbnailLoadError: (e, st) async {
+														Thread? newThread;
+														bool hadToUseArchive = false;
+														try {
+															newThread = await savedPost.imageboard.site.getThread(savedPost.item.post.threadIdentifier);
+														}
+														on ThreadNotFoundException {
+															newThread = await savedPost.imageboard.site.getThreadFromArchive(savedPost.item.post.threadIdentifier);
+															hadToUseArchive = true;
+														}
+														if (newThread != threadState!.thread || hadToUseArchive) {
+															threadState.thread = newThread;
+															final state = savedPost.imageboard.persistence.getThreadStateIfExists(savedPost.item.post.threadIdentifier);
+															state?.thread = newThread;
+															await state?.save();
+															savedPost.item.post = newThread.posts.firstWhere((p) => p.id == savedPost.item.post.id);
+															savedPost.imageboard.persistence.didUpdateSavedPost();
+														}
+													},
+													onThumbnailTap: (initialAttachment) {
+														final attachments = _postListController.items.expand((_) => _.item.post.attachments).toList();
+														showGallery(
+															context: context,
+															attachments: attachments,
+															replyCounts: {
+																for (final state in _postListController.items)
+																	for (final attachment in state.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.attachments ?? [])
+																		attachment: state.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.replyCount ?? 0
+															},
+															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+															onChange: (attachment) {
+																_postListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.item.post.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
+															},
+															semanticParentIds: [-2]
+														);
 													}
-													on ThreadNotFoundException {
-														newThread = await savedPost.imageboard.site.getThreadFromArchive(savedPost.item.thread.identifier);
-														hadToUseArchive = true;
-													}
-													if (newThread != savedPost.item.thread || hadToUseArchive) {
-														savedPost.item.thread = newThread;
-														final state = savedPost.imageboard.persistence.getThreadStateIfExists(savedPost.item.thread.identifier);
-														state?.thread = newThread;
-														await state?.save();
-														savedPost.item.post = newThread.posts.firstWhere((p) => p.id == savedPost.item.post.id);
-														savedPost.imageboard.persistence.didUpdateSavedPost();
-													}
-												},
-												onThumbnailTap: (initialAttachment) {
-													final attachments = _postListController.items.expand((_) => _.item.post.attachments).toList();
-													showGallery(
-														context: context,
-														attachments: attachments,
-														replyCounts: {
-															for (final state in _postListController.items)
-																for (final attachment in state.item.thread.attachments)
-																	attachment: state.item.thread.replyCount
-														},
-														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-														onChange: (attachment) {
-															_postListController.animateTo((p) => p.item.thread.attachments.any((a) => a.id == attachment.id));
-														},
-														semanticParentIds: [-2]
-													);
-												}
+												)
 											)
 										)
-									)
-								),
+									);
+								},
 								filterHint: 'Search saved threads'
 							);
 						}
