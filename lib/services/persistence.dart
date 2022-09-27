@@ -139,7 +139,11 @@ class Persistence extends ChangeNotifier {
 		);
 		await Directory('${documentsDirectory.path}/$_savedAttachmentsDir').create(recursive: true);
 		await Directory('${documentsDirectory.path}/$_savedAttachmentThumbnailsDir').create(recursive: true);
-		final settingsBox = await Hive.openBox<SavedSettings>('${_boxPrefix}settings');
+		final settingsBox = await Hive.openBox<SavedSettings>('${_boxPrefix}settings',
+			compactionStrategy: (int entries, int deletedEntries) {
+				return deletedEntries > 5;
+			}
+		);
 		settings = settingsBox.get('settings', defaultValue: SavedSettings(
 			useInternalBrowser: true
 		))!;
