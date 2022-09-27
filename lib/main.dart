@@ -1084,14 +1084,17 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				padding: const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8),
 				child: Opacity(
 					opacity: 0.5,
-					child: Column(
-						children: [
-							const Icon(CupertinoIcons.add),
-							if (!hideLabel) ...[
-								const SizedBox(height: 4),
-								const Text("New", style: TextStyle(fontSize: 15))
+					child: FittedBox(
+						child: Column(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								const Icon(CupertinoIcons.add),
+								if (!hideLabel) ...[
+									const SizedBox(height: 4),
+									const Text("New", style: TextStyle(fontSize: 15))
+								]
 							]
-						]
+						)
 					)
 				),
 				onPressed: () {
