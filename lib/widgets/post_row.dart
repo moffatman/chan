@@ -331,7 +331,7 @@ class PostRow extends StatelessWidget {
 													onTap: () => alertError(context, translatedPostSnapshot?.error?.toStringDio() ?? 'Unknown'),
 													child: const Icon(CupertinoIcons.exclamationmark_triangle)
 												)
-												else if (!(translatedPostSnapshot?.hasData ?? false)) const CupertinoActivityIndicator(),
+												else if (translatedPostSnapshot?.hasData == false) const CupertinoActivityIndicator(),
 												if (savedPost != null) const Icon(CupertinoIcons.bookmark_fill, size: 18)
 											]
 										)
