@@ -739,7 +739,7 @@ class PostLinkSpan extends PostSpan {
 							height: 75,
 							child: CupertinoActivityIndicator()
 						),
-						center: Text(url, style: const TextStyle(decoration: TextDecoration.underline), textScaleFactor: 1)
+						center: Flexible(child: Text(url, style: const TextStyle(decoration: TextDecoration.underline), textScaleFactor: 1))
 					);
 				}
 				String? byline = snapshot.data?.provider;
