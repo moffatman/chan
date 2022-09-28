@@ -66,6 +66,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			mainAxisAlignment: MainAxisAlignment.spaceAround,
 			children: [
 				CupertinoButton(
+					padding: EdgeInsets.zero,
 					onPressed: (loading || result.data?.page == 1) ? null : () {
 						page = 1;
 						_runQuery();
@@ -75,6 +76,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				),
 				const Spacer(),
 				CupertinoButton(
+					padding: EdgeInsets.zero,
 					onPressed: (loading || result.data?.page == 1) ? null : () {
 						page = page! - 1;
 						_runQuery();
@@ -129,6 +131,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					child: Text('Page $page')
 				),
 				CupertinoButton(
+					padding: EdgeInsets.zero,
 					onPressed: (loading || result.data?.page == result.data?.maxPage) ? null : () {
 						page = page! + 1;
 						_runQuery();
@@ -138,6 +141,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				),
 				const Spacer(),
 				CupertinoButton(
+					padding: EdgeInsets.zero,
 					onPressed: (loading || result.data?.page == result.data?.maxPage) ? null : () {
 						page = result.data?.maxPage;
 						_runQuery();
