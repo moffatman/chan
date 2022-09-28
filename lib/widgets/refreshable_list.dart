@@ -28,6 +28,24 @@ class FilterAlternative {
 	});
 }
 
+class SliverDontRebuildChildBuilderDelegate extends SliverChildBuilderDelegate {
+	final List? list;
+	const SliverDontRebuildChildBuilderDelegate(
+    super.builder, {
+		required this.list,
+    super.findChildIndexCallback,
+    super.childCount,
+    super.addAutomaticKeepAlives,
+    super.addRepaintBoundaries,
+    super.addSemanticIndexes,
+    super.semanticIndexCallback,
+    super.semanticIndexOffset
+  });
+
+	@override
+	bool shouldRebuild(SliverDontRebuildChildBuilderDelegate oldDelegate) => !listEquals(list, oldDelegate.list);
+}
+
 class RefreshableList<T> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
 	final List<T>? initialList;
@@ -469,13 +487,14 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 												maxCrossAxisExtent: widget.gridSize!.width,
 												childAspectRatio: widget.gridSize!.aspectRatio
 											),
-											delegate: SliverChildBuilderDelegate(
+											delegate: SliverDontRebuildChildBuilderDelegate(
 												(context, i) => Builder(
 													builder: (context) {
 														widget.controller?.registerItem(i, values[i].item1, context);
 														return _itemBuilder(context, values[i].item1, highlighted: values[i].item2);
 													}
 												),
+												list: values,
 												childCount: values.length,
 												addRepaintBoundaries: false,
 												addAutomaticKeepAlives: false
@@ -483,7 +502,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 										)
 										else SliverList(
 											key: _sliverListKey,
-											delegate: SliverChildBuilderDelegate(
+											delegate: SliverDontRebuildChildBuilderDelegate(
 												(context, i) {
 													if (i % 2 == 0) {
 														return Builder(
@@ -501,6 +520,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 														);
 													}
 												},
+												list: values,
 												childCount: values.length * 2,
 												addAutomaticKeepAlives: false,
 												addRepaintBoundaries: false,
@@ -543,7 +563,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 													maxCrossAxisExtent: widget.gridSize!.width,
 													childAspectRatio: widget.gridSize!.aspectRatio
 												),
-												delegate: SliverChildBuilderDelegate(
+												delegate: SliverDontRebuildChildBuilderDelegate(
 													(context, i) => Stack(
 														children: [
 															Builder(
@@ -577,6 +597,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 															)
 														]
 													),
+													list: filteredValues,
 													childCount: filteredValues.length,
 													addRepaintBoundaries: false,
 													addAutomaticKeepAlives: false
@@ -584,7 +605,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 											)
 											else SliverList(
 												key: PageStorageKey('filtered list for ${widget.id}'),
-												delegate: SliverChildBuilderDelegate(
+												delegate: SliverDontRebuildChildBuilderDelegate(
 													(context, i) {
 														if (i % 2 == 0) {
 															return Stack(
@@ -615,6 +636,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 															);
 														}
 													},
+													list: filteredValues,
 													childCount: filteredValues.length * 2,
 													addRepaintBoundaries: false,
 													addAutomaticKeepAlives: false

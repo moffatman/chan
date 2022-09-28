@@ -97,6 +97,7 @@ class _BoardPageState extends State<BoardPage> {
 	final _boardsPullTabKey = GlobalKey();
 	final _threadPullTabKey = GlobalKey();
 	int _page = 1;
+	final Map<ThreadIdentifier, ValueNotifier<bool>> _selectedThreadNotifiers = {};
 
 	@override
 	void initState() {
@@ -127,6 +128,8 @@ class _BoardPageState extends State<BoardPage> {
 	@override
 	void didUpdateWidget(BoardPage oldWidget) {
 		super.didUpdateWidget(oldWidget);
+		_selectedThreadNotifiers[oldWidget.selectedThread]?.value = false;
+		_selectedThreadNotifiers[widget.selectedThread]?.value = true;
 		if (widget.selectedThread != null) {
 			_lastSelectedThread = widget.selectedThread;
 		}
@@ -270,33 +273,36 @@ class _BoardPageState extends State<BoardPage> {
 					)
 				],
 				maxHeight: settings.maxCatalogRowHeight,
-				child:  GestureDetector(
-					child: ThreadRow(
-						contentFocus: settings.useCatalogGrid,
-						thread: thread,
-						isSelected: thread.identifier == widget.selectedThread,
-						semanticParentIds: [widget.semanticId],
-						onThumbnailTap: (initialAttachment) {
-							final attachments = _listController.items.expand((_) => _.attachments).toList();
-							// It might not be in the list if the thread has been filtered
-							final initialAttachmentInList = attachments.tryFirstWhere((a) => a.id == initialAttachment.id);
-							showGallery(
-								context: context,
-								attachments: initialAttachmentInList == null ? [initialAttachment] : attachments,
-								replyCounts: {
-									for (final thread in _listController.items)
-										for (final attachment in thread.attachments)
-											attachment: thread.replyCount
-								},
-								initialAttachment: initialAttachmentInList ?? initialAttachment,
-								onChange: (attachment) {
-									_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
-								},
-								semanticParentIds: [widget.semanticId]
-							);
-						},
-						baseOptions: PostSpanRenderOptions(
-							highlightString: highlightString
+				child: GestureDetector(
+					child: ValueListenableBuilder<bool>(
+						valueListenable: _selectedThreadNotifiers.putIfAbsent(thread.identifier, () => ValueNotifier(thread.identifier == widget.selectedThread)),
+						builder: (context, isSelected, child) => ThreadRow(
+							contentFocus: settings.useCatalogGrid,
+							thread: thread,
+							isSelected: isSelected,
+							semanticParentIds: [widget.semanticId],
+							onThumbnailTap: (initialAttachment) {
+								final attachments = _listController.items.expand((_) => _.attachments).toList();
+								// It might not be in the list if the thread has been filtered
+								final initialAttachmentInList = attachments.tryFirstWhere((a) => a.id == initialAttachment.id);
+								showGallery(
+									context: context,
+									attachments: initialAttachmentInList == null ? [initialAttachment] : attachments,
+									replyCounts: {
+										for (final thread in _listController.items)
+											for (final attachment in thread.attachments)
+												attachment: thread.replyCount
+									},
+									initialAttachment: initialAttachmentInList ?? initialAttachment,
+									onChange: (attachment) {
+										_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
+									},
+									semanticParentIds: [widget.semanticId]
+								);
+							},
+							baseOptions: PostSpanRenderOptions(
+								highlightString: highlightString
+							)
 						)
 					),
 					onTap: () => _onThreadSelected(thread.identifier)
@@ -611,6 +617,18 @@ class _BoardPageState extends State<BoardPage> {
 																	break;
 															}
 															Future.delayed(const Duration(milliseconds: 100), () {
+																if (!mounted) return;
+																final idsNow = list.map((x) => x.identifier).toSet();
+																final toRemove = <ThreadIdentifier>[];
+																for (final entry in _selectedThreadNotifiers.entries) {
+																	if (!idsNow.contains(entry.key)) {
+																		entry.value.dispose();
+																		toRemove.add(entry.key);
+																	}
+																}
+																for (final key in toRemove) {
+																	_selectedThreadNotifiers.remove(key);
+																}
 																if (_loadCompleter?.isCompleted == false) {
 																	_loadCompleter?.complete();
 																}
@@ -731,5 +749,8 @@ class _BoardPageState extends State<BoardPage> {
 	void dispose() {
 		super.dispose();
 		_listController.dispose();
+		for (final notifier in _selectedThreadNotifiers.values) {
+			notifier.dispose();
+		}
 	}
 }
