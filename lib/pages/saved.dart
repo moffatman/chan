@@ -289,7 +289,7 @@ class _SavedPageState extends State<SavedPage> {
 																				opacity: watch.item.zombie ? 0.5 : 1.0,
 																				child: ThreadRow(
 																					thread: threadState!.thread!,
-																					isSelected: watch == selected,
+																					isSelected: selected(context, watch),
 																					showBoardName: true,
 																					showSiteIcon: true,
 																					onThumbnailLoadError: (error, stackTrace) {
@@ -419,7 +419,10 @@ class _SavedPageState extends State<SavedPage> {
 											child: Builder(
 												builder: (context) => ThreadRow(
 													thread: state.item.thread!,
-													isSelected: state.imageboard == selectedThread?.imageboard && state.item.thread!.identifier == selectedThread?.item,
+													isSelected: selectedThread(context, ImageboardScoped(
+														imageboard: state.imageboard,
+														item: state.item.identifier
+													)),
 													showBoardName: true,
 													showSiteIcon: true,
 													onThumbnailLoadError: (error, stackTrace) {
@@ -517,7 +520,7 @@ class _SavedPageState extends State<SavedPage> {
 										),
 										child: PostRow(
 											post: item.post,
-											isSelected: item == selected,
+											isSelected: selected(context, item),
 											onTap: () => setter(item),
 											showBoardName: true,
 											showSiteIcon: true
@@ -587,7 +590,7 @@ class _SavedPageState extends State<SavedPage> {
 											child: Builder(
 												builder: (context) => PostRow(
 													post: savedPost.item.post,
-													isSelected: savedPost == selected,
+													isSelected: selected(context, savedPost),
 													onTap: () => setter(savedPost),
 													showBoardName: true,
 													showSiteIcon: true,
@@ -661,28 +664,30 @@ class _SavedPageState extends State<SavedPage> {
 							list.sort((a, b) => b.item.savedTime.compareTo(a.item.savedTime));
 							return GridView.builder(
 								itemCount: list.length,
-								itemBuilder: (context, i) => ImageboardScope(
-									imageboardKey: list[i].imageboard.key,
-									child: GestureDetector(
-										child: Container(
-											decoration: BoxDecoration(
-												color: Colors.transparent,
-												borderRadius: const BorderRadius.all(Radius.circular(4)),
-												border: Border.all(color: list[i] == selected ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
-											),
-											margin: const EdgeInsets.all(4),
-											child: Hero(
-												tag: AttachmentSemanticLocation(
-													attachment: list[i].item.attachment,
-													semanticParents: [-5]
+								itemBuilder: (context, i) => Builder(
+									builder: (context) => ImageboardScope(
+										imageboardKey: list[i].imageboard.key,
+										child: GestureDetector(
+											child: Container(
+												decoration: BoxDecoration(
+													color: Colors.transparent,
+													borderRadius: const BorderRadius.all(Radius.circular(4)),
+													border: Border.all(color: selected(context, list[i]) ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
 												),
-												child: SavedAttachmentThumbnail(
-													file: list[i].item.file,
-													fit: BoxFit.contain
+												margin: const EdgeInsets.all(4),
+												child: Hero(
+													tag: AttachmentSemanticLocation(
+														attachment: list[i].item.attachment,
+														semanticParents: [-5]
+													),
+													child: SavedAttachmentThumbnail(
+														file: list[i].item.file,
+														fit: BoxFit.contain
+													)
 												)
-											)
-										),
-										onTap: () => setter(list[i])
+											),
+											onTap: () => setter(list[i])
+										)
 									)
 								),
 								gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

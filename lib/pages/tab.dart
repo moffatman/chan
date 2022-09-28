@@ -33,7 +33,7 @@ class ImageboardTab extends StatelessWidget {
 				return BoardPage(
 					key: tab.boardKey,
 					initialBoard: tab.board,
-					selectedThread: selectedThread,
+					isThreadSelected: selectedThread,
 					onThreadSelected: threadSetter,
 					onBoardChanged: (board) {
 						tab.board = board.item;

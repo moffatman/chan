@@ -16,10 +16,12 @@ PageRoute transparentPageRouteBuilder(WidgetBuilder builder, {required bool show
 class MasterDetailHint {
 	final bool twoPane;
 	final GlobalKey<PrimaryScrollControllerInjectingNavigatorState> primaryInterceptorKey;
+	final dynamic currentValue;
 
 	const MasterDetailHint({
 		required this.twoPane,
-		required this.primaryInterceptorKey
+		required this.primaryInterceptorKey,
+		required this.currentValue
 	});
 }
 
@@ -45,7 +47,7 @@ class BuiltDetailPane {
 
 class MasterDetailPage<T> extends StatelessWidget {
 	final Object? id;
-	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T?> valueSetter) masterBuilder;
+	final Widget Function(BuildContext context, bool Function(BuildContext, T) isSelected, ValueChanged<T?> valueSetter) masterBuilder;
 	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
 	final T? initialValue;
 	final ValueChanged<T?>? onValueChanged;
@@ -78,7 +80,7 @@ class MultiMasterPane<T> {
 	final Widget? title;
 	final ObstructingPreferredSizeWidget? navigationBar;
 	final IconData? icon;
-	final Widget Function(BuildContext context, T? selectedValue, ValueChanged<T?> valueSetter) masterBuilder;
+	final Widget Function(BuildContext context, bool Function(BuildContext, T) isSelected, ValueChanged<T?> valueSetter) masterBuilder;
 	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
 	ValueNotifier<T?> currentValue;
 	final ValueChanged<T?>? onValueChanged;
@@ -94,15 +96,14 @@ class MultiMasterPane<T> {
 	}) : currentValue = ValueNotifier<T?>(initialValue);
 
 	Widget buildMaster(BuildContext context, VoidCallback onNewValue, bool provideCurrentValue) {
-		return ValueListenableBuilder(
-			valueListenable: currentValue,
-			builder: (context, T? v, child) => masterBuilder(context, provideCurrentValue ? v : null, (newValue) {
-					currentValue.value = newValue;
-					onValueChanged?.call(newValue);
-					onNewValue();
-				}
-			)
-		);
+		return masterBuilder(context, (context, thisValue) => context.select<MasterDetailHint, bool>((h) {
+			if (!provideCurrentValue) return false;
+			return h.currentValue == thisValue;
+		}), (newValue) {
+			currentValue.value = newValue;
+			onValueChanged?.call(newValue);
+			onNewValue();
+		});
 	}
 
 	void onPushReturn(dynamic value) {
@@ -287,7 +288,9 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 							Widget child = TabBarView(
 								controller: _tabController,
 								physics: panes.length > 1 ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
-								children: panes.map((pane) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)).toList()
+								children: panes.map((pane) => Builder(
+									builder: (context) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)
+								)).toList()
 							);
 							if (widget.showChrome) {
 								child = CupertinoPageScaffold(
@@ -370,7 +373,8 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		return Provider.value(
 			value: MasterDetailHint(
 				twoPane: !onePane,
-				primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey
+				primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
+				currentValue: panes[_tabController.index].currentValue.value
 			),
 			child: WillPopScope(
 				onWillPop: _onWillPop,

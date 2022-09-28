@@ -78,8 +78,9 @@ class SearchPageState extends State<SearchPage> {
 			paneCreator: () => [
 				MultiMasterPane<ImageboardScoped<ImageboardArchiveSearchResult>>(
 					masterBuilder: (context, currentValue, setValue) {
+						final v = context.watch<MasterDetailHint>().currentValue;
 						WidgetsBinding.instance.addPostFrameCallback((_){
-							_valueInjector.value = currentValue;
+							_valueInjector.value = v;
 						});
 						return SearchComposePage(
 							onSearchComposed: onSearchComposed

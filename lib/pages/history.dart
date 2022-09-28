@@ -11,6 +11,7 @@ import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 
 final _appLaunchTime = DateTime.now();
 
@@ -79,7 +80,10 @@ class _HistoryPageState extends State<HistoryPage> {
 									child: Builder(
 										builder: (context) => ThreadRow(
 											thread: state.item.thread!,
-											isSelected: state.item.thread!.identifier == selectedThread?.item,
+											isSelected: selectedThread(context, ImageboardScoped(
+												imageboard: state.imageboard,
+												item: state.item.identifier
+											)),
 											semanticParentIds: const [-3],
 											showSiteIcon: ImageboardRegistry.instance.count > 1,
 											showBoardName: true,
@@ -223,7 +227,7 @@ class _HistoryPageState extends State<HistoryPage> {
 										onPressed: () {
 											Persistence.enableHistory = !Persistence.enableHistory;
 											Persistence.didChangeBrowserHistoryStatus();
-											threadSetter(selectedThread);
+											threadSetter(context.read<MasterDetailHint>().currentValue);
 											showToast(
 												context: context,
 												message: Persistence.enableHistory ? 'History resumed' : 'History stopped',
