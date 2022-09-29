@@ -130,7 +130,7 @@ class PostRow extends StatelessWidget {
 						},
 						child: Text.rich(
 							(translatedPostSnapshot?.data ?? latestPost).span.build(
-								ctx,
+								ctx, zone, settings,
 								(baseOptions ?? PostSpanRenderOptions()).copyWith(
 									showCrossThreadLabel: showCrossThreadLabel,
 									shrinkWrap: shrinkWrap,
@@ -257,7 +257,7 @@ class PostRow extends StatelessWidget {
 																	threadId: latestPost.threadId,
 																	postId: id,
 																	dead: false
-																).build(ctx, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+																).build(ctx, zone, settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
 																	showCrossThreadLabel: showCrossThreadLabel,
 																	addExpandingPosts: false,
 																	shrinkWrap: shrinkWrap

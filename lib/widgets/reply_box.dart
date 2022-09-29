@@ -1409,7 +1409,7 @@ class ReplyBoxState extends State<ReplyBox> {
 														builder: (context, _) => DefaultTextStyle(
 															style: defaultTextStyle,
 															child: Text.rich(
-																snippet.previewBuilder!(controller.text).build(context, PostSpanRenderOptions())
+																snippet.previewBuilder!(controller.text).build(context, context.watch<PostSpanZoneData>(), context.watch<EffectiveSettings>(), PostSpanRenderOptions())
 															)
 														)
 													),

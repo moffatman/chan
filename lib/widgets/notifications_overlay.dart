@@ -4,6 +4,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -229,7 +230,7 @@ class NotificationContent extends StatelessWidget {
 								TextSpan(text: 'New ${isYou ? 'reply' : 'post'} in /${notification.board}/${notification.threadId}       \n', style: const TextStyle(
 									fontWeight: FontWeight.bold
 								)),
-								post.span.build(context, PostSpanRenderOptions(
+								post.span.build(context, context.watch<PostSpanZoneData>(), context.watch<EffectiveSettings>(), PostSpanRenderOptions(
 									shrinkWrap: true,
 									avoidBuggyClippers: true
 								))

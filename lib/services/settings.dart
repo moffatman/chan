@@ -257,6 +257,15 @@ class SavedTheme {
 
 	@override
 	int get hashCode => Object.hash(backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, copiedFrom);
+
+	Color primaryColorWithBrightness(double factor) {
+		return Color.fromRGBO(
+			((primaryColor.red * factor) + (backgroundColor.red * (1 - factor))).round(),
+			((primaryColor.green * factor) + (backgroundColor.green * (1 - factor))).round(),
+			((primaryColor.blue * factor) + (backgroundColor.blue * (1 - factor))).round(),
+			primaryColor.opacity
+		);
+	}
 }
 
 @HiveType(typeId: 30)

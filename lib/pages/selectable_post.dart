@@ -231,7 +231,7 @@ class SelectablePostPage extends StatelessWidget {
 												interactive: false
 											)),
 											const TextSpan(text: '\n'),
-											post.span.build(context, PostSpanRenderOptions(
+											post.span.build(context, zone, context.watch<EffectiveSettings>(), PostSpanRenderOptions(
 												showRawSource: true,
 												recognizer: TapGestureRecognizer(),
 												overrideRecognizer: true,

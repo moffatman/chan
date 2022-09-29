@@ -74,32 +74,37 @@ class PostSpanRenderOptions {
 	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 
 	PostSpanRenderOptions copyWith({
+		TapGestureRecognizer? recognizer,
+		bool? overrideRecognizer,
+		Color? overrideTextColor,
 		bool? ownLine,
 		TextStyle? baseTextStyle,
 		bool? showCrossThreadLabel,
 		bool? shrinkWrap,
 		bool? addExpandingPosts,
 		bool? avoidBuggyClippers,
+		PointerEnterEventListener? onEnter,
+		PointerExitEventListener? onExit,
 		int? maxLines,
 		int? charactersPerLine,
 		InlineSpan? postInject,
 	}) => PostSpanRenderOptions(
-		recognizer: recognizer,
-		overrideRecognizer: overrideRecognizer,
-		overrideTextColor: overrideTextColor,
+		recognizer: recognizer ?? this.recognizer,
+		overrideRecognizer: overrideRecognizer ?? this.overrideRecognizer,
+		overrideTextColor: overrideTextColor ?? this.overrideTextColor,
 		showCrossThreadLabel: showCrossThreadLabel ?? this.showCrossThreadLabel,
 		addExpandingPosts: addExpandingPosts ?? this.addExpandingPosts,
 		baseTextStyle: baseTextStyle ?? this.baseTextStyle,
 		showRawSource: showRawSource,
 		avoidBuggyClippers: avoidBuggyClippers ?? this.avoidBuggyClippers,
-		onEnter: onEnter,
-		onExit: onExit,
+		onEnter: onEnter ?? this.onEnter,
+		onExit: onExit ?? this.onExit,
 		ownLine: ownLine ?? this.ownLine,
 		shrinkWrap: shrinkWrap ?? this.shrinkWrap,
 		highlightString: highlightString,
 		maxLines: maxLines ?? this.maxLines,
 		charactersPerLine: charactersPerLine ?? this.charactersPerLine,
-		postInject: postInject ?? this.postInject,
+		postInject: postInject ?? this.postInject
 	);
 }
 
@@ -107,7 +112,7 @@ abstract class PostSpan {
 	List<int> referencedPostIds(String forBoard) {
 		return [];
 	}
-	InlineSpan build(BuildContext context, PostSpanRenderOptions options);
+	InlineSpan build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options);
 	String buildText();
 }
 
@@ -115,7 +120,7 @@ class _PostWrapperSpan extends PostSpan {
 	final InlineSpan span;
 	_PostWrapperSpan(this.span);
 	@override
-	InlineSpan build(BuildContext context, options) => span;
+	InlineSpan build(context, zone, settings, options) => span;
 	@override
 	String buildText() => '';
 }
@@ -133,7 +138,7 @@ class PostNodeSpan extends PostSpan {
 	}
 
 	@override
-	InlineSpan build(context, options) {
+	InlineSpan build(context, zone, settings, options) {
 		PostSpanRenderOptions effectiveOptions = options.copyWith(maxLines: 99999);
 		final renderChildren = <InlineSpan>[];
 		List<PostSpan> effectiveChildren = children;
@@ -146,10 +151,10 @@ class PostNodeSpan extends PostSpan {
 		double lineGuess = 0;
 		for (int i = 0; i < effectiveChildren.length && lines < options.maxLines; i++) {
 			if ((i == 0 || effectiveChildren[i - 1] is PostLineBreakSpan) && (i == effectiveChildren.length - 1 || effectiveChildren[i + 1] is PostLineBreakSpan)) {
-				renderChildren.add(effectiveChildren[i].build(context, ownLineOptions));
+				renderChildren.add(effectiveChildren[i].build(context, zone, settings, ownLineOptions));
 			}
 			else {
-				renderChildren.add(effectiveChildren[i].build(context, effectiveOptions));
+				renderChildren.add(effectiveChildren[i].build(context, zone, settings, effectiveOptions));
 			}
 			if (effectiveChildren[i] is PostLineBreakSpan) {
 				lines += lineGuess.ceil();
@@ -164,7 +169,7 @@ class PostNodeSpan extends PostSpan {
 		);
 	}
 
-	Widget buildWidget(BuildContext context, PostSpanRenderOptions options, {Widget? preInjectRow, InlineSpan? postInject}) {
+	Widget buildWidget(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options, {Widget? preInjectRow, InlineSpan? postInject}) {
 		final rows = <List<InlineSpan>>[[]];
 		int lines = preInjectRow != null ? 2 : 1;
 		for (int i = 0; i < children.length && lines < options.maxLines; i++) {
@@ -173,10 +178,10 @@ class PostNodeSpan extends PostSpan {
 				lines++;
 			}
 			else if ((i == 0 || children[i - 1] is PostLineBreakSpan) && (i == children.length - 1 || children[i + 1] is PostLineBreakSpan)) {
-				rows.last.add(children[i].build(context, options.copyWith(ownLine: true)));
+				rows.last.add(children[i].build(context, zone, settings, options.copyWith(ownLine: true)));
 			}
 			else {
-				rows.last.add(children[i].build(context, options));
+				rows.last.add(children[i].build(context, zone, settings, options));
 			}
 		}
 		if (postInject != null) {
@@ -218,9 +223,9 @@ class PostTextSpan extends PostSpan {
 	PostTextSpan(this.text, {this.underlined = false});
 
 	@override
-	InlineSpan build(context, options) {
+	InlineSpan build(context, zone, settings, options) {
 		final children = <TextSpan>[];
-		final str = context.read<EffectiveSettings>().filterProfanity(text);
+		final str = settings.filterProfanity(text);
 		if (options.highlightString != null) {
 			final escapedHighlight = options.highlightString!.replaceAllMapped(RegExp(r'[.*+?^${}()|[\]\\]'), (m) => '\\${m.group(0)}');
 			final nonHighlightedParts = str.split(RegExp(escapedHighlight, caseSensitive: false));
@@ -279,9 +284,9 @@ class PostQuoteSpan extends PostSpan {
 	PostQuoteSpan(this.child);
 
 	@override
-	InlineSpan build(context, options) {
-		return child.build(context, options.copyWith(
-			baseTextStyle: options.baseTextStyle.copyWith(color: context.read<EffectiveSettings>().theme.quoteColor)
+	InlineSpan build(context, zone, settings, options) {
+		return child.build(context, zone, settings, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(color: settings.theme.quoteColor)
 		));
 	}
 
@@ -313,9 +318,9 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		return [];
 	}
-	Tuple2<InlineSpan, TapGestureRecognizer> _buildCrossThreadLink(BuildContext context, PostSpanRenderOptions options) {
+	Tuple2<InlineSpan, TapGestureRecognizer> _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
 		String text = '>>';
-		if (context.watch<PostSpanZoneData>().thread.board != board) {
+		if (zone.thread.board != board) {
 			text += '/$board/';
 		}
 		text += '$postId';
@@ -340,14 +345,13 @@ class PostQuoteLinkSpan extends PostSpan {
 		return Tuple2(TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
-				color: options.overrideTextColor ?? CupertinoTheme.of(context).textTheme.actionTextStyle.color,
+				color: options.overrideTextColor ?? settings.theme.secondaryColor,
 				decoration: TextDecoration.underline
 			),
 			recognizer: recognizer
 		), recognizer);
 	}
-	Tuple2<InlineSpan, TapGestureRecognizer> _buildDeadLink(BuildContext context, PostSpanRenderOptions options) {
-		final zone = context.watch<PostSpanZoneData>();
+	Tuple2<InlineSpan, TapGestureRecognizer> _buildDeadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
 		String text = '>>$postId';
 		if (zone.postFromArchiveError(postId) != null) {
 			text += ' (Error: ${zone.postFromArchiveError(postId)})';
@@ -359,19 +363,18 @@ class PostQuoteLinkSpan extends PostSpan {
 			text += ' (Dead)';
 		}
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
-			if (!zone.isLoadingPostFromArchive(postId)) zone.loadPostFromArchive(postId);
+			if (zone.isLoadingPostFromArchive(postId) == false) zone.loadPostFromArchive(postId);
 		});
 		return Tuple2(TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
-				color: options.overrideTextColor ?? CupertinoTheme.of(context).textTheme.actionTextStyle.color,
+				color: options.overrideTextColor ?? settings.theme.secondaryColor,
 				decoration: TextDecoration.underline
 			),
 			recognizer: recognizer
 		), recognizer);
 	}
-	Tuple2<InlineSpan, TapGestureRecognizer> _buildNormalLink(BuildContext context, PostSpanRenderOptions options) {
-		final zone = context.watch<PostSpanZoneData>();
+	Tuple2<InlineSpan, TapGestureRecognizer> _buildNormalLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
 		String text = '>>$postId';
 		if (postId == threadId) {
 			text += ' (OP)';
@@ -387,7 +390,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		final bool expandedSomewhereAbove = expandedImmediatelyAbove || zone.stackIds.contains(postId);
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
 			if (!zone.stackIds.contains(postId)) {
-				if (!context.read<EffectiveSettings>().supportMouse.value) {
+				if (!settings.supportMouse.value) {
 					WeakNavigator.push(context, PostsPage(
 							zone: zone.childZoneFor(postId),
 							postsIdsToShow: [postId],
@@ -403,7 +406,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		return Tuple2(TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
-				color: options.overrideTextColor ?? (expandedImmediatelyAbove ? CupertinoTheme.of(context).textTheme.actionTextStyle.color?.shiftSaturation(-0.5) : CupertinoTheme.of(context).textTheme.actionTextStyle.color),
+				color: options.overrideTextColor ?? (expandedImmediatelyAbove ? settings.theme.secondaryColor.shiftSaturation(-0.5) : settings.theme.secondaryColor),
 				decoration: TextDecoration.underline,
 				decorationStyle: expandedSomewhereAbove ? TextDecorationStyle.dashed : null
 			),
@@ -412,8 +415,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			onExit: options.onExit
 		), recognizer);
 	}
-	Tuple2<InlineSpan, TapGestureRecognizer> _build(BuildContext context, PostSpanRenderOptions options) {
-		final zone = context.watch<PostSpanZoneData>();
+	Tuple2<InlineSpan, TapGestureRecognizer> _build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
 		if (dead && threadId == null) {
 			// Dead links do not know their thread
 			final thisPostLoaded = zone.postFromArchive(postId);
@@ -421,18 +423,18 @@ class PostQuoteLinkSpan extends PostSpan {
 				threadId = thisPostLoaded.threadId;
 			}
 			else {
-				return _buildDeadLink(context, options);
+				return _buildDeadLink(context, zone, settings, options);
 			}
 		}
 
 		if (threadId != null && (board != zone.thread.board || threadId != zone.thread.id)) {
-			return _buildCrossThreadLink(context, options);
+			return _buildCrossThreadLink(context, zone, settings, options);
 		}
 		else {
 			// Normal link
-			final span = _buildNormalLink(context, options);
-			final thisPostInThread = zone.thread.posts.where((p) => p.id == postId);
-			if (thisPostInThread.isEmpty || zone.shouldExpandPost(postId)) {
+			final span = _buildNormalLink(context, zone, settings, options);
+			final thisPostInThread = zone.thread.posts.tryFirstWhere((p) => p.id == postId);
+			if (thisPostInThread == null || zone.shouldExpandPost(postId) == true) {
 				return span;
 			}
 			else {
@@ -443,11 +445,11 @@ class PostQuoteLinkSpan extends PostSpan {
 						value: zone,
 						child: DecoratedBox(
 							decoration: BoxDecoration(
-								border: Border.all(color: CupertinoTheme.of(context).primaryColor)
+								border: Border.all(color: settings.theme.primaryColor)
 							),
 							position: DecorationPosition.foreground,
 							child: PostRow(
-								post: thisPostInThread.first,
+								post: thisPostInThread,
 								shrinkWrap: true
 							)
 						)
@@ -471,9 +473,8 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 	}
 	@override
-	build(context, options) {
-		final zone = context.watch<PostSpanZoneData>();
-		final pair = _build(context, options);
+	build(context, zone, settings, options) {
+		final pair = _build(context, zone, settings, options);
 		final span = TextSpan(
 			children: [
 				pair.item1
@@ -502,11 +503,11 @@ class PostBoardLink extends PostSpan {
 	final String board;
 	PostBoardLink(this.board);
 	@override
-	build(context, options) {
+	build(context, zone, settings, options) {
 		return TextSpan(
 			text: '>>/$board/',
 			style: options.baseTextStyle.copyWith(
-				color: options.overrideTextColor ?? CupertinoTheme.of(context).textTheme.actionTextStyle.color,
+				color: options.overrideTextColor ?? settings.theme.secondaryColor,
 				decoration: TextDecoration.underline
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
@@ -550,8 +551,7 @@ class PostCodeSpan extends PostSpan {
 	PostCodeSpan(this.text);
 
 	@override
-	build(context, options) {
-		final zone = context.watch<PostSpanZoneData>();
+	build(context, zone, settings, options) {
 		final result = zone.getFutureForComputation(
 			id: 'languagedetect $text',
 			work: () async {
@@ -632,18 +632,17 @@ class PostSpoilerSpan extends PostSpan {
 	final int id;
 	PostSpoilerSpan(this.child, this.id);
 	@override
-	build(context, options) {
-		final zone = context.watch<PostSpanZoneData>();
+	build(context, zone, settings, options) {
 		final showSpoiler = zone.shouldShowSpoiler(id);
 		final toggleRecognizer = TapGestureRecognizer()..onTap = () {
 			zone.toggleShowingOfSpoiler(id);
 		};
-		final hiddenColor = DefaultTextStyle.of(context).style.color;
-		final visibleColor = CupertinoTheme.of(context).scaffoldBackgroundColor;
+		final hiddenColor = settings.theme.primaryColor;
+		final visibleColor = settings.theme.backgroundColor;
 		onEnter(_) => zone.showSpoiler(id);
 		onExit(_) => zone.hideSpoiler(id);
 		return TextSpan(
-			children: [child.build(context, PostSpanRenderOptions(
+			children: [child.build(context, zone, settings, options.copyWith(
 				recognizer: toggleRecognizer,
 				overrideRecognizer: !showSpoiler,
 				overrideTextColor: showSpoiler ? visibleColor : hiddenColor,
@@ -671,9 +670,7 @@ class PostLinkSpan extends PostSpan {
 	final String url;
 	PostLinkSpan(this.url);
 	@override
-	build(context, options) {
-		final zone = context.watch<PostSpanZoneData>();
-		final settings = context.watch<EffectiveSettings>();
+	build(context, zone, settings, options) {
 		// Remove trailing bracket or other punctuation
 		final cleanedUrl = url.replaceAllMapped(
 			RegExp(r'(\.[A-Za-z0-9\-._~]+)[^A-Za-z0-9\-._~\.\/?]+$'),
@@ -706,7 +703,7 @@ class PostLinkSpan extends PostSpan {
 						borderRadius: const BorderRadius.all(Radius.circular(8)),
 						child: Container(
 							padding: const EdgeInsets.all(8),
-							color: CupertinoTheme.of(context).barBackgroundColor,
+							color: settings.theme.barColor,
 							child: LayoutBuilder(
 								builder: (context, constraints) => constraints.maxWidth < 250 ? Column(
 									mainAxisSize: MainAxisSize.min,
@@ -772,7 +769,7 @@ class PostLinkSpan extends PostSpan {
 								crossAxisAlignment: CrossAxisAlignment.start,
 								children: [
 									if (snapshot.data?.title != null) Text(snapshot.data!.title!, style: TextStyle(
-										color: CupertinoTheme.of(context).primaryColor
+										color: settings.theme.primaryColor
 									), textScaleFactor: 1),
 									if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey), textScaleFactor: 1)
 								]
@@ -825,12 +822,12 @@ class PostCatalogSearchSpan extends PostSpan {
 		required this.query
 	});
 	@override
-	build(context, options) {
+	build(context, zone, settings, options) {
 		return TextSpan(
 			text: '>>/$board/$query',
 			style: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline,
-				color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
+				color: settings.theme.secondaryColor
 			),
 			recognizer: TapGestureRecognizer()..onTap = () => (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 				builder: (ctx) => ImageboardScope(
@@ -859,7 +856,7 @@ class PostTeXSpan extends PostSpan {
 	final String tex;
 	PostTeXSpan(this.tex);
 	@override
-	build(context, options) {
+	build(context, zone, settings, options) {
 		final child = TexWidget(
 			tex: tex,
 			color: options.overrideTextColor ?? options.baseTextStyle.color
@@ -888,7 +885,7 @@ class PostInlineImageSpan extends PostSpan {
 		required this.height
 	});
 	@override
-	build(context, options) {
+	build(context, zone, settings, options) {
 		return WidgetSpan(
 			child: SizedBox(
 				width: width.toDouble(),
@@ -912,8 +909,8 @@ class PostColorSpan extends PostSpan {
 	
 	PostColorSpan(this.child, this.color);
 	@override
-	build(context, options) {
-		return child.build(context, options.copyWith(
+	build(context, zone, settings, options) {
+		return child.build(context, zone, settings, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(color: color)
 		));
 	}
@@ -926,8 +923,8 @@ class PostBoldSpan extends PostSpan {
 
 	PostBoldSpan(this.child);
 	@override
-	build(context, options) {
-		return child.build(context, options.copyWith(
+	build(context, zone, settings, options) {
+		return child.build(context, zone, settings, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(fontWeight: FontWeight.bold)
 		));
 	}
@@ -943,7 +940,7 @@ class PostPopupSpan extends PostSpan {
 		required this.title
 	});
 	@override
-	build(context, options) {
+	build(context, zone, settings, options) {
 		return TextSpan(
 			text: 'Show $title',
 			style: options.baseTextStyle.copyWith(
@@ -956,7 +953,7 @@ class PostPopupSpan extends PostSpan {
 					builder: (context) => CupertinoActionSheet(
 						title: Text(title),
 						message: Text.rich(
-							popup.build(context, options),
+							popup.build(context, zone, settings, options),
 							textAlign: TextAlign.left,
 						),
 						actions: [
@@ -981,7 +978,7 @@ class PostTableSpan extends PostSpan {
 	final List<List<String>> rows;
 	PostTableSpan(this.rows);
 	@override
-	build(context, options) {
+	build(context, zone, settings, options) {
 		return WidgetSpan(
 			child: Table(
 				children: rows.map((row) => TableRow(
@@ -1418,15 +1415,15 @@ List<InlineSpan> buildPostInfoRow({
 			if (field == PostDisplayField.name) ...[
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername)) TextSpan(
 					text: settings.filterProfanity(post.name) + (isYourPost ? ' (You)' : ''),
-					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
+					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? settings.theme.primaryColor : null)
 				)
 				else if (isYourPost) TextSpan(
 					text: '(You)',
-					style: TextStyle(fontWeight: FontWeight.w600, color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)
+					style: TextStyle(fontWeight: FontWeight.w600, color: settings.theme.secondaryColor)
 				),
 				if (settings.showTripOnPosts && post.trip != null) TextSpan(
 					text: '${settings.filterProfanity(post.trip!)} ',
-					style: TextStyle(color: isYourPost ? CupertinoTheme.of(context).textTheme.actionTextStyle.color : null)
+					style: TextStyle(color: isYourPost ? settings.theme.secondaryColor : null)
 				)
 				else if (settings.showNameOnPosts || isYourPost) const TextSpan(text: ' '),
 				if (post.capcode != null) TextSpan(
@@ -1450,7 +1447,7 @@ List<InlineSpan> buildPostInfoRow({
 					settings: settings
 				),
 				style: TextStyle(
-					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8)
+					color: settings.theme.primaryColorWithBrightness(0.8)
 				)
 			)
 			else if (field == PostDisplayField.pass && settings.showPassOnPosts && post.passSinceYear != null) ...[
@@ -1483,7 +1480,7 @@ List<InlineSpan> buildPostInfoRow({
 				),
 				TextSpan(
 					text: '${showBoardName ? '/${post.board}/' : ''}${post.id} ',
-					style: TextStyle(color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5)),
+					style: TextStyle(color: settings.theme.primaryColor.withOpacity(0.5)),
 					recognizer: interactive ? (TapGestureRecognizer()..onTap = () {
 						context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.id);
 					}) : null

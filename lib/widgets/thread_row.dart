@@ -197,7 +197,7 @@ class ThreadRow extends StatelessWidget {
 			if (headerRow.isNotEmpty) {
 				headerRow.add(const TextSpan(text: '\n'));
 			}
-			headerRow.add(PostTextSpan(latestThread.title!).build(context, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+			headerRow.add(PostTextSpan(latestThread.title!).build(context, PostSpanRootZoneData(thread: thread, site: context.read<ImageboardSite>()), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
 				baseTextStyle: const TextStyle(fontWeight: FontWeight.bold)
 			)));
 		}
@@ -269,38 +269,36 @@ class ThreadRow extends StatelessWidget {
 							thread: latestThread,
 							site: context.watch<ImageboardSite>()
 						),
-						child: Builder(
-							builder: (ctx) => IgnorePointer(
-								child: LayoutBuilder(
-									builder: (context, constraints) => Text.rich(
-										TextSpan(
-											children: [
-												if (headerRow.isNotEmpty) TextSpan(
-													children: [
-														...headerRow,
-														const TextSpan(text: '\n')
-													]
-												),
-												latestThread.posts_.first.span.build(
-													ctx,
-													(baseOptions ?? PostSpanRenderOptions()).copyWith(
-														avoidBuggyClippers: true,
-														maxLines: (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
-														charactersPerLine: (constraints.maxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
-														postInject: WidgetSpan(
-															alignment: PlaceholderAlignment.top,
-															child: Visibility(
-																visible: false,
-																maintainState: true,
-																maintainAnimation: true,
-																maintainSize: true,
-																child: makeCounters()
-															)
+						child: IgnorePointer(
+							child: LayoutBuilder(
+								builder: (context, constraints) => Text.rich(
+									TextSpan(
+										children: [
+											if (headerRow.isNotEmpty) TextSpan(
+												children: [
+													...headerRow,
+													const TextSpan(text: '\n')
+												]
+											),
+											latestThread.posts_.first.span.build(
+												context, context.watch<PostSpanZoneData>(), settings,
+												(baseOptions ?? PostSpanRenderOptions()).copyWith(
+													avoidBuggyClippers: true,
+													maxLines: (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
+													charactersPerLine: (constraints.maxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
+													postInject: WidgetSpan(
+														alignment: PlaceholderAlignment.top,
+														child: Visibility(
+															visible: false,
+															maintainState: true,
+															maintainAnimation: true,
+															maintainSize: true,
+															child: makeCounters()
 														)
 													)
 												)
-											]
-										)
+											)
+										]
 									)
 								)
 							)
@@ -362,6 +360,7 @@ class ThreadRow extends StatelessWidget {
 											text: '${settings.filterProfanity(latestThread.title!)}\n',
 											style: const TextStyle(fontWeight: FontWeight.bold),
 										),
+										latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
 											maxLines: (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0),
 											charactersPerLine: (constraints.maxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 											avoidBuggyClippers: true
