@@ -342,16 +342,18 @@ class _ScalerBlurrerState extends State<_ScalerBlurrer> {
 
 	@override
 	Widget build(BuildContext context) {
-		return ImageFiltered(
-			imageFilter: ImageFilter.blur(
-				sigmaX: blur,
-				sigmaY: blur,
-				tileMode: TileMode.decal
-			),
-			child: Transform.scale(
-				scale: scale,
-				alignment: Alignment.center,
-				child: widget.child
+		return ClipRect(
+			child: ImageFiltered(
+				imageFilter: ImageFilter.blur(
+					sigmaX: blur,
+					sigmaY: blur,
+					tileMode: TileMode.decal
+				),
+				child: Transform.scale(
+					scale: scale,
+					alignment: Alignment.center,
+					child: widget.child
+				)
 			)
 		);
 	}
