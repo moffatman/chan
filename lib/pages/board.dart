@@ -639,9 +639,10 @@ class _BoardPageState extends State<BoardPage> {
 																			mainAxisSize: MainAxisSize.min,
 																			children: [
 																				GestureDetector(
-																					onTap: () {
+																					onTap: () async {
 																						lightHapticFeedback();
-																						scrollToTop();
+																						await scrollToTop();
+																						_page = _listController.items.first.currentPage ?? 1;
 																					},
 																					child: Container(
 																						decoration: BoxDecoration(
