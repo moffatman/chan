@@ -136,6 +136,7 @@ class ThreadWatcher extends ChangeNotifier {
 
 	Filter get __filter => FilterGroup([settings.filter, persistence.browserState.imageMD5Filter]);
 	late final FilterCache _filter = FilterCache(__filter);
+	final _initialCountsDone = Completer<void>();
 	
 	ThreadWatcher({
 		required this.imageboardKey,
@@ -148,14 +149,19 @@ class ThreadWatcher extends ChangeNotifier {
 	}) {
 		controller.registerWatcher(this);
 		_boxSubscription = persistence.threadStateBox.watch().listen(_threadUpdated);
-		// Set initial counts
+		_setInitialCounts();
+	}
+
+	Future<void> _setInitialCounts() async {
 		for (final watch in persistence.browserState.threadWatches) {
 			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount(_filter) ?? 0;
 			if (!watch.localYousOnly) {
 				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
 			}
+			await Future.microtask(() => {});
 		}
 		_updateCounts();
+		_initialCountsDone.complete();
 	}
 
 	void _updateCounts() {
@@ -173,7 +179,8 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 	}
 
-	void onWatchUpdated(Watch watch) {
+	void onWatchUpdated(Watch watch) async {
+		await _initialCountsDone.future;
 		if (watch is ThreadWatch) {
 			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount(_filter) ?? 0;
 			if (watch.localYousOnly) {
@@ -200,7 +207,8 @@ class ThreadWatcher extends ChangeNotifier {
 		}
 	}
 
-	void _threadUpdated(BoxEvent event) {
+	void _threadUpdated(BoxEvent event) async {
+		await _initialCountsDone.future;
 		// Update notification counters when last-seen-id is saved to disk
 		if (event.value is PersistentThreadState) {
 			final newThreadState = event.value as PersistentThreadState;
