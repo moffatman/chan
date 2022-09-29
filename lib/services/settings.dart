@@ -9,6 +9,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -744,6 +745,11 @@ class SavedSettings extends HiveObject {
 		showCountryNameInCatalogHeader = showCountryNameInCatalogHeader ?? (showFlagInCatalogHeader ?? true),
 		webmTranscoding = webmTranscoding ?? ((Platform.isIOS || Platform.isMacOS) ? WebmTranscodingSetting.always : WebmTranscodingSetting.never),
 		showListPositionIndicatorsOnLeft = showListPositionIndicatorsOnLeft ?? false;
+
+	@override
+	Future<void> save() async {
+		await runWhenIdle(const Duration(milliseconds: 500), super.save);
+	}
 }
 
 class EffectiveSettings extends ChangeNotifier {

@@ -337,7 +337,7 @@ class Persistence extends ChangeNotifier {
 		if (settings.automaticCacheClearDays < 100000) {
 			await cleanupThreads(Duration(days: settings.automaticCacheClearDays));
 		}
-		await settings.save();
+		settings.save();
 	}
 
 	PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
@@ -450,22 +450,22 @@ class Persistence extends ChangeNotifier {
 	}
 
 	static Future<void> didUpdateTabs() async {
-		await settings.save();
+		settings.save();
 		tabsListenable.didUpdate();
 	}
 
 	Future<void> didUpdateBrowserState() async {
-		await settings.save();
+		settings.save();
 		notifyListeners();
 	}
 
 	static Future<void> didUpdateRecentSearches() async {
-		await settings.save();
+		settings.save();
 		recentSearchesListenable.didUpdate();
 	}
 
 	Future<void> didUpdateSavedPost() async {
-		await settings.save();
+		settings.save();
 		savedPostsNotifier.add(null);
 	}
 
