@@ -599,13 +599,30 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 				),
 				const SizedBox(height: 32),
 				if (Platform.isAndroid) ...[
-					const Text('Transcode WEBMs'),
+					Row(
+						children: const [
+							Icon(CupertinoIcons.play_rectangle),
+							SizedBox(width: 8),
+							Expanded(
+								child: Text('Transcode WEBM videos')
+							)
+						]
+					),
 					const SizedBox(height: 16),
 					CupertinoSegmentedControl<WebmTranscodingSetting>(
 						children: const {
-							WebmTranscodingSetting.never: Text('Never'),
-							WebmTranscodingSetting.vp9: Text('VP9 only'),
-							WebmTranscodingSetting.always: Text('Always')
+							WebmTranscodingSetting.never: Padding(
+								padding: EdgeInsets.all(8),
+								child: Text('Never')
+							),
+							WebmTranscodingSetting.vp9: Padding(
+								padding: EdgeInsets.all(8),
+								child: Text('VP9 only', textAlign: TextAlign.center)
+							),
+							WebmTranscodingSetting.always: Padding(
+								padding: EdgeInsets.all(8),
+								child: Text('Always')
+							)
 						},
 						groupValue: settings.webmTranscoding,
 						onValueChanged: (newValue) {
@@ -2326,11 +2343,21 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 			children: [
 				if (Platform.isAndroid) ...[
 					const SizedBox(height: 16),
-					CupertinoButton(
-						child: Text('${settings.androidGallerySavePath == null ? 'Set' : 'Change'} media save directory'),
-						onPressed: () async {
-							settings.androidGallerySavePath = await pickDirectory();
-						}
+					Center(
+						child: CupertinoButton.filled(
+							padding: const EdgeInsets.all(16),
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									const Icon(CupertinoIcons.floppy_disk),
+									const SizedBox(width: 8),
+									Text('${settings.androidGallerySavePath == null ? 'Set' : 'Change'} media save directory')
+								]
+							),
+							onPressed: () async {
+								settings.androidGallerySavePath = await pickDirectory();
+							}
+						)
 					)
 				],
 				const SizedBox(height: 16),
