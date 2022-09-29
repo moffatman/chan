@@ -89,9 +89,11 @@ class _SettingsPageState extends State<_SettingsPage> {
 }
 
 class _SettingsPageButton extends StatelessWidget {
+	final IconData icon;
 	final String title;
 	final WidgetBuilder pageBuilder;
 	const _SettingsPageButton({
+		required this.icon,
 		required this.title,
 		required this.pageBuilder,
 		Key? key
@@ -105,8 +107,11 @@ class _SettingsPageButton extends StatelessWidget {
 				padding: const EdgeInsets.all(16),
 				child: Row(
 					children: [
-						Text(title),
-						const Spacer(),
+						Icon(icon),
+						const SizedBox(width: 16),
+						Expanded(
+							child: Text(title)
+						),
 						const Icon(CupertinoIcons.chevron_forward)
 					]
 				)
@@ -357,6 +362,7 @@ class SettingsPage extends StatelessWidget {
 					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
 				),
 				_SettingsPageButton(
+					icon: CupertinoIcons.eye_slash,
 					title: 'Behavior Settings',
 					pageBuilder: (context) => const SettingsBehaviorPage()
 				),
@@ -364,6 +370,7 @@ class SettingsPage extends StatelessWidget {
 					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
 				),
 				_SettingsPageButton(
+					icon: CupertinoIcons.paintbrush,
 					title: 'Appearance Settings',
 					pageBuilder: (context) => const SettingsAppearancePage()
 				),
@@ -371,6 +378,7 @@ class SettingsPage extends StatelessWidget {
 					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
 				),
 				_SettingsPageButton(
+					icon: CupertinoIcons.photo_on_rectangle,
 					title: 'Data Settings',
 					pageBuilder: (context) => const SettingsDataPage()
 				),
