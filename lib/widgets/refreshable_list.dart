@@ -257,12 +257,12 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 			}
 		}
 		updatingNow = false;
-		if (mounted && (newList != null || list == null)) {
+		if (mounted && (newList != null || list == null || errorMessage != null)) {
 			if (hapticFeedback) {
 				mediumHapticFeedback();
 			}
 			setState(() {
-				list = newList;
+				list = newList ?? list;
 			});
 		}
 	}
