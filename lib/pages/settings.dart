@@ -711,8 +711,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 								settings.didUpdateHostsToOpenExternally();
 							},
 							child: Text('For ${describeCount(settings.hostsToOpenExternally.length, 'site')}')
-						),
-						const SizedBox(width: 16)
+						)
 					]
 				),
 				const SizedBox(height: 32),
@@ -766,8 +765,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 								controller.dispose();
 							},
 							child: Text(settings.maximumImageUploadDimension == null ? 'No limit' : '${settings.maximumImageUploadDimension} px')
-						),
-						const SizedBox(width: 16)
+						)
 					]
 				),
 				const SizedBox(height: 32),
@@ -824,8 +822,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 									child: AutoSizeText(settings.settingsQuickAction.name, maxLines: 1)
 								)
 							)
-						),
-						const SizedBox(width: 16)
+						)
 					]
 				),
 				const SizedBox(height: 32),
