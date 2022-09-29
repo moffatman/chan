@@ -285,7 +285,8 @@ class ThreadRow extends StatelessWidget {
 													ctx,
 													(baseOptions ?? PostSpanRenderOptions()).copyWith(
 														avoidBuggyClippers: true,
-														maxLines: ((constraints.maxHeight - (DefaultTextStyle.of(context).style.fontSize ?? 17)) / (DefaultTextStyle.of(context).style.fontSize ?? 17)).lazyCeil(),
+														maxLines: (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
+														charactersPerLine: (constraints.maxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 														postInject: WidgetSpan(
 															alignment: PlaceholderAlignment.top,
 															child: Visibility(
@@ -352,8 +353,8 @@ class ThreadRow extends StatelessWidget {
 						thread: latestThread,
 						site: context.watch<ImageboardSite>()
 					),
-					child: Builder(
-						builder: (ctx) => IgnorePointer(
+					child: LayoutBuilder(
+						builder: (ctx, constraints) => IgnorePointer(
 							child: Text.rich(
 								TextSpan(
 									children: [
@@ -361,7 +362,8 @@ class ThreadRow extends StatelessWidget {
 											text: '${settings.filterProfanity(latestThread.title!)}\n',
 											style: const TextStyle(fontWeight: FontWeight.bold),
 										),
-										latestThread.posts_.first.span.build(ctx, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+											maxLines: (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0),
+											charactersPerLine: (constraints.maxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 											avoidBuggyClippers: true
 										)),
 										WidgetSpan(

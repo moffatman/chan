@@ -50,6 +50,7 @@ class PostSpanRenderOptions {
 	final bool ownLine;
 	final bool shrinkWrap;
 	final int maxLines;
+	final int charactersPerLine;
 	final String? highlightString;
 	final InlineSpan? postInject;
 	PostSpanRenderOptions({
@@ -66,6 +67,7 @@ class PostSpanRenderOptions {
 		this.ownLine = false,
 		this.shrinkWrap = false,
 		this.maxLines = 999999,
+		this.charactersPerLine = 999999,
 		this.highlightString,
 		this.postInject
 	});
@@ -79,7 +81,8 @@ class PostSpanRenderOptions {
 		bool? addExpandingPosts,
 		bool? avoidBuggyClippers,
 		int? maxLines,
-		InlineSpan? postInject
+		int? charactersPerLine,
+		InlineSpan? postInject,
 	}) => PostSpanRenderOptions(
 		recognizer: recognizer,
 		overrideRecognizer: overrideRecognizer,
@@ -95,7 +98,8 @@ class PostSpanRenderOptions {
 		shrinkWrap: shrinkWrap ?? this.shrinkWrap,
 		highlightString: highlightString,
 		maxLines: maxLines ?? this.maxLines,
-		postInject: postInject ?? this.postInject
+		charactersPerLine: charactersPerLine ?? this.charactersPerLine,
+		postInject: postInject ?? this.postInject,
 	);
 }
 
@@ -130,7 +134,7 @@ class PostNodeSpan extends PostSpan {
 
 	@override
 	InlineSpan build(context, options) {
-		PostSpanRenderOptions effectiveOptions = options;
+		PostSpanRenderOptions effectiveOptions = options.copyWith(maxLines: 99999);
 		final renderChildren = <InlineSpan>[];
 		List<PostSpan> effectiveChildren = children;
 		if (options.postInject != null) {
@@ -139,6 +143,7 @@ class PostNodeSpan extends PostSpan {
 		}
 		final ownLineOptions = effectiveOptions.copyWith(ownLine: true);
 		int lines = 0;
+		double lineGuess = 0;
 		for (int i = 0; i < effectiveChildren.length && lines < options.maxLines; i++) {
 			if ((i == 0 || effectiveChildren[i - 1] is PostLineBreakSpan) && (i == effectiveChildren.length - 1 || effectiveChildren[i + 1] is PostLineBreakSpan)) {
 				renderChildren.add(effectiveChildren[i].build(context, ownLineOptions));
@@ -147,7 +152,11 @@ class PostNodeSpan extends PostSpan {
 				renderChildren.add(effectiveChildren[i].build(context, effectiveOptions));
 			}
 			if (effectiveChildren[i] is PostLineBreakSpan) {
-				lines++;
+				lines += lineGuess.ceil();
+				lineGuess = 0;
+			}
+			else {
+				lineGuess += effectiveChildren[i].buildText().length / options.charactersPerLine;
 			}
 		}
 		return TextSpan(
