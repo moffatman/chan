@@ -553,7 +553,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						),
 						AutoloadAttachmentsSetting.wifi: Padding(
 							padding: EdgeInsets.all(8),
-							child: Text('When on Wi-Fi', textAlign: TextAlign.center)
+							child: Text('When on Wi\u200d-\u200dFi', textAlign: TextAlign.center)
 						),
 						AutoloadAttachmentsSetting.always: Padding(
 							padding: EdgeInsets.all(8),
