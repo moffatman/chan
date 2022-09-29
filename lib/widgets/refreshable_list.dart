@@ -30,9 +30,11 @@ class FilterAlternative {
 
 class SliverDontRebuildChildBuilderDelegate extends SliverChildBuilderDelegate {
 	final List? list;
+	final String? id;
 	const SliverDontRebuildChildBuilderDelegate(
     super.builder, {
 		required this.list,
+		this.id,
     super.findChildIndexCallback,
     super.childCount,
     super.addAutomaticKeepAlives,
@@ -43,7 +45,7 @@ class SliverDontRebuildChildBuilderDelegate extends SliverChildBuilderDelegate {
   });
 
 	@override
-	bool shouldRebuild(SliverDontRebuildChildBuilderDelegate oldDelegate) => !listEquals(list, oldDelegate.list);
+	bool shouldRebuild(SliverDontRebuildChildBuilderDelegate oldDelegate) => !listEquals(list, oldDelegate.list) || id != oldDelegate.id;
 }
 
 class RefreshableList<T> extends StatefulWidget {
@@ -271,7 +273,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 
 	Widget _itemBuilder(BuildContext context, T value, {bool highlighted = false}) {
 		Widget child;
-		if (_searchFilter != null && widget.filteredItemBuilder!= null) {
+		if (_searchFilter != null && widget.filteredItemBuilder != null) {
 			child = widget.filteredItemBuilder!(context, value, _closeSearch, _searchFilter!.text);
 		}
 		else {
@@ -495,6 +497,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 													}
 												),
 												list: values,
+												id: widget.filteredItemBuilder != null ? _searchFilter?.text : null,
 												childCount: values.length,
 												addRepaintBoundaries: false,
 												addAutomaticKeepAlives: false
@@ -521,6 +524,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 													}
 												},
 												list: values,
+												id: widget.filteredItemBuilder != null ? _searchFilter?.text : null,
 												childCount: values.length * 2,
 												addAutomaticKeepAlives: false,
 												addRepaintBoundaries: false,
