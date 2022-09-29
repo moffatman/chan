@@ -11,7 +11,7 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:html_unescape/html_unescape_small.dart';
-import 'package:html/parser.dart' show parse;
+import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:html/dom.dart' as dom;
 import 'package:linkify/linkify.dart';
 
@@ -48,9 +48,9 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
-		final doc = parse(data.replaceAll('<wbr>', ''));
+		final body = parseFragment(data.replaceAll('<wbr>', ''));
 		final List<PostSpan> elements = [];
-		for (final node in doc.body!.nodes) {
+		for (final node in body.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
 					elements.add(PostLineBreakSpan());

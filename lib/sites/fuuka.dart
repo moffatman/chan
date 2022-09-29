@@ -7,7 +7,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
-import 'package:html/parser.dart' show parse;
+import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:html/dom.dart' as dom;
 import 'package:html_unescape/html_unescape_small.dart';
 
@@ -29,9 +29,9 @@ class FuukaArchive extends ImageboardSiteArchive {
 	@override
 	final String name;
 	static PostNodeSpan makeSpan(String board, int threadId, Map<String, int> linkedPostThreadIds, String data) {
-		final doc = parse(data);
+		final body = parseFragment(data);
 		final List<PostSpan> elements = [];
-		for (final node in doc.body!.nodes) {
+		for (final node in body.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
 					elements.add(PostLineBreakSpan());

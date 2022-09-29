@@ -78,11 +78,11 @@ class SiteFutaba extends ImageboardSite {
 	String boardDomain(String board) => persistence.boards[board]?.subdomain ?? baseUrl;
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
-		final doc = parser.parse(data);
+		final body = parser.parseFragment(data);
 		final List<PostSpan> elements = [];
 		int previousQuoteDestination = -1;
 		bool skipNextLineBreak = false;
-		for (final node in doc.body!.nodes) {
+		for (final node in body.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'font') {
 					if (node.attributes['target'] != null) {

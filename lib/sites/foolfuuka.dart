@@ -12,7 +12,7 @@ import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
-import 'package:html/parser.dart' show parse;
+import 'package:html/parser.dart' show parseFragment;
 import 'package:html/dom.dart' as dom;
 import 'package:html_unescape/html_unescape_small.dart';
 
@@ -50,7 +50,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return null;
 	}
 	static PostNodeSpan makeSpan(String board, int threadId, Map<String, int> linkedPostThreadIds, String data) {
-		final doc = parse(data.replaceAll('<wbr>', '').replaceAll('\n', ''));
+		final body = parseFragment(data.replaceAll('<wbr>', '').replaceAll('\n', ''));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
 		processQuotelink(dom.Element quoteLink) {
@@ -92,7 +92,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				elements.add(PostBoardLink(linkedBoard));
 			}
 		}
-		for (final node in doc.body!.nodes) {
+		for (final node in body.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
 					elements.add(PostLineBreakSpan());

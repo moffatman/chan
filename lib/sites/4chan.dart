@@ -13,7 +13,7 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:html/parser.dart' show parse;
+import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:html/dom.dart' as dom;
 import 'package:html_unescape/html_unescape_small.dart';
 import 'package:linkify/linkify.dart';
@@ -92,15 +92,15 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
-		final doc = parse(data.replaceAll('<wbr>', '').replaceAllMapped(RegExp(r'\[math\](.+?)\[\/math\]'), (match) {
+		final body = parseFragment(data.replaceAll('<wbr>', '').replaceAllMapped(RegExp(r'\[math\](.+?)\[\/math\]'), (match) {
 			return '<tex>${match.group(1)!}</tex>';
 		}).replaceAllMapped(RegExp(r'\[eqn\](.+?)\[\/eqn\]'), (match) {
 			return '<tex>${match.group(1)!}</tex>';
 		}));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
-		for (int i = 0; i < doc.body!.nodes.length; i++) {
-			final node = doc.body!.nodes[i];
+		for (int i = 0; i < body.nodes.length; i++) {
+			final node = body.nodes[i];
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
 					elements.add(PostLineBreakSpan());
@@ -178,14 +178,14 @@ class Site4Chan extends ImageboardSite {
 						}
 					}
 					else if (node.classes.contains('abbr') &&
-									(i + 2 < doc.body!.nodes.length) &&
-									(doc.body!.nodes[i + 1] is dom.Element) &&
-									((doc.body!.nodes[i + 1] as dom.Element).localName == 'br') &&
-									(doc.body!.nodes[i + 1] is dom.Element) &&
-									((doc.body!.nodes[i + 2] as dom.Element).localName == 'table')) {
+									(i + 2 < body.nodes.length) &&
+									(body.nodes[i + 1] is dom.Element) &&
+									((body.nodes[i + 1] as dom.Element).localName == 'br') &&
+									(body.nodes[i + 1] is dom.Element) &&
+									((body.nodes[i + 2] as dom.Element).localName == 'table')) {
 							final tableRows = <PostSpan>[];
 							List<List<String>> subtable = [];
-							for (final row in (doc.body!.nodes[i + 2] as dom.Element).firstChild!.children) {
+							for (final row in (body.nodes[i + 2] as dom.Element).firstChild!.children) {
 								if (row.firstChild?.attributes['colspan'] == '2') {
 									if (subtable.isNotEmpty) {
 										tableRows.add(PostTableSpan(subtable));
