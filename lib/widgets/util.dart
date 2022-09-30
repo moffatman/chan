@@ -505,7 +505,7 @@ class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
 			child: AnimatedBuilder(
 				animation: animation,
 				builder: (context, _) => SizedBox(
-					height: Curves.ease.transform(animation.value) * widget.height,
+					height: widget.curve.transform(animation.value) * widget.height,
 					child: Stack(
 						clipBehavior: Clip.hardEdge,
 						children: [

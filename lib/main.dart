@@ -1524,6 +1524,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										height: 80,
 										bottomSafe: false,
 										expanded: showTabPopup,
+										duration: const Duration(milliseconds: 200),
+										curve: Curves.ease,
 										child: Container(
 											color: CupertinoTheme.of(context).barBackgroundColor,
 											child: Row(
