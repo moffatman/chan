@@ -284,7 +284,7 @@ class ThreadRow extends StatelessWidget {
 												context, context.watch<PostSpanZoneData>(), settings,
 												(baseOptions ?? PostSpanRenderOptions()).copyWith(
 													avoidBuggyClippers: true,
-													maxLines: (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
+													maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
 													charactersPerLine: (constraints.maxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 													postInject: WidgetSpan(
 														alignment: PlaceholderAlignment.top,
@@ -361,7 +361,7 @@ class ThreadRow extends StatelessWidget {
 											style: const TextStyle(fontWeight: FontWeight.bold),
 										),
 										latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
-											maxLines: (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0),
+											maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0),
 											charactersPerLine: (constraints.maxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 											avoidBuggyClippers: true
 										)),
