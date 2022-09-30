@@ -344,6 +344,7 @@ class _ScalerBlurrerState extends State<_ScalerBlurrer> {
 	Widget build(BuildContext context) {
 		return ClipRect(
 			child: ImageFiltered(
+				enabled: blur > 0.1,
 				imageFilter: ImageFilter.blur(
 					sigmaX: blur,
 					sigmaY: blur,
