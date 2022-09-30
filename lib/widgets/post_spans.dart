@@ -1415,7 +1415,7 @@ List<InlineSpan> buildPostInfoRow({
 			if (field == PostDisplayField.name) ...[
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername)) TextSpan(
 					text: settings.filterProfanity(post.name) + (isYourPost ? ' (You)' : ''),
-					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? settings.theme.primaryColor : null)
+					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? settings.theme.secondaryColor : null)
 				)
 				else if (isYourPost) TextSpan(
 					text: '(You)',
