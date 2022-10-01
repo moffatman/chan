@@ -431,6 +431,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	void onCacheCompleted(File file) {
 		_cachedFile = file;
+		if (_isDisposed) return;
 		_scheduleHidingOfLoadingProgress();
 		notifyListeners();
 	}
