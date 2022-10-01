@@ -336,6 +336,9 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 				_listAfterFiltering = newList;
 				widget.controller?.setItems(newList);
 			}
+			else if (widget.controller?._items.isEmpty ?? false) {
+				widget.controller?.setItems(newList);
+			}
 			if (filteredValues.isEmpty) {
 				// Don't auto open filtered values after clearing it before
 				_showFilteredValues = false;
