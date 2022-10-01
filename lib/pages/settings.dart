@@ -3224,22 +3224,21 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 									]
 								),
 								const SizedBox(height: 16),
-								Padding(
-									padding: const EdgeInsets.only(left: 16, right: 16),
-									child: CupertinoTextField(
-										style: GoogleFonts.ibmPlexMono(),
-										minLines: 5,
-										maxLines: 5,
-										focusNode: regexFocusNode,
-										controller: regexController,
-										onChanged: (_) {
-											if (!dirty) {
-												setState(() {
-													dirty = true;
-												});
-											}
+								CupertinoTextField(
+									style: GoogleFonts.ibmPlexMono(),
+									minLines: 5,
+									maxLines: 5,
+									focusNode: regexFocusNode,
+									controller: regexController,
+									enableSuggestions: false,
+									autocorrect: false,
+									onChanged: (_) {
+										if (!dirty) {
+											setState(() {
+												dirty = true;
+											});
 										}
-									)
+									}
 								)
 							]
 						) : ClipRRect(
