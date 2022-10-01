@@ -2849,7 +2849,10 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 			final List<String> boards = filter.boards.toList();
 			final List<String> excludeBoards = filter.excludeBoards.toList();
 			int? minRepliedTo = filter.minRepliedTo;
-			FilterResultType outputType = filter.outputType;
+			bool hide = filter.outputType.hide;
+			bool highlight = filter.outputType.highlight;
+			bool pinToTop = filter.outputType.pinToTop;
+			bool autoSave = filter.outputType.autoSave;
 			const labelStyle = TextStyle(fontWeight: FontWeight.bold);
 			return showCupertinoModalPopup<Tuple2<bool, CustomFilter?>>(
 				context: context,
@@ -3036,31 +3039,51 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 									Container(
 										padding: const EdgeInsets.all(16),
 										alignment: Alignment.center,
-										child: CupertinoSegmentedControl<FilterResultType>(
-											groupValue: outputType,
-											onValueChanged: (v) {
-												setInnerState(() {
-													outputType = v;
-												});
-											},
-											children: const {
-												FilterResultType.hide: Padding(
-													padding: EdgeInsets.all(8),
-													child: Text('Hide')
-												),
-												FilterResultType.highlight: Padding(
-													padding: EdgeInsets.all(8),
-													child: Text('Highlight', textAlign: TextAlign.center)
-												),
-												FilterResultType.pinToTop: Padding(
-													padding: EdgeInsets.all(8),
-													child: Text('Pin-to-top', textAlign: TextAlign.center)
-												),
-												FilterResultType.autoSave: Padding(
-													padding: EdgeInsets.all(8),
-													child: Text('Auto-save', textAlign: TextAlign.center)
-												)
-											}
+										child: ClipRRect(
+											borderRadius: BorderRadius.circular(8),
+											child: CupertinoListSection(
+												topMargin: 0,
+												margin: EdgeInsets.zero,
+												children: [
+													CupertinoListTile(
+														title: const Text('Hide'),
+														trailing: hide ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+														onTap: () {
+															if (!hide) {
+																hide = true;
+																highlight = false;
+																pinToTop = false;
+																autoSave = false;
+															}
+															setInnerState(() {});
+														}
+													)
+												]
+											)
+										)
+									),
+									Container(
+										padding: const EdgeInsets.all(16),
+										alignment: Alignment.center,
+										child: ClipRRect(
+											borderRadius: BorderRadius.circular(8),
+											child: CupertinoListSection(
+												topMargin: 0,
+												margin: EdgeInsets.zero,
+												children: [
+													Tuple3('Highlight', highlight, (v) => highlight = v),
+													Tuple3('Pin-to-top', pinToTop, (v) => pinToTop = v),
+													Tuple3('Auto-save', autoSave, (v) => autoSave = v),
+												].map((t) => CupertinoListTile(
+													title: Text(t.item1),
+													trailing: t.item2 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+													onTap: () {
+														t.item3(!t.item2);
+														hide = !(highlight || pinToTop || autoSave);
+														setInnerState(() {});
+													},
+												)).toList()
+											)
 										)
 									)
 								]
@@ -3082,7 +3105,12 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 										hasFile: hasFile,
 										threadOnly: threadOnly,
 										minRepliedTo: minRepliedTo,
-										outputType: outputType,
+										outputType: FilterResultType(
+											hide: hide,
+											highlight: highlight,
+											pinToTop: pinToTop,
+											autoSave: autoSave
+										),
 										label: labelController.text
 									)));
 								},
@@ -3190,7 +3218,7 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 																'Example: `;board:tv,mu` will only apply the filter on /tv/ and /mu/\n'
 																'`;exclude:<list>` Don\'t apply on certain boards\n'
 																'`;highlight` Highlight instead of hiding matches\n'
-																'`;top` Highlight and pin match to top of list instead of hiding\n'
+																'`;top` Pin match to top of list instead of hiding\n'
 																'`;save` Automatically save matching threads\n'
 																'`;file:only` Only apply to posts with files\n'
 																'`;file:no` Only apply to posts without files\n'
@@ -3248,6 +3276,12 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 								margin: EdgeInsets.zero,
 								children: [
 									...filters.entries.map((filter) {
+										final icons = [
+											if (filter.value.outputType.hide) const Icon(CupertinoIcons.eye_slash),
+											if (filter.value.outputType.highlight) const Icon(CupertinoIcons.sun_max_fill),
+											if (filter.value.outputType.pinToTop) const Icon(CupertinoIcons.arrow_up_to_line),
+											if (filter.value.outputType.autoSave) const Icon(CupertinoIcons.bookmark_fill)
+										];
 										return Row(
 											children: [
 												Expanded(
@@ -3255,12 +3289,18 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 														opacity: filter.value.disabled ? 0.5 : 1,
 														child: CupertinoListTile(
 															title: Text(filter.value.label.isNotEmpty ? filter.value.label : '/${filter.value.pattern.pattern}/'),
-															leading:  const {
-																FilterResultType.hide: Icon(CupertinoIcons.eye_slash),
-																FilterResultType.highlight: Icon(CupertinoIcons.sun_max_fill),
-																FilterResultType.pinToTop: Icon(CupertinoIcons.arrow_up_to_line),
-																FilterResultType.autoSave: Icon(CupertinoIcons.bookmark_fill)
-															}[filter.value.outputType],
+															leading: FittedBox(fit: BoxFit.contain, child: Column(
+																mainAxisAlignment: MainAxisAlignment.spaceBetween,
+																children: [
+																	for (int i = 0; i < icons.length; i += 2) Row(
+																		mainAxisAlignment: MainAxisAlignment.spaceBetween,
+																		children: [
+																			if (i < icons.length) icons[i],
+																			if ((i + 1) < icons.length) icons[i + 1]
+																		]
+																	)
+																]
+															)),
 															additionalInfo: Wrap(
 																children: [
 																	if (filter.value.minRepliedTo != null) Text('Replying to >=${filter.value.minRepliedTo}'),
@@ -3431,18 +3471,23 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 	}
 
 	String _filterResultType(FilterResultType? type) {
-		switch (type) {
-			case FilterResultType.autoSave:
-				return 'Auto-saved';
-			case FilterResultType.pinToTop:
-				return 'Pinned to top of catalog';
-			case FilterResultType.highlight:
-				return 'Highlighted';
-			case FilterResultType.hide:
-				return 'Hidden';
-			case null:
-				return 'No action';
+		final results = <String>[];
+		if (type?.hide == true) {
+			results.add('Hidden');
 		}
+		if (type?.highlight == true) {
+			results.add('Highlighted');
+		}
+		if (type?.pinToTop == true) {
+			results.add('Pinned to top of catalog');
+		}
+		if (type?.autoSave == true) {
+			results.add('Auto-saved');
+		}
+		if (results.isEmpty) {
+			return 'No action';
+		}
+		return results.join(', ');
 	}
 
 	@override

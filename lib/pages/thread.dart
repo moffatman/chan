@@ -789,7 +789,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		_slowScrollSubscription = widget.listController.slowScrollUpdates.listen(_onSlowScroll);
 		widget.persistentState.lastSeenPostIdNotifier.addListener(_onLastSeenPostIdNotifier);
 		if (widget.thread != null) {
-			_filteredPosts = widget.thread!.posts.where((p) => widget.filter.filter(p)?.type != FilterResultType.hide).toList();
+			_filteredPosts = widget.thread!.posts.where((p) => widget.filter.filter(p)?.type.hide != true).toList();
 		}
 	}
 
@@ -808,7 +808,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 				_filteredPosts = null;
 			}
 			else {
-				_filteredPosts = widget.thread!.posts.where((p) => widget.filter.filter(p)?.type != FilterResultType.hide).toList();
+				_filteredPosts = widget.thread!.posts.where((p) => widget.filter.filter(p)?.type.hide != true).toList();
 			}
 			if (widget.thread?.identifier != oldWidget.thread?.identifier) {
 				setState(() {

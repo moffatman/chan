@@ -100,7 +100,7 @@ class PostRow extends StatelessWidget {
 		replyIds.removeWhere((id) {
 			final replyPost = parentZone.thread.posts.tryFirstWhere((p) => p.id == id);
 			if (replyPost != null) {
-				if (Filter.of(context).filter(replyPost)?.type == FilterResultType.hide) {
+				if (Filter.of(context).filter(replyPost)?.type.hide == true) {
 					return true;
 				}
 			}

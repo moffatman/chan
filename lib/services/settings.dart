@@ -536,6 +536,8 @@ class SavedSettings extends HiveObject {
 	WebmTranscodingSetting webmTranscoding;
 	@HiveField(93)
 	bool showListPositionIndicatorsOnLeft;
+	@HiveField(94)
+	List<String> appliedMigrations;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -631,6 +633,7 @@ class SavedSettings extends HiveObject {
 		bool? showCountryNameInCatalogHeader,
 		WebmTranscodingSetting? webmTranscoding,
 		bool? showListPositionIndicatorsOnLeft,
+		List<String>? appliedMigrations,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -753,7 +756,17 @@ class SavedSettings extends HiveObject {
 		promptedAboutCrashlytics = promptedAboutCrashlytics ?? false,
 		showCountryNameInCatalogHeader = showCountryNameInCatalogHeader ?? (showFlagInCatalogHeader ?? true),
 		webmTranscoding = webmTranscoding ?? ((Platform.isIOS || Platform.isMacOS) ? WebmTranscodingSetting.always : WebmTranscodingSetting.never),
-		showListPositionIndicatorsOnLeft = showListPositionIndicatorsOnLeft ?? false;
+		showListPositionIndicatorsOnLeft = showListPositionIndicatorsOnLeft ?? false,
+		appliedMigrations = appliedMigrations ?? [] {
+			if (!this.appliedMigrations.contains('filters')) {
+				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
+					return '${m.group(1)};save;highlight${m.group(3)}';
+				}).replaceAllMapped(RegExp(r'^(\/.*\/.*)(;top)(.*)$', multiLine: true), (m) {
+					return '${m.group(1)};top;highlight${m.group(3)}';
+				});
+				this.appliedMigrations.add('filters');
+			}
+		}
 
 	@override
 	Future<void> save() async {

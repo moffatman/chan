@@ -308,24 +308,19 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 				for (final filter in filters) {
 					final result = widget.filterableAdapter != null ? filter.filter(widget.filterableAdapter!(item)) : null;
 					if (result != null) {
-						switch (result.type) {
-							case FilterResultType.hide:
-								filteredValues.add(Tuple2(item, result.reason));
-								break;
-							case FilterResultType.highlight:
-								values.add(Tuple2(item, true));
-								break;
-							case FilterResultType.pinToTop:
-								if (widget.allowReordering) {
-									pinnedValues.add(item);
-								}
-								else {
-									values.add(Tuple2(item, true));
-								}
-								break;
-							case FilterResultType.autoSave:
-								widget.onWantAutosave?.call(item);
-								values.add(Tuple2(item, true));
+						bool pinned = false;
+						if (result.type.pinToTop && widget.allowReordering) {
+							pinned = true;
+							pinnedValues.add(item);
+						}
+						if (result.type.autoSave) {
+							widget.onWantAutosave?.call(item);
+						}
+						if (result.type.hide) {
+							filteredValues.add(Tuple2(item, result.reason));
+						}
+						else if (!pinned) {
+							values.add(Tuple2(item, result.type.highlight));
 						}
 						handled = true;
 						break;

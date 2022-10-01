@@ -5,11 +5,18 @@ import 'package:provider/provider.dart';
 const allPatternFields = ['text', 'subject', 'name', 'filename', 'postID', 'posterID', 'flag'];
 const defaultPatternFields = ['subject', 'name', 'filename', 'text'];
 
-enum FilterResultType {
-	hide,
-	highlight,
-	pinToTop,
-	autoSave
+class FilterResultType {
+	final bool hide;
+	final bool highlight;
+	final bool pinToTop;
+	final bool autoSave;
+
+	const FilterResultType({
+		this.hide = false,
+		this.highlight = false,
+		this.pinToTop = false,
+		this.autoSave = false
+	});
 }
 
 class FilterResult {
@@ -80,7 +87,7 @@ class CustomFilter implements Filter {
 		this.label = '',
 		required this.pattern,
 		this.patternFields = defaultPatternFields,
-		this.outputType = FilterResultType.hide,
+		this.outputType = const FilterResultType(hide: true),
 		this.boards = const [],
 		this.excludeBoards = const [],
 		this.hasFile,
@@ -137,19 +144,26 @@ class CustomFilter implements Filter {
 		);
 		final separator = RegExp(r':|,');
 		int i = 5;
+		bool hide = true;
+		bool highlight = false;
+		bool pinToTop = false;
+		bool autoSave = false;
 		while (true) {
 			final s = match.group(i);
 			if (s == null) {
 				break;
 			}
 			else if (s == 'highlight') {
-				filter.outputType = FilterResultType.highlight;
+				highlight = true;
+				hide = false;
 			}
 			else if (s == 'top') {
-				filter.outputType = FilterResultType.pinToTop;
+				pinToTop = true;
+				hide = false;
 			}
 			else if (s == 'save') {
-				filter.outputType = FilterResultType.autoSave;	
+				autoSave = true;
+				hide = false;
 			}
 			else if (s.startsWith('type:')) {
 				filter.patternFields = s.split(separator).skip(1).toList();
@@ -180,6 +194,12 @@ class CustomFilter implements Filter {
 			}
 			i += 2;
 		}
+		filter.outputType = FilterResultType(
+			hide: hide,
+			highlight: highlight,
+			pinToTop: pinToTop,
+			autoSave: autoSave
+		);
 		return filter;
 	}
 
@@ -192,13 +212,13 @@ class CustomFilter implements Filter {
 		out.write('/');
 		out.write(pattern.pattern);
 		out.write('/');
-		if (outputType == FilterResultType.highlight) {
+		if (outputType.highlight) {
 			out.write(';highlight');
 		}
-		else if (outputType == FilterResultType.pinToTop) {
+		if (outputType.pinToTop) {
 			out.write(';top');
 		}
-		else if (outputType == FilterResultType.autoSave) {
+		if (outputType.autoSave) {
 			out.write(';save');
 		}
 		if (patternFields != defaultPatternFields && patternFields.isNotEmpty) {
@@ -241,7 +261,7 @@ class IDFilter implements Filter {
 	@override
 	FilterResult? filter(Filterable item) {
 		if (ids.contains(item.id)) {
-			return FilterResult(FilterResultType.hide, 'Manually hidden');
+			return FilterResult(const FilterResultType(hide: true), 'Manually hidden');
 		}
 		else {
 			return null;
@@ -266,13 +286,13 @@ class ThreadFilter implements Filter {
 	@override
 	FilterResult? filter(Filterable item) {
 		if (ids.contains(item.id)) {
-			return FilterResult(FilterResultType.hide, 'Manually hidden');
+			return FilterResult(const FilterResultType(hide: true), 'Manually hidden');
 		}
 		else if (repliedToIds.any(item.repliedToIds.contains)) {
-			return FilterResult(FilterResultType.hide, 'Replied to manually hidden');
+			return FilterResult(const FilterResultType(hide: true), 'Replied to manually hidden');
 		}
 		else if (posterIds.contains(item.getFilterFieldText('posterID'))) {
-			return FilterResult(FilterResultType.hide, 'Posted by "${item.getFilterFieldText('posterID')}"');
+			return FilterResult(const FilterResultType(hide: true), 'Posted by "${item.getFilterFieldText('posterID')}"');
 		}
 		else {
 			return null;
@@ -295,7 +315,7 @@ class MD5Filter implements Filter {
 	@override
 	FilterResult? filter(Filterable item) {
 		return md5s.contains(item.getFilterFieldText('md5')) ?
-			FilterResult(FilterResultType.hide, 'Matches filtered image') : null;
+			FilterResult(const FilterResultType(hide: true), 'Matches filtered image') : null;
 	}
 
 	@override
@@ -315,7 +335,7 @@ class SearchFilter implements Filter {
 	FilterResult? filter(Filterable item) {
 		return defaultPatternFields.map((field) {
 			return item.getFilterFieldText(field) ?? '';
-		}).join(' ').toLowerCase().contains(text) ? null : FilterResult(FilterResultType.hide, 'Search for "$text"');
+		}).join(' ').toLowerCase().contains(text) ? null : FilterResult(const FilterResultType(hide: true), 'Search for "$text"');
 	}
 
 	@override

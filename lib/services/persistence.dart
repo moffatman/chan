@@ -576,11 +576,11 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		if (lastSeenPostId == null) {
 			return null;
 		}
-		return thread?.posts.where((p) => _filterCache.filter(p)?.type != FilterResultType.hide).toList();
+		return thread?.posts.where((p) => _filterCache.filter(p)?.type.hide != true).toList();
 	});
 	int? unseenReplyCount(Filter filter) => _filteredPosts(filter)?.binarySearchCountAfter((p) => p.id > lastSeenPostId!);
 	int? unseenImageCount(Filter filter) => _filteredPosts(filter)?.map((p) {
-		if (p.id <= lastSeenPostId! || _filterCache.filter(p)?.type == FilterResultType.hide) {
+		if (p.id <= lastSeenPostId! || _filterCache.filter(p)?.type.hide == true) {
 			return 0;
 		}
 		return p.attachments.length;

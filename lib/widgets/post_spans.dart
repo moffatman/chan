@@ -383,7 +383,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			text += ' (You)';
 		}
 		final linkedPost = zone.thread.posts.tryFirstWhere((p) => p.id == postId);
-		if (linkedPost != null && Filter.of(context).filter(linkedPost)?.type == FilterResultType.hide) {
+		if (linkedPost != null && Filter.of(context).filter(linkedPost)?.type.hide == true) {
 			text += ' (Hidden)';
 		}
 		final bool expandedImmediatelyAbove = zone.shouldExpandPost(postId) || zone.stackIds.length > 1 && zone.stackIds.elementAt(zone.stackIds.length - 2) == postId;
