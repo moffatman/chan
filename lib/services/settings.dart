@@ -538,6 +538,8 @@ class SavedSettings extends HiveObject {
 	bool showListPositionIndicatorsOnLeft;
 	@HiveField(94)
 	List<String> appliedMigrations;
+	@HiveField(95)
+	bool? useStatusBarWorkaround;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -634,6 +636,7 @@ class SavedSettings extends HiveObject {
 		WebmTranscodingSetting? webmTranscoding,
 		bool? showListPositionIndicatorsOnLeft,
 		List<String>? appliedMigrations,
+		this.useStatusBarWorkaround,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1513,6 +1516,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showListPositionIndicatorsOnLeft => _settings.showListPositionIndicatorsOnLeft;
 	set showListPositionIndicatorsOnLeft(bool setting) {
 		_settings.showListPositionIndicatorsOnLeft = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool? get useStatusBarWorkaround => _settings.useStatusBarWorkaround;
+	set useStatusBarWorkaround(bool? setting) {
+		_settings.useStatusBarWorkaround = setting;
 		_settings.save();
 		notifyListeners();
 	}

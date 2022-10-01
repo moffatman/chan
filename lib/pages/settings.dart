@@ -2322,6 +2322,46 @@ class SettingsAppearancePage extends StatelessWidget {
 						settings.showListPositionIndicatorsOnLeft = newValue;
 					}
 				),
+				if (Platform.isAndroid) ...[
+					const SizedBox(height: 32),
+					Row(
+						children: [
+							const Icon(CupertinoIcons.device_phone_portrait),
+							const SizedBox(width: 8),
+							const Text('Use status bar workaround'),
+							const SizedBox(width: 8),
+							CupertinoButton(
+								minSize: 0,
+								padding: EdgeInsets.zero,
+								child: const Icon(CupertinoIcons.question_circle),
+								onPressed: () {
+									showCupertinoDialog<bool>(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => CupertinoAlertDialog(
+											content: const Text('Some devices have a bug in their Android ROM, where the status bar cannot be properly hidden.\n\nIf this workaround is enabled, the status bar will not be hidden when opening the gallery.'),
+											actions: [
+												CupertinoDialogAction(
+													child: const Text('OK'),
+													onPressed: () {
+														Navigator.of(context).pop();
+													}
+												)
+											]
+										)
+									);
+								}
+							),
+							const Spacer(),
+							CupertinoSwitch(
+								value: settings.useStatusBarWorkaround ?? false,
+								onChanged: (newValue) {
+									settings.useStatusBarWorkaround = newValue;
+								}
+							)
+						]
+					)
+				],
 				const SizedBox(height: 16),
 			]
 		);
