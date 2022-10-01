@@ -2883,35 +2883,38 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 										)
 									),
 									const Text('Search in fields', style: labelStyle),
-									Padding(
-										padding: const EdgeInsets.all(16),
-										child: Column(
-											mainAxisSize: MainAxisSize.min,
+									const SizedBox(height: 16),
+									ClipRRect(
+										borderRadius: BorderRadius.circular(8),
+										child: CupertinoListSection(
+											topMargin: 0,
+											margin: EdgeInsets.zero,
 											children: [
-												for (final field in allPatternFields) Row(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														SizedBox(
-															width: 200,
-															child: Text(field)
-														),
-														CupertinoSwitch(
-															value: patternFields.contains(field),
-															onChanged: (v) {
-																if (v) {
-																	patternFields.add(field);
-																}
-																else {
-																	patternFields.remove(field);
-																}
-																setInnerState(() {});
-															}
-														)
-													]
+												for (final field in allPatternFields) CupertinoListTile(
+													title: Text(const{
+														'text': 'Text',
+														'subject': 'Subject',
+														'name': 'Name',
+														'filename': 'Filename',
+														'postID': 'Post ID',
+														'posterID': 'Poster ID',
+														'flag': 'Flag'
+													}[field] ?? field),
+													trailing: patternFields.contains(field) ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+													onTap:() {
+														if (patternFields.contains(field)) {
+															patternFields.add(field);
+														}
+														else {
+															patternFields.remove(field);
+														}
+														setInnerState(() {});
+													}
 												)
 											]
 										)
 									),
+									const SizedBox(height: 16),
 									Container(
 										padding: const EdgeInsets.all(16),
 										alignment: Alignment.center,
