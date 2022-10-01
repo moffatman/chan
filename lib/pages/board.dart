@@ -615,7 +615,7 @@ class _BoardPageState extends State<BoardPage> {
 															});
 															return reverseSorting ? list.reversed.toList() : list;
 														}),
-														id: '/${board!.name}/ $sortingMethod $reverseSorting',
+														id: '${site.name} /${board!.name}/ $sortingMethod $reverseSorting',
 														itemBuilder: (context, thread) => itemBuilder(context, thread),
 														filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
 														filterHint: 'Search in board',
