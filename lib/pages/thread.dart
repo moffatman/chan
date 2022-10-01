@@ -324,7 +324,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			title += widget.thread.id.toString();
 		}
 		if (persistentState.thread?.isArchived ?? false) {
-			title += ' (Archived)';
+			title = '(Archived) $title';
 		}
 		final notifications = context.watch<Notifications>();
 		final watch = context.select<Persistence, ThreadWatch?>((_) => notifications.getThreadWatch(widget.thread));
