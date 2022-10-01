@@ -921,6 +921,18 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											}
 										),
 										Tuple3('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch),
+										if (widget.persistentState.useArchive) Tuple3('Live', const ImageboardIcon(), () {
+											widget.persistentState.useArchive = false;
+											widget.persistentState.save();
+											setState(() {});
+											widget.listController.blockAndUpdate();
+										})
+										else Tuple3('Archive', const Icon(CupertinoIcons.archivebox, size: 19), () async {
+											widget.persistentState.useArchive = true;
+											widget.persistentState.save();
+											setState(() {});
+											widget.listController.blockAndUpdate();
+										}),
 										if (widget.persistentState.autoTranslate) Tuple3('Original', const Icon(Icons.translate, size: 19), () {
 											widget.persistentState.autoTranslate = false;
 											widget.persistentState.translatedPosts.clear();
