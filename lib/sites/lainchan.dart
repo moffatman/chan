@@ -25,6 +25,7 @@ class SiteLainchan extends ImageboardSite {
 	final String baseUrl;
 	@override
 	final String name;
+	final int? maxUploadSizeBytes;
 
 	final _unescape = HtmlUnescape();
 
@@ -33,6 +34,7 @@ class SiteLainchan extends ImageboardSite {
 	SiteLainchan({
 		required this.baseUrl,
 		required this.name,
+		this.maxUploadSizeBytes,
 		List<ImageboardSiteArchive> archives = const []
 	}) : super(archives);
 
@@ -247,7 +249,9 @@ class SiteLainchan extends ImageboardSite {
 			name: board['board'],
 			title: board['title'],
 			isWorksafe: board['ws_board'] == 1,
-			webmAudioAllowed: board['webm_audio'] == 1
+			webmAudioAllowed: board['webm_audio'] == 1,
+			maxImageSizeBytes: maxUploadSizeBytes,
+			maxWebmSizeBytes: maxUploadSizeBytes
 		)).toList();
 	}
 

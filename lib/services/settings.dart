@@ -79,7 +79,8 @@ final _badWords = Set.from(ProfanityFilter().wordsToFilterOutList);
 const defaultSite = {
 	'type': 'lainchan',
 	'name': 'testchan',
-	'baseUrl': 'boards.chance.surf'
+	'baseUrl': 'boards.chance.surf',
+	'maxUploadSizeBytes': 8000000
 };
 const defaultSites = {
 	'testchan': defaultSite

@@ -506,7 +506,8 @@ ImageboardSite makeSite(dynamic data) {
 	if (data['type'] == 'lainchan') {
 		return SiteLainchan(
 			name: data['name'],
-			baseUrl: data['baseUrl']
+			baseUrl: data['baseUrl'],
+			maxUploadSizeBytes: data['maxUploadSizeBytes']
 		);
 	}
 	else if (data['type'] == 'soyjak') {

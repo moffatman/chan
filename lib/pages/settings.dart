@@ -215,7 +215,9 @@ class SettingsPage extends StatelessWidget {
 												name: 'chance',
 												title: 'Chance - Imageboard Browser',
 												isWorksafe: true,
-												webmAudioAllowed: false
+												webmAudioAllowed: false,
+												maxImageSizeBytes: 8000000,
+												maxWebmSizeBytes: 8000000
 											),
 											allowChangingBoard: false,
 											semanticId: -1
