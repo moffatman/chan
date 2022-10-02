@@ -50,46 +50,50 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 
 	@override
 	Widget build(BuildContext context) {
-		Widget? label;
-		if (scan != null) {
-			final minutes = scan!.duration?.inMinutes ?? 0;
-			final seconds = (scan!.duration?.inSeconds ?? 0) - (minutes * 60);
-			if ((seconds + minutes) > 0) {
-				label = Text('${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}', style: TextStyle(fontSize: widget.fontSize));
-			}
-		}
-		if (ext == 'webm' || ext == 'mp4' || ext == 'mov') {
-			return IntrinsicWidth(
-				child: Stack(
-					alignment: Alignment.center,
-					fit: StackFit.passthrough,
-					children: [
-						Image(
-							image: ThumbnailImageProvider(
-								file: widget.file
-							),
-							fit: widget.fit
-						),
-						if (label != null) Align(
-							alignment: Alignment.bottomRight,
-							child: Container(
-								decoration: const BoxDecoration(
-									borderRadius: BorderRadius.only(topLeft: Radius.circular(4)),
-									color: Colors.black54
+		return LayoutBuilder(
+			builder: (context, constraints) {
+				Widget? label;
+				if (scan != null) {
+					final minutes = scan!.duration?.inMinutes ?? 0;
+					final seconds = (scan!.duration?.inSeconds ?? 0) - (minutes * 60);
+					if ((seconds + minutes) > 0) {
+						label = Text('${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}', style: TextStyle(fontSize: widget.fontSize));
+					}
+				}
+				if ((ext == 'webm' || ext == 'mp4' || ext == 'mov') && constraints.maxWidth > 50 && constraints.maxHeight > 50) {
+					return IntrinsicWidth(
+						child: Stack(
+							alignment: Alignment.center,
+							fit: StackFit.passthrough,
+							children: [
+								Image(
+									image: ThumbnailImageProvider(
+										file: widget.file
+									),
+									fit: widget.fit
 								),
-								padding: const EdgeInsets.only(left: 4, top: 4, right: 2, bottom: 2),
-								child: label
-							)
+								if (label != null) Align(
+									alignment: Alignment.bottomRight,
+									child: Container(
+										decoration: const BoxDecoration(
+											borderRadius: BorderRadius.only(topLeft: Radius.circular(4)),
+											color: Colors.black54
+										),
+										padding: const EdgeInsets.only(left: 4, top: 4, right: 2, bottom: 2),
+										child: label
+									)
+								)
+							]
 						)
-					]
-				)
-			);
-		 }
-		 else {
-			 return Image(
-				 image: ThumbnailImageProvider(file: widget.file),
-				 fit: widget.fit
-			 );
-		 }
+					);
+				}
+				else {
+					return Image(
+						image: ThumbnailImageProvider(file: widget.file),
+						fit: widget.fit
+					);
+				}
+			}
+		);
 	}
 }
