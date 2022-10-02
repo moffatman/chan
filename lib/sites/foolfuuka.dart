@@ -238,7 +238,12 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			queryParameters: {
 				'board': board,
 				'num': id.toString()
-			}
+			},
+			options: Options(
+				headers: {
+					if (useRandomUseragent) 'user-agent': base64Url.encode(List.generate(random.nextInt(30) + 10, (i) => random.nextInt(256)))
+				}
+			)
 		);
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
@@ -317,7 +322,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				'num': thread.id.toString()
 			},
 			options: Options(
-				validateStatus: (x) => true
+				validateStatus: (x) => true,
+				headers: {
+					if (useRandomUseragent) 'user-agent': base64Url.encode(List.generate(random.nextInt(30) + 10, (i) => random.nextInt(256)))
+				}
 			)
 		);
 		if (response.statusCode != 200) {
@@ -334,10 +342,17 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	}
 	@override
 	Future<List<Thread>> getCatalog(String board) async {
-		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/index').toString(), queryParameters: {
-			'board': board,
-			'page': '1'
-		});
+		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/index').toString(),
+			queryParameters: {
+				'board': board,
+				'page': '1'
+			},
+			options: Options(
+				headers: {
+					if (useRandomUseragent) 'user-agent': base64Url.encode(List.generate(random.nextInt(30) + 10, (i) => random.nextInt(256)))
+				}
+			)
+		);
 		return Future.wait((response.data as Map<dynamic, dynamic>).keys.where((threadIdStr) {
 			return response.data[threadIdStr]['op'] != null;
 		}).map((threadIdStr) => _makeThread(ThreadIdentifier(
