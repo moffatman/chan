@@ -36,6 +36,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
+import 'package:tuple/tuple.dart';
 
 const _captchaContributionServer = 'https://captcha.chance.surf';
 
@@ -298,6 +299,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	double _replyBoxHeightOffsetAtPanStart = 0;
 	bool _willHideOnPanEnd = false;
 	late final FocusNode _rootFocusNode;
+	Tuple2<String, ValueListenable<double?>>? _attachmentProgress;
 
 	bool get _haveValidCaptcha {
 		if (_captchaSolution == null) {
@@ -477,94 +479,61 @@ class ReplyBoxState extends State<ReplyBox> {
 		required MediaConversion transcode
 	}) async {
 		final ext = source.path.split('.').last.toLowerCase();
-		bool loading = false;
-		ValueNotifier<double?> progress = ValueNotifier<double?>(null);
-		final problems = [
+		final solutions = [
 			if (ext != transcode.outputFileExtension &&
 					!(ext == 'jpeg' && transcode.outputFileExtension == 'jpg') &&
-					!(ext == 'jpg' && transcode.outputFileExtension == 'jpeg')) 'File type needs to be converted to .${transcode.outputFileExtension} from .$ext',
-			if (size != null && maximumSize != null && (size > maximumSize)) 'Size needs to be reduced from ${(size / 1e6).toStringAsFixed(1)} MB to below ${(maximumSize / 1e6).toStringAsFixed(1)} MB',
-			if (audioPresent == true && audioAllowed == false) 'Audio track needs to be removed',
-			if (durationInSeconds != null && maximumDurationInSeconds != null && (durationInSeconds > maximumDurationInSeconds)) 'Duration needs to be clipped at $maximumDurationInSeconds seconds'
+					!(ext == 'jpg' && transcode.outputFileExtension == 'jpeg')) 'to .${transcode.outputFileExtension}',
+			if (size != null && maximumSize != null && (size > maximumSize)) 'compressing',
+			if (audioPresent == true && audioAllowed == false) 'removing audio',
+			if (durationInSeconds != null && maximumDurationInSeconds != null && (durationInSeconds > maximumDurationInSeconds)) 'clipping at ${maximumDurationInSeconds}s'
 		];
 		if (width != null && height != null && maximumDimension != null && (width > maximumDimension || height > maximumDimension)) {
-			final size = applyBoxFit(BoxFit.contain, Size(width.toDouble(), height.toDouble()), Size.square(maximumDimension.toDouble())).destination;
-			problems.add('Dimensions need to be reduced from ${width}x$height to ${size.width.round()}x${size.height.round()}');
+			solutions.add('resizing');
 		}
-		if (problems.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm'].contains(ext)) {
+		if (solutions.isEmpty && ['jpg', 'jpeg', 'png', 'gif', 'webm'].contains(ext)) {
 			return source;
 		}
 		final existingResult = await transcode.getDestinationIfSatisfiesConstraints();
 		if (existingResult != null) {
 			if ((audioPresent == true && audioAllowed == true && !existingResult.hasAudio)) {
-				problems.add('Previous transcoding stripped out the audio');
+				solutions.add('re-adding audio');
 			}
 			else {
 				return existingResult.file;
 			}
 		}
 		if (!mounted) return null;
-		return await Navigator.of(context).push<Future<File>>(TransparentRoute(
-			builder: (context) => OverscrollModalPage(
-				child: Container(
-					width: MediaQuery.of(context).size.width,
-					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-					padding: const EdgeInsets.all(16),
-					child: StatefulBuilder(
-						builder: (context, setTranscodeState) => Column(
-							mainAxisSize: MainAxisSize.min,
-							crossAxisAlignment: CrossAxisAlignment.center,
-							children: [
-								const Text('Transcoding required'),
-								const SizedBox(height: 16),
-								ConstrainedBox(
-									constraints: const BoxConstraints(
-										maxHeight: 150,
-									),
-									child: SavedAttachmentThumbnail(file: source)
-								),
-								const SizedBox(height: 32),
-								...problems.expand((p) => [Text(p), const SizedBox(height: 16)]),
-								CupertinoButton(
-									onPressed: loading ? null : () async {
-										setTranscodeState(() {
-											loading = true;
-										});
-										transcode.start();
-										setTranscodeState(() {
-											progress = transcode.progress;
-										});
-										try {
-											final result = await transcode.result;
-											if (!mounted) return;
-											Navigator.of(context).pop(Future.value(result.file));
-										}
-										catch (e) {
-											Navigator.of(context).pop(Future<File>.error(e));
-										}
-									},
-									child: loading ? const Text('Transcoding...') : const Text('Start')
-								),
-								if (loading) ValueListenableBuilder(
-									valueListenable: progress,
-									builder: (context, double? value, child) => LinearProgressIndicator(
-										value: value,
-										valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
-										backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.2)
-									)
-								)
-							]
-						)
-					)
-				)
-			),
-			showAnimations: context.read<EffectiveSettings>().showAnimations
-		));
+		showToast(context: context, message: 'Converting: ${solutions.join(', ')}', icon: CupertinoIcons.photo);
+		transcode.start();
+		setState(() {
+			_attachmentProgress = Tuple2('Converting', transcode.progress);
+		});
+		try {
+			final result = await transcode.result;
+			if (!mounted) return null;
+			setState(() {
+				_attachmentProgress = null;
+			});
+			showToast(context: context, message: 'File converted', icon: CupertinoIcons.checkmark);
+			return result.file;
+		}
+		catch (e) {
+			if (mounted) {
+				setState(() {
+					_attachmentProgress = null;
+				});
+			}
+			rethrow;
+		}
 	}
 
 	Future<void> setAttachment(File newAttachment) async {
 		File? file = newAttachment;
 		final settings = context.read<EffectiveSettings>();
+		final progress = ValueNotifier<double?>(null);
+		setState(() {
+			_attachmentProgress = Tuple2('Processing', progress);
+		});
 		try {
 			final board = context.read<Persistence>().getBoard(widget.board);
 			String ext = file.path.split('.').last.toLowerCase();
@@ -584,8 +553,11 @@ class ReplyBoxState extends State<ReplyBox> {
 				ext = 'jpg';
 			}
 			final size = (await file.stat()).size;
+			final scan = await MediaScan.scan(file.uri);
+			setState(() {
+				_attachmentProgress = null;
+			});
 			if (ext == 'jpg' || ext == 'jpeg') {
-				final scan = await MediaScan.scan(file.uri);
 				file = await _showTranscodeWindow(
 					source: file,
 					size: size,
@@ -601,7 +573,6 @@ class ReplyBoxState extends State<ReplyBox> {
 				);
 			}
 			else if (ext == 'png') {
-				final scan = await MediaScan.scan(file.uri);
 				file = await _showTranscodeWindow(
 					source: file,
 					size: size,
@@ -622,7 +593,6 @@ class ReplyBoxState extends State<ReplyBox> {
 				}
 			}
 			else if (ext == 'webm') {
-				final scan = await MediaScan.scan(file.uri);
 				file = await _showTranscodeWindow(
 					source: file,
 					audioAllowed: board.webmAudioAllowed,
@@ -644,7 +614,6 @@ class ReplyBoxState extends State<ReplyBox> {
 				);
 			}
 			else if (ext == 'mp4' || ext == 'mov') {
-				final scan = await MediaScan.scan(file.uri);
 				file = await _showTranscodeWindow(
 					source: file,
 					audioAllowed: board.webmAudioAllowed,
@@ -677,7 +646,11 @@ class ReplyBoxState extends State<ReplyBox> {
 			print(e);
 			print(st);
 			alertError(context, e.toStringDio());
+			setState(() {
+				_attachmentProgress = null;
+			});
 		}
+		progress.dispose();
 	}
 
 	Future<void> _solveCaptcha() async {
@@ -1485,6 +1458,27 @@ class ReplyBoxState extends State<ReplyBox> {
 										),
 									]
 								)
+							) : _attachmentProgress != null ? Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									Text(_attachmentProgress!.item1),
+									const SizedBox(width: 16),
+									SizedBox(
+										width: 100,
+										child: ClipRRect(
+											borderRadius: BorderRadius.circular(4),
+											child: ValueListenableBuilder<double?>(
+												valueListenable: _attachmentProgress!.item2,
+												builder: (context, value, _) => LinearProgressIndicator(
+													value: value,
+													minHeight: 20,
+													valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
+													backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.2)
+												)
+											)
+										)
+									)
+								]
 							) : AnimatedBuilder(
 								animation: attachmentSourceNotifier,
 								builder: (context, _) => ListView(
