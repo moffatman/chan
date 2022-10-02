@@ -375,7 +375,9 @@ class Persistence extends ChangeNotifier {
 				title: boardName,
 				name: boardName,
 				webmAudioAllowed: false,
-				isWorksafe: true
+				isWorksafe: true,
+				maxImageSizeBytes: 4000000,
+				maxWebmSizeBytes: 4000000
 			);
 		}
 	}
