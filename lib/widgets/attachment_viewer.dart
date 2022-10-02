@@ -396,6 +396,8 @@ class AttachmentViewerController extends ChangeNotifier {
 			_errorMessage = e.toStringDio();
 			print(e);
 			print(st);
+			if (_isDisposed) return;
+			_scheduleHidingOfLoadingProgress();
 			notifyListeners();
 		}
 		finally {
