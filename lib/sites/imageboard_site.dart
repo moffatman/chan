@@ -329,7 +329,7 @@ abstract class ImageboardSiteArchive {
 		));
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
-				options.headers['user-agent'] = userAgent;
+				options.headers['user-agent'] ??= userAgent;
 				handler.next(options);
 			}
 		));
@@ -562,7 +562,8 @@ ImageboardSite makeSite(dynamic data) {
 						name: archive['name'],
 						baseUrl: archive['baseUrl'],
 						staticUrl: archive['staticUrl'],
-						boards: boards
+						boards: boards,
+						useRandomUseragent: archive['useRandomUseragent'] ?? false
 					);
 				}
 				else if (archive['type'] == 'fuuka') {

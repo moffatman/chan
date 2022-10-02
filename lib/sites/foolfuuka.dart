@@ -5,6 +5,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/services/http_429_backoff.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
@@ -30,6 +31,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	final String staticUrl;
 	@override
 	final String name;
+	final bool useRandomUseragent;
 	ImageboardFlag? _makeFlag(dynamic data) {
 		if (data['poster_country'] != null && data['poster_country'].isNotEmpty) {
 			return ImageboardFlag(
@@ -345,7 +347,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	}
 	Future<List<ImageboardBoard>> _getBoards() async {
 		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/archives').toString(), options: Options(
-			validateStatus: (x) => true
+			validateStatus: (x) => true,
+			headers: {
+				if (useRandomUseragent) 'user-agent': base64Url.encode(List.generate(random.nextInt(30) + 10, (i) => random.nextInt(256)))
+			}
 		));
 		if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode!);
@@ -398,8 +403,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			queryParameters: {
 				'text': query.query,
 				'page': page.toString(),
-				if (query.boards.length == 1) 'board': query.boards.single
-				else if (query.boards.isNotEmpty) 'boards': query.boards.join('.'),
+				if (query.boards.isNotEmpty) 'boards': query.boards.join('.'),
 				if (query.mediaFilter != MediaFilter.none) 'filter': query.mediaFilter == MediaFilter.onlyWithMedia ? 'text' : 'image',
 				if (query.postTypeFilter != PostTypeFilter.none) 'type': query.postTypeFilter == PostTypeFilter.onlyOPs ? 'op' : 'posts',
 				if (query.startDate != null) 'start': '${query.startDate!.year}-${query.startDate!.month}-${query.startDate!.day}',
@@ -409,8 +413,12 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				else if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) 'deleted': 'not-deleted'
 			},
 			options: Options(
-				validateStatus: (x) => true
-		));
+				validateStatus: (x) => true,
+				headers: {
+					if (useRandomUseragent) 'user-agent': base64Url.encode(List.generate(random.nextInt(30) + 10, (i) => random.nextInt(256)))
+				}
+			)
+		);
 		if (response.statusCode != 200) {
 			throw HTTPStatusException(response.statusCode!);
 		}
@@ -452,6 +460,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		required this.baseUrl,
 		required this.staticUrl,
 		required this.name,
+		this.useRandomUseragent = false,
 		this.boards
 	}) : super() {
 		client.interceptors.add(HTTP429BackoffInterceptor(
