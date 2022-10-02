@@ -234,6 +234,7 @@ class RefreshableListState<T> extends State<RefreshableList<T>> with TickerProvi
 					print('Error refreshing list: ${e.toStringDio()}');
 					print(st);
 					resetTimer();
+					lastUpdateTime = DateTime.now();
 				}
 				else {
 					nextUpdateTime = null;
