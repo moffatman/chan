@@ -288,8 +288,14 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 							Widget child = TabBarView(
 								controller: _tabController,
 								physics: panes.length > 1 ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
-								children: panes.map((pane) => Builder(
-									builder: (context) => pane.buildMaster(context, () => _onNewValue(pane), !onePane)
+								children: panes.asMap().entries.map((entry) => AnimatedBuilder(
+									animation: _tabController,
+									builder: (context, child) => entry.key == _tabController.index ? child! : PrimaryScrollController.none(
+										child: child!
+									),
+									child: Builder(
+										builder: (context) => entry.value.buildMaster(context, () => _onNewValue(entry.value), !onePane)
+									)
 								)).toList()
 							);
 							if (widget.showChrome) {

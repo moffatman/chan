@@ -944,7 +944,7 @@ class RefreshableListController<T> {
 		if (scrollController != controller) {
 			scrollController?.removeListener(_onScrollControllerNotification);
 			scrollController = controller;
-			scrollController!.addListener(_onScrollControllerNotification);
+			scrollController?.addListener(_onScrollControllerNotification);
 		}
 	}
 	void dispose() {
