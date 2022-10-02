@@ -400,6 +400,10 @@ class SettingsPage extends StatelessWidget {
 					)
 				),
 				const SizedBox(height: 16),
+				Center(
+					child: Text('Chance 1.0.27', style: TextStyle(color: settings.theme.primaryColorWithBrightness(0.5)))
+				),
+				const SizedBox(height: 16),
 			],
 		);
 	}
