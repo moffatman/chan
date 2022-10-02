@@ -169,78 +169,82 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			);
 		}
 		else if (!loading && result.hasData) {
-			return ListView.separated(
-				itemCount: result.data!.posts.length + 2,
-				itemBuilder: (context, i) {
-					if (i == 0 || i == result.data!.posts.length + 1) {
-						return _buildPagination(() => setValue(currentValue));
-					}
-					final row = result.data!.posts[i - 1];
-					if (row.post != null) {
-						return ChangeNotifierProvider<PostSpanZoneData>(
-							create: (context) => PostSpanRootZoneData(
-								site: context.read<ImageboardSite>(),
-								thread: Thread(
-									board: row.post!.threadIdentifier.board,
-									id: row.post!.threadIdentifier.id,
-									isDeleted: false,
-									isArchived: false,
-									title: '',
-									isSticky: false,
-									replyCount: -1,
-									imageCount: -1,
-									time: DateTime.fromMicrosecondsSinceEpoch(0),
-									posts_: [],
-									attachments: []
+			return MaybeCupertinoScrollbar(
+				child: ListView.separated(
+					itemCount: result.data!.posts.length + 2,
+					itemBuilder: (context, i) {
+						if (i == 0 || i == result.data!.posts.length + 1) {
+							return _buildPagination(() => setValue(currentValue));
+						}
+						final row = result.data!.posts[i - 1];
+						if (row.post != null) {
+							return ChangeNotifierProvider<PostSpanZoneData>(
+								create: (context) => PostSpanRootZoneData(
+									site: context.read<ImageboardSite>(),
+									thread: Thread(
+										board: row.post!.threadIdentifier.board,
+										id: row.post!.threadIdentifier.id,
+										isDeleted: false,
+										isArchived: false,
+										title: '',
+										isSticky: false,
+										replyCount: -1,
+										imageCount: -1,
+										time: DateTime.fromMicrosecondsSinceEpoch(0),
+										posts_: [],
+										attachments: []
+									),
+									semanticRootIds: [-7]
 								),
-								semanticRootIds: [-7]
-							),
-							child: PostRow(
-								post: row.post!,
-								onThumbnailTap: (attachment) => showGallery(
-									context: context,
-									attachments: [attachment],
-									semanticParentIds: [-7]
-								),
-								showCrossThreadLabel: false,
-								allowTappingLinks: false,
-								isSelected: currentValue?.item == row,
+								child: PostRow(
+									post: row.post!,
+									onThumbnailTap: (attachment) => showGallery(
+										context: context,
+										attachments: [attachment],
+										semanticParentIds: [-7]
+									),
+									showCrossThreadLabel: false,
+									showBoardName: true,
+									allowTappingLinks: false,
+									isSelected: currentValue?.item == row,
+									onTap: () => setValue(ImageboardScoped(
+										imageboard: context.read<Imageboard>(),
+										item: row
+									)),
+									baseOptions: PostSpanRenderOptions(
+										highlightString: widget.query.query
+									),
+								)
+							);
+						}
+						else {
+							return GestureDetector(
 								onTap: () => setValue(ImageboardScoped(
 									imageboard: context.read<Imageboard>(),
 									item: row
 								)),
-								baseOptions: PostSpanRenderOptions(
-									highlightString: widget.query.query
-								),
-							)
-						);
-					}
-					else {
-						return GestureDetector(
-							onTap: () => setValue(ImageboardScoped(
-								imageboard: context.read<Imageboard>(),
-								item: row
-							)),
-							child: ThreadRow(
-								thread: row.thread!,
-								onThumbnailTap: (attachment) => showGallery(
-									context: context,
-									attachments: [attachment],
-									semanticParentIds: [-7]
-								),
-								isSelected: currentValue?.item == row,
-								countsUnreliable: true,
-								baseOptions: PostSpanRenderOptions(
-									highlightString: widget.query.query.isEmpty ? null : widget.query.query
-								),
-							)
-						);
-					}
-				},
-				separatorBuilder: (context, i) => Divider(
-					thickness: 1,
-					height: 0,
-					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+								child: ThreadRow(
+									thread: row.thread!,
+									onThumbnailTap: (attachment) => showGallery(
+										context: context,
+										attachments: [attachment],
+										semanticParentIds: [-7]
+									),
+									isSelected: currentValue?.item == row,
+									countsUnreliable: true,
+									showBoardName: true,
+									baseOptions: PostSpanRenderOptions(
+										highlightString: widget.query.query.isEmpty ? null : widget.query.query
+									),
+								)
+							);
+						}
+					},
+					separatorBuilder: (context, i) => Divider(
+						thickness: 1,
+						height: 0,
+						color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+					)
 				)
 			);
 		}
