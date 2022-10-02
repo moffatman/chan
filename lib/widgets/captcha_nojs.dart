@@ -229,7 +229,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 		if (tokenElement != null) {
 			widget.onCaptchaSolved(RecaptchaSolution(
 				response: tokenElement.text,
-				cloudflare: challenge!.cloudflare
+				cloudflare: chal.cloudflare
 			));
 		}
 		else {
@@ -242,7 +242,9 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 		try {
 			await _submitChallenge();
 		}
-		catch(e) {
+		catch (e, st) {
+			print(e);
+			print(st);
 			setState(() {
 				errorMessage = e.toStringDio();
 			});
