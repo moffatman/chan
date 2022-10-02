@@ -31,17 +31,17 @@ import 'package:provider/provider.dart';
 class _PostThreadCombo {
 	final Imageboard imageboard;
 	final Post post;
-	final Thread thread;
+	final PersistentThreadState threadState;
 	_PostThreadCombo({
 		required this.imageboard,
 		required this.post,
-		required this.thread
+		required this.threadState
 	});
 
 	@override
-	bool operator == (dynamic o) => (o is _PostThreadCombo) && (o.post.id == post.id) && (o.thread.identifier == thread.identifier);
+	bool operator == (dynamic o) => (o is _PostThreadCombo) && (o.imageboard == imageboard) && (o.post.id == post.id) && (o.threadState.identifier == threadState.identifier);
 	@override
-	int get hashCode => post.hashCode * 31 + thread.hashCode;
+	int get hashCode => Object.hash(imageboard, post, threadState);
 }
 
 class SavedPage extends StatefulWidget {
@@ -64,6 +64,7 @@ class _SavedPageState extends State<SavedPage> {
 	late final RefreshableListController<ImageboardScoped<ThreadWatch>> _watchedListController;
 	late final RefreshableListController<ImageboardScoped<PersistentThreadState>> _threadListController;
 	late final RefreshableListController<ImageboardScoped<SavedPost>> _postListController;
+	late final RefreshableListController<_PostThreadCombo> _yourPostsListController;
 
 	@override
 	void initState() {
@@ -71,6 +72,7 @@ class _SavedPageState extends State<SavedPage> {
 		_watchedListController = RefreshableListController();
 		_threadListController = RefreshableListController();
 		_postListController = RefreshableListController();
+		_yourPostsListController = RefreshableListController();
 	}
 
 	Widget _placeholder(String message) {
@@ -497,7 +499,7 @@ class _SavedPageState extends State<SavedPage> {
 											replies.add(_PostThreadCombo(
 												imageboard: s.imageboard,
 												post: reply,
-												thread: s.item.thread!
+												threadState: s.item
 											));
 										}
 									}
@@ -506,6 +508,7 @@ class _SavedPageState extends State<SavedPage> {
 							replies.sort((a, b) => b.post.time.compareTo(a.post.time));
 							return RefreshableList<_PostThreadCombo>(
 								filterableAdapter: (t) => t.post,
+								controller: _yourPostsListController,
 								listUpdater: () => throw UnimplementedError(),
 								id: 'yourPosts',
 								disableUpdates: true,
@@ -515,15 +518,49 @@ class _SavedPageState extends State<SavedPage> {
 									child: ChangeNotifierProvider<PostSpanZoneData>(
 										create: (context) => PostSpanRootZoneData(
 											site: item.imageboard.site,
-											thread: item.thread,
+											thread: item.threadState.thread!,
 											semanticRootIds: [-8]
 										),
-										child: PostRow(
-											post: item.post,
-											isSelected: selected(context, item),
-											onTap: () => setter(item),
-											showBoardName: true,
-											showSiteIcon: true
+										child: Builder(
+											builder: (context) => PostRow(
+												post: item.post,
+												isSelected: selected(context, item),
+												onTap: () => setter(item),
+												showBoardName: true,
+												showSiteIcon: true,
+												onThumbnailLoadError: (e, st) async {
+													Thread? newThread;
+													bool hadToUseArchive = false;
+													try {
+														newThread = await item.imageboard.site.getThread(item.post.threadIdentifier);
+													}
+													on ThreadNotFoundException {
+														newThread = await item.imageboard.site.getThreadFromArchive(item.post.threadIdentifier);
+														hadToUseArchive = true;
+													}
+													if (newThread != item.threadState.thread || hadToUseArchive) {
+														item.threadState.thread = newThread;
+														await item.threadState.save();
+													}
+												},
+												onThumbnailTap: (initialAttachment) {
+													final attachments = _yourPostsListController.items.expand((_) => _.post.attachments).toList();
+													showGallery(
+														context: context,
+														attachments: attachments,
+														replyCounts: {
+															for (final state in _yourPostsListController.items)
+																for (final attachment in state.imageboard.persistence.getThreadStateIfExists(state.post.threadIdentifier)?.thread?.attachments ?? [])
+																	attachment: state.imageboard.persistence.getThreadStateIfExists(state.post.threadIdentifier)?.thread?.replyCount ?? 0
+														},
+														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+														onChange: (attachment) {
+															_yourPostsListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.post.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
+														},
+														semanticParentIds: [-8]
+													);
+												}
+											)
 										)
 									)
 								)
