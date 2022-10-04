@@ -231,7 +231,7 @@ class _SavedPageState extends State<SavedPage> {
 													id: 'watched',
 													disableUpdates: true,
 													initialList: watches,
-													itemBuilder: (context, watch) => ImageboardScope(
+													itemBuilder: (itemContext, watch) => ImageboardScope(
 														imageboardKey: watch.imageboard.key,
 														child: ContextMenu(
 															maxHeight: 125,
@@ -291,7 +291,7 @@ class _SavedPageState extends State<SavedPage> {
 																				opacity: watch.item.zombie ? 0.5 : 1.0,
 																				child: ThreadRow(
 																					thread: threadState!.thread!,
-																					isSelected: selected(context, watch),
+																					isSelected: selected(itemContext, watch),
 																					showBoardName: true,
 																					showSiteIcon: true,
 																					onThumbnailLoadError: (error, stackTrace) {
@@ -394,7 +394,7 @@ class _SavedPageState extends State<SavedPage> {
 								id: 'saved',
 								disableUpdates: true,
 								initialList: states,
-								itemBuilder: (context, state) => ImageboardScope(
+								itemBuilder: (itemContext, state) => ImageboardScope(
 									imageboardKey: state.imageboard.key,
 									child: ContextMenu(
 										maxHeight: 125,
@@ -421,7 +421,7 @@ class _SavedPageState extends State<SavedPage> {
 											child: Builder(
 												builder: (context) => ThreadRow(
 													thread: state.item.thread!,
-													isSelected: selectedThread(context, ImageboardScoped(
+													isSelected: selectedThread(itemContext, ImageboardScoped(
 														imageboard: state.imageboard,
 														item: state.item.identifier
 													)),

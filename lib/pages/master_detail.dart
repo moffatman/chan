@@ -96,9 +96,9 @@ class MultiMasterPane<T> {
 	}) : currentValue = ValueNotifier<T?>(initialValue);
 
 	Widget buildMaster(BuildContext context, VoidCallback onNewValue, bool provideCurrentValue) {
-		return masterBuilder(context, (context, thisValue) => context.select<MasterDetailHint, bool>((h) {
+		return masterBuilder(context, (context, thisValue) => context.select<MasterDetailHint?, bool>((h) {
 			if (!provideCurrentValue) return false;
-			return h.currentValue == thisValue;
+			return h?.currentValue == thisValue;
 		}), (newValue) {
 			currentValue.value = newValue;
 			onValueChanged?.call(newValue);

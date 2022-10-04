@@ -56,7 +56,7 @@ class _HistoryPageState extends State<HistoryPage> {
 						id: 'history',
 						disableUpdates: true,
 						initialList: states,
-						itemBuilder: (context, state) => ContextMenu(
+						itemBuilder: (itemContext, state) => ContextMenu(
 							maxHeight: 125,
 							actions: [
 								if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
@@ -80,7 +80,7 @@ class _HistoryPageState extends State<HistoryPage> {
 									child: Builder(
 										builder: (context) => ThreadRow(
 											thread: state.item.thread!,
-											isSelected: selectedThread(context, ImageboardScoped(
+											isSelected: selectedThread(itemContext, ImageboardScoped(
 												imageboard: state.imageboard,
 												item: state.item.identifier
 											)),
