@@ -221,7 +221,7 @@ class CustomFilter implements Filter {
 		if (outputType.autoSave) {
 			out.write(';save');
 		}
-		if (patternFields != defaultPatternFields && patternFields.isNotEmpty) {
+		if (patternFields.isNotEmpty && !setEquals(patternFields.toSet(), defaultPatternFields.toSet())) {
 			out.write(';type:${patternFields.join(',')}');
 		}
 		if (boards.isNotEmpty) {
