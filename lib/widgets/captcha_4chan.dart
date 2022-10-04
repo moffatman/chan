@@ -455,6 +455,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				newText = newText.substring(0, min(numLetters, newText.length)).padRight(numLetters, ' ');
 			}
 		}
+		final spaceLocations = <int>[];
 		for (int i = 0; i < numLetters; i++) {
 			final char = newText[i].toUpperCase();
 			if (!captchaLetters.contains(char)) {
@@ -471,8 +472,15 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				else {
 					newText = _previousText;
 					newSelection = TextSelection(baseOffset: i, extentOffset: i + 1);
+					if (char == ' ') {
+						spaceLocations.add(i);
+					}
 				}
 			}
+		}
+		if (spaceLocations.length == 1) {
+			final start = (spaceLocations.single + 1) % numLetters;
+			newSelection = TextSelection(baseOffset: start, extentOffset: start + 1);
 		}
 		int start = newSelection.baseOffset % numLetters;
 		if (newSelection.isCollapsed) {
