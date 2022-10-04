@@ -2952,10 +2952,10 @@ class _SettingsFilterPanelState extends State<SettingsFilterPanel> {
 													trailing: patternFields.contains(field) ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap:() {
 														if (patternFields.contains(field)) {
-															patternFields.add(field);
+															patternFields.remove(field);
 														}
 														else {
-															patternFields.remove(field);
+															patternFields.add(field);
 														}
 														setInnerState(() {});
 													}
