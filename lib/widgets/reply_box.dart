@@ -1485,7 +1485,7 @@ class ReplyBoxState extends State<ReplyBox> {
 									shrinkWrap: true,
 									scrollDirection: Axis.horizontal,
 									children: [
-										for (final file in receivedFilePaths) CupertinoButton(
+										for (final file in receivedFilePaths.reversed) CupertinoButton(
 											alignment: Alignment.center,
 											padding: EdgeInsets.zero,
 											onPressed: () => setAttachment(File(file)),
