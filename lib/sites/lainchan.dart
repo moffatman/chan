@@ -457,9 +457,6 @@ class SiteLainchan extends ImageboardSite {
 	@override
 	String get imageUrl => baseUrl;
 
-	@override
-	Uri get passIconUrl => Uri.https('boards.chance.surf', '/minileaf.gif');
-
   @override
   List<ImageboardSiteLoginField> getLoginFields() {
     return const [
@@ -515,11 +512,6 @@ class SiteLainchan extends ImageboardSite {
   String? getLoginSystemName() {
     return 'Administrator';
   }
-	
-	@override
-	List<ImageboardEmote> getEmotes() {
-		return [];
-	}
 
 	@override
 	String get siteType => 'lainchan';
@@ -539,11 +531,6 @@ class SiteLainchan extends ImageboardSite {
 	BoardThreadOrPostIdentifier? decodeUrl(String url) => decodeGenericUrl(baseUrl, url);
 
 	@override
-	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async {
-		return [];
-	}
-
-	@override
 	bool operator ==(Object other) => (other is SiteLainchan) && (other.name == name) && (other.baseUrl == baseUrl);
 
 	@override
@@ -554,7 +541,4 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	String get defaultUsername => 'Anonymous';
-
-	@override
-	List<ImageboardSnippet> getBoardSnippets(String board) => [];
 }

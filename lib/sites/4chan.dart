@@ -777,11 +777,6 @@ class Site4Chan extends ImageboardSite {
 	Uri get passIconUrl => Uri.https(staticUrl, '/image/minileaf.gif');
 
 	@override
-	List<ImageboardEmote> getEmotes() {
-		return [];
-	}
-
-	@override
 	String get siteType => '4chan';
 	@override
 	String get siteData => apiUrl;

@@ -364,7 +364,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		}
 		return memoizedWifiHeaders[url.host];
 	}
-	Uri get passIconUrl;
+	Uri get passIconUrl => Uri.https('boards.chance.surf', '/minileaf.gif');
 	String get baseUrl;
 	String get imageUrl;
 	Uri get iconUrl;
@@ -492,12 +492,12 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		await persistence.didUpdateBrowserState();
 	}
 	Future<void> clearLoginCookies(bool fromBothWifiAndCellular);
-	List<ImageboardEmote> getEmotes();
-	Future<List<ImageboardBoardFlag>> getBoardFlags(String board);
+	List<ImageboardEmote> getEmotes() => [];
+	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async => [];
 	String get siteType;
 	String get siteData;
 	String get defaultUsername;
-	List<ImageboardSnippet> getBoardSnippets(String board);
+	List<ImageboardSnippet> getBoardSnippets(String board) => [];
 	CaptchaRequest? getBannedCaptchaRequest(bool cloudflare) => null;
 	Future<String> getBannedReason(CaptchaSolution captchaSolution) async => 'Unknown';
 }

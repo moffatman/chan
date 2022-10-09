@@ -161,12 +161,6 @@ class SiteFutaba extends ImageboardSite {
 	DateTime? getActionAllowedTime(String board, ImageboardAction action) => null;
 
 	@override
-	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async => [];
-
-	@override
-	List<ImageboardSnippet> getBoardSnippets(String board) => [];
-
-	@override
 	Future<List<ImageboardBoard>> getBoards() async {
 		final response = await client.get(Uri.https(baseUrl, '/index2.html').toString(), options: Options(
 			responseType: ResponseType.bytes
@@ -211,9 +205,6 @@ class SiteFutaba extends ImageboardSite {
 			}))).expand((x) => x).toList()
 		];
 	}
-
-	@override
-	List<ImageboardEmote> getEmotes() => [];
 
 	@override
 	List<ImageboardSiteLoginField> getLoginFields() => [];
@@ -374,9 +365,6 @@ class SiteFutaba extends ImageboardSite {
 	Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
 		throw UnimplementedError();
 	}
-
-	@override
-	Uri get passIconUrl => Uri.https('boards.chance.surf', '/minileaf.gif');
 
 	Future<PostReceipt> _post({
 		required String board,

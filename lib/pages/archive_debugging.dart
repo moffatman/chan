@@ -95,9 +95,6 @@ class WrappedArchive extends ImageboardSite {
   String get imageUrl => throw UnimplementedError();
 
   @override
-  Uri get passIconUrl => throw UnimplementedError();
-
-  @override
   String get name => archive.name;
 
   @override
@@ -129,11 +126,6 @@ class WrappedArchive extends ImageboardSite {
   String? getLoginSystemName() {
     return null;
   }
-  
-  @override
-  List<ImageboardEmote> getEmotes() {
-    return [];
-  }
 
   @override
   String get siteType => 'debugging';
@@ -144,11 +136,6 @@ class WrappedArchive extends ImageboardSite {
   BoardThreadOrPostIdentifier? decodeUrl(String url) => null;
 
   @override
-  Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async {
-    return [];
-  }
-
-  @override
   Uri get iconUrl => Uri.https('google.com', '/favicon.ico');
   
   @override
@@ -156,9 +143,6 @@ class WrappedArchive extends ImageboardSite {
   
   @override
   String get baseUrl => 'www.example.com';
-  
-  @override
-  List<ImageboardSnippet> getBoardSnippets(String board) => [];
 }
 
 class ArchiveDebuggingPage extends StatelessWidget {

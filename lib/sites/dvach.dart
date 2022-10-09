@@ -326,11 +326,6 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	List<ImageboardEmote> getEmotes() {
-		return [];
-	}
-
-	@override
 	List<ImageboardSiteLoginField> getLoginFields() {
 		return [];
 	}
@@ -351,16 +346,6 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async {
-		return [];
-	}
-
-	@override
-	List<ImageboardSnippet> getBoardSnippets(String board) {
-		return [];
-	}
-
-	@override
 	String get siteType => 'dvach';
 	@override
 	String get siteData => baseUrl;
@@ -370,8 +355,6 @@ class SiteDvach extends ImageboardSite {
 	String get imageUrl => baseUrl;
 	@override
 	String get defaultUsername => 'Аноним';
-	@override
-	Uri get passIconUrl => Uri.https('boards.chance.surf', '/minileaf.gif');
 
 	@override
 	bool operator ==(Object other) => (other is SiteDvach) && (other.name == name) && (other.baseUrl == baseUrl);
