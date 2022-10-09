@@ -65,7 +65,8 @@ class Site4Chan extends ImageboardSite {
 	@override
 	final String baseUrl;
 	final String staticUrl;
-	final String sysUrl;
+	final String sysRedUrl;
+	final String sysBlueUrl;
 	final String apiUrl;
 	@override
 	final String imageUrl;
@@ -79,6 +80,8 @@ class Site4Chan extends ImageboardSite {
 		ImageboardAction.postReplyWithImage: <String, DateTime>{},
 		ImageboardAction.postThread: <String, DateTime>{},
 	};
+
+	String _sysUrl(String board) => persistence.getBoard(board).isWorksafe ? sysBlueUrl : sysRedUrl;
 
 	static List<PostSpan> parsePlaintext(String text) {
 		return linkify(text, linkifiers: const [UrlLinkifier(), ChanceLinkifier()]).map((elem) {
@@ -467,7 +470,7 @@ class Site4Chan extends ImageboardSite {
 			return NoCaptchaRequest();
 		}
 		return Chan4CustomCaptchaRequest(
-			challengeUrl: Uri.https(sysUrl, '/captcha', {
+			challengeUrl: Uri.https(_sysUrl(board), '/captcha', {
 				'framed': '1',
 				'board': board,
 				if (threadId != null) 'thread_id': threadId.toString()
@@ -491,7 +494,7 @@ class Site4Chan extends ImageboardSite {
 	}) async {
 		final password = base64Url.encode(List.generate(66, (i) => random.nextInt(256)));
 		final response = await client.post(
-			Uri.https(sysUrl, '/$board/post').toString(),
+			Uri.https(_sysUrl(board), '/$board/post').toString(),
 			data: FormData.fromMap({
 				if (threadId != null) 'resto': threadId.toString(),
 				if (subject != null) 'sub': subject,
@@ -648,7 +651,7 @@ class Site4Chan extends ImageboardSite {
 	@override
 	Future<void> deletePost(String board, PostReceipt receipt) async {
 		final response = await client.post(
-			Uri.https(sysUrl, '/$board/imgboard.php').toString(),
+			Uri.https(_sysUrl(board), '/$board/imgboard.php').toString(),
 			data: FormData.fromMap({
 				receipt.id.toString(): 'delete',
 				'mode': 'usrdel',
@@ -690,7 +693,7 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	Uri getPostReportUrl(String board, int id) {
-		return Uri.https(sysUrl, '/$board/imgboard.php', {
+		return Uri.https(_sysUrl(board), '/$board/imgboard.php', {
 			'mode': 'report',
 			'no': id.toString()
 		});
@@ -699,13 +702,13 @@ class Site4Chan extends ImageboardSite {
 	Site4Chan({
 		required this.baseUrl,
 		required this.staticUrl,
-		required this.sysUrl,
+		required String sysUrl,
 		required this.apiUrl,
 		required this.imageUrl,
 		required this.name,
 		required this.captchaKey,
 		List<ImageboardSiteArchive> archives = const []
-	}) : super(archives);
+	}) : sysRedUrl = sysUrl, sysBlueUrl = sysUrl.replaceAll('chan.', 'channel.'), super(archives);
 
   @override
   List<ImageboardSiteLoginField> getLoginFields() {
@@ -735,35 +738,39 @@ class Site4Chan extends ImageboardSite {
 			Persistence.currentCookies
 		];
 		for (final jar in jars) {
-			final toSave = (await jar.loadForRequest(Uri.https(sysUrl, '/'))).where((cookie) {
-				return cookie.name == 'cf_clearance';
-			}).toList();
-			await jar.delete(Uri.https(sysUrl, '/'), true);
-			await jar.delete(Uri.https(sysUrl, '/'), true);
-			await jar.saveFromResponse(Uri.https(sysUrl, '/'), toSave);
+			for (final sysUrl in [sysRedUrl, sysBlueUrl]) {
+				final toSave = (await jar.loadForRequest(Uri.https(sysUrl, '/'))).where((cookie) {
+					return cookie.name == 'cf_clearance';
+				}).toList();
+				await jar.delete(Uri.https(sysUrl, '/'), true);
+				await jar.delete(Uri.https(sysUrl, '/'), true);
+				await jar.saveFromResponse(Uri.https(sysUrl, '/'), toSave);
+			}
 			_passEnabled[jar] = false;
 		}
   }
 
   @override
   Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
-    final response = await client.post(
-			Uri.https(sysUrl, '/auth').toString(),
-			data: FormData.fromMap({
-				for (final field in fields.entries) field.key.formKey: field.value
-			})
-		);
-		final document = parse(response.data);
-		final message = document.querySelector('h2')?.text;
-		if (message == null) {
-			_passEnabled[Persistence.currentCookies] = false;
-			await clearLoginCookies(false);
-			throw const ImageboardSiteLoginException('Unexpected response, contact developer');
-		}
-		if (!message.contains('Success!')) {
-			_passEnabled[Persistence.currentCookies] = false;
-			await clearLoginCookies(false);
-			throw ImageboardSiteLoginException(message);
+		for (final sysUrl in [sysRedUrl, sysBlueUrl]) {
+			final response = await client.post(
+				Uri.https(sysUrl, '/auth').toString(),
+				data: FormData.fromMap({
+					for (final field in fields.entries) field.key.formKey: field.value
+				})
+			);
+			final document = parse(response.data);
+			final message = document.querySelector('h2')?.text;
+			if (message == null) {
+				_passEnabled[Persistence.currentCookies] = false;
+				await clearLoginCookies(false);
+				throw const ImageboardSiteLoginException('Unexpected response, contact developer');
+			}
+			if (!message.contains('Success!')) {
+				_passEnabled[Persistence.currentCookies] = false;
+				await clearLoginCookies(false);
+				throw ImageboardSiteLoginException(message);
+			}
 		}
 		_passEnabled[Persistence.currentCookies] = true;
   }
@@ -813,10 +820,10 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	bool operator ==(Object other) => (other is Site4Chan) && (other.name == name) && (other.imageUrl == imageUrl) && (other.captchaKey == captchaKey) && (other.apiUrl == apiUrl) && (other.sysUrl == sysUrl) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && listEquals(other.archives, archives);
+	bool operator ==(Object other) => (other is Site4Chan) && (other.name == name) && (other.imageUrl == imageUrl) && (other.captchaKey == captchaKey) && (other.apiUrl == apiUrl) && (other.sysRedUrl == sysRedUrl) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysUrl, baseUrl, staticUrl, archives);
+	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysRedUrl, baseUrl, staticUrl, archives);
 	
 	@override
 	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
