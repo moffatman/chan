@@ -56,63 +56,66 @@ class _HistoryPageState extends State<HistoryPage> {
 						id: 'history',
 						disableUpdates: true,
 						initialList: states,
-						itemBuilder: (itemContext, state) => ContextMenu(
-							maxHeight: 125,
-							actions: [
-								if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
-									child: const Text('Open in new tab'),
-									trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
-									onPressed: () {
-										widget.onWantOpenThreadInNewTab?.call(state.imageboard.key, state.item.identifier);
-									}
-								),
-								ContextMenuAction(
-									child: const Text('Remove'),
-									onPressed: state.item.delete,
-									trailingIcon: CupertinoIcons.xmark,
-									isDestructiveAction: true
-								)
-							],
-							child: GestureDetector(
-								behavior: HitTestBehavior.opaque,
-								child: ImageboardScope(
-									imageboardKey: state.imageboard.key,
-									child: Builder(
-										builder: (context) => ThreadRow(
-											thread: state.item.thread!,
-											isSelected: selectedThread(itemContext, ImageboardScoped(
-												imageboard: state.imageboard,
-												item: state.item.identifier
-											)),
-											semanticParentIds: const [-3],
-											showSiteIcon: ImageboardRegistry.instance.count > 1,
-											showBoardName: true,
-											onThumbnailTap: (initialAttachment) {
-												final attachments = _listController.items.expand((_) => _.item.thread!.attachments).toList();
-												showGallery(
-													context: context,
-													attachments: attachments,
-													replyCounts: {
-														for (final state in _listController.items)
-															for (final attachment in state.item.thread!.attachments)
-																attachment: state.item.thread!.replyCount
-													},
-													initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-													onChange: (attachment) {
-														_listController.animateTo((p) => p.item.thread!.attachments.any((a) => a.id == attachment.id));
-													},
-													semanticParentIds: [-3]
-												);
-											}
-										)
+						itemBuilder: (itemContext, state) {
+							final isSelected = selectedThread(itemContext, ImageboardScoped(
+								imageboard: state.imageboard,
+								item: state.item.identifier
+							));
+							return ContextMenu(
+								maxHeight: 125,
+								actions: [
+									if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+										child: const Text('Open in new tab'),
+										trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+										onPressed: () {
+											widget.onWantOpenThreadInNewTab?.call(state.imageboard.key, state.item.identifier);
+										}
+									),
+									ContextMenuAction(
+										child: const Text('Remove'),
+										onPressed: state.item.delete,
+										trailingIcon: CupertinoIcons.xmark,
+										isDestructiveAction: true
 									)
-								),
-								onTap: () => threadSetter(ImageboardScoped(
-									imageboard: state.imageboard,
-									item: state.item.thread!.identifier
-								))
-							)
-						),
+								],
+								child: GestureDetector(
+									behavior: HitTestBehavior.opaque,
+									child: ImageboardScope(
+										imageboardKey: state.imageboard.key,
+										child: Builder(
+											builder: (context) => ThreadRow(
+												thread: state.item.thread!,
+												isSelected: isSelected,
+												semanticParentIds: const [-3],
+												showSiteIcon: ImageboardRegistry.instance.count > 1,
+												showBoardName: true,
+												onThumbnailTap: (initialAttachment) {
+													final attachments = _listController.items.expand((_) => _.item.thread!.attachments).toList();
+													showGallery(
+														context: context,
+														attachments: attachments,
+														replyCounts: {
+															for (final state in _listController.items)
+																for (final attachment in state.item.thread!.attachments)
+																	attachment: state.item.thread!.replyCount
+														},
+														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+														onChange: (attachment) {
+															_listController.animateTo((p) => p.item.thread!.attachments.any((a) => a.id == attachment.id));
+														},
+														semanticParentIds: [-3]
+													);
+												}
+											)
+										)
+									),
+									onTap: () => threadSetter(ImageboardScoped(
+										imageboard: state.imageboard,
+										item: state.item.thread!.identifier
+									))
+								)
+							);
+						},
 						filterHint: 'Search history'
 					);
 				}

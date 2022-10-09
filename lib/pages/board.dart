@@ -199,6 +199,7 @@ class _BoardPageState extends State<BoardPage> {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
 			final isThreadHidden = context.select<Persistence, bool>((p) => p.browserState.isThreadHidden(thread.board, thread.id));
 			final isImageHidden = context.select<Persistence, bool>((p) => p.browserState.areMD5sHidden(thread.md5s));
+			final isSelected = widget.isThreadSelected?.call(context, thread.identifier) ?? false;
 			return ContextMenu(
 				actions: [
 					if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
@@ -271,7 +272,7 @@ class _BoardPageState extends State<BoardPage> {
 					child: ThreadRow(
 						contentFocus: settings.useCatalogGrid,
 						thread: thread,
-						isSelected: widget.isThreadSelected?.call(context, thread.identifier) ?? false,
+						isSelected: isSelected,
 						semanticParentIds: [widget.semanticId],
 						onThumbnailTap: (initialAttachment) {
 							final attachments = _listController.items.expand((_) => _.attachments).toList();

@@ -231,102 +231,105 @@ class _SavedPageState extends State<SavedPage> {
 													id: 'watched',
 													disableUpdates: true,
 													initialList: watches,
-													itemBuilder: (itemContext, watch) => ImageboardScope(
-														imageboardKey: watch.imageboard.key,
-														child: ContextMenu(
-															maxHeight: 125,
-															actions: [
-																if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
-																	child: const Text('Open in new tab'),
-																	trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
-																	onPressed: () {
-																		widget.onWantOpenThreadInNewTab?.call(watch.imageboard.key, watch.item.threadIdentifier);
-																	}
-																),
-																ContextMenuAction(
-																	child: const Text('Unwatch'),
-																	onPressed: () {
-																		watch.imageboard.notifications.removeThreadWatch(watch.item);
-																	},
-																	trailingIcon: CupertinoIcons.xmark,
-																	isDestructiveAction: true
-																),
-																if (watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier)?.savedTime != null) ContextMenuAction(
-																	child: const Text('Un-save thread'),
-																	trailingIcon: CupertinoIcons.bookmark_fill,
-																	onPressed: () {
-																		final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
-																		threadState.savedTime = null;
-																		threadState.save();
-																	}
-																)
-																else ContextMenuAction(
-																	child: const Text('Save thread'),
-																	trailingIcon: CupertinoIcons.bookmark,
-																	onPressed: () {
-																		final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
-																		threadState.savedTime = DateTime.now();
-																		threadState.save();
-																	}
-																),
-															],
-															child: GestureDetector(
-																behavior: HitTestBehavior.opaque,
-																child: ValueListenableBuilder(
-																	valueListenable: watch.imageboard.persistence.listenForPersistentThreadStateChanges(watch.item.threadIdentifier),
-																	builder: (context, box, child) {
-																		final threadState = watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier);
-																		if (threadState?.thread == null) {
-																			// Make sure this isn't a newly-created thread/watch
-																			if (threadState != null && (DateTime.now().difference(threadState.lastOpenedTime) > const Duration(days: 30))) {
-																				// Probably the thread was deleted during a cleanup
-																				Future.delayed(const Duration(seconds: 1), () {
-																					watch.imageboard.notifications.removeThreadWatch(watch.item);
-																				});
+													itemBuilder: (itemContext, watch) {
+														final isSelected = selected(itemContext, watch);
+														return ImageboardScope(
+															imageboardKey: watch.imageboard.key,
+															child: ContextMenu(
+																maxHeight: 125,
+																actions: [
+																	if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+																		child: const Text('Open in new tab'),
+																		trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+																		onPressed: () {
+																			widget.onWantOpenThreadInNewTab?.call(watch.imageboard.key, watch.item.threadIdentifier);
+																		}
+																	),
+																	ContextMenuAction(
+																		child: const Text('Unwatch'),
+																		onPressed: () {
+																			watch.imageboard.notifications.removeThreadWatch(watch.item);
+																		},
+																		trailingIcon: CupertinoIcons.xmark,
+																		isDestructiveAction: true
+																	),
+																	if (watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier)?.savedTime != null) ContextMenuAction(
+																		child: const Text('Un-save thread'),
+																		trailingIcon: CupertinoIcons.bookmark_fill,
+																		onPressed: () {
+																			final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
+																			threadState.savedTime = null;
+																			threadState.save();
+																		}
+																	)
+																	else ContextMenuAction(
+																		child: const Text('Save thread'),
+																		trailingIcon: CupertinoIcons.bookmark,
+																		onPressed: () {
+																			final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
+																			threadState.savedTime = DateTime.now();
+																			threadState.save();
+																		}
+																	),
+																],
+																child: GestureDetector(
+																	behavior: HitTestBehavior.opaque,
+																	child: ValueListenableBuilder(
+																		valueListenable: watch.imageboard.persistence.listenForPersistentThreadStateChanges(watch.item.threadIdentifier),
+																		builder: (context, box, child) {
+																			final threadState = watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier);
+																			if (threadState?.thread == null) {
+																				// Make sure this isn't a newly-created thread/watch
+																				if (threadState != null && (DateTime.now().difference(threadState.lastOpenedTime) > const Duration(days: 30))) {
+																					// Probably the thread was deleted during a cleanup
+																					Future.delayed(const Duration(seconds: 1), () {
+																						watch.imageboard.notifications.removeThreadWatch(watch.item);
+																					});
+																				}
+																				return const SizedBox.shrink();
 																			}
-																			return const SizedBox.shrink();
+																			else {
+																				return Opacity(
+																					opacity: watch.item.zombie ? 0.5 : 1.0,
+																					child: ThreadRow(
+																						thread: threadState!.thread!,
+																						isSelected: isSelected,
+																						showBoardName: true,
+																						showSiteIcon: true,
+																						onThumbnailLoadError: (error, stackTrace) {
+																							watch.imageboard.threadWatcher.fixBrokenThread(watch.item.threadIdentifier);
+																						},
+																						semanticParentIds: const [-4],
+																						onThumbnailTap: (initialAttachment) {
+																							final attachments = {
+																								for (final w in _watchedListController.items)
+																									for (final attachment in w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
+																										attachment: w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)!
+																								};
+																							showGallery(
+																								context: context,
+																								attachments: attachments.keys.toList(),
+																								replyCounts: {
+																									for (final item in attachments.entries) item.key: item.value.thread!.replyCount
+																								},
+																								initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
+																								onChange: (attachment) {
+																									final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
+																									_watchedListController.animateTo((p) => p.item.threadIdentifier == threadId);
+																								},
+																								semanticParentIds: [-4]
+																							);
+																						}
+																					)
+																				);
+																			}
 																		}
-																		else {
-																			return Opacity(
-																				opacity: watch.item.zombie ? 0.5 : 1.0,
-																				child: ThreadRow(
-																					thread: threadState!.thread!,
-																					isSelected: selected(itemContext, watch),
-																					showBoardName: true,
-																					showSiteIcon: true,
-																					onThumbnailLoadError: (error, stackTrace) {
-																						watch.imageboard.threadWatcher.fixBrokenThread(watch.item.threadIdentifier);
-																					},
-																					semanticParentIds: const [-4],
-																					onThumbnailTap: (initialAttachment) {
-																						final attachments = {
-																							for (final w in _watchedListController.items)
-																								for (final attachment in w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
-																									attachment: w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)!
-																							};
-																						showGallery(
-																							context: context,
-																							attachments: attachments.keys.toList(),
-																							replyCounts: {
-																								for (final item in attachments.entries) item.key: item.value.thread!.replyCount
-																							},
-																							initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
-																							onChange: (attachment) {
-																								final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
-																								_watchedListController.animateTo((p) => p.item.threadIdentifier == threadId);
-																							},
-																							semanticParentIds: [-4]
-																						);
-																					}
-																				)
-																			);
-																		}
-																	}
-																),
-																onTap: () => setter(watch)
+																	),
+																	onTap: () => setter(watch)
+																)
 															)
-														)
-													),
+														);
+													},
 													filterHint: 'Search watched threads',
 													footer: Container(
 														padding: const EdgeInsets.all(16),
@@ -394,69 +397,72 @@ class _SavedPageState extends State<SavedPage> {
 								id: 'saved',
 								disableUpdates: true,
 								initialList: states,
-								itemBuilder: (itemContext, state) => ImageboardScope(
-									imageboardKey: state.imageboard.key,
-									child: ContextMenu(
-										maxHeight: 125,
-										actions: [
-											if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
-												child: const Text('Open in new tab'),
-												trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
-												onPressed: () {
-													widget.onWantOpenThreadInNewTab?.call(state.imageboard.key, state.item.identifier);
-												}
-											),
-											ContextMenuAction(
-												child: const Text('Unsave'),
-												onPressed: () {
-													state.item.savedTime = null;
-													state.item.save();
-												},
-												trailingIcon: CupertinoIcons.xmark,
-												isDestructiveAction: true
-											)
-										],
-										child: GestureDetector(
-											behavior: HitTestBehavior.opaque,
-											child: Builder(
-												builder: (context) => ThreadRow(
-													thread: state.item.thread!,
-													isSelected: selectedThread(itemContext, ImageboardScoped(
-														imageboard: state.imageboard,
-														item: state.item.identifier
-													)),
-													showBoardName: true,
-													showSiteIcon: true,
-													onThumbnailLoadError: (error, stackTrace) {
-														state.imageboard.threadWatcher.fixBrokenThread(state.item.thread!.identifier);
-													},
-													semanticParentIds: const [-4],
-													onThumbnailTap: (initialAttachment) {
-														final attachments = _threadListController.items.expand((_) => _.item.thread!.attachments).toList();
-														showGallery(
-															context: context,
-															attachments: attachments,
-															replyCounts: {
-																for (final state in _threadListController.items)
-																	for (final attachment in state.item.thread!.attachments)
-																		attachment: state.item.thread!.replyCount
-															},
-															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-															onChange: (attachment) {
-																_threadListController.animateTo((p) => p.item.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
-															},
-															semanticParentIds: [-4]
-														);
+								itemBuilder: (itemContext, state) {
+									final isSelected = selectedThread(itemContext, ImageboardScoped(
+										imageboard: state.imageboard,
+										item: state.item.identifier
+									));
+									return ImageboardScope(
+										imageboardKey: state.imageboard.key,
+										child: ContextMenu(
+											maxHeight: 125,
+											actions: [
+												if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+													child: const Text('Open in new tab'),
+													trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+													onPressed: () {
+														widget.onWantOpenThreadInNewTab?.call(state.imageboard.key, state.item.identifier);
 													}
+												),
+												ContextMenuAction(
+													child: const Text('Unsave'),
+													onPressed: () {
+														state.item.savedTime = null;
+														state.item.save();
+													},
+													trailingIcon: CupertinoIcons.xmark,
+													isDestructiveAction: true
 												)
-											),
-											onTap: () => threadSetter(ImageboardScoped(
-												imageboard: state.imageboard,
-												item: state.item.identifier
-											))
+											],
+											child: GestureDetector(
+												behavior: HitTestBehavior.opaque,
+												child: Builder(
+													builder: (context) => ThreadRow(
+														thread: state.item.thread!,
+														isSelected: isSelected,
+														showBoardName: true,
+														showSiteIcon: true,
+														onThumbnailLoadError: (error, stackTrace) {
+															state.imageboard.threadWatcher.fixBrokenThread(state.item.thread!.identifier);
+														},
+														semanticParentIds: const [-4],
+														onThumbnailTap: (initialAttachment) {
+															final attachments = _threadListController.items.expand((_) => _.item.thread!.attachments).toList();
+															showGallery(
+																context: context,
+																attachments: attachments,
+																replyCounts: {
+																	for (final state in _threadListController.items)
+																		for (final attachment in state.item.thread!.attachments)
+																			attachment: state.item.thread!.replyCount
+																},
+																initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+																onChange: (attachment) {
+																	_threadListController.animateTo((p) => p.item.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
+																},
+																semanticParentIds: [-4]
+															);
+														}
+													)
+												),
+												onTap: () => threadSetter(ImageboardScoped(
+													imageboard: state.imageboard,
+													item: state.item.identifier
+												))
+											)
 										)
-									)
-								),
+									);
+								},
 								filterHint: 'Search saved threads'
 							);
 						}
