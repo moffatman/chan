@@ -180,31 +180,44 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 		Response result = await site.client.head(attachment.url.toString(), options: Options(
 			validateStatus: (_) => true,
-			headers: context.read<ImageboardSite>().getHeaders(attachment.url),
+			headers: site.getHeaders(attachment.url)
 		));
 		if (result.statusCode == 200) {
 			return attachment.url;
 		}
-		else {
-			if (_checkArchives && attachment.threadId != null) {
-				final archivedThread = await site.getThreadFromArchive(ThreadIdentifier(
-					attachment.board,
-					attachment.threadId!
-				), validate: (thread) async {
-					final newAttachment = thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id);
-					if (newAttachment == null) {
-						throw AttachmentNotFoundException(attachment);
-					}
-					final check = await site.client.head(newAttachment.url.toString(), options: Options(
-						validateStatus: (_) => true,
-						headers: context.read<ImageboardSite>().getHeaders(newAttachment.url)
-					));
-					if (check.statusCode != 200) {
-						throw AttachmentNotArchivedException(attachment);
-					}
-				});
-				return archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)!.url;
+		// handle issue with timestamps in url
+		bool corrected = false;
+		final correctedUrl = attachment.url.toString().replaceAllMapped(RegExp(r'^(.*\/\d+)\d{3}(.*)$'), (match) {
+			corrected = true;
+			return '${match.group(1)}${match.group(2)}';
+		});
+		if (corrected) {
+			result = await site.client.head(correctedUrl, options: Options(
+				validateStatus: (_) => true,
+				headers: site.getHeaders(attachment.url)
+			));
+			if (result.statusCode == 200) {
+				return Uri.parse(correctedUrl);
 			}
+		}
+		if (_checkArchives && attachment.threadId != null) {
+			final archivedThread = await site.getThreadFromArchive(ThreadIdentifier(
+				attachment.board,
+				attachment.threadId!
+			), validate: (thread) async {
+				final newAttachment = thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id);
+				if (newAttachment == null) {
+					throw AttachmentNotFoundException(attachment);
+				}
+				final check = await site.client.head(newAttachment.url.toString(), options: Options(
+					validateStatus: (_) => true,
+					headers: context.read<ImageboardSite>().getHeaders(newAttachment.url)
+				));
+				if (check.statusCode != 200) {
+					throw AttachmentNotArchivedException(attachment);
+				}
+			});
+			return archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)!.url;
 		}
 		if (result.statusCode == 404) {
 			throw AttachmentNotFoundException(attachment);
