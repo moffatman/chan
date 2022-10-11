@@ -171,50 +171,48 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 									}
 								}
 							},
-							onPointerUp: (event) => _onPointerUp(),
+							onPointerUp: (event) {
+								_onPointerUp();
+								if (_controller.position.userScrollDirection != ScrollDirection.idle && _pointerDownCount == 0) {
+									_controller.jumpTo(_controller.position.pixels);
+								}
+							},
 							onPointerCancel: (event) {
 								_pointerDownCount--;
 							},
 							onPointerPanZoomEnd: (event) => _onPointerUp(),
-							child: GestureDetector(
-								onTap: () {
-									if (_controller.position.userScrollDirection != ScrollDirection.idle && _pointerDownCount == 0) {
-										_controller.jumpTo(_controller.position.pixels);
-									}
+							child: Actions(
+								actions: {
+									DismissIntent: CallbackAction<DismissIntent>(
+										onInvoke: (i) => WeakNavigator.pop(context)
+									)
 								},
-								child: Actions(
-									actions: {
-										DismissIntent: CallbackAction<DismissIntent>(
-											onInvoke: (i) => WeakNavigator.pop(context)
-										)
-									},
-									child: Focus(
-										autofocus: true,
-										child: MaybeCupertinoScrollbar(
+								child: Focus(
+									autofocus: true,
+									child: MaybeCupertinoScrollbar(
+										controller: _controller,
+										child: CustomScrollView(
 											controller: _controller,
-											child: CustomScrollView(
-												controller: _controller,
-												physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
-												slivers: [
-													SliverToBoxAdapter(
-														child: ConstrainedBox(
-															constraints: BoxConstraints(
-																minHeight: constraints.maxHeight
-															),
-															child: SafeArea(
-																child: Center(
-																	key: _scrollKey,
-																	child: Opacity(
-																		key: _childKey,
-																		opacity: _opacity,
-																		child: widget.child
-																	)
+											physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
+											slivers: [
+												SliverToBoxAdapter(
+													child: ConstrainedBox(
+														constraints: BoxConstraints(
+															minHeight: constraints.maxHeight
+														),
+														child: SafeArea(
+															child: Center(
+																key: _scrollKey,
+																child: Opacity(
+																	key: _childKey,
+																	opacity: _opacity,
+																	child: widget.child
 																)
 															)
 														)
 													)
-												]
-											)
+												)
+											]
 										)
 									)
 								)
