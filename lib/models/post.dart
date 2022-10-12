@@ -82,7 +82,6 @@ class Post implements Filterable {
 			_span = _makeSpan();
 		}
 	}
-	@HiveField(10)
 	List<int> replyIds = [];
 	@HiveField(11, defaultValue: false)
 	bool attachmentDeleted;
