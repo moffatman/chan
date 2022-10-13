@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -13,6 +14,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/widgets/refreshable_list.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:extended_image_library/extended_image_library.dart';
@@ -34,6 +36,8 @@ const _knownCacheDirs = {
 };
 
 const _boxPrefix = '';
+const _backupBoxPrefix = 'backup_';
+const _backupUpdateDuration = Duration(minutes: 10);
 
 class UriAdapter extends TypeAdapter<Uri> {
 	@override
@@ -94,6 +98,10 @@ class Persistence extends ChangeNotifier {
 	static final browserHistoryStatusListenable = EasyListenable();
 	static final tabsListenable = EasyListenable();
 	static final recentSearchesListenable = EasyListenable();
+	static String get _settingsBoxName => '${_boxPrefix}settings';
+	static String get _settingsBoxPath => '${documentsDirectory.path}/$_settingsBoxName.hive';
+	static String get _settingsBackupBoxName => '${_backupBoxPrefix}settings';
+	static String get _settingsBackupBoxPath => '${documentsDirectory.path}/$_settingsBackupBoxName.hive';
 
 	static Future<void> initializeStatic() async {
 		await Hive.initFlutter();
@@ -139,11 +147,36 @@ class Persistence extends ChangeNotifier {
 		);
 		await Directory('${documentsDirectory.path}/$_savedAttachmentsDir').create(recursive: true);
 		await Directory('${documentsDirectory.path}/$_savedAttachmentThumbnailsDir').create(recursive: true);
-		final settingsBox = await Hive.openBox<SavedSettings>('${_boxPrefix}settings',
-			compactionStrategy: (int entries, int deletedEntries) {
-				return deletedEntries > 5;
+		Box<SavedSettings> settingsBox;
+		try {
+			settingsBox = await Hive.openBox<SavedSettings>(_settingsBoxName,
+				compactionStrategy: (int entries, int deletedEntries) {
+					return deletedEntries > 5;
+				},
+				crashRecovery: false
+			);
+			await File(_settingsBoxPath).copy(_settingsBackupBoxPath);
+		}
+		catch (e, st) {
+			if (await File(_settingsBackupBoxPath).exists()) {
+				print('Attempting to handle $e opening settings by restoring backup');
+				print(st);
+				final backupTime = (await File(_settingsBackupBoxPath).stat()).modified;
+				await File(_settingsBoxPath).copy('${documentsDirectory.path}/$_settingsBoxName.broken.hive');
+				await File(_settingsBackupBoxPath).copy(_settingsBoxPath);
+				settingsBox = await Hive.openBox<SavedSettings>(_settingsBoxName,
+					compactionStrategy: (int entries, int deletedEntries) {
+						return deletedEntries > 5;
+					}
+				);
+				Future.delayed(const Duration(seconds: 5), () {
+					alertError(ImageboardRegistry.instance.context!, 'Settings corruption\nSettings database was restored to backup from $backupTime (${formatRelativeTime(backupTime)} ago)');
+				});
 			}
-		);
+			else {
+				rethrow;
+			}
+		}
 		settings = settingsBox.get('settings', defaultValue: SavedSettings(
 			useInternalBrowser: true
 		))!;
@@ -151,6 +184,9 @@ class Persistence extends ChangeNotifier {
 			// Don't await
 			clearFilesystemCaches(Duration(days: settings.automaticCacheClearDays));
 		}
+		Timer.periodic(_backupUpdateDuration, (_) {
+			File(_settingsBoxPath).copy(_settingsBackupBoxPath);
+		});
 	}
 
 	static Future<Map<String, int>> getFilesystemCacheSizes() async {
@@ -225,8 +261,32 @@ class Persistence extends ChangeNotifier {
 		await threadStateBox.deleteFromDisk();
 	}
 
+	String get _threadStatesBoxName => '${_boxPrefix}threadStates_$id';
+	String get _threadStatesBackupBoxName => '${_backupBoxPrefix}threadStates_$id';
+	String get _threadStatesBoxPath => '${documentsDirectory.path}/$_threadStatesBoxName.hive';
+	String get _threadStatesBackupBoxPath => '${documentsDirectory.path}/$_threadStatesBackupBoxName.hive';
+
 	Future<void> initialize() async {
-		threadStateBox = await Hive.openBox<PersistentThreadState>('${_boxPrefix}threadStates_$id');
+		try {
+			threadStateBox = await Hive.openBox<PersistentThreadState>(_threadStatesBoxName, crashRecovery: false);
+			await File(_threadStatesBoxPath).copy(_threadStatesBackupBoxPath);
+		}
+		catch (e, st) {
+			if (await File(_threadStatesBackupBoxPath).exists()) {
+				print('Attempting to handle $e opening $id by restoring backup');
+				print(st);
+				final backupTime = (await File(_threadStatesBackupBoxPath).stat()).modified;
+				await File(_threadStatesBoxPath).copy('${documentsDirectory.path}/$_threadStatesBoxName.broken.hive');
+				await File(_threadStatesBackupBoxPath).copy(_threadStatesBoxPath);
+				threadStateBox = await Hive.openBox<PersistentThreadState>(_threadStatesBoxName);
+				Future.delayed(const Duration(seconds: 5), () {
+					alertError(ImageboardRegistry.instance.context!, 'Database corruption\n$id database was restored to backup from $backupTime (${formatRelativeTime(backupTime)} ago)');
+				});
+			}
+			else {
+				rethrow;
+			}
+		}
 		if (await Hive.boxExists('searches_$id')) {
 			print('Migrating searches box');
 			final searchesBox = await Hive.openBox<PersistentRecentSearches>('${_boxPrefix}searches_$id');
@@ -338,6 +398,9 @@ class Persistence extends ChangeNotifier {
 			await cleanupThreads(Duration(days: settings.automaticCacheClearDays));
 		}
 		settings.save();
+		Timer.periodic(_backupUpdateDuration, (_) {
+			File(_threadStatesBoxPath).copy(_threadStatesBackupBoxPath);
+		});
 	}
 
 	PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
