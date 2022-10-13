@@ -29,32 +29,20 @@ enum PostSpanFormat {
 	futaba
 }
 
-@HiveType(typeId: 11)
 class Post implements Filterable {
 	@override
-	@HiveField(0)
 	final String board;
-	@HiveField(1)
 	final String text;
-	@HiveField(2)
 	final String name;
-	@HiveField(3)
 	final DateTime time;
-	@HiveField(4)
 	final int threadId;
 	@override
-	@HiveField(5)
 	final int id;
-	@HiveField(6)
 	Attachment? deprecatedAttachment;
-	@HiveField(7)
 	final ImageboardFlag? flag;
-	@HiveField(8)
 	final String? posterId;
-	@HiveField(9)
 	PostSpanFormat spanFormat;
 	PostNodeSpan? _span;
-	@HiveField(12)
 	Map<String, int>? foolfuukaLinkedPostThreadIds;
 	PostNodeSpan _makeSpan() {
 		switch (spanFormat) {
@@ -83,15 +71,10 @@ class Post implements Filterable {
 		}
 	}
 	List<int> replyIds = [];
-	@HiveField(11, defaultValue: false)
 	bool attachmentDeleted;
-	@HiveField(13)
 	String? trip;
-	@HiveField(14)
 	int? passSinceYear;
-	@HiveField(15)
 	String? capcode;
-	@HiveField(16, defaultValue: [])
 	final List<Attachment> attachments;
 	Post({
 		required this.board,
@@ -156,4 +139,104 @@ class Post implements Filterable {
 
 	@override
 	int get hashCode => Object.hash(board, id);
+}
+
+class PostAdapter extends TypeAdapter<Post> {
+  @override
+  final int typeId = 11;
+
+  @override
+  Post read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final Map<int, dynamic> fields;
+		if (numOfFields == 255) {
+			// Use new method (dynamic number of fields)
+			fields = {};
+			while (true) {
+				final int fieldId = reader.readByte();
+				fields[fieldId] = reader.read();
+				if (fieldId == 0) {
+					break;
+				}
+			}
+		}
+		else {
+			fields = {
+				for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+			};
+		}
+    return Post(
+      board: fields[0] as String,
+      text: fields[1] as String,
+      name: fields[2] as String,
+      time: fields[3] as DateTime,
+      trip: fields[13] as String?,
+      threadId: fields[4] as int,
+      id: fields[5] as int,
+      spanFormat: fields[9] as PostSpanFormat,
+      flag: fields[7] as ImageboardFlag?,
+      deprecatedAttachment: fields[6] as Attachment?,
+      attachmentDeleted: fields[11] == null ? false : fields[11] as bool,
+      posterId: fields[8] as String?,
+      foolfuukaLinkedPostThreadIds: (fields[12] as Map?)?.cast<String, int>(),
+      passSinceYear: fields[14] as int?,
+      capcode: fields[15] as String?,
+      attachments:
+          fields[16] == null ? [] : (fields[16] as List).cast<Attachment>()
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Post obj) {
+    writer
+      ..writeByte(255)
+      ..writeByte(1)
+      ..write(obj.text)
+      ..writeByte(2)
+      ..write(obj.name)
+      ..writeByte(3)
+      ..write(obj.time)
+      ..writeByte(4)
+      ..write(obj.threadId)
+      ..writeByte(5)
+      ..write(obj.id)
+      ..writeByte(9)
+      ..write(obj.spanFormat)
+      ..writeByte(11)
+      ..write(obj.attachmentDeleted)
+      ..writeByte(16)
+      ..write(obj.attachments);
+		if (obj.flag != null) {
+      writer..writeByte(7)..write(obj.flag);
+		}
+		if (obj.posterId != null) {
+      writer..writeByte(8)..write(obj.posterId);
+		}
+		if (obj.foolfuukaLinkedPostThreadIds != null) {
+      writer..writeByte(12)..write(obj.foolfuukaLinkedPostThreadIds);
+		}
+		if (obj.trip != null) {
+      writer..writeByte(13)..write(obj.trip);
+		}
+		if (obj.passSinceYear != null) {
+      writer..writeByte(14)..write(obj.passSinceYear);
+		}
+		if (obj.capcode != null) {
+      writer..writeByte(15)..write(obj.capcode);
+		}
+		// End with field zero (terminator)
+		writer
+			..writeByte(0)
+      ..write(obj.board);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PostAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
 }

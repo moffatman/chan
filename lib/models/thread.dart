@@ -7,43 +7,25 @@ import 'package:hive/hive.dart';
 
 part 'thread.g.dart';
 
-@HiveType(typeId: 15)
 class Thread implements Filterable {
-	@HiveField(0)
 	final List<Post> posts_;
-	@HiveField(1)
 	final bool isArchived;
-	@HiveField(2)
 	final bool isDeleted;
-	@HiveField(3)
 	final int replyCount;
-	@HiveField(4)
 	final int imageCount;
 	@override
-	@HiveField(5)
 	final int id;
 	@override
-	@HiveField(6)
 	final String board;
-	@HiveField(7)
 	Attachment? deprecatedAttachment;
-	@HiveField(8)
 	final String? title;
-	@HiveField(9)
 	bool isSticky;
-	@HiveField(10)
 	final DateTime time;
-	@HiveField(11)
 	final ImageboardFlag? flag;
-	@HiveField(12)
 	int? currentPage;
-	@HiveField(13)
 	int? uniqueIPCount;
-	@HiveField(14)
 	int? customSpoilerId;
-	@HiveField(15, defaultValue: false)
 	bool attachmentDeleted;
-	@HiveField(16, defaultValue: [])
 	final List<Attachment> attachments;
 	Thread({
 		required this.posts_,
@@ -186,4 +168,105 @@ class BoardThreadOrPostIdentifier {
 	bool operator == (Object other) => (other is BoardThreadOrPostIdentifier) && (other.board == board) && (other.threadId == threadId) && (other.postId == postId);
 	@override
 	int get hashCode => Object.hash(board, threadId, postId);
+}
+
+class ThreadAdapter extends TypeAdapter<Thread> {
+  @override
+  final int typeId = 15;
+
+  @override
+  Thread read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final Map<int, dynamic> fields;
+		if (numOfFields == 255) {
+			// New version (terminated with zero)
+			fields = {};
+			while (true) {
+				final int fieldId = reader.readByte();
+				fields[fieldId] = reader.read();
+				if (fieldId == 0) {
+					break;
+				}
+			}
+		}
+		else {
+			// Previous versions (last field is 16, numOfFields is untrustworthy)
+			fields = {
+				for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+			};
+		}
+    return Thread(
+      posts_: (fields[0] as List).cast<Post>(),
+      isArchived: fields[1] as bool,
+      isDeleted: fields[2] as bool,
+      replyCount: fields[3] as int,
+      imageCount: fields[4] as int,
+      id: fields[5] as int,
+      deprecatedAttachment: fields[7] as Attachment?,
+      attachmentDeleted: fields[15] == null ? false : fields[15] as bool,
+      board: fields[6] as String,
+      title: fields[8] as String?,
+      isSticky: fields[9] as bool,
+      time: fields[10] as DateTime,
+      flag: fields[11] as ImageboardFlag?,
+      currentPage: fields[12] as int?,
+      uniqueIPCount: fields[13] as int?,
+      customSpoilerId: fields[14] as int?,
+      attachments:
+          fields[16] == null ? [] : (fields[16] as List).cast<Attachment>(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Thread obj) {
+    writer
+      ..writeByte(255)
+      ..writeByte(1)
+      ..write(obj.isArchived)
+      ..writeByte(2)
+      ..write(obj.isDeleted)
+      ..writeByte(3)
+      ..write(obj.replyCount)
+      ..writeByte(4)
+      ..write(obj.imageCount)
+      ..writeByte(5)
+      ..write(obj.id)
+      ..writeByte(6)
+      ..write(obj.board)
+      ..writeByte(8)
+      ..write(obj.title)
+      ..writeByte(9)
+      ..write(obj.isSticky)
+      ..writeByte(10)
+      ..write(obj.time)
+      ..writeByte(15)
+      ..write(obj.attachmentDeleted)
+      ..writeByte(16)
+      ..write(obj.attachments);
+		if (obj.flag != null) {
+      writer..writeByte(11)..write(obj.flag);
+		}
+		if (obj.currentPage != null) {
+			writer..writeByte(12)..write(obj.currentPage);
+		}
+		if (obj.uniqueIPCount != null) {
+			writer..writeByte(13)..write(obj.uniqueIPCount);
+		}
+		if (obj.customSpoilerId != null) {
+			writer..writeByte(14)..write(obj.customSpoilerId);
+		}
+		writer
+      ..writeByte(0)
+      ..write(obj.posts_);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ThreadAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
 }

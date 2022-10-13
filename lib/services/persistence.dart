@@ -684,13 +684,9 @@ class SavedAttachment {
 	File get file => File('${Persistence.documentsDirectory.path}/$_savedAttachmentsDir/${attachment.globalId}${attachment.ext == '.webm' ? '.mp4' : attachment.ext}');
 }
 
-@HiveType(typeId: 19)
 class SavedPost {
-	@HiveField(0)
 	Post post;
-	@HiveField(1)
 	final DateTime savedTime;
-	@HiveField(2)
 	Thread? deprecatedThread;
 
 	SavedPost({
@@ -839,4 +835,42 @@ class PersistentBrowserState {
 		}));
 		imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
 	}
+}
+
+/// Custom adapter to not write-out deprecatedThread
+class SavedPostAdapter extends TypeAdapter<SavedPost> {
+  @override
+  final int typeId = 19;
+
+  @override
+  SavedPost read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return SavedPost(
+      post: fields[0] as Post,
+      savedTime: fields[1] as DateTime,
+    )..deprecatedThread = fields[2] as Thread?;
+  }
+
+  @override
+  void write(BinaryWriter writer, SavedPost obj) {
+    writer
+      ..writeByte(2)
+      ..writeByte(0)
+      ..write(obj.post)
+      ..writeByte(1)
+      ..write(obj.savedTime);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SavedPostAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
 }
