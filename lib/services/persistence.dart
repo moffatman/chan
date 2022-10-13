@@ -568,7 +568,7 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	final Map<Filter, List<int>?> _replyIdsToYou = {};
 	List<int>? replyIdsToYou(Filter filter) => _replyIdsToYou.putIfAbsent(filter, () {
 		return _filteredPosts(filter)?.where((p) {
-			return p.span.referencedPostIds(thread!.board).any((id) => youIds.contains(id));
+			return p.repliedToIds.any((id) => youIds.contains(id));
 		}).map((p) => p.id).toList();
 	});
 

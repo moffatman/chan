@@ -125,8 +125,12 @@ class Post implements Filterable {
 	bool get hasFile => attachments.isNotEmpty;
 	@override
 	bool get isThread => false;
+	List<int>? _repliedToIds;
 	@override
-	Iterable<int> get repliedToIds => span.referencedPostIds(board);
+	List<int> get repliedToIds {
+		_repliedToIds ??= span.referencedPostIds(board).toList();
+		return _repliedToIds!;
+	}
 	@override
 	Iterable<String> get md5s => attachments.map((a) => a.md5);
 

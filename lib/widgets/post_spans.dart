@@ -109,9 +109,7 @@ class PostSpanRenderOptions {
 }
 
 abstract class PostSpan {
-	List<int> referencedPostIds(String forBoard) {
-		return [];
-	}
+	Iterable<int> referencedPostIds(String forBoard) => const Iterable.empty();
 	InlineSpan build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options);
 	String buildText();
 }
@@ -129,12 +127,11 @@ class PostNodeSpan extends PostSpan {
 	List<PostSpan> children;
 	PostNodeSpan(this.children);
 
-	final Map<String, List<int>> _referencedPostIds = {};
 	@override
-	List<int> referencedPostIds(String forBoard) {
-		return _referencedPostIds.putIfAbsent(forBoard, () {
-			return children.expand((child) => child.referencedPostIds(forBoard)).toList();
-		});
+	Iterable<int> referencedPostIds(String forBoard) sync* {
+		for (final child in children) {
+			yield* child.referencedPostIds(forBoard);
+		}
 	}
 
 	@override
@@ -312,11 +309,10 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 	}
 	@override
-	List<int> referencedPostIds(String forBoard) {
+	Iterable<int> referencedPostIds(String forBoard) sync* {
 		if (forBoard == board) {
-			return [postId];
+			yield postId;
 		}
-		return [];
 	}
 	Tuple2<InlineSpan, TapGestureRecognizer> _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
 		String text = '>>';
@@ -1249,7 +1245,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 			_isLoadingPostFromArchive[id] = true;
 			notifyListeners();
 			_postsFromArchive[id] = await site.getPostFromArchive(thread.board, id);
-			_postsFromArchive[id]!.replyIds = thread.posts.where((p) => p.span.referencedPostIds(thread.board).contains(id)).map((p) => p.id).toList();
+			_postsFromArchive[id]!.replyIds = thread.posts.where((p) => p.repliedToIds.contains(id)).map((p) => p.id).toList();
 			notifyListeners();
 		}
 		catch (e, st) {

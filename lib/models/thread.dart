@@ -61,7 +61,7 @@ class Thread implements Filterable {
 				post.replyIds = [];
 			}
 			for (final post in posts_) {
-				for (final referencedPostId in post.span.referencedPostIds(board)) {
+				for (final referencedPostId in post.repliedToIds) {
 					if (!(postsById[referencedPostId]?.replyIds.contains(post.id) ?? true)) {
 						postsById[referencedPostId]?.replyIds.add(post.id);
 					}
