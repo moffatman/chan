@@ -111,8 +111,6 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	late final ValueNotifier<bool> _shouldShowPosition;
 	late final BehaviorSubject<void> _currentAttachmentChanged;
 	late final BehaviorSubject<void> _rotationsChanged;
-	Widget? _cachedScrollSheetChild;
-	ScrollController? _cachedScrollSheetController;
 	late final DraggableScrollableController _scrollSheetController;
 	final _draggableScrollableSheetKey = GlobalKey();
 	late StreamSubscription<List<void>> __onPageControllerUpdateSubscription;
@@ -858,13 +856,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 															maxChildSize: _maxScrollSheetSize,
 															minChildSize: _minScrollSheetSize,
 															controller: _scrollSheetController,
-															builder: (context, controller) {
-																if (_cachedScrollSheetChild == null || controller != _cachedScrollSheetController) {
-																	_cachedScrollSheetController = controller;
-																	_cachedScrollSheetChild = _buildScrollSheetChild(controller);
-																}
-																return _cachedScrollSheetChild!;
-															}
+															builder: (context, controller) => _buildScrollSheetChild(controller)
 														)
 													)
 												)
