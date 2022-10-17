@@ -72,9 +72,11 @@ class _SliderBuilderState extends State<SliderBuilder> {
 	}
 
 	void _handleDragCancel() {
-		setState(() {
-			factor = 0;
-		});
+		if (mounted) {
+			setState(() {
+				factor = 0;
+			});
+		}
 	}
 
 	@override
@@ -99,8 +101,8 @@ class _SliderBuilderState extends State<SliderBuilder> {
 
 	@override
 	void dispose() {
-		super.dispose();
 		_recognizingRecognizer.dispose();
 		_claimingRecognizer.dispose();
+		super.dispose();
 	}
 }
