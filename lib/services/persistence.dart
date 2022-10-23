@@ -269,15 +269,26 @@ class Persistence extends ChangeNotifier {
 	Future<void> initialize() async {
 		try {
 			threadStateBox = await Hive.openBox<PersistentThreadState>(_threadStatesBoxName, crashRecovery: false);
-			await File(_threadStatesBoxPath).copy(_threadStatesBackupBoxPath);
+			if (await File(_threadStatesBoxPath).exists()) {
+				await File(_threadStatesBoxPath).copy(_threadStatesBackupBoxPath);
+			}
+			else if (await File(_threadStatesBoxPath.toLowerCase()).exists()) {
+				await File(_threadStatesBoxPath.toLowerCase()).copy(_threadStatesBackupBoxPath);
+			}
 		}
 		catch (e, st) {
 			if (await File(_threadStatesBackupBoxPath).exists()) {
 				print('Attempting to handle $e opening $id by restoring backup');
 				print(st);
 				final backupTime = (await File(_threadStatesBackupBoxPath).stat()).modified;
-				await File(_threadStatesBoxPath).copy('${documentsDirectory.path}/$_threadStatesBoxName.broken.hive');
-				await File(_threadStatesBackupBoxPath).copy(_threadStatesBoxPath);
+				if (await File(_threadStatesBoxPath).exists()) {
+					await File(_threadStatesBoxPath).copy('${documentsDirectory.path}/$_threadStatesBoxName.broken.hive');
+					await File(_threadStatesBackupBoxPath).copy(_threadStatesBoxPath);
+				}
+				else if (await File(_threadStatesBoxPath.toLowerCase()).exists()) {
+					await File(_threadStatesBoxPath.toLowerCase()).copy('${documentsDirectory.path}/$_threadStatesBoxName.broken.hive');
+					await File(_threadStatesBackupBoxPath).copy(_threadStatesBoxPath.toLowerCase());
+				}
 				threadStateBox = await Hive.openBox<PersistentThreadState>(_threadStatesBoxName);
 				Future.delayed(const Duration(seconds: 5), () {
 					alertError(ImageboardRegistry.instance.context!, 'Database corruption\n$id database was restored to backup from $backupTime (${formatRelativeTime(backupTime)} ago)');
