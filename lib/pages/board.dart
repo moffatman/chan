@@ -274,8 +274,9 @@ class _BoardPageState extends State<BoardPage> {
 						thread: thread,
 						isSelected: isSelected,
 						semanticParentIds: [widget.semanticId],
+						dimReadThreads: true,
 						onThumbnailTap: (initialAttachment) {
-							final attachments = _listController.items.expand((_) => _.attachments).toList();
+							final attachments = _listController.items.expand((_) => _.item.attachments).toList();
 							// It might not be in the list if the thread has been filtered
 							final initialAttachmentInList = attachments.tryFirstWhere((a) => a.id == initialAttachment.id);
 							showGallery(
@@ -283,8 +284,8 @@ class _BoardPageState extends State<BoardPage> {
 								attachments: initialAttachmentInList == null ? [initialAttachment] : attachments,
 								replyCounts: {
 									for (final thread in _listController.items)
-										for (final attachment in thread.attachments)
-											attachment: thread.replyCount
+										for (final attachment in thread.item.attachments)
+											attachment: thread.item.replyCount
 								},
 								initialAttachment: initialAttachmentInList ?? initialAttachment,
 								onChange: (attachment) {
@@ -319,7 +320,9 @@ class _BoardPageState extends State<BoardPage> {
 						children: [
 							if (imageboard != null) ...[
 								if (ImageboardRegistry.instance.count > 1) ...[
-									const ImageboardIcon(),
+									ImageboardIcon(
+										boardName: board?.name
+									),
 									const Text(' ')
 								],
 								if (board != null) Text('/${board!.name}/')
@@ -433,7 +436,7 @@ class _BoardPageState extends State<BoardPage> {
 								);
 							}
 						),
-						CupertinoButton(
+						if (imageboard?.site.supportsPosting ?? false) CupertinoButton(
 							padding: EdgeInsets.zero,
 							child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.pencil_slash) : const Icon(CupertinoIcons.pencil),
 							onPressed: () {
@@ -529,19 +532,19 @@ class _BoardPageState extends State<BoardPage> {
 											bindings: {
 												LogicalKeySet(LogicalKeyboardKey.keyG): () {
 													if (board != null && context.read<EffectiveSettings>().showImages(context, board!.name)) {
-														final nextThreadWithImage = _listController.items.skip(max(0, _listController.firstVisibleIndex)).firstWhere((t) => t.attachments.isNotEmpty, orElse: () {
-															return _listController.items.firstWhere((t) => t.attachments.isNotEmpty);
+														final nextThreadWithImage = _listController.items.skip(max(0, _listController.firstVisibleIndex)).firstWhere((t) => t.item.attachments.isNotEmpty, orElse: () {
+															return _listController.items.firstWhere((t) => t.item.attachments.isNotEmpty);
 														});
-														final attachments = _listController.items.expand((_) => _.attachments).toList();
+														final attachments = _listController.items.expand((_) => _.item.attachments).toList();
 														showGallery(
 															context: context,
 															attachments: attachments,
 															replyCounts: {
 																for (final thread in _listController.items)
-																	for (final attachment in thread.attachments)
-																		attachment: thread.replyCount
+																	for (final attachment in thread.item.attachments)
+																		attachment: thread.item.replyCount
 															},
-															initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.attachments.any((a2) => a2.id == a.id)),
+															initialAttachment: attachments.firstWhere((a) => nextThreadWithImage.item.attachments.any((a2) => a2.id == a.id)),
 															onChange: (attachment) {
 																_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
 															},
@@ -573,6 +576,39 @@ class _BoardPageState extends State<BoardPage> {
 															await threadState.save();
 															await persistence.didUpdateBrowserState();
 														},
+														sortMethods: [
+															if (sortingMethod == ThreadSortingMethod.replyCount)
+																if (reverseSorting)
+																	(b, a) => b.replyCount.compareTo(a.replyCount)
+																else
+																	(a, b) => b.replyCount.compareTo(a.replyCount)
+															else if (sortingMethod == ThreadSortingMethod.threadPostTime)
+																if (reverseSorting)
+																	(b, a) => b.id.compareTo(a.id)
+																else
+																	(a, b) => b.id.compareTo(a.id)
+															else if (sortingMethod == ThreadSortingMethod.postsPerMinute)
+																if (reverseSorting)
+																	(b, a) {
+																		final now = DateTime.now();
+																		return -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds);
+																	}
+																else
+																	(a, b) {
+																		final now = DateTime.now();
+																		return -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds);
+																	}
+																else if (sortingMethod == ThreadSortingMethod.lastReplyTime)
+																	if (reverseSorting)
+																		(b, a) => b.posts.last.id.compareTo(a.posts.last.id)
+																	else
+																		(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
+																else if (sortingMethod == ThreadSortingMethod.imageCount)
+																	if (reverseSorting)
+																		(b, a) => b.imageCount.compareTo(a.imageCount)
+																	else
+																		(a, b) => b.imageCount.compareTo(a.imageCount)
+														],
 														gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
 														controller: _listController,
 														listUpdater: () => site.getCatalog(board!.name).then((list) async {
@@ -585,45 +621,28 @@ class _BoardPageState extends State<BoardPage> {
 																	return !thread.isSticky || now.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
 																}).toList();
 															}
-															switch (sortingMethod) {
-																case ThreadSortingMethod.replyCount:
-																	list.sort((a, b) => b.replyCount.compareTo(a.replyCount));
-																	break;
-																case ThreadSortingMethod.threadPostTime:
-																	list.sort((a, b) => b.id.compareTo(a.id));
-																	break;
-																case ThreadSortingMethod.postsPerMinute:
-																	list.sort((a, b) => -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds));
-																	break;
-																case ThreadSortingMethod.lastReplyTime:
-																	list.sort((a, b) => b.posts.last.id.compareTo(a.posts.last.id));
-																	break;
-																case ThreadSortingMethod.imageCount:
-																	list.sort((a, b) => b.imageCount.compareTo(a.imageCount));
-																	break;
-																// Some methods only used for saved posts
-																case ThreadSortingMethod.savedTime:
-																case ThreadSortingMethod.lastPostTime:
-																case ThreadSortingMethod.lastReplyByYouTime:
-																case ThreadSortingMethod.unsorted:
-																	break;
-															}
 															Future.delayed(const Duration(milliseconds: 100), () {
 																if (!mounted) return;
 																if (_loadCompleter?.isCompleted == false) {
 																	_loadCompleter?.complete();
 																}
 															});
-															return reverseSorting ? list.reversed.toList() : list;
+															return list;
 														}),
-														id: '${site.name} /${board!.name}/ $sortingMethod $reverseSorting',
+														listExtender: (after) => site.getMoreCatalog(after).then((list) async {
+															for (final thread in list) {
+																await thread.preinit(catalog: true);
+															}
+															return list;
+														}),
+														id: '${site.name} /${board!.name}/',
 														itemBuilder: (context, thread) => itemBuilder(context, thread),
 														filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
 														filterHint: 'Search in board',
-														filterAlternative: widget.onWantArchiveSearch == null ? null : FilterAlternative(
+														filterAlternative: (widget.onWantArchiveSearch == null || !imageboard!.site.supportsSearch) ? null : FilterAlternative(
 															name: '/${board?.name}/ archives',
 															handler: (s) {
-																widget.onWantArchiveSearch!(imageboard!.key, board!.name, s);
+																widget.onWantArchiveSearch!(imageboard.key, board!.name, s);
 															}
 														)
 													),
@@ -643,7 +662,7 @@ class _BoardPageState extends State<BoardPage> {
 																					onTap: () async {
 																						lightHapticFeedback();
 																						await scrollToTop();
-																						_page = _listController.items.first.currentPage ?? 1;
+																						_page = _listController.items.first.item.currentPage ?? 1;
 																					},
 																					child: Container(
 																						decoration: BoxDecoration(

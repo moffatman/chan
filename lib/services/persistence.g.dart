@@ -67,13 +67,14 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
           fields[11] == null ? [] : (fields[11] as List).cast<String>()
       ..translatedPosts =
           fields[12] == null ? {} : (fields[12] as Map).cast<int, Post>()
-      ..autoTranslate = fields[13] == null ? false : fields[13] as bool;
+      ..autoTranslate = fields[13] == null ? false : fields[13] as bool
+      ..useTree = fields[14] as bool?;
   }
 
   @override
   void write(BinaryWriter writer, PersistentThreadState obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.lastSeenPostId)
       ..writeByte(1)
@@ -99,7 +100,9 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..writeByte(12)
       ..write(obj.translatedPosts)
       ..writeByte(13)
-      ..write(obj.autoTranslate);
+      ..write(obj.autoTranslate)
+      ..writeByte(14)
+      ..write(obj.useTree);
   }
 
   @override
@@ -284,13 +287,14 @@ class PersistentBrowserStateAdapter
       boardReverseSortings:
           fields[14] == null ? {} : (fields[14] as Map).cast<String, bool>(),
       postingName: fields[15] == null ? '' : fields[15] as String,
+      useTree: fields[16] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -316,7 +320,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(14)
       ..write(obj.boardReverseSortings)
       ..writeByte(15)
-      ..write(obj.postingName);
+      ..write(obj.postingName)
+      ..writeByte(16)
+      ..write(obj.useTree);
   }
 
   @override

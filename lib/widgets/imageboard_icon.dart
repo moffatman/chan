@@ -5,9 +5,11 @@ import 'package:provider/provider.dart';
 
 class ImageboardIcon extends StatelessWidget {
 	final String? imageboardKey;
+	final String? boardName;
 
 	const ImageboardIcon({
 		this.imageboardKey,
+		this.boardName,
 		Key? key
 	}) : super(key: key);
 
@@ -20,9 +22,18 @@ class ImageboardIcon extends StatelessWidget {
 		if (imageboard == null) {
 			return const Icon(CupertinoIcons.exclamationmark_triangle_fill);
 		}
-		return ExtendedImage.network(
-			imageboard.site.iconUrl.toString(),
-			headers: imageboard.site.getHeaders(imageboard.site.iconUrl),
+		Uri url = imageboard.site.iconUrl;
+		bool clipOval = false;
+		if (boardName != null) {
+			final boardUrl = imageboard.persistence.getBoard(boardName!).icon;
+			if (boardUrl != null) {
+				url = boardUrl;
+				clipOval = true;
+			}
+		}
+		final child = ExtendedImage.network(
+			url.toString(),
+			headers: imageboard.site.getHeaders(url),
 			cache: true,
 			enableLoadState: false,
 			filterQuality: FilterQuality.high,
@@ -31,5 +42,11 @@ class ImageboardIcon extends StatelessWidget {
 			cacheWidth: 32,
 			cacheHeight: 32,
 		);
+		if (clipOval) {
+			return ClipOval(
+				child: child
+			);
+		}
+		return child;
 	}
 }

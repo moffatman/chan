@@ -303,8 +303,8 @@ class _SavedPageState extends State<SavedPage> {
 																						onThumbnailTap: (initialAttachment) {
 																							final attachments = {
 																								for (final w in _watchedListController.items)
-																									for (final attachment in w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
-																										attachment: w.imageboard.persistence.getThreadStateIfExists(w.item.threadIdentifier)!
+																									for (final attachment in w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
+																										attachment: w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.threadIdentifier)!
 																								};
 																							showGallery(
 																								context: context,
@@ -383,12 +383,13 @@ class _SavedPageState extends State<SavedPage> {
 								imageboard: i,
 								item: s
 							))).toList();
+							Comparator<ImageboardScoped<PersistentThreadState>> sortMethod = (a, b) => 0;
 							if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
-								states.sort((a, b) => b.item.savedTime!.compareTo(a.item.savedTime!));
+								sortMethod = (a, b) => b.item.savedTime!.compareTo(a.item.savedTime!);
 							}
 							else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
 								final noDate = DateTime.fromMillisecondsSinceEpoch(0);
-								states.sort((a, b) => (b.item.thread?.posts.last.time ?? noDate).compareTo(a.item.thread?.posts.last.time ?? noDate));
+								sortMethod = (a, b) => (b.item.thread?.posts.last.time ?? noDate).compareTo(a.item.thread?.posts.last.time ?? noDate);
 							}
 							return RefreshableList<ImageboardScoped<PersistentThreadState>>(
 								filterableAdapter: (t) => t.item,
@@ -397,6 +398,7 @@ class _SavedPageState extends State<SavedPage> {
 								id: 'saved',
 								disableUpdates: true,
 								initialList: states,
+								sortMethods: [sortMethod],
 								itemBuilder: (itemContext, state) {
 									final isSelected = selectedThread(itemContext, ImageboardScoped(
 										imageboard: state.imageboard,
@@ -437,14 +439,14 @@ class _SavedPageState extends State<SavedPage> {
 														},
 														semanticParentIds: const [-4],
 														onThumbnailTap: (initialAttachment) {
-															final attachments = _threadListController.items.expand((_) => _.item.thread!.attachments).toList();
+															final attachments = _threadListController.items.expand((_) => _.item.item.thread!.attachments).toList();
 															showGallery(
 																context: context,
 																attachments: attachments,
 																replyCounts: {
 																	for (final state in _threadListController.items)
-																		for (final attachment in state.item.thread!.attachments)
-																			attachment: state.item.thread!.replyCount
+																		for (final attachment in state.item.item.thread!.attachments)
+																			attachment: state.item.item.thread!.replyCount
 																},
 																initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 																onChange: (attachment) {
@@ -511,7 +513,6 @@ class _SavedPageState extends State<SavedPage> {
 									}
 								}
 							}
-							replies.sort((a, b) => b.post.time.compareTo(a.post.time));
 							return RefreshableList<_PostThreadCombo>(
 								filterableAdapter: (t) => t.post,
 								controller: _yourPostsListController,
@@ -519,6 +520,7 @@ class _SavedPageState extends State<SavedPage> {
 								id: 'yourPosts',
 								disableUpdates: true,
 								initialList: replies,
+								sortMethods: [(a, b) => b.post.time.compareTo(a.post.time)],
 								itemBuilder: (context, item) => ImageboardScope(
 									imageboardKey: item.imageboard.key,
 									child: ChangeNotifierProvider<PostSpanZoneData>(
@@ -550,14 +552,14 @@ class _SavedPageState extends State<SavedPage> {
 													}
 												},
 												onThumbnailTap: (initialAttachment) {
-													final attachments = _yourPostsListController.items.expand((_) => _.post.attachments).toList();
+													final attachments = _yourPostsListController.items.expand((_) => _.item.post.attachments).toList();
 													showGallery(
 														context: context,
 														attachments: attachments,
 														replyCounts: {
 															for (final state in _yourPostsListController.items)
-																for (final attachment in state.imageboard.persistence.getThreadStateIfExists(state.post.threadIdentifier)?.thread?.attachments ?? [])
-																	attachment: state.imageboard.persistence.getThreadStateIfExists(state.post.threadIdentifier)?.thread?.replyCount ?? 0
+																for (final attachment in state.item.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.attachments ?? [])
+																	attachment: state.item.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.replyCount ?? 0
 														},
 														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 														onChange: (attachment) {
@@ -599,11 +601,12 @@ class _SavedPageState extends State<SavedPage> {
 								imageboard: i,
 								item: p
 							))).toList();
+							Comparator<ImageboardScoped<SavedPost>> sortMethod = (a, b) => 0;
 							if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
-								savedPosts.sort((a, b) => b.item.savedTime.compareTo(a.item.savedTime));
+								sortMethod = (a, b) => b.item.savedTime.compareTo(a.item.savedTime);
 							}
 							else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
-								savedPosts.sort((a, b) => b.item.post.time.compareTo(a.item.post.time));
+								sortMethod = (a, b) => b.item.post.time.compareTo(a.item.post.time);
 							}
 							return RefreshableList<ImageboardScoped<SavedPost>>(
 								filterableAdapter: (t) => t.item.post,
@@ -612,6 +615,7 @@ class _SavedPageState extends State<SavedPage> {
 								id: 'saved',
 								disableUpdates: true,
 								initialList: savedPosts,
+								sortMethods: [sortMethod],
 								itemBuilder: (context, savedPost) {
 									final threadState = savedPost.imageboard.persistence.getThreadStateIfExists(savedPost.item.post.threadIdentifier);
 									if (threadState?.thread == null) {
@@ -657,14 +661,14 @@ class _SavedPageState extends State<SavedPage> {
 														}
 													},
 													onThumbnailTap: (initialAttachment) {
-														final attachments = _postListController.items.expand((_) => _.item.post.attachments).toList();
+														final attachments = _postListController.items.expand((_) => _.item.item.post.attachments).toList();
 														showGallery(
 															context: context,
 															attachments: attachments,
 															replyCounts: {
 																for (final state in _postListController.items)
-																	for (final attachment in state.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.attachments ?? [])
-																		attachment: state.imageboard.persistence.getThreadStateIfExists(state.item.post.threadIdentifier)?.thread?.replyCount ?? 0
+																	for (final attachment in state.item.imageboard.persistence.getThreadStateIfExists(state.item.item.post.threadIdentifier)?.thread?.attachments ?? [])
+																		attachment: state.item.imageboard.persistence.getThreadStateIfExists(state.item.item.post.threadIdentifier)?.thread?.replyCount ?? 0
 															},
 															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 															onChange: (attachment) {

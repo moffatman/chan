@@ -10,7 +10,6 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:html_unescape/html_unescape_small.dart';
 import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:html/dom.dart' as dom;
 import 'package:linkify/linkify.dart';
@@ -26,8 +25,6 @@ class SiteLainchan extends ImageboardSite {
 	@override
 	final String name;
 	final int? maxUploadSizeBytes;
-
-	final _unescape = HtmlUnescape();
 
 	final Map<PersistCookieJar, bool> _adminEnabled = {};
 
@@ -55,7 +52,7 @@ class SiteLainchan extends ImageboardSite {
 		for (final node in body.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
-					elements.add(PostLineBreakSpan());
+					elements.add(const PostLineBreakSpan());
 				}
 				else if (node.localName == 'a' && node.attributes['href'] != null) {
 					final match = RegExp(r'^\/([^\/]+)\/\/?res\/(\d+).html#(\d+)').firstMatch(node.attributes['href']!);
@@ -117,7 +114,7 @@ class SiteLainchan extends ImageboardSite {
 			return Attachment(
 				id: id,
 				type: type,
-				filename: _unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
+				filename: unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
 				ext: ext,
 				board: board,
 				url: getAttachmentUrl(board, '$id$ext'),

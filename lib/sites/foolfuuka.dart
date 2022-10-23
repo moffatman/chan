@@ -15,7 +15,6 @@ import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:html/parser.dart' show parseFragment;
 import 'package:html/dom.dart' as dom;
-import 'package:html_unescape/html_unescape_small.dart';
 
 class FoolFuukaException implements Exception {
 	String error;
@@ -26,7 +25,6 @@ class FoolFuukaException implements Exception {
 
 class FoolFuukaArchive extends ImageboardSiteArchive {
 	List<ImageboardBoard>? boards;
-	final unescape = HtmlUnescape();
 	final String baseUrl;
 	final String staticUrl;
 	@override
@@ -97,7 +95,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		for (final node in body.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
-					elements.add(PostLineBreakSpan());
+					elements.add(const PostLineBreakSpan());
 				}
 				else if (node.localName == 'img' && node.attributes.containsKey('width') && node.attributes.containsKey('height')) {
 					final src = node.attributes['src'];
@@ -388,8 +386,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 
 	Future<ImageboardArchiveSearchResult> _makeResult(dynamic data) async {
 		if (data['op'] == '1') {
-			return ImageboardArchiveSearchResult(
-				thread: await _makeThread(ThreadIdentifier(
+			return ImageboardArchiveSearchResult.thread(
+				await _makeThread(ThreadIdentifier(
 					data['board']['shortname'],
 					int.parse(data['num'])
 				), {
@@ -400,14 +398,14 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			);
 		}
 		else {
-			return ImageboardArchiveSearchResult(
-				post: await _makePost(data, resolveIds: false)
+			return ImageboardArchiveSearchResult.post(
+				await _makePost(data, resolveIds: false)
 			);
 		}
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
 		final knownBoards = await getBoards();
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {

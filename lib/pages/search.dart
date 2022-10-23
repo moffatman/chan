@@ -291,6 +291,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 											final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 												builder: (ctx) => ImageboardSwitcherPage(
 													initialImageboardKey: query.imageboardKey,
+													filterImageboards: (b) => b.site.supportsSearch,
 													builder: (ctx, focusNode) => BoardSwitcherPage(
 														searchFocusNode: focusNode
 													)
@@ -390,7 +391,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 				duration: const Duration(milliseconds: 300),
 				switchInCurve: Curves.easeIn,
 				switchOutCurve: Curves.easeOut,
-				child: _searchFocused ? ListView(
+				child: (_searchFocused && query.imageboardKey != null && (ImageboardRegistry.instance.getImageboard(query.imageboardKey!)?.site.supportsSearchOptions ?? false)) ? ListView(
 					key: const ValueKey(true),
 					children: [
 						const SizedBox(height: 16),

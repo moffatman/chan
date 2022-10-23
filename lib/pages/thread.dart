@@ -82,6 +82,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	int lastReceiptsLength = 0;
 	int lastTreeHiddenIdsLength = 0;
 	int lastHiddenPosterIdsLength = 0;
+	bool? lastUseTree;
 	bool _foreground = false;
 	late StreamSubscription<void>? _slowScrollUpdatesSubscription;
 
@@ -97,16 +98,24 @@ class _ThreadPageState extends State<ThreadPage> {
 				hiddenMD5sLength != lastHiddenMD5sLength ||
 				persistentState.receipts.length != lastReceiptsLength ||
 				persistentState.treeHiddenPostIds.length != lastTreeHiddenIdsLength ||
-				persistentState.hiddenPosterIds.length != lastHiddenPosterIdsLength) {
+				persistentState.hiddenPosterIds.length != lastHiddenPosterIdsLength ||
+				persistentState.useTree != lastUseTree) {
 			setState(() {});
 		}
 		if (persistentState.thread != lastThread) {
 			final tmpPersistentState = persistentState;
 			Future.delayed(const Duration(milliseconds: 100), () {
 				if (persistentState == tmpPersistentState && !_unnaturallyScrolling) {
-					final lastItem = _listController.lastVisibleItem;
-					if (lastItem != null) {
-						tmpPersistentState.lastSeenPostId = max(tmpPersistentState.lastSeenPostId ?? 0, lastItem.id);
+					int? newLastId;
+					if (useTree) {
+						final lastListIndex = _listController.lastVisibleIndex;
+						newLastId = _listController.items.take(lastListIndex).map((l) => l.item.id).reduce(max);
+					}
+					else {
+						newLastId = _listController.lastVisibleItem?.id;
+					}
+					if (newLastId != null) {
+						tmpPersistentState.lastSeenPostId = max(tmpPersistentState.lastSeenPostId ?? 0, newLastId);
 						tmpPersistentState.save();
 						setState(() {});
 					}
@@ -125,10 +134,13 @@ class _ThreadPageState extends State<ThreadPage> {
 		lastReceiptsLength = persistentState.receipts.length;
 		lastTreeHiddenIdsLength = persistentState.treeHiddenPostIds.length;
 		lastHiddenPosterIdsLength = persistentState.hiddenPosterIds.length;
+		lastUseTree = persistentState.useTree;
 		if (persistentState.thread != null) {
 			zone.thread = persistentState.thread!;
 		}
 	}
+
+	bool get useTree => persistentState.useTree ?? context.read<Persistence>().browserState.useTree ?? context.read<ImageboardSite>().useTree;
 
 	Thread get _nullThread => Thread(
 		board: widget.thread.board,
@@ -224,7 +236,9 @@ class _ThreadPageState extends State<ThreadPage> {
 			}
 		});
 		context.read<PersistentBrowserTab?>()?.threadController = _listController;
-		_blockAndScrollToPostIfNeeded();
+		if (!useTree) {
+			_blockAndScrollToPostIfNeeded();
+		}
 	}
 
 	@override
@@ -249,7 +263,9 @@ class _ThreadPageState extends State<ThreadPage> {
 			);
 			_maybeUpdateWatch();
 			persistentState.save();
-			_blockAndScrollToPostIfNeeded(const Duration(milliseconds: 100));
+			if (!useTree) {
+				_blockAndScrollToPostIfNeeded(const Duration(milliseconds: 100));
+			}
 			setState(() {});
 		}
 		else if (widget.initialPostId != old.initialPostId && widget.initialPostId != null) {
@@ -368,9 +384,11 @@ class _ThreadPageState extends State<ThreadPage> {
 										mainAxisAlignment: MainAxisAlignment.center,
 										mainAxisSize: MainAxisSize.min,
 										children: [
-											if (ImageboardRegistry.instance.count > 1) const Padding(
-												padding: EdgeInsets.only(right: 6),
-												child: ImageboardIcon()
+											if (ImageboardRegistry.instance.count > 1) Padding(
+												padding: const EdgeInsets.only(right: 6),
+												child: ImageboardIcon(
+													boardName: widget.thread.board
+												)
 											),
 											Flexible(
 												child: AutoSizeText(
@@ -422,7 +440,7 @@ class _ThreadPageState extends State<ThreadPage> {
 											);
 										}
 									),
-									CupertinoButton(
+									if (context.watch<ImageboardSite>().supportsPosting) CupertinoButton(
 										padding: EdgeInsets.zero,
 										onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
 											_replyBoxKey.currentState?.toggleReplyBox();
@@ -480,10 +498,55 @@ class _ThreadPageState extends State<ThreadPage> {
 																	child: RefreshableList<Post>(
 																		filterableAdapter: (t) => t,
 																		key: _listKey,
+																		sortMethods: [
+																			(a, b) => a.id.compareTo(b.id),
+																			if (context.watch<ImageboardSite>().sortByUpvotes && useTree)  (a, b) => (b.upvotes ?? 0).compareTo(a.upvotes ?? 0)
+																		],
 																		id: '/${widget.thread.board}/${widget.thread.id}',
 																		disableUpdates: persistentState.thread?.isArchived ?? false,
 																		autoUpdateDuration: const Duration(seconds: 60),
 																		initialList: persistentState.thread?.posts,
+																		useTree: useTree,
+																		treeAdapter: RefreshableTreeAdapter(
+																			getId: (p) => p.id,
+																			getParentIds: (p) => p.repliedToIds,
+																			getOmittedChildCount: (p) => p.omittedChildrenCount,
+																			updateWithOmittedChildren: (_, p) async {
+																				final thread = persistentState.thread;
+																				if (thread == null) {
+																					throw Exception('Thread not loaded');
+																				}
+																				final newChildren = await context.read<ImageboardSite>().getMoreThread(p);
+																				final postsById = {
+																					for (final post in thread.posts_) post.id: post
+																				};
+																				for (final item in newChildren) {
+																					if (postsById[item.id] != null) {
+																						postsById[item.id]?.omittedChildrenCount = 0;
+																					}
+																					else {
+																						thread.posts_.add(item);
+																						for (final parentId in item.repliedToIds) {
+																							postsById[parentId]?.replyIds.add(item.id);
+																						}
+																					}
+																				}
+																				thread.posts_.sort((a, b) => a.id.compareTo(b.id));
+																				persistentState.save();
+																				return thread.posts;
+																			},
+																			opId: widget.thread.id,
+																			wrapTreeChild: (child, parentIds) {
+																				PostSpanZoneData childZone = zone;
+																				for (final id in parentIds) {
+																					childZone = childZone.childZoneFor(id);
+																				}
+																				return ChangeNotifierProvider.value(
+																					value: childZone,
+																					child: child
+																				);
+																			}
+																		),
 																		footer: Container(
 																			padding: const EdgeInsets.all(16),
 																			child: (persistentState.thread == null) ? null : Opacity(
@@ -566,6 +629,10 @@ class _ThreadPageState extends State<ThreadPage> {
 																							}
 																						}
 																					}
+																					if (useTree) {
+																						tmpPersistentState.lastSeenPostId = newThread.posts.map((p) => p.id).reduce(max);
+																						tmpPersistentState.lastSeenPostIdNotifier.value = tmpPersistentState.lastSeenPostId;
+																					}
 																				}
 																				await tmpPersistentState.save();
 																				setState(() {});
@@ -588,7 +655,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																					lastPageNumber = newThread.currentPage;
 																				});
 																			}
-																			if (shouldScroll) _blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500));
+																			if (shouldScroll && !useTree) _blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500));
 																			// Don't show data if the thread switched
 																			Future.delayed(const Duration(milliseconds: 30), () {
 																				if (!mounted) return;
@@ -604,6 +671,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																		itemBuilder: (context, post) {
 																			return PostRow(
 																				post: post,
+																				showIdsIfImplicit: !useTree,
 																				onThumbnailTap: (attachment) {
 																					_showGallery(initialAttachment: attachment);
 																				},
@@ -613,6 +681,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																		filteredItemBuilder: (context, post, resetPage, filterText) {
 																			return PostRow(
 																				post: post,
+																				showIdsIfImplicit: !useTree,
 																				onThumbnailTap: (attachment) {
 																					_showGallery(initialAttachment: attachment);
 																				},
@@ -624,6 +693,45 @@ class _ThreadPageState extends State<ThreadPage> {
 																				baseOptions: PostSpanRenderOptions(
 																					highlightString: filterText
 																				),
+																			);
+																		},
+																		collapsedItemBuilder: (context, post, collapsedChildrenCount) {
+																			final settings = context.watch<EffectiveSettings>();
+																			return IgnorePointer(
+																				child: SizedBox(
+																					width: double.infinity,
+																					child: Padding(
+																						padding: const EdgeInsets.all(8),
+																						child: Stack(
+																							children: [
+																								if (post != null) Text.rich(
+																									TextSpan(
+																										children: buildPostInfoRow(
+																											post: post,
+																											isYourPost: persistentState.youIds.contains(post.id),
+																											settings: settings,
+																											site: context.watch<ImageboardSite>(),
+																											context: context,
+																											zone: zone
+																										)
+																									)
+																								),
+																								Align(
+																									alignment: Alignment.centerRight,
+																									child: Row(
+																										mainAxisSize: MainAxisSize.min,
+																										children: [
+																											if (collapsedChildrenCount > 0) Text(
+																												'$collapsedChildrenCount '
+																											),
+																											const Icon(CupertinoIcons.chevron_down, size: 20)
+																										]
+																									)
+																								)
+																							]
+																						)
+																					)
+																				)
 																			);
 																		},
 																		filterHint: 'Search in thread'
@@ -639,7 +747,8 @@ class _ThreadPageState extends State<ThreadPage> {
 																		thread: persistentState.thread,
 																		listController: _listController,
 																		zone: zone,
-																		filter: Filter.of(context)
+																		filter: Filter.of(context),
+																		useTree: useTree
 																	)
 																)
 															),
@@ -724,6 +833,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 	final Filter filter;
 	final PostSpanZoneData zone;
 	final bool reversed;
+	final bool useTree;
 	
 	const ThreadPositionIndicator({
 		required this.persistentState,
@@ -732,6 +842,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 		required this.filter,
 		required this.zone,
 		this.reversed = false,
+		required this.useTree,
 		Key? key
 	}) : super(key: key);
 
@@ -758,7 +869,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		_youIds = widget.persistentState.replyIdsToYou(widget.filter) ?? [];
 		_redCount = _youIds.binarySearchCountAfter((p) => p > lastSeenPostId);
 		_whiteCount = _filteredPosts!.binarySearchCountAfter((p) => p.id > lastSeenPostId);
-		_greyCount = _filteredPosts!.binarySearchCountAfter((p) => p.id > lastVisibleItemId) - _whiteCount;
+		_greyCount = widget.listController.items.length - widget.listController.lastVisibleIndex - 1 - _whiteCount;
 		_lastLastVisibleItemId = lastVisibleItemId;
 		setState(() {});
 		return true;
@@ -955,6 +1066,14 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											widget.persistentState.save();
 											setState(() {});
 										}),
+										if (widget.useTree) Tuple3('Linear', const Icon(CupertinoIcons.list_bullet), () => setState(() {
+											widget.persistentState.useTree = false;
+											widget.persistentState.save();
+										}))
+										else Tuple3('Tree', const Icon(CupertinoIcons.list_bullet_indent), () => setState(() {
+											widget.persistentState.useTree = true;
+											widget.persistentState.save();
+										})),
 										Tuple3('Scroll to last-seen', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), _greyCount <= 0 ? null : () => widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0)),
 										Tuple3('Scroll to bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom)
 									]) Padding(
@@ -993,6 +1112,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 						child: Builder(
 							builder: (context) {
 								List<Widget> children = [
+									// Text(widget.listController.lastVisibleItem.toString()),
 									if (_redCount > 0) Container(
 										decoration: BoxDecoration(
 											borderRadius: radiusStart,

@@ -860,7 +860,7 @@ class AttachmentViewer extends StatelessWidget {
 						key: controller.contextMenuShareButtonKey,
 						child: const Text('Share')
 					),
-					CupertinoContextMenuAction(
+					if (context.watch<ImageboardSite?>()?.supportsSearch ?? false) CupertinoContextMenuAction(
 						trailingIcon: Icons.image_search,
 						onPressed: () {
 							openSearch(context: context, query: ImageboardArchiveSearchQuery(

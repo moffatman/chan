@@ -94,7 +94,7 @@ class SiteFutaba extends ImageboardSite {
 								postId: thisQuoteDestination,
 								dead: false
 							));
-							elements.add(PostLineBreakSpan());
+							elements.add(const PostLineBreakSpan());
 						}
 						if (node.attributes['d'] == 'true') {
 							skipNextLineBreak = true;
@@ -116,7 +116,7 @@ class SiteFutaba extends ImageboardSite {
 						skipNextLineBreak = false;
 					}
 					else {
-						elements.add(PostLineBreakSpan());
+						elements.add(const PostLineBreakSpan());
 					}
 				}
 				else if (node.localName == 'a') {
@@ -190,20 +190,30 @@ class SiteFutaba extends ImageboardSite {
 	Future<dom.Document> _getCatalogPage(String board, String page) async {
 		final response = await client.get('https://${boardDomain(board)}/$board/$page.htm', options: Options(
 			responseType: ResponseType.bytes,
+			validateStatus: (status) => status == 200 || status == 404
 		));
+		if (response.statusCode == 404) {
+			throw BoardNotFoundException(board);
+		}
 		return await parse(response.data);
 	}
 
 	@override
 	Future<List<Thread>> getCatalog(String board) async {
 		final doc0 = await _getCatalogPage(board, 'futaba');
-		final lastPageNumber = int.parse(RegExp(r'(\d+).htm$').firstMatch(doc0.querySelectorAll('.psen a').last.attributes['href']!)!.group(1)!);
-		return [
-			...doc0.querySelectorAll('.thre').map((e) => _makeThread(e, board)..currentPage = 1),
-			...(await Future.wait(List.generate(lastPageNumber, (i) async {
-				return (await _getCatalogPage(board, (i + 1).toString())).querySelectorAll('.thre').map((e) => _makeThread(e, board)..currentPage = i + 1);
-			}))).expand((x) => x).toList()
-		];
+		return doc0.querySelectorAll('.thre').map((e) => _makeThread(e, board)..currentPage = 0).toList();
+	}
+
+	@override
+	Future<List<Thread>> getMoreCatalog(Thread after) async {
+		try {
+			final pageNumber = (after.currentPage ?? 0) + 1;
+			final doc = await _getCatalogPage(after.board, pageNumber.toString());
+			return doc.querySelectorAll('.thre').map((e) => _makeThread(e, after.board)..currentPage = pageNumber).toList();
+		}
+		on BoardNotFoundException {
+			return [];
+		}
 	}
 
 	@override
@@ -437,4 +447,6 @@ class SiteFutaba extends ImageboardSite {
 	@override
 	String get siteType => 'futaba';
 
+	@override
+	bool get supportsPosting => false;
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/rendering.dart';
 import 'package:hive/hive.dart';
 
 part 'attachment.g.dart';
@@ -14,6 +15,10 @@ enum AttachmentType {
 	mp3,
 	@HiveField(4)
 	pdf
+}
+
+extension IsVideo on AttachmentType {
+	bool get isVideo => this == AttachmentType.webm || this == AttachmentType.mp4;
 }
 
 @HiveType(typeId: 9)
@@ -68,6 +73,27 @@ class Attachment {
 	}
 
 	bool? get isLandscape => (width == null || height == null) ? null : width! > height!;
+
+	double get aspectRatio {
+		if (width == null || height == null) {
+			return 1;
+		}
+		return width! / height!;
+	}
+
+	Size estimateFittedSize({
+		required Size size,
+		BoxFit fit = BoxFit.contain,
+	}) {
+		if (width == null || height == null) {
+			return size;
+		}
+		return applyBoxFit(
+			fit,
+			Size(width!.toDouble(), height!.toDouble()),
+			size
+		).destination;
+	}
 
 	String get globalId => '${board}_$id';
 

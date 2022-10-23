@@ -46,10 +46,12 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 
 	void _runQuery() async {
 		final siteToUse = result.data?.archive ?? context.read<ImageboardSite>();
+		final lastResult = result.data;
 		result = const AsyncSnapshot.waiting();
 		setState(() {});
 		try {
-			result = AsyncSnapshot.withData(ConnectionState.done, await siteToUse.search(widget.query, page: page ?? 1));
+			final newResult = await siteToUse.search(widget.query, page: page ?? 1, lastResult: lastResult);
+			result = AsyncSnapshot.withData(ConnectionState.done, newResult);
 			page = result.data?.page;
 			if (mounted) setState(() {});
 		}
@@ -86,7 +88,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				),
 				CupertinoButton(
 					padding: EdgeInsets.zero,
-					onPressed: (loading || result.data?.maxPage == 1) ? null : () async {
+					onPressed: (loading || result.data?.maxPage == 1 || result.data?.maxPage == null) ? null : () async {
 						final controller = TextEditingController();
 						final selectedPage = await showCupertinoDialog<int>(
 							context: context,
@@ -142,12 +144,12 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				const Spacer(),
 				CupertinoButton(
 					padding: EdgeInsets.zero,
-					onPressed: (loading || result.data?.page == result.data?.maxPage) ? null : () {
+					onPressed: (loading || result.data?.page == result.data?.maxPage || result.data?.maxPage == null) ? null : () {
 						page = result.data?.maxPage;
 						_runQuery();
 						onChange();
 					},
-					child: Text('${result.data?.maxPage}')
+					child: Text('${result.data?.maxPage ?? '--'}')
 				),
 			]
 		);

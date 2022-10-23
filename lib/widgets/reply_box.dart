@@ -421,7 +421,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void onTapPostId(int id) {
-		if (!widget.isArchived) {
+		if (!widget.isArchived && (context.read<ImageboardSite?>()?.supportsPosting ?? false)) {
 			showReplyBox();
 			_insertText('>>$id');
 		}

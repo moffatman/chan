@@ -46,6 +46,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final bool gaplessPlayback;
 	final bool revealSpoilers;
 	final ImageboardSite? site;
+	final bool shrinkHeight;
 
 	const AttachmentThumbnail({
 		required this.attachment,
@@ -59,6 +60,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.onLoadError,
 		this.gaplessPlayback = false,
 		this.revealSpoilers = false,
+		this.shrinkHeight = false,
 		this.site,
 		Key? key
 	}) : super(key: key);
@@ -67,7 +69,10 @@ class AttachmentThumbnail extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
 		final effectiveWidth = width ?? settings.thumbnailSize;
-		final effectiveHeight = height ?? settings.thumbnailSize;
+		double effectiveHeight = height ?? settings.thumbnailSize;
+		if (shrinkHeight) {
+			effectiveHeight = attachment.estimateFittedSize(size: Size(effectiveWidth, effectiveHeight)).height;
+		}
 		final s = site ?? context.watch<ImageboardSite?>();
 		if (s == null) {
 			return SizedBox(

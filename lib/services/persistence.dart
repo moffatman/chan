@@ -506,7 +506,7 @@ class Persistence extends ChangeNotifier {
 
 	Future<void> storeBoards(List<ImageboardBoard> newBoards) async {
 		final deadline = DateTime.now().subtract(const Duration(days: 3));
-		boards.removeWhere((k, v) => v.additionalDataTime == null || v.additionalDataTime!.isBefore(deadline));
+		boards.removeWhere((k, v) => (v.additionalDataTime == null || v.additionalDataTime!.isBefore(deadline)) && !browserState.favouriteBoards.contains(v.name));
 		for (final newBoard in newBoards) {
 			if (boards[newBoard.name] == null || newBoard.additionalDataTime != null) {
 				boards[newBoard.name] = newBoard;
@@ -602,6 +602,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	Map<int, Post> translatedPosts = {};
 	@HiveField(13, defaultValue: false)
 	bool autoTranslate = false;
+	@HiveField(14)
+	bool? useTree;
 
 	PersistentThreadState({this.ephemeral = false}) : lastOpenedTime = DateTime.now();
 
@@ -829,6 +831,8 @@ class PersistentBrowserState {
 	final Map<String, bool> boardReverseSortings;
 	@HiveField(15, defaultValue: '')
 	String postingName;
+	@HiveField(16)
+	bool? useTree;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -843,7 +847,8 @@ class PersistentBrowserState {
 		required this.notificationsMigrated,
 		required this.boardSortingMethods,
 		required this.boardReverseSortings,
-		this.postingName = ''
+		this.postingName = '',
+		this.useTree
 	}) : hiddenImageMD5s = hiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};

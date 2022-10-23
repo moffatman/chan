@@ -39,6 +39,7 @@ class ThreadRow extends StatelessWidget {
 	final bool showBoardName;
 	final bool countsUnreliable;
 	final PostSpanRenderOptions? baseOptions;
+	final bool dimReadThreads;
 
 	const ThreadRow({
 		required this.thread,
@@ -51,11 +52,13 @@ class ThreadRow extends StatelessWidget {
 		this.countsUnreliable = false,
 		this.semanticParentIds = const [],
 		this.baseOptions,
+		this.dimReadThreads = false,
 		Key? key
 	}) : super(key: key);
 
 	Widget _build(BuildContext context, PersistentThreadState? threadState) {
 		final settings = context.watch<EffectiveSettings>();
+		final site = context.watch<ImageboardSite>();
 		final latestThread = threadState?.thread ?? thread;
 		final int latestReplyCount = max(thread.replyCount, latestThread.replyCount);
 		final int latestImageCount = max(thread.imageCount, latestThread.imageCount);
@@ -66,9 +69,15 @@ class ThreadRow extends StatelessWidget {
 		Color? replyCountColor;
 		Color? imageCountColor;
 		Color? otherMetadataColor;
+		final threadAsUrl = RegExp(r'^https?:\/\/([^\/]+)').matchAsPrefix(latestThread.posts_.first.text)?.group(1);
 		if (threadState?.lastSeenPostId != null) {
 			final filter = Filter.of(context);
-			unseenReplyCount = (threadState?.unseenReplyCount(filter) ?? 0) + ((latestReplyCount + 1) - latestThread.posts.length);
+			if (site.hasOmittedReplies) {
+				unseenReplyCount = (threadState?.unseenReplyCount(filter) ?? 0) + ((latestReplyCount) - (threadState!.thread?.replyCount ?? 0));
+			}
+			else {
+				unseenReplyCount = (threadState?.unseenReplyCount(filter) ?? 0) + ((latestReplyCount + 1) - latestThread.posts.length);
+			}
 			unseenYouCount = threadState?.unseenReplyIdsToYouCount(filter) ?? 0;
 			unseenImageCount = (threadState?.unseenImageCount(filter) ?? 0) + ((latestImageCount + 1) - (threadState?.thread?.posts.expand((x) => x.attachments).length ?? 0));
 			replyCountColor = unseenReplyCount <= 0 ? grey : null;
@@ -117,6 +126,18 @@ class ThreadRow extends StatelessWidget {
 								]
 							)
 						),
+						if (latestThread.posts_.first.upvotes != null) FittedBox(
+							fit: BoxFit.contain,
+								child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									Icon(CupertinoIcons.arrow_up, color: otherMetadataColor, size: 18),
+									const SizedBox(width: 2),
+									Text(latestThread.posts_.first.upvotes.toString(), style: TextStyle(color: otherMetadataColor)),
+									const SizedBox(width: 6),
+								]
+							)
+						),
 						FittedBox(
 							fit: BoxFit.contain,
 							child: Row(
@@ -132,7 +153,7 @@ class ThreadRow extends StatelessWidget {
 								]
 							)
 						),
-						if (settings.showImageCountInCatalog) FittedBox(
+						if (settings.showImageCountInCatalog && site.showImageCount) FittedBox(
 							fit: BoxFit.contain,
 							child: Row(
 								mainAxisSize: MainAxisSize.min,
@@ -154,52 +175,93 @@ class ThreadRow extends StatelessWidget {
 				)
 			)
 		);
+		final countersPlaceholder = WidgetSpan(
+			alignment: PlaceholderAlignment.top,
+			child: Visibility(
+				visible: false,
+				maintainState: true,
+				maintainAnimation: true,
+				maintainSize: true,
+				child: Padding(
+					padding: const EdgeInsets.only(top: 2),
+					child: makeCounters()
+				)
+			)
+		);
 		final borderRadius = contentFocus ? const BorderRadius.all(Radius.circular(8)) : BorderRadius.zero;
+		final double? subheaderFontSize = site.classicCatalogStyle ? null : 15;
+		final spaceSpan = site.classicCatalogStyle ? const TextSpan(text: ' ') : const TextSpan(text: ' ', style: TextStyle(fontSize: 15));
 		final headerRow = [
 			if (settings.showNameInCatalog) ...[
 				TextSpan(
 					text: settings.filterProfanity(latestThread.posts_.first.name),
-					style: const TextStyle(fontWeight: FontWeight.w600)
+					style: TextStyle(
+						fontWeight: FontWeight.w600,
+						fontSize: subheaderFontSize
+					)
 				),
-				const TextSpan(text: ' ')
+				spaceSpan
 			],
 			if (settings.showFlagInCatalogHeader && latestThread.flag != null) ...[
 				FlagSpan(latestThread.flag!),
-				const TextSpan(text: ' '),
+				spaceSpan
 			],
 			if (settings.showCountryNameInCatalogHeader && latestThread.flag != null) ...[
 				TextSpan(
 					text: latestThread.flag!.name,
-					style: const TextStyle(
-						fontStyle: FontStyle.italic
+					style: TextStyle(
+						fontStyle: FontStyle.italic,
+						fontSize: subheaderFontSize
 					)
 				),
-				const TextSpan(text: ' ')
+				spaceSpan
 			],
 			if (settings.showTimeInCatalogHeader) ...[
 				TextSpan(
-					text: formatTime(latestThread.time)
+					text: formatTime(latestThread.time),
+					style: TextStyle(
+						fontSize: subheaderFontSize
+					)
 				),
-				const TextSpan(text: ' ')
+				spaceSpan
 			],
-			if (showSiteIcon) const WidgetSpan(
+			if (showSiteIcon) WidgetSpan(
 				alignment: PlaceholderAlignment.middle,
-				child: ImageboardIcon()
+				child: ImageboardIcon(
+					boardName: thread.board
+				)
 			),
-			if (showBoardName || settings.showIdInCatalogHeader) TextSpan(
+			if (showBoardName || (settings.showIdInCatalogHeader && site.explicitIds)) TextSpan(
 				text: showBoardName ?
-					'/${latestThread.board}/${latestThread.id}' :
-					latestThread.id.toString(),
-				style: const TextStyle(color: Colors.grey)
+					'/${latestThread.board}/${latestThread.id} ' :
+					'${latestThread.id} ',
+				style: TextStyle(
+					color: Colors.grey,
+					fontSize: subheaderFontSize
+				)
 			)
 		];
 		if (thread.title?.isNotEmpty == true) {
-			if (headerRow.isNotEmpty) {
-				headerRow.add(const TextSpan(text: '\n'));
+			final titleSpan = PostTextSpan(latestThread.title!).build(context, PostSpanRootZoneData(thread: thread, site: site), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+				baseTextStyle: site.classicCatalogStyle ? const TextStyle(fontWeight: FontWeight.bold) : null
+			));
+			if (site.classicCatalogStyle) {
+				if (headerRow.isNotEmpty) {
+					headerRow.add(const TextSpan(text: '\n'));
+				}
+				headerRow.add(titleSpan);
 			}
-			headerRow.add(PostTextSpan(latestThread.title!).build(context, PostSpanRootZoneData(thread: thread, site: context.read<ImageboardSite>()), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
-				baseTextStyle: const TextStyle(fontWeight: FontWeight.bold)
-			)));
+			else {
+				if (headerRow.isNotEmpty) {
+					headerRow.insert(0, const TextSpan(text: '\n', style: TextStyle(fontSize: 3)));
+					headerRow.insert(0, const TextSpan(text: '\n', style: TextStyle(fontSize: 3)));
+				}
+				if (threadAsUrl != null) {
+					headerRow.insert(0, TextSpan(text: threadAsUrl, style: const TextStyle(color: Colors.grey)));
+					headerRow.insert(0, const TextSpan(text: '\n'));
+				}
+				headerRow.insert(0, titleSpan);
+			}
 		}
 		List<Widget> rowChildren() => [
 			const SizedBox(width: 8),
@@ -222,11 +284,13 @@ class ThreadRow extends StatelessWidget {
 											hero: AttachmentSemanticLocation(
 												attachment: attachment,
 												semanticParents: semanticParentIds
-											)
+											),
+											shrinkHeight: true
 										),
-										if (attachment.type == AttachmentType.webm) SizedBox(
-											width: settings.thumbnailSize,
-											height: settings.thumbnailSize,
+										if (attachment.type.isVideo) SizedBox.fromSize(
+											size: attachment.estimateFittedSize(
+												size: Size.square(settings.thumbnailSize)
+											),
 											child: Center(
 												child: AspectRatio(
 													aspectRatio: attachment.spoiler ? 1 : ((attachment.width ?? 1) / (attachment.height ?? 1)),
@@ -262,12 +326,12 @@ class ThreadRow extends StatelessWidget {
 			),
 			Expanded(
 				child: Container(
-					constraints: BoxConstraints(minHeight: settings.thumbnailSize),
+					constraints: BoxConstraints(minHeight: settings.thumbnailSize * 0.7),
 					padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 					child: ChangeNotifierProvider<PostSpanZoneData>(
 						create: (ctx) => PostSpanRootZoneData(
 							thread: latestThread,
-							site: context.watch<ImageboardSite>()
+							site: site
 						),
 						child: IgnorePointer(
 							child: LayoutBuilder(
@@ -277,27 +341,21 @@ class ThreadRow extends StatelessWidget {
 											if (headerRow.isNotEmpty) TextSpan(
 												children: [
 													...headerRow,
-													const TextSpan(text: '\n')
 												]
 											),
-											latestThread.posts_.first.span.build(
-												context, context.watch<PostSpanZoneData>(), settings,
-												(baseOptions ?? PostSpanRenderOptions()).copyWith(
-													avoidBuggyClippers: true,
-													maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
-													charactersPerLine: (constraints.maxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
-													postInject: WidgetSpan(
-														alignment: PlaceholderAlignment.top,
-														child: Visibility(
-															visible: false,
-															maintainState: true,
-															maintainAnimation: true,
-															maintainSize: true,
-															child: makeCounters()
-														)
+											if (site.classicCatalogStyle) ...[
+												if (headerRow.isNotEmpty) const TextSpan(text: '\n'),
+												latestThread.posts_.first.span.build(
+													context, context.watch<PostSpanZoneData>(), settings,
+													(baseOptions ?? PostSpanRenderOptions()).copyWith(
+														avoidBuggyClippers: true,
+														maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
+														charactersPerLine: (constraints.maxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
+														postInject: countersPlaceholder
 													)
 												)
-											)
+											]
+											else countersPlaceholder
 										]
 									)
 								)
@@ -324,7 +382,7 @@ class ThreadRow extends StatelessWidget {
 										onLoadError: onThumbnailLoadError,
 										hero: null
 									),
-									if (attachment.type == AttachmentType.webm) Positioned(
+									if (attachment.type.isVideo) Positioned(
 										bottom: 0,
 										right: 0,
 										child: Container(
@@ -349,7 +407,7 @@ class ThreadRow extends StatelessWidget {
 				child: ChangeNotifierProvider<PostSpanZoneData>(
 					create: (ctx) => PostSpanRootZoneData(
 						thread: latestThread,
-						site: context.watch<ImageboardSite>()
+						site: site
 					),
 					child: LayoutBuilder(
 						builder: (ctx, constraints) => IgnorePointer(
@@ -358,22 +416,14 @@ class ThreadRow extends StatelessWidget {
 									children: [
 										if (thread.title != null) TextSpan(
 											text: '${settings.filterProfanity(latestThread.title!)}\n',
-											style: const TextStyle(fontWeight: FontWeight.bold),
+											style: site.classicCatalogStyle ? const TextStyle(fontWeight: FontWeight.bold) : null,
 										),
-										latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+										if (site.classicCatalogStyle) latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
 											maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0),
 											charactersPerLine: (constraints.maxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 											avoidBuggyClippers: true
 										)),
-										WidgetSpan(
-											child: Visibility(
-												visible: false,
-												maintainState: true,
-												maintainAnimation: true,
-												maintainSize: true,
-												child: makeCounters()
-											)
-										)
+										countersPlaceholder
 									]
 								),
 								maxLines: settings.catalogGridModeTextLinesLimit
@@ -416,12 +466,12 @@ class ThreadRow extends StatelessWidget {
 				];
 			}
 		}
-		final child = Stack(
+		Widget child = Stack(
 			fit: StackFit.passthrough,
 			children: [
 				if (contentFocus) ...buildContentFocused()
 				else Row(
-					crossAxisAlignment: CrossAxisAlignment.start,
+					crossAxisAlignment: site.classicCatalogStyle ? CrossAxisAlignment.start : CrossAxisAlignment.center,
 					mainAxisSize: MainAxisSize.max,
 					children: settings.imagesOnRight ? rowChildren().reversed.toList() : rowChildren()
 				),
@@ -430,7 +480,7 @@ class ThreadRow extends StatelessWidget {
 						alignment: Alignment.bottomRight,
 						child: Row(
 							children: [
-								if (!contentFocus) SizedBox(width: settings.thumbnailSize + 8 + 4),
+								if (!contentFocus && thread.attachments.isNotEmpty) SizedBox(width: settings.thumbnailSize + 8 + 4),
 								Expanded(
 									child: Align(
 										alignment: Alignment.bottomRight,
@@ -463,6 +513,12 @@ class ThreadRow extends StatelessWidget {
 				)
 			]
 		);
+		if (dimReadThreads && !isSelected && threadState != null) {
+			child = Opacity(
+				opacity: 0.5,
+				child: child
+			);
+		}
 		return Container(
 			decoration: BoxDecoration(
 				color: isSelected ? CupertinoTheme.of(context).primaryColorWithBrightness(0.4) : CupertinoTheme.of(context).scaffoldBackgroundColor,

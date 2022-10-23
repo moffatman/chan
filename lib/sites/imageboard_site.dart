@@ -18,6 +18,7 @@ import 'package:chan/sites/futaba.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/lainchan_org.dart';
+import 'package:chan/sites/reddit.dart';
 import 'package:chan/sites/soyjak.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -242,6 +243,9 @@ class ImageboardArchiveSearchResult {
 		assert(post != null || thread != null);
 	}
 
+	const ImageboardArchiveSearchResult.post(Post this.post) : thread = null;
+	const ImageboardArchiveSearchResult.thread(Thread this.thread) : post = null;
+
 	ThreadIdentifier get threadIdentifier => (post?.threadIdentifier ?? thread?.identifier)!;
 	int get id => (post?.id ?? thread?.id)!;
 
@@ -251,7 +255,7 @@ class ImageboardArchiveSearchResult {
 class ImageboardArchiveSearchResultPage {
 	final List<ImageboardArchiveSearchResult> posts;
 	final int page;
-	final int maxPage;
+	final int? maxPage;
 	final ImageboardSiteArchive archive;
 	ImageboardArchiveSearchResultPage({
 		required this.posts,
@@ -340,7 +344,7 @@ abstract class ImageboardSiteArchive {
 	Future<Thread> getThread(ThreadIdentifier thread);
 	Future<List<Thread>> getCatalog(String board);
 	Future<List<ImageboardBoard>> getBoards();
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page});
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult});
 	String getWebUrl(String board, [int? threadId, int? postId]);
 	BoardThreadOrPostIdentifier? decodeUrl(String url);
 }
@@ -450,11 +454,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
 		String s = '';
 		for (final archive in archives) {
 			try {
-				return await archive.search(query, page: page);
+				return await archive.search(query, page: page, lastResult: lastResult);
 			}
 			catch (e, st) {
 				if (e is! BoardNotFoundException) {
@@ -500,6 +504,20 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	List<ImageboardSnippet> getBoardSnippets(String board) => [];
 	CaptchaRequest? getBannedCaptchaRequest(bool cloudflare) => null;
 	Future<String> getBannedReason(CaptchaSolution captchaSolution) async => 'Unknown';
+	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async => [];
+	bool get allowsArbitraryBoards => false;
+	bool get classicCatalogStyle => true;
+	bool get explicitIds => true;
+	bool get useTree => false;
+	bool get showImageCount => true;
+	bool get supportsSearch => archives.isNotEmpty;
+	bool get supportsPosting => true;
+	Future<List<Post>> getMoreThread(Post after) async => throw UnimplementedError();
+	/// If an empty list is returned from here, the bottom of the catalog has been reached.
+	Future<List<Thread>> getMoreCatalog(Thread after) async => [];
+	bool get hasOmittedReplies => false;
+	bool get sortByUpvotes => false;
+	bool get supportsSearchOptions => true;
 }
 
 ImageboardSite makeSite(dynamic data) {
@@ -540,6 +558,9 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			maxUploadSizeBytes: data['maxUploadSizeBytes']
 		);
+	}
+	else if (data['type'] == 'reddit') {
+		return SiteReddit();
 	}
 	else if (data['type'] == '4chan') {
 		return Site4Chan(

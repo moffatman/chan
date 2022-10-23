@@ -15,7 +15,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:html/dom.dart' as dom;
-import 'package:html_unescape/html_unescape_small.dart';
 import 'package:linkify/linkify.dart';
 import 'imageboard_site.dart';
 import 'package:chan/models/attachment.dart';
@@ -71,7 +70,6 @@ class Site4Chan extends ImageboardSite {
 	@override
 	final String imageUrl;
 	final String captchaKey;
-	static final unescape = HtmlUnescape();
 	final Map<String, _ThreadCacheEntry> _threadCache = {};
 	final Map<String, _CatalogCache> _catalogCaches = {};
 	final Map<PersistCookieJar, bool> _passEnabled = {};
@@ -106,7 +104,7 @@ class Site4Chan extends ImageboardSite {
 			final node = body.nodes[i];
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
-					elements.add(PostLineBreakSpan());
+					elements.add(const PostLineBreakSpan());
 				}
 				else if (node.localName == 'tex') {
 					elements.add(PostTeXSpan(node.innerHtml));
@@ -187,7 +185,7 @@ class Site4Chan extends ImageboardSite {
 									(body.nodes[i + 1] is dom.Element) &&
 									((body.nodes[i + 2] as dom.Element).localName == 'table')) {
 							final tableRows = <PostSpan>[];
-							List<List<String>> subtable = [];
+							List<List<PostSpan>> subtable = [];
 							for (final row in (body.nodes[i + 2] as dom.Element).firstChild!.children) {
 								if (row.firstChild?.attributes['colspan'] == '2') {
 									if (subtable.isNotEmpty) {
@@ -195,12 +193,12 @@ class Site4Chan extends ImageboardSite {
 										subtable = [];
 									}
 									if (tableRows.isNotEmpty) {
-										tableRows.add(PostLineBreakSpan());
+										tableRows.add(const PostLineBreakSpan());
 									}
 									tableRows.add(PostTextSpan(row.firstChild!.text!, underlined: true));
 								}
 								else {
-									subtable.add(row.children.map((c) => c.text).toList());
+									subtable.add(row.children.map((c) => PostTextSpan(c.text)).toList());
 								}
 							}
 							if (subtable.isNotEmpty) {

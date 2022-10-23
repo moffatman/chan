@@ -5,13 +5,17 @@ import 'package:chan/models/board.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:provider/provider.dart';
+import 'package:tuple/tuple.dart';
 
 class BoardSwitcherPage extends StatefulWidget {
 	final bool currentlyPickingFavourites;
@@ -30,6 +34,7 @@ class BoardSwitcherPage extends StatefulWidget {
 class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	late final FocusNode _focusNode;
 	late List<ImageboardBoard> boards;
+	Tuple2<String, List<ImageboardBoard>> typeahead = const Tuple2('', []);
 	String searchString = '';
 	String? errorMessage;
 	late final ScrollController scrollController;
@@ -48,13 +53,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		_backgroundColor = ValueNotifier<Color?>(null);
 		_focusNode = widget.searchFocusNode ?? FocusNode();
 		boards = context.read<Persistence>().boards.values.toList();
+		boards.sort((a, b) => a.name.compareTo(b.name));
 		scrollController.addListener(_onScroll);
-		context.read<Imageboard>().refreshBoards().then((freshBoards) {
-			if (!mounted) return;
-			setState(() {
-				boards = freshBoards;
-			});
-		});
 	}
 
 	double _getOverscroll() {
@@ -70,10 +70,26 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		_backgroundColor.value = CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(1.0 - max(0, _getOverscroll() / 50).clamp(0, 1));
 	}
 
+	Future<void> _updateTypeaheadBoards(String query) async {
+		if (query.isEmpty) {
+			setState(() {
+				typeahead = const Tuple2('', []);
+			});
+			return;
+		}
+		final newTypeaheadBoards = await context.read<ImageboardSite>().getBoardsForQuery(query);
+		if (mounted && searchString.indexOf(query) == 0 && query.length > typeahead.item1.length) {
+			setState(() {
+				typeahead = Tuple2(query, newTypeaheadBoards);
+			});
+		}
+	}
+
 	List<ImageboardBoard> getFilteredBoards() {
 		final settings = context.read<EffectiveSettings>();
+		final normalized = searchString.toLowerCase();
 		List<ImageboardBoard> filteredBoards = boards.where((board) {
-			return board.name.toLowerCase().contains(searchString) || board.title.toLowerCase().contains(searchString);
+			return board.name.toLowerCase().contains(normalized) || board.title.toLowerCase().contains(normalized);
 		}).toList();
 		if (searchString.isNotEmpty) {
 			mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
@@ -81,10 +97,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			});
 		}
 		mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
-			return a.name.indexOf(searchString) - b.name.indexOf(searchString);
+			return a.name.toLowerCase().indexOf(normalized) - b.name.toLowerCase().indexOf(normalized);
 		});
 		mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
-			return (b.name.contains(searchString) ? 1 : 0) - (a.name.contains(searchString) ? 1 : 0);
+			return (b.name.toLowerCase().contains(normalized) ? 1 : 0) - (a.name.contains(normalized) ? 1 : 0);
 		});
 		if (searchString.isEmpty) {
 			final favsList = context.read<Persistence>().browserState.favouriteBoards;
@@ -99,6 +115,27 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				mergeSort<ImageboardBoard>(filteredBoards, compare: (a, b) {
 					return (favs[a.name] ?? favs.length) - (favs[b.name] ?? favs.length);
 				});
+			}
+		}
+		else {
+			for (final board in typeahead.item2) {
+				if (!filteredBoards.any((b) => b.name == board.name)) {
+					filteredBoards.add(board);
+				}
+			}
+			if (context.read<ImageboardSite>().allowsArbitraryBoards) {
+				final fakeBoard = ImageboardBoard(
+					name: searchString,
+					title: '',
+					isWorksafe: false,
+					webmAudioAllowed: true
+				);
+				if (filteredBoards.isEmpty) {
+					filteredBoards.add(fakeBoard);
+				}
+				else if (!filteredBoards.any((b) => b.name == searchString)) {
+					filteredBoards.insert(1, fakeBoard);
+				}
 			}
 		}
 		filteredBoards = filteredBoards.where((b) => settings.showBoard(context, b.name)).toList();
@@ -158,6 +195,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									}
 								},
 								onChanged: (String newSearchString) {
+									_updateTypeaheadBoards(newSearchString);
 									setState(() {
 										searchString = newSearchString;
 									});
@@ -209,8 +247,13 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																padding: const EdgeInsets.only(left: 16),
 																child: Row(
 																	children: [
-																		Text('/${browserState.favouriteBoards[i]}/', style: const TextStyle(fontSize: 20)),
-																		const Spacer(),
+																		Expanded(
+																			child: AutoSizeText(
+																				'/${browserState.favouriteBoards[i]}/',
+																				style: const TextStyle(fontSize: 20),
+																				maxLines: 1
+																			),
+																		),
 																		CupertinoButton(
 																			child: const Icon(CupertinoIcons.delete),
 																			onPressed: () {
@@ -336,48 +379,93 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								itemCount: filteredBoards.length,
 								itemBuilder: (context, i) {
 									final board = filteredBoards[i];
-									return GestureDetector(
-										child: Container(
-											padding: const EdgeInsets.all(4),
-											height: 64,
-											decoration: BoxDecoration(
-												borderRadius: const BorderRadius.all(Radius.circular(4)),
-												color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
-											),
-											child: Stack(
-												fit: StackFit.expand,
-												children: [
-													Row(
-														crossAxisAlignment: CrossAxisAlignment.center,
-														children: [
-															const SizedBox(width: 16),
-															Flexible(
-																child: AutoSizeText(
-																	'/${board.name}/ - ${board.title}',
-																	maxFontSize: 20,
-																	maxLines: 1,
-																	textAlign: TextAlign.left
-																)
-															),
-															const SizedBox(width: 16)
-														]
-													),
-													if (browserState.favouriteBoards.contains(board.name)) const Align(
-														alignment: Alignment.topRight,
-														child: Padding(
-															padding: EdgeInsets.only(top: 4, right: 4),
-															child: Icon(CupertinoIcons.star_fill, size: 15)
-														)
-													)
-												]
+									return ContextMenu(
+										actions: [
+											if (browserState.favouriteBoards.contains(board.name)) ContextMenuAction(
+												child: const Text('Unfavourite'),
+												trailingIcon: CupertinoIcons.star,
+												onPressed: () {
+													browserState.favouriteBoards.remove(board.name);
+													setState(() {});
+												}
 											)
-										),
-										onTap: () {
-											Navigator.of(context).pop(ImageboardScoped(
-												item: board,
-												imageboard: context.read<Imageboard>()
-											));
-										}
+											else ContextMenuAction(
+												child: const Text('Favourite'),
+												trailingIcon: CupertinoIcons.star_fill,
+												onPressed: () {
+													browserState.favouriteBoards.add(board.name);
+													setState(() {});
+												}
+											),
+											if (board.additionalDataTime != null) ContextMenuAction(
+												child: const Text('Remove'),
+												trailingIcon: CupertinoIcons.delete,
+												onPressed: () {
+													context.read<Persistence>().boards.removeWhere((k, v) => v == board);
+													boards = context.read<Persistence>().boards.values.toList();
+													boards.sort((a, b) => a.name.compareTo(b.name));
+													setState(() {});
+												}
+											)
+										],
+										child: GestureDetector(
+											child: Container(
+												padding: const EdgeInsets.all(4),
+												height: 64,
+												decoration: BoxDecoration(
+													borderRadius: const BorderRadius.all(Radius.circular(4)),
+													color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
+												),
+												child: Stack(
+													fit: StackFit.expand,
+													children: [
+														Row(
+															crossAxisAlignment: CrossAxisAlignment.center,
+															children: [
+																const SizedBox(width: 16),
+																if (board.icon != null) ...[
+																	ClipOval(
+																		child: SizedBox(
+																			width: 30,
+																			height: 30,
+																			child: FittedBox(
+																				fit: BoxFit.contain,
+																				child: ExtendedImage.network(board.icon!.toString())
+																			)
+																		)
+																	),
+																	const SizedBox(width: 16)
+																],
+																Flexible(
+																	child: AutoSizeText(
+																		'/${board.name}/${board.title.isEmpty ? '' : ' - ${board.title}'}',
+																		maxFontSize: 20,
+																		minFontSize: 15,
+																		maxLines: 1,
+																		textAlign: TextAlign.left,
+																		overflow: TextOverflow.ellipsis
+																	)
+																),
+																const SizedBox(width: 16)
+															]
+														),
+														if (browserState.favouriteBoards.contains(board.name)) const Align(
+															alignment: Alignment.topRight,
+															child: Padding(
+																padding: EdgeInsets.only(top: 4, right: 4),
+																child: Icon(CupertinoIcons.star_fill, size: 15)
+															)
+														)
+													]
+												)
+											),
+											onTap: () {
+												Navigator.of(context).pop(ImageboardScoped(
+													item: board,
+													imageboard: context.read<Imageboard>()
+												));
+											}
+										)
 									);
 								}
 							) : GridView.extent(

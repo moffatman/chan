@@ -48,7 +48,6 @@ class _HistoryPageState extends State<HistoryPage> {
 						imageboard: i,
 						item: s
 					))).where((i) => i.item.thread != null).toList();
-					states.sort((a, b) => b.item.lastOpenedTime.compareTo(a.item.lastOpenedTime));
 					return RefreshableList<ImageboardScoped<PersistentThreadState>>(
 						filterableAdapter: (t) => t.item,
 						controller: _listController,
@@ -56,6 +55,7 @@ class _HistoryPageState extends State<HistoryPage> {
 						id: 'history',
 						disableUpdates: true,
 						initialList: states,
+						sortMethods: [(a, b) => b.item.lastOpenedTime.compareTo(a.item.lastOpenedTime)],
 						itemBuilder: (itemContext, state) {
 							final isSelected = selectedThread(itemContext, ImageboardScoped(
 								imageboard: state.imageboard,
@@ -90,14 +90,14 @@ class _HistoryPageState extends State<HistoryPage> {
 												showSiteIcon: ImageboardRegistry.instance.count > 1,
 												showBoardName: true,
 												onThumbnailTap: (initialAttachment) {
-													final attachments = _listController.items.expand((_) => _.item.thread!.attachments).toList();
+													final attachments = _listController.items.expand((_) => _.item.item.thread!.attachments).toList();
 													showGallery(
 														context: context,
 														attachments: attachments,
 														replyCounts: {
 															for (final state in _listController.items)
-																for (final attachment in state.item.thread!.attachments)
-																	attachment: state.item.thread!.replyCount
+																for (final attachment in state.item.item.thread!.attachments)
+																	attachment: state.item.item.thread!.replyCount
 														},
 														initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
 														onChange: (attachment) {

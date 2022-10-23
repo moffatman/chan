@@ -103,8 +103,8 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page}) {
-    return archive.search(query, page: page);
+  Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) {
+    return archive.search(query, page: page, lastResult: lastResult);
   }
 
   @override

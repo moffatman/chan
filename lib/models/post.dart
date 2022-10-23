@@ -6,6 +6,7 @@ import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/futaba.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:chan/sites/reddit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
@@ -26,7 +27,9 @@ enum PostSpanFormat {
 	@HiveField(3)
 	fuuka,
 	@HiveField(4)
-	futaba
+	futaba,
+	@HiveField(5)
+	reddit
 }
 
 class Post implements Filterable {
@@ -56,6 +59,8 @@ class Post implements Filterable {
 				return FuukaArchive.makeSpan(board, threadId, foolfuukaLinkedPostThreadIds ?? {}, text);
 			case PostSpanFormat.futaba:
 				return SiteFutaba.makeSpan(board, threadId, text);
+			case PostSpanFormat.reddit:
+				return SiteReddit.makeSpan(board, threadId, text);
 		}
 	}
 	PostNodeSpan get span {
@@ -76,6 +81,10 @@ class Post implements Filterable {
 	int? passSinceYear;
 	String? capcode;
 	final List<Attachment> attachments;
+	final int? upvotes;
+	final int? parentId;
+	int omittedChildrenCount;
+
 	Post({
 		required this.board,
 		required this.text,
@@ -92,12 +101,15 @@ class Post implements Filterable {
 		this.foolfuukaLinkedPostThreadIds,
 		this.passSinceYear,
 		this.capcode,
-		required this.attachments
+		required this.attachments,
+		this.upvotes,
+		this.parentId,
+		this.omittedChildrenCount = 0
 	});
 
 	@override
 	String toString() {
-		return 'Post $id';
+		return 'Post $id ($name): ${text.length > 23 ? '${text.substring(0, 20)}...' : text}';
 	}
 
 	@override
@@ -128,7 +140,10 @@ class Post implements Filterable {
 	List<int>? _repliedToIds;
 	@override
 	List<int> get repliedToIds {
-		_repliedToIds ??= span.referencedPostIds(board).toList();
+		_repliedToIds ??= [
+			if (parentId != null) parentId!,
+			...span.referencedPostIds(board)
+		];
 		return _repliedToIds!;
 	}
 	@override
@@ -139,10 +154,10 @@ class Post implements Filterable {
 	String get globalId => '${board}_${threadId}_$id';
 
 	@override
-	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id;
+	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id && other.upvotes == upvotes && other.omittedChildrenCount == omittedChildrenCount;
 
 	@override
-	int get hashCode => Object.hash(board, id);
+	int get hashCode => Object.hash(board, id, upvotes, omittedChildrenCount);
 }
 
 class PostAdapter extends TypeAdapter<Post> {
@@ -186,7 +201,10 @@ class PostAdapter extends TypeAdapter<Post> {
       passSinceYear: fields[14] as int?,
       capcode: fields[15] as String?,
       attachments:
-          fields[16] == null ? [] : (fields[16] as List).cast<Attachment>()
+          fields[16] == null ? [] : (fields[16] as List).cast<Attachment>(),
+			upvotes: fields[17] as int?,
+			parentId: fields[18] as int?,
+			omittedChildrenCount: (fields[19] as int?) ?? 0
     );
   }
 
@@ -227,6 +245,15 @@ class PostAdapter extends TypeAdapter<Post> {
 		}
 		if (obj.capcode != null) {
       writer..writeByte(15)..write(obj.capcode);
+		}
+		if (obj.upvotes != null) {
+			writer..writeByte(17)..write(obj.upvotes);
+		}
+		if (obj.parentId != null) {
+			writer..writeByte(18)..write(obj.parentId);
+		}
+		if (obj.omittedChildrenCount != 0) {
+			writer..writeByte(19)..write(obj.omittedChildrenCount);
 		}
 		// End with field zero (terminator)
 		writer

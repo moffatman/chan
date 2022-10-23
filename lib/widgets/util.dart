@@ -15,6 +15,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -392,12 +393,17 @@ extension OffsetBrightness on Color {
 	}
 	Color shiftHue(double offset) {
 		HSVColor hsv = HSVColor.fromColor(this);
-		hsv = hsv.withHue(hsv.hue + offset % 360);
+		hsv = hsv.withHue((hsv.hue + offset) % 360);
 		return hsv.toColor();
 	}
 	Color shiftSaturation(double offset) {
 		HSVColor hsv = HSVColor.fromColor(this);
 		hsv = hsv.withSaturation((hsv.saturation * (1 + offset)).clamp(0, 1));
+		return hsv.toColor();
+	}
+	Color withSaturation(double saturation) {
+		HSVColor hsv = HSVColor.fromColor(this);
+		hsv = hsv.withSaturation(saturation);
 		return hsv.toColor();
 	}
 }
@@ -872,4 +878,73 @@ Future<void> editStringList({
 			]
 		)
 	);
+}
+
+class ConditionalTapGestureRecognizer extends TapGestureRecognizer {
+	bool Function(PointerDownEvent) condition;
+
+	ConditionalTapGestureRecognizer({
+		required this.condition,
+		super.debugOwner,
+		super.supportedDevices
+	});
+
+	@override
+	bool isPointerAllowed(PointerDownEvent event) {
+		return super.isPointerAllowed(event) && condition(event);
+	}
+}
+
+class ConditionalOnTapUp extends StatefulWidget {
+	final Widget child;
+	final bool Function(PointerDownEvent) condition;
+	final GestureTapUpCallback onTapUp;
+
+	const ConditionalOnTapUp({
+		required this.child,
+		required this.condition,
+		required this.onTapUp,
+		super.key
+	});
+
+	@override
+	createState() => _ConditionalOnTapUpState();
+}
+
+class _ConditionalOnTapUpState extends State<ConditionalOnTapUp> {
+	late final ConditionalTapGestureRecognizer recognizer;
+
+	@override
+	void initState() {
+		super.initState();
+		recognizer = ConditionalTapGestureRecognizer(
+			debugOwner: this,
+			condition: widget.condition
+		)..onTapUp = widget.onTapUp;
+	}
+
+	@override
+	void didUpdateWidget(ConditionalOnTapUp oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.condition != oldWidget.condition) {
+			recognizer.condition = widget.condition;
+		}
+		if (widget.onTapUp != oldWidget.onTapUp) {
+			recognizer.onTapUp = widget.onTapUp;
+		}
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		return Listener(
+			onPointerDown: recognizer.addPointer,
+			child: widget.child
+		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		recognizer.dispose();
+	}
 }

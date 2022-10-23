@@ -7,10 +7,12 @@ import 'package:flutter/cupertino.dart';
 
 class ImageboardSwitcherPage extends StatefulWidget {
 	final Widget Function(BuildContext context, FocusNode descendantFocusNode) builder;
+	final bool Function(Imageboard imageboard)? filterImageboards;
 	final String? initialImageboardKey;
 
 	const ImageboardSwitcherPage({
 		required this.builder,
+		this.filterImageboards,
 		this.initialImageboardKey,
 		Key? key
 	}) : super(key: key);
@@ -27,13 +29,13 @@ class _ImageboardSwitcherPageState extends State<ImageboardSwitcherPage> {
 	void initState() {
 		super.initState();
 		_controller = PageController(
-			initialPage: max(0, ImageboardRegistry.instance.imageboardsIncludingUninitialized.toList().indexWhere((b) => b.key == widget.initialImageboardKey))
+			initialPage: max(0, ImageboardRegistry.instance.imageboardsIncludingUninitialized.where(widget.filterImageboards ?? (_) => true).toList().indexWhere((b) => b.key == widget.initialImageboardKey))
 		);
 	}
 
 	@override
 	Widget build(BuildContext context) {
-		final imageboards = ImageboardRegistry.instance.imageboardsIncludingUninitialized.toList();
+		final imageboards = ImageboardRegistry.instance.imageboardsIncludingUninitialized.where(widget.filterImageboards ?? (_) => true).toList();
 		return PageView.builder(
 			controller: _controller,
 			itemCount: imageboards.length,

@@ -907,10 +907,17 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 	}
 }
 
-class SettingsAppearancePage extends StatelessWidget {
+class SettingsAppearancePage extends StatefulWidget {
 	const SettingsAppearancePage({
 		Key? key
 	}) : super(key: key);
+
+	@override
+	createState() => _SettingsAppearancePageState();
+}
+
+class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
+	Imageboard _threadLayoutImageboard = ImageboardRegistry.instance.imageboards.first;
 
 	Thread _makeFakeThread() {
 		final flag = ImageboardFlag(
@@ -2368,6 +2375,70 @@ class SettingsAppearancePage extends StatelessWidget {
 						]
 					)
 				],
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.list_bullet_below_rectangle),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Default thread layout')
+						),
+						CupertinoButton.filled(
+							padding: const EdgeInsets.all(8),
+							onPressed: () async {
+								final newImageboard = await _pickImageboard(context, _threadLayoutImageboard);
+								if (newImageboard != null) {
+									setState(() {
+										_threadLayoutImageboard = newImageboard;
+									});
+								}
+							},
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									ImageboardIcon(
+										imageboardKey: _threadLayoutImageboard.key
+									),
+									const SizedBox(width: 8),
+									Text(_threadLayoutImageboard.site.name)
+								]
+							)
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<bool>(
+					children: {
+						false: Padding(
+							padding: const EdgeInsets.all(8),
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: const [
+									Icon(CupertinoIcons.list_bullet),
+									SizedBox(width: 8),
+									Text('Linear')
+								]
+							)
+						),
+						true: Padding(
+							padding: const EdgeInsets.all(8),
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: const [
+									Icon(CupertinoIcons.list_bullet_indent),
+									SizedBox(width: 8),
+									Text('Tree')
+								]
+							)
+						)
+					},
+					groupValue: _threadLayoutImageboard.persistence.browserState.useTree ?? _threadLayoutImageboard.site.useTree,
+					onValueChanged: (newValue) {
+						_threadLayoutImageboard.persistence.browserState.useTree = newValue;
+						_threadLayoutImageboard.persistence.didUpdateBrowserState();
+						setState(() {});
+					}
+				),
 				const SizedBox(height: 16),
 			]
 		);

@@ -9,7 +9,6 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
 import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:html/dom.dart' as dom;
-import 'package:html_unescape/html_unescape_small.dart';
 
 class FuukaException implements Exception {
 	String error;
@@ -24,7 +23,6 @@ final _crossBoardLinkMatcher = RegExp(r'^>>>\/([A-Za-z]+)\/(\d+)$');
 
 class FuukaArchive extends ImageboardSiteArchive {
 	List<ImageboardBoard>? boards;
-	final unescape = HtmlUnescape();
 	final String baseUrl;
 	@override
 	final String name;
@@ -34,7 +32,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		for (final node in body.nodes) {
 			if (node is dom.Element) {
 				if (node.localName == 'br') {
-					elements.add(PostLineBreakSpan());
+					elements.add(const PostLineBreakSpan());
 				}
 				else if (node.localName == 'span') {
 					if (node.classes.contains('unkfunc')) {
@@ -237,7 +235,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
 		final knownBoards = await getBoards();
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {
@@ -263,7 +261,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		}
 		final document = parse(response.data);
 		return ImageboardArchiveSearchResultPage(
-			posts: (await Future.wait(document.querySelectorAll('.reply:not(.subreply)').map(_makePost))).map((p) => ImageboardArchiveSearchResult(post: p)).toList(),
+			posts: (await Future.wait(document.querySelectorAll('.reply:not(.subreply)').map(_makePost))).map((p) => ImageboardArchiveSearchResult.post(p)).toList(),
 			page: page,
 			maxPage: 100,
 			archive: this

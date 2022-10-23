@@ -108,7 +108,9 @@ class PostSpanRenderOptions {
 	);
 }
 
+@immutable
 abstract class PostSpan {
+	const PostSpan();
 	Iterable<int> referencedPostIds(String forBoard) => const Iterable.empty();
 	InlineSpan build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options);
 	String buildText();
@@ -116,7 +118,7 @@ abstract class PostSpan {
 
 class _PostWrapperSpan extends PostSpan {
 	final InlineSpan span;
-	_PostWrapperSpan(this.span);
+	const _PostWrapperSpan(this.span);
 	@override
 	InlineSpan build(context, zone, settings, options) => span;
 	@override
@@ -124,8 +126,8 @@ class _PostWrapperSpan extends PostSpan {
 }
 
 class PostNodeSpan extends PostSpan {
-	List<PostSpan> children;
-	PostNodeSpan(this.children);
+	final List<PostSpan> children;
+	const PostNodeSpan(this.children);
 
 	@override
 	Iterable<int> referencedPostIds(String forBoard) sync* {
@@ -217,7 +219,7 @@ class PostNodeSpan extends PostSpan {
 class PostTextSpan extends PostSpan {
 	final String text;
 	final bool underlined;
-	PostTextSpan(this.text, {this.underlined = false});
+	const PostTextSpan(this.text, {this.underlined = false});
 
 	@override
 	InlineSpan build(context, zone, settings, options) {
@@ -273,12 +275,12 @@ class PostTextSpan extends PostSpan {
 }
 
 class PostLineBreakSpan extends PostTextSpan {
-	PostLineBreakSpan() : super('\n');
+	const PostLineBreakSpan() : super('\n');
 }
 
 class PostQuoteSpan extends PostSpan {
 	final PostSpan child;
-	PostQuoteSpan(this.child);
+	const PostQuoteSpan(this.child);
 
 	@override
 	InlineSpan build(context, zone, settings, options) {
@@ -295,26 +297,23 @@ class PostQuoteSpan extends PostSpan {
 
 class PostQuoteLinkSpan extends PostSpan {
 	final String board;
-	int? threadId;
+	final int? initialThreadId;
 	final int postId;
 	final bool dead;
-	PostQuoteLinkSpan({
+	const PostQuoteLinkSpan({
 		required this.board,
-		this.threadId,
+		int? threadId,
 		required this.postId,
 		required this.dead
-	}) {
-		if (!dead && threadId == null) {
-			throw StateError('A live QuoteLinkSpan should know its threadId');
-		}
-	}
+	}) : initialThreadId = threadId;
+
 	@override
 	Iterable<int> referencedPostIds(String forBoard) sync* {
 		if (forBoard == board) {
 			yield postId;
 		}
 	}
-	Tuple2<InlineSpan, TapGestureRecognizer> _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
+	Tuple2<InlineSpan, TapGestureRecognizer> _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options, int threadId) {
 		String text = '>>';
 		if (zone.thread.board != board) {
 			text += '/$board/';
@@ -329,7 +328,7 @@ class PostQuoteLinkSpan extends PostSpan {
 					imageboardKey: null,
 					imageboard: context.read<Imageboard>(),
 					child: ThreadPage(
-						thread: ThreadIdentifier(board, threadId!),
+						thread: ThreadIdentifier(board, threadId),
 						initialPostId: postId,
 						initiallyUseArchive: dead,
 						boardSemanticId: -1
@@ -370,7 +369,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer
 		), recognizer);
 	}
-	Tuple2<InlineSpan, TapGestureRecognizer> _buildNormalLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
+	Tuple2<InlineSpan, TapGestureRecognizer> _buildNormalLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options, int? threadId) {
 		String text = '>>$postId';
 		if (postId == threadId) {
 			text += ' (OP)';
@@ -412,7 +411,8 @@ class PostQuoteLinkSpan extends PostSpan {
 		), recognizer);
 	}
 	Tuple2<InlineSpan, TapGestureRecognizer> _build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
-		if (dead && threadId == null) {
+		int? threadId = initialThreadId;
+		if (dead && initialThreadId == null) {
 			// Dead links do not know their thread
 			final thisPostLoaded = zone.postFromArchive(postId);
 			if (thisPostLoaded != null) {
@@ -424,11 +424,11 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 
 		if (threadId != null && (board != zone.thread.board || threadId != zone.thread.id)) {
-			return _buildCrossThreadLink(context, zone, settings, options);
+			return _buildCrossThreadLink(context, zone, settings, options, threadId);
 		}
 		else {
 			// Normal link
-			final span = _buildNormalLink(context, zone, settings, options);
+			final span = _buildNormalLink(context, zone, settings, options, threadId);
 			final thisPostInThread = zone.thread.posts.tryFirstWhere((p) => p.id == postId);
 			if (thisPostInThread == null || zone.shouldExpandPost(postId) == true) {
 				return span;
@@ -476,7 +476,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				pair.item1
 			]
 		);
-		if (options.addExpandingPosts && (threadId == zone.thread.id && board == zone.thread.board)) {
+		if (options.addExpandingPosts && (initialThreadId == zone.thread.id && board == zone.thread.board)) {
 			return TextSpan(
 				children: [
 					span,
@@ -497,7 +497,7 @@ class PostQuoteLinkSpan extends PostSpan {
 
 class PostBoardLink extends PostSpan {
 	final String board;
-	PostBoardLink(this.board);
+	const PostBoardLink(this.board);
 	@override
 	build(context, zone, settings, options) {
 		return TextSpan(
@@ -544,7 +544,7 @@ void _detectLanguageIsolate(_DetectLanguageParam param) {
 class PostCodeSpan extends PostSpan {
 	final String text;
 
-	PostCodeSpan(this.text);
+	const PostCodeSpan(this.text);
 
 	@override
 	build(context, zone, settings, options) {
@@ -626,7 +626,7 @@ class PostCodeSpan extends PostSpan {
 class PostSpoilerSpan extends PostSpan {
 	final PostSpan child;
 	final int id;
-	PostSpoilerSpan(this.child, this.id);
+	const PostSpoilerSpan(this.child, this.id);
 	@override
 	build(context, zone, settings, options) {
 		final showSpoiler = zone.shouldShowSpoiler(id);
@@ -664,7 +664,8 @@ class PostSpoilerSpan extends PostSpan {
 
 class PostLinkSpan extends PostSpan {
 	final String url;
-	PostLinkSpan(this.url);
+	final String? name;
+	const PostLinkSpan(this.url, {this.name});
 	@override
 	build(context, zone, settings, options) {
 		// Remove trailing bracket or other punctuation
@@ -764,6 +765,7 @@ class PostLinkSpan extends PostSpan {
 							child: Column(
 								crossAxisAlignment: CrossAxisAlignment.start,
 								children: [
+									if (name != null) Text(name!),
 									if (snapshot.data?.title != null) Text(snapshot.data!.title!, style: TextStyle(
 										color: settings.theme.primaryColor
 									), textScaleFactor: 1),
@@ -794,7 +796,7 @@ class PostLinkSpan extends PostSpan {
 			}
 		}
 		return TextSpan(
-			text: url,
+			text: name ?? url,
 			style: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline
 			),
@@ -813,7 +815,7 @@ class PostLinkSpan extends PostSpan {
 class PostCatalogSearchSpan extends PostSpan {
 	final String board;
 	final String query;
-	PostCatalogSearchSpan({
+	const PostCatalogSearchSpan({
 		required this.board,
 		required this.query
 	});
@@ -850,7 +852,7 @@ class PostCatalogSearchSpan extends PostSpan {
 
 class PostTeXSpan extends PostSpan {
 	final String tex;
-	PostTeXSpan(this.tex);
+	const PostTeXSpan(this.tex);
 	@override
 	build(context, zone, settings, options) {
 		final child = TexWidget(
@@ -875,7 +877,7 @@ class PostInlineImageSpan extends PostSpan {
 	final String src;
 	final int width;
 	final int height;
-	PostInlineImageSpan({
+	const PostInlineImageSpan({
 		required this.src,
 		required this.width,
 		required this.height
@@ -903,7 +905,7 @@ class PostColorSpan extends PostSpan {
 	final PostSpan child;
 	final Color color;
 	
-	PostColorSpan(this.child, this.color);
+	const PostColorSpan(this.child, this.color);
 	@override
 	build(context, zone, settings, options) {
 		return child.build(context, zone, settings, options.copyWith(
@@ -917,7 +919,7 @@ class PostColorSpan extends PostSpan {
 class PostBoldSpan extends PostSpan {
 	final PostSpan child;
 
-	PostBoldSpan(this.child);
+	const PostBoldSpan(this.child);
 	@override
 	build(context, zone, settings, options) {
 		return child.build(context, zone, settings, options.copyWith(
@@ -928,10 +930,39 @@ class PostBoldSpan extends PostSpan {
 	buildText() => child.buildText();
 }
 
+class PostItalicSpan extends PostSpan {
+	final PostSpan child;
+
+	const PostItalicSpan(this.child);
+	@override
+	build(context, zone, settings, options) {
+		return child.build(context, zone, settings, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(fontStyle: FontStyle.italic)
+		));
+	}
+	@override
+	buildText() => child.buildText();
+}
+
+class PostSuperscriptSpan extends PostSpan {
+	final PostSpan child;
+
+	const PostSuperscriptSpan(this.child);
+	@override
+	build(context, zone, settings, options) {
+		return child.build(context, zone, settings, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(fontSize: 10)
+		));
+	}
+	@override
+	buildText() => child.buildText();
+}
+
+
 class PostPopupSpan extends PostSpan {
 	final PostSpan popup;
 	final String title;
-	PostPopupSpan({
+	const PostPopupSpan({
 		required this.popup,
 		required this.title
 	});
@@ -971,16 +1002,16 @@ class PostPopupSpan extends PostSpan {
 }
 
 class PostTableSpan extends PostSpan {
-	final List<List<String>> rows;
-	PostTableSpan(this.rows);
+	final List<List<PostSpan>> rows;
+	const PostTableSpan(this.rows);
 	@override
 	build(context, zone, settings, options) {
 		return WidgetSpan(
 			child: Table(
 				children: rows.map((row) => TableRow(
 					children: row.map((col) => TableCell(
-						child: Text(
-							col,
+						child: Text.rich(
+							col.build(context, zone, settings, options),
 							textAlign: TextAlign.left,
 							textScaleFactor: 1
 						)
@@ -991,6 +1022,21 @@ class PostTableSpan extends PostSpan {
 	}
 	@override
 	buildText() => rows.map((r) => r.join(', ')).join('\n');
+}
+
+class PostDividerSpan extends PostSpan {
+	const PostDividerSpan();
+	@override
+	build(context, zone, settings, options) => WidgetSpan(
+		child: Divider(
+			thickness: 1,
+			height: 25,
+			color: settings.theme.primaryColorWithBrightness(0.2)
+		)
+	);
+
+	@override
+	buildText() => '\n';
 }
 
 class PostSpanZone extends StatelessWidget {
@@ -1106,7 +1152,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		_lineTapCallbacks[id] = Tuple2(context, callback);
 	}
 
-	bool onTap(Offset position) {
+	bool _onTap(Offset position, bool runCallback) {
 		for (final pair in _lineTapCallbacks.values) {
 			final box = pair.item1.findRenderObject() as RenderBox?;
 			if (box != null) {
@@ -1116,13 +1162,19 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 				}
 				final y1 = box.localToGlobal(box.paintBounds.bottomRight).dy;
 				if (position.dy < y1) {
-					pair.item2();
+					if (runCallback) {
+						pair.item2();
+					}
 					return true;
 				}
 			}
 		}
 		return false;
 	}
+
+	bool onTap(Offset position) => _onTap(position, true);
+
+	bool canTap(Offset position) => _onTap(position, false);
 
 	@override
 	void dispose() {
@@ -1398,8 +1450,8 @@ String _makeAttachmentInfo({
 List<InlineSpan> buildPostInfoRow({
 	required Post post,
 	required bool isYourPost,
-	required bool showSiteIcon,
-	required bool showBoardName,
+	bool showSiteIcon = false,
+	bool showBoardName = false,
 	required EffectiveSettings settings,
 	required ImageboardSite site,
 	required BuildContext context,
@@ -1469,10 +1521,12 @@ List<InlineSpan> buildPostInfoRow({
 			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts) TextSpan(
 				text: '${formatRelativeTime(post.time)} ago '
 			)
-			else if (field == PostDisplayField.postId) ...[
-				if (showSiteIcon) const WidgetSpan(
+			else if (field == PostDisplayField.postId && site.explicitIds) ...[
+				if (showSiteIcon) WidgetSpan(
 					alignment: PlaceholderAlignment.middle,
-					child: ImageboardIcon()
+					child: ImageboardIcon(
+						boardName: post.board
+					)
 				),
 				TextSpan(
 					text: '${showBoardName ? '/${post.board}/' : ''}${post.id} ',
@@ -1481,6 +1535,13 @@ List<InlineSpan> buildPostInfoRow({
 						context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.id);
 					}) : null
 				)
-			]
+			],
+		if (post.upvotes != null) ...[
+			WidgetSpan(
+				child: Icon(CupertinoIcons.arrow_up, size: 16, color: settings.theme.primaryColorWithBrightness(0.5)),
+				alignment: PlaceholderAlignment.middle
+			),
+			TextSpan(text: '${post.upvotes} ', style: TextStyle(color: settings.theme.primaryColorWithBrightness(0.5)))
+		]
 	];
 }

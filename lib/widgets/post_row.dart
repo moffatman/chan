@@ -40,6 +40,7 @@ class PostRow extends StatelessWidget {
 	final PostSpanRenderOptions? baseOptions;
 	final bool showSiteIcon;
 	final bool showBoardName;
+	final bool showIdsIfImplicit;
 
 	const PostRow({
 		required this.post,
@@ -53,6 +54,7 @@ class PostRow extends StatelessWidget {
 		this.isSelected = false,
 		this.showSiteIcon = false,
 		this.showBoardName = false,
+		this.showIdsIfImplicit = false,
 		this.baseOptions,
 		Key? key
 	}) : super(key: key);
@@ -122,23 +124,41 @@ class PostRow extends StatelessWidget {
 				padding: const EdgeInsets.all(8),
 				child: IgnorePointer(
 					ignoring: !allowTappingLinks,
-					child: GestureDetector(
+					child: ConditionalOnTapUp(
+						condition: (d) => ctx.read<PostSpanZoneData>().canTap(d.position),
 						onTapUp: (d) {
 							if (!ctx.read<PostSpanZoneData>().onTap(d.globalPosition)) {
 								onTap?.call();
 							}
 						},
 						child: Text.rich(
-							(translatedPostSnapshot?.data ?? latestPost).span.build(
-								ctx, ctx.watch<PostSpanZoneData>(), settings,
-								(baseOptions ?? PostSpanRenderOptions()).copyWith(
-									showCrossThreadLabel: showCrossThreadLabel,
-									shrinkWrap: shrinkWrap,
-									postInject: replyIds.isEmpty ? null : TextSpan(
-										text: List.filled(replyIds.length.toString().length + 4, '1').join(),
-										style: const TextStyle(color: Colors.transparent)
+							TextSpan(
+								children: [
+									if (showIdsIfImplicit && !site.explicitIds && post.parentId != null) ...[
+										PostQuoteLinkSpan(
+											board: latestPost.board,
+											threadId: latestPost.threadId,
+											postId: latestPost.parentId!,
+											dead: false
+										).build(
+											ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+												shrinkWrap: shrinkWrap
+											)
+										),
+										const TextSpan(text: '\n'),
+									],
+									(translatedPostSnapshot?.data ?? latestPost).span.build(
+										ctx, ctx.watch<PostSpanZoneData>(), settings,
+										(baseOptions ?? PostSpanRenderOptions()).copyWith(
+											showCrossThreadLabel: showCrossThreadLabel,
+											shrinkWrap: shrinkWrap,
+											postInject: replyIds.isEmpty ? null : TextSpan(
+												text: List.filled(replyIds.length.toString().length + 4, '1').join(),
+												style: const TextStyle(color: Colors.transparent)
+											)
+										)
 									)
-								)
+								]
 							)
 						)
 					)
@@ -166,11 +186,13 @@ class PostRow extends StatelessWidget {
 											hero: AttachmentSemanticLocation(
 												attachment: attachment,
 												semanticParents: parentZone.stackIds
-											)
+											),
+											shrinkHeight: true,
 										),
-										if (attachment.type == AttachmentType.webm) SizedBox(
-											width: settings.thumbnailSize,
-											height: settings.thumbnailSize,
+										if (attachment.type.isVideo) SizedBox.fromSize(
+											size: attachment.estimateFittedSize(
+												size: Size.square(settings.thumbnailSize)
+											),
 											child: Center(
 												child: AspectRatio(
 													aspectRatio: attachment.spoiler ? 1 : (attachment.width ?? 1) / (attachment.height ?? 1),
@@ -378,7 +400,7 @@ class PostRow extends StatelessWidget {
 		}
 		return ContextMenu(
 			actions: [
-				if (context.read<GlobalKey<ReplyBoxState>?>()?.currentState != null) ContextMenuAction(
+				if (site.supportsPosting && context.read<GlobalKey<ReplyBoxState>?>()?.currentState != null) ContextMenuAction(
 					child: const Text('Reply'),
 					trailingIcon: CupertinoIcons.reply,
 					onPressed: () => context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.id)
@@ -580,7 +602,7 @@ class PostRow extends StatelessWidget {
 					}
 				),
 				if (latestPost.attachments.isNotEmpty) ...[
-					ContextMenuAction(
+					if (context.watch<ImageboardSite?>()?.supportsSearch ?? false) ContextMenuAction(
 						child: const Text('Search archives'),
 						trailingIcon: Icons.image_search,
 						onPressed: () async {

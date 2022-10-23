@@ -18,6 +18,7 @@ class ImageboardBoard {
 	final bool? spoilers;
 	DateTime? additionalDataTime;
 	String? subdomain;
+	Uri? icon;
 
 	ImageboardBoard({
 		required this.name,
@@ -36,7 +37,8 @@ class ImageboardBoard {
 		this.imageCooldown,
 		this.spoilers,
 		this.additionalDataTime,
-		this.subdomain
+		this.subdomain,
+		this.icon
 	});
 
 	@override
@@ -85,6 +87,7 @@ class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
       spoilers: fields[14] as bool?,
       additionalDataTime: fields[15] as DateTime?,
       subdomain: fields[16] as String?,
+			icon: fields[17] as Uri?,
     );
   }
 
@@ -136,6 +139,9 @@ class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
 		}
 		if (obj.subdomain != null) {
       writer..writeByte(16)..write(obj.subdomain);
+		}
+		if (obj.icon != null) {
+			writer..writeByte(17)..write(obj.icon);
 		}
 		writer
 			..writeByte(0)
