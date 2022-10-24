@@ -1133,14 +1133,27 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				);
 				buildStationaryIcon() {
 					Widget icon = blankIcon;
+					bool injectIcon = false;
 					if (Persistence.tabs[i].imageboardKey != null) {
 						if (ImageboardRegistry.instance.getImageboard(Persistence.tabs[i].imageboardKey!)?.seemsOk == true) {
+							icon = SizedBox(
+								width: 30,
+								height: 30,
+								child: FittedBox(
+									fit: BoxFit.contain,
+									child: ImageboardIcon(
+										imageboardKey: Persistence.tabs[i].imageboardKey,
+										boardName: Persistence.tabs[i].board?.name
+									)
+								)
+							);
 							final threadState = Persistence.tabs[i].thread == null ? null : Persistence.tabs[i].imageboard?.persistence.getThreadStateIfExists(Persistence.tabs[i].thread!);
 							if (threadState != null) {
 								Future.microtask(() => Persistence.tabs[i].unseen.value = threadState.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
 								final attachment = threadState.thread?.attachments.tryFirst;
+								injectIcon = attachment != null;
 								icon = StationaryNotifyingIcon(
-									icon: attachment == null ? blankIcon : ClipRRect(
+									icon: attachment == null ? icon : ClipRRect(
 										borderRadius: const BorderRadius.all(Radius.circular(4)),
 										child: AttachmentThumbnail(
 											gaplessPlayback: true,
@@ -1153,19 +1166,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									),
 									primary: threadState.unseenReplyIdsToYouCount(Filter.of(context)) ?? 0,
 									secondary: threadState.unseenReplyCount(Filter.of(context)) ?? 0
-								);
-							}
-							else {
-								icon = SizedBox(
-									width: 30,
-									height: 30,
-									child: FittedBox(
-										fit: BoxFit.contain,
-										child: ImageboardIcon(
-											imageboardKey: Persistence.tabs[i].imageboardKey,
-											boardName: Persistence.tabs[i].board?.name
-										)
-									)
 								);
 							}
 						}
@@ -1187,13 +1187,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						Persistence.tabs[i].board != null ? '/${Persistence.tabs[i].board?.name}/' : (Persistence.tabs[i].imageboardKey ?? 'None'),
 						reorderable: false,
 						axis: axis,
-						preLabelInjection: (Persistence.tabs[i].thread == null || ImageboardRegistry.instance.count < 2 || Persistence.tabs[i].imageboardKey == null) ? null : AnimatedBuilder(
+						preLabelInjection: injectIcon ? AnimatedBuilder(
 							animation: Persistence.tabs[i],
 							builder: (context, _) => ImageboardIcon(
 								imageboardKey: Persistence.tabs[i].imageboardKey,
 								boardName: Persistence.tabs[i].board?.name
 							)
-						)
+						) : null
 					);
 				}
 				return ReorderableDelayedDragStartListener(
