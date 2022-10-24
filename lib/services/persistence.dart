@@ -409,8 +409,13 @@ class Persistence extends ChangeNotifier {
 			await cleanupThreads(Duration(days: settings.automaticCacheClearDays));
 		}
 		settings.save();
-		Timer.periodic(_backupUpdateDuration, (_) {
-			File(_threadStatesBoxPath).copy(_threadStatesBackupBoxPath);
+		Timer.periodic(_backupUpdateDuration, (_) async {
+			if (await File(_threadStatesBoxPath).exists()) {
+				await File(_threadStatesBoxPath).copy(_threadStatesBackupBoxPath);
+			}
+			else if (await File(_threadStatesBoxPath.toLowerCase()).exists()) {
+				await File(_threadStatesBoxPath.toLowerCase()).copy(_threadStatesBackupBoxPath);
+			}
 		});
 	}
 
