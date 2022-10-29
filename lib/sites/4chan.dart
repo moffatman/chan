@@ -1,5 +1,4 @@
 // ignore_for_file: file_names
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:async/async.dart';
@@ -490,7 +489,7 @@ class Site4Chan extends ImageboardSite {
 		String? overrideFilename,
 		ImageboardBoardFlag? flag
 	}) async {
-		final password = base64Url.encode(List.generate(66, (i) => random.nextInt(256)));
+		final password = makeRandomBase64String(66);
 		final response = await client.post(
 			Uri.https(_sysUrl(board), '/$board/post').toString(),
 			data: FormData.fromMap({

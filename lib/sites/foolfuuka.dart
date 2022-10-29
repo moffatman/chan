@@ -239,7 +239,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			},
 			options: Options(
 				headers: {
-					if (useRandomUseragent) 'user-agent': base64Url.encode(List.generate(random.nextInt(30) + 10, (i) => random.nextInt(256)))
+					if (useRandomUseragent) 'user-agent': makeRandomBase64String(random.nextInt(30) + 10)
 				}
 			)
 		);
@@ -322,7 +322,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			options: Options(
 				validateStatus: (x) => true,
 				headers: {
-					if (useRandomUseragent) 'user-agent': base64Url.encode(List.generate(random.nextInt(30) + 10, (i) => random.nextInt(256)))
+					if (useRandomUseragent) 'user-agent': makeRandomBase64String(random.nextInt(30) + 10)
 				}
 			)
 		);
@@ -347,7 +347,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			},
 			options: Options(
 				headers: {
-					if (useRandomUseragent) 'user-agent': base64Url.encode(List.generate(random.nextInt(30) + 10, (i) => random.nextInt(256)))
+					if (useRandomUseragent) 'user-agent': makeRandomBase64String(random.nextInt(30) + 10)
 				}
 			)
 		);
@@ -362,7 +362,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/archives').toString(), options: Options(
 			validateStatus: (x) => true,
 			headers: {
-				if (useRandomUseragent) 'user-agent': base64Url.encode(List.generate(random.nextInt(30) + 10, (i) => random.nextInt(256)))
+				if (useRandomUseragent) 'user-agent': makeRandomBase64String(random.nextInt(30) + 10)
 			}
 		));
 		if (response.statusCode != 200) {
@@ -428,7 +428,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			options: Options(
 				validateStatus: (x) => true,
 				headers: {
-					if (useRandomUseragent) 'user-agent': base64Url.encode(List.generate(random.nextInt(30) + 10, (i) => random.nextInt(256)))
+					if (useRandomUseragent) 'user-agent': makeRandomBase64String(random.nextInt(30) + 10)
 				}
 			)
 		);

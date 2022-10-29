@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -11,6 +12,10 @@ bool isDesktop() {
 
 final random = Random(DateTime.now().millisecondsSinceEpoch);
 final unescape = HtmlUnescape();
+
+String makeRandomBase64String(int length) {
+	return base64Url.encode(List.generate(length, (i) => random.nextInt(256)));
+}
 
 String describeCount(int count, String noun) {
 	if (count == 1) {

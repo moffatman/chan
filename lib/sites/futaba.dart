@@ -299,7 +299,7 @@ class SiteFutaba extends ImageboardSite {
 				filename: filename,
 				url: Uri.https(boardDomain(board), fileUrl),
 				thumbnailUrl: Uri.https(boardDomain(board), fileThumbnailUrl),
-				md5: base64Url.encode(List.generate(32, (i) => random.nextInt(256))), // no md5 provided by fuutaba
+				md5: makeRandomBase64String(32), // no md5 provided by fuutaba
 				width: null,
 				height: null,
 				sizeInBytes: filesize
