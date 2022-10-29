@@ -21,41 +21,25 @@ extension IsVideo on AttachmentType {
 	bool get isVideo => this == AttachmentType.webm || this == AttachmentType.mp4;
 }
 
-@HiveType(typeId: 9)
 class Attachment {
-	@HiveField(0)
 	final String board;
-	@HiveField(1)
-	final int deprecatedId;
-	@HiveField(2)
 	final String ext;
-	@HiveField(3)
 	final String filename;
-	@HiveField(4)
 	final AttachmentType type;
-	@HiveField(5)
 	final Uri url;
-	@HiveField(6)
 	Uri thumbnailUrl;
-	@HiveField(7)
 	final String md5;
-	@HiveField(8)
 	final bool spoiler;
-	@HiveField(9)
 	final int? width;
-	@HiveField(10)
 	final int? height;
-	@HiveField(11)
 	final int? threadId;
-	@HiveField(12)
 	final int? sizeInBytes;
-	@HiveField(13, defaultValue: '')
 	String id;
+	final bool useRandomUseragent;
 	Attachment({
 		required this.type,
 		required this.board,
 		required this.id,
-		this.deprecatedId = 0,
 		required this.ext,
 		required this.filename,
 		required this.url,
@@ -65,12 +49,9 @@ class Attachment {
 		required this.width,
 		required this.height,
 		required this.threadId,
-		required this.sizeInBytes
-	}) : spoiler = spoiler ?? false {
-		if (id == '') {
-			id = deprecatedId.toString();
-		}
-	}
+		required this.sizeInBytes,
+		this.useRandomUseragent = false
+	}) : spoiler = spoiler ?? false;
 
 	bool? get isLandscape => (width == null || height == null) ? null : width! > height!;
 
@@ -105,4 +86,96 @@ class Attachment {
 
 	@override
 	int get hashCode => Object.hash(url, thumbnailUrl);
+}
+
+class AttachmentAdapter extends TypeAdapter<Attachment> {
+  @override
+  final int typeId = 9;
+
+  @override
+  Attachment read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+		final Map<int, dynamic> fields;
+		if (numOfFields == 255) {
+			// Dynamic number of fields
+			fields = {};
+			while (true) {
+				final int fieldId = reader.readByte();
+				fields[fieldId] = reader.read();
+				if (fieldId == 0) {
+					break;
+				}
+			}
+		}
+		else {
+			fields = <int, dynamic>{
+				for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+			};
+		}
+    return Attachment(
+      type: fields[4] as AttachmentType,
+      board: fields[0] as String,
+      id: fields[13] == null ? '${fields[1]}' : fields[13] as String,
+      ext: fields[2] as String,
+      filename: fields[3] as String,
+      url: fields[5] as Uri,
+      thumbnailUrl: fields[6] as Uri,
+      md5: fields[7] as String,
+      spoiler: fields[8] as bool?,
+      width: fields[9] as int?,
+      height: fields[10] as int?,
+      threadId: fields[11] as int?,
+      sizeInBytes: fields[12] as int?,
+			useRandomUseragent: fields[14] as bool? ?? false
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Attachment obj) {
+    writer
+      ..writeByte(255)
+      ..writeByte(2)
+      ..write(obj.ext)
+      ..writeByte(3)
+      ..write(obj.filename)
+      ..writeByte(4)
+      ..write(obj.type)
+      ..writeByte(5)
+      ..write(obj.url)
+      ..writeByte(6)
+      ..write(obj.thumbnailUrl)
+      ..writeByte(7)
+      ..write(obj.md5);
+		if (obj.spoiler) {
+			writer..writeByte(8)..write(obj.spoiler);
+		}
+		if (obj.width != null) {
+      writer..writeByte(9)..write(obj.width);
+		}
+		if (obj.height != null) {
+      writer..writeByte(10)..write(obj.height);
+		}
+		if (obj.threadId != null) {
+      writer..writeByte(11)..write(obj.threadId);
+		}
+		if (obj.sizeInBytes != null) {
+      writer..writeByte(12)..write(obj.sizeInBytes);
+		}
+		writer
+      ..writeByte(13)
+      ..write(obj.id);
+		writer
+      ..writeByte(0)
+      ..write(obj.board);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AttachmentAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
 }
