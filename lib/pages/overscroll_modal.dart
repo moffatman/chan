@@ -171,12 +171,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 									}
 								}
 							},
-							onPointerUp: (event) {
-								_onPointerUp();
-								if (_controller.position.userScrollDirection != ScrollDirection.idle && _pointerDownCount == 0) {
-									_controller.jumpTo(_controller.position.pixels);
-								}
-							},
+							onPointerUp: (event) => _onPointerUp(),
 							onPointerCancel: (event) {
 								_pointerDownCount--;
 							},
