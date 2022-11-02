@@ -67,16 +67,15 @@ dependencies:
   mime: ^1.0.2
   http_parser: ^4.0.0
   cupertino_icons: ^1.0.0
-  firebase_core: 1.18.0
-  firebase_messaging: 11.4.2
-  firebase_core_platform_interface: 4.4.1
+  firebase_core: ^2.1.1
+  firebase_messaging: ^14.0.3
   path_provider: ^2.0.10
   path_provider_ios: 2.0.9
   async: ^2.9.0
   flutter_email_sender: ^5.1.0
   flutter:
     sdk: flutter
-  firebase_crashlytics: ^2.8.3
+  firebase_crashlytics: ^3.0.3
   charset_converter: ^2.1.0
   markdown: ^6.0.1
 

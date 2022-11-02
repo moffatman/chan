@@ -8,5 +8,11 @@
 	<array>
 		<string>group.com.moffatman.chan</string>
 	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.moffatman.chan</string>
+		<string>$(AppIdentifierPrefix)com.google.iid</string>
+		<string>$(AppIdentifierPrefix)com.google.iid.checkin</string>
+	</array>
 </dict>
 </plist>
