@@ -532,7 +532,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					alertError(context, 'Error adding site: $e');
 				}
 			}
-			else {
+			else if (link != 'chance://') {
 				alertError(context, 'Unrecognized link\n$link');
 			}
 		}
