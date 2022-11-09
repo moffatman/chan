@@ -5,7 +5,6 @@ import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 class OverscrollModalPage extends StatefulWidget {
@@ -38,7 +37,6 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	double _opacity = 1;
 	bool _popping = false;
 	bool _finishedPopIn = false;
-	int _pointerDownCount = 0;
 
 	@override
 	void initState() {
@@ -73,7 +71,6 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	}
 
 	void _onPointerUp() {
-		_pointerDownCount--;
 		if (_popping || _controller.positions.isEmpty) {
 			return;
 		}
@@ -159,7 +156,6 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 					RepaintBoundary(
 						child: Listener(
 							onPointerDown: (event) {
-								_pointerDownCount++;
 								final RenderBox childBox = _childKey.currentContext!.findRenderObject()! as RenderBox;
 								_pointerDownPosition = event.position;
 								_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter).dy;
@@ -172,9 +168,6 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 								}
 							},
 							onPointerUp: (event) => _onPointerUp(),
-							onPointerCancel: (event) {
-								_pointerDownCount--;
-							},
 							onPointerPanZoomEnd: (event) => _onPointerUp(),
 							child: Actions(
 								actions: {
