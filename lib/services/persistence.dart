@@ -135,7 +135,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(ThreadIdentifierAdapter());
 		Hive.registerAdapter(PersistentBrowserTabAdapter());
 		Hive.registerAdapter(ThreadWatchAdapter());
-		Hive.registerAdapter(NewThreadWatchAdapter());
+		Hive.registerAdapter(BoardWatchAdapter());
 		Hive.registerAdapter(PersistentBrowserStateAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
@@ -330,7 +330,7 @@ class Persistence extends ChangeNotifier {
 			hiddenImageMD5s: [],
 			loginFields: {},
 			threadWatches: [],
-			newThreadWatches: [],
+			boardWatches: [],
 			notificationsMigrated: true,
 			boardSortingMethods: {},
 			boardReverseSortings: {}
@@ -838,7 +838,7 @@ class PersistentBrowserState {
 	@HiveField(10, defaultValue: [])
 	List<ThreadWatch> threadWatches;
 	@HiveField(11, defaultValue: [])
-	List<NewThreadWatch> newThreadWatches;
+	List<BoardWatch> boardWatches;
 	@HiveField(12, defaultValue: false)
 	bool notificationsMigrated;
 	@HiveField(13, defaultValue: {})
@@ -859,7 +859,7 @@ class PersistentBrowserState {
 		required this.loginFields,
 		String? notificationsId,
 		required this.threadWatches,
-		required this.newThreadWatches,
+		required this.boardWatches,
 		required this.notificationsMigrated,
 		required this.boardSortingMethods,
 		required this.boardReverseSortings,

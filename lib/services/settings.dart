@@ -936,6 +936,7 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.filterConfiguration = setting;
 		_settings.save();
 		_tryToSetupFilter();
+		Notifications.didUpdateFilter();
 		notifyListeners();
 	}
 

@@ -8,6 +8,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/version.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -17,6 +18,34 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
+
+abstract class PushNotification {
+	final ThreadIdentifier thread;
+	final int? postId;
+	const PushNotification({
+		required this.thread,
+		required this.postId
+	});
+	BoardThreadOrPostIdentifier get target => BoardThreadOrPostIdentifier(thread.board, thread.id, postId);
+	bool get isThread => postId == null || thread.id == postId;
+}
+
+class ThreadWatchNotification extends PushNotification {
+	const ThreadWatchNotification({
+		required super.thread,
+		required super.postId
+	});
+}
+
+class BoardWatchNotification extends PushNotification {
+	final String filter;
+
+	const BoardWatchNotification({
+		required super.thread,
+		required super.postId,
+		required this.filter
+	});
+}
 
 const _platform = MethodChannel('com.moffatman.chan/notifications');
 
@@ -53,9 +82,9 @@ Future<void> promptForPushNotificationsIfNeeded(BuildContext context) async {
 Future<void> clearNotifications(Notifications notifications, Watch watch) async {
 	await _platform.invokeMethod('clearNotificationsWithProperties', {
 		'userId': notifications.id,
-		if (watch is NewThreadWatch) ...{
-			'board': watch.board,
-			'uniqueId': watch.uniqueId
+		'type': watch.type,
+		if (watch is BoardWatch) ...{
+			'board': watch.board
 		}
 		else if (watch is ThreadWatch) ...{
 			'board': watch.board,
@@ -82,15 +111,20 @@ const _notificationSettingsApiRoot = 'https://push.chance.surf';
 class Notifications {
 	static final Map<String, Notifications> _children = {};
 	final tapStream = BehaviorSubject<BoardThreadOrPostIdentifier>();
-	final foregroundStream = BehaviorSubject<BoardThreadOrPostIdentifier>();
+	final foregroundStream = BehaviorSubject<PushNotification>();
 	final Persistence persistence;
 	ThreadWatcher? localWatcher;
 	final String siteType;
 	final String siteData;
 	String get id => persistence.browserState.notificationsId;
 	List<ThreadWatch> get threadWatches => persistence.browserState.threadWatches;
-	List<NewThreadWatch> get newThreadWatches => persistence.browserState.newThreadWatches;
+	List<BoardWatch> get boardWatches => persistence.browserState.boardWatches;
 	static final Map<String, List<RemoteMessage>> _unrecognizedByUserId = {};
+	static final _client = Dio(BaseOptions(
+		headers: {
+			HttpHeaders.userAgentHeader: 'Chance/$kChanceVersion'
+		}
+	));
 
 	Notifications({
 		required ImageboardSite site,
@@ -104,17 +138,24 @@ class Notifications {
 	static void _onMessageOpenedApp(RemoteMessage message) {
 		print('onMessageOpenedApp');
 		print(message.data);
-		if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
-			if (!_children.containsKey(message.data['userId'])) {
-				print('Opened via message with unknown userId: ${message.data}');
-				_unrecognizedByUserId.update(message.data['userId'], (list) => list..add(message), ifAbsent: () => [message]);
-			}
-			_children[message.data['userId']]?.tapStream.add(BoardThreadOrPostIdentifier(
+		Future.delayed(const Duration(seconds: 1), updateNotificationsBadgeCount);
+		final child = _children[message.data['userId']];
+		if (child == null) {
+			print('Opened via message with unknown userId: ${message.data}');
+			_unrecognizedByUserId.update(message.data['userId'], (list) => list..add(message), ifAbsent: () => [message]);
+			return;
+		}
+		if (message.data['type'] == 'thread' || message.data['type'] == 'board') {
+			child.tapStream.add(BoardThreadOrPostIdentifier(
 				message.data['board'],
 				int.parse(message.data['threadId']),
 				int.tryParse(message.data['postId'] ?? '')
 			));
 		}
+	}
+
+	static _onTokenRefresh(String newToken) {
+		print('newToken $newToken');
 	}
 
 	static Future<void> initializeStatic() async {
@@ -123,6 +164,7 @@ class Notifications {
 				options: DefaultFirebaseOptions.currentPlatform,
 			);
 			FirebaseMessaging messaging = FirebaseMessaging.instance;
+			messaging.onTokenRefresh.listen(_onTokenRefresh);
 			//print('Token: ${await messaging.getToken()}');
 			if (Persistence.settings.usePushNotifications == true) {
 				await messaging.requestPermission();
@@ -132,23 +174,32 @@ class Notifications {
 				_onMessageOpenedApp(initialMessage);
 			}
 			FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-				print('onMessage');
-				//print(message);
-				print(message.data);
 				if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
 					final child = _children[message.data['userId']];
 					if (child == null) {
 						print('Opened via message with unknown userId: ${message.data}');
 						return;
 					}
-					final identifier = BoardThreadOrPostIdentifier(
-						message.data['board'],
-						int.parse(message.data['threadId']),
-						int.tryParse(message.data['postId'] ?? '')
-					);
-					await child.localWatcher?.updateThread(identifier.threadIdentifier!);
-					if (child.getThreadWatch(identifier.threadIdentifier!)?.foregroundMuted != true) {
-						child.foregroundStream.add(identifier);
+					PushNotification notification;
+					if (message.data['type'] == 'thread') {
+						notification = ThreadWatchNotification(
+							thread: ThreadIdentifier(message.data['board'], int.parse(message.data['threadId'])),
+							postId: int.tryParse(message.data['postId'] ?? '')
+						);
+					}
+					else if (message.data['type'] == 'board') {
+						notification = BoardWatchNotification(
+							thread: ThreadIdentifier(message.data['board'], int.parse(message.data['threadId'])),
+							postId: int.tryParse(message.data['postId'] ?? ''),
+							filter: message.data['filter']
+						);
+					}
+					else {
+						throw Exception('Unknown notification type ${message.data['type']}');
+					}
+					await child.localWatcher?.updateThread(notification.thread);
+					if (child.getThreadWatch(notification.thread)?.foregroundMuted != true) {
+						child.foregroundStream.add(notification);
 					}
 				}
 			});
@@ -166,6 +217,12 @@ class Notifications {
 		await Future.wait(_children.values.map((c) => c.initialize()));
 	}
 
+	static Future<void> didUpdateFilter() async {
+		if (Persistence.settings.usePushNotifications == true) {
+			await Future.wait(_children.values.map((c) => c.initialize()));
+		}
+	}
+
 	static Future<String?> getToken() {
 		return FirebaseMessaging.instance.getToken();
 	}
@@ -173,23 +230,24 @@ class Notifications {
 	String _calculateDigest() {
 		final boards = [
 			...threadWatches.where((w) => !w.zombie).map((w) => w.board),
-			...newThreadWatches.map((w) => w.board)
+			...boardWatches.map((w) => w.board)
 		];
 		boards.sort((a, b) => a.compareTo(b));
 		return base64Encode(md5.convert(boards.join(',').codeUnits).bytes);
 	}
 
 	Future<void> deleteAllNotificationsFromServer() async {
-		final response = await Dio().patch('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
+		final response = await _client.patch('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
 			'token': await Notifications.getToken(),
 			'siteType': siteType,
-			'siteData': siteData
+			'siteData': siteData,
+			'filters': ''
 		}));
 		final String digest = response.data['digest'];
 		final emptyDigest = base64Encode(md5.convert(''.codeUnits).bytes);
 		if (digest != emptyDigest) {
 			print('Need to resync notifications $id');
-			await Dio().put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
+			await _client.put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
 				'watches': []
 			}));
 		}
@@ -199,18 +257,19 @@ class Notifications {
 		_children[id] = this;
 		try {
 			if (Persistence.settings.usePushNotifications == true) {
-				final response = await Dio().patch('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
+				final response = await _client.patch('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
 					'token': await Notifications.getToken(),
 					'siteType': siteType,
-					'siteData': siteData
+					'siteData': siteData,
+					'filters': settings.filterConfiguration
 				}));
 				final String digest = response.data['digest'];
 				if (digest != _calculateDigest()) {
 					print('Need to resync notifications $id');
-					await Dio().put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
+					await _client.put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
 						'watches': [
 							...threadWatches.where((w) => !w.zombie),
-							...newThreadWatches
+							...boardWatches
 						].map((w) => w.toMap()).toList()
 					}));
 				}
@@ -231,6 +290,10 @@ class Notifications {
 	ThreadWatch? getThreadWatch(ThreadIdentifier thread) {
 		return threadWatches.tryFirstWhere((w) => w.board == thread.board && w.threadId == thread.id);
 	}
+	
+	BoardWatch? getBoardWatch(String boardName) {
+		return boardWatches.tryFirstWhere((w) => w.board == boardName);
+	}
 
 	void subscribeToThread({
 		required ThreadIdentifier thread,
@@ -244,7 +307,7 @@ class Notifications {
 		if (existingWatch != null) {
 			existingWatch.youIds = youIds;
 			existingWatch.lastSeenId = lastSeenId;
-			didUpdateThreadWatch(existingWatch);
+			didUpdateWatch(existingWatch);
 		}
 		else {
 			final watch = ThreadWatch(
@@ -265,10 +328,40 @@ class Notifications {
 		}
 	}
 
+void subscribeToBoard({
+		required String boardName,
+		required bool threadsOnly
+	}) {
+		final existingWatch = getBoardWatch(boardName);
+		if (existingWatch != null) {
+			existingWatch.threadsOnly = threadsOnly;
+			didUpdateWatch(existingWatch);
+		}
+		else {
+			final watch = BoardWatch(
+				board: boardName,
+				threadsOnly: threadsOnly
+			);
+			boardWatches.add(watch);
+			if (Persistence.settings.usePushNotifications == true && watch.push) {
+				_create(watch);
+			}
+			localWatcher?.onWatchUpdated(watch);
+			persistence.didUpdateBrowserState();
+		}
+	}
+
 	void unsubscribeFromThread(ThreadIdentifier thread) {
 		final watch = getThreadWatch(thread);
 		if (watch != null) {
-			removeThreadWatch(watch);
+			removeWatch(watch);
+		}
+	}
+
+	void unsubscribeFromBoard(String boardName) {
+		final watch = getBoardWatch(boardName);
+		if (watch != null) {
+			removeWatch(watch);
 		}
 	}
 
@@ -290,7 +383,7 @@ class Notifications {
 		}
 	}
 
-	void didUpdateThreadWatch(ThreadWatch watch, {bool possiblyDisabledPush = false}) {
+	void didUpdateWatch(Watch watch, {bool possiblyDisabledPush = false}) {
 		if (Persistence.settings.usePushNotifications == true && watch.push) {
 			_replace(watch);
 		}
@@ -310,11 +403,16 @@ class Notifications {
 		persistence.didUpdateBrowserState();
 	}
 
-	void removeThreadWatch(ThreadWatch watch) async {
+	void removeWatch(Watch watch) async {
 		if (Persistence.settings.usePushNotifications == true && watch.push) {
 			_delete(watch);
 		}
-		threadWatches.remove(watch);
+		if (watch is ThreadWatch) {
+			threadWatches.remove(watch);
+		}
+		else if (watch is BoardWatch) {
+			boardWatches.remove(watch);
+		}
 		localWatcher?.onWatchRemoved(watch);
 		persistence.didUpdateBrowserState();
 		await clearNotifications(this, watch);
@@ -322,11 +420,8 @@ class Notifications {
 		await updateNotificationsBadgeCount();
 	}
 
-	List<NewThreadWatch> getNewThreadWatches(String board) {
-		return newThreadWatches.where((w) => w.board == board).toList();
-	}
-
-	Future<void> updateLastKnownId(Watch watch, int lastKnownId, {bool foreground = false}) async {
+	Future<void> updateLastKnownId(ThreadWatch watch, int lastKnownId, {bool foreground = false}) async {
+		print('$foreground ${WidgetsBinding.instance.lifecycleState}');
 		if (foreground && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
 			await clearNotifications(this, watch);
 			clearOverlayNotifications(this, watch);
@@ -340,7 +435,7 @@ class Notifications {
 	}
 
 	Future<void> _create(Watch watch) async {
-		await Dio().post(
+		await _client.post(
 			'$_notificationSettingsApiRoot/user/$id/watch',
 			data: jsonEncode(watch.toMap())
 		);
@@ -348,7 +443,7 @@ class Notifications {
 
 	Future<void> _replace(Watch watch) async {
 		if (watch.push) {
-			await Dio().put(
+			await _client.put(
 				'$_notificationSettingsApiRoot/user/$id/watch',
 				data: jsonEncode(watch.toMap())
 			);
@@ -359,14 +454,14 @@ class Notifications {
 	}
 
 	Future<void> _update(Watch watch) async {
-		await Dio().patch(
+		await _client.patch(
 			'$_notificationSettingsApiRoot/user/$id/watch',
 			data: jsonEncode(watch.toMap())
 		);
 	}
 
 	Future<void> _delete(Watch watch) async {
-		await Dio().delete(
+		await _client.delete(
 			'$_notificationSettingsApiRoot/user/$id/watch',
 			data: jsonEncode(watch.toMap())
 		);

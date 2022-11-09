@@ -518,6 +518,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get hasOmittedReplies => false;
 	bool get sortByUpvotes => false;
 	bool get supportsSearchOptions => true;
+	bool get supportsPushNotifications => false;
 }
 
 ImageboardSite makeSite(dynamic data) {

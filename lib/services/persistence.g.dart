@@ -278,8 +278,8 @@ class PersistentBrowserStateAdapter
       notificationsId: fields[8] as String?,
       threadWatches:
           fields[10] == null ? [] : (fields[10] as List).cast<ThreadWatch>(),
-      newThreadWatches:
-          fields[11] == null ? [] : (fields[11] as List).cast<NewThreadWatch>(),
+      boardWatches:
+          fields[11] == null ? [] : (fields[11] as List).cast<BoardWatch>(),
       notificationsMigrated: fields[12] == null ? false : fields[12] as bool,
       boardSortingMethods: fields[13] == null
           ? {}
@@ -312,7 +312,7 @@ class PersistentBrowserStateAdapter
       ..writeByte(10)
       ..write(obj.threadWatches)
       ..writeByte(11)
-      ..write(obj.newThreadWatches)
+      ..write(obj.boardWatches)
       ..writeByte(12)
       ..write(obj.notificationsMigrated)
       ..writeByte(13)

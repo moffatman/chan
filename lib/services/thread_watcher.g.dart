@@ -64,39 +64,30 @@ class ThreadWatchAdapter extends TypeAdapter<ThreadWatch> {
           typeId == other.typeId;
 }
 
-class NewThreadWatchAdapter extends TypeAdapter<NewThreadWatch> {
+class BoardWatchAdapter extends TypeAdapter<BoardWatch> {
   @override
   final int typeId = 29;
 
   @override
-  NewThreadWatch read(BinaryReader reader) {
+  BoardWatch read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return NewThreadWatch(
+    return BoardWatch(
       board: fields[0] as String,
-      filter: fields[1] as String,
-      lastSeenId: fields[2] as int,
-      allStickies: fields[3] as bool,
-      uniqueId: fields[4] as String,
+      threadsOnly: fields[3] as bool,
     );
   }
 
   @override
-  void write(BinaryWriter writer, NewThreadWatch obj) {
+  void write(BinaryWriter writer, BoardWatch obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(2)
       ..writeByte(0)
       ..write(obj.board)
-      ..writeByte(1)
-      ..write(obj.filter)
-      ..writeByte(2)
-      ..write(obj.lastSeenId)
       ..writeByte(3)
-      ..write(obj.allStickies)
-      ..writeByte(4)
-      ..write(obj.uniqueId);
+      ..write(obj.threadsOnly);
   }
 
   @override
@@ -105,7 +96,7 @@ class NewThreadWatchAdapter extends TypeAdapter<NewThreadWatch> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is NewThreadWatchAdapter &&
+      other is BoardWatchAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

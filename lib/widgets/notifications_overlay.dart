@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -15,20 +16,20 @@ import 'package:provider/provider.dart';
 
 class OverlayNotification {
 	final Imageboard imageboard;
-	final BoardThreadOrPostIdentifier target;
+	final PushNotification notification;
 	bool closed = false;
 	AnimationController? autoCloseAnimation;
 
 	OverlayNotification({
 		required this.imageboard,
-		required this.target,
+		required this.notification,
 		required this.autoCloseAnimation
 	});
 
-	bool get isMuted => imageboard.notifications.getThreadWatch(target.threadIdentifier!)?.foregroundMuted ?? false;
+	bool get isMuted => imageboard.notifications.getThreadWatch(notification.thread)?.foregroundMuted ?? false;
 
 	@override
-	String toString() => 'OverlayNotification(imageboard: $imageboard, target: $target)';
+	String toString() => 'OverlayNotification(imageboard: $imageboard, notification: $notification)';
 }
 
 class NotificationsOverlay extends StatefulWidget {
@@ -50,7 +51,7 @@ class NotificationsOverlay extends StatefulWidget {
 }
 
 class NotificationsOverlayState extends State<NotificationsOverlay> with TickerProviderStateMixin {
-	final Map<Imageboard, StreamSubscription<BoardThreadOrPostIdentifier>> subscriptions = {};
+	final Map<Imageboard, StreamSubscription<PushNotification>> subscriptions = {};
 	final List<OverlayNotification> shown = [];
 
 	void _checkAutoclose() {
@@ -61,22 +62,22 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		if (n.autoCloseAnimation!.isAnimating) {
 			return;
 		}
-		if (!(n.imageboard.persistence.getThreadStateIfExists(n.target.threadIdentifier!)?.freshYouIds().contains(n.target.postId) ?? false)) {
+		if (!(n.imageboard.persistence.getThreadStateIfExists(n.notification.thread)?.freshYouIds().contains(n.notification.postId) ?? false)) {
 			n.autoCloseAnimation!.forward().then((_) => closeNotification(n));
 		}
 	}
 
-	void _newNotification(Imageboard imageboard, BoardThreadOrPostIdentifier target) async {
+	void _newNotification(Imageboard imageboard, PushNotification notification) async {
 		final autoCloseAnimation = AnimationController(
 			vsync: this,
 			duration: widget.fadeTime
 		);
-		final notification = OverlayNotification(
+		final overlayNotification = OverlayNotification(
 			imageboard: imageboard,
-			target: target,
+			notification: notification,
 			autoCloseAnimation: autoCloseAnimation
 		);
-		shown.add(notification);
+		shown.add(overlayNotification);
 		setState(() {});
 		await Future.delayed(const Duration(seconds: 1));
 		_checkAutoclose();
@@ -100,12 +101,12 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		if (!shown.contains(notification)) {
 			return;
 		}
-		notification.imageboard.notifications.foregroundMuteThread(notification.target.threadIdentifier!);
+		notification.imageboard.notifications.foregroundMuteThread(notification.notification.thread);
 		closeNotification(notification);
 	}
 
 	void _notificationTapped(OverlayNotification notification) {
-		notification.imageboard.notifications.tapStream.add(notification.target);
+		notification.imageboard.notifications.tapStream.add(notification.notification.target);
 		closeNotification(notification);
 	}
 
@@ -179,7 +180,7 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 }
 
 class NotificationContent extends StatelessWidget {
-	final BoardThreadOrPostIdentifier notification;
+	final PushNotification notification;
 	final BoxConstraints constraints;
 
 	const NotificationContent({
@@ -190,7 +191,7 @@ class NotificationContent extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final threadState = context.read<Persistence>().getThreadStateIfExists(notification.threadIdentifier!);
+		final threadState = context.read<Persistence>().getThreadStateIfExists(notification.thread);
 		final thread = threadState?.thread;
 		Post? post;
 		bool isYou = false;
@@ -200,13 +201,23 @@ class NotificationContent extends StatelessWidget {
 		if (threadState != null) {
 			isYou = threadState.youIds.contains(notification.postId);
 		}
+		String title;
+		if (notification is BoardWatchNotification) {
+			title = 'New ${notification.isThread ? 'thread' : 'post'} matching "${(notification as BoardWatchNotification).filter}" on /${notification.thread.board}/';
+		}
+		else if (post == null) {
+			title = 'New post in /${notification.thread.board}/${notification.thread.id}';
+		}
+		else {
+			title = 'New ${isYou ? 'reply' : 'post'} in /${notification.thread.board}/${notification.thread.id}';
+		}
 		return IgnorePointer(
 			child: ChangeNotifierProvider<PostSpanZoneData>(
 				create: (context) => PostSpanRootZoneData(
 				site: context.read<ImageboardSite>(),
 					thread: thread ?? Thread(
-						board: notification.board,
-						id: notification.threadId!,
+						board: notification.thread.board,
+						id: notification.thread.id,
 						isDeleted: false,
 						isArchived: false,
 						title: '',
@@ -217,23 +228,24 @@ class NotificationContent extends StatelessWidget {
 						posts_: [],
 						attachments: []
 					),
-					threadState: context.read<Persistence>().getThreadStateIfExists(notification.threadIdentifier!),
+					threadState: context.read<Persistence>().getThreadStateIfExists(notification.thread),
 					semanticRootIds: [-10]
 				),
 				builder: (context, _) => ConstrainedBox(
 					constraints: constraints,
-					child: post == null ? Text('New post in /${notification.board}/${notification.threadId}       ', style: const TextStyle(
-						fontWeight: FontWeight.bold
-					)) : Text.rich(
+					child: Text.rich(
 						TextSpan(
 							children: [
-								TextSpan(text: 'New ${isYou ? 'reply' : 'post'} in /${notification.board}/${notification.threadId}       \n', style: const TextStyle(
+								TextSpan(text: '$title       ', style: const TextStyle(
 									fontWeight: FontWeight.bold
 								)),
-								post.span.build(context, context.watch<PostSpanZoneData>(), context.watch<EffectiveSettings>(), PostSpanRenderOptions(
-									shrinkWrap: true,
-									avoidBuggyClippers: true
-								))
+								if (post != null) ...[
+									const TextSpan(text: '\n'),
+									post.span.build(context, context.watch<PostSpanZoneData>(), context.watch<EffectiveSettings>(), PostSpanRenderOptions(
+										shrinkWrap: true,
+										avoidBuggyClippers: true
+									))
+								]
 							]
 						),
 						overflow: TextOverflow.fade
@@ -281,7 +293,7 @@ class TopNotification extends StatelessWidget {
 										imageboardKey: null, // it could be the dev board
 										imageboard: notification.imageboard,
 										child: NotificationContent(
-											notification: notification.target,
+											notification: notification.notification,
 											constraints: const BoxConstraints(
 												maxHeight: 80,
 												minHeight: 80
@@ -290,7 +302,7 @@ class TopNotification extends StatelessWidget {
 									)
 								)
 							),
-							if (!notification.isMuted) CupertinoButton.filled(
+							if (notification is ThreadWatchNotification && !notification.isMuted) CupertinoButton.filled(
 								padding: const EdgeInsets.all(16),
 								borderRadius: BorderRadius.zero,
 								alignment: Alignment.topCenter,
@@ -358,7 +370,7 @@ class CornerNotification extends StatelessWidget {
 									imageboardKey: null, // it could be the dev board
 									imageboard: notification.imageboard,
 									child: NotificationContent(
-										notification: notification.target,
+										notification: notification.notification,
 										constraints: const BoxConstraints(
 											maxWidth: 300,
 											maxHeight: 200

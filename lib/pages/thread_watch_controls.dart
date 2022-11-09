@@ -3,6 +3,7 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -86,113 +87,115 @@ class ThreadWatchControlsPage extends StatelessWidget {
 										else {
 											switch (v) {
 												case _ThreadWatchingStatus.off:
-													notifications.removeThreadWatch(watch);
+													notifications.removeWatch(watch);
 													break;
 												case _ThreadWatchingStatus.yousOnly:
 													watch.localYousOnly = true;
-													notifications.didUpdateThreadWatch(watch);
+													notifications.didUpdateWatch(watch);
 													break;
 												case _ThreadWatchingStatus.allPosts:
 													watch.localYousOnly = false;
-													notifications.didUpdateThreadWatch(watch);
+													notifications.didUpdateWatch(watch);
 													break;
 											}
 										}
 									}
 								)
 							),
-							const SizedBox(height: 16),
-							const Text('Push Notifications'),
-							Padding(
-								padding: const EdgeInsets.all(16),
-								child: CupertinoSegmentedControl<_ThreadWatchingStatus>(
-									children: const {
-										_ThreadWatchingStatus.off: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('Off')
-										),
-										_ThreadWatchingStatus.yousOnly: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('(You)s only')
-										),
-										_ThreadWatchingStatus.allPosts: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('All posts')
-										)
-									},
-									groupValue: pushWatcherStatus,
-									onValueChanged: (v) {
-										if (watch == null) {
-											final ts = persistence.getThreadStateIfExists(thread);
-											notifications.subscribeToThread(
-												thread: thread,
-												lastSeenId: ts?.lastSeenPostId ?? thread.id,
-												localYousOnly: v == _ThreadWatchingStatus.yousOnly,
-												pushYousOnly: v == _ThreadWatchingStatus.yousOnly,
-												youIds: ts?.youIds ?? [],
-												push: true
-											);
-										}
-										else {
-											switch (v) {
-												case _ThreadWatchingStatus.off:
-													watch.push = false;
-													break;
-												case _ThreadWatchingStatus.yousOnly:
-													watch.push = true;
-													watch.pushYousOnly = true;
-													break;
-												case _ThreadWatchingStatus.allPosts:
-													watch.push = true;
-													watch.localYousOnly = false;
-													watch.pushYousOnly = false;
-													break;
-											}
-											notifications.didUpdateThreadWatch(watch, possiblyDisabledPush: true);
-										}
-									}
-								)
-							),
-							const SizedBox(height: 16),
-							const Text('In-App Notifications'),
-							Padding(
-								padding: const EdgeInsets.all(16),
-								child: CupertinoSegmentedControl<bool>(
-									children: const {
-										false: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('Off')
-										),
-										true: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('On')
-										)
-									},
-									groupValue: !(watch?.foregroundMuted ?? true) && (watch?.push ?? false),
-									onValueChanged: (v) {
-										if (watch == null && v) {
-											final ts = persistence.getThreadStateIfExists(thread);
-											notifications.subscribeToThread(
-												thread: thread,
-												lastSeenId: ts?.lastSeenPostId ?? thread.id,
-												localYousOnly: true,
-												pushYousOnly: true,
-												youIds: ts?.youIds ?? [],
-												push: true
-											);
-										}
-										else if (watch != null) {
-											if (v) {
-												watch.push = true;
-												notifications.foregroundUnmuteThread(watch.threadIdentifier);
+							if (context.watch<ImageboardSite>().supportsPushNotifications) ...[
+								const SizedBox(height: 16),
+								const Text('Push Notifications'),
+								Padding(
+									padding: const EdgeInsets.all(16),
+									child: CupertinoSegmentedControl<_ThreadWatchingStatus>(
+										children: const {
+											_ThreadWatchingStatus.off: Padding(
+												padding: EdgeInsets.all(8),
+												child: Text('Off')
+											),
+											_ThreadWatchingStatus.yousOnly: Padding(
+												padding: EdgeInsets.all(8),
+												child: Text('(You)s only')
+											),
+											_ThreadWatchingStatus.allPosts: Padding(
+												padding: EdgeInsets.all(8),
+												child: Text('All posts')
+											)
+										},
+										groupValue: pushWatcherStatus,
+										onValueChanged: (v) {
+											if (watch == null) {
+												final ts = persistence.getThreadStateIfExists(thread);
+												notifications.subscribeToThread(
+													thread: thread,
+													lastSeenId: ts?.lastSeenPostId ?? thread.id,
+													localYousOnly: v == _ThreadWatchingStatus.yousOnly,
+													pushYousOnly: v == _ThreadWatchingStatus.yousOnly,
+													youIds: ts?.youIds ?? [],
+													push: true
+												);
 											}
 											else {
-												notifications.foregroundMuteThread(watch.threadIdentifier);
+												switch (v) {
+													case _ThreadWatchingStatus.off:
+														watch.push = false;
+														break;
+													case _ThreadWatchingStatus.yousOnly:
+														watch.push = true;
+														watch.pushYousOnly = true;
+														break;
+													case _ThreadWatchingStatus.allPosts:
+														watch.push = true;
+														watch.localYousOnly = false;
+														watch.pushYousOnly = false;
+														break;
+												}
+												notifications.didUpdateWatch(watch, possiblyDisabledPush: true);
 											}
 										}
-									}
+									)
+								),
+								const SizedBox(height: 16),
+								const Text('In-App Notifications'),
+								Padding(
+									padding: const EdgeInsets.all(16),
+									child: CupertinoSegmentedControl<bool>(
+										children: const {
+											false: Padding(
+												padding: EdgeInsets.all(8),
+												child: Text('Off')
+											),
+											true: Padding(
+												padding: EdgeInsets.all(8),
+												child: Text('On')
+											)
+										},
+										groupValue: !(watch?.foregroundMuted ?? true) && (watch?.push ?? false),
+										onValueChanged: (v) {
+											if (watch == null && v) {
+												final ts = persistence.getThreadStateIfExists(thread);
+												notifications.subscribeToThread(
+													thread: thread,
+													lastSeenId: ts?.lastSeenPostId ?? thread.id,
+													localYousOnly: true,
+													pushYousOnly: true,
+													youIds: ts?.youIds ?? [],
+													push: true
+												);
+											}
+											else if (watch != null) {
+												if (v) {
+													watch.push = true;
+													notifications.foregroundUnmuteThread(watch.threadIdentifier);
+												}
+												else {
+													notifications.foregroundMuteThread(watch.threadIdentifier);
+												}
+											}
+										}
+									)
 								)
-							)
+							]
 						]
 					)
 				)

@@ -159,6 +159,10 @@ class _ThreadPageState extends State<ThreadPage> {
 	);
 
 	Future<void> _blockAndScrollToPostIfNeeded([Duration delayBeforeScroll = Duration.zero]) async {
+		if (persistentState.thread == null) {
+			// too early to try to scroll
+			return;
+		}
 		final int? scrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread] ?? persistentState.lastSeenPostId;
 		context.read<PersistentBrowserTab?>()?.initialPostId.remove(widget.thread);
 		if (persistentState.thread != null && scrollToId != null) {
@@ -782,7 +786,9 @@ class _ThreadPageState extends State<ThreadPage> {
 											_saveThreadStateDuringEditingTimer = Timer(const Duration(seconds: 3), () => persistentState.save());
 										},
 										onReplyPosted: (receipt) async {
-											await promptForPushNotificationsIfNeeded(context);
+											if (context.read<ImageboardSite>().supportsPushNotifications) {
+												await promptForPushNotificationsIfNeeded(context);
+											}
 											if (!mounted) return;
 											context.read<Notifications>().subscribeToThread(
 												thread: widget.thread,

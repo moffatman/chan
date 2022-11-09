@@ -1394,7 +1394,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												GestureDetector(
 													onLongPress: _runSettingsQuickAction,
 													child: _buildTabletIcon(4, NotifyingIcon(
-															icon: const Icon(CupertinoIcons.settings),
+															icon: Icon(CupertinoIcons.settings, color: settings.filterError != null ? Colors.red : null),
 															primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
 															secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
 														), hideTabletLayoutLabels ? null : 'Settings'
@@ -1483,7 +1483,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									icon: GestureDetector(
 										onLongPress: _runSettingsQuickAction,
 										child: NotifyingIcon(
-											icon: const Icon(CupertinoIcons.settings, size: 28),
+											icon: Icon(CupertinoIcons.settings, size: 28, color: settings.filterError != null ? Colors.red : null),
 											primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
 											secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
 										)

@@ -248,7 +248,7 @@ class _SavedPageState extends State<SavedPage> {
 																	ContextMenuAction(
 																		child: const Text('Unwatch'),
 																		onPressed: () {
-																			watch.imageboard.notifications.removeThreadWatch(watch.item);
+																			watch.imageboard.notifications.removeWatch(watch.item);
 																		},
 																		trailingIcon: CupertinoIcons.xmark,
 																		isDestructiveAction: true
@@ -283,7 +283,7 @@ class _SavedPageState extends State<SavedPage> {
 																				if (threadState != null && (DateTime.now().difference(threadState.lastOpenedTime) > const Duration(days: 30))) {
 																					// Probably the thread was deleted during a cleanup
 																					Future.delayed(const Duration(seconds: 1), () {
-																						watch.imageboard.notifications.removeThreadWatch(watch.item);
+																						watch.imageboard.notifications.removeWatch(watch.item);
 																					});
 																				}
 																				return const SizedBox.shrink();
@@ -338,7 +338,7 @@ class _SavedPageState extends State<SavedPage> {
 															onPressed: (watches.any((w) => w.item.zombie)) ? () {
 																final toRemove = watches.where((w) => w.item.zombie).toList();
 																for (final watch in toRemove) {
-																	watch.imageboard.notifications.removeThreadWatch(watch.item);
+																	watch.imageboard.notifications.removeWatch(watch.item);
 																}
 															} : null,
 															child: Row(

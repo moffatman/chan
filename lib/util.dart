@@ -226,3 +226,29 @@ Future<void> runWhenIdle(Duration duration, FutureOr Function() function) {
 	}), completer);
 	return completer.future;
 }
+
+enum NullSafeOptional {
+	null_,
+	false_,
+	true_
+}
+
+extension ToBool on NullSafeOptional {
+	bool? get value {
+		switch (this) {
+			case NullSafeOptional.null_: return null;
+			case NullSafeOptional.false_: return false;
+			case NullSafeOptional.true_: return true;
+		}
+	}
+}
+
+extension ToNullSafeOptional on bool? {
+	NullSafeOptional get value {
+		switch (this) {
+			case true: return NullSafeOptional.true_;
+			case false: return NullSafeOptional.false_;
+			default: return NullSafeOptional.null_;
+		}
+	}
+}

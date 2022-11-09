@@ -538,4 +538,7 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	String get defaultUsername => 'Anonymous';
+
+	@override
+	bool get supportsPushNotifications => true;
 }

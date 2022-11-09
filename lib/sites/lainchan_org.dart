@@ -41,4 +41,7 @@ class SiteLainchanOrg extends SiteLainchan {
 
 	@override
 	int get hashCode => Object.hash(name, baseUrl);
+
+	@override
+	bool get supportsPushNotifications => false;
 } 

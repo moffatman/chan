@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/board_switcher.dart';
+import 'package:chan/pages/board_watch_controls.dart';
 import 'package:chan/pages/imageboard_switcher.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
@@ -185,6 +186,8 @@ class _BoardPageState extends State<BoardPage> {
 		final site = context.watch<ImageboardSite?>();
 		final settings = context.watch<EffectiveSettings>();
 		final persistence = context.watch<Persistence?>();
+		final notifications = context.watch<Notifications?>();
+		final boardWatch = notifications?.getBoardWatch(board?.name ?? '');
 		ThreadSortingMethod sortingMethod = settings.catalogSortingMethod;
 		bool reverseSorting = settings.reverseCatalogSorting;
 		if (persistence?.browserState.boardSortingMethods[board?.name] != null) {
@@ -336,6 +339,19 @@ class _BoardPageState extends State<BoardPage> {
 				trailing: Row(
 					mainAxisSize: MainAxisSize.min,
 					children: [
+						if (board != null && (site?.supportsPushNotifications ?? false)) CupertinoButton(
+							padding: EdgeInsets.zero,
+							child: boardWatch == null ? const Icon(CupertinoIcons.bell) : const Icon(CupertinoIcons.bell_fill),
+							onPressed: () {
+								Navigator.of(context).push(TransparentRoute(
+									showAnimations: settings.showAnimations,
+									builder: (context) => BoardWatchControlsPage(
+										imageboard: imageboard!,
+										board: board!
+									)
+								));
+							}
+						),
 						CupertinoButton(
 							padding: EdgeInsets.zero,
 							child: Transform(
@@ -470,7 +486,9 @@ class _BoardPageState extends State<BoardPage> {
 															widget.onThreadDraftFilePathChanged?.call(filePath);
 														},
 														onReplyPosted: (receipt) async {
-															await promptForPushNotificationsIfNeeded(ctx);
+															if (imageboard.site.supportsPushNotifications) {
+																await promptForPushNotificationsIfNeeded(ctx);
+															}
 															if (!mounted) return;
 															imageboard.notifications.subscribeToThread(
 																thread: ThreadIdentifier(board!.name, receipt.id),
@@ -721,7 +739,9 @@ class _BoardPageState extends State<BoardPage> {
 												widget.onThreadDraftFilePathChanged?.call(filePath);
 											},
 											onReplyPosted: (receipt) async {
-												await promptForPushNotificationsIfNeeded(context);
+												if (imageboard?.site.supportsPushNotifications == true) {
+													await promptForPushNotificationsIfNeeded(context);
+												}
 												if (!mounted) return;
 												imageboard?.notifications.subscribeToThread(
 													thread: ThreadIdentifier(board!.name, receipt.id),

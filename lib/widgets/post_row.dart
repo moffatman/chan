@@ -464,7 +464,9 @@ class PostRow extends StatelessWidget {
 							trailingIcon: CupertinoIcons.person_badge_plus,
 							onPressed: () async {
 								parentZone.threadState!.postsMarkedAsYou.add(latestPost.id);
-								await promptForPushNotificationsIfNeeded(context);
+								if (site.supportsPushNotifications) {
+									await promptForPushNotificationsIfNeeded(context);
+								}
 								notifications.subscribeToThread(
 									thread: parentZone.threadState!.identifier,
 									lastSeenId: parentZone.threadState!.thread?.posts.last.id ?? latestPost.id,

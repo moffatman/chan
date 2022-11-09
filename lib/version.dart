@@ -1,0 +1,1 @@
+const kChanceVersion = '1.0.27';

@@ -20,13 +20,10 @@ enum WatchAction {
 }
 
 abstract class Watch {
-	int get lastSeenId;
-	set lastSeenId(int id);
-	String get _type;
+	String get type;
 	Map<String, dynamic> toMap() {
 		return {
-			'type': _type,
-			'lastSeenId': lastSeenId,
+			'type': type,
 			..._toMap()
 		};
 	}
@@ -43,7 +40,6 @@ class ThreadWatch extends Watch {
 	@HiveField(1)
 	final int threadId;
 	@HiveField(2)
-	@override
 	int lastSeenId;
 	@HiveField(3, defaultValue: true)
 	bool localYousOnly;
@@ -69,11 +65,11 @@ class ThreadWatch extends Watch {
 		this.push = true,
 		this.foregroundMuted = false
 	}) : pushYousOnly = pushYousOnly ?? localYousOnly;
-	static const type = 'thread';
 	@override
-	String get _type => type;
+	String get type => 'thread';
 	@override
 	Map<String, dynamic> _toMap() => {
+		'lastSeenId': lastSeenId,
 		'board': board,
 		'threadId': threadId.toString(),
 		'yousOnly': pushYousOnly,
@@ -83,34 +79,21 @@ class ThreadWatch extends Watch {
 }
 
 @HiveType(typeId: 29)
-class NewThreadWatch extends Watch {
+class BoardWatch extends Watch {
 	@HiveField(0)
 	String board;
-	@HiveField(1)
-	String filter;
-	@HiveField(2)
-	@override
-	int lastSeenId;
 	@HiveField(3)
-	bool allStickies;
-	@HiveField(4)
-	String uniqueId;
-	NewThreadWatch({
+	bool threadsOnly;
+	BoardWatch({
 		required this.board,
-		required this.filter,
-		required this.lastSeenId,
-		required this.allStickies,
-		required this.uniqueId
+		required this.threadsOnly
 	});
-	static const type = 'newThread';
 	@override
-	String get _type => type;
+	String get type => 'board';
 	@override
 	Map<String, dynamic> _toMap() => {
 		'board': board,
-		'filter': filter,
-		'allStickies': allStickies,
-		'uniqueId': uniqueId
+		'threadsOnly': threadsOnly
 	};
 }
 
@@ -191,7 +174,7 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 			_updateCounts();
 		}
-		else if (watch is NewThreadWatch) {
+		else if (watch is BoardWatch) {
 
 		}
 	}
@@ -202,7 +185,7 @@ class ThreadWatcher extends ChangeNotifier {
 			cachedUnseen.remove(watch.threadIdentifier);
 			_updateCounts();
 		}
-		else if (watch is NewThreadWatch) {
+		else if (watch is BoardWatch) {
 
 		}
 	}
@@ -229,7 +212,7 @@ class ThreadWatcher extends ChangeNotifier {
 					}
 					if (!listEquals(watch.youIds, newThreadState.youIds)) {
 						watch.youIds = newThreadState.youIds;
-						notifications.didUpdateThreadWatch(watch);
+						notifications.didUpdateWatch(watch);
 					}
 					if (watch.lastSeenId < newThreadState.thread!.posts.last.id) {
 						notifications.updateLastKnownId(watch, newThreadState.thread!.posts.last.id);
@@ -282,8 +265,7 @@ class ThreadWatcher extends ChangeNotifier {
 			return;
 		}
 		// Could be concurrently-modified
-		final watches = persistence.browserState.threadWatches.toList();
-		for (final watch in watches) {
+		for (final watch in notifications.threadWatches) {
 			if (watch.zombie) {
 				continue;
 			}
@@ -291,7 +273,7 @@ class ThreadWatcher extends ChangeNotifier {
 			if (threadState.identifier == ThreadIdentifier('', 0)) {
 				print('Cleaning up watch for deleted thread ${persistence.id}/${watch.board}/${watch.threadId}');
 				await threadState.delete();
-				notifications.removeThreadWatch(watch);
+				notifications.removeWatch(watch);
 			}
 			else {
 				await _updateThread(threadState);
@@ -395,6 +377,7 @@ class ThreadWatcherController extends ChangeNotifier {
 			nextUpdateTimer = Timer(_briefInterval, update);
 		}
 		else {
+			updateNotificationsBadgeCount();
 			for (final watcher in _watchers) {
 				if (_doghouse.contains(watcher)) {
 					_doghouse.remove(watcher);

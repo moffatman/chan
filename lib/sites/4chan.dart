@@ -864,4 +864,7 @@ class Site4Chan extends ImageboardSite {
 		}
 		return [];
 	}
+
+	@override
+	bool get supportsPushNotifications => true;
 }
