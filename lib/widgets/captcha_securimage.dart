@@ -168,6 +168,7 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 						width: 150,
 						child: CupertinoTextField(
 							focusNode: _solutionNode,
+							enableIMEPersonalizedLearning: false,
 							autocorrect: false,
 							placeholder: 'Captcha text',
 							onSubmitted: (response) async {

@@ -911,6 +911,24 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
+				if (Platform.isAndroid) ...[
+					const SizedBox(height: 32),
+					Row(
+						children: [
+							const Icon(CupertinoIcons.keyboard),
+							const SizedBox(width: 8),
+							const Expanded(
+								child: Text('Incognito keyboard')
+							),
+							CupertinoSwitch(
+								value: !settings.enableIMEPersonalizedLearning,
+								onChanged: (newValue) {
+									settings.enableIMEPersonalizedLearning = !newValue;
+								}
+							)
+						]
+					),
+				],
 				const SizedBox(height: 32)
 			]
 		);
@@ -946,6 +964,7 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 				const SizedBox(height: 8),
 				CupertinoTextField(
 					controller: controller,
+					enableIMEPersonalizedLearning: false,
 					onChanged: (s) {
 						widget.browserState.setHiddenImageMD5s(s.split('\n').where((x) => x.isNotEmpty));
 					},

@@ -1073,6 +1073,7 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	Widget _buildAttachmentOptions(BuildContext context) {
 		final board = context.read<Persistence>().getBoard(widget.board);
+		final settings = context.watch<EffectiveSettings>();
 		final fakeAttachment = Attachment(
 			ext: '.$attachmentExt',
 			url: Uri.https('', ''),
@@ -1105,13 +1106,14 @@ class ReplyBoxState extends State<ReplyBox> {
 									children: [
 										Flexible(
 											child: CupertinoTextField(
-												enabled: !context.watch<EffectiveSettings>().randomizeFilenames,
+												enabled: !settings.randomizeFilenames,
 												controller: _filenameController,
-												placeholder: (context.watch<EffectiveSettings>().randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
+												placeholder: (settings.randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
 												placeholderStyle: TextStyle(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.7)),
 												maxLines: 1,
 												textCapitalization: TextCapitalization.none,
 												autocorrect: false,
+												enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 												keyboardAppearance: CupertinoTheme.of(context).brightness
 											)
 										),
@@ -1128,13 +1130,13 @@ class ReplyBoxState extends State<ReplyBox> {
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
 													children: [
-														Icon(context.watch<EffectiveSettings>().randomizeFilenames ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
+														Icon(settings.randomizeFilenames ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
 														const Text('Random')
 													]
 												),
 												onPressed: () {
 													setState(() {
-														context.read<EffectiveSettings>().randomizeFilenames = !context.read<EffectiveSettings>().randomizeFilenames;
+														settings.randomizeFilenames = !settings.randomizeFilenames;
 													});
 												}
 											),
@@ -1216,6 +1218,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	Widget _buildOptions(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
 		return Container(
 			decoration: BoxDecoration(
 				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
@@ -1230,6 +1233,7 @@ class ReplyBoxState extends State<ReplyBox> {
 							placeholder: 'Name',
 							keyboardAppearance: CupertinoTheme.of(context).brightness,
 							controller: _nameFieldController,
+							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 							onChanged: (s) {
 								context.read<Persistence>().browserState.postingName = s;
 								context.read<Persistence>().didUpdateBrowserState();
@@ -1241,6 +1245,7 @@ class ReplyBoxState extends State<ReplyBox> {
 						child: CupertinoTextField(
 							maxLines: 1,
 							placeholder: 'Options',
+							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 							keyboardAppearance: CupertinoTheme.of(context).brightness,
 							controller: _optionsFieldController,
 							onChanged: (s) {
@@ -1255,6 +1260,7 @@ class ReplyBoxState extends State<ReplyBox> {
 
 	Widget _buildTextField(BuildContext context) {
 		final board = context.read<Persistence>().getBoard(widget.board);
+		final settings = context.watch<EffectiveSettings>();
 		return CallbackShortcuts(
 			bindings: {
 				LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.enter): _submit,
@@ -1280,6 +1286,7 @@ class ReplyBoxState extends State<ReplyBox> {
 						if (widget.threadId == null) ...[
 							CupertinoTextField(
 								enabled: !loading,
+								enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 								controller: _subjectFieldController,
 								maxLines: 1,
 								placeholder: 'Subject',
@@ -1293,6 +1300,7 @@ class ReplyBoxState extends State<ReplyBox> {
 								children: [
 									CupertinoTextField(
 										enabled: !loading,
+										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 										controller: _textFieldController,
 										selectionControls: _ImagePastingEditingControls(this),
 										placeholder: 'Comment',
@@ -1338,6 +1346,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		};
 		final site = context.read<ImageboardSite>();
 		final defaultTextStyle = DefaultTextStyle.of(context).style;
+		final settings = context.watch<EffectiveSettings>();
 		return Row(
 			mainAxisAlignment: MainAxisAlignment.end,
 			children: [
@@ -1354,6 +1363,7 @@ class ReplyBoxState extends State<ReplyBox> {
 									padding: const EdgeInsets.only(top: 16),
 									child: CupertinoTextField(
 										autofocus: true,
+										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 										minLines: 5,
 										maxLines: 5,
 										controller: controller,

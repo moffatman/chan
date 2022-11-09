@@ -541,6 +541,8 @@ class SavedSettings extends HiveObject {
 	List<String> appliedMigrations;
 	@HiveField(95)
 	bool? useStatusBarWorkaround;
+	@HiveField(96)
+	bool enableIMEPersonalizedLearning;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -638,6 +640,7 @@ class SavedSettings extends HiveObject {
 		bool? showListPositionIndicatorsOnLeft,
 		List<String>? appliedMigrations,
 		this.useStatusBarWorkaround,
+		bool? enableIMEPersonalizedLearning,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -761,7 +764,8 @@ class SavedSettings extends HiveObject {
 		showCountryNameInCatalogHeader = showCountryNameInCatalogHeader ?? (showFlagInCatalogHeader ?? true),
 		webmTranscoding = webmTranscoding ?? ((Platform.isIOS || Platform.isMacOS) ? WebmTranscodingSetting.always : WebmTranscodingSetting.never),
 		showListPositionIndicatorsOnLeft = showListPositionIndicatorsOnLeft ?? false,
-		appliedMigrations = appliedMigrations ?? [] {
+		appliedMigrations = appliedMigrations ?? [],
+		enableIMEPersonalizedLearning = enableIMEPersonalizedLearning ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1525,6 +1529,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool? get useStatusBarWorkaround => _settings.useStatusBarWorkaround;
 	set useStatusBarWorkaround(bool? setting) {
 		_settings.useStatusBarWorkaround = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get enableIMEPersonalizedLearning => _settings.enableIMEPersonalizedLearning;
+	set enableIMEPersonalizedLearning(bool setting) {
+		_settings.enableIMEPersonalizedLearning = setting;
 		_settings.save();
 		notifyListeners();
 	}

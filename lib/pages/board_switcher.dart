@@ -174,6 +174,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							width: box.maxWidth * 0.75,
 							child: CupertinoTextField(
 								autofocus: settings.boardSwitcherHasKeyboardFocus,
+								enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 								autocorrect: false,
 								placeholder: 'Board...',
 								textAlign: TextAlign.center,

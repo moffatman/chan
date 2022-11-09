@@ -212,13 +212,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showListPositionIndicatorsOnLeft: fields[93] as bool?,
       appliedMigrations: (fields[94] as List?)?.cast<String>(),
       useStatusBarWorkaround: fields[95] as bool?,
+      enableIMEPersonalizedLearning: fields[96] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(92)
+      ..writeByte(93)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -402,7 +403,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(94)
       ..write(obj.appliedMigrations)
       ..writeByte(95)
-      ..write(obj.useStatusBarWorkaround);
+      ..write(obj.useStatusBarWorkaround)
+      ..writeByte(96)
+      ..write(obj.enableIMEPersonalizedLearning);
   }
 
   @override

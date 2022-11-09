@@ -99,6 +99,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									padding: const EdgeInsets.only(top: 8),
 									child: CupertinoTextField(
 										controller: controller,
+										enableIMEPersonalizedLearning: context.watch<EffectiveSettings>().enableIMEPersonalizedLearning,
 										autofocus: true,
 										keyboardType: TextInputType.number,
 										onSubmitted: (str) {

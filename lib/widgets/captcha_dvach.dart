@@ -174,6 +174,7 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 						width: 150,
 						child: CupertinoTextField(
 							focusNode: _solutionNode,
+							enableIMEPersonalizedLearning: false,
 							autocorrect: false,
 							placeholder: 'Captcha text',
 							keyboardType: challenge?.inputType == 'numeric' ? TextInputType.number : null,

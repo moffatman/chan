@@ -104,7 +104,10 @@ class _FilterEditorState extends State<FilterEditor> {
 										child: SizedBox(
 											width: 300,
 											child: CupertinoTextField(
-												controller: patternController
+												controller: patternController,
+												autocorrect: false,
+												enableIMEPersonalizedLearning: false,
+												enableSuggestions: false
 											)
 										)
 									),
@@ -261,6 +264,7 @@ class _FilterEditorState extends State<FilterEditor> {
 														padding: const EdgeInsets.only(top: 16),
 														child: CupertinoTextField(
 															autofocus: true,
+															keyboardType: TextInputType.number,
 															controller: controller,
 															onSubmitted: (s) {
 																Navigator.pop(context);
@@ -451,6 +455,7 @@ class _FilterEditorState extends State<FilterEditor> {
 							focusNode: regexFocusNode,
 							controller: regexController,
 							enableSuggestions: false,
+							enableIMEPersonalizedLearning: false,
 							autocorrect: false,
 							onChanged: (_) {
 								if (!dirty) {

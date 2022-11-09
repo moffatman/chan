@@ -762,6 +762,7 @@ Future<void> editStringList({
 													content: CupertinoTextField(
 														autofocus: true,
 														autocorrect: false,
+														enableIMEPersonalizedLearning: false,
 														controller: controller,
 														onSubmitted: (s) => Navigator.pop(context, s)
 													),
@@ -838,6 +839,7 @@ Future<void> editStringList({
 																		autofocus: true,
 																		controller: controller,
 																		autocorrect: false,
+																		enableIMEPersonalizedLearning: false,
 																		onSubmitted: (s) => Navigator.pop(context, s)
 																	),
 																	actions: [
