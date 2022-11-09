@@ -544,9 +544,9 @@ class AttachmentViewerController extends ChangeNotifier {
 		final settings = context.read<EffectiveSettings>();
 		try {
 			if (Platform.isIOS) {
-				final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common, filterOption: FilterOptionGroup(containsEmptyAlbum: true));
+				final existingAlbums = await PhotoManager.getAssetPathList(type: RequestType.common);
 				AssetPathEntity? album = existingAlbums.tryFirstWhere((album) => album.name == deviceGalleryAlbumName);
-				album ??= await PhotoManager.editor.iOS.createAlbum('Chance');
+				album ??= await PhotoManager.editor.darwin.createAlbum('Chance');
 				final shareCachedFile = await _moveToShareCache();
 				final asAsset = attachment.type == AttachmentType.image ? 
 					await PhotoManager.editor.saveImageWithPath(shareCachedFile.path, title: attachment.filename) :

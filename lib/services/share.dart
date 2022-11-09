@@ -26,8 +26,8 @@ Future<void> shareOne({
 			);
 		}
 		on MissingPluginException {
-			await Share.shareFiles(
-				[text],
+			await Share.shareXFiles(
+				[XFile(text)],
 				subject: subject,
 				sharePositionOrigin: sharePositionOrigin
 			);
