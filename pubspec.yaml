@@ -31,7 +31,7 @@ dependencies:
   share_plus: ^4.0.4
   share_extend: "^2.0.0"
   extended_image_library: ^3.3.0
-  flutter_inappwebview: ^5.2.1
+  flutter_inappwebview: ^5.7.1
   home_indicator: ^2.0.0
   linkify: ^4.1.0
   auto_size_text: ^3.0.0
