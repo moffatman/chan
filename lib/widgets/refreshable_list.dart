@@ -641,8 +641,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			List<RefreshableListItem<T>> values = [];
 			final filteredValues = <RefreshableListItem<T>>[];
 			final filters = [
-				Filter.of(context),
-				if (_searchFilter != null) _searchFilter!
+				if (_searchFilter != null) _searchFilter!,
+				Filter.of(context)
 			];
 			for (final item in list!) {
 				bool handled = false;
