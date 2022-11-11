@@ -404,11 +404,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			errorMessage = e.toStringDio();
 			errorType = e.runtimeType;
 			if (mounted) {
-				showToast(
-					context: context,
-					message: 'Error loading ${widget.id}: $errorMessage',
-					icon: CupertinoIcons.exclamationmark_triangle
-				);
+				if (widget.controller?.scrollController?.hasOnePosition ?? false) {
+					final position = widget.controller!.scrollController!.position;
+					if (position.extentAfter > 0) {
+						showToast(
+							context: context,
+							message: 'Error loading ${widget.id}: $errorMessage',
+							icon: CupertinoIcons.exclamationmark_triangle
+						);
+					}
+				}
 				if (widget.remedies[errorType] == null) {
 					print('Error refreshing list: ${e.toStringDio()}');
 					print(st);
