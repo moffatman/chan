@@ -873,9 +873,8 @@ class AttachmentViewer extends StatelessWidget {
 					),
 					CupertinoContextMenuAction(
 						trailingIcon: Icons.image_search,
-						onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
-							'image_url': attachment.url.toString(),
-							'safe': 'off'
+						onPressed: () => openBrowser(context, Uri.https('lens.google.com', '/uploadbyurl', {
+							'url': attachment.url.toString()
 						})),
 						child: const Text('Search Google')
 					),

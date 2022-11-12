@@ -629,9 +629,8 @@ class PostRow extends StatelessWidget {
 								return;
 							}
 							// ignore: use_build_context_synchronously
-							openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
-								'image_url': attachment.url.toString(),
-								'safe': 'off'
+							openBrowser(context, Uri.https('lens.google.com', '/uploadbyurl', {
+								'url': attachment.url.toString()
 							}));
 						}
 					),
