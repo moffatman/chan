@@ -69,6 +69,11 @@ class ImageboardTab extends StatelessWidget {
 						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
 					},
 					onWantArchiveSearch: onWantArchiveSearch,
+					initialCatalogVariant: tab.catalogVariant,
+					onCatalogVariantChanged: (newVariant) {
+						tab.catalogVariant = newVariant;
+						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
+					},
 					semanticId: id
 				);
 			},

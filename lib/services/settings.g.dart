@@ -117,8 +117,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       autoloadAttachments: fields[0] as AutoloadAttachmentsSetting?,
       theme: fields[1] as TristateSystemSetting?,
       hideOldStickiedThreads: fields[2] as bool?,
-      catalogSortingMethod: fields[3] as ThreadSortingMethod?,
-      reverseCatalogSorting: fields[4] as bool?,
+      deprecatedCatalogSortingMethod: fields[3] as ThreadSortingMethod?,
+      deprecatedReverseCatalogSorting: fields[4] as bool?,
       savedThreadsSortingMethod: fields[5] as ThreadSortingMethod?,
       autoRotateInGallery: fields[6] as bool?,
       useTouchLayout: fields[9] as bool?,
@@ -213,13 +213,15 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       appliedMigrations: (fields[94] as List?)?.cast<String>(),
       useStatusBarWorkaround: fields[95] as bool?,
       enableIMEPersonalizedLearning: fields[96] as bool?,
+      catalogVariant: fields[97] as CatalogVariant?,
+      redditCatalogVariant: fields[98] as CatalogVariant?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(93)
+      ..writeByte(95)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -227,9 +229,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(2)
       ..write(obj.hideOldStickiedThreads)
       ..writeByte(3)
-      ..write(obj.catalogSortingMethod)
+      ..write(obj.deprecatedCatalogSortingMethod)
       ..writeByte(4)
-      ..write(obj.reverseCatalogSorting)
+      ..write(obj.deprecatedReverseCatalogSorting)
       ..writeByte(5)
       ..write(obj.savedThreadsSortingMethod)
       ..writeByte(6)
@@ -405,7 +407,11 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(95)
       ..write(obj.useStatusBarWorkaround)
       ..writeByte(96)
-      ..write(obj.enableIMEPersonalizedLearning);
+      ..write(obj.enableIMEPersonalizedLearning)
+      ..writeByte(97)
+      ..write(obj.catalogVariant)
+      ..writeByte(98)
+      ..write(obj.redditCatalogVariant);
   }
 
   @override

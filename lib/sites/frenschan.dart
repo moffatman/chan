@@ -44,7 +44,7 @@ class SiteFrenschan extends SiteSoyjak {
 	}
 
 	@override
-	Future<List<Thread>> getCatalog(String board) async {
+	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant}) async {
 		final broken = await super.getCatalog(board);
 		final response = await client.get(Uri.https(baseUrl, '/$board/catalog.html').toString());
 		final document = parse(response.data);

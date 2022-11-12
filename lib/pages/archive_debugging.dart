@@ -52,7 +52,7 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<List<Thread>> getCatalog(String board) {
+  Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant}) {
     return archive.getCatalog(board);
   }
 

@@ -854,7 +854,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														}
 													),
 													list: values,
-													id: widget.filteredItemBuilder != null ? _searchFilter?.text : null,
+													id: '${_searchFilter?.text}${widget.sortMethods}',
 													childCount: values.length,
 													addRepaintBoundaries: false,
 													addAutomaticKeepAlives: false
@@ -889,7 +889,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														}
 													},
 													list: values,
-													id: widget.filteredItemBuilder != null ? _searchFilter?.text : null,
+													id: '${_searchFilter?.text}${widget.sortMethods}',
 													childCount: values.length * 2,
 													addAutomaticKeepAlives: false,
 													addRepaintBoundaries: false,

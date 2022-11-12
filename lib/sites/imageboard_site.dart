@@ -10,6 +10,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/dvach.dart';
 import 'package:chan/sites/foolfuuka.dart';
@@ -23,11 +24,15 @@ import 'package:chan/sites/soyjak.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/thread.dart';
 
 import 'package:dio/dio.dart';
+
+part 'imageboard_site.g.dart';
+
 final userAgent = Platform.isAndroid ? 
 	'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.5195.79 Mobile Safari/537.36'
 	: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6.1 Mobile/15E148 Safari/604.1';
@@ -114,6 +119,241 @@ enum ImageboardAction {
 	postThread,
 	postReply,
 	postReplyWithImage
+}
+
+@HiveType(typeId: 33)
+enum CatalogVariant {
+	@HiveField(0)
+	unsorted,
+	@HiveField(1)
+	unsortedReversed,
+	@HiveField(2)
+	lastPostTime,
+	@HiveField(3)
+	lastPostTimeReversed,
+	@HiveField(4)
+	replyCount,
+	@HiveField(5)
+	replyCountReversed,
+	@HiveField(6)
+	threadPostTime,
+	@HiveField(7)
+	threadPostTimeReversed,
+	@HiveField(8)
+	savedTime,
+	@HiveField(9)
+	savedTimeReversed,
+	@HiveField(10)
+	postsPerMinute,
+	@HiveField(11)
+	postsPerMinuteReversed,
+	@HiveField(12)
+	lastReplyTime,
+	@HiveField(13)
+	lastReplyTimeReversed,
+	@HiveField(14)
+	imageCount,
+	@HiveField(15)
+	imageCountReversed,
+	@HiveField(16)
+	lastReplyByYouTime,
+	@HiveField(17)
+	lastReplyByYouTimeReversed,
+	@HiveField(18)
+	redditHot,
+	@HiveField(19)
+	redditNew,
+	@HiveField(20)
+	redditRising,
+	@HiveField(21)
+	redditControversialPastHour,
+	@HiveField(22)
+	redditControversialPast24Hours,
+	@HiveField(23)
+	redditControversialPastWeek,
+	@HiveField(24)
+	redditControversialPastMonth,
+	@HiveField(25)
+	redditControversialPastYear,
+	@HiveField(26)
+	redditControversialAllTime,
+	@HiveField(27)
+	redditTopPastHour,
+	@HiveField(28)
+	redditTopPast24Hours,
+	@HiveField(29)
+	redditTopPastWeek,
+	@HiveField(30)
+	redditTopPastMonth,
+	@HiveField(31)
+	redditTopPastYear,
+	@HiveField(32)
+	redditTopAllTime,
+	@HiveField(33)
+	chan4NativeArchive
+}
+
+extension CatalogVariantMetadata on CatalogVariant {
+	bool get reverseAfterSorting {
+		switch (this) {
+			case CatalogVariant.unsortedReversed:
+			case CatalogVariant.lastPostTimeReversed:
+			case CatalogVariant.replyCountReversed:
+			case CatalogVariant.threadPostTimeReversed:
+			case CatalogVariant.savedTimeReversed:
+			case CatalogVariant.postsPerMinuteReversed:
+			case CatalogVariant.lastReplyTimeReversed:
+			case CatalogVariant.imageCountReversed:
+			case CatalogVariant.lastReplyByYouTimeReversed:
+				return true;
+			default:
+				return false;
+		}
+	}
+	bool get temporary {
+		switch (this) {
+			case CatalogVariant.chan4NativeArchive:
+				return true;
+			default:
+				return false;
+		}
+	}
+	IconData? get icon => const {
+		CatalogVariant.lastPostTime: CupertinoIcons.staroflife,
+		CatalogVariant.lastPostTimeReversed: CupertinoIcons.staroflife,
+		CatalogVariant.replyCount: CupertinoIcons.reply_all,
+		CatalogVariant.replyCountReversed: CupertinoIcons.reply_all,
+		CatalogVariant.threadPostTime: CupertinoIcons.clock,
+		CatalogVariant.threadPostTimeReversed: CupertinoIcons.clock,
+		CatalogVariant.postsPerMinute: CupertinoIcons.speedometer,
+		CatalogVariant.postsPerMinuteReversed: CupertinoIcons.speedometer,
+		CatalogVariant.lastReplyTime: CupertinoIcons.staroflife,
+		CatalogVariant.lastReplyTimeReversed: CupertinoIcons.staroflife,
+		CatalogVariant.imageCount: CupertinoIcons.photo,
+		CatalogVariant.imageCountReversed: CupertinoIcons.photo,
+		CatalogVariant.redditHot: CupertinoIcons.flame,
+		CatalogVariant.redditNew: CupertinoIcons.clock,
+		CatalogVariant.redditRising: CupertinoIcons.graph_square,
+		CatalogVariant.redditControversialPastHour: CupertinoIcons.exclamationmark_shield,
+		CatalogVariant.redditControversialPast24Hours: CupertinoIcons.exclamationmark_shield,
+		CatalogVariant.redditControversialPastWeek: CupertinoIcons.exclamationmark_shield,
+		CatalogVariant.redditControversialPastMonth: CupertinoIcons.exclamationmark_shield,
+		CatalogVariant.redditControversialPastYear: CupertinoIcons.exclamationmark_shield,
+		CatalogVariant.redditControversialAllTime: CupertinoIcons.exclamationmark_shield,
+		CatalogVariant.redditTopPastHour: CupertinoIcons.arrow_up,
+		CatalogVariant.redditTopPast24Hours: CupertinoIcons.arrow_up,
+		CatalogVariant.redditTopPastWeek: CupertinoIcons.arrow_up,
+		CatalogVariant.redditTopPastMonth: CupertinoIcons.arrow_up,
+		CatalogVariant.redditTopPastYear: CupertinoIcons.arrow_up,
+		CatalogVariant.redditTopAllTime: CupertinoIcons.arrow_up,
+		CatalogVariant.chan4NativeArchive: CupertinoIcons.archivebox
+	}[this];
+	String get name => const {
+		CatalogVariant.unsorted: 'Bump order',
+		CatalogVariant.unsortedReversed: 'Reverse bump order',
+		CatalogVariant.lastPostTime: 'Latest reply first',
+		CatalogVariant.lastPostTimeReversed: 'Latest reply last',
+		CatalogVariant.replyCount: 'Most replies',
+		CatalogVariant.replyCountReversed: 'Least replies',
+		CatalogVariant.threadPostTime: 'Newest threads',
+		CatalogVariant.threadPostTimeReversed: 'Oldest threads',
+		CatalogVariant.savedTime: 'Newest saved',
+		CatalogVariant.savedTimeReversed: 'Oldest saved',
+		CatalogVariant.postsPerMinute: 'Fastest threads',
+		CatalogVariant.postsPerMinuteReversed: 'Slowest threads',
+		CatalogVariant.lastReplyTime: 'Latest reply first',
+		CatalogVariant.lastReplyTimeReversed: 'Latest reply last',
+		CatalogVariant.imageCount: 'Most images',
+		CatalogVariant.imageCountReversed: 'Least images',
+		CatalogVariant.lastReplyByYouTime: 'Latest reply by you',
+		CatalogVariant.lastReplyByYouTimeReversed: 'Oldest reply by you',
+		CatalogVariant.redditHot: 'Hot',
+		CatalogVariant.redditNew: 'New',
+		CatalogVariant.redditRising: 'Rising',
+		CatalogVariant.redditControversialPastHour: 'Hour',
+		CatalogVariant.redditControversialPast24Hours: 'Day',
+		CatalogVariant.redditControversialPastWeek: 'Week',
+		CatalogVariant.redditControversialPastMonth: 'Month',
+		CatalogVariant.redditControversialPastYear: 'Year',
+		CatalogVariant.redditControversialAllTime: 'All time',
+		CatalogVariant.redditTopPastHour: 'Hour',
+		CatalogVariant.redditTopPast24Hours: 'Day',
+		CatalogVariant.redditTopPastWeek: 'Week',
+		CatalogVariant.redditTopPastMonth: 'Month',
+		CatalogVariant.redditTopPastYear: 'Year',
+		CatalogVariant.redditTopAllTime: 'All time',
+		CatalogVariant.chan4NativeArchive: 'Archive'
+	}[this]!;
+	bool get countsUnreliable {
+		switch (this) {
+			case CatalogVariant.chan4NativeArchive:
+				return true;
+			default:
+				return false;
+		}
+	}
+	String get dataId {
+		switch (this) {
+			case CatalogVariant.unsorted:
+			case CatalogVariant.unsortedReversed:
+				return 'unsortable';
+			case CatalogVariant.lastPostTime:
+			case CatalogVariant.lastPostTimeReversed:
+			case CatalogVariant.replyCount:
+			case CatalogVariant.replyCountReversed:
+			case CatalogVariant.threadPostTime:
+			case CatalogVariant.threadPostTimeReversed:
+			case CatalogVariant.savedTime:
+			case CatalogVariant.savedTimeReversed:
+			case CatalogVariant.postsPerMinute:
+			case CatalogVariant.postsPerMinuteReversed:
+			case CatalogVariant.lastReplyTime:
+			case CatalogVariant.lastReplyTimeReversed:
+			case CatalogVariant.imageCount:
+			case CatalogVariant.imageCountReversed:
+			case CatalogVariant.lastReplyByYouTime:
+			case CatalogVariant.lastReplyByYouTimeReversed:
+				return '';
+			default:
+				return toString();
+		}
+	}
+
+	static CatalogVariant migrate(ThreadSortingMethod? sortingMethod, bool? reverseSorting) {
+		final method = sortingMethod ?? ThreadSortingMethod.unsorted;
+		final reverse = reverseSorting ?? false;
+		switch (method) {
+			case ThreadSortingMethod.unsorted:
+				return reverse ? CatalogVariant.unsortedReversed : CatalogVariant.unsorted;
+			case ThreadSortingMethod.lastPostTime:
+				return reverse ? CatalogVariant.lastPostTimeReversed : CatalogVariant.lastPostTime;
+			case ThreadSortingMethod.replyCount:
+				return reverse ? CatalogVariant.replyCountReversed : CatalogVariant.replyCount;
+			case ThreadSortingMethod.threadPostTime:
+				return reverse ? CatalogVariant.threadPostTimeReversed : CatalogVariant.threadPostTime;
+			case ThreadSortingMethod.savedTime:
+				return reverse ? CatalogVariant.savedTimeReversed : CatalogVariant.savedTime;
+			case ThreadSortingMethod.postsPerMinute:
+				return reverse ? CatalogVariant.postsPerMinuteReversed : CatalogVariant.postsPerMinute;
+			case ThreadSortingMethod.lastReplyTime:
+				return reverse ? CatalogVariant.lastReplyTimeReversed : CatalogVariant.lastReplyTime;
+			case ThreadSortingMethod.imageCount:
+				return reverse ? CatalogVariant.imageCountReversed : CatalogVariant.imageCount;
+			case ThreadSortingMethod.lastReplyByYouTime:
+				return reverse ? CatalogVariant.lastReplyByYouTimeReversed : CatalogVariant.lastReplyByYouTime;
+		}
+	}
+}
+
+class CatalogVariantGroup {
+	final String name;
+	final List<CatalogVariant> variants;
+	final bool hasPrimary;
+	const CatalogVariantGroup({
+		required this.name,
+		required this.variants,
+		this.hasPrimary = false
+	});
 }
 
 class CaptchaRequest {
@@ -342,7 +582,7 @@ abstract class ImageboardSiteArchive {
 	String get name;
 	Future<Post> getPost(String board, int id);
 	Future<Thread> getThread(ThreadIdentifier thread);
-	Future<List<Thread>> getCatalog(String board);
+	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant});
 	Future<List<ImageboardBoard>> getBoards();
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult});
 	String getWebUrl(String board, [int? threadId, int? postId]);
@@ -516,9 +756,41 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	/// If an empty list is returned from here, the bottom of the catalog has been reached.
 	Future<List<Thread>> getMoreCatalog(Thread after) async => [];
 	bool get hasOmittedReplies => false;
-	bool get sortByUpvotes => false;
+	bool get isReddit => false;
 	bool get supportsSearchOptions => true;
 	bool get supportsPushNotifications => false;
+	List<CatalogVariantGroup> get catalogVariantGroups => const [
+		CatalogVariantGroup(
+			name: 'Bump order',
+			variants: [CatalogVariant.unsorted, CatalogVariant.unsortedReversed],
+			hasPrimary: true
+		),
+		CatalogVariantGroup(
+			name: 'Reply count',
+			variants: [CatalogVariant.replyCount, CatalogVariant.replyCountReversed],
+			hasPrimary: true
+		),
+		CatalogVariantGroup(
+			name: 'Creation date',
+			variants: [CatalogVariant.threadPostTime, CatalogVariant.threadPostTimeReversed],
+			hasPrimary: true
+		),
+		CatalogVariantGroup(
+			name: 'Reply rate',
+			variants: [CatalogVariant.postsPerMinute, CatalogVariant.postsPerMinuteReversed],
+			hasPrimary: true
+		),
+		CatalogVariantGroup(
+			name: 'Last reply',
+			variants: [CatalogVariant.lastReplyTime, CatalogVariant.lastReplyTimeReversed],
+			hasPrimary: true
+		),
+		CatalogVariantGroup(
+			name: 'Image count',
+			variants: [CatalogVariant.imageCount, CatalogVariant.imageCountReversed],
+			hasPrimary: true
+		)
+	];
 }
 
 ImageboardSite makeSite(dynamic data) {

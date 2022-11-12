@@ -13,6 +13,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -110,6 +111,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(TristateSystemSettingAdapter());
 		Hive.registerAdapter(AutoloadAttachmentsSettingAdapter());
 		Hive.registerAdapter(ThreadSortingMethodAdapter());
+		Hive.registerAdapter(CatalogVariantAdapter());
 		Hive.registerAdapter(ContentSettingsAdapter());
 		Hive.registerAdapter(PostDisplayFieldAdapter());
 		Hive.registerAdapter(SettingsQuickActionAdapter());
@@ -332,8 +334,9 @@ class Persistence extends ChangeNotifier {
 			threadWatches: [],
 			boardWatches: [],
 			notificationsMigrated: true,
-			boardSortingMethods: {},
-			boardReverseSortings: {}
+			deprecatedBoardSortingMethods: {},
+			deprecatedBoardReverseSortings: {},
+			catalogVariants: {}
 		));
 		if (browserState.deprecatedTabs.isNotEmpty && ImageboardRegistry.instance.getImageboardUnsafe(id) != null) {
 			print('Migrating tabs');
@@ -805,6 +808,8 @@ class PersistentBrowserTab extends EasyListenable {
 	String? draftFilePath;
 	@HiveField(7)
 	String? initialSearch;
+	@HiveField(8)
+	CatalogVariant? catalogVariant;
 
 	PersistentBrowserTab({
 		this.board,
@@ -814,7 +819,8 @@ class PersistentBrowserTab extends EasyListenable {
 		this.imageboardKey,
 		this.draftOptions = '',
 		this.draftFilePath,
-		this.initialSearch
+		this.initialSearch,
+		this.catalogVariant
 	});
 }
 
@@ -842,13 +848,15 @@ class PersistentBrowserState {
 	@HiveField(12, defaultValue: false)
 	bool notificationsMigrated;
 	@HiveField(13, defaultValue: {})
-	final Map<String, ThreadSortingMethod> boardSortingMethods;
+	final Map<String, ThreadSortingMethod> deprecatedBoardSortingMethods;
 	@HiveField(14, defaultValue: {})
-	final Map<String, bool> boardReverseSortings;
+	final Map<String, bool> deprecatedBoardReverseSortings;
 	@HiveField(15, defaultValue: '')
 	String postingName;
 	@HiveField(16)
 	bool? useTree;
+	@HiveField(17, defaultValue: {})
+	final Map<String, CatalogVariant> catalogVariants;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -861,8 +869,9 @@ class PersistentBrowserState {
 		required this.threadWatches,
 		required this.boardWatches,
 		required this.notificationsMigrated,
-		required this.boardSortingMethods,
-		required this.boardReverseSortings,
+		required this.deprecatedBoardSortingMethods,
+		required this.deprecatedBoardReverseSortings,
+		required this.catalogVariants,
 		this.postingName = '',
 		this.useTree
 	}) : hiddenImageMD5s = hiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();

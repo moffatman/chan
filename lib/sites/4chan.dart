@@ -398,8 +398,58 @@ class Site4Chan extends ImageboardSite {
 		throw Exception('Not implemented');
 	}
 
+	Future<List<Thread>> _getArchive(String board) async {
+		final response = await client.get(Uri.https(baseUrl, '/$board/archive').toString(), options: Options(
+			validateStatus: (x) => true
+		));
+		if (response.statusCode != 200) {
+			if (response.statusCode == 404) {
+				return Future.error(BoardNotFoundException(board));
+			}
+			else {
+				return Future.error(HTTPStatusException(response.statusCode!));
+			}
+		}
+		final document = parse(response.data);
+		return document.querySelector('#arc-list tbody')!.querySelectorAll('tr').map((tr) {
+			final id = int.parse(tr.children.first.text);
+			final excerptNode = tr.children[1];
+			String? subject;
+			if (excerptNode.children.isNotEmpty && excerptNode.children.first.localName == 'b') {
+				subject = excerptNode.children.first.text;
+				excerptNode.children.first.remove();
+			}
+			final text = excerptNode.innerHtml;
+			return Thread(
+				replyCount: 0,
+				imageCount: 0,
+				id: id,
+				board: board,
+				title: subject,
+				isSticky: false,
+				time: DateTime.fromMicrosecondsSinceEpoch(0),
+				attachments: [],
+				posts_: [
+					Post(
+						board: board,
+						text: text,
+						name: defaultUsername,
+						time: DateTime.fromMicrosecondsSinceEpoch(0),
+						threadId: id,
+						id: id,
+						spanFormat: PostSpanFormat.chan4,
+						attachments: []
+					)
+				]
+			);
+		}).toList();
+	}
+
 	@override
-	Future<List<Thread>> getCatalog(String board) async {
+	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant}) async {
+		if (variant == CatalogVariant.chan4NativeArchive) {
+			return _getArchive(board);
+		}
 		final response = await client.get(Uri.https(apiUrl, '/$board/catalog.json').toString(), options: Options(
 			validateStatus: (x) => true
 		));
@@ -867,4 +917,13 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	bool get supportsPushNotifications => true;
+
+	@override
+	List<CatalogVariantGroup> get catalogVariantGroups => [
+		...super.catalogVariantGroups,
+		const CatalogVariantGroup(
+			name: 'Archive',
+			variants: [CatalogVariant.chan4NativeArchive]
+		)
+	];
 }

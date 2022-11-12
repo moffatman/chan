@@ -121,7 +121,7 @@ class ThreadRow extends StatelessWidget {
 										Icon(CupertinoIcons.clock, color: otherMetadataColor, size: 18),
 										const SizedBox(width: 4)
 									],
-									Text(formatRelativeTime(thread.time), style: TextStyle(color: otherMetadataColor)),
+									Text(latestThread.time.year < 2000 ? '--' : formatRelativeTime(latestThread.time), style: TextStyle(color: otherMetadataColor)),
 									const SizedBox(width: 4),
 								]
 							)
@@ -145,7 +145,7 @@ class ThreadRow extends StatelessWidget {
 								children: [
 									Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
 									const SizedBox(width: 4),
-									if ((latestReplyCount - unseenReplyCount) == 0 && countsUnreliable) const Text('--')
+									if ((latestReplyCount - unseenReplyCount) == 0 && (countsUnreliable && latestThread == thread)) const Text('--')
 									else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
 									if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
 									if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)),
@@ -165,7 +165,7 @@ class ThreadRow extends StatelessWidget {
 										Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
 										if (unseenImageCount > 0) Text('+$unseenImageCount'),
 									]
-									else if (unseenImageCount == 0 && countsUnreliable) const Text('--')
+									else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const Text('--')
 									else Text('$unseenImageCount', style: TextStyle(color: threadState?.lastSeenPostId != null ? grey : null)),
 									const SizedBox(width: 2)
 								]

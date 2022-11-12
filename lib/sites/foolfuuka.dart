@@ -339,7 +339,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return _makeThread(thread, data);
 	}
 	@override
-	Future<List<Thread>> getCatalog(String board) async {
+	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant}) async {
 		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/index').toString(),
 			queryParameters: {
 				'board': board,

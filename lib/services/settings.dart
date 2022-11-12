@@ -9,6 +9,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -364,9 +365,9 @@ class SavedSettings extends HiveObject {
 	@HiveField(2)
 	bool hideOldStickiedThreads;
 	@HiveField(3)
-	ThreadSortingMethod catalogSortingMethod;
+	ThreadSortingMethod deprecatedCatalogSortingMethod;
 	@HiveField(4)
-	bool reverseCatalogSorting;
+	bool deprecatedReverseCatalogSorting;
 	@HiveField(5)
 	ThreadSortingMethod savedThreadsSortingMethod;
 	@HiveField(6)
@@ -543,13 +544,17 @@ class SavedSettings extends HiveObject {
 	bool? useStatusBarWorkaround;
 	@HiveField(96)
 	bool enableIMEPersonalizedLearning;
+	@HiveField(97)
+	CatalogVariant catalogVariant;
+	@HiveField(98)
+	CatalogVariant redditCatalogVariant;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
 		TristateSystemSetting? theme = TristateSystemSetting.system,
 		bool? hideOldStickiedThreads,
-		ThreadSortingMethod? catalogSortingMethod,
-		bool? reverseCatalogSorting,
+		ThreadSortingMethod? deprecatedCatalogSortingMethod,
+		bool? deprecatedReverseCatalogSorting,
 		ThreadSortingMethod? savedThreadsSortingMethod,
 		bool? autoRotateInGallery,
 		String? currentBoardName,
@@ -641,11 +646,13 @@ class SavedSettings extends HiveObject {
 		List<String>? appliedMigrations,
 		this.useStatusBarWorkaround,
 		bool? enableIMEPersonalizedLearning,
+		CatalogVariant? catalogVariant,
+		CatalogVariant? redditCatalogVariant,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
-		catalogSortingMethod = catalogSortingMethod ?? ThreadSortingMethod.unsorted,
-		reverseCatalogSorting = reverseCatalogSorting ?? false,
+		deprecatedCatalogSortingMethod = deprecatedCatalogSortingMethod ?? ThreadSortingMethod.unsorted,
+		deprecatedReverseCatalogSorting = deprecatedReverseCatalogSorting ?? false,
 		savedThreadsSortingMethod = savedThreadsSortingMethod ?? ThreadSortingMethod.savedTime,
 		autoRotateInGallery = autoRotateInGallery ?? false,
 		useTouchLayout = useTouchLayout ?? (Platform.isAndroid || Platform.isIOS),
@@ -765,7 +772,9 @@ class SavedSettings extends HiveObject {
 		webmTranscoding = webmTranscoding ?? ((Platform.isIOS || Platform.isMacOS) ? WebmTranscodingSetting.always : WebmTranscodingSetting.never),
 		showListPositionIndicatorsOnLeft = showListPositionIndicatorsOnLeft ?? false,
 		appliedMigrations = appliedMigrations ?? [],
-		enableIMEPersonalizedLearning = enableIMEPersonalizedLearning ?? true {
+		enableIMEPersonalizedLearning = enableIMEPersonalizedLearning ?? true,
+		catalogVariant = catalogVariant ?? CatalogVariant.unsorted,
+		redditCatalogVariant = redditCatalogVariant ?? CatalogVariant.redditHot {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -773,6 +782,15 @@ class SavedSettings extends HiveObject {
 					return '${m.group(1)};top;highlight${m.group(3)}';
 				});
 				this.appliedMigrations.add('filters');
+			}
+			if (!this.appliedMigrations.contains('catalogVariant')) {
+				this.catalogVariant = CatalogVariantMetadata.migrate(this.deprecatedCatalogSortingMethod, this.deprecatedReverseCatalogSorting);
+				for (final browserState in this.browserStateBySite.values) {
+					for (final board in browserState.deprecatedBoardSortingMethods.keys) {
+						browserState.catalogVariants[board] = CatalogVariantMetadata.migrate(browserState.deprecatedBoardSortingMethods[board], browserState.deprecatedBoardReverseSortings[board]);
+					}
+				}
+				this.appliedMigrations.add('catalogVariant');
 			}
 		}
 
@@ -829,19 +847,6 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get hideOldStickiedThreads => _settings.hideOldStickiedThreads;
 	set hideOldStickiedThreads(bool setting) {
 		_settings.hideOldStickiedThreads = setting;
-		_settings.save();
-		notifyListeners();
-	}
-
-	ThreadSortingMethod get catalogSortingMethod => _settings.catalogSortingMethod;
-	set catalogSortingMethod(ThreadSortingMethod setting) {
-		_settings.catalogSortingMethod = setting;
-		_settings.save();
-		notifyListeners();
-	}
-	bool get reverseCatalogSorting => _settings.reverseCatalogSorting;
-	set reverseCatalogSorting(bool setting) {
-		_settings.reverseCatalogSorting = setting;
 		_settings.save();
 		notifyListeners();
 	}
@@ -1536,6 +1541,20 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get enableIMEPersonalizedLearning => _settings.enableIMEPersonalizedLearning;
 	set enableIMEPersonalizedLearning(bool setting) {
 		_settings.enableIMEPersonalizedLearning = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	CatalogVariant get catalogVariant => _settings.catalogVariant;
+	set catalogVariant(CatalogVariant setting) {
+		_settings.catalogVariant = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	CatalogVariant get redditCatalogVariant => _settings.redditCatalogVariant;
+	set redditCatalogVariant(CatalogVariant setting) {
+		_settings.redditCatalogVariant = setting;
 		_settings.save();
 		notifyListeners();
 	}

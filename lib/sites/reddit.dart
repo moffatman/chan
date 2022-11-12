@@ -366,9 +366,26 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalog(String board) async {
+	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant}) async {
 		await _updateBoardIfNeeded(board);
-		final response = await client.get(Uri.https(baseUrl, '/r/$board.json').toString());
+		final suffix = {
+			CatalogVariant.redditHot: '/hot.json',
+			CatalogVariant.redditNew: '/new.json',
+			CatalogVariant.redditRising: '/rising.json',
+			CatalogVariant.redditControversialPastHour: '/controversial.json?t=hour',
+			CatalogVariant.redditControversialPast24Hours: '/controversial.json?t=day',
+			CatalogVariant.redditControversialPastWeek: '/controversial.json?t=week',
+			CatalogVariant.redditControversialPastMonth: '/controversial.json?t=month',
+			CatalogVariant.redditControversialPastYear: '/controversial.json?t=year',
+			CatalogVariant.redditControversialAllTime: '/controversial.json?t=all',
+			CatalogVariant.redditTopPastHour: '/top.json?t=hour',
+			CatalogVariant.redditTopPast24Hours: '/top.json?t=day',
+			CatalogVariant.redditTopPastWeek: '/top.json?t=week',
+			CatalogVariant.redditTopPastMonth: '/top.json?t=month',
+			CatalogVariant.redditTopPastYear: '/top.json?t=year',
+			CatalogVariant.redditTopAllTime: '/top.json?t=all',
+		}[variant] ?? '.json';
+		final response = await client.get('https://$baseUrl/r/$board$suffix');
 		return (response.data['data']['children'] as List<dynamic>).map((d) => _makeThread(d['data'])..currentPage = 1).toList();
 	}
 
@@ -560,10 +577,52 @@ class SiteReddit extends ImageboardSite {
 	@override
 	bool get hasOmittedReplies => true;
 	@override
-	bool get sortByUpvotes => true;
+	bool get isReddit => true;
 	@override
 	bool get supportsSearchOptions => false;
 
 	@override
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? validate}) => getThread(thread);
+
+	@override
+	List<CatalogVariantGroup> get catalogVariantGroups => const [
+		CatalogVariantGroup(
+			name: 'Hot',
+			variants: [CatalogVariant.redditHot]
+		),
+		CatalogVariantGroup(
+			name: 'Top',
+			variants: [
+				CatalogVariant.redditTopPastHour,
+				CatalogVariant.redditTopPast24Hours,
+				CatalogVariant.redditTopPastWeek,
+				CatalogVariant.redditTopPastMonth,
+				CatalogVariant.redditTopPastYear,
+				CatalogVariant.redditTopAllTime
+			]
+		),
+		CatalogVariantGroup(
+			name: 'New',
+			variants: [
+				CatalogVariant.redditNew
+			]
+		),
+		CatalogVariantGroup(
+			name: 'Rising',
+			variants: [
+				CatalogVariant.redditRising
+			]
+		),
+		CatalogVariantGroup(
+			name: 'Controversial',
+			variants: [
+				CatalogVariant.redditControversialPastHour,
+				CatalogVariant.redditControversialPast24Hours,
+				CatalogVariant.redditControversialPastWeek,
+				CatalogVariant.redditControversialPastMonth,
+				CatalogVariant.redditControversialPastYear,
+				CatalogVariant.redditControversialAllTime
+			]
+		),
+	];
 }

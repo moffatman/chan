@@ -33,13 +33,14 @@ import 'package:provider/provider.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 
 import 'package:chan/pages/gallery.dart';
+import 'package:tuple/tuple.dart';
 
 const _oldThreadThreshold = Duration(days: 7);
 
 enum _ThreadSortingMethodScope {
 	global,
 	board,
-	temporary
+	tab
 }
 
 class BoardPage extends StatefulWidget {
@@ -61,6 +62,8 @@ class BoardPage extends StatefulWidget {
 	final String? Function()? getInitialThreadDraftFilePath;
 	final ValueChanged<String?>? onThreadDraftFilePathChanged;
 	final void Function(String, String, String)? onWantArchiveSearch;
+	final CatalogVariant? initialCatalogVariant;
+	final ValueChanged<CatalogVariant?>? onCatalogVariantChanged;
 	const BoardPage({
 		required this.initialBoard,
 		this.allowChangingBoard = true,
@@ -79,6 +82,8 @@ class BoardPage extends StatefulWidget {
 		this.getInitialThreadDraftFilePath,
 		this.onThreadDraftFilePathChanged,
 		this.onWantArchiveSearch,
+		this.initialCatalogVariant,
+		this.onCatalogVariantChanged,
 		required this.semanticId,
 		Key? key
 	}) : super(key: key);
@@ -92,17 +97,20 @@ class _BoardPageState extends State<BoardPage> {
 	late final RefreshableListController<Thread> _listController;
 	final _replyBoxKey = GlobalKey<ReplyBoxState>();
 	Completer<void>? _loadCompleter;
-	ThreadSortingMethod? _temporarySortingMethod;
-	bool _temporaryReverseSorting = false;
+	CatalogVariant? _variant;
 	ThreadIdentifier? _lastSelectedThread;
 	final _boardsPullTabKey = GlobalKey();
 	final _threadPullTabKey = GlobalKey();
 	int _page = 1;
 
+	CatalogVariant? get _defaultBoardVariant => context.read<Persistence?>()?.browserState.catalogVariants[board?.name];
+	CatalogVariant get _defaultGlobalVariant => ((context.read<ImageboardSite?>()?.isReddit ?? false) ? context.read<EffectiveSettings>().redditCatalogVariant : context.read<EffectiveSettings>().catalogVariant);
+
 	@override
 	void initState() {
 		super.initState();
 		_listController = RefreshableListController();
+		_variant = widget.initialCatalogVariant;
 		board = widget.initialBoard;
 		if (board == null) {
 			Future.delayed(const Duration(milliseconds: 100), _selectBoard);
@@ -150,8 +158,8 @@ class _BoardPageState extends State<BoardPage> {
 			if (_listController.scrollController?.hasOnePosition ?? false) {
 				_listController.scrollController?.jumpTo(0);
 			}
-			_temporarySortingMethod = null;
-			_temporaryReverseSorting = false;
+			_variant = null;
+			widget.onCatalogVariantChanged?.call(_variant);
 		});
 	}
 
@@ -176,6 +184,198 @@ class _BoardPageState extends State<BoardPage> {
 		}
 	}
 
+	Future<Tuple2<CatalogVariant?, _ThreadSortingMethodScope>?> _variantDetailsMenu({
+		required BuildContext context,
+		required CatalogVariant variant,
+		required List<CatalogVariant> others,
+		required CatalogVariant currentVariant
+	}) => showCupertinoModalPopup<Tuple2<CatalogVariant?, _ThreadSortingMethodScope>>(
+		context: context,
+		useRootNavigator: false,
+		builder: (context) => CupertinoActionSheet(
+			title: Text(variant.name),
+			actions: [
+				CupertinoActionSheetAction(
+					child: Row(
+						children: [
+							const SizedBox(width: 40),
+							Expanded(
+								child: Text('Set as default for /${board?.name}/', style: TextStyle(
+									fontWeight: _defaultBoardVariant == variant ? FontWeight.bold : null,
+									color: _defaultBoardVariant == variant ? CupertinoDynamicColor.resolve(CupertinoColors.placeholderText, context) : null
+								), textAlign: TextAlign.left)
+							),
+							if (_defaultBoardVariant == variant) GestureDetector(
+								child: const SizedBox(
+									width: 40,
+									child: Icon(CupertinoIcons.xmark)
+								),
+								onTap: () => Navigator.pop(context, const Tuple2(null, _ThreadSortingMethodScope.board))
+							)
+						]
+					),
+					onPressed: () {
+						if (_defaultBoardVariant == variant) return;
+						Navigator.pop(context, Tuple2(variant, _ThreadSortingMethodScope.board));
+					}
+				),
+				CupertinoActionSheetAction(
+					child: Row(
+						children: [
+							const SizedBox(width: 40),
+							Expanded(
+								child: Text('Set as global default', style: TextStyle(
+									fontWeight: _defaultGlobalVariant == variant ? FontWeight.bold : null,
+									color: _defaultGlobalVariant == variant ? CupertinoDynamicColor.resolve(CupertinoColors.placeholderText, context) : null
+								), textAlign: TextAlign.left)
+							)
+						]
+					),
+					onPressed: () {
+						if (_defaultGlobalVariant == variant) return;
+						Navigator.pop(context, Tuple2(variant, _ThreadSortingMethodScope.global));
+					}
+				),
+				...others.map((other) => _buildVariantDetails(
+					context: context,
+					v: CatalogVariantGroup(
+						name: other.name,
+						variants: [other]
+					),
+					currentVariant: currentVariant
+				))
+			],
+			cancelButton: CupertinoActionSheetAction(
+				child: const Text('Cancel'),
+				onPressed: () => Navigator.pop(context)
+			)
+		)
+	);
+
+	Widget _buildVariantDetails({
+		required BuildContext context,
+		required CatalogVariantGroup v,
+		required CatalogVariant currentVariant,
+	}) => GestureDetector(
+		child: Container(
+			constraints: const BoxConstraints(
+				minHeight: 56
+			),
+			padding: const EdgeInsets.symmetric(
+				vertical: 16,
+				horizontal: 10
+			),
+			child: Row(
+				children: [
+					SizedBox(
+						width: 40,
+						child: Center(
+							child: Icon(
+								v.variants.tryFirst?.icon ?? ((v.variants.tryFirst?.reverseAfterSorting ?? false) ? CupertinoIcons.sort_up : CupertinoIcons.sort_down),
+								color: ((v.variants.length == 1 || v.hasPrimary) && v.variants.first == currentVariant) ? CupertinoDynamicColor.resolve(CupertinoColors.placeholderText, context) : null
+							)
+						)
+					),
+					Expanded(
+						child: Text(v.name, style: TextStyle(
+							fontSize: 20,
+							fontWeight: v.variants.contains(currentVariant) ? FontWeight.bold : null,
+							color: ((v.variants.length == 1 || v.hasPrimary) && v.variants.first == currentVariant) ? CupertinoDynamicColor.resolve(CupertinoColors.placeholderText, context) : null
+						))
+					),
+					if (v.variants.first == _variant) GestureDetector(
+						child: const SizedBox(
+							width: 40,
+							child: Icon(CupertinoIcons.xmark)
+						),
+						onTap: () => Navigator.pop(context, const Tuple2(null, _ThreadSortingMethodScope.tab))
+					),
+					if ((v.hasPrimary || v.variants.length == 1) && !v.variants.first.temporary) GestureDetector(
+						child: const SizedBox(
+							width: 40,
+							child: Icon(CupertinoIcons.ellipsis)
+						),
+						onTap: () async {
+							final innerChoice = await _variantDetailsMenu(
+								context: context,
+								variant: v.variants.first,
+								others: v.variants.skip(1).toList(),
+								currentVariant: currentVariant
+							);
+							if (innerChoice != null && mounted) {
+								Navigator.pop(context, innerChoice);
+							}
+						}
+					)
+					else if (v.variants.length > 1) const Icon(CupertinoIcons.chevron_right)
+				]
+			)
+		),
+		onTap: () async {
+			if (((v.variants.length == 1 || v.hasPrimary) && v.variants.first == currentVariant)) {
+				return;
+			}
+			if (v.hasPrimary || v.variants.length == 1) {
+				Navigator.pop(context, Tuple2(v.variants.first, _ThreadSortingMethodScope.tab));
+			}
+			else {
+				final choice = await showCupertinoModalPopup<Tuple2<CatalogVariant?, _ThreadSortingMethodScope>>(
+					context: context,
+					useRootNavigator: false,
+					builder: (context) => CupertinoActionSheet(
+						title: Text(v.name),
+						actions: v.variants.map((subvariant) => GestureDetector(
+							child: Container(
+								constraints: const BoxConstraints(
+									minHeight: 56
+								),
+								padding: const EdgeInsets.symmetric(
+									vertical: 16,
+									horizontal: 10
+								),
+								child: Row(
+									children: [
+										SizedBox(
+											width: 40,
+											child: Center(
+												child: Icon(subvariant.icon ?? (subvariant.reverseAfterSorting ? CupertinoIcons.sort_up : CupertinoIcons.sort_down)),
+											)
+										),
+										Expanded(
+											child: Text(subvariant.name, style: const TextStyle(
+												fontSize: 20
+											))
+										),
+										GestureDetector(
+											child: const Icon(CupertinoIcons.ellipsis),
+											onTap: () async {
+												final innerChoice = await _variantDetailsMenu(
+													context: context,
+													variant: subvariant,
+													others: [],
+													currentVariant: currentVariant
+												);
+												if (innerChoice != null && mounted) {
+													Navigator.pop(context, innerChoice);
+												}
+											}
+										)
+									]
+								)
+							),
+							onTap: () async {
+								Navigator.pop(context, Tuple2(subvariant, _ThreadSortingMethodScope.tab));
+							}
+						)).toList()
+					)
+				);
+				if (choice != null && mounted) {
+					Navigator.pop(context, choice);
+				}
+			}
+		}
+	);
+
 	@override
 	Widget build(BuildContext context) {
 		final selectedThread = context.watch<MasterDetailHint?>()?.currentValue;
@@ -188,16 +388,7 @@ class _BoardPageState extends State<BoardPage> {
 		final persistence = context.watch<Persistence?>();
 		final notifications = context.watch<Notifications?>();
 		final boardWatch = notifications?.getBoardWatch(board?.name ?? '');
-		ThreadSortingMethod sortingMethod = settings.catalogSortingMethod;
-		bool reverseSorting = settings.reverseCatalogSorting;
-		if (persistence?.browserState.boardSortingMethods[board?.name] != null) {
-			sortingMethod = persistence!.browserState.boardSortingMethods[board?.name]!;
-			reverseSorting = persistence.browserState.boardReverseSortings[board?.name] ?? false;
-		}
-		if (_temporarySortingMethod != null) {
-			sortingMethod = _temporarySortingMethod!;
-			reverseSorting = _temporaryReverseSorting;
-		}
+		final variant = _variant ?? (_defaultBoardVariant ?? _defaultGlobalVariant);
 		Widget itemBuilder(BuildContext context, Thread thread, {String? highlightString}) {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
 			final isThreadHidden = context.select<Persistence, bool>((p) => p.browserState.isThreadHidden(thread.board, thread.id));
@@ -278,6 +469,7 @@ class _BoardPageState extends State<BoardPage> {
 						isSelected: isSelected,
 						semanticParentIds: [widget.semanticId],
 						dimReadThreads: true,
+						countsUnreliable: variant.countsUnreliable,
 						onThumbnailTap: (initialAttachment) {
 							final attachments = _listController.items.expand((_) => _.item.attachments).toList();
 							// It might not be in the list if the thread has been filtered
@@ -354,102 +546,81 @@ class _BoardPageState extends State<BoardPage> {
 						),
 						CupertinoButton(
 							padding: EdgeInsets.zero,
-							child: Transform(
-								alignment: Alignment.center,
-								transform: reverseSorting ? Matrix4.rotationX(pi) : Matrix4.identity(),
-								child: const Icon(CupertinoIcons.sort_down)
-							),
-							onPressed: () {
-								showCupertinoModalPopup<DateTime>(
+							child: (variant.icon != null && !variant.temporary) ? FittedBox(
+								fit: BoxFit.contain,
+								child: SizedBox(
+									width: 40,
+									height: 40,
+									child: Stack(
+										children: [
+											Align(
+												alignment: Alignment.bottomRight,
+												child: Icon(variant.icon)
+											),
+											Align(
+												alignment: Alignment.topLeft,
+												child: Icon(variant.reverseAfterSorting ? CupertinoIcons.sort_up : CupertinoIcons.sort_down)
+											)
+										]
+									)
+								)
+							) : (variant.icon != null && variant.temporary) ? Icon(variant.icon) : Icon(variant.reverseAfterSorting ? CupertinoIcons.sort_up : CupertinoIcons.sort_down),
+							onPressed: () async {
+								final choice = await showCupertinoModalPopup<Tuple2<CatalogVariant?, _ThreadSortingMethodScope>>(
 									context: context,
+									useRootNavigator: false,
 									builder: (context) => CupertinoActionSheet(
 										title: const Text('Sort by...'),
-										actions: {
-											ThreadSortingMethod.unsorted: 'Bump Order',
-											ThreadSortingMethod.replyCount: 'Reply Count',
-											ThreadSortingMethod.threadPostTime: 'Creation Date',
-											ThreadSortingMethod.postsPerMinute: 'Reply Rate',
-											ThreadSortingMethod.lastReplyTime: 'Last Reply',
-											ThreadSortingMethod.imageCount: 'Image Count',
-											if (_temporarySortingMethod != null) null: 'Clear temporary method'
-											else if (persistence?.browserState.boardSortingMethods[board?.name] != null) null: 'Clear board method'
-										}.entries.map((entry) => CupertinoActionSheetAction(
-											child: Text(entry.value, style: TextStyle(
-												fontWeight: (entry.key == sortingMethod || entry.key == null) ? FontWeight.bold : null
-											)),
-											onPressed: () {
-												Navigator.of(context, rootNavigator: true).pop();
-												final method = entry.key;
-												if (method == null) {
-													if (_temporarySortingMethod != null) {
-														_temporarySortingMethod = null;
-													}
-													else {
-														persistence?.browserState.boardSortingMethods.remove(board?.name);
-														persistence?.browserState.boardReverseSortings.remove(board?.name);
-													}
-													setState(() {});
-													return;
-												}
-												showCupertinoModalPopup<DateTime>(
-													context: context,
-													builder: (context) => CupertinoActionSheet(
-														title: const Text('Sorting method scope'),
-														actions: {
-															_ThreadSortingMethodScope.global: 'For All Boards',
-															_ThreadSortingMethodScope.board: 'For Current Board',
-															_ThreadSortingMethodScope.temporary: 'Temporarily',
-														}.entries.map((entry) => CupertinoActionSheetAction(
-															child: Text(entry.value),
-															onPressed: () {
-																switch (entry.key) {
-																	case _ThreadSortingMethodScope.global:
-																		if (settings.catalogSortingMethod == method) {
-																			settings.reverseCatalogSorting = !settings.reverseCatalogSorting;
-																		}
-																		else {
-																			settings.reverseCatalogSorting = false;
-																			settings.catalogSortingMethod = method;
-																		}
-																		break;
-																	case _ThreadSortingMethodScope.board:
-																		if (persistence?.browserState.boardSortingMethods[board!.name] == method) {
-																			persistence?.browserState.boardReverseSortings[board!.name] = !(persistence.browserState.boardReverseSortings[board!.name] ?? false);
-																		}
-																		else {
-																			persistence?.browserState.boardReverseSortings[board!.name] = false;
-																			persistence?.browserState.boardSortingMethods[board!.name] = method;
-																		}
-																		persistence?.didUpdateBrowserState();
-																		break;
-																	case _ThreadSortingMethodScope.temporary:
-																		if (_temporarySortingMethod == method) {
-																			_temporaryReverseSorting = !_temporaryReverseSorting;
-																		}
-																		else {
-																			_temporaryReverseSorting = false;
-																			_temporarySortingMethod = method;
-																		}
-																		setState(() {});
-																		break;
-																}
-																Navigator.of(context, rootNavigator: true).pop();
-															}
-														)).toList(),
-														cancelButton: CupertinoActionSheetAction(
-															child: const Text('Cancel'),
-															onPressed: () => Navigator.of(context, rootNavigator: true).pop()
-														)
-													)
-												);
-											}
+										actions:(site?.catalogVariantGroups ?? []).map((v) => _buildVariantDetails(
+											context: context,
+											v: v,
+											currentVariant: variant
 										)).toList(),
 										cancelButton: CupertinoActionSheetAction(
 											child: const Text('Cancel'),
-											onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+											onPressed: () => Navigator.pop(context)
 										)
 									)
 								);
+								if (choice == null) {
+									return;
+								}
+								if (choice.item1 == null) {
+									if (choice.item2 == _ThreadSortingMethodScope.tab) {
+										_variant = null;
+										widget.onCatalogVariantChanged?.call(_variant);
+									}
+									else if (choice.item2 == _ThreadSortingMethodScope.board) {
+										persistence?.browserState.catalogVariants.remove(board?.name);
+									}
+									setState(() {});
+									return;
+								}
+								switch (choice.item2) {
+									case _ThreadSortingMethodScope.global:
+										if (site?.isReddit ?? false) {
+											settings.redditCatalogVariant = choice.item1!;
+										}
+										else {
+											settings.catalogVariant = choice.item1!;
+										}
+										break;
+									case _ThreadSortingMethodScope.board:
+										persistence?.browserState.catalogVariants[board!.name] = choice.item1!;
+										persistence?.didUpdateBrowserState();
+										break;
+									case _ThreadSortingMethodScope.tab:
+										final otherwiseDefault = _defaultBoardVariant ?? _defaultGlobalVariant;
+										if (otherwiseDefault == choice.item1!) {
+											_variant = null;
+										}
+										else {
+											_variant = choice.item1!;
+										}
+										widget.onCatalogVariantChanged?.call(_variant);
+										setState(() {});
+										break;
+								}
 							}
 						),
 						if (imageboard?.site.supportsPosting ?? false) CupertinoButton(
@@ -595,41 +766,36 @@ class _BoardPageState extends State<BoardPage> {
 															await persistence.didUpdateBrowserState();
 														},
 														sortMethods: [
-															if (sortingMethod == ThreadSortingMethod.replyCount)
-																if (reverseSorting)
-																	(b, a) => b.replyCount.compareTo(a.replyCount)
-																else
-																	(a, b) => b.replyCount.compareTo(a.replyCount)
-															else if (sortingMethod == ThreadSortingMethod.threadPostTime)
-																if (reverseSorting)
-																	(b, a) => b.id.compareTo(a.id)
-																else
-																	(a, b) => b.id.compareTo(a.id)
-															else if (sortingMethod == ThreadSortingMethod.postsPerMinute)
-																if (reverseSorting)
-																	(b, a) {
-																		final now = DateTime.now();
-																		return -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds);
-																	}
-																else
-																	(a, b) {
-																		final now = DateTime.now();
-																		return -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds);
-																	}
-																else if (sortingMethod == ThreadSortingMethod.lastReplyTime)
-																	if (reverseSorting)
-																		(b, a) => b.posts.last.id.compareTo(a.posts.last.id)
-																	else
-																		(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
-																else if (sortingMethod == ThreadSortingMethod.imageCount)
-																	if (reverseSorting)
-																		(b, a) => b.imageCount.compareTo(a.imageCount)
-																	else
-																		(a, b) => b.imageCount.compareTo(a.imageCount)
+															if (variant == CatalogVariant.replyCount)
+																(a, b) => b.replyCount.compareTo(a.replyCount)
+															else if (variant == CatalogVariant.replyCountReversed)
+																(b, a) => b.replyCount.compareTo(a.replyCount)
+															else if (variant == CatalogVariant.threadPostTime)
+																(a, b) => b.id.compareTo(a.id)
+															else if (variant == CatalogVariant.threadPostTimeReversed)
+																(b, a) => b.id.compareTo(a.id)
+															else if (variant == CatalogVariant.postsPerMinute)
+																(a, b) {
+																	final now = DateTime.now();
+																	return -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds);
+																}
+															else if (variant == CatalogVariant.postsPerMinuteReversed)
+																(b, a) {
+																	final now = DateTime.now();
+																	return -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds);
+																}
+															else if (variant == CatalogVariant.lastReplyTime)
+																(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
+															else if (variant == CatalogVariant.lastReplyTimeReversed)
+																(b, a) => b.posts.last.id.compareTo(a.posts.last.id)
+															else if (variant == CatalogVariant.imageCount)
+																(a, b) => b.imageCount.compareTo(a.imageCount)
+															else if (variant == CatalogVariant.imageCountReversed)
+																(b, a) => b.imageCount.compareTo(a.imageCount)
 														],
 														gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
 														controller: _listController,
-														listUpdater: () => site.getCatalog(board!.name).then((list) async {
+														listUpdater: () => site.getCatalog(board!.name, variant: variant).then((list) async {
 															for (final thread in list) {
 																await thread.preinit(catalog: true);
 															}
@@ -653,7 +819,7 @@ class _BoardPageState extends State<BoardPage> {
 															}
 															return list;
 														}),
-														id: '${site.name} /${board!.name}/',
+														id: '${site.name} /${board!.name}/${variant.dataId}',
 														itemBuilder: (context, thread) => itemBuilder(context, thread),
 														filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
 														filterHint: 'Search in board',

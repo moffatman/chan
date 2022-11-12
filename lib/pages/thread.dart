@@ -506,7 +506,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																		key: _listKey,
 																		sortMethods: [
 																			(a, b) => a.id.compareTo(b.id),
-																			if (context.watch<ImageboardSite>().sortByUpvotes && useTree)  (a, b) => (b.upvotes ?? 0).compareTo(a.upvotes ?? 0)
+																			if (context.watch<ImageboardSite>().isReddit && useTree)  (a, b) => (b.upvotes ?? 0).compareTo(a.upvotes ?? 0)
 																		],
 																		id: '/${widget.thread.board}/${widget.thread.id}',
 																		disableUpdates: persistentState.thread?.isArchived ?? false,

@@ -212,13 +212,14 @@ class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
       draftOptions: fields[5] == null ? '' : fields[5] as String,
       draftFilePath: fields[6] as String?,
       initialSearch: fields[7] as String?,
+      catalogVariant: fields[8] as CatalogVariant?,
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserTab obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.board)
       ..writeByte(1)
@@ -234,7 +235,9 @@ class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
       ..writeByte(6)
       ..write(obj.draftFilePath)
       ..writeByte(7)
-      ..write(obj.initialSearch);
+      ..write(obj.initialSearch)
+      ..writeByte(8)
+      ..write(obj.catalogVariant);
   }
 
   @override
@@ -281,11 +284,14 @@ class PersistentBrowserStateAdapter
       boardWatches:
           fields[11] == null ? [] : (fields[11] as List).cast<BoardWatch>(),
       notificationsMigrated: fields[12] == null ? false : fields[12] as bool,
-      boardSortingMethods: fields[13] == null
+      deprecatedBoardSortingMethods: fields[13] == null
           ? {}
           : (fields[13] as Map).cast<String, ThreadSortingMethod>(),
-      boardReverseSortings:
+      deprecatedBoardReverseSortings:
           fields[14] == null ? {} : (fields[14] as Map).cast<String, bool>(),
+      catalogVariants: fields[17] == null
+          ? {}
+          : (fields[17] as Map).cast<String, CatalogVariant>(),
       postingName: fields[15] == null ? '' : fields[15] as String,
       useTree: fields[16] as bool?,
     );
@@ -294,7 +300,7 @@ class PersistentBrowserStateAdapter
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -316,13 +322,15 @@ class PersistentBrowserStateAdapter
       ..writeByte(12)
       ..write(obj.notificationsMigrated)
       ..writeByte(13)
-      ..write(obj.boardSortingMethods)
+      ..write(obj.deprecatedBoardSortingMethods)
       ..writeByte(14)
-      ..write(obj.boardReverseSortings)
+      ..write(obj.deprecatedBoardReverseSortings)
       ..writeByte(15)
       ..write(obj.postingName)
       ..writeByte(16)
-      ..write(obj.useTree);
+      ..write(obj.useTree)
+      ..writeByte(17)
+      ..write(obj.catalogVariants);
   }
 
   @override
