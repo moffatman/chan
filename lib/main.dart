@@ -1298,6 +1298,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					message: settings.supportMouse.value ? 'Switched to mouse layout' : 'Switched to touch layout'
 				);
 				break;
+			case SettingsQuickAction.toggleListPositionIndicatorLocation:
+				settings.showListPositionIndicatorsOnLeft = !settings.showListPositionIndicatorsOnLeft;
+				showToast(
+					context: context,
+					icon: settings.showListPositionIndicatorsOnLeft ? CupertinoIcons.arrow_left_to_line : CupertinoIcons.arrow_right_to_line,
+					message: settings.showListPositionIndicatorsOnLeft ? 'Moved list position indicators to left' : 'Moved list position indicators to right'
+				);
+				break;
 			case null:
 				break;
 		}

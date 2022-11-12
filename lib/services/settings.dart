@@ -327,6 +327,8 @@ enum SettingsQuickAction {
 	toggleCatalogLayout,
 	@HiveField(3)
 	toggleInterfaceStyle,
+	@HiveField(4)
+	toggleListPositionIndicatorLocation
 }
 
 @HiveType(typeId: 32)
@@ -350,6 +352,8 @@ extension SettingsQuickActionName on SettingsQuickAction? {
 				return 'Toggle catalog layout';
 			case SettingsQuickAction.toggleInterfaceStyle:
 				return 'Toggle interface style';
+			case SettingsQuickAction.toggleListPositionIndicatorLocation:
+				return 'Toggle list position indicator location';
 			case null:
 				return 'None';
 		}
