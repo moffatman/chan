@@ -509,6 +509,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							}
 							else {
 								context.read<_CollapsedRefreshableTreeItems>().hideItem(value.parentIds, id!);
+								widget.controller?._alignToItemIfPartiallyAboveFold(value);
 							}
 						}
 						else {
@@ -1289,7 +1290,7 @@ class RefreshableListController<T extends Object> {
 		}
 		lastCached++; // Cache the final item if uncached
 		for (int i = 0; i < lastCached; i++) {
-			if (_items[i].cachedOffset == null) {
+			if (_items[i].cachedOffset == null || state?.widget.useTree == true) {
 				_tryCachingItem(i, _items[i]);
 			}
 		}
@@ -1376,7 +1377,6 @@ class RefreshableListController<T extends Object> {
 		return estimate;
 	}
 	Future<void> animateTo(bool Function(T val) f, {double alignment = 0.0, bool Function(T val)? orElseLast, Duration duration = const Duration(milliseconds: 200)}) async {
-		final start = DateTime.now();
 		int targetIndex = _items.indexWhere((i) => f(i.item.item));
 		if (targetIndex == -1) {
 			if (orElseLast != null) {
@@ -1386,7 +1386,11 @@ class RefreshableListController<T extends Object> {
 				throw StateError('No matching item to scroll to');
 			}
 		}
+		_animateToIndex(targetIndex, alignment: alignment, duration: duration);
+	}
+	Future<void> _animateToIndex(int targetIndex, {double alignment = 0.0, Duration duration = const Duration(milliseconds: 200)}) async {
 		print('$contentId animating to $targetIndex');
+		final start = DateTime.now();
 		currentTargetIndex = targetIndex;
 		Duration d = duration;
 		Curve c = Curves.easeIn;
@@ -1502,6 +1506,16 @@ class RefreshableListController<T extends Object> {
 	}
 	Future<void> update() async {
 		await state?.update();
+	}
+	Future<void> _alignToItemIfPartiallyAboveFold(RefreshableListItem<T> item) async {
+		final found = _items.tryFirstWhere((i) => i.item == item);
+		if (found != null && found.cachedOffset != null && (found.cachedOffset! < (scrollController?.offset ?? 0))) {
+			scrollController?.animateTo(
+				found.cachedOffset!,
+				duration: const Duration(milliseconds: 200),
+				curve: Curves.ease
+			);
+		}
 	}
 }
 
