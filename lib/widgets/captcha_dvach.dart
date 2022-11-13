@@ -6,7 +6,6 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:provider/provider.dart';
 
 class CaptchaDvach extends StatefulWidget {
 	final DvachCaptchaRequest request;
