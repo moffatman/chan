@@ -11,10 +11,12 @@ import 'package:provider/provider.dart';
 class CaptchaDvach extends StatefulWidget {
 	final DvachCaptchaRequest request;
 	final ValueChanged<DvachCaptchaSolution> onCaptchaSolved;
+	final ImageboardSite site;
 
 	const CaptchaDvach({
 		required this.request,
 		required this.onCaptchaSolved,
+		required this.site,
 		Key? key
 	}) : super(key: key);
 
@@ -57,8 +59,7 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 	}
 
 	Future<CaptchaDvachChallenge> _requestChallenge() async {
-		final site = context.read<ImageboardSite>();
-		final idResponse = await site.client.get(Uri.https(site.baseUrl, '/api/captcha/2chcaptcha/id').toString(), options: Options(
+		final idResponse = await widget.site.client.get(Uri.https(widget.site.baseUrl, '/api/captcha/2chcaptcha/id').toString(), options: Options(
 			responseType: ResponseType.json
 		));
 		if (idResponse.statusCode != 200) {
@@ -70,7 +71,7 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 		final String id = idResponse.data['id'];
 		final String inputType = idResponse.data['input'];
 		final DateTime expiresAt = DateTime.now().add(widget.request.challengeLifetime);
-		final imageResponse = await site.client.get(Uri.https(site.baseUrl, '/api/captcha/2chcaptcha/show').toString(), queryParameters: {
+		final imageResponse = await widget.site.client.get(Uri.https(widget.site.baseUrl, '/api/captcha/2chcaptcha/show').toString(), queryParameters: {
 			'id': id
 		}, options: Options(
 			responseType: ResponseType.bytes

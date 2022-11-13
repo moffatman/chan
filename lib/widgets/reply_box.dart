@@ -719,7 +719,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			if (!mounted) return;
 			if (captchaRequest is RecaptchaRequest) {
 				hideReplyBox();
-				_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
+				_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
 					builder: (context) => OverscrollModalPage(
 						child: CaptchaNoJS(
 							site: site,
@@ -733,7 +733,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 			else if (captchaRequest is Chan4CustomCaptchaRequest) {
 				hideReplyBox();
-				_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
+				_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
 					builder: (context) => OverscrollModalPage(
 						child: Captcha4ChanCustom(
 							site: site,
@@ -747,11 +747,12 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 			else if (captchaRequest is SecurimageCaptchaRequest) {
 				hideReplyBox();
-				_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
+				_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
 					builder: (context) => OverscrollModalPage(
 						child: CaptchaSecurimage(
 							request: captchaRequest,
-							onCaptchaSolved: (key) => Navigator.of(context).pop(key)
+							onCaptchaSolved: (key) => Navigator.of(context).pop(key),
+							site: site
 						)
 					),
 					showAnimations: context.read<EffectiveSettings>().showAnimations
@@ -760,11 +761,12 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 			else if (captchaRequest is DvachCaptchaRequest) {
 				hideReplyBox();
-				_captchaSolution = await Navigator.of(context).push<CaptchaSolution>(TransparentRoute(
+				_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
 					builder: (context) => OverscrollModalPage(
 						child: CaptchaDvach(
 							request: captchaRequest,
-							onCaptchaSolved: (key) => Navigator.of(context).pop(key)
+							onCaptchaSolved: (key) => Navigator.of(context).pop(key),
+							site: site
 						)
 					),
 					showAnimations: context.read<EffectiveSettings>().showAnimations

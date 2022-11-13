@@ -7,15 +7,16 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:provider/provider.dart';
 
 class CaptchaSecurimage extends StatefulWidget {
 	final SecurimageCaptchaRequest request;
 	final ValueChanged<SecurimageCaptchaSolution> onCaptchaSolved;
+	final ImageboardSite site;
 
 	const CaptchaSecurimage({
 		required this.request,
 		required this.onCaptchaSolved,
+		required this.site,
 		Key? key
 	}) : super(key: key);
 
@@ -56,7 +57,7 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 	}
 
 	Future<CaptchaSecurimageChallenge> _requestChallenge() async {
-		final challengeResponse = await context.read<ImageboardSite>().client.get(widget.request.challengeUrl.toString(), queryParameters: {
+		final challengeResponse = await widget.site.client.get(widget.request.challengeUrl.toString(), queryParameters: {
 			'mode': 'get',
 			'extra': 'abcdefghijklmnopqrstuvwxyz'
 		}, options: Options(
