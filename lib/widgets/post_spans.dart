@@ -88,6 +88,7 @@ class PostSpanRenderOptions {
 		int? maxLines,
 		int? charactersPerLine,
 		InlineSpan? postInject,
+		bool removePostInject = false
 	}) => PostSpanRenderOptions(
 		recognizer: recognizer ?? this.recognizer,
 		overrideRecognizer: overrideRecognizer ?? this.overrideRecognizer,
@@ -104,7 +105,7 @@ class PostSpanRenderOptions {
 		highlightString: highlightString,
 		maxLines: maxLines ?? this.maxLines,
 		charactersPerLine: charactersPerLine ?? this.charactersPerLine,
-		postInject: postInject ?? this.postInject
+		postInject: removePostInject ? null : (postInject ?? this.postInject)
 	);
 }
 
@@ -142,7 +143,7 @@ class PostNodeSpan extends PostSpan {
 		final renderChildren = <InlineSpan>[];
 		List<PostSpan> effectiveChildren = children;
 		if (options.postInject != null) {
-			effectiveOptions = options.copyWith(postInject: null);
+			effectiveOptions = effectiveOptions.copyWith(removePostInject: true);
 			effectiveChildren = children.toList()..add(_PostWrapperSpan(options.postInject!));
 		}
 		final ownLineOptions = effectiveOptions.copyWith(ownLine: true);
