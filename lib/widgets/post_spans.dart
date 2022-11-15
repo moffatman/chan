@@ -767,7 +767,10 @@ class PostLinkSpan extends PostSpan {
 								crossAxisAlignment: CrossAxisAlignment.start,
 								children: [
 									if (name != null) Text(name!),
-									if (snapshot.data?.title != null) Text(snapshot.data!.title!, style: TextStyle(
+									if (snapshot.data?.title?.isNotEmpty ?? false) Text(snapshot.data!.title!, style: TextStyle(
+										color: settings.theme.primaryColor
+									), textScaleFactor: 1)
+									else if (name == null) Text(url, style: TextStyle(
 										color: settings.theme.primaryColor
 									), textScaleFactor: 1),
 									if (byline != null) Text(byline, style: const TextStyle(color: Colors.grey), textScaleFactor: 1)
