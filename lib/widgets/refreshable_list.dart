@@ -215,6 +215,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final bool useTree;
 	final RefreshableTreeAdapter<T>? treeAdapter;
 	final List<Comparator<T>> sortMethods;
+	final bool reverseSort;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -240,6 +241,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.treeAdapter,
 		this.collapsedItemBuilder,
 		this.sortMethods = const [],
+		this.reverseSort = false,
 		Key? key
 	}) : super(key: key);
 
@@ -248,7 +250,8 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 }
 
 class RefreshableListState<T extends Object> extends State<RefreshableList<T>> with TickerProviderStateMixin {
-	List<T>? list;
+	List<T>? originalList;
+	List<T>? sortedList;
 	String? errorMessage;
 	Type? errorType;
 	SearchFilter? _searchFilter;
@@ -282,9 +285,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		widget.controller?.attach(this);
 		widget.controller?.newContentId(widget.id);
-		list = widget.initialList?.toList();
-		if (list != null) {
-			_sortList(list!);
+		originalList = widget.initialList?.toList();
+		if (originalList != null) {
+			sortedList = originalList!.toList();
+			_sortList();
 		}
 		if (!widget.disableUpdates) {
 			update();
@@ -302,7 +306,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			_scrollViewKey = GlobalKey();
 			_sliverListKey = GlobalKey();
 			_closeSearch();
-			list = widget.initialList;
+			originalList = widget.initialList;
+			sortedList = null;
 			errorMessage = null;
 			errorType = null;
 			lastUpdateTime = null;
@@ -318,10 +323,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 		}
 		else if (widget.disableUpdates && !listEquals(oldWidget.initialList, widget.initialList)) {
-			list = widget.initialList;
+			originalList = widget.initialList;
+			sortedList = null;
 		}
-		if (!listEquals(widget.sortMethods, oldWidget.sortMethods) && list != null) {
-			_sortList(list!);
+		if ((!listEquals(widget.sortMethods, oldWidget.sortMethods) ||
+		     widget.reverseSort != oldWidget.reverseSort ||
+				 sortedList == null) && originalList != null) {
+			sortedList = originalList!.toList();
+			_sortList();
 		}
 	}
 
@@ -334,9 +343,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		_footerShakeAnimation.dispose();
 	}
 
-	void _sortList(List<T> theList) {
+	void _sortList() {
 		for (final method in widget.sortMethods) {
-			mergeSort<T>(theList, compare: method);
+			mergeSort<T>(sortedList!, compare: method);
+		}
+		if (widget.reverseSort) {
+			sortedList = sortedList!.reversed.toList();
 		}
 	}
 
@@ -383,15 +395,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			if (widget.controller?.scrollController?.positions.length == 1 && (widget.controller!.scrollController!.position.pixels > 0 && (widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent))) {
 				minUpdateDuration = const Duration(seconds: 1);
 			}
-			if (extend && widget.listExtender != null && (list?.isNotEmpty ?? false)) {
-				final newItems = await widget.listExtender!(list!.last);
-				newList = list!.followedBy(newItems).toList();
+			if (extend && widget.listExtender != null && (originalList?.isNotEmpty ?? false)) {
+				final newItems = await widget.listExtender!(originalList!.last);
+				newList = originalList!.followedBy(newItems).toList();
 			}
 			else {
 				newList = (await Future.wait([widget.listUpdater(), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
-			}
-			if (newList != null) {
-				_sortList(newList);
 			}
 			if (updatingWithId != widget.id) {
 				updatingNow = false;
@@ -442,12 +451,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 		}
 		updatingNow = false;
-		if (mounted && (newList != null || list == null || errorMessage != null)) {
+		if (mounted && (newList != null || originalList == null || errorMessage != null)) {
 			if (hapticFeedback) {
 				mediumHapticFeedback();
 			}
 			setState(() {
-				list = newList ?? list;
+				originalList = newList ?? originalList;
+				sortedList = originalList?.toList();
+				if (sortedList != null) {
+					_sortList();
+				}
 			});
 		}
 	}
@@ -513,11 +526,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							}
 						}
 						else {
-							final newList = await widget.treeAdapter!.updateWithOmittedChildren(list!, value.item);
-							_sortList(newList);
-							setState(() {
-								list = newList;
-							});
+							originalList = await widget.treeAdapter!.updateWithOmittedChildren(originalList!, value.item);
+							sortedList = originalList!.toList();
+							_sortList();
+							setState(() { });
 						}
 					},
 					child: child
@@ -642,7 +654,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		widget.controller?.reportPrimaryScrollController(PrimaryScrollController.of(context));
 		widget.controller?.topOffset = MediaQuery.of(context).padding.top;
 		widget.controller?.bottomOffset = MediaQuery.of(context).padding.bottom;
-		if (list != null) {
+		if (sortedList != null) {
 			final pinnedValues = <RefreshableListItem<T>>[];
 			List<RefreshableListItem<T>> values = [];
 			final filteredValues = <RefreshableListItem<T>>[];
@@ -650,7 +662,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				if (_searchFilter != null) _searchFilter!,
 				Filter.of(context)
 			];
-			for (final item in list!) {
+			for (final item in sortedList!) {
 				bool handled = false;
 				for (final filter in filters) {
 					final result = widget.filterableAdapter != null ? filter.filter(widget.filterableAdapter!(item)) : null;
@@ -774,7 +786,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 											),
 											bottom: false
 										),
-										if ((list?.isNotEmpty ?? false) && widget.filterableAdapter != null) SliverToBoxAdapter(
+										if ((sortedList?.isNotEmpty ?? false) && widget.filterableAdapter != null) SliverToBoxAdapter(
 											child: Container(
 												height: kMinInteractiveDimensionCupertino * context.select<EffectiveSettings, double>((s) => s.textScale),
 												padding: const EdgeInsets.all(4),
@@ -1499,7 +1511,8 @@ class RefreshableListController<T extends Object> {
 		return null;
 	}
 	Future<void> blockAndUpdate() async {
-		state?.list = null;
+		state?.originalList = null;
+		state?.sortedList = null;
 		setItems([]);
 		await state?.update();
 		slowScrollUpdates.add(null);

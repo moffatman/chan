@@ -5,6 +5,7 @@ import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/pages/overscroll_modal.dart';
@@ -53,6 +54,9 @@ class _PostsPageState extends State<PostsPage> {
 					replies.add(archivedPost);
 				}
 			}
+		}
+		for (final method in widget.zone.postSortingMethods) {
+			mergeSort<Post>(replies, compare: method);
 		}
 		final attachments = replies.expand<Attachment>((a) => a.attachments).toList();
 		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.thread.posts.tryFirstWhere((p) => p.id == widget.postIdForBackground);

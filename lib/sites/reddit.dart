@@ -431,7 +431,6 @@ class SiteReddit extends ImageboardSite {
 			}
 		}
 		addChildren(null, response.data[1]['data']['children']);
-		ret.sort((a, b) => a.time.compareTo(b.time));
 		return ret;
 	}
 
@@ -498,7 +497,6 @@ class SiteReddit extends ImageboardSite {
 			}
 		}
 		addChildren(null, response.data[1]['data']['children']);
-		ret.posts_.sort((a, b) => a.id.compareTo(b.id));
 		return ret;
 	}
 

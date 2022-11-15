@@ -351,6 +351,9 @@ class _ThreadPageState extends State<ThreadPage> {
 		final notifications = context.watch<Notifications>();
 		final watch = context.select<Persistence, ThreadWatch?>((_) => notifications.getThreadWatch(widget.thread));
 		final reverseIndicatorPosition = context.select<EffectiveSettings, bool>((s) => s.showListPositionIndicatorsOnLeft);
+		zone.postSortingMethods = [
+			if (context.watch<ImageboardSite>().isReddit && !useTree) (a, b) => a.id.compareTo(b.id)
+		];
 		return WillPopScope(
 			onWillPop: () async {
 				if (_replyBoxKey.currentState?.show ?? false) {
@@ -504,10 +507,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																	child: RefreshableList<Post>(
 																		filterableAdapter: (t) => t,
 																		key: _listKey,
-																		sortMethods: [
-																			(a, b) => a.id.compareTo(b.id),
-																			if (context.watch<ImageboardSite>().isReddit && useTree)  (a, b) => (b.upvotes ?? 0).compareTo(a.upvotes ?? 0)
-																		],
+																		sortMethods: zone.postSortingMethods,
 																		id: '/${widget.thread.board}/${widget.thread.id}',
 																		disableUpdates: persistentState.thread?.isArchived ?? false,
 																		autoUpdateDuration: const Duration(seconds: 60),
@@ -526,18 +526,23 @@ class _ThreadPageState extends State<ThreadPage> {
 																				final postsById = {
 																					for (final post in thread.posts_) post.id: post
 																				};
-																				for (final item in newChildren) {
-																					if (postsById[item.id] != null) {
-																						postsById[item.id]?.omittedChildrenCount = 0;
-																					}
-																					else {
-																						thread.posts_.add(item);
-																						for (final parentId in item.repliedToIds) {
-																							postsById[parentId]?.replyIds.add(item.id);
+																				int afterIndex = thread.posts_.indexWhere((oldPost) => oldPost.id == p.id);
+																				if (afterIndex != -1) {
+																					for (int i = afterIndex; i < thread.posts_.length && newChildren.isNotEmpty; i++) {
+																						if (thread.posts_[i].id == newChildren.first.id) {
+																							thread.posts_[i].omittedChildrenCount = 0;
 																						}
+																						else {
+																							thread.posts_.insert(i, newChildren.first);
+																							postsById[newChildren.first.id] = newChildren.first;
+																							for (final parentId in newChildren.first.repliedToIds) {
+																								postsById[parentId]?.replyIds.add(newChildren.first.id);
+																							}
+																						}
+																						newChildren.removeAt(0);
 																					}
 																				}
-																				thread.posts_.sort((a, b) => a.id.compareTo(b.id));
+																				thread.posts_.addAll(newChildren);
 																				persistentState.save();
 																				return thread.posts;
 																			},

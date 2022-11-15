@@ -194,6 +194,36 @@ enum CatalogVariant {
 }
 
 extension CatalogVariantMetadata on CatalogVariant {
+	ThreadSortingMethod? get sortingMethod {
+		switch (this) {
+			case CatalogVariant.lastPostTime:
+			case CatalogVariant.lastPostTimeReversed:
+				return ThreadSortingMethod.lastPostTime;
+			case CatalogVariant.replyCount:
+			case CatalogVariant.replyCountReversed:
+				return ThreadSortingMethod.replyCount;
+			case CatalogVariant.threadPostTime:
+			case CatalogVariant.threadPostTimeReversed:
+				return ThreadSortingMethod.threadPostTime;
+			case CatalogVariant.savedTime:
+			case CatalogVariant.savedTimeReversed:
+				return ThreadSortingMethod.savedTime;
+			case CatalogVariant.postsPerMinute:
+			case CatalogVariant.postsPerMinuteReversed:
+				return ThreadSortingMethod.postsPerMinute;
+			case CatalogVariant.lastReplyTime:
+			case CatalogVariant.lastReplyTimeReversed:
+				return ThreadSortingMethod.lastReplyTime;
+			case CatalogVariant.imageCount:
+			case CatalogVariant.imageCountReversed:
+				return ThreadSortingMethod.imageCount;
+			case CatalogVariant.lastReplyByYouTime:
+			case CatalogVariant.lastReplyByYouTimeReversed:
+				return ThreadSortingMethod.imageCount;
+			default:
+				return null;
+		}
+	}
 	bool get reverseAfterSorting {
 		switch (this) {
 			case CatalogVariant.unsortedReversed:
@@ -296,7 +326,6 @@ extension CatalogVariantMetadata on CatalogVariant {
 		switch (this) {
 			case CatalogVariant.unsorted:
 			case CatalogVariant.unsortedReversed:
-				return 'unsortable';
 			case CatalogVariant.lastPostTime:
 			case CatalogVariant.lastPostTimeReversed:
 			case CatalogVariant.replyCount:

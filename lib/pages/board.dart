@@ -766,33 +766,21 @@ class _BoardPageState extends State<BoardPage> {
 															await persistence.didUpdateBrowserState();
 														},
 														sortMethods: [
-															if (variant == CatalogVariant.replyCount)
+															if (variant.sortingMethod == ThreadSortingMethod.replyCount)
 																(a, b) => b.replyCount.compareTo(a.replyCount)
-															else if (variant == CatalogVariant.replyCountReversed)
-																(b, a) => b.replyCount.compareTo(a.replyCount)
-															else if (variant == CatalogVariant.threadPostTime)
+															else if (variant.sortingMethod == ThreadSortingMethod.threadPostTime)
 																(a, b) => b.id.compareTo(a.id)
-															else if (variant == CatalogVariant.threadPostTimeReversed)
-																(b, a) => b.id.compareTo(a.id)
-															else if (variant == CatalogVariant.postsPerMinute)
+															else if (variant.sortingMethod == ThreadSortingMethod.postsPerMinute)
 																(a, b) {
 																	final now = DateTime.now();
 																	return -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds);
 																}
-															else if (variant == CatalogVariant.postsPerMinuteReversed)
-																(b, a) {
-																	final now = DateTime.now();
-																	return -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds);
-																}
-															else if (variant == CatalogVariant.lastReplyTime)
+															else if (variant.sortingMethod == ThreadSortingMethod.lastReplyTime)
 																(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
-															else if (variant == CatalogVariant.lastReplyTimeReversed)
-																(b, a) => b.posts.last.id.compareTo(a.posts.last.id)
-															else if (variant == CatalogVariant.imageCount)
+															else if (variant.sortingMethod == ThreadSortingMethod.imageCount)
 																(a, b) => b.imageCount.compareTo(a.imageCount)
-															else if (variant == CatalogVariant.imageCountReversed)
-																(b, a) => b.imageCount.compareTo(a.imageCount)
 														],
+														reverseSort: variant.reverseAfterSorting,
 														gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
 														controller: _listController,
 														listUpdater: () => site.getCatalog(board!.name, variant: variant).then((list) async {
