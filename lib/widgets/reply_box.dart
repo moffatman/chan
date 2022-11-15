@@ -882,6 +882,31 @@ class ReplyBoxState extends State<ReplyBox> {
 						});
 					}
 				}
+				if (_captchaSolution?.cloudflare ?? false) {
+					throw ActionableException(
+						message: 'Your post was likely blocked by 4chan\'s anti-span firewall.\nIf you don\'t see your post appear, try again later. It has been saved in the reply form.',
+						actions: {
+							'Clear cookies': () async {
+								if (settings.connectivity == ConnectivityResult.mobile) {
+									await Persistence.cellularCookies.deleteAll();
+									showToast(
+										context: context,
+										icon: CupertinoIcons.antenna_radiowaves_left_right,
+										message: 'Cellular cookies cleared'
+									);
+								}
+								else {
+									await Persistence.wifiCookies.deleteAll();
+									showToast(
+										context: context,
+										icon: CupertinoIcons.wifi,
+										message: 'Wi-Fi cookies cleared'
+									);
+								}
+							}
+						}
+					);
+				}
 			}
 			_textFieldController.clear();
 			_nameFieldController.clear();
@@ -956,7 +981,12 @@ class ReplyBoxState extends State<ReplyBox> {
 				);
 			}
 			else {
-				alertError(context, e.toStringDio());
+				if (e is ActionableException) {
+					alertError(context, e.message, actions: e.actions);
+				}
+				else {
+					alertError(context, e.toStringDio());
+				}
 			}
 		}
 		_captchaSolution = null;

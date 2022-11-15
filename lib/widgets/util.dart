@@ -24,7 +24,21 @@ import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-Future<void> alertError(BuildContext context, String error) async {
+class ActionableException implements Exception {
+	final String message;
+	final Map<String, VoidCallback> actions;
+	const ActionableException({
+		required this.message,
+		required this.actions
+	});
+
+	@override
+	String toString() => 'ActionableException(message: $message, ${actions.length} actions)';
+}
+
+Future<void> alertError(BuildContext context, String error, {
+	Map<String, VoidCallback> actions = const {}
+}) async {
 	await showCupertinoDialog(
 		context: context,
 		builder: (context) {
@@ -32,6 +46,10 @@ Future<void> alertError(BuildContext context, String error) async {
 				title: const Text('Error'),
 				content: Text(error),
 				actions: [
+					for (final action in actions.entries) CupertinoDialogAction(
+						onPressed: action.value,
+						child: Text(action.key)
+					),
 					CupertinoDialogAction(
 						child: const Text('OK'),
 						onPressed: () {
