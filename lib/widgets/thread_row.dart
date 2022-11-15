@@ -442,7 +442,7 @@ class ThreadRow extends StatelessWidget {
 					Align(
 						alignment: Alignment.bottomCenter,
 						child: Container(
-							color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.5),
+							color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.75),
 							width: double.infinity,
 							child: txt
 						)
