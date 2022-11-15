@@ -177,6 +177,8 @@ class ImageboardRegistry extends ChangeNotifier {
 			setupError = null;
 			try {
 				final siteKeysToRemove = _sites.keys.toList();
+				final initializations = <Future<void>>[];
+				final microtasks = <Future<void> Function()>[];
 				for (final entry in data.entries) {
 					siteKeysToRemove.remove(entry.key);
 					if (_sites.containsKey(entry.key)) {
@@ -189,10 +191,10 @@ class ImageboardRegistry extends ChangeNotifier {
 							siteData: entry.value,
 							key: entry.key
 						);
-						await _sites[entry.key]?.initialize();
+						initializations.add(_sites[entry.key]!.initialize());
 					}
 					// Only try to reauth on wifi
-					Future.microtask(() async {
+					microtasks.add(() async {
 						if (!_sites[entry.key]!.initialized) {
 							return;
 						}
@@ -214,6 +216,8 @@ class ImageboardRegistry extends ChangeNotifier {
 						}
 					});
 				}
+				await Future.wait(initializations);
+				microtasks.forEach(Future.microtask);
 				final initialTabsLength = Persistence.tabs.length;
 				final initialTab = Persistence.tabs[Persistence.currentTabIndex];
 				final initialTabIndex = Persistence.currentTabIndex;
