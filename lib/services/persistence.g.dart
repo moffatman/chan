@@ -292,7 +292,8 @@ class PersistentBrowserStateAdapter
       catalogVariants: fields[17] == null
           ? {}
           : (fields[17] as Map).cast<String, CatalogVariant>(),
-      postingName: fields[15] == null ? '' : fields[15] as String,
+      postingNames:
+          fields[18] == null ? {} : (fields[18] as Map).cast<String, String>(),
       useTree: fields[16] as bool?,
     );
   }
@@ -325,12 +326,12 @@ class PersistentBrowserStateAdapter
       ..write(obj.deprecatedBoardSortingMethods)
       ..writeByte(14)
       ..write(obj.deprecatedBoardReverseSortings)
-      ..writeByte(15)
-      ..write(obj.postingName)
       ..writeByte(16)
       ..write(obj.useTree)
       ..writeByte(17)
-      ..write(obj.catalogVariants);
+      ..write(obj.catalogVariants)
+      ..writeByte(18)
+      ..write(obj.postingNames);
   }
 
   @override

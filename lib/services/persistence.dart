@@ -336,7 +336,8 @@ class Persistence extends ChangeNotifier {
 			notificationsMigrated: true,
 			deprecatedBoardSortingMethods: {},
 			deprecatedBoardReverseSortings: {},
-			catalogVariants: {}
+			catalogVariants: {},
+			postingNames: {}
 		));
 		if (browserState.deprecatedTabs.isNotEmpty && ImageboardRegistry.instance.getImageboardUnsafe(id) != null) {
 			print('Migrating tabs');
@@ -851,12 +852,12 @@ class PersistentBrowserState {
 	final Map<String, ThreadSortingMethod> deprecatedBoardSortingMethods;
 	@HiveField(14, defaultValue: {})
 	final Map<String, bool> deprecatedBoardReverseSortings;
-	@HiveField(15, defaultValue: '')
-	String postingName;
 	@HiveField(16)
 	bool? useTree;
 	@HiveField(17, defaultValue: {})
 	final Map<String, CatalogVariant> catalogVariants;
+	@HiveField(18, defaultValue: {})
+	final Map<String, String> postingNames;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -872,7 +873,7 @@ class PersistentBrowserState {
 		required this.deprecatedBoardSortingMethods,
 		required this.deprecatedBoardReverseSortings,
 		required this.catalogVariants,
-		this.postingName = '',
+		required this.postingNames,
 		this.useTree
 	}) : hiddenImageMD5s = hiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();
 

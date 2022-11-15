@@ -345,7 +345,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		_subjectFieldController = TextEditingController(text: widget.initialSubject);
 		_optionsFieldController = TextEditingController(text: widget.initialOptions);
 		_filenameController = TextEditingController();
-		_nameFieldController = TextEditingController(text: context.read<Persistence>().browserState.postingName);
+		_nameFieldController = TextEditingController(text: context.read<Persistence>().browserState.postingNames[widget.board]);
 		_textFocusNode = FocusNode();
 		_rootFocusNode = FocusNode();
 		_textFieldController.addListener(_onTextChanged);
@@ -436,8 +436,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void showReplyBox() {
-		if (_nameFieldController.text.isEmpty && context.read<Persistence>().browserState.postingName.isNotEmpty) {
-			_nameFieldController.text = context.read<Persistence>().browserState.postingName;
+		if (_nameFieldController.text.isEmpty && (context.read<Persistence>().browserState.postingNames[widget.board]?.isNotEmpty ?? false)) {
+			_nameFieldController.text = context.read<Persistence>().browserState.postingNames[widget.board] ?? '';
 			_showOptions = true;
 		}
 		setState(() {
@@ -1237,7 +1237,7 @@ class ReplyBoxState extends State<ReplyBox> {
 							controller: _nameFieldController,
 							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 							onChanged: (s) {
-								context.read<Persistence>().browserState.postingName = s;
+								context.read<Persistence>().browserState.postingNames[widget.board] = s;
 								context.read<Persistence>().didUpdateBrowserState();
 							}
 						)
