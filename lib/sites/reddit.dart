@@ -161,6 +161,10 @@ class SiteReddit extends ImageboardSite {
 						int i = 1;
 						for (final li in node.nodes) {
 							if (li is dom.Element && li.localName == 'li') {
+								if (addLinebreakBefore) {
+									yield const PostLineBreakSpan();
+									addLinebreakBefore = false;
+								}
 								if (node.localName == 'ol') {
 									yield PostTextSpan('$i. ');
 								}
@@ -173,7 +177,7 @@ class SiteReddit extends ImageboardSite {
 								else {
 									yield* visit(li.nodes);
 								}
-								yield const PostLineBreakSpan();
+								addLinebreakBefore = true;
 								i++;
 							}
 						}
