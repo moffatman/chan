@@ -25,7 +25,7 @@ Future<bool> embedPossible({
 	if (url.startsWith('chance://site/') || url.startsWith('chance://theme')) {
 		return true;
 	}
-	if (url.contains('twitter.com/')) {
+	if (url.contains('twitter.com/') || url.contains('imgur.com/')) {
 		return false;
 	}
 	if (kDebugMode) {
