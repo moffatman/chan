@@ -189,12 +189,15 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 															minHeight: constraints.maxHeight
 														),
 														child: SafeArea(
-															child: Center(
-																key: _scrollKey,
-																child: Opacity(
-																	key: _childKey,
-																	opacity: _opacity,
-																	child: widget.child
+															child: Padding(
+																padding: MediaQuery.of(context).viewInsets,
+																child: Center(
+																	key: _scrollKey,
+																	child: Opacity(
+																		key: _childKey,
+																		opacity: _opacity,
+																		child: widget.child
+																	)
 																)
 															)
 														)
