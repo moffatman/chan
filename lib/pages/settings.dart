@@ -2275,6 +2275,22 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						}
 					)
 				),
+				const SizedBox(height: 16),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.lightbulb_slash),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Dim read threads in catalog')
+						),
+						CupertinoSwitch(
+							value: settings.dimReadThreads,
+							onChanged: (newValue) {
+								settings.dimReadThreads = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 32),
 				Row(
 					children: [

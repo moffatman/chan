@@ -552,6 +552,8 @@ class SavedSettings extends HiveObject {
 	CatalogVariant catalogVariant;
 	@HiveField(98)
 	CatalogVariant redditCatalogVariant;
+	@HiveField(99)
+	bool dimReadThreads;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -652,6 +654,7 @@ class SavedSettings extends HiveObject {
 		bool? enableIMEPersonalizedLearning,
 		CatalogVariant? catalogVariant,
 		CatalogVariant? redditCatalogVariant,
+		bool? dimReadThreads,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -778,7 +781,8 @@ class SavedSettings extends HiveObject {
 		appliedMigrations = appliedMigrations ?? [],
 		enableIMEPersonalizedLearning = enableIMEPersonalizedLearning ?? true,
 		catalogVariant = catalogVariant ?? CatalogVariant.unsorted,
-		redditCatalogVariant = redditCatalogVariant ?? CatalogVariant.redditHot {
+		redditCatalogVariant = redditCatalogVariant ?? CatalogVariant.redditHot,
+		dimReadThreads = dimReadThreads ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1559,6 +1563,13 @@ class EffectiveSettings extends ChangeNotifier {
 	CatalogVariant get redditCatalogVariant => _settings.redditCatalogVariant;
 	set redditCatalogVariant(CatalogVariant setting) {
 		_settings.redditCatalogVariant = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get dimReadThreads => _settings.dimReadThreads;
+	set dimReadThreads(bool setting) {
+		_settings.dimReadThreads = setting;
 		_settings.save();
 		notifyListeners();
 	}

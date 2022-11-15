@@ -468,7 +468,7 @@ class _BoardPageState extends State<BoardPage> {
 						thread: thread,
 						isSelected: isSelected,
 						semanticParentIds: [widget.semanticId],
-						dimReadThreads: true,
+						dimReadThreads: settings.dimReadThreads,
 						countsUnreliable: variant.countsUnreliable,
 						onThumbnailTap: (initialAttachment) {
 							final attachments = _listController.items.expand((_) => _.item.attachments).toList();

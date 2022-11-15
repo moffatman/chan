@@ -215,13 +215,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       enableIMEPersonalizedLearning: fields[96] as bool?,
       catalogVariant: fields[97] as CatalogVariant?,
       redditCatalogVariant: fields[98] as CatalogVariant?,
+      dimReadThreads: fields[99] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(95)
+      ..writeByte(96)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -411,7 +412,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(97)
       ..write(obj.catalogVariant)
       ..writeByte(98)
-      ..write(obj.redditCatalogVariant);
+      ..write(obj.redditCatalogVariant)
+      ..writeByte(99)
+      ..write(obj.dimReadThreads);
   }
 
   @override
