@@ -354,6 +354,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		zone.postSortingMethods = [
 			if (context.watch<ImageboardSite>().isReddit && !useTree) (a, b) => a.id.compareTo(b.id)
 		];
+		zone.showParentQuotelinkIfImplicit = !useTree;
 		return WillPopScope(
 			onWillPop: () async {
 				if (_replyBoxKey.currentState?.show ?? false) {
@@ -682,7 +683,6 @@ class _ThreadPageState extends State<ThreadPage> {
 																		itemBuilder: (context, post) {
 																			return PostRow(
 																				post: post,
-																				showIdsIfImplicit: !useTree,
 																				onThumbnailTap: (attachment) {
 																					_showGallery(initialAttachment: attachment);
 																				},
@@ -692,7 +692,6 @@ class _ThreadPageState extends State<ThreadPage> {
 																		filteredItemBuilder: (context, post, resetPage, filterText) {
 																			return PostRow(
 																				post: post,
-																				showIdsIfImplicit: !useTree,
 																				onThumbnailTap: (attachment) {
 																					_showGallery(initialAttachment: attachment);
 																				},

@@ -40,7 +40,6 @@ class PostRow extends StatelessWidget {
 	final PostSpanRenderOptions? baseOptions;
 	final bool showSiteIcon;
 	final bool showBoardName;
-	final bool showIdsIfImplicit;
 
 	const PostRow({
 		required this.post,
@@ -54,7 +53,6 @@ class PostRow extends StatelessWidget {
 		this.isSelected = false,
 		this.showSiteIcon = false,
 		this.showBoardName = false,
-		this.showIdsIfImplicit = false,
 		this.baseOptions,
 		Key? key
 	}) : super(key: key);
@@ -134,7 +132,7 @@ class PostRow extends StatelessWidget {
 						child: Text.rich(
 							TextSpan(
 								children: [
-									if (showIdsIfImplicit && !site.explicitIds && post.parentId != null) ...[
+									if (parentZone.showParentQuotelinkIfImplicit && !site.explicitIds && post.parentId != null) ...[
 										PostQuoteLinkSpan(
 											board: latestPost.board,
 											threadId: latestPost.threadId,

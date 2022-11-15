@@ -1069,6 +1069,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	ValueChanged<Post>? get onNeedScrollToPost;
 	bool disposed = false;
 	List<Comparator<Post>> get postSortingMethods;
+	bool get showParentQuotelinkIfImplicit;
 
 	final Map<int, bool> _shouldExpandPost = {};
 	bool shouldExpandPost(int id) {
@@ -1252,6 +1253,8 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	}
 	@override
 	List<Comparator<Post>> get postSortingMethods => parent.postSortingMethods;
+	@override
+	bool get showParentQuotelinkIfImplicit => parent.showParentQuotelinkIfImplicit;
 }
 
 
@@ -1271,6 +1274,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	final Map<int, AsyncSnapshot<Post>> _translatedPostSnapshots = {};
 	@override
 	List<Comparator<Post>> postSortingMethods;
+	@override
+	bool showParentQuotelinkIfImplicit;
 
 	PostSpanRootZoneData({
 		required this.thread,
@@ -1278,7 +1283,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		this.threadState,
 		this.onNeedScrollToPost,
 		this.semanticRootIds = const [],
-		this.postSortingMethods = const []
+		this.postSortingMethods = const [],
+		this.showParentQuotelinkIfImplicit = false
 	}) {
 		if (threadState != null) {
 			_translatedPostSnapshots.addAll({
