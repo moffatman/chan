@@ -25,6 +25,9 @@ Future<bool> embedPossible({
 	if (url.startsWith('chance://site/') || url.startsWith('chance://theme')) {
 		return true;
 	}
+	if (url.contains('twitter.com/')) {
+		return false;
+	}
 	if (kDebugMode) {
 		return context.read<EffectiveSettings>().embedRegexes.any((regex) => regex.hasMatch(url));
 	}
