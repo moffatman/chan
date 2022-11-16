@@ -833,7 +833,9 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 															),
 															child: StreamBuilder(
 																stream: _currentAttachmentChanged,
-																builder: (context, _) => Text("${currentIndex + 1} / ${widget.attachments.length}")
+																builder: (context, _) => Text("${currentIndex + 1} / ${widget.attachments.length}", style: TextStyle(
+																	color: CupertinoTheme.of(context).primaryColor
+																))
 															)
 														)
 													),
