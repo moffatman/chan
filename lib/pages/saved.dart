@@ -709,37 +709,89 @@ class _SavedPageState extends State<SavedPage> {
 								item: p
 							))).toList();
 							list.sort((a, b) => b.item.savedTime.compareTo(a.item.savedTime));
-							return GridView.builder(
-								itemCount: list.length,
-								itemBuilder: (context, i) => Builder(
-									builder: (context) => ImageboardScope(
-										imageboardKey: list[i].imageboard.key,
-										child: GestureDetector(
-											child: Container(
-												decoration: BoxDecoration(
-													color: Colors.transparent,
-													borderRadius: const BorderRadius.all(Radius.circular(4)),
-													border: Border.all(color: selected(context, list[i]) ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
-												),
-												margin: const EdgeInsets.all(4),
-												child: Hero(
-													tag: AttachmentSemanticLocation(
-														attachment: list[i].item.attachment,
-														semanticParents: [-5]
-													),
-													child: SavedAttachmentThumbnail(
-														file: list[i].item.file,
-														fit: BoxFit.contain
+							return CustomScrollView(
+								slivers: [
+									SliverGrid(
+										delegate: SliverChildBuilderDelegate(
+											(context, i) => Builder(
+												builder: (context) => ImageboardScope(
+													imageboardKey: list[i].imageboard.key,
+													child: GestureDetector(
+														child: Container(
+															decoration: BoxDecoration(
+																color: Colors.transparent,
+																borderRadius: const BorderRadius.all(Radius.circular(4)),
+																border: Border.all(color: selected(context, list[i]) ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
+															),
+															margin: const EdgeInsets.all(4),
+															child: Hero(
+																tag: AttachmentSemanticLocation(
+																	attachment: list[i].item.attachment,
+																	semanticParents: [-5]
+																),
+																child: SavedAttachmentThumbnail(
+																	file: list[i].item.file,
+																	fit: BoxFit.contain
+																)
+															)
+														),
+														onTap: () => setter(list[i])
 													)
 												)
 											),
-											onTap: () => setter(list[i])
+											childCount: list.length
+										),
+										gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+											crossAxisCount: 4
+										)
+									),
+									SliverToBoxAdapter(
+										child: Container(
+											padding: const EdgeInsets.all(16),
+											child: CupertinoButton(
+												padding: const EdgeInsets.all(8),
+												onPressed: list.isNotEmpty ? () async {
+													final ok = await showCupertinoDialog<bool>(
+														context: context,
+														barrierDismissible: true,
+														builder: (context) => CupertinoAlertDialog(
+															title: const Text('Are you sure?'),
+															content: const Text('All saved attachments will be removed.'),
+															actions: [
+																CupertinoDialogAction(
+																	onPressed: () => Navigator.pop(context),
+																	child: const Text('Cancel')
+																),
+																CupertinoDialogAction(
+																	isDestructiveAction: true,
+																	onPressed: () => Navigator.pop(context, true),
+																	child: const Text('Delete all')
+																)
+															]
+														)
+													);
+													if (ok != true || !mounted) {
+														return;
+													}
+													for (final item in list) {
+														item.imageboard.persistence.deleteSavedAttachment(item.item.attachment);
+													}
+													setState(() {});
+												} : null,
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: const [
+														Icon(CupertinoIcons.xmark),
+														SizedBox(width: 8),
+														Flexible(
+															child: Text('Delete all', textAlign: TextAlign.center)
+														)
+													]
+												)
+											)
 										)
 									)
-								),
-								gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-									crossAxisCount: 4
-								)
+								]
 							);
 						}
 					),
