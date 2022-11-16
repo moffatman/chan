@@ -150,7 +150,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						_runQuery();
 						onChange();
 					},
-					child: Text('${result.data?.maxPage ?? '--'}')
+					child: Text('${result.data?.maxPage ?? '—'}')
 				),
 			]
 		);

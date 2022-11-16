@@ -1552,12 +1552,12 @@ List<InlineSpan> buildPostInfoRow({
 					}) : null
 				)
 			],
-		if (post.upvotes != null) ...[
+		if (site.isReddit) ...[
 			WidgetSpan(
 				child: Icon(CupertinoIcons.arrow_up, size: 16, color: settings.theme.primaryColorWithBrightness(0.5)),
 				alignment: PlaceholderAlignment.middle
 			),
-			TextSpan(text: '${post.upvotes} ', style: TextStyle(color: settings.theme.primaryColorWithBrightness(0.5)))
+			TextSpan(text: '${post.upvotes ?? '—'} ', style: TextStyle(color: settings.theme.primaryColorWithBrightness(0.5)))
 		]
 	];
 }
