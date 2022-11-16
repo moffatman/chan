@@ -344,7 +344,7 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread) async {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
 		final response = await client.get(getWebUrl(thread.board, thread.id), options: Options(
 			responseType: ResponseType.bytes
 		));

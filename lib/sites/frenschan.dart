@@ -25,7 +25,7 @@ class SiteFrenschan extends SiteSoyjak {
 	String get siteType => 'frenschan';
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread) async {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
 		final broken = await super.getThread(thread);
 		final response = await client.get(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html').toString());
 		final document = parse(response.data);

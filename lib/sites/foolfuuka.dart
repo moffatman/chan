@@ -309,7 +309,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		);
 	}
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread) async {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
 		if (!(await getBoards()).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}

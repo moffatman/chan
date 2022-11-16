@@ -336,7 +336,7 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread) async {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
 		Map<String, String>? headers;
 		if (_threadCache['${thread.board}/${thread.id}'] != null) {
 			headers = {

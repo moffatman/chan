@@ -204,3 +204,62 @@ class CatalogVariantAdapter extends TypeAdapter<CatalogVariant> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class ThreadVariantAdapter extends TypeAdapter<ThreadVariant> {
+  @override
+  final int typeId = 34;
+
+  @override
+  ThreadVariant read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return ThreadVariant.redditTop;
+      case 1:
+        return ThreadVariant.redditBest;
+      case 2:
+        return ThreadVariant.redditNew;
+      case 3:
+        return ThreadVariant.redditControversial;
+      case 4:
+        return ThreadVariant.redditOld;
+      case 5:
+        return ThreadVariant.redditQandA;
+      default:
+        return ThreadVariant.redditTop;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, ThreadVariant obj) {
+    switch (obj) {
+      case ThreadVariant.redditTop:
+        writer.writeByte(0);
+        break;
+      case ThreadVariant.redditBest:
+        writer.writeByte(1);
+        break;
+      case ThreadVariant.redditNew:
+        writer.writeByte(2);
+        break;
+      case ThreadVariant.redditControversial:
+        writer.writeByte(3);
+        break;
+      case ThreadVariant.redditOld:
+        writer.writeByte(4);
+        break;
+      case ThreadVariant.redditQandA:
+        writer.writeByte(5);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ThreadVariantAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

@@ -44,7 +44,24 @@ class _SpoilerSyntax extends markdown.InlineSyntax {
   }
 }
 
-
+extension _RedditApiName on ThreadVariant {
+	String? get redditApiName {
+		switch (this) {
+			case ThreadVariant.redditTop:
+				return 'top';
+			case ThreadVariant.redditBest:
+				return 'confidence';
+			case ThreadVariant.redditNew:
+				return 'new';
+			case ThreadVariant.redditControversial:
+				return 'controversial';
+			case ThreadVariant.redditOld:
+				return 'old';
+			case ThreadVariant.redditQandA:
+				return 'qa';
+		}
+	}
+}
 
 class SiteReddit extends ImageboardSite {
 	SiteReddit() : super([]);
@@ -466,8 +483,10 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread) async {
-		final response = await client.get(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json').toString());
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
+		final response = await client.getUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
+			if (variant?.redditApiName != null) 'sort': variant!.redditApiName!
+		}));
 		final ret = _makeThread(response.data[0]['data']['children'][0]['data']);
 		addChildren(int? parentId, List<dynamic> childData) {
 			for (final childContainer in childData) {
@@ -626,5 +645,15 @@ class SiteReddit extends ImageboardSite {
 				CatalogVariant.redditControversialAllTime
 			]
 		),
+	];
+
+	@override
+	List<ThreadVariant> get threadVariants => const [
+		ThreadVariant.redditTop,
+		ThreadVariant.redditBest,
+		ThreadVariant.redditNew,
+		ThreadVariant.redditControversial,
+		ThreadVariant.redditOld,
+		ThreadVariant.redditQandA
 	];
 }

@@ -112,6 +112,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(AutoloadAttachmentsSettingAdapter());
 		Hive.registerAdapter(ThreadSortingMethodAdapter());
 		Hive.registerAdapter(CatalogVariantAdapter());
+		Hive.registerAdapter(ThreadVariantAdapter());
 		Hive.registerAdapter(ContentSettingsAdapter());
 		Hive.registerAdapter(PostDisplayFieldAdapter());
 		Hive.registerAdapter(SettingsQuickActionAdapter());
@@ -624,6 +625,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	bool autoTranslate = false;
 	@HiveField(14)
 	bool? useTree;
+	@HiveField(15)
+	ThreadVariant? variant;
 
 	PersistentThreadState({this.ephemeral = false}) : lastOpenedTime = DateTime.now();
 

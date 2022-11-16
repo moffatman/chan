@@ -385,6 +385,42 @@ class CatalogVariantGroup {
 	});
 }
 
+@HiveType(typeId: 34)
+enum ThreadVariant {
+	@HiveField(0)
+	redditTop,
+	@HiveField(1)
+	redditBest,
+	@HiveField(2)
+	redditNew,
+	@HiveField(3)
+	redditControversial,
+	@HiveField(4)
+	redditOld,
+	@HiveField(5)
+	redditQandA
+}
+
+extension ThreadVariantMetadata on ThreadVariant {
+	String get dataId => toString();
+	IconData get icon => const {
+		ThreadVariant.redditTop: CupertinoIcons.arrow_up,
+		ThreadVariant.redditBest: CupertinoIcons.star,
+		ThreadVariant.redditNew: CupertinoIcons.clock,
+		ThreadVariant.redditControversial: CupertinoIcons.exclamationmark_shield,
+		ThreadVariant.redditOld: CupertinoIcons.clock,
+		ThreadVariant.redditQandA: CupertinoIcons.chat_bubble_2
+	}[this]!;
+	String get name => const {
+		ThreadVariant.redditTop: 'Top',
+		ThreadVariant.redditBest: 'Best',
+		ThreadVariant.redditNew: 'New',
+		ThreadVariant.redditControversial: 'Controversial',
+		ThreadVariant.redditOld: 'Old',
+		ThreadVariant.redditQandA: 'Q&A'
+	}[this]!;
+}
+
 class CaptchaRequest {
 
 }
@@ -610,7 +646,7 @@ abstract class ImageboardSiteArchive {
 	}
 	String get name;
 	Future<Post> getPost(String board, int id);
-	Future<Thread> getThread(ThreadIdentifier thread);
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant});
 	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant});
 	Future<List<ImageboardBoard>> getBoards();
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult});
@@ -820,6 +856,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			hasPrimary: true
 		)
 	];
+	List<ThreadVariant> get threadVariants => const [];
 }
 
 ImageboardSite makeSite(dynamic data) {

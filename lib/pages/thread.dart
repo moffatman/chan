@@ -348,11 +348,12 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread?.isArchived ?? false) {
 			title = '(Archived) $title';
 		}
+		final site = context.watch<ImageboardSite>();
 		final notifications = context.watch<Notifications>();
 		final watch = context.select<Persistence, ThreadWatch?>((_) => notifications.getThreadWatch(widget.thread));
 		final reverseIndicatorPosition = context.select<EffectiveSettings, bool>((s) => s.showListPositionIndicatorsOnLeft);
 		zone.postSortingMethods = [
-			if (context.watch<ImageboardSite>().isReddit && !useTree) (a, b) => a.id.compareTo(b.id)
+			if (site.isReddit && !useTree) (a, b) => a.id.compareTo(b.id)
 		];
 		zone.showParentQuotelinkIfImplicit = !useTree;
 		return WillPopScope(
@@ -435,6 +436,55 @@ class _ThreadPageState extends State<ThreadPage> {
 											setState(() {});
 										}
 									),
+									if (site.threadVariants.isNotEmpty) CupertinoButton(
+										padding: EdgeInsets.zero,
+										child: persistentState.variant == null || persistentState.variant == site.threadVariants.first ? const Icon(CupertinoIcons.sort_down) : Icon(persistentState.variant!.icon),
+										onPressed: () async {
+											final choice = await showCupertinoModalPopup<ThreadVariant>(
+												useRootNavigator: false,
+												context: context,
+												builder: (context) => CupertinoActionSheet(
+													title: const Text('Thread Sorting'),
+													actions: site.threadVariants.map((variant) => CupertinoActionSheetAction(
+														child: Row(
+															children: [
+																SizedBox(
+																	width: 40,
+																	child: Center(
+																		child: Icon(variant.icon),
+																	)
+																),
+																Expanded(
+																	child: Text(
+																		variant.name,
+																		textAlign: TextAlign.left,
+																		style: TextStyle(
+																			fontWeight: variant == (persistentState.variant ?? site.threadVariants.first) ? FontWeight.bold : null
+																		)
+																	)
+																)
+															]
+														),
+														onPressed: () {
+															Navigator.of(context).pop(variant);
+														}
+													)).toList(),
+													cancelButton: CupertinoActionSheetAction(
+														child: const Text('Cancel'),
+														onPressed: () => Navigator.of(context).pop()
+													)
+												)
+											);
+											if (choice != null && mounted) {
+												persistentState.variant = choice;
+												persistentState.save();
+												setState(() {});
+												await Future.delayed(const Duration(milliseconds: 30));
+												await _listController.blockAndUpdate();
+												setState(() {});
+											}
+										}
+									),
 									CupertinoButton(
 										key: _shareButtonKey,
 										padding: EdgeInsets.zero,
@@ -444,13 +494,13 @@ class _ThreadPageState extends State<ThreadPage> {
 											final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
 											shareOne(
 												context: context,
-												text: context.read<ImageboardSite>().getWebUrl(widget.thread.board, widget.thread.id),
+												text: site.getWebUrl(widget.thread.board, widget.thread.id),
 												type: "text",
 												sharePositionOrigin: (offset != null && size != null) ? offset & size : null
 											);
 										}
 									),
-									if (context.watch<ImageboardSite>().supportsPosting) CupertinoButton(
+									if (site.supportsPosting) CupertinoButton(
 										padding: EdgeInsets.zero,
 										onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
 											_replyBoxKey.currentState?.toggleReplyBox();
@@ -509,7 +559,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																		filterableAdapter: (t) => t,
 																		key: _listKey,
 																		sortMethods: zone.postSortingMethods,
-																		id: '/${widget.thread.board}/${widget.thread.id}',
+																		id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId}',
 																		disableUpdates: persistentState.thread?.isArchived ?? false,
 																		autoUpdateDuration: const Duration(seconds: 60),
 																		initialList: persistentState.thread?.posts,
@@ -523,7 +573,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																				if (thread == null) {
 																					throw Exception('Thread not loaded');
 																				}
-																				final newChildren = await context.read<ImageboardSite>().getMoreThread(p);
+																				final newChildren = await site.getMoreThread(p);
 																				final postsById = {
 																					for (final post in thread.posts_) post.id: post
 																				};
@@ -619,8 +669,8 @@ class _ThreadPageState extends State<ThreadPage> {
 																			lastPageNumber = persistentState.thread?.currentPage;
 																			// The thread might switch in this interval
 																			final newThread = tmpPersistentState.useArchive ?
-																				await context.read<ImageboardSite>().getThreadFromArchive(widget.thread) :
-																				await context.read<ImageboardSite>().getThread(widget.thread);
+																				await site.getThreadFromArchive(widget.thread) :
+																				await site.getThread(widget.thread, variant: tmpPersistentState.variant);
 																			final bool firstLoad = tmpPersistentState.thread == null;
 																			bool shouldScroll = false;
 																			if (watch != null && newThread.identifier == widget.thread && mounted) {
@@ -720,7 +770,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																											post: post,
 																											isYourPost: persistentState.youIds.contains(post.id),
 																											settings: settings,
-																											site: context.watch<ImageboardSite>(),
+																											site: site,
 																											context: context,
 																											zone: zone
 																										)
@@ -790,15 +840,15 @@ class _ThreadPageState extends State<ThreadPage> {
 											_saveThreadStateDuringEditingTimer = Timer(const Duration(seconds: 3), () => persistentState.save());
 										},
 										onReplyPosted: (receipt) async {
-											if (context.read<ImageboardSite>().supportsPushNotifications) {
+											if (site.supportsPushNotifications) {
 												await promptForPushNotificationsIfNeeded(context);
 											}
 											if (!mounted) return;
-											context.read<Notifications>().subscribeToThread(
+											notifications.subscribeToThread(
 												thread: widget.thread,
 												lastSeenId: receipt.id,
-												localYousOnly: context.read<Notifications>().getThreadWatch(widget.thread)?.localYousOnly ?? true,
-												pushYousOnly: context.read<Notifications>().getThreadWatch(widget.thread)?.pushYousOnly ?? true,
+												localYousOnly: notifications.getThreadWatch(widget.thread)?.localYousOnly ?? true,
+												pushYousOnly: notifications.getThreadWatch(widget.thread)?.pushYousOnly ?? true,
 												push: true,
 												youIds: persistentState.freshYouIds()
 											);

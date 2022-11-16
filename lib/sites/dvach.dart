@@ -155,7 +155,7 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread) async {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
 		final response = await client.get(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json').toString());
 		if (response.data['board'] != null) {
 			_updateBoardInformation(response.data['board']);

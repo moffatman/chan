@@ -172,7 +172,7 @@ class SiteLainchan extends ImageboardSite {
 		throw Exception('Not implemented');
 	}
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread) async {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
 		final response = await client.get(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json').toString(), options: Options(
 			validateStatus: (x) => true
 		));
