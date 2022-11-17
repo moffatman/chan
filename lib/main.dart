@@ -535,6 +535,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				alertError(context, 'Unrecognized link\n$link');
 			}
 		}
+		else if (link.toLowerCase().startsWith('sharemedia-com.moffatman.chan://')) {
+			// ignore this, it is handled elsewhere
+		}
 		else {
 			for (final imageboard in ImageboardRegistry.instance.imageboards) {
 				BoardThreadOrPostIdentifier? dest = imageboard.site.decodeUrl(link);
