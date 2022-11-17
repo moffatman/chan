@@ -29,7 +29,6 @@ import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/notifications_overlay.dart';
 import 'package:chan/widgets/notifying_icon.dart';
-import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/saved_theme_thumbnail.dart';
 import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/util.dart';

@@ -1531,8 +1531,3 @@ class RefreshableListController<T extends Object> {
 		}
 	}
 }
-
-extension HasOnePosition on ScrollController {
-	// ignore: INVALID_USE_OF_PROTECTED_MEMBER
-	bool get hasOnePosition => positions.length == 1;
-}

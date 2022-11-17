@@ -94,6 +94,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	AttachmentViewerController get currentController => _getController(currentAttachment);
 	bool firstControllerMade = false;
 	late final ScrollController thumbnailScrollController;
+	late final ScrollController _gridViewScrollController;
 	late final ExtendedPageController pageController;
 	late bool showChrome;
 	bool showingOverlays = true;
@@ -124,6 +125,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		_currentAttachmentChanged = BehaviorSubject();
 		_rotationsChanged = BehaviorSubject();
 		_scrollSheetController = DraggableScrollableController();
+		_gridViewScrollController = ScrollController()..addListener(_onGridViewScrollControllerUpdate);
 		_rotateButtonAnimationController = AnimationController(duration: const Duration(milliseconds: 5000), vsync: this, upperBound: pi * 2);
 		showChrome = widget.initiallyShowChrome;
 		_updateOverlays(showChrome);
@@ -150,6 +152,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				// Not scrollable (not large enough to need to scroll)
 				thumbnailScrollController = ScrollController();
 			}
+			thumbnailScrollController.addListener(_onThumbnailScrollControllerUpdate);
+			Future.delayed(const Duration(milliseconds: 100), _onThumbnailScrollControllerUpdate);
 			firstControllerMade = true;
 		}
 	}
@@ -163,6 +167,24 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 				final attachment = widget.attachments[currentIndex];
 				_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
 			}
+		}
+	}
+
+	void _onThumbnailScrollControllerUpdate() {
+		if (_gridViewScrollController.hasOnePosition && !_gridViewScrollController.position.isScrollingNotifier.value) {
+			_gridViewScrollController.position.jumpTo(
+				(_gridViewScrollController.position.maxScrollExtent * (thumbnailScrollController.position.pixels / thumbnailScrollController.position.maxScrollExtent))
+					.clamp(_gridViewScrollController.position.minScrollExtent, _gridViewScrollController.position.maxScrollExtent)
+			);
+		}
+	}
+
+	void _onGridViewScrollControllerUpdate() {
+		if (thumbnailScrollController.hasOnePosition && !thumbnailScrollController.position.isScrollingNotifier.value) {
+			thumbnailScrollController.position.jumpTo(
+				(thumbnailScrollController.position.maxScrollExtent * (_gridViewScrollController.position.pixels / _gridViewScrollController.position.maxScrollExtent))
+					.clamp(thumbnailScrollController.position.minScrollExtent, thumbnailScrollController.position.maxScrollExtent)
+			);
 		}
 	}
 
@@ -411,150 +433,201 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 			builder: (context, child) {
 				return Padding(
 					padding: currentController.videoPlayerController == null ? const EdgeInsets.only(top: 44) : EdgeInsets.zero,
-					child: ClipRect(
-						child: BackdropFilter(
-							filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-							child: Container(
-								color: Colors.black38,
-								child: CustomScrollView(
-									cacheExtent: 500,
-									controller: controller,
-									physics: const ClampingScrollPhysics(),
-									slivers: [
-										if (currentController.videoPlayerController != null) SliverToBoxAdapter(
-											child: VideoControls(
-												controller: currentController.videoPlayerController!,
-												hasAudio: currentController.hasAudio
-											)
-										),
-										SliverToBoxAdapter(
-											child: SizedBox(
-												height: _thumbnailSize + 8,
-												child: KeyedSubtree(
-													key: _thumbnailsKey,
-													child: ListView.builder(
-														controller: thumbnailScrollController,
-														itemCount: widget.attachments.length,
-														scrollDirection: Axis.horizontal,
-														itemBuilder: (context, index) {
-															final attachment = widget.attachments[index];
-															return GestureDetector(
-																onTap: () => _animateToPage(index),
-																child: Container(
-																	decoration: BoxDecoration(
-																		color: Colors.transparent,
-																		borderRadius: const BorderRadius.all(Radius.circular(4)),
-																		border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
-																	),
-																	margin: const EdgeInsets.all(4),
-																	child: Stack(
-																		children: [
-																			AttachmentThumbnail(
-																				gaplessPlayback: true,
-																				attachment: widget.attachments[index],
-																				width: _thumbnailSize,
-																				height: _thumbnailSize
-																			),
-																			if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) SizedBox(
-																				width: _thumbnailSize,
-																				child: Center(
+					child: SingleChildScrollView(
+						controller: controller,
+						physics: const BouncingScrollPhysics(),
+						child: Column(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								ClipRect(
+									child: BackdropFilter(
+										filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+										child: Container(
+											color: Colors.black38,
+											child: Column(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													if (currentController.videoPlayerController != null) VideoControls(
+														controller: currentController.videoPlayerController!,
+														hasAudio: currentController.hasAudio
+													),
+													SizedBox(
+														height: _thumbnailSize + 8,
+														child: KeyedSubtree(
+															key: _thumbnailsKey,
+															child: ListView.builder(
+																cacheExtent: 99999,
+																controller: thumbnailScrollController,
+																itemCount: widget.attachments.length,
+																scrollDirection: Axis.horizontal,
+																itemBuilder: (context, index) {
+																	final attachment = widget.attachments[index];
+																	return CupertinoButton(
+																		padding: EdgeInsets.zero,
+																		minSize: 0,
+																		onPressed: () => _animateToPage(index),
+																		child: SizedBox(
+																			width: _thumbnailSize + 8,
+																			height: _thumbnailSize + 8,
+																			child: Center(
+																				child: Container(
+																					decoration: BoxDecoration(
+																						color: Colors.transparent,
+																						borderRadius: const BorderRadius.all(Radius.circular(4)),
+																						border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
+																					),
+																					margin: const EdgeInsets.all(4),
+																					child: Stack(
+																						children: [
+																							AttachmentThumbnail(
+																								gaplessPlayback: true,
+																								shrinkBoth: true,
+																								attachment: widget.attachments[index],
+																								width: _thumbnailSize,
+																								height: _thumbnailSize
+																							),
+																							if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) SizedBox(
+																								width: _thumbnailSize,
+																								child: Center(
+																									child: Container(
+																										decoration: BoxDecoration(
+																											borderRadius: BorderRadius.circular(4),
+																											color: Colors.black54
+																										),
+																										padding: const EdgeInsets.all(4),
+																										child: Text(
+																											widget.replyCounts[widget.attachments[index]]!.toString(),
+																											style: const TextStyle(
+																												color: Colors.white70,
+																												fontSize: 14,
+																												fontWeight: FontWeight.bold
+																											)
+																										)
+																									)
+																								)
+																							)
+																						]
+																					)
+																				)
+																			)
+																		)
+																	);
+																}
+															)
+														)
+													),
+													SizedBox(
+														height: MediaQuery.of(context).size.height - (_thumbnailSize + 48 + (currentController.videoPlayerController == null ? -44 : 0) + kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top),
+														child: GridView.builder(
+															scrollDirection: Axis.horizontal,
+															cacheExtent: 99999,
+															controller: _gridViewScrollController,
+															gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+																maxCrossAxisExtent: context.select<EffectiveSettings, double>((s) => s.thumbnailSize) * 1.5
+															),
+															itemBuilder: (context, index) {
+																if (index == widget.attachments.length) {
+																	return Center(
+																		child: CupertinoButton.filled(
+																			padding: const EdgeInsets.all(8),
+																			onPressed: _downloadAll,
+																			child: Column(
+																				mainAxisSize: MainAxisSize.min,
+																				children: const [
+																					Icon(CupertinoIcons.cloud_download, size: 50),
+																					Text('Download all')
+																				]
+																			)
+																		)
+																	);
+																}
+																final attachment = widget.attachments[index];
+																return CupertinoButton(
+																	padding: EdgeInsets.zero,
+																	minSize: 0,
+																	onPressed: () {
+																		_scrollSheetController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+																		Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
+																	},
+																	child: Container(
+																		decoration: BoxDecoration(
+																			color: Colors.transparent,
+																			borderRadius: const BorderRadius.all(Radius.circular(4)),
+																			border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 4)
+																		),
+																		margin: const EdgeInsets.all(4),
+																		child: Stack(
+																			children: [
+																				AttachmentThumbnail(
+																					gaplessPlayback: true,
+																					attachment: widget.attachments[index],
+																					shrinkBoth: true,
+																					hero: null
+																				),
+																				if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) Center(
 																					child: Container(
 																						decoration: BoxDecoration(
-																							borderRadius: BorderRadius.circular(4),
+																							borderRadius: BorderRadius.circular(8),
 																							color: Colors.black54
 																						),
-																						padding: const EdgeInsets.all(4),
+																						padding: const EdgeInsets.all(8),
 																						child: Text(
 																							widget.replyCounts[widget.attachments[index]]!.toString(),
 																							style: const TextStyle(
 																								color: Colors.white70,
-																								fontSize: 14,
+																								fontSize: 38,
 																								fontWeight: FontWeight.bold
 																							)
 																						)
 																					)
 																				)
-																			)
-																		]
-																	)
-																)
-															);
-														}
-													)
-												)
-											)
-										),
-										SliverGrid(
-											gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-												maxCrossAxisExtent: context.select<EffectiveSettings, double>((s) => s.thumbnailSize) * 1.5
-											),
-											delegate: SliverChildBuilderDelegate(
-												(context, index) {
-													if (index == widget.attachments.length) {
-														return Center(
-															child: CupertinoButton.filled(
-																padding: const EdgeInsets.all(8),
-																onPressed: _downloadAll,
-																child: Column(
-																	mainAxisSize: MainAxisSize.min,
-																	children: const [
-																		Icon(CupertinoIcons.cloud_download, size: 50),
-																		Text('Download all')
-																	]
-																)
-															)
-														);
-													}
-													final attachment = widget.attachments[index];
-													return GestureDetector(
-														onTap: () {
-															_scrollSheetController.reset();
-															Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
-														},
-														child: Container(
-															decoration: BoxDecoration(
-																color: Colors.transparent,
-																borderRadius: const BorderRadius.all(Radius.circular(4)),
-																border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
-															),
-															margin: const EdgeInsets.all(4),
-															child: Stack(
-																children: [
-																	AttachmentThumbnail(
-																		gaplessPlayback: true,
-																		attachment: widget.attachments[index],
-																		width: 200,
-																		height: 200,
-																		hero: null
-																	),
-																	if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) Center(
-																		child: Container(
-																			decoration: BoxDecoration(
-																				borderRadius: BorderRadius.circular(8),
-																				color: Colors.black54
-																			),
-																			padding: const EdgeInsets.all(8),
-																			child: Text(
-																				widget.replyCounts[widget.attachments[index]]!.toString(),
-																				style: const TextStyle(
-																					color: Colors.white70,
-																					fontSize: 38,
-																					fontWeight: FontWeight.bold
-																				)
-																			)
+																			]
 																		)
 																	)
-																]
-															)
+																);
+															},
+															itemCount: widget.attachments.length + 1
 														)
-													);
-												},
-												childCount: widget.attachments.length + 1
+													)
+												]
 											)
 										)
-									]
+									)
+								),
+								SizedBox(
+									height: 0,
+									child: OverflowBox(
+										maxHeight: 100,
+										alignment: Alignment.topCenter,
+										child: Stack(
+											alignment: Alignment.topCenter,
+											clipBehavior: Clip.none,
+											children: [
+												Positioned(
+													top: 0,
+													child: Container(
+														margin: const EdgeInsets.only(top: 50),
+														padding: const EdgeInsets.all(16),
+														decoration: BoxDecoration(
+															borderRadius: BorderRadius.circular(8),
+															color: CupertinoTheme.of(context).scaffoldBackgroundColor
+														),
+														child: Row(
+															children: const [
+																Icon(CupertinoIcons.arrow_left),
+																SizedBox(width: 8),
+																Text('Scroll horizontally'),
+																SizedBox(width: 8),
+																Icon(CupertinoIcons.arrow_right)
+															]
+														)
+													)
+												)
+											]
+										)
+									)
 								)
-							)
+							]
 						)
 					)
 				);
@@ -659,215 +732,212 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 							)
 						)
 					) : null,
-					child: Container(
-							height: double.infinity,
-							color: Colors.transparent,
-							child: Shortcuts(
-								shortcuts: {
-									LogicalKeySet(LogicalKeyboardKey.arrowLeft): const GalleryLeftIntent(),
-									LogicalKeySet(LogicalKeyboardKey.arrowRight): const GalleryRightIntent(),
-									LogicalKeySet(LogicalKeyboardKey.space): const GalleryToggleChromeIntent(),
-									LogicalKeySet(LogicalKeyboardKey.keyG): const DismissIntent(),
-									LogicalKeySet(LogicalKeyboardKey.tab): Intent.doNothing,
-									LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.arrowLeft) : const DismissIntent()
-								},
-								child: Actions(
-									actions: {
-										GalleryLeftIntent: CallbackAction<GalleryLeftIntent>(
-											onInvoke: (i) {
-												if (currentIndex > 0) {
-													_animateToPage(currentIndex - 1, milliseconds: 0);
-												}
-												return null;
-											}
-										),
-										GalleryRightIntent: CallbackAction<GalleryRightIntent>(
-											onInvoke: (i) {
-												if (currentIndex < widget.attachments.length - 1) {
-													_animateToPage(currentIndex + 1, milliseconds: 0);
-												}
-												return null;
-											}
-										),
-										GalleryToggleChromeIntent: CallbackAction<GalleryToggleChromeIntent>(
-											onInvoke: (i) => _toggleChrome()
-										),
-										DismissIntent: CallbackAction<DismissIntent>(
-											onInvoke: (i) {
-												if (Navigator.of(context).canPop()) {
-													Navigator.of(context).pop();
-												}
-												return null;
-											}
-										)
-									},
-									child: Focus(
-										autofocus: true,
-										child: Stack(
-											children: [
-												KeyedSubtree(
-													key: _pageControllerKey,
-													child: ExtendedImageGesturePageView.builder(
-														physics: settings.showAnimations ? null : const _FasterSnappingPageScrollPhysics(),
-														canScrollPage: (x) => settings.allowSwipingInGallery && widget.allowScroll,
-														onPageChanged: _onPageChanged,
-														controller: pageController,
-														itemCount: widget.attachments.length,
-														itemBuilder: (context, index) {
-															final attachment = widget.attachments[index];
-															return TransformedMediaQuery(
-																transformation: (data) => data.copyWith(
-																	gestureSettings: DeviceGestureSettings(
-																		touchSlop: (data.gestureSettings.touchSlop ?? kTouchSlop) * 2
-																	)
-																),
-																child: AnimatedBuilder(
-																	animation: _getController(attachment),
-																	builder: (context, _) => GestureDetector(
-																		onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
-																			_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
-																		},
-																		child: AttachmentViewer(
-																			controller: _getController(attachment),
-																			onScaleChanged: (scale) {
-																				if (scale > 1 && !_hideRotateButton) {
-																					setState(() {
-																						_hideRotateButton = true;
-																					});
-																				}
-																				else if (scale <= 1 && _hideRotateButton) {
-																					setState(() {
-																						_hideRotateButton = false;
-																					});
-																				}
-																			},
-																			semanticParentIds: widget.semanticParentIds,
-																			onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
-																				_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
-																			},
-																			layoutInsets: layoutInsets,
-																			allowContextMenu: widget.allowContextMenu,
-																		)
-																	)
+					child: Shortcuts(
+						shortcuts: {
+							LogicalKeySet(LogicalKeyboardKey.arrowLeft): const GalleryLeftIntent(),
+							LogicalKeySet(LogicalKeyboardKey.arrowRight): const GalleryRightIntent(),
+							LogicalKeySet(LogicalKeyboardKey.space): const GalleryToggleChromeIntent(),
+							LogicalKeySet(LogicalKeyboardKey.keyG): const DismissIntent(),
+							LogicalKeySet(LogicalKeyboardKey.tab): Intent.doNothing,
+							LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.arrowLeft) : const DismissIntent()
+						},
+						child: Actions(
+							actions: {
+								GalleryLeftIntent: CallbackAction<GalleryLeftIntent>(
+									onInvoke: (i) {
+										if (currentIndex > 0) {
+											_animateToPage(currentIndex - 1, milliseconds: 0);
+										}
+										return null;
+									}
+								),
+								GalleryRightIntent: CallbackAction<GalleryRightIntent>(
+									onInvoke: (i) {
+										if (currentIndex < widget.attachments.length - 1) {
+											_animateToPage(currentIndex + 1, milliseconds: 0);
+										}
+										return null;
+									}
+								),
+								GalleryToggleChromeIntent: CallbackAction<GalleryToggleChromeIntent>(
+									onInvoke: (i) => _toggleChrome()
+								),
+								DismissIntent: CallbackAction<DismissIntent>(
+									onInvoke: (i) {
+										if (Navigator.of(context).canPop()) {
+											Navigator.of(context).pop();
+										}
+										return null;
+									}
+								)
+							},
+							child: Focus(
+								autofocus: true,
+								child: Stack(
+									children: [
+										KeyedSubtree(
+											key: _pageControllerKey,
+											child: ExtendedImageGesturePageView.builder(
+												physics: settings.showAnimations ? null : const _FasterSnappingPageScrollPhysics(),
+												canScrollPage: (x) => settings.allowSwipingInGallery && widget.allowScroll,
+												onPageChanged: _onPageChanged,
+												controller: pageController,
+												itemCount: widget.attachments.length,
+												itemBuilder: (context, index) {
+													final attachment = widget.attachments[index];
+													return TransformedMediaQuery(
+														transformation: (data) => data.copyWith(
+															gestureSettings: DeviceGestureSettings(
+																touchSlop: (data.gestureSettings.touchSlop ?? kTouchSlop) * 2
+															)
+														),
+														child: AnimatedBuilder(
+															animation: _getController(attachment),
+															builder: (context, _) => GestureDetector(
+																onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
+																	_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
+																},
+																child: AttachmentViewer(
+																	controller: _getController(attachment),
+																	onScaleChanged: (scale) {
+																		if (scale > 1 && !_hideRotateButton) {
+																			setState(() {
+																				_hideRotateButton = true;
+																			});
+																		}
+																		else if (scale <= 1 && _hideRotateButton) {
+																			setState(() {
+																				_hideRotateButton = false;
+																			});
+																		}
+																	},
+																	semanticParentIds: widget.semanticParentIds,
+																	onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
+																		_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
+																	},
+																	layoutInsets: layoutInsets,
+																	allowContextMenu: widget.allowContextMenu,
 																)
-															);
-														}
-													)
-												),
-												StreamBuilder(
-													stream: _rotationsChanged.mergeWith([_currentAttachmentChanged]),
-													builder: (context, _) {
-														return Align(
-															alignment: Alignment.bottomRight,
-															child: Row(
-																mainAxisSize: MainAxisSize.min,
-																crossAxisAlignment: CrossAxisAlignment.end,
-																children: [
-																	ValueListenableBuilder<bool>(
-																		valueListenable: settings.muteAudio,
-																		builder: (context, muted, _) => AnimatedSwitcher(
-																			duration: const Duration(milliseconds: 300),
-																			child: currentController.hasAudio ? Align(
-																				key: ValueKey<bool>(muted),
-																				alignment: Alignment.bottomLeft,
-																				child: CupertinoButton(
-																					padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-																					child: muted ? const Icon(CupertinoIcons.volume_off) : const Icon(CupertinoIcons.volume_up),
-																					onPressed: () {
-																						if (muted) {
-																							currentController.videoPlayerController?.setVolume(1);
-																							settings.setMuteAudio(false);
-																						}
-																						else {
-																							currentController.videoPlayerController?.setVolume(0);
-																							settings.setMuteAudio(true);
-																						}
-																					}
-																				)
-																			) : const SizedBox.shrink()
-																		)																		
-																	),
-																	AnimatedSwitcher(
-																		duration: const Duration(milliseconds: 300),
-																		child: (_rotationAppropriate(currentAttachment) && !_hideRotateButton) ? RotationTransition(
-																				key: ValueKey<bool>(_rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0),
-																				turns: _rotationsInProgress.contains(currentAttachment) ? Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController) : const AlwaysStoppedAnimation(0.0),
-																				child: CupertinoButton(
-																					padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-																					child: Transform(
-																						alignment: Alignment.center,
-																						transform: _rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0 ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
-																						child: const Icon(CupertinoIcons.rotate_left)
-																					),
-																					onPressed: () {
-																						if (currentController.quarterTurns == 1) {
-																							currentController.unrotate();
-																						}
-																						else {
-																							_rotate(currentAttachment);
-																						}
-																						_rotationsChanged.add(null);
-																					}
-																				)
-																			) : const SizedBox.shrink()
-																	),
-																	const SizedBox(width: 8)
-																]
 															)
-														);
-													}
-												),
-												AnimatedBuilder(
-													animation: _shouldShowPosition,
-													child: Align(
-														alignment: Alignment.bottomLeft,
-														child: Container(
-															margin: showChrome ? EdgeInsets.only(
-																bottom: (settings.showThumbnailsInGallery ? MediaQuery.of(context).size.height * 0.2 : (44 + MediaQuery.of(context).padding.bottom)) + 16 - (currentController.videoPlayerController == null ? 44 : 0),
-																left: 16
-															) : const EdgeInsets.all(16),
-															padding: const EdgeInsets.all(8),
-															decoration: const BoxDecoration(
-																borderRadius: BorderRadius.all(Radius.circular(8)),
-																color: Colors.black54
+														)
+													);
+												}
+											)
+										),
+										StreamBuilder(
+											stream: _rotationsChanged.mergeWith([_currentAttachmentChanged]),
+											builder: (context, _) {
+												return Align(
+													alignment: Alignment.bottomRight,
+													child: Row(
+														mainAxisSize: MainAxisSize.min,
+														crossAxisAlignment: CrossAxisAlignment.end,
+														children: [
+															ValueListenableBuilder<bool>(
+																valueListenable: settings.muteAudio,
+																builder: (context, muted, _) => AnimatedSwitcher(
+																	duration: const Duration(milliseconds: 300),
+																	child: currentController.hasAudio ? Align(
+																		key: ValueKey<bool>(muted),
+																		alignment: Alignment.bottomLeft,
+																		child: CupertinoButton(
+																			padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+																			child: muted ? const Icon(CupertinoIcons.volume_off) : const Icon(CupertinoIcons.volume_up),
+																			onPressed: () {
+																				if (muted) {
+																					currentController.videoPlayerController?.setVolume(1);
+																					settings.setMuteAudio(false);
+																				}
+																				else {
+																					currentController.videoPlayerController?.setVolume(0);
+																					settings.setMuteAudio(true);
+																				}
+																			}
+																		)
+																	) : const SizedBox.shrink()
+																)																		
 															),
-															child: StreamBuilder(
-																stream: _currentAttachmentChanged,
-																builder: (context, _) => Text("${currentIndex + 1} / ${widget.attachments.length}", style: TextStyle(
-																	color: CupertinoTheme.of(context).primaryColor
-																))
-															)
-														)
-													),
-													builder: (context, child) => AnimatedSwitcher(
-														duration: const Duration(milliseconds: 300),
-														child: _shouldShowPosition.value ? child : Container()
+															AnimatedSwitcher(
+																duration: const Duration(milliseconds: 300),
+																child: (_rotationAppropriate(currentAttachment) && !_hideRotateButton) ? RotationTransition(
+																		key: ValueKey<bool>(_rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0),
+																		turns: _rotationsInProgress.contains(currentAttachment) ? Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController) : const AlwaysStoppedAnimation(0.0),
+																		child: CupertinoButton(
+																			padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+																			child: Transform(
+																				alignment: Alignment.center,
+																				transform: _rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0 ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
+																				child: const Icon(CupertinoIcons.rotate_left)
+																			),
+																			onPressed: () {
+																				if (currentController.quarterTurns == 1) {
+																					currentController.unrotate();
+																				}
+																				else {
+																					_rotate(currentAttachment);
+																				}
+																				_rotationsChanged.add(null);
+																			}
+																		)
+																	) : const SizedBox.shrink()
+															),
+															const SizedBox(width: 8)
+														]
 													)
-												),
-												Visibility(
-													visible: showChrome,
-													maintainState: true,
-													maintainSize: true,
-													maintainAnimation: true,
-													child: AnimatedBuilder(
-														animation: currentController,
-														builder: (context, _) => DraggableScrollableSheet(
-															key: _draggableScrollableSheetKey,
-															snap: true,
-															initialChildSize: _minScrollSheetSize,
-															maxChildSize: _maxScrollSheetSize,
-															minChildSize: _minScrollSheetSize,
-															controller: _scrollSheetController,
-															builder: (context, controller) => _buildScrollSheetChild(controller)
-														)
+												);
+											}
+										),
+										AnimatedBuilder(
+											animation: _shouldShowPosition,
+											child: Align(
+												alignment: Alignment.bottomLeft,
+												child: Container(
+													margin: showChrome ? EdgeInsets.only(
+														bottom: (settings.showThumbnailsInGallery ? MediaQuery.of(context).size.height * 0.2 : (44 + MediaQuery.of(context).padding.bottom)) + 16 - (currentController.videoPlayerController == null ? 44 : 0),
+														left: 16
+													) : const EdgeInsets.all(16),
+													padding: const EdgeInsets.all(8),
+													decoration: const BoxDecoration(
+														borderRadius: BorderRadius.all(Radius.circular(8)),
+														color: Colors.black54
+													),
+													child: StreamBuilder(
+														stream: _currentAttachmentChanged,
+														builder: (context, _) => Text("${currentIndex + 1} / ${widget.attachments.length}", style: TextStyle(
+															color: CupertinoTheme.of(context).primaryColor
+														))
 													)
 												)
-											]
+											),
+											builder: (context, child) => AnimatedSwitcher(
+												duration: const Duration(milliseconds: 300),
+												child: _shouldShowPosition.value ? child : Container()
+											)
+										),
+										Visibility(
+											visible: showChrome,
+											maintainState: true,
+											maintainSize: true,
+											maintainAnimation: true,
+											child: AnimatedBuilder(
+												animation: currentController,
+												builder: (context, _) => DraggableScrollableSheet(
+													key: _draggableScrollableSheetKey,
+													snap: true,
+													snapAnimationDuration: const Duration(milliseconds: 200),
+													initialChildSize: _minScrollSheetSize,
+													maxChildSize: _maxScrollSheetSize,
+													minChildSize: _minScrollSheetSize,
+													controller: _scrollSheetController,
+													builder: (context, controller) => _buildScrollSheetChild(controller)
+												)
+											)
 										)
-									)
+									]
 								)
 							)
 						)
+					)
 				)
 			)
 		);
@@ -888,6 +958,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		_shouldShowPosition.dispose();
 		_rotateButtonAnimationController.dispose();
 		__onPageControllerUpdateSubscription.cancel();
+		_gridViewScrollController.dispose();
 	}
 }
 
