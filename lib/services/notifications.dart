@@ -109,6 +109,8 @@ Future<void> updateNotificationsBadgeCount() async {
 const _notificationSettingsApiRoot = 'https://push.chance.surf';
 
 class Notifications {
+	static String? staticError;
+	String? error;
 	static final Map<String, Notifications> _children = {};
 	final tapStream = BehaviorSubject<BoardThreadOrPostIdentifier>();
 	final foregroundStream = BehaviorSubject<PushNotification>();
@@ -204,9 +206,11 @@ class Notifications {
 				}
 			});
 			FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
+			staticError = null;
 		}
 		catch (e) {
 			print('Error initializing notifications: $e');
+			staticError = e.toStringDio();
 		}
 	}
 
@@ -281,9 +285,11 @@ class Notifications {
 				_unrecognizedByUserId[id]?.forEach(_onMessageOpenedApp);
 				_unrecognizedByUserId[id]?.clear();
 			}
+			error = null;
 		}
 		catch (e) {
 			print('Error initializing notifications: $e');
+			error = e.toStringDio();
 		}
 	}
 

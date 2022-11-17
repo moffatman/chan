@@ -7,6 +7,7 @@ import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -776,7 +777,6 @@ class _SavedPageState extends State<SavedPage> {
 													for (final item in list) {
 														item.imageboard.persistence.deleteSavedAttachment(item.item.attachment);
 													}
-													setState(() {});
 												} : null,
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
@@ -841,6 +841,18 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
 		final w = ImageboardRegistry.threadWatcherController;
+		String notificationsError = '';
+		if (Notifications.staticError != null) {
+			notificationsError = 'Notification setup error:\n${Notifications.staticError!}';
+		}
+		for (final i in ImageboardRegistry.instance.imageboards) {
+			if (i.notifications.error != null) {
+				if (notificationsError.isNotEmpty) {
+					notificationsError += '\n\n';
+				}
+				notificationsError += '${i.key} notifications error:\n${i.notifications.error}';
+			}
+		}
 		return AnimatedSize(
 			duration: const Duration(milliseconds: 300),
 			child: Container(
@@ -903,6 +915,12 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 								const SizedBox(width: 16),
 								const AutoSizeText('Push Notifications'),
 								const Spacer(),
+								if (notificationsError.isNotEmpty) CupertinoButton(
+									onPressed: () {
+										alertError(context, notificationsError);
+									},
+									child: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red)
+								),
 								CupertinoSwitch(
 									value: settings.usePushNotifications ?? false,
 									onChanged: (val) {
