@@ -115,6 +115,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	late final DraggableScrollableController _scrollSheetController;
 	final _draggableScrollableSheetKey = GlobalKey();
 	late StreamSubscription<List<void>> __onPageControllerUpdateSubscription;
+	bool _gridViewDesynced = false;
 
 	@override
 	void initState() {
@@ -171,6 +172,9 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	}
 
 	void _onThumbnailScrollControllerUpdate() {
+		if (_gridViewDesynced) {
+			return;
+		}
 		if (_gridViewScrollController.hasOnePosition && !_gridViewScrollController.position.isScrollingNotifier.value) {
 			_gridViewScrollController.position.jumpTo(
 				(_gridViewScrollController.position.maxScrollExtent * (thumbnailScrollController.position.pixels / thumbnailScrollController.position.maxScrollExtent))
@@ -180,12 +184,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	}
 
 	void _onGridViewScrollControllerUpdate() {
-		if (thumbnailScrollController.hasOnePosition && !thumbnailScrollController.position.isScrollingNotifier.value) {
-			thumbnailScrollController.position.jumpTo(
-				(thumbnailScrollController.position.maxScrollExtent * (_gridViewScrollController.position.pixels / _gridViewScrollController.position.maxScrollExtent))
-					.clamp(thumbnailScrollController.position.minScrollExtent, thumbnailScrollController.position.maxScrollExtent)
-			);
-		}
+		// ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+		_gridViewDesynced |= _gridViewScrollController.position.activity is DragScrollActivity;
 	}
 
 	AttachmentViewerController _getController(Attachment attachment) {
@@ -406,6 +406,8 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 
 	void _toggleChrome() {
 		showChrome = !showChrome & widget.allowChrome;
+		_gridViewDesynced = false;
+		Future.delayed(const Duration(milliseconds: 30), _onThumbnailScrollControllerUpdate);
 		_updateOverlays(showChrome);
 		setState(() {});
 	}
