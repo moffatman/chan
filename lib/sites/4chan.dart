@@ -81,7 +81,9 @@ class Site4Chan extends ImageboardSite {
 	String _sysUrl(String board) => persistence.getBoard(board).isWorksafe ? sysBlueUrl : sysRedUrl;
 
 	static List<PostSpan> parsePlaintext(String text) {
-		return linkify(text, linkifiers: const [UrlLinkifier(), ChanceLinkifier()]).map((elem) {
+		return linkify(text, linkifiers: const [UrlLinkifier(), ChanceLinkifier()], options: const LinkifyOptions(
+			looseUrl: true
+		)).map((elem) {
 			if (elem is UrlElement) {
 				return PostLinkSpan(elem.url);
 			}
