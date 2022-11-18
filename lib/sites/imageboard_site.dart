@@ -733,7 +733,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {
 			try {
-				final thread_ = await archive.getThread(thread);
+				final thread_ = await archive.getThread(thread).timeout(const Duration(seconds: 10));
 				for (final attachment in thread_.attachments) {
 					await ensureCookiesMemoized(attachment.thumbnailUrl);
 					await ensureCookiesMemoized(attachment.url);
