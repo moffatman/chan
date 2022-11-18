@@ -415,7 +415,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		return offset.distance / threshold;
 	}
 
-	double get _maxScrollSheetSize => 1 - (((currentController.videoPlayerController == null ? -44 : 0) + kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top) / MediaQuery.of(context).size.height);
+	double get _maxScrollSheetSize => 1 - (((currentController.videoPlayerController == null ? -44 : -44) + kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top) / MediaQuery.of(context).size.height);
 
 	double get _minScrollSheetSize {
 		if (context.read<EffectiveSettings>().showThumbnailsInGallery) {
@@ -517,7 +517,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 														)
 													),
 													SizedBox(
-														height: MediaQuery.of(context).size.height - (_thumbnailSize + 48 + (currentController.videoPlayerController == null ? -44 : 0) + kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top),
+														height: MediaQuery.of(context).size.height - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top),
 														child: GridView.builder(
 															scrollDirection: Axis.horizontal,
 															cacheExtent: 99999,
