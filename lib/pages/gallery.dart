@@ -479,12 +479,15 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																					margin: const EdgeInsets.all(4),
 																					child: Stack(
 																						children: [
-																							AttachmentThumbnail(
-																								gaplessPlayback: true,
-																								shrinkBoth: true,
-																								attachment: widget.attachments[index],
-																								width: _thumbnailSize,
-																								height: _thumbnailSize
+																							ClipRRect(
+																								borderRadius: BorderRadius.circular(4),
+																								child: AttachmentThumbnail(
+																									gaplessPlayback: true,
+																									attachment: widget.attachments[index],
+																									width: _thumbnailSize,
+																									height: _thumbnailSize,
+																									fit: BoxFit.cover
+																								)
 																							),
 																							if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) SizedBox(
 																								width: _thumbnailSize,
@@ -527,16 +530,20 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 															),
 															itemBuilder: (context, index) {
 																if (index == widget.attachments.length) {
-																	return Center(
+																	return Padding(
+																		padding: const EdgeInsets.all(4),
 																		child: CupertinoButton.filled(
 																			padding: const EdgeInsets.all(8),
 																			onPressed: _downloadAll,
-																			child: Column(
-																				mainAxisSize: MainAxisSize.min,
-																				children: const [
-																					Icon(CupertinoIcons.cloud_download, size: 50),
-																					Text('Download all')
-																				]
+																			child: FittedBox(
+																				fit: BoxFit.contain,
+																				child: Column(
+																					mainAxisSize: MainAxisSize.min,
+																					children: const [
+																						Icon(CupertinoIcons.cloud_download, size: 50),
+																						Text('Download all')
+																					]
+																				)
 																			)
 																		)
 																	);
@@ -551,18 +558,21 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 																	},
 																	child: Container(
 																		decoration: BoxDecoration(
-																			color: Colors.transparent,
-																			borderRadius: const BorderRadius.all(Radius.circular(4)),
+																			borderRadius: const BorderRadius.all(Radius.circular(8)),
 																			border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 4)
 																		),
-																		margin: const EdgeInsets.all(4),
 																		child: Stack(
 																			children: [
-																				AttachmentThumbnail(
-																					gaplessPlayback: true,
-																					attachment: widget.attachments[index],
-																					shrinkBoth: true,
-																					hero: null
+																				ClipRRect(
+																					borderRadius: BorderRadius.circular(8),
+																					child: AttachmentThumbnail(
+																						gaplessPlayback: true,
+																						attachment: widget.attachments[index],
+																						hero: null,
+																						width: 9999,
+																						height: 9999,
+																						fit: BoxFit.cover,
+																					)
 																				),
 																				if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) Center(
 																					child: Container(
@@ -605,21 +615,33 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 											children: [
 												Positioned(
 													top: 0,
-													child: Container(
-														margin: const EdgeInsets.only(top: 50),
-														padding: const EdgeInsets.all(16),
-														decoration: BoxDecoration(
-															borderRadius: BorderRadius.circular(8),
-															color: CupertinoTheme.of(context).scaffoldBackgroundColor
-														),
-														child: Row(
-															children: const [
-																Icon(CupertinoIcons.arrow_left),
-																SizedBox(width: 8),
-																Text('Scroll horizontally'),
-																SizedBox(width: 8),
-																Icon(CupertinoIcons.arrow_right)
-															]
+													left: 0,
+													right: 0,
+													child: ClipRect(
+														child: BackdropFilter(
+															filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+															child:Container(
+																padding: const EdgeInsets.only(bottom: 800),
+																alignment: Alignment.topCenter,
+																child: Container(
+																	margin: const EdgeInsets.only(top: 70),
+																	padding: const EdgeInsets.all(16),
+																	decoration: BoxDecoration(
+																		borderRadius: BorderRadius.circular(8),
+																		color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.5)
+																	),
+																	child: Row(
+																		mainAxisSize: MainAxisSize.min,
+																		children: const [
+																			Icon(CupertinoIcons.arrow_left),
+																			SizedBox(width: 8),
+																			Text('Scroll horizontally'),
+																			SizedBox(width: 8),
+																			Icon(CupertinoIcons.arrow_right)
+																		]
+																	)
+																)
+															)
 														)
 													)
 												)
