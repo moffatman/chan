@@ -559,7 +559,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																		filterableAdapter: (t) => t,
 																		key: _listKey,
 																		sortMethods: zone.postSortingMethods,
-																		id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId}',
+																		id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
 																		disableUpdates: persistentState.thread?.isArchived ?? false,
 																		autoUpdateDuration: const Duration(seconds: 60),
 																		initialList: persistentState.thread?.posts,
