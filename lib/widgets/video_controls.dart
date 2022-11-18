@@ -132,7 +132,7 @@ class _VideoControlsState extends State<VideoControls> {
 											valueListenable: position,
 											builder: (context, Duration positionValue, _) => LinearProgressIndicator(
 												minHeight: 44,
-												value: positionValue.inMilliseconds / value.duration.inMilliseconds,
+												value: positionValue.inMilliseconds / value.duration.inMilliseconds.clamp(1, double.maxFinite),
 												valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
 												backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.3)
 											)
