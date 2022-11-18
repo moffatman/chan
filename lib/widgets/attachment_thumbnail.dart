@@ -5,6 +5,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/services/rotating_image_provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:provider/provider.dart';
@@ -90,8 +91,16 @@ class AttachmentThumbnail extends StatelessWidget {
 				)
 			);
 		}
+		String url = (attachment.spoiler && !revealSpoilers) ? s.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString();
+		if (url.endsWith('.jp')) {
+			// Sometimes 4plebs has strange thumbnails which are blocked from hotlinking, just fallback to the full image
+			if (attachment.ext != '.webm' && ((attachment.sizeInBytes ?? 0) < 300000) || settings.connectivity == ConnectivityResult.wifi) {
+				// Only use the full-res image if less than 300 KB or we are on Wi-Fi
+				url = attachment.url.toString();
+			}
+		}
 		ImageProvider image = ExtendedNetworkImageProvider(
-			(attachment.spoiler && !revealSpoilers) ? s.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString(),
+			url,
 			cache: true,
 			headers: s.getHeaders(attachment.thumbnailUrl)
 		);
