@@ -438,220 +438,213 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 					child: SingleChildScrollView(
 						controller: controller,
 						physics: const BouncingScrollPhysics(),
-						child: Column(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								ClipRect(
-									child: BackdropFilter(
-										filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-										child: Container(
-											color: Colors.black38,
-											child: Column(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													if (currentController.videoPlayerController != null) VideoControls(
-														controller: currentController.videoPlayerController!,
-														hasAudio: currentController.hasAudio
-													),
-													SizedBox(
-														height: _thumbnailSize + 8,
-														child: KeyedSubtree(
-															key: _thumbnailsKey,
-															child: ListView.builder(
-																cacheExtent: 99999,
-																controller: thumbnailScrollController,
-																itemCount: widget.attachments.length,
-																scrollDirection: Axis.horizontal,
-																itemBuilder: (context, index) {
-																	final attachment = widget.attachments[index];
-																	return CupertinoButton(
-																		padding: EdgeInsets.zero,
-																		minSize: 0,
-																		onPressed: () => _animateToPage(index),
-																		child: SizedBox(
-																			width: _thumbnailSize + 8,
-																			height: _thumbnailSize + 8,
-																			child: Center(
-																				child: Container(
-																					decoration: BoxDecoration(
-																						color: Colors.transparent,
-																						borderRadius: const BorderRadius.all(Radius.circular(4)),
-																						border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
+						child: BackdropFilter(
+							filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+								child: Container(
+									color: Colors.black38,
+									child: Column(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											if (currentController.videoPlayerController != null) VideoControls(
+												controller: currentController.videoPlayerController!,
+												hasAudio: currentController.hasAudio
+											),
+											SizedBox(
+												height: _thumbnailSize + 8,
+												child: KeyedSubtree(
+													key: _thumbnailsKey,
+													child: ListView.builder(
+														cacheExtent: 99999,
+														controller: thumbnailScrollController,
+														itemCount: widget.attachments.length,
+														scrollDirection: Axis.horizontal,
+														itemBuilder: (context, index) {
+															final attachment = widget.attachments[index];
+															return CupertinoButton(
+																padding: EdgeInsets.zero,
+																minSize: 0,
+																onPressed: () => _animateToPage(index),
+																child: SizedBox(
+																	width: _thumbnailSize + 8,
+																	height: _thumbnailSize + 8,
+																	child: Center(
+																		child: Container(
+																			decoration: BoxDecoration(
+																				color: Colors.transparent,
+																				borderRadius: const BorderRadius.all(Radius.circular(4)),
+																				border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
+																			),
+																			margin: const EdgeInsets.all(4),
+																			child: Stack(
+																				children: [
+																					ClipRRect(
+																						borderRadius: BorderRadius.circular(4),
+																						child: AttachmentThumbnail(
+																							gaplessPlayback: true,
+																							attachment: widget.attachments[index],
+																							width: _thumbnailSize,
+																							height: _thumbnailSize,
+																							fit: BoxFit.cover
+																						)
 																					),
-																					margin: const EdgeInsets.all(4),
-																					child: Stack(
-																						children: [
-																							ClipRRect(
-																								borderRadius: BorderRadius.circular(4),
-																								child: AttachmentThumbnail(
-																									gaplessPlayback: true,
-																									attachment: widget.attachments[index],
-																									width: _thumbnailSize,
-																									height: _thumbnailSize,
-																									fit: BoxFit.cover
-																								)
-																							),
-																							if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) SizedBox(
-																								width: _thumbnailSize,
-																								child: Center(
-																									child: Container(
-																										decoration: BoxDecoration(
-																											borderRadius: BorderRadius.circular(4),
-																											color: Colors.black54
-																										),
-																										padding: const EdgeInsets.all(4),
-																										child: Text(
-																											widget.replyCounts[widget.attachments[index]]!.toString(),
-																											style: const TextStyle(
-																												color: Colors.white70,
-																												fontSize: 14,
-																												fontWeight: FontWeight.bold
-																											)
-																										)
+																					if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) SizedBox(
+																						width: _thumbnailSize,
+																						child: Center(
+																							child: Container(
+																								decoration: BoxDecoration(
+																									borderRadius: BorderRadius.circular(4),
+																									color: Colors.black54
+																								),
+																								padding: const EdgeInsets.all(4),
+																								child: Text(
+																									widget.replyCounts[widget.attachments[index]]!.toString(),
+																									style: const TextStyle(
+																										color: Colors.white70,
+																										fontSize: 14,
+																										fontWeight: FontWeight.bold
 																									)
 																								)
 																							)
-																						]
-																					)
-																				)
-																			)
-																		)
-																	);
-																}
-															)
-														)
-													),
-													SizedBox(
-														height: MediaQuery.of(context).size.height - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top),
-														child: GridView.builder(
-															scrollDirection: Axis.horizontal,
-															cacheExtent: 99999,
-															controller: _gridViewScrollController,
-															gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-																maxCrossAxisExtent: context.select<EffectiveSettings, double>((s) => s.thumbnailSize) * 1.5
-															),
-															itemBuilder: (context, index) {
-																if (index == widget.attachments.length) {
-																	return Padding(
-																		padding: const EdgeInsets.all(4),
-																		child: CupertinoButton.filled(
-																			padding: const EdgeInsets.all(8),
-																			onPressed: _downloadAll,
-																			child: FittedBox(
-																				fit: BoxFit.contain,
-																				child: Column(
-																					mainAxisSize: MainAxisSize.min,
-																					children: const [
-																						Icon(CupertinoIcons.cloud_download, size: 50),
-																						Text('Download all')
-																					]
-																				)
-																			)
-																		)
-																	);
-																}
-																final attachment = widget.attachments[index];
-																return CupertinoButton(
-																	padding: EdgeInsets.zero,
-																	minSize: 0,
-																	onPressed: () {
-																		_scrollSheetController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
-																		Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
-																	},
-																	child: Container(
-																		decoration: BoxDecoration(
-																			borderRadius: const BorderRadius.all(Radius.circular(8)),
-																			border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 4)
-																		),
-																		child: Stack(
-																			children: [
-																				ClipRRect(
-																					borderRadius: BorderRadius.circular(8),
-																					child: AttachmentThumbnail(
-																						gaplessPlayback: true,
-																						attachment: widget.attachments[index],
-																						hero: null,
-																						width: 9999,
-																						height: 9999,
-																						fit: BoxFit.cover,
-																					)
-																				),
-																				if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) Center(
-																					child: Container(
-																						decoration: BoxDecoration(
-																							borderRadius: BorderRadius.circular(8),
-																							color: Colors.black54
-																						),
-																						padding: const EdgeInsets.all(8),
-																						child: Text(
-																							widget.replyCounts[widget.attachments[index]]!.toString(),
-																							style: const TextStyle(
-																								color: Colors.white70,
-																								fontSize: 38,
-																								fontWeight: FontWeight.bold
-																							)
 																						)
 																					)
-																				)
+																				]
+																			)
+																		)
+																	)
+																)
+															);
+														}
+													)
+												)
+											),
+											SizedBox(
+												height: MediaQuery.of(context).size.height - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top),
+												child: GridView.builder(
+													scrollDirection: Axis.horizontal,
+													cacheExtent: 99999,
+													controller: _gridViewScrollController,
+													gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+														maxCrossAxisExtent: context.select<EffectiveSettings, double>((s) => s.thumbnailSize) * 1.5
+													),
+													itemBuilder: (context, index) {
+														if (index == widget.attachments.length) {
+															return Padding(
+																padding: const EdgeInsets.all(4),
+																child: CupertinoButton.filled(
+																	padding: const EdgeInsets.all(8),
+																	onPressed: _downloadAll,
+																	child: FittedBox(
+																		fit: BoxFit.contain,
+																		child: Column(
+																			mainAxisSize: MainAxisSize.min,
+																			children: const [
+																				Icon(CupertinoIcons.cloud_download, size: 50),
+																				Text('Download all')
 																			]
 																		)
 																	)
-																);
+																)
+															);
+														}
+														final attachment = widget.attachments[index];
+														return CupertinoButton(
+															padding: EdgeInsets.zero,
+															minSize: 0,
+															onPressed: () {
+																_scrollSheetController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+																Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
 															},
-															itemCount: widget.attachments.length + 1
-														)
-													)
-												]
-											)
-										)
-									)
-								),
-								SizedBox(
-									height: 0,
-									child: OverflowBox(
-										maxHeight: 100,
-										alignment: Alignment.topCenter,
-										child: Stack(
-											alignment: Alignment.topCenter,
-											clipBehavior: Clip.none,
-											children: [
-												Positioned(
-													top: 0,
-													left: 0,
-													right: 0,
-													child: ClipRect(
-														child: BackdropFilter(
-															filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-															child:Container(
+															child: Container(
+																decoration: BoxDecoration(
+																	borderRadius: const BorderRadius.all(Radius.circular(8)),
+																	border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 4)
+																),
+																child: Stack(
+																	children: [
+																		ClipRRect(
+																			borderRadius: BorderRadius.circular(8),
+																			child: AttachmentThumbnail(
+																				gaplessPlayback: true,
+																				attachment: widget.attachments[index],
+																				hero: null,
+																				width: 9999,
+																				height: 9999,
+																				fit: BoxFit.cover,
+																			)
+																		),
+																		if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) Center(
+																			child: Container(
+																				decoration: BoxDecoration(
+																					borderRadius: BorderRadius.circular(8),
+																					color: Colors.black54
+																				),
+																				padding: const EdgeInsets.all(8),
+																				child: Text(
+																					widget.replyCounts[widget.attachments[index]]!.toString(),
+																					style: const TextStyle(
+																						color: Colors.white70,
+																						fontSize: 38,
+																						fontWeight: FontWeight.bold
+																					)
+																				)
+																			)
+																		)
+																	]
+																)
+															)
+														);
+													},
+													itemCount: widget.attachments.length + 1
+												)
+											),
+											SizedBox(
+												height: 0,
+												child: OverflowBox(
+													maxHeight: 100,
+													alignment: Alignment.topCenter,
+													child: Stack(
+														alignment: Alignment.topCenter,
+														clipBehavior: Clip.none,
+														children: [
+															Positioned(
+																top: 0,
+																left: 0,
+																right: 0,
+																child: Container(
 																padding: const EdgeInsets.only(bottom: 800),
 																alignment: Alignment.topCenter,
-																child: Container(
-																	margin: const EdgeInsets.only(top: 70),
-																	padding: const EdgeInsets.all(16),
-																	decoration: BoxDecoration(
-																		borderRadius: BorderRadius.circular(8),
-																		color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.5)
-																	),
-																	child: Row(
-																		mainAxisSize: MainAxisSize.min,
-																		children: const [
-																			Icon(CupertinoIcons.arrow_left),
-																			SizedBox(width: 8),
-																			Text('Scroll horizontally'),
-																			SizedBox(width: 8),
-																			Icon(CupertinoIcons.arrow_right)
-																		]
+																color: Colors.black38,
+																child: Visibility(
+																	visible: _gridViewScrollController.hasOnePosition &&
+																					 _gridViewScrollController.position.maxScrollExtent > _gridViewScrollController.position.viewportDimension,
+																	child: Container(
+																		margin: const EdgeInsets.only(top: 70),
+																		padding: const EdgeInsets.all(16),
+																		decoration: BoxDecoration(
+																			borderRadius: BorderRadius.circular(8),
+																			color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.5)
+																		),
+																		child: Row(
+																			mainAxisSize: MainAxisSize.min,
+																			children: const [
+																				Icon(CupertinoIcons.arrow_left),
+																				SizedBox(width: 8),
+																				Text('Scroll horizontally'),
+																				SizedBox(width: 8),
+																				Icon(CupertinoIcons.arrow_right)
+																			]
+																		)
 																	)
 																)
 															)
 														)
-													)
+													]
 												)
-											]
+											)
 										)
-									)
+									]
 								)
-							]
+							)
 						)
 					)
 				);
