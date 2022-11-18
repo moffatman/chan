@@ -63,7 +63,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		}
 	}
 
-	Widget _buildPagination(VoidCallback onChange) {
+	Widget _buildPagination() {
 		return Row(
 			mainAxisAlignment: MainAxisAlignment.spaceAround,
 			children: [
@@ -72,7 +72,6 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					onPressed: (loading || result.data?.page == 1) ? null : () {
 						page = 1;
 						_runQuery();
-						onChange();
 					},
 					child: const Text('1')
 				),
@@ -82,7 +81,6 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					onPressed: (loading || result.data?.page == 1) ? null : () {
 						page = page! - 1;
 						_runQuery();
-						onChange();
 					},
 					child: const Icon(CupertinoIcons.chevron_left)
 				),
@@ -127,7 +125,6 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						if (selectedPage != null) {
 							page = selectedPage;
 							_runQuery();
-							onChange();
 						}
 						controller.dispose();
 					},
@@ -138,7 +135,6 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					onPressed: (loading || result.data?.page == result.data?.maxPage) ? null : () {
 						page = page! + 1;
 						_runQuery();
-						onChange();
 					},
 					child: const Icon(CupertinoIcons.chevron_right)
 				),
@@ -148,7 +144,6 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					onPressed: (loading || result.data?.page == result.data?.maxPage || result.data?.maxPage == null) ? null : () {
 						page = result.data?.maxPage;
 						_runQuery();
-						onChange();
 					},
 					child: Text('${result.data?.maxPage ?? '—'}')
 				),
@@ -177,7 +172,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					itemCount: result.data!.posts.length + 2,
 					itemBuilder: (context, i) {
 						if (i == 0 || i == result.data!.posts.length + 1) {
-							return _buildPagination(() => setValue(currentValue));
+							return _buildPagination();
 						}
 						final row = result.data!.posts[i - 1];
 						if (row.post != null) {
@@ -255,7 +250,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			children: [
 				if (result.hasData) SafeArea(
 					bottom: false,
-					child: _buildPagination(() => setValue(currentValue))
+					child: _buildPagination()
 				),
 				const Expanded(
 					child: Center(
