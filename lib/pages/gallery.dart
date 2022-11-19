@@ -501,7 +501,7 @@ class _GalleryPageState extends State<GalleryPage> {
 												)
 											),
 											SizedBox(
-												height: MediaQuery.of(context).size.height - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + MediaQuery.of(context).viewPadding.top),
+												height: MediaQuery.of(context).size.height - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((Persistence.settings.useStatusBarWorkaround ?? false) ? 0 : MediaQuery.of(context).viewPadding.top)),
 												child: GridView.builder(
 													scrollDirection: Axis.horizontal,
 													cacheExtent: 99999,
