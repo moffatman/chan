@@ -88,7 +88,7 @@ class GalleryPage extends StatefulWidget {
 	createState() => _GalleryPageState();
 }
 
-class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin {
+class _GalleryPageState extends State<GalleryPage> {
 	late int currentIndex;
 	Attachment get currentAttachment => widget.attachments[currentIndex];
 	AttachmentViewerController get currentController => _getController(currentAttachment);
@@ -106,8 +106,6 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 	final _shareButtonKey = GlobalKey();
 	late final BehaviorSubject<void> _slideStream;
 	bool _hideRotateButton = false;
-	final Set<Attachment> _rotationsInProgress = {};
-	late final AnimationController _rotateButtonAnimationController;
 	final Map<Attachment, AttachmentViewerController> _controllers = {};
 	late final ValueNotifier<bool> _shouldShowPosition;
 	late final BehaviorSubject<void> _currentAttachmentChanged;
@@ -127,7 +125,6 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		_rotationsChanged = BehaviorSubject();
 		_scrollSheetController = DraggableScrollableController();
 		_gridViewScrollController = ScrollController()..addListener(_onGridViewScrollControllerUpdate);
-		_rotateButtonAnimationController = AnimationController(duration: const Duration(milliseconds: 5000), vsync: this, upperBound: pi * 2);
 		showChrome = widget.initiallyShowChrome;
 		_updateOverlays(showChrome);
 		currentIndex = (widget.initialAttachment != null) ? max(0, widget.attachments.indexOf(widget.initialAttachment!)) : 0;
@@ -282,25 +279,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 		return attachment.isLandscape != null && displayIsLandscape != attachment.isLandscape;
 	}
 
-	void _rotate(Attachment attachment) async {
-		if (attachment == currentAttachment) {
-			_rotateButtonAnimationController.repeat();
-		}
-		_rotationsInProgress.add(attachment);
-		_rotationsChanged.add(null);
-		await _getController(attachment).rotate();
-		_rotationsInProgress.remove(attachment);
-		_rotationsChanged.add(null);
-		if (attachment == currentAttachment) {
-			_rotateButtonAnimationController.reset();
-		}
-	}
-
 	void _onPageChanged(int index) async {
-		_rotateButtonAnimationController.reset();
-		if (_rotationsInProgress.contains(widget.attachments[index])) {
-			_rotateButtonAnimationController.repeat();
-		}
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
 		currentIndex = index;
@@ -320,7 +299,7 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 					_getController(nextAttachment).preloadFullAttachment();
 				}
 			}
-			if (settings.autoRotateInGallery && _rotationAppropriate(attachment) && _getController(attachment).quarterTurns == 0) {
+			if (settings.autoRotateInGallery && _rotationAppropriate(attachment) && !_getController(attachment).rotate90DegreesClockwise) {
 				_getController(attachment).rotate();
 			}
 			for (final c in _controllers.entries) {
@@ -841,68 +820,62 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 												}
 											)
 										),
-										StreamBuilder(
-											stream: _rotationsChanged.mergeWith([_currentAttachmentChanged]),
-											builder: (context, _) {
-												return Align(
-													alignment: Alignment.bottomRight,
-													child: Row(
-														mainAxisSize: MainAxisSize.min,
-														crossAxisAlignment: CrossAxisAlignment.end,
-														children: [
-															ValueListenableBuilder<bool>(
-																valueListenable: settings.muteAudio,
-																builder: (context, muted, _) => AnimatedSwitcher(
-																	duration: const Duration(milliseconds: 300),
-																	child: currentController.hasAudio ? Align(
-																		key: ValueKey<bool>(muted),
-																		alignment: Alignment.bottomLeft,
-																		child: CupertinoButton(
-																			padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-																			child: muted ? const Icon(CupertinoIcons.volume_off) : const Icon(CupertinoIcons.volume_up),
-																			onPressed: () {
-																				if (muted) {
-																					currentController.videoPlayerController?.setVolume(1);
-																					settings.setMuteAudio(false);
-																				}
-																				else {
-																					currentController.videoPlayerController?.setVolume(0);
-																					settings.setMuteAudio(true);
-																				}
-																			}
-																		)
-																	) : const SizedBox.shrink()
-																)																		
-															),
-															AnimatedSwitcher(
-																duration: const Duration(milliseconds: 300),
-																child: (_rotationAppropriate(currentAttachment) && !_hideRotateButton) ? RotationTransition(
-																		key: ValueKey<bool>(_rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0),
-																		turns: _rotationsInProgress.contains(currentAttachment) ? Tween(begin: 0.0, end: 1.0).animate(_rotateButtonAnimationController) : const AlwaysStoppedAnimation(0.0),
-																		child: CupertinoButton(
-																			padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-																			child: Transform(
-																				alignment: Alignment.center,
-																				transform: _rotationsInProgress.contains(currentAttachment) || currentController.quarterTurns == 0 ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
-																				child: const Icon(CupertinoIcons.rotate_left)
-																			),
-																			onPressed: () {
-																				if (currentController.quarterTurns == 1) {
-																					currentController.unrotate();
-																				}
-																				else {
-																					_rotate(currentAttachment);
-																				}
-																				_rotationsChanged.add(null);
-																			}
-																		)
-																	) : const SizedBox.shrink()
-															),
-															const SizedBox(width: 8)
-														]
-													)
-												);
-											}
+										Align(
+											alignment: Alignment.bottomRight,
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												crossAxisAlignment: CrossAxisAlignment.end,
+												children: [
+													ValueListenableBuilder<bool>(
+														valueListenable: settings.muteAudio,
+														builder: (context, muted, _) => AnimatedSwitcher(
+															duration: const Duration(milliseconds: 300),
+															child: currentController.hasAudio ? Align(
+																key: ValueKey<bool>(muted),
+																alignment: Alignment.bottomLeft,
+																child: CupertinoButton(
+																	padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+																	child: muted ? const Icon(CupertinoIcons.volume_off) : const Icon(CupertinoIcons.volume_up),
+																	onPressed: () {
+																		if (muted) {
+																			currentController.videoPlayerController?.setVolume(1);
+																			settings.setMuteAudio(false);
+																		}
+																		else {
+																			currentController.videoPlayerController?.setVolume(0);
+																			settings.setMuteAudio(true);
+																		}
+																	}
+																)
+															) : const SizedBox.shrink()
+														)																		
+													),
+													StreamBuilder(
+														stream: _rotationsChanged.mergeWith([_currentAttachmentChanged]),
+														builder: (context, _) => AnimatedSwitcher(
+															duration: const Duration(milliseconds: 300),
+															child: (_rotationAppropriate(currentAttachment) && !_hideRotateButton) ? CupertinoButton(
+																padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+																child: Transform(
+																	alignment: Alignment.center,
+																	transform: !currentController.rotate90DegreesClockwise ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
+																	child: const Icon(CupertinoIcons.rotate_left)
+																),
+																onPressed: () {
+																	if (currentController.rotate90DegreesClockwise) {
+																		currentController.unrotate();
+																	}
+																	else {
+																		currentController.rotate();
+																	}
+																	_rotationsChanged.add(null);
+																}
+															) : const SizedBox.shrink()
+														)
+													),
+													const SizedBox(width: 8)
+												]
+											)
 										),
 										AnimatedBuilder(
 											animation: _shouldShowPosition,
@@ -962,20 +935,18 @@ class _GalleryPageState extends State<GalleryPage> with TickerProviderStateMixin
 
 	@override
 	void dispose() {
-		super.dispose();
 		pageController.dispose();
 		_scrollCoalescer.close();
 		_currentAttachmentChanged.close();
-		_rotationsChanged.close();
 		thumbnailScrollController.dispose();
 		_slideStream.close();
 		for (final controller in _controllers.values) {
 			controller.dispose();
 		}
 		_shouldShowPosition.dispose();
-		_rotateButtonAnimationController.dispose();
 		__onPageControllerUpdateSubscription.cancel();
 		_gridViewScrollController.dispose();
+		super.dispose();
 	}
 }
 

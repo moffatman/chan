@@ -4,7 +4,6 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/services/rotating_image_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:extended_image/extended_image.dart';
@@ -41,7 +40,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final double? height;
 	final BoxFit fit;
 	final Object? hero;
-	final int quarterTurns;
+	final bool rotate90DegreesClockwise;
 	final Function(Object?, StackTrace?)? onLoadError;
 	final Alignment alignment;
 	final bool gaplessPlayback;
@@ -58,7 +57,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.fit = BoxFit.contain,
 		this.alignment = Alignment.center,
 		this.hero,
-		this.quarterTurns = 0,
+		this.rotate90DegreesClockwise = false,
 		this.onLoadError,
 		this.gaplessPlayback = false,
 		this.revealSpoilers = false,
@@ -107,9 +106,6 @@ class AttachmentThumbnail extends StatelessWidget {
 			cache: true,
 			headers: s.getHeaders(attachment.thumbnailUrl)
 		);
-		if (quarterTurns != 0) {
-			image = RotatingImageProvider(parent: image, quarterTurns: quarterTurns);
-		}
 		Widget child = ExtendedImage(
 			image: image,
 			width: effectiveWidth,
@@ -117,6 +113,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			fit: fit,
 			alignment: alignment,
 			gaplessPlayback: gaplessPlayback,
+			rotate90DegreesClockwise: rotate90DegreesClockwise,
 			//filterQuality: FilterQuality.high,
 			loadStateChanged: (loadstate) {
 				if (loadstate.extendedImageLoadState == LoadState.loading) {

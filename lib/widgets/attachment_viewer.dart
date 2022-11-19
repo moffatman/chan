@@ -11,7 +11,6 @@ import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/storage.dart';
-import 'package:chan/services/rotating_image_provider.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -75,7 +74,6 @@ class AttachmentViewerController extends ChangeNotifier {
 	final Uri? overrideSource;
 
 	// Private usage
-	Completer<void>? _rotationCompleter;
 	bool _isFullResolution = false;
 	String? _errorMessage;
 	VideoPlayerController? _videoPlayerController;
@@ -84,7 +82,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	File? _cachedFile;
 	bool _isPrimary = false;
 	MediaConversion? _ongoingConversion;
-	int _quarterTurns = 0;
+	bool _rotate90DegreesClockwise = false;
 	bool _checkArchives = false;
 	bool _showLoadingProgress = false;
 	final _longPressFactorStream = BehaviorSubject<double>();
@@ -120,8 +118,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool get cacheCompleted => _cachedFile != null;
 	/// Whether this attachment is currently the primary one being displayed to the user
 	bool get isPrimary => _isPrimary;
-	/// How many turns to rotate the image by
-	int get quarterTurns => _quarterTurns;
+	/// Whether to rotate the image 90 degrees clockwise
+	bool get rotate90DegreesClockwise => _rotate90DegreesClockwise;
 	/// A key to use to with ExtendedImage (to help maintain gestures when the image widget is replaced)
 	final gestureKey = GlobalKey<ExtendedImageGestureState>();
 	/// A key to use with CupertinoContextMenu share button
@@ -425,24 +423,14 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<void> preloadFullAttachment() => _loadFullAttachment(true);
 
-	Future<void> rotate() async {
-		_quarterTurns = 1;
+	void rotate() {
+		_rotate90DegreesClockwise = true;
 		notifyListeners();
-		if (attachment.type == AttachmentType.image) {
-			_rotationCompleter ??= Completer<void>();
-			await _rotationCompleter!.future;
-		}
 	}
 
 	void unrotate() {
-		_quarterTurns = 0;
+		_rotate90DegreesClockwise = false;
 		notifyListeners();
-	}
-
-	void onRotationCompleted() {
-		if (!(_rotationCompleter?.isCompleted ?? false)) {
-			_rotationCompleter?.complete();
-		}
 	}
 
 	void onCacheCompleted(File file) {
@@ -665,18 +653,6 @@ class AttachmentViewer extends StatelessWidget {
 				imageCacheName: 'asdf'
 			);
 		}
-		if (controller.quarterTurns != 0) {
-			image = RotatingImageProvider(
-				parent: image,
-				quarterTurns: controller.quarterTurns,
-				onLoaded: controller.onRotationCompleted
-			);
-			image.obtainCacheStatus(configuration: createLocalImageConfiguration(context)).then((status) {
-				if (status?.keepAlive == true) {
-					controller.onRotationCompleted();
-				}
-			});
-		}
 		void onDoubleTap(ExtendedImageGestureState state) {
 			final old = state.gestureDetails!;
 			if ((old.totalScale ?? 1) > 1) {
@@ -717,6 +693,7 @@ class AttachmentViewer extends StatelessWidget {
 			enableLoadState: true,
 			handleLoadingProgress: true,
 			layoutInsets: layoutInsets,
+			rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
 			loadStateChanged: (loadstate) {
 				// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback
 				if (!controller.cacheCompleted || controller.showLoadingProgress) {
@@ -935,7 +912,7 @@ class AttachmentViewer extends StatelessWidget {
 							attachment: attachment,
 							width: double.infinity,
 							height: double.infinity,
-							quarterTurns: controller.quarterTurns,
+							rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
 							gaplessPlayback: true,
 							revealSpoilers: true
 						),
@@ -946,7 +923,7 @@ class AttachmentViewer extends StatelessWidget {
 							onLongPressEnd: (x) => controller._onLongPressEnd(),
 							child: Center(
 								child: RotatedBox(
-									quarterTurns: controller.quarterTurns,
+									quarterTurns: controller.rotate90DegreesClockwise ? 1 : 0,
 									child: AspectRatio(
 										aspectRatio: aspectRatio,
 										child: VideoPlayer(controller.videoPlayerController!)
@@ -971,7 +948,7 @@ class AttachmentViewer extends StatelessWidget {
 							duration: const Duration(milliseconds: 250),
 							child: (controller.overlayText != null) ? Center(
 								child: RotatedBox(
-									quarterTurns: controller.quarterTurns,
+									quarterTurns: controller.rotate90DegreesClockwise ? 1 : 0,
 									child: Container(
 										padding: const EdgeInsets.all(8),
 										decoration: const BoxDecoration(
@@ -1012,7 +989,7 @@ class AttachmentViewer extends StatelessWidget {
 							attachment: attachment,
 							width: double.infinity,
 							height: double.infinity,
-							quarterTurns: controller.quarterTurns,
+							rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
 							gaplessPlayback: true,
 							revealSpoilers: true
 						),
