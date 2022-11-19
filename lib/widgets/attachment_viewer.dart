@@ -236,6 +236,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		await Future.delayed(const Duration(milliseconds: 500));
 		if (_isDisposed) return;
 		_showLoadingProgress = false;
+		_loadingProgressHideScheduled = false;
 		notifyListeners();
 	}
 
