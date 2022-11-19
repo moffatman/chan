@@ -71,15 +71,18 @@ class AttachmentThumbnail extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
+		final spoiler = attachment.spoiler && !revealSpoilers;
 		double effectiveWidth = width ?? settings.thumbnailSize;
 		double effectiveHeight = height ?? settings.thumbnailSize;
-		if (shrinkBoth) {
-			final size = attachment.estimateFittedSize(size: Size(effectiveWidth, effectiveHeight));
-			effectiveWidth = size.width;
-			effectiveHeight = size.height;
-		}
-		else if (shrinkHeight) {
-			effectiveHeight = attachment.estimateFittedSize(size: Size(effectiveWidth, effectiveHeight)).height;
+		if (!spoiler) {
+			if (shrinkBoth) {
+				final size = attachment.estimateFittedSize(size: Size(effectiveWidth, effectiveHeight));
+				effectiveWidth = size.width;
+				effectiveHeight = size.height;
+			}
+			else if (shrinkHeight) {
+				effectiveHeight = attachment.estimateFittedSize(size: Size(effectiveWidth, effectiveHeight)).height;
+			}
 		}
 		final s = site ?? context.watch<ImageboardSite?>();
 		if (s == null) {
@@ -91,7 +94,7 @@ class AttachmentThumbnail extends StatelessWidget {
 				)
 			);
 		}
-		String url = (attachment.spoiler && !revealSpoilers) ? s.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString();
+		String url = spoiler ? s.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString();
 		if (url.endsWith('.jp')) {
 			// Sometimes 4plebs has strange thumbnails which are blocked from hotlinking, just fallback to the full image
 			if (attachment.ext != '.webm' && ((attachment.sizeInBytes ?? 0) < 300000) || settings.connectivity == ConnectivityResult.wifi) {
