@@ -939,13 +939,7 @@ class AttachmentViewer extends StatelessWidget {
 							gaplessPlayback: true,
 							revealSpoilers: true
 						),
-						if (controller.errorMessage != null) Center(
-							child: ErrorMessageCard(controller.errorMessage!, remedies: {
-								'Retry': () => controller.reloadFullAttachment(),
-								if (!controller.checkArchives) 'Try archives': () => controller.tryArchives()
-							})
-						)
-						else if (controller.videoPlayerController != null) GestureDetector(
+						if (controller.videoPlayerController != null) GestureDetector(
 							behavior: HitTestBehavior.translucent,
 							onLongPressStart: (x) => controller._onLongPressStart(),
 							onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.of(context).size.width / 2)),
@@ -966,6 +960,12 @@ class AttachmentViewer extends StatelessWidget {
 								active: controller.isFullResolution,
 								value: loadingProgress
 							)
+						),
+						if (controller.errorMessage != null) Center(
+							child: ErrorMessageCard(controller.errorMessage!, remedies: {
+								'Retry': () => controller.reloadFullAttachment(),
+								if (!controller.checkArchives) 'Try archives': () => controller.tryArchives()
+							})
 						),
 						AnimatedSwitcher(
 							duration: const Duration(milliseconds: 250),
