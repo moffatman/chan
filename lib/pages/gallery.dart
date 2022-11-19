@@ -512,7 +512,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													itemBuilder: (context, index) {
 														if (index == widget.attachments.length) {
 															return Padding(
-																padding: const EdgeInsets.all(4),
+																padding: const EdgeInsets.all(6),
 																child: CupertinoButton.filled(
 																	padding: const EdgeInsets.all(8),
 																	onPressed: _downloadAll,
