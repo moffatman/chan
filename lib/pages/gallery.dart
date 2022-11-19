@@ -442,7 +442,12 @@ class _GalleryPageState extends State<GalleryPage> {
 															return CupertinoButton(
 																padding: EdgeInsets.zero,
 																minSize: 0,
-																onPressed: () => _animateToPage(index),
+																onPressed: () {
+																	if (_scrollSheetController.size > 0.5) {
+																		_scrollSheetController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
+																	}
+																	_animateToPage(index);
+																},
 																child: SizedBox(
 																	width: _thumbnailSize + 8,
 																	height: _thumbnailSize + 8,
