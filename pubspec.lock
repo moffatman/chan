@@ -274,10 +274,10 @@ packages:
     description:
       path: "."
       ref: chan_master
-      resolved-ref: c6c515595da751dba87b769eff0893d02d3a1a0e
+      resolved-ref: "575d4b61e2b73f8d1f564192fdc77b5c0d429bdf"
       url: "https://github.com/moffatman/extended_image.git"
     source: git
-    version: "6.3.1"
+    version: "6.3.2"
   extended_image_library:
     dependency: "direct main"
     description:
