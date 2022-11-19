@@ -834,6 +834,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				subject: _subjectFieldController.text,
 				flag: flag
 			));
+			bool spamFiltered = false;
 			if (_captchaSolution is Chan4CustomCaptchaSolution) {
 				final solution = (_captchaSolution as Chan4CustomCaptchaSolution);
 				settings.contributeCaptchas ??= await showCupertinoDialog<bool>(
@@ -882,22 +883,19 @@ class ReplyBoxState extends State<ReplyBox> {
 						});
 					}
 				}
-				if (_captchaSolution?.cloudflare ?? false) {
-					throw const ActionableException(
-						message: 'Your post was likely blocked by 4chan\'s anti-span firewall.\nIf you don\'t see your post appear, try again later. It has been saved in the reply form.',
-						actions: {}
-					);
-				}
+				spamFiltered = _captchaSolution?.cloudflare ?? false;
 			}
-			_textFieldController.clear();
-			_nameFieldController.clear();
-			_optionsFieldController.clear();
-			_subjectFieldController.clear();
-			_filenameController.clear();
+			if (!spamFiltered) {
+				_textFieldController.clear();
+				_nameFieldController.clear();
+				_optionsFieldController.clear();
+				_subjectFieldController.clear();
+				_filenameController.clear();
+				attachment = null;
+				_showAttachmentOptions = false;
+			}
 			_show = false;
 			loading = false;
-			attachment = null;
-			_showAttachmentOptions = false;
 			if (mounted) setState(() {});
 			print(receipt);
 			_rootFocusNode.unfocus();
@@ -907,8 +905,18 @@ class ReplyBoxState extends State<ReplyBox> {
 			threadState.receipts = [...threadState.receipts, receipt];
 			threadState.save();
 			mediumHapticFeedback();
-			showToast(context: context, message: 'Post successful', icon: CupertinoIcons.check_mark, hapticFeedback: false);
 			widget.onReplyPosted(receipt);
+			if (spamFiltered) {
+				if (mounted) {
+					alertError(
+						context,
+						'Your post was likely blocked by 4chan\'s anti-span firewall.\nIf you don\'t see your post appear, try again later. It has been saved in the reply form.'
+					);
+				}
+			}
+			else {
+				showToast(context: context, message: 'Post successful', icon: CupertinoIcons.check_mark, hapticFeedback: false);
+			}
 		}
 		catch (e, st) {
 			print(e);
