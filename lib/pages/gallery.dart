@@ -448,12 +448,11 @@ class _GalleryPageState extends State<GalleryPage> {
 																	height: _thumbnailSize + 8,
 																	child: Center(
 																		child: Container(
+																			padding: const EdgeInsets.all(2),
 																			decoration: BoxDecoration(
-																				color: Colors.transparent,
+																				color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : null,
 																				borderRadius: const BorderRadius.all(Radius.circular(4)),
-																				border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
 																			),
-																			margin: const EdgeInsets.all(4),
 																			child: Stack(
 																				children: [
 																					ClipRRect(
@@ -534,9 +533,11 @@ class _GalleryPageState extends State<GalleryPage> {
 																Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
 															},
 															child: Container(
+																padding: const EdgeInsets.all(4),
+																margin: const EdgeInsets.all(2),
 																decoration: BoxDecoration(
 																	borderRadius: const BorderRadius.all(Radius.circular(8)),
-																	border: Border.all(color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 4)
+																	color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : null
 																),
 																child: Stack(
 																	children: [
