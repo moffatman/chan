@@ -272,7 +272,9 @@ class ThreadRow extends StatelessWidget {
 						mainAxisSize: MainAxisSize.min,
 						children: latestThread.attachments.map((attachment) => PopupAttachment(
 							attachment: attachment,
-							child: GestureDetector(
+							child: CupertinoButton(
+								padding: EdgeInsets.zero,
+								minSize: 0,
 								child: Stack(
 									alignment: Alignment.center,
 									fit: StackFit.loose,
@@ -311,7 +313,7 @@ class ThreadRow extends StatelessWidget {
 										)
 									]
 								),
-								onTap: () => onThumbnailTap?.call(attachment)
+								onPressed: () => onThumbnailTap?.call(attachment)
 							)
 						)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
 					)

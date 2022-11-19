@@ -172,7 +172,9 @@ class PostRow extends StatelessWidget {
 						mainAxisSize: MainAxisSize.min,
 						children: latestPost.attachments.map((attachment) => PopupAttachment(
 							attachment: attachment,
-							child: GestureDetector(
+							child: CupertinoButton(
+								padding: EdgeInsets.zero,
+								minSize: 0,
 								child: Stack(
 									alignment: Alignment.center,
 									fit: StackFit.loose,
@@ -211,7 +213,7 @@ class PostRow extends StatelessWidget {
 										)
 									]
 								),
-								onTap: () {
+								onPressed: () {
 									onThumbnailTap?.call(attachment);
 								}
 							)
@@ -222,9 +224,8 @@ class PostRow extends StatelessWidget {
 					child: SizedBox(
 						width: 75,
 						height: 75,
-						child: GestureDetector(
-							behavior: HitTestBehavior.opaque,
-							onTap: onRequestArchive,
+						child: CupertinoButton(
+							onPressed: onRequestArchive,
 							child: const Icon(CupertinoIcons.question_square, size: 36)
 						)
 					)
