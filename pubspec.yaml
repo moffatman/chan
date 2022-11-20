@@ -103,6 +103,8 @@ flutter_icons:
 flutter_native_splash:
   color: "#141414"
   image: "assets/splash.png"
+  android_12:
+    image: "assets/splash_android12.png"
 
 # The following section is specific to Flutter.
 flutter:
@@ -118,6 +120,7 @@ flutter:
   #  - images/a_dot_ham.jpeg
   assets:
     - assets/katex.html
+    - assets/splash.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.io/assets-and-images/#resolution-aware.

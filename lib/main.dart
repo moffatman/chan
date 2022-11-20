@@ -241,7 +241,7 @@ class _ChanAppState extends State<ChanApp> {
 																					settings.updateContentSettings();
 																				});
 																			}
-																		}) : const CupertinoActivityIndicator()
+																		}) : const ChanSplashPage()
 																	)
 																)
 															);
@@ -258,6 +258,37 @@ class _ChanAppState extends State<ChanApp> {
 								}
 							)
 						)
+					)
+				)
+			)
+		);
+	}
+}
+
+class ChanSplashPage extends StatelessWidget {
+	const ChanSplashPage({
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		return Container(
+			width: double.infinity,
+			height: double.infinity,
+			alignment: Alignment.center,
+			color: context.select<EffectiveSettings, Color>((s) => s.theme.backgroundColor),
+			child: Transform.scale(
+				scale: 1 / (
+					2.0 * MediaQuery.of(context).devicePixelRatio *
+					context.select<EffectiveSettings, double>((s) => s.interfaceScale)
+				),
+				child: ColorFiltered(
+					colorFilter: ColorFilter.mode(
+						context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+						BlendMode.srcATop
+					),
+					child: const Image(
+						image: AssetImage('assets/splash.png')
 					)
 				)
 			)
@@ -1330,9 +1361,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	Widget build(BuildContext context) {
 		final hideTabletLayoutLabels = MediaQuery.of(context).size.height < 600;
 		if (!ImageboardRegistry.instance.initialized) {
-			return const Center(
-				child: CupertinoActivityIndicator()
-			);
+			return const ChanSplashPage();
 		}
 		for (final board in ImageboardRegistry.instance.imageboards) {
 			if (_notificationsSubscriptions[board.key]?.item1 != board.notifications) {
@@ -1357,63 +1386,64 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					onWillPop: () async {
 						return ((await _tabletWillPopZones[_tabController.index]?.callback?.call() ?? false) && (await confirmExit()));
 					},
-					child: CupertinoPageScaffold(
-						backgroundColor: CupertinoTheme.of(context).barBackgroundColor,
-						child: SafeArea(
-							top: false,
-							bottom: false,
-							child: Row(
-								children: [
-									Container(
-										padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-										width: 85,
-										child: Column(
-											children: [
-												Expanded(
-													child: Column(
-														children: [
-															Expanded(
-																child: AnimatedBuilder(
-																	animation: activeBrowserTab,
-																	builder: (context, _) => _buildTabList(Axis.vertical)
-																)
-															),
-															_buildNewTabIcon(hideLabel: hideTabletLayoutLabels)
-														]
-													)
-												),
-												_buildTabletIcon(1, NotifyingIcon(
-														icon: const Icon(CupertinoIcons.bookmark),
-														primaryCount: CombiningValueListenable<int>(
-															children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
-															combine: (a, b) => a + b,
-															noChildrenValue: 0
+					child: SafeArea(
+						top: false,
+						bottom: false,
+						child: Row(
+							children: [
+								Container(
+									padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+									color: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+									width: 85,
+									child: Column(
+										children: [
+											Expanded(
+												child: Column(
+													children: [
+														Expanded(
+															child: AnimatedBuilder(
+																animation: activeBrowserTab,
+																builder: (context, _) => _buildTabList(Axis.vertical)
+															)
 														),
-														secondaryCount: CombiningValueListenable<int>(
-															children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
-															combine: (a, b) => a + b,
-															noChildrenValue: 0
-														)
-													), hideTabletLayoutLabels ? null : 'Saved',
-												),
-												GestureDetector(
-													onLongPress: _toggleHistory,
-													child: _buildTabletIcon(2, Persistence.enableHistory ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History')
-												),
-												_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
-												GestureDetector(
-													onLongPress: _runSettingsQuickAction,
-													child: _buildTabletIcon(4, NotifyingIcon(
-															icon: Icon(CupertinoIcons.settings, color: settings.filterError != null ? Colors.red : null),
-															primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
-															secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
-														), hideTabletLayoutLabels ? null : 'Settings'
-													)
+														_buildNewTabIcon(hideLabel: hideTabletLayoutLabels)
+													]
 												)
-											]
-										)
-									),
-									Expanded(
+											),
+											_buildTabletIcon(1, NotifyingIcon(
+													icon: const Icon(CupertinoIcons.bookmark),
+													primaryCount: CombiningValueListenable<int>(
+														children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenYouCount).toList(),
+														combine: (a, b) => a + b,
+														noChildrenValue: 0
+													),
+													secondaryCount: CombiningValueListenable<int>(
+														children: ImageboardRegistry.instance.imageboards.map((x) => x.threadWatcher.unseenCount).toList(),
+														combine: (a, b) => a + b,
+														noChildrenValue: 0
+													)
+												), hideTabletLayoutLabels ? null : 'Saved',
+											),
+											GestureDetector(
+												onLongPress: _toggleHistory,
+												child: _buildTabletIcon(2, Persistence.enableHistory ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History')
+											),
+											_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
+											GestureDetector(
+												onLongPress: _runSettingsQuickAction,
+												child: _buildTabletIcon(4, NotifyingIcon(
+														icon: Icon(CupertinoIcons.settings, color: settings.filterError != null ? Colors.red : null),
+														primaryCount: devImageboard?.threadWatcher.unseenYouCount ?? zeroValueNotifier,
+														secondaryCount: devImageboard?.threadWatcher.unseenCount ?? zeroValueNotifier
+													), hideTabletLayoutLabels ? null : 'Settings'
+												)
+											)
+										]
+									)
+								),
+								Expanded(
+									child: Container(
+										color: context.select<EffectiveSettings, Color>((s) => s.theme.backgroundColor),
 										child: AnimatedBuilder(
 											animation: _tabController,
 											builder: (context, _) => TabSwitchingView(
@@ -1423,8 +1453,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											)
 										)
 									)
-								]
-							)
+								)
+							]
 						)
 					)
 				)
