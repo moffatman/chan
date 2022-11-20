@@ -1398,7 +1398,7 @@ class RefreshableListController<T extends Object> {
 				throw StateError('No matching item to scroll to');
 			}
 		}
-		_animateToIndex(targetIndex, alignment: alignment, duration: duration);
+		await _animateToIndex(targetIndex, alignment: alignment, duration: duration);
 	}
 	Future<void> _animateToIndex(int targetIndex, {double alignment = 0.0, Duration duration = const Duration(milliseconds: 200)}) async {
 		print('$contentId animating to $targetIndex');
