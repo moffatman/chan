@@ -427,7 +427,6 @@ void subscribeToBoard({
 	}
 
 	Future<void> updateLastKnownId(ThreadWatch watch, int lastKnownId, {bool foreground = false}) async {
-		print('$foreground ${WidgetsBinding.instance.lifecycleState}');
 		if (foreground && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
 			await clearNotifications(this, watch);
 			clearOverlayNotifications(this, watch);
