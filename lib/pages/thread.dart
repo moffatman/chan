@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/posts.dart';
@@ -20,6 +19,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -286,9 +286,13 @@ class _ThreadPageState extends State<ThreadPage> {
 		setHandoffUrl(_foreground ? context.read<ImageboardSite>().getWebUrl(widget.thread.board, widget.thread.id) : null);
 	}
 
-	void _showGallery({bool initiallyShowChrome = false, Attachment? initialAttachment}) {
-		final attachments = persistentState.thread!.posts.expand((_) => _.attachments).toList();
-		showGallery(
+	void _showGallery({bool initiallyShowChrome = false, TaggedAttachment? initialAttachment}) {
+		final commonParentIds = [widget.boardSemanticId, 0];
+		final attachments = _listController.items.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
+			attachment: a,
+			semanticParentIds: commonParentIds.followedBy(item.parentIds)
+		))).toList();
+		showGalleryPretagged(
 			context: context,
 			attachments: attachments,
 			replyCounts: {
@@ -297,11 +301,12 @@ class _ThreadPageState extends State<ThreadPage> {
 						attachment: post.replyIds.length
 			},
 			initiallyShowChrome: initiallyShowChrome,
-			initialAttachment: (initialAttachment == null) ? null : (attachments.tryFirstWhere((a) => a.id == initialAttachment.id) ?? initialAttachment),
+			initialAttachment: initialAttachment,
 			onChange: (attachment) {
-				_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id));
-			},
-			semanticParentIds: [widget.boardSemanticId, 0]
+				_listController.animateTo((p) => p.attachments.any((a) {
+					return a.id == attachment.attachment.id;
+				}));
+			}
 		);
 	}
 
@@ -355,7 +360,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		zone.postSortingMethods = [
 			if (site.isReddit && !useTree) (a, b) => a.id.compareTo(b.id)
 		];
-		zone.showParentQuotelinkIfImplicit = !useTree;
+		zone.tree = !useTree;
 		return WillPopScope(
 			onWillPop: () async {
 				if (_replyBoxKey.currentState?.show ?? false) {
@@ -523,11 +528,13 @@ class _ThreadPageState extends State<ThreadPage> {
 												OpenGalleryIntent: CallbackAction<OpenGalleryIntent>(
 													onInvoke: (i) {
 														if (context.read<EffectiveSettings>().showImages(context, widget.thread.board)) {
-															final nextPostWithImage = persistentState.thread?.posts.skip(_listController.firstVisibleIndex).firstWhere((p) => p.attachments.isNotEmpty, orElse: () {
-																return persistentState.thread!.posts.take(_listController.firstVisibleIndex).firstWhere((p) => p.attachments.isNotEmpty);
-															});
+															RefreshableListItem<Post>? nextPostWithImage = _listController.items.skip(_listController.firstVisibleIndex).tryFirstWhere((p) => p.item.attachments.isNotEmpty);
+															nextPostWithImage ??= _listController.items.take(_listController.firstVisibleIndex).tryFirstWhere((p) => p.item.attachments.isNotEmpty);
 															if (nextPostWithImage != null) {
-																_showGallery(initialAttachment: nextPostWithImage.attachments.first);
+																_showGallery(initialAttachment: TaggedAttachment(
+																	attachment: nextPostWithImage.item.attachments.first,
+																	semanticParentIds: [widget.boardSemanticId, 0].followedBy(nextPostWithImage.parentIds)
+																));
 															}
 														}
 														return null;
@@ -734,7 +741,10 @@ class _ThreadPageState extends State<ThreadPage> {
 																			return PostRow(
 																				post: post,
 																				onThumbnailTap: (attachment) {
-																					_showGallery(initialAttachment: attachment);
+																					_showGallery(initialAttachment: TaggedAttachment(
+																						attachment: attachment,
+																						semanticParentIds: context.read<PostSpanZoneData>().stackIds
+																					));
 																				},
 																				onRequestArchive: _switchToArchive
 																			);
@@ -743,7 +753,10 @@ class _ThreadPageState extends State<ThreadPage> {
 																			return PostRow(
 																				post: post,
 																				onThumbnailTap: (attachment) {
-																					_showGallery(initialAttachment: attachment);
+																					_showGallery(initialAttachment: TaggedAttachment(
+																						attachment: attachment,
+																						semanticParentIds: context.read<PostSpanZoneData>().stackIds
+																					));
 																				},
 																				onRequestArchive: _switchToArchive,
 																				onTap: () {

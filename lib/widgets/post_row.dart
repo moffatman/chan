@@ -132,7 +132,7 @@ class PostRow extends StatelessWidget {
 						child: Text.rich(
 							TextSpan(
 								children: [
-									if (parentZone.showParentQuotelinkIfImplicit && !site.explicitIds && post.parentId != null) ...[
+									if (!parentZone.tree && !site.explicitIds && post.parentId != null) ...[
 										PostQuoteLinkSpan(
 											board: latestPost.board,
 											threadId: latestPost.threadId,
@@ -183,9 +183,9 @@ class PostRow extends StatelessWidget {
 											attachment: attachment,
 											thread: latestPost.threadIdentifier,
 											onLoadError: onThumbnailLoadError,
-											hero: AttachmentSemanticLocation(
+											hero: TaggedAttachment(
 												attachment: attachment,
-												semanticParents: parentZone.stackIds
+												semanticParentIds: parentZone.stackIds
 											),
 											shrinkHeight: true,
 										),

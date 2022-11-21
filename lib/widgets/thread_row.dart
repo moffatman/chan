@@ -283,9 +283,9 @@ class ThreadRow extends StatelessWidget {
 											onLoadError: onThumbnailLoadError,
 											attachment: attachment,
 											thread: latestThread.identifier,
-											hero: AttachmentSemanticLocation(
+											hero: TaggedAttachment(
 												attachment: attachment,
-												semanticParents: semanticParentIds
+												semanticParentIds: semanticParentIds
 											),
 											shrinkHeight: true
 										),

@@ -57,13 +57,12 @@ class _FasterSnappingPageScrollPhysics extends ScrollPhysics {
 }
 
 class GalleryPage extends StatefulWidget {
-	final List<Attachment> attachments;
+	final List<TaggedAttachment> attachments;
 	final Map<Attachment, int> replyCounts;
 	final Map<Attachment, Uri> overrideSources;
-	final Attachment? initialAttachment;
+	final TaggedAttachment? initialAttachment;
 	final bool initiallyShowChrome;
-	final ValueChanged<Attachment>? onChange;
-	final Iterable<int> semanticParentIds;
+	final ValueChanged<TaggedAttachment>? onChange;
 	final bool allowScroll;
 	final bool allowContextMenu;
 	final bool allowChrome;
@@ -74,7 +73,6 @@ class GalleryPage extends StatefulWidget {
 		this.replyCounts = const {},
 		this.overrideSources = const {},
 		required this.initialAttachment,
-		required this.semanticParentIds,
 		this.initiallyShowChrome = false,
 		this.onChange,
 		this.allowScroll = true,
@@ -90,7 +88,7 @@ class GalleryPage extends StatefulWidget {
 
 class _GalleryPageState extends State<GalleryPage> {
 	late int currentIndex;
-	Attachment get currentAttachment => widget.attachments[currentIndex];
+	TaggedAttachment get currentAttachment => widget.attachments[currentIndex];
 	AttachmentViewerController get currentController => _getController(currentAttachment);
 	bool firstControllerMade = false;
 	late final ScrollController thumbnailScrollController;
@@ -106,7 +104,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	final _shareButtonKey = GlobalKey();
 	late final BehaviorSubject<void> _slideStream;
 	bool _hideRotateButton = false;
-	final Map<Attachment, AttachmentViewerController> _controllers = {};
+	final Map<TaggedAttachment, AttachmentViewerController> _controllers = {};
 	late final ValueNotifier<bool> _shouldShowPosition;
 	late final BehaviorSubject<void> _currentAttachmentChanged;
 	late final BehaviorSubject<void> _rotationsChanged;
@@ -185,11 +183,11 @@ class _GalleryPageState extends State<GalleryPage> {
 		_gridViewDesynced |= _gridViewScrollController.position.activity is DragScrollActivity;
 	}
 
-	AttachmentViewerController _getController(Attachment attachment) {
+	AttachmentViewerController _getController(TaggedAttachment attachment) {
 		if (_controllers[attachment] == null) {
 			_controllers[attachment] = AttachmentViewerController(
 				context: context,
-				attachment: attachment,
+				attachment: attachment.attachment,
 				redrawGestureStream: _slideStream,
 				site: context.read<ImageboardSite>(),
 				isPrimary: attachment == currentAttachment,
@@ -299,7 +297,7 @@ class _GalleryPageState extends State<GalleryPage> {
 					_getController(nextAttachment).preloadFullAttachment();
 				}
 			}
-			if (settings.autoRotateInGallery && _rotationAppropriate(attachment) && !_getController(attachment).rotate90DegreesClockwise) {
+			if (settings.autoRotateInGallery && _rotationAppropriate(attachment.attachment) && !_getController(attachment).rotate90DegreesClockwise) {
 				_getController(attachment).rotate();
 			}
 			for (final c in _controllers.entries) {
@@ -464,7 +462,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																						borderRadius: BorderRadius.circular(4),
 																						child: AttachmentThumbnail(
 																							gaplessPlayback: true,
-																							attachment: widget.attachments[index],
+																							attachment: widget.attachments[index].attachment,
 																							width: _thumbnailSize,
 																							height: _thumbnailSize,
 																							fit: BoxFit.cover
@@ -550,7 +548,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																			borderRadius: BorderRadius.circular(8),
 																			child: AttachmentThumbnail(
 																				gaplessPlayback: true,
-																				attachment: widget.attachments[index],
+																				attachment: widget.attachments[index].attachment,
 																				hero: null,
 																				width: 9999,
 																				height: 9999,
@@ -666,7 +664,7 @@ class _GalleryPageState extends State<GalleryPage> {
 							builder: (context, _) => Padding(
 								padding: const EdgeInsets.only(bottom: 4),
 								child: AutoSizeText(
-									"${currentAttachment.filename} (${currentAttachment.width}x${currentAttachment.height}${currentAttachment.sizeInBytes == null ? ')' : ', ${(currentAttachment.sizeInBytes! / 1024).round()} KB)'}",
+									"${currentAttachment.attachment.filename} (${currentAttachment.attachment.width}x${currentAttachment.attachment.height}${currentAttachment.attachment.sizeInBytes == null ? ')' : ', ${(currentAttachment.attachment.sizeInBytes! / 1024).round()} KB)'}",
 									minFontSize: 8
 								)
 							)
@@ -696,22 +694,22 @@ class _GalleryPageState extends State<GalleryPage> {
 												onPressed: currentController.canShare && !currentController.isDownloaded ? () async {
 													await currentController.download();
 													if (!mounted) return;
-													showToast(context: context, message: 'Downloaded ${currentAttachment.filename}', icon: CupertinoIcons.cloud_download);
+													showToast(context: context, message: 'Downloaded ${currentAttachment.attachment.filename}', icon: CupertinoIcons.cloud_download);
 												} : null,
 												child: const Icon(CupertinoIcons.cloud_download)
 											),
 											StreamBuilder(
 												stream: context.watch<Persistence>().savedAttachmentsNotifier,
 												builder: (context, child) {
-													final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment) != null;
+													final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment.attachment) != null;
 													return CupertinoButton(
 														padding: EdgeInsets.zero,
 														onPressed: currentController.canShare ? () async {
 															if (currentlySaved) {
-																context.read<Persistence>().deleteSavedAttachment(currentAttachment);
+																context.read<Persistence>().deleteSavedAttachment(currentAttachment.attachment);
 															}
 															else {
-																context.read<Persistence>().saveAttachment(currentAttachment, await currentController.getFile());
+																context.read<Persistence>().saveAttachment(currentAttachment.attachment, await currentController.getFile());
 															}
 														} : null,
 														child: Icon(currentlySaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark)
@@ -813,7 +811,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																			});
 																		}
 																	},
-																	semanticParentIds: widget.semanticParentIds,
+																	semanticParentIds: attachment.semanticParentIds,
 																	onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
 																		_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
 																	},
@@ -860,7 +858,7 @@ class _GalleryPageState extends State<GalleryPage> {
 														stream: _rotationsChanged.mergeWith([_currentAttachmentChanged]),
 														builder: (context, _) => AnimatedSwitcher(
 															duration: const Duration(milliseconds: 300),
-															child: (_rotationAppropriate(currentAttachment) && !_hideRotateButton) ? CupertinoButton(
+															child: (_rotationAppropriate(currentAttachment.attachment) && !_hideRotateButton) ? CupertinoButton(
 																padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
 																child: Transform(
 																	alignment: Alignment.center,
@@ -956,17 +954,16 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 }
 
-Future<Attachment?> showGallery({
+Future<Attachment?> showGalleryPretagged({
 	required BuildContext context,
-	required List<Attachment> attachments,
+	required List<TaggedAttachment> attachments,
 	Map<Attachment, Uri> overrideSources = const {},
 	Map<Attachment, int> replyCounts = const {},
-	required Iterable<int> semanticParentIds,
-	Attachment? initialAttachment,
+	TaggedAttachment? initialAttachment,
 	bool initiallyShowChrome = false,
 	bool allowChrome = true,
 	bool allowContextMenu = true,
-	ValueChanged<Attachment>? onChange,
+	ValueChanged<TaggedAttachment>? onChange,
 }) async {
 	final imageboard = context.read<Imageboard>();
 	final showAnimations = context.read<EffectiveSettings>().showAnimations;
@@ -981,7 +978,6 @@ Future<Attachment?> showGallery({
 				initialAttachment: initialAttachment,
 				initiallyShowChrome: initiallyShowChrome,
 				onChange: onChange,
-				semanticParentIds: semanticParentIds,
 				allowChrome: allowChrome,
 				allowContextMenu: allowContextMenu,
 			)
@@ -997,3 +993,32 @@ Future<Attachment?> showGallery({
 	await showStatusBar();
 	return lastSelected;
 }
+
+Future<Attachment?> showGallery({
+	required BuildContext context,
+	required List<Attachment> attachments,
+	Map<Attachment, Uri> overrideSources = const {},
+	Map<Attachment, int> replyCounts = const {},
+	required Iterable<int> semanticParentIds,
+	Attachment? initialAttachment,
+	bool initiallyShowChrome = false,
+	bool allowChrome = true,
+	bool allowContextMenu = true,
+	ValueChanged<Attachment>? onChange,
+}) => showGalleryPretagged(
+	context: context,
+	attachments: attachments.map((attachment) => TaggedAttachment(
+		attachment: attachment,
+		semanticParentIds: semanticParentIds
+	)).toList(),
+	overrideSources: overrideSources,
+	replyCounts: replyCounts,
+	initialAttachment: initialAttachment == null ? null : TaggedAttachment(
+		attachment: initialAttachment,
+		semanticParentIds: semanticParentIds
+	),
+	initiallyShowChrome: initiallyShowChrome,
+	allowChrome: allowChrome,
+	allowContextMenu: allowContextMenu,
+	onChange: onChange == null ? null : (x) => onChange(x.attachment)
+);

@@ -726,9 +726,9 @@ class _SavedPageState extends State<SavedPage> {
 															),
 															margin: const EdgeInsets.all(4),
 															child: Hero(
-																tag: AttachmentSemanticLocation(
+																tag: TaggedAttachment(
 																	attachment: list[i].item.attachment,
-																	semanticParents: [-5]
+																	semanticParentIds: [-5]
 																),
 																child: SavedAttachmentThumbnail(
 																	file: list[i].item.file,
@@ -795,22 +795,34 @@ class _SavedPageState extends State<SavedPage> {
 							);
 						}
 					),
-					detailBuilder: (selectedValue, poppedOut) => BuiltDetailPane(
-						widget: selectedValue == null ? _placeholder('Select an attachment') : ImageboardScope(
-							imageboardKey: selectedValue.imageboard.key,
-							child: GalleryPage(
-								initialAttachment: selectedValue.item.attachment,
-								attachments: [selectedValue.item.attachment],
-								overrideSources: {
-									selectedValue.item.attachment: selectedValue.item.file.uri
-								},
-								semanticParentIds: poppedOut ? [-5] : [-6],
-								allowScroll: poppedOut,
-								updateOverlays: false
-							)
-						),
-						pageRouteBuilder: transparentPageRouteBuilder
-					)
+					detailBuilder: (selectedValue, poppedOut) {
+						Widget child;
+						if (selectedValue == null) {
+							child = _placeholder('Select an attachment');
+						}
+						else {
+							final attachment = TaggedAttachment(
+								attachment: selectedValue.item.attachment,
+								semanticParentIds: poppedOut ? [-5] : [-6]
+							);
+							child = ImageboardScope(
+								imageboardKey: selectedValue.imageboard.key,
+								child: GalleryPage(
+									initialAttachment: attachment,
+									attachments: [attachment],
+									overrideSources: {
+										selectedValue.item.attachment: selectedValue.item.file.uri
+									},
+									allowScroll: poppedOut,
+									updateOverlays: false
+								)
+							);
+						}
+						return BuiltDetailPane(
+							widget: child,
+							pageRouteBuilder: transparentPageRouteBuilder
+						);
+					}
 				)
 			]
 		);

@@ -9,19 +9,21 @@ import 'package:flutter/cupertino.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:provider/provider.dart';
 
-class AttachmentSemanticLocation {
+class TaggedAttachment {
+	final Attachment attachment;
+	final Iterable<int> semanticParentIds;
 	final String _tag;
-	AttachmentSemanticLocation({
-		required Iterable<int> semanticParents,
-		required Attachment attachment
-	}) : _tag = '${semanticParents.join('/')}/${attachment.id}';
+	TaggedAttachment({
+		required this.attachment,
+		required this.semanticParentIds
+	}) : _tag = '${semanticParentIds.join('/')}/${attachment.id}';
 
 	@override
 	bool operator == (Object other) {
 		if (identical(this, other)) {
 			return true;
 		}
-		return (other is AttachmentSemanticLocation) && _tag == other._tag;
+		return (other is TaggedAttachment) && _tag == other._tag;
 	}
 
 	@override

@@ -478,7 +478,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		Widget? collapsed;
 		int? id = widget.treeAdapter?.getId(value.item);
 		if (_searchFilter != null && widget.filteredItemBuilder != null) {
-			child = widget.filteredItemBuilder!(context, value.item, _closeSearch, _searchFilter!.text);
+			child = Builder(
+				builder: (context) => widget.filteredItemBuilder!(context, value.item, _closeSearch, _searchFilter!.text)
+			);
 		}
 		else {
 			if (value.omittedChildCount > 0) {
@@ -489,7 +491,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				);
 			}
 			else {
-				child = widget.itemBuilder(context, value.item);
+				child = Builder(
+					builder: (context) => widget.itemBuilder(context, value.item)
+				);
 				collapsed = widget.collapsedItemBuilder?.call(context, value.item, value.treeChildrenCount);
 			}
 			if (widget.treeAdapter != null && widget.useTree) {

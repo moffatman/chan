@@ -1195,9 +1195,9 @@ class ReplyBoxState extends State<ReplyBox> {
 								Flexible(
 									child: GestureDetector(
 										child: Hero(
-											tag: AttachmentSemanticLocation(
+											tag: TaggedAttachment(
 												attachment: fakeAttachment,
-												semanticParents: [_textFieldController.hashCode]
+												semanticParentIds: [_textFieldController.hashCode]
 											),
 											child: SavedAttachmentThumbnail(file: attachment!, fit: BoxFit.contain)
 										),

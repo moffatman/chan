@@ -604,9 +604,9 @@ class AttachmentViewer extends StatelessWidget {
 
 	Attachment get attachment => controller.attachment;
 
-	Object get _tag => AttachmentSemanticLocation(
+	Object get _tag => TaggedAttachment(
 		attachment: attachment,
-		semanticParents: semanticParentIds
+		semanticParentIds: semanticParentIds
 	);
 
 	Widget _centeredLoader({
