@@ -1162,6 +1162,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													maxChildSize: _maxScrollSheetSize,
 													minChildSize: _minScrollSheetSize,
 													controller: _scrollSheetController,
+													shouldIgnorePointer: false,
 													builder: (context, controller) => showChromeOnce ? _buildScrollSheetChild(controller) : const SizedBox.shrink()
 												)
 											)
