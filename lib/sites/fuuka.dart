@@ -27,7 +27,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 	@override
 	final String name;
 	static PostNodeSpan makeSpan(String board, int threadId, Map<String, int> linkedPostThreadIds, String data) {
-		final body = parseFragment(data);
+		final body = parseFragment(data.trim());
 		final List<PostSpan> elements = [];
 		for (final node in body.nodes) {
 			if (node is dom.Element) {
