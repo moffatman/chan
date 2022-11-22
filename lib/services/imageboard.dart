@@ -36,7 +36,7 @@ class Imageboard extends ChangeNotifier {
 	bool _threadWatcherInitialized = false;
 	bool _notificationsInitialized = false;
 	final String key;
-	bool get seemsOk => initialized && !boardsLoading && setupErrorMessage == null && boardFetchErrorMessage == null;
+	bool get seemsOk => initialized && !(boardsLoading && persistence.boards.isEmpty) && setupErrorMessage == null && boardFetchErrorMessage == null;
 	final ThreadWatcherController? threadWatcherController;
 
 	Imageboard({

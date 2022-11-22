@@ -35,7 +35,7 @@ class ImageboardScope extends StatelessWidget {
 		return AnimatedBuilder(
 			animation: b,
 			builder: (context, child) {
-				if (b.boardsLoading) {
+				if (b.boardsLoading && b.persistence.boards.isEmpty) {
 					return Center(
 						child: Transform(
 							transform: Matrix4.translationValues(loaderOffset.dx, loaderOffset.dy, 0),
