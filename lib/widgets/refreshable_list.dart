@@ -1349,7 +1349,10 @@ class RefreshableListController<T extends Object> {
 		_itemCacheCallbacks.clear();
 	}
 	void setItems(List<RefreshableListItem<T>> items) {
-		if (items.isNotEmpty && _items.isNotEmpty && items.first == _items.first.item) {
+		if (items.isNotEmpty &&
+		   _items.isNotEmpty &&
+			 items.first == _items.first.item &&
+			 ((items.length < 2 && _items.length < 2) || items[1] == _items[1].item)) {
 			if (items.length < _items.length) {
 				_items = _items.sublist(0, items.length);
 			}
