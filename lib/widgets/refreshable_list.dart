@@ -551,7 +551,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		if (value.depth > 0) {
 			child = Container(
-				margin: EdgeInsets.only(left: (value.depth * 20) - 5),
+				margin: EdgeInsets.only(left: (pow(value.depth, 0.70) * 20) - 5),
 				decoration: BoxDecoration(
 					border: Border(left: BorderSide(
 						width: 5,
@@ -897,7 +897,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																depth = min(depth, values[childIndex + 1].depth);
 															}
 															return Padding(
-																padding: EdgeInsets.only(left: depth * 20),
+																padding: EdgeInsets.only(left: pow(depth, 0.70) * 20),
 																child: Divider(
 																	thickness: 1,
 																	height: 0,
