@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:async/async.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
+import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
@@ -574,13 +575,15 @@ class Site4Chan extends ImageboardSite {
 		final document = parse(response.data);
 		final metaTag = document.querySelector('meta[http-equiv="refresh"]');
 		if (metaTag != null) {
-			if (threadId == null) {
-				_lastActionTime[ImageboardAction.postThread]![board] = DateTime.now();
-			}
-			else {
-				_lastActionTime[ImageboardAction.postReply]![board] = DateTime.now();
-				if (file != null) {
-					_lastActionTime[ImageboardAction.postReplyWithImage]![board] = DateTime.now();
+			if (!response.cloudflare) {
+				if (threadId == null) {
+					_lastActionTime[ImageboardAction.postThread]![board] = DateTime.now();
+				}
+				else {
+					_lastActionTime[ImageboardAction.postReply]![board] = DateTime.now();
+					if (file != null) {
+						_lastActionTime[ImageboardAction.postReplyWithImage]![board] = DateTime.now();
+					}
 				}
 			}
 			return PostReceipt(
