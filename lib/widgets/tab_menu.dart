@@ -56,8 +56,8 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 		setState(() {
 			fakeDone = true;
 		});
-		await _animationController.reverse().orCancel;
 		lightHapticFeedback();
+		await _animationController.reverse().orCancel;
 		widget.onDone();
 	}
 	
