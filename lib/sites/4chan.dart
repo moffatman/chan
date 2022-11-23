@@ -85,7 +85,7 @@ class Site4Chan extends ImageboardSite {
 			looseUrl: true
 		)).map((elem) {
 			if (elem is UrlElement) {
-				return PostLinkSpan(elem.url);
+				return PostLinkSpan(elem.url, name: elem.text);
 			}
 			else {
 				return PostTextSpan(elem.text);
