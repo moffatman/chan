@@ -424,6 +424,14 @@ extension OffsetBrightness on Color {
 		hsv = hsv.withSaturation(saturation);
 		return hsv.toColor();
 	}
+	Color withMinValue(double value) {
+		HSVColor hsv = HSVColor.fromColor(this);
+		if (hsv.value >= value) {
+			return this;
+		}
+		hsv = hsv.withValue(value);
+		return hsv.toColor();
+	}
 }
 
 Color colorToHex(String hexString) {

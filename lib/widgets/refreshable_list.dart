@@ -555,7 +555,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				decoration: BoxDecoration(
 					border: Border(left: BorderSide(
 						width: 5,
-						color: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColor).withSaturation(0.5).shiftHue(value.depth * 25).withOpacity(0.7)
+						color: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColor).withMinValue(0.5).withSaturation(0.5).shiftHue(value.depth * 25).withOpacity(0.7)
 					))
 				),
 				child: child
