@@ -1537,7 +1537,7 @@ List<InlineSpan> buildPostInfoRow({
 			else if (field == PostDisplayField.relativeTime && settings.showRelativeTimeOnPosts) TextSpan(
 				text: '${formatRelativeTime(post.time)} ago '
 			)
-			else if (field == PostDisplayField.postId && site.explicitIds) ...[
+			else if (field == PostDisplayField.postId && (site.explicitIds || !zone.tree)) ...[
 				if (showSiteIcon) WidgetSpan(
 					alignment: PlaceholderAlignment.middle,
 					child: ImageboardIcon(
