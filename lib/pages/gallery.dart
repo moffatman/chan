@@ -95,6 +95,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	late final ScrollController _gridViewScrollController;
 	late final ExtendedPageController pageController;
 	late bool showChrome;
+	bool showChromeOnce = false;
 	bool showingOverlays = true;
 	final Key _pageControllerKey = GlobalKey();
 	final Key _thumbnailsKey = GlobalKey();
@@ -112,6 +113,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	final _draggableScrollableSheetKey = GlobalKey();
 	late StreamSubscription<List<void>> __onPageControllerUpdateSubscription;
 	bool _gridViewDesynced = false;
+	bool _thumbnailsDesynced = false;
 
 	@override
 	void initState() {
@@ -122,7 +124,6 @@ class _GalleryPageState extends State<GalleryPage> {
 		_currentAttachmentChanged = BehaviorSubject();
 		_rotationsChanged = BehaviorSubject();
 		_scrollSheetController = DraggableScrollableController();
-		_gridViewScrollController = ScrollController()..addListener(_onGridViewScrollControllerUpdate);
 		showChrome = widget.initiallyShowChrome;
 		_updateOverlays(showChrome);
 		currentIndex = (widget.initialAttachment != null) ? max(0, widget.attachments.indexOf(widget.initialAttachment!)) : 0;
@@ -139,17 +140,30 @@ class _GalleryPageState extends State<GalleryPage> {
 	void didChangeDependencies() {
 		super.didChangeDependencies();
 		if (!firstControllerMade) {
-			final initialOffset = ((_thumbnailSize + 12) * (currentIndex + 0.5)) - (MediaQuery.of(context).size.width / 2);
-			final maxOffset = ((_thumbnailSize + 12) * widget.attachments.length) - MediaQuery.of(context).size.width;
+			final initialOffset = ((_thumbnailSize + 8) * (currentIndex + 0.5)) - (MediaQuery.of(context).size.width / 2);
+			final maxOffset = ((_thumbnailSize + 8) * widget.attachments.length) - MediaQuery.of(context).size.width;
 			if (maxOffset > 0) {
 				thumbnailScrollController = ScrollController(initialScrollOffset: initialOffset.clamp(0, maxOffset));
+				final gridViewRowCount = (_gridViewHeight / (context.read<EffectiveSettings>().thumbnailSize * 1.5)).ceil();
+				final gridViewSquareSize = _gridViewHeight / gridViewRowCount;
+				final gridViewWidthEstimate = ((widget.attachments.length + 1) / gridViewRowCount).ceil() * gridViewSquareSize;
+				final gridviewMaxOffset = gridViewWidthEstimate - MediaQuery.of(context).size.width;
+				if (gridviewMaxOffset > 0) {
+					_gridViewScrollController = ScrollController(
+						initialScrollOffset: gridviewMaxOffset * (initialOffset.clamp(0, maxOffset) / maxOffset)
+					);
+				}
+				else {
+					_gridViewScrollController = ScrollController();
+				}
 			}
 			else {
 				// Not scrollable (not large enough to need to scroll)
 				thumbnailScrollController = ScrollController();
+				_gridViewScrollController = ScrollController();
 			}
 			thumbnailScrollController.addListener(_onThumbnailScrollControllerUpdate);
-			Future.delayed(const Duration(milliseconds: 100), _onThumbnailScrollControllerUpdate);
+			_gridViewScrollController.addListener(_onGridViewScrollControllerUpdate);
 			firstControllerMade = true;
 		}
 	}
@@ -167,6 +181,8 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	void _onThumbnailScrollControllerUpdate() {
+				// ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+		_thumbnailsDesynced |= thumbnailScrollController.position.activity is DragScrollActivity;
 		if (_gridViewDesynced) {
 			return;
 		}
@@ -198,6 +214,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	void _updateOverlays(bool show) async {
+		showChromeOnce |= show;
 		if (!widget.updateOverlays) {
 			return;
 		}
@@ -229,6 +246,7 @@ class _GalleryPageState extends State<GalleryPage> {
 
 	void __onPageControllerUpdate() {
 		if (!mounted) return;
+		if (_thumbnailsDesynced) return;
 		if (pageController.hasClients && pageController.position.pixels != _lastpageControllerPixels) {
 			_lastpageControllerPixels = pageController.position.pixels;
 			final factor = pageController.position.pixels / pageController.position.maxScrollExtent;
@@ -384,6 +402,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	void _toggleChrome() {
 		showChrome = !showChrome & widget.allowChrome;
 		_gridViewDesynced = false;
+		_thumbnailsDesynced = false;
 		Future.delayed(const Duration(milliseconds: 30), _onThumbnailScrollControllerUpdate);
 		_updateOverlays(showChrome);
 		setState(() {});
@@ -405,6 +424,8 @@ class _GalleryPageState extends State<GalleryPage> {
 		}
 		return 0.0;
 	}
+	
+	double get _gridViewHeight => MediaQuery.of(context).size.height - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((Persistence.settings.useStatusBarWorkaround ?? false) ? 0 : MediaQuery.of(context).viewPadding.top));
 
 	Widget _buildScrollSheetChild(ScrollController controller) {
 		return StreamBuilder(
@@ -431,7 +452,6 @@ class _GalleryPageState extends State<GalleryPage> {
 												child: KeyedSubtree(
 													key: _thumbnailsKey,
 													child: ListView.builder(
-														cacheExtent: 99999,
 														controller: thumbnailScrollController,
 														itemCount: widget.attachments.length,
 														scrollDirection: Axis.horizontal,
@@ -499,10 +519,9 @@ class _GalleryPageState extends State<GalleryPage> {
 												)
 											),
 											SizedBox(
-												height: MediaQuery.of(context).size.height - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((Persistence.settings.useStatusBarWorkaround ?? false) ? 0 : MediaQuery.of(context).viewPadding.top)),
+												height: _gridViewHeight,
 												child: GridView.builder(
 													scrollDirection: Axis.horizontal,
-													cacheExtent: 99999,
 													controller: _gridViewScrollController,
 													gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
 														maxCrossAxisExtent: context.select<EffectiveSettings, double>((s) => s.thumbnailSize) * 1.5
@@ -910,9 +929,9 @@ class _GalleryPageState extends State<GalleryPage> {
 										),
 										Visibility(
 											visible: showChrome,
-											maintainState: true,
-											maintainSize: true,
-											maintainAnimation: true,
+											maintainState: showChromeOnce,
+											maintainSize: showChromeOnce,
+											maintainAnimation: showChromeOnce,
 											child: AnimatedBuilder(
 												animation: currentController,
 												builder: (context, _) => DraggableScrollableSheet(
