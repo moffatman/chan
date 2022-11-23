@@ -30,6 +30,7 @@ import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/notifications_overlay.dart';
 import 'package:chan/widgets/notifying_icon.dart';
 import 'package:chan/widgets/saved_theme_thumbnail.dart';
+import 'package:chan/widgets/tab_menu.dart';
 import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -1000,72 +1001,65 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				)
 			)
 		);
-		final child = CupertinoButton(
-			padding: axis == Axis.vertical ? const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8) : const EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
-			child: content,
-			onPressed: () async {
-				lightHapticFeedback();
-				if (index <= 0) {
-					if (activeBrowserTab.value == -1 * index && _tabController.index == 0) {
-						if (Persistence.tabs.length > 1) {
-							final shouldClose = await showCupertinoDialog<bool>(
-								context: context,
-								barrierDismissible: true,
-								builder: (context) => CupertinoAlertDialog(
-									title: const Text('Close tab?'),
+		final child = Builder(
+			builder: (context) => CupertinoButton(
+				padding: axis == Axis.vertical ? const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8) : const EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
+				child: content,
+				onPressed: () async {
+					lightHapticFeedback();
+					if (index <= 0) {
+						if (activeBrowserTab.value == -1 * index && _tabController.index == 0) {
+							if (Persistence.tabs.length > 1) {
+								final ro = context.findRenderObject()! as RenderBox;
+								showTabMenu(
+									context: context,
+									direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
+									origin: Rect.fromPoints(
+										ro.localToGlobal(ro.semanticBounds.topLeft),
+										ro.localToGlobal(ro.semanticBounds.bottomRight)
+									),
 									actions: [
-										CupertinoDialogAction(
-											child: const Text('No'),
-											onPressed: () {
-												Navigator.of(context).pop(false);
-											}
-										),
-										CupertinoDialogAction(
+										TabMenuAction(
+											icon: CupertinoIcons.xmark,
 											isDestructiveAction: true,
 											onPressed: () {
-												Navigator.of(context).pop(true);
-											},
-											child: const Text('Yes')
+												Persistence.tabs.removeAt(-1 * index);
+												browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
+												final newActiveTabIndex = min(activeBrowserTab.value, Persistence.tabs.length - 1);
+												activeBrowserTab.value = newActiveTabIndex;
+												Persistence.currentTabIndex = newActiveTabIndex;
+												_didUpdateTabs();
+												setState(() {});
+											}
 										)
 									]
-								)
-							);
-							if (shouldClose == true) {
-								Persistence.tabs.removeAt(-1 * index);
-								browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
-								final newActiveTabIndex = min(activeBrowserTab.value, Persistence.tabs.length - 1);
-								activeBrowserTab.value = newActiveTabIndex;
-								Persistence.currentTabIndex = newActiveTabIndex;
-								_didUpdateTabs();
-								if (Persistence.settings.closeTabSwitcherAfterUse) {
-									showTabPopup = false;
-								}
-								setState(() {});
+								);
 							}
 						}
-					}
-					else {
-						activeBrowserTab.value = -1 * index;
-						Persistence.currentTabIndex = -1 * index;
-						if (Persistence.settings.closeTabSwitcherAfterUse) {
-							setState(() {
-								showTabPopup = false;
-							});
+						else {
+							activeBrowserTab.value = -1 * index;
+							Persistence.currentTabIndex = -1 * index;
+							if (Persistence.settings.closeTabSwitcherAfterUse) {
+								setState(() {
+									showTabPopup = false;
+								});
+							}
+							_didUpdateTabs();
+							setState(() {});
 						}
-						_didUpdateTabs();
 					}
+					else if (index == _lastIndex) {
+						if (index == 4) {
+							_settingsNavigatorKey.currentState?.maybePop();
+						}
+						else {
+							_tabletWillPopZones[index]?.callback?.call();
+						}
+					}
+					_tabController.index = max(0, index);
+					_lastIndex = max(0, index);
 				}
-				else if (index == _lastIndex) {
-					if (index == 4) {
-						_settingsNavigatorKey.currentState?.maybePop();
-					}
-					else {
-						_tabletWillPopZones[index]?.callback?.call();
-					}
-				}
-				_tabController.index = max(0, index);
-				_lastIndex = max(0, index);
-			}
+			)
 		);
 		if (reorderable) {
 			return ReorderableDelayedDragStartListener(
