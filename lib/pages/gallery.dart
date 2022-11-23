@@ -326,7 +326,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		_hideRotateButton = false;
 		_shouldShowPosition.value = true;
 		await Future.delayed(const Duration(seconds: 1));
-		if (currentIndex == index) {
+		if (mounted && currentIndex == index) {
 			_shouldShowPosition.value = false;
 		}
 	}
