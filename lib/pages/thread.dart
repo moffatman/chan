@@ -361,7 +361,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		zone.postSortingMethods = [
 			if (site.isReddit && !useTree) (a, b) => a.id.compareTo(b.id)
 		];
-		zone.tree = !useTree;
+		zone.tree = useTree;
 		return WillPopScope(
 			onWillPop: () async {
 				if (_replyBoxKey.currentState?.show ?? false) {
