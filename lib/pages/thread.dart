@@ -251,6 +251,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	void didUpdateWidget(ThreadPage old) {
 		super.didUpdateWidget(old);
 		if (widget.thread != old.thread) {
+			_saveQueued = false;
 			_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
 			_threadStateListenable = context.read<Persistence>().listenForPersistentThreadStateChanges(widget.thread);
 			_threadStateListenable.addListener(_onThreadStateListenableUpdate);
