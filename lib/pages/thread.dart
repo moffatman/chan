@@ -571,6 +571,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																		autoUpdateDuration: const Duration(seconds: 60),
 																		initialList: persistentState.thread?.posts,
 																		useTree: useTree,
+																		initialCollapsedItems: persistentState.collapsedItems,
+																		onCollapsedItemsChanged: (newCollapsedItems) {
+																			persistentState.collapsedItems = newCollapsedItems.toList();
+																			_saveQueued = true;
+																		},
 																		treeAdapter: RefreshableTreeAdapter(
 																			getId: (p) => p.id,
 																			getParentIds: (p) => p.repliedToIds,

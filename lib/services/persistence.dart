@@ -627,6 +627,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	bool? useTree;
 	@HiveField(15)
 	ThreadVariant? variant;
+	@HiveField(16, defaultValue: [])
+	List<List<int>> collapsedItems = [];
 
 	PersistentThreadState({this.ephemeral = false}) : lastOpenedTime = DateTime.now();
 

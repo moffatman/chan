@@ -146,7 +146,13 @@ enum _TreeItemCollapseType {
 }
 
 class _CollapsedRefreshableTreeItems extends ChangeNotifier {
-	final List<List<int>> collapsedItems = [];
+	final List<List<int>> collapsedItems;
+	final ValueChanged<List<List<int>>>? onCollapsedItemsChanged;
+
+	_CollapsedRefreshableTreeItems({
+		required this.collapsedItems,
+		this.onCollapsedItemsChanged
+	});
 
 	_TreeItemCollapseType? isItemHidden(List<int> parentIds, int? thisId) {
 		// By iterating reversed it will properly handle collapses within collapses
@@ -179,6 +185,7 @@ class _CollapsedRefreshableTreeItems extends ChangeNotifier {
 			...parentIds,
 			thisId
 		]);
+		onCollapsedItemsChanged?.call(collapsedItems);
 		notifyListeners();
 	}
 
@@ -188,6 +195,7 @@ class _CollapsedRefreshableTreeItems extends ChangeNotifier {
 			thisId
 		];
 		collapsedItems.removeWhere((w) => listEquals(w, x));
+		onCollapsedItemsChanged?.call(collapsedItems);
 		notifyListeners();
 	}
 }
@@ -217,6 +225,8 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final RefreshableTreeAdapter<T>? treeAdapter;
 	final List<Comparator<T>> sortMethods;
 	final bool reverseSort;
+	final List<List<int>>? initialCollapsedItems;
+	final ValueChanged<List<List<int>>>? onCollapsedItemsChanged;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -243,6 +253,8 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.collapsedItemBuilder,
 		this.sortMethods = const [],
 		this.reverseSort = false,
+		this.initialCollapsedItems,
+		this.onCollapsedItemsChanged,
 		Key? key
 	}) : super(key: key);
 
@@ -775,7 +787,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						child: MaybeCupertinoScrollbar(
 							controller: widget.controller?.scrollController,
 							child: ChangeNotifierProvider<_CollapsedRefreshableTreeItems>(
-								create: (context) => _CollapsedRefreshableTreeItems(),
+								create: (context) => _CollapsedRefreshableTreeItems(
+									collapsedItems: widget.initialCollapsedItems?.toList() ?? [],
+									onCollapsedItemsChanged: widget.onCollapsedItemsChanged
+								),
 								child: CustomScrollView(
 									key: _scrollViewKey,
 									cacheExtent: 1000,

@@ -69,13 +69,18 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
           fields[12] == null ? {} : (fields[12] as Map).cast<int, Post>()
       ..autoTranslate = fields[13] == null ? false : fields[13] as bool
       ..useTree = fields[14] as bool?
-      ..variant = fields[15] as ThreadVariant?;
+      ..variant = fields[15] as ThreadVariant?
+      ..collapsedItems = fields[16] == null
+          ? []
+          : (fields[16] as List)
+              .map((dynamic e) => (e as List).cast<int>())
+              .toList();
   }
 
   @override
   void write(BinaryWriter writer, PersistentThreadState obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.lastSeenPostId)
       ..writeByte(1)
@@ -105,7 +110,9 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..writeByte(14)
       ..write(obj.useTree)
       ..writeByte(15)
-      ..write(obj.variant);
+      ..write(obj.variant)
+      ..writeByte(16)
+      ..write(obj.collapsedItems);
   }
 
   @override
