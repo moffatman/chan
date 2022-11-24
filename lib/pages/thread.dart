@@ -342,6 +342,72 @@ class _ThreadPageState extends State<ThreadPage> {
 		));
 	}
 
+	Future<Thread> _getUpdatedThread() async {
+		final tmpPersistentState = persistentState;
+		final site = context.read<ImageboardSite>();
+		final notifications = context.read<Notifications>();
+		lastPageNumber = persistentState.thread?.currentPage;
+		// The thread might switch in this interval
+		final newThread = tmpPersistentState.useArchive ?
+			await site.getThreadFromArchive(widget.thread) :
+			await site.getThread(widget.thread, variant: tmpPersistentState.variant);
+		final bool firstLoad = tmpPersistentState.thread == null;
+		bool shouldScroll = false;
+		final watch = notifications.getThreadWatch(widget.thread);
+		if (watch != null && newThread.identifier == widget.thread && mounted) {
+			_checkForeground();
+			notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: _foreground);
+		}
+		if (newThread != tmpPersistentState.thread) {
+			await newThread.preinit();
+			tmpPersistentState.thread = newThread;
+			if (persistentState == tmpPersistentState) {
+				zone.thread = newThread;
+				if (firstLoad) shouldScroll = true;
+				if (persistentState.autoTranslate) {
+					// Translate new posts
+					for (final post in newThread.posts) {
+						if (zone.translatedPost(post.id) == null) {
+							zone.translatePost(post.id);
+						}
+					}
+				}
+				if (useTree) {
+					tmpPersistentState.lastSeenPostId = newThread.posts.map((p) => p.id).reduce(max);
+					tmpPersistentState.lastSeenPostIdNotifier.value = tmpPersistentState.lastSeenPostId;
+				}
+			}
+			await tmpPersistentState.save();
+			setState(() {});
+			Future.delayed(const Duration(milliseconds: 100), () {
+				if (persistentState == tmpPersistentState && !_unnaturallyScrolling) {
+					final lastItem = _listController.lastVisibleItem;
+					if (lastItem != null) {
+						tmpPersistentState.lastSeenPostId = max(tmpPersistentState.lastSeenPostId ?? 0, lastItem.id);
+						tmpPersistentState.save();
+						setState(() {});
+					}
+					else {
+						print('Failed to find last visible post after an update in $tmpPersistentState');
+					}
+				}
+			});
+		}
+		else if (newThread.currentPage != lastPageNumber) {
+			setState(() {
+				lastPageNumber = newThread.currentPage;
+			});
+		}
+		if (shouldScroll && !useTree) _blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500));
+		// Don't show data if the thread switched
+		Future.delayed(const Duration(milliseconds: 30), () {
+			if (!mounted) return;
+			// Trigger update of counts in case new post is drawn fully onscreen
+			_listController.slowScrollUpdates.add(null);
+		});
+		return newThread;
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		String title = '/${widget.thread.board}/';
@@ -677,70 +743,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																				}
 																			)
 																		},
+																		listExtender: (persistentState.thread?.isSticky == true && !site.isReddit) ? (Post after) async {
+																			return (await _getUpdatedThread()).posts.where((p) => p.id > after.id).toList();
+																		} : null,
 																		listUpdater: () async {
-																			final tmpPersistentState = persistentState;
-																			lastPageNumber = persistentState.thread?.currentPage;
-																			// The thread might switch in this interval
-																			final newThread = tmpPersistentState.useArchive ?
-																				await site.getThreadFromArchive(widget.thread) :
-																				await site.getThread(widget.thread, variant: tmpPersistentState.variant);
-																			final bool firstLoad = tmpPersistentState.thread == null;
-																			bool shouldScroll = false;
-																			if (watch != null && newThread.identifier == widget.thread && mounted) {
-																				_checkForeground();
-																				notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: _foreground);
-																			}
-																			if (newThread != tmpPersistentState.thread) {
-																				await newThread.preinit();
-																				tmpPersistentState.thread = newThread;
-																				if (persistentState == tmpPersistentState) {
-																					zone.thread = newThread;
-																					if (firstLoad) shouldScroll = true;
-																					if (persistentState.autoTranslate) {
-																						// Translate new posts
-																						for (final post in newThread.posts) {
-																							if (zone.translatedPost(post.id) == null) {
-																								zone.translatePost(post.id);
-																							}
-																						}
-																					}
-																					if (useTree) {
-																						tmpPersistentState.lastSeenPostId = newThread.posts.map((p) => p.id).reduce(max);
-																						tmpPersistentState.lastSeenPostIdNotifier.value = tmpPersistentState.lastSeenPostId;
-																					}
-																				}
-																				await tmpPersistentState.save();
-																				setState(() {});
-																				Future.delayed(const Duration(milliseconds: 100), () {
-																					if (persistentState == tmpPersistentState && !_unnaturallyScrolling) {
-																						final lastItem = _listController.lastVisibleItem;
-																						if (lastItem != null) {
-																							tmpPersistentState.lastSeenPostId = max(tmpPersistentState.lastSeenPostId ?? 0, lastItem.id);
-																							tmpPersistentState.save();
-																							setState(() {});
-																						}
-																						else {
-																							print('Failed to find last visible post after an update in $tmpPersistentState');
-																						}
-																					}
-																				});
-																			}
-																			else if (newThread.currentPage != lastPageNumber) {
-																				setState(() {
-																					lastPageNumber = newThread.currentPage;
-																				});
-																			}
-																			if (shouldScroll && !useTree) _blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500));
-																			// Don't show data if the thread switched
-																			Future.delayed(const Duration(milliseconds: 30), () {
-																				if (!mounted) return;
-																				// Trigger update of counts in case new post is drawn fully onscreen
-																				_listController.slowScrollUpdates.add(null);
-																			});
-																			if (persistentState == tmpPersistentState) {
-																				return newThread.posts;
-																			}
-																			return null;
+																			return (await _getUpdatedThread()).posts;
 																		},
 																		controller: _listController,
 																		itemBuilder: (context, post) {
