@@ -37,10 +37,12 @@ class ActionableException implements Exception {
 }
 
 Future<void> alertError(BuildContext context, String error, {
-	Map<String, VoidCallback> actions = const {}
+	Map<String, VoidCallback> actions = const {},
+	bool barrierDismissible = false
 }) async {
 	await showCupertinoDialog(
 		context: context,
+		barrierDismissible: barrierDismissible,
 		builder: (context) {
 			return CupertinoAlertDialog(
 				title: const Text('Error'),

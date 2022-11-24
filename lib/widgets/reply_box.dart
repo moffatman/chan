@@ -910,7 +910,8 @@ class ReplyBoxState extends State<ReplyBox> {
 				if (mounted) {
 					alertError(
 						context,
-						'Your post was likely blocked by 4chan\'s anti-span firewall.\nIf you don\'t see your post appear, try again later. It has been saved in the reply form.'
+						'Your post was likely blocked by 4chan\'s anti-span firewall.\nIf you don\'t see your post appear, try again later. It has been saved in the reply form.',
+						barrierDismissible: true
 					);
 				}
 			}
