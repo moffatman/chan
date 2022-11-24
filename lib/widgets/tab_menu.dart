@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class TabMenuAction {
 	final IconData icon;
@@ -129,7 +131,7 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 						if (widget.direction == AxisDirection.up) Positioned(
 							left: widget.origin.left,
 							width: widget.origin.width,
-							bottom: screenSize.height - widget.origin.top - (1 - _animation.value) * 15,
+							bottom: (screenSize.height / context.select<EffectiveSettings, double>((s) => s.interfaceScale)) - widget.origin.top - (1 - _animation.value) * 15,
 							child: child!
 						)
 						else if (widget.direction == AxisDirection.right) Positioned(
@@ -160,7 +162,10 @@ Future<void> showTabMenu({
 	final completer = Completer<void>();
 	final entry = OverlayEntry(
 		builder: (context) => _TabMenuOverlay(
-			origin: origin,
+			origin: Rect.fromPoints(
+				origin.topLeft / context.read<EffectiveSettings>().interfaceScale,
+				origin.bottomRight / context.read<EffectiveSettings>().interfaceScale
+			),
 			direction: direction,
 			actions: actions,
 			onDone: completer.complete
