@@ -133,6 +133,9 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (context.read<EffectiveSettings>().autoloadAttachments || context.read<EffectiveSettings>().alwaysAutoloadTappedAttachment) {
 			_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
 		}
+	}
+
+	void _initializeScrollSheetScrollControllers() {
 		final initialOffset = ((_thumbnailSize + 8) * (currentIndex + 0.5)) - (context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width / 2);
 		final maxOffset = ((_thumbnailSize + 8) * widget.attachments.length) - context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width;
 		if (maxOffset > 0) {
@@ -206,6 +209,9 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	void _updateOverlays(bool show) async {
+		if (!showChromeOnce && show) {
+			_initializeScrollSheetScrollControllers();
+		}
 		showChromeOnce |= show;
 		if (!widget.updateOverlays) {
 			return;
@@ -239,7 +245,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	void __onPageControllerUpdate() {
 		if (!mounted) return;
 		if (_thumbnailsDesynced) return;
-		if (pageController.hasClients && pageController.position.pixels != _lastpageControllerPixels) {
+		if (showChromeOnce && pageController.hasClients && thumbnailScrollController.hasOnePosition && pageController.position.pixels != _lastpageControllerPixels) {
 			_lastpageControllerPixels = pageController.position.pixels;
 			final factor = pageController.position.pixels / pageController.position.maxScrollExtent;
 			final idealLocation = (thumbnailScrollController.position.maxScrollExtent + thumbnailScrollController.position.viewportDimension - _thumbnailSize - 12) * factor - (thumbnailScrollController.position.viewportDimension / 2) + (_thumbnailSize / 2 + 6);
