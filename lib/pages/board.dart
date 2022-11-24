@@ -121,7 +121,7 @@ class _BoardPageState extends State<BoardPage> {
 			_loadCompleter = Completer<void>()
 				..future.then((_) async {
 					try {
-						await _listController.animateTo((t) => t.identifier == selectedThread);
+						await _listController.animateTo((t) => t.identifier == selectedThread, alignment: 1.0);
 					}
 					on StateError {
 						// Ignore, the thread must not be in catalog
