@@ -61,7 +61,7 @@ class ThreadRow extends StatelessWidget {
 		final site = context.watch<ImageboardSite>();
 		final latestThread = threadState?.thread ?? thread;
 		final int latestReplyCount = max(thread.replyCount, latestThread.replyCount);
-		final int latestImageCount = max(thread.imageCount, latestThread.imageCount);
+		final int latestImageCount = (thread.isSticky && latestReplyCount == 1000) ? latestThread.imageCount : max(thread.imageCount, latestThread.imageCount);
 		int unseenReplyCount = 0;
 		int unseenYouCount = 0;
 		int unseenImageCount = 0;
