@@ -460,7 +460,9 @@ class PostQuoteLinkSpan extends PostSpan {
 					child: IntrinsicHeight(
 						child: Builder(
 							builder: (context) {
-								zone.registerLineTapTarget('$board/$threadId/$postId', context, span.item2.onTap ?? () {});
+								if (!zone.stackIds.contains(postId)) {
+									zone.registerLineTapTarget('$board/$threadId/$postId', context, span.item2.onTap ?? () {});
+								}
 								return popup;
 							}
 						)
