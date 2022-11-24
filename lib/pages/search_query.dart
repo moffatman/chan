@@ -1,6 +1,7 @@
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/imageboard.dart';
@@ -204,7 +205,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									showCrossThreadLabel: false,
 									showBoardName: true,
 									allowTappingLinks: false,
-									isSelected: currentValue?.item == row,
+									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.item == row,
 									onTap: () => setValue(ImageboardScoped(
 										imageboard: context.read<Imageboard>(),
 										item: row
@@ -228,7 +229,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										attachments: [attachment],
 										semanticParentIds: [-7]
 									),
-									isSelected: currentValue?.item == row,
+									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.item == row,
 									countsUnreliable: true,
 									showBoardName: true,
 									baseOptions: PostSpanRenderOptions(
