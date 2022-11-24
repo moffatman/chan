@@ -90,7 +90,6 @@ class _GalleryPageState extends State<GalleryPage> {
 	late int currentIndex;
 	TaggedAttachment get currentAttachment => widget.attachments[currentIndex];
 	AttachmentViewerController get currentController => _getController(currentAttachment);
-	bool firstControllerMade = false;
 	late final ScrollController thumbnailScrollController;
 	late final ScrollController _gridViewScrollController;
 	late final ExtendedPageController pageController;
@@ -134,38 +133,31 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (context.read<EffectiveSettings>().autoloadAttachments || context.read<EffectiveSettings>().alwaysAutoloadTappedAttachment) {
 			_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
 		}
-	}
-
-	@override
-	void didChangeDependencies() {
-		super.didChangeDependencies();
-		if (!firstControllerMade) {
-			final initialOffset = ((_thumbnailSize + 8) * (currentIndex + 0.5)) - (MediaQuery.of(context).size.width / 2);
-			final maxOffset = ((_thumbnailSize + 8) * widget.attachments.length) - MediaQuery.of(context).size.width;
-			if (maxOffset > 0) {
-				thumbnailScrollController = ScrollController(initialScrollOffset: initialOffset.clamp(0, maxOffset));
-				final gridViewRowCount = (_gridViewHeight / (context.read<EffectiveSettings>().thumbnailSize * 1.5)).ceil();
-				final gridViewSquareSize = _gridViewHeight / gridViewRowCount;
-				final gridViewWidthEstimate = ((widget.attachments.length + 1) / gridViewRowCount).ceil() * gridViewSquareSize;
-				final gridviewMaxOffset = gridViewWidthEstimate - MediaQuery.of(context).size.width;
-				if (gridviewMaxOffset > 0) {
-					_gridViewScrollController = ScrollController(
-						initialScrollOffset: gridviewMaxOffset * (initialOffset.clamp(0, maxOffset) / maxOffset)
-					);
-				}
-				else {
-					_gridViewScrollController = ScrollController();
-				}
+		final initialOffset = ((_thumbnailSize + 8) * (currentIndex + 0.5)) - (context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width / 2);
+		final maxOffset = ((_thumbnailSize + 8) * widget.attachments.length) - context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width;
+		if (maxOffset > 0) {
+			thumbnailScrollController = ScrollController(initialScrollOffset: initialOffset.clamp(0, maxOffset));
+			final gridViewHeight = context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.height - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((Persistence.settings.useStatusBarWorkaround ?? false) ? 0 : context.findAncestorWidgetOfExactType<MediaQuery>()!.data.viewPadding.top));
+			final gridViewRowCount = (gridViewHeight / (context.read<EffectiveSettings>().thumbnailSize * 1.5)).ceil();
+			final gridViewSquareSize = gridViewHeight / gridViewRowCount;
+			final gridViewWidthEstimate = ((widget.attachments.length + 1) / gridViewRowCount).ceil() * gridViewSquareSize;
+			final gridviewMaxOffset = gridViewWidthEstimate - context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width;
+			if (gridviewMaxOffset > 0) {
+				_gridViewScrollController = ScrollController(
+					initialScrollOffset: gridviewMaxOffset * (initialOffset.clamp(0, maxOffset) / maxOffset)
+				);
 			}
 			else {
-				// Not scrollable (not large enough to need to scroll)
-				thumbnailScrollController = ScrollController();
 				_gridViewScrollController = ScrollController();
 			}
-			thumbnailScrollController.addListener(_onThumbnailScrollControllerUpdate);
-			_gridViewScrollController.addListener(_onGridViewScrollControllerUpdate);
-			firstControllerMade = true;
 		}
+		else {
+			// Not scrollable (not large enough to need to scroll)
+			thumbnailScrollController = ScrollController();
+			_gridViewScrollController = ScrollController();
+		}
+		thumbnailScrollController.addListener(_onThumbnailScrollControllerUpdate);
+		_gridViewScrollController.addListener(_onGridViewScrollControllerUpdate);
 	}
 
 	@override
