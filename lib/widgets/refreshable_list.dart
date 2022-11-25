@@ -716,16 +716,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 			values.insertAll(0, pinnedValues);
-			if (!listEquals(values, _listAfterFiltering)) {
-				_listAfterFiltering = values.toList();
-				widget.controller?.setItems(values);
-			}
-			else if (widget.controller?._items.isEmpty ?? false) {
-				widget.controller?.setItems(values);
-			}
 			if (widget.useTree) {
 				values = _reassembleAsTree(values);
 			}
+			widget.controller?.setItems(values);
 			if (filteredValues.isEmpty) {
 				// Don't auto open filtered values after clearing it before
 				_showFilteredValues = false;
