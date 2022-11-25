@@ -281,9 +281,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	bool _searchTapped = false;
 	bool _overscrollEndingNow = false;
 	late final AnimationController _footerShakeAnimation;
-	List<RefreshableListItem<T>> _listAfterFiltering = [];
 	DateTime _lastPointerUpTime = DateTime(2000);
 	final Set<int> _collapsedIds = {};
+	List<RefreshableListItem<T>> filteredValues = [];
 
 	@override
 	void initState() {
@@ -674,7 +674,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (sortedList != null) {
 			final pinnedValues = <RefreshableListItem<T>>[];
 			List<RefreshableListItem<T>> values = [];
-			final filteredValues = <RefreshableListItem<T>>[];
+			filteredValues = <RefreshableListItem<T>>[];
 			final filters = [
 				if (_searchFilter != null) _searchFilter!,
 				Filter.of(context)

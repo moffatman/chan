@@ -289,10 +289,19 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	void _showGallery({bool initiallyShowChrome = false, TaggedAttachment? initialAttachment}) {
 		final commonParentIds = [widget.boardSemanticId, 0];
-		final attachments = _listController.items.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
+		List<TaggedAttachment> attachments = _listController.items.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
 			attachment: a,
 			semanticParentIds: commonParentIds.followedBy(item.parentIds)
 		))).toList();
+		if (!attachments.contains(initialAttachment)) {
+			final hiddenAttachments = _listController.state?.filteredValues.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
+				attachment: a,
+				semanticParentIds: commonParentIds.followedBy(item.parentIds)
+			))).toList() ?? [];
+			if (hiddenAttachments.contains(initialAttachment)) {
+				attachments = hiddenAttachments;
+			}
+		}
 		showGalleryPretagged(
 			context: context,
 			attachments: attachments,
