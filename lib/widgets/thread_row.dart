@@ -515,7 +515,7 @@ class ThreadRow extends StatelessWidget {
 				)
 			]
 		);
-		if (dimReadThreads && !isSelected && threadState != null) {
+		if (dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0)) {
 			child = Opacity(
 				opacity: 0.5,
 				child: child
