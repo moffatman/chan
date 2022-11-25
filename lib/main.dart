@@ -53,6 +53,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 final fakeLinkStream = PublishSubject<String?>();
 bool _initialConsume = false;
 final zeroValueNotifier = ValueNotifier(0);
+bool _promptedAboutCrashlytics = false;
 
 void main() async {
 	runZonedGuarded<Future<void>>(() async {
@@ -712,8 +713,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_sharedFilesSubscription = ReceiveSharingIntent.getMediaStream().listen((f) => _consumeFiles(f.map((x) => x.path).toList()));
 		_sharedTextSubscription = ReceiveSharingIntent.getTextStream().listen(_consumeLink);
 		_initialConsume = true;
-		if (!Persistence.settings.promptedAboutCrashlytics) {
-			Future.delayed(const Duration(milliseconds: 300), () async{
+		if (!Persistence.settings.promptedAboutCrashlytics && !_promptedAboutCrashlytics) {
+			_promptedAboutCrashlytics = true;
+			Future.delayed(const Duration(milliseconds: 300), () async {
 				if (!mounted) return;
 				final choice = await showCupertinoDialog<bool>(
 					context: context,
