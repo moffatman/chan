@@ -401,7 +401,6 @@ class _GalleryPageState extends State<GalleryPage> {
 		showChrome = !showChrome & widget.allowChrome;
 		_gridViewDesynced = false;
 		_thumbnailsDesynced = false;
-		Future.delayed(const Duration(milliseconds: 30), _onThumbnailScrollControllerUpdate);
 		_updateOverlays(showChrome);
 		setState(() {});
 	}
