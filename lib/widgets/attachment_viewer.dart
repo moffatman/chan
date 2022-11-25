@@ -639,7 +639,7 @@ class AttachmentViewer extends StatelessWidget {
 
 	Widget _buildImage(BuildContext context, Size? size, bool passedFirstBuild) {
 		Uri source = attachment.thumbnailUrl;
-		if (controller.goodImageSource != null && passedFirstBuild) {
+		if (controller.goodImageSource != null && (passedFirstBuild || source.toString().length < 6)) {
 			source = controller.goodImageSource!;
 		}
 		ImageProvider image = ExtendedNetworkImageProvider(
