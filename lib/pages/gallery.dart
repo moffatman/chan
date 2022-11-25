@@ -959,14 +959,16 @@ class _GalleryPageState extends State<GalleryPage> {
 		pageController.dispose();
 		_scrollCoalescer.close();
 		_currentAttachmentChanged.close();
-		thumbnailScrollController.dispose();
+		if (showChromeOnce) {
+			thumbnailScrollController.dispose();
+			_gridViewScrollController.dispose();
+		}
 		_slideStream.close();
 		for (final controller in _controllers.values) {
 			controller.dispose();
 		}
 		_shouldShowPosition.dispose();
 		__onPageControllerUpdateSubscription.cancel();
-		_gridViewScrollController.dispose();
 		super.dispose();
 	}
 }
