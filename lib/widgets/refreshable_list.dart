@@ -1454,12 +1454,7 @@ class RefreshableListController<T extends Object> {
 				return;
 			}
 			Duration timeLeft = duration - DateTime.now().difference(start);
-			if (timeLeft.inMilliseconds.isNegative) {
-				d = duration ~/ 4;
-			}
-			else {
-				d = Duration(milliseconds: min(timeLeft.inMilliseconds, duration.inMilliseconds ~/ 4));
-			}
+			d = Duration(milliseconds: max(timeLeft.inMilliseconds, duration.inMilliseconds ~/ 4));
 		}
 		if (_items[targetIndex].cachedOffset == null) {
 			throw Exception('Scrolling timed out');
