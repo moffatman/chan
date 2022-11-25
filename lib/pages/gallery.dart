@@ -202,7 +202,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				redrawGestureStream: _slideStream,
 				site: context.read<ImageboardSite>(),
 				isPrimary: attachment == currentAttachment,
-				overrideSource: widget.overrideSources[attachment]
+				overrideSource: widget.overrideSources[attachment.attachment]
 			);
 		}
 		return _controllers[attachment]!;
