@@ -84,6 +84,7 @@ class _PostsPageState extends State<PostsPage> {
 						return PostRow(
 							post: reply,
 							onTap: widget.onTap == null ? null : () => widget.onTap!(reply),
+							onDoubleTap: widget.zone.onNeedScrollToPost == null ? null : () => widget.zone.onNeedScrollToPost!(reply),
 							onThumbnailTap: (attachment) {
 								showGallery(
 									context: context,

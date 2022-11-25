@@ -17,8 +17,10 @@ import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/slider_builder.dart';
 import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/reply_box.dart';
+import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'package:chan/models/post.dart';
@@ -31,6 +33,7 @@ class PostRow extends StatelessWidget {
 	final Post post;
 	final ValueChanged<Attachment>? onThumbnailTap;
 	final VoidCallback? onTap;
+	final VoidCallback? onDoubleTap;
 	final VoidCallback? onRequestArchive;
 	final bool showCrossThreadLabel;
 	final bool allowTappingLinks;
@@ -44,6 +47,7 @@ class PostRow extends StatelessWidget {
 	const PostRow({
 		required this.post,
 		this.onTap,
+		this.onDoubleTap,
 		this.onThumbnailTap,
 		this.onThumbnailLoadError,
 		this.onRequestArchive,
@@ -238,8 +242,17 @@ class PostRow extends StatelessWidget {
 				),
 				const SizedBox(width: 8)
 			];
-			return GestureDetector(
-				onTap: onTap,
+			return RawGestureDetector(
+				gestures: {
+					WeakDoubleTapGestureRecognizer: GestureRecognizerFactoryWithHandlers<WeakDoubleTapGestureRecognizer>(
+						() => WeakDoubleTapGestureRecognizer(debugOwner: this),
+						(recognizer) => recognizer..onDoubleTap = onDoubleTap
+					),
+					TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+						() => TapGestureRecognizer(debugOwner: this),
+						(recognizer) => recognizer..onTap = onTap
+					)
+				},
 				child: Container(
 					padding: const EdgeInsets.only(bottom: 8),
 					decoration: BoxDecoration(
