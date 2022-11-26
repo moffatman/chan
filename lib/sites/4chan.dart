@@ -594,7 +594,7 @@ class Site4Chan extends ImageboardSite {
 		else {
 			final errSpan = document.querySelector('#errmsg');
 			if (errSpan != null) {
-				if (errSpan.text.contains('banned') || errSpan.text.contains('warned')) {
+				if (errSpan.text.toLowerCase().contains('ban') || errSpan.text.toLowerCase().contains('warn')) {
 					throw BannedException(errSpan.text);
 				}
 				throw PostFailedException(errSpan.text);
