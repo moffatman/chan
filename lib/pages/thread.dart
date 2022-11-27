@@ -372,6 +372,9 @@ class _ThreadPageState extends State<ThreadPage> {
 			tmpPersistentState.thread = newThread;
 			if (persistentState == tmpPersistentState) {
 				zone.thread = newThread;
+				if (_replyBoxKey.currentState?.hasSpamFilteredPostToCheck ?? false) {
+					newThread.posts.forEach(_replyBoxKey.currentState!.checkForSpamFilteredPost);
+				}
 				if (firstLoad) shouldScroll = true;
 				if (persistentState.autoTranslate) {
 					// Translate new posts
@@ -893,7 +896,7 @@ class _ThreadPageState extends State<ThreadPage> {
 												persistentState.lastSeenPostIdNotifier.value = receipt.id;
 												_saveQueued = true;
 											}
-											_listController.update();
+											Future.delayed(const Duration(seconds: 3), _listController.update);
 										},
 										onVisibilityChanged: () {
 											setState(() {});

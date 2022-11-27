@@ -78,6 +78,7 @@ dependencies:
   firebase_crashlytics: ^3.0.3
   charset_converter: ^2.1.0
   markdown: ^6.0.1
+  string_similarity: ^2.0.0
 
 dev_dependencies:
   hive_generator: ^2.0.0

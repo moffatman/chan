@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:chan/models/attachment.dart';
+import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/overscroll_modal.dart';
@@ -36,6 +37,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
+import 'package:string_similarity/string_similarity.dart';
 import 'package:tuple/tuple.dart';
 
 const _captchaContributionServer = 'https://captcha.chance.surf';
@@ -300,6 +302,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool _willHideOnPanEnd = false;
 	late final FocusNode _rootFocusNode;
 	Tuple2<String, ValueListenable<double?>>? _attachmentProgress;
+	Tuple2<String, int>? _spamFilteredPostId;
+	bool get hasSpamFilteredPostToCheck => _spamFilteredPostId != null;
 
 	bool get _haveValidCaptcha {
 		if (_captchaSolution == null) {
@@ -309,6 +313,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void _onTextChanged() async {
+		_spamFilteredPostId = null;
 		widget.onTextChanged?.call(_textFieldController.text);
 		_autoPostTimer?.cancel();
 		if (mounted) setState(() {});
@@ -350,6 +355,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		_rootFocusNode = FocusNode();
 		_textFieldController.addListener(_onTextChanged);
 		_subjectFieldController.addListener(() {
+			_spamFilteredPostId = null;
 			widget.onSubjectChanged?.call(_subjectFieldController.text);
 		});
 		context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
@@ -463,6 +469,25 @@ class ReplyBoxState extends State<ReplyBox> {
 			showReplyBox();
 		}
 		lightHapticFeedback();
+	}
+
+	void checkForSpamFilteredPost(Post post) {
+		if (post.board != _spamFilteredPostId?.item1) return;
+		if (post.id != _spamFilteredPostId?.item2) return;
+		final similarity = post.span.buildText().similarityTo(_textFieldController.text);
+		print('Spam filter similarity: $similarity');
+		if (similarity > 0.90) {
+			showToast(context: context, message: 'Post successful', icon: CupertinoIcons.smiley, hapticFeedback: false);
+			_textFieldController.clear();
+			_nameFieldController.clear();
+			_optionsFieldController.clear();
+			_subjectFieldController.clear();
+			_filenameController.clear();
+			attachment = null;
+			_showAttachmentOptions = false;
+			_spamFilteredPostId = null;
+			setState(() {});
+		}
 	}
 
 	Future<File?> _showTranscodeWindow({
@@ -639,6 +664,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				setState(() {
 					attachment = file;
 				});
+				_spamFilteredPostId = null;
 				widget.onFilePathChanged?.call(file.path);
 			}
 		}
@@ -885,7 +911,10 @@ class ReplyBoxState extends State<ReplyBox> {
 				}
 				spamFiltered = _captchaSolution?.cloudflare ?? false;
 			}
-			if (!spamFiltered) {
+			if (spamFiltered) {
+				_spamFilteredPostId = Tuple2(widget.board, receipt.id);
+			}
+			else {
 				_textFieldController.clear();
 				_nameFieldController.clear();
 				_optionsFieldController.clear();
@@ -908,11 +937,17 @@ class ReplyBoxState extends State<ReplyBox> {
 			widget.onReplyPosted(receipt);
 			if (spamFiltered) {
 				if (mounted) {
-					alertError(
-						context,
-						'Your post was likely blocked by 4chan\'s anti-span firewall.\nIf you don\'t see your post appear, try again later. It has been saved in the reply form.',
-						barrierDismissible: true
-					);
+					Future.delayed(const Duration(seconds: 7), () {
+						if (_spamFilteredPostId == null) {
+							// The post appeared after all.
+							return;
+						}
+						alertError(
+							context,
+							'Your post was likely blocked by 4chan\'s anti-spam firewall.\nIf you don\'t see your post appear, try again later. It has been saved in the reply form.',
+							barrierDismissible: true
+						);
+					});
 				}
 			}
 			else {
