@@ -896,6 +896,7 @@ class _ThreadPageState extends State<ThreadPage> {
 												persistentState.lastSeenPostIdNotifier.value = receipt.id;
 												_saveQueued = true;
 											}
+											_listController.update();
 											Future.delayed(const Duration(seconds: 3), _listController.update);
 										},
 										onVisibilityChanged: () {
