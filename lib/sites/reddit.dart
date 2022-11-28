@@ -258,7 +258,7 @@ class SiteReddit extends ImageboardSite {
 	ImageboardBoard _makeBoard(Map<String, dynamic> data) => ImageboardBoard(
 		name: data['display_name'],
 		title: data['public_description'],
-		isWorksafe: !data['over18'],
+		isWorksafe: data['over18'] == false,
 		webmAudioAllowed: true,
 		icon: (data['icon_img']?.isEmpty ?? true) ? null : Uri.parse(data['icon_img'])
 	);
@@ -268,21 +268,39 @@ class SiteReddit extends ImageboardSite {
 		final attachments = <Attachment>[];
 		if (data['media_metadata'] != null) {
 			for (final item in data['media_metadata'].values) {
-				final ext = '.${item['m'].split('/').last}';
-				attachments.add(Attachment(
-					type: AttachmentType.image,
-					board: data['subreddit'],
-					threadId: id,
-					id: item['id'],
-					ext: ext,
-					filename: item['id'] + ext,
-					url: Uri.parse(unescape.convert(item['s']['u'] ?? item['s']['gif'])),
-					thumbnailUrl: Uri.parse(unescape.convert(item['p'][0]['u'])),
-					md5: '',
-					width: item['s']['x'],
-					height: item['s']['y'],
-					sizeInBytes: null
-				));
+				if (item['m'] == null && item['e'] == 'RedditVideo') {
+					attachments.add(Attachment(
+						type: AttachmentType.mp4,
+						board: data['subreddit'],
+						threadId: id,
+						id: item['id'],
+						ext: '.mp4',
+						filename: '${item['id']}.mp4',
+						url: Uri.parse(unescape.convert(item['hlsUrl'])),
+						thumbnailUrl: Uri.https(''),
+						md5: '',
+						width: item['x'],
+						height: item['y'],
+						sizeInBytes: null
+					));
+				}
+				else if (item['m'] != null) {
+					final ext = '.${item['m'].split('/').last}';
+					attachments.add(Attachment(
+						type: AttachmentType.image,
+						board: data['subreddit'],
+						threadId: id,
+						id: item['id'],
+						ext: ext,
+						filename: item['id'] + ext,
+						url: Uri.parse(unescape.convert(item['s']['u'] ?? item['s']['gif'])),
+						thumbnailUrl: Uri.parse(unescape.convert(item['p'][0]['u'])),
+						md5: '',
+						width: item['s']['x'],
+						height: item['s']['y'],
+						sizeInBytes: null
+					));
+				}
 			}
 		}
 		else if (data['preview'] != null) {
