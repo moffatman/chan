@@ -1698,7 +1698,7 @@ class ReplyBoxState extends State<ReplyBox> {
 										try {
 											final dir = await (Directory('${Persistence.temporaryDirectory.path}/sharecache')).create(recursive: true);
 											final data = await site.client.get(_proposedAttachmentUrl!, options: dio.Options(responseType: dio.ResponseType.bytes));
-											final newFile = File('${dir.path}${DateTime.now().millisecondsSinceEpoch}_${_proposedAttachmentUrl!.split('/').last}');
+											final newFile = File('${dir.path}${DateTime.now().millisecondsSinceEpoch}_${_proposedAttachmentUrl!.split('/').last.split('?').first}');
 											await newFile.writeAsBytes(data.data);
 											setAttachment(newFile);
 											_filenameController.text = _proposedAttachmentUrl!.split('/').last.split('.').reversed.skip(1).toList().reversed.join('.');
