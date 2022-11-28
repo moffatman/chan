@@ -260,7 +260,7 @@ class SiteReddit extends ImageboardSite {
 		title: data['public_description'],
 		isWorksafe: !data['over18'],
 		webmAudioAllowed: true,
-		icon: data['icon_img'].isEmpty ? null : Uri.parse(data['icon_img'])
+		icon: (data['icon_img']?.isEmpty ?? true) ? null : Uri.parse(data['icon_img'])
 	);
 
 	Thread _makeThread(dynamic data) {
