@@ -768,7 +768,7 @@ class PostLinkSpan extends PostSpan {
 							child: Column(
 								crossAxisAlignment: CrossAxisAlignment.start,
 								children: [
-									if (name != null) Text(name!),
+									if (name != null && !url.contains(name!)) Text(name!),
 									if (snapshot.data?.title?.isNotEmpty ?? false) Text(snapshot.data!.title!, style: TextStyle(
 										color: settings.theme.primaryColor
 									), textScaleFactor: 1)
