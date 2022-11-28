@@ -170,7 +170,10 @@ class _GalleryPageState extends State<GalleryPage> {
 			currentIndex = (widget.initialAttachment != null) ? max(0, widget.attachments.indexOf(widget.initialAttachment!)) : 0;
 			if (context.read<EffectiveSettings>().autoloadAttachments) {
 				final attachment = widget.attachments[currentIndex];
-				_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
+				_getController(attachment).loadFullAttachment().then((x) {
+					if (!mounted) return;
+					_currentAttachmentChanged.add(null);
+				});
 			}
 		}
 	}
