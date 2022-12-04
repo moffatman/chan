@@ -5,7 +5,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/posts.dart';
-import 'package:chan/pages/thread_attachments.dart';
+import 'package:chan/pages/attachments.dart';
 import 'package:chan/pages/thread_watch_controls.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
@@ -1114,17 +1114,24 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19)
 											),
 											() {
-												final nextPostWithImage = widget.persistentState.thread?.posts.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.attachments.isNotEmpty, orElse: () {
-													return widget.persistentState.thread!.posts.take(widget.listController.firstVisibleIndex).lastWhere((p) => p.attachments.isNotEmpty);
+												const commonParentIds = [-101];
+												final nextPostWithImage = widget.listController.items.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.item.attachments.isNotEmpty, orElse: () {
+													return widget.listController.items.take(widget.listController.firstVisibleIndex).lastWhere((p) => p.item.attachments.isNotEmpty);
 												});
 												final imageboard = context.read<Imageboard>();
 												Navigator.of(context).push(FullWidthCupertinoPageRoute(
 													builder: (context) => ImageboardScope(
 														imageboardKey: null,
 														imageboard: imageboard,
-														child: ThreadAttachmentsPage(
-															thread: widget.persistentState.thread!,
-															initialAttachment: nextPostWithImage?.attachments.first,
+														child: AttachmentsPage(
+															attachments: widget.listController.items.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
+																attachment: a,
+																semanticParentIds: commonParentIds.followedBy(item.parentIds)
+															))).toList(),
+															initialAttachment: TaggedAttachment(
+																attachment: nextPostWithImage.item.attachments.first,
+																semanticParentIds: commonParentIds.followedBy(nextPostWithImage.parentIds)
+															)
 															//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
 														)
 													),

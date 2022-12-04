@@ -1,33 +1,32 @@
 import 'dart:async';
 
-import 'package:chan/models/attachment.dart';
-import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
-class ThreadAttachmentsPage extends StatefulWidget {
-	final Thread thread;
-	final Attachment? initialAttachment;
-	final ValueChanged<Attachment>? onChange;
-	const ThreadAttachmentsPage({
-		required this.thread,
+class AttachmentsPage extends StatefulWidget {
+	final List<TaggedAttachment> attachments;
+	final TaggedAttachment? initialAttachment;
+	final ValueChanged<TaggedAttachment>? onChange;
+	const AttachmentsPage({
+		required this.attachments,
 		this.initialAttachment,
 		this.onChange,
 		Key? key
 	}) : super(key: key);
 
 	@override
-	createState() => _ThreadAttachmentsPage();
+	createState() => _AttachmentsPageState();
 }
 
-class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
-	final Map<Attachment, AttachmentViewerController> _controllers = {};
-	late final RefreshableListController<Attachment> _controller;
+class _AttachmentsPageState extends State<AttachmentsPage> {
+	final Map<TaggedAttachment, AttachmentViewerController> _controllers = {};
+	late final RefreshableListController<TaggedAttachment> _controller;
 	AttachmentViewerController? _lastPrimary;
 	StreamSubscription<void>? _slowScrollUpdatesSubscription;
 
@@ -37,7 +36,7 @@ class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 		_controller = RefreshableListController();
 		if (widget.initialAttachment != null) {
 			Future.delayed(const Duration(milliseconds: 250), () {
-				_controller.animateTo((a) => a.id == widget.initialAttachment?.id);
+				_controller.animateTo((a) => a.attachment.id == widget.initialAttachment?.attachment.id);
 			});
 		}
 		Future.delayed(const Duration(seconds: 1), () {
@@ -56,11 +55,11 @@ class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 		});
 	}
 
-	AttachmentViewerController _getController(Attachment attachment) {
+	AttachmentViewerController _getController(TaggedAttachment attachment) {
 		return _controllers.putIfAbsent(attachment, () {
 			final controller = AttachmentViewerController(
 				context: context,
-				attachment: attachment,
+				attachment: attachment.attachment,
 				site: context.read<ImageboardSite>(),
 				isPrimary: false
 			);
@@ -73,24 +72,22 @@ class _ThreadAttachmentsPage extends State<ThreadAttachmentsPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final attachments = widget.thread.posts.expand((p) => p.attachments).toList();
-		return RefreshableList<Attachment>(
+		return RefreshableList<TaggedAttachment>(
 			filterableAdapter: null,
-			id: '${widget.thread.identifier} attachments',
+			id: '${widget.attachments.hashCode} attachments',
 			controller: _controller,
 			listUpdater: () => throw UnimplementedError(),
 			disableUpdates: true,
-			initialList: attachments,
+			initialList: widget.attachments,
 			itemBuilder: (context, attachment) => AspectRatio(
-				aspectRatio: (attachment.width ?? 1) / (attachment.height ?? 1),
+				aspectRatio: (attachment.attachment.width ?? 1) / (attachment.attachment.height ?? 1),
 				child: GestureDetector(
 					behavior: HitTestBehavior.opaque,
 					onTap: () async {
 						_getController(attachment).isPrimary = false;
-						await showGallery(
+						await showGalleryPretagged(
 							context: context,
-							attachments: attachments,
-							semanticParentIds: [-101],
+							attachments: widget.attachments,
 							initialAttachment: attachment
 						);
 						_getController(attachment).isPrimary = true;
