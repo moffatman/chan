@@ -1032,7 +1032,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			}
 			if (!_updateCounts()) {
 				_waitForRebuildTimer = Timer.periodic(const Duration(milliseconds: 150), (t) {
-					if (_updateCounts()) {
+					if (!mounted || _updateCounts()) {
 						t.cancel();
 					}
 				});
@@ -1305,5 +1305,6 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		_slowScrollSubscription.cancel();
 		widget.persistentState.lastSeenPostIdNotifier.removeListener(_onLastSeenPostIdNotifier);
 		_buttonsAnimationController.dispose();
+		_waitForRebuildTimer?.cancel();
 	}
 }
