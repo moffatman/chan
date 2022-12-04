@@ -275,43 +275,48 @@ class ThreadRow extends StatelessWidget {
 							child: CupertinoButton(
 								padding: EdgeInsets.zero,
 								minSize: 0,
-								child: Stack(
-									alignment: Alignment.center,
-									fit: StackFit.loose,
-									children: [
-										AttachmentThumbnail(
-											onLoadError: onThumbnailLoadError,
-											attachment: attachment,
-											thread: latestThread.identifier,
-											hero: TaggedAttachment(
+								child: ConstrainedBox(
+									constraints: const BoxConstraints(
+										minHeight: 75
+									),
+									child: Stack(
+										alignment: Alignment.center,
+										fit: StackFit.loose,
+										children: [
+											AttachmentThumbnail(
+												onLoadError: onThumbnailLoadError,
 												attachment: attachment,
-												semanticParentIds: semanticParentIds
+												thread: latestThread.identifier,
+												hero: TaggedAttachment(
+													attachment: attachment,
+													semanticParentIds: semanticParentIds
+												),
+												shrinkHeight: true
 											),
-											shrinkHeight: true
-										),
-										if (attachment.type.isVideo) SizedBox.fromSize(
-											size: attachment.estimateFittedSize(
-												size: Size.square(settings.thumbnailSize)
-											),
-											child: Center(
-												child: AspectRatio(
-													aspectRatio: attachment.spoiler ? 1 : ((attachment.width ?? 1) / (attachment.height ?? 1)),
-													child: Align(
-														alignment: Alignment.bottomRight,
-														child: Container(
-															decoration: BoxDecoration(
-																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-															),
-															padding: const EdgeInsets.all(2),
-															child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
+											if (attachment.type.isVideo) SizedBox.fromSize(
+												size: attachment.estimateFittedSize(
+													size: Size.square(settings.thumbnailSize)
+												),
+												child: Center(
+													child: AspectRatio(
+														aspectRatio: attachment.spoiler ? 1 : ((attachment.width ?? 1) / (attachment.height ?? 1)),
+														child: Align(
+															alignment: Alignment.bottomRight,
+															child: Container(
+																decoration: BoxDecoration(
+																	borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																	border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+																),
+																padding: const EdgeInsets.all(2),
+																child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
+															)
 														)
 													)
 												)
 											)
-										)
-									]
+										]
+									)
 								),
 								onPressed: () => onThumbnailTap?.call(attachment)
 							)
@@ -328,7 +333,7 @@ class ThreadRow extends StatelessWidget {
 			),
 			Expanded(
 				child: Container(
-					constraints: BoxConstraints(minHeight: settings.thumbnailSize * 0.7),
+					constraints: const BoxConstraints(minHeight: 75),
 					padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 					child: ChangeNotifierProvider<PostSpanZoneData>(
 						create: (ctx) => PostSpanRootZoneData(
