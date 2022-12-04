@@ -284,6 +284,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	DateTime _lastPointerUpTime = DateTime(2000);
 	final Set<int> _collapsedIds = {};
 	List<RefreshableListItem<T>> filteredValues = [];
+	int forceRebuildId = 0;
 
 	@override
 	void initState() {
@@ -881,7 +882,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														}
 													),
 													list: values,
-													id: '${_searchFilter?.text}${widget.sortMethods}',
+													id: '${_searchFilter?.text}${widget.sortMethods}$forceRebuildId',
 													childCount: values.length,
 													addRepaintBoundaries: false,
 													addAutomaticKeepAlives: false
@@ -916,7 +917,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														}
 													},
 													list: values,
-													id: '${_searchFilter?.text}${widget.sortMethods}',
+													id: '${_searchFilter?.text}${widget.sortMethods}$forceRebuildId',
 													childCount: values.length * 2,
 													addAutomaticKeepAlives: false,
 													addRepaintBoundaries: false,
@@ -994,6 +995,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															]
 														),
 														list: filteredValues,
+														id: '$forceRebuildId',
 														childCount: filteredValues.length,
 														addRepaintBoundaries: false,
 														addAutomaticKeepAlives: false
@@ -1033,6 +1035,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															}
 														},
 														list: filteredValues,
+														id: '$forceRebuildId',
 														childCount: filteredValues.length * 2,
 														addRepaintBoundaries: false,
 														addAutomaticKeepAlives: false

@@ -100,6 +100,7 @@ class _ThreadPageState extends State<ThreadPage> {
 				persistentState.treeHiddenPostIds.length != lastTreeHiddenIdsLength ||
 				persistentState.hiddenPosterIds.length != lastHiddenPosterIdsLength ||
 				persistentState.useTree != lastUseTree) {
+			_listController.state?.forceRebuildId++;
 			setState(() {});
 		}
 		if (persistentState.thread != lastThread) {
