@@ -143,7 +143,10 @@ class _GalleryPageState extends State<GalleryPage> {
 		__onPageControllerUpdateSubscription = _scrollCoalescer.bufferTime(const Duration(milliseconds: 10)).listen((_) => __onPageControllerUpdate());
 		final attachment = widget.attachments[currentIndex];
 		if (context.read<EffectiveSettings>().autoloadAttachments || context.read<EffectiveSettings>().alwaysAutoloadTappedAttachment) {
-			_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
+			_getController(attachment).loadFullAttachment().then((x) {
+				if (!mounted) return;
+				_currentAttachmentChanged.add(null);
+			});
 		}
 	}
 
