@@ -19,6 +19,15 @@ class FilterResultType {
 		this.autoSave = false,
 		this.notify = false
 	});
+
+	@override
+	String toString() => 'FilterResultType(${[
+		if (hide) 'hide',
+		if (highlight) 'highlight',
+		if (pinToTop) 'pinToTop',
+		if (autoSave) 'autoSave',
+		if (notify) 'notify'
+	].join(', ')})';
 }
 
 class FilterResult {
@@ -49,12 +58,6 @@ class FilterCache implements Filter {
 	Filter wrappedFilter;
 	FilterCache(this.wrappedFilter);
 	final Map<Filterable, FilterResult?> _cache = {};
-	void setFilter(Filter newFilter) {
-		if (newFilter != wrappedFilter) {
-			_cache.clear();
-		}
-		wrappedFilter = newFilter;
-	}
 
 	@override
 	FilterResult? filter(Filterable item) {

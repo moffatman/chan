@@ -207,6 +207,7 @@ class Notifications {
 			});
 			FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
 			staticError = null;
+			settings.filterListenable.addListener(_didUpdateFilter);
 		}
 		catch (e) {
 			print('Error initializing notifications: $e');
@@ -221,7 +222,7 @@ class Notifications {
 		await Future.wait(_children.values.map((c) => c.initialize()));
 	}
 
-	static Future<void> didUpdateFilter() async {
+	static Future<void> _didUpdateFilter() async {
 		if (Persistence.settings.usePushNotifications == true) {
 			await Future.wait(_children.values.map((c) => c.initialize()));
 		}

@@ -447,7 +447,7 @@ class _BoardPageState extends State<BoardPage> {
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
 							context.read<Persistence>().browserState.unHideByMD5s(thread.md5s);
-							context.read<Persistence>().didUpdateBrowserState();
+							context.read<Persistence>().didUpdateHiddenMD5s();
 							setState(() {});
 						}
 					)
@@ -456,7 +456,7 @@ class _BoardPageState extends State<BoardPage> {
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () {
 							thread.md5s.forEach(context.read<Persistence>().browserState.hideByMD5);
-							context.read<Persistence>().didUpdateBrowserState();
+							context.read<Persistence>().didUpdateHiddenMD5s();
 							setState(() {});
 						}
 					)

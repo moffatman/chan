@@ -117,8 +117,7 @@ class ThreadWatcher extends ChangeNotifier {
 	final unseenCount = ValueNotifier<int>(0);
 	final unseenYouCount = ValueNotifier<int>(0);
 
-	Filter get __filter => FilterGroup([settings.filter, persistence.browserState.imageMD5Filter]);
-	late final FilterCache _filter = FilterCache(__filter);
+	Filter get _filter => FilterGroup([settings.filter, persistence.browserState.imageMD5Filter]);
 	final _initialCountsDone = Completer<void>();
 	
 	ThreadWatcher({
@@ -133,6 +132,12 @@ class ThreadWatcher extends ChangeNotifier {
 		controller.registerWatcher(this);
 		_boxSubscription = persistence.threadStateBox.watch().listen(_threadUpdated);
 		_setInitialCounts();
+		settings.filterListenable.addListener(_didUpdateFilter);
+		persistence.hiddenMD5sListenable.addListener(_didUpdateFilter);
+	}
+
+	void _didUpdateFilter() {
+		_setInitialCounts();
 	}
 
 	Future<void> _setInitialCounts() async {
@@ -144,7 +149,9 @@ class ThreadWatcher extends ChangeNotifier {
 			await Future.microtask(() => {});
 		}
 		_updateCounts();
-		_initialCountsDone.complete();
+		if (!_initialCountsDone.isCompleted) {
+			_initialCountsDone.complete();
+		}
 	}
 
 	void _updateCounts() {
@@ -338,6 +345,8 @@ class ThreadWatcher extends ChangeNotifier {
 		_boxSubscription = null;
 		unseenCount.dispose();
 		unseenYouCount.dispose();
+		settings.filterListenable.removeListener(_didUpdateFilter);
+		persistence.hiddenMD5sListenable.removeListener(_didUpdateFilter);
 		super.dispose();
 	}
 }

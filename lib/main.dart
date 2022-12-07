@@ -54,6 +54,7 @@ final fakeLinkStream = PublishSubject<String?>();
 bool _initialConsume = false;
 final zeroValueNotifier = ValueNotifier(0);
 bool _promptedAboutCrashlytics = false;
+bool developerMode = false;
 
 void main() async {
 	runZonedGuarded<Future<void>>(() async {
@@ -202,14 +203,14 @@ class _ChanAppState extends State<ChanApp> {
 										),
 										child: RootCustomScale(
 											scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
-											child: CupertinoApp(
-												title: 'Chance',
-												useInheritedMediaQuery: true,
-												debugShowCheckedModeBanner: false,
-												theme: theme,
-												home: FilterZone(
-													filter: settings.filter,
-													child: Builder(
+											child: FilterZone(
+												filter: settings.filter,
+												child: CupertinoApp(
+													title: 'Chance',
+													useInheritedMediaQuery: true,
+													debugShowCheckedModeBanner: false,
+													theme: theme,
+													home: Builder(
 														builder: (BuildContext context) {
 															ImageboardRegistry.instance.context = context;
 															return DefaultTextStyle(
@@ -248,12 +249,12 @@ class _ChanAppState extends State<ChanApp> {
 																)
 															);
 														}
-													)
-												),
-												localizationsDelegates: const [
-													DefaultCupertinoLocalizations.delegate,
-													DefaultMaterialLocalizations.delegate
-												]
+													),
+													localizationsDelegates: const [
+														DefaultCupertinoLocalizations.delegate,
+														DefaultMaterialLocalizations.delegate
+													]
+												)
 											)
 										)
 									);

@@ -83,6 +83,7 @@ class Persistence extends ChangeNotifier {
 	}
 	final savedAttachmentsNotifier = PublishSubject<void>();
 	final savedPostsNotifier = PublishSubject<void>();
+	final hiddenMD5sListenable = EasyListenable();
 	static late final SavedSettings settings;
 	static late final Directory temporaryDirectory;
 	static late final Directory documentsDirectory;
@@ -545,6 +546,11 @@ class Persistence extends ChangeNotifier {
 		notifyListeners();
 	}
 
+	Future<void> didUpdateHiddenMD5s() async {
+		hiddenMD5sListenable.didUpdate();
+		didUpdateBrowserState();
+	}
+
 	static Future<void> didUpdateRecentSearches() async {
 		settings.save();
 		recentSearchesListenable.didUpdate();
@@ -634,7 +640,7 @@ class PersistentThreadState extends HiveObject implements Filterable {
 
 	void _invalidate() {
 		_replyIdsToYou.clear();
-		__filteredPosts.clear();
+		_filteredPosts.clear();
 	}
 
 	Thread? get thread => _thread;
@@ -646,6 +652,11 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		}
 	}
 
+	void didUpdatePostsMarkedAsYou() {
+		_youIds = null;
+		_invalidate();
+	}
+
 	List<int> freshYouIds() {
 		return receipts.map((receipt) => receipt.id).followedBy(postsMarkedAsYou).toList();
 	}
@@ -654,25 +665,27 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		_youIds ??= freshYouIds();
 		return _youIds!;
 	}
-	final FilterCache _filterCache = FilterCache(const DummyFilter());
 	final Map<Filter, List<int>?> _replyIdsToYou = {};
-	List<int>? replyIdsToYou(Filter filter) => _replyIdsToYou.putIfAbsent(filter, () {
-		return _filteredPosts(filter)?.where((p) {
+	List<int>? replyIdsToYou(Filter additionalFilter) => _replyIdsToYou.putIfAbsent(additionalFilter, () {
+		return filteredPosts(additionalFilter)?.where((p) {
 			return p.repliedToIds.any((id) => youIds.contains(id));
 		}).map((p) => p.id).toList();
 	});
 
-	int? unseenReplyIdsToYouCount(Filter filter) => replyIdsToYou(filter)?.binarySearchCountAfter((id) => id > lastSeenPostId!);
-	final Map<Filter, List<Post>?> __filteredPosts = {};
-	List<Post>? _filteredPosts(Filter filter) => __filteredPosts.putIfAbsent(filter, () {
+	int? unseenReplyIdsToYouCount(Filter additionalFilter) => replyIdsToYou(additionalFilter)?.binarySearchCountAfter((id) => id > lastSeenPostId!);
+	final Map<Filter, List<Post>?> _filteredPosts = {};
+	List<Post>? filteredPosts(Filter additionalFilter) => _filteredPosts.putIfAbsent(additionalFilter, () {
 		if (lastSeenPostId == null) {
 			return null;
 		}
-		return thread?.posts.where((p) => _filterCache.filter(p)?.type.hide != true).toList();
+		return thread?.posts.where((p) {
+			return threadFilter.filter(p)?.type.hide != true
+				&& additionalFilter.filter(p)?.type.hide != true;
+		}).toList();
 	});
-	int? unseenReplyCount(Filter filter) => _filteredPosts(filter)?.binarySearchCountAfter((p) => p.id > lastSeenPostId!);
-	int? unseenImageCount(Filter filter) => _filteredPosts(filter)?.map((p) {
-		if (p.id <= lastSeenPostId! || _filterCache.filter(p)?.type.hide == true) {
+	int? unseenReplyCount(Filter additionalFilter) => filteredPosts(additionalFilter)?.binarySearchCountAfter((p) => p.id > lastSeenPostId!);
+	int? unseenImageCount(Filter additionalFilter) => filteredPosts(additionalFilter)?.map((p) {
+		if (p.id <= lastSeenPostId!) {
 			return 0;
 		}
 		return p.attachments.length;
@@ -842,7 +855,6 @@ class PersistentBrowserState {
 	final Map<String, List<int>> autosavedIds;
 	@HiveField(6, defaultValue: [])
 	final Set<String> hiddenImageMD5s;
-	Persistence? persistence;
 	@HiveField(7, defaultValue: {})
 	Map<String, String> loginFields;
 	@HiveField(8)

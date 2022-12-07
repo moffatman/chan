@@ -937,11 +937,15 @@ class EffectiveSettings extends ChangeNotifier {
 	}
 
 	String? filterError;
-	final FilterCache _filter = FilterCache(const DummyFilter());
+	final filterListenable = EasyListenable();
+	FilterCache _filter = FilterCache(const DummyFilter());
 	Filter get filter => _filter;
 	void _tryToSetupFilter() {
 		try {
-			_filter.setFilter(makeFilter(filterConfiguration));
+			final newFilter = makeFilter(filterConfiguration);
+			if (newFilter != _filter.wrappedFilter) {
+				_filter = FilterCache(newFilter);
+			}
 			filterError = null;
 		}
 		catch (e) {
@@ -953,7 +957,7 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.filterConfiguration = setting;
 		_settings.save();
 		_tryToSetupFilter();
-		Notifications.didUpdateFilter();
+		filterListenable.didUpdate();
 		notifyListeners();
 	}
 

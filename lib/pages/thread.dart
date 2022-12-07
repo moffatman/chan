@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:chan/main.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/posts.dart';
@@ -984,10 +985,6 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		}
 	}
 
-	void _onLastSeenPostIdNotifier() {
-		_updateCounts();
-	}
-
 	@override
 	void initState() {
 		super.initState();
@@ -1000,9 +997,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			curve: Curves.ease
 		);
 		_slowScrollSubscription = widget.listController.slowScrollUpdates.listen(_onSlowScroll);
-		widget.persistentState.lastSeenPostIdNotifier.addListener(_onLastSeenPostIdNotifier);
+		widget.persistentState.lastSeenPostIdNotifier.addListener(_updateCounts);
 		if (widget.thread != null) {
-			_filteredPosts = widget.thread!.posts.where((p) => widget.filter.filter(p)?.type.hide != true).toList();
+			_filteredPosts = widget.persistentState.filteredPosts(widget.filter);
 		}
 	}
 
@@ -1012,16 +1009,18 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		if (widget.persistentState != oldWidget.persistentState) {
 			_filteredPosts = null;
 			_lastLastVisibleItemId = null;
-			oldWidget.persistentState.lastSeenPostIdNotifier.removeListener(_onLastSeenPostIdNotifier);
-			widget.persistentState.lastSeenPostIdNotifier.addListener(_onLastSeenPostIdNotifier);
+			oldWidget.persistentState.lastSeenPostIdNotifier.removeListener(_updateCounts);
+			widget.persistentState.lastSeenPostIdNotifier.addListener(_updateCounts);
 		}
+		print('did update widget');
 		if (widget.thread != oldWidget.thread || widget.filter != oldWidget.filter) {
+			print(widget.filter != oldWidget.filter);
 			_waitForRebuildTimer?.cancel();
 			if (widget.thread == null) {
 				_filteredPosts = null;
 			}
 			else {
-				_filteredPosts = widget.thread!.posts.where((p) => widget.filter.filter(p)?.type.hide != true).toList();
+				_filteredPosts = widget.persistentState.filteredPosts(widget.filter);
 			}
 			if (widget.thread?.identifier != oldWidget.thread?.identifier) {
 				setState(() {
@@ -1050,7 +1049,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		const radiusAlone = BorderRadius.all(radius);
 		final radiusStart = widget.reversed ? const BorderRadius.only(topRight: radius, bottomRight: radius) : const BorderRadius.only(topLeft: radius, bottomLeft: radius);
 		final radiusEnd = widget.reversed ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : const BorderRadius.only(topRight: radius, bottomRight: radius);
-		scrollToBottom() => widget.listController.animateTo((post) => post.id == widget.persistentState.thread!.posts.last.id, orElseLast: (x) => true, alignment: 1.0);
+		scrollToBottom() => widget.listController.animateTo((post) => post.id == _filteredPosts?.last.id, orElseLast: (x) => true, alignment: 1.0);
 		final youIds = widget.persistentState.youIds;
 		return Stack(
 			alignment: widget.reversed ? Alignment.bottomLeft : Alignment.bottomRight,
@@ -1184,7 +1183,15 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											widget.persistentState.save();
 										})),
 										Tuple3('Scroll to last-seen', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), _greyCount <= 0 ? null : () => widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0)),
-										Tuple3('Scroll to bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom)
+										Tuple3('Scroll to bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom),
+										if (developerMode) Tuple3('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
+											final id = widget.listController.lastVisibleItem?.id;
+											if (id != null) {
+												widget.persistentState.lastSeenPostId = id;
+												widget.persistentState.lastSeenPostIdNotifier.value = id;
+												widget.persistentState.save();
+											}
+										})
 									]) Padding(
 										padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
 										child: CupertinoButton.filled(
@@ -1303,7 +1310,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	void dispose() {
 		super.dispose();
 		_slowScrollSubscription.cancel();
-		widget.persistentState.lastSeenPostIdNotifier.removeListener(_onLastSeenPostIdNotifier);
+		widget.persistentState.lastSeenPostIdNotifier.removeListener(_updateCounts);
 		_buttonsAnimationController.dispose();
 		_waitForRebuildTimer?.cancel();
 	}

@@ -468,6 +468,7 @@ class PostRow extends StatelessWidget {
 							onPressed: () {
 								parentZone.threadState!.receipts.removeWhere((r) => r.id == latestPost.id);
 								parentZone.threadState!.postsMarkedAsYou.remove(latestPost.id);
+								parentZone.threadState!.didUpdatePostsMarkedAsYou();
 								parentZone.threadState!.save();
 							}
 						)
@@ -476,6 +477,7 @@ class PostRow extends StatelessWidget {
 							trailingIcon: CupertinoIcons.person_badge_plus,
 							onPressed: () async {
 								parentZone.threadState!.postsMarkedAsYou.add(latestPost.id);
+								parentZone.threadState!.didUpdatePostsMarkedAsYou();
 								if (site.supportsPushNotifications) {
 									await promptForPushNotificationsIfNeeded(context);
 								}
@@ -547,7 +549,7 @@ class PostRow extends StatelessWidget {
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
 							context.read<Persistence>().browserState.unHideByMD5s(latestPost.md5s);
-							context.read<Persistence>().didUpdateBrowserState();
+							context.read<Persistence>().didUpdateHiddenMD5s();
 							parentZone.threadState!.save();
 						}
 					)
@@ -561,7 +563,7 @@ class PostRow extends StatelessWidget {
 								return;
 							}
 							persistence.browserState.hideByMD5(attachment.md5);
-							persistence.didUpdateBrowserState();
+							persistence.didUpdateHiddenMD5s();
 							parentZone.threadState!.save();
 						}
 					)
