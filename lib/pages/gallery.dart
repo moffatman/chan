@@ -516,7 +516,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																								fit: BoxFit.cover
 																							)
 																						),
-																						if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) SizedBox(
+																						if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) SizedBox(
 																							width: _thumbnailSize,
 																							child: Center(
 																								child: Container(
@@ -526,7 +526,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																									),
 																									padding: const EdgeInsets.all(4),
 																									child: Text(
-																										widget.replyCounts[widget.attachments[index]]!.toString(),
+																										widget.replyCounts[widget.attachments[index].attachment]!.toString(),
 																										style: const TextStyle(
 																											color: Colors.white70,
 																											fontSize: 14,
@@ -602,7 +602,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																					fit: BoxFit.cover,
 																				)
 																			),
-																			if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index]] ?? 0) > 0)) Center(
+																			if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Center(
 																				child: Container(
 																					decoration: BoxDecoration(
 																						borderRadius: BorderRadius.circular(8),
@@ -610,7 +610,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																					),
 																					padding: const EdgeInsets.all(8),
 																					child: Text(
-																						widget.replyCounts[widget.attachments[index]]!.toString(),
+																						widget.replyCounts[widget.attachments[index].attachment]!.toString(),
 																						style: const TextStyle(
 																							color: Colors.white70,
 																							fontSize: 38,
