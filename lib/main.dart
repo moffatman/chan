@@ -609,7 +609,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					]
 				)
 			);
-			if (open == true) {
+			if (open == true && mounted) {
 				await shareOne(
 					context: context,
 					type: 'text',

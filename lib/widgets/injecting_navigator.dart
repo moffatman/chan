@@ -90,7 +90,7 @@ class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScroll
 			]),
 			builder: (context, child) {
 				final bestController = primaryScrollControllerTracker.value;
-				final automaticController = PrimaryScrollController.of(context)!;
+				final automaticController = PrimaryScrollController.of(context);
 				return PrimaryScrollController(
 					controller: (route != topRoute?.value || bestController == null) ? automaticController : bestController,
 					child: child!

@@ -372,7 +372,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				]
 			)
 		);
-		if (shouldDownload == true) {
+		if (shouldDownload == true && mounted) {
 			final loadingStream = ValueNotifier<int>(0);
 			bool cancel = false;
 			showCupertinoDialog(

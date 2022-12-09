@@ -17,6 +17,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/circular_loading_indicator.dart';
+import 'package:chan/widgets/cupertino_context_menu2.dart';
 import 'package:chan/widgets/double_tap_drag_detector.dart';
 import 'package:chan/widgets/rx_stream_builder.dart';
 import 'package:chan/widgets/util.dart';
@@ -815,18 +816,19 @@ class AttachmentViewer extends StatelessWidget {
 				}
 				controller._gestureDetailsOnDoubleTapDragStart = null;
 			},
-			child: !allowContextMenu ? buildChild(true) : CupertinoContextMenu(
+			child: !allowContextMenu ? buildChild(true) : CupertinoContextMenu2(
 				actions: [
-					CupertinoContextMenuAction(
+					CupertinoContextMenuAction2(
 						trailingIcon: CupertinoIcons.cloud_download,
 						onPressed: () async {
 							Navigator.of(context, rootNavigator: true).pop();
 							await controller.download();
+							// ignore: use_build_context_synchronously
 							showToast(context: context, message: 'Downloaded ${controller.attachment.filename}', icon: CupertinoIcons.cloud_download);
 						},
 						child: const Text('Download')
 					),
-					CupertinoContextMenuAction(
+					CupertinoContextMenuAction2(
 						trailingIcon: CupertinoIcons.share,
 						onPressed: () async {
 							final offset = (controller.contextMenuShareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
@@ -838,7 +840,7 @@ class AttachmentViewer extends StatelessWidget {
 						key: controller.contextMenuShareButtonKey,
 						child: const Text('Share')
 					),
-					if (context.watch<ImageboardSite?>()?.supportsSearch ?? false) CupertinoContextMenuAction(
+					if (context.watch<ImageboardSite?>()?.supportsSearch ?? false) CupertinoContextMenuAction2(
 						trailingIcon: Icons.image_search,
 						onPressed: () {
 							openSearch(context: context, query: ImageboardArchiveSearchQuery(
@@ -849,14 +851,14 @@ class AttachmentViewer extends StatelessWidget {
 						},
 						child: const Text('Search archives')
 					),
-					CupertinoContextMenuAction(
+					CupertinoContextMenuAction2(
 						trailingIcon: Icons.image_search,
 						onPressed: () => openBrowser(context, Uri.https('lens.google.com', '/uploadbyurl', {
 							'url': attachment.url.toString()
 						})),
 						child: const Text('Search Google')
 					),
-					CupertinoContextMenuAction(
+					CupertinoContextMenuAction2(
 						trailingIcon: Icons.image_search,
 						onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
 							'rpt': 'imageview',
@@ -864,7 +866,7 @@ class AttachmentViewer extends StatelessWidget {
 						})),
 						child: const Text('Search Yandex')
 					),
-					CupertinoContextMenuAction(
+					CupertinoContextMenuAction2(
 						trailingIcon: Icons.image_search,
 						onPressed: () => openBrowser(context, Uri.https('saucenao.com', '/search.php', {
 							'url': attachment.url.toString()

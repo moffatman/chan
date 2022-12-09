@@ -280,6 +280,7 @@ class SettingsPage extends StatelessWidget {
 								),
 								onPressed: () async {
 									await settings.updateContentSettings();
+									// ignore: use_build_context_synchronously
 									showToast(
 										context: context,
 										icon: CupertinoIcons.check_mark,

@@ -8,6 +8,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/cupertino_context_menu2.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -123,8 +124,8 @@ class _ContextMenuState extends State<ContextMenu> {
 				Overlay.of(context, rootOverlay: true).insert(_overlayEntry!);
 			},
 			child: LayoutBuilder(
-				builder: (context, originalConstraints) => CupertinoContextMenu(
-					actions: widget.actions.map((action) => CupertinoContextMenuAction(
+				builder: (context, originalConstraints) => CupertinoContextMenu2(
+					actions: widget.actions.map((action) => CupertinoContextMenuAction2(
 						trailingIcon: action.trailingIcon,
 						onPressed: () async {
 							Navigator.of(context, rootNavigator: true).pop();

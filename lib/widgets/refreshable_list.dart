@@ -1390,7 +1390,7 @@ class RefreshableListController<T extends Object> {
 		}
 	}
 	double _getOffset(RenderObject object) {
-		return RenderAbstractViewport.of(object)!.getOffsetToReveal(object, 0.0).offset;
+		return RenderAbstractViewport.of(object).getOffsetToReveal(object, 0.0).offset;
 	}
 	double? _estimateOffset(int targetIndex) {
 		final heightedItems = _items.map((i) => i.cachedHeight).where((i) => i != null);
