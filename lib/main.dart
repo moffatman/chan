@@ -1472,7 +1472,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					},
 					child: CupertinoTabScaffold(
 						controller: _tabController,
-						tabBar: CupertinoTabBar(
+						tabBar: ChanceCupertinoTabBar(
 							inactiveColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.4),
 							items: [
 								BottomNavigationBarItem(
@@ -1527,6 +1527,30 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									label: 'Settings'
 								)
 							],
+							onLeftSwipe: () {
+								if (_tabController.index != 0) {
+									return;
+								}
+								if (Persistence.currentTabIndex <= 0) {
+									return;
+								}
+								activeBrowserTab.value--;
+								Persistence.currentTabIndex--;
+								_didUpdateTabs();
+								setState(() {});
+							},
+							onRightSwipe: () {
+								if (_tabController.index != 0) {
+									return;
+								}
+								if (Persistence.currentTabIndex >= Persistence.tabs.length - 1) {
+									return;
+								}
+								activeBrowserTab.value++;
+								Persistence.currentTabIndex++;
+								_didUpdateTabs();
+								setState(() {});
+							},
 							onTap: (index) {
 								lightHapticFeedback();
 								if (index == _lastIndex && index == 0) {
@@ -1641,5 +1665,71 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		for (final subscription in _notificationsSubscriptions.values) {
 			subscription.item2.cancel();
 		}
+	}
+}
+
+class ChanceCupertinoTabBar extends CupertinoTabBar {
+	final VoidCallback onLeftSwipe;
+	final VoidCallback onRightSwipe;
+
+  const ChanceCupertinoTabBar({
+		required super.items,
+		required this.onLeftSwipe,
+		required this.onRightSwipe,
+		super.backgroundColor,
+		super.activeColor,
+		super.inactiveColor,
+		super.iconSize,
+		super.height,
+		super.border,
+		super.currentIndex,
+		super.onTap,
+		super.key
+	});
+
+	@override
+	CupertinoTabBar copyWith({
+    Key? key,
+    List<BottomNavigationBarItem>? items,
+    Color? backgroundColor,
+    Color? activeColor,
+    Color? inactiveColor,
+    double? iconSize,
+    double? height,
+    Border? border,
+    int? currentIndex,
+    ValueChanged<int>? onTap,
+  }) {
+    return ChanceCupertinoTabBar(
+			onLeftSwipe: onLeftSwipe,
+			onRightSwipe: onRightSwipe,
+      key: key ?? this.key,
+      items: items ?? this.items,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+      activeColor: activeColor ?? this.activeColor,
+      inactiveColor: inactiveColor ?? this.inactiveColor,
+      iconSize: iconSize ?? this.iconSize,
+      height: height ?? this.height,
+      border: border ?? this.border,
+      currentIndex: currentIndex ?? this.currentIndex,
+      onTap: onTap ?? this.onTap,
+    );
+  }
+	
+	@override
+	Widget build(BuildContext context) {
+		return GestureDetector(
+			behavior: HitTestBehavior.translucent,
+			onHorizontalDragEnd: (details) {
+				print(details);
+				if (details.velocity.pixelsPerSecond.dx < 0) {
+					onLeftSwipe();
+				}
+				else if (details.velocity.pixelsPerSecond.dx > 0) {
+					onRightSwipe();
+				}
+			},
+			child: super.build(context)
+		);
 	}
 }
