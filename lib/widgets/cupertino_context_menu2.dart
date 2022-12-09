@@ -987,6 +987,9 @@ class _ContextMenuRoute<T> extends PopupRoute<T> {
       },
     );
   }
+
+  @override
+  bool get shouldCancelActivePointers => false;
 }
 
 class _ContextMenuRouteStatic extends StatefulWidget {
