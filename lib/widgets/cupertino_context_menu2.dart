@@ -1057,6 +1057,9 @@ class _ContextMenuRoute<T> extends PopupRoute<T> with HapticRouteMixin<T> {
       },
     );
   }
+
+  @override
+  bool get shouldCancelActivePointers => false;
 }
 
 class _ContextMenuRouteStatic extends StatefulWidget {
