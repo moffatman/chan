@@ -669,7 +669,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	@override
 	Widget build(BuildContext context) {
-		widget.controller?.reportPrimaryScrollController(PrimaryScrollController.of(context));
+		widget.controller?.reportPrimaryScrollController(PrimaryScrollController.maybeOf(context));
 		widget.controller?.topOffset = MediaQuery.of(context).padding.top;
 		widget.controller?.bottomOffset = MediaQuery.of(context).padding.bottom;
 		if (sortedList != null) {

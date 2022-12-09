@@ -132,7 +132,7 @@ class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScroll
 
 	@override
 	Widget build(BuildContext context) {
-		primaryScrollControllerTracker.value = PrimaryScrollController.of(context);
+		primaryScrollControllerTracker.value = PrimaryScrollController.maybeOf(context);
 		return _navigator;
 	}
 
