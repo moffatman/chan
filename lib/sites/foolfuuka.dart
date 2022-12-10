@@ -33,7 +33,11 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	ImageboardFlag? _makeFlag(dynamic data) {
 		if (data['poster_country'] != null && data['poster_country'].isNotEmpty) {
 			return ImageboardFlag(
-				name: data['poster_country_name'],
+				name: data['poster_country_name'] ?? const {
+					'XE': 'England',
+					'XS': 'Scotland',
+					'XW': 'Wales'
+				}[data['poster_country']] ?? 'Unknown',
 				imageUrl: Uri.https(staticUrl, '/image/country/${data['poster_country'].toLowerCase()}.gif').toString(),
 				imageWidth: 16,
 				imageHeight: 11
