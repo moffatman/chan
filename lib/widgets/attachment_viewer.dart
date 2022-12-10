@@ -19,7 +19,6 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/circular_loading_indicator.dart';
 import 'package:chan/widgets/cupertino_context_menu2.dart';
 import 'package:chan/widgets/double_tap_drag_detector.dart';
-import 'package:chan/widgets/rx_stream_builder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
@@ -70,7 +69,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	// Parameters
 	final BuildContext context;
 	final Attachment attachment;
-	final Stream<void>? redrawGestureStream;
+	final Listenable? redrawGestureListenable;
 	final ImageboardSite site;
 	final Uri? overrideSource;
 
@@ -140,7 +139,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	AttachmentViewerController({
 		required this.context,
 		required this.attachment,
-		this.redrawGestureStream,
+		this.redrawGestureListenable,
 		required this.site,
 		this.overrideSource,
 		bool isPrimary = false
@@ -759,8 +758,8 @@ class AttachmentViewer extends StatelessWidget {
 					return Stack(
 						children: [
 							loadstate.completedWidget,
-							if (controller.redrawGestureStream != null) RxStreamBuilder(
-								stream: controller.redrawGestureStream!,
+							if (controller.redrawGestureListenable != null) AnimatedBuilder(
+								animation: controller.redrawGestureListenable!,
 								builder: buildContent
 							)
 							else buildContent(context, null)

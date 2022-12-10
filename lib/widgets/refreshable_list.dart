@@ -1268,9 +1268,9 @@ class RefreshableListController<T extends Object> {
 	List<_BuiltRefreshableListItem<RefreshableListItem<T>>> _items = [];
 	Iterable<RefreshableListItem<T>> get items => _items.map((i) => i.item);
 	ScrollController? scrollController;
-	final overscrollFactor = ValueNotifier<double>(0);
-	final BehaviorSubject<void> _scrollStream = BehaviorSubject();
-	final BehaviorSubject<void> slowScrollUpdates = BehaviorSubject();
+	late final ValueNotifier<double> overscrollFactor = ValueNotifier<double>(0);
+	late final BehaviorSubject<void> _scrollStream = BehaviorSubject();
+	late final EasyListenable slowScrolls = EasyListenable();
 	late final StreamSubscription<List<void>> _slowScrollSubscription;
 	double? topOffset;
 	double? bottomOffset;
@@ -1323,7 +1323,7 @@ class RefreshableListController<T extends Object> {
 				_tryCachingItem(i, _items[i]);
 			}
 		}
-		slowScrollUpdates.add(null);
+		slowScrolls.didUpdate();
 	}
 	void _onScrollControllerNotification() {
 		_scrollStream.add(null);
@@ -1349,7 +1349,7 @@ class RefreshableListController<T extends Object> {
 		_scrollStream.close();
 		_slowScrollSubscription.cancel();
 		scrollController?.removeListener(_onScrollControllerNotification);
-		slowScrollUpdates.close();
+		slowScrolls.dispose();
 		overscrollFactor.dispose();
 	}
 	void newContentId(String contentId) {
@@ -1531,7 +1531,7 @@ class RefreshableListController<T extends Object> {
 		state?.sortedList = null;
 		setItems([]);
 		await state?.update();
-		slowScrollUpdates.add(null);
+		slowScrolls.didUpdate();
 	}
 	Future<void> update() async {
 		await state?.update();

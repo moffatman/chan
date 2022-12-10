@@ -28,7 +28,6 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 	final Map<TaggedAttachment, AttachmentViewerController> _controllers = {};
 	late final RefreshableListController<TaggedAttachment> _controller;
 	AttachmentViewerController? _lastPrimary;
-	StreamSubscription<void>? _slowScrollUpdatesSubscription;
 
 	@override
 	void initState() {
@@ -40,19 +39,21 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 			});
 		}
 		Future.delayed(const Duration(seconds: 1), () {
-			_slowScrollUpdatesSubscription = _controller.slowScrollUpdates.listen((_) {
-				final lastItem = _controller.middleVisibleItem;
-				if (lastItem != null) {
-					widget.onChange?.call(lastItem);
-					final primary = _controllers[lastItem];
-					if (primary != _lastPrimary) {
-						_lastPrimary?.isPrimary = false;
-						_controllers[lastItem]?.isPrimary = true;
-						_lastPrimary = primary;
-					}
-				}
-			});
+			_controller.slowScrolls.addListener(_onSlowScroll);
 		});
+	}
+
+	void _onSlowScroll() {
+		final lastItem = _controller.middleVisibleItem;
+		if (lastItem != null) {
+			widget.onChange?.call(lastItem);
+			final primary = _controllers[lastItem];
+			if (primary != _lastPrimary) {
+				_lastPrimary?.isPrimary = false;
+				_controllers[lastItem]?.isPrimary = true;
+				_lastPrimary = primary;
+			}
+		}
 	}
 
 	AttachmentViewerController _getController(TaggedAttachment attachment) {
@@ -109,10 +110,10 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 	@override
 	void dispose() {
 		super.dispose();
+		_controller.slowScrolls.removeListener(_onSlowScroll);
 		_controller.dispose();
 		for (final controller in _controllers.values) {
 			controller.dispose();
 		}
-		_slowScrollUpdatesSubscription?.cancel();
 	}
 }

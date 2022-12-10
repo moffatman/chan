@@ -209,6 +209,18 @@ class _ThreadPageState extends State<ThreadPage> {
 				 	|| masterDetailHint.primaryInterceptorKey.currentState?.primaryScrollControllerTracker.value != null;
 	}
 
+	void _onSlowScroll() {
+		final lastItem = _listController.lastVisibleItem;
+		if (persistentState.thread != null && !_unnaturallyScrolling && lastItem != null) {
+			final newLastSeen = lastItem.id;
+			if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
+				persistentState.lastSeenPostId = newLastSeen;
+				persistentState.lastSeenPostIdNotifier.value = newLastSeen;
+				_saveQueued = true;
+			}
+		}
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -232,17 +244,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			_threadStateListenable = context.read<Persistence>().listenForPersistentThreadStateChanges(widget.thread);
 			_threadStateListenable.addListener(_onThreadStateListenableUpdate);
 		});
-		_slowScrollUpdatesSubscription = _listController.slowScrollUpdates.listen((_) {
-			final lastItem = _listController.lastVisibleItem;
-			if (persistentState.thread != null && !_unnaturallyScrolling && lastItem != null) {
-				final newLastSeen = lastItem.id;
-				if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
-					persistentState.lastSeenPostId = newLastSeen;
-					persistentState.lastSeenPostIdNotifier.value = newLastSeen;
-					_saveQueued = true;
-				}
-			}
-		});
+		_listController.slowScrolls.addListener(_onSlowScroll);
 		context.read<PersistentBrowserTab?>()?.threadController = _listController;
 		if (!useTree) {
 			_blockAndScrollToPostIfNeeded();
@@ -417,7 +419,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		Future.delayed(const Duration(milliseconds: 30), () {
 			if (!mounted) return;
 			// Trigger update of counts in case new post is drawn fully onscreen
-			_listController.slowScrollUpdates.add(null);
+			_listController.slowScrolls.didUpdate();
 		});
 		return newThread;
 	}
@@ -960,7 +962,6 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	int _redCount = 0;
 	int _whiteCount = 0;
 	int _greyCount = 0;
-	late StreamSubscription<void> _slowScrollSubscription;
 	Timer? _waitForRebuildTimer;
 	late final AnimationController _buttonsAnimationController;
 	late final Animation<double> _buttonsAnimation;
@@ -983,7 +984,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		return true;
 	}
 
-	void _onSlowScroll(_) {
+	void _onSlowScroll() {
 		final lastVisibleItemId = widget.listController.lastVisibleItem?.id;
 		_filteredPosts ??= widget.persistentState.filteredPosts(widget.filter);
 		if (lastVisibleItemId != null && lastVisibleItemId != _lastLastVisibleItemId && _filteredPosts != null) {
@@ -1002,7 +1003,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			parent: _buttonsAnimationController,
 			curve: Curves.ease
 		);
-		_slowScrollSubscription = widget.listController.slowScrollUpdates.listen(_onSlowScroll);
+		widget.listController.slowScrolls.addListener(_onSlowScroll);
 		widget.persistentState.lastSeenPostIdNotifier.addListener(_updateCounts);
 		if (widget.thread != null) {
 			_filteredPosts = widget.persistentState.filteredPosts(widget.filter);
@@ -1042,8 +1043,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			}
 		}
 		if (widget.listController != oldWidget.listController) {
-			_slowScrollSubscription.cancel();
-			_slowScrollSubscription = widget.listController.slowScrollUpdates.listen(_onSlowScroll);
+			oldWidget.listController.slowScrolls.removeListener(_onSlowScroll);
+			widget.listController.slowScrolls.addListener(_onSlowScroll);
 		}
 	}
 
@@ -1313,7 +1314,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	@override
 	void dispose() {
 		super.dispose();
-		_slowScrollSubscription.cancel();
+		widget.listController.slowScrolls.removeListener(_onSlowScroll);
 		widget.persistentState.lastSeenPostIdNotifier.removeListener(_updateCounts);
 		_buttonsAnimationController.dispose();
 		_waitForRebuildTimer?.cancel();

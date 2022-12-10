@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:chan/services/settings.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/util.dart';
 
@@ -8,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:provider/provider.dart';
-import 'package:rxdart/subjects.dart';
 
 PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder, {required bool showAnimations, required bool? showAnimationsForward}) => FullWidthCupertinoPageRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 PageRoute transparentPageRouteBuilder(WidgetBuilder builder, {required bool showAnimations, required bool? showAnimationsForward}) => TransparentRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
@@ -157,11 +157,11 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 	List<MultiMasterPane> panes = [];
  	bool? lastOnePane;
 	late bool onePane;
-	late final BehaviorSubject<void> _rebuild;
+	late final EasyListenable _rebuild;
 
 	void _onPaneChanged() {
 		setState(() {});
-		_rebuild.add(null);
+		_rebuild.didUpdate();
 	}
 
 	void _initGlobalKeys() {
@@ -176,7 +176,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 	@override
 	void initState() {
 		super.initState();
-		_rebuild = BehaviorSubject();
+		_rebuild = EasyListenable();
 		panes = widget.paneCreator();
 		_tabController = TabController(length: panes.length, vsync: this);
 		_tabController.addListener(_onPaneChanged);
@@ -282,8 +282,8 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 					key: _masterInterceptorKey,
 					navigatorKey: masterKey,
 					observers: [HeroController()],
-					buildRoot: (context) => StreamBuilder(
-						stream: _rebuild,
+					buildRoot: (context) => AnimatedBuilder(
+						animation: _rebuild,
 						builder: (context, _) {
 							Widget child = TabBarView(
 								controller: _tabController,
@@ -349,8 +349,8 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 				child: PrimaryScrollControllerInjectingNavigator(
 					key: _detailInterceptorKey,
 					navigatorKey: detailKey,
-					buildRoot: (context) => StreamBuilder(
-						stream: _rebuild,
+					buildRoot: (context) => AnimatedBuilder(
+						animation: _rebuild,
 						builder: (context, _) => KeyedSubtree(
 							key: _detailContentKey,
 							child: panes[_tabController.index].buildDetail()
@@ -413,6 +413,6 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		for (final pane in panes) {
 			pane.dispose();
 		}
-		_rebuild.close();
+		_rebuild.dispose();
 	}
 }

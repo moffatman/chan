@@ -11,6 +11,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/status_bar.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
@@ -114,12 +115,12 @@ class _GalleryPageState extends State<GalleryPage> {
 	double? _lastpageControllerPixels;
 	bool _animatingNow = false;
 	final _shareButtonKey = GlobalKey();
-	late final BehaviorSubject<void> _slideStream;
+	late final EasyListenable _slideListenable;
 	bool _hideRotateButton = false;
 	final Map<TaggedAttachment, AttachmentViewerController> _controllers = {};
 	late final ValueNotifier<bool> _shouldShowPosition;
-	late final BehaviorSubject<void> _currentAttachmentChanged;
-	late final BehaviorSubject<void> _rotationsChanged;
+	late final EasyListenable _currentAttachmentChanged;
+	late final EasyListenable _rotationsChanged;
 	late final DraggableScrollableController _scrollSheetController;
 	final _draggableScrollableSheetKey = GlobalKey();
 	late StreamSubscription<List<void>> __onPageControllerUpdateSubscription;
@@ -130,10 +131,10 @@ class _GalleryPageState extends State<GalleryPage> {
 	void initState() {
 		super.initState();
 		_scrollCoalescer = BehaviorSubject();
-		_slideStream = BehaviorSubject();
+		_slideListenable = EasyListenable();
 		_shouldShowPosition = ValueNotifier(false);
-		_currentAttachmentChanged = BehaviorSubject();
-		_rotationsChanged = BehaviorSubject();
+		_currentAttachmentChanged = EasyListenable();
+		_rotationsChanged = EasyListenable();
 		_scrollSheetController = DraggableScrollableController();
 		showChrome = widget.initiallyShowChrome;
 		_updateOverlays(showChrome);
@@ -145,7 +146,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (context.read<EffectiveSettings>().autoloadAttachments || context.read<EffectiveSettings>().alwaysAutoloadTappedAttachment) {
 			_getController(attachment).loadFullAttachment().then((x) {
 				if (!mounted) return;
-				_currentAttachmentChanged.add(null);
+				_currentAttachmentChanged.didUpdate();
 			});
 		}
 	}
@@ -187,7 +188,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				final attachment = widget.attachments[currentIndex];
 				_getController(attachment).loadFullAttachment().then((x) {
 					if (!mounted) return;
-					_currentAttachmentChanged.add(null);
+					_currentAttachmentChanged.didUpdate();
 				});
 			}
 		}
@@ -217,7 +218,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			_controllers[attachment] = AttachmentViewerController(
 				context: context,
 				attachment: attachment.attachment,
-				redrawGestureStream: _slideStream,
+				redrawGestureListenable: _slideListenable,
 				site: context.read<ImageboardSite>(),
 				isPrimary: attachment == currentAttachment,
 				overrideSource: widget.overrideSources[attachment.attachment]
@@ -280,7 +281,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (context.read<EffectiveSettings>().autoloadAttachments) {
 			_getController(attachment).loadFullAttachment().then((x) {
 				if (mounted) {
-					_currentAttachmentChanged.add(null);
+					_currentAttachmentChanged.didUpdate();
 				}
 			});
 		}
@@ -320,7 +321,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			if (settings.autoloadAttachments) {
 				_getController(attachment).loadFullAttachment().then((x) {
 					if (!mounted) return;
-					_currentAttachmentChanged.add(null);
+					_currentAttachmentChanged.didUpdate();
 				});
 				if (index > 0) {
 					final previousAttachment = widget.attachments[index - 1];
@@ -337,7 +338,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			for (final c in _controllers.entries) {
 				c.value.isPrimary = c.key == currentAttachment;
 			}
-			_currentAttachmentChanged.add(null);
+			_currentAttachmentChanged.didUpdate();
 		}
 		_hideRotateButton = false;
 		_shouldShowPosition.value = true;
@@ -453,8 +454,8 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	Widget _buildScrollSheetChild(ScrollController controller) {
-		return StreamBuilder(
-			stream: _currentAttachmentChanged,
+		return AnimatedBuilder(
+			animation: _currentAttachmentChanged,
 			builder: (context, child) {
 				return Padding(
 					padding: currentController.videoPlayerController == null ? const EdgeInsets.only(top: 44) : EdgeInsets.zero,
@@ -690,7 +691,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		return ExtendedImageSlidePage(
 			resetPageDuration: const Duration(milliseconds: 100),
 			slidePageBackgroundHandler: (offset, size) {
-				_slideStream.add(null);
+				_slideListenable.didUpdate();
 				final factor = _dragPopFactor(offset, size);
 				if (!showChrome) {
 					_updateOverlays(factor > 1);
@@ -707,8 +708,8 @@ class _GalleryPageState extends State<GalleryPage> {
 					backgroundColor: Colors.transparent,
 					navigationBar: showChrome ? CupertinoNavigationBar(
 						transitionBetweenRoutes: false,
-						middle: StreamBuilder(
-							stream: _currentAttachmentChanged,
+						middle: AnimatedBuilder(
+							animation: _currentAttachmentChanged,
 							builder: (context, _) => Padding(
 								padding: const EdgeInsets.only(bottom: 4),
 								child: AutoSizeText(
@@ -718,8 +719,8 @@ class _GalleryPageState extends State<GalleryPage> {
 							)
 						),
 						backgroundColor: Colors.black38,
-						trailing: StreamBuilder(
-							stream: _currentAttachmentChanged,
+						trailing: AnimatedBuilder(
+							animation: _currentAttachmentChanged,
 							builder: (context, _) => AnimatedBuilder(
 								animation: currentController,
 								builder: (context, _) {
@@ -843,7 +844,10 @@ class _GalleryPageState extends State<GalleryPage> {
 															animation: _getController(attachment),
 															builder: (context, _) => GestureDetector(
 																onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
-																	_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
+																	_getController(attachment).loadFullAttachment().then((x) {
+																		if (!mounted) return;
+																		_currentAttachmentChanged.didUpdate();
+																	});
 																},
 																child: AttachmentViewer(
 																	controller: _getController(attachment),
@@ -861,7 +865,10 @@ class _GalleryPageState extends State<GalleryPage> {
 																	},
 																	semanticParentIds: attachment.semanticParentIds,
 																	onTap: _getController(attachment).isFullResolution ? _toggleChrome : () {
-																		_getController(attachment).loadFullAttachment().then((x) => _currentAttachmentChanged.add(null));
+																		_getController(attachment).loadFullAttachment().then((x) {
+																			if (!mounted) return;
+																			_currentAttachmentChanged.didUpdate();
+																		});
 																	},
 																	layoutInsets: layoutInsets,
 																	allowContextMenu: widget.allowContextMenu,
@@ -902,27 +909,30 @@ class _GalleryPageState extends State<GalleryPage> {
 															) : const SizedBox.shrink()
 														)																		
 													),
-													StreamBuilder(
-														stream: _rotationsChanged.mergeWith([_currentAttachmentChanged]),
-														builder: (context, _) => AnimatedSwitcher(
-															duration: const Duration(milliseconds: 300),
-															child: (_rotationAppropriate(currentAttachment.attachment) && !_hideRotateButton) ? CupertinoButton(
-																padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-																child: Transform(
-																	alignment: Alignment.center,
-																	transform: !currentController.rotate90DegreesClockwise ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
-																	child: const Icon(CupertinoIcons.rotate_left)
-																),
-																onPressed: () {
-																	if (currentController.rotate90DegreesClockwise) {
-																		currentController.unrotate();
+													AnimatedBuilder(
+														animation: _currentAttachmentChanged,
+														builder: (context, _) => AnimatedBuilder(
+															animation: _rotationsChanged,
+															builder: (context, _) => AnimatedSwitcher(
+																duration: const Duration(milliseconds: 300),
+																child: (_rotationAppropriate(currentAttachment.attachment) && !_hideRotateButton) ? CupertinoButton(
+																	padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+																	child: Transform(
+																		alignment: Alignment.center,
+																		transform: !currentController.rotate90DegreesClockwise ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
+																		child: const Icon(CupertinoIcons.rotate_left)
+																	),
+																	onPressed: () {
+																		if (currentController.rotate90DegreesClockwise) {
+																			currentController.unrotate();
+																		}
+																		else {
+																			currentController.rotate();
+																		}
+																		_rotationsChanged.didUpdate();
 																	}
-																	else {
-																		currentController.rotate();
-																	}
-																	_rotationsChanged.add(null);
-																}
-															) : const SizedBox.shrink()
+																) : const SizedBox.shrink()
+															)
 														)
 													),
 													const SizedBox(width: 8)
@@ -943,8 +953,8 @@ class _GalleryPageState extends State<GalleryPage> {
 														borderRadius: BorderRadius.all(Radius.circular(8)),
 														color: Colors.black54
 													),
-													child: StreamBuilder(
-														stream: _currentAttachmentChanged,
+													child: AnimatedBuilder(
+														animation: _currentAttachmentChanged,
 														builder: (context, _) => Text("${currentIndex + 1} / ${widget.attachments.length}", style: TextStyle(
 															color: CupertinoTheme.of(context).primaryColor
 														))
@@ -989,12 +999,12 @@ class _GalleryPageState extends State<GalleryPage> {
 	void dispose() {
 		pageController.dispose();
 		_scrollCoalescer.close();
-		_currentAttachmentChanged.close();
+		_currentAttachmentChanged.dispose();
 		if (showChromeOnce) {
 			thumbnailScrollController.dispose();
 			_gridViewScrollController.dispose();
 		}
-		_slideStream.close();
+		_slideListenable.dispose();
 		for (final controller in _controllers.values) {
 			controller.dispose();
 		}

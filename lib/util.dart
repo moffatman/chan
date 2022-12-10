@@ -252,3 +252,9 @@ extension ToNullSafeOptional on bool? {
 		}
 	}
 }
+
+class EasyListenable extends ChangeNotifier {
+	void didUpdate() {
+		notifyListeners();
+	}
+}

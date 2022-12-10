@@ -56,12 +56,6 @@ class UriAdapter extends TypeAdapter<Uri> {
 	}
 }
 
-class EasyListenable extends ChangeNotifier {
-	void didUpdate() {
-		notifyListeners();
-	}
-}
-
 const _savedAttachmentThumbnailsDir = 'saved_attachments_thumbs';
 const _savedAttachmentsDir = 'saved_attachments';
 const _maxAutosavedIdsPerBoard = 250;
