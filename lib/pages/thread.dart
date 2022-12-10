@@ -967,7 +967,12 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 
 	bool _updateCounts() {
 		final lastVisibleItemId = widget.listController.lastVisibleItem?.id;
-		if (lastVisibleItemId == null || _filteredPosts == null) return false;
+		if (lastVisibleItemId == null || _filteredPosts == null) {
+			_whiteCount = widget.thread?.replyCount ?? 0;
+			_redCount = 0;
+			_greyCount = 0;
+			return false;
+		}
 		final lastSeenPostId = widget.persistentState.lastSeenPostId ?? widget.persistentState.id;
 		_youIds = widget.persistentState.replyIdsToYou(widget.filter) ?? [];
 		_redCount = _youIds.binarySearchCountAfter((p) => p > lastSeenPostId);
@@ -980,6 +985,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 
 	void _onSlowScroll(_) {
 		final lastVisibleItemId = widget.listController.lastVisibleItem?.id;
+		_filteredPosts ??= widget.persistentState.filteredPosts(widget.filter);
 		if (lastVisibleItemId != null && lastVisibleItemId != _lastLastVisibleItemId && _filteredPosts != null) {
 			_updateCounts();
 		}
@@ -1012,9 +1018,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			oldWidget.persistentState.lastSeenPostIdNotifier.removeListener(_updateCounts);
 			widget.persistentState.lastSeenPostIdNotifier.addListener(_updateCounts);
 		}
-		print('did update widget');
 		if (widget.thread != oldWidget.thread || widget.filter != oldWidget.filter) {
-			print(widget.filter != oldWidget.filter);
 			_waitForRebuildTimer?.cancel();
 			if (widget.thread == null) {
 				_filteredPosts = null;

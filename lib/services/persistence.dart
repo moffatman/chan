@@ -674,15 +674,18 @@ class PersistentThreadState extends HiveObject implements Filterable {
 
 	int? unseenReplyIdsToYouCount(Filter additionalFilter) => replyIdsToYou(additionalFilter)?.binarySearchCountAfter((id) => id > lastSeenPostId!);
 	final Map<Filter, List<Post>?> _filteredPosts = {};
-	List<Post>? filteredPosts(Filter additionalFilter) => _filteredPosts.putIfAbsent(additionalFilter, () {
-		if (lastSeenPostId == null) {
-			return null;
-		}
-		return thread?.posts.where((p) {
-			return threadFilter.filter(p)?.type.hide != true
-				&& additionalFilter.filter(p)?.type.hide != true;
-		}).toList();
-	});
+	List<Post>? filteredPosts(Filter additionalFilter) {
+		_filteredPosts[additionalFilter] ??= () {
+			if (lastSeenPostId == null) {
+				return null;
+			}
+			return thread?.posts.where((p) {
+				return threadFilter.filter(p)?.type.hide != true
+					&& additionalFilter.filter(p)?.type.hide != true;
+			}).toList();
+		}();
+		return _filteredPosts[additionalFilter];
+	}
 	int? unseenReplyCount(Filter additionalFilter) => filteredPosts(additionalFilter)?.binarySearchCountAfter((p) => p.id > lastSeenPostId!);
 	int? unseenImageCount(Filter additionalFilter) => filteredPosts(additionalFilter)?.map((p) {
 		if (p.id <= lastSeenPostId!) {
