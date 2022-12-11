@@ -804,32 +804,27 @@ class _ThreadPageState extends State<ThreadPage> {
 																					width: double.infinity,
 																					child: Padding(
 																						padding: const EdgeInsets.all(8),
-																						child: Stack(
+																						child: Row(
 																							children: [
-																								if (post != null) Text.rich(
-																									TextSpan(
-																										children: buildPostInfoRow(
-																											post: post,
-																											isYourPost: persistentState.youIds.contains(post.id),
-																											settings: settings,
-																											site: site,
-																											context: context,
-																											zone: zone
+																								if (post != null) Expanded(
+																									child: Text.rich(
+																										TextSpan(
+																											children: buildPostInfoRow(
+																												post: post,
+																												isYourPost: persistentState.youIds.contains(post.id),
+																												settings: settings,
+																												site: site,
+																												context: context,
+																												zone: zone
+																											)
 																										)
 																									)
-																								),
-																								Align(
-																									alignment: Alignment.centerRight,
-																									child: Row(
-																										mainAxisSize: MainAxisSize.min,
-																										children: [
-																											if (collapsedChildrenCount > 0) Text(
-																												'$collapsedChildrenCount '
-																											),
-																											const Icon(CupertinoIcons.chevron_down, size: 20)
-																										]
-																									)
 																								)
+																								else const Spacer(),
+																								if (collapsedChildrenCount > 0) Text(
+																									'$collapsedChildrenCount '
+																								),
+																								const Icon(CupertinoIcons.chevron_down, size: 20)
 																							]
 																						)
 																					)
