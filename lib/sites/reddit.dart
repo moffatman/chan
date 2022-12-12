@@ -44,6 +44,20 @@ class _SpoilerSyntax extends markdown.InlineSyntax {
   }
 }
 
+class _StrikethroughSyntax extends markdown.InlineSyntax {
+  static const _pattern = r'~~(.+)~~';
+
+  _StrikethroughSyntax() : super(_pattern,
+		startCharacter: 0x7E // ~
+	);
+
+  @override
+  bool onMatch(markdown.InlineParser parser, Match match) {
+		parser.addNode(markdown.Element.text('strikethrough', match.group(1)!));
+    return true;
+  }
+}
+
 extension _RedditApiName on ThreadVariant {
 	String? get redditApiName {
 		switch (this) {
@@ -139,7 +153,8 @@ class SiteReddit extends ImageboardSite {
 		final body = parseFragment(markdown.markdownToHtml(text,
 			inlineSyntaxes: [
 				_SuperscriptSyntax(),
-				_SpoilerSyntax()
+				_SpoilerSyntax(),
+				_StrikethroughSyntax()
 			],
 			blockSyntaxes: [
 				const markdown.TableSyntax(),
@@ -210,6 +225,9 @@ class SiteReddit extends ImageboardSite {
 					}
 					else if (node.localName == 'spoiler') {
 						yield PostSpoilerSpan(PostTextSpan(node.text), spoilerSpanId++);
+					}
+					else if (node.localName == 'strikethrough') {
+						yield PostStrikethroughSpan(PostTextSpan(node.text));
 					}
 					else if (node.localName == 'blockquote') {
 						yield PostQuoteSpan(PostNodeSpan(node.children.isNotEmpty ? visit(node.children).toList() : visit(node.nodes).toList()));

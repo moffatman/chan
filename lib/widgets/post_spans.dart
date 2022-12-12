@@ -964,6 +964,20 @@ class PostSuperscriptSpan extends PostSpan {
 	buildText() => child.buildText();
 }
 
+class PostStrikethroughSpan extends PostSpan {
+	final PostSpan child;
+
+	const PostStrikethroughSpan(this.child);
+	@override
+	build(context, zone, settings, options) {
+		return child.build(context, zone, settings, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(decoration: TextDecoration.lineThrough)
+		));
+	}
+	@override
+	buildText() => child.buildText();
+}
+
 
 class PostPopupSpan extends PostSpan {
 	final PostSpan popup;
