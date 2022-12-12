@@ -1047,7 +1047,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		const radiusAlone = BorderRadius.all(radius);
 		final radiusStart = widget.reversed ? const BorderRadius.only(topRight: radius, bottomRight: radius) : const BorderRadius.only(topLeft: radius, bottomLeft: radius);
 		final radiusEnd = widget.reversed ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : const BorderRadius.only(topRight: radius, bottomRight: radius);
-		scrollToBottom() => widget.listController.animateTo((post) => post.id == _filteredPosts?.last.id, orElseLast: (x) => true, alignment: 1.0);
+		scrollToBottom() => widget.listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0);
 		final youIds = widget.persistentState.youIds;
 		return Stack(
 			alignment: widget.reversed ? Alignment.bottomLeft : Alignment.bottomRight,
