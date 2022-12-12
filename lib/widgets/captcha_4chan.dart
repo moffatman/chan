@@ -547,6 +547,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					return CupertinoButton(
 						onPressed: seconds > 0 ? null : _tryRequestChallenge,
 						child: FittedBox(
+							fit: BoxFit.scaleDown,
 							child: Row(
 								mainAxisSize: MainAxisSize.min,
 								children: [
@@ -645,6 +646,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 										flex: 1,
 										fit: FlexFit.tight,
 										child: FittedBox(
+											fit: BoxFit.scaleDown,
 											child: Row(
 												mainAxisAlignment: MainAxisAlignment.end,
 												children: [
