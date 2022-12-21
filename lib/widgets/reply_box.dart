@@ -190,6 +190,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			attachment = null;
 			spoiler = false;
 			flag = null;
+			widget.onFilePathChanged?.call(null);
 		}
 		if (oldWidget.board != widget.board) {
 			context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
@@ -292,6 +293,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_subjectFieldController.clear();
 			_filenameController.clear();
 			attachment = null;
+			widget.onFilePathChanged?.call(null);
 			_showAttachmentOptions = false;
 			_spamFilteredPostId = null;
 			setState(() {});
@@ -746,6 +748,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				_subjectFieldController.clear();
 				_filenameController.clear();
 				attachment = null;
+				widget.onFilePathChanged?.call(null);
 				_showAttachmentOptions = false;
 			}
 			_show = false;
@@ -1083,6 +1086,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										minSize: 30,
 										child: const Icon(CupertinoIcons.xmark),
 										onPressed: () {
+											widget.onFilePathChanged?.call(null);
 											setState(() {
 												attachment = null;
 												_showAttachmentOptions = false;
