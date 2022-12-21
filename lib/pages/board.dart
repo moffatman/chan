@@ -102,6 +102,7 @@ class _BoardPageState extends State<BoardPage> {
 	final _boardsPullTabKey = GlobalKey();
 	final _threadPullTabKey = GlobalKey();
 	int _page = 1;
+	DateTime? _lastCatalogUpdateTime;
 
 	CatalogVariant? get _defaultBoardVariant => context.read<Persistence?>()?.browserState.catalogVariants[board?.name];
 	CatalogVariant get _defaultGlobalVariant => ((context.read<ImageboardSite?>()?.isReddit ?? false) ? context.read<EffectiveSettings>().redditCatalogVariant : context.read<EffectiveSettings>().catalogVariant);
@@ -772,8 +773,8 @@ class _BoardPageState extends State<BoardPage> {
 																(a, b) => b.id.compareTo(a.id)
 															else if (variant.sortingMethod == ThreadSortingMethod.postsPerMinute)
 																(a, b) {
-																	final now = DateTime.now();
-																	return -1 * ((b.replyCount + 1) / b.time.difference(now).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(now).inSeconds);
+																	_lastCatalogUpdateTime ??= DateTime.now();
+																	return -1 * ((b.replyCount + 1) / b.time.difference(_lastCatalogUpdateTime!).inSeconds).compareTo((a.replyCount + 1) / a.time.difference(_lastCatalogUpdateTime!).inSeconds);
 																}
 															else if (variant.sortingMethod == ThreadSortingMethod.lastReplyTime)
 																(a, b) => b.posts.last.id.compareTo(a.posts.last.id)
@@ -787,10 +788,10 @@ class _BoardPageState extends State<BoardPage> {
 															for (final thread in list) {
 																await thread.preinit(catalog: true);
 															}
-															final now = DateTime.now();
+															_lastCatalogUpdateTime = DateTime.now();
 															if (settings.hideOldStickiedThreads && list.length > 100) {
 																list = list.where((thread) {
-																	return !thread.isSticky || now.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
+																	return !thread.isSticky || _lastCatalogUpdateTime!.difference(thread.time).compareTo(_oldThreadThreshold).isNegative;
 																}).toList();
 															}
 															Future.delayed(const Duration(milliseconds: 100), () {
