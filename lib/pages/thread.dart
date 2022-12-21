@@ -106,7 +106,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread != lastThread) {
 			final tmpPersistentState = persistentState;
 			Future.delayed(const Duration(milliseconds: 100), () {
-				if (persistentState == tmpPersistentState && !_unnaturallyScrolling) {
+				if (mounted && persistentState == tmpPersistentState && !_unnaturallyScrolling) {
 					int? newLastId;
 					if (useTree) {
 						final lastListIndex = _listController.lastVisibleIndex;
