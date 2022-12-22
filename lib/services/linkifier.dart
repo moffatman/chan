@@ -1,7 +1,7 @@
 import 'package:linkify/linkify.dart';
 
 final _looseUrlRegex = RegExp(
-  r'^(.*?)((https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%_\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*))',
+  r'^(.*?)((https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%_.\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*))',
   caseSensitive: false,
   dotAll: true,
 );
@@ -22,7 +22,7 @@ class LooseUrlLinkifier extends Linkifier {
       if (element is TextElement) {
         var match = _looseUrlRegex.firstMatch(element.text);
 
-        if (match == null) {
+        if (match == null || (match.group(0)?.contains('..') ?? false)) {
           list.add(element);
         } else {
           final text = element.text.replaceFirst(match.group(0)!, '');
