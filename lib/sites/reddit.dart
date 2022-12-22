@@ -382,7 +382,8 @@ class SiteReddit extends ImageboardSite {
 			text: data['is_self'] ? unescape.convert(data['selftext']) : data['url'],
 			spanFormat: PostSpanFormat.reddit,
 			attachments: attachments,
-			upvotes: (data['score_hidden'] == true || data['hide_score'] == true) ? null : data['score']
+			upvotes: (data['score_hidden'] == true || data['hide_score'] == true) ? null : data['score'],
+			capcode: data['distinguished']
 		);
 		return Thread(
 			board: data['subreddit'],
@@ -496,7 +497,8 @@ class SiteReddit extends ImageboardSite {
 						spanFormat: PostSpanFormat.reddit,
 						attachments: [],
 						parentId: parentId ?? fromRedditId(child['parent_id'].split('_')[1]),
-						upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score']
+						upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score'],
+						capcode: child['distinguished']
 					));
 					if (child['replies'] != '') {
 						addChildren(id, child['replies']['data']['children']);
@@ -564,7 +566,8 @@ class SiteReddit extends ImageboardSite {
 						spanFormat: PostSpanFormat.reddit,
 						attachments: [],
 						parentId: parentId,
-						upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score']
+						upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score'],
+						capcode: child['distinguished']
 					));
 					if (child['replies'] != '') {
 						addChildren(id, child['replies']['data']['children']);
