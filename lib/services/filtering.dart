@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
-const allPatternFields = ['text', 'subject', 'name', 'filename', 'postID', 'posterID', 'flag'];
+const allPatternFields = ['text', 'subject', 'name', 'filename', 'postID', 'posterID', 'flag', 'capcode'];
 const defaultPatternFields = ['subject', 'name', 'filename', 'text'];
 
 class FilterResultType {

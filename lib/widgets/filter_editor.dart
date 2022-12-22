@@ -145,7 +145,8 @@ class _FilterEditorState extends State<FilterEditor> {
 														'filename': 'Filename',
 														'postID': 'Post ID',
 														'posterID': 'Poster ID',
-														'flag': 'Flag'
+														'flag': 'Flag',
+														'capcode': 'Capcode'
 													}[field] ?? field),
 													trailing: patternFields.contains(field) ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap:() {

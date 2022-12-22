@@ -129,6 +129,8 @@ class Post implements Filterable {
 				return flag?.name;
 			case 'md5':
 				return attachments.map((a) => a.md5).join(' ');
+			case 'capcode':
+				return capcode;
 			default:
 				return null;
 		}
