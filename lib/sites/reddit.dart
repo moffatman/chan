@@ -424,7 +424,14 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant}) async {
-		await _updateBoardIfNeeded(board);
+		try {
+			await _updateBoardIfNeeded(board);
+		}
+		catch (e, st) {
+			if (board != 'popular') {
+				Future.error(e, st);
+			}
+		}
 		final suffix = {
 			CatalogVariant.redditHot: '/hot.json',
 			CatalogVariant.redditNew: '/new.json',
