@@ -5,6 +5,7 @@ import 'package:async/async.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
@@ -82,9 +83,7 @@ class Site4Chan extends ImageboardSite {
 	String _sysUrl(String board) => persistence.getBoard(board).isWorksafe ? sysBlueUrl : sysRedUrl;
 
 	static List<PostSpan> parsePlaintext(String text) {
-		return linkify(text, linkifiers: const [UrlLinkifier(), ChanceLinkifier()], options: const LinkifyOptions(
-			looseUrl: true
-		)).map((elem) {
+		return linkify(text, linkifiers: const [LooseUrlLinkifier(), ChanceLinkifier()]).map((elem) {
 			if (elem is UrlElement) {
 				return PostLinkSpan(elem.url, name: elem.text);
 			}

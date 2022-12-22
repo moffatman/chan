@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/flag.dart';
+import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
@@ -36,9 +37,7 @@ class SiteLainchan extends ImageboardSite {
 	}) : super(archives);
 
 	static List<PostSpan> parsePlaintext(String text) {
-		return linkify(text, linkifiers: const [UrlLinkifier(), ChanceLinkifier()], options: const LinkifyOptions(
-			looseUrl: true
-		)).map((elem) {
+		return linkify(text, linkifiers: const [LooseUrlLinkifier(), ChanceLinkifier()]).map((elem) {
 			if (elem is UrlElement) {
 				return PostLinkSpan(elem.url, name: elem.text);
 			}
