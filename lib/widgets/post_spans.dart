@@ -123,7 +123,7 @@ class _PostWrapperSpan extends PostSpan {
 	@override
 	InlineSpan build(context, zone, settings, options) => span;
 	@override
-	String buildText() => '';
+	String buildText() => span.toPlainText();
 }
 
 class PostNodeSpan extends PostSpan {
