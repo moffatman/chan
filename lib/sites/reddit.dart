@@ -75,6 +75,23 @@ extension _RedditApiName on ThreadVariant {
 				return 'qa';
 		}
 	}
+	static ThreadVariant? toVariant(String redditApiName) {
+		switch (redditApiName) {
+			case 'top':
+				return ThreadVariant.redditTop;
+			case 'confidence':
+				return ThreadVariant.redditBest;
+			case 'new':
+				return ThreadVariant.redditNew;
+			case 'controversial':
+				return ThreadVariant.redditControversial;
+			case 'old':
+				return ThreadVariant.redditOld;
+			case 'qa':
+				return ThreadVariant.redditQandA;
+		}
+		return null;
+	}
 }
 
 class SiteReddit extends ImageboardSite {
@@ -376,7 +393,8 @@ class SiteReddit extends ImageboardSite {
 			attachments: data['is_self'] == true ? [] : attachments,
 			replyCount: data['num_comments'],
 			imageCount: 0,
-			id: id
+			id: id,
+			suggestedVariant: (data['suggested_sort']?.isNotEmpty ?? false) ? _RedditApiName.toVariant(data['suggested_sort']) : null
 		);
 	}
 

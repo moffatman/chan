@@ -525,7 +525,7 @@ class _ThreadPageState extends State<ThreadPage> {
 									),
 									if (site.threadVariants.isNotEmpty) CupertinoButton(
 										padding: EdgeInsets.zero,
-										child: persistentState.variant == null || persistentState.variant == site.threadVariants.first ? const Icon(CupertinoIcons.sort_down) : Icon(persistentState.variant!.icon),
+										child: persistentState.variant == site.threadVariants.first ? const Icon(CupertinoIcons.sort_down) : Icon(persistentState.variant?.icon ?? persistentState.thread?.suggestedVariant?.icon ?? CupertinoIcons.sort_down),
 										onPressed: () async {
 											final choice = await showCupertinoModalPopup<ThreadVariant>(
 												useRootNavigator: false,
@@ -546,7 +546,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																		variant.name,
 																		textAlign: TextAlign.left,
 																		style: TextStyle(
-																			fontWeight: variant == (persistentState.variant ?? site.threadVariants.first) ? FontWeight.bold : null
+																			fontWeight: variant == (persistentState.variant ?? persistentState.thread?.suggestedVariant ?? site.threadVariants.first) ? FontWeight.bold : null
 																		)
 																	)
 																)

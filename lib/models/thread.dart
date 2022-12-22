@@ -2,6 +2,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
@@ -27,6 +28,7 @@ class Thread implements Filterable {
 	int? customSpoilerId;
 	bool attachmentDeleted;
 	final List<Attachment> attachments;
+	ThreadVariant? suggestedVariant;
 	Thread({
 		required this.posts_,
 		this.isArchived = false,
@@ -44,7 +46,8 @@ class Thread implements Filterable {
 		this.currentPage,
 		this.uniqueIPCount,
 		this.customSpoilerId,
-		required this.attachments
+		required this.attachments,
+		this.suggestedVariant
 	}) {
 		if (deprecatedAttachment != null) {
 			attachments.insert(0, deprecatedAttachment!);
@@ -214,6 +217,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       customSpoilerId: fields[14] as int?,
       attachments:
           fields[16] == null ? [] : (fields[16] as List).cast<Attachment>(),
+			suggestedVariant: fields[17] as ThreadVariant?
     );
   }
 
@@ -254,6 +258,9 @@ class ThreadAdapter extends TypeAdapter<Thread> {
 		}
 		if (obj.customSpoilerId != null) {
 			writer..writeByte(14)..write(obj.customSpoilerId);
+		}
+		if (obj.suggestedVariant != null) {
+			writer..writeByte(17)..write(obj.suggestedVariant);
 		}
 		writer
       ..writeByte(0)
