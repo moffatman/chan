@@ -147,16 +147,20 @@ enum _TreeItemCollapseType {
 
 class _CollapsedRefreshableTreeItems extends ChangeNotifier {
 	final List<List<int>> collapsedItems;
+	final List<List<int>> filterCollapsedItems;
 	final ValueChanged<List<List<int>>>? onCollapsedItemsChanged;
+	final ValueChanged<List<int>>? onFilterCollapsedItemExpanded;
 
 	_CollapsedRefreshableTreeItems({
 		required this.collapsedItems,
+		required this.filterCollapsedItems,
+		this.onFilterCollapsedItemExpanded,
 		this.onCollapsedItemsChanged
 	});
 
 	_TreeItemCollapseType? isItemHidden(List<int> parentIds, int? thisId) {
 		// By iterating reversed it will properly handle collapses within collapses
-		for (final collapsed in collapsedItems.reversed) {
+		for (final collapsed in collapsedItems.reversed.followedBy(filterCollapsedItems)) {
 			if (collapsed.length > parentIds.length + 1) {
 				continue;
 			}
@@ -194,8 +198,16 @@ class _CollapsedRefreshableTreeItems extends ChangeNotifier {
 			...parentIds,
 			thisId
 		];
+		final collapsedItemsLengthBefore = collapsedItems.length;
 		collapsedItems.removeWhere((w) => listEquals(w, x));
-		onCollapsedItemsChanged?.call(collapsedItems);
+		if (collapsedItemsLengthBefore != collapsedItems.length) {
+			onCollapsedItemsChanged?.call(collapsedItems);
+		}
+		final filterCollapsedItemsLengthBefore = filterCollapsedItems.length;
+		filterCollapsedItems.removeWhere((w) => listEquals(w, x));
+		if (filterCollapsedItemsLengthBefore != filterCollapsedItems.length) {
+			onFilterCollapsedItemExpanded?.call(x);
+		}
 		notifyListeners();
 	}
 }
@@ -282,7 +294,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	bool _overscrollEndingNow = false;
 	late final AnimationController _footerShakeAnimation;
 	DateTime _lastPointerUpTime = DateTime(2000);
-	final Set<int> _collapsedIds = {};
+	final List<List<int>> _filterCollapsedItems = [];
+	final List<List<int>> _filterCollapsedExpandedItems = [];
 	List<RefreshableListItem<T>> filteredValues = [];
 	int forceRebuildId = 0;
 
@@ -325,7 +338,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			errorMessage = null;
 			errorType = null;
 			lastUpdateTime = null;
-			_collapsedIds.clear();
+			_filterCollapsedItems.clear();
+			_filterCollapsedExpandedItems.clear();
 			update();
 		}
 		else if (oldWidget.disableUpdates != widget.disableUpdates) {
@@ -364,6 +378,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (widget.reverseSort) {
 			sortedList = sortedList!.reversed.toList();
 		}
+	}
+
+	void _onFilterCollapsedItemExpanded(List<int> item) {
+		_filterCollapsedExpandedItems.add(item);
 	}
 
 	void resetTimer() {
@@ -577,7 +595,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		return child;
 	}
 
-	List<RefreshableListItem<T>> _reassembleAsTree(List<RefreshableListItem<T>> linear) {
+	Tuple2<List<RefreshableListItem<T>>, List<List<int>>> _reassembleAsTree(List<RefreshableListItem<T>> linear) {
 		// In case the list is not in sequential order by id
 		final orphans = <int, List<_TreeNode<RefreshableListItem<T>>>>{};
 		final treeMap = <int, _TreeNode<RefreshableListItem<T>>>{};
@@ -586,7 +604,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final adapter = widget.treeAdapter;
 		if (adapter == null) {
 			print('Tried to reassemble a tree of $T with a null adapter');
-			return linear;
+			return Tuple2(linear, []);
 		}
 
 		for (final item in linear) {
@@ -646,14 +664,19 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 
 		final out = <RefreshableListItem<T>>[];
+		final collapsed = <List<int>>[];
 		int dumpNode(_TreeNode<RefreshableListItem<T>> node, List<int> parentIds) {
 			final item = node.item.copyWith(parentIds: parentIds);
 			out.add(item);
+			final ids = [
+				...parentIds,
+				node.id
+			];
+			if (item.collapsed) {
+				collapsed.add(ids);
+			}
 			for (final child in node.children) {
-				item.treeChildrenCount += 1 + dumpNode(child, [
-					...parentIds,
-					node.id
-				]);
+				item.treeChildrenCount += 1 + dumpNode(child, ids.toList());
 			}
 			if (node.omittedChildCount > 0) {
 				out.add(item.copyWith(omittedChildCount: node.omittedChildCount));
@@ -664,7 +687,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		for (final root in treeRoots) {
 			dumpNode(root, []);
 		}
-		return out;
+		return Tuple2(out, collapsed);
 	}
 
 	@override
@@ -705,7 +728,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						else if (!pinned) {
 							values.add(RefreshableListItem(
 								item: item,
-								highlighted: result.type.highlight
+								highlighted: result.type.highlight,
+								collapsed: result.type.collapse
 							));
 						}
 						handled = true;
@@ -718,7 +742,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			values.insertAll(0, pinnedValues);
 			if (widget.useTree) {
-				values = _reassembleAsTree(values);
+				final tree = _reassembleAsTree(values);
+				values = tree.item1;
+				_filterCollapsedItems.clear();
+				for (final collapsed in tree.item2) {
+					if (_filterCollapsedExpandedItems.any((x) => listEquals(x, collapsed))) {
+						continue;
+					}
+					_filterCollapsedItems.add(collapsed);
+				}
 			}
 			widget.controller?.setItems(values);
 			if (filteredValues.isEmpty) {
@@ -784,6 +816,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							child: ChangeNotifierProvider<_CollapsedRefreshableTreeItems>(
 								create: (context) => _CollapsedRefreshableTreeItems(
 									collapsedItems: widget.initialCollapsedItems?.toList() ?? [],
+									filterCollapsedItems: _filterCollapsedItems,
+									onFilterCollapsedItemExpanded: _onFilterCollapsedItemExpanded,
 									onCollapsedItemsChanged: widget.onCollapsedItemsChanged
 								),
 								child: CustomScrollView(

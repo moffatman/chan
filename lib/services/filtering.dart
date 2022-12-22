@@ -11,13 +11,15 @@ class FilterResultType {
 	final bool pinToTop;
 	final bool autoSave;
 	final bool notify;
+	final bool collapse;
 
 	const FilterResultType({
 		this.hide = false,
 		this.highlight = false,
 		this.pinToTop = false,
 		this.autoSave = false,
-		this.notify = false
+		this.notify = false,
+		this.collapse = false
 	});
 
 	@override
@@ -26,7 +28,8 @@ class FilterResultType {
 		if (highlight) 'highlight',
 		if (pinToTop) 'pinToTop',
 		if (autoSave) 'autoSave',
-		if (notify) 'notify'
+		if (notify) 'notify',
+		if (collapse) 'collapse'
 	].join(', ')})';
 }
 
@@ -154,6 +157,7 @@ class CustomFilter implements Filter {
 		bool pinToTop = false;
 		bool autoSave = false;
 		bool notify = false;
+		bool collapse = false;
 		while (true) {
 			final s = match.group(i);
 			if (s == null) {
@@ -173,6 +177,10 @@ class CustomFilter implements Filter {
 			}
 			else if (s == 'notify') {
 				notify = true;
+				hide = false;
+			}
+			else if (s == 'collapse') {
+				collapse = true;
 				hide = false;
 			}
 			else if (s.startsWith('type:')) {
@@ -209,7 +217,8 @@ class CustomFilter implements Filter {
 			highlight: highlight,
 			pinToTop: pinToTop,
 			autoSave: autoSave,
-			notify: notify
+			notify: notify,
+			collapse: collapse
 		);
 		return filter;
 	}
@@ -237,6 +246,9 @@ class CustomFilter implements Filter {
 		}
 		if (outputType.notify) {
 			out.write(';notify');
+		}
+		if (outputType.collapse) {
+			out.write(';collapse');
 		}
 		if (patternFields.isNotEmpty && !setEquals(patternFields.toSet(), defaultPatternFields.toSet())) {
 			out.write(';type:${patternFields.join(',')}');

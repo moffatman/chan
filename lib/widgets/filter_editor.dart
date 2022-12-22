@@ -76,6 +76,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			bool pinToTop = filter.outputType.pinToTop;
 			bool autoSave = filter.outputType.autoSave;
 			bool notify = filter.outputType.notify;
+			bool collapse = filter.outputType.collapse;
 			const labelStyle = TextStyle(fontWeight: FontWeight.bold);
 			return showCupertinoModalPopup<Tuple2<bool, CustomFilter?>>(
 				context: context,
@@ -301,6 +302,7 @@ class _FilterEditorState extends State<FilterEditor> {
 																pinToTop = false;
 																autoSave = false;
 																notify = false;
+																collapse = false;
 															}
 															setInnerState(() {});
 														}
@@ -322,12 +324,13 @@ class _FilterEditorState extends State<FilterEditor> {
 													Tuple3('Pin-to-top', pinToTop, (v) => pinToTop = v),
 													Tuple3('Auto-save', autoSave, (v) => autoSave = v),
 													Tuple3('Notify', notify, (v) => notify = v),
+													Tuple3('Collapse (tree mode)', collapse, (v) => collapse = v),
 												].map((t) => CupertinoListTile(
 													title: Text(t.item1),
 													trailing: t.item2 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap: () {
 														t.item3(!t.item2);
-														hide = !(highlight || pinToTop || autoSave || notify);
+														hide = !(highlight || pinToTop || autoSave || notify || collapse);
 														setInnerState(() {});
 													},
 												)).toList()
@@ -358,7 +361,8 @@ class _FilterEditorState extends State<FilterEditor> {
 											highlight: highlight,
 											pinToTop: pinToTop,
 											autoSave: autoSave,
-											notify: notify
+											notify: notify,
+											collapse: collapse
 										),
 										label: labelController.text
 									)));
@@ -417,6 +421,7 @@ class _FilterEditorState extends State<FilterEditor> {
 														'`;top` Pin match to top of list instead of hiding\n'
 														'`;save` Send a push notification (if enabled) for matches\n'
 														'`;notify` Automatically save matching threads\n'
+														'`;collapse` Automatically collapse matching posts in tree mode\n'
 														'`;file:only` Only apply to posts with files\n'
 														'`;file:no` Only apply to posts without files\n'
 														'`;thread` Only apply to threads\n'
@@ -479,7 +484,8 @@ class _FilterEditorState extends State<FilterEditor> {
 									if (filter.value.outputType.highlight) const Icon(CupertinoIcons.sun_max_fill),
 									if (filter.value.outputType.pinToTop) const Icon(CupertinoIcons.arrow_up_to_line),
 									if (filter.value.outputType.autoSave) const Icon(CupertinoIcons.bookmark_fill),
-									if (filter.value.outputType.notify) const Icon(CupertinoIcons.bell_fill)
+									if (filter.value.outputType.notify) const Icon(CupertinoIcons.bell_fill),
+									if (filter.value.outputType.collapse) const Icon(CupertinoIcons.chevron_down_square)
 								];
 								return Row(
 									children: [
