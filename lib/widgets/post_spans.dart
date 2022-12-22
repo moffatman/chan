@@ -1491,6 +1491,10 @@ List<InlineSpan> buildPostInfoRow({
 	bool interactive = true
 }) {
 	return [
+		if (post.id == post.threadId && zone.thread.title != null) TextSpan(
+			text: '${zone.thread.title} ',
+			style: TextStyle(fontWeight: FontWeight.w600, color: settings.theme.quoteColor.shiftHue(40).shiftSaturation(-0.3))
+		),
 		for (final field in settings.postDisplayFieldOrder)
 			if (field == PostDisplayField.name) ...[
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername)) TextSpan(
