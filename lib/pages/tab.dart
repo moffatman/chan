@@ -5,10 +5,11 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/util.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
 
 class ImageboardTab extends StatelessWidget {
 	final PersistentBrowserTab tab;
-	final void Function(String, ThreadIdentifier)? onWantOpenThreadInNewTab;
+	final void Function(String, ThreadIdentifier, bool)? onWantOpenThreadInNewTab;
 	final void Function(String, String, String)? onWantArchiveSearch;
 	final int id;
 	const ImageboardTab({
@@ -26,6 +27,10 @@ class ImageboardTab extends StatelessWidget {
 			initialValue: tab.thread,
 			onValueChanged: (thread) {
 				tab.thread = thread;
+				if (thread != null) {
+					// ensure state created before didUpdate
+					context.read<Persistence>().getThreadState(thread);
+				}
 				Future.delayed(const Duration(seconds: 1), Persistence.didUpdateTabs);
 				tab.didUpdate();
 			},

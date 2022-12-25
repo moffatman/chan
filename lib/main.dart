@@ -752,16 +752,20 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		String? withImageboardKey,
 		int? atPosition,
 		String? withBoard,
+		ThreadIdentifier? withThread,
 		int? withThreadId,
 		bool activate = false,
+		bool incognito = false,
 		int? withInitialPostId
 	}) {
 		final pos = atPosition ?? Persistence.tabs.length;
 		final tab = PersistentBrowserTab(
 			imageboardKey: withImageboardKey,
 			board: withImageboardKey == null || withBoard == null ? null : ImageboardRegistry.instance.getImageboard(withImageboardKey)?.persistence.getBoard(withBoard),
-			thread: withThreadId == null ? null : ThreadIdentifier(withBoard!, withThreadId)
+			thread: withThread ?? (withThreadId == null ? null : ThreadIdentifier(withBoard!, withThreadId)),
+			incognito: incognito
 		);
+		tab.initialize();
 		if (withBoard != null && withThreadId != null && withInitialPostId != null) {
 			tab.initialPostId[ThreadIdentifier(withBoard, withThreadId)] = withInitialPostId;
 		}
@@ -833,12 +837,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								final tab = ImageboardTab(
 									tab: tabObject,
 									key: tabObject.tabKey,
-									onWantOpenThreadInNewTab: (imageboardKey, thread) {
+									onWantOpenThreadInNewTab: (imageboardKey, thread, incognito) {
 										_addNewTab(
 											withImageboardKey: imageboardKey,
 											atPosition: Persistence.tabs.indexOf(tabObject) + 1,
 											withBoard: thread.board,
-											withThreadId: thread.id
+											withThreadId: thread.id,
+											incognito: incognito
 										);
 									},
 									onWantArchiveSearch: (imageboardKey, board, query) async {
@@ -871,6 +876,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										},
 										child: tabObject.imageboardKey == null ? tab : ImageboardScope(
 											imageboardKey: tabObject.imageboardKey!,
+											overridePersistence: tabObject.incognitoPersistence,
 											loaderOffset: isInTabletLayout ? const Offset(-42.5, 0) : const Offset(0, 25),
 											child: tab
 										)
@@ -1024,6 +1030,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									actions: [
 										TabMenuAction(
 											icon: CupertinoIcons.xmark,
+											title: 'Close',
 											isDestructiveAction: true,
 											onPressed: () {
 												Persistence.tabs.removeAt(-1 * index);
@@ -1031,6 +1038,21 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												final newActiveTabIndex = min(activeBrowserTab.value, Persistence.tabs.length - 1);
 												activeBrowserTab.value = newActiveTabIndex;
 												Persistence.currentTabIndex = newActiveTabIndex;
+												_didUpdateTabs();
+												setState(() {});
+											}
+										),
+										TabMenuAction(
+											icon: CupertinoIcons.doc_on_doc,
+											title: 'Clone',
+											onPressed: () {
+												_addNewTab(
+													withImageboardKey: Persistence.tabs[-1 * index].imageboardKey,
+													atPosition: (-1 * index) + 1,
+													withBoard: Persistence.tabs[-1 * index].board?.name,
+													withThread: Persistence.tabs[-1 * index].thread,
+													incognito: Persistence.tabs[-1 * index].incognito
+												);
 												_didUpdateTabs();
 												setState(() {});
 											}
@@ -1076,63 +1098,92 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
-	Widget _buildNewTabIcon({bool hideLabel = false}) {
-		return GestureDetector(
-			onLongPress: () async {
-				lightHapticFeedback();
-				final shouldCloseOthers = await showCupertinoDialog<bool>(
-					context: context,
-					barrierDismissible: true,
-					builder: (context) => CupertinoAlertDialog(
-						title: const Text('Close all other tabs?'),
+	Widget _buildNewTabIcon({required Axis axis, bool hideLabel = false}) {
+		return Builder(
+			builder: (context) => GestureDetector(
+				onLongPress: () async {
+					lightHapticFeedback();
+					final ro = context.findRenderObject()! as RenderBox;
+					showTabMenu(
+						context: context,
+						direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
+						origin: Rect.fromPoints(
+							ro.localToGlobal(ro.semanticBounds.topLeft),
+							ro.localToGlobal(ro.semanticBounds.bottomRight)
+						),
 						actions: [
-							CupertinoDialogAction(
-								onPressed: () => Navigator.of(context).pop(false),
-								child: const Text('No')
+							TabMenuAction(
+								icon: CupertinoIcons.eyeglasses,
+								title: 'Private',
+								onPressed: () {
+									lightHapticFeedback();
+									_addNewTab(activate: true, incognito: true);
+								}
 							),
-							CupertinoDialogAction(
-								onPressed: () => Navigator.of(context).pop(true),
+							TabMenuAction(
+								icon: CupertinoIcons.xmark_square,
+								title: 'Close others',
 								isDestructiveAction: true,
-								child: const Text('Yes')
+								onPressed: () async {
+									lightHapticFeedback();
+									final shouldCloseOthers = await showCupertinoDialog<bool>(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => CupertinoAlertDialog(
+											title: const Text('Close all other tabs?'),
+											actions: [
+												CupertinoDialogAction(
+													onPressed: () => Navigator.of(context).pop(false),
+													child: const Text('No')
+												),
+												CupertinoDialogAction(
+													onPressed: () => Navigator.of(context).pop(true),
+													isDestructiveAction: true,
+													child: const Text('Yes')
+												)
+											]
+										)
+									);
+									if (shouldCloseOthers == true) {
+										final tabToPreserve = Persistence.tabs[activeBrowserTab.value];
+										Persistence.tabs.clear();
+										Persistence.tabs.add(tabToPreserve);
+										browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
+										activeBrowserTab.value = 0;
+										Persistence.currentTabIndex = 0;
+										_didUpdateTabs();
+										if (Persistence.settings.closeTabSwitcherAfterUse) {
+											showTabPopup = false;
+										}
+										setState(() {});
+									}
+								}
 							)
 						]
-					)
-				);
-				if (shouldCloseOthers == true) {
-					final tabToPreserve = Persistence.tabs[activeBrowserTab.value];
-					Persistence.tabs.clear();
-					Persistence.tabs.add(tabToPreserve);
-					browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
-					activeBrowserTab.value = 0;
-					Persistence.currentTabIndex = 0;
-					_didUpdateTabs();
-					if (Persistence.settings.closeTabSwitcherAfterUse) {
-						showTabPopup = false;
-					}
-					setState(() {});
-				}
-			},
-			child: CupertinoButton(
-				padding: const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8),
-				child: Opacity(
-					opacity: 0.5,
-					child: FittedBox(
-						child: Column(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								const Icon(CupertinoIcons.add),
-								if (!hideLabel) ...[
-									const SizedBox(height: 4),
-									const Text("New", style: TextStyle(fontSize: 15))
+					);
+				},
+				child: CupertinoButton(
+					padding: const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8),
+					child: Opacity(
+						opacity: 0.5,
+						child: FittedBox(
+							child: Column(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									const Icon(CupertinoIcons.add),
+									if (!hideLabel) ...[
+										const SizedBox(height: 4),
+										const Text("New", style: TextStyle(fontSize: 15))
+									]
 								]
-							]
+							)
 						)
-					)
-				),
-				onPressed: () {
-					lightHapticFeedback();
-					_addNewTab(activate: true);
-				}
+					),
+					onPressed: () {
+						lightHapticFeedback();
+						_addNewTab(activate: true);
+					}
+				)
 			)
 		);
 	}
@@ -1177,7 +1228,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									)
 								)
 							);
-							final threadState = Persistence.tabs[i].thread == null ? null : Persistence.tabs[i].imageboard?.persistence.getThreadStateIfExists(Persistence.tabs[i].thread!);
+							final threadState = Persistence.tabs[i].thread == null ? null : Persistence.tabs[i].persistence?.getThreadStateIfExists(Persistence.tabs[i].thread!);
 							if (threadState != null) {
 								Future.microtask(() => Persistence.tabs[i].unseen.value = threadState.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
 								final attachment = threadState.thread?.attachments.tryFirst;
@@ -1211,6 +1262,28 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							);
 						}
 					}
+					if (Persistence.tabs[i].incognito) {
+						icon = Stack(
+							alignment: Alignment.center,
+							clipBehavior: Clip.none,
+							children: [
+								icon,
+								Positioned(
+									bottom: -5,
+									child: DecoratedBox(
+										decoration: BoxDecoration(
+											color: settings.theme.primaryColor,
+											borderRadius: BorderRadius.circular(8)
+										),
+										child: Padding(
+											padding: const EdgeInsets.symmetric(horizontal: 4),
+											child: Icon(CupertinoIcons.eyeglasses, size: 20, color: settings.theme.barColor)
+										)
+									)
+								)
+							]
+						);
+					}
 					return _buildTabletIcon(
 						i * -1,
 						icon,
@@ -1233,7 +1306,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						animation: Persistence.tabs[i],
 						builder: (context, _) {
 							final imageboard = Persistence.tabs[i].imageboard;
-							if (imageboard == null) {
+							final persistence = Persistence.tabs[i].persistence;
+							if (imageboard == null || persistence == null) {
 								return buildStationaryIcon();
 							}
 							return AnimatedBuilder(
@@ -1244,9 +1318,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										return buildStationaryIcon();
 									}
 									return AnimatedBuilder(
-										animation: imageboard.persistence.listenForPersistentThreadStateChanges(thread),
+										animation: persistence.listenForPersistentThreadStateChanges(thread),
 										builder: (context, _) {
-											final threadState = imageboard.persistence.getThreadStateIfExists(thread);
+											final threadState = persistence.getThreadStateIfExists(thread);
 											if (threadState == null) {
 												return buildStationaryIcon();
 											}
@@ -1404,7 +1478,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 																	builder: (context, _) => _buildTabList(Axis.vertical)
 																)
 															),
-															_buildNewTabIcon(hideLabel: hideTabletLayoutLabels)
+															_buildNewTabIcon(
+																axis: Axis.vertical,
+																hideLabel: hideTabletLayoutLabels
+															)
 														]
 													)
 												),
@@ -1600,7 +1677,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 															builder: (context, _) => _buildTabList(Axis.horizontal)
 														)
 													),
-													_buildNewTabIcon()
+													_buildNewTabIcon(axis: Axis.horizontal)
 												]
 											)
 										)

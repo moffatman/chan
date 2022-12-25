@@ -542,9 +542,9 @@ class ThreadRow extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return ValueListenableBuilder(
-			valueListenable: context.read<Persistence>().listenForPersistentThreadStateChanges(thread.identifier),
-			builder: (context, box, child) {
+		return AnimatedBuilder(
+			animation: context.read<Persistence>().listenForPersistentThreadStateChanges(thread.identifier),
+			builder: (context, child) {
 				final threadState = context.read<Persistence>().getThreadStateIfExists(thread.identifier);
 				if (threadState == null) {
 					return _build(context, threadState);

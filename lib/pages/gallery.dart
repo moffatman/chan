@@ -747,8 +747,8 @@ class _GalleryPageState extends State<GalleryPage> {
 												} : null,
 												child: const Icon(CupertinoIcons.cloud_download)
 											),
-											StreamBuilder(
-												stream: context.watch<Persistence>().savedAttachmentsNotifier,
+											AnimatedBuilder(
+												animation: context.watch<Persistence>().savedAttachmentsListenable,
 												builder: (context, child) {
 													final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment.attachment) != null;
 													return CupertinoButton(

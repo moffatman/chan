@@ -56,7 +56,7 @@ class BoardPage extends StatefulWidget {
 	final ValueChanged<String>? onDraftTextChanged;
 	final String Function()? getInitialDraftSubject;
 	final ValueChanged<String>? onDraftSubjectChanged;
-	final void Function(String, ThreadIdentifier)? onWantOpenThreadInNewTab;
+	final void Function(String, ThreadIdentifier, bool)? onWantOpenThreadInNewTab;
 	final String Function()? getInitialThreadDraftOptions;
 	final ValueChanged<String>? onThreadDraftOptionsChanged;
 	final String? Function()? getInitialThreadDraftFilePath;
@@ -397,13 +397,22 @@ class _BoardPageState extends State<BoardPage> {
 			final isSelected = widget.isThreadSelected?.call(context, thread.identifier) ?? false;
 			return ContextMenu(
 				actions: [
-					if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
-						child: const Text('Open in new tab'),
-						trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
-						onPressed: () {
-							widget.onWantOpenThreadInNewTab?.call(imageboard!.key, thread.identifier);
-						}
-					),
+					if (widget.onWantOpenThreadInNewTab != null) ...[
+						ContextMenuAction(
+							child: const Text('Open in new tab'),
+							trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
+							onPressed: () {
+								widget.onWantOpenThreadInNewTab?.call(imageboard!.key, thread.identifier, false);
+							}
+						),
+						ContextMenuAction(
+							child: const Text('Open in new private tab'),
+							trailingIcon: CupertinoIcons.eyeglasses,
+							onPressed: () {
+								widget.onWantOpenThreadInNewTab?.call(imageboard!.key, thread.identifier, true);
+							}
+						),
+					],
 					if (isSaved) ContextMenuAction(
 						child: const Text('Un-save thread'),
 						trailingIcon: CupertinoIcons.bookmark_fill,
@@ -514,6 +523,10 @@ class _BoardPageState extends State<BoardPage> {
 					child: Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
+							if (context.read<PersistentBrowserTab?>()?.incognito ?? false) ...[
+								const Icon(CupertinoIcons.eyeglasses),
+								const Text(' ')
+							],
 							if (imageboard != null) ...[
 								if (ImageboardRegistry.instance.count > 1) ...[
 									ImageboardIcon(

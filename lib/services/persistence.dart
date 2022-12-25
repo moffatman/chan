@@ -10,6 +10,7 @@ import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/incognito.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -19,11 +20,10 @@ import 'package:chan/widgets/util.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:extended_image_library/extended_image_library.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:rxdart/rxdart.dart';
+import 'package:tuple/tuple.dart';
 import 'package:uuid/uuid.dart';
 import 'package:chan/util.dart';
 import 'package:chan/main.dart' as main;
@@ -61,10 +61,15 @@ const _savedAttachmentsDir = 'saved_attachments';
 const _maxAutosavedIdsPerBoard = 250;
 const _maxHiddenIdsPerBoard = 1000;
 
-class Persistence extends ChangeNotifier {
+abstract class EphemeralThreadStateOwner {
+	Future<void> ephemeralThreadStateDidUpdate(PersistentThreadState state);
+}
+
+class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 	final String id;
 	Persistence(this.id);
-	late final Box<PersistentThreadState> threadStateBox;
+	late final Box<PersistentThreadState> _threadStateBox;
+	Box<PersistentThreadState> get threadStateBox => _threadStateBox;
 	Map<String, ImageboardBoard> get boards => settings.boardsBySite[id]!;
 	Map<String, SavedAttachment> get savedAttachments => settings.savedAttachmentsBySite[id]!;
 	Map<String, SavedPost> get savedPosts => settings.savedPostsBySite[id]!;
@@ -75,8 +80,8 @@ class Persistence extends ChangeNotifier {
 	static set currentTabIndex(int setting) {
 		settings.currentTabIndex = setting;
 	}
-	final savedAttachmentsNotifier = PublishSubject<void>();
-	final savedPostsNotifier = PublishSubject<void>();
+	final savedAttachmentsListenable = EasyListenable();
+	final savedPostsListenable = EasyListenable();
 	final hiddenMD5sListenable = EasyListenable();
 	static late final SavedSettings settings;
 	static late final Directory temporaryDirectory;
@@ -238,7 +243,7 @@ class Persistence extends ChangeNotifier {
 		}
 	}
 
-	Future<void> cleanupThreads(Duration olderThan) async {
+	Future<void> _cleanupThreads(Duration olderThan) async {
 		final deadline = DateTime.now().subtract(olderThan);
 		final toPreserve = savedPosts.values.map((v) => '${v.post.board}/${v.post.threadId}').toSet();
 		final toDelete = threadStateBox.keys.where((key) {
@@ -266,7 +271,7 @@ class Persistence extends ChangeNotifier {
 
 	Future<void> initialize() async {
 		try {
-			threadStateBox = await Hive.openBox<PersistentThreadState>(_threadStatesBoxName, crashRecovery: false);
+			_threadStateBox = await Hive.openBox<PersistentThreadState>(_threadStatesBoxName, crashRecovery: false);
 			if (await File(_threadStatesBoxPath).exists()) {
 				await File(_threadStatesBoxPath).copy(_threadStatesBackupBoxPath);
 			}
@@ -287,7 +292,7 @@ class Persistence extends ChangeNotifier {
 					await File(_threadStatesBoxPath.toLowerCase()).copy('${documentsDirectory.path}/$_threadStatesBoxName.broken.hive');
 					await File(_threadStatesBackupBoxPath).copy(_threadStatesBoxPath.toLowerCase());
 				}
-				threadStateBox = await Hive.openBox<PersistentThreadState>(_threadStatesBoxName);
+				_threadStateBox = await Hive.openBox<PersistentThreadState>(_threadStatesBoxName);
 				Future.delayed(const Duration(seconds: 5), () {
 					alertError(ImageboardRegistry.instance.context!, 'Database corruption\n$id database was restored to backup from $backupTime (${formatRelativeTime(backupTime)} ago)');
 				});
@@ -406,7 +411,7 @@ class Persistence extends ChangeNotifier {
 			}
 		}
 		if (settings.automaticCacheClearDays < 100000) {
-			await cleanupThreads(Duration(days: settings.automaticCacheClearDays));
+			await _cleanupThreads(Duration(days: settings.automaticCacheClearDays));
 		}
 		settings.save();
 		Timer.periodic(_backupUpdateDuration, (_) async {
@@ -420,11 +425,11 @@ class Persistence extends ChangeNotifier {
 	}
 
 	PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
-		return threadStateBox.get('${thread.board}/${thread.id}');
+		return _cachedEphemeralThreadStates[thread]?.item1 ?? threadStateBox.get('${thread.board}/${thread.id}');
 	}
 
-	static final Map<String, Map<ThreadIdentifier, PersistentThreadState>> _cachedEphemeralThreadStatesById = {};
-	Map<ThreadIdentifier, PersistentThreadState> get _cachedEphemeralThreadStates => _cachedEphemeralThreadStatesById.putIfAbsent(id, () => {});
+	static final Map<String, Map<ThreadIdentifier, Tuple2<PersistentThreadState, EasyListenable>>> _cachedEphemeralThreadStatesById = {};
+	Map<ThreadIdentifier, Tuple2<PersistentThreadState, EasyListenable>> get _cachedEphemeralThreadStates => _cachedEphemeralThreadStatesById.putIfAbsent(id, () => {});
 	PersistentThreadState getThreadState(ThreadIdentifier thread, {bool updateOpenedTime = false}) {
 		final existingState = threadStateBox.get('${thread.board}/${thread.id}');
 		if (existingState != null) {
@@ -440,8 +445,13 @@ class Persistence extends ChangeNotifier {
 			return newState;
 		}
 		else {
-			return _cachedEphemeralThreadStates.putIfAbsent(thread, () => PersistentThreadState(ephemeral: true));
+			return _cachedEphemeralThreadStates.putIfAbsent(thread, () => Tuple2(PersistentThreadState(ephemeralOwner: this), EasyListenable())).item1;
 		}
+	}
+
+	@override
+	Future<void> ephemeralThreadStateDidUpdate(PersistentThreadState state) async {
+		await Future.microtask(() => _cachedEphemeralThreadStates[state.identifier]?.item2.didUpdate());
 	}
 
 	ImageboardBoard getBoard(String boardName) {
@@ -478,7 +488,7 @@ class Persistence extends ChangeNotifier {
 			}
 		});
 		settings.save();
-		savedAttachmentsNotifier.add(null);
+		savedAttachmentsListenable.didUpdate();
 		if (savedAttachments.length == 1) {
 			attachmentSourceNotifier.didUpdate();
 		}
@@ -493,7 +503,7 @@ class Persistence extends ChangeNotifier {
 			attachmentSourceNotifier.didUpdate();
 		}
 		settings.save();
-		savedAttachmentsNotifier.add(null);
+		savedAttachmentsListenable.didUpdate();
 	}
 
 	SavedPost? getSavedPost(Post post) {
@@ -505,7 +515,7 @@ class Persistence extends ChangeNotifier {
 		settings.save();
 		// Likely will force the widget to rebuild
 		getThreadState(post.threadIdentifier).save();
-		savedPostsNotifier.add(null);
+		savedPostsListenable.didUpdate();
 	}
 
 	void unsavePost(Post post) {
@@ -513,11 +523,11 @@ class Persistence extends ChangeNotifier {
 		settings.save();
 		// Likely will force the widget to rebuild
 		getThreadStateIfExists(post.threadIdentifier)?.save();
-		savedPostsNotifier.add(null);
+		savedPostsListenable.didUpdate();
 	}
 
-	ValueListenable<Box<PersistentThreadState>> listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
-		return threadStateBox.listenable(keys: ['${thread.board}/${thread.id}']);
+	Listenable listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
+		return _cachedEphemeralThreadStates[thread]?.item2 ?? threadStateBox.listenable(keys: ['${thread.board}/${thread.id}']);
 	}
 
 	Future<void> storeBoards(List<ImageboardBoard> newBoards) async {
@@ -552,13 +562,21 @@ class Persistence extends ChangeNotifier {
 
 	Future<void> didUpdateSavedPost() async {
 		settings.save();
-		savedPostsNotifier.add(null);
+		savedPostsListenable.didUpdate();
 	}
 
 	static void didChangeBrowserHistoryStatus() {
+		for (final x in _cachedEphemeralThreadStatesById.values) {
+			for (final y in x.values) {
+				y.item2.dispose();
+			}
+		}
 		_cachedEphemeralThreadStatesById.clear();
 		browserHistoryStatusListenable.didUpdate();
 	}
+
+	@override
+	String toString() => 'Persistence($id)';
 }
 
 const _maxRecentItems = 50;
@@ -614,7 +632,7 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	// Don't persist this
 	final lastSeenPostIdNotifier = ValueNotifier<int?>(null);
 	// Don't persist this
-	bool ephemeral;
+	EphemeralThreadStateOwner? ephemeralOwner;
 	@HiveField(10, defaultValue: [])
 	List<int> treeHiddenPostIds = [];
 	@HiveField(11, defaultValue: [])
@@ -630,7 +648,9 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	@HiveField(16, defaultValue: [])
 	List<List<int>> collapsedItems = [];
 
-	PersistentThreadState({this.ephemeral = false}) : lastOpenedTime = DateTime.now();
+	bool get incognito => ephemeralOwner != null;
+
+	PersistentThreadState({this.ephemeralOwner}) : lastOpenedTime = DateTime.now();
 
 	void _invalidate() {
 		_replyIdsToYou.clear();
@@ -739,7 +759,10 @@ class PersistentThreadState extends HiveObject implements Filterable {
 
 	@override
 	Future<void> save() async {
-		if (!ephemeral) {
+		if (ephemeralOwner != null) {
+			await ephemeralOwner!.ephemeralThreadStateDidUpdate(this);
+		}
+		else {
 			await super.save();
 		}
 	}
@@ -807,7 +830,7 @@ class PersistentBrowserTab extends EasyListenable {
 	String draftSubject;
 	@HiveField(4)
 	String? imageboardKey;
-	Imageboard? get imageboard => imageboardKey == null ? null :  ImageboardRegistry.instance.getImageboard(imageboardKey!);
+	Imageboard? get imageboard => imageboardKey == null ? null : ImageboardRegistry.instance.getImageboard(imageboardKey!);
 	// Do not persist
 	RefreshableListController<Post>? threadController;
 	// Do not persist
@@ -816,6 +839,8 @@ class PersistentBrowserTab extends EasyListenable {
 	final tabKey = GlobalKey();
 	// Do not persist
 	final boardKey = GlobalKey();
+	// Do not persist
+	final incognitoProviderKey = GlobalKey();
 	// Do not persist
 	final unseen = ValueNotifier(0);
 	@HiveField(5, defaultValue: '')
@@ -826,6 +851,8 @@ class PersistentBrowserTab extends EasyListenable {
 	String? initialSearch;
 	@HiveField(8)
 	CatalogVariant? catalogVariant;
+	@HiveField(9, defaultValue: false)
+	bool incognito;
 
 	PersistentBrowserTab({
 		this.board,
@@ -836,8 +863,38 @@ class PersistentBrowserTab extends EasyListenable {
 		this.draftOptions = '',
 		this.draftFilePath,
 		this.initialSearch,
-		this.catalogVariant
+		this.catalogVariant,
+		this.incognito = false
 	});
+
+	IncognitoPersistence? incognitoPersistence;
+	Persistence? get persistence => incognitoPersistence ?? imageboard?.persistence;
+
+	void initialize() {
+		if (incognito && imageboardKey != null) {
+			final persistence = ImageboardRegistry.instance.getImageboardUnsafe(imageboardKey!)?.persistence;
+			if (persistence != null) {
+				incognitoPersistence = IncognitoPersistence(persistence);
+				if (thread != null) {
+					// ensure state created before accessing
+					incognitoPersistence!.getThreadState(thread!);
+				}
+			}
+		}
+	}
+
+	@override
+	void didUpdate() {
+		if (incognito && imageboard != null && imageboard!.persistence != incognitoPersistence?.parent) {
+			incognitoPersistence?.dispose();
+			incognitoPersistence = IncognitoPersistence(imageboard!.persistence);
+		}
+		else if (!incognito) {
+			incognitoPersistence?.dispose();
+			incognitoPersistence = null;
+		}
+		super.didUpdate();
+	}
 }
 
 @HiveType(typeId: 22)

@@ -8,11 +8,13 @@ import 'package:provider/provider.dart';
 
 class TabMenuAction {
 	final IconData icon;
+	final String title;
 	final VoidCallback onPressed;
 	final bool isDestructiveAction;
 
 	const TabMenuAction({
 		required this.icon,
+		required this.title,
 		required this.onPressed,
 		this.isDestructiveAction = false
 	});
@@ -110,7 +112,18 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 						action.onPressed();
 						onDone();
 					},
-					child: Icon(action.icon, color: action.isDestructiveAction ? Colors.red : null)
+					child: FittedBox(
+						child: Column(
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								Icon(action.icon, color: action.isDestructiveAction ? Colors.red : null),
+								const SizedBox(height: 4),
+								Flexible(
+									child: Text(action.title, overflow: TextOverflow.visible, style: const TextStyle(fontSize: 15))
+								)
+							]
+						)
+					)
 				)).toList()
 			)
 		);

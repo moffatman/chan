@@ -223,13 +223,14 @@ class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
       draftFilePath: fields[6] as String?,
       initialSearch: fields[7] as String?,
       catalogVariant: fields[8] as CatalogVariant?,
+      incognito: fields[9] == null ? false : fields[9] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserTab obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.board)
       ..writeByte(1)
@@ -247,7 +248,9 @@ class PersistentBrowserTabAdapter extends TypeAdapter<PersistentBrowserTab> {
       ..writeByte(7)
       ..write(obj.initialSearch)
       ..writeByte(8)
-      ..write(obj.catalogVariant);
+      ..write(obj.catalogVariant)
+      ..writeByte(9)
+      ..write(obj.incognito);
   }
 
   @override

@@ -482,6 +482,10 @@ class _ThreadPageState extends State<ThreadPage> {
 										mainAxisAlignment: MainAxisAlignment.center,
 										mainAxisSize: MainAxisSize.min,
 										children: [
+											if (persistentState.incognito) const Padding(
+												padding: EdgeInsets.only(right: 6),
+												child: Icon(CupertinoIcons.eyeglasses)
+											),
 											if (ImageboardRegistry.instance.count > 1) Padding(
 												padding: const EdgeInsets.only(right: 6),
 												child: ImageboardIcon(
@@ -510,8 +514,7 @@ class _ThreadPageState extends State<ThreadPage> {
 									),
 									CupertinoButton(
 										padding: EdgeInsets.zero,
-										child: Icon(persistentState.savedTime == null ? CupertinoIcons.bookmark : CupertinoIcons.bookmark_fill),
-										onPressed: () {
+										onPressed: persistentState.incognito ? null : () {
 											lightHapticFeedback();
 											if (persistentState.savedTime != null) {
 												persistentState.savedTime = null;
@@ -521,7 +524,8 @@ class _ThreadPageState extends State<ThreadPage> {
 											}
 											persistentState.save();
 											setState(() {});
-										}
+										},
+										child: Icon(persistentState.savedTime == null ? CupertinoIcons.bookmark : CupertinoIcons.bookmark_fill)
 									),
 									if (site.threadVariants.isNotEmpty) CupertinoButton(
 										padding: EdgeInsets.zero,

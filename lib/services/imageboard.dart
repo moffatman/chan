@@ -236,6 +236,9 @@ class ImageboardRegistry extends ChangeNotifier {
 				else {
 					Persistence.currentTabIndex = min(Persistence.tabs.length - 1, initialTabIndex);
 				}
+				for (final tab in Persistence.tabs) {
+					tab.initialize();
+				}
 				if (initialTabsLength != Persistence.tabs.length) {
 					Persistence.didUpdateTabs();
 				}

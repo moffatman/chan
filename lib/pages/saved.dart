@@ -1,4 +1,3 @@
-import 'package:async/async.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
@@ -164,8 +163,8 @@ class _SavedPageState extends State<SavedPage> {
 		final settings = context.watch<EffectiveSettings>();
 		final persistencesAnimation = Listenable.merge(ImageboardRegistry.instance.imageboards.map((x) => x.persistence).toList());
 		final threadStateBoxesAnimation = Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.threadStateBox.listenable()).toList());
-		final savedPostNotifiersAnimation = StreamGroup.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedPostsNotifier)).asBroadcastStream();
-		final savedAttachmentsNotifiersAnimation = StreamGroup.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsNotifier)).asBroadcastStream();
+		final savedPostNotifiersAnimation = Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList());
+		final savedAttachmentsNotifiersAnimation = Listenable.merge(ImageboardRegistry.instance.imageboards.map((i) => i.persistence.savedAttachmentsListenable).toList());
 		return MultiMasterDetailPage(
 			id: 'saved',
 			key: widget.masterDetailKey,
@@ -275,9 +274,9 @@ class _SavedPageState extends State<SavedPage> {
 																],
 																child: GestureDetector(
 																	behavior: HitTestBehavior.opaque,
-																	child: ValueListenableBuilder(
-																		valueListenable: watch.imageboard.persistence.listenForPersistentThreadStateChanges(watch.item.threadIdentifier),
-																		builder: (context, box, child) {
+																	child: AnimatedBuilder(
+																		animation: watch.imageboard.persistence.listenForPersistentThreadStateChanges(watch.item.threadIdentifier),
+																		builder: (context, child) {
 																			final threadState = watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier);
 																			if (threadState?.thread == null) {
 																				// Make sure this isn't a newly-created thread/watch
@@ -595,8 +594,8 @@ class _SavedPageState extends State<SavedPage> {
 				MultiMasterPane<ImageboardScoped<SavedPost>>(
 					navigationBar: _savedNavigationBar('Saved Posts'),
 					icon: CupertinoIcons.reply,
-					masterBuilder: (context, selected, setter) => StreamBuilder(
-						stream: savedPostNotifiersAnimation,
+					masterBuilder: (context, selected, setter) => AnimatedBuilder(
+						animation: savedPostNotifiersAnimation,
 						builder: (context, child) {
 							final savedPosts = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedPosts.values.map((p) => ImageboardScoped(
 								imageboard: i,
@@ -702,8 +701,8 @@ class _SavedPageState extends State<SavedPage> {
 				MultiMasterPane<ImageboardScoped<SavedAttachment>>(
 					title: const Text('Saved Attachments'),
 					icon: CupertinoIcons.photo,
-					masterBuilder: (context, selected, setter) => StreamBuilder(
-						stream: savedAttachmentsNotifiersAnimation,
+					masterBuilder: (context, selected, setter) => AnimatedBuilder(
+						animation: savedAttachmentsNotifiersAnimation,
 						builder: (context, child) {
 							final list = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedAttachments.values.map((p) => ImageboardScoped(
 								imageboard: i,

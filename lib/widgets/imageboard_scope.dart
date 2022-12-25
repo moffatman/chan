@@ -9,12 +9,14 @@ class ImageboardScope extends StatelessWidget {
 	final Widget child;
 	final String? imageboardKey;
 	final Imageboard? imageboard;
+	final Persistence? overridePersistence;
 	final Offset loaderOffset;
 
 	const ImageboardScope({
 		required this.child,
 		required this.imageboardKey,
 		this.imageboard,
+		this.overridePersistence,
 		this.loaderOffset = Offset.zero,
 		Key? key
 	}) : super(key: key);
@@ -62,7 +64,7 @@ class ImageboardScope extends StatelessWidget {
 					ChangeNotifierProvider.value(value: b),
 					if (b.initialized) ...[
 						Provider.value(value: b.site),
-						ChangeNotifierProvider.value(value: b.persistence),
+						ChangeNotifierProvider.value(value: overridePersistence ?? b.persistence),
 						ChangeNotifierProvider.value(value: b.threadWatcher),
 						Provider.value(value: b.notifications)
 					]
