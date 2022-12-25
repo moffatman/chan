@@ -126,7 +126,8 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 					fit: StackFit.expand,
 					children: [
 						GestureDetector(
-							onTap: onDone
+							onTap: onDone,
+							behavior: HitTestBehavior.opaque
 						),
 						if (widget.direction == AxisDirection.up) Positioned(
 							left: widget.origin.left,
