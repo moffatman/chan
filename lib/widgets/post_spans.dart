@@ -1546,10 +1546,7 @@ List<InlineSpan> buildPostInfoRow({
 				const TextSpan(text: ' ')
 			]
 			else if (field == PostDisplayField.countryName && settings.showCountryNameOnPosts && post.flag != null) TextSpan(
-				text: '${post.flag!.name} ',
-				style: const TextStyle(
-					fontStyle: FontStyle.italic
-				)
+				text: '${post.flag!.name} '
 			)
 			else if (field == PostDisplayField.absoluteTime && settings.showAbsoluteTimeOnPosts) TextSpan(
 				text: '${formatTime(post.time)} '

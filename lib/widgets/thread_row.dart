@@ -207,10 +207,9 @@ class ThreadRow extends StatelessWidget {
 				spaceSpan
 			],
 			if (settings.showCountryNameInCatalogHeader && latestThread.flag != null) ...[
-				TextSpan(
+				TextSpan(	
 					text: latestThread.flag!.name,
 					style: TextStyle(
-						fontStyle: FontStyle.italic,
 						fontSize: subheaderFontSize
 					)
 				),
