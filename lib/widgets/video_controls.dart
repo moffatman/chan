@@ -103,6 +103,7 @@ class _VideoControlsState extends State<VideoControls> {
 
 	@override
 	Widget build(BuildContext context) {
+		final primaryColor = CupertinoTheme.of(context).primaryColor;
 		return SizedBox(
 			height: 44,
 			child: Row(
@@ -111,7 +112,13 @@ class _VideoControlsState extends State<VideoControls> {
 					const SizedBox(width: 8),
 					ValueListenableBuilder(
 						valueListenable: position,
-						builder: (context, Duration positionValue, _) => Text(_formatDuration(positionValue))
+						builder: (context, Duration positionValue, _) => SizedBox(
+							width: 40,
+							child: FittedBox(
+								fit: BoxFit.scaleDown,
+								child: Text(_formatDuration(positionValue), style: TextStyle(color: primaryColor))
+							)
+						)
 					),
 					Expanded(
 						child: Padding(
@@ -133,8 +140,8 @@ class _VideoControlsState extends State<VideoControls> {
 											builder: (context, Duration positionValue, _) => LinearProgressIndicator(
 												minHeight: 44,
 												value: positionValue.inMilliseconds / value.duration.inMilliseconds.clamp(1, double.maxFinite),
-												valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
-												backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.3)
+												valueColor: AlwaysStoppedAnimation(primaryColor),
+												backgroundColor: primaryColor.withOpacity(0.3)
 											)
 										)
 									)
@@ -142,7 +149,13 @@ class _VideoControlsState extends State<VideoControls> {
 							)
 						)
 					),
-					Text(_formatDuration(value.duration), style: const TextStyle(color: Colors.white)),
+					SizedBox(
+						width: 40,
+						child: FittedBox(
+							fit: BoxFit.scaleDown,
+							child: Text(_formatDuration(value.duration), style: TextStyle(color: primaryColor))
+						)
+					),
 					if (widget.hasAudio) AnimatedBuilder(
 						animation: context.read<EffectiveSettings>().muteAudio,
 						builder: (context, _) => CupertinoButton(
