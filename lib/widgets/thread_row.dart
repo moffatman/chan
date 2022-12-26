@@ -472,15 +472,24 @@ class ThreadRow extends StatelessWidget {
 				];
 			}
 		}
+		Widget content = contentFocus ? Stack(
+			fit: StackFit.passthrough,
+			children: buildContentFocused()
+		) : Row(
+			crossAxisAlignment: site.classicCatalogStyle ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+			mainAxisSize: MainAxisSize.max,
+			children: settings.imagesOnRight ? rowChildren().reversed.toList() : rowChildren()
+		);
+		if (dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0)) {
+			content = Opacity(
+				opacity: 0.5,
+				child: content
+			);
+		}
 		Widget child = Stack(
 			fit: StackFit.passthrough,
 			children: [
-				if (contentFocus) ...buildContentFocused()
-				else Row(
-					crossAxisAlignment: site.classicCatalogStyle ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-					mainAxisSize: MainAxisSize.max,
-					children: settings.imagesOnRight ? rowChildren().reversed.toList() : rowChildren()
-				),
+				content,
 				Positioned.fill(
 					child: Align(
 						alignment: Alignment.bottomRight,
@@ -519,12 +528,6 @@ class ThreadRow extends StatelessWidget {
 				)
 			]
 		);
-		if (dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0)) {
-			child = Opacity(
-				opacity: 0.5,
-				child: child
-			);
-		}
 		return Container(
 			decoration: BoxDecoration(
 				color: isSelected ? CupertinoTheme.of(context).primaryColorWithBrightness(0.4) : CupertinoTheme.of(context).scaffoldBackgroundColor,
