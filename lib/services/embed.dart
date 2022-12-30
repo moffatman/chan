@@ -81,7 +81,6 @@ Future<EmbedData?> loadEmbedData({
 	if (url.startsWith('chance://site/')) {
 		try {
 			final response = await Dio().get(url.replaceFirst('chance://', '$contentSettingsApiRoot/'));
-			print(response);
 			if (response.data['data'] == null) {
 				throw Exception(response.data['error'] ?? 'Unknown error');
 			}
