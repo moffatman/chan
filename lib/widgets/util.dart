@@ -17,6 +17,7 @@ import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -286,7 +287,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 			host: context.read<Imageboard?>()?.site.baseUrl,
 		);
 	}
-	final webmMatcher = RegExp('https?://${context.read<ImageboardSite>().imageUrl}/([^/]+)/([0-9]+).webm');
+	final webmMatcher = RegExp('https?://${context.read<ImageboardSite?>()?.imageUrl}/([^/]+)/([0-9]+).webm');
 	final match = webmMatcher.firstMatch(url.toString());
 	if (match != null) {
 		final String board = match.group(1)!;
@@ -370,15 +371,20 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 			openInChance();
 		}
 		else {
-			return ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
-				android: AndroidChromeCustomTabsOptions(
-					toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor
-				),
-				ios: IOSSafariOptions(
-					preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
-					preferredControlTintColor: CupertinoTheme.of(context).primaryColor
-				)
-			));
+			try {
+				await ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
+					android: AndroidChromeCustomTabsOptions(
+						toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor
+					),
+					ios: IOSSafariOptions(
+						preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
+						preferredControlTintColor: CupertinoTheme.of(context).primaryColor
+					)
+				));
+			}
+			on PlatformException {
+				await launchUrl(url);
+			}
 		}
 	}
 }
