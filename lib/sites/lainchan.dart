@@ -70,7 +70,7 @@ class SiteLainchan extends ImageboardSite {
 					}
 				}
 				else if (node.localName == 'span') {
-					if (node.classes.contains('quote')) {
+					if (node.classes.contains('quote') || node.classes.contains('unkfunc')) {
 						elements.add(PostQuoteSpan(makeSpan(board, threadId, node.innerHtml)));
 					}
 					else {
