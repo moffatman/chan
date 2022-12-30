@@ -68,7 +68,9 @@ dependencies:
   http_parser: ^4.0.0
   cupertino_icons: ^1.0.0
   firebase_core: ^2.1.1
-  firebase_messaging: ^14.0.3
+  unifiedpush: ^4.0.0
+  flutter_apns_only: ^1.6.0
+  flutter_local_notifications: ^13.0.0
   path_provider: ^2.0.10
   path_provider_ios: ^2.0.11
   async: ^2.9.0

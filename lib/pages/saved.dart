@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
@@ -27,6 +29,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:unifiedpush/unifiedpush.dart';
 
 class _PostThreadCombo {
 	final Imageboard imageboard;
@@ -931,6 +934,64 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 										alertError(context, notificationsError);
 									},
 									child: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red)
+								)
+								else if (Platform.isAndroid && (settings.usePushNotifications ?? false)) CupertinoButton(
+									onPressed: () async {
+										try {
+											final currentDistributor = await UnifiedPush.getDistributor();
+											final distributors = await UnifiedPush.getDistributors();
+											if (!mounted) return;
+											final newDistributor = await showCupertinoDialog<String>(
+												context: context,
+												barrierDismissible: true,
+												builder: (context) => CupertinoAlertDialog(
+													title: const Text('UnifiedPush Distributor'),
+													content: Column(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															const SizedBox(height: 16),
+															const Flexible(
+																child: Text('Select which service will be used to deliver your push notifications.')
+															),
+															CupertinoButton(
+																padding: EdgeInsets.zero,
+																onPressed: () => openBrowser(context, Uri.https('unifiedpush.org', '/users/distributors/')),
+																child: Row(
+																	mainAxisSize: MainAxisSize.min,
+																	children: const [
+																		Text('More info', style: TextStyle(fontSize: 15)),
+																		Icon(CupertinoIcons.chevron_right, size: 15)
+																	]
+																)
+															)
+														]
+													),
+													actions: [
+														...distributors.map((distributor) => CupertinoDialogAction(
+															isDefaultAction: distributor == currentDistributor,
+															onPressed: () => Navigator.pop(context, distributor),
+															child: Text(distributor == 'com.moffatman.chan' ? 'Firebase (requires Google services)' : distributor)
+														)),
+														CupertinoDialogAction(
+															onPressed: () => Navigator.pop(context),
+															child: const Text('Cancel')
+														)
+													]
+												)
+											);
+											if (newDistributor != null) {
+												await Notifications.tryUnifiedPushDistributor(newDistributor);
+											}
+										}
+										catch (e) {
+											alertError(context, e.toStringDio());
+											Notifications.registerUnifiedPush();
+										}
+									},
+									child: const Icon(CupertinoIcons.wrench)
+								),
+								const SizedBox(
+									height: 60
 								),
 								CupertinoSwitch(
 									value: settings.usePushNotifications ?? false,

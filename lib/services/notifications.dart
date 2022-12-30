@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:chan/main.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -11,13 +13,13 @@ import 'package:chan/util.dart';
 import 'package:chan/version.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:chan/firebase_options.dart';
+import 'package:flutter_apns_only/flutter_apns_only.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unifiedpush/unifiedpush.dart';
 
 abstract class PushNotification {
 	final ThreadIdentifier thread;
@@ -45,6 +47,33 @@ class BoardWatchNotification extends PushNotification {
 		required super.postId,
 		required this.filter
 	});
+}
+
+abstract class _NotificationsToken {
+	Map<String, String> toMap();	
+}
+
+class _ApnsNotificationsToken implements _NotificationsToken {
+	final String token;
+	final bool isProduction;
+	const _ApnsNotificationsToken(this.token, this.isProduction);
+
+	@override
+	Map<String, String> toMap() => {
+		'type': isProduction ? 'apns-prod' : 'apns-sandbox',
+		'token': token
+	};
+}
+
+class _UnifiedPushNotificationsToken implements _NotificationsToken {
+	final String endpoint;
+	const _UnifiedPushNotificationsToken(this.endpoint);
+
+	@override
+	Map<String, String> toMap() => {
+		'type': 'up',
+		'endpoint': endpoint
+	};
 }
 
 const _platform = MethodChannel('com.moffatman.chan/notifications');
@@ -121,7 +150,10 @@ class Notifications {
 	String get id => persistence.browserState.notificationsId;
 	List<ThreadWatch> get threadWatches => persistence.browserState.threadWatches;
 	List<BoardWatch> get boardWatches => persistence.browserState.boardWatches;
-	static final Map<String, List<RemoteMessage>> _unrecognizedByUserId = {};
+	static final Map<String, List<Map<String, dynamic>>> _unrecognizedByUserId = {};
+	static ApnsPushConnectorOnly? _apnsConnector;
+	static String? _lastUnifiedPushEndpoint;
+	static final List<Completer<String>> _unifiedPushNewEndpointCompleters = [];
 	static final _client = Dio(BaseOptions(
 		headers: {
 			HttpHeaders.userAgentHeader: 'Chance/$kChanceVersion'
@@ -137,99 +169,243 @@ class Notifications {
 	@override
 	String toString() => 'Notifications(siteType: $siteType, id: $id, tapStream: $tapStream)';
 
-	static void _onMessageOpenedApp(RemoteMessage message) {
-		print('onMessageOpenedApp');
-		print(message.data);
+	static Future<void> _onMessage(Map messageData) async {
+		final data = messageData.cast<String, String>();
+		print('_onMessage');
+		print(data);
+		if (data.containsKey('threadId') && data.containsKey('userId')) {
+			final child = _children[data['userId']];
+			if (child == null) {
+				print('Opened via message with unknown userId: $data');
+				return;
+			}
+			PushNotification notification;
+			if (data['type'] == 'thread') {
+				notification = ThreadWatchNotification(
+					thread: ThreadIdentifier(data['board']!, int.parse(data['threadId']!)),
+					postId: int.tryParse(data['postId'] ?? '')
+				);
+			}
+			else if (data['type'] == 'board') {
+				notification = BoardWatchNotification(
+					thread: ThreadIdentifier(data['board']!, int.parse(data['threadId']!)),
+					postId: int.tryParse(data['postId'] ?? ''),
+					filter: data['filter']!
+				);
+			}
+			else {
+				throw Exception('Unknown notification type ${data['type']}');
+			}
+			await child.localWatcher?.updateThread(notification.thread);
+			if (child.getThreadWatch(notification.thread)?.foregroundMuted != true) {
+				child.foregroundStream.add(notification);
+			}
+		}
+	}
+
+	@pragma('vm:entry-point')
+	static void _onMessageOpenedApp(Map messageData) {
+		final data = messageData.cast<String, String>();
+		print('_onMessageOpenedApp');
+		print(data);
 		Future.delayed(const Duration(seconds: 1), updateNotificationsBadgeCount);
-		final child = _children[message.data['userId']];
+		final child = _children[data['userId']];
 		if (child == null) {
-			print('Opened via message with unknown userId: ${message.data}');
-			_unrecognizedByUserId.update(message.data['userId'], (list) => list..add(message), ifAbsent: () => [message]);
+			print('Opened via message with unknown userId: $data');
+			_unrecognizedByUserId.update(data['userId']!, (list) => list..add(data), ifAbsent: () => [data]);
 			return;
 		}
-		if (message.data['type'] == 'thread' || message.data['type'] == 'board') {
+		if (data['type'] == 'thread' || data['type'] == 'board') {
 			child.tapStream.add(BoardThreadOrPostIdentifier(
-				message.data['board'],
-				int.parse(message.data['threadId']),
-				int.tryParse(message.data['postId'] ?? '')
+				data['board']!,
+				int.parse(data['threadId']!),
+				int.tryParse(data['postId'] ?? '')
 			));
 		}
 	}
 
-	static _onTokenRefresh(String newToken) {
-		print('newToken $newToken');
+	@pragma('vm:entry-point')
+	static Future<void> onNewUnifiedPushEndpoint(String endpoint, String instance) async {
+		_lastUnifiedPushEndpoint = endpoint;
+		for (final completer in _unifiedPushNewEndpointCompleters) {
+			completer.complete(endpoint);
+		}
+		_unifiedPushNewEndpointCompleters.clear();
+		await _reinitializeChildren();
+	}
+
+	@pragma('vm:entry-point')
+	static Future<void> onUnifiedPushUnregistered(String instance) async {
+		_lastUnifiedPushEndpoint = null;
+		_reinitializeChildren();
+	}
+
+	@pragma('vm:entry-point')
+	static Future<void> onUnifiedPushMessage(Uint8List message, String instance) async {
+		final data = json.decode(utf8.decode(message));
+		if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+			_onMessage(data['data']);
+		}
+		else {
+			FlutterLocalNotificationsPlugin().show(
+				int.parse(data['data']['postId']),
+				data['title'],
+				data['body'],
+				const NotificationDetails(
+					android: AndroidNotificationDetails(
+						'up', 'Unified Push',
+						importance: Importance.high,
+						priority: Priority.high
+					)
+				),
+				payload: json.encode(data['data'])
+			);
+		}
+	}
+
+	@pragma('vm:entry-point')
+	static Future<void> onAPNSLaunch(ApnsRemoteMessage message) async {
+		_onMessageOpenedApp(message.payload['data']);
+	}
+
+	@pragma('vm:entry-point')
+	static Future<void> onAPNSMessage(ApnsRemoteMessage message) async {
+		_onMessage(message.payload['data']);
+	}
+
+	@pragma('vm:entry-point')
+	static Future<void> onAPNSResume(ApnsRemoteMessage message) async {
+		_onMessageOpenedApp(message.payload['data']);
+	}
+
+	@pragma('vm:entry-point')
+	static Future<void> _onLocalNotificationTapped(NotificationResponse response) async {
+		_onMessageOpenedApp(json.decode(response.payload!));
+	}
+
+	@pragma('vm:entry-point')
+	static Future<void> _onBackgroundLocalNotificationTapped(NotificationResponse response) async {
+		print('_onBackgroundLocalNotificationTapped(response: $response)');
+	}
+
+	static Future<void> tryUnifiedPushDistributor(String distributor) async {
+		final completer = Completer<String>();
+		_unifiedPushNewEndpointCompleters.add(completer);
+		await UnifiedPush.saveDistributor(distributor);
+		await UnifiedPush.registerApp();
+		await completer.future.timeout(const Duration(milliseconds: 300), onTimeout: () async {
+			await UnifiedPush.unregister();
+			throw TimeoutException('Distributor did not provide an endpoint');
+		});
+	}
+
+	static Future<void> registerUnifiedPush() async {
+		if ((await UnifiedPush.getDistributor()).isNotEmpty) {
+			return;
+		}
+		final distributors = await UnifiedPush.getDistributors();
+		if (distributors.length == 1) {
+			await UnifiedPush.saveDistributor(distributors.single);
+		}
+		for (final distributor in distributors) {
+			try {
+				await tryUnifiedPushDistributor(distributor);
+				return;
+			}
+			on TimeoutException {
+				print('UnifiedPush timed out waiting for $distributor endpoint');
+			}
+		}
 	}
 
 	static Future<void> initializeStatic() async {
 		try {
-			await Firebase.initializeApp(
-				options: DefaultFirebaseOptions.currentPlatform,
-			);
-			FirebaseMessaging messaging = FirebaseMessaging.instance;
-			messaging.onTokenRefresh.listen(_onTokenRefresh);
-			//print('Token: ${await messaging.getToken()}');
-			if (Persistence.settings.usePushNotifications == true) {
-				await messaging.requestPermission();
-			}
-			final initialMessage = await messaging.getInitialMessage();
-			if (initialMessage != null) {
-				_onMessageOpenedApp(initialMessage);
-			}
-			FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-				if (message.data.containsKey('threadId') && message.data.containsKey('userId')) {
-					final child = _children[message.data['userId']];
-					if (child == null) {
-						print('Opened via message with unknown userId: ${message.data}');
-						return;
-					}
-					PushNotification notification;
-					if (message.data['type'] == 'thread') {
-						notification = ThreadWatchNotification(
-							thread: ThreadIdentifier(message.data['board'], int.parse(message.data['threadId'])),
-							postId: int.tryParse(message.data['postId'] ?? '')
-						);
-					}
-					else if (message.data['type'] == 'board') {
-						notification = BoardWatchNotification(
-							thread: ThreadIdentifier(message.data['board'], int.parse(message.data['threadId'])),
-							postId: int.tryParse(message.data['postId'] ?? ''),
-							filter: message.data['filter']
-						);
-					}
-					else {
-						throw Exception('Unknown notification type ${message.data['type']}');
-					}
-					await child.localWatcher?.updateThread(notification.thread);
-					if (child.getThreadWatch(notification.thread)?.foregroundMuted != true) {
-						child.foregroundStream.add(notification);
-					}
-				}
-			});
-			FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
 			staticError = null;
 			settings.filterListenable.addListener(_didUpdateFilter);
+			if (Platform.isAndroid) {
+				await FlutterLocalNotificationsPlugin().initialize(
+					const InitializationSettings(
+						android: AndroidInitializationSettings('@drawable/ic_stat_clover')
+					),
+					onDidReceiveNotificationResponse: _onLocalNotificationTapped,
+					onDidReceiveBackgroundNotificationResponse: _onBackgroundLocalNotificationTapped
+				);
+				await UnifiedPush.initialize(
+					onNewEndpoint: onNewUnifiedPushEndpoint,
+					onUnregistered: onUnifiedPushUnregistered,
+					onMessage: onUnifiedPushMessage
+				);
+				if (Persistence.settings.usePushNotifications ?? false) {
+					await registerUnifiedPush();
+				}
+				final initial = await FlutterLocalNotificationsPlugin().getNotificationAppLaunchDetails();
+				if (initial?.didNotificationLaunchApp ?? false) {
+					_onMessageOpenedApp(json.decode(initial!.notificationResponse!.payload!));
+				}
+			}
+			else if (Platform.isIOS || Platform.isMacOS) {
+				_apnsConnector = ApnsPushConnectorOnly();
+				_apnsConnector!.configureApns(
+					onLaunch: onAPNSLaunch,
+					onMessage: onAPNSMessage,
+					onResume: onAPNSResume,
+				);
+				if (Persistence.settings.usePushNotifications == true) {
+					await _apnsConnector!.requestNotificationPermissions();
+				}
+			}
 		}
-		catch (e) {
+		catch (e, st) {
 			print('Error initializing notifications: $e');
+			print(st);
 			staticError = e.toStringDio();
 		}
 	}
 
 	static Future<void> didUpdateUsePushNotificationsSetting() async {
 		if (Persistence.settings.usePushNotifications == true) {
-			await FirebaseMessaging.instance.requestPermission();
+			if (Platform.isIOS || Platform.isMacOS) {
+				await _apnsConnector?.requestNotificationPermissions();
+			}
+			else if (Platform.isAndroid) {
+				await registerUnifiedPush();
+			}
 		}
-		await Future.wait(_children.values.map((c) => c.initialize()));
+		else if (Persistence.settings.usePushNotifications == false) {
+			if (Platform.isIOS || Platform.isMacOS) {
+				await _apnsConnector?.unregister();
+			}
+			else if (Platform.isAndroid) {
+				await UnifiedPush.unregister();
+			}
+		}
+		await _reinitializeChildren();
 	}
 
 	static Future<void> _didUpdateFilter() async {
 		if (Persistence.settings.usePushNotifications == true) {
-			await Future.wait(_children.values.map((c) => c.initialize()));
+			await _reinitializeChildren();
 		}
 	}
 
-	static Future<String?> getToken() {
-		return FirebaseMessaging.instance.getToken();
+	static Future<void> _reinitializeChildren() async {
+		await Future.wait(_children.values.map((c) => c.initialize()));
+	}
+
+	static Future<_NotificationsToken?> _getToken() async {
+		if (Platform.isAndroid) {
+			final endpoint = _lastUnifiedPushEndpoint;
+			if (endpoint != null) {
+				return _UnifiedPushNotificationsToken(endpoint);
+			}
+		}
+		else if (Platform.isIOS || Platform.isMacOS) {
+			final token = _apnsConnector?.token.value;
+			if (token != null) {
+				return _ApnsNotificationsToken(token, !isDevelopmentBuild);
+			}
+		}
+		return null;
 	}
 
 	String _calculateDigest() {
@@ -243,7 +419,7 @@ class Notifications {
 
 	Future<void> deleteAllNotificationsFromServer() async {
 		final response = await _client.patch('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
-			'token': await Notifications.getToken(),
+			'token2': (await _getToken())?.toMap(),
 			'siteType': siteType,
 			'siteData': siteData,
 			'filters': ''
@@ -263,7 +439,7 @@ class Notifications {
 		try {
 			if (Persistence.settings.usePushNotifications == true) {
 				final response = await _client.patch('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
-					'token': await Notifications.getToken(),
+					'token2': (await _getToken())?.toMap(),
 					'siteType': siteType,
 					'siteData': siteData,
 					'filters': settings.filterConfiguration

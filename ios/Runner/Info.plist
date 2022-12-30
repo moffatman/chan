@@ -101,5 +101,9 @@
 		<true/>
 		<key>FirebaseCrashlyticsCollectionEnabled</key>
 		<false/>
+		<key>flutter_apns.disable_firebase_core</key>
+		<false/>
+		<key>flutter_apns.disable_swizzling</key>
+		<true/>
 	</dict>
 </plist>

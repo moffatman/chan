@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:chan/firebase_options.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/history.dart';
@@ -35,6 +36,7 @@ import 'package:chan/widgets/tab_switching_view.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -66,11 +68,14 @@ void main() async {
 			final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
 			imageHttpClient.connectionTimeout = const Duration(seconds: 10);
 			imageHttpClient.idleTimeout = const Duration(seconds: 10);
-			await Persistence.initializeStatic();
-			await Notifications.initializeStatic();
 			if (Platform.isAndroid || Platform.isIOS) {
+				await Firebase.initializeApp(
+					options: DefaultFirebaseOptions.currentPlatform
+				);
 				FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
 			}
+			await Persistence.initializeStatic();
+			await Notifications.initializeStatic();
 			runApp(const ChanApp());
 		}
 		catch (e, st) {
