@@ -100,31 +100,32 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 				);
 				break;
 		}
+		final actions = widget.actions.map((action) => CupertinoButton(
+			onPressed: () {
+				action.onPressed();
+				onDone();
+			},
+			child: FittedBox(
+				child: Column(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						Icon(action.icon, color: action.isDestructiveAction ? Colors.red : null),
+						const SizedBox(height: 4),
+						Flexible(
+							child: Text(action.title, overflow: TextOverflow.visible, style: const TextStyle(fontSize: 15))
+						)
+					]
+				)
+			)
+		)).toList();
 		final menu = Container(
 			decoration: BoxDecoration(
 				color: CupertinoTheme.of(context).barBackgroundColor,
 				borderRadius: borderRadius
 			),
 			child: Flex(
-				direction: widget.direction == AxisDirection.down || widget.direction == AxisDirection.up ? Axis.vertical : Axis.horizontal,
-				children: widget.actions.map((action) => CupertinoButton(
-					onPressed: () {
-						action.onPressed();
-						onDone();
-					},
-					child: FittedBox(
-						child: Column(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								Icon(action.icon, color: action.isDestructiveAction ? Colors.red : null),
-								const SizedBox(height: 4),
-								Flexible(
-									child: Text(action.title, overflow: TextOverflow.visible, style: const TextStyle(fontSize: 15))
-								)
-							]
-						)
-					)
-				)).toList()
+				direction: axisDirectionToAxis(widget.direction),
+				children: axisDirectionIsReversed(widget.direction) ? actions.reversed.toList() : actions
 			)
 		);
 		return IgnorePointer(
