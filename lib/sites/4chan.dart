@@ -149,7 +149,7 @@ class Site4Chan extends ImageboardSite {
 						final parts = node.attributes['href']!.split('/');
 						final catalogSearchMatch = RegExp(r'^catalog#s=(.+)$').firstMatch(parts.last);
 						if (catalogSearchMatch != null) {
-							elements.add(PostCatalogSearchSpan(board: board, query: catalogSearchMatch.group(1)!));
+							elements.add(PostCatalogSearchSpan(board: parts[parts.length - 2], query: catalogSearchMatch.group(1)!));
 						}
 						else {
 							elements.add(PostBoardLink(parts[parts.length - 2]));
