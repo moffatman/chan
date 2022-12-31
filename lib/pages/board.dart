@@ -116,7 +116,14 @@ class _BoardPageState extends State<BoardPage> {
 		if (board == null) {
 			Future.delayed(const Duration(milliseconds: 100), _selectBoard);
 		}
-		final ThreadIdentifier? selectedThread = context.read<MasterDetailHint?>()?.currentValue;
+		ThreadIdentifier? selectedThread;
+		dynamic possibleThread = context.read<MasterDetailHint?>()?.currentValue;
+		if (possibleThread is ThreadIdentifier) {
+			selectedThread = possibleThread;
+		}
+		else if (possibleThread is ImageboardScoped<ThreadIdentifier>) {
+			selectedThread = possibleThread.item;
+		}
 		if (selectedThread != null) {
 			_lastSelectedThread = selectedThread;
 			_loadCompleter = Completer<void>()
@@ -380,8 +387,11 @@ class _BoardPageState extends State<BoardPage> {
 	@override
 	Widget build(BuildContext context) {
 		final selectedThread = context.watch<MasterDetailHint?>()?.currentValue;
-		if (selectedThread != null) {
+		if (selectedThread is ThreadIdentifier) {
 			_lastSelectedThread = selectedThread;
+		}
+		else if (selectedThread is ImageboardScoped<ThreadIdentifier>) {
+			_lastSelectedThread = selectedThread.item;
 		}
 		final imageboard = context.watch<Imageboard?>();
 		final site = context.watch<ImageboardSite?>();
