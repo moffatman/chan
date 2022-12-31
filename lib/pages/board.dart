@@ -124,7 +124,7 @@ class _BoardPageState extends State<BoardPage> {
 					try {
 						await _listController.animateTo((t) => t.identifier == selectedThread, alignment: 1.0);
 					}
-					on StateError {
+					on ItemNotFoundException {
 						// Ignore, the thread must not be in catalog
 					}
 					_loadCompleter = null;
