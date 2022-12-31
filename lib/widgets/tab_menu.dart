@@ -11,12 +11,14 @@ class TabMenuAction {
 	final String title;
 	final VoidCallback onPressed;
 	final bool isDestructiveAction;
+	final bool disabled;
 
 	const TabMenuAction({
 		required this.icon,
 		required this.title,
 		required this.onPressed,
-		this.isDestructiveAction = false
+		this.isDestructiveAction = false,
+		this.disabled = false
 	});
 }
 
@@ -102,14 +104,14 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 		}
 		final actions = widget.actions.map((action) => CupertinoButton(
 			padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-			onPressed: () {
+			onPressed: action.disabled ? null : () {
 				action.onPressed();
 				onDone();
 			},
 			child: Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					Icon(action.icon, color: action.isDestructiveAction ? Colors.red : null),
+					Icon(action.icon, color: !action.disabled && action.isDestructiveAction ? Colors.red : null),
 					if (axisDirectionToAxis(widget.direction) == Axis.horizontal) ...[
 						const SizedBox(height: 4),
 						Flexible(

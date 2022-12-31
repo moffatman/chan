@@ -1038,48 +1038,50 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					lightHapticFeedback();
 					if (index <= 0) {
 						if (activeBrowserTab.value == -1 * index && _tabController.index == 0) {
-							if (Persistence.tabs.length > 1) {
-								final ro = context.findRenderObject()! as RenderBox;
-								showTabMenu(
-									context: context,
-									direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
-									origin: Rect.fromPoints(
-										ro.localToGlobal(ro.semanticBounds.topLeft),
-										ro.localToGlobal(ro.semanticBounds.bottomRight)
+							final ro = context.findRenderObject()! as RenderBox;
+							showTabMenu(
+								context: context,
+								direction: axis == Axis.horizontal ? AxisDirection.up : AxisDirection.right,
+								origin: Rect.fromPoints(
+									ro.localToGlobal(ro.semanticBounds.topLeft),
+									ro.localToGlobal(ro.semanticBounds.bottomRight)
+								),
+								actions: [
+									TabMenuAction(
+										icon: CupertinoIcons.xmark,
+										title: 'Close',
+										isDestructiveAction: true,
+										disabled: Persistence.tabs.length == 1,
+										onPressed: () {
+											Persistence.tabs.removeAt(-1 * index);
+											browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
+											final newActiveTabIndex = min(activeBrowserTab.value, Persistence.tabs.length - 1);
+											activeBrowserTab.value = newActiveTabIndex;
+											Persistence.currentTabIndex = newActiveTabIndex;
+											_didUpdateTabs();
+											setState(() {});
+										}
 									),
-									actions: [
-										TabMenuAction(
-											icon: CupertinoIcons.xmark,
-											title: 'Close',
-											isDestructiveAction: true,
-											onPressed: () {
-												Persistence.tabs.removeAt(-1 * index);
-												browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
-												final newActiveTabIndex = min(activeBrowserTab.value, Persistence.tabs.length - 1);
-												activeBrowserTab.value = newActiveTabIndex;
-												Persistence.currentTabIndex = newActiveTabIndex;
-												_didUpdateTabs();
-												setState(() {});
-											}
-										),
-										TabMenuAction(
-											icon: CupertinoIcons.doc_on_doc,
-											title: 'Clone',
-											onPressed: () {
-												_addNewTab(
-													withImageboardKey: Persistence.tabs[-1 * index].imageboardKey,
-													atPosition: (-1 * index) + 1,
-													withBoard: Persistence.tabs[-1 * index].board?.name,
-													withThread: Persistence.tabs[-1 * index].thread,
-													incognito: Persistence.tabs[-1 * index].incognito
-												);
-												_didUpdateTabs();
-												setState(() {});
-											}
-										)
-									]
-								);
-							}
+									TabMenuAction(
+										icon: CupertinoIcons.doc_on_doc,
+										title: 'Clone',
+										onPressed: () {
+											final i = -1 * index;
+											_addNewTab(
+												withImageboardKey: Persistence.tabs[i].imageboardKey,
+												atPosition: i + 1,
+												withBoard: Persistence.tabs[i].board?.name,
+												withThread: Persistence.tabs[i].thread,
+												incognito: Persistence.tabs[i].incognito
+											);
+											activeBrowserTab.value = i + 1;
+											Persistence.currentTabIndex = i + 1;
+											_didUpdateTabs();
+											setState(() {});
+										}
+									)
+								]
+							);
 						}
 						else {
 							activeBrowserTab.value = -1 * index;
