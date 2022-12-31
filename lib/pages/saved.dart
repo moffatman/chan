@@ -934,8 +934,8 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 										alertError(context, notificationsError);
 									},
 									child: const Icon(CupertinoIcons.exclamationmark_triangle, color: Colors.red)
-								)
-								else if (Platform.isAndroid && (settings.usePushNotifications ?? false)) CupertinoButton(
+								),
+								if (Platform.isAndroid && (settings.usePushNotifications ?? false)) CupertinoButton(
 									onPressed: () async {
 										try {
 											final currentDistributor = await UnifiedPush.getDistributor();
