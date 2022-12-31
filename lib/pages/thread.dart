@@ -85,6 +85,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	int lastHiddenPosterIdsLength = 0;
 	bool? lastUseTree;
 	bool _foreground = false;
+	PersistentBrowserTab? _parentTab;
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -287,6 +288,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	void didChangeDependencies() {
 		super.didChangeDependencies();
 		_checkForeground();
+		_parentTab = context.watch<PersistentBrowserTab?>();
 		setHandoffUrl(_foreground ? context.read<ImageboardSite>().getWebUrl(widget.thread.board, widget.thread.id) : null);
 	}
 
@@ -919,6 +921,9 @@ class _ThreadPageState extends State<ThreadPage> {
 		super.dispose();
 		_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
 		_listController.dispose();
+		if (_parentTab?.threadController == _listController) {
+			_parentTab?.threadController = null;
+		}
 		if (_saveQueued) {
 			persistentState.save();
 		}

@@ -30,6 +30,7 @@ import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/notifications_overlay.dart';
 import 'package:chan/widgets/notifying_icon.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/saved_theme_thumbnail.dart';
 import 'package:chan/widgets/tab_menu.dart';
 import 'package:chan/widgets/tab_switching_view.dart';
@@ -335,6 +336,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _tabListController = ScrollController();
 	StreamSubscription<BoardThreadOrPostIdentifier>? _devNotificationsSubscription;
 	Imageboard? devImageboard;
+	final devTab = PersistentBrowserTab();
 	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
 	final _tabletWillPopZones = <int, WillPopZone>{};
 	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
@@ -376,25 +378,37 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	void _onDevNotificationTapped(BoardThreadOrPostIdentifier id) async {
 		_tabController.index = 4;
 		_lastIndex = 4;
-		final settings = context.read<EffectiveSettings>();
-		for (int i = 0; i < 200 && _settingsNavigatorKey.currentState == null; i++) {
-			await Future.delayed(const Duration(milliseconds: 50));
-		}
-		_settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
-		_settingsNavigatorKey.currentState?.push(
-			FullWidthCupertinoPageRoute(
-				builder: (context) => ThreadPage(
-					thread: id.threadIdentifier!,
-					initialPostId: id.postId,
-					boardSemanticId: -1
-				),
-				showAnimations: settings.showAnimations
-			)
-		);
 		if (showTabPopup) {
 			setState(() {
 				showTabPopup = false;
 			});
+		}
+		final settings = context.read<EffectiveSettings>();
+		for (int i = 0; i < 200 && _settingsNavigatorKey.currentState == null; i++) {
+			await Future.delayed(const Duration(milliseconds: 50));
+		}
+		if (devTab.threadController?.items.tryFirst?.item.threadIdentifier != id.threadIdentifier) {
+			_settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
+			_settingsNavigatorKey.currentState?.push(
+				FullWidthCupertinoPageRoute(
+					builder: (context) => ThreadPage(
+						thread: id.threadIdentifier!,
+						initialPostId: id.postId,
+						boardSemanticId: -1
+					),
+					showAnimations: settings.showAnimations
+				)
+			);
+		}
+		else if (id.postId != null) {
+			try {
+				await devTab.threadController?.animateTo((p) => p.id == id.postId);
+			}
+			on ItemNotFoundException {
+				await devTab.threadController?.update();
+				await Future.delayed(const Duration(milliseconds: 100));
+				await devTab.threadController?.animateTo((p) => p.id == id.postId, orElseLast: (p) => true);
+			}
 		}
 	}
 
@@ -954,7 +968,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								Provider.value(value: devImageboard!.site),
 								ChangeNotifierProvider.value(value: devImageboard!.persistence),
 								ChangeNotifierProvider.value(value: devImageboard!.threadWatcher),
-								Provider.value(value: devImageboard!.notifications)
+								Provider.value(value: devImageboard!.notifications),
+								ChangeNotifierProvider.value(value: devTab)
 							],
 							child: ClipRect(
 								child: PrimaryScrollControllerInjectingNavigator(

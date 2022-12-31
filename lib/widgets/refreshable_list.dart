@@ -19,6 +19,13 @@ import 'package:tuple/tuple.dart';
 
 const double _overscrollTriggerThreshold = 100;
 
+class ItemNotFoundException implements Exception {
+	final String message;
+	const ItemNotFoundException(this.message);
+	@override
+	String toString() => 'Item not found: $message';
+}
+
 class FilterAlternative {
 	final String name;
 	final void Function(String) handler;
@@ -1450,7 +1457,7 @@ class RefreshableListController<T extends Object> {
 				targetIndex = _items.lastIndexWhere((i) => orElseLast(i.item.item));
 			}
 			if (targetIndex == -1) {
-				throw StateError('No matching item to scroll to');
+				throw const ItemNotFoundException('No matching item to scroll to');
 			}
 		}
 		await _animateToIndex(targetIndex, alignment: alignment, duration: duration);
