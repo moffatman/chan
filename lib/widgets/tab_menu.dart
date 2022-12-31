@@ -101,21 +101,22 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 				break;
 		}
 		final actions = widget.actions.map((action) => CupertinoButton(
+			padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
 			onPressed: () {
 				action.onPressed();
 				onDone();
 			},
-			child: FittedBox(
-				child: Column(
-					mainAxisSize: MainAxisSize.min,
-					children: [
-						Icon(action.icon, color: action.isDestructiveAction ? Colors.red : null),
+			child: Column(
+				mainAxisSize: MainAxisSize.min,
+				children: [
+					Icon(action.icon, color: action.isDestructiveAction ? Colors.red : null),
+					if (axisDirectionToAxis(widget.direction) == Axis.horizontal) ...[
 						const SizedBox(height: 4),
 						Flexible(
 							child: Text(action.title, overflow: TextOverflow.visible, style: const TextStyle(fontSize: 15))
 						)
 					]
-				)
+				]
 			)
 		)).toList();
 		final menu = Container(
