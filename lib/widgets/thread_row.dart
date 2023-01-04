@@ -126,7 +126,7 @@ class ThreadRow extends StatelessWidget {
 								]
 							)
 						),
-						if (site.isReddit) FittedBox(
+						if (site.isReddit || site.isHackerNews) FittedBox(
 							fit: BoxFit.contain,
 								child: Row(
 								mainAxisSize: MainAxisSize.min,
@@ -234,7 +234,7 @@ class ThreadRow extends StatelessWidget {
 				)
 			),
 			if (showBoardName || (settings.showIdInCatalogHeader && site.explicitIds)) TextSpan(
-				text: showBoardName ?
+				text: (site.supportsMultipleBoards && showBoardName) ?
 					'/${latestThread.board}/${latestThread.id} ' :
 					'${latestThread.id} ',
 				style: TextStyle(

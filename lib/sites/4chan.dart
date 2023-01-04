@@ -849,7 +849,7 @@ class Site4Chan extends ImageboardSite {
 	}
 	
 	@override
-	BoardThreadOrPostIdentifier? decodeUrl(String url) {
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
 		if (baseUrl.contains('chan')) {
 			return _decodeUrl(baseUrl, url) ?? _decodeUrl(baseUrl.replaceFirst('chan', 'channel'), url);
 		}

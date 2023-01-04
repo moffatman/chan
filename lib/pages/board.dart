@@ -105,7 +105,15 @@ class _BoardPageState extends State<BoardPage> {
 	DateTime? _lastCatalogUpdateTime;
 
 	CatalogVariant? get _defaultBoardVariant => context.read<Persistence?>()?.browserState.catalogVariants[board?.name];
-	CatalogVariant get _defaultGlobalVariant => ((context.read<ImageboardSite?>()?.isReddit ?? false) ? context.read<EffectiveSettings>().redditCatalogVariant : context.read<EffectiveSettings>().catalogVariant);
+	CatalogVariant get _defaultGlobalVariant {
+		if (context.read<ImageboardSite?>()?.isReddit ?? false) {
+			return context.read<EffectiveSettings>().redditCatalogVariant;
+		}
+		if (context.read<ImageboardSite?>()?.isHackerNews ?? false) {
+			return context.read<EffectiveSettings>().hackerNewsCatalogVariant;
+		}
+		return context.read<EffectiveSettings>().catalogVariant;
+	}
 
 	@override
 	void initState() {
@@ -203,7 +211,7 @@ class _BoardPageState extends State<BoardPage> {
 		builder: (context) => CupertinoActionSheet(
 			title: Text(variant.name),
 			actions: [
-				CupertinoActionSheetAction(
+				if (context.read<ImageboardSite>().supportsMultipleBoards) CupertinoActionSheetAction(
 					child: Row(
 						children: [
 							const SizedBox(width: 40),
@@ -544,8 +552,11 @@ class _BoardPageState extends State<BoardPage> {
 									),
 									const Text(' ')
 								],
-								if (board != null) Text('/${board!.name}/')
-								else const Text('Select Board')
+								if (imageboard.site.supportsMultipleBoards) ...[
+									if (board != null) Text('/${board!.name}/')
+									else const Text('Select Board')
+								]
+								else Text(imageboard.site.name)
 							]
 							else const Text('Select Imageboard'),
 							if (widget.allowChangingBoard) const Icon(Icons.arrow_drop_down)
@@ -624,6 +635,9 @@ class _BoardPageState extends State<BoardPage> {
 									case _ThreadSortingMethodScope.global:
 										if (site?.isReddit ?? false) {
 											settings.redditCatalogVariant = choice.item1!;
+										}
+										else if (site?.isHackerNews ?? false) {
+											settings.hackerNewsCatalogVariant = choice.item1!;
 										}
 										else {
 											settings.catalogVariant = choice.item1!;

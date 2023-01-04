@@ -281,7 +281,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 	}
 
 	@override
-	BoardThreadOrPostIdentifier? decodeUrl(String url) {
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
 		final pattern = RegExp(r'https?:\/\/' + baseUrl + r'\/([^\/]+)\/thread\/(\d+)(#p(\d+))?');
 		final match = pattern.firstMatch(url);
 		if (match != null) {

@@ -593,23 +593,24 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 		else {
 			for (final imageboard in ImageboardRegistry.instance.imageboards) {
-				BoardThreadOrPostIdentifier? dest = imageboard.site.decodeUrl(link);
+				BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(link);
 				for (final archive in imageboard.site.archives) {
 					if (dest != null) {
 						break;
 					}
-					dest = archive.decodeUrl(link);
+					dest = await archive.decodeUrl(link);
 				}
 				if (dest != null) {
 					_onNotificationTapped(imageboard, dest);
 					return;
 				}
 			}
-			final dest = devImageboard?.site.decodeUrl(link);
+			final dest = await devImageboard?.site.decodeUrl(link);
 			if (dest != null) {
 				_onDevNotificationTapped(dest);
 				return;
 			}
+			if (!mounted) return;
 			final open = await showCupertinoDialog<bool>(
 				context: context,
 				barrierDismissible: true,
@@ -1309,7 +1310,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					return _buildTabletIcon(
 						i * -1,
 						icon,
-						Persistence.tabs[i].board != null ? '/${Persistence.tabs[i].board?.name}/' : (Persistence.tabs[i].imageboardKey ?? 'None'),
+						((Persistence.tabs[i].imageboard?.site.supportsMultipleBoards ?? false) && Persistence.tabs[i].board != null) ? '/${Persistence.tabs[i].board?.name}/' : (Persistence.tabs[i].imageboard?.site.name ?? Persistence.tabs[i].imageboardKey ?? 'None'),
 						reorderable: false,
 						axis: axis,
 						preLabelInjection: injectIcon ? AnimatedBuilder(

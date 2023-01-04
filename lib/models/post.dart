@@ -5,6 +5,7 @@ import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/futaba.dart';
 import 'package:chan/sites/fuuka.dart';
+import 'package:chan/sites/hacker_news.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/reddit.dart';
 import 'package:flutter/foundation.dart';
@@ -29,7 +30,9 @@ enum PostSpanFormat {
 	@HiveField(4)
 	futaba,
 	@HiveField(5)
-	reddit
+	reddit,
+	@HiveField(6)
+	hackerNews
 }
 
 class Post implements Filterable {
@@ -61,6 +64,8 @@ class Post implements Filterable {
 				return SiteFutaba.makeSpan(board, threadId, text);
 			case PostSpanFormat.reddit:
 				return SiteReddit.makeSpan(board, threadId, text);
+			case PostSpanFormat.hackerNews:
+				return SiteHackerNews.makeSpan(text);
 		}
 	}
 	PostNodeSpan get span {

@@ -133,7 +133,7 @@ class WrappedArchive extends ImageboardSite {
   String get siteData => '';
   
   @override
-  BoardThreadOrPostIdentifier? decodeUrl(String url) => null;
+  Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => null;
 
   @override
   Uri get iconUrl => Uri.https('google.com', '/favicon.ico');

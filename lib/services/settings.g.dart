@@ -216,13 +216,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       catalogVariant: fields[97] as CatalogVariant?,
       redditCatalogVariant: fields[98] as CatalogVariant?,
       dimReadThreads: fields[99] as bool?,
+      hackerNewsCatalogVariant: fields[100] as CatalogVariant?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(96)
+      ..writeByte(97)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -414,7 +415,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(98)
       ..write(obj.redditCatalogVariant)
       ..writeByte(99)
-      ..write(obj.dimReadThreads);
+      ..write(obj.dimReadThreads)
+      ..writeByte(100)
+      ..write(obj.hackerNewsCatalogVariant);
   }
 
   @override

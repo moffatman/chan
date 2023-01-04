@@ -438,11 +438,19 @@ class _ThreadPageState extends State<ThreadPage> {
 			title = '(Archived) $title';
 		}
 		final site = context.watch<ImageboardSite>();
+		if (!site.supportsMultipleBoards) {
+			if (persistentState.thread?.title != null) {
+				title = context.read<EffectiveSettings>().filterProfanity(persistentState.thread!.title!);
+			}
+			else {
+				title = widget.thread.id.toString();
+			}
+		}
 		final notifications = context.watch<Notifications>();
 		final watch = context.select<Persistence, ThreadWatch?>((_) => notifications.getThreadWatch(widget.thread));
 		final reverseIndicatorPosition = context.select<EffectiveSettings, bool>((s) => s.showListPositionIndicatorsOnLeft);
 		zone.postSortingMethods = [
-			if (site.isReddit && !useTree) (a, b) => a.id.compareTo(b.id)
+			if ((site.isReddit || site.isHackerNews) && !useTree) (a, b) => a.id.compareTo(b.id)
 		];
 		zone.tree = useTree;
 		return WillPopScope(
@@ -764,7 +772,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																				}
 																			)
 																		},
-																		listExtender: (persistentState.thread?.isSticky == true && !site.isReddit) ? (Post after) async {
+																		listExtender: (persistentState.thread?.isSticky == true && !site.isReddit && !site.isHackerNews) ? (Post after) async {
 																			return (await _getUpdatedThread()).posts.where((p) => p.id > after.id).toList();
 																		} : null,
 																		listUpdater: () async {

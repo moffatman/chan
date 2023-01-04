@@ -17,6 +17,7 @@ import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/frenschan.dart';
 import 'package:chan/sites/futaba.dart';
 import 'package:chan/sites/fuuka.dart';
+import 'package:chan/sites/hacker_news.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/lainchan_org.dart';
 import 'package:chan/sites/reddit.dart';
@@ -190,7 +191,19 @@ enum CatalogVariant {
 	@HiveField(32)
 	redditTopAllTime,
 	@HiveField(33)
-	chan4NativeArchive
+	chan4NativeArchive,
+	@HiveField(34)
+	hackerNewsTop,
+	@HiveField(35)
+	hackerNewsNew,
+	@HiveField(36)
+	hackerNewsBest,
+	@HiveField(37)
+	hackerNewsAsk,
+	@HiveField(38)
+	hackerNewsShow,
+	@HiveField(39)
+	hackerNewsJobs
 }
 
 extension CatalogVariantMetadata on CatalogVariant {
@@ -276,7 +289,13 @@ extension CatalogVariantMetadata on CatalogVariant {
 		CatalogVariant.redditTopPastMonth: CupertinoIcons.arrow_up,
 		CatalogVariant.redditTopPastYear: CupertinoIcons.arrow_up,
 		CatalogVariant.redditTopAllTime: CupertinoIcons.arrow_up,
-		CatalogVariant.chan4NativeArchive: CupertinoIcons.archivebox
+		CatalogVariant.chan4NativeArchive: CupertinoIcons.archivebox,
+		CatalogVariant.hackerNewsTop: CupertinoIcons.arrow_up,
+		CatalogVariant.hackerNewsNew: CupertinoIcons.clock,
+		CatalogVariant.hackerNewsBest: CupertinoIcons.star,
+		CatalogVariant.hackerNewsAsk: CupertinoIcons.chat_bubble_2,
+		CatalogVariant.hackerNewsShow: CupertinoIcons.chart_bar_square,
+		CatalogVariant.hackerNewsJobs: CupertinoIcons.briefcase
 	}[this];
 	String get name => const {
 		CatalogVariant.unsorted: 'Bump order',
@@ -312,7 +331,13 @@ extension CatalogVariantMetadata on CatalogVariant {
 		CatalogVariant.redditTopPastMonth: 'Month',
 		CatalogVariant.redditTopPastYear: 'Year',
 		CatalogVariant.redditTopAllTime: 'All time',
-		CatalogVariant.chan4NativeArchive: 'Archive'
+		CatalogVariant.chan4NativeArchive: 'Archive',
+		CatalogVariant.hackerNewsTop: 'Top',
+		CatalogVariant.hackerNewsNew: 'New',
+		CatalogVariant.hackerNewsBest: 'Best',
+		CatalogVariant.hackerNewsAsk: 'Ask HN',
+		CatalogVariant.hackerNewsShow: 'Show HN',
+		CatalogVariant.hackerNewsJobs: 'Jobs'
 	}[this]!;
 	bool get countsUnreliable {
 		switch (this) {
@@ -651,7 +676,7 @@ abstract class ImageboardSiteArchive {
 	Future<List<ImageboardBoard>> getBoards();
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult});
 	String getWebUrl(String board, [int? threadId, int? postId]);
-	BoardThreadOrPostIdentifier? decodeUrl(String url);
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url);
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
@@ -821,7 +846,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	/// If an empty list is returned from here, the bottom of the catalog has been reached.
 	Future<List<Thread>> getMoreCatalog(Thread after) async => [];
 	bool get hasOmittedReplies => false;
+	bool get isHackerNews => false;
 	bool get isReddit => false;
+	bool get supportsMultipleBoards => true;
 	bool get supportsSearchOptions => true;
 	bool get supportsPushNotifications => false;
 	List<CatalogVariantGroup> get catalogVariantGroups => const [
@@ -900,6 +927,9 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == 'reddit') {
 		return SiteReddit();
+	}
+	else if (data['type'] == 'hackernews') {
+		return SiteHackerNews();
 	}
 	else if (data['type'] == '4chan') {
 		return Site4Chan(

@@ -81,6 +81,18 @@ class CatalogVariantAdapter extends TypeAdapter<CatalogVariant> {
         return CatalogVariant.redditTopAllTime;
       case 33:
         return CatalogVariant.chan4NativeArchive;
+      case 34:
+        return CatalogVariant.hackerNewsTop;
+      case 35:
+        return CatalogVariant.hackerNewsNew;
+      case 36:
+        return CatalogVariant.hackerNewsBest;
+      case 37:
+        return CatalogVariant.hackerNewsAsk;
+      case 38:
+        return CatalogVariant.hackerNewsShow;
+      case 39:
+        return CatalogVariant.hackerNewsJobs;
       default:
         return CatalogVariant.unsorted;
     }
@@ -190,6 +202,24 @@ class CatalogVariantAdapter extends TypeAdapter<CatalogVariant> {
         break;
       case CatalogVariant.chan4NativeArchive:
         writer.writeByte(33);
+        break;
+      case CatalogVariant.hackerNewsTop:
+        writer.writeByte(34);
+        break;
+      case CatalogVariant.hackerNewsNew:
+        writer.writeByte(35);
+        break;
+      case CatalogVariant.hackerNewsBest:
+        writer.writeByte(36);
+        break;
+      case CatalogVariant.hackerNewsAsk:
+        writer.writeByte(37);
+        break;
+      case CatalogVariant.hackerNewsShow:
+        writer.writeByte(38);
+        break;
+      case CatalogVariant.hackerNewsJobs:
+        writer.writeByte(39);
         break;
     }
   }

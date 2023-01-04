@@ -526,7 +526,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 	
 	@override
-	BoardThreadOrPostIdentifier? decodeUrl(String url) => decodeGenericUrl(baseUrl, url);
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => decodeGenericUrl(baseUrl, url);
 
 	@override
 	bool operator ==(Object other) => (other is SiteLainchan) && (other.name == name) && (other.baseUrl == baseUrl);

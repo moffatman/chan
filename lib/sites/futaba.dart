@@ -139,7 +139,7 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	BoardThreadOrPostIdentifier? decodeUrl(String url) {
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
 		final baseBaseUrl = RegExp(r'[^.]+\.[^.]+$').firstMatch(baseUrl)?.group(0);
 		final pattern = RegExp(r'https?:\/\/(.*\.)?' + (baseBaseUrl ?? baseUrl).replaceAll('.', r'\.') + r'\/([^\/]+)\/((res\/(\d+)\.html?(#sd(\d+))?.*)|(index\.html?))?$');
 		final match = pattern.firstMatch(url);

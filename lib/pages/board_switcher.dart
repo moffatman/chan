@@ -163,6 +163,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		_backgroundColor.value ??= CupertinoTheme.of(context).scaffoldBackgroundColor;
 		final browserState = context.watch<Persistence>().browserState;
 		final filteredBoards = getFilteredBoards();
+		final site = context.watch<ImageboardSite>();
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
 			backgroundColor: Colors.transparent,
@@ -439,7 +440,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																],
 																Flexible(
 																	child: AutoSizeText(
-																		'/${board.name}/${board.title.isEmpty ? '' : ' - ${board.title}'}',
+																		site.supportsMultipleBoards ? '/${board.name}/${board.title.isEmpty ? '' : ' - ${board.title}'}' : board.title,
 																		maxFontSize: 20,
 																		minFontSize: 15,
 																		maxLines: 1,

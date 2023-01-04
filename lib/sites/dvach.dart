@@ -313,7 +313,7 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	BoardThreadOrPostIdentifier? decodeUrl(String url) => SiteLainchan.decodeGenericUrl(baseUrl, url);
+	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => SiteLainchan.decodeGenericUrl(baseUrl, url);
 
 	@override
 	Uri getPostReportUrl(String board, int id) {

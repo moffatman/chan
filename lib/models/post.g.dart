@@ -25,6 +25,8 @@ class PostSpanFormatAdapter extends TypeAdapter<PostSpanFormat> {
         return PostSpanFormat.futaba;
       case 5:
         return PostSpanFormat.reddit;
+      case 6:
+        return PostSpanFormat.hackerNews;
       default:
         return PostSpanFormat.chan4;
     }
@@ -50,6 +52,9 @@ class PostSpanFormatAdapter extends TypeAdapter<PostSpanFormat> {
         break;
       case PostSpanFormat.reddit:
         writer.writeByte(5);
+        break;
+      case PostSpanFormat.hackerNews:
+        writer.writeByte(6);
         break;
     }
   }

@@ -316,13 +316,13 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 	else {
 		Tuple3<Imageboard, BoardThreadOrPostIdentifier, bool>? imageboardTarget;
 		for (final imageboard in ImageboardRegistry.instance.imageboards) {
-			BoardThreadOrPostIdentifier? dest = imageboard.site.decodeUrl(url.toString());
+			BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(url.toString());
 			bool usedArchive = false;
 			for (final archive in imageboard.site.archives) {
 				if (dest != null) {
 					break;
 				}
-				dest = archive.decodeUrl(url.toString());
+				dest = await archive.decodeUrl(url.toString());
 				usedArchive = true;
 			}
 			if (dest != null) {
