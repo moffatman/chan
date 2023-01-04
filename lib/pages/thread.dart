@@ -802,7 +802,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																				),
 																			);
 																		},
-																		collapsedItemBuilder: (context, post, collapsedChildrenCount) {
+																		collapsedItemBuilder: (context, post, collapsedChildrenCount, loading) {
 																			final settings = context.watch<EffectiveSettings>();
 																			return IgnorePointer(
 																				child: SizedBox(
@@ -826,6 +826,10 @@ class _ThreadPageState extends State<ThreadPage> {
 																									)
 																								)
 																								else const Spacer(),
+																								if (loading) ...[
+																									const CupertinoActivityIndicator(),
+																									const Text(' ')
+																								],
 																								if (collapsedChildrenCount > 0) Text(
 																									'$collapsedChildrenCount '
 																								),

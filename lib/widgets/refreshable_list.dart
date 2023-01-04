@@ -78,6 +78,9 @@ class _TreeNode<T extends Object> {
 	}
 
 	@override
+	String toString() => '_TreeNode<$T>(item: $item, id: $id, omittedChildCount: $omittedChildCount: # children: ${children.length}, # parents: ${parents.length}';
+
+	@override
 	bool operator == (Object o) => (o is _TreeNode<T>) && (o.item == item);
 
 	@override
@@ -102,6 +105,9 @@ class RefreshableListItem<T extends Object> {
 		this.treeChildrenCount = 0,
 		this.omittedChildCount = 0
 	});
+
+	@override
+	String toString() => 'RefreshableListItem<$T>(item: $item, omittedChildCount: $omittedChildCount, treeChildrenCount: $treeChildrenCount)';
 
 	@override
 	bool operator == (Object other) => (other is RefreshableListItem<T>) && (other.item == item) && (other.highlighted == highlighted) && (other.collapsed == collapsed) && (other.filterReason == filterReason) && listEquals(other.parentIds, parentIds) && (other.treeChildrenCount == treeChildrenCount);
@@ -152,13 +158,14 @@ enum _TreeItemCollapseType {
 	childCollapsed
 }
 
-class _CollapsedRefreshableTreeItems extends ChangeNotifier {
+class _RefreshableTreeItems extends ChangeNotifier {
 	final List<List<int>> collapsedItems;
 	final List<List<int>> filterCollapsedItems;
 	final ValueChanged<List<List<int>>>? onCollapsedItemsChanged;
 	final ValueChanged<List<int>>? onFilterCollapsedItemExpanded;
+	final Set<List<int>> loadingOmittedItems = {};
 
-	_CollapsedRefreshableTreeItems({
+	_RefreshableTreeItems({
 		required this.collapsedItems,
 		required this.filterCollapsedItems,
 		this.onFilterCollapsedItemExpanded,
@@ -191,6 +198,40 @@ class _CollapsedRefreshableTreeItems extends ChangeNotifier {
 		return null;
 	}
 
+  bool isItemLoadingOmittedItems(List<int> parentIds, int? thisId) {
+		// By iterating reversed it will properly handle collapses within collapses
+		for (final loading in loadingOmittedItems) {
+			if (loading.length != parentIds.length + 1) {
+				continue;
+			}
+			bool keepGoing = true;
+			for (int i = 0; i < loading.length - 1 && keepGoing; i++) {
+				keepGoing = loading[i] == parentIds[i];
+			}
+			if (keepGoing && loading.last == thisId) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void itemLoadingOmittedItemsStarted(List<int> parentIds, int thisId) {
+		loadingOmittedItems.add([
+			...parentIds,
+			thisId
+		]);
+		notifyListeners();
+	}
+
+	void itemLoadingOmittedItemsEnded(List<int> parentIds, int thisId) {
+		final x = [
+			...parentIds,
+			thisId
+		];
+		loadingOmittedItems.removeWhere((w) => listEquals(w, x));
+		notifyListeners();
+	}
+
 	void hideItem(List<int> parentIds, int thisId) {
 		collapsedItems.add([
 			...parentIds,
@@ -221,7 +262,7 @@ class _CollapsedRefreshableTreeItems extends ChangeNotifier {
 
 class RefreshableList<T extends Object> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
-	final Widget Function(BuildContext context, T? value, int collapsedChildrenCount)? collapsedItemBuilder;
+	final Widget Function(BuildContext context, T? value, int collapsedChildrenCount, bool loading)? collapsedItemBuilder;
 	final List<T>? initialList;
 	final Future<List<T>?> Function() listUpdater;
 	final Future<List<T>> Function(T after)? listExtender;
@@ -516,6 +557,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		Widget child;
 		Widget? collapsed;
 		int? id = widget.treeAdapter?.getId(value.item);
+		bool loadingOmittedItems = false;
+		if (widget.treeAdapter != null && widget.useTree) {
+			loadingOmittedItems = context.select<_RefreshableTreeItems, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, id));
+		}
 		if (_searchFilter != null && widget.filteredItemBuilder != null) {
 			child = Builder(
 				builder: (context) => widget.filteredItemBuilder!(context, value.item, _closeSearch, _searchFilter!.text)
@@ -523,7 +568,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		else {
 			if (value.omittedChildCount > 0) {
-				child = widget.collapsedItemBuilder?.call(context, null, value.treeChildrenCount) ?? Container(
+				child = widget.collapsedItemBuilder?.call(context, null, value.omittedChildCount, loadingOmittedItems) ?? Container(
 					height: 30,
 					alignment: Alignment.center,
 					child: Text('${value.omittedChildCount} more replies...')
@@ -533,10 +578,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				child = Builder(
 					builder: (context) => widget.itemBuilder(context, value.item)
 				);
-				collapsed = widget.collapsedItemBuilder?.call(context, value.item, value.treeChildrenCount);
+				collapsed = widget.collapsedItemBuilder?.call(context, value.item, value.treeChildrenCount, loadingOmittedItems);
 			}
 			if (widget.treeAdapter != null && widget.useTree) {
-				final isHidden = context.select<_CollapsedRefreshableTreeItems, _TreeItemCollapseType?>((c) => c.isItemHidden(value.parentIds, id));
+				final isHidden = context.select<_RefreshableTreeItems, _TreeItemCollapseType?>((c) => c.isItemHidden(value.parentIds, id));
 				if (value.parentIds.isNotEmpty) {
 					child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
 				}
@@ -561,18 +606,24 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					onTap: () async {
 						if (value.omittedChildCount == 0) {
 							if (isHidden != null) {
-								context.read<_CollapsedRefreshableTreeItems>().unhideItem(value.parentIds, id!);
+								context.read<_RefreshableTreeItems>().unhideItem(value.parentIds, id!);
 							}
 							else {
-								context.read<_CollapsedRefreshableTreeItems>().hideItem(value.parentIds, id!);
+								context.read<_RefreshableTreeItems>().hideItem(value.parentIds, id!);
 								widget.controller?._alignToItemIfPartiallyAboveFold(value);
 							}
 						}
 						else {
-							originalList = await widget.treeAdapter!.updateWithOmittedChildren(originalList!, value.item);
-							sortedList = originalList!.toList();
-							_sortList();
-							setState(() { });
+							context.read<_RefreshableTreeItems>().itemLoadingOmittedItemsStarted(value.parentIds, id!);
+							try {
+								originalList = await widget.treeAdapter!.updateWithOmittedChildren(originalList!, value.item);
+								sortedList = originalList!.toList();
+								_sortList();
+								setState(() { });
+							}
+							finally {
+								context.read<_RefreshableTreeItems>().itemLoadingOmittedItemsEnded(value.parentIds, id);
+							}
 						}
 					},
 					child: child
@@ -820,8 +871,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						},
 						child: MaybeCupertinoScrollbar(
 							controller: widget.controller?.scrollController,
-							child: ChangeNotifierProvider<_CollapsedRefreshableTreeItems>(
-								create: (context) => _CollapsedRefreshableTreeItems(
+							child: ChangeNotifierProvider<_RefreshableTreeItems>(
+								create: (context) => _RefreshableTreeItems(
 									collapsedItems: widget.initialCollapsedItems?.toList() ?? [],
 									filterCollapsedItems: _filterCollapsedItems,
 									onFilterCollapsedItemExpanded: _onFilterCollapsedItemExpanded,
