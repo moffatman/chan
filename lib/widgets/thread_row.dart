@@ -226,8 +226,11 @@ class ThreadRow extends StatelessWidget {
 			],
 			if (showSiteIcon) WidgetSpan(
 				alignment: PlaceholderAlignment.middle,
-				child: ImageboardIcon(
-					boardName: thread.board
+				child: Padding(
+					padding: const EdgeInsets.only(right: 4),
+					child: ImageboardIcon(
+						boardName: thread.board
+					)
 				)
 			),
 			if (showBoardName || (settings.showIdInCatalogHeader && site.explicitIds)) TextSpan(
