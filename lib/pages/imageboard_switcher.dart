@@ -72,6 +72,7 @@ class _ImageboardSwitcherPageState extends State<ImageboardSwitcherPage> {
 									),
 									padding: const EdgeInsets.all(16),
 									child: Row(
+										crossAxisAlignment: CrossAxisAlignment.end,
 										children: [
 											CupertinoButton(
 												padding: EdgeInsets.zero,
@@ -90,7 +91,7 @@ class _ImageboardSwitcherPageState extends State<ImageboardSwitcherPage> {
 														ImageboardIcon(imageboardKey: imageboards[_currentPage].key),
 														const SizedBox(width: 8),
 														Flexible(
-															child: Text(imageboards[_currentPage].key)
+															child: Text(imageboards[_currentPage].site.name, textAlign: TextAlign.center)
 														),
 													]
 												)
