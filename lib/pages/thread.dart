@@ -832,6 +832,9 @@ class _ThreadPageState extends State<ThreadPage> {
 																								],
 																								if (collapsedChildrenCount > 0) Text(
 																									'$collapsedChildrenCount '
+																								)
+																								else if ((post?.omittedChildrenCount ?? 0) > 0) Text(
+																									'${post?.omittedChildrenCount} '
 																								),
 																								const Icon(CupertinoIcons.chevron_down, size: 20)
 																							]
