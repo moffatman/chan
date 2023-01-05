@@ -603,7 +603,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				);
 				child = GestureDetector(
 					behavior: HitTestBehavior.translucent,
-					onTap: () async {
+					onTap: loadingOmittedItems ? null : () async {
 						if (value.omittedChildCount == 0) {
 							if (isHidden != null) {
 								context.read<_RefreshableTreeItems>().unhideItem(value.parentIds, id!);
