@@ -916,8 +916,8 @@ class EffectiveSettings extends ChangeNotifier {
 		}
 	}
 
-	bool showBoard(BuildContext context, String board) {
-		return context.read<Persistence>().getBoard(board).isWorksafe || _settings.contentSettings.nsfwBoards;
+	bool showBoard(ImageboardBoard board) {
+		return board.isWorksafe || _settings.contentSettings.nsfwBoards;
 	}
 
 	bool showImages(BuildContext context, String board) {

@@ -191,10 +191,7 @@ class _SavedPageState extends State<SavedPage> {
 										child: AnimatedBuilder(
 											animation: persistencesAnimation,
 											builder: (context, _) {
-												final watches = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.browserState.threadWatches.map((w) => ImageboardScoped(
-													imageboard: i,
-													item: w
-												))).toList();
+												final watches = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.browserState.threadWatches.map(i.scope)).toList();
 												final d = DateTime(2000);
 												if (settings.watchedThreadsSortingMethod == ThreadSortingMethod.lastReplyByYouTime) {
 													mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
@@ -382,10 +379,7 @@ class _SavedPageState extends State<SavedPage> {
 					icon: CupertinoIcons.tray_full,
 					masterBuilder: (context, selectedThread, threadSetter) {
 						Widget innerMasterBuilder(BuildContext context, Widget? child) {
-							final states = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.threadStateBox.toMap().values.where((s) => s.savedTime != null).map((s) => ImageboardScoped(
-								imageboard: i,
-								item: s
-							))).toList();
+							final states = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.threadStateBox.toMap().values.where((s) => s.savedTime != null).map(i.scope)).toList();
 							Comparator<ImageboardScoped<PersistentThreadState>> sortMethod = (a, b) => 0;
 							if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
 								sortMethod = (a, b) => b.item.savedTime!.compareTo(a.item.savedTime!);
@@ -403,10 +397,7 @@ class _SavedPageState extends State<SavedPage> {
 								initialList: states,
 								sortMethods: [sortMethod],
 								itemBuilder: (itemContext, state) {
-									final isSelected = selectedThread(itemContext, ImageboardScoped(
-										imageboard: state.imageboard,
-										item: state.item.identifier
-									));
+									final isSelected = selectedThread(itemContext, state.imageboard.scope(state.item.identifier));
 									return ImageboardScope(
 										imageboardKey: state.imageboard.key,
 										child: ContextMenu(
@@ -460,10 +451,7 @@ class _SavedPageState extends State<SavedPage> {
 														}
 													)
 												),
-												onTap: () => threadSetter(ImageboardScoped(
-													imageboard: state.imageboard,
-													item: state.item.identifier
-												))
+												onTap: () => threadSetter(state.imageboard.scope(state.item.identifier))
 											)
 										)
 									);
@@ -497,10 +485,7 @@ class _SavedPageState extends State<SavedPage> {
 					icon: CupertinoIcons.pencil,
 					masterBuilder: (context, selected, setter) {
 						Widget innerMasterBuilder(BuildContext context, Widget? child) {
-							final states = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.threadStateBox.toMap().values.where((s) => s.youIds.isNotEmpty).map((s) => ImageboardScoped(
-								imageboard: i,
-								item: s
-							))).toList();
+							final states = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.threadStateBox.toMap().values.where((s) => s.youIds.isNotEmpty).map(i.scope)).toList();
 							final replies = <_PostThreadCombo>[];
 							for (final s in states) {
 								if (s.item.thread != null) {
@@ -600,10 +585,7 @@ class _SavedPageState extends State<SavedPage> {
 					masterBuilder: (context, selected, setter) => AnimatedBuilder(
 						animation: savedPostNotifiersAnimation,
 						builder: (context, child) {
-							final savedPosts = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedPosts.values.map((p) => ImageboardScoped(
-								imageboard: i,
-								item: p
-							))).toList();
+							final savedPosts = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedPosts.values.map(i.scope)).toList();
 							Comparator<ImageboardScoped<SavedPost>> sortMethod = (a, b) => 0;
 							if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
 								sortMethod = (a, b) => b.item.savedTime.compareTo(a.item.savedTime);
@@ -707,10 +689,7 @@ class _SavedPageState extends State<SavedPage> {
 					masterBuilder: (context, selected, setter) => AnimatedBuilder(
 						animation: savedAttachmentsNotifiersAnimation,
 						builder: (context, child) {
-							final list = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedAttachments.values.map((p) => ImageboardScoped(
-								imageboard: i,
-								item: p
-							))).toList();
+							final list = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedAttachments.values.map(i.scope)).toList();
 							list.sort((a, b) => b.item.savedTime.compareTo(a.item.savedTime));
 							return CustomScrollView(
 								slivers: [

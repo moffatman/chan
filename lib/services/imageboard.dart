@@ -144,6 +144,11 @@ class Imageboard extends ChangeNotifier {
 			notifications.dispose();
 		}
 	}
+
+	ImageboardScoped<T> scope<T>(T item) => ImageboardScoped(
+		imageboard: this,
+		item: item
+	);
 }
 
 class ImageboardRegistry extends ChangeNotifier {

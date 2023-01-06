@@ -44,10 +44,7 @@ class _HistoryPageState extends State<HistoryPage> {
 			id: 'history',
 			masterBuilder: (context, selectedThread, threadSetter) {
 				Widget innerMasterBuilder(BuildContext context, Widget? child) {
-					final states = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.threadStateBox.toMap().values.map((s) => ImageboardScoped(
-						imageboard: i,
-						item: s
-					))).where((i) => i.item.thread != null).toList();
+					final states = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.threadStateBox.toMap().values.map(i.scope)).where((i) => i.item.thread != null).toList();
 					return RefreshableList<ImageboardScoped<PersistentThreadState>>(
 						filterableAdapter: (t) => t.item,
 						controller: _listController,
@@ -57,10 +54,7 @@ class _HistoryPageState extends State<HistoryPage> {
 						initialList: states,
 						sortMethods: [(a, b) => b.item.lastOpenedTime.compareTo(a.item.lastOpenedTime)],
 						itemBuilder: (itemContext, state) {
-							final isSelected = selectedThread(itemContext, ImageboardScoped(
-								imageboard: state.imageboard,
-								item: state.item.identifier
-							));
+							final isSelected = selectedThread(itemContext, state.imageboard.scope(state.item.identifier));
 							return ContextMenu(
 								maxHeight: 125,
 								actions: [
@@ -109,10 +103,7 @@ class _HistoryPageState extends State<HistoryPage> {
 											)
 										)
 									),
-									onTap: () => threadSetter(ImageboardScoped(
-										imageboard: state.imageboard,
-										item: state.item.thread!.identifier
-									))
+									onTap: () => threadSetter(state.imageboard.scope(state.item.identifier))
 								)
 							);
 						},
@@ -137,10 +128,7 @@ class _HistoryPageState extends State<HistoryPage> {
 											barrierDismissible: true,
 											builder: (context) => StatefulBuilder(
 												builder: (context, setDialogState) {
-													final states = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.threadStateBox.toMap().values.map((s) => ImageboardScoped(
-														imageboard: i,
-														item: s
-													))).where((i) => i.item.savedTime == null && i.item.thread != null && (includeThreadsYouRepliedTo || i.item.youIds.isEmpty)).toList();
+													final states = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.threadStateBox.toMap().values.map(i.scope)).where((i) => i.item.savedTime == null && i.item.thread != null && (includeThreadsYouRepliedTo || i.item.youIds.isEmpty)).toList();
 													final thisSessionStates = states.where((s) => s.item.lastOpenedTime.compareTo(_appLaunchTime) >= 0).toList();
 													final now = DateTime.now();
 													final lastDayStates = states.where((s) => now.difference(s.item.lastOpenedTime).inDays < 1);

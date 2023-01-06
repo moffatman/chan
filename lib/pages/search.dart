@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/models/search.dart';
-import 'package:chan/pages/imageboard_switcher.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search_query.dart';
 import 'package:chan/pages/thread.dart';
@@ -289,12 +288,9 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										),
 										onPressed: () async {
 											final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-												builder: (ctx) => ImageboardSwitcherPage(
+												builder: (ctx) => BoardSwitcherPage(
 													initialImageboardKey: query.imageboardKey,
-													filterImageboards: (b) => b.site.supportsSearch,
-													builder: (ctx, focusNode) => BoardSwitcherPage(
-														searchFocusNode: focusNode
-													)
+													filterImageboards: (b) => b.site.supportsSearch
 												),
 												showAnimations: context.read<EffectiveSettings>().showAnimations
 											));

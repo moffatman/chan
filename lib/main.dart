@@ -678,10 +678,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					if (notification.postId != null) {
 						_savedFakeTab.initialPostId[notification.threadIdentifier!] = notification.postId!;
 					}
-					_savedMasterDetailKey.currentState?.setValue(0, ImageboardScoped(
-						imageboard: imageboard,
-						item: watch
-					));
+					_savedMasterDetailKey.currentState?.setValue(0, imageboard.scope(watch));
 				}
 				if (showTabPopup) {
 					setState(() {

@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/pages/board_watch_controls.dart';
-import 'package:chan/pages/imageboard_switcher.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
@@ -151,14 +150,9 @@ class _BoardPageState extends State<BoardPage> {
 	}
 
 	void _selectBoard() async {
-		final keys = <String, GlobalKey>{};
 		final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-			builder: (ctx) => ImageboardSwitcherPage(
-				initialImageboardKey: context.read<Imageboard?>()?.key,
-				builder: (ctx, focusNode) => BoardSwitcherPage(
-					key: keys.putIfAbsent(ctx.read<Imageboard?>()?.key ?? 'null', () => GlobalKey()),
-					searchFocusNode: focusNode
-				)
+			builder: (ctx) => BoardSwitcherPage(
+				initialImageboardKey: context.read<Imageboard?>()?.key
 			),
 			showAnimations: context.read<EffectiveSettings>().showAnimations
 		));

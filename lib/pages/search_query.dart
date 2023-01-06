@@ -206,10 +206,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									showBoardName: true,
 									allowTappingLinks: false,
 									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.item == row,
-									onTap: () => setValue(ImageboardScoped(
-										imageboard: context.read<Imageboard>(),
-										item: row
-									)),
+									onTap: () => setValue(context.read<Imageboard>().scope(row)),
 									baseOptions: PostSpanRenderOptions(
 										highlightString: widget.query.query
 									),
@@ -218,10 +215,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						}
 						else {
 							return GestureDetector(
-								onTap: () => setValue(ImageboardScoped(
-									imageboard: context.read<Imageboard>(),
-									item: row
-								)),
+								onTap: () => setValue(context.read<Imageboard>().scope(row)),
 								child: ThreadRow(
 									thread: row.thread!,
 									onThumbnailTap: (attachment) => showGallery(
