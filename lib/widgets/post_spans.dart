@@ -1457,23 +1457,20 @@ String _makeAttachmentInfo({
 }) {
 	String text = '';
 	for (final attachment in post.attachments) {
-		if (settings.showFilenameOnPosts) {
+		if (settings.showFilenameOnPosts && attachment.filename.isNotEmpty) {
 			text += '${attachment.filename} ';
 		}
 		if (settings.showFilesizeOnPosts || settings.showFileDimensionsOnPosts) {
-			text += '(';
-			bool firstItemPassed = false;
+			final bracketParts = <String>[];
 			if (settings.showFilesizeOnPosts && attachment.sizeInBytes != null) {
-				text += '${((attachment.sizeInBytes ?? 0) / 1024).round()} KB';
-				firstItemPassed = true;
+				bracketParts.add('${((attachment.sizeInBytes ?? 0) / 1024).round()} KB');
 			}
 			if (settings.showFileDimensionsOnPosts && attachment.width != null && attachment.height != null) {
-				if (firstItemPassed) {
-					text += ', ';
-				}
-				text += '${attachment.width}x${attachment.height}';
+				bracketParts.add('${attachment.width}x${attachment.height}');
 			}
-			text += ') ';
+			if (bracketParts.isNotEmpty) {
+				text += '(${bracketParts.join(', ')})';
+			}
 		}
 	}
 	return text;
