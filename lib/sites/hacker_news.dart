@@ -436,7 +436,7 @@ class SiteHackerNews extends ImageboardSite {
 		if (index == -1) {
 			return [];
 		}
-		return await Future.wait(_lastCatalogIds!.skip(index).take(catalogThreadsPerPage).map(_getThreadForCatalog));
+		return await Future.wait(_lastCatalogIds!.skip(index + 1).take(catalogThreadsPerPage).map(_getThreadForCatalog));
 	}
 
 	@override
