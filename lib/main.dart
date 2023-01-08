@@ -1818,10 +1818,10 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 		return GestureDetector(
 			behavior: HitTestBehavior.translucent,
 			onHorizontalDragEnd: (details) {
-				if (details.velocity.pixelsPerSecond.dx < 0) {
+				if (details.velocity.pixelsPerSecond.dx > 0) {
 					onLeftSwipe();
 				}
-				else if (details.velocity.pixelsPerSecond.dx > 0) {
+				else if (details.velocity.pixelsPerSecond.dx < 0) {
 					onRightSwipe();
 				}
 			},
