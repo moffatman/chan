@@ -163,6 +163,23 @@ class SiteHackerNews extends ImageboardSite {
 		return PostNodeSpan(visit(body.nodes).toList());
 	}
 
+	static Attachment _makeAttachment(int threadId, Uri url) => Attachment(
+		type: AttachmentType.url,
+		board: '',
+		id: url.toString(),
+		ext: '',
+		filename: '',
+		url: url,
+		thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
+			'url': url.toString()
+		}),
+		md5: '',
+		width: null,
+		height: null,
+		threadId: threadId,
+		sizeInBytes: null
+	);
+
 	static int _countDescendants(_HNObject o) {
 		int out = 0;
 		for (final child in o.children) {
@@ -228,10 +245,10 @@ class SiteHackerNews extends ImageboardSite {
 		String text;
 		switch (d['type']) {
 			case 'story':
-				text = d['text'] ?? d['url'];
+				text = d['text'] ?? d['url'] ?? '';
 				break;
 			case 'job':
-				text = d['url'] ?? d['text'];
+				text = d['text'] ?? d['url'] ?? '';
 				break;
 			case 'poll':
 				final responses = await Future.wait<Map>(d['parts'].map((int part) async {
@@ -242,6 +259,7 @@ class SiteHackerNews extends ImageboardSite {
 			default:
 				throw Exception('Unexpected HN item type "${d['type']}"');
 		}
+		final Uri? url = d['url'] == null ? null : Uri.parse(d['url'] ?? '');
 		final op = Post(
 			board: '',
 			text: text,
@@ -250,7 +268,9 @@ class SiteHackerNews extends ImageboardSite {
 			threadId: id,
 			id: id,
 			spanFormat: PostSpanFormat.hackerNews,
-			attachments: [],
+			attachments: [
+				if (url != null) _makeAttachment(id, url)
+			],
 			upvotes: d['score']
 		);
 		return Thread(
@@ -261,7 +281,7 @@ class SiteHackerNews extends ImageboardSite {
 			title: d['title'],
 			isSticky: false,
 			time: op.time,
-			attachments: [],
+			attachments: op.attachments,
 			replyCount: d['descendants'] ?? 0
 		);
 	}
@@ -285,10 +305,8 @@ class SiteHackerNews extends ImageboardSite {
 			String text;
 			switch (item.type) {
 				case _HNStoryType.normal:
-					text = item.text ?? item.url.toString();
-					break;
 				case _HNStoryType.job:
-					text = item.url?.toString() ?? item.text ?? 'No content';
+					text = item.text ?? item.url?.toString() ?? '';
 					break;
 				case _HNStoryType.poll:
 					text = '${item.text}<ul>${item.pollOptions.map((r) => '<li>${parseFragment(r.text).text} - ${r.votes} votes</li>').join('\n')}</ul>';
@@ -302,7 +320,9 @@ class SiteHackerNews extends ImageboardSite {
 				threadId: item.id,
 				id: item.id,
 				spanFormat: PostSpanFormat.hackerNews,
-				attachments: [],
+				attachments: [
+					if (item.url != null) _makeAttachment(item.id, item.url!)
+				],
 				upvotes: item.score
 			);
 		}
@@ -443,8 +463,9 @@ class SiteHackerNews extends ImageboardSite {
 		if (item is! _HNStory) {
 			throw Exception('HN item ${thread.id} is not a thread');
 		}
+		final posts = await _getMoreThread(item);
 		return Thread(
-			posts_: await _getMoreThread(item),
+			posts_: posts,
 			replyCount: item.descendants,
 			imageCount: 0,
 			id: item.id,
@@ -452,7 +473,7 @@ class SiteHackerNews extends ImageboardSite {
 			title: item.title,
 			isSticky: false,
 			time: item.time,
-			attachments: []
+			attachments: posts.first.attachments
 		);
 	}
 
@@ -556,13 +577,15 @@ class SiteHackerNews extends ImageboardSite {
 				final id = int.parse(hit['objectID']);
 				final op = Post(
 					board: '',
-					text: hit['story_text'] ?? hit['url'],
+					text: hit['story_text'] ?? '',
 					name: hit['author'],
 					time: DateTime.fromMillisecondsSinceEpoch(hit['created_at_i'] * 1000),
 					threadId: id,
 					id: id,
 					spanFormat: PostSpanFormat.hackerNews,
-					attachments: []
+					attachments: [
+						if (hit['url'] != null) _makeAttachment(id, Uri.parse(hit['url']!))
+					]
 				);
 				return ImageboardArchiveSearchResult.thread(Thread(
 					posts_: [op],
@@ -573,7 +596,7 @@ class SiteHackerNews extends ImageboardSite {
 					title: hit['title'],
 					isSticky: false,
 					time: op.time,
-					attachments: []
+					attachments: op.attachments
 				));
 			}).toList()
 		);

@@ -14,7 +14,9 @@ enum AttachmentType {
 	@HiveField(3)
 	mp3,
 	@HiveField(4)
-	pdf
+	pdf,
+	@HiveField(5)
+	url
 }
 
 extension IsVideo on AttachmentType {

@@ -23,6 +23,8 @@ class AttachmentTypeAdapter extends TypeAdapter<AttachmentType> {
         return AttachmentType.mp3;
       case 4:
         return AttachmentType.pdf;
+      case 5:
+        return AttachmentType.url;
       default:
         return AttachmentType.image;
     }
@@ -45,6 +47,9 @@ class AttachmentTypeAdapter extends TypeAdapter<AttachmentType> {
         break;
       case AttachmentType.pdf:
         writer.writeByte(4);
+        break;
+      case AttachmentType.url:
+        writer.writeByte(5);
         break;
     }
   }

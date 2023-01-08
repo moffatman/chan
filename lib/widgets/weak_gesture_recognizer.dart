@@ -6,9 +6,16 @@
 // allowing to change the width of area where back swipe gesture is accepted
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
+
+extension WithinRange on num {
+  withinRange(num low, num high) {
+    return this >= low && this <= high;
+  }
+}
 
 enum _DragState {
 	ready,
@@ -65,6 +72,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 	int? _initialButtons;
 	Matrix4? _lastTransform;
 
+  late Offset _globalMoved;
 	late double _globalDistanceMoved;
 
 	bool isFlingGesture(VelocityEstimate estimate, PointerDeviceKind kind);
@@ -118,6 +126,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 			_initialButtons = event.buttons;
 			_pendingDragOffset = OffsetPair.zero;
 			_globalDistanceMoved = 0.0;
+      _globalMoved = Offset.zero;
 			_lastPendingEventTimestamp = event.timeStamp;
 			_lastTransform = event.transform;
 			_checkDown();
@@ -140,6 +149,7 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
       _initialButtons = kPrimaryButton;
       _pendingDragOffset = OffsetPair.zero;
       _globalDistanceMoved = 0.0;
+      _globalMoved = Offset.zero;
       _lastPendingEventTimestamp = event.timeStamp;
       _lastTransform = event.transform;
       _checkDown();
@@ -186,6 +196,11 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
           untransformedDelta: movedLocally,
           untransformedEndPosition: event.localPosition,
         ).distance * (_getPrimaryValueFromOffset(movedLocally) ?? 1).sign;
+        _globalMoved += PointerEvent.transformDeltaViaPositions(
+          transform: localToGlobalTransform,
+          untransformedDelta: movedLocally,
+          untransformedEndPosition: event.localPosition,
+        );
         if (_hasSufficientGlobalDistanceToAccept(event, gestureSettings?.touchSlop)) {
           resolve(GestureDisposition.accepted);
 				}
@@ -212,6 +227,11 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
           untransformedDelta: movedLocally,
           untransformedEndPosition: event.localPosition + event.pan
         ).distance * (_getPrimaryValueFromOffset(movedLocally) ?? 1).sign;
+        _globalMoved += PointerEvent.transformDeltaViaPositions(
+          transform: localToGlobalTransform,
+          untransformedDelta: movedLocally,
+          untransformedEndPosition: event.localPosition + event.pan
+        );
         if (_hasSufficientGlobalDistanceToAccept(event, gestureSettings?.touchSlop)) {
           resolve(GestureDisposition.accepted);
 				}
@@ -478,12 +498,17 @@ class WeakHorizontalDragGestureRecognizer extends WeakDragGestureRecognizer {
 class WeakPanGestureRecognizer extends WeakDragGestureRecognizer {
 	final double weakness;
 	final bool allowedToAccept;
-	final double? sign;
+	final Set<AxisDirection> allowedDirections;
 
 	WeakPanGestureRecognizer({
 		required this.weakness,
 		this.allowedToAccept = true,
-		this.sign,
+		this.allowedDirections = const {
+      AxisDirection.up,
+      AxisDirection.down,
+      AxisDirection.left,
+      AxisDirection.right,
+    },
 		Set<PointerDeviceKind>? supportedDevices = _kTouchLikeDeviceTypes,
 		Object? debugOwner
 	}) : super(debugOwner: debugOwner, supportedDevices: supportedDevices);
@@ -496,9 +521,24 @@ class WeakPanGestureRecognizer extends WeakDragGestureRecognizer {
 				&& estimate.offset.distanceSquared > minDistance * minDistance;
 	}
 
+  bool _globalMovementDirectionIsOK() {
+    return allowedDirections.any((d) {
+      switch (d) {
+        case AxisDirection.up:
+          return _globalMoved.direction.withinRange(math.pi * -0.75, math.pi * -0.25);
+        case AxisDirection.down:
+          return _globalMoved.direction.withinRange(math.pi * 0.25, math.pi * 0.75);
+        case AxisDirection.left:
+          return _globalMoved.direction.abs() > 0.75;
+        case AxisDirection.right:
+          return _globalMoved.direction.abs() < 0.25;
+      }
+    });
+  }
+
 	@override
 	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop) {
-		return allowedToAccept && (sign != null && _globalDistanceMoved.sign == sign!.sign) && _globalDistanceMoved.abs() > (weakness * computePanSlop(event.kind, gestureSettings)) || (
+		return allowedToAccept && _globalMovementDirectionIsOK() && _globalDistanceMoved.abs() > (weakness * computePanSlop(event.kind, gestureSettings)) || (
 			(_globalDistanceMoved.abs() > computePanSlop(event.kind, gestureSettings)) &&
 			_hasSufficientDurationToAccept(event)
 		);

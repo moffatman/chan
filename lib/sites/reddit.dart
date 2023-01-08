@@ -356,22 +356,42 @@ class SiteReddit extends ImageboardSite {
 				));
 			}
 			else {
-				final url = Uri.parse(unescape.convert(data['preview']['images'][0]['source']['url']));
+				final imageUrl = Uri.parse(unescape.convert(data['preview']['images'][0]['source']['url']));
+				bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => data['url'].endsWith(e));
 				attachments.add(Attachment(
-					type: AttachmentType.image,
+					type: isDirectLink ? AttachmentType.image : AttachmentType.url,
 					board: data['subreddit'],
 					threadId: id,
 					id: data['name'],
-					ext: '.png',
-					filename: 'preview',
-					url: url,
+					ext: isDirectLink ? '.png' : '',
+					filename: isDirectLink ? 'preview' : '',
+					url: Uri.parse(data['url']),
 					width: data['preview']['images'][0]['source']['width'],
 					height: data['preview']['images'][0]['source']['height'],
 					md5: '',
 					sizeInBytes: null,
-					thumbnailUrl: data['preview']['images'][0]['resolutions'].isNotEmpty ? Uri.parse(unescape.convert(data['preview']['images'][0]['resolutions'][0]['url'])) : url
+					thumbnailUrl: data['preview']['images'][0]['resolutions'].isNotEmpty ? Uri.parse(unescape.convert(data['preview']['images'][0]['resolutions'][0]['url'])) : imageUrl
 				));
 			}
+		}
+		else if (data['url'] != null) {
+			final url = Uri.parse(data['url']);
+			attachments.add(Attachment(
+				type: AttachmentType.url,
+				board: data['subreddit'],
+				threadId: id,
+				id: data['name'],
+				ext: '',
+				filename: '',
+				url: url,
+				thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
+					'url': url.toString()
+				}),
+				md5: '',
+				width: null,
+				height: null,
+				sizeInBytes: null
+			));
 		}
 		final asPost = Post(
 			board: data['subreddit'],

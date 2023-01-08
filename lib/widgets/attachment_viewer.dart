@@ -17,6 +17,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/circular_loading_indicator.dart';
+import 'package:chan/widgets/cooperative_browser.dart';
 import 'package:chan/widgets/cupertino_context_menu2.dart';
 import 'package:chan/widgets/double_tap_drag_detector.dart';
 import 'package:chan/widgets/util.dart';
@@ -24,6 +25,7 @@ import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
@@ -1013,6 +1015,24 @@ class AttachmentViewer extends StatelessWidget {
 		);
 	}
 
+	Widget _buildBrowser(BuildContext context, Size? size) {
+		return ExtendedImageSlidePageHandler(
+			heroBuilderForSlidingPage: (Widget result) {
+				return Hero(
+					tag: _tag,
+					child: result,
+					flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
+				);
+			},
+			child: SizedBox.fromSize(
+				size: size,
+				child: CooperativeInAppBrowser(
+					initialUrlRequest: URLRequest(url: controller.attachment.url)
+				)
+			)
+		);
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		return FirstBuildDetector(
@@ -1029,6 +1049,9 @@ class AttachmentViewer extends StatelessWidget {
 						}
 						else if (attachment.type == AttachmentType.pdf) {
 							return _buildPdf(context, targetSize);
+						}
+						else if (attachment.type == AttachmentType.url) {
+							return _buildBrowser(context, targetSize);
 						}
 						else {
 							return _buildVideo(context, targetSize);

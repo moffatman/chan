@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:chan/models/attachment.dart';
@@ -49,7 +50,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final bool revealSpoilers;
 	final ImageboardSite? site;
 	final bool shrinkHeight;
-	final bool shrinkBoth;
+	final bool shrinkWidth;
 
 	const AttachmentThumbnail({
 		required this.attachment,
@@ -64,7 +65,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.gaplessPlayback = false,
 		this.revealSpoilers = false,
 		this.shrinkHeight = false,
-		this.shrinkBoth = false,
+		this.shrinkWidth = false,
 		this.site,
 		Key? key
 	}) : super(key: key);
@@ -75,16 +76,6 @@ class AttachmentThumbnail extends StatelessWidget {
 		final spoiler = attachment.spoiler && !revealSpoilers;
 		double effectiveWidth = width ?? settings.thumbnailSize;
 		double effectiveHeight = height ?? settings.thumbnailSize;
-		if (!spoiler) {
-			if (shrinkBoth) {
-				final size = attachment.estimateFittedSize(size: Size(effectiveWidth, effectiveHeight));
-				effectiveWidth = size.width;
-				effectiveHeight = size.height;
-			}
-			else if (shrinkHeight) {
-				effectiveHeight = attachment.estimateFittedSize(size: Size(effectiveWidth, effectiveHeight)).height;
-			}
-		}
 		final s = site ?? context.watch<ImageboardSite?>();
 		if (s == null) {
 			return SizedBox(
@@ -110,8 +101,14 @@ class AttachmentThumbnail extends StatelessWidget {
 		);
 		Widget child = ExtendedImage(
 			image: image,
-			width: effectiveWidth,
-			height: effectiveHeight,
+			constraints: BoxConstraints(
+				maxWidth: effectiveWidth,
+				maxHeight: effectiveHeight
+			),
+			width: shrinkWidth ? null : effectiveWidth,
+			height: shrinkHeight ? null : effectiveHeight,
+			color: const Color.fromRGBO(238, 242, 255, 1),
+			colorBlendMode: BlendMode.dstOver,
 			fit: fit,
 			alignment: alignment,
 			gaplessPlayback: gaplessPlayback,
@@ -129,11 +126,12 @@ class AttachmentThumbnail extends StatelessWidget {
 				}
 				else if (loadstate.extendedImageLoadState == LoadState.failed) {
 					onLoadError?.call(loadstate.lastException, loadstate.lastStack);
-					return SizedBox(
+					return Container(
 						width: effectiveWidth,
 						height: effectiveHeight,
-						child: const Center(
-							child: Icon(CupertinoIcons.exclamationmark_triangle_fill)
+						color: settings.theme.barColor,
+						child: Center(
+							child: Icon(attachment.type == AttachmentType.url ? CupertinoIcons.compass : CupertinoIcons.exclamationmark_triangle_fill, size: min(effectiveWidth, effectiveHeight))
 						)
 					);
 				}

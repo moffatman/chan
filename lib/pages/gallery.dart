@@ -713,7 +713,9 @@ class _GalleryPageState extends State<GalleryPage> {
 							builder: (context, _) => Padding(
 								padding: const EdgeInsets.only(bottom: 4),
 								child: AutoSizeText(
-									"${currentAttachment.attachment.filename} (${currentAttachment.attachment.width}x${currentAttachment.attachment.height}${currentAttachment.attachment.sizeInBytes == null ? ')' : ', ${(currentAttachment.attachment.sizeInBytes! / 1024).round()} KB)'}",
+									currentAttachment.attachment.type == AttachmentType.url ?
+										currentAttachment.attachment.url.toString() :
+										"${currentAttachment.attachment.filename} (${currentAttachment.attachment.width}x${currentAttachment.attachment.height}${currentAttachment.attachment.sizeInBytes == null ? ')' : ', ${(currentAttachment.attachment.sizeInBytes! / 1024).round()} KB)'}",
 									minFontSize: 8
 								)
 							)
@@ -877,6 +879,11 @@ class _GalleryPageState extends State<GalleryPage> {
 														)
 													);
 												}
+											)
+										),
+										Positioned.fill(
+											child: GestureDetector(
+												onTap: showChrome ? _toggleChrome : null
 											)
 										),
 										Align(

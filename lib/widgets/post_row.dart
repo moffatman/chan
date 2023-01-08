@@ -179,43 +179,38 @@ class PostRow extends StatelessWidget {
 							child: CupertinoButton(
 								padding: EdgeInsets.zero,
 								minSize: 0,
-								child: Stack(
+								child: Container(
 									alignment: Alignment.center,
-									fit: StackFit.loose,
-									children: [
-										AttachmentThumbnail(
-											attachment: attachment,
-											thread: latestPost.threadIdentifier,
-											onLoadError: onThumbnailLoadError,
-											hero: TaggedAttachment(
+									width: settings.thumbnailSize,
+									child: Stack(
+										children: [
+											AttachmentThumbnail(
 												attachment: attachment,
-												semanticParentIds: parentZone.stackIds
+												thread: latestPost.threadIdentifier,
+												onLoadError: onThumbnailLoadError,
+												hero: TaggedAttachment(
+													attachment: attachment,
+													semanticParentIds: parentZone.stackIds
+												),
+												shrinkHeight: true,
+												shrinkWidth: true
 											),
-											shrinkHeight: true,
-										),
-										if (attachment.type.isVideo) SizedBox.fromSize(
-											size: attachment.estimateFittedSize(
-												size: Size.square(settings.thumbnailSize)
-											),
-											child: Center(
-												child: AspectRatio(
-													aspectRatio: attachment.spoiler ? 1 : (attachment.width ?? 1) / (attachment.height ?? 1),
-													child: Align(
-														alignment: Alignment.bottomRight,
-														child: Container(
-															decoration: BoxDecoration(
-																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-															),
-															padding: const EdgeInsets.all(2),
-															child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
-														)
+											if (attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned.fill(
+												child: Align(
+													alignment: Alignment.bottomRight,
+													child: Container(
+														decoration: BoxDecoration(
+															borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+															color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+															border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+														),
+														padding: const EdgeInsets.all(2),
+														child: attachment.type.isVideo ? const Icon(CupertinoIcons.play_arrow_solid, size: 16) : const Icon(CupertinoIcons.link, size: 16)
 													)
 												)
 											)
-										)
-									]
+										]
+									)
 								),
 								onPressed: () {
 									onThumbnailTap?.call(attachment);

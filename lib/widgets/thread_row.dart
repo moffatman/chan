@@ -6,6 +6,7 @@ import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -69,7 +70,7 @@ class ThreadRow extends StatelessWidget {
 		Color? replyCountColor;
 		Color? imageCountColor;
 		Color? otherMetadataColor;
-		final threadAsUrl = RegExp(r'^https?:\/\/([^\/]+)').matchAsPrefix(latestThread.posts_.first.text)?.group(1);
+		final threadAsUrl = latestThread.attachments.tryFirstWhere((a) => a.type == AttachmentType.url)?.url.host.replaceFirst(RegExp(r'^www\.'), '');
 		if (threadState?.lastSeenPostId != null) {
 			final filter = Filter.of(context);
 			if (site.hasOmittedReplies) {
@@ -278,46 +279,40 @@ class ThreadRow extends StatelessWidget {
 								padding: EdgeInsets.zero,
 								minSize: 0,
 								child: ConstrainedBox(
-									constraints: const BoxConstraints(
-										minHeight: 75
+									constraints: BoxConstraints(
+										minHeight: 75,
+										minWidth: settings.thumbnailSize
 									),
-									child: Stack(
-										alignment: Alignment.center,
-										fit: StackFit.loose,
-										children: [
-											AttachmentThumbnail(
-												onLoadError: onThumbnailLoadError,
-												attachment: attachment,
-												thread: latestThread.identifier,
-												hero: TaggedAttachment(
+									child: Center(
+										child: Stack(
+											children: [
+												AttachmentThumbnail(
+													onLoadError: onThumbnailLoadError,
 													attachment: attachment,
-													semanticParentIds: semanticParentIds
+													thread: latestThread.identifier,
+													hero: TaggedAttachment(
+														attachment: attachment,
+														semanticParentIds: semanticParentIds
+													),
+													shrinkHeight: true,
+													shrinkWidth: true
 												),
-												shrinkHeight: true
-											),
-											if (attachment.type.isVideo) SizedBox.fromSize(
-												size: attachment.estimateFittedSize(
-													size: Size.square(settings.thumbnailSize)
-												),
-												child: Center(
-													child: AspectRatio(
-														aspectRatio: attachment.spoiler ? 1 : ((attachment.width ?? 1) / (attachment.height ?? 1)),
-														child: Align(
-															alignment: Alignment.bottomRight,
-															child: Container(
-																decoration: BoxDecoration(
-																	borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																	border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-																),
-																padding: const EdgeInsets.all(2),
-																child: const Icon(CupertinoIcons.play_arrow_solid, size: 16)
-															)
+												if (attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned.fill(
+													child: Align(
+														alignment: Alignment.bottomRight,
+														child: Container(
+															decoration: BoxDecoration(
+																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+															),
+															padding: const EdgeInsets.all(2),
+															child: attachment.type.isVideo ? const Icon(CupertinoIcons.play_arrow_solid, size: 16) : const Icon(CupertinoIcons.link, size: 16)
 														)
 													)
 												)
-											)
-										]
+											]
+										)
 									)
 								),
 								onPressed: () => onThumbnailTap?.call(attachment)
