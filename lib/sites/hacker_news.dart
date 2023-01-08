@@ -92,7 +92,7 @@ class _HNComment extends _HNObject {
 class SiteHackerNews extends ImageboardSite {
 	final int catalogThreadsPerPage;
 	SiteHackerNews({
-		this.catalogThreadsPerPage = 25
+		this.catalogThreadsPerPage = 30
 	}) : super([]);
 	@override
 	String get baseUrl => 'news.ycombinator.com';
