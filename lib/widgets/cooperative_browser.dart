@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -44,19 +45,21 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 		_url = await _controller?.getUrl();
 		if (!mounted) return;
 		if (_pageReady) {
-			final Map v = await _controller!.evaluateJavascript(source: '''(() => ({
+			final Map? v = await _controller?.evaluateJavascript(source: '''(() => ({
 				top: window.scrollY < 50,
 				bottom: document.body.scrollHeight < (window.scrollY + window.innerHeight + 50),
 				left: window.scrollX < 50,
 				right: document.body.scrollWidth < (window.scrollX + window.innerWidth + 50)
 			}))()''');
-			_allowedDirections.clear();
-			_allowedDirections.addAll([
-				if (!v['top']!) AxisDirection.down,
-				if (!v['bottom']!) AxisDirection.up,
-				if (!v['left']!) AxisDirection.right,
-				if (!v['right']!) AxisDirection.left
-			]);
+			if (v != null) {
+				_allowedDirections.clear();
+				_allowedDirections.addAll([
+					if (!v['top']!) AxisDirection.down,
+					if (!v['bottom']!) AxisDirection.up,
+					if (!v['left']!) AxisDirection.right,
+					if (!v['right']!) AxisDirection.left
+				]);
+			}
 		}
 		else {
 			_allowedDirections.clear();
@@ -72,90 +75,97 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 
 	@override
 	Widget build(BuildContext context) {
-		return Container(
-			decoration: BoxDecoration(
-				border: Border(
-					top: BorderSide(
-						color: _allowedDirections.contains(AxisDirection.down) ? Colors.green : Colors.red,
-						width: 10
-					),
-					bottom: BorderSide(
-						color: _allowedDirections.contains(AxisDirection.up) ? Colors.green : Colors.red,
-						width: 10
-					),
-					left: BorderSide(
-						color: _allowedDirections.contains(AxisDirection.right) ? Colors.green : Colors.red,
-						width: 10
-					),
-					right: BorderSide(
-						color: _allowedDirections.contains(AxisDirection.left) ? Colors.green : Colors.red,
-						width: 10
-					)
-				)
-			),
-			child: Column(
-				children: [
-					Expanded(
-						child: InAppWebView(
-							onLoadStart: (controller, url) {
-								_controller = controller;
-								_pageReady = false;
-								_progress.value = null;
-							},
-							onProgressChanged: (controller, progress) {
-								_controller = controller;
-								_progress.value = progress / 100;
-								if (progress > 0) {
-									_pageReady = true;
-								}
-							},
-							onLoadStop: (controller, url) {
-								_controller = controller;
-								_progress.value = 1;
-								_pageReady = true;
-							},
-							gestureRecognizers: {
-								Factory<WeakPanGestureRecognizer>(() => WeakPanGestureRecognizer(
-									weakness: 0.5,
-									allowedDirections: _allowedDirections,
-									debugOwner: this
-									)
-									..gestureSettings = MediaQuery.maybeGestureSettingsOf(context))
-							},
-							initialUrlRequest: widget.initialUrlRequest
-						)
-					),
-					ValueListenableBuilder<double?>(
-						valueListenable: _progress,
-						builder: (context, progress, _) => LinearProgressIndicator(
-							value: progress
-						)
-					),
-					DecoratedBox(
-						decoration: BoxDecoration(
-							color: CupertinoTheme.of(context).scaffoldBackgroundColor
+		return SafeArea(
+			top: false,
+			child: Container(
+				margin: EdgeInsets.only(
+					top: MediaQuery.paddingOf(ImageboardRegistry.instance.context ?? context).top
+				),
+				decoration: BoxDecoration(
+					border: Border(
+						top: BorderSide(
+							color: _allowedDirections.contains(AxisDirection.down) ? Colors.green : Colors.red,
+							width: 10
 						),
-						child: Row(
-							children: [
-								CupertinoButton(
-									onPressed: _canGoBack ? _controller?.goBack : null,
-									child: const Icon(CupertinoIcons.arrow_left)
-								),
-								Expanded(
-									child: Text(_url.toString())
-								),
-								CupertinoButton(
-									onPressed: _controller?.reload,
-									child: const Icon(CupertinoIcons.refresh)
-								),
-								CupertinoButton(
-									onPressed: _canGoForward ? _controller?.goForward : null,
-									child: const Icon(CupertinoIcons.arrow_right)
-								)
-							]
+						bottom: BorderSide(
+							color: _allowedDirections.contains(AxisDirection.up) ? Colors.green : Colors.red,
+							width: 10
+						),
+						left: BorderSide(
+							color: _allowedDirections.contains(AxisDirection.right) ? Colors.green : Colors.red,
+							width: 10
+						),
+						right: BorderSide(
+							color: _allowedDirections.contains(AxisDirection.left) ? Colors.green : Colors.red,
+							width: 10
 						)
 					)
-				]
+				),
+				child: Column(
+					children: [
+						Expanded(
+							child: InAppWebView(
+								onLoadStart: (controller, url) {
+									_controller = controller;
+									_pageReady = false;
+									_progress.value = null;
+								},
+								onProgressChanged: (controller, progress) {
+									_controller = controller;
+									_progress.value = progress / 100;
+									if (progress > 0) {
+										_pageReady = true;
+									}
+								},
+								onLoadStop: (controller, url) {
+									_controller = controller;
+									_progress.value = 1;
+									_pageReady = true;
+								},
+								gestureRecognizers: {
+									Factory<WeakPanGestureRecognizer>(() => WeakPanGestureRecognizer(
+										weakness: 0.5,
+										allowedDirections: _allowedDirections,
+										debugOwner: this
+										)
+										..gestureSettings = MediaQuery.maybeGestureSettingsOf(context)
+										..onStart = (_) {})
+								},
+								initialUrlRequest: widget.initialUrlRequest
+							)
+						),
+						ValueListenableBuilder<double?>(
+							valueListenable: _progress,
+							builder: (context, progress, _) => LinearProgressIndicator(
+								value: progress
+							)
+						),
+						DecoratedBox(
+							decoration: BoxDecoration(
+								color: CupertinoTheme.of(context).scaffoldBackgroundColor
+							),
+							child: Row(
+								children: [
+									CupertinoButton(
+										onPressed: _canGoBack ? _controller?.goBack : null,
+										child: const Icon(CupertinoIcons.arrow_left)
+									),
+									Expanded(
+										child: Text(_url.toString(), maxLines: 1, overflow: TextOverflow.ellipsis)
+									),
+									CupertinoButton(
+										onPressed: _controller?.reload,
+										child: const Icon(CupertinoIcons.refresh)
+									),
+									CupertinoButton(
+										onPressed: _canGoForward ? _controller?.goForward : null,
+										child: const Icon(CupertinoIcons.arrow_right)
+									)
+								]
+							)
+						)
+					]
+				)
 			)
 		);
 	}
