@@ -1628,7 +1628,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								if (_tabController.index != 0) {
 									return;
 								}
+								mediumHapticFeedback();
 								if (Persistence.currentTabIndex <= 0) {
+									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
 									return;
 								}
 								activeBrowserTab.value--;
@@ -1640,7 +1642,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								if (_tabController.index != 0) {
 									return;
 								}
+								mediumHapticFeedback();
 								if (Persistence.currentTabIndex >= Persistence.tabs.length - 1) {
+									Future.delayed(const Duration(milliseconds: 100), mediumHapticFeedback);
 									return;
 								}
 								activeBrowserTab.value++;
