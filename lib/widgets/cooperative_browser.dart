@@ -45,12 +45,16 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 		_url = await _controller?.getUrl();
 		if (!mounted) return;
 		if (_pageReady) {
-			final Map? v = await _controller?.evaluateJavascript(source: '''(() => ({
-				top: window.scrollY < 50,
-				bottom: document.body.scrollHeight < (window.scrollY + window.innerHeight + 50),
-				left: window.scrollX < 50,
-				right: document.body.scrollWidth < (window.scrollX + window.innerWidth + 50)
-			}))()''');
+			final Map? v = await _controller?.evaluateJavascript(source: '''(() => {
+				var top = Math.max(window.scrollY, visualViewport.offsetTop, document.body.scrollTop)
+				var left = Math.max(window.scrollX, visualViewport.offsetLeft, document.body.scrollLeft)
+				return {
+					top: top < 50,
+					bottom: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) < (top + visualViewport.height + 50),
+					left: left < 50,
+					right: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) < (left + visualViewport.width + 50)
+				}
+			})()''');
 			if (v != null) {
 				_allowedDirections.clear();
 				_allowedDirections.addAll([
