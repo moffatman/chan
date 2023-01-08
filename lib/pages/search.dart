@@ -281,7 +281,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 													ImageboardIcon(imageboardKey: query.imageboardKey),
 													const SizedBox(width: 4),
 												],
-												Text('/${query.boards.first}/', style: const TextStyle(
+												if (ImageboardRegistry.instance.getImageboard(query.imageboardKey ?? '')?.site.supportsMultipleBoards ?? true) Text('/${query.boards.first}/', style: const TextStyle(
 													color: Colors.white
 												))
 											]
@@ -321,7 +321,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 													ImageboardIcon(imageboardKey: query.imageboardKey),
 													const SizedBox(width: 4),
 												],
-												Text('/${query.boards.first}/', style: const TextStyle(
+												if (ImageboardRegistry.instance.getImageboard(query.imageboardKey ?? '')?.site.supportsMultipleBoards ?? true) Text('/${query.boards.first}/', style: const TextStyle(
 													color: Colors.white
 												))
 											]
@@ -566,9 +566,10 @@ class _SearchComposePageState extends State<SearchComposePage> {
 List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 	return [
 		if (ImageboardRegistry.instance.count > 1 && q.imageboardKey != null) ImageboardIcon(imageboardKey: q.imageboardKey),
-		...q.boards.map(
+		if (ImageboardRegistry.instance.getImageboard(q.imageboardKey ?? '')?.site.supportsMultipleBoards ?? true) ...q.boards.map(
 			(board) => _SearchQueryFilterTag('/$board/')
-		),
+		)
+		else const SizedBox(width: 8),
 		Text(q.query),
 		if (q.mediaFilter == MediaFilter.onlyWithMedia) const _SearchQueryFilterTag('With images'),
 		if (q.mediaFilter == MediaFilter.onlyWithNoMedia) const _SearchQueryFilterTag('Without images'),
