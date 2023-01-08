@@ -529,10 +529,10 @@ class SiteLainchan extends ImageboardSite {
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => decodeGenericUrl(baseUrl, url);
 
 	@override
-	bool operator ==(Object other) => (other is SiteLainchan) && (other.name == name) && (other.baseUrl == baseUrl);
+	bool operator ==(Object other) => (other is SiteLainchan) && (other.baseUrl == baseUrl) && (other.name == name) && (other.maxUploadSizeBytes == maxUploadSizeBytes) && listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl);
+	int get hashCode => Object.hash(baseUrl, name, maxUploadSizeBytes, archives);
 	
 	@override
 	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');

@@ -43,6 +43,30 @@ class ImageboardBoard {
 
 	@override
 	String toString() => '/$name/';
+
+	@override
+	bool operator == (Object other) => (other is ImageboardBoard) &&
+		(other.name == name) &&
+		(other.title == title) &&
+		(other.isWorksafe == isWorksafe) &&
+		(other.webmAudioAllowed == webmAudioAllowed) &&
+		(other.maxImageSizeBytes == maxImageSizeBytes) &&
+		(other.maxWebmSizeBytes == maxWebmSizeBytes) &&
+		(other.maxWebmDurationSeconds == maxWebmDurationSeconds) &&
+		(other.maxCommentCharacters == maxCommentCharacters) &&
+		(other.threadCommentLimit == threadCommentLimit) &&
+		(other.threadImageLimit == threadImageLimit) &&
+		(other.pageCount == pageCount) &&
+		(other.threadCooldown == threadCooldown) &&
+		(other.replyCooldown == replyCooldown) &&
+		(other.imageCooldown == imageCooldown) &&
+		(other.spoilers == spoilers) &&
+		(other.additionalDataTime == additionalDataTime) &&
+		(other.subdomain == subdomain) &&
+		(other.icon == icon);
+
+	@override
+	int get hashCode => Object.hash(name, title, isWorksafe, webmAudioAllowed, maxImageSizeBytes, maxWebmSizeBytes, maxWebmDurationSeconds, maxCommentCharacters, threadCommentLimit, threadImageLimit, pageCount, threadCooldown, replyCooldown, imageCooldown, spoilers, additionalDataTime, subdomain, icon);
 }
 
 class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {

@@ -601,4 +601,10 @@ class SiteHackerNews extends ImageboardSite {
 			}).toList()
 		);
 	}
+
+	@override
+	bool operator == (Object other) => (other is SiteHackerNews) && (other.catalogThreadsPerPage == catalogThreadsPerPage);
+
+	@override
+	int get hashCode => catalogThreadsPerPage.hashCode;
 }

@@ -2,6 +2,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/soyjak.dart';
 import 'package:chan/util.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 
 class SiteFrenschan extends SiteSoyjak {
@@ -66,10 +67,10 @@ class SiteFrenschan extends SiteSoyjak {
 	}
 
 	@override
-	bool operator ==(Object other) => (other is SiteFrenschan) && (other.name == name) && (other.baseUrl == baseUrl);
+	bool operator ==(Object other) => (other is SiteFrenschan) && (other.baseUrl == baseUrl) && (other.name == name) && listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl);
+	int get hashCode => Object.hash(baseUrl, name, archives);
 	
 	@override
 	String get defaultUsername => 'Fren';

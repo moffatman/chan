@@ -48,10 +48,10 @@ class Imageboard extends ChangeNotifier {
 	
 	void updateSiteData(dynamic siteData) {
 		try {
-			final oldSite = site;
-			site = makeSite(siteData);
-			site.persistence = persistence;
-			if (site != oldSite) {
+			final newSite = makeSite(siteData);
+			if (newSite != site) {
+				site = newSite;
+				site.persistence = persistence;
 				notifyListeners();
 			}
 		}

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
@@ -17,6 +16,7 @@ import 'package:chan/widgets/util.dart';
 import 'package:charset_converter/charset_converter.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:html/dom.dart' as dom;
 
@@ -449,4 +449,10 @@ class SiteFutaba extends ImageboardSite {
 
 	@override
 	bool get supportsPosting => false;
+
+	@override
+	bool operator == (Object other) => (other is SiteFutaba) && (other.baseUrl == baseUrl) && (other.name == name) && (other.maxUploadSizeBytes == maxUploadSizeBytes) && listEquals(other.archives, archives);
+
+	@override
+	int get hashCode => Object.hash(baseUrl, name, maxUploadSizeBytes, archives);
 }

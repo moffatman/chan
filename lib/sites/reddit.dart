@@ -740,4 +740,10 @@ class SiteReddit extends ImageboardSite {
 		ThreadVariant.redditOld,
 		ThreadVariant.redditQandA
 	];
+
+	@override
+	bool operator == (Object other) => (other is SiteReddit);
+
+	@override
+	int get hashCode => 0;
 }

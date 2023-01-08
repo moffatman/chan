@@ -8,6 +8,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 
 class DvachException implements Exception {
@@ -357,8 +358,8 @@ class SiteDvach extends ImageboardSite {
 	String get defaultUsername => 'Аноним';
 
 	@override
-	bool operator ==(Object other) => (other is SiteDvach) && (other.name == name) && (other.baseUrl == baseUrl);
+	bool operator ==(Object other) => (other is SiteDvach) && (other.name == name) && (other.baseUrl == baseUrl) && listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl);
+	int get hashCode => Object.hash(name, baseUrl, archives);
 }

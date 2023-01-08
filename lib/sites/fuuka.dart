@@ -7,6 +7,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:html/dom.dart' as dom;
 
@@ -297,8 +298,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 	});
 
 	@override
-	bool operator == (Object other) => (other is FuukaArchive) && (other.name == name) && (other.baseUrl == baseUrl);
+	bool operator == (Object other) => (other is FuukaArchive) && (other.baseUrl == baseUrl) && (other.name == name) && listEquals(other.boards, boards);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl);
+	int get hashCode => Object.hash(baseUrl, name, boards);
 }

@@ -2,6 +2,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 
 class SiteLainchanOrg extends SiteLainchan {
@@ -37,10 +38,10 @@ class SiteLainchanOrg extends SiteLainchan {
 	String get siteData => baseUrl;
 
 	@override
-	bool operator ==(Object other) => (other is SiteLainchanOrg) && (other.name == name) && (other.baseUrl == baseUrl);
+	bool operator ==(Object other) => (other is SiteLainchanOrg) && (other.baseUrl == baseUrl) && (other.name == name) && listEquals(other.archives, archives);
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl);
+	int get hashCode => Object.hash(baseUrl, name, archives);
 
 	@override
 	bool get supportsPushNotifications => false;
