@@ -374,7 +374,7 @@ class SiteReddit extends ImageboardSite {
 				));
 			}
 		}
-		else if (data['url'] != null) {
+		else if (!(data['is_self'] ?? false) && data['url'] != null) {
 			final url = Uri.parse(data['url']);
 			attachments.add(Attachment(
 				type: AttachmentType.url,
