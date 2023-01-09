@@ -308,6 +308,9 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	bool _rotationAppropriate(Attachment attachment) {
+		if (attachment.type == AttachmentType.url || attachment.type == AttachmentType.pdf) {
+			return false;
+		}
 		final displayIsLandscape = MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;
 		return attachment.isLandscape != null && displayIsLandscape != attachment.isLandscape;
 	}
