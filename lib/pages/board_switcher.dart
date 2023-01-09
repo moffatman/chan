@@ -16,6 +16,20 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 
+extension _Unnullify on ImageboardScoped<ImageboardBoard?> {
+	ImageboardScoped<ImageboardBoard> get unnullify => ImageboardScoped(
+		imageboard: imageboard,
+		item: item!
+	);
+}
+
+extension _Nullify on ImageboardScoped<ImageboardBoard> {
+	ImageboardScoped<ImageboardBoard?> get nullify => ImageboardScoped(
+		imageboard: imageboard,
+		item: item
+	);
+}
+
 class BoardSwitcherPage extends StatefulWidget {
 	final bool Function(Imageboard imageboard)? filterImageboards;
 	final String? initialImageboardKey;
@@ -153,6 +167,15 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 					filteredBoards.add(board);
 				}
 			}
+		}
+		if (settings.onlyShowFavouriteBoardsInSwitcher) {
+			final favs = imageboards.expand((i) => i.persistence.browserState.favouriteBoards.map(i.scope)).toList();
+			filteredBoards = filteredBoards.where((b) => favs.any((f) => f.imageboard == b.imageboard && f.item == b.item.name)).toList();
+		}
+		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
+			return (b.item.name.toLowerCase().startsWith(normalized) ? 1 : 0) - (a.item.name.startsWith(normalized) ? 1 : 0);
+		});
+		if (searchString.isNotEmpty && !settings.onlyShowFavouriteBoardsInSwitcher) {
 			if (currentImageboard.site.allowsArbitraryBoards) {
 				final fakeBoard = ImageboardBoard(
 					name: searchString,
@@ -168,13 +191,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				}
 			}
 		}
-		if (settings.onlyShowFavouriteBoardsInSwitcher) {
-			final favs = imageboards.expand((i) => i.persistence.browserState.favouriteBoards.map(i.scope)).toList();
-			filteredBoards = filteredBoards.where((b) => favs.any((f) => f.imageboard == b.imageboard && f.item == b.item.name)).toList();
-		}
-		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-			return (b.item.name.toLowerCase().startsWith(normalized) ? 1 : 0) - (a.item.name.startsWith(normalized) ? 1 : 0);
-		});
 		return filteredBoards;
 	}
 
@@ -194,7 +210,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
 		_backgroundColor.value ??= CupertinoTheme.of(context).scaffoldBackgroundColor;
-		final filteredBoards = getFilteredBoards();
+		final List<ImageboardScoped<ImageboardBoard?>> filteredBoards = getFilteredBoards().map((x) => x.nullify).toList();
+		filteredBoards.addAll(allImageboards.where((i) {
+			return i != currentImageboard && i.site.allowsArbitraryBoards;
+		}).map((i) => i.scope(null)));
 		return Stack(
 			children: [
 				CupertinoPageScaffold(
@@ -218,13 +237,18 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											scrollController.jumpTo(scrollController.position.pixels);
 										},
 										onSubmitted: (String board) {
-											final currentBoards = getFilteredBoards();
-											if (currentBoards.isNotEmpty) {
-												Navigator.of(context).pop(currentBoards.first);
+											if (filteredBoards.isNotEmpty) {
+												if (filteredBoards.first.item != null) {
+													Navigator.of(context).pop(filteredBoards.first.unnullify);
+													return;
+												}
+												setState(() {
+													currentImageboardIndex = allImageboards.indexOf(filteredBoards.first.imageboard);
+												});
+												typeahead = const Tuple2('', []);
+												_updateTypeaheadBoards(searchString);
 											}
-											else {
-												_focusNode.requestFocus();
-											}
+											_focusNode.requestFocus();
 										},
 										onChanged: (String newSearchString) {
 											_updateTypeaheadBoards(newSearchString);
@@ -424,41 +448,106 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										itemBuilder: (context, i) {
 											final board = filteredBoards[i].item;
 											final imageboard = filteredBoards[i].imageboard;
-											return ContextMenu(
-												actions: [
-													if (currentImageboard.persistence.browserState.favouriteBoards.contains(board.name)) ContextMenuAction(
-														child: const Text('Unfavourite'),
-														trailingIcon: CupertinoIcons.star,
+											if (board != null) {
+												return ContextMenu(
+													actions: [
+														if (currentImageboard.persistence.browserState.favouriteBoards.contains(board.name)) ContextMenuAction(
+															child: const Text('Unfavourite'),
+															trailingIcon: CupertinoIcons.star,
+															onPressed: () {
+																currentImageboard.persistence.browserState.favouriteBoards.remove(board.name);
+																setState(() {});
+															}
+														)
+														else ContextMenuAction(
+															child: const Text('Favourite'),
+															trailingIcon: CupertinoIcons.star_fill,
+															onPressed: () {
+																currentImageboard.persistence.browserState.favouriteBoards.add(board.name);
+																setState(() {});
+															}
+														),
+														if (board.additionalDataTime != null) ContextMenuAction(
+															child: const Text('Remove'),
+															trailingIcon: CupertinoIcons.delete,
+															onPressed: () {
+																imageboard.persistence.boards.removeWhere((k, v) => v == board);
+																_fetchBoards();
+																setState(() {});
+															}
+														)
+													],
+													child: CupertinoButton(
+														padding: EdgeInsets.zero,
+														child: Container(
+															padding: const EdgeInsets.all(4),
+															height: 64,
+															decoration: BoxDecoration(
+																borderRadius: const BorderRadius.all(Radius.circular(4)),
+																color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
+															),
+															child: Stack(
+																fit: StackFit.expand,
+																children: [
+																	Row(
+																		crossAxisAlignment: CrossAxisAlignment.center,
+																		children: [
+																			const SizedBox(width: 16),
+																			ImageboardIcon(
+																				imageboardKey: imageboard.key
+																			),
+																			const SizedBox(width: 16),
+																			if (board.icon != null) ...[
+																				ClipOval(
+																					child: SizedBox(
+																						width: 30,
+																						height: 30,
+																						child: FittedBox(
+																							fit: BoxFit.contain,
+																							child: ExtendedImage.network(board.icon!.toString())
+																						)
+																					)
+																				),
+																				const SizedBox(width: 16)
+																			],
+																			Flexible(
+																				child: AutoSizeText(
+																					imageboard.site.supportsMultipleBoards ? '/${board.name}/${board.title.isEmpty ? '' : ' - ${board.title}'}' : board.title,
+																					maxFontSize: 20,
+																					minFontSize: 15,
+																					maxLines: 1,
+																					textAlign: TextAlign.left,
+																					overflow: TextOverflow.ellipsis
+																				)
+																			),
+																			const SizedBox(width: 16)
+																		]
+																	),
+																	if (imageboard.persistence.browserState.favouriteBoards.contains(board.name)) const Align(
+																		alignment: Alignment.topRight,
+																		child: Padding(
+																			padding: EdgeInsets.only(top: 4, right: 4),
+																			child: Icon(CupertinoIcons.star_fill, size: 15)
+																		)
+																	)
+																]
+															)
+														),
 														onPressed: () {
-															currentImageboard.persistence.browserState.favouriteBoards.remove(board.name);
-															setState(() {});
+															Navigator.of(context).pop(imageboard.scope(board));
 														}
 													)
-													else ContextMenuAction(
-														child: const Text('Favourite'),
-														trailingIcon: CupertinoIcons.star_fill,
-														onPressed: () {
-															currentImageboard.persistence.browserState.favouriteBoards.add(board.name);
-															setState(() {});
-														}
-													),
-													if (board.additionalDataTime != null) ContextMenuAction(
-														child: const Text('Remove'),
-														trailingIcon: CupertinoIcons.delete,
-														onPressed: () {
-															imageboard.persistence.boards.removeWhere((k, v) => v == board);
-															_fetchBoards();
-															setState(() {});
-														}
-													)
-												],
-												child: GestureDetector(
+												);
+											}
+											else {
+												return CupertinoButton(
+													padding: EdgeInsets.zero,
 													child: Container(
 														padding: const EdgeInsets.all(4),
 														height: 64,
 														decoration: BoxDecoration(
 															borderRadius: const BorderRadius.all(Radius.circular(4)),
-															color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
+															color: Colors.red.withOpacity(0.1)
 														),
 														child: Stack(
 															fit: StackFit.expand,
@@ -471,22 +560,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																			imageboardKey: imageboard.key
 																		),
 																		const SizedBox(width: 16),
-																		if (board.icon != null) ...[
-																			ClipOval(
-																				child: SizedBox(
-																					width: 30,
-																					height: 30,
-																					child: FittedBox(
-																						fit: BoxFit.contain,
-																						child: ExtendedImage.network(board.icon!.toString())
-																					)
-																				)
-																			),
-																			const SizedBox(width: 16)
-																		],
 																		Flexible(
 																			child: AutoSizeText(
-																				imageboard.site.supportsMultipleBoards ? '/${board.name}/${board.title.isEmpty ? '' : ' - ${board.title}'}' : board.title,
+																				'Search ${imageboard.site.name}',
 																				maxFontSize: 20,
 																				minFontSize: 15,
 																				maxLines: 1,
@@ -496,22 +572,19 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																		),
 																		const SizedBox(width: 16)
 																	]
-																),
-																if (imageboard.persistence.browserState.favouriteBoards.contains(board.name)) const Align(
-																	alignment: Alignment.topRight,
-																	child: Padding(
-																		padding: EdgeInsets.only(top: 4, right: 4),
-																		child: Icon(CupertinoIcons.star_fill, size: 15)
-																	)
 																)
 															]
 														)
 													),
-													onTap: () {
-														Navigator.of(context).pop(imageboard.scope(board));
+													onPressed: () {
+														setState(() {
+															currentImageboardIndex = allImageboards.indexOf(imageboard);
+														});
+														typeahead = const Tuple2('', []);
+														_updateTypeaheadBoards(searchString);
 													}
-												)
-											);
+												);
+											}
 										}
 									) : GridView.extent(
 										physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
@@ -521,13 +594,108 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										mainAxisSpacing: 4,
 										childAspectRatio: 1.2,
 										crossAxisSpacing: 4,
-										children: filteredBoards.map((board) {
-											return GestureDetector(
+										children: filteredBoards.map((item) {
+											final imageboard = item.imageboard;
+											final board = item.item;
+											if (board != null) {
+												return ContextMenu(
+													actions: [
+														if (currentImageboard.persistence.browserState.favouriteBoards.contains(board.name)) ContextMenuAction(
+															child: const Text('Unfavourite'),
+															trailingIcon: CupertinoIcons.star,
+															onPressed: () {
+																currentImageboard.persistence.browserState.favouriteBoards.remove(board.name);
+																setState(() {});
+															}
+														)
+														else ContextMenuAction(
+															child: const Text('Favourite'),
+															trailingIcon: CupertinoIcons.star_fill,
+															onPressed: () {
+																currentImageboard.persistence.browserState.favouriteBoards.add(board.name);
+																setState(() {});
+															}
+														),
+														if (board.additionalDataTime != null) ContextMenuAction(
+															child: const Text('Remove'),
+															trailingIcon: CupertinoIcons.delete,
+															onPressed: () {
+																imageboard.persistence.boards.removeWhere((k, v) => v == board);
+																_fetchBoards();
+																setState(() {});
+															}
+														)
+													],
+													child: CupertinoButton(
+														padding: EdgeInsets.zero,
+														child: Container(
+															padding: const EdgeInsets.all(4),
+															decoration: BoxDecoration(
+																borderRadius: const BorderRadius.all(Radius.circular(4)),
+																color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
+															),
+															child: Stack(
+																children: [
+																	if (allImageboards.length > 1) Align(
+																		alignment: Alignment.topLeft,
+																		child: Padding(
+																			padding: const EdgeInsets.only(top: 2, left: 2),
+																			child: ImageboardIcon(
+																				imageboardKey: imageboard.key,
+																				boardName: board.name
+																			)
+																		)
+																	),
+																	if (imageboard.persistence.browserState.favouriteBoards.contains(board.name)) const Align(
+																		alignment: Alignment.topRight,
+																		child: Padding(
+																			padding: EdgeInsets.only(top: 2, right: 2),
+																			child: Icon(CupertinoIcons.star_fill, size: 15)
+																		)
+																	),
+																	Column(
+																		mainAxisAlignment: MainAxisAlignment.start,
+																		crossAxisAlignment: CrossAxisAlignment.center,
+																		children: [
+																			const SizedBox(height: 20),
+																			if (imageboard.site.supportsMultipleBoards) Flexible(
+																				child: AutoSizeText(
+																					'/${board.name}/',
+																					textAlign: TextAlign.center,
+																					style: const TextStyle(
+																						fontSize: 24
+																					)
+																				)
+																			),
+																			Flexible(
+																				child: Center(
+																					child: AutoSizeText(
+																						board.title,
+																						maxFontSize: imageboard.site.supportsMultipleBoards ? 14 : double.infinity,
+																						maxLines: 2,
+																						textAlign: TextAlign.center,
+																						overflow: TextOverflow.ellipsis
+																					)
+																				)
+																			)
+																		]
+																	)
+																]
+															)
+														),
+														onPressed: () {
+															Navigator.of(context).pop(item.unnullify);
+														}
+													)
+												);
+											}
+											return CupertinoButton(
+												padding: EdgeInsets.zero,
 												child: Container(
 													padding: const EdgeInsets.all(4),
 													decoration: BoxDecoration(
 														borderRadius: const BorderRadius.all(Radius.circular(4)),
-														color: board.item.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
+														color: Colors.red.withOpacity(0.1)
 													),
 													child: Stack(
 														children: [
@@ -536,16 +704,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																child: Padding(
 																	padding: const EdgeInsets.only(top: 2, left: 2),
 																	child: ImageboardIcon(
-																		imageboardKey: board.imageboard.key,
-																		boardName: board.item.name
+																		imageboardKey: imageboard.key
 																	)
-																)
-															),
-															if (board.imageboard.persistence.browserState.favouriteBoards.contains(board.item.name)) const Align(
-																alignment: Alignment.topRight,
-																child: Padding(
-																	padding: EdgeInsets.only(top: 2, right: 2),
-																	child: Icon(CupertinoIcons.star_fill, size: 15)
 																)
 															),
 															Column(
@@ -553,23 +713,12 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																crossAxisAlignment: CrossAxisAlignment.center,
 																children: [
 																	const SizedBox(height: 20),
-																	if (board.imageboard.site.supportsMultipleBoards) Flexible(
+																	if (imageboard.site.supportsMultipleBoards) Flexible(
 																		child: AutoSizeText(
-																			'/${board.item.name}/',
+																			'Search ${imageboard.site.name}',
 																			textAlign: TextAlign.center,
 																			style: const TextStyle(
 																				fontSize: 24
-																			)
-																		)
-																	),
-																	Flexible(
-																		child: Center(
-																			child: AutoSizeText(
-																				board.item.title,
-																				maxFontSize: board.imageboard.site.supportsMultipleBoards ? 14 : double.infinity,
-																				maxLines: 2,
-																				textAlign: TextAlign.center,
-																				overflow: TextOverflow.ellipsis
 																			)
 																		)
 																	)
@@ -578,8 +727,12 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 														]
 													)
 												),
-												onTap: () {
-													Navigator.of(context).pop(board);
+												onPressed: () {
+													setState(() {
+														currentImageboardIndex = allImageboards.indexOf(imageboard);
+													});
+													typeahead = const Tuple2('', []);
+													_updateTypeaheadBoards(searchString);
 												}
 											);
 										}).toList()
