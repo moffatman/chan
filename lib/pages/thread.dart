@@ -427,17 +427,18 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		String title = '/${widget.thread.board}/';
+		final site = context.watch<ImageboardSite>();
+		String title = site.formatBoardName(site.persistence.getBoard(widget.thread.board));
 		if (persistentState.thread?.title != null) {
 			title += ' - ${context.read<EffectiveSettings>().filterProfanity(persistentState.thread!.title!)}';
 		}
 		else {
-			title += widget.thread.id.toString();
+			title.replaceFirst(RegExp(r'\/$'), '');
+			title += '/${widget.thread.id}';
 		}
 		if (persistentState.thread?.isArchived ?? false) {
 			title = '(Archived) $title';
 		}
-		final site = context.watch<ImageboardSite>();
 		if (!site.supportsMultipleBoards) {
 			if (persistentState.thread?.title != null) {
 				title = context.read<EffectiveSettings>().filterProfanity(persistentState.thread!.title!);

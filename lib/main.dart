@@ -1307,7 +1307,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					return _buildTabletIcon(
 						i * -1,
 						icon,
-						((Persistence.tabs[i].imageboard?.site.supportsMultipleBoards ?? false) && Persistence.tabs[i].board != null) ? '/${Persistence.tabs[i].board?.name}/' : (Persistence.tabs[i].imageboard?.site.name ?? Persistence.tabs[i].imageboardKey ?? 'None'),
+						Persistence.tabs[i].board != null ? Persistence.tabs[i].imageboard?.site.formatBoardName(Persistence.tabs[i].board!) : (Persistence.tabs[i].imageboard?.site.name ?? Persistence.tabs[i].imageboardKey ?? 'None'),
 						reorderable: false,
 						axis: axis,
 						preLabelInjection: injectIcon ? AnimatedBuilder(

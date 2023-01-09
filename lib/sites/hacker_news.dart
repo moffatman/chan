@@ -603,6 +603,9 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
+	String formatBoardName(ImageboardBoard board) => name;
+
+	@override
 	bool operator == (Object other) => (other is SiteHackerNews) && (other.catalogThreadsPerPage == catalogThreadsPerPage);
 
 	@override

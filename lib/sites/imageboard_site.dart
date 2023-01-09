@@ -884,6 +884,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		)
 	];
 	List<ThreadVariant> get threadVariants => const [];
+	String formatBoardName(ImageboardBoard board) => '/${board.name}/';
 }
 
 ImageboardSite makeSite(dynamic data) {

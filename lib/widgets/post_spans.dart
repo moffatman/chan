@@ -317,7 +317,8 @@ class PostQuoteLinkSpan extends PostSpan {
 	Tuple2<InlineSpan, TapGestureRecognizer> _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options, int threadId) {
 		String text = '>>';
 		if (zone.thread.board != board) {
-			text += '/$board/';
+			text += zone.site.formatBoardName(zone.site.persistence.getBoard(board)).replaceFirst(RegExp(r'\/$'), '');
+			text += '/';
 		}
 		text += '$postId';
 		if (options.showCrossThreadLabel) {
@@ -1559,7 +1560,7 @@ List<InlineSpan> buildPostInfoRow({
 					)
 				),
 				TextSpan(
-					text: '${showBoardName ? '/${post.board}/' : ''}${post.id} ',
+					text: '${showBoardName ? '${zone.site.formatBoardName(zone.site.persistence.getBoard(post.board)).replaceFirst(RegExp(r'\/$'), '')}/' : ''}${post.id} ',
 					style: TextStyle(color: settings.theme.primaryColor.withOpacity(0.5)),
 					recognizer: interactive ? (TapGestureRecognizer()..onTap = () {
 						context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.id);

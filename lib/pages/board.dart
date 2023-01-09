@@ -546,11 +546,8 @@ class _BoardPageState extends State<BoardPage> {
 									),
 									const Text(' ')
 								],
-								if (imageboard.site.supportsMultipleBoards) ...[
-									if (board != null) Text('/${board!.name}/')
-									else const Text('Select Board')
-								]
-								else Text(imageboard.site.name)
+								if (board != null) Text(imageboard.site.formatBoardName(board!))
+								else const Text('Select Board')
 							]
 							else const Text('Select Imageboard'),
 							if (widget.allowChangingBoard) const Icon(Icons.arrow_drop_down)
@@ -844,7 +841,7 @@ class _BoardPageState extends State<BoardPage> {
 														filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),
 														filterHint: 'Search in board',
 														filterAlternative: (widget.onWantArchiveSearch == null || !imageboard!.site.supportsSearch) ? null : FilterAlternative(
-															name: '/${board?.name}/ archives',
+															name: '${board == null ? '' : site.formatBoardName(board!)} archives',
 															handler: (s) {
 																widget.onWantArchiveSearch!(imageboard.key, board!.name, s);
 															}

@@ -742,6 +742,9 @@ class SiteReddit extends ImageboardSite {
 	];
 
 	@override
+	String formatBoardName(ImageboardBoard board) => '/r/${board.name}';
+
+	@override
 	bool operator == (Object other) => (other is SiteReddit);
 
 	@override

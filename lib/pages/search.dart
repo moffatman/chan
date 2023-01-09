@@ -259,6 +259,14 @@ class _SearchComposePageState extends State<SearchComposePage> {
 			}
 			_lastBoardName = currentBoardName;
 		}
+		final imageboard = ImageboardRegistry.instance.getImageboard(query.imageboardKey ?? '');
+		final String? boardName;
+		if (imageboard != null) {
+			boardName = imageboard.site.formatBoardName(imageboard.persistence.getBoard(query.boards.first));
+		}
+		else {
+			boardName = null;
+		}
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
 			navigationBar: CupertinoNavigationBar(
@@ -281,7 +289,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 													ImageboardIcon(imageboardKey: query.imageboardKey),
 													const SizedBox(width: 4),
 												],
-												if (ImageboardRegistry.instance.getImageboard(query.imageboardKey ?? '')?.site.supportsMultipleBoards ?? true) Text('/${query.boards.first}/', style: const TextStyle(
+												if (imageboard?.site.supportsMultipleBoards ?? true) Text(boardName ?? '/${query.boards.first}', style: const TextStyle(
 													color: Colors.white
 												))
 											]
@@ -321,7 +329,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 													ImageboardIcon(imageboardKey: query.imageboardKey),
 													const SizedBox(width: 4),
 												],
-												if (ImageboardRegistry.instance.getImageboard(query.imageboardKey ?? '')?.site.supportsMultipleBoards ?? true) Text('/${query.boards.first}/', style: const TextStyle(
+												if (imageboard?.site.supportsMultipleBoards ?? true) Text(boardName ?? '/${query.boards.first}', style: const TextStyle(
 													color: Colors.white
 												))
 											]
@@ -564,11 +572,14 @@ class _SearchComposePageState extends State<SearchComposePage> {
 }
 
 List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
+	final imageboard = ImageboardRegistry.instance.getImageboard(q.imageboardKey ?? '');
 	return [
 		if (ImageboardRegistry.instance.count > 1 && q.imageboardKey != null) ImageboardIcon(imageboardKey: q.imageboardKey),
-		if (ImageboardRegistry.instance.getImageboard(q.imageboardKey ?? '')?.site.supportsMultipleBoards ?? true) ...q.boards.map(
-			(board) => _SearchQueryFilterTag('/$board/')
-		)
+		if (imageboard?.site.supportsMultipleBoards ?? true) ...q.boards.map((boardName) {
+			final board = imageboard?.persistence.getBoard(boardName);
+			final formattedBoardName = board == null ? null : imageboard!.site.formatBoardName(board);
+			return _SearchQueryFilterTag(formattedBoardName ?? '/$boardName/');
+		})
 		else const SizedBox(width: 8),
 		Text(q.query),
 		if (q.mediaFilter == MediaFilter.onlyWithMedia) const _SearchQueryFilterTag('With images'),
