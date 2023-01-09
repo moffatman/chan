@@ -87,7 +87,9 @@ class Imageboard extends ChangeNotifier {
 			);
 			notifications.localWatcher = threadWatcher;
 			_threadWatcherInitialized = true;
-			setupBoards(); // don't await
+			if (persistence.boards.isEmpty) {
+				setupBoards(); // don't await
+			}
 			initialized = true;
 		}
 		catch (e, st) {

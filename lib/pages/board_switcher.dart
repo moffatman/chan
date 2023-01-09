@@ -71,6 +71,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		if (currentImageboardIndex == -1) {
 			currentImageboardIndex = 0;
 		}
+		currentImageboard.refreshBoards();
 		_fetchBoards();
 		scrollController.addListener(_onScroll);
 	}
@@ -624,6 +625,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													setState(() {
 														currentImageboardIndex--;
 													});
+													currentImageboard.refreshBoards();
 												},
 												child: const Icon(CupertinoIcons.chevron_left)
 											),
@@ -648,6 +650,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													setState(() {
 														currentImageboardIndex++;
 													});
+													currentImageboard.refreshBoards();
 												},
 												child: const Icon(CupertinoIcons.chevron_right)
 											)
