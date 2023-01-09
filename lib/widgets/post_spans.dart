@@ -1470,7 +1470,7 @@ String _makeAttachmentInfo({
 				bracketParts.add('${attachment.width}x${attachment.height}');
 			}
 			if (bracketParts.isNotEmpty) {
-				text += '(${bracketParts.join(', ')})';
+				text += '(${bracketParts.join(', ')}) ';
 			}
 		}
 	}
