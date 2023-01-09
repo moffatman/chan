@@ -42,10 +42,16 @@ class ImageboardTab extends StatelessWidget {
 					onThreadSelected: threadSetter,
 					onBoardChanged: (board) {
 						tab.board = board.item;
+						final didChangeSite = tab.imageboardKey != board.imageboard.key;
 						tab.imageboardKey = board.imageboard.key;
 						tab.initialSearch = null;
-						Future.delayed(const Duration(seconds: 1), Persistence.didUpdateTabs);
-						tab.didUpdate();
+						if (didChangeSite) {
+							threadSetter(null);
+						}
+						else {
+							Future.delayed(const Duration(seconds: 1), Persistence.didUpdateTabs);
+							tab.didUpdate();
+						}
 					},
 					getInitialDraftText: () => tab.draftThread,
 					onDraftTextChanged: (newText) {
