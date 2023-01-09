@@ -131,7 +131,7 @@ class AttachmentThumbnail extends StatelessWidget {
 						height: effectiveHeight,
 						color: settings.theme.barColor,
 						child: Center(
-							child: Icon(attachment.type == AttachmentType.url ? CupertinoIcons.compass : CupertinoIcons.exclamationmark_triangle_fill, size: min(effectiveWidth, effectiveHeight))
+							child: Icon(attachment.type == AttachmentType.url ? CupertinoIcons.compass : CupertinoIcons.exclamationmark_triangle_fill, size: max(24, 0.5 * min(effectiveWidth, effectiveHeight)))
 						)
 					);
 				}
