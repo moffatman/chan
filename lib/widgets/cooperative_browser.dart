@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -26,6 +27,8 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 	bool _pageReady = false;
 	bool _canGoBack = false;
 	bool _canGoForward = false;
+	bool _showProgress = true;
+	Timer? _showProgressTimer;
 	Uri? _url;
 	late final ValueNotifier<double?> _progress;
 
@@ -89,19 +92,19 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 					border: Border(
 						top: BorderSide(
 							color: _allowedDirections.contains(AxisDirection.down) ? Colors.green : Colors.red,
-							width: 10
+							width: 3
 						),
 						bottom: BorderSide(
 							color: _allowedDirections.contains(AxisDirection.up) ? Colors.green : Colors.red,
-							width: 10
+							width: 3
 						),
 						left: BorderSide(
 							color: _allowedDirections.contains(AxisDirection.right) ? Colors.green : Colors.red,
-							width: 10
+							width: 3
 						),
 						right: BorderSide(
 							color: _allowedDirections.contains(AxisDirection.left) ? Colors.green : Colors.red,
-							width: 10
+							width: 3
 						)
 					)
 				),
@@ -113,18 +116,29 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 									_controller = controller;
 									_pageReady = false;
 									_progress.value = null;
+									_showProgressTimer?.cancel();
+									_showProgressTimer = null;
+									_showProgress = true;
+									setState(() {});
 								},
 								onProgressChanged: (controller, progress) {
 									_controller = controller;
 									_progress.value = progress / 100;
 									if (progress > 0) {
 										_pageReady = true;
+										_showProgressTimer?.cancel();
+										_showProgressTimer = null;
+										_showProgress = true;
+										setState(() {});
 									}
 								},
 								onLoadStop: (controller, url) {
 									_controller = controller;
 									_progress.value = 1;
 									_pageReady = true;
+									_showProgressTimer = Timer(const Duration(milliseconds: 300), () => setState(() {
+										_showProgress = false;
+									}));
 								},
 								gestureRecognizers: {
 									Factory<WeakPanGestureRecognizer>(() => WeakPanGestureRecognizer(
@@ -138,10 +152,22 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 								initialUrlRequest: widget.initialUrlRequest
 							)
 						),
-						ValueListenableBuilder<double?>(
-							valueListenable: _progress,
-							builder: (context, progress, _) => LinearProgressIndicator(
-								value: progress
+						AnimatedSwitcher(
+							duration: const Duration(milliseconds: 500),
+							switchInCurve: Curves.ease,
+							switchOutCurve: Curves.ease,
+							child: _showProgress ? ValueListenableBuilder<double?>(
+								valueListenable: _progress,
+								builder: (context, progress, _) => LinearProgressIndicator(
+									minHeight: 5,
+									value: progress,
+									valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
+									backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor
+								)
+							) : Container(
+								height: 5,
+								width: double.infinity,
+								color: CupertinoTheme.of(context).scaffoldBackgroundColor
 							)
 						),
 						DecoratedBox(
@@ -154,16 +180,39 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 										onPressed: _canGoBack ? _controller?.goBack : null,
 										child: const Icon(CupertinoIcons.arrow_left)
 									),
-									Expanded(
-										child: Text(_url.toString(), maxLines: 1, overflow: TextOverflow.ellipsis)
-									),
-									CupertinoButton(
-										onPressed: _controller?.reload,
-										child: const Icon(CupertinoIcons.refresh)
-									),
 									CupertinoButton(
 										onPressed: _canGoForward ? _controller?.goForward : null,
 										child: const Icon(CupertinoIcons.arrow_right)
+									),
+									Expanded(
+										child: Row(
+											mainAxisAlignment: MainAxisAlignment.center,
+											children: [
+												if (_url?.scheme == 'https') ...[
+													const Icon(CupertinoIcons.padlock_solid, size: 15),
+													const SizedBox(width: 4)
+												],
+												Flexible(
+													child: Text(_url?.host ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)
+												),
+											]
+										)
+									),
+									CupertinoButton(
+										onPressed: () {
+											_showProgressTimer?.cancel();
+											_showProgressTimer = null;
+											_showProgress = true;
+											setState(() {});
+											_controller?.reload();
+										},
+										child: const Icon(CupertinoIcons.refresh)
+									),
+									CupertinoButton(
+										onPressed: () {
+											openBrowser(context, _url!);
+										},
+										child: const Icon(CupertinoIcons.compass)
 									)
 								]
 							)
