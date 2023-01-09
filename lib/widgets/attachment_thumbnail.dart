@@ -124,8 +124,11 @@ class AttachmentThumbnail extends StatelessWidget {
 						)
 					);
 				}
-				else if (loadstate.extendedImageLoadState == LoadState.failed) {
-					onLoadError?.call(loadstate.lastException, loadstate.lastStack);
+				else if (loadstate.extendedImageLoadState == LoadState.failed ||
+					(((loadstate.extendedImageInfo?.image.height ?? 0) < 5) && ((loadstate.extendedImageInfo?.image.width ?? 0) < 5))) {
+					if (loadstate.extendedImageLoadState == LoadState.failed) {
+						onLoadError?.call(loadstate.lastException, loadstate.lastStack);
+					}
 					return Container(
 						width: effectiveWidth,
 						height: effectiveHeight,
