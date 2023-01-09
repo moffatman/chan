@@ -401,7 +401,7 @@ class SiteReddit extends ImageboardSite {
 			id: id,
 			text: data['is_self'] ? unescape.convert(data['selftext']) : data['url'],
 			spanFormat: PostSpanFormat.reddit,
-			attachments: attachments,
+			attachments: data['is_self'] == true ? [] : attachments,
 			upvotes: (data['score_hidden'] == true || data['hide_score'] == true) ? null : data['score'],
 			capcode: data['distinguished']
 		);
@@ -411,7 +411,7 @@ class SiteReddit extends ImageboardSite {
 			isSticky: data['stickied'],
 			time: asPost.time,
 			posts_: [asPost],
-			attachments: data['is_self'] == true ? [] : attachments,
+			attachments: asPost.attachments,
 			replyCount: data['num_comments'],
 			imageCount: 0,
 			id: id,
