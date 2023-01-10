@@ -277,7 +277,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			data = jsonDecode(match.group(1)!)['twister'];
 		}
 		if (data['cd'] != null) {
-			tryAgainAt = DateTime.now().add(Duration(seconds: data['cd'].toInt() + 1));
+			tryAgainAt = DateTime.now().add(Duration(seconds: data['cd'].toInt() + 2));
 		}
 		if (data['error'] != null) {
 			throw Captcha4ChanCustomException(data['error']);
