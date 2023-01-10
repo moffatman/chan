@@ -762,7 +762,13 @@ class PostLinkSpan extends PostSpan {
 								cache: true,
 								width: 75,
 								height: 75,
-								fit: BoxFit.cover
+								fit: BoxFit.cover,
+								loadStateChanged: (loadstate) {
+									if (loadstate.extendedImageLoadState == LoadState.failed) {
+										return const Icon(CupertinoIcons.question);
+									}
+									return null;
+								}
 							)
 						),
 						center: Flexible(
