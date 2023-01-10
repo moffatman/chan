@@ -20,6 +20,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/version.dart';
+import 'package:chan/widgets/cupertino_adaptive_segmented_control.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/filter_editor.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
@@ -439,40 +440,57 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 			children: [
 				const SizedBox(height: 16),
 				Row(
+					crossAxisAlignment: CrossAxisAlignment.start,
 					children: [
-						const Icon(CupertinoIcons.scope),
-						const SizedBox(width: 8),
-						const Text('Filters'),
-						const Spacer(),
-						CupertinoButton.filled(
-							padding: const EdgeInsets.all(8),
-							borderRadius: BorderRadius.circular(4),
-							minSize: 0,
-							child: const Text('Test filter setup'),
-							onPressed: () {
-								Navigator.of(context).push(FullWidthCupertinoPageRoute(
-									builder: (context) => const FilterTestPage(),
-									showAnimations: settings.showAnimations
-								));
-							}
+						Padding(
+							padding: const EdgeInsets.only(top: 4),
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: const [
+									Icon(CupertinoIcons.scope),
+									SizedBox(width: 8),
+									Text('Filters'),
+								]
+							)
 						),
-						const SizedBox(width: 8),
-						CupertinoSegmentedControl<bool>(
-							padding: EdgeInsets.zero,
-							groupValue: showFilterRegex,
-							children: const {
-								false: Padding(
-									padding: EdgeInsets.all(8),
-									child: Text('Wizard')
-								),
-								true: Padding(
-									padding: EdgeInsets.all(8),
-									child: Text('Regex')
-								)
-							},
-							onValueChanged: (v) => setState(() {
-								showFilterRegex = v;
-							})
+						const SizedBox(width: 32),
+						Expanded(
+							child: Wrap(
+								alignment: WrapAlignment.end,
+								spacing: 16,
+								runSpacing: 16,
+								children: [
+									CupertinoButton.filled(
+										padding: const EdgeInsets.all(8),
+										borderRadius: BorderRadius.circular(4),
+										minSize: 0,
+										child: const Text('Test filter setup'),
+										onPressed: () {
+											Navigator.of(context).push(FullWidthCupertinoPageRoute(
+												builder: (context) => const FilterTestPage(),
+												showAnimations: settings.showAnimations
+											));
+										}
+									),
+									CupertinoSegmentedControl<bool>(
+										padding: EdgeInsets.zero,
+										groupValue: showFilterRegex,
+										children: const {
+											false: Padding(
+												padding: EdgeInsets.all(8),
+												child: Text('Wizard')
+											),
+											true: Padding(
+												padding: EdgeInsets.all(8),
+												child: Text('Regex')
+											)
+										},
+										onValueChanged: (v) => setState(() {
+											showFilterRegex = v;
+										})
+									)
+								]
+							)
 						)
 					]
 				),
@@ -511,7 +529,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 									_imageFilterImageboard.persistence.didUpdateBrowserState();
 								}
 							},
-							child: Text('Ignoring ${describeCount(_imageFilterImageboard.persistence.browserState.hiddenImageMD5s.length, 'image')}')
+							child: Text(describeCount(_imageFilterImageboard.persistence.browserState.hiddenImageMD5s.length, 'image'))
 						),
 						const SizedBox(width: 8),
 						CupertinoButton.filled(
@@ -864,6 +882,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Icon(CupertinoIcons.settings),
 						const SizedBox(width: 8),
 						const Text('Settings icon action'),
+						const SizedBox(width: 16),
 						Expanded(
 							child: Align(
 								alignment: Alignment.centerRight,
@@ -893,7 +912,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 											settings.settingsQuickAction = newAction;
 										}
 									},
-									child: AutoSizeText(settings.settingsQuickAction.name, maxLines: 1)
+									child: AutoSizeText(settings.settingsQuickAction.name, maxLines: 2, textAlign: TextAlign.center)
 								)
 							)
 						)
@@ -1136,15 +1155,15 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<TristateSystemSetting>(
+				CupertinoAdaptiveSegmentedControl<TristateSystemSetting>(
 					children: {
 						TristateSystemSetting.a: Padding(
 							padding: const EdgeInsets.all(8),
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
+							child: Wrap(
+								alignment: WrapAlignment.center,
+								spacing: 8,
 								children: const [
 									Icon(CupertinoIcons.hand_draw),
-									SizedBox(width: 8),
 									Text('Touch')
 								]
 							)
@@ -1155,11 +1174,11 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						),
 						TristateSystemSetting.b: Padding(
 							padding: const EdgeInsets.all(8),
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
+							child: Wrap(
+								alignment: WrapAlignment.center,
+								spacing: 8,
 								children: const [
 									Icon(Icons.mouse),
-									SizedBox(width: 8),
 									Text('Mouse')
 								]
 							)
@@ -1247,200 +1266,209 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 							Icon(theme.item5),
 							const SizedBox(width: 8),
 							Text(theme.item3),
-							const Spacer(),
-							Padding(
-								padding: const EdgeInsets.all(16),
-								child: CupertinoButton.filled(
-									padding: const EdgeInsets.all(8),
-									onPressed: () async {
-										final selectedKey = await showCupertinoDialog<String>(
-											barrierDismissible: true,
-											context: context,
-											builder: (context) => CupertinoAlertDialog(
-												title: Padding(
-													padding: const EdgeInsets.only(bottom: 16),
-													child: Row(
-														mainAxisAlignment: MainAxisAlignment.center,
-														children: [
-															const Icon(CupertinoIcons.paintbrush),
-															const SizedBox(width: 8),
-															Text('Picking ${theme.item1}')
-														]
-													)
-												),
-												content: StatefulBuilder(
-													builder: (context, setDialogState) {
-														final themeNames = settings.themes.keys.toList();
-														themeNames.sort();
-														return SizedBox(
-															width: 200,
-															height: 350,
-															child: ListView.separated(
-																itemCount: themeNames.length,
-																separatorBuilder: (context, i) => const SizedBox(height: 16),
-																itemBuilder: (context, i) => GestureDetector(
-																	onTap: () {
-																		Navigator.pop(context, themeNames[i]);
-																	},
-																	child: CupertinoTheme(
-																		data: CupertinoTheme.of(context).copyWith(
-																			primaryColor: settings.themes[themeNames[i]]?.primaryColor,
-																			primaryContrastingColor: settings.themes[themeNames[i]]?.backgroundColor,
-																			brightness: (settings.themes[themeNames[i]]?.primaryColor.computeLuminance() ?? 0) > 0.5 ? Brightness.dark : Brightness.light
-																		),
-																		child: Container(
-																			decoration: BoxDecoration(
-																				borderRadius: const BorderRadius.all(Radius.circular(8)),
-																				color: settings.themes[themeNames[i]]?.backgroundColor
-																			),
-																			child: Column(
-																				mainAxisSize: MainAxisSize.min,
-																				children: [
-																					Padding(
-																						padding: const EdgeInsets.all(16),
-																						child: AutoSizeText(themeNames[i], style: TextStyle(
-																							fontSize: 18,
-																							color: settings.themes[themeNames[i]]?.primaryColor,
-																							fontWeight: themeNames[i] == theme.item3 ? FontWeight.bold : null
-																						))
-																					),
-																					Container(
-																						//margin: const EdgeInsets.all(4),
-																						decoration: BoxDecoration(
-																							color: settings.themes[themeNames[i]]?.barColor,
-																							borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8))
+							const SizedBox(width: 16),
+							Expanded(
+								child: Row(
+									mainAxisAlignment: MainAxisAlignment.end,
+									children: [
+										Flexible(
+											child: Padding(
+												padding: const EdgeInsets.all(16),
+												child: CupertinoButton.filled(
+													padding: const EdgeInsets.all(8),
+													onPressed: () async {
+														final selectedKey = await showCupertinoDialog<String>(
+															barrierDismissible: true,
+															context: context,
+															builder: (context) => CupertinoAlertDialog(
+																title: Padding(
+																	padding: const EdgeInsets.only(bottom: 16),
+																	child: Row(
+																		mainAxisAlignment: MainAxisAlignment.center,
+																		children: [
+																			const Icon(CupertinoIcons.paintbrush),
+																			const SizedBox(width: 8),
+																			Text('Picking ${theme.item1}')
+																		]
+																	)
+																),
+																content: StatefulBuilder(
+																	builder: (context, setDialogState) {
+																		final themeNames = settings.themes.keys.toList();
+																		themeNames.sort();
+																		return SizedBox(
+																			width: 200,
+																			height: 350,
+																			child: ListView.separated(
+																				itemCount: themeNames.length,
+																				separatorBuilder: (context, i) => const SizedBox(height: 16),
+																				itemBuilder: (context, i) => GestureDetector(
+																					onTap: () {
+																						Navigator.pop(context, themeNames[i]);
+																					},
+																					child: CupertinoTheme(
+																						data: CupertinoTheme.of(context).copyWith(
+																							primaryColor: settings.themes[themeNames[i]]?.primaryColor,
+																							primaryContrastingColor: settings.themes[themeNames[i]]?.backgroundColor,
+																							brightness: (settings.themes[themeNames[i]]?.primaryColor.computeLuminance() ?? 0) > 0.5 ? Brightness.dark : Brightness.light
 																						),
-																						child: Row(
-																							mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-																							children: [
-																								CupertinoButton(
-																									child: const Icon(CupertinoIcons.share),
-																									onPressed: () {
-																										Clipboard.setData(ClipboardData(
-																											text: Uri(
-																												scheme: 'chance',
-																												host: 'theme',
-																												queryParameters: {
-																													'name': themeNames[i],
-																													'data': settings.themes[themeNames[i]]!.encode()
-																												}
-																											).toString()
-																										));
-																										showToast(
-																											context: context,
-																											message: 'Copied ${themeNames[i]} to clipboard',
-																											icon: CupertinoIcons.doc_on_clipboard
-																										);
-																									}
-																								),
-																								CupertinoButton(
-																									child: const Icon(CupertinoIcons.textformat),
-																									onPressed: () async {
-																										final controller = TextEditingController(text: themeNames[i]);
-																										controller.selection = TextSelection(baseOffset: 0, extentOffset: themeNames[i].length);
-																										final newName = await showCupertinoDialog<String>(
-																											context: context,
-																											barrierDismissible: true,
-																											builder: (context) => CupertinoAlertDialog(
-																												title: const Text('Enter new name'),
-																												content: CupertinoTextField(
-																													autofocus: true,
-																													controller: controller,
-																													onSubmitted: (s) => Navigator.pop(context, s)
+																						child: Container(
+																							decoration: BoxDecoration(
+																								borderRadius: const BorderRadius.all(Radius.circular(8)),
+																								color: settings.themes[themeNames[i]]?.backgroundColor
+																							),
+																							child: Column(
+																								mainAxisSize: MainAxisSize.min,
+																								children: [
+																									Padding(
+																										padding: const EdgeInsets.all(16),
+																										child: AutoSizeText(themeNames[i], style: TextStyle(
+																											fontSize: 18,
+																											color: settings.themes[themeNames[i]]?.primaryColor,
+																											fontWeight: themeNames[i] == theme.item3 ? FontWeight.bold : null
+																										))
+																									),
+																									Container(
+																										//margin: const EdgeInsets.all(4),
+																										decoration: BoxDecoration(
+																											color: settings.themes[themeNames[i]]?.barColor,
+																											borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8))
+																										),
+																										child: Row(
+																											mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+																											children: [
+																												CupertinoButton(
+																													child: const Icon(CupertinoIcons.share),
+																													onPressed: () {
+																														Clipboard.setData(ClipboardData(
+																															text: Uri(
+																																scheme: 'chance',
+																																host: 'theme',
+																																queryParameters: {
+																																	'name': themeNames[i],
+																																	'data': settings.themes[themeNames[i]]!.encode()
+																																}
+																															).toString()
+																														));
+																														showToast(
+																															context: context,
+																															message: 'Copied ${themeNames[i]} to clipboard',
+																															icon: CupertinoIcons.doc_on_clipboard
+																														);
+																													}
 																												),
-																												actions: [
-																													CupertinoDialogAction(
-																														child: const Text('Cancel'),
-																														onPressed: () => Navigator.pop(context)
-																													),
-																													CupertinoDialogAction(
-																														isDefaultAction: true,
-																														child: const Text('Rename'),
-																														onPressed: () => Navigator.pop(context, controller.text)
-																													)
-																												]
-																											)
-																										);
-																										if (newName != null) {
-																											final effectiveName = settings.addTheme(newName, settings.themes[themeNames[i]]!);
-																											settings.themes.remove(themeNames[i]);
-																											if (settings.lightThemeKey == themeNames[i]) {
-																												settings.lightThemeKey = effectiveName;
-																											}
-																											if (settings.darkThemeKey == themeNames[i]) {
-																												settings.darkThemeKey = effectiveName;
-																											}
-																											settings.handleThemesAltered();
-																											setDialogState(() {});
-																										}
-																										controller.dispose();
-																									}
-																								),
-																								CupertinoButton(
-																									child: const Icon(CupertinoIcons.doc_on_doc),
-																									onPressed: () {
-																										settings.addTheme(themeNames[i], settings.themes[themeNames[i]]!);
-																										settings.handleThemesAltered();
-																										setDialogState(() {});
-																									}
-																								),
-																								CupertinoButton(
-																									onPressed: (themeNames[i] == settings.darkThemeKey || themeNames[i] == settings.lightThemeKey) ? null : () async {
-																										final consent = await showCupertinoDialog<bool>(
-																											context: context,
-																											barrierDismissible: true,
-																											builder: (context) => CupertinoAlertDialog(
-																												title: Text('Delete ${themeNames[i]}?'),
-																												actions: [
-																													CupertinoDialogAction(
-																														child: const Text('Cancel'),
-																														onPressed: () {
-																															Navigator.of(context).pop();
+																												CupertinoButton(
+																													child: const Icon(CupertinoIcons.textformat),
+																													onPressed: () async {
+																														final controller = TextEditingController(text: themeNames[i]);
+																														controller.selection = TextSelection(baseOffset: 0, extentOffset: themeNames[i].length);
+																														final newName = await showCupertinoDialog<String>(
+																															context: context,
+																															barrierDismissible: true,
+																															builder: (context) => CupertinoAlertDialog(
+																																title: const Text('Enter new name'),
+																																content: CupertinoTextField(
+																																	autofocus: true,
+																																	controller: controller,
+																																	onSubmitted: (s) => Navigator.pop(context, s)
+																																),
+																																actions: [
+																																	CupertinoDialogAction(
+																																		child: const Text('Cancel'),
+																																		onPressed: () => Navigator.pop(context)
+																																	),
+																																	CupertinoDialogAction(
+																																		isDefaultAction: true,
+																																		child: const Text('Rename'),
+																																		onPressed: () => Navigator.pop(context, controller.text)
+																																	)
+																																]
+																															)
+																														);
+																														if (newName != null) {
+																															final effectiveName = settings.addTheme(newName, settings.themes[themeNames[i]]!);
+																															settings.themes.remove(themeNames[i]);
+																															if (settings.lightThemeKey == themeNames[i]) {
+																																settings.lightThemeKey = effectiveName;
+																															}
+																															if (settings.darkThemeKey == themeNames[i]) {
+																																settings.darkThemeKey = effectiveName;
+																															}
+																															settings.handleThemesAltered();
+																															setDialogState(() {});
 																														}
-																													),
-																													CupertinoDialogAction(
-																														isDestructiveAction: true,
-																														onPressed: () {
-																															Navigator.of(context).pop(true);
-																														},
-																														child: const Text('Delete')
-																													)
-																												]
-																											)
-																										);
-																										if (consent == true) {
-																											settings.themes.remove(themeNames[i]);
-																											settings.handleThemesAltered();
-																											setDialogState(() {});
-																										}
-																									},
-																									child: const Icon(CupertinoIcons.delete)
-																								)
-																							]
+																														controller.dispose();
+																													}
+																												),
+																												CupertinoButton(
+																													child: const Icon(CupertinoIcons.doc_on_doc),
+																													onPressed: () {
+																														settings.addTheme(themeNames[i], settings.themes[themeNames[i]]!);
+																														settings.handleThemesAltered();
+																														setDialogState(() {});
+																													}
+																												),
+																												CupertinoButton(
+																													onPressed: (themeNames[i] == settings.darkThemeKey || themeNames[i] == settings.lightThemeKey) ? null : () async {
+																														final consent = await showCupertinoDialog<bool>(
+																															context: context,
+																															barrierDismissible: true,
+																															builder: (context) => CupertinoAlertDialog(
+																																title: Text('Delete ${themeNames[i]}?'),
+																																actions: [
+																																	CupertinoDialogAction(
+																																		child: const Text('Cancel'),
+																																		onPressed: () {
+																																			Navigator.of(context).pop();
+																																		}
+																																	),
+																																	CupertinoDialogAction(
+																																		isDestructiveAction: true,
+																																		onPressed: () {
+																																			Navigator.of(context).pop(true);
+																																		},
+																																		child: const Text('Delete')
+																																	)
+																																]
+																															)
+																														);
+																														if (consent == true) {
+																															settings.themes.remove(themeNames[i]);
+																															settings.handleThemesAltered();
+																															setDialogState(() {});
+																														}
+																													},
+																													child: const Icon(CupertinoIcons.delete)
+																												)
+																											]
+																										)
+																									)
+																								]
+																							)
 																						)
 																					)
-																				]
+																				)
 																			)
-																		)
+																		);
+																	}
+																),
+																actions: [
+																	CupertinoDialogAction(
+																		child: const Text('Close'),
+																		onPressed: () => Navigator.pop(context)
 																	)
-																)
+																]
 															)
 														);
-													}
-												),
-												actions: [
-													CupertinoDialogAction(
-														child: const Text('Close'),
-														onPressed: () => Navigator.pop(context)
-													)
-												]
+														if (selectedKey != null) {
+															theme.item4(selectedKey);
+														}
+													},
+													child: Text('Pick ${theme.item1}', textAlign: TextAlign.center)
+												)
 											)
-										);
-										if (selectedKey != null) {
-											theme.item4(selectedKey);
-										}
-									},
-									child: Text('Pick ${theme.item1}')
+										)
+									]
 								)
 							)
 						]
@@ -2659,7 +2687,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					children: [
 						const Icon(CupertinoIcons.rectangle_paperclip),
 						const SizedBox(width: 8),
-						const Text('Show rich links when possible'),
+						const Text('Show rich links'),
 						const SizedBox(width: 8),
 						CupertinoButton(
 							minSize: 0,
@@ -2704,7 +2732,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 				),
 				Padding(
 					padding: const EdgeInsets.all(16),
-					child: CupertinoSegmentedControl<int>(
+					child: CupertinoAdaptiveSegmentedControl<int>(
 						children: const {
 							7: Padding(
 								padding: EdgeInsets.all(8),
