@@ -567,17 +567,21 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						if (siteResponse.data['error'] != null) {
 							throw Exception(siteResponse.data['error']);
 						}
-						makeSite(siteResponse.data['data']);
+						final site = makeSite(siteResponse.data['data']);
 						final response = await Dio().put('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$siteKey');
 						if (response.data['error'] != null) {
 							throw Exception(response.data['error']);
 						}
-						await settings.updateContentSettings();
-						await Future.delayed(const Duration(milliseconds: 500)); // wait for rebuild of ChanHomePage
+						if (!mounted) return;
+						await modalLoad(context, 'Setting up ${site.name}...', () async {
+							await settings.updateContentSettings();
+							await Future.delayed(const Duration(milliseconds: 500)); // wait for rebuild of ChanHomePage
+						});
 					}
 					_addNewTab(
 						withImageboardKey: siteKey,
-						activate: true
+						activate: true,
+						keepTabPopupOpen: true
 					);
 				}
 				catch (e) {
@@ -773,7 +777,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		int? withThreadId,
 		bool activate = false,
 		bool incognito = false,
-		int? withInitialPostId
+		int? withInitialPostId,
+		bool keepTabPopupOpen = false
 	}) {
 		final pos = atPosition ?? Persistence.tabs.length;
 		final tab = PersistentBrowserTab(
@@ -793,7 +798,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			activeBrowserTab.value = pos;
 			Persistence.currentTabIndex = pos;
 		}
-		showTabPopup = !activate || !Persistence.settings.closeTabSwitcherAfterUse;
+		showTabPopup = keepTabPopupOpen || !activate || !Persistence.settings.closeTabSwitcherAfterUse;
 		Persistence.didUpdateTabs();
 		setState(() {});
 		Future.delayed(const Duration(milliseconds: 100), () {

@@ -16,6 +16,7 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -98,6 +99,30 @@ void showToast({
 			)
 		)
 	);
+}
+
+Future<void> modalLoad(BuildContext context, String title, Future Function() work) async {
+	final rootNavigator = Navigator.of(context, rootNavigator: true);
+	showCupertinoDialog(
+		context: context,
+		barrierDismissible: false,
+		builder: (context) => CupertinoAlertDialog(
+			title: Text(title),
+			content: Column(
+				mainAxisSize: MainAxisSize.min,
+				children: const [
+					SizedBox(height: 8),
+					LinearProgressIndicator()
+				]	
+			)
+		)
+	);
+	try {
+		await work();
+	}
+	finally {
+		rootNavigator.pop();
+	}
 }
 
 String formatTime(DateTime time) {

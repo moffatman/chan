@@ -328,13 +328,15 @@ class SettingsPage extends StatelessWidget {
 													]
 												)
 											);
-											if (toDelete != null) {
-												ImageboardRegistry.instance.getImageboard(toDelete)?.deleteAllData();
-												final response = await Dio().delete('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$toDelete');
-												if (response.data['error'] != null) {
-													throw Exception(response.data['error']);
-												}
-												await settings.updateContentSettings();
+											if (toDelete != null && context.mounted) {
+												await modalLoad(context, 'Cleaning up...', () async {
+													ImageboardRegistry.instance.getImageboard(toDelete)?.deleteAllData();
+													final response = await Dio().delete('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$toDelete');
+													if (response.data['error'] != null) {
+														throw Exception(response.data['error']);
+													}
+													await settings.updateContentSettings();
+												});
 											}
 										}
 										catch (e) {
