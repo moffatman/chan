@@ -10,6 +10,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/services/soundposts.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
@@ -287,7 +288,8 @@ class AttachmentViewerController extends ChangeNotifier {
 			notifyListeners();
 		});
 		try {
-			if (attachment.type == AttachmentType.image || attachment.type == AttachmentType.pdf) {
+			final soundSource = attachment.soundSource;
+			if (soundSource == null && (attachment.type == AttachmentType.image || attachment.type == AttachmentType.pdf)) {
 				_goodImageSource = await _getGoodSource();
 				_recordUrlTime(_goodImageSource!, DateTime.now().difference(startTime));
 				if (_goodImageSource?.scheme == 'file') {
@@ -307,13 +309,14 @@ class AttachmentViewerController extends ChangeNotifier {
 					}
 				}
 			}
-			else if (attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
+			else if (soundSource != null || attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
 				final url = await _getGoodSource();
 				_recordUrlTime(url, DateTime.now().difference(startTime));
 				bool transcode = false;
 				if (attachment.type == AttachmentType.webm) {
 					transcode = settings.webmTranscoding == WebmTranscodingSetting.always;
 				}
+				transcode |= soundSource != null;
 				if (!transcode) {
 					final scan = await MediaScan.scan(url, headers: site.getHeaders(url) ?? {});
 					if (_isDisposed) {
@@ -365,7 +368,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					_scheduleHidingOfVideoThumbnail();
 				}
 				else {
-					_ongoingConversion = MediaConversion.toMp4(url, headers: site.getHeaders(url) ?? {});
+					_ongoingConversion = MediaConversion.toMp4(url, headers: site.getHeaders(url) ?? {}, soundSource: soundSource);
 					_ongoingConversion!.progress.addListener(_onConversionProgressUpdate);
 					_ongoingConversion!.start();
 					final result = await _ongoingConversion!.result;
@@ -1044,7 +1047,7 @@ class AttachmentViewer extends StatelessWidget {
 						if (!fill && attachment.width != null && attachment.height != null && constraints.hasBoundedHeight && constraints.hasBoundedWidth) {
 							targetSize = applyBoxFit(BoxFit.scaleDown, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), constraints.biggest).destination;
 						}
-						if (attachment.type == AttachmentType.image) {
+						if (attachment.type == AttachmentType.image && attachment.soundSource == null) {
 							return _buildImage(context, targetSize, passedFirstBuild);
 						}
 						else if (attachment.type == AttachmentType.pdf) {

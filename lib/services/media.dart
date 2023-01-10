@@ -164,6 +164,7 @@ class MediaConversion {
 	final String cacheKey;
 	final Map<String, String> headers;
 	int _additionalScaleDownFactor = 1;
+	final Uri? soundSource;
 
 	FFmpegSession? _session;
 
@@ -178,11 +179,13 @@ class MediaConversion {
 		this.stripAudio = false,
 		this.extraOptions = const [],
 		this.cacheKey = '',
-		this.headers = const {}
+		this.headers = const {},
+		this.soundSource
 	});
 
 	static MediaConversion toMp4(Uri inputFile, {
-		Map<String, String> headers = const {}
+		Map<String, String> headers = const {},
+		Uri? soundSource
 	}) {
 		List<String> extraOptions = [];
 		if (Platform.isIOS && !RegExp(r'Version 15\.[01]').hasMatch(Platform.operatingSystemVersion)) {
@@ -195,7 +198,8 @@ class MediaConversion {
 			inputFile: inputFile,
 			outputFileExtension: 'mp4',
 			extraOptions: extraOptions,
-			headers: headers
+			headers: headers,
+			soundSource: soundSource
 		);
 	}
 
@@ -357,6 +361,13 @@ class MediaConversion {
 								headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
 							],
 							'-i', inputFile.toStringFFMPEG(),
+							if (soundSource != null) ...[
+								'-i', soundSource!.toStringFFMPEG(),
+								'-map', '0:v:0',
+								'-map', '1:a:0',
+								'-c:a', 'aac',
+								'-b:a', '192k'
+							],
 							'-max_muxing_queue_size', '9999',
 							...extraOptions,
 							if (stripAudio) '-an',
@@ -388,7 +399,7 @@ class MediaConversion {
 							return;
 						}
 						else {
-							_completer!.complete(MediaConversionResult(convertedFile, scan.hasAudio));
+							_completer!.complete(MediaConversionResult(convertedFile, soundSource != null || scan.hasAudio));
 						}
 					}
 				}

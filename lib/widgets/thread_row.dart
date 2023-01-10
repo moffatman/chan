@@ -5,6 +5,7 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/soundposts.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
@@ -304,7 +305,7 @@ class ThreadRow extends StatelessWidget {
 													shrinkHeight: true,
 													shrinkWidth: true
 												),
-												if (attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned.fill(
+												if (attachment.soundSource != null || attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned.fill(
 													child: Align(
 														alignment: Alignment.bottomRight,
 														child: Container(
@@ -314,7 +315,11 @@ class ThreadRow extends StatelessWidget {
 																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 															),
 															padding: const EdgeInsets.all(2),
-															child: attachment.type.isVideo ? const Icon(CupertinoIcons.play_arrow_solid, size: 16) : const Icon(CupertinoIcons.link, size: 16)
+															child: attachment.soundSource != null ?
+																const Icon(CupertinoIcons.volume_up, size: 16) :
+																attachment.type.isVideo ?
+																	const Icon(CupertinoIcons.play_arrow_solid, size: 16) :
+																	const Icon(CupertinoIcons.link, size: 16)
 														)
 													)
 												)
