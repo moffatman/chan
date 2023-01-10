@@ -339,6 +339,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 		);
 	}
 	else {
+		final settings = context.read<EffectiveSettings>();
 		Tuple3<Imageboard, BoardThreadOrPostIdentifier, bool>? imageboardTarget;
 		for (final imageboard in ImageboardRegistry.instance.imageboards) {
 			BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(url.toString());
@@ -378,24 +379,26 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 				launchUrl(url, mode: LaunchMode.externalApplication);
 			}
 		}
-		else if (context.read<EffectiveSettings>().useInternalBrowser == null && !fromShareOne) {
-			shareOne(
-				context: context,
-				text: url.toString(),
-				type: "text",
-				sharePositionOrigin: null,
-				additionalOptions: {
-					if (imageboardTarget != null) 'Open in Chance': openInChance
-				}
-			);
+		else if (settings.useInternalBrowser == null && !fromShareOne) {
+			if (context.mounted) {
+				shareOne(
+					context: context,
+					text: url.toString(),
+					type: "text",
+					sharePositionOrigin: null,
+					additionalOptions: {
+						if (imageboardTarget != null) 'Open in Chance': openInChance
+					}
+				);
+			}
 		}
-		else if ((isOnMac && imageboardTarget == null) || context.read<EffectiveSettings>().useInternalBrowser == false || (url.scheme != 'http' && url.scheme != 'https')) {
+		else if ((isOnMac && imageboardTarget == null) || settings.useInternalBrowser == false || (url.scheme != 'http' && url.scheme != 'https')) {
 			launchUrl(url, mode: LaunchMode.externalApplication);
 		}
 		else if (imageboardTarget != null && !fromShareOne) {
 			openInChance();
 		}
-		else {
+		else if (context.mounted) {
 			try {
 				await ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
 					android: AndroidChromeCustomTabsOptions(
