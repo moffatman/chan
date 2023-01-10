@@ -398,17 +398,24 @@ class ThreadRow extends StatelessWidget {
 										onLoadError: onThumbnailLoadError,
 										hero: null
 									),
-									if (attachment.type.isVideo) Positioned(
-										bottom: 0,
+									if (attachment.soundSource != null || attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned(
+										top: settings.catalogGridModeAttachmentInBackground ? 0 : null,
+										bottom: settings.catalogGridModeAttachmentInBackground ? null : 0,
 										right: 0,
 										child: Container(
 											decoration: BoxDecoration(
-												borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+												borderRadius: settings.catalogGridModeAttachmentInBackground ?
+													const BorderRadius.only(bottomLeft: Radius.circular(6)) :
+													const BorderRadius.only(topLeft: Radius.circular(6)),
 												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 												border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 											),
 											padding: const EdgeInsets.all(2),
-											child: const Icon(CupertinoIcons.play_arrow_solid)
+											child: attachment.soundSource != null ?
+												const Icon(CupertinoIcons.volume_up) :
+												attachment.type.isVideo ?
+													const Icon(CupertinoIcons.play_arrow_solid) :
+													const Icon(CupertinoIcons.link)
 										)
 									)
 								]
