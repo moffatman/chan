@@ -94,6 +94,8 @@ class _PostsPageState extends State<PostsPage> {
 											for (final attachment in reply.attachments)
 												attachment: reply.replyIds.length
 									},
+									isAttachmentAlreadyDownloaded: widget.zone.threadState?.isAttachmentDownloaded,
+									onAttachmentDownload: widget.zone.threadState?.didDownloadAttachment,
 									initialAttachment: attachment,
 									semanticParentIds: context.read<PostSpanZoneData>().stackIds,
 									onChange: (attachment) {

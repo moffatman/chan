@@ -647,6 +647,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	ThreadVariant? variant;
 	@HiveField(16, defaultValue: [])
 	List<List<int>> collapsedItems = [];
+	@HiveField(17, defaultValue: [])
+	List<String> downloadedAttachmentIds = [];
 
 	bool get incognito => ephemeralOwner != null;
 
@@ -755,6 +757,13 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		// invalidate cache
 		threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));
 		_invalidate();
+	}
+
+	bool isAttachmentDownloaded(Attachment attachment) => downloadedAttachmentIds.contains(attachment.id);
+
+	void didDownloadAttachment(Attachment attachment) {
+		downloadedAttachmentIds.add(attachment.id);
+		save();
 	}
 
 	@override

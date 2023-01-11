@@ -538,28 +538,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				final siteKey = uri.pathSegments[0];
 				try {
 					if (ImageboardRegistry.instance.getImageboard(siteKey) == null) {
-						final consent = await showCupertinoDialog<bool>(
-							context: context,
-							barrierDismissible: true,
-							builder: (context) => CupertinoAlertDialog(
-								title: Text('Add site $siteKey?'),
-								actions: [
-									CupertinoDialogAction(
-										child: const Text('Cancel'),
-										onPressed: () {
-											Navigator.of(context).pop();
-										}
-									),
-									CupertinoDialogAction(
-										isDefaultAction: true,
-										onPressed: () {
-											Navigator.of(context).pop(true);
-										},
-										child: const Text('OK')
-									)
-								]
-							)
-						);
+						final consent = await confirm(context, 'Add site $siteKey?');
 						if (consent != true) {
 							return;
 						}

@@ -73,6 +73,8 @@ class GalleryPage extends StatefulWidget {
 	final List<TaggedAttachment> attachments;
 	final Map<Attachment, int> replyCounts;
 	final Map<Attachment, Uri> overrideSources;
+	final bool Function(Attachment)? isAttachmentAlreadyDownloaded;
+	final ValueChanged<Attachment>? onAttachmentDownload;
 	final TaggedAttachment? initialAttachment;
 	final bool initiallyShowChrome;
 	final ValueChanged<TaggedAttachment>? onChange;
@@ -85,6 +87,8 @@ class GalleryPage extends StatefulWidget {
 		required this.attachments,
 		this.replyCounts = const {},
 		this.overrideSources = const {},
+		this.isAttachmentAlreadyDownloaded,
+		this.onAttachmentDownload,
 		required this.initialAttachment,
 		this.initiallyShowChrome = false,
 		this.onChange,
@@ -221,7 +225,9 @@ class _GalleryPageState extends State<GalleryPage> {
 				redrawGestureListenable: _slideListenable,
 				site: context.read<ImageboardSite>(),
 				isPrimary: attachment == currentAttachment,
-				overrideSource: widget.overrideSources[attachment.attachment]
+				overrideSource: widget.overrideSources[attachment.attachment],
+				isDownloaded: widget.isAttachmentAlreadyDownloaded?.call(attachment.attachment) ?? false,
+				onDownloaded: () => widget.onAttachmentDownload?.call(attachment.attachment)
 			);
 		}
 		return _controllers[attachment]!;
@@ -745,12 +751,14 @@ class _GalleryPageState extends State<GalleryPage> {
 											),
 											CupertinoButton(
 												padding: EdgeInsets.zero,
-												onPressed: currentController.canShare && !currentController.isDownloaded ? () async {
+												onPressed: currentController.canShare ? () async {
+													final download = !currentController.isDownloaded || (await confirm(context, 'Redownload?'));
+													if (!download) return;
 													await currentController.download();
 													if (!mounted) return;
 													showToast(context: context, message: 'Downloaded ${currentAttachment.attachment.filename}', icon: CupertinoIcons.cloud_download);
 												} : null,
-												child: const Icon(CupertinoIcons.cloud_download)
+												child: currentController.isDownloaded ? const Icon(CupertinoIcons.cloud_download_fill) : const Icon(CupertinoIcons.cloud_download)
 											),
 											AnimatedBuilder(
 												animation: context.watch<Persistence>().savedAttachmentsListenable,
@@ -1032,6 +1040,8 @@ Future<Attachment?> showGalleryPretagged({
 	required List<TaggedAttachment> attachments,
 	Map<Attachment, Uri> overrideSources = const {},
 	Map<Attachment, int> replyCounts = const {},
+	bool Function(Attachment)? isAttachmentAlreadyDownloaded,
+	ValueChanged<Attachment>? onAttachmentDownload,
 	TaggedAttachment? initialAttachment,
 	bool initiallyShowChrome = false,
 	bool allowChrome = true,
@@ -1048,6 +1058,8 @@ Future<Attachment?> showGalleryPretagged({
 				attachments: attachments,
 				replyCounts: replyCounts,
 				overrideSources: overrideSources,
+				isAttachmentAlreadyDownloaded: isAttachmentAlreadyDownloaded,
+				onAttachmentDownload: onAttachmentDownload,
 				initialAttachment: initialAttachment,
 				initiallyShowChrome: initiallyShowChrome,
 				onChange: onChange,
@@ -1072,6 +1084,8 @@ Future<Attachment?> showGallery({
 	required List<Attachment> attachments,
 	Map<Attachment, Uri> overrideSources = const {},
 	Map<Attachment, int> replyCounts = const {},
+	bool Function(Attachment)? isAttachmentAlreadyDownloaded,
+	ValueChanged<Attachment>? onAttachmentDownload,
 	required Iterable<int> semanticParentIds,
 	Attachment? initialAttachment,
 	bool initiallyShowChrome = false,
@@ -1086,6 +1100,8 @@ Future<Attachment?> showGallery({
 	)).toList(),
 	overrideSources: overrideSources,
 	replyCounts: replyCounts,
+	isAttachmentAlreadyDownloaded: isAttachmentAlreadyDownloaded,
+	onAttachmentDownload: onAttachmentDownload,
 	initialAttachment: initialAttachment == null ? null : TaggedAttachment(
 		attachment: initialAttachment,
 		semanticParentIds: semanticParentIds

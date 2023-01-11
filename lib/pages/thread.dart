@@ -315,6 +315,8 @@ class _ThreadPageState extends State<ThreadPage> {
 					for (final attachment in post.attachments)
 						attachment: post.replyIds.length
 			},
+			isAttachmentAlreadyDownloaded: persistentState.isAttachmentDownloaded,
+			onAttachmentDownload: persistentState.didDownloadAttachment,
 			initiallyShowChrome: initiallyShowChrome,
 			initialAttachment: initialAttachment,
 			onChange: (attachment) {
@@ -1154,7 +1156,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 															initialAttachment: TaggedAttachment(
 																attachment: nextPostWithImage.item.attachments.first,
 																semanticParentIds: commonParentIds.followedBy(nextPostWithImage.parentIds)
-															)
+															),
+															threadState: widget.persistentState
 															//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
 														)
 													),

@@ -75,6 +75,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	final Listenable? redrawGestureListenable;
 	final ImageboardSite site;
 	final Uri? overrideSource;
+	final VoidCallback? onDownloaded;
 
 	// Private usage
 	bool _isFullResolution = false;
@@ -95,7 +96,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _seeking = false;
 	String? _overlayText;
 	bool _isDisposed = false;
-	bool _isDownloaded = false;
+	bool _isDownloaded;
 	GestureDetails? _gestureDetailsOnDoubleTapDragStart;
 	StreamSubscription<List<double>>? _longPressFactorSubscription;
 	bool _loadingProgressHideScheduled = false;
@@ -145,8 +146,10 @@ class AttachmentViewerController extends ChangeNotifier {
 		this.redrawGestureListenable,
 		required this.site,
 		this.overrideSource,
-		bool isPrimary = false
-	}) : _isPrimary = isPrimary {
+		this.onDownloaded,
+		bool isPrimary = false,
+		bool isDownloaded = false,
+	}) : _isPrimary = isPrimary, _isDownloaded = isDownloaded {
 		_longPressFactorSubscription = _longPressFactorStream.bufferTime(const Duration(milliseconds: 50)).listen((x) {
 			if (x.isNotEmpty) {
 				_onCoalescedLongPressUpdate(x.last);
@@ -563,6 +566,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			else {
 				throw UnsupportedError("Downloading not supported on this platform");
 			}
+			onDownloaded?.call();
 		}
 		catch (e) {
 			alertError(context, e.toStringDio());

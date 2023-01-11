@@ -1017,3 +1017,28 @@ extension HasOnePosition on ScrollController {
 	// ignore: INVALID_USE_OF_PROTECTED_MEMBER
 	bool get hasOnePosition => positions.length == 1;
 }
+
+Future<bool> confirm(BuildContext context, String message) async {
+	return (await showCupertinoDialog<bool>(
+		context: context,
+		barrierDismissible: true,
+		builder: (context) => CupertinoAlertDialog(
+			title: Text(message),
+			actions: [
+				CupertinoDialogAction(
+					child: const Text('Cancel'),
+					onPressed: () {
+						Navigator.of(context).pop();
+					}
+				),
+				CupertinoDialogAction(
+					isDefaultAction: true,
+					onPressed: () {
+						Navigator.of(context).pop(true);
+					},
+					child: const Text('OK')
+				)
+			]
+		)
+	)) ?? false;
+}

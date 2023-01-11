@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -13,10 +14,12 @@ class AttachmentsPage extends StatefulWidget {
 	final List<TaggedAttachment> attachments;
 	final TaggedAttachment? initialAttachment;
 	final ValueChanged<TaggedAttachment>? onChange;
+	final PersistentThreadState? threadState;
 	const AttachmentsPage({
 		required this.attachments,
 		this.initialAttachment,
 		this.onChange,
+		this.threadState,
 		Key? key
 	}) : super(key: key);
 
@@ -89,7 +92,9 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 						await showGalleryPretagged(
 							context: context,
 							attachments: widget.attachments,
-							initialAttachment: attachment
+							initialAttachment: attachment,
+							isAttachmentAlreadyDownloaded: widget.threadState?.isAttachmentDownloaded,
+							onAttachmentDownload: widget.threadState?.didDownloadAttachment
 						);
 						_getController(attachment).isPrimary = true;
 					},
