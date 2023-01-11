@@ -2249,6 +2249,16 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
+																const Text('Hide default names'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.hideDefaultNamesInCatalog,
+																	onChanged: (d) => settings.hideDefaultNamesInCatalog = d
+																)
+															]
+														),
+														Row(
+															children: [
 																const Text('Show exact time'),
 																const Spacer(),
 																CupertinoSwitch(

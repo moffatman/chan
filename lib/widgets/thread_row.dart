@@ -194,7 +194,7 @@ class ThreadRow extends StatelessWidget {
 		final double? subheaderFontSize = site.classicCatalogStyle ? null : 15;
 		final spaceSpan = site.classicCatalogStyle ? const TextSpan(text: ' ') : const TextSpan(text: ' ', style: TextStyle(fontSize: 15));
 		final headerRow = [
-			if (settings.showNameInCatalog) ...[
+			if (settings.showNameInCatalog && !(settings.hideDefaultNamesInCatalog && latestThread.posts_.first.name == site.defaultUsername)) ...[
 				TextSpan(
 					text: settings.filterProfanity(latestThread.posts_.first.name),
 					style: TextStyle(

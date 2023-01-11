@@ -556,6 +556,8 @@ class SavedSettings extends HiveObject {
 	bool dimReadThreads;
 	@HiveField(100)
 	CatalogVariant hackerNewsCatalogVariant;
+	@HiveField(101)
+	bool hideDefaultNamesInCatalog;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -658,6 +660,7 @@ class SavedSettings extends HiveObject {
 		CatalogVariant? redditCatalogVariant,
 		bool? dimReadThreads,
 		CatalogVariant? hackerNewsCatalogVariant,
+		bool? hideDefaultNamesInCatalog,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -786,7 +789,8 @@ class SavedSettings extends HiveObject {
 		catalogVariant = catalogVariant ?? CatalogVariant.unsorted,
 		redditCatalogVariant = redditCatalogVariant ?? CatalogVariant.redditHot,
 		dimReadThreads = dimReadThreads ?? true,
-		hackerNewsCatalogVariant = hackerNewsCatalogVariant ?? CatalogVariant.hackerNewsTop {
+		hackerNewsCatalogVariant = hackerNewsCatalogVariant ?? CatalogVariant.hackerNewsTop,
+		hideDefaultNamesInCatalog = hideDefaultNamesInCatalog ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1585,6 +1589,13 @@ class EffectiveSettings extends ChangeNotifier {
 	CatalogVariant get hackerNewsCatalogVariant => _settings.hackerNewsCatalogVariant;
 	set hackerNewsCatalogVariant(CatalogVariant setting) {
 		_settings.hackerNewsCatalogVariant = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get hideDefaultNamesInCatalog => _settings.hideDefaultNamesInCatalog;
+	set hideDefaultNamesInCatalog(bool setting) {
+		_settings.hideDefaultNamesInCatalog = setting;
 		_settings.save();
 		notifyListeners();
 	}
