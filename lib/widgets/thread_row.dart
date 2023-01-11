@@ -266,11 +266,6 @@ class ThreadRow extends StatelessWidget {
 					headerRow.insert(0, TextSpan(text: threadAsUrl, style: const TextStyle(color: Colors.grey)));
 					headerRow.insert(0, const TextSpan(text: '\n'));
 				}
-				else {
-					headerRow.insert(0, TextSpan(text: ' ${latestThread.posts_.first.name}', style: const TextStyle(color: Colors.grey)));
-					headerRow.insert(0, const WidgetSpan(child: Icon(CupertinoIcons.person_fill, color: Colors.grey, size: 15), alignment: PlaceholderAlignment.middle));
-					headerRow.insert(0, const TextSpan(text: '\n'));
-				}
 				headerRow.insert(0, titleSpan);
 			}
 		}
