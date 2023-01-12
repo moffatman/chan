@@ -919,7 +919,7 @@ class _ThreadPageState extends State<ThreadPage> {
 												_saveQueued = true;
 											}
 											_listController.update();
-											Future.delayed(const Duration(seconds: 3), _listController.update);
+											Future.delayed(const Duration(seconds: 8), _listController.update);
 										},
 										onVisibilityChanged: () {
 											setState(() {});

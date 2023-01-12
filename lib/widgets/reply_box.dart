@@ -765,7 +765,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			widget.onReplyPosted(receipt);
 			if (spamFiltered) {
 				if (mounted) {
-					Future.delayed(const Duration(seconds: 7), () {
+					Future.delayed(const Duration(seconds: 10), () {
 						if (_spamFilteredPostId == null) {
 							// The post appeared after all.
 							return;
