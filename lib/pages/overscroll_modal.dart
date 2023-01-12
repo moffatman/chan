@@ -1,14 +1,17 @@
 import 'dart:math';
 
 import 'package:chan/services/settings.dart';
+import 'package:chan/widgets/sliver_center.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 class OverscrollModalPage extends StatefulWidget {
-	final Widget child;
+	final Widget? child;
+	final Widget? sliver;
 	final double heightEstimate;
 	final Color backgroundColor;
 	final Widget? background;
@@ -20,8 +23,17 @@ class OverscrollModalPage extends StatefulWidget {
 		this.heightEstimate = 0,
 		this.backgroundColor = Colors.black38,
 		this.allowScroll = true,
-		Key? key
-	}) : super(key: key);
+		super.key
+	}) : sliver = null;
+
+	const OverscrollModalPage.sliver({
+		required this.sliver,
+		this.background,
+		this.heightEstimate = 0,
+		this.backgroundColor = Colors.black38,
+		this.allowScroll = true,
+		super.key
+	}) : child = null;
 
 	@override
 	createState() => _OverscrollModalPageState();
@@ -34,13 +46,14 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	late double _scrollStopPosition;
 	Offset? _pointerDownPosition;
 	bool _pointerInSpacer = false;
-	double _opacity = 1;
+	late final ValueNotifierAnimation<double> _opacity;
 	bool _popping = false;
 	bool _finishedPopIn = false;
 
 	@override
 	void initState() {
 		super.initState();
+		_opacity = ValueNotifierAnimation(1);
 		_scrollStopPosition = -1 * min(150.0 + widget.heightEstimate, context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.height / 2);
 		_controller = ScrollController(initialScrollOffset: context.read<EffectiveSettings>().showAnimations ? _scrollStopPosition : 0);
 		_controller.addListener(_onScrollUpdate);
@@ -51,14 +64,9 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		if (!_popping) {
 			final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
 			final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
-			final double desiredOpacity = 1 - (((max(overscrollTop, overscrollBottom) + _scrollStopPosition) - 40) / 100).clamp(0, 1);
-			if (desiredOpacity != _opacity) {
-				setState(() {
-					_opacity = desiredOpacity;
-				});
-			}
+			_opacity.value = 1 - (((max(overscrollTop, overscrollBottom) + _scrollStopPosition) - 40) / 100).clamp(0, 1);
 		}
-		if (_scrollStopPosition != 0 && _controller.position.pixels > _scrollStopPosition) {
+		if (!_finishedPopIn && _scrollStopPosition != 0 && _controller.position.pixels > _scrollStopPosition) {
 			_scrollStopPosition = _controller.position.pixels;
 			// Stop when coming to intial rest (since start position is largely negative)
 			if (_scrollStopPosition > -0.2) {
@@ -95,7 +103,6 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final ancestor = context.findRenderObject();
 		return LayoutBuilder(
 			builder: (context, constraints) => Stack(
 				fit: StackFit.expand,
@@ -108,21 +115,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 									animation: _controller,
 									child: widget.background,
 									builder: (context, child) {
-										final RenderBox? scrollBox = _scrollKey.currentContext?.findRenderObject() as RenderBox?;
-										final RenderBox? childBox = _childKey.currentContext?.findRenderObject() as RenderBox?;
-										double scrollBoxTop = 0;
-										double scrollBoxBottom = 0;
-										double childBoxTopDiff = 0;
-										double childBoxBottomDiff = 0;
-										try {
-											scrollBoxTop = scrollBox?.localToGlobal(scrollBox.semanticBounds.topCenter, ancestor: ancestor).dy ?? 0;
-											scrollBoxBottom = scrollBox?.localToGlobal(scrollBox.semanticBounds.bottomCenter, ancestor: ancestor).dy ?? 0;
-											childBoxTopDiff = (childBox?.localToGlobal(childBox.semanticBounds.topCenter, ancestor: ancestor).dy ?? scrollBoxTop) - scrollBoxTop;
-											childBoxBottomDiff = scrollBoxBottom - (childBox?.localToGlobal(childBox.semanticBounds.bottomCenter, ancestor: ancestor).dy ?? scrollBoxBottom);
-										}
-										catch (e) {
-											// Maybe the box didn't have a size yet
-										}
+										final double childBoxTopDiff = ((_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.child!.parentData as SliverPhysicalParentData?)?.paintOffset.dy ?? 0;
 										double topOverscroll = 0;
 										double bottomOverscroll = 0;
 										if (_finishedPopIn && _controller.positions.isNotEmpty && _controller.position.isScrollingNotifier.value) {
@@ -134,7 +127,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 											children: [
 												Positioned(
 													top: childBoxTopDiff - topOverscroll,
-													bottom: childBoxBottomDiff - bottomOverscroll,
+													bottom: childBoxTopDiff - bottomOverscroll,
 													left: 0,
 													right: 0,
 													child: Center(
@@ -156,9 +149,10 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 					RepaintBoundary(
 						child: Listener(
 							onPointerDown: (event) {
-								final RenderBox childBox = _childKey.currentContext!.findRenderObject()! as RenderBox;
+								final RenderBox scrollBox = _scrollKey.currentContext!.findRenderObject()! as RenderBox;
+								final Offset childBoxOffset = ((_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.child!.parentData as SliverPhysicalParentData?)?.paintOffset ?? Offset.zero;
 								_pointerDownPosition = event.position;
-								_pointerInSpacer = event.position.dy < childBox.localToGlobal(childBox.semanticBounds.topCenter).dy || event.position.dy > childBox.localToGlobal(childBox.semanticBounds.bottomCenter).dy;
+								_pointerInSpacer = event.position.dy < scrollBox.localToGlobal(childBoxOffset).dy || event.position.dy > scrollBox.localToGlobal(scrollBox.semanticBounds.bottomCenter - childBoxOffset).dy;
 							},
 							onPointerMove: (event) {
 								if (_pointerInSpacer) {
@@ -181,23 +175,18 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 										controller: _controller,
 										child: CustomScrollView(
 											controller: _controller,
+											key: _scrollKey,
 											physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
 											slivers: [
-												SliverToBoxAdapter(
-													child: ConstrainedBox(
-														constraints: BoxConstraints(
-															minHeight: constraints.maxHeight
-														),
-														child: SafeArea(
-															child: Padding(
-																padding: MediaQuery.viewInsetsOf(context),
-																child: Center(
-																	key: _scrollKey,
-																	child: Opacity(
-																		key: _childKey,
-																		opacity: _opacity,
-																		child: widget.child
-																	)
+												SliverSafeArea(
+													sliver: SliverPadding(
+														padding: MediaQuery.viewInsetsOf(context),
+														sliver: SliverFadeTransition(
+															opacity: _opacity,
+															sliver: SliverCenter(
+																key: _childKey,
+																child: widget.sliver ?? SliverToBoxAdapter(
+																	child: widget.child
 																)
 															)
 														)
@@ -219,5 +208,39 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	void dispose() {
 		super.dispose();
 		_controller.dispose();
+		_opacity.dispose();
 	}
+}
+
+class ValueNotifierAnimation<T> extends Animation<T> with AnimationLocalListenersMixin, AnimationLocalStatusListenersMixin {
+	T _value;
+	ValueNotifierAnimation(this._value);
+
+	@override
+	T get value => _value;
+
+	set value(T newValue) {
+		if (_value == newValue) {
+			return;
+		}
+		_value = newValue;
+		notifyListeners();
+	}
+
+	@override
+	AnimationStatus get status => AnimationStatus.forward;
+
+	@override
+	void didRegisterListener() {}
+
+	@override
+	void didUnregisterListener() {}
+
+	void dispose() {
+		clearListeners();
+		clearStatusListeners();
+	}
+
+	@override
+	String toString() => 'ValueNotifierAnimation<$T>($value)';
 }

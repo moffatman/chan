@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
@@ -9,9 +12,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:chan/pages/overscroll_modal.dart';
-import 'package:chan/util.dart';
 
-class PostsPage extends StatefulWidget {
+class PostsPage extends StatelessWidget {
 	final PostSpanZoneData zone;
 	final int? postIdForBackground;
 	final List<int> postsIdsToShow;
@@ -26,88 +28,72 @@ class PostsPage extends StatefulWidget {
 	}) : super(key: key);
 
 	@override
-	createState() => _PostsPageState();
-}
-
-class _PostsPageState extends State<PostsPage> {
-	Map<Post, BuildContext> postContexts = {};
-
-	@override
-	void didUpdateWidget(PostsPage old) {
-		super.didUpdateWidget(old);
-		if (widget.zone != old.zone || widget.postsIdsToShow != old.postsIdsToShow) {
-			postContexts = {};
-		}
-	}
-
-	@override
 	Widget build(BuildContext context) {
 		final List<Post> replies = [];
-		for (final id in widget.postsIdsToShow) {
-			final matchingPost = widget.zone.thread.posts.tryFirstWhere((p) => p.id == id);
+		for (final id in postsIdsToShow) {
+			final matchingPost = zone.thread.posts.tryFirstWhere((p) => p.id == id);
 			if (matchingPost != null) {
 				replies.add(matchingPost);
 			}
 			else {
-				final archivedPost = widget.zone.postFromArchive(id);
+				final archivedPost = zone.postFromArchive(id);
 				if (archivedPost != null) {
 					replies.add(archivedPost);
 				}
 			}
 		}
-		for (final method in widget.zone.postSortingMethods) {
+		for (final method in zone.postSortingMethods) {
 			mergeSort<Post>(replies, compare: method);
 		}
 		final attachments = replies.expand<Attachment>((a) => a.attachments).toList();
-		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.thread.posts.tryFirstWhere((p) => p.id == widget.postIdForBackground);
+		final postForBackground = postIdForBackground == null ? null : zone.thread.posts.tryFirstWhere((p) => p.id == postIdForBackground);
 		return ChangeNotifierProvider.value(
-			value: widget.zone,
-			child: OverscrollModalPage(
+			value: zone,
+			child: OverscrollModalPage.sliver(
 				background: postForBackground == null ? null : PostRow(
 					post: postForBackground,
 					isSelected: true
 				),
-				heightEstimate: 100.0 * (widget.postsIdsToShow.length - 1),
-				child: ListView.separated(
-					shrinkWrap: true,
-					primary: false,
-					physics: const NeverScrollableScrollPhysics(),
-					separatorBuilder: (context, i) => Divider(
-						thickness: 1,
-						height: 0,
-						color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
-					),
-					itemCount: replies.length,
-					itemBuilder: (context, i) {
-						final reply = replies[i];
-						postContexts[reply] = context;
-						return PostRow(
-							post: reply,
-							onTap: widget.onTap == null ? null : () => widget.onTap!(reply),
-							onDoubleTap: widget.zone.onNeedScrollToPost == null ? null : () => widget.zone.onNeedScrollToPost!(reply),
-							onThumbnailTap: (attachment) {
-								showGallery(
-									context: context,
-									attachments: attachments,
-									replyCounts: {
-										for (final reply in replies)
-											for (final attachment in reply.attachments)
-												attachment: reply.replyIds.length
-									},
-									isAttachmentAlreadyDownloaded: widget.zone.threadState?.isAttachmentDownloaded,
-									onAttachmentDownload: widget.zone.threadState?.didDownloadAttachment,
-									initialAttachment: attachment,
-									semanticParentIds: context.read<PostSpanZoneData>().stackIds,
-									onChange: (attachment) {
-										final match = postContexts.entries.tryFirstWhere((p) =>  p.key.attachments.contains(attachment));
-										if (match != null) {
-											Scrollable.ensureVisible(match.value, alignment: 0.5, duration: const Duration(milliseconds: 200));
-										}
+				heightEstimate: 100.0 * (postsIdsToShow.length - 1),
+				sliver: SliverList(
+					delegate: SliverChildBuilderDelegate(
+						addRepaintBoundaries: false,
+						childCount: max(0, (replies.length * 2) - 1),
+						(context, j) {
+							if (j % 2 == 0) {
+								final i = j ~/ 2;
+								final reply = replies[i];
+								return PostRow(
+									post: reply,
+									onTap: onTap == null ? null : () => onTap!(reply),
+									onDoubleTap: zone.onNeedScrollToPost == null ? null : () => zone.onNeedScrollToPost!(reply),
+									onThumbnailTap: (attachment) {
+										showGallery(
+											context: context,
+											attachments: attachments,
+											replyCounts: {
+												for (final reply in replies)
+													for (final attachment in reply.attachments)
+														attachment: reply.replyIds.length
+											},
+											isAttachmentAlreadyDownloaded: zone.threadState?.isAttachmentDownloaded,
+											onAttachmentDownload: zone.threadState?.didDownloadAttachment,
+											initialAttachment: attachment,
+											semanticParentIds: context.read<PostSpanZoneData>().stackIds,
+											onChange: (attachment) {
+												Scrollable.ensureVisible(context, alignment: 0.5, duration: const Duration(milliseconds: 200));
+											}
+										);
 									}
 								);
 							}
-						);
-					}
+							return Divider(
+								thickness: 1,
+								height: 0,
+								color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+							);
+						}
+					)
 				)
 			)
 		);
