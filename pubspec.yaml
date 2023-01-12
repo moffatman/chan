@@ -63,7 +63,7 @@ dependencies:
   receive_sharing_intent:
     git: 
         url: https://github.com/krabbenprgr/receive_sharing_intent
-  native_drag_n_drop: ^0.0.4
+  native_drag_n_drop: ^0.0.5
   mime: ^1.0.2
   http_parser: ^4.0.0
   cupertino_icons: ^1.0.0

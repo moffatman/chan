@@ -1715,9 +1715,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					final List<String> paths = [];
 					for (final datum in data) {
 						if (datum.dropFile != null) {
-							paths.add(
-								(await datum.dropFile!.copy(
-									'${Persistence.temporaryDirectory.path}/${datum.dropFile!.path.split('/').last.replaceFirst(RegExp(r'\.(png|gif)$'), '.jpg')}')).path);
+							paths.add(datum.dropFile!.path);
 						}
 						else if (datum.dropText != null) {
 							_consumeLink(datum.dropText);
