@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/share.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:flutter/cupertino.dart';
@@ -164,6 +165,16 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 										onPressed: _canGoForward ? _controller?.goForward : null,
 										child: const Icon(CupertinoIcons.arrow_right)
 									),
+									CupertinoButton(
+										onPressed: () {
+											_showProgressTimer?.cancel();
+											_showProgressTimer = null;
+											_showProgress = true;
+											setState(() {});
+											_controller?.reload();
+										},
+										child: const Icon(CupertinoIcons.refresh)
+									),
 									Expanded(
 										child: Row(
 											mainAxisAlignment: MainAxisAlignment.center,
@@ -180,13 +191,20 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 									),
 									CupertinoButton(
 										onPressed: () {
-											_showProgressTimer?.cancel();
-											_showProgressTimer = null;
-											_showProgress = true;
-											setState(() {});
-											_controller?.reload();
+											final url = _url ?? widget.initialUrlRequest?.url;
+											if (url == null) {
+												alertError(context, 'No URL');
+											}
+											else {
+												_controller?.loadUrl(urlRequest: URLRequest(
+													url: Uri.https('archive.today', '/', {
+														'run': '1',
+														'url': url.toString()
+													})
+												));
+											}
 										},
-										child: const Icon(CupertinoIcons.refresh)
+										child: const Icon(CupertinoIcons.archivebox)
 									),
 									CupertinoButton(
 										onPressed: () {
@@ -199,6 +217,25 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 											}
 										},
 										child: const Icon(CupertinoIcons.compass)
+									),
+									Builder(
+										builder: (context) => CupertinoButton(
+											onPressed: () {
+												final url = _url ?? widget.initialUrlRequest?.url;
+												if (url == null) {
+													alertError(context, 'No URL');
+												}
+												else {
+													shareOne(
+														context: context,
+														text: url.toString(),
+														type: 'text',
+														sharePositionOrigin: (context.findRenderObject() as RenderBox?)?.paintBounds
+													);
+												}
+											},
+											child: const Icon(CupertinoIcons.share)
+										)
 									)
 								]
 							)
