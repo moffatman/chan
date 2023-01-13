@@ -1604,23 +1604,18 @@ class RefreshableListController<T extends Object> {
 	}
 	int get lastVisibleIndex {
 		if (scrollController?.hasOnePosition ?? false) {
+			if (_items.isNotEmpty &&
+					_items.first.cachedHeight != null &&
+					_items.first.cachedHeight! > (scrollController!.position.pixels + scrollController!.position.viewportDimension)) {
+				return 0;
+			}
 			return _items.lastIndexWhere((i) => (i.cachedOffset != null) && i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
 		}
 		return -1;
 	}
 	T? get lastVisibleItem {
-		if (scrollController?.hasOnePosition ?? false) {
-			if (_items.isNotEmpty &&
-					_items.first.cachedHeight != null &&
-					_items.first.cachedHeight! > (scrollController!.position.pixels + scrollController!.position.viewportDimension)) {
-				return _items.first.item.item;
-			}
-			return _items.tryLastWhere((i) {
-				return (i.cachedOffset != null) &&
-							 (i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
-			})?.item.item;
-		}
-		return null;
+		final index = lastVisibleIndex;
+		return index < 0 ? null : _items[index].item.item;
 	}
 	Future<void> blockAndUpdate() async {
 		state?.originalList = null;
