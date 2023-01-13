@@ -1074,7 +1074,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 													fakeAttachment: attachment!.uri
 												},
 												allowChrome: false,
-												allowContextMenu: false
+												allowContextMenu: false,
+												allowScroll: false
 											);
 										}
 									)

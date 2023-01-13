@@ -792,7 +792,7 @@ class PostLinkSpan extends PostSpan {
 
 				if (tapChild != null) {
 					onTap() {
-						openBrowser(context, cleanedUri!);
+						openBrowser(context, cleanedUri!, useCooperativeBrowser: true);
 					}
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
@@ -813,7 +813,7 @@ class PostLinkSpan extends PostSpan {
 			style: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline
 			),
-			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(cleanedUrl))),
+			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(cleanedUrl), useCooperativeBrowser: true)),
 			onEnter: options.onEnter,
 			onExit: options.onExit
 		);

@@ -79,6 +79,7 @@ class GalleryPage extends StatefulWidget {
 	final bool initiallyShowChrome;
 	final ValueChanged<TaggedAttachment>? onChange;
 	final bool allowScroll;
+	final bool allowPop;
 	final bool allowContextMenu;
 	final bool allowChrome;
 	final bool updateOverlays;
@@ -93,6 +94,7 @@ class GalleryPage extends StatefulWidget {
 		this.initiallyShowChrome = false,
 		this.onChange,
 		this.allowScroll = true,
+		this.allowPop = true,
 		this.allowChrome = true,
 		this.allowContextMenu = true,
 		this.updateOverlays = true,
@@ -709,7 +711,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			},
 			slideEndHandler: (offset, {ScaleEndDetails? details, ExtendedImageSlidePageState? state}) {
 				final a = ((details?.velocity ?? Velocity.zero).pixelsPerSecond.direction / pi).abs();
-				return ((details?.pointerCount ?? 0) == 0) && widget.allowScroll && (a >= 0.25 && a <= 0.75) && (state?.imageGestureState?.gestureDetails?.totalScale ?? 1) <= 1;
+				return ((details?.pointerCount ?? 0) == 0) && widget.allowPop && (a >= 0.25 && a <= 0.75) && (state?.imageGestureState?.gestureDetails?.totalScale ?? 1) <= 1;
 			},
 			child: CupertinoTheme(
 				data: settings.makeDarkTheme(context),
@@ -1047,10 +1049,13 @@ Future<Attachment?> showGalleryPretagged({
 	bool allowChrome = true,
 	bool allowContextMenu = true,
 	ValueChanged<TaggedAttachment>? onChange,
+	bool fullscreen = true,
+	bool allowScroll = true,
 }) async {
 	final imageboard = context.read<Imageboard>();
 	final showAnimations = context.read<EffectiveSettings>().showAnimations;
-	final lastSelected = await Navigator.of(context, rootNavigator: true).push(TransparentRoute<Attachment>(
+	final navigator = fullscreen ? Navigator.of(context, rootNavigator: true) : context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context);
+	final lastSelected = await navigator.push(TransparentRoute<Attachment>(
 		builder: (ctx) => ImageboardScope(
 			imageboardKey: null,
 			imageboard: imageboard,
@@ -1065,6 +1070,7 @@ Future<Attachment?> showGalleryPretagged({
 				onChange: onChange,
 				allowChrome: allowChrome,
 				allowContextMenu: allowContextMenu,
+				allowScroll: allowScroll,
 			)
 		),
 		showAnimations: showAnimations
@@ -1092,6 +1098,8 @@ Future<Attachment?> showGallery({
 	bool allowChrome = true,
 	bool allowContextMenu = true,
 	ValueChanged<Attachment>? onChange,
+	bool fullscreen = true,
+	bool allowScroll = true,
 }) => showGalleryPretagged(
 	context: context,
 	attachments: attachments.map((attachment) => TaggedAttachment(
@@ -1109,5 +1117,7 @@ Future<Attachment?> showGallery({
 	initiallyShowChrome: initiallyShowChrome,
 	allowChrome: allowChrome,
 	allowContextMenu: allowContextMenu,
-	onChange: onChange == null ? null : (x) => onChange(x.attachment)
+	onChange: onChange == null ? null : (x) => onChange(x.attachment),
+	fullscreen: fullscreen,
+	allowScroll: allowScroll
 );

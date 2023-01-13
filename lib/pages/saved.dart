@@ -795,6 +795,7 @@ class _SavedPageState extends State<SavedPage> {
 										selectedValue.item.attachment: selectedValue.item.file.uri
 									},
 									allowScroll: poppedOut,
+									allowPop: poppedOut,
 									updateOverlays: false
 								)
 							);

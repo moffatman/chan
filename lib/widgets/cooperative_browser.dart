@@ -190,7 +190,13 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 									),
 									CupertinoButton(
 										onPressed: () {
-											openBrowser(context, _url!);
+											final url = _url ?? widget.initialUrlRequest?.url;
+											if (url == null) {
+												alertError(context, 'No URL');
+											}
+											else {
+												openBrowser(context, url);
+											}
 										},
 										child: const Icon(CupertinoIcons.compass)
 									)

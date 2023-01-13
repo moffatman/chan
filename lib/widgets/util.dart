@@ -305,7 +305,7 @@ class ErrorMessageCard extends StatelessWidget {
 	}
 }
 
-Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = false}) async {
+Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = false, bool useCooperativeBrowser = false}) async {
 	if (url.host.isEmpty && url.scheme.isEmpty) {
 		url = url.replace(
 			scheme: 'https',
@@ -392,26 +392,54 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 				);
 			}
 		}
-		else if ((isOnMac && imageboardTarget == null) || settings.useInternalBrowser == false || (url.scheme != 'http' && url.scheme != 'https')) {
+		else if ((isOnMac && !useCooperativeBrowser && imageboardTarget == null) || settings.useInternalBrowser == false || (url.scheme != 'http' && url.scheme != 'https')) {
 			launchUrl(url, mode: LaunchMode.externalApplication);
 		}
 		else if (imageboardTarget != null && !fromShareOne) {
 			openInChance();
 		}
 		else if (context.mounted) {
-			try {
-				await ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
-					android: AndroidChromeCustomTabsOptions(
-						toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor
-					),
-					ios: IOSSafariOptions(
-						preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
-						preferredControlTintColor: CupertinoTheme.of(context).primaryColor
-					)
-				));
+			if (useCooperativeBrowser) {
+				final fakeAttachment = Attachment(
+					type: AttachmentType.url,
+					board: '',
+					id: '',
+					ext: '',
+					filename: '',
+					url: url,
+					thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
+						'url': url.toString()
+					}),
+					md5: '',
+					width: null,
+					height: null,
+					sizeInBytes: null,
+					threadId: null
+				);
+				showGallery(
+					context: context,
+					attachments: [fakeAttachment],
+					allowChrome: false,
+					semanticParentIds: [],
+					fullscreen: false,
+					allowScroll: false
+				);
 			}
-			on PlatformException {
-				await launchUrl(url);
+			else {
+				try {
+					await ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
+						android: AndroidChromeCustomTabsOptions(
+							toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor
+						),
+						ios: IOSSafariOptions(
+							preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
+							preferredControlTintColor: CupertinoTheme.of(context).primaryColor
+						)
+					));
+				}
+				on PlatformException {
+					await launchUrl(url);
+				}
 			}
 		}
 	}
