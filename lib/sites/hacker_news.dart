@@ -102,12 +102,16 @@ class SiteHackerNews extends ImageboardSite {
 		Iterable<PostSpan> visit(Iterable<dom.Node> nodes) sync* {
 			bool addLinebreakBefore = false;
 			for (final node in nodes) {
+				bool addedLinebreakBefore = addLinebreakBefore;
 				if (addLinebreakBefore) {
 					yield const PostLineBreakSpan();
 					addLinebreakBefore = false;
 				}
 				if (node is dom.Element) {
 					if (node.localName == 'p') {
+						if (addedLinebreakBefore) {
+							yield const PostLineBreakSpan();
+						}
 						if (node.text.startsWith('>')) {
 							yield PostQuoteSpan(PostNodeSpan(visit(node.nodes).toList()));
 						}
