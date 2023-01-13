@@ -147,7 +147,7 @@ class Post implements Filterable {
 	List<int>? _repliedToIds;
 	@override
 	List<int> get repliedToIds {
-		_repliedToIds ??= [
+		_repliedToIds ??= id == threadId ? [] : [
 			if (parentId != null) parentId!,
 			...span.referencedPostIds(board)
 		];
