@@ -84,29 +84,9 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 	Widget build(BuildContext context) {
 		return SafeArea(
 			top: false,
-			child: Container(
-				margin: EdgeInsets.only(
+			child: Padding(
+				padding: EdgeInsets.only(
 					top: MediaQuery.paddingOf(ImageboardRegistry.instance.context ?? context).top
-				),
-				decoration: BoxDecoration(
-					border: Border(
-						top: BorderSide(
-							color: _allowedDirections.contains(AxisDirection.down) ? Colors.green : Colors.red,
-							width: 3
-						),
-						bottom: BorderSide(
-							color: _allowedDirections.contains(AxisDirection.up) ? Colors.green : Colors.red,
-							width: 3
-						),
-						left: BorderSide(
-							color: _allowedDirections.contains(AxisDirection.right) ? Colors.green : Colors.red,
-							width: 3
-						),
-						right: BorderSide(
-							color: _allowedDirections.contains(AxisDirection.left) ? Colors.green : Colors.red,
-							width: 3
-						)
-					)
 				),
 				child: Column(
 					children: [
