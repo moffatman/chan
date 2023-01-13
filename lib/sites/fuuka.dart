@@ -202,7 +202,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 		return _makeThread(parse(response.data).body!, thread.board, thread.id);
 	}
 	@override
-	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
 		final response = await client.get(Uri.https(baseUrl, '/$board/').toString(), options: Options(validateStatus: (x) => true));
 		final document = parse(response.data);
 		int? threadId;

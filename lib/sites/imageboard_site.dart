@@ -656,6 +656,7 @@ class ImageboardSnippet {
 
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
+	final Map<ThreadIdentifier, Thread> _catalogCache = {};
 	ImageboardSiteArchive() {
 		client.interceptors.add(SeparatedCookieManager(
 			wifiCookieJar: Persistence.wifiCookies,
@@ -672,7 +673,17 @@ abstract class ImageboardSiteArchive {
 	String get name;
 	Future<Post> getPost(String board, int id);
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant});
-	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant});
+	@protected
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant});
+	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant}) async {
+		final catalog = await getCatalogImpl(board, variant: variant);
+		_catalogCache.addAll({
+			for (final t in catalog)
+				t.identifier: t
+		});
+		return catalog;
+	}
+	Thread? getThreadFromCatalogCache(ThreadIdentifier identifier) => _catalogCache[identifier];
 	Future<List<ImageboardBoard>> getBoards();
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult});
 	String getWebUrl(String board, [int? threadId, int? postId]);

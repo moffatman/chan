@@ -450,8 +450,9 @@ class _ThreadPageState extends State<ThreadPage> {
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
 		String title = site.formatBoardName(site.persistence.getBoard(widget.thread.board));
-		if (persistentState.thread?.title != null) {
-			title += ' - ${context.read<EffectiveSettings>().filterProfanity(persistentState.thread!.title!)}';
+		final threadTitle = persistentState.thread?.title ?? site.getThreadFromCatalogCache(widget.thread)?.title;
+		if (threadTitle != null) {
+			title += ' - ${context.read<EffectiveSettings>().filterProfanity(threadTitle)}';
 		}
 		else {
 			title.replaceFirst(RegExp(r'\/$'), '');
@@ -884,6 +885,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																		reversed: reverseIndicatorPosition,
 																		persistentState: persistentState,
 																		thread: persistentState.thread,
+																		threadIdentifier: widget.thread,
 																		listController: _listController,
 																		zone: zone,
 																		filter: Filter.of(context),
@@ -973,6 +975,7 @@ class _ThreadPageState extends State<ThreadPage> {
 class ThreadPositionIndicator extends StatefulWidget {
 	final PersistentThreadState persistentState;
 	final Thread? thread;
+	final ThreadIdentifier threadIdentifier;
 	final RefreshableListController<Post> listController;
 	final Filter filter;
 	final PostSpanZoneData zone;
@@ -982,6 +985,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 	const ThreadPositionIndicator({
 		required this.persistentState,
 		required this.thread,
+		required this.threadIdentifier,
 		required this.listController,
 		required this.filter,
 		required this.zone,
@@ -1009,7 +1013,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		final lastVisibleIndex = widget.listController.lastVisibleIndex;
 		final lastVisibleItemId = lastVisibleIndex == -1 ? null : widget.listController.getItem(lastVisibleIndex).item.id;
 		if (lastVisibleItemId == null || _filteredPosts == null) {
-			_whiteCount = widget.thread?.replyCount ?? 0;
+			_whiteCount = widget.thread?.replyCount ??
+				context.read<ImageboardSite>().getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount
+					?? 0;
 			_redCount = 0;
 			_greyCount = 0;
 			return false;

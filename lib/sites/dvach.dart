@@ -124,7 +124,7 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
 		final response = await client.get(Uri.https(baseUrl, '/$board/catalog.json').toString(), options: Options(
 			validateStatus: (s) => true
 		));

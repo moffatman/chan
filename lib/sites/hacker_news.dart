@@ -390,7 +390,7 @@ class SiteHackerNews extends ImageboardSite {
 
 	List<int>? _lastCatalogIds;
 	@override
-	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
 		final name = {
 			CatalogVariant.hackerNewsTop: 'topstories',
 			CatalogVariant.hackerNewsNew: 'newstories',

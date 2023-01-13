@@ -462,7 +462,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
 		try {
 			await _updateBoardIfNeeded(board);
 		}
