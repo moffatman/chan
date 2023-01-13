@@ -86,6 +86,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	bool? lastUseTree;
 	bool _foreground = false;
 	PersistentBrowserTab? _parentTab;
+	final List<Function> _postUpdateCallbacks = [];
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -106,7 +107,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 		if (persistentState.thread != lastThread) {
 			final tmpPersistentState = persistentState;
-			Future.delayed(const Duration(milliseconds: 100), () {
+			_postUpdateCallbacks.add(() {
 				if (mounted && persistentState == tmpPersistentState && !_unnaturallyScrolling) {
 					int? newLastId;
 					if (useTree) {
@@ -398,7 +399,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			}
 			await tmpPersistentState.save();
 			setState(() {});
-			Future.delayed(const Duration(milliseconds: 100), () {
+			_postUpdateCallbacks.add(() async {
 				if (persistentState == tmpPersistentState && !_unnaturallyScrolling) {
 					final lastItem = _listController.lastVisibleItem;
 					if (lastItem != null) {
@@ -417,14 +418,32 @@ class _ThreadPageState extends State<ThreadPage> {
 				lastPageNumber = newThread.currentPage;
 			});
 		}
-		if (shouldScroll && !useTree) _blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500));
 		// Don't show data if the thread switched
-		Future.delayed(const Duration(milliseconds: 30), () {
+		_postUpdateCallbacks.add(() async {
 			if (!mounted) return;
 			// Trigger update of counts in case new post is drawn fully onscreen
 			_listController.slowScrolls.didUpdate();
 		});
+		if (shouldScroll && !useTree) {
+			_blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500))
+				.then((_) async {
+					await _listController.waitForItemBuild(0);
+					_runPostUpdateCallbacks();
+				});
+		}
+		else {
+			_listController.waitForItemBuild(0).then((_) => _runPostUpdateCallbacks());
+		}
 		return newThread;
+	}
+
+	void _runPostUpdateCallbacks() async {
+		await WidgetsBinding.instance.endOfFrame;
+		final tmp = _postUpdateCallbacks.toList();
+		_postUpdateCallbacks.clear();
+		for (final cb in tmp) {
+			cb();
+		}
 	}
 
 	@override
@@ -987,7 +1006,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	late final Animation<double> _buttonsAnimation;
 
 	bool _updateCounts() {
-		final lastVisibleItemId = widget.listController.lastVisibleItem?.id;
+		final lastVisibleIndex = widget.listController.lastVisibleIndex;
+		final lastVisibleItemId = lastVisibleIndex == -1 ? null : widget.listController.getItem(lastVisibleIndex).item.id;
 		if (lastVisibleItemId == null || _filteredPosts == null) {
 			_whiteCount = widget.thread?.replyCount ?? 0;
 			_redCount = 0;
@@ -998,7 +1018,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		_youIds = widget.persistentState.replyIdsToYou(widget.filter) ?? [];
 		_redCount = _youIds.binarySearchCountAfter((p) => p > lastSeenPostId);
 		_whiteCount = _filteredPosts!.binarySearchCountAfter((p) => p.id > lastSeenPostId);
-		_greyCount = widget.listController.items.length - widget.listController.lastVisibleIndex - 1 - _whiteCount;
+		_greyCount = max(0, widget.listController.itemsLength - (widget.listController.lastVisibleIndex + 1) - 1 - _whiteCount);
 		_lastLastVisibleItemId = lastVisibleItemId;
 		setState(() {});
 		return true;

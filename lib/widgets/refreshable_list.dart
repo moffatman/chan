@@ -1359,6 +1359,8 @@ class _BuiltRefreshableListItem<T extends Object> {
 class RefreshableListController<T extends Object> {
 	List<_BuiltRefreshableListItem<RefreshableListItem<T>>> _items = [];
 	Iterable<RefreshableListItem<T>> get items => _items.map((i) => i.item);
+	int get itemsLength => _items.length;
+	RefreshableListItem<T> getItem(int i) => _items[i].item;
 	ScrollController? scrollController;
 	late final ValueNotifier<double> overscrollFactor = ValueNotifier<double>(0);
 	late final BehaviorSubject<void> _scrollStream = BehaviorSubject();
@@ -1368,7 +1370,7 @@ class RefreshableListController<T extends Object> {
 	double? bottomOffset;
 	String? contentId;
 	RefreshableListState<T>? state;
-	final Map<Tuple2<int, bool>, Completer<void>> _itemCacheCallbacks = {};
+	final Map<Tuple2<int, bool>, List<Completer<void>>> _itemCacheCallbacks = {};
 	int? currentTargetIndex;
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onSlowScroll);
@@ -1391,12 +1393,12 @@ class RefreshableListController<T extends Object> {
 			for (final position in keys) {
 				if (position.item2 && index >= position.item1) {
 					// scrolling down
-					_itemCacheCallbacks[position]?.complete();
+					_itemCacheCallbacks[position]?.forEach((c) => c.complete());
 					_itemCacheCallbacks.remove(position);
 				}
 				else if (!position.item2 && index <= position.item1) {
 					// scrolling up
-					_itemCacheCallbacks[position]?.complete();
+					_itemCacheCallbacks[position]?.forEach((c) => c.complete());
 					_itemCacheCallbacks.remove(position);
 				}
 			}
@@ -1447,8 +1449,10 @@ class RefreshableListController<T extends Object> {
 	void newContentId(String contentId) {
 		this.contentId = contentId;
 		_items = [];
-		for (final cb in _itemCacheCallbacks.values) {
-			cb.completeError(Exception('page changed'));
+		for (final cbs in _itemCacheCallbacks.values) {
+			for (final cb in cbs) {
+				cb.completeError(Exception('page changed'));
+			}
 		}
 		_itemCacheCallbacks.clear();
 	}
@@ -1527,7 +1531,7 @@ class RefreshableListController<T extends Object> {
 				// prevent overscroll
 				estimate = max(estimate, scrollController!.position.maxScrollExtent);
 			}
-			_itemCacheCallbacks[Tuple2(targetIndex, estimate > scrollController!.position.pixels)] = completer;
+			_itemCacheCallbacks.putIfAbsent(Tuple2(targetIndex, estimate > scrollController!.position.pixels), () => []).add(completer);
 			final delay = Duration(milliseconds: min(300, max(1, (estimate - scrollController!.position.pixels).abs() ~/ 100)));
 			scrollController!.animateTo(
 				estimate,
@@ -1600,7 +1604,7 @@ class RefreshableListController<T extends Object> {
 	}
 	int get lastVisibleIndex {
 		if (scrollController?.hasOnePosition ?? false) {
-			return _items.lastIndexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! + i.cachedHeight!) < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
+			return _items.lastIndexWhere((i) => (i.cachedOffset != null) && i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
 		}
 		return -1;
 	}
@@ -1613,7 +1617,7 @@ class RefreshableListController<T extends Object> {
 			}
 			return _items.tryLastWhere((i) {
 				return (i.cachedOffset != null) &&
-							 ((i.cachedOffset! + i.cachedHeight!) < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
+							 (i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
 			})?.item.item;
 		}
 		return null;
@@ -1637,5 +1641,14 @@ class RefreshableListController<T extends Object> {
 				curve: Curves.ease
 			);
 		}
+	}
+
+	Future<void> waitForItemBuild(int item) async {
+		if (_items.length > item && _items[item].hasGoodState) {
+			return;
+		}
+		final c = Completer();
+		_itemCacheCallbacks.putIfAbsent(const Tuple2(0, true), () => []).add(c);
+		await c.future;
 	}
 }
