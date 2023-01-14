@@ -336,6 +336,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	Timer? autoUpdateTimer;
 	GlobalKey _scrollViewKey = GlobalKey();
 	GlobalKey _sliverListKey = GlobalKey();
+	GlobalKey _footerKey = GlobalKey();
 	int _pointerDownCount = 0;
 	bool _showFilteredValues = false;
 	bool _searchTapped = false;
@@ -380,6 +381,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			widget.controller?.newContentId(widget.id);
 			_scrollViewKey = GlobalKey();
 			_sliverListKey = GlobalKey();
+			_footerKey = GlobalKey();
 			_closeSearch();
 			originalList = widget.initialList;
 			sortedList = null;
@@ -863,11 +865,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						_pointerDownCount--;
 					},
 					child: GestureDetector(
-						onTap: () {
+						onTapUp: (e) {
 							if (widget.controller?.scrollController != null && (widget.controller!.scrollController!.position.userScrollDirection != ScrollDirection.idle) && _pointerDownCount == 0) {
 								widget.controller!.scrollController!.jumpTo(widget.controller!.scrollController!.position.pixels);
 							}
 							widget.controller?.cancelCurrentAnimation();
+							final footerBox = _footerKey.currentContext?.findRenderObject() as RenderBox?;
+							final footerTop = footerBox?.localToGlobal(footerBox.paintBounds.topLeft).dy ?? double.infinity;
+							if (e.globalPosition.dy > footerTop) {
+								_updateWithHapticFeedback();
+							}
 						},
 						child: MaybeCupertinoScrollbar(
 							controller: widget.controller?.scrollController,
@@ -1178,6 +1185,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 											sliver: SliverToBoxAdapter(
 												child: RepaintBoundary(
 													child: RefreshableListFooter(
+														key: _footerKey,
 														updater: _updateOrExtendWithHapticFeedback,
 														updatingNow: updatingNow,
 														lastUpdateTime: lastUpdateTime,
