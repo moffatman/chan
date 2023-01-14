@@ -1054,6 +1054,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		if (widget.thread != null) {
 			_filteredPosts = widget.persistentState.filteredPosts(widget.filter);
 		}
+		_updateCounts();
 	}
 
 	@override
