@@ -478,7 +478,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				minUpdateDuration = const Duration(seconds: 1);
 			}
 			if (extend && widget.listExtender != null && (originalList?.isNotEmpty ?? false)) {
-				final newItems = await widget.listExtender!(originalList!.last);
+				final newItems = (await Future.wait([widget.listExtender!(originalList!.last), Future<List<T>>.delayed(minUpdateDuration)])).first;
 				newList = originalList!.followedBy(newItems).toList();
 			}
 			else {
