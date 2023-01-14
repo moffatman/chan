@@ -1183,7 +1183,13 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 
 	bool _onTap(Offset position, bool runCallback) {
 		for (final pair in _lineTapCallbacks.values) {
-			final box = pair.item1.findRenderObject() as RenderBox?;
+			final RenderBox? box;
+			try {
+				box = pair.item1.findRenderObject() as RenderBox?;
+			}
+			catch (e) {
+				continue;
+			}
 			if (box != null) {
 				final y0 = box.localToGlobal(box.paintBounds.topLeft).dy;
 				if (y0 > position.dy) {
