@@ -1459,7 +1459,20 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				},
 				child: WillPopScope(
 					onWillPop: () async {
-						return ((await _tabletWillPopZones[_tabController.index]?.callback?.call() ?? false) && (await confirmExit()));
+						if (_tabController.index == 4) {
+							if ((await _settingsNavigatorKey.currentState?.maybePop()) ?? false) {
+								return false;
+							}
+						}
+						else if (!((await _tabletWillPopZones[_tabController.index]?.callback?.call()) ?? true)) {
+							return false;
+						}
+						if (_tabController.index != 0) {
+							_tabController.index = 0;
+							_lastIndex = 0;
+							return false;
+						}
+						return await confirmExit();
 					},
 					child: CupertinoPageScaffold(
 						child: SafeArea(
@@ -1549,7 +1562,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				},
 				child: WillPopScope(
 					onWillPop: () async {
-						return (!(await _tabNavigatorKeys[_tabController.index]?.currentState?.maybePop() ?? false) && (await confirmExit()));
+						if (await _tabNavigatorKeys[_tabController.index]?.currentState?.maybePop() ?? false) {
+							return false;
+						}
+						if (_tabController.index != 0) {
+							_tabController.index = 0;
+							_lastIndex = 0;
+							return false;
+						}
+						return await confirmExit();
 					},
 					child: CupertinoTabScaffold(
 						controller: _tabController,
