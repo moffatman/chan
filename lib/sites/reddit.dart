@@ -534,7 +534,7 @@ class SiteReddit extends ImageboardSite {
 				}
 			}
 		}
-		addChildren(null, response.data[1]['data']['children']);
+		addChildren(after.threadId, response.data[1]['data']['children']);
 		return ret;
 	}
 
@@ -603,7 +603,7 @@ class SiteReddit extends ImageboardSite {
 				}
 			}
 		}
-		addChildren(null, response.data[1]['data']['children']);
+		addChildren(thread.id, response.data[1]['data']['children']);
 		return ret;
 	}
 
