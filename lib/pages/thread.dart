@@ -462,8 +462,8 @@ class _ThreadPageState extends State<ThreadPage> {
 			title = '(Archived) $title';
 		}
 		if (!site.supportsMultipleBoards) {
-			if (persistentState.thread?.title != null) {
-				title = context.read<EffectiveSettings>().filterProfanity(persistentState.thread!.title!);
+			if (threadTitle != null) {
+				title = context.read<EffectiveSettings>().filterProfanity(threadTitle);
 			}
 			else {
 				title = widget.thread.id.toString();
