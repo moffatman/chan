@@ -124,7 +124,8 @@ class _BoardPageState extends State<BoardPage> {
 			Future.delayed(const Duration(milliseconds: 100), _selectBoard);
 		}
 		ThreadIdentifier? selectedThread;
-		dynamic possibleThread = context.read<MasterDetailHint?>()?.currentValue;
+		final hint = context.read<MasterDetailHint?>();
+		dynamic possibleThread = hint?.currentValue;
 		if (possibleThread is ThreadIdentifier) {
 			selectedThread = possibleThread;
 		}
@@ -133,16 +134,18 @@ class _BoardPageState extends State<BoardPage> {
 		}
 		if (selectedThread != null) {
 			_lastSelectedThread = selectedThread;
-			_loadCompleter = Completer<void>()
-				..future.then((_) async {
-					try {
-						await _listController.animateTo((t) => t.identifier == selectedThread, alignment: 1.0);
-					}
-					on ItemNotFoundException {
-						// Ignore, the thread must not be in catalog
-					}
-					_loadCompleter = null;
-				});
+			if (hint?.twoPane ?? false) {
+				_loadCompleter = Completer<void>()
+					..future.then((_) async {
+						try {
+							await _listController.animateTo((t) => t.identifier == selectedThread, alignment: 1.0);
+						}
+						on ItemNotFoundException {
+							// Ignore, the thread must not be in catalog
+						}
+						_loadCompleter = null;
+					});
+			}
 		}
 		else if (context.findAncestorStateOfType<NavigatorState>()?.canPop() == false) {
 			_lastSelectedThread = context.read<PersistentBrowserTab?>()?.thread;
