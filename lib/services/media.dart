@@ -170,6 +170,9 @@ class MediaConversion {
 
 	static final pool = Pool(Platform.numberOfProcessors);
 
+	static bool get _isVideoToolboxSupported => Platform.isIOS && !RegExp(r'Version 15\.[01]').hasMatch(Platform.operatingSystemVersion);
+	bool _hasVideoToolboxFailed = false;
+
 	MediaConversion({
 		required this.inputFile,
 		required this.outputFileExtension,
@@ -187,17 +190,9 @@ class MediaConversion {
 		Map<String, String> headers = const {},
 		Uri? soundSource
 	}) {
-		List<String> extraOptions = [];
-		if (Platform.isIOS && !RegExp(r'Version 15\.[01]').hasMatch(Platform.operatingSystemVersion)) {
-			extraOptions = ['-vcodec', 'h264_videotoolbox'];
-		}
-		else if (Platform.isAndroid || Platform.isIOS) {
-			extraOptions = ['-c:v', 'libx264', '-preset', 'medium', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'];
-		}
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'mp4',
-			extraOptions: extraOptions,
 			headers: headers,
 			soundSource: soundSource
 		);
@@ -376,6 +371,11 @@ class MediaConversion {
 							if (outputFileExtension == 'jpg' || outputFileExtension == 'png') ...['-pix_fmt', 'rgba'],
 							if (outputFileExtension == 'png') ...['-pred', 'mixed'],
 							if (outputFileExtension == 'webm') ...['-crf', '10'],
+							if (outputFileExtension == 'mp4')
+								if (_isVideoToolboxSupported && !_hasVideoToolboxFailed)
+									...['-vcodec', 'h264_videotoolbox']
+								else
+									...['-c:v', 'libx264', '-preset', 'medium', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'],
 							if (newSize != null) ...['-vf', 'scale=${newSize.item1}:${newSize.item2}'],
 							if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
 							convertedFile.path
@@ -388,6 +388,14 @@ class MediaConversion {
 					if (!(returnCode?.isValueSuccess() ?? false)) {
 						if (await convertedFile.exists()) {
 							await convertedFile.delete();
+						}
+						if (outputFileExtension == 'mp4' &&
+								_isVideoToolboxSupported &&
+								!_hasVideoToolboxFailed &&
+								((await results.getAllLogsAsString())?.contains('Error while opening encoder') ?? false)) {
+							_hasVideoToolboxFailed = true;
+							await start();
+							return;
 						}
 						throw MediaConversionFFMpegException(returnCode?.getValue() ?? -1);
 					}
