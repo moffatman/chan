@@ -1482,6 +1482,9 @@ class RefreshableListController<T extends Object> {
 				}
 			}
 		}
+		else if (items.length == 1 && _items.length == 1 && items[0] == _items[0].item) {
+			_items[0].item = items[0];
+		}
 		else {
 			_items = items.map((item) => _BuiltRefreshableListItem(item)).toList();
 		}
