@@ -95,6 +95,7 @@ class RefreshableListItem<T extends Object> {
 	final String? filterReason;
 	final List<int> parentIds;
 	int treeChildrenCount;
+	final int? _depth;
 
 	RefreshableListItem({
 		required this.item,
@@ -103,8 +104,9 @@ class RefreshableListItem<T extends Object> {
 		this.filterReason,
 		this.parentIds = const [],
 		this.treeChildrenCount = 0,
-		this.omittedChildCount = 0
-	});
+		this.omittedChildCount = 0,
+		int? depth
+	}) : _depth = depth;
 
 	@override
 	String toString() => 'RefreshableListItem<$T>(item: $item, omittedChildCount: $omittedChildCount, treeChildrenCount: $treeChildrenCount)';
@@ -116,7 +118,8 @@ class RefreshableListItem<T extends Object> {
 
 	RefreshableListItem<T> copyWith({
 		List<int>? parentIds,
-		int? omittedChildCount
+		int? omittedChildCount,
+		int? depth
 	}) => RefreshableListItem(
 		item: item,
 		highlighted: highlighted,
@@ -125,9 +128,13 @@ class RefreshableListItem<T extends Object> {
 		parentIds: parentIds ?? this.parentIds,
 		treeChildrenCount: treeChildrenCount,
 		omittedChildCount: omittedChildCount ?? this.omittedChildCount,
+		depth: depth,
 	);
 
 	int get depth {
+		if (_depth != null) {
+			return _depth!;
+		}
 		if (omittedChildCount > 0) {
 			return parentIds.length + 1;
 		}
@@ -725,7 +732,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 		final out = <RefreshableListItem<T>>[];
 		final collapsed = <List<int>>[];
-		int dumpNode(_TreeNode<RefreshableListItem<T>> node, List<int> parentIds) {
+		int dumpNode(_TreeNode<RefreshableListItem<T>> node, List<int> parentIds, {bool addOmittedChildNode = true}) {
 			final item = node.item.copyWith(parentIds: parentIds);
 			out.add(item);
 			final ids = [
@@ -738,14 +745,18 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			for (final child in node.children) {
 				item.treeChildrenCount += 1 + dumpNode(child, ids.toList());
 			}
-			if (node.omittedChildCount > 0) {
+			if (addOmittedChildNode && node.omittedChildCount > 0) {
 				out.add(item.copyWith(omittedChildCount: node.omittedChildCount));
 				item.treeChildrenCount += item.omittedChildCount;
 			}
 			return item.treeChildrenCount;
 		}
-		for (final root in treeRoots) {
+		dumpNode(treeRoots.first, [], addOmittedChildNode: false);
+		for (final root in treeRoots.skip(1)) {
 			dumpNode(root, []);
+		}
+		if (treeRoots.first.omittedChildCount > 0) {
+			out.add(treeRoots.first.item.copyWith(parentIds: [], omittedChildCount: treeRoots.first.omittedChildCount, depth: 0));
 		}
 		return Tuple2(out, collapsed);
 	}
