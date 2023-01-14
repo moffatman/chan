@@ -71,6 +71,8 @@ class _FilterEditorState extends State<FilterEditor> {
 			final List<String> boards = filter.boards.toList();
 			final List<String> excludeBoards = filter.excludeBoards.toList();
 			int? minRepliedTo = filter.minRepliedTo;
+			int? minReplyCount = filter.minReplyCount;
+			int? maxReplyCount = filter.maxReplyCount;
 			bool hide = filter.outputType.hide;
 			bool highlight = filter.outputType.highlight;
 			bool pinToTop = filter.outputType.pinToTop;
@@ -282,6 +284,90 @@ class _FilterEditorState extends State<FilterEditor> {
 										child: Text(minRepliedTo == null ? 'No replied-to criteria' : 'With at least $minRepliedTo replied-to posts')
 									),
 									const SizedBox(height: 16),
+									CupertinoButton.filled(
+										padding: const EdgeInsets.all(16),
+										onPressed: () async {
+											final controller = TextEditingController(text: minReplyCount?.toString());
+											await showCupertinoDialog(
+												context: context,
+												barrierDismissible: true,
+												builder: (context) => CupertinoAlertDialog(
+													title: const Text('Set minimum reply count'),
+													actions: [
+														CupertinoButton(
+															child: const Text('Clear'),
+															onPressed: () {
+																controller.text = '';
+																Navigator.pop(context);
+															}
+														),
+														CupertinoButton(
+															child: const Text('Close'),
+															onPressed: () => Navigator.pop(context)
+														)
+													],
+													content: Padding(
+														padding: const EdgeInsets.only(top: 16),
+														child: CupertinoTextField(
+															autofocus: true,
+															keyboardType: TextInputType.number,
+															controller: controller,
+															onSubmitted: (s) {
+																Navigator.pop(context);
+															}
+														)
+													)
+												)
+											);
+											minReplyCount = int.tryParse(controller.text);
+											controller.dispose();
+											setInnerState(() {});
+										},
+										child: Text(minReplyCount == null ? 'No min-replies criteria' : 'With at least $minReplyCount replies')
+									),
+									const SizedBox(height: 16),
+									CupertinoButton.filled(
+										padding: const EdgeInsets.all(16),
+										onPressed: () async {
+											final controller = TextEditingController(text: maxReplyCount?.toString());
+											await showCupertinoDialog(
+												context: context,
+												barrierDismissible: true,
+												builder: (context) => CupertinoAlertDialog(
+													title: const Text('Set maximum reply count'),
+													actions: [
+														CupertinoButton(
+															child: const Text('Clear'),
+															onPressed: () {
+																controller.text = '';
+																Navigator.pop(context);
+															}
+														),
+														CupertinoButton(
+															child: const Text('Close'),
+															onPressed: () => Navigator.pop(context)
+														)
+													],
+													content: Padding(
+														padding: const EdgeInsets.only(top: 16),
+														child: CupertinoTextField(
+															autofocus: true,
+															keyboardType: TextInputType.number,
+															controller: controller,
+															onSubmitted: (s) {
+																Navigator.pop(context);
+															}
+														)
+													)
+												)
+											);
+											maxReplyCount = int.tryParse(controller.text);
+											controller.dispose();
+											setInnerState(() {});
+										},
+										child: Text(maxReplyCount == null ? 'No max-replies criteria' : 'With at most $maxReplyCount replies')
+									),
+									const SizedBox(height: 16),
 									const Text('Action', style: labelStyle),
 									Container(
 										padding: const EdgeInsets.all(16),
@@ -356,6 +442,8 @@ class _FilterEditorState extends State<FilterEditor> {
 										hasFile: hasFile,
 										threadOnly: threadOnly,
 										minRepliedTo: minRepliedTo,
+										minReplyCount: minReplyCount,
+										maxReplyCount: maxReplyCount,
 										outputType: FilterResultType(
 											hide: hide,
 											highlight: highlight,
@@ -510,6 +598,9 @@ class _FilterEditorState extends State<FilterEditor> {
 														TextSpan(
 															children: [
 																if (filter.value.minRepliedTo != null) TextSpan(text: 'Replying to >=${filter.value.minRepliedTo}'),
+																if (filter.value.minReplyCount != null && filter.value.maxReplyCount != null) TextSpan(text: '${filter.value.minReplyCount}-${filter.value.maxReplyCount} replies')
+																else if (filter.value.minReplyCount != null) TextSpan(text: '>=${filter.value.minReplyCount} replies')
+																else if (filter.value.maxReplyCount != null) TextSpan(text: '<=${filter.value.maxReplyCount} replies'),
 																if (filter.value.threadOnly) const TextSpan(text: 'Threads only'),
 																if (filter.value.hasFile == true) const WidgetSpan(
 																	child: Icon(CupertinoIcons.doc)

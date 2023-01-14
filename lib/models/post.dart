@@ -158,6 +158,9 @@ class Post implements Filterable {
 
 	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board, threadId);
 
+	@override
+	int get replyCount => replyIds.length;
+
 	String get globalId => '${board}_${threadId}_$id';
 
 	@override

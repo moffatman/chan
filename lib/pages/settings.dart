@@ -3068,6 +3068,7 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 	late final TextEditingController _filenameController;
 	late final TextEditingController _posterIdController;
 	late final TextEditingController _flagController;
+	late final TextEditingController _replyCountController;
 
 	@override
 	void initState() {
@@ -3080,6 +3081,7 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 		_filenameController = TextEditingController();
 		_posterIdController = TextEditingController();
 		_flagController = TextEditingController();
+		_replyCountController = TextEditingController();
 	}
 
 	@override
@@ -3096,6 +3098,9 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 
 	@override
 	List<int> get repliedToIds => [];
+
+	@override
+	int get replyCount => int.tryParse(_replyCountController.text) ?? 0;
 
 	@override
 	Iterable<String> get md5s => [];
@@ -3179,12 +3184,13 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 				for (final field in [
 					Tuple3('Board', _boardController, null),
 					Tuple3(isThread ? 'Thread no.' : 'Post no.', _idController, null),
+					Tuple3('Reply Count', _replyCountController, null),
 					if (isThread) Tuple3('Subject', _subjectController, null),
 					Tuple3('Name', _nameController, null),
 					Tuple3('Poster ID', _posterIdController, null),
 					Tuple3('Flag', _flagController, null),
 					Tuple3('Filename', _filenameController, null),
-					Tuple3('Text', _textController, 5)
+					Tuple3('Text', _textController, 5),
 				]) ...[
 					Text(field.item1),
 					Padding(

@@ -47,6 +47,7 @@ abstract class Filterable {
 	bool get hasFile;
 	bool get isThread;
 	Iterable<String> get md5s;
+	int get replyCount;
 }
 
 abstract class Filter {
@@ -89,6 +90,8 @@ class CustomFilter implements Filter {
 	bool threadOnly;
 	int? minRepliedTo;
 	bool disabled;
+	int? minReplyCount;
+	int? maxReplyCount;
 	CustomFilter({
 		String? configuration,
 		this.disabled = false,
@@ -100,7 +103,9 @@ class CustomFilter implements Filter {
 		this.excludeBoards = const [],
 		this.hasFile,
 		this.threadOnly = false,
-		this.minRepliedTo
+		this.minRepliedTo,
+		this.minReplyCount,
+		this.maxReplyCount
 	}) {
 		this.configuration = configuration ?? toStringConfiguration();
 	}
@@ -134,6 +139,12 @@ class CustomFilter implements Filter {
 			return null;
 		}
 		if (minRepliedTo != null && item.repliedToIds.length < minRepliedTo!) {
+			return null;
+		}
+		if (minReplyCount != null && item.replyCount < minReplyCount!) {
+			return null;
+		}
+		if (maxReplyCount != null && item.replyCount > maxReplyCount!) {
 			return null;
 		}
 		return FilterResult(outputType, label.isEmpty ? 'Matched "$configuration"' : '$label filter');
@@ -207,6 +218,18 @@ class CustomFilter implements Filter {
 					throw FilterException('Not a valid number for minReplied: "${s.split(':')[1]}"');
 				}
 			}
+			else if (s.startsWith('minReplyCount')) {
+				filter.minReplyCount = int.tryParse(s.split(':')[1]);
+				if (filter.minReplyCount == null) {
+					throw FilterException('Not a valid number for minReplyCount: "${s.split(':')[1]}"');
+				}
+			}
+			else if (s.startsWith('maxReplyCount')) {
+				filter.maxReplyCount = int.tryParse(s.split(':')[1]);
+				if (filter.maxReplyCount == null) {
+					throw FilterException('Not a valid number for maxReplyCount: "${s.split(':')[1]}"');
+				}
+			}
 			else {
 				throw FilterException('Unknown qualifier "$s"');
 			}
@@ -271,11 +294,17 @@ class CustomFilter implements Filter {
 		if (minRepliedTo != null) {
 			out.write(';minReplied:$minRepliedTo');
 		}
+		if (minReplyCount != null) {
+			out.write(';minReplyCount:$minReplyCount');
+		}
+		if (maxReplyCount != null) {
+			out.write(';maxReplyCount:$maxReplyCount');
+		}
 		return out.toString();
 	}
 
 	@override
-	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadOnly: $threadOnly, minRepliedTo: $minRepliedTo)';
+	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadOnly: $threadOnly, minRepliedTo: $minRepliedTo, minReplyCount: $minReplyCount, maxReplyCount: $maxReplyCount)';
 
 	@override
 	operator == (dynamic other) => other is CustomFilter && other.configuration == configuration;

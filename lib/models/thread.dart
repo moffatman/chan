@@ -12,6 +12,7 @@ class Thread implements Filterable {
 	final List<Post> posts_;
 	final bool isArchived;
 	final bool isDeleted;
+	@override
 	final int replyCount;
 	final int imageCount;
 	@override

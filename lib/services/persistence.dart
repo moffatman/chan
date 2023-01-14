@@ -726,6 +726,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	@override
 	List<int> get repliedToIds => [];
 	@override
+	int get replyCount => thread?.replyCount ?? 0;
+	@override
 	Iterable<String> get md5s => thread?.md5s ?? [];
 
 	late Filter threadFilter = FilterCache(ThreadFilter(hiddenPostIds, treeHiddenPostIds, hiddenPosterIds));

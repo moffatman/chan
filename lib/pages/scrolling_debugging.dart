@@ -33,6 +33,9 @@ class FakeItem implements Filterable {
 	List<int> get repliedToIds => [];
 
 	@override
+	int get replyCount => 0;
+
+	@override
 	Iterable<String> get md5s => [];
 }
 
