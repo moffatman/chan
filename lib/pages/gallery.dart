@@ -843,7 +843,7 @@ class _GalleryPageState extends State<GalleryPage> {
 											key: _pageControllerKey,
 											child: ExtendedImageGesturePageView.builder(
 												physics: settings.showAnimations ? null : const _FasterSnappingPageScrollPhysics(),
-												canScrollPage: (x) => settings.allowSwipingInGallery && widget.allowScroll,
+												canScrollPage: (x) => settings.allowSwipingInGallery && widget.allowScroll && widget.attachments.length > 1,
 												onPageChanged: _onPageChanged,
 												controller: pageController,
 												itemCount: widget.attachments.length,
