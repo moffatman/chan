@@ -171,28 +171,28 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 								},
 								child: Focus(
 									autofocus: true,
-									child: MaybeCupertinoScrollbar(
-										controller: _controller,
-										child: CustomScrollView(
+									child: Padding(
+										padding: MediaQuery.viewInsetsOf(context),
+										child: MaybeCupertinoScrollbar(
 											controller: _controller,
-											key: _scrollKey,
-											physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
-											slivers: [
-												SliverSafeArea(
-													sliver: SliverPadding(
-														padding: MediaQuery.viewInsetsOf(context),
-														sliver: SliverFadeTransition(
-															opacity: _opacity,
-															sliver: SliverCenter(
-																key: _childKey,
-																child: widget.sliver ?? SliverToBoxAdapter(
+											child: CustomScrollView(
+												controller: _controller,
+												key: _scrollKey,
+												physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
+												slivers: [
+													SliverFadeTransition(
+														opacity: _opacity,
+														sliver: SliverCenter(
+															key: _childKey,
+															child: SliverSafeArea(
+																sliver: widget.sliver ?? SliverToBoxAdapter(
 																	child: widget.child
 																)
 															)
 														)
 													)
-												)
-											]
+												]
+											)
 										)
 									)
 								)
