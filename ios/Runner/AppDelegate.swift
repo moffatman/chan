@@ -76,6 +76,22 @@ import Foundation
         }
         result(nil)
       }
+      else if (call.method == "setAdditionalSafeAreaInsets") {
+        if let fvc = application.keyWindow?.rootViewController as? FlutterViewController,
+           let args = call.arguments as? Dictionary<String, Any>,
+           let top = args["top"] as? NSNumber,
+           let left = args["left"] as? NSNumber,
+           let right = args["right"] as? NSNumber,
+           let bottom = args["bottom"] as? NSNumber {
+          fvc.additionalSafeAreaInsets = UIEdgeInsets.init(
+            top: CGFloat(truncating: top),
+            left: CGFloat(truncating: left),
+            bottom: CGFloat(truncating: bottom),
+            right: CGFloat(truncating: right)
+          )
+        }
+        result(nil)
+      }
       else {
         result(FlutterMethodNotImplemented)
       }

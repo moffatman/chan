@@ -205,7 +205,9 @@ class _ChanAppState extends State<ChanApp> {
 									return MediaQuery(
 										data: mq.copyWith(
 											boldText: false,
-											textScaleFactor: mq.textScaleFactor * settings.textScale
+											textScaleFactor: mq.textScaleFactor * settings.textScale,
+											padding: (mq.padding - additionalSafeAreaInsets).clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity).resolve(null),
+											viewPadding: (mq.viewPadding - additionalSafeAreaInsets).clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity).resolve(null)
 										),
 										child: RootCustomScale(
 											scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
@@ -330,7 +332,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	int _lastIndex = 0;
 	final _keys = <int, GlobalKey>{};
 	final _tabController = CupertinoTabController();
-	bool showTabPopup = false;
+	bool _showTabPopup = false;
 	late Listenable browseCountListenable;
 	final activeBrowserTab = ValueNotifier<int>(0);
 	final _tabListController = ScrollController();
@@ -352,6 +354,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _searchPageKey = GlobalKey<SearchPageState>();
 	// Sometimes duplicate links are received due to use of multiple link handling packages
 	Tuple2<DateTime, String>? _lastLink;
+
+	bool get showTabPopup => _showTabPopup;
+	set showTabPopup(bool setting) {
+		_showTabPopup = setting;
+		_setAdditionalSafeAreaInsets();
+	}
 
 	void _didUpdateTabs() {
 		if (_isScrolling) {
@@ -696,6 +704,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
+	Future<void> _setAdditionalSafeAreaInsets() async {
+		await setAdditionalSafeAreaInsets(EdgeInsets.only(
+			bottom: 44 + 60 + (showTabPopup && !_isInTabletLayout ? 80 : 0)
+		) * settings.interfaceScale);
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -714,6 +728,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_sharedFilesSubscription = ReceiveSharingIntent.getMediaStream().listen((f) => _consumeFiles(f.map((x) => x.path).toList()));
 		_sharedTextSubscription = ReceiveSharingIntent.getTextStream().listen(_consumeLink);
 		_initialConsume = true;
+		_setAdditionalSafeAreaInsets();
 		if (Persistence.settings.launchCount > 5 && !Persistence.settings.promptedAboutCrashlytics && !_promptedAboutCrashlytics) {
 			_promptedAboutCrashlytics = true;
 			Future.delayed(const Duration(milliseconds: 300), () async {
@@ -1430,6 +1445,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		);
 	}
 
+	bool get _isInTabletLayout => (context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width - 85) > (context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.height - 50);
 	bool get isInTabletLayout => (MediaQuery.sizeOf(context).width - 85) > (MediaQuery.sizeOf(context).height - 50);
 
 	@override

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:chan/main.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 const _platform = MethodChannel('com.moffatman.chan/apple');
@@ -83,4 +84,18 @@ Future<void> setHandoffUrl(String? url) async {
 		print(e);
 		print(st);
 	}
+}
+
+EdgeInsets additionalSafeAreaInsets = EdgeInsets.zero;
+Future<void> setAdditionalSafeAreaInsets(EdgeInsets insets) async {
+	if (!Platform.isIOS) {
+		return;
+	}
+	additionalSafeAreaInsets = insets;
+	await _platform.invokeMethod('setAdditionalSafeAreaInsets', {
+		'top': insets.top,
+		'left': insets.left,
+		'right': insets.right,
+		'bottom': insets.bottom
+	});
 }
