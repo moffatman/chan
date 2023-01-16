@@ -280,6 +280,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final Duration? autoUpdateDuration;
 	final Map<Type, Widget Function(BuildContext, VoidCallback)> remedies;
 	final bool disableUpdates;
+	final bool disableBottomUpdates;
 	final Widget? footer;
 	final Size? gridSize;
 	final String? initialFilter;
@@ -307,6 +308,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.remedies = const {},
 		this.initialList,
 		this.disableUpdates = false,
+		this.disableBottomUpdates = false,
 		this.gridSize,
 		this.footer,
 		this.initialFilter,
@@ -843,7 +845,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					if (widget.controller != null && isScrollEnd && plausible) {
 						if (!_overscrollEndingNow) {
 							double overscroll = widget.controller!.scrollController!.position.pixels - widget.controller!.scrollController!.position.maxScrollExtent;
-							if (overscroll > _overscrollTriggerThreshold && !widget.disableUpdates) {
+							if (overscroll > _overscrollTriggerThreshold && !widget.disableUpdates && !widget.disableBottomUpdates) {
 								_overscrollEndingNow = true;
 								lightHapticFeedback();
 								_updateOrExtendWithHapticFeedback();
@@ -1191,7 +1193,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 												child: Container()
 											)
 										),
-										if (!widget.disableUpdates) SliverSafeArea(
+										if (!widget.disableUpdates && !widget.disableBottomUpdates) SliverSafeArea(
 											top: false,
 											sliver: SliverToBoxAdapter(
 												child: RepaintBoundary(

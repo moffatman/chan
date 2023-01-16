@@ -685,6 +685,8 @@ class SiteReddit extends ImageboardSite {
 	bool get isReddit => true;
 	@override
 	bool get supportsSearchOptions => false;
+	@override
+	bool get hasPagedCatalog => true;
 
 	@override
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? validate}) => getThread(thread);

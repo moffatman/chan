@@ -535,6 +535,8 @@ class SiteHackerNews extends ImageboardSite {
 	bool get supportsSearchOptions => false;
 	@override
 	bool get supportsMultipleBoards => false;
+	@override
+	bool get hasPagedCatalog => true;
 
 	@override
 	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? validate}) => getThread(thread);

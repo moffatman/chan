@@ -839,6 +839,7 @@ class _BoardPageState extends State<BoardPage> {
 															}
 															return list;
 														}),
+														disableBottomUpdates: !site.hasPagedCatalog,
 														id: '${site.name} /${board!.name}/${variant.dataId}',
 														itemBuilder: (context, thread) => itemBuilder(context, thread),
 														filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),

@@ -847,6 +847,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<String> getBannedReason(CaptchaSolution captchaSolution) async => 'Unknown';
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async => [];
 	bool get allowsArbitraryBoards => false;
+	bool get hasPagedCatalog => false;
 	bool get classicCatalogStyle => true;
 	bool get explicitIds => true;
 	bool get useTree => false;

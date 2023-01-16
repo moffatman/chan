@@ -451,6 +451,9 @@ class SiteFutaba extends ImageboardSite {
 	bool get supportsPosting => false;
 
 	@override
+	bool get hasPagedCatalog => true;
+
+	@override
 	bool operator == (Object other) => (other is SiteFutaba) && (other.baseUrl == baseUrl) && (other.name == name) && (other.maxUploadSizeBytes == maxUploadSizeBytes) && listEquals(other.archives, archives);
 
 	@override
