@@ -706,7 +706,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	Future<void> _setAdditionalSafeAreaInsets() async {
 		await setAdditionalSafeAreaInsets(EdgeInsets.only(
-			bottom: 44 + 60 + (showTabPopup && !_isInTabletLayout ? 80 : 0)
+			bottom: 60 + (_isInTabletLayout ? 0 : 44 + (showTabPopup ? 80 : 0))
 		) * settings.interfaceScale);
 	}
 
