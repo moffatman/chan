@@ -714,7 +714,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_sharedFilesSubscription = ReceiveSharingIntent.getMediaStream().listen((f) => _consumeFiles(f.map((x) => x.path).toList()));
 		_sharedTextSubscription = ReceiveSharingIntent.getTextStream().listen(_consumeLink);
 		_initialConsume = true;
-		if (!Persistence.settings.promptedAboutCrashlytics && !_promptedAboutCrashlytics) {
+		if (Persistence.settings.launchCount > 5 && !Persistence.settings.promptedAboutCrashlytics && !_promptedAboutCrashlytics) {
 			_promptedAboutCrashlytics = true;
 			Future.delayed(const Duration(milliseconds: 300), () async {
 				if (!mounted) return;

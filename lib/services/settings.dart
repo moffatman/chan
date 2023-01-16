@@ -558,6 +558,8 @@ class SavedSettings extends HiveObject {
 	CatalogVariant hackerNewsCatalogVariant;
 	@HiveField(101)
 	bool hideDefaultNamesInCatalog;
+	@HiveField(102)
+	int launchCount;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -661,6 +663,7 @@ class SavedSettings extends HiveObject {
 		bool? dimReadThreads,
 		CatalogVariant? hackerNewsCatalogVariant,
 		bool? hideDefaultNamesInCatalog,
+		int? launchCount,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -790,7 +793,8 @@ class SavedSettings extends HiveObject {
 		redditCatalogVariant = redditCatalogVariant ?? CatalogVariant.redditHot,
 		dimReadThreads = dimReadThreads ?? true,
 		hackerNewsCatalogVariant = hackerNewsCatalogVariant ?? CatalogVariant.hackerNewsTop,
-		hideDefaultNamesInCatalog = hideDefaultNamesInCatalog ?? false {
+		hideDefaultNamesInCatalog = hideDefaultNamesInCatalog ?? false,
+		launchCount = launchCount ?? 0 {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1599,6 +1603,8 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.save();
 		notifyListeners();
 	}
+
+	int get launchCount => _settings.launchCount;
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

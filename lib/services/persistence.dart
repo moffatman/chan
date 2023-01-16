@@ -187,6 +187,7 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 			// Don't await
 			clearFilesystemCaches(Duration(days: settings.automaticCacheClearDays));
 		}
+		settings.launchCount++;
 		Timer.periodic(_backupUpdateDuration, (_) {
 			File(_settingsBoxPath).copy(_settingsBackupBoxPath);
 		});
