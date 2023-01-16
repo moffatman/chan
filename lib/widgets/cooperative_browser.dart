@@ -91,164 +91,166 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 				}
 				return true;
 			},
-			child: SafeArea(
-				top: false,
-				child: Padding(
-					padding: EdgeInsets.only(
-						top: MediaQuery.paddingOf(ImageboardRegistry.instance.context ?? context).top
-					),
-					child: Column(
-						children: [
-							Expanded(
-								child: InAppWebView(
-									onLoadStart: (controller, url) {
-										_controller = controller;
-										_pageReady = false;
-										_progress.value = null;
-										_showProgressTimer?.cancel();
-										_showProgressTimer = null;
-										_showProgress = true;
-										setState(() {});
-									},
-									onProgressChanged: (controller, progress) {
-										_controller = controller;
-										_progress.value = progress / 100;
-										if (progress > 0) {
-											_pageReady = true;
+			child: Container(
+				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+				child: SafeArea(
+					top: false,
+					child: Padding(
+						padding: EdgeInsets.only(
+							top: MediaQuery.paddingOf(ImageboardRegistry.instance.context ?? context).top
+						),
+						child: Column(
+							children: [
+								Expanded(
+									child: InAppWebView(
+										onLoadStart: (controller, url) {
+											_controller = controller;
+											_pageReady = false;
+											_progress.value = null;
 											_showProgressTimer?.cancel();
 											_showProgressTimer = null;
 											_showProgress = true;
 											setState(() {});
-										}
-									},
-									onLoadStop: (controller, url) {
-										_controller = controller;
-										_progress.value = 1;
-										_pageReady = true;
-										_showProgressTimer = Timer(const Duration(milliseconds: 300), () => setState(() {
-											_showProgress = false;
-										}));
-									},
-									gestureRecognizers: {
-										Factory<WeakPanGestureRecognizer>(() => WeakPanGestureRecognizer(
-											weakness: 0.5,
-											allowedDirections: _allowedDirections,
-											debugOwner: this
-											)
-											..gestureSettings = MediaQuery.maybeGestureSettingsOf(context)
-											..onStart = (_) {})
-									},
-									initialUrlRequest: widget.initialUrlRequest
-								)
-							),
-							AnimatedSwitcher(
-								duration: const Duration(milliseconds: 500),
-								switchInCurve: Curves.ease,
-								switchOutCurve: Curves.ease,
-								child: _showProgress ? ValueListenableBuilder<double?>(
-									valueListenable: _progress,
-									builder: (context, progress, _) => LinearProgressIndicator(
-										minHeight: 5,
-										value: progress,
-										valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
-										backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor
-									)
-								) : Container(
-									height: 5,
-									width: double.infinity,
-									color: CupertinoTheme.of(context).scaffoldBackgroundColor
-								)
-							),
-							DecoratedBox(
-								decoration: BoxDecoration(
-									color: CupertinoTheme.of(context).scaffoldBackgroundColor
-								),
-								child: Row(
-									children: [
-										CupertinoButton(
-											onPressed: _canGoBack ? _controller?.goBack : null,
-											child: const Icon(CupertinoIcons.arrow_left)
-										),
-										CupertinoButton(
-											onPressed: _canGoForward ? _controller?.goForward : null,
-											child: const Icon(CupertinoIcons.arrow_right)
-										),
-										CupertinoButton(
-											onPressed: () {
+										},
+										onProgressChanged: (controller, progress) {
+											_controller = controller;
+											_progress.value = progress / 100;
+											if (progress > 0) {
+												_pageReady = true;
 												_showProgressTimer?.cancel();
 												_showProgressTimer = null;
 												_showProgress = true;
 												setState(() {});
-												_controller?.reload();
-											},
-											child: const Icon(CupertinoIcons.refresh)
-										),
-										Expanded(
-											child: Row(
-												mainAxisAlignment: MainAxisAlignment.center,
-												children: [
-													if (_url?.scheme == 'https') ...[
-														const Icon(CupertinoIcons.padlock_solid, size: 15),
-														const SizedBox(width: 4)
-													],
-													Flexible(
-														child: Text(_url?.host ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)
-													),
-												]
-											)
-										),
-										CupertinoButton(
-											onPressed: () {
-												final url = _url ?? widget.initialUrlRequest?.url;
-												if (url == null) {
-													alertError(context, 'No URL');
-												}
-												else {
-													_controller?.loadUrl(urlRequest: URLRequest(
-														url: Uri.https('archive.today', '/', {
-															'run': '1',
-															'url': url.toString()
-														})
-													));
-												}
-											},
-											child: const Icon(CupertinoIcons.archivebox)
-										),
-										CupertinoButton(
-											onPressed: () {
-												final url = _url ?? widget.initialUrlRequest?.url;
-												if (url == null) {
-													alertError(context, 'No URL');
-												}
-												else {
-													openBrowser(context, url);
-												}
-											},
-											child: const Icon(CupertinoIcons.compass)
-										),
-										Builder(
-											builder: (context) => CupertinoButton(
+											}
+										},
+										onLoadStop: (controller, url) {
+											_controller = controller;
+											_progress.value = 1;
+											_pageReady = true;
+											_showProgressTimer = Timer(const Duration(milliseconds: 300), () => setState(() {
+												_showProgress = false;
+											}));
+										},
+										gestureRecognizers: {
+											Factory<WeakPanGestureRecognizer>(() => WeakPanGestureRecognizer(
+												weakness: 0.5,
+												allowedDirections: _allowedDirections,
+												debugOwner: this
+												)
+												..gestureSettings = MediaQuery.maybeGestureSettingsOf(context)
+												..onStart = (_) {})
+										},
+										initialUrlRequest: widget.initialUrlRequest
+									)
+								),
+								AnimatedSwitcher(
+									duration: const Duration(milliseconds: 500),
+									switchInCurve: Curves.ease,
+									switchOutCurve: Curves.ease,
+									child: _showProgress ? ValueListenableBuilder<double?>(
+										valueListenable: _progress,
+										builder: (context, progress, _) => LinearProgressIndicator(
+											minHeight: 5,
+											value: progress,
+											valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
+											backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor
+										)
+									) : const SizedBox(
+										height: 5,
+										width: double.infinity
+									)
+								),
+								DecoratedBox(
+									decoration: BoxDecoration(
+										color: CupertinoTheme.of(context).scaffoldBackgroundColor
+									),
+									child: Row(
+										children: [
+											CupertinoButton(
+												onPressed: _canGoBack ? _controller?.goBack : null,
+												child: const Icon(CupertinoIcons.arrow_left)
+											),
+											CupertinoButton(
+												onPressed: _canGoForward ? _controller?.goForward : null,
+												child: const Icon(CupertinoIcons.arrow_right)
+											),
+											CupertinoButton(
+												onPressed: () {
+													_showProgressTimer?.cancel();
+													_showProgressTimer = null;
+													_showProgress = true;
+													setState(() {});
+													_controller?.reload();
+												},
+												child: const Icon(CupertinoIcons.refresh)
+											),
+											Expanded(
+												child: Row(
+													mainAxisAlignment: MainAxisAlignment.center,
+													children: [
+														if (_url?.scheme == 'https') ...[
+															const Icon(CupertinoIcons.padlock_solid, size: 15),
+															const SizedBox(width: 4)
+														],
+														Flexible(
+															child: Text(_url?.host ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)
+														),
+													]
+												)
+											),
+											CupertinoButton(
 												onPressed: () {
 													final url = _url ?? widget.initialUrlRequest?.url;
 													if (url == null) {
 														alertError(context, 'No URL');
 													}
 													else {
-														shareOne(
-															context: context,
-															text: url.toString(),
-															type: 'text',
-															sharePositionOrigin: (context.findRenderObject() as RenderBox?)?.paintBounds
-														);
+														_controller?.loadUrl(urlRequest: URLRequest(
+															url: Uri.https('archive.today', '/', {
+																'run': '1',
+																'url': url.toString()
+															})
+														));
 													}
 												},
-												child: const Icon(CupertinoIcons.share)
+												child: const Icon(CupertinoIcons.archivebox)
+											),
+											CupertinoButton(
+												onPressed: () {
+													final url = _url ?? widget.initialUrlRequest?.url;
+													if (url == null) {
+														alertError(context, 'No URL');
+													}
+													else {
+														openBrowser(context, url);
+													}
+												},
+												child: const Icon(CupertinoIcons.compass)
+											),
+											Builder(
+												builder: (context) => CupertinoButton(
+													onPressed: () {
+														final url = _url ?? widget.initialUrlRequest?.url;
+														if (url == null) {
+															alertError(context, 'No URL');
+														}
+														else {
+															shareOne(
+																context: context,
+																text: url.toString(),
+																type: 'text',
+																sharePositionOrigin: (context.findRenderObject() as RenderBox?)?.paintBounds
+															);
+														}
+													},
+													child: const Icon(CupertinoIcons.share)
+												)
 											)
-										)
-									]
+										]
+									)
 								)
-							)
-						]
+							]
+						)
 					)
 				)
 			)
