@@ -9,6 +9,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 
+final _youtubeShortsRegex = RegExp(r'youtube.com\/shorts\/([^?]+)');
+
 class _EmbedParam {
 	final List<RegExp> regexes;
 	final String url;
@@ -27,6 +29,9 @@ Future<bool> embedPossible({
 	}
 	if (url.contains('twitter.com/') || url.contains('imgur.com/')) {
 		return false;
+	}
+	if (url.contains('youtube.com/shorts')) {
+		return true;
 	}
 	if (kDebugMode) {
 		return context.read<EffectiveSettings>().embedRegexes.any((regex) => regex.hasMatch(url));
@@ -120,6 +125,10 @@ Future<EmbedData?> loadEmbedData({
 		);
 	}
 	else {
+		final youtubeShortsMatch = _youtubeShortsRegex.firstMatch(url);
+		if (youtubeShortsMatch != null) {
+			url = 'https://www.youtube.com/watch?v=${youtubeShortsMatch.group(1)}';
+		}
 		final response = await context.read<ImageboardSite>().client.get('https://noembed.com/embed', queryParameters: {
 			'url': url
 		});
