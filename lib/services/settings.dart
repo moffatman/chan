@@ -1625,7 +1625,9 @@ class EffectiveSettings extends ChangeNotifier {
 		muteAudio.value = _settings.muteAudio;
 		_tryToSetupFilter();
 		embedRegexes = _settings.embedRegexes.map((x) => RegExp(x)).toList();
-		updateEmbedRegexes();
+		if (_settings.launchCount % 10 == 0) {
+			updateEmbedRegexes();
+		}
 		updateContentSettings();
 	}
 }
