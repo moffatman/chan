@@ -239,7 +239,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (!showChromeOnce && show) {
 			_initializeScrollSheetScrollControllers();
 		}
-		show |= currentAttachment.attachment.type == AttachmentType.pdf;
+		show |= currentAttachment.attachment.type == AttachmentType.url;
 		showChromeOnce |= show;
 		if (!widget.updateOverlays) {
 			return;
