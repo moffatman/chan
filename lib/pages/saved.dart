@@ -515,6 +515,7 @@ class _SavedPageState extends State<SavedPage> {
 										create: (context) => PostSpanRootZoneData(
 											site: item.imageboard.site,
 											thread: item.threadState.thread!,
+											threadState: item.threadState,
 											semanticRootIds: [-8]
 										),
 										child: Builder(
@@ -524,6 +525,7 @@ class _SavedPageState extends State<SavedPage> {
 												onTap: () => setter(item),
 												showBoardName: true,
 												showSiteIcon: true,
+												showYourPostBorder: false,
 												onThumbnailLoadError: (e, st) async {
 													Thread? newThread;
 													bool hadToUseArchive = false;

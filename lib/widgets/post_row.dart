@@ -44,6 +44,7 @@ class PostRow extends StatelessWidget {
 	final PostSpanRenderOptions? baseOptions;
 	final bool showSiteIcon;
 	final bool showBoardName;
+	final bool showYourPostBorder;
 
 	const PostRow({
 		required this.post,
@@ -58,6 +59,7 @@ class PostRow extends StatelessWidget {
 		this.isSelected = false,
 		this.showSiteIcon = false,
 		this.showBoardName = false,
+		this.showYourPostBorder = true,
 		this.baseOptions,
 		Key? key
 	}) : super(key: key);
@@ -91,7 +93,7 @@ class PostRow extends StatelessWidget {
 		final receipt = parentZone.threadState?.receipts.tryFirstWhere((r) => r.id == latestPost.id);
 		final isYourPost = receipt != null || (parentZone.threadState?.postsMarkedAsYou.contains(post.id) ?? false);
 		Border? border;
-		if (isYourPost) {
+		if (isYourPost && showYourPostBorder) {
 			border = Border(
 				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color ?? Colors.red, width: 10)
 			);
