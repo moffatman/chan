@@ -1600,7 +1600,7 @@ List<InlineSpan> buildPostInfoRow({
 					}) : null
 				)
 			],
-		if (site.isReddit || site.isHackerNews) ...[
+		if (site.isReddit) ...[
 			WidgetSpan(
 				child: Icon(CupertinoIcons.arrow_up, size: 16, color: settings.theme.primaryColorWithBrightness(0.5)),
 				alignment: PlaceholderAlignment.middle
