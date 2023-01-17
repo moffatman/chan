@@ -143,7 +143,6 @@ class _GalleryPageState extends State<GalleryPage> {
 		_rotationsChanged = EasyListenable();
 		_scrollSheetController = DraggableScrollableController();
 		showChrome = widget.initiallyShowChrome;
-		_updateOverlays(showChrome);
 		currentIndex = (widget.initialAttachment != null) ? max(0, widget.attachments.indexOf(widget.initialAttachment!)) : 0;
 		pageController = ExtendedPageController(keepPage: true, initialPage: currentIndex);
 		pageController.addListener(_onPageControllerUpdate);
@@ -155,6 +154,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				_currentAttachmentChanged.didUpdate();
 			});
 		}
+		_updateOverlays(showChrome);
 	}
 
 	void _initializeScrollSheetScrollControllers() {
@@ -239,6 +239,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (!showChromeOnce && show) {
 			_initializeScrollSheetScrollControllers();
 		}
+		show |= currentAttachment.attachment.type == AttachmentType.pdf;
 		showChromeOnce |= show;
 		if (!widget.updateOverlays) {
 			return;
