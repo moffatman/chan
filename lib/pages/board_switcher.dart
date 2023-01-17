@@ -317,7 +317,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																			children: [
 																				Expanded(
 																					child: AutoSizeText(
-																						'/${currentImageboard.persistence.browserState.favouriteBoards[i]}/',
+																						currentImageboard.site.formatBoardName(currentImageboard.persistence.getBoard(currentImageboard.persistence.browserState.favouriteBoards[i])),
 																						style: const TextStyle(fontSize: 20),
 																						maxLines: 1
 																					),
@@ -510,14 +510,28 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																				),
 																				const SizedBox(width: 16)
 																			],
-																			Flexible(
-																				child: AutoSizeText(
-																					imageboard.site.supportsMultipleBoards ? '/${board.name}/${board.title.isEmpty ? '' : ' - ${board.title}'}' : board.title,
-																					maxFontSize: 20,
-																					minFontSize: 15,
-																					maxLines: 1,
-																					textAlign: TextAlign.left,
-																					overflow: TextOverflow.ellipsis
+																			Expanded(
+																				child: Column(
+																					mainAxisSize: MainAxisSize.min,
+																					crossAxisAlignment: CrossAxisAlignment.stretch,
+																					children: [
+																						AutoSizeText(
+																							imageboard.site.supportsMultipleBoards ? imageboard.site.formatBoardName(board) : board.title,
+																							maxFontSize: 20,
+																							minFontSize: 13,
+																							maxLines: 1,
+																							textAlign: TextAlign.left,
+																							overflow: TextOverflow.ellipsis
+																						),
+																						if (imageboard.site.supportsMultipleBoards) AutoSizeText(
+																							board.title,
+																							maxFontSize: 15,
+																							minFontSize: 13,
+																							maxLines: 1,
+																							textAlign: TextAlign.left,
+																							overflow: TextOverflow.ellipsis
+																						),
+																					]
 																				)
 																			),
 																			const SizedBox(width: 16)
@@ -659,15 +673,19 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																		children: [
 																			const SizedBox(height: 20),
 																			if (imageboard.site.supportsMultipleBoards) Flexible(
-																				child: AutoSizeText(
-																					'/${board.name}/',
-																					textAlign: TextAlign.center,
-																					style: const TextStyle(
-																						fontSize: 24
+																				child: Center(
+																					child: AutoSizeText(
+																						imageboard.site.formatBoardName(board),
+																						textAlign: TextAlign.center,
+																						maxLines: 1,
+																						minFontSize: 0,
+																						style: const TextStyle(
+																							fontSize: 24
+																						)
 																					)
 																				)
 																			),
-																			Flexible(
+																			if (board.title.isNotEmpty) Flexible(
 																				child: Center(
 																					child: AutoSizeText(
 																						board.title,
