@@ -177,7 +177,15 @@ class ThreadRow extends StatelessWidget {
 				maintainSize: true,
 				child: Padding(
 					padding: const EdgeInsets.only(top: 2),
-					child: makeCounters()
+					child: LayoutBuilder(
+						builder: (context, constraints) {
+							final fontSize = DefaultTextStyle.of(context).style.fontSize ?? 17;
+							if (constraints.maxWidth < 150) {
+								return SizedBox(height: fontSize + 12, width: double.infinity);	
+							}
+							return makeCounters();
+						}
+					)
 				)
 			)
 		);
@@ -496,17 +504,7 @@ class ThreadRow extends StatelessWidget {
 				Positioned.fill(
 					child: Align(
 						alignment: Alignment.bottomRight,
-						child: Row(
-							children: [
-								if (!contentFocus && thread.attachments.isNotEmpty) SizedBox(width: settings.thumbnailSize + 8 + 4),
-								Expanded(
-									child: Align(
-										alignment: Alignment.bottomRight,
-										child: makeCounters()
-									)
-								)
-							]
-						)
+						child: makeCounters()
 					)
 				),
 				if (watch != null || threadState?.savedTime != null) Positioned.fill(
