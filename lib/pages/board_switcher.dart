@@ -779,7 +779,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							alignment: Alignment.bottomCenter,
 							child: Container(
 								padding: const EdgeInsets.all(16),
-								width: 250 * context.select<EffectiveSettings, double>((s) => s.textScale),
+								width: 300 * context.select<EffectiveSettings, double>((s) => s.textScale),
 								child: Container(
 									decoration: BoxDecoration(
 										borderRadius: BorderRadius.circular(16),
@@ -787,7 +787,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									),
 									padding: const EdgeInsets.all(16),
 									child: Row(
-										crossAxisAlignment: CrossAxisAlignment.end,
+										crossAxisAlignment: CrossAxisAlignment.center,
 										children: [
 											CupertinoButton(
 												padding: EdgeInsets.zero,
@@ -808,8 +808,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 														ImageboardIcon(imageboardKey: currentImageboard.key),
 														const SizedBox(width: 8),
 														Flexible(
-															child: Text(currentImageboard.site.name, textAlign: TextAlign.center)
-														),
+															child: AutoSizeText(currentImageboard.site.name, textAlign: TextAlign.center, maxLines: 1)
+														)
 													]
 												)
 											),
