@@ -1585,8 +1585,11 @@ List<InlineSpan> buildPostInfoRow({
 			else if (field == PostDisplayField.postId && (site.explicitIds || !zone.tree)) ...[
 				if (showSiteIcon) WidgetSpan(
 					alignment: PlaceholderAlignment.middle,
-					child: ImageboardIcon(
-						boardName: post.board
+					child: Padding(
+						padding: const EdgeInsets.only(right: 4),
+						child: ImageboardIcon(
+							boardName: post.board
+						)
 					)
 				),
 				TextSpan(
