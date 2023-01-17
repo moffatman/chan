@@ -115,6 +115,7 @@ abstract class PostSpan {
 	Iterable<int> referencedPostIds(String forBoard) => const Iterable.empty();
 	InlineSpan build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options);
 	String buildText();
+	double estimateLines(double charactersPerLine) => buildText().length / charactersPerLine;
 }
 
 class _PostWrapperSpan extends PostSpan {
@@ -214,6 +215,23 @@ class PostNodeSpan extends PostSpan {
 	@override
 	String buildText() {
 		return children.map((x) => x.buildText()).join('');
+	}
+
+	@override
+	double estimateLines(double charactersPerLine) {
+		double lines = 0;
+		double lineGuess = 0;
+		for (final child in children) {
+			if (child is PostLineBreakSpan) {
+				lines += lineGuess.ceil();
+				lineGuess = 0;
+			}
+			else {
+				lineGuess += child.estimateLines(charactersPerLine);
+			}
+		}
+		lines += lineGuess.ceil();
+		return lines;
 	}
 }
 

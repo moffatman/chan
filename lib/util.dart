@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -256,5 +257,54 @@ extension ToNullSafeOptional on bool? {
 class EasyListenable extends ChangeNotifier {
 	void didUpdate() {
 		notifyListeners();
+	}
+}
+
+extension LazyCeil on double {
+	int lazyCeil() {
+		if (isFinite) {
+			return ceil();
+		}
+		return 99999999;
+	}
+}
+
+void insertIntoSortedList<T>({
+	required List<T> list,
+	required List<Comparator<T>> sortMethods,
+	required bool reverseSort,
+	required T item
+}) {
+	if (list.isEmpty) {
+		list.add(item);
+		return;
+	}
+	try {
+		int i = 0;
+		for (final originalMethod in sortMethods) {
+			method(a, b) => originalMethod(a, b) * (reverseSort ? -1 : 1);
+			final comp = i == list.length ? -1 : method(item, list[i]);
+			if (comp > 0) {
+				// go forwards
+				while (i < list.length && method(item, list[i]) > 0) {
+					i++;
+				}
+			}
+			else if (comp < 0) {
+				// go backwards
+				while (i > 0 && method(item, list[min(list.length - 1, i)]) < 0) {
+					i--;
+				}
+				if (method(item, list[i]) >= 0) {
+					i++;
+				}
+			}
+		}
+		list.insert(i, item);
+	}
+	catch (e) {
+		list.add(item);
+		// Let it be caught by crashlytics
+		Future.error(e);
 	}
 }

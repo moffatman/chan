@@ -149,6 +149,7 @@ class RefreshableTreeAdapter<T extends Object> {
 	final Future<List<T>> Function(List<T>, T) updateWithOmittedChildren;
 	final Widget Function(Widget, List<int>) wrapTreeChild;
 	final int opId;
+	final double Function(T item, double width) estimateHeight;
 
 	const RefreshableTreeAdapter({
 		required this.getId,
@@ -156,7 +157,8 @@ class RefreshableTreeAdapter<T extends Object> {
 		required this.getOmittedChildCount,
 		required this.updateWithOmittedChildren,
 		required this.opId,
-		required this.wrapTreeChild
+		required this.wrapTreeChild,
+		required this.estimateHeight
 	});
 }
 
@@ -664,6 +666,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		return child;
 	}
 
+	bool _shouldPreCollapseOnSubsequentEncounter(RefreshableListItem<T> item, RefreshableListItem<T> previousEncounter) {
+		final width = (context.findRenderObject() as RenderBox?)?.paintBounds.width ?? 500;
+		final height = (widget.treeAdapter?.estimateHeight(item.item, width) ?? 0);
+		final parentCount = widget.treeAdapter?.getParentIds(item.item).length ?? 0;
+		return height > 100 || parentCount > 4 || previousEncounter.treeChildrenCount > 3;
+	}
+
 	Tuple2<List<RefreshableListItem<T>>, List<List<int>>> _reassembleAsTree(List<RefreshableListItem<T>> linear) {
 		// In case the list is not in sequential order by id
 		final orphans = <int, List<_TreeNode<RefreshableListItem<T>>>>{};
@@ -681,6 +690,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			final node = _TreeNode(item, id, adapter.getOmittedChildCount(item.item));
 			treeMap[id] = node;
 			node.children.addAll(orphans[id] ?? []);
+			orphans.remove(id);
 			final parentIds = adapter.getParentIds(item.item).toList();
 			if (id == adapter.opId) {
 				treeRoots.insert(0, node);
@@ -733,32 +743,59 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 
 		final out = <RefreshableListItem<T>>[];
+		final Map<int, RefreshableListItem<T>> encountered = {};
+		final precollapseCache = <T, bool>{};
 		final collapsed = <List<int>>[];
-		int dumpNode(_TreeNode<RefreshableListItem<T>> node, List<int> parentIds, {bool addOmittedChildNode = true}) {
+		int dumpNode(_TreeNode<RefreshableListItem<T>> node, List<int> parentIds, {bool addOmittedChildNode = true, bool parentPreCollapsed = false}) {
 			final item = node.item.copyWith(parentIds: parentIds);
 			out.add(item);
 			final ids = [
 				...parentIds,
 				node.id
 			];
-			if (item.collapsed) {
+			final preCollapse = !parentPreCollapsed &&
+				encountered.containsKey(node.id) &&
+				precollapseCache.putIfAbsent(item.item, () => _shouldPreCollapseOnSubsequentEncounter(item, encountered[node.id]!));
+			if (item.collapsed || preCollapse) {
 				collapsed.add(ids);
 			}
 			for (final child in node.children) {
-				item.treeChildrenCount += 1 + dumpNode(child, ids.toList());
+				item.treeChildrenCount += 1 + dumpNode(child, ids.toList(), parentPreCollapsed: preCollapse);
 			}
 			if (addOmittedChildNode && node.omittedChildCount > 0) {
 				out.add(item.copyWith(omittedChildCount: node.omittedChildCount));
 				item.treeChildrenCount += item.omittedChildCount;
 			}
+			encountered[node.id] = item;
 			return item.treeChildrenCount;
 		}
-		dumpNode(treeRoots.first, [], addOmittedChildNode: false);
-		for (final root in treeRoots.skip(1)) {
+		_TreeNode<RefreshableListItem<T>>? firstRoot;
+		if (treeRoots.isNotEmpty) {
+			firstRoot = treeRoots.removeAt(0);
+			dumpNode(firstRoot, [], addOmittedChildNode: false);
+		}
+		for (final pair in orphans.entries) {
+			for (final orphan in pair.value) {
+				if (encountered.containsKey(orphan.id)) {
+					// It is seen somewhere else in the tree
+					continue;
+				}
+				insertIntoSortedList(
+					list: treeRoots,
+					sortMethods: widget.sortMethods.isEmpty ? <Comparator<_TreeNode<RefreshableListItem<T>>>>[
+						(a, b) => a.id.compareTo(b.id)
+					] : widget.sortMethods.map((c) => (a, b) => c(a.item.item, b.item.item)).toList(),
+					reverseSort: widget.reverseSort,
+					item: orphan
+				);
+				encountered[orphan.id] = orphan.item;
+			}
+		}
+		for (final root in treeRoots) {
 			dumpNode(root, []);
 		}
-		if (treeRoots.first.omittedChildCount > 0) {
-			out.add(treeRoots.first.item.copyWith(parentIds: [], omittedChildCount: treeRoots.first.omittedChildCount, depth: 0));
+		if (firstRoot != null && firstRoot.omittedChildCount > 0) {
+			out.add(firstRoot.item.copyWith(parentIds: [], omittedChildCount: firstRoot.omittedChildCount, depth: 0));
 		}
 		return Tuple2(out, collapsed);
 	}

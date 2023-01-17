@@ -738,6 +738,12 @@ class _ThreadPageState extends State<ThreadPage> {
 																					value: childZone,
 																					child: child
 																				);
+																			},
+																			estimateHeight: (post, width) {
+																				final fontSize = DefaultTextStyle.of(context).style.fontSize ?? 17;
+																				return post.span.estimateLines(
+																					(width / (0.55 * fontSize * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil().toDouble()
+																				).ceil() * fontSize;
 																			}
 																		),
 																		footer: Container(

@@ -1,6 +1,7 @@
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/compress_html.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:flutter/foundation.dart';
 import 'package:test/test.dart';
 import 'package:chan/util.dart';
 
@@ -23,6 +24,24 @@ void main() {
           expect(list.binarySearchLastIndexWhere(id), switchpoint == length ? length - 1 : switchpoint);
         }
       }
+    });
+  });
+
+  group('insertIntoSortedList', () {
+    test('test1', () {
+      final methods = <Comparator<String>>[
+        (a, b) => a.substring(1, 2).compareTo(b.substring(1, 2)),
+        (a, b) => a.substring(0, 1).compareTo(b.substring(0, 1))
+      ];
+      final list = ['01a', '02', '10'];
+      insertIntoSortedList(list: list, sortMethods: methods, reverseSort: false, item: '03');
+      expect(listEquals(list, ['01a', '02', '03', '10']), isTrue);
+      insertIntoSortedList(list: list, sortMethods: methods, reverseSort: false, item: '00');
+      expect(listEquals(list, ['00', '01a', '02', '03', '10']), isTrue);
+      insertIntoSortedList(list: list, sortMethods: methods, reverseSort: false, item: '20');
+      expect(listEquals(list, ['00', '01a', '02', '03', '10', '20']), isTrue);
+      insertIntoSortedList(list: list, sortMethods: methods, reverseSort: false, item: '01b');
+      expect(listEquals(list, ['00', '01b', '01a', '02', '03', '10', '20']), isTrue);
     });
   });
 

@@ -21,15 +21,6 @@ import 'package:provider/provider.dart';
 
 import 'package:chan/models/thread.dart';
 
-extension LazyCeil on double {
-	int lazyCeil() {
-		if (isFinite) {
-			return ceil();
-		}
-		return 99999999;
-	}
-}
-
 class ThreadRow extends StatelessWidget {
 	final Thread thread;
 	final bool isSelected;
