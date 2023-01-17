@@ -76,34 +76,37 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		return RefreshableList<TaggedAttachment>(
-			filterableAdapter: null,
-			id: '${widget.attachments.hashCode} attachments',
-			controller: _controller,
-			listUpdater: () => throw UnimplementedError(),
-			disableUpdates: true,
-			initialList: widget.attachments,
-			itemBuilder: (context, attachment) => AspectRatio(
-				aspectRatio: (attachment.attachment.width ?? 1) / (attachment.attachment.height ?? 1),
-				child: GestureDetector(
-					behavior: HitTestBehavior.opaque,
-					onTap: () async {
-						_getController(attachment).isPrimary = false;
-						await showGalleryPretagged(
-							context: context,
-							attachments: widget.attachments,
-							initialAttachment: attachment,
-							isAttachmentAlreadyDownloaded: widget.threadState?.isAttachmentDownloaded,
-							onAttachmentDownload: widget.threadState?.didDownloadAttachment
-						);
-						_getController(attachment).isPrimary = true;
-					},
-					child: AnimatedBuilder(
-						animation: _getController(attachment),
-						builder: (context, child) => IgnorePointer(
-							child: AttachmentViewer(
-								controller: _getController(attachment),
-								semanticParentIds: const [-101],
+		return Container(
+			color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+			child: RefreshableList<TaggedAttachment>(
+				filterableAdapter: null,
+				id: '${widget.attachments.hashCode} attachments',
+				controller: _controller,
+				listUpdater: () => throw UnimplementedError(),
+				disableUpdates: true,
+				initialList: widget.attachments,
+				itemBuilder: (context, attachment) => AspectRatio(
+					aspectRatio: (attachment.attachment.width ?? 1) / (attachment.attachment.height ?? 1),
+					child: GestureDetector(
+						behavior: HitTestBehavior.opaque,
+						onTap: () async {
+							_getController(attachment).isPrimary = false;
+							await showGalleryPretagged(
+								context: context,
+								attachments: widget.attachments,
+								initialAttachment: attachment,
+								isAttachmentAlreadyDownloaded: widget.threadState?.isAttachmentDownloaded,
+								onAttachmentDownload: widget.threadState?.didDownloadAttachment
+							);
+							_getController(attachment).isPrimary = true;
+						},
+						child: AnimatedBuilder(
+							animation: _getController(attachment),
+							builder: (context, child) => IgnorePointer(
+								child: AttachmentViewer(
+									controller: _getController(attachment),
+									semanticParentIds: const [-101],
+								)
 							)
 						)
 					)
