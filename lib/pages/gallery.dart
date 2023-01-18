@@ -239,8 +239,8 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (!showChromeOnce && show) {
 			_initializeScrollSheetScrollControllers();
 		}
-		show |= currentAttachment.attachment.type == AttachmentType.url;
 		showChromeOnce |= show;
+		show |= currentAttachment.attachment.type == AttachmentType.url;
 		if (!widget.updateOverlays) {
 			return;
 		}
