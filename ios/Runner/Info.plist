@@ -68,6 +68,8 @@
 		<dict>
 			<key>NSAllowsLocalNetworking</key>
 			<true/>
+			<key>NSAllowsArbitraryLoadsInWebContent</key>
+			<true/>
 		</dict>
 		<key>UIBackgroundModes</key>
 		<array>
