@@ -2849,6 +2849,61 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					)
 				),
 				const SizedBox(height: 16),
+				Center(
+					child: CupertinoButton.filled(
+						onPressed: () async {
+							final controller = TextEditingController(text: settings.userAgent);
+							final newUserAgent = await showCupertinoDialog<String>(
+								context: context,
+								barrierDismissible: true,
+								builder: (context) => CupertinoAlertDialog(
+									title: const Text('Edit User-Agent'),
+									content: Padding(
+										padding: const EdgeInsets.only(top: 10),
+										child: CupertinoTextField(
+											autofocus: true,
+											controller: controller,
+											minLines: 5,
+											maxLines: 5,
+											onSubmitted: (s) => Navigator.pop(context, s)
+										)
+									),
+									actions: [
+										CupertinoDialogAction(
+											child: const Text('Random'),
+											onPressed: () {
+												final idx = userAgents.indexOf(controller.text) + 1;
+												controller.text = userAgents[idx % userAgents.length];
+											}
+										),
+										CupertinoDialogAction(
+											isDefaultAction: true,
+											child: const Text('Save'),
+											onPressed: () => Navigator.pop(context, controller.text.isEmpty ? null : controller.text)
+										),
+										CupertinoDialogAction(
+											child: const Text('Cancel'),
+											onPressed: () => Navigator.pop(context)
+										)
+									]
+								)
+							);
+							controller.dispose();
+							if (newUserAgent != null) {
+								settings.userAgent = newUserAgent;
+							}
+						},
+						child: Row(
+							mainAxisSize: MainAxisSize.min,
+							children: const [
+								Icon(CupertinoIcons.globe),
+								SizedBox(width: 8),
+								Text('Edit user agent')
+							]
+						)
+					)
+				),
+				const SizedBox(height: 16),
 			]
 		);
 	}

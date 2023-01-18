@@ -6,7 +6,6 @@ import 'dart:typed_data';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -60,7 +59,7 @@ class CloudflareInterceptor extends Interceptor {
 			crossPlatform: InAppWebViewOptions(
 				clearCache: true,
 				cacheEnabled: false,
-				userAgent: userAgent
+				userAgent: Persistence.settings.userAgent
 			)
 		);
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<String?> callback) => (controller, uri) async {

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
@@ -140,7 +141,12 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 												..gestureSettings = MediaQuery.maybeGestureSettingsOf(context)
 												..onStart = (_) {})
 										},
-										initialUrlRequest: widget.initialUrlRequest
+										initialUrlRequest: widget.initialUrlRequest,
+										initialOptions: InAppWebViewGroupOptions(
+											crossPlatform: InAppWebViewOptions(
+												userAgent: Persistence.settings.userAgent
+											)
+										),
 									)
 								),
 								AnimatedSwitcher(

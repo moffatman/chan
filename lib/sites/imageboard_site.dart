@@ -34,10 +34,6 @@ import 'package:dio/dio.dart';
 
 part 'imageboard_site.g.dart';
 
-final userAgent = Platform.isAndroid ? 
-	'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.5195.79 Mobile Safari/537.36'
-	: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6.1 Mobile/15E148 Safari/604.1';
-
 class PostNotFoundException implements Exception {
 	String board;
 	int id;
@@ -664,7 +660,7 @@ abstract class ImageboardSiteArchive {
 		));
 		client.interceptors.add(InterceptorsWrapper(
 			onRequest: (options, handler) {
-				options.headers['user-agent'] ??= userAgent;
+				options.headers['user-agent'] ??= Persistence.settings.userAgent;
 				handler.next(options);
 			}
 		));
@@ -697,17 +693,23 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	ImageboardSite(this.archives) : super();
 	Future<void> ensureCookiesMemoized(Uri url) async {
 		memoizedWifiHeaders.putIfAbsent(url.host, () => {
-			'user-agent': userAgent
+
 		})['cookie'] = (await Persistence.wifiCookies.loadForRequest(url)).join('; ');
 		memoizedCellularHeaders.putIfAbsent(url.host, () => {
-			'user-agent': userAgent
+
 		})['cookie'] = (await Persistence.cellularCookies.loadForRequest(url)).join('; ');
 	}
 	Map<String, String>? getHeaders(Uri url) {
 		if (settings.connectivity == ConnectivityResult.mobile) {
-			return memoizedCellularHeaders[url.host];
+			return {
+				'user-agent': Persistence.settings.userAgent,
+				...memoizedCellularHeaders[url.host] ?? {}
+			};
 		}
-		return memoizedWifiHeaders[url.host];
+		return {
+				'user-agent': Persistence.settings.userAgent,
+				...memoizedWifiHeaders[url.host] ?? {}
+			};
 	}
 	Uri get passIconUrl => Uri.https('boards.chance.surf', '/minileaf.gif');
 	String get baseUrl;

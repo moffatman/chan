@@ -219,13 +219,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       hackerNewsCatalogVariant: fields[100] as CatalogVariant?,
       hideDefaultNamesInCatalog: fields[101] as bool?,
       launchCount: fields[102] as int?,
+      userAgent: fields[103] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(99)
+      ..writeByte(100)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -423,7 +424,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(101)
       ..write(obj.hideDefaultNamesInCatalog)
       ..writeByte(102)
-      ..write(obj.launchCount);
+      ..write(obj.launchCount)
+      ..writeByte(103)
+      ..write(obj.userAgent);
   }
 
   @override
