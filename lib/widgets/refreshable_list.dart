@@ -923,7 +923,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							final footerBox = _footerKey.currentContext?.findRenderObject() as RenderBox?;
 							final footerTop = footerBox?.localToGlobal(footerBox.paintBounds.topLeft).dy ?? double.infinity;
 							if (e.globalPosition.dy > footerTop) {
-								_updateWithHapticFeedback();
+								_updateOrExtendWithHapticFeedback();
 							}
 						},
 						child: MaybeCupertinoScrollbar(
