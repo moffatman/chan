@@ -26,6 +26,8 @@ class _SliderBuilderState extends State<SliderBuilder> {
 	late final WeakHorizontalDragGestureRecognizer _claimingRecognizer;
 	late final WeakPanGestureRecognizer _recognizingRecognizer;
 	late final GestureArenaTeam _team;
+	VoidCallback? pop;
+	bool _disposeDelayed = false;
 	double factor = 0;
 	bool insertedEarly = false;
 
@@ -48,12 +50,14 @@ class _SliderBuilderState extends State<SliderBuilder> {
 
 	void _handleDragUpdate(DragUpdateDetails details) {
 		if (!insertedEarly) {
-			WeakNavigator.push(context, widget.popup);
+			pop = WeakNavigator.pushAndReturnCallback(context, widget.popup);
 			insertedEarly = true;
 		}
-		setState(() {
-			factor -= details.delta.dx / widget.activationDistance;
-		});
+		if (mounted) {
+			setState(() {
+				factor -= details.delta.dx / widget.activationDistance;
+			});
+		}
 	}
 
 	void _handleDragEnd(DragEndDetails details) {
@@ -63,15 +67,32 @@ class _SliderBuilderState extends State<SliderBuilder> {
 			}
 		}
 		else if (details.velocity != Velocity.zero) {
-			WeakNavigator.pop(context);
+			if (pop != null) {
+				pop?.call();
+			}
+			else {
+				WeakNavigator.pop(context);
+			}
 		}
-		setState(() {
-			factor = 0;
-			insertedEarly = false;
-		});
+		pop = null;
+		if (_disposeDelayed) {
+			_claimingRecognizer.dispose();
+			_recognizingRecognizer.dispose();
+		}
+		if (mounted) {
+			setState(() {
+				factor = 0;
+				insertedEarly = false;
+			});
+		}
 	}
 
 	void _handleDragCancel() {
+		pop = null;
+		if (_disposeDelayed) {
+			_claimingRecognizer.dispose();
+			_recognizingRecognizer.dispose();
+		}
 		if (mounted) {
 			setState(() {
 				factor = 0;
@@ -101,8 +122,13 @@ class _SliderBuilderState extends State<SliderBuilder> {
 
 	@override
 	void dispose() {
-		_recognizingRecognizer.dispose();
-		_claimingRecognizer.dispose();
+		if (pop == null) {
+			_recognizingRecognizer.dispose();
+			_claimingRecognizer.dispose();
+		}
+		else {
+			_disposeDelayed = true;
+		}
 		super.dispose();
 	}
 }

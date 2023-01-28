@@ -54,6 +54,25 @@ class WeakNavigator extends StatefulWidget {
       Navigator.of(context).pop(result);
     }
   }
+
+  static VoidCallback pushAndReturnCallback<T extends Object?>(BuildContext context, Widget widget) {
+    if (WeakNavigator.of(context) != null) {
+      WeakNavigator.of(context)!.push(widget);
+      return WeakNavigator.of(context)!.pop;
+    }
+    else {
+      final imageboard = context.read<Imageboard?>();
+      Navigator.of(context).push(TransparentRoute(
+        builder: (context) => imageboard == null ? widget : ImageboardScope(
+          imageboardKey: null,
+          imageboard: imageboard,
+          child: widget
+        ),
+        showAnimations: context.read<EffectiveSettings>().showAnimations
+      ));
+    }
+    return Navigator.of(context).pop;
+  }
 }
 
 class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMixin {
