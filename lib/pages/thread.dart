@@ -207,7 +207,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			try {
 				await WidgetsBinding.instance.endOfFrame;
 				await _listController.animateTo(
-					useTree ? (_) => false : (post) => post.id == scrollToId,
+					(useTree && scrollToId == persistentState.lastSeenPostId) ? (_) => false : (post) => post.id == scrollToId,
 					orElseLast: (post) => post.id <= scrollToId,
 					alignment: alignment,
 					duration: const Duration(milliseconds: 1)
@@ -285,7 +285,8 @@ class _ThreadPageState extends State<ThreadPage> {
 		});
 		_listController.slowScrolls.addListener(_onSlowScroll);
 		context.read<PersistentBrowserTab?>()?.threadController = _listController;
-		if (!(useTree && (context.read<ImageboardSite>().isReddit || context.read<ImageboardSite>().isHackerNews))) {
+		final int? explicitScrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread];
+		if (explicitScrollToId != null || !(useTree && (context.read<ImageboardSite>().isReddit || context.read<ImageboardSite>().isHackerNews))) {
 			_blockAndScrollToPostIfNeeded();
 		}
 	}
