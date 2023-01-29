@@ -1444,6 +1444,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																		widget.onFilterChanged?.call(searchText);
 																	},
 																	controller: _searchController,
+																	enableIMEPersonalizedLearning: context.select<EffectiveSettings, bool>((s) => s.enableIMEPersonalizedLearning),
 																	focusNode: _searchFocusNode,
 																	placeholder: widget.filterHint,
 																	smartQuotesType: SmartQuotesType.disabled,
