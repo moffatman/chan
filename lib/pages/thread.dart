@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/main.dart';
+import 'package:chan/models/attachment.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/master_detail.dart';
@@ -348,6 +349,17 @@ class _ThreadPageState extends State<ThreadPage> {
 			if (hiddenAttachments.contains(initialAttachment)) {
 				attachments = hiddenAttachments;
 			}
+		}
+		else {
+			// Dedupe
+			final found = <Attachment, TaggedAttachment>{};
+			for (final a in attachments) {
+				found.putIfAbsent(a.attachment, () => a);
+			}
+			if (initialAttachment != null) {
+				found[initialAttachment.attachment] = initialAttachment;
+			}
+			attachments.removeWhere((a) => found[a.attachment] != a);
 		}
 		showGalleryPretagged(
 			context: context,
