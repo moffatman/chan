@@ -826,20 +826,22 @@ class PostLinkSpan extends PostSpan {
 				}
 			}
 		}
-		return TextSpan(
-			text: name ?? url,
-			style: options.baseTextStyle.copyWith(
+		return PostTextSpan(name ?? url).build(context, zone, settings, options.copyWith(
+			recognizer: TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(cleanedUrl), useCooperativeBrowser: true),
+			baseTextStyle: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline
-			),
-			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(cleanedUrl), useCooperativeBrowser: true)),
-			onEnter: options.onEnter,
-			onExit: options.onExit
-		);
+			)
+		));
 	}
 
 	@override
 	String buildText() {
-		return url;
+		if (name != null) {
+			return '[$name]($url)';
+		}
+		else {
+			return url;
+		}
 	}
 }
 
