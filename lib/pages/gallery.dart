@@ -158,15 +158,19 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	void _initializeScrollSheetScrollControllers() {
-		final initialOffset = ((_thumbnailSize + 8) * (currentIndex + 0.5)) - (context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width / 2);
-		final maxOffset = ((_thumbnailSize + 8) * widget.attachments.length) - context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width;
+		final mediaQueryData = context.findAncestorWidgetOfExactType<MediaQuery>()!.data;
+		final screenWidth = mediaQueryData.size.width / Persistence.settings.interfaceScale;
+		final initialOffset = ((_thumbnailSize + 8) * (currentIndex + 0.5)) - (screenWidth / 2);
+		final maxOffset = ((_thumbnailSize + 8) * widget.attachments.length) - screenWidth;
 		if (maxOffset > 0) {
 			thumbnailScrollController = ScrollController(initialScrollOffset: initialOffset.clamp(0, maxOffset));
-			final gridViewHeight = context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.height - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((Persistence.settings.useStatusBarWorkaround ?? false) ? 0 : context.findAncestorWidgetOfExactType<MediaQuery>()!.data.viewPadding.top));
+			final screenHeight = mediaQueryData.size.height / Persistence.settings.interfaceScale;
+			final screenTopViewPadding = mediaQueryData.viewPadding.top / Persistence.settings.interfaceScale;
+			final gridViewHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((Persistence.settings.useStatusBarWorkaround ?? false) ? 0 : screenTopViewPadding));
 			final gridViewRowCount = (gridViewHeight / (context.read<EffectiveSettings>().thumbnailSize * 1.5)).ceil();
 			final gridViewSquareSize = gridViewHeight / gridViewRowCount;
 			final gridViewWidthEstimate = ((widget.attachments.length + 1) / gridViewRowCount).ceil() * gridViewSquareSize;
-			final gridviewMaxOffset = gridViewWidthEstimate - context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size.width;
+			final gridviewMaxOffset = gridViewWidthEstimate - screenWidth;
 			if (gridviewMaxOffset > 0) {
 				_gridViewScrollController = ScrollController(
 					initialScrollOffset: gridviewMaxOffset * (initialOffset.clamp(0, maxOffset) / maxOffset)
@@ -278,6 +282,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			final factor = pageController.position.pixels / pageController.position.maxScrollExtent;
 			final idealLocation = (thumbnailScrollController.position.maxScrollExtent + thumbnailScrollController.position.viewportDimension - _thumbnailSize - 12) * factor - (thumbnailScrollController.position.viewportDimension / 2) + (_thumbnailSize / 2 + 6);
 			thumbnailScrollController.jumpTo(idealLocation.clamp(0, thumbnailScrollController.position.maxScrollExtent));
+			print(thumbnailScrollController.position.pixels);
 		}
 	}
 
@@ -441,7 +446,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		return offset.distance / threshold;
 	}
 
-	double get _maxScrollSheetSize => (_thumbnailSize + 8 +_gridViewHeight + kMinInteractiveDimensionCupertino) / MediaQuery.sizeOf(context).height;
+	double get _maxScrollSheetSize => (_thumbnailSize + 8 +_gridViewHeight + kMinInteractiveDimensionCupertino) / (MediaQuery.sizeOf(context).height / Persistence.settings.interfaceScale);
 
 	double get _minScrollSheetSize {
 		if (context.read<EffectiveSettings>().showThumbnailsInGallery) {
@@ -454,11 +459,14 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 	
 	double get _gridViewHeight {
-		final mq = context.findAncestorWidgetOfExactType<MediaQuery>()!.data;
-		final maxHeight = mq.size.height - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((Persistence.settings.useStatusBarWorkaround ?? false) ? 0 : mq.viewPadding.top));
+		final mediaQueryData = context.findAncestorWidgetOfExactType<MediaQuery>()!.data;
+		final screenHeight = mediaQueryData.size.height / Persistence.settings.interfaceScale;
+		final screenWidth = mediaQueryData.size.width / Persistence.settings.interfaceScale;
+		final screenTopViewPadding = mediaQueryData.viewPadding.top / Persistence.settings.interfaceScale;
+		final maxHeight = screenHeight - (_thumbnailSize + 8 + kMinInteractiveDimensionCupertino + ((Persistence.settings.useStatusBarWorkaround ?? false) ? 0 : screenTopViewPadding));
 		final maxRowCount = (maxHeight / (context.read<EffectiveSettings>().thumbnailSize * 1.5)).ceil();
 		final squareSize = maxHeight / maxRowCount;
-		final visibleSquaresPerRow = (mq.size.width / squareSize).floor();
+		final visibleSquaresPerRow = (screenWidth / squareSize).floor();
 		if ((widget.attachments.length + 1) > (maxRowCount * visibleSquaresPerRow)) {
 			return maxHeight;
 		}
