@@ -49,6 +49,7 @@ class _PersistentThreadStateSnapshot {
 	final int receiptsLength;
 	final int treeHiddenIdsLength;
 	final int hiddenPosterIdsLength;
+	final bool? useTree;
 
 	_PersistentThreadStateSnapshot.empty() :
 		thread = null,
@@ -57,7 +58,8 @@ class _PersistentThreadStateSnapshot {
 		savedTime = null,
 		receiptsLength = 0,
 		treeHiddenIdsLength = 0,
-		hiddenPosterIdsLength = 0;
+		hiddenPosterIdsLength = 0,
+		useTree = null;
 
 	_PersistentThreadStateSnapshot.of(PersistentThreadState s) :
 		thread = s.thread,
@@ -66,7 +68,8 @@ class _PersistentThreadStateSnapshot {
 		savedTime = s.savedTime,
 		receiptsLength = s.receipts.length,
 		treeHiddenIdsLength = s.treeHiddenPostIds.length,
-		hiddenPosterIdsLength = s.hiddenPosterIds.length;
+		hiddenPosterIdsLength = s.hiddenPosterIds.length,
+		useTree = s.useTree;
 	
 	@override
 	bool operator == (Object o) =>
@@ -77,10 +80,11 @@ class _PersistentThreadStateSnapshot {
 		(o.savedTime == savedTime) &&
 		(o.receiptsLength == receiptsLength) &&
 		(o.treeHiddenIdsLength == treeHiddenIdsLength) &&
-		(o.hiddenPosterIdsLength == hiddenPosterIdsLength);
+		(o.hiddenPosterIdsLength == hiddenPosterIdsLength) &&
+		(o.useTree == useTree);
 	
 	@override
-	int get hashCode => Object.hash(thread, hiddenPostIdsLength, postsMarkedAsYouLength, savedTime, receiptsLength, treeHiddenIdsLength, hiddenPostIdsLength);
+	int get hashCode => Object.hash(thread, hiddenPostIdsLength, postsMarkedAsYouLength, savedTime, receiptsLength, treeHiddenIdsLength, hiddenPostIdsLength, useTree);
 }
 
 class ThreadPage extends StatefulWidget {
