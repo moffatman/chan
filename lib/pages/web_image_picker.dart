@@ -71,6 +71,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 				middle: CupertinoSearchTextField(
 					focusNode: urlFocusNode,
 					controller: urlController,
+					enableIMEPersonalizedLearning: context.select<EffectiveSettings, bool>((s) => s.enableIMEPersonalizedLearning),
 					smartDashesType: SmartDashesType.disabled,
 					smartQuotesType: SmartQuotesType.disabled,
 					onSubmitted: (value) {

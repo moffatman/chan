@@ -357,6 +357,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 														FocusManager.instance.primaryFocus!.unfocus();
 														widget.onSearchComposed(query);
 													},
+													enableIMEPersonalizedLearning: context.select<EffectiveSettings, bool>((s) => s.enableIMEPersonalizedLearning),
 													smartQuotesType: SmartQuotesType.disabled,
 													smartDashesType: SmartDashesType.disabled,
 													onSuffixTap: () {
