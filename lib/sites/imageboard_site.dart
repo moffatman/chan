@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/board.dart';
+import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/services/cloudflare.dart';
@@ -856,10 +857,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get showImageCount => true;
 	bool get supportsSearch => archives.isNotEmpty;
 	bool get supportsPosting => true;
-	Future<List<Post>> getMoreThread(Post after) async => throw UnimplementedError();
+	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds) async => throw UnimplementedError();
 	/// If an empty list is returned from here, the bottom of the catalog has been reached.
 	Future<List<Thread>> getMoreCatalog(Thread after) async => [];
-	bool get hasOmittedReplies => false;
 	bool get isHackerNews => false;
 	bool get isReddit => false;
 	bool get supportsMultipleBoards => true;

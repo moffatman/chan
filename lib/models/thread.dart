@@ -87,6 +87,34 @@ class Thread implements Filterable {
 		}
 	}
 
+	void integratePosts(List<Post> newPosts) {
+		final postIdToListIndex = {
+			for (final pair in posts_.asMap().entries) pair.value.id: pair.key
+		};
+		for (final newChild in newPosts) {
+			final indexToReplace = postIdToListIndex[newChild.id];
+			if (indexToReplace != null) {
+				final postToReplace = posts_[indexToReplace];
+				if (postToReplace.isStub) {
+					posts_.removeAt(indexToReplace);
+					posts_.insert(indexToReplace, newChild);
+				}
+			}
+			else {
+				posts_.add(newChild);
+				// This only handles single-parent case but no real imageboards have omitted replies
+				final parentIndex = postIdToListIndex[newChild.parentId];
+				if (parentIndex != null) {
+					final parent = posts_[parentIndex];
+					if (!parent.replyIds.contains(newChild.id)) {
+						parent.replyIds.add(newChild.id);
+					}
+					parent.hasOmittedReplies = false;
+				}
+			}
+		}
+	}
+
 	@override
 	bool operator == (dynamic other) {
 		return (other is Thread)

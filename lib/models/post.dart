@@ -32,7 +32,9 @@ enum PostSpanFormat {
 	@HiveField(5)
 	reddit,
 	@HiveField(6)
-	hackerNews
+	hackerNews,
+	@HiveField(7)
+	stub
 }
 
 class Post implements Filterable {
@@ -66,6 +68,10 @@ class Post implements Filterable {
 				return SiteReddit.makeSpan(board, threadId, text);
 			case PostSpanFormat.hackerNews:
 				return SiteHackerNews.makeSpan(text);
+			case PostSpanFormat.stub:
+				return const PostNodeSpan([
+					PostTextSpan('Stub post')
+				]);
 		}
 	}
 	PostNodeSpan get span {
@@ -88,7 +94,7 @@ class Post implements Filterable {
 	final List<Attachment> attachments;
 	final int? upvotes;
 	final int? parentId;
-	int omittedChildrenCount;
+	bool hasOmittedReplies;
 
 	Post({
 		required this.board,
@@ -109,7 +115,7 @@ class Post implements Filterable {
 		required this.attachments,
 		this.upvotes,
 		this.parentId,
-		this.omittedChildrenCount = 0
+		this.hasOmittedReplies = false
 	});
 
 	@override
@@ -163,11 +169,13 @@ class Post implements Filterable {
 
 	String get globalId => '${board}_${threadId}_$id';
 
-	@override
-	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id && other.upvotes == upvotes && other.omittedChildrenCount == omittedChildrenCount;
+	bool get isStub => spanFormat == PostSpanFormat.stub;
 
 	@override
-	int get hashCode => Object.hash(board, id, upvotes, omittedChildrenCount);
+	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id && other.upvotes == upvotes;
+
+	@override
+	int get hashCode => Object.hash(board, id, upvotes);
 }
 
 class PostAdapter extends TypeAdapter<Post> {
@@ -214,7 +222,8 @@ class PostAdapter extends TypeAdapter<Post> {
           fields[16] == null ? [] : (fields[16] as List).cast<Attachment>(),
 			upvotes: fields[17] as int?,
 			parentId: fields[18] as int?,
-			omittedChildrenCount: (fields[19] as int?) ?? 0
+			//fields[19] was used for int omittedChildrenCount
+			hasOmittedReplies: fields[20] as bool? ?? false,
     );
   }
 
@@ -262,8 +271,9 @@ class PostAdapter extends TypeAdapter<Post> {
 		if (obj.parentId != null) {
 			writer..writeByte(18)..write(obj.parentId);
 		}
-		if (obj.omittedChildrenCount != 0) {
-			writer..writeByte(19)..write(obj.omittedChildrenCount);
+		//fields[19] was used for int omittedChildrenCount
+		if (obj.hasOmittedReplies) {
+			writer..writeByte(20)..write(true);
 		}
 		// End with field zero (terminator)
 		writer

@@ -45,6 +45,7 @@ class PostRow extends StatelessWidget {
 	final bool showSiteIcon;
 	final bool showBoardName;
 	final bool showYourPostBorder;
+	final bool highlight;
 
 	const PostRow({
 		required this.post,
@@ -60,6 +61,7 @@ class PostRow extends StatelessWidget {
 		this.showSiteIcon = false,
 		this.showBoardName = false,
 		this.showYourPostBorder = true,
+		this.highlight = false,
 		this.baseOptions,
 		Key? key
 	}) : super(key: key);
@@ -139,7 +141,7 @@ class PostRow extends StatelessWidget {
 						child: Text.rich(
 							TextSpan(
 								children: [
-									if (!parentZone.tree && !site.explicitIds && post.parentId != null) ...[
+									if ((!parentZone.tree || (post.parentId != latestPost.threadId && (baseOptions?.highlightString?.isNotEmpty ?? false))) && !site.explicitIds && post.parentId != null) ...[
 										PostQuoteLinkSpan(
 											board: latestPost.board,
 											threadId: latestPost.threadId,
@@ -259,7 +261,9 @@ class PostRow extends StatelessWidget {
 					padding: const EdgeInsets.only(bottom: 8),
 					decoration: BoxDecoration(
 						border: border,
-						color: isSelected ? CupertinoTheme.of(context).primaryColorWithBrightness(0.4) : CupertinoTheme.of(context).scaffoldBackgroundColor,
+						color: isSelected ?
+							CupertinoTheme.of(context).primaryColorWithBrightness(0.4) :
+								highlight ? CupertinoTheme.of(context).primaryColorWithBrightness(0.1) : CupertinoTheme.of(context).scaffoldBackgroundColor,
 					),
 					child: Stack(
 						children: [

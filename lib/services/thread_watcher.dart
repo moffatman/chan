@@ -260,6 +260,7 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 		}
 		if (newThread != threadState.thread) {
+			newThread.integratePosts(threadState.thread?.posts_ ?? []);
 			threadState.thread = newThread;
 			threadState.save();
 			return true;
@@ -307,6 +308,7 @@ class ThreadWatcher extends ChangeNotifier {
 					try {
 						final newThread = await site.getThread(threadState.thread!.identifier);
 						if (newThread != threadState.thread) {
+							newThread.integratePosts(threadState.thread?.posts_ ?? []);
 							threadState.thread = newThread;
 							await threadState.save();
 						}

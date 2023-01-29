@@ -1,3 +1,4 @@
+import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/models/thread.dart';
@@ -9,12 +10,13 @@ import 'package:chan/sites/4chan.dart';
 import 'dart:io';
 
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:html/parser.dart';
+import 'package:html_unescape/html_unescape_small.dart';
 import 'package:markdown/markdown.dart' as markdown;
 import 'package:html/dom.dart' as dom;
+import 'package:tuple/tuple.dart';
 
 class _SuperscriptSyntax extends markdown.InlineSyntax {
   static const _pattern = r'\^([^ ]+)';
@@ -95,6 +97,24 @@ extension _RedditApiName on ThreadVariant {
 }
 
 class SiteReddit extends ImageboardSite {
+	Tuple2<int, DateTime>? _earliestKnown;
+	Tuple2<int, DateTime>? _latestKnown;
+	void _updateTimeEstimateData(int id, DateTime time) {
+		if (_earliestKnown == null || id < _earliestKnown!.item1) {
+			_earliestKnown = Tuple2(id, time);
+		}
+		if (_latestKnown == null || id > _latestKnown!.item1) {
+			_latestKnown = Tuple2(id, time);
+		}
+	}
+	DateTime _estimateTime(int id) {
+		if (_earliestKnown == null || _latestKnown == null) {
+			return DateTime(2000);
+		}
+		final slope = (_latestKnown!.item2.millisecondsSinceEpoch - _earliestKnown!.item2.millisecondsSinceEpoch) / (_latestKnown!.item1 - _earliestKnown!.item1);
+		return DateTime.fromMillisecondsSinceEpoch((slope * (id - _earliestKnown!.item1)).round() + _earliestKnown!.item2.millisecondsSinceEpoch);
+	}
+
 	SiteReddit() : super([]);
 	@override
 	String get baseUrl => 'reddit.com';
@@ -405,6 +425,7 @@ class SiteReddit extends ImageboardSite {
 			upvotes: (data['score_hidden'] == true || data['hide_score'] == true) ? null : data['score'],
 			capcode: data['distinguished']
 		);
+		_updateTimeEstimateData(asPost.id, asPost.time);
 		return Thread(
 			board: data['subreddit'],
 			title: unescape.convert(data['title']),
@@ -499,42 +520,84 @@ class SiteReddit extends ImageboardSite {
 	String? getLoginSystemName() => null;
 
 	@override
-	Future<List<Post>> getMoreThread(Post after) async {
-		final response = await client.get(Uri.https(baseUrl, '/r/${after.board}/comments/${toRedditId(after.threadId)}/_/${toRedditId(after.id)}.json').toString());
+	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds) async {
 		final ret = <Post>[];
-		addChildren(int? parentId, List<dynamic> childData) {
-			for (final childContainer in childData) {
-				final child = childContainer['data'];
-				if (childContainer['kind'] == 't1') {
-					final id = fromRedditId(child['id']);
-					ret.add(Post(
-						board: after.board,
-						text: unescape.convert(child['body']),
-						name: child['author'],
-						time: DateTime.fromMillisecondsSinceEpoch(child['created'].toInt() * 1000),
-						threadId: after.threadId,
+		final childIdsToGet = postIds.take(20).toList();
+		final newPosts = <int, Post>{};
+		final Set<int> newPostsWithReplies = {};
+		if (childIdsToGet.isNotEmpty) {
+			final response = await client.getUri(Uri.https(baseUrl, '/api/morechildren', {
+				'link_id': 't3_${toRedditId(thread.id)}',
+				'children': 'c1:${childIdsToGet.map((cid) => 't1_${toRedditId(cid.childId)}').join(',')}',
+				'api_type': 'json',
+				'renderstyle': 'html'
+			}));
+			final things = response.data['json']['data']['things'];
+			for (final thing in things) {
+				final parentId = fromRedditId(thing['data']['parent'].split('_')[1]);
+				if (thing['data']['id'] == 't1__') {
+					newPosts[parentId]?.hasOmittedReplies = true;
+				}
+				else {
+					final id = fromRedditId(thing['data']['id'].split('_')[1]);
+					final doc = parseFragment(HtmlUnescape().convert(thing['data']['content']));
+					final post = Post(
+						board: thread.board,
+						text: thing['data']['contentText'],
+						name: doc.querySelector('.author')?.text ?? '',
+						time: DateTime.tryParse(doc.querySelector('.live-timestamp')?.attributes['datetime'] ?? '') ?? DateTime(2000),
+						threadId: thread.id,
+						parentId: parentId,
 						id: id,
 						spanFormat: PostSpanFormat.reddit,
 						attachments: [],
-						parentId: parentId ?? fromRedditId(child['parent_id'].split('_')[1]),
-						upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score'],
-						capcode: child['distinguished']
-					));
-					if (child['replies'] != '') {
-						addChildren(id, child['replies']['data']['children']);
+						upvotes: int.tryParse(doc.querySelector('.score.unvoted')?.attributes['title'] ?? '')
+					);
+					_updateTimeEstimateData(post.id, post.time);
+					newPosts[id] = post;
+					if (!(doc.querySelector('.numchildren')?.text.contains('(0 children)') ?? true)) {
+						newPostsWithReplies.add(id);
 					}
-				}
-				else if (child['count'] != null) {
-					final parent = ret.reversed.tryFirstWhere((p) => p.id == parentId);
-					parent?.omittedChildrenCount = (parent.omittedChildrenCount + child['count']).toInt();
-				}
-				else {
-					print('Ignoring child with kind ${child['kind']}');
-					print(child);
 				}
 			}
 		}
-		addChildren(after.threadId, response.data[1]['data']['children']);
+		final newPostsMatched = newPosts.values.toList();
+		for (final id in childIdsToGet) {
+			final newPost = newPosts[id.childId];
+			if (newPost != null) {
+				final parent = newPosts[newPost.parentId];
+				if (parent != null) {
+					parent.replyIds.add(id.childId);
+				}
+				ret.add(newPost);
+				newPostsMatched.remove(newPost);
+			}
+			else {
+				ret.add(Post(
+					board: thread.board,
+					text: '[shadowbanned]',
+					name: '[shadowbanned]',
+					time: _estimateTime(id.childId),
+					threadId: thread.id,
+					id: id.childId,
+					spanFormat: PostSpanFormat.reddit,
+					attachments: [],
+					parentId: id.parentId
+				));
+			}
+		}
+		for (final unmatchedPost in newPostsMatched) {
+			final parent = newPosts[unmatchedPost.parentId];
+			if (parent != null) {
+				parent.replyIds.add(unmatchedPost.id);
+			}
+			ret.add(unmatchedPost);
+		}
+		for (final id in newPostsWithReplies) {
+			if (newPosts[id]?.replyIds.isEmpty ?? false) {
+				newPosts[id]?.hasOmittedReplies = true;
+			}
+		}
 		return ret;
 	}
 
@@ -571,12 +634,12 @@ class SiteReddit extends ImageboardSite {
 			if (variant?.redditApiName != null) 'sort': variant!.redditApiName!
 		}));
 		final ret = _makeThread(response.data[0]['data']['children'][0]['data']);
-		addChildren(int? parentId, List<dynamic> childData) {
+		addChildren(int parentId, List<dynamic> childData, Post? parent) {
 			for (final childContainer in childData) {
 				final child = childContainer['data'];
 				if (childContainer['kind'] == 't1') {
 					final id = fromRedditId(child['id']);
-					ret.posts_.add(Post(
+					final post = Post(
 						board: thread.board,
 						text: unescape.convert(child['body']),
 						name: child['author'],
@@ -588,14 +651,31 @@ class SiteReddit extends ImageboardSite {
 						parentId: parentId,
 						upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score'],
 						capcode: child['distinguished']
-					));
+					);
+					ret.posts_.add(post);
+					_updateTimeEstimateData(post.id, post.time);
 					if (child['replies'] != '') {
-						addChildren(id, child['replies']['data']['children']);
+						addChildren(id, child['replies']['data']['children'], post);
 					}
 				}
-				else if (child['count'] != null) {
-					final parent = ret.posts_.reversed.tryFirstWhere((p) => p.id == parentId);
-					parent?.omittedChildrenCount = (parent.omittedChildrenCount + child['count']).toInt();
+				else if (childContainer['kind'] == 'more') {
+					if (child['id'] == '_') {
+						parent?.hasOmittedReplies = true;
+					}
+					for (final childId in child['children']) {
+						final id = fromRedditId(childId);
+						ret.posts_.add(Post(
+							board: thread.board,
+							text: '',
+							name: '',
+							time: _estimateTime(id),
+							threadId: thread.id,
+							id: id,
+							spanFormat: PostSpanFormat.stub,
+							parentId: parentId,
+							attachments: []
+						));
+					}
 				}
 				else {
 					print('Ignoring child with kind ${child['kind']}');
@@ -603,7 +683,7 @@ class SiteReddit extends ImageboardSite {
 				}
 			}
 		}
-		addChildren(thread.id, response.data[1]['data']['children']);
+		addChildren(thread.id, response.data[1]['data']['children'], null);
 		return ret;
 	}
 
@@ -679,8 +759,6 @@ class SiteReddit extends ImageboardSite {
 	bool get supportsSearch => true;
 	@override
 	bool get supportsPosting => false;
-	@override
-	bool get hasOmittedReplies => true;
 	@override
 	bool get isReddit => true;
 	@override

@@ -1,5 +1,6 @@
 import 'dart:isolate';
 
+import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
@@ -1112,6 +1113,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	Iterable<int> get stackIds;
 	PersistentThreadState? get threadState;
 	ValueChanged<Post>? get onNeedScrollToPost;
+	Future<void> Function(List<ParentAndChildIdentifier>)? get onNeedUpdateWithStubItems;
 	bool disposed = false;
 	List<Comparator<Post>> get postSortingMethods;
 	bool get tree;
@@ -1265,6 +1267,9 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	ValueChanged<Post>? get onNeedScrollToPost => parent.onNeedScrollToPost;
 
 	@override
+	Future<void> Function(List<ParentAndChildIdentifier>)? get onNeedUpdateWithStubItems => parent.onNeedUpdateWithStubItems;
+
+	@override
 	Iterable<int> get stackIds {
 		return parent.stackIds.followedBy([postId]);
 	}
@@ -1318,6 +1323,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	final PersistentThreadState? threadState;
 	@override
 	final ValueChanged<Post>? onNeedScrollToPost;
+	@override
+	Future<void> Function(List<ParentAndChildIdentifier>)? onNeedUpdateWithStubItems;
 	final Map<int, bool> _isLoadingPostFromArchive = {};
 	final Map<int, Post> _postsFromArchive = {};
 	final Map<int, String> _postFromArchiveErrors = {};
@@ -1333,6 +1340,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		required this.site,
 		this.threadState,
 		this.onNeedScrollToPost,
+		this.onNeedUpdateWithStubItems,
 		this.semanticRootIds = const [],
 		this.postSortingMethods = const [],
 		this.tree = false

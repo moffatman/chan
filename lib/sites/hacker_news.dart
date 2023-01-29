@@ -429,12 +429,6 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Post>> getMoreThread(Post after) async {
-		final item = await _getAlgolia(after.id);
-		return await _getMoreThread(item);
-	}
-
-	@override
 	Future<List<Thread>> getMoreCatalog(Thread after) async {
 		final index = _lastCatalogIds?.indexOf(after.id) ?? -1;
 		if (index == -1) {
@@ -527,8 +521,6 @@ class SiteHackerNews extends ImageboardSite {
 	bool get supportsSearch => true;
 	@override
 	bool get supportsPosting => false;
-	@override
-	bool get hasOmittedReplies => false;
 	@override
 	bool get isHackerNews => true;
 	@override

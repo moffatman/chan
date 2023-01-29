@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/settings.dart';
@@ -18,6 +19,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:tuple/tuple.dart';
 
 const double _overscrollTriggerThreshold = 100;
+const _treeAnimationDuration = Duration(milliseconds: 350);
 
 class ItemNotFoundException implements Exception {
 	final String message;
@@ -59,11 +61,12 @@ class SliverDontRebuildChildBuilderDelegate extends SliverChildBuilderDelegate {
 class _TreeNode<T extends Object> {
 	final T item;
 	final int id;
-	final int omittedChildCount;
+	final bool hasOmittedReplies;
 	final List<_TreeNode<T>> children;
+	final List<int> stubChildIds;
 	final List<_TreeNode<T>> parents;
 
-	_TreeNode(this.item, this.id, this.omittedChildCount) : children = [], parents = [];
+	_TreeNode(this.item, this.id, this.hasOmittedReplies) : children = [], stubChildIds = [], parents = [];
 
 	bool find(int needle) {
 		if (needle == id) {
@@ -78,7 +81,7 @@ class _TreeNode<T extends Object> {
 	}
 
 	@override
-	String toString() => '_TreeNode<$T>(item: $item, id: $id, omittedChildCount: $omittedChildCount: # children: ${children.length}, # parents: ${parents.length}';
+	String toString() => '_TreeNode<$T>(item: $item, id: $id, # children: ${children.length}, # parents: ${parents.length}';
 
 	@override
 	bool operator == (Object o) => (o is _TreeNode<T>) && (o.item == item);
@@ -89,9 +92,10 @@ class _TreeNode<T extends Object> {
 
 class RefreshableListItem<T extends Object> {
 	final T item;
-	final int omittedChildCount;
+	final bool representsUnknownStubChildren;
+	final List<ParentAndChildIdentifier> representsKnownStubChildren;
 	final bool highlighted;
-	final bool collapsed;
+	bool preCollapsed;
 	final String? filterReason;
 	final List<int> parentIds;
 	int treeChildrenCount;
@@ -100,34 +104,47 @@ class RefreshableListItem<T extends Object> {
 	RefreshableListItem({
 		required this.item,
 		this.highlighted = false,
-		this.collapsed = false,
+		this.preCollapsed = false,
 		this.filterReason,
 		this.parentIds = const [],
 		this.treeChildrenCount = 0,
-		this.omittedChildCount = 0,
+		this.representsUnknownStubChildren = false,
+		this.representsKnownStubChildren = const [],
 		int? depth
 	}) : _depth = depth;
 
 	@override
-	String toString() => 'RefreshableListItem<$T>(item: $item, omittedChildCount: $omittedChildCount, treeChildrenCount: $treeChildrenCount)';
+	String toString() => 'RefreshableListItem<$T>(item: $item, representsKnownStubChildren: $representsKnownStubChildren, treeChildrenCount: $treeChildrenCount)';
 
 	@override
-	bool operator == (Object other) => (other is RefreshableListItem<T>) && (other.item == item) && (other.highlighted == highlighted) && (other.collapsed == collapsed) && (other.filterReason == filterReason) && listEquals(other.parentIds, parentIds) && (other.treeChildrenCount == treeChildrenCount);
+	bool operator == (Object other) => (other is RefreshableListItem<T>) &&
+		(other.item == item) &&
+		(other.representsUnknownStubChildren == representsUnknownStubChildren) &&
+		listEquals(other.representsKnownStubChildren, representsKnownStubChildren) &&
+		(other.highlighted == highlighted) &&
+		(other.preCollapsed == preCollapsed) &&
+		(other.filterReason == filterReason) &&
+		listEquals(other.parentIds, parentIds) &&
+		(other.treeChildrenCount == treeChildrenCount) &&
+		(other._depth == _depth);
+
 	@override
-	int get hashCode => Object.hash(item, highlighted, collapsed, filterReason, parentIds, treeChildrenCount);
+	int get hashCode => Object.hash(item, representsUnknownStubChildren, representsKnownStubChildren, highlighted, preCollapsed, filterReason, parentIds, treeChildrenCount, _depth);
 
 	RefreshableListItem<T> copyWith({
 		List<int>? parentIds,
-		int? omittedChildCount,
+		bool? representsUnknownStubChildren,
+		List<ParentAndChildIdentifier>? representsKnownStubChildren,
 		int? depth
 	}) => RefreshableListItem(
 		item: item,
 		highlighted: highlighted,
-		collapsed: collapsed,
+		preCollapsed: preCollapsed,
 		filterReason: filterReason,
 		parentIds: parentIds ?? this.parentIds,
 		treeChildrenCount: treeChildrenCount,
-		omittedChildCount: omittedChildCount ?? this.omittedChildCount,
+		representsUnknownStubChildren: representsUnknownStubChildren ?? this.representsUnknownStubChildren,
+		representsKnownStubChildren: representsKnownStubChildren ?? this.representsKnownStubChildren,
 		depth: depth,
 	);
 
@@ -135,53 +152,59 @@ class RefreshableListItem<T extends Object> {
 		if (_depth != null) {
 			return _depth!;
 		}
-		if (omittedChildCount > 0) {
+		if (representsStubChildren) {
 			return parentIds.length + 1;
 		}
 		return parentIds.length;
 	}
+
+	bool get representsStubChildren => representsUnknownStubChildren || representsKnownStubChildren.isNotEmpty;
 }
 
 class RefreshableTreeAdapter<T extends Object> {
 	final int Function(T item) getId;
 	final Iterable<int> Function(T item) getParentIds;
-	final int Function(T item) getOmittedChildCount;
-	final Future<List<T>> Function(List<T>, T) updateWithOmittedChildren;
+	final bool Function(T item) getHasOmittedReplies;
+	final Future<List<T>> Function(List<T> currentList, List<ParentAndChildIdentifier> stubIds) updateWithStubItems;
 	final Widget Function(Widget, List<int>) wrapTreeChild;
 	final int opId;
 	final double Function(T item, double width) estimateHeight;
+	final bool Function(T item) getIsStub;
 
 	const RefreshableTreeAdapter({
 		required this.getId,
 		required this.getParentIds,
-		required this.getOmittedChildCount,
-		required this.updateWithOmittedChildren,
+		required this.getHasOmittedReplies,
+		required this.updateWithStubItems,
 		required this.opId,
 		required this.wrapTreeChild,
-		required this.estimateHeight
+		required this.estimateHeight,
+		required this.getIsStub
 	});
 }
 
-enum _TreeItemCollapseType {
+enum TreeItemCollapseType {
 	collapsed,
 	childCollapsed
 }
 
-class _RefreshableTreeItems extends ChangeNotifier {
+class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	final List<List<int>> collapsedItems;
 	final List<List<int>> filterCollapsedItems;
 	final ValueChanged<List<List<int>>>? onCollapsedItemsChanged;
 	final ValueChanged<List<int>>? onFilterCollapsedItemExpanded;
+	final ValueChanged<RefreshableListItem<T>>? onCollapseOrExpand;
 	final Set<List<int>> loadingOmittedItems = {};
 
 	_RefreshableTreeItems({
 		required this.collapsedItems,
 		required this.filterCollapsedItems,
 		this.onFilterCollapsedItemExpanded,
+		this.onCollapseOrExpand,
 		this.onCollapsedItemsChanged
 	});
 
-	_TreeItemCollapseType? isItemHidden(List<int> parentIds, int? thisId) {
+	TreeItemCollapseType? isItemHidden(List<int> parentIds, int? thisId) {
 		// By iterating reversed it will properly handle collapses within collapses
 		for (final collapsed in collapsedItems.reversed.followedBy(filterCollapsedItems)) {
 			if (collapsed.length > parentIds.length + 1) {
@@ -196,12 +219,12 @@ class _RefreshableTreeItems extends ChangeNotifier {
 			}
 			if (collapsed.length == parentIds.length + 1) {
 				if (collapsed.last == thisId) {
-					return _TreeItemCollapseType.collapsed;
+					return TreeItemCollapseType.collapsed;
 				}
 				continue;
 			}
 			if (collapsed.last == parentIds[collapsed.length - 1]) {
-				return _TreeItemCollapseType.childCollapsed;
+				return TreeItemCollapseType.childCollapsed;
 			}
 		}
 		return null;
@@ -241,16 +264,17 @@ class _RefreshableTreeItems extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	void hideItem(List<int> parentIds, int thisId) {
+	void hideItem(List<int> parentIds, int thisId, RefreshableListItem<T> item) {
 		collapsedItems.add([
 			...parentIds,
 			thisId
 		]);
 		onCollapsedItemsChanged?.call(collapsedItems);
+		onCollapseOrExpand?.call(item);
 		notifyListeners();
 	}
 
-	void unhideItem(List<int> parentIds, int thisId) {
+	void unhideItem(List<int> parentIds, int thisId, RefreshableListItem<T> item) {
 		final x = [
 			...parentIds,
 			thisId
@@ -265,13 +289,20 @@ class _RefreshableTreeItems extends ChangeNotifier {
 		if (filterCollapsedItemsLengthBefore != filterCollapsedItems.length) {
 			onFilterCollapsedItemExpanded?.call(x);
 		}
+		onCollapseOrExpand?.call(item);
 		notifyListeners();
 	}
 }
 
 class RefreshableList<T extends Object> extends StatefulWidget {
 	final Widget Function(BuildContext context, T value) itemBuilder;
-	final Widget Function(BuildContext context, T? value, int collapsedChildrenCount, bool loading)? collapsedItemBuilder;
+	final Widget Function({
+		required BuildContext context,
+		required T? value,
+		required int collapsedChildrenCount,
+		required bool loading,
+		required List<ParentAndChildIdentifier>? stubChildIds
+	})? collapsedItemBuilder;
 	final List<T>? initialList;
 	final Future<List<T>?> Function() listUpdater;
 	final Future<List<T>> Function(T after)? listExtender;
@@ -339,7 +370,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	String? errorMessage;
 	Type? errorType;
 	SearchFilter? _searchFilter;
-	bool updatingNow = false;
+	late final ValueNotifier<bool> updatingNow;
 	late final TextEditingController _searchController;
 	late final FocusNode _searchFocusNode;
 	DateTime? lastUpdateTime;
@@ -357,11 +388,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	final List<List<int>> _filterCollapsedItems = [];
 	final List<List<int>> _filterCollapsedExpandedItems = [];
 	List<RefreshableListItem<T>> filteredValues = [];
+	late _RefreshableTreeItems _refreshableTreeItems;
 	int forceRebuildId = 0;
 
 	@override
 	void initState() {
 		super.initState();
+		updatingNow = ValueNotifier(false);
 		_searchController = TextEditingController();
 		_searchFocusNode = FocusNode();
 		 _footerShakeAnimation = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
@@ -381,6 +414,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			update();
 			resetTimer();
 		}
+		_refreshableTreeItems = _RefreshableTreeItems<T>(
+			collapsedItems: widget.initialCollapsedItems?.toList() ?? [],
+			filterCollapsedItems: _filterCollapsedItems,
+			onFilterCollapsedItemExpanded: _onFilterCollapsedItemExpanded,
+			onCollapseOrExpand: _onTreeCollapseOrExpand,
+			onCollapsedItemsChanged: widget.onCollapsedItemsChanged
+		);
 	}
 
 	@override
@@ -393,7 +433,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			_scrollViewKey = GlobalKey();
 			_sliverListKey = GlobalKey();
 			_footerKey = GlobalKey();
-			_closeSearch();
+			closeSearch();
 			originalList = widget.initialList;
 			sortedList = null;
 			errorMessage = null;
@@ -401,6 +441,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			lastUpdateTime = null;
 			_filterCollapsedItems.clear();
 			_filterCollapsedExpandedItems.clear();
+			_refreshableTreeItems.dispose();
+			_refreshableTreeItems = _RefreshableTreeItems<T>(
+				collapsedItems: widget.initialCollapsedItems?.toList() ?? [],
+				filterCollapsedItems: _filterCollapsedItems,
+				onFilterCollapsedItemExpanded: _onFilterCollapsedItemExpanded,
+				onCollapseOrExpand: _onTreeCollapseOrExpand,
+				onCollapsedItemsChanged: widget.onCollapsedItemsChanged
+			);
 			update();
 		}
 		else if (oldWidget.disableUpdates != widget.disableUpdates) {
@@ -430,6 +478,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		_searchController.dispose();
 		_searchFocusNode.dispose();
 		_footerShakeAnimation.dispose();
+		_refreshableTreeItems.dispose();
+		updatingNow.dispose();
 	}
 
 	void _sortList() {
@@ -445,6 +495,17 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		_filterCollapsedExpandedItems.add(item);
 	}
 
+	Future<void> _onTreeCollapseOrExpand(RefreshableListItem<T> item) async {
+		Duration total = Duration.zero;
+		while (total < _treeAnimationDuration) {
+			const incremental = Duration(milliseconds: 50);
+			await Future.delayed(incremental);
+			widget.controller?.invalidateAfter(item);
+			widget.controller?._scrollStream.add(null);
+			total += incremental;
+		}
+	}
+
 	void resetTimer() {
 		autoUpdateTimer?.cancel();
 		if (widget.autoUpdateDuration != null && !widget.useTree) {
@@ -456,14 +517,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 	}
 
-	void _closeSearch() {
+	void closeSearch() {
 		_searchFocusNode.unfocus();
 		_searchController.clear();
 		setState(() {
 			_searchTapped = false;
 			_searchFilter = null;
 		});
-		widget.onFilterChanged?.call(null);
+		WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+			widget.onFilterChanged?.call(null);
+		});
 	}
 
 	void _focusSearch() {
@@ -473,7 +536,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	Future<void> update({bool hapticFeedback = false, bool extend = false}) async {
-		if (updatingNow) {
+		if (updatingNow.value) {
 			return;
 		}
 		final updatingWithId = widget.id;
@@ -482,13 +545,27 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			setState(() {
 				errorMessage = null;
 				errorType = null;
-				updatingNow = true;
+				updatingNow.value = true;
 			});
 			Duration minUpdateDuration = const Duration(milliseconds: 500);
 			if (widget.controller?.scrollController?.positions.length == 1 && (widget.controller!.scrollController!.position.pixels > 0 && (widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent))) {
 				minUpdateDuration = const Duration(seconds: 1);
 			}
-			if (extend && widget.listExtender != null && (originalList?.isNotEmpty ?? false)) {
+			final lastItem = widget.controller?._items.tryLast?.item;
+			if (extend && widget.treeAdapter != null && ((lastItem?.representsStubChildren ?? false))) {
+				final id = widget.treeAdapter!.getId(lastItem!.item);
+				_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem.parentIds, id);
+				try {
+					newList = await widget.treeAdapter!.updateWithStubItems(originalList!, lastItem.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(id)] : lastItem.representsKnownStubChildren);
+				}
+				catch (e) {
+					alertError(context, e.toStringDio());
+				}
+				finally {
+					_refreshableTreeItems.itemLoadingOmittedItemsEnded(lastItem.parentIds, widget.treeAdapter!.getId(lastItem.item));
+				}
+			}
+			else if (extend && widget.listExtender != null && (originalList?.isNotEmpty ?? false)) {
 				final newItems = (await Future.wait([widget.listExtender!(originalList!.last), Future<List<T>?>.delayed(minUpdateDuration)])).first!;
 				newList = originalList!.followedBy(newItems).toList();
 			}
@@ -496,7 +573,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				newList = (await Future.wait([widget.listUpdater(), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
 			}
 			if (updatingWithId != widget.id) {
-				updatingNow = false;
+				updatingNow.value = false;
 				return;
 			}
 			resetTimer();
@@ -539,11 +616,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			if (!mounted) return;
 			widget.controller?.scrollController?.position.isScrollingNotifier.removeListener(listener);
 			if (updatingWithId != widget.id) {
-				updatingNow = false;
+				updatingNow.value = false;
 				return;
 			}
 		}
-		updatingNow = false;
+		updatingNow.value = false;
 		if (mounted && (newList != null || originalList == null || errorMessage != null)) {
 			if (hapticFeedback) {
 				mediumHapticFeedback();
@@ -556,6 +633,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			});
 		}
+	}
+
+	void acceptNewList(List<T> list) {
+		originalList = list;
+		sortedList = list.toList();
+		_sortList();
+		setState(() {});
 	}
 
 	Future<void> _updateWithHapticFeedback() async {
@@ -571,40 +655,53 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		Widget? collapsed;
 		int? id = widget.treeAdapter?.getId(value.item);
 		bool loadingOmittedItems = false;
-		if (widget.treeAdapter != null && widget.useTree) {
+		if (widget.treeAdapter != null && (widget.useTree || value.representsStubChildren)) {
 			loadingOmittedItems = context.select<_RefreshableTreeItems, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, id));
 		}
 		if (_searchFilter != null && widget.filteredItemBuilder != null) {
 			child = Builder(
-				builder: (context) => widget.filteredItemBuilder!(context, value.item, _closeSearch, _searchFilter!.text)
+				builder: (context) => widget.filteredItemBuilder!(context, value.item, closeSearch, _searchFilter!.text)
 			);
 		}
 		else {
-			if (value.omittedChildCount > 0) {
-				child = widget.collapsedItemBuilder?.call(context, null, value.omittedChildCount, loadingOmittedItems) ?? Container(
+			if (value.representsStubChildren) {
+				child = widget.collapsedItemBuilder?.call(
+					context: context,
+					value: null,
+					collapsedChildrenCount: value.representsKnownStubChildren.length,
+					loading: loadingOmittedItems,
+					stubChildIds: value.representsKnownStubChildren
+				) ?? Container(
 					height: 30,
 					alignment: Alignment.center,
-					child: Text('${value.omittedChildCount} more replies...')
+					child: Text('${value.representsKnownStubChildren.length} more replies...')
 				);
 			}
 			else {
 				child = Builder(
 					builder: (context) => widget.itemBuilder(context, value.item)
 				);
-				collapsed = widget.collapsedItemBuilder?.call(context, value.item, value.treeChildrenCount, loadingOmittedItems);
+				collapsed = widget.collapsedItemBuilder?.call(
+					context: context,
+					value: value.item,
+					collapsedChildrenCount: value.treeChildrenCount,
+					loading: loadingOmittedItems,
+					stubChildIds: null
+				);
 			}
 			if (widget.treeAdapter != null && widget.useTree) {
-				final isHidden = context.select<_RefreshableTreeItems, _TreeItemCollapseType?>((c) => c.isItemHidden(value.parentIds, id));
+				final isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value.parentIds, id));
 				if (value.parentIds.isNotEmpty) {
 					child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
 				}
 				child = AnimatedCrossFade(
-					duration: const Duration(milliseconds: 350),
+					key: ValueKey(value),
+					duration: _treeAnimationDuration,
 					sizeCurve: Curves.ease,
 					firstCurve: Curves.ease,
 					//secondCurve: Curves.ease,
 					firstChild: child,
-					secondChild: (isHidden != _TreeItemCollapseType.childCollapsed && value.omittedChildCount == 0) ? (collapsed ?? const SizedBox(
+					secondChild: (isHidden != TreeItemCollapseType.childCollapsed && !value.representsStubChildren) ? (collapsed ?? const SizedBox(
 						height: 30,
 						width: double.infinity,
 						child: Text('Something hidden')
@@ -617,26 +714,50 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				child = GestureDetector(
 					behavior: HitTestBehavior.translucent,
 					onTap: loadingOmittedItems ? null : () async {
-						if (value.omittedChildCount == 0) {
+						if (!value.representsStubChildren) {
 							if (isHidden != null) {
-								context.read<_RefreshableTreeItems>().unhideItem(value.parentIds, id!);
+								context.read<_RefreshableTreeItems>().unhideItem(value.parentIds, id!, value);
 							}
 							else {
-								context.read<_RefreshableTreeItems>().hideItem(value.parentIds, id!);
+								context.read<_RefreshableTreeItems>().hideItem(value.parentIds, id!, value);
 								widget.controller?._alignToItemIfPartiallyAboveFold(value);
 							}
 						}
 						else {
 							context.read<_RefreshableTreeItems>().itemLoadingOmittedItemsStarted(value.parentIds, id!);
 							try {
-								originalList = await widget.treeAdapter!.updateWithOmittedChildren(originalList!, value.item);
+								originalList = await widget.treeAdapter!.updateWithStubItems(originalList!, value.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(id)] : value.representsKnownStubChildren);
 								sortedList = originalList!.toList();
 								_sortList();
 								setState(() { });
 							}
+							catch (e) {
+								alertError(context, e.toStringDio());
+							}
 							finally {
 								context.read<_RefreshableTreeItems>().itemLoadingOmittedItemsEnded(value.parentIds, id);
 							}
+						}
+					},
+					child: child
+				);
+			}
+			else if (widget.treeAdapter != null && value.representsStubChildren) {
+				child = GestureDetector(
+					behavior: HitTestBehavior.translucent,
+					onTap: loadingOmittedItems ? null : () async {
+						context.read<_RefreshableTreeItems>().itemLoadingOmittedItemsStarted(value.parentIds, id!);
+						try {
+							originalList = await widget.treeAdapter!.updateWithStubItems(originalList!, value.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(id)] : value.representsKnownStubChildren);
+							sortedList = originalList!.toList();
+							_sortList();
+							setState(() { });
+						}
+						catch (e) {
+							alertError(context, e.toStringDio());
+						}
+						finally {
+							context.read<_RefreshableTreeItems>().itemLoadingOmittedItemsEnded(value.parentIds, id);
 						}
 					},
 					child: child
@@ -651,7 +772,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				)
 			);
 		}
-		if (value.depth > 0) {
+		if (value.depth > 0 && widget.useTree) {
 			child = Container(
 				margin: EdgeInsets.only(left: (pow(value.depth, 0.70) * 20) - 5),
 				decoration: BoxDecoration(
@@ -663,6 +784,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				child: child
 			);
 		}
+		child = KeyedSubtree(
+			key: ValueKey(value),
+			child: child
+		);
 		return child;
 	}
 
@@ -676,6 +801,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	Tuple2<List<RefreshableListItem<T>>, List<List<int>>> _reassembleAsTree(List<RefreshableListItem<T>> linear) {
 		// In case the list is not in sequential order by id
 		final orphans = <int, List<_TreeNode<RefreshableListItem<T>>>>{};
+		final orphanStubs = <int, List<int>>{};
 		final treeMap = <int, _TreeNode<RefreshableListItem<T>>>{};
 		final treeRoots = <_TreeNode<RefreshableListItem<T>>>[];
 
@@ -687,10 +813,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 		for (final item in linear) {
 			final id = adapter.getId(item.item);
-			final node = _TreeNode(item, id, adapter.getOmittedChildCount(item.item));
+			final node = _TreeNode(item, id, adapter.getHasOmittedReplies(item.item));
 			treeMap[id] = node;
 			node.children.addAll(orphans[id] ?? []);
 			orphans.remove(id);
+			node.stubChildIds.addAll(orphanStubs[id] ?? []);
+			orphanStubs.remove(id);
 			final parentIds = adapter.getParentIds(item.item).toList();
 			if (id == adapter.opId) {
 				treeRoots.insert(0, node);
@@ -733,11 +861,21 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					}
 				} while (toDelete != null);
 			}
-			for (final parentId in parentIds) {
-				if (parentId == adapter.opId) continue;
-				treeMap[parentId]?.children.add(node);
-				if (treeMap[parentId] == null) {
-					orphans.putIfAbsent(parentId, () => []).add(node);
+			if (adapter.getIsStub(item.item)) {
+				for (final parentId in parentIds) {
+					treeMap[parentId]?.stubChildIds.add(node.id);
+					if (treeMap[parentId] == null) {
+						orphanStubs.putIfAbsent(parentId, () => []).add(node.id);
+					}
+				}
+			}
+			else {
+				for (final parentId in parentIds) {
+					if (parentId == adapter.opId) continue;
+					treeMap[parentId]?.children.add(node);
+					if (treeMap[parentId] == null) {
+						orphans.putIfAbsent(parentId, () => []).add(node);
+					}
 				}
 			}
 		}
@@ -753,18 +891,24 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				...parentIds,
 				node.id
 			];
-			final preCollapse = !parentPreCollapsed &&
+			item.preCollapsed |= !parentPreCollapsed &&
 				encountered.containsKey(node.id) &&
 				precollapseCache.putIfAbsent(item.item, () => _shouldPreCollapseOnSubsequentEncounter(item, encountered[node.id]!));
-			if (item.collapsed || preCollapse) {
+			if (item.preCollapsed) {
 				collapsed.add(ids);
 			}
 			for (final child in node.children) {
-				item.treeChildrenCount += 1 + dumpNode(child, ids.toList(), parentPreCollapsed: preCollapse);
+				item.treeChildrenCount += 1 + dumpNode(child, ids.toList(), parentPreCollapsed: item.preCollapsed);
 			}
-			if (addOmittedChildNode && node.omittedChildCount > 0) {
-				out.add(item.copyWith(omittedChildCount: node.omittedChildCount));
-				item.treeChildrenCount += item.omittedChildCount;
+			if (addOmittedChildNode && (node.stubChildIds.isNotEmpty || node.hasOmittedReplies)) {
+				out.add(item.copyWith(
+					representsKnownStubChildren: node.stubChildIds.map((childId) => ParentAndChildIdentifier(
+						parentId: node.id,
+						childId: childId
+					)).toList(),
+					representsUnknownStubChildren: node.hasOmittedReplies
+				));
+				item.treeChildrenCount += item.representsKnownStubChildren.length + (item.representsUnknownStubChildren ? 1 : 0);
 			}
 			encountered[node.id] = item;
 			return item.treeChildrenCount;
@@ -774,9 +918,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			firstRoot = treeRoots.removeAt(0);
 			dumpNode(firstRoot, [], addOmittedChildNode: false);
 		}
+		final Set<int> orphanEncountered = {};
 		for (final pair in orphans.entries) {
 			for (final orphan in pair.value) {
-				if (encountered.containsKey(orphan.id)) {
+				if (encountered.containsKey(orphan.id) || orphanEncountered.contains(orphan.id)) {
 					// It is seen somewhere else in the tree
 					continue;
 				}
@@ -788,14 +933,25 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					reverseSort: widget.reverseSort,
 					item: orphan
 				);
-				encountered[orphan.id] = orphan.item;
+				orphanEncountered.add(orphan.id);
 			}
 		}
 		for (final root in treeRoots) {
+			if (adapter.getIsStub(root.item.item)) {
+				continue;
+			}
 			dumpNode(root, []);
 		}
-		if (firstRoot != null && firstRoot.omittedChildCount > 0) {
-			out.add(firstRoot.item.copyWith(parentIds: [], omittedChildCount: firstRoot.omittedChildCount, depth: 0));
+		if (firstRoot != null && (firstRoot.stubChildIds.isNotEmpty || firstRoot.hasOmittedReplies)) {
+			out.add(firstRoot.item.copyWith(
+				parentIds: [],
+				representsKnownStubChildren: firstRoot.stubChildIds.map((childId) => ParentAndChildIdentifier(
+					parentId: firstRoot!.id,
+					childId: childId
+				)).toList(),
+				representsUnknownStubChildren: firstRoot.hasOmittedReplies,
+				depth: 0
+			));
 		}
 		return Tuple2(out, collapsed);
 	}
@@ -839,7 +995,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							values.add(RefreshableListItem(
 								item: item,
 								highlighted: result.type.highlight,
-								collapsed: result.type.collapse
+								preCollapsed: result.type.collapse
 							));
 						}
 						handled = true;
@@ -862,6 +1018,41 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					_filterCollapsedItems.add(collapsed);
 				}
 			}
+			else if (widget.treeAdapter != null) {
+				final adapter = widget.treeAdapter!;
+				RefreshableListItem<T>? stubItem;
+				final items = values;
+				values = [];
+				for (final item in items) {
+					if (adapter.getIsStub(item.item)) {
+						stubItem ??= RefreshableListItem(
+							item: item.item, // Arbitrary
+							representsKnownStubChildren: []
+						);
+						stubItem.representsKnownStubChildren.add(ParentAndChildIdentifier(
+							parentId: adapter.getParentIds(item.item).tryFirst ?? adapter.opId,
+							childId: adapter.getId(item.item)
+						));
+					}
+					else {
+						if (stubItem != null) {
+							values.add(stubItem);
+							stubItem = null;
+						}
+						values.add(item);
+						if (adapter.getHasOmittedReplies(item.item)) {
+							stubItem ??= RefreshableListItem(
+								item: item.item, // Arbitrary
+								representsKnownStubChildren: []
+							);
+							stubItem.representsKnownStubChildren.add(ParentAndChildIdentifier(
+								parentId: adapter.getId(item.item),
+								childId: adapter.getId(item.item)
+							));
+						}
+					}
+				}
+			}
 			widget.controller?.setItems(values);
 			if (filteredValues.isEmpty) {
 				// Don't auto open filtered values after clearing it before
@@ -874,7 +1065,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			return NotificationListener<ScrollNotification>(
 				key: ValueKey(widget.id),
 				onNotification: (notification) {
-					if (updatingNow) {
+					if (updatingNow.value) {
 						return false;
 					}
 					final bool isScrollEnd = (notification is ScrollEndNotification) || (notification is ScrollUpdateNotification && notification.dragDetails == null);
@@ -928,13 +1119,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						},
 						child: MaybeCupertinoScrollbar(
 							controller: widget.controller?.scrollController,
-							child: ChangeNotifierProvider<_RefreshableTreeItems>(
-								create: (context) => _RefreshableTreeItems(
-									collapsedItems: widget.initialCollapsedItems?.toList() ?? [],
-									filterCollapsedItems: _filterCollapsedItems,
-									onFilterCollapsedItemExpanded: _onFilterCollapsedItemExpanded,
-									onCollapsedItemsChanged: widget.onCollapsedItemsChanged
-								),
+							child: ChangeNotifierProvider.value(
+								value: _refreshableTreeItems,
 								child: CustomScrollView(
 									key: _scrollViewKey,
 									cacheExtent: 1000,
@@ -968,6 +1154,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																		setState(() {
 																			_searchTapped = true;
 																		});
+																		widget.onFilterChanged?.call('');
 																	},
 																	onChanged: (searchText) {
 																		setState(() {
@@ -985,7 +1172,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														),
 														if (_searchTapped) CupertinoButton(
 															padding: const EdgeInsets.only(left: 8),
-															onPressed: _closeSearch,
+															onPressed: closeSearch,
 															child: const Text('Cancel')
 														)
 													]
@@ -1201,7 +1388,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 											child: RepaintBoundary(
 												child: GestureDetector(
 													behavior: HitTestBehavior.opaque,
-													onTap: updatingNow ? null : () {
+													onTap: updatingNow.value ? null : () {
 														lightHapticFeedback();
 														Future.delayed(const Duration(milliseconds: 17), () {
 															widget.controller?.scrollController?.animateTo(
@@ -1237,7 +1424,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													child: RefreshableListFooter(
 														key: _footerKey,
 														updater: _updateOrExtendWithHapticFeedback,
-														updatingNow: updatingNow,
+														updatingNow: updatingNow.value,
 														lastUpdateTime: lastUpdateTime,
 														nextUpdateTime: nextUpdateTime,
 														errorMessage: errorMessage,
@@ -1434,6 +1621,16 @@ class RefreshableListController<T extends Object> {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onSlowScroll);
 		SchedulerBinding.instance.endOfFrame.then((_) => _onScrollControllerNotification());
 	}
+	void invalidateAfter(RefreshableListItem<T> item) {
+		final index = _items.indexWhere((i) => i.item == item);
+		if (index == -1) {
+			print('Could not find $item in list to invalidate after');
+		}
+		for (final item in _items.skip(index + 1)) {
+			item.cachedOffset = null;
+			item.cachedHeight = null;
+		}
+	}
 	Future<void> _tryCachingItem(int index, _BuiltRefreshableListItem<RefreshableListItem<T>> item) async {
 		await SchedulerBinding.instance.endOfFrame;
 		if (item.hasGoodState) {
@@ -1462,19 +1659,28 @@ class RefreshableListController<T extends Object> {
 			}
 		}
 	}
-	void _onSlowScroll(void update) {
-		int lastCached = -1;
-		for (final entry in _items.asMap().entries) {
-			if (entry.value.cachedOffset != null) {
-				lastCached = entry.key;
-			}
+	Future<void> _onSlowScroll(void update) async {
+		final useTree = state?.widget.useTree ?? false;
+		int lastCached;
+		if (useTree) {
+			lastCached = _items.length;
 		}
-		lastCached++; // Cache the final item if uncached
+		else {
+			lastCached = -1;
+			for (final entry in _items.asMap().entries) {
+				if (entry.value.cachedOffset != null) {
+					lastCached = entry.key;
+				}
+			}
+			lastCached++; // Cache the final item if uncached
+		}
+		final futures = <Future<void>>[];
 		for (int i = 0; i < lastCached; i++) {
-			if (_items[i].cachedOffset == null || state?.widget.useTree == true) {
-				_tryCachingItem(i, _items[i]);
+			if (_items[i].cachedOffset == null || useTree) {
+				futures.add(_tryCachingItem(i, _items[i]));
 			}
 		}
+		await Future.wait(futures);
 		slowScrolls.didUpdate();
 	}
 	void _onScrollControllerNotification() {
@@ -1519,7 +1725,8 @@ class RefreshableListController<T extends Object> {
 		   _items.length > 2 &&
 			 items[0] == _items[0].item &&
 			 items[1] == _items[1].item &&
-			 items.length >= _items.length) {
+			 items.length >= _items.length &&
+			 state?.widget.useTree != true) {
 			if (items.length < _items.length) {
 				_items = _items.sublist(0, items.length);
 			}
@@ -1535,7 +1742,7 @@ class RefreshableListController<T extends Object> {
 		else if (items.length == 1 && _items.length == 1 && items[0] == _items[0].item) {
 			_items[0].item = items[0];
 		}
-		else {
+		else if (!listEquals(items, this.items.toList())) {
 			_items = items.map((item) => _BuiltRefreshableListItem(item)).toList();
 		}
 	}
@@ -1576,9 +1783,9 @@ class RefreshableListController<T extends Object> {
 				throw const ItemNotFoundException('No matching item to scroll to');
 			}
 		}
-		await _animateToIndex(targetIndex, alignment: alignment, duration: duration);
+		await animateToIndex(targetIndex, alignment: alignment, duration: duration);
 	}
-	Future<void> _animateToIndex(int targetIndex, {double alignment = 0.0, Duration duration = const Duration(milliseconds: 200)}) async {
+	Future<void> animateToIndex(int targetIndex, {double alignment = 0.0, Duration duration = const Duration(milliseconds: 200)}) async {
 		print('$contentId animating to $targetIndex');
 		final start = DateTime.now();
 		currentTargetIndex = targetIndex;
@@ -1587,10 +1794,10 @@ class RefreshableListController<T extends Object> {
 		final initialContentId = contentId;
 		Future<bool> attemptResolve() async {
 			final completer = Completer<void>();
-			double estimate = (_estimateOffset(targetIndex) ?? scrollController!.position.maxScrollExtent) - topOffset!;
+			double estimate = (_estimateOffset(targetIndex) ?? ((targetIndex > (_items.length / 2)) ? scrollController!.position.maxScrollExtent : 0)) - topOffset!;
 			if (_items.last.cachedOffset != null) {
 				// prevent overscroll
-				estimate = max(estimate, scrollController!.position.maxScrollExtent);
+				estimate = min(estimate, scrollController!.position.maxScrollExtent);
 			}
 			_itemCacheCallbacks.putIfAbsent(Tuple2(targetIndex, estimate > scrollController!.position.pixels), () => []).add(completer);
 			final delay = Duration(milliseconds: min(300, max(1, (estimate - scrollController!.position.pixels).abs() ~/ 100)));
@@ -1642,6 +1849,12 @@ class RefreshableListController<T extends Object> {
 	}
 	int get firstVisibleIndex {
 		if (scrollController?.hasOnePosition ?? false) {
+			if (_items.isNotEmpty &&
+					_items.first.cachedHeight != null &&
+					_items.first.cachedOffset! > scrollController!.position.pixels) {
+				// Search field will mean that the _items.lastIndexWhere search will return -1
+				return 0;
+			}
 			return _items.lastIndexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! <= scrollController!.position.pixels));
 		}
 		return -1;
@@ -1706,5 +1919,13 @@ class RefreshableListController<T extends Object> {
 		final c = Completer();
 		_itemCacheCallbacks.putIfAbsent(const Tuple2(0, true), () => []).add(c);
 		await c.future;
+	}
+
+	TreeItemCollapseType? isItemHidden(RefreshableListItem<T> item) {
+		final id = state?.widget.treeAdapter?.getId(item.item);
+		if (id == null) {
+			return null;
+		}
+		return state?._refreshableTreeItems.isItemHidden(item.parentIds, id);
 	}
 }
