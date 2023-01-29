@@ -269,6 +269,9 @@ class SiteReddit extends ImageboardSite {
 					else if (node.localName == 'blockquote') {
 						yield PostQuoteSpan(PostNodeSpan(node.children.isNotEmpty ? visit(node.children).toList() : visit(node.nodes).toList()));
 					}
+					else if (node.localName == 'pre') {
+						yield PostCodeSpan(node.text);
+					}
 					else {
 						yield PostTextSpan(node.outerHtml);
 					}
