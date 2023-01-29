@@ -304,7 +304,7 @@ class SiteReddit extends ImageboardSite {
 			if (match.group(4) != null) {
 				threadId = fromRedditId(match.group(4)!);
 				if (match.group(6) != null) {
-					postId = fromRedditId(match.group(6)!);
+					postId = fromRedditId(match.group(6)!.split('?').first);
 				}
 			}
 			return BoardThreadOrPostIdentifier(match.group(2)!, threadId, postId);
