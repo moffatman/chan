@@ -45,11 +45,11 @@ flutter pub get
 ```
 flutter pub run build_runner build
 ```
-6. To build an APK for android, run `flutter build apk --split-per-abi --release`
-7. To build for iOS (Mac and Xcode required), run `flutter build ios --release`
-8. To run in development mode, use `flutter run` while your device is connected
+6. To build an APK for android, run `flutter build apk --split-per-abi --release --enable-experiment=records`
+7. To build for iOS (Mac and Xcode required), run `flutter build ios --release --enable-experiment=records`
+8. To run in development mode, use `flutter run --enable-experiment=records` while your device is connected
 
-Chance is developed using the `flutter` `master` branch, so if you get errors while building or running, try using `flutter channel dev` or `flutter channel master`. 
+Chance is developed using the `flutter` `master` branch, so if you get errors while building or running, try using `flutter channel dev` or `flutter channel master`. Because it takes advantage of some preview Dart 3 features, the argument `--enable-experiment=records` is required to run it.
 
 ## FAQ
 
