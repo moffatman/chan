@@ -254,13 +254,14 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	void itemLoadingOmittedItemsEnded(List<int> parentIds, int thisId) {
+	void itemLoadingOmittedItemsEnded(List<int> parentIds, int thisId, RefreshableListItem<T> item) {
 		final x = [
 			...parentIds,
 			thisId
 		];
 		loadingOmittedItems.removeWhere((w) => listEquals(w, x));
 		notifyListeners();
+		onCollapseOrExpand?.call(item);
 	}
 
 	void hideItem(List<int> parentIds, int thisId, RefreshableListItem<T> item) {
@@ -561,7 +562,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					alertError(context, e.toStringDio());
 				}
 				finally {
-					_refreshableTreeItems.itemLoadingOmittedItemsEnded(lastItem.parentIds, widget.treeAdapter!.getId(lastItem.item));
+					_refreshableTreeItems.itemLoadingOmittedItemsEnded(lastItem.parentIds, widget.treeAdapter!.getId(lastItem.item), lastItem);
 				}
 			}
 			else if (extend && widget.listExtender != null && (originalList?.isNotEmpty ?? false)) {
@@ -734,7 +735,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 								alertError(context, e.toStringDio());
 							}
 							finally {
-								context.read<_RefreshableTreeItems>().itemLoadingOmittedItemsEnded(value.parentIds, id);
+								context.read<_RefreshableTreeItems>().itemLoadingOmittedItemsEnded(value.parentIds, id, value);
 							}
 						}
 					},
@@ -756,7 +757,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							alertError(context, e.toStringDio());
 						}
 						finally {
-							context.read<_RefreshableTreeItems>().itemLoadingOmittedItemsEnded(value.parentIds, id);
+							context.read<_RefreshableTreeItems>().itemLoadingOmittedItemsEnded(value.parentIds, id, value);
 						}
 					},
 					child: child
