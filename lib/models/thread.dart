@@ -97,6 +97,7 @@ class Thread implements Filterable {
 			&& other.isArchived == isArchived
 			&& other.isDeleted == isDeleted
 			&& other.isSticky == isSticky
+			&& other.replyCount == replyCount
 			&& listEquals(other.attachments, attachments);
 	}
 	@override

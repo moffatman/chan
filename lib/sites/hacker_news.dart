@@ -185,7 +185,7 @@ class SiteHackerNews extends ImageboardSite {
 	);
 
 	static int _countDescendants(_HNObject o) {
-		int out = 0;
+		int out = 1;
 		for (final child in o.children) {
 			out += _countDescendants(child);
 		}
@@ -200,7 +200,7 @@ class SiteHackerNews extends ImageboardSite {
 			case 'poll':
 				return _HNStory(
 					by: d['author'] ?? '',
-					descendants: children.fold<int>(0, (count, child) => count + 1 + _countDescendants(child)), 
+					descendants: children.fold<int>(0, (count, child) => count + _countDescendants(child)), 
 					id: d['id'],
 					children: children,
 					pollOptions: (d['options'] as List?)?.cast<Map>().map((option) => _HNPollOption(
