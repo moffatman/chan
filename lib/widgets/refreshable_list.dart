@@ -688,6 +688,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					loading: loadingOmittedItems,
 					stubChildIds: null
 				);
+				if (value.preCollapsed && collapsed != null) {
+					collapsed = Opacity(
+						opacity: 0.5,
+						child: collapsed
+					);
+				}
 			}
 			if (widget.treeAdapter != null && widget.useTree) {
 				final isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value.parentIds, id));
