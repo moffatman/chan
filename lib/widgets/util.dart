@@ -23,7 +23,6 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ActionableException implements Exception {
@@ -340,7 +339,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 	}
 	else {
 		final settings = context.read<EffectiveSettings>();
-		Tuple3<Imageboard, BoardThreadOrPostIdentifier, bool>? imageboardTarget;
+		(Imageboard, BoardThreadOrPostIdentifier, bool)? imageboardTarget;
 		for (final imageboard in ImageboardRegistry.instance.imageboards) {
 			BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(url.toString());
 			bool usedArchive = false;
@@ -352,7 +351,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 				usedArchive = true;
 			}
 			if (dest != null) {
-				imageboardTarget = Tuple3(imageboard, dest, usedArchive);
+				imageboardTarget = (imageboard, dest, usedArchive);
 				break;
 			}
 		}
@@ -360,14 +359,14 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 				builder: (ctx) => ImageboardScope(
 					imageboardKey: null,
-					imageboard: imageboardTarget!.item1,
-					child: imageboardTarget.item2.threadId == null ? BoardPage(
-						initialBoard: imageboardTarget.item1.persistence.getBoard(imageboardTarget.item2.board),
+					imageboard: imageboardTarget!.$0,
+					child: imageboardTarget.$1.threadId == null ? BoardPage(
+						initialBoard: imageboardTarget.$0.persistence.getBoard(imageboardTarget.$1.board),
 						semanticId: -1
 					) : ThreadPage(
-						thread: imageboardTarget.item2.threadIdentifier!,
-						initialPostId: imageboardTarget.item2.postId,
-						initiallyUseArchive: imageboardTarget.item3,
+						thread: imageboardTarget.$1.threadIdentifier!,
+						initialPostId: imageboardTarget.$1.postId,
+						initiallyUseArchive: imageboardTarget.$2,
 						boardSemanticId: -1
 					)
 				),

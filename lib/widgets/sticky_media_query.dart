@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:tuple/tuple.dart';
 
 class StickyMediaQuery extends StatefulWidget {
 	final bool top;
@@ -22,30 +21,30 @@ class StickyMediaQuery extends StatefulWidget {
 }
 
 class _StickyMediaQueryState extends State<StickyMediaQuery> {
-	final Map<Orientation, Tuple2<EdgeInsets, EdgeInsets>> map = {};
+	final Map<Orientation, (EdgeInsets padding, EdgeInsets viewPadding)> map = {};
 
 	@override
 	Widget build(BuildContext context) {
 		final data = map.update(MediaQuery.of(context).orientation, (old) {
-			return Tuple2(
+			return (
 				MediaQuery.of(context).padding.clamp(EdgeInsets.only(
-					left: widget.left ? old.item1.left : 0,
-					top: widget.top ? old.item1.top : 0,
-					right: widget.right ? old.item1.right : 0,
-					bottom: widget.bottom ? old.item1.bottom : 0
+					left: widget.left ? old.$0.left : 0,
+					top: widget.top ? old.$0.top : 0,
+					right: widget.right ? old.$0.right : 0,
+					bottom: widget.bottom ? old.$0.bottom : 0
 				), const EdgeInsets.all(double.infinity)).resolve(TextDirection.ltr),
 				MediaQuery.of(context).padding.clamp(EdgeInsets.only(
-					left: widget.left ? old.item2.left : 0,
-					top: widget.top ? old.item2.top : 0,
-					right: widget.right ? old.item2.right : 0,
-					bottom: widget.bottom ? old.item2.bottom : 0
+					left: widget.left ? old.$1.left : 0,
+					top: widget.top ? old.$1.top : 0,
+					right: widget.right ? old.$1.right : 0,
+					bottom: widget.bottom ? old.$1.bottom : 0
 				), const EdgeInsets.all(double.infinity)).resolve(TextDirection.ltr)
 			);
-		}, ifAbsent: () => Tuple2(MediaQuery.of(context).padding, MediaQuery.of(context).viewPadding));
+		}, ifAbsent: () => (MediaQuery.of(context).padding, MediaQuery.of(context).viewPadding));
 		return MediaQuery(
 			data: MediaQuery.of(context).copyWith(
-				padding: data.item1,
-				viewPadding: data.item2
+				padding: data.$0,
+				viewPadding: data.$1
 			),
 			child: widget.child
 		);

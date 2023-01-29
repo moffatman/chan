@@ -14,7 +14,7 @@ description: A new Flutter project.
 version: 1.0.28+29 # Remember to update version.dart
 
 environment:
-  sdk: ">=2.17.0 <3.0.0"
+  sdk: ">=3.0.0-179.0.dev <4.0.0"
 
 publish_to: none
 dependencies:
@@ -41,7 +41,6 @@ dependencies:
   image_picker: ^0.8.4
   heic_to_jpg: ^0.2.0
   mutex: ^3.0.0
-  tuple: ^2.0.0
   uuid: ^3.0.5
   profanity_filter: ^2.0.0
   url_launcher: ^6.0.12

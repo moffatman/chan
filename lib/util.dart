@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mutex/mutex.dart';
-import 'package:tuple/tuple.dart';
 
 extension SafeWhere<T> on Iterable<T> {
 	T? tryFirstWhere(bool Function(T v) f) => cast<T?>().firstWhere((v) => f(v as T), orElse: () => null);
@@ -216,15 +215,15 @@ class CombiningValueListenable<T> extends ChangeNotifier implements ValueListena
 	T get value => children.isEmpty ? noChildrenValue : children.map((c) => c.value).reduce(combine);
 }
 
-final Map<Function, Tuple2<Timer, Completer<void>>> _functionIdleTimers = {};
+final Map<Function, ({Timer timer, Completer<void> completer})> _functionIdleTimers = {};
 Future<void> runWhenIdle(Duration duration, FutureOr Function() function) {
-	final completer = _functionIdleTimers[function]?.item2 ?? Completer();
-	_functionIdleTimers[function]?.item1.cancel();
-	_functionIdleTimers[function] = Tuple2(Timer(duration, () async {
+	final completer = _functionIdleTimers[function]?.completer ?? Completer();
+	_functionIdleTimers[function]?.timer.cancel();
+	_functionIdleTimers[function] = (timer: Timer(duration, () async {
 		_functionIdleTimers.remove(function);
 		await function();
 		completer.complete();
-	}), completer);
+	}), completer: completer);
 	return completer.future;
 }
 

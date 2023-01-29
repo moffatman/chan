@@ -32,7 +32,6 @@ import 'package:provider/provider.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 
 import 'package:chan/pages/gallery.dart';
-import 'package:tuple/tuple.dart';
 
 const _oldThreadThreshold = Duration(days: 7);
 
@@ -197,12 +196,12 @@ class _BoardPageState extends State<BoardPage> {
 		}
 	}
 
-	Future<Tuple2<CatalogVariant?, _ThreadSortingMethodScope>?> _variantDetailsMenu({
+	Future<(CatalogVariant?, _ThreadSortingMethodScope)?> _variantDetailsMenu({
 		required BuildContext context,
 		required CatalogVariant variant,
 		required List<CatalogVariant> others,
 		required CatalogVariant currentVariant
-	}) => showCupertinoModalPopup<Tuple2<CatalogVariant?, _ThreadSortingMethodScope>>(
+	}) => showCupertinoModalPopup<(CatalogVariant?, _ThreadSortingMethodScope)>(
 		context: context,
 		useRootNavigator: false,
 		builder: (context) => CupertinoActionSheet(
@@ -223,13 +222,13 @@ class _BoardPageState extends State<BoardPage> {
 									width: 40,
 									child: Icon(CupertinoIcons.xmark)
 								),
-								onTap: () => Navigator.pop(context, const Tuple2(null, _ThreadSortingMethodScope.board))
+								onTap: () => Navigator.pop(context, const (null, _ThreadSortingMethodScope.board))
 							)
 						]
 					),
 					onPressed: () {
 						if (_defaultBoardVariant == variant) return;
-						Navigator.pop(context, Tuple2(variant, _ThreadSortingMethodScope.board));
+						Navigator.pop(context, (variant, _ThreadSortingMethodScope.board));
 					}
 				),
 				CupertinoActionSheetAction(
@@ -246,7 +245,7 @@ class _BoardPageState extends State<BoardPage> {
 					),
 					onPressed: () {
 						if (_defaultGlobalVariant == variant) return;
-						Navigator.pop(context, Tuple2(variant, _ThreadSortingMethodScope.global));
+						Navigator.pop(context, (variant, _ThreadSortingMethodScope.global));
 					}
 				),
 				...others.map((other) => _buildVariantDetails(
@@ -301,7 +300,7 @@ class _BoardPageState extends State<BoardPage> {
 							width: 40,
 							child: Icon(CupertinoIcons.xmark)
 						),
-						onTap: () => Navigator.pop(context, const Tuple2(null, _ThreadSortingMethodScope.tab))
+						onTap: () => Navigator.pop(context, const (null, _ThreadSortingMethodScope.tab))
 					),
 					if ((v.hasPrimary || v.variants.length == 1) && !v.variants.first.temporary) GestureDetector(
 						child: const SizedBox(
@@ -329,10 +328,10 @@ class _BoardPageState extends State<BoardPage> {
 				return;
 			}
 			if (v.hasPrimary || v.variants.length == 1) {
-				Navigator.pop(context, Tuple2(v.variants.first, _ThreadSortingMethodScope.tab));
+				Navigator.pop(context, (v.variants.first, _ThreadSortingMethodScope.tab));
 			}
 			else {
-				final choice = await showCupertinoModalPopup<Tuple2<CatalogVariant?, _ThreadSortingMethodScope>>(
+				final choice = await showCupertinoModalPopup<(CatalogVariant?, _ThreadSortingMethodScope)>(
 					context: context,
 					useRootNavigator: false,
 					builder: (context) => CupertinoActionSheet(
@@ -377,7 +376,7 @@ class _BoardPageState extends State<BoardPage> {
 								)
 							),
 							onTap: () async {
-								Navigator.pop(context, Tuple2(subvariant, _ThreadSortingMethodScope.tab));
+								Navigator.pop(context, (subvariant, _ThreadSortingMethodScope.tab));
 							}
 						)).toList()
 					)
@@ -595,7 +594,7 @@ class _BoardPageState extends State<BoardPage> {
 								)
 							) : (variant.icon != null && variant.temporary) ? Icon(variant.icon) : Icon(variant.reverseAfterSorting ? CupertinoIcons.sort_up : CupertinoIcons.sort_down),
 							onPressed: () async {
-								final choice = await showCupertinoModalPopup<Tuple2<CatalogVariant?, _ThreadSortingMethodScope>>(
+								final choice = await showCupertinoModalPopup<(CatalogVariant?, _ThreadSortingMethodScope)>(
 									context: context,
 									useRootNavigator: false,
 									builder: (context) => CupertinoActionSheet(
@@ -614,40 +613,40 @@ class _BoardPageState extends State<BoardPage> {
 								if (choice == null) {
 									return;
 								}
-								if (choice.item1 == null) {
-									if (choice.item2 == _ThreadSortingMethodScope.tab) {
+								if (choice.$0 == null) {
+									if (choice.$1 == _ThreadSortingMethodScope.tab) {
 										_variant = null;
 										widget.onCatalogVariantChanged?.call(_variant);
 									}
-									else if (choice.item2 == _ThreadSortingMethodScope.board) {
+									else if (choice.$1 == _ThreadSortingMethodScope.board) {
 										persistence?.browserState.catalogVariants.remove(board?.name);
 									}
 									setState(() {});
 									return;
 								}
-								switch (choice.item2) {
+								switch (choice.$1) {
 									case _ThreadSortingMethodScope.global:
 										if (site?.isReddit ?? false) {
-											settings.redditCatalogVariant = choice.item1!;
+											settings.redditCatalogVariant = choice.$0!;
 										}
 										else if (site?.isHackerNews ?? false) {
-											settings.hackerNewsCatalogVariant = choice.item1!;
+											settings.hackerNewsCatalogVariant = choice.$0!;
 										}
 										else {
-											settings.catalogVariant = choice.item1!;
+											settings.catalogVariant = choice.$0!;
 										}
 										break;
 									case _ThreadSortingMethodScope.board:
-										persistence?.browserState.catalogVariants[board!.name] = choice.item1!;
+										persistence?.browserState.catalogVariants[board!.name] = choice.$0!;
 										persistence?.didUpdateBrowserState();
 										break;
 									case _ThreadSortingMethodScope.tab:
 										final otherwiseDefault = _defaultBoardVariant ?? _defaultGlobalVariant;
-										if (otherwiseDefault == choice.item1!) {
+										if (otherwiseDefault == choice.$0!) {
 											_variant = null;
 										}
 										else {
-											_variant = choice.item1!;
+											_variant = choice.$0!;
 										}
 										widget.onCatalogVariantChanged?.call(_variant);
 										setState(() {});

@@ -14,7 +14,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:provider/provider.dart';
-import 'package:tuple/tuple.dart';
 
 extension _Unnullify on ImageboardScoped<ImageboardBoard?> {
 	ImageboardScoped<ImageboardBoard> get unnullify => ImageboardScoped(
@@ -52,7 +51,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	int currentImageboardIndex = 0;
 	Imageboard get currentImageboard => allImageboards[currentImageboardIndex];
 	late List<ImageboardScoped<ImageboardBoard>> boards;
-	Tuple2<String, List<ImageboardScoped<ImageboardBoard>>> typeahead = const Tuple2('', []);
+	({String query, List<ImageboardScoped<ImageboardBoard>> results}) typeahead = const (query: '', results: []);
 	String searchString = '';
 	String? errorMessage;
 	late final ScrollController scrollController;
@@ -106,14 +105,14 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	Future<void> _updateTypeaheadBoards(String query) async {
 		if (query.isEmpty) {
 			setState(() {
-				typeahead = const Tuple2('', []);
+				typeahead = const (query: '', results: []);
 			});
 			return;
 		}
 		final newTypeaheadBoards = await currentImageboard.site.getBoardsForQuery(query);
-		if (mounted && searchString.indexOf(query) == 0 && query.length > typeahead.item1.length) {
+		if (mounted && searchString.indexOf(query) == 0 && query.length > typeahead.query.length) {
 			setState(() {
-				typeahead = Tuple2(query, newTypeaheadBoards.map(currentImageboard.scope).toList());
+				typeahead = (query: query, results: newTypeaheadBoards.map(currentImageboard.scope).toList());
 			});
 		}
 	}
@@ -162,7 +161,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			return (imageboardPriority[a.imageboard] ?? imageboards.length) - (imageboardPriority[b.imageboard] ?? imageboards.length);
 		});
 		if (searchString.isNotEmpty) {
-			for (final board in typeahead.item2) {
+			for (final board in typeahead.results) {
 				if (!filteredBoards.any((b) => b.item.name == board.item.name && b.imageboard == currentImageboard)) {
 					filteredBoards.add(board);
 				}
@@ -245,7 +244,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 												setState(() {
 													currentImageboardIndex = allImageboards.indexOf(filteredBoards.first.imageboard);
 												});
-												typeahead = const Tuple2('', []);
+												typeahead = const (query: '', results: []);
 												_updateTypeaheadBoards(searchString);
 											}
 											_focusNode.requestFocus();
@@ -594,7 +593,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 														setState(() {
 															currentImageboardIndex = allImageboards.indexOf(imageboard);
 														});
-														typeahead = const Tuple2('', []);
+														typeahead = const (query: '', results: []);
 														_updateTypeaheadBoards(searchString);
 													}
 												);
@@ -749,7 +748,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													setState(() {
 														currentImageboardIndex = allImageboards.indexOf(imageboard);
 													});
-													typeahead = const Tuple2('', []);
+													typeahead = const (query: '', results: []);
 													_updateTypeaheadBoards(searchString);
 												}
 											);

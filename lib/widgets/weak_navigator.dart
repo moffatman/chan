@@ -8,7 +8,6 @@ import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
-import 'package:tuple/tuple.dart';
 
 class WeakNavigator extends StatefulWidget {
   final Widget child;
@@ -76,7 +75,13 @@ class WeakNavigator extends StatefulWidget {
 }
 
 class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMixin {
-  final List<Tuple5<OverlayEntry, AnimationController, CurvedAnimation, AnimationController, Completer>> stack = [];
+  final List<({
+    OverlayEntry overlayEntry,
+    AnimationController forwardController,
+    CurvedAnimation forwardCurvedAnimation,
+    AnimationController coverController,
+    Completer completer
+  })> stack = [];
   final _overlayKey = GlobalKey<OverlayState>();
   late OverlayEntry rootEntry;
   late final AnimationController rootCoverAnimationController = AnimationController(vsync: this, duration: widget.duration);
@@ -128,58 +133,64 @@ class WeakNavigatorState extends State<WeakNavigator> with TickerProviderStateMi
       vsync: this,
       duration: widget.duration
     );
-    final entry = Tuple5(OverlayEntry(
-      builder: (context) => FadeTransition(
-        opacity: forwardCurvedAnimation,
-        child: _AnimatedBlur(
-          animation: coverController,
-          curve: widget.curve,
-          child: child
-        )
+    final entry = (
+      overlayEntry: OverlayEntry(
+        builder: (context) => FadeTransition(
+          opacity: forwardCurvedAnimation,
+          child: _AnimatedBlur(
+            animation: coverController,
+            curve: widget.curve,
+            child: child
+          )
+        ),
+        maintainState: true
       ),
-      maintainState: true
-    ), forwardController, forwardCurvedAnimation, coverController, Completer<T>());
+      forwardController: forwardController,
+      forwardCurvedAnimation: forwardCurvedAnimation,
+      coverController: coverController,
+      completer: Completer<T>()
+    );
     stack.add(entry);
-    _overlayKey.currentState!.insert(entry.item1);
+    _overlayKey.currentState!.insert(entry.overlayEntry);
     forwardController.forward();
     if (stack.length > 1) {
-      stack[stack.length - 2].item4.forward();
+      stack[stack.length - 2].coverController.forward();
     }
     else {
       rootCoverAnimationController.forward();
     }
-    return entry.item5.future;
+    return entry.completer.future;
   }
 
   void pop<T extends Object?>([T? result]) async {
     lightHapticFeedback();
     final entry = stack.removeLast();
     if (stack.isNotEmpty) {
-      stack.last.item4.reverse();
+      stack.last.coverController.reverse();
     }
     else {
       rootCoverAnimationController.reverse();
     }
-    await entry.item2.reverse(from: 1).orCancel;
-    entry.item1.remove();
-    entry.item5.complete(result);
-    entry.item2.dispose();
-    entry.item3.dispose();
-    entry.item4.dispose();
+    await entry.forwardController.reverse(from: 1).orCancel;
+    entry.overlayEntry.remove();
+    entry.completer.complete(result);
+    entry.forwardController.dispose();
+    entry.forwardCurvedAnimation.dispose();
+    entry.coverController.dispose();
   }
 
   Future<void> popAllExceptFirst({bool animated = false}) async {
     lightHapticFeedback();
     await Future.wait([
       rootCoverAnimationController.reverse(),
-      ...stack.map((x) => x.item2.reverse(from: 1))
+      ...stack.map((x) => x.forwardController.reverse(from: 1))
     ]);
     for (final x in stack) {
-      x.item1.remove();
-      x.item5.complete();
-      x.item2.dispose();
-      x.item3.dispose();
-      x.item4.dispose();
+      x.overlayEntry.remove();
+      x.completer.complete();
+      x.forwardController.dispose();
+      x.forwardCurvedAnimation.dispose();
+      x.coverController.dispose();
     }
     stack.clear();
   }

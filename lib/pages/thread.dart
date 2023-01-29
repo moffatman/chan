@@ -36,7 +36,6 @@ import 'package:flutter/material.dart';
 import 'package:chan/models/post.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:tuple/tuple.dart';
 
 class OpenGalleryIntent extends Intent {
 	const OpenGalleryIntent();
@@ -1344,12 +1343,12 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 								mainAxisSize: MainAxisSize.min,
 								children: [
 									for (final button in [
-										Tuple3('Scroll to top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), () => widget.listController.scrollController?.animateTo(
+										('Scroll to top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), () => widget.listController.scrollController?.animateTo(
 											0,
 											duration: const Duration(milliseconds: 200),
 											curve: Curves.ease
 										)),
-										Tuple3(describeCount(youIds.length, 'submission'), const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
+										(describeCount(youIds.length, 'submission'), const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
 												WeakNavigator.push(context, PostsPage(
 													zone: widget.zone,
 													postsIdsToShow: youIds,
@@ -1360,7 +1359,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												)
 											);
 										}),
-										Tuple3(describeCount(_youIds.length, '(You)'), const Icon(CupertinoIcons.reply_all, size: 19), _youIds.isEmpty ? null : () {
+										(describeCount(_youIds.length, '(You)'), const Icon(CupertinoIcons.reply_all, size: 19), _youIds.isEmpty ? null : () {
 												WeakNavigator.push(context, PostsPage(
 													zone: widget.zone,
 													postsIdsToShow: _youIds,
@@ -1371,7 +1370,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												)
 											);
 										}),
-										Tuple3(
+										(
 											describeCount((widget.thread?.imageCount ?? 0) + 1, 'image'),
 											const RotatedBox(
 												quarterTurns: 1,
@@ -1404,27 +1403,27 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												);
 											}
 										),
-										Tuple3('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch),
-										if (widget.persistentState.useArchive) Tuple3('Live', const ImageboardIcon(), () {
+										('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch),
+										if (widget.persistentState.useArchive) ('Live', const ImageboardIcon(), () {
 											widget.persistentState.useArchive = false;
 											widget.persistentState.save();
 											setState(() {});
 											widget.listController.blockAndUpdate();
 										})
-										else Tuple3('Archive', const Icon(CupertinoIcons.archivebox, size: 19), () async {
+										else ('Archive', const Icon(CupertinoIcons.archivebox, size: 19), () async {
 											widget.persistentState.useArchive = true;
 											widget.persistentState.save();
 											setState(() {});
 											widget.listController.blockAndUpdate();
 										}),
-										if (widget.persistentState.autoTranslate) Tuple3('Original', const Icon(Icons.translate, size: 19), () {
+										if (widget.persistentState.autoTranslate) ('Original', const Icon(Icons.translate, size: 19), () {
 											widget.persistentState.autoTranslate = false;
 											widget.persistentState.translatedPosts.clear();
 											widget.zone.clearTranslatedPosts();
 											widget.persistentState.save();
 											setState(() {});
 										})
-										else Tuple3('Translate', const Icon(Icons.translate, size: 19), () async {
+										else ('Translate', const Icon(Icons.translate, size: 19), () async {
 											widget.persistentState.autoTranslate = true;
 											for (final post in widget.persistentState.thread?.posts ?? []) {
 												if (widget.zone.translatedPost(post.id) == null) {
@@ -1439,15 +1438,15 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											widget.persistentState.save();
 											setState(() {});
 										}),
-										if (widget.useTree) Tuple3('Linear', const Icon(CupertinoIcons.list_bullet), () => setState(() {
+										if (widget.useTree) ('Linear', const Icon(CupertinoIcons.list_bullet), () => setState(() {
 											widget.persistentState.useTree = false;
 											widget.persistentState.save();
 										}))
-										else Tuple3('Tree', const Icon(CupertinoIcons.list_bullet_indent), () => setState(() {
+										else ('Tree', const Icon(CupertinoIcons.list_bullet_indent), () => setState(() {
 											widget.persistentState.useTree = true;
 											widget.persistentState.save();
 										})),
-										Tuple3('Scroll to new posts', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), _whiteCountBelow <= 0 ? null : () {
+										('Scroll to new posts', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), _whiteCountBelow <= 0 ? null : () {
 											if (widget.useTree) {
 												int targetIndex = widget.listController.items.toList().asMap().entries.tryFirstWhere((entry) {
 													return entry.key > treeModeFurthestSeenIndexBottom &&
@@ -1466,8 +1465,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0);
 											}
 										}),
-										Tuple3('Scroll to bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom),
-										if (developerMode) Tuple3('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
+										('Scroll to bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom),
+										if (developerMode) ('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
 											final id = widget.listController.lastVisibleItem?.id;
 											if (id != null) {
 												widget.persistentState.lastSeenPostId = id;
@@ -1481,17 +1480,17 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											disabledColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.4),
 											padding: const EdgeInsets.all(8),
 											minSize: 0,
-											onPressed: button.item3 == null ? null : () {
+											onPressed: button.$2 == null ? null : () {
 												lightHapticFeedback();
-												button.item3?.call();
+												button.$2?.call();
 												_buttonsAnimationController.reverse();
 											},
 											child: Row(
 												mainAxisSize: MainAxisSize.min,
 												children: [
-													Text(button.item1),
+													Text(button.$0),
 													const SizedBox(width: 8),
-													button.item2
+													button.$1
 												]
 											)
 										),

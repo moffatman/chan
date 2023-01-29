@@ -35,7 +35,6 @@ import 'package:provider/provider.dart';
 import 'package:highlight/highlight.dart';
 import 'package:flutter_highlight/themes/atom-one-dark-reasonable.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:tuple/tuple.dart';
 
 class PostSpanRenderOptions {
 	final TapGestureRecognizer? recognizer;
@@ -333,7 +332,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			yield postId;
 		}
 	}
-	Tuple2<InlineSpan, TapGestureRecognizer> _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options, int threadId) {
+	(InlineSpan, TapGestureRecognizer) _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options, int threadId) {
 		String text = '>>';
 		if (zone.thread.board != board) {
 			text += zone.site.formatBoardName(zone.site.persistence.getBoard(board)).replaceFirst(RegExp(r'\/$'), '');
@@ -358,7 +357,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				showAnimations: context.read<EffectiveSettings>().showAnimations
 			));
 		});
-		return Tuple2(TextSpan(
+		return (TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? settings.theme.secondaryColor,
@@ -367,7 +366,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer
 		), recognizer);
 	}
-	Tuple2<InlineSpan, TapGestureRecognizer> _buildDeadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
+  (InlineSpan, TapGestureRecognizer) _buildDeadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
 		String text = '>>$postId';
 		if (zone.postFromArchiveError(postId) != null) {
 			text += ' (Error: ${zone.postFromArchiveError(postId)})';
@@ -381,7 +380,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
 			if (zone.isLoadingPostFromArchive(postId) == false) zone.loadPostFromArchive(postId);
 		});
-		return Tuple2(TextSpan(
+		return (TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? settings.theme.secondaryColor,
@@ -390,7 +389,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			recognizer: recognizer
 		), recognizer);
 	}
-	Tuple2<InlineSpan, TapGestureRecognizer> _buildNormalLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options, int? threadId) {
+	(InlineSpan, TapGestureRecognizer) _buildNormalLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options, int? threadId) {
 		String text = '>>$postId';
 		if (postId == threadId) {
 			text += ' (OP)';
@@ -419,7 +418,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				}
 			}
 		});
-		return Tuple2(TextSpan(
+		return (TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? (expandedImmediatelyAbove ? settings.theme.secondaryColor.shiftSaturation(-0.5) : settings.theme.secondaryColor),
@@ -431,7 +430,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			onExit: options.onExit
 		), recognizer);
 	}
-	Tuple2<InlineSpan, TapGestureRecognizer> _build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
+	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
 		int? threadId = initialThreadId;
 		if (dead && initialThreadId == null) {
 			// Dead links do not know their thread
@@ -472,22 +471,22 @@ class PostQuoteLinkSpan extends PostSpan {
 						)
 					),
 					child: Text.rich(
-						span.item1,
+						span.$0,
 						textScaleFactor: 1
 					)
 				);
-				return Tuple2(WidgetSpan(
+				return (WidgetSpan(
 					child: IntrinsicHeight(
 						child: Builder(
 							builder: (context) {
 								if (!zone.stackIds.contains(postId)) {
-									zone.registerLineTapTarget('$board/$threadId/$postId', context, span.item2.onTap ?? () {});
+									zone.registerLineTapTarget('$board/$threadId/$postId', context, span.$1.onTap ?? () {});
 								}
 								return popup;
 							}
 						)
 					)
-				), span.item2);
+				), span.$1);
 			}
 		}
 	}
@@ -496,7 +495,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		final pair = _build(context, zone, settings, options);
 		final span = TextSpan(
 			children: [
-				pair.item1
+				pair.$0
 			]
 		);
 		if (options.addExpandingPosts && (initialThreadId == zone.thread.id && board == zone.thread.board)) {
@@ -1196,16 +1195,16 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		}
 	}
 
-	final Map<String, Tuple2<BuildContext, VoidCallback>> _lineTapCallbacks = {};
+	final Map<String, (BuildContext, VoidCallback)> _lineTapCallbacks = {};
 	void registerLineTapTarget(String id, BuildContext context, VoidCallback callback) {
-		_lineTapCallbacks[id] = Tuple2(context, callback);
+		_lineTapCallbacks[id] = (context, callback);
 	}
 
 	bool _onTap(Offset position, bool runCallback) {
 		for (final pair in _lineTapCallbacks.values) {
 			final RenderBox? box;
 			try {
-				box = pair.item1.findRenderObject() as RenderBox?;
+				box = pair.$0.findRenderObject() as RenderBox?;
 			}
 			catch (e) {
 				continue;
@@ -1218,7 +1217,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 				final y1 = box.localToGlobal(box.paintBounds.bottomRight).dy;
 				if (position.dy < y1) {
 					if (runCallback) {
-						pair.item2();
+						pair.$1();
 					}
 					return true;
 				}

@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:tuple/tuple.dart';
 import 'package:flutter/cupertino.dart';
 
 class _CircularLoadingIndicatorPainter extends CustomPainter {
@@ -124,7 +123,7 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		return a;
 	}
 
-	Tuple2<AnimationController, Future<void>> _constantVelocityAnimation(double from, double to, {bool reversed = false}) {
+	(AnimationController, Future<void>) _constantVelocityAnimation(double from, double to, {bool reversed = false}) {
 		double dest = reversed ? to : (to >= from) ? to : to + 1;
 		final a = AnimationController(
 			vsync: this,
@@ -133,7 +132,7 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 			upperBound: reversed ? from : dest
 		);
 		a.reset();
-		return Tuple2(
+		return (
 			a,
 			(reversed ? a.reverse() : a.forward()).orCancel.catchError((e) => {})
 		);
@@ -147,20 +146,20 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		// continue animate both start and end forward
 		// when startAngle reaches 0, stop that motion
 		// when endAngle reaches value, stop that motion
-		Tuple2<AnimationController, Future<void>>? s;
-		Tuple2<AnimationController, Future<void>>? e;
+		(AnimationController, Future<void>)? s;
+		(AnimationController, Future<void>)? e;
 		if (_startValue != 0) {
 			s = _constantVelocityAnimation(_startValue, 0, reversed: _startValue < value);
-			_replaceStartValueController(s.item1);
+			_replaceStartValueController(s.$0);
 		}
 		if (_endValue != value) {
 			e = _constantVelocityAnimation(_endValue, value);
-			_replaceEndValueController(e.item1);
+			_replaceEndValueController(e.$0);
 		}
 		setState(() {});
-		await s?.item2;
+		await s?.$1;
 		if (!mounted) return;
-		await e?.item2;
+		await e?.$1;
 		if (!mounted) return;
 	}
 
@@ -170,16 +169,16 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		// animate both angles forward
 		if (_sweepAngle - _continuousSweepAngle > 0.001) {
 			final x = _constantVelocityAnimation(_startValue, _endValue - _continuousSweepAngle);
-			_replaceStartValueController(x.item1);
+			_replaceStartValueController(x.$0);
 			setState(() {});
-			await x.item2;
+			await x.$1;
 			if (!mounted) return;
 		}
 		if (_continuousSweepAngle - _sweepAngle > 0.001) {
 			final x = _constantVelocityAnimation(_endValue, _startValue + _continuousSweepAngle);
-			_replaceEndValueController(x.item1);
+			_replaceEndValueController(x.$0);
 			setState(() {});
-			await x.item2;
+			await x.$1;
 			if (!mounted) return;
 		}
 		if (mounted) {

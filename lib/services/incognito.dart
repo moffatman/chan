@@ -9,11 +9,10 @@ import 'package:chan/services/persistence.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:chan/util.dart';
-import 'package:tuple/tuple.dart';
 
 class IncognitoPersistence implements Persistence {
 	final Persistence parent;
-	final _ephemeralThreadStates = <ThreadIdentifier, Tuple2<PersistentThreadState, EasyListenable>>{};
+	final _ephemeralThreadStates = <ThreadIdentifier, (PersistentThreadState, EasyListenable)>{};
 
 	IncognitoPersistence(this.parent);
 
@@ -52,7 +51,7 @@ class IncognitoPersistence implements Persistence {
     print('IncognitoPersistence.dispose()');
     print(StackTrace.current);
 		for (final pair in _ephemeralThreadStates.values) {
-			pair.item2.dispose();
+			pair.$1.dispose();
 		}
 	}
 
@@ -72,13 +71,13 @@ class IncognitoPersistence implements Persistence {
 			return existing;
 		}
 		final newState = PersistentThreadState(ephemeralOwner: this);
-		_ephemeralThreadStates[thread] = Tuple2(newState, EasyListenable());
+		_ephemeralThreadStates[thread] = (newState, EasyListenable());
 		return newState;
   }
 
   @override
   PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
-    return _ephemeralThreadStates[thread]?.item1 ?? parent.getThreadStateIfExists(thread);
+    return _ephemeralThreadStates[thread]?.$0 ?? parent.getThreadStateIfExists(thread);
   }
 
   @override
@@ -95,7 +94,7 @@ class IncognitoPersistence implements Persistence {
 
   @override
   Listenable listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
-		return _ephemeralThreadStates[thread]?.item2 ?? parent.listenForPersistentThreadStateChanges(thread);
+		return _ephemeralThreadStates[thread]?.$1 ?? parent.listenForPersistentThreadStateChanges(thread);
 	}
 
   @override
@@ -130,7 +129,7 @@ class IncognitoPersistence implements Persistence {
 	
 	@override
 	Future<void> ephemeralThreadStateDidUpdate(PersistentThreadState state) async {
-		await Future.microtask(() => _ephemeralThreadStates[state.identifier]?.item2.didUpdate());
+		await Future.microtask(() => _ephemeralThreadStates[state.identifier]?.$1.didUpdate());
 	}
 
   @override

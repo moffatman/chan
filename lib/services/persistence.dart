@@ -23,7 +23,6 @@ import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:tuple/tuple.dart';
 import 'package:uuid/uuid.dart';
 import 'package:chan/util.dart';
 import 'package:chan/main.dart' as main;
@@ -426,11 +425,11 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 	}
 
 	PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
-		return _cachedEphemeralThreadStates[thread]?.item1 ?? threadStateBox.get('${thread.board}/${thread.id}');
+		return _cachedEphemeralThreadStates[thread]?.$0 ?? threadStateBox.get('${thread.board}/${thread.id}');
 	}
 
-	static final Map<String, Map<ThreadIdentifier, Tuple2<PersistentThreadState, EasyListenable>>> _cachedEphemeralThreadStatesById = {};
-	Map<ThreadIdentifier, Tuple2<PersistentThreadState, EasyListenable>> get _cachedEphemeralThreadStates => _cachedEphemeralThreadStatesById.putIfAbsent(id, () => {});
+	static final Map<String, Map<ThreadIdentifier, (PersistentThreadState, EasyListenable)>> _cachedEphemeralThreadStatesById = {};
+	Map<ThreadIdentifier, (PersistentThreadState, EasyListenable)> get _cachedEphemeralThreadStates => _cachedEphemeralThreadStatesById.putIfAbsent(id, () => {});
 	PersistentThreadState getThreadState(ThreadIdentifier thread, {bool updateOpenedTime = false}) {
 		final existingState = threadStateBox.get('${thread.board}/${thread.id}');
 		if (existingState != null) {
@@ -446,13 +445,13 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 			return newState;
 		}
 		else {
-			return _cachedEphemeralThreadStates.putIfAbsent(thread, () => Tuple2(PersistentThreadState(ephemeralOwner: this), EasyListenable())).item1;
+			return _cachedEphemeralThreadStates.putIfAbsent(thread, () => (PersistentThreadState(ephemeralOwner: this), EasyListenable())).$0;
 		}
 	}
 
 	@override
 	Future<void> ephemeralThreadStateDidUpdate(PersistentThreadState state) async {
-		await Future.microtask(() => _cachedEphemeralThreadStates[state.identifier]?.item2.didUpdate());
+		await Future.microtask(() => _cachedEphemeralThreadStates[state.identifier]?.$1.didUpdate());
 	}
 
 	ImageboardBoard getBoard(String boardName) {
@@ -528,7 +527,7 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 	}
 
 	Listenable listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
-		return _cachedEphemeralThreadStates[thread]?.item2 ?? threadStateBox.listenable(keys: ['${thread.board}/${thread.id}']);
+		return _cachedEphemeralThreadStates[thread]?.$1 ?? threadStateBox.listenable(keys: ['${thread.board}/${thread.id}']);
 	}
 
 	Future<void> storeBoards(List<ImageboardBoard> newBoards) async {
@@ -569,7 +568,7 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 	static void didChangeBrowserHistoryStatus() {
 		for (final x in _cachedEphemeralThreadStatesById.values) {
 			for (final y in x.values) {
-				y.item2.dispose();
+				y.$1.dispose();
 			}
 		}
 		_cachedEphemeralThreadStatesById.clear();

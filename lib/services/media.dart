@@ -15,7 +15,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:image/image.dart';
 import 'package:mutex/mutex.dart';
-import 'package:tuple/tuple.dart';
 import 'package:pool/pool.dart';
 
 extension HandleSpacesInPath on Uri {
@@ -312,14 +311,14 @@ class MediaConversion {
 							outputBitrate = min(outputBitrate, (8 * (maximumSizeInBytes! / (outputDurationInMilliseconds! / 1000))).round());
 						}
 					}
-					Tuple2<int, int>? newSize;
+					(int, int)? newSize;
 					if (scan.width != null && scan.height != null) {
 						if (outputFileExtension != 'jpg' && outputFileExtension != 'png') {
 							double scaleDownFactorSq = (outputBitrate/(2 * scan.width! * scan.height!)) / _additionalScaleDownFactor;
 							if (scaleDownFactorSq < 1) {
 								final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
 								final newHeight = (scan.height! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
-								newSize = Tuple2(newWidth, newHeight);
+								newSize = (newWidth, newHeight);
 							}
 						}
 						else if (maximumSizeInBytes != null) {
@@ -327,13 +326,13 @@ class MediaConversion {
 							if (scaleDownFactor > 1) {
 								final newWidth = ((scan.width! / scaleDownFactor) / 2).round() * 2;
 								final newHeight = ((scan.height! / scaleDownFactor) / 2).round() * 2;
-								newSize = Tuple2(newWidth, newHeight);
+								newSize = (newWidth, newHeight);
 							}
 						}
 						if (maximumDimension != null) {
 							final fittedSize = applyBoxFit(BoxFit.contain, Size(scan.width!.toDouble(), scan.height!.toDouble()), Size.square(maximumDimension!.toDouble())).destination;
-							if (newSize == null || fittedSize.width < newSize.item1) {
-								newSize = Tuple2(fittedSize.width.round(), fittedSize.height.round());
+							if (newSize == null || fittedSize.width < newSize.$0) {
+								newSize = (fittedSize.width.round(), fittedSize.height.round());
 							}
 						}
 					}
@@ -376,7 +375,7 @@ class MediaConversion {
 									...['-vcodec', 'h264_videotoolbox']
 								else
 									...['-c:v', 'libx264', '-preset', 'medium', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'],
-							if (newSize != null) ...['-vf', 'scale=${newSize.item1}:${newSize.item2}'],
+							if (newSize != null) ...['-vf', 'scale=${newSize.$0}:${newSize.$1}'],
 							if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
 							convertedFile.path
 						];

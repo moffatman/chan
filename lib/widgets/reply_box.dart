@@ -38,7 +38,6 @@ import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:provider/provider.dart';
 import 'package:heic_to_jpg/heic_to_jpg.dart';
 import 'package:string_similarity/string_similarity.dart';
-import 'package:tuple/tuple.dart';
 
 const _captchaContributionServer = 'https://captcha.chance.surf';
 
@@ -109,8 +108,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	double _replyBoxHeightOffsetAtPanStart = 0;
 	bool _willHideOnPanEnd = false;
 	late final FocusNode _rootFocusNode;
-	Tuple2<String, ValueListenable<double?>>? _attachmentProgress;
-	Tuple2<String, int>? _spamFilteredPostId;
+	(String, ValueListenable<double?>)? _attachmentProgress;
+	(String, int)? _spamFilteredPostId;
 	bool get hasSpamFilteredPostToCheck => _spamFilteredPostId != null;
 
 	bool get _haveValidCaptcha {
@@ -281,8 +280,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void checkForSpamFilteredPost(Post post) {
-		if (post.board != _spamFilteredPostId?.item1) return;
-		if (post.id != _spamFilteredPostId?.item2) return;
+		if (post.board != _spamFilteredPostId?.$0) return;
+		if (post.id != _spamFilteredPostId?.$1) return;
 		final similarity = post.span.buildText().similarityTo(_textFieldController.text);
 		print('Spam filter similarity: $similarity');
 		if (similarity > 0.90) {
@@ -341,7 +340,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		showToast(context: context, message: 'Converting: ${solutions.join(', ')}', icon: CupertinoIcons.photo);
 		transcode.start();
 		setState(() {
-			_attachmentProgress = Tuple2('Converting', transcode.progress);
+			_attachmentProgress = ('Converting', transcode.progress);
 		});
 		try {
 			final result = await transcode.result;
@@ -381,7 +380,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		final settings = context.read<EffectiveSettings>();
 		final progress = ValueNotifier<double?>(null);
 		setState(() {
-			_attachmentProgress = Tuple2('Processing', progress);
+			_attachmentProgress = ('Processing', progress);
 		});
 		try {
 			final board = context.read<Persistence>().getBoard(widget.board);
@@ -739,7 +738,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				spamFiltered = _captchaSolution?.cloudflare ?? false;
 			}
 			if (spamFiltered) {
-				_spamFilteredPostId = Tuple2(widget.board, receipt.id);
+				_spamFilteredPostId = (widget.board, receipt.id);
 			}
 			else {
 				_textFieldController.clear();
@@ -1376,14 +1375,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							) : _attachmentProgress != null ? Row(
 								mainAxisSize: MainAxisSize.min,
 								children: [
-									Text(_attachmentProgress!.item1),
+									Text(_attachmentProgress!.$0),
 									const SizedBox(width: 16),
 									SizedBox(
 										width: 100,
 										child: ClipRRect(
 											borderRadius: BorderRadius.circular(4),
 											child: ValueListenableBuilder<double?>(
-												valueListenable: _attachmentProgress!.item2,
+												valueListenable: _attachmentProgress!.$1,
 												builder: (context, value, _) => LinearProgressIndicator(
 													value: value,
 													minHeight: 20,

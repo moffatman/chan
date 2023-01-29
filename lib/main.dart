@@ -45,7 +45,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:native_drag_n_drop/native_drag_n_drop.dart';
 import 'package:rxdart/subjects.dart';
-import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:chan/pages/tab.dart';
 import 'package:provider/provider.dart';
@@ -346,14 +345,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool _isScrolling = false;
 	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
-	final Map<String, Tuple2<Notifications, StreamSubscription<BoardThreadOrPostIdentifier>>> _notificationsSubscriptions = {};
+	final Map<String, ({Notifications notifications, StreamSubscription<BoardThreadOrPostIdentifier> subscription})> _notificationsSubscriptions = {};
 	late StreamSubscription<String?> _linkSubscription;
 	late StreamSubscription<String?> _fakeLinkSubscription;
 	late StreamSubscription<List<SharedMediaFile>> _sharedFilesSubscription;
 	late StreamSubscription<String> _sharedTextSubscription;
 	final _searchPageKey = GlobalKey<SearchPageState>();
 	// Sometimes duplicate links are received due to use of multiple link handling packages
-	Tuple2<DateTime, String>? _lastLink;
+	({DateTime time, String link})? _lastLink;
 
 	bool get showTabPopup => _showTabPopup;
 	set showTabPopup(bool setting) {
@@ -448,10 +447,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		if (link == null) {
 			return;
 		}
-		if (_lastLink != null && link == _lastLink?.item2 && DateTime.now().isBefore(_lastLink!.item1.add(const Duration(seconds: 1)))) {
+		if (_lastLink != null && link == _lastLink?.link && DateTime.now().isBefore(_lastLink!.time.add(const Duration(seconds: 1)))) {
 			return;
 		}
-		_lastLink = Tuple2(DateTime.now(), link);
+		_lastLink = (time: DateTime.now(), link: link);
 		if (link.startsWith('chance:')) {
 			final uri = Uri.parse(link);
 			if (uri.host == 'theme') {
@@ -1455,9 +1454,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			return const ChanSplashPage();
 		}
 		for (final board in ImageboardRegistry.instance.imageboards) {
-			if (_notificationsSubscriptions[board.key]?.item1 != board.notifications) {
-				_notificationsSubscriptions[board.key]?.item2.cancel();
-				_notificationsSubscriptions[board.key] = Tuple2(board.notifications, board.notifications.tapStream.listen((target) {
+			if (_notificationsSubscriptions[board.key]?.notifications != board.notifications) {
+				_notificationsSubscriptions[board.key]?.subscription.cancel();
+				_notificationsSubscriptions[board.key] = (notifications: board.notifications, subscription: board.notifications.tapStream.listen((target) {
 					_onNotificationTapped(board, target);
 				}));
 			}
@@ -1785,7 +1784,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_sharedTextSubscription.cancel();
 		_devNotificationsSubscription?.cancel();
 		for (final subscription in _notificationsSubscriptions.values) {
-			subscription.item2.cancel();
+			subscription.subscription.cancel();
 		}
 	}
 }

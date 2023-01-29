@@ -35,7 +35,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:tuple/tuple.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -1251,11 +1250,11 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					}
 				),
 				for (final theme in [
-					Tuple5('light theme', settings.lightTheme, settings.lightThemeKey, (key) {
+					('light theme', settings.lightTheme, settings.lightThemeKey, (key) {
 						settings.lightThemeKey = key;
 						settings.handleThemesAltered();
 					}, CupertinoIcons.sun_max),
-					Tuple5('dark theme', settings.darkTheme, settings.darkThemeKey, (key) {
+					('dark theme', settings.darkTheme, settings.darkThemeKey, (key) {
 						settings.darkThemeKey = key;
 						settings.handleThemesAltered();
 					}, CupertinoIcons.moon)
@@ -1263,9 +1262,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					Row(
 						children: [
 							const SizedBox(width: 16),
-							Icon(theme.item5),
+							Icon(theme.$4),
 							const SizedBox(width: 8),
-							Text(theme.item3),
+							Text(theme.$2),
 							const SizedBox(width: 16),
 							Expanded(
 								child: Row(
@@ -1288,7 +1287,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																		children: [
 																			const Icon(CupertinoIcons.paintbrush),
 																			const SizedBox(width: 8),
-																			Text('Picking ${theme.item1}')
+																			Text('Picking ${theme.$0}')
 																		]
 																	)
 																),
@@ -1325,7 +1324,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																										child: AutoSizeText(themeNames[i], style: TextStyle(
 																											fontSize: 18,
 																											color: settings.themes[themeNames[i]]?.primaryColor,
-																											fontWeight: themeNames[i] == theme.item3 ? FontWeight.bold : null
+																											fontWeight: themeNames[i] == theme.$2 ? FontWeight.bold : null
 																										))
 																									),
 																									Container(
@@ -1461,10 +1460,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															)
 														);
 														if (selectedKey != null) {
-															theme.item4(selectedKey);
+															theme.$3(selectedKey);
 														}
 													},
-													child: Text('Pick ${theme.item1}', textAlign: TextAlign.center)
+													child: Text('Pick ${theme.$0}', textAlign: TextAlign.center)
 												)
 											)
 										)
@@ -1476,30 +1475,30 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					Container(
 						margin: const EdgeInsets.only(left: 16, right: 16),
 						decoration: BoxDecoration(
-							color: theme.item2.barColor,
+							color: theme.$1.barColor,
 							borderRadius: const BorderRadius.all(Radius.circular(8))
 						),
 						child: SingleChildScrollView(
 							scrollDirection: Axis.horizontal,
 							child: Row(
-								children: <Tuple4<String, Color, ValueChanged<Color>, Color?>>[
-									Tuple4('Primary', theme.item2.primaryColor, (c) => theme.item2.primaryColor = c, theme.item2.copiedFrom?.primaryColor),
-									Tuple4('Secondary', theme.item2.secondaryColor, (c) => theme.item2.secondaryColor = c, theme.item2.copiedFrom?.secondaryColor),
-									Tuple4('Bar', theme.item2.barColor, (c) => theme.item2.barColor = c, theme.item2.copiedFrom?.barColor),
-									Tuple4('Background', theme.item2.backgroundColor, (c) => theme.item2.backgroundColor = c, theme.item2.copiedFrom?.backgroundColor),
-									Tuple4('Quote', theme.item2.quoteColor, (c) => theme.item2.quoteColor = c, theme.item2.copiedFrom?.quoteColor)
+								children: <(String, Color, ValueChanged<Color>, Color?)>[
+									('Primary', theme.$1.primaryColor, (c) => theme.$1.primaryColor = c, theme.$1.copiedFrom?.primaryColor),
+									('Secondary', theme.$1.secondaryColor, (c) => theme.$1.secondaryColor = c, theme.$1.copiedFrom?.secondaryColor),
+									('Bar', theme.$1.barColor, (c) => theme.$1.barColor = c, theme.$1.copiedFrom?.barColor),
+									('Background', theme.$1.backgroundColor, (c) => theme.$1.backgroundColor = c, theme.$1.copiedFrom?.backgroundColor),
+									('Quote', theme.$1.quoteColor, (c) => theme.$1.quoteColor = c, theme.$1.copiedFrom?.quoteColor)
 								].map((color) => Column(
 									mainAxisSize: MainAxisSize.min,
 									children: [
 										const SizedBox(height: 16),
-										Text(color.item1, style: TextStyle(color: theme.item2.primaryColor)),
+										Text(color.$0, style: TextStyle(color: theme.$1.primaryColor)),
 										const SizedBox(height: 16),
 										GestureDetector(
 											child: Container(
 												decoration: BoxDecoration(
 													borderRadius: const BorderRadius.all(Radius.circular(8)),
-													border: Border.all(color: theme.item2.primaryColor),
-													color: color.item2
+													border: Border.all(color: theme.$1.primaryColor),
+													color: color.$1
 												),
 												width: 50,
 												height: 50
@@ -1509,7 +1508,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 													barrierDismissible: true,
 													context: context,
 													builder: (context) => CupertinoActionSheet(
-														title: Text('Select ${color.item1} Color'),
+														title: Text('Select ${color.$0} Color'),
 														message: Theme(
 															data: ThemeData(
 																textTheme: Theme.of(context).textTheme.apply(
@@ -1526,8 +1525,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																		Material(
 																			color: Colors.transparent,
 																			child: ColorPicker(
-																				pickerColor: color.item2,
-																				onColorChanged: color.item3,
+																				pickerColor: color.$1,
+																				onColorChanged: color.$2,
 																				enableAlpha: false,
 																				portraitOnly: true,
 																				displayThumbColor: true,
@@ -1536,12 +1535,12 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																		),
 																		CupertinoButton(
 																			padding: const EdgeInsets.all(8),
-																			color: color.item4,
-																			onPressed: color.item2 == color.item4 ? null : () {
-																				color.item3(color.item4!);
+																			color: color.$3,
+																			onPressed: color.$1 == color.$3 ? null : () {
+																				color.$2(color.$3!);
 																				settings.handleThemesAltered();
 																			},
-																			child: Text('Reset to original color', style: TextStyle(color: (color.item4?.computeLuminance() ?? 0) > 0.5 ? Colors.black : Colors.white))
+																			child: Text('Reset to original color', style: TextStyle(color: (color.$3?.computeLuminance() ?? 0) > 0.5 ? Colors.black : Colors.white))
 																		)
 																	]
 																)
@@ -3028,9 +3027,9 @@ class SettingsThreadsPanel extends StatelessWidget {
 					final oldThreads = threadStateBox.values.where((state) {
 						return (state.savedTime == null) && state.lastOpenedTime.compareTo(cutoff).isNegative;
 					}).toList();
-					return Tuple2(days, oldThreads);
+					return (days, oldThreads);
 				}).toList();
-				oldThreadRows.removeRange(oldThreadRows.lastIndexWhere((r) => r.item2.isNotEmpty) + 1, oldThreadRows.length);
+				oldThreadRows.removeRange(oldThreadRows.lastIndexWhere((r) => r.$1.isNotEmpty) + 1, oldThreadRows.length);
 				confirmDelete(List<PersistentThreadState> toDelete) async {
 					final confirmed = await showCupertinoDialog<bool>(
 						context: context,
@@ -3087,11 +3086,11 @@ class SettingsThreadsPanel extends StatelessWidget {
 							...oldThreadRows.map((entry) {
 								return TableRow(
 									children: [
-										Text('Over ${entry.item1} days old', textAlign: TextAlign.left),
-										Text(entry.item2.length.toString(), textAlign: TextAlign.right),
+										Text('Over ${entry.$0} days old', textAlign: TextAlign.left),
+										Text(entry.$1.length.toString(), textAlign: TextAlign.right),
 										CupertinoButton(
 											padding: EdgeInsets.zero,
-											onPressed: entry.item2.isEmpty ? null : () => confirmDelete(entry.item2),
+											onPressed: entry.$1.isEmpty ? null : () => confirmDelete(entry.$1),
 											child: const Text('Delete')
 										)
 									]
@@ -3237,22 +3236,22 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 				),
 				const SizedBox(height: 16),
 				for (final field in [
-					Tuple3('Board', _boardController, null),
-					Tuple3(isThread ? 'Thread no.' : 'Post no.', _idController, null),
-					Tuple3('Reply Count', _replyCountController, null),
-					if (isThread) Tuple3('Subject', _subjectController, null),
-					Tuple3('Name', _nameController, null),
-					Tuple3('Poster ID', _posterIdController, null),
-					Tuple3('Flag', _flagController, null),
-					Tuple3('Filename', _filenameController, null),
-					Tuple3('Text', _textController, 5),
+					('Board', _boardController, null),
+					(isThread ? 'Thread no.' : 'Post no.', _idController, null),
+					('Reply Count', _replyCountController, null),
+					if (isThread) ('Subject', _subjectController, null),
+					('Name', _nameController, null),
+					('Poster ID', _posterIdController, null),
+					('Flag', _flagController, null),
+					('Filename', _filenameController, null),
+					('Text', _textController, 5),
 				]) ...[
-					Text(field.item1),
+					Text(field.$0),
 					Padding(
 						padding: const EdgeInsets.all(16),
 						child: CupertinoTextField(
-							controller: field.item2,
-							minLines: field.item3,
+							controller: field.$1,
+							minLines: field.$2,
 							maxLines: null,
 							onChanged: (_) {
 								_recalculate();

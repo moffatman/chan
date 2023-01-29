@@ -16,7 +16,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:tuple/tuple.dart';
 
 const double _overscrollTriggerThreshold = 100;
 const _treeAnimationDuration = Duration(milliseconds: 350);
@@ -798,7 +797,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		return height > 100 || parentCount > 4 || previousEncounter.treeChildrenCount > 3;
 	}
 
-	Tuple2<List<RefreshableListItem<T>>, List<List<int>>> _reassembleAsTree(List<RefreshableListItem<T>> linear) {
+	(List<RefreshableListItem<T>>, List<List<int>>) _reassembleAsTree(List<RefreshableListItem<T>> linear) {
 		// In case the list is not in sequential order by id
 		final orphans = <int, List<_TreeNode<RefreshableListItem<T>>>>{};
 		final orphanStubs = <int, List<int>>{};
@@ -808,7 +807,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final adapter = widget.treeAdapter;
 		if (adapter == null) {
 			print('Tried to reassemble a tree of $T with a null adapter');
-			return Tuple2(linear, []);
+			return (linear, []);
 		}
 
 		for (final item in linear) {
@@ -953,7 +952,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				depth: 0
 			));
 		}
-		return Tuple2(out, collapsed);
+		return (out, collapsed);
 	}
 
 	@override
@@ -1009,9 +1008,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			values.insertAll(0, pinnedValues);
 			if (widget.useTree) {
 				final tree = _reassembleAsTree(values);
-				values = tree.item1;
+				values = tree.$0;
 				_filterCollapsedItems.clear();
-				for (final collapsed in tree.item2) {
+				for (final collapsed in tree.$1) {
 					if (_filterCollapsedExpandedItems.any((x) => listEquals(x, collapsed))) {
 						continue;
 					}
@@ -1615,7 +1614,7 @@ class RefreshableListController<T extends Object> {
 	double? bottomOffset;
 	String? contentId;
 	RefreshableListState<T>? state;
-	final Map<Tuple2<int, bool>, List<Completer<void>>> _itemCacheCallbacks = {};
+	final Map<(int, bool), List<Completer<void>>> _itemCacheCallbacks = {};
 	int? currentTargetIndex;
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onSlowScroll);
@@ -1646,12 +1645,12 @@ class RefreshableListController<T extends Object> {
 			item.cachedOffset = newOffset;
 			final keys = _itemCacheCallbacks.keys.toList();
 			for (final position in keys) {
-				if (position.item2 && index >= position.item1) {
+				if (position.$1 && index >= position.$0) {
 					// scrolling down
 					_itemCacheCallbacks[position]?.forEach((c) => c.complete());
 					_itemCacheCallbacks.remove(position);
 				}
-				else if (!position.item2 && index <= position.item1) {
+				else if (!position.$1 && index <= position.$0) {
 					// scrolling up
 					_itemCacheCallbacks[position]?.forEach((c) => c.complete());
 					_itemCacheCallbacks.remove(position);
@@ -1799,7 +1798,7 @@ class RefreshableListController<T extends Object> {
 				// prevent overscroll
 				estimate = min(estimate, scrollController!.position.maxScrollExtent);
 			}
-			_itemCacheCallbacks.putIfAbsent(Tuple2(targetIndex, estimate > scrollController!.position.pixels), () => []).add(completer);
+			_itemCacheCallbacks.putIfAbsent((targetIndex, estimate > scrollController!.position.pixels), () => []).add(completer);
 			final delay = Duration(milliseconds: min(300, max(1, (estimate - scrollController!.position.pixels).abs() ~/ 100)));
 			scrollController!.animateTo(
 				estimate,
@@ -1917,7 +1916,7 @@ class RefreshableListController<T extends Object> {
 			return;
 		}
 		final c = Completer();
-		_itemCacheCallbacks.putIfAbsent(const Tuple2(0, true), () => []).add(c);
+		_itemCacheCallbacks.putIfAbsent(const (0, true), () => []).add(c);
 		await c.future;
 	}
 

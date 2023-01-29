@@ -15,7 +15,7 @@ class ThumbnailImageProvider extends ImageProvider<ThumbnailImageProvider> {
 	});
 
 	@override
-	ImageStreamCompleter loadBuffer(ThumbnailImageProvider key, DecoderBufferCallback decode) {
+	ImageStreamCompleter loadImage(ThumbnailImageProvider key, ImageDecoderCallback decode) {
 		return MultiFrameImageStreamCompleter(
 			codec: () async {
 				assert(key == this);

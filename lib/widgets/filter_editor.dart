@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:tuple/tuple.dart';
 
 class FilterEditor extends StatefulWidget {
 	final bool showRegex;
@@ -57,7 +56,7 @@ class _FilterEditorState extends State<FilterEditor> {
 				return v.excludeBoards.contains(widget.forBoard!) || (v.boards.isNotEmpty && !v.boards.contains(widget.forBoard!));
 			});
 		}
-		Future<Tuple2<bool, CustomFilter?>?> editFilter(CustomFilter? originalFilter) {
+		Future<(bool, CustomFilter?)?> editFilter(CustomFilter? originalFilter) {
 			final filter = originalFilter ?? widget.blankFilter ?? CustomFilter(
 				configuration: '',
 				pattern: RegExp('', caseSensitive: false)
@@ -80,7 +79,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			bool notify = filter.outputType.notify;
 			bool collapse = filter.outputType.collapse;
 			const labelStyle = TextStyle(fontWeight: FontWeight.bold);
-			return showCupertinoModalPopup<Tuple2<bool, CustomFilter?>>(
+			return showCupertinoModalPopup<(bool, CustomFilter?)>(
 				context: context,
 				builder: (context) => StatefulBuilder(
 					builder: (context, setInnerState) => CupertinoActionSheet(
@@ -406,16 +405,16 @@ class _FilterEditorState extends State<FilterEditor> {
 												topMargin: 0,
 												margin: EdgeInsets.zero,
 												children: [
-													Tuple3('Highlight', highlight, (v) => highlight = v),
-													Tuple3('Pin-to-top', pinToTop, (v) => pinToTop = v),
-													Tuple3('Auto-save', autoSave, (v) => autoSave = v),
-													Tuple3('Notify', notify, (v) => notify = v),
-													Tuple3('Collapse (tree mode)', collapse, (v) => collapse = v),
+													('Highlight', highlight, (v) => highlight = v),
+													('Pin-to-top', pinToTop, (v) => pinToTop = v),
+													('Auto-save', autoSave, (v) => autoSave = v),
+													('Notify', notify, (v) => notify = v),
+													('Collapse (tree mode)', collapse, (v) => collapse = v),
 												].map((t) => CupertinoListTile(
-													title: Text(t.item1),
-													trailing: t.item2 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+													title: Text(t.$0),
+													trailing: t.$1 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap: () {
-														t.item3(!t.item2);
+														t.$2(!t.$1);
 														hide = !(highlight || pinToTop || autoSave || notify || collapse);
 														setInnerState(() {});
 													},
@@ -429,12 +428,12 @@ class _FilterEditorState extends State<FilterEditor> {
 						actions: [
 							if (originalFilter != null) CupertinoDialogAction(
 								isDestructiveAction: true,
-								onPressed: () => Navigator.pop(context, const Tuple2(true, null)),
+								onPressed: () => Navigator.pop(context, const (true, null)),
 								child: const Text('Delete')
 							),
 							CupertinoDialogAction(
 								onPressed: () {
-									Navigator.pop(context, Tuple2(false, CustomFilter(
+									Navigator.pop(context, (false, CustomFilter(
 										pattern: RegExp(patternController.text, caseSensitive: isCaseSensitive),
 										patternFields: patternFields,
 										boards: boards,
@@ -625,11 +624,11 @@ class _FilterEditorState extends State<FilterEditor> {
 														final newFilter = await editFilter(filter.value);
 														if (newFilter != null) {
 															final lines = settings.filterConfiguration.split('\n');
-															if (newFilter.item1) {
+															if (newFilter.$0) {
 																lines.removeAt(filter.key);
 															}
 															else {
-																lines[filter.key] = newFilter.item2!.toStringConfiguration();
+																lines[filter.key] = newFilter.$1!.toStringConfiguration();
 															}
 															settings.filterConfiguration = lines.join('\n');
 															regexController.text = settings.filterConfiguration;
@@ -670,8 +669,8 @@ class _FilterEditorState extends State<FilterEditor> {
 								leading: const Icon(CupertinoIcons.plus),
 								onTap: () async {
 									final newFilter = await editFilter(null);
-									if (newFilter?.item2 != null) {
-										settings.filterConfiguration += '\n${newFilter!.item2!.toStringConfiguration()}';
+									if (newFilter?.$1 != null) {
+										settings.filterConfiguration += '\n${newFilter!.$1!.toStringConfiguration()}';
 										regexController.text = settings.filterConfiguration;
 									}
 								}

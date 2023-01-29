@@ -5,7 +5,6 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/filter_editor.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:tuple/tuple.dart';
 
 enum _BoardWatchingStatus {
 	off,
@@ -66,17 +65,17 @@ class _BoardWatchControlsPage extends State<BoardWatchControlsPage> {
 									topMargin: 0,
 									margin: EdgeInsets.zero,
 									children: const [
-										Tuple2(_BoardWatchingStatus.off, 'Off'),
-										Tuple2(_BoardWatchingStatus.threadsOnly, 'Threads only'),
-										Tuple2(_BoardWatchingStatus.threadsAndPosts, 'All posts (not reliable')
+										(_BoardWatchingStatus.off, 'Off'),
+										(_BoardWatchingStatus.threadsOnly, 'Threads only'),
+										(_BoardWatchingStatus.threadsAndPosts, 'All posts (not reliable')
 									].map((v) => CupertinoListTile(
-										title: Text(v.item2),
-										trailing: status == v.item1 ? const Icon(CupertinoIcons.check_mark, size: 18) : const SizedBox.shrink(),
+										title: Text(v.$1),
+										trailing: status == v.$0 ? const Icon(CupertinoIcons.check_mark, size: 18) : const SizedBox.shrink(),
 										onTap: () {
-											if (v.item1 != _BoardWatchingStatus.off) {
+											if (v.$0 != _BoardWatchingStatus.off) {
 												widget.imageboard.notifications.subscribeToBoard(
 													boardName: widget.board.name,
-													threadsOnly: v.item1 == _BoardWatchingStatus.threadsOnly
+													threadsOnly: v.$0 == _BoardWatchingStatus.threadsOnly
 												);
 											}
 											else {

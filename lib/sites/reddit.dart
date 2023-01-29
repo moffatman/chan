@@ -16,7 +16,6 @@ import 'package:html/parser.dart';
 import 'package:html_unescape/html_unescape_small.dart';
 import 'package:markdown/markdown.dart' as markdown;
 import 'package:html/dom.dart' as dom;
-import 'package:tuple/tuple.dart';
 
 class _SuperscriptSyntax extends markdown.InlineSyntax {
   static const _pattern = r'\^([^ ]+)';
@@ -97,22 +96,22 @@ extension _RedditApiName on ThreadVariant {
 }
 
 class SiteReddit extends ImageboardSite {
-	Tuple2<int, DateTime>? _earliestKnown;
-	Tuple2<int, DateTime>? _latestKnown;
+	(int, DateTime)? _earliestKnown;
+	(int, DateTime)? _latestKnown;
 	void _updateTimeEstimateData(int id, DateTime time) {
-		if (_earliestKnown == null || id < _earliestKnown!.item1) {
-			_earliestKnown = Tuple2(id, time);
+		if (_earliestKnown == null || id < _earliestKnown!.$0) {
+			_earliestKnown = (id, time);
 		}
-		if (_latestKnown == null || id > _latestKnown!.item1) {
-			_latestKnown = Tuple2(id, time);
+		if (_latestKnown == null || id > _latestKnown!.$0) {
+			_latestKnown = (id, time);
 		}
 	}
 	DateTime _estimateTime(int id) {
 		if (_earliestKnown == null || _latestKnown == null) {
 			return DateTime(2000);
 		}
-		final slope = (_latestKnown!.item2.millisecondsSinceEpoch - _earliestKnown!.item2.millisecondsSinceEpoch) / (_latestKnown!.item1 - _earliestKnown!.item1);
-		return DateTime.fromMillisecondsSinceEpoch((slope * (id - _earliestKnown!.item1)).round() + _earliestKnown!.item2.millisecondsSinceEpoch);
+		final slope = (_latestKnown!.$1.millisecondsSinceEpoch - _earliestKnown!.$1.millisecondsSinceEpoch) / (_latestKnown!.$0 - _earliestKnown!.$0);
+		return DateTime.fromMillisecondsSinceEpoch((slope * (id - _earliestKnown!.$0)).round() + _earliestKnown!.$1.millisecondsSinceEpoch);
 	}
 
 	SiteReddit() : super([]);
