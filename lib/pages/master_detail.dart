@@ -23,6 +23,16 @@ class MasterDetailHint {
 		required this.primaryInterceptorKey,
 		required this.currentValue
 	});
+
+	@override
+	bool operator == (Object other) =>
+		other is MasterDetailHint &&
+		other.twoPane == twoPane &&
+		other.primaryInterceptorKey == primaryInterceptorKey &&
+		other.currentValue == currentValue;
+	
+	@override
+	int get hashCode => Object.hash(twoPane, primaryInterceptorKey, currentValue);
 }
 
 const dontAutoPopSettings = RouteSettings(
