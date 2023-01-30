@@ -582,10 +582,10 @@ class _ExpanderState extends State<Expander> with TickerProviderStateMixin {
 	void didUpdateWidget(Expander oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		if (widget.expanded && !oldWidget.expanded) {
-			animation.forward(from: 0.0);
+			animation.forward();
 		}
 		else if (!widget.expanded && oldWidget.expanded) {
-			animation.reverse(from: 1.0);
+			animation.reverse();
 		}
 		else if (widget.duration != oldWidget.duration) {
 			animation.duration = widget.duration;

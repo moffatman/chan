@@ -353,6 +353,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _searchPageKey = GlobalKey<SearchPageState>();
 	// Sometimes duplicate links are received due to use of multiple link handling packages
 	({DateTime time, String link})? _lastLink;
+	bool _hidTabPopupFromScroll = false;
 
 	bool get showTabPopup => _showTabPopup;
 	set showTabPopup(bool setting) {
@@ -377,6 +378,21 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			_isScrolling = false;
 			if (_queuedUpdateTabs) {
 				Persistence.didUpdateTabs();
+			}
+		}
+		else if (notification is ScrollUpdateNotification) {
+			final delta = notification.scrollDelta ?? 0;
+			if (delta > 0 && showTabPopup) {
+				setState(() {
+					showTabPopup = false;
+					_hidTabPopupFromScroll = true;
+				});
+			}
+			else if (delta < 0 && _hidTabPopupFromScroll) {
+				setState(() {
+					showTabPopup = true;
+					_hidTabPopupFromScroll = false;
+				});
 			}
 		}
 		return false;
