@@ -227,6 +227,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									child: CupertinoTextField(
 										autofocus: settings.boardSwitcherHasKeyboardFocus,
 										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+										smartDashesType: SmartDashesType.disabled,
+										smartQuotesType: SmartQuotesType.disabled,
 										autocorrect: false,
 										placeholder: 'Board...',
 										textAlign: TextAlign.center,

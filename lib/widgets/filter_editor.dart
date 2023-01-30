@@ -96,7 +96,9 @@ class _FilterEditorState extends State<FilterEditor> {
 										child: SizedBox(
 											width: 300,
 											child: CupertinoTextField(
-												controller: labelController
+												controller: labelController,
+												smartDashesType: SmartDashesType.disabled,
+												smartQuotesType: SmartQuotesType.disabled
 											)
 										)
 									),
@@ -109,6 +111,8 @@ class _FilterEditorState extends State<FilterEditor> {
 												controller: patternController,
 												autocorrect: false,
 												enableIMEPersonalizedLearning: false,
+												smartDashesType: SmartDashesType.disabled,
+												smartQuotesType: SmartQuotesType.disabled,
 												enableSuggestions: false
 											)
 										)
@@ -549,6 +553,8 @@ class _FilterEditorState extends State<FilterEditor> {
 							controller: regexController,
 							enableSuggestions: false,
 							enableIMEPersonalizedLearning: false,
+							smartDashesType: SmartDashesType.disabled,
+							smartQuotesType: SmartQuotesType.disabled,
 							autocorrect: false,
 							onChanged: (_) {
 								if (!dirty) {

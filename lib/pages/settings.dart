@@ -841,6 +841,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 													child: CupertinoTextField(
 														autofocus: true,
 														controller: controller,
+														keyboardType: TextInputType.number,
 														onSubmitted: (s) {
 															Navigator.pop(context);
 														}
@@ -1369,6 +1370,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																																content: CupertinoTextField(
 																																	autofocus: true,
 																																	controller: controller,
+																																	smartDashesType: SmartDashesType.disabled,
+																																	smartQuotesType: SmartQuotesType.disabled,
 																																	onSubmitted: (s) => Navigator.pop(context, s)
 																																),
 																																actions: [
@@ -2862,6 +2865,8 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 										child: CupertinoTextField(
 											autofocus: true,
 											controller: controller,
+											smartDashesType: SmartDashesType.disabled,
+											smartQuotesType: SmartQuotesType.disabled,
 											minLines: 5,
 											maxLines: 5,
 											onSubmitted: (s) => Navigator.pop(context, s)
@@ -3253,6 +3258,8 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 							controller: field.$1,
 							minLines: field.$2,
 							maxLines: null,
+							smartDashesType: SmartDashesType.disabled,
+							smartQuotesType: SmartQuotesType.disabled,
 							onChanged: (_) {
 								_recalculate();
 							}
@@ -3325,6 +3332,8 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 								onChanged: (value) {
 									fields[field] = value;
 								},
+								smartDashesType: SmartDashesType.disabled,
+								smartQuotesType: SmartQuotesType.disabled,
 								keyboardType: field.inputType
 							),
 							const SizedBox(height: 16),

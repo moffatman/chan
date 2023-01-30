@@ -998,6 +998,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												textCapitalization: TextCapitalization.none,
 												autocorrect: false,
 												enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+												smartDashesType: SmartDashesType.disabled,
+												smartQuotesType: SmartQuotesType.disabled,
 												keyboardAppearance: CupertinoTheme.of(context).brightness
 											)
 										),
@@ -1120,6 +1122,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							keyboardAppearance: CupertinoTheme.of(context).brightness,
 							controller: _nameFieldController,
 							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+							smartDashesType: SmartDashesType.disabled,
+							smartQuotesType: SmartQuotesType.disabled,
 							onChanged: (s) {
 								context.read<Persistence>().browserState.postingNames[widget.board] = s;
 								context.read<Persistence>().didUpdateBrowserState();
@@ -1132,6 +1136,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							maxLines: 1,
 							placeholder: 'Options',
 							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+							smartDashesType: SmartDashesType.disabled,
+							smartQuotesType: SmartQuotesType.disabled,
 							keyboardAppearance: CupertinoTheme.of(context).brightness,
 							controller: _optionsFieldController,
 							onChanged: (s) {
@@ -1173,6 +1179,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							CupertinoTextField(
 								enabled: !loading,
 								enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+								smartDashesType: SmartDashesType.disabled,
+								smartQuotesType: SmartQuotesType.disabled,
 								controller: _subjectFieldController,
 								maxLines: 1,
 								placeholder: 'Subject',
@@ -1187,6 +1195,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									CupertinoTextField(
 										enabled: !loading,
 										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+										smartDashesType: SmartDashesType.disabled,
+										smartQuotesType: SmartQuotesType.disabled,
 										controller: _textFieldController,
 										contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
 											anchors: editableTextState.contextMenuAnchors,
@@ -1268,6 +1278,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									child: CupertinoTextField(
 										autofocus: true,
 										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+										smartDashesType: SmartDashesType.disabled,
+										smartQuotesType: SmartQuotesType.disabled,
 										minLines: 5,
 										maxLines: 5,
 										controller: controller,

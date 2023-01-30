@@ -852,6 +852,8 @@ Future<void> editStringList({
 														autofocus: true,
 														autocorrect: false,
 														enableIMEPersonalizedLearning: false,
+														smartDashesType: SmartDashesType.disabled,
+														smartQuotesType: SmartQuotesType.disabled,
 														controller: controller,
 														onSubmitted: (s) => Navigator.pop(context, s)
 													),
@@ -929,6 +931,8 @@ Future<void> editStringList({
 																		controller: controller,
 																		autocorrect: false,
 																		enableIMEPersonalizedLearning: false,
+																		smartDashesType: SmartDashesType.disabled,
+																		smartQuotesType: SmartQuotesType.disabled,
 																		onSubmitted: (s) => Navigator.pop(context, s)
 																	),
 																	actions: [

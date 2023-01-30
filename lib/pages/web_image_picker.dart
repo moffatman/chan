@@ -71,6 +71,8 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 				middle: CupertinoSearchTextField(
 					focusNode: urlFocusNode,
 					controller: urlController,
+					smartDashesType: SmartDashesType.disabled,
+					smartQuotesType: SmartQuotesType.disabled,
 					onSubmitted: (value) {
 						var url = Uri.parse(value);
 						if (url.scheme.isEmpty) {
