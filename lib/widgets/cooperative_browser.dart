@@ -23,7 +23,7 @@ class CooperativeInAppBrowser extends StatefulWidget {
 }
 
 class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
-	final Set<AxisDirection> _allowedDirections = {...AxisDirection.values};
+	final Set<AxisDirection> _allowedDirections = {};
 	InAppWebViewController? _controller;
 	late Timer _pollAllowedDirections;
 	bool _pageReady = false;
