@@ -801,7 +801,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final width = (context.findRenderObject() as RenderBox?)?.paintBounds.width ?? 500;
 		final height = (widget.treeAdapter?.estimateHeight(item.item, width) ?? 0);
 		final parentCount = widget.treeAdapter?.getParentIds(item.item).length ?? 0;
-		return height > 100 || parentCount > 4 || previousEncounter.treeChildrenCount > 3;
+		return height > (100 * max(parentCount, 3)) || previousEncounter.treeChildrenCount > 3;
 	}
 
 	(List<RefreshableListItem<T>>, List<List<int>>) _reassembleAsTree(List<RefreshableListItem<T>> linear) {
