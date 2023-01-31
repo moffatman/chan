@@ -587,6 +587,8 @@ class SavedSettings extends HiveObject {
 	String userAgent;
 	@HiveField(104)
 	int captcha4ChanCustomNumLetters;
+	@HiveField(105)
+	bool tabMenuHidesWhenScrollingDown;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -693,6 +695,7 @@ class SavedSettings extends HiveObject {
 		int? launchCount,
 		String? userAgent,
 		int? captcha4ChanCustomNumLetters,
+		bool? tabMenuHidesWhenScrollingDown,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -825,7 +828,8 @@ class SavedSettings extends HiveObject {
 		hideDefaultNamesInCatalog = hideDefaultNamesInCatalog ?? false,
 		launchCount = launchCount ?? 0,
 		userAgent = userAgent ?? userAgents.first,
-		captcha4ChanCustomNumLetters = captcha4ChanCustomNumLetters ?? 6 {
+		captcha4ChanCustomNumLetters = captcha4ChanCustomNumLetters ?? 6,
+		tabMenuHidesWhenScrollingDown = tabMenuHidesWhenScrollingDown ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1647,6 +1651,13 @@ class EffectiveSettings extends ChangeNotifier {
 	int get captcha4ChanCustomNumLetters => _settings.captcha4ChanCustomNumLetters;
 	set captcha4ChanCustomNumLetters(int setting) {
 		_settings.captcha4ChanCustomNumLetters = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get tabMenuHidesWhenScrollingDown => _settings.tabMenuHidesWhenScrollingDown;
+	set tabMenuHidesWhenScrollingDown(bool setting) {
+		_settings.tabMenuHidesWhenScrollingDown = setting;
 		_settings.save();
 		notifyListeners();
 	}

@@ -952,6 +952,22 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						]
 					),
 				],
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.arrow_up_down),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Tab bar hides when scrolling down')
+						),
+						CupertinoSwitch(
+							value: settings.tabMenuHidesWhenScrollingDown,
+							onChanged: (newValue) {
+								settings.tabMenuHidesWhenScrollingDown = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 32)
 			]
 		);

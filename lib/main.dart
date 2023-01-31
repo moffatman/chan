@@ -380,7 +380,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				Persistence.didUpdateTabs();
 			}
 		}
-		else if (notification is ScrollUpdateNotification) {
+		else if (settings.tabMenuHidesWhenScrollingDown && notification is ScrollUpdateNotification) {
 			if (notification.metrics.axis == Axis.vertical && notification.dragDetails != null && notification.metrics.extentAfter > 100) {
 				final delta = notification.scrollDelta ?? 0;
 				if (delta > 0 && showTabPopup) {
