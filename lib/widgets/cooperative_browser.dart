@@ -87,7 +87,7 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 		if (rect == null) {
 			return true;
 		}
-		return const EdgeInsets.only(top: 64, left: 64, right: 64, bottom: 128).deflateRect(rect).contains(offset);
+		return const EdgeInsets.only(top: 64, left: 64, right: 64, bottom: 200).deflateRect(rect).contains(offset);
 	}
 
 	@override
@@ -142,7 +142,7 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 										},
 										gestureRecognizers: {
 											Factory<WeakPanGestureRecognizer>(() => WeakPanGestureRecognizer(
-												weakness: 0.05,
+												weakness: 0.49,
 												allowedDirections: _allowedDirections,
 												shouldAcceptRegardlessOfGlobalMovementDirection: _shouldPlatformViewAccept,
 												debugOwner: this
