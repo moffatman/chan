@@ -572,6 +572,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			else {
 				newList = (await Future.wait([widget.listUpdater(), Future<List<T>?>.delayed(minUpdateDuration)])).first?.toList();
 			}
+			if (!mounted) return;
 			if (updatingWithId != widget.id) {
 				updatingNow.value = false;
 				return;
