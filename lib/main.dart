@@ -1235,6 +1235,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	Widget _buildTabList(Axis axis) {
 		return ReorderableList(
+			controller: _tabListController,
 			scrollDirection: axis,
 			physics: const BouncingScrollPhysics(),
 			onReorder: (oldIndex, newIndex) {
