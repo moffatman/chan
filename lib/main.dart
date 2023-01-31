@@ -1136,8 +1136,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	Widget _buildNewTabIcon({required Axis axis, bool hideLabel = false}) {
 		return Builder(
-			builder: (context) => GestureDetector(
-				onLongPress: () async {
+			builder: (context) {
+				Future<void> showNewTabPopup() async {
 					lightHapticFeedback();
 					final ro = context.findRenderObject()! as RenderBox;
 					showTabMenu(
@@ -1197,36 +1197,44 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							)
 						]
 					);
-				},
-				child: CupertinoButton(
-					padding: const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8),
-					child: Opacity(
-						opacity: 0.5,
-						child: FittedBox(
-							child: Column(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									const Icon(CupertinoIcons.add),
-									if (!hideLabel) ...[
-										const SizedBox(height: 4),
-										const Text("New", style: TextStyle(fontSize: 15))
+				}
+				return GestureDetector(
+					onVerticalDragEnd: (details) {
+						final velocity = details.primaryVelocity ?? 0;
+						if (velocity < 0) {
+							showNewTabPopup();
+						}
+					},
+					onLongPress: showNewTabPopup,
+					child: CupertinoButton(
+						padding: const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8),
+						child: Opacity(
+							opacity: 0.5,
+							child: FittedBox(
+								child: Column(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										const Icon(CupertinoIcons.add),
+										if (!hideLabel) ...[
+											const SizedBox(height: 4),
+											const Text("New", style: TextStyle(fontSize: 15))
+										]
 									]
-								]
+								)
 							)
-						)
-					),
-					onPressed: () {
-						lightHapticFeedback();
-						_addNewTab(activate: true);
-					}
-				)
-			)
+						),
+						onPressed: () {
+							lightHapticFeedback();
+							_addNewTab(activate: true);
+						}
+					)
+				);
+			}
 		);
 	}
 
 	Widget _buildTabList(Axis axis) {
 		return ReorderableList(
-			controller: _tabListController,
 			scrollDirection: axis,
 			physics: const BouncingScrollPhysics(),
 			onReorder: (oldIndex, newIndex) {
