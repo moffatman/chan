@@ -205,8 +205,6 @@ class _Captcha4ChanCustomPainter extends CustomPainter{
 	}
 }
 
-int numLetters = 6;
-
 class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	String? errorMessage;
 	DateTime? tryAgainAt;
@@ -221,6 +219,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	final _pickerKeys = List.generate(6, (i) => GlobalKey());
 	double _guessingProgress = 0.0;
 	CancelableOperation<Chan4CustomCaptchaGuess>? _guessInProgress;
+
+	int get numLetters => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters;
+	set numLetters(int setting) => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters = setting;
 
 	Future<void> _animateGuess() async {
 		setState(() {

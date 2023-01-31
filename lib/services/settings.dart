@@ -585,6 +585,8 @@ class SavedSettings extends HiveObject {
 	int launchCount;
 	@HiveField(103)
 	String userAgent;
+	@HiveField(104)
+	int captcha4ChanCustomNumLetters;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -690,6 +692,7 @@ class SavedSettings extends HiveObject {
 		bool? hideDefaultNamesInCatalog,
 		int? launchCount,
 		String? userAgent,
+		int? captcha4ChanCustomNumLetters,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -821,7 +824,8 @@ class SavedSettings extends HiveObject {
 		hackerNewsCatalogVariant = hackerNewsCatalogVariant ?? CatalogVariant.hackerNewsTop,
 		hideDefaultNamesInCatalog = hideDefaultNamesInCatalog ?? false,
 		launchCount = launchCount ?? 0,
-		userAgent = userAgent ?? userAgents.first {
+		userAgent = userAgent ?? userAgents.first,
+		captcha4ChanCustomNumLetters = captcha4ChanCustomNumLetters ?? 6 {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1636,6 +1640,13 @@ class EffectiveSettings extends ChangeNotifier {
 	String get userAgent => _settings.userAgent;
 	set userAgent(String setting) {
 		_settings.userAgent = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	int get captcha4ChanCustomNumLetters => _settings.captcha4ChanCustomNumLetters;
+	set captcha4ChanCustomNumLetters(int setting) {
+		_settings.captcha4ChanCustomNumLetters = setting;
 		_settings.save();
 		notifyListeners();
 	}
