@@ -1207,7 +1207,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					},
 					onLongPress: showNewTabPopup,
 					child: CupertinoButton(
-						padding: const EdgeInsets.only(top: 16, bottom: 16, left: 8, right: 8),
+						padding: const EdgeInsets.all(16),
 						child: Opacity(
 							opacity: 0.5,
 							child: FittedBox(
@@ -1528,20 +1528,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										child: Column(
 											children: [
 												Expanded(
-													child: Column(
-														children: [
-															Expanded(
-																child: AnimatedBuilder(
-																	animation: activeBrowserTab,
-																	builder: (context, _) => _buildTabList(Axis.vertical)
-																)
-															),
-															_buildNewTabIcon(
-																axis: Axis.vertical,
-																hideLabel: hideTabletLayoutLabels
-															)
-														]
+													child: AnimatedBuilder(
+														animation: activeBrowserTab,
+														builder: (context, _) => _buildTabList(Axis.vertical)
 													)
+												),
+												_buildNewTabIcon(
+													axis: Axis.vertical,
+													hideLabel: hideTabletLayoutLabels
 												),
 												_buildTabletIcon(1, NotifyingIcon(
 														icon: const Icon(CupertinoIcons.bookmark),
