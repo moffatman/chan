@@ -484,17 +484,7 @@ class SiteReddit extends ImageboardSite {
 		}
 	}
 
-	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
-		try {
-			await _updateBoardIfNeeded(board);
-		}
-		catch (e, st) {
-			if (board != 'popular') {
-				Future.error(e, st);
-			}
-		}
-		final suffix = {
+	static String _getCatalogSuffix(CatalogVariant? variant) => const {
 			CatalogVariant.redditHot: '/hot.json',
 			CatalogVariant.redditNew: '/new.json',
 			CatalogVariant.redditRising: '/rising.json',
@@ -511,7 +501,18 @@ class SiteReddit extends ImageboardSite {
 			CatalogVariant.redditTopPastYear: '/top.json?t=year',
 			CatalogVariant.redditTopAllTime: '/top.json?t=all',
 		}[variant] ?? '.json';
-		final response = await client.get('https://$baseUrl/r/$board$suffix');
+
+	@override
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
+		try {
+			await _updateBoardIfNeeded(board);
+		}
+		catch (e, st) {
+			if (board != 'popular') {
+				Future.error(e, st);
+			}
+		}
+		final response = await client.get('https://$baseUrl/r/$board${_getCatalogSuffix(variant)}');
 		return (response.data['data']['children'] as List<dynamic>).map((d) => _makeThread(d['data'])..currentPage = 1).toList();
 	}
 
@@ -604,8 +605,8 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalog(Thread after) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/r/${after.board}.json', {
+	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async {
+		final response = await client.getUri(Uri.https(baseUrl, '/r/${after.board}${_getCatalogSuffix(variant)}', {
 			'after': 't3_${toRedditId(after.id)}'
 		}));
 		final newPage = (after.currentPage ?? 1) + 1;

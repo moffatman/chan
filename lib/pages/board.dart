@@ -832,7 +832,7 @@ class _BoardPageState extends State<BoardPage> {
 															});
 															return list;
 														}),
-														listExtender: (after) => site.getMoreCatalog(after).then((list) async {
+														listExtender: (after) => site.getMoreCatalog(after, variant: variant).then((list) async {
 															for (final thread in list) {
 																await thread.preinit(catalog: true);
 															}

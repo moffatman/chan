@@ -200,7 +200,9 @@ enum CatalogVariant {
 	@HiveField(38)
 	hackerNewsShow,
 	@HiveField(39)
-	hackerNewsJobs
+	hackerNewsJobs,
+	@HiveField(40)
+	hackerNewsSecondChancePool
 }
 
 extension CatalogVariantMetadata on CatalogVariant {
@@ -292,7 +294,8 @@ extension CatalogVariantMetadata on CatalogVariant {
 		CatalogVariant.hackerNewsBest: CupertinoIcons.star,
 		CatalogVariant.hackerNewsAsk: CupertinoIcons.chat_bubble_2,
 		CatalogVariant.hackerNewsShow: CupertinoIcons.chart_bar_square,
-		CatalogVariant.hackerNewsJobs: CupertinoIcons.briefcase
+		CatalogVariant.hackerNewsJobs: CupertinoIcons.briefcase,
+		CatalogVariant.hackerNewsSecondChancePool: CupertinoIcons.arrow_2_circlepath
 	}[this];
 	String get name => const {
 		CatalogVariant.unsorted: 'Bump order',
@@ -334,7 +337,8 @@ extension CatalogVariantMetadata on CatalogVariant {
 		CatalogVariant.hackerNewsBest: 'Best',
 		CatalogVariant.hackerNewsAsk: 'Ask HN',
 		CatalogVariant.hackerNewsShow: 'Show HN',
-		CatalogVariant.hackerNewsJobs: 'Jobs'
+		CatalogVariant.hackerNewsJobs: 'Jobs',
+		CatalogVariant.hackerNewsSecondChancePool: 'Second Chance'
 	}[this]!;
 	bool get countsUnreliable {
 		switch (this) {
@@ -859,7 +863,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get supportsPosting => true;
 	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds) async => throw UnimplementedError();
 	/// If an empty list is returned from here, the bottom of the catalog has been reached.
-	Future<List<Thread>> getMoreCatalog(Thread after) async => [];
+	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async => [];
 	bool get isHackerNews => false;
 	bool get isReddit => false;
 	bool get supportsMultipleBoards => true;

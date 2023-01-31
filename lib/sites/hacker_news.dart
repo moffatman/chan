@@ -391,21 +391,40 @@ class SiteHackerNews extends ImageboardSite {
 		return NoCaptchaRequest();
 	}
 
+	Future<List<int>> _getSecondChancePoolIds(int? after) async {
+		final response = await client.getUri(Uri.https(baseUrl, '/pool', {
+			if (after != null) 'next': after.toString()
+		}));
+		final doc = parse(response.data);
+		final ids = doc.querySelectorAll('.athing').map((e) => int.parse(e.id));
+		if (after != null) {
+			// Avoid duplicating the "after" id
+			return ids.skip(1).toList();
+		}
+		return ids.toList();
+	}
 
-	List<int>? _lastCatalogIds;
+	final _lastCatalogIds = <CatalogVariant?, List<int>>{};
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
-		final name = {
-			CatalogVariant.hackerNewsTop: 'topstories',
-			CatalogVariant.hackerNewsNew: 'newstories',
-			CatalogVariant.hackerNewsBest: 'beststories',
-			CatalogVariant.hackerNewsAsk: 'askstories',
-			CatalogVariant.hackerNewsShow: 'showstories',
-			CatalogVariant.hackerNewsJobs: 'jobstories',
-		}[variant]!;
-		final response = await client.get('https://hacker-news.firebaseio.com/v0/$name.json');
-		_lastCatalogIds = (response.data as List).cast<int>();
-		return await Future.wait(_lastCatalogIds!.take(catalogThreadsPerPage).map(_getThreadForCatalog));
+		final List<int> data;
+		if (variant == CatalogVariant.hackerNewsSecondChancePool) {
+			data = await _getSecondChancePoolIds(null);
+		}
+		else {
+			final name = {
+				CatalogVariant.hackerNewsTop: 'topstories',
+				CatalogVariant.hackerNewsNew: 'newstories',
+				CatalogVariant.hackerNewsBest: 'beststories',
+				CatalogVariant.hackerNewsAsk: 'askstories',
+				CatalogVariant.hackerNewsShow: 'showstories',
+				CatalogVariant.hackerNewsJobs: 'jobstories',
+			}[variant]!;
+			final response = await client.get('https://hacker-news.firebaseio.com/v0/$name.json');
+			data = (response.data as List).cast<int>();
+		}
+		_lastCatalogIds[variant] = data;
+		return await Future.wait(data.take(catalogThreadsPerPage).map(_getThreadForCatalog));
 	}
 
 	@override
@@ -429,12 +448,19 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalog(Thread after) async {
-		final index = _lastCatalogIds?.indexOf(after.id) ?? -1;
-		if (index == -1) {
-			return [];
+	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async {
+		if (variant == CatalogVariant.hackerNewsSecondChancePool) {
+			final ids = await _getSecondChancePoolIds(after.id);
+			return await Future.wait(ids.map(_getThreadForCatalog));
 		}
-		return await Future.wait(_lastCatalogIds!.skip(index + 1).take(catalogThreadsPerPage).map(_getThreadForCatalog));
+		else {
+			final lastCatalogIds = _lastCatalogIds[variant];
+			final index = lastCatalogIds?.indexOf(after.id) ?? -1;
+			if (index == -1) {
+				return [];
+			}
+			return await Future.wait(lastCatalogIds!.skip(index + 1).take(catalogThreadsPerPage).map(_getThreadForCatalog));
+		}
 	}
 
 	@override
@@ -558,6 +584,10 @@ class SiteHackerNews extends ImageboardSite {
 		CatalogVariantGroup(
 			name: 'Jobs',
 			variants: [CatalogVariant.hackerNewsJobs]
+		),
+		CatalogVariantGroup(
+			name: 'Second Chance',
+			variants: [CatalogVariant.hackerNewsSecondChancePool]
 		)
 	];
 
