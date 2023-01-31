@@ -63,7 +63,7 @@ class SelectablePostPage extends StatelessWidget {
 										anchors: editableTextState.contextMenuAnchors,
 										buttonItems: [
 											...editableTextState.contextMenuButtonItems,
-											ContextMenuButtonItem(
+											if (zone.site.supportsPosting && !zone.thread.isArchived) ContextMenuButtonItem(
 												onPressed: () {
 													onQuoteText(editableTextState.textEditingValue.selection.textInside(editableTextState.textEditingValue.text));
 												},
@@ -84,7 +84,7 @@ class SelectablePostPage extends StatelessWidget {
 								Align(
 									alignment: Alignment.centerRight,
 									child: CupertinoButton.filled(
-										onPressed: () {
+										onPressed: !zone.site.supportsPosting || zone.thread.isArchived ? null : () {
 											onQuoteText(post.span.buildText());
 											WeakNavigator.pop(context);
 										},
