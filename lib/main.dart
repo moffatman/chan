@@ -381,18 +381,20 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			}
 		}
 		else if (notification is ScrollUpdateNotification) {
-			final delta = notification.scrollDelta ?? 0;
-			if (delta > 0 && showTabPopup) {
-				setState(() {
-					showTabPopup = false;
-					_hidTabPopupFromScroll = true;
-				});
-			}
-			else if (delta < 0 && _hidTabPopupFromScroll) {
-				setState(() {
-					showTabPopup = true;
-					_hidTabPopupFromScroll = false;
-				});
+			if (notification.metrics.axis == Axis.vertical && notification.dragDetails != null && notification.metrics.extentAfter > 100) {
+				final delta = notification.scrollDelta ?? 0;
+				if (delta > 0 && showTabPopup) {
+					setState(() {
+						showTabPopup = false;
+						_hidTabPopupFromScroll = true;
+					});
+				}
+				else if (delta < 0 && _hidTabPopupFromScroll) {
+					setState(() {
+						showTabPopup = true;
+						_hidTabPopupFromScroll = false;
+					});
+				}
 			}
 		}
 		return false;
