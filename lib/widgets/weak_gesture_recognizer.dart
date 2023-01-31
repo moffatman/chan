@@ -499,10 +499,12 @@ class WeakPanGestureRecognizer extends WeakDragGestureRecognizer {
 	final double weakness;
 	final bool allowedToAccept;
 	final Set<AxisDirection> allowedDirections;
+	final bool Function(Offset localOrigin)? shouldAcceptRegardlessOfGlobalMovementDirection;
 
 	WeakPanGestureRecognizer({
 		required this.weakness,
 		this.allowedToAccept = true,
+		this.shouldAcceptRegardlessOfGlobalMovementDirection,
 		this.allowedDirections = const {
       AxisDirection.up,
       AxisDirection.down,
@@ -522,6 +524,9 @@ class WeakPanGestureRecognizer extends WeakDragGestureRecognizer {
 	}
 
   bool _globalMovementDirectionIsOK() {
+    if (shouldAcceptRegardlessOfGlobalMovementDirection?.call(_initialPosition.local) ?? false) {
+      return true;
+    }
     return allowedDirections.any((d) {
       switch (d) {
         case AxisDirection.up:

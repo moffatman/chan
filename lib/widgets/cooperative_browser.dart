@@ -82,6 +82,14 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 		setState(() {});
 	}
 
+	bool _shouldPlatformViewAccept(Offset offset) {
+		final rect = context.findRenderObject()?.semanticBounds;
+		if (rect == null) {
+			return true;
+		}
+		return const EdgeInsets.only(top: 64, left: 64, right: 64, bottom: 128).deflateRect(rect).contains(offset);
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		return WillPopScope(
@@ -134,8 +142,9 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 										},
 										gestureRecognizers: {
 											Factory<WeakPanGestureRecognizer>(() => WeakPanGestureRecognizer(
-												weakness: 0.5,
+												weakness: 0.05,
 												allowedDirections: _allowedDirections,
+												shouldAcceptRegardlessOfGlobalMovementDirection: _shouldPlatformViewAccept,
 												debugOwner: this
 												)
 												..gestureSettings = MediaQuery.maybeGestureSettingsOf(context)
