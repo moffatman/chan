@@ -524,7 +524,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			title += ' - ${context.read<EffectiveSettings>().filterProfanity(threadTitle)}';
 		}
 		else {
-			title.replaceFirst(RegExp(r'\/$'), '');
+			title = title.replaceFirst(RegExp(r'\/$'), '');
 			title += '/${widget.thread.id}';
 		}
 		if (persistentState.thread?.isArchived ?? false) {
