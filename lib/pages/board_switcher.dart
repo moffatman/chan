@@ -372,8 +372,14 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																				),
 																				CupertinoSegmentedControl<bool>(
 																					children: const {
-																						false: Text('All boards'),
-																						true: Text('Only favourites')
+																						false: Padding(
+																							padding: EdgeInsets.all(8),
+																							child: Text('All boards', textAlign: TextAlign.center)
+																						),
+																						true: Padding(
+																							padding: EdgeInsets.all(8),
+																							child: Text('Only favourites', textAlign: TextAlign.center)
+																						)
 																					},
 																					groupValue: settings.onlyShowFavouriteBoardsInSwitcher,
 																					onValueChanged: (setting) {
