@@ -153,7 +153,10 @@ class SiteHackerNews extends ImageboardSite {
 						}
 					}
 					else if (node.localName == 'pre') {
-						yield PostCodeSpan(node.text);
+						yield PostCodeSpan(node.text.replaceFirst(RegExp(r'\n$'), ''));
+						if (node.text.endsWith('\n')) {
+							yield const PostLineBreakSpan();
+						}
 					}
 					else {
 						yield* Site4Chan.parsePlaintext(node.text);
