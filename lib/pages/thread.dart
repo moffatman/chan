@@ -1219,7 +1219,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			final lastSeenPostId = widget.persistentState.lastSeenPostId ?? widget.persistentState.id;
 			_redCountBelow = _youIds.binarySearchCountAfter((p) => p > lastSeenPostId);
 			_whiteCountBelow = _filteredPosts!.binarySearchCountAfter((p) => p.id > lastSeenPostId);
-			_greyCount = max(0, widget.listController.itemsLength - (widget.listController.lastVisibleIndex + 1) - 1 - _whiteCountBelow);
+			_greyCount = max(0, widget.listController.itemsLength - (widget.listController.lastVisibleIndex + 1) - _whiteCountBelow);
 		}
 		_lastLastVisibleItemId = lastVisibleItemId;
 		setState(() {});
