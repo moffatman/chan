@@ -62,9 +62,11 @@ class _VideoControlsState extends State<VideoControls> {
 		if (!mounted) {
 			return;
 		}
-		final newPosition = await widget.controller.position;
-		if (newPosition != null) {
-			position.value = newPosition;
+		if (!_currentlyWithinLongPress) {
+			final newPosition = await widget.controller.position;
+			if (newPosition != null) {
+				position.value = newPosition;
+			}
 		}
 		Future.delayed(_positionUpdatePeriod, _updatePosition);
 	}
@@ -80,10 +82,11 @@ class _VideoControlsState extends State<VideoControls> {
 			final duration = value.duration.inMilliseconds;
 			final newPosition = Duration(milliseconds: (relativePosition.clamp(0, 1) * (duration)).round());
 			if (!_mutex.isLocked) {
-				await _mutex.protect(() async {
+				_mutex.protect(() async {
 					await widget.controller.seekTo(newPosition);
 					await widget.controller.play();
 					await widget.controller.pause();
+					await Future.delayed(const Duration(milliseconds: 50));
 				});
 			}
 			position.value = newPosition;
