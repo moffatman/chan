@@ -862,8 +862,9 @@ class _BoardPageState extends State<BoardPage> {
 																		child: Row(
 																			mainAxisSize: MainAxisSize.min,
 																			children: [
-																				GestureDetector(
-																					onTap: () async {
+																				CupertinoButton(
+																					padding: EdgeInsets.zero,
+																					onPressed: () async {
 																						lightHapticFeedback();
 																						await scrollToTop();
 																						_page = _listController.items.first.item.currentPage ?? 1;
