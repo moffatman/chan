@@ -238,7 +238,7 @@ class Site4Chan extends ImageboardSite {
 	ImageboardFlag? _makeFlag(dynamic data, String board) {
 		if (data['country'] != null) {
 			return ImageboardFlag(
-				name: data['country_name'],
+				name: unescape.convert(data['country_name']),
 				imageUrl: Uri.https(staticUrl, '/image/country/${data['country'].toLowerCase()}.gif').toString(),
 				imageWidth: 16,
 				imageHeight: 11
@@ -246,7 +246,7 @@ class Site4Chan extends ImageboardSite {
 		}
 		else if (data['troll_country'] != null) {
 			return ImageboardFlag(
-				name: data['country_name'],
+				name: unescape.convert(data['country_name']),
 				imageUrl: Uri.https(staticUrl, '/image/country/troll/${data['troll_country'].toLowerCase()}.gif').toString(),
 				imageWidth: 16,
 				imageHeight: 11
@@ -254,7 +254,7 @@ class Site4Chan extends ImageboardSite {
 		}
 		else if (data['board_flag'] != null) {
 			return ImageboardFlag(
-				name: data['flag_name'],
+				name: unescape.convert(data['flag_name']),
 				imageUrl: Uri.https(staticUrl, '/image/flags/$board/${data['board_flag'].toLowerCase()}.gif').toString(),
 				imageWidth: 16,
 				imageHeight: 11
