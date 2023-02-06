@@ -1,7 +1,7 @@
 import 'package:linkify/linkify.dart';
 
 final _looseUrlRegex = RegExp(
-  r'^(.*?)((https?:\/\/)?(www\.)?([-a-zA-Z0-9@:%_.\+~#=]{2,256}\.[a-z]{2,})\b[-a-zA-Z0-9@:%_\+.~#?&//=]*)',
+  r'^(.*?)((https?:\/\/)?(www\.)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b[-a-zA-Z0-9@:%_\+.~#?&//=]*)',
   caseSensitive: false,
   dotAll: true,
 );
