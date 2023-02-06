@@ -1528,6 +1528,15 @@ List<InlineSpan> buildPostInfoRow({
 	bool interactive = true
 }) {
 	return [
+		if (post.deleted) ...[
+			TextSpan(
+				text: '[Deleted] ',
+				style: TextStyle(
+					color: settings.theme.secondaryColor,
+					fontWeight: FontWeight.w600
+				)
+			),
+		],
 		if (post.id == post.threadId && zone.thread.title != null) TextSpan(
 			text: '${zone.thread.title} ',
 			style: TextStyle(fontWeight: FontWeight.w600, color: settings.theme.quoteColor.shiftHue(40).shiftSaturation(-0.3))

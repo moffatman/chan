@@ -87,11 +87,11 @@ class Thread implements Filterable {
 		}
 	}
 
-	void integratePosts(List<Post> newPosts) {
+	void mergePosts(List<Post> otherPosts, void Function(List<Post> list, Post newPost) placeNewPost) {
 		final postIdToListIndex = {
 			for (final pair in posts_.asMap().entries) pair.value.id: pair.key
 		};
-		for (final newChild in newPosts) {
+		for (final newChild in otherPosts) {
 			final indexToReplace = postIdToListIndex[newChild.id];
 			if (indexToReplace != null) {
 				final postToReplace = posts_[indexToReplace];
@@ -101,7 +101,7 @@ class Thread implements Filterable {
 				}
 			}
 			else {
-				posts_.add(newChild);
+				placeNewPost(posts_, newChild);
 				// This only handles single-parent case but no real imageboards have omitted replies
 				final parentIndex = postIdToListIndex[newChild.parentId];
 				if (parentIndex != null) {

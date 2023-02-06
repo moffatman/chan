@@ -95,6 +95,7 @@ class Post implements Filterable {
 	final int? upvotes;
 	final int? parentId;
 	bool hasOmittedReplies;
+	bool deleted;
 
 	Post({
 		required this.board,
@@ -115,7 +116,8 @@ class Post implements Filterable {
 		required this.attachments,
 		this.upvotes,
 		this.parentId,
-		this.hasOmittedReplies = false
+		this.hasOmittedReplies = false,
+		this.deleted = false
 	});
 
 	@override
@@ -172,10 +174,10 @@ class Post implements Filterable {
 	bool get isStub => spanFormat == PostSpanFormat.stub;
 
 	@override
-	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id && other.upvotes == upvotes;
+	bool operator ==(dynamic other) => other is Post && other.board == board && other.id == id && other.upvotes == upvotes && other.deleted == deleted;
 
 	@override
-	int get hashCode => Object.hash(board, id, upvotes);
+	int get hashCode => Object.hash(board, id, upvotes, deleted);
 }
 
 class PostAdapter extends TypeAdapter<Post> {
@@ -224,6 +226,7 @@ class PostAdapter extends TypeAdapter<Post> {
 			parentId: fields[18] as int?,
 			//fields[19] was used for int omittedChildrenCount
 			hasOmittedReplies: fields[20] as bool? ?? false,
+			deleted: fields[21] as bool? ?? false,
     );
   }
 
@@ -274,6 +277,9 @@ class PostAdapter extends TypeAdapter<Post> {
 		//fields[19] was used for int omittedChildrenCount
 		if (obj.hasOmittedReplies) {
 			writer..writeByte(20)..write(true);
+		}
+		if (obj.deleted) {
+			writer..writeByte(21)..write(true);
 		}
 		// End with field zero (terminator)
 		writer

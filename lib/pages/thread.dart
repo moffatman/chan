@@ -428,7 +428,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			_checkForeground();
 			notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: _foreground);
 		}
-		newThread.integratePosts(tmpPersistentState.thread?.posts_ ?? []);
+		newThread.mergePosts(tmpPersistentState.thread?.posts_ ?? [], site.placeOrphanPost);
 		if (newThread != tmpPersistentState.thread) {
 			await newThread.preinit();
 			tmpPersistentState.thread = newThread;
@@ -505,8 +505,9 @@ class _ThreadPageState extends State<ThreadPage> {
 			if (thread == null) {
 				throw Exception('Thread not loaded');
 			}
-			final newChildren = await context.read<ImageboardSite>().getStubPosts(thread.identifier, ids);
-			thread.integratePosts(newChildren);
+			final site = context.read<ImageboardSite>();
+			final newChildren = await site.getStubPosts(thread.identifier, ids);
+			thread.mergePosts(newChildren, site.placeOrphanPost);
 			if (ids.length == 1 && ids.single.childId == ids.single.parentId) {
 				// Clear hasOmittedReplies in case it has only omitted shadowbanned replies
 				thread.posts_.tryFirstWhere((p) => p.id == ids.single.childId)?.hasOmittedReplies = false;
