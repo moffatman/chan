@@ -778,6 +778,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				}
 			});
 		}
+		WidgetsBinding.instance.addPostFrameCallback((_) {
+			if (isInTabletLayout) {
+				return;
+			}
+			_tabListController.jumpTo(((Persistence.currentTabIndex + 1) / Persistence.tabs.length) * _tabListController.position.maxScrollExtent);
+		});
 	}
 
 	PersistentBrowserTab _addNewTab({
