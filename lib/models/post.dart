@@ -246,8 +246,6 @@ class PostAdapter extends TypeAdapter<Post> {
       ..write(obj.id)
       ..writeByte(9)
       ..write(obj.spanFormat)
-      ..writeByte(11)
-      ..write(obj.attachmentDeleted)
       ..writeByte(16)
       ..write(obj.attachments);
 		if (obj.flag != null) {
@@ -255,6 +253,9 @@ class PostAdapter extends TypeAdapter<Post> {
 		}
 		if (obj.posterId != null) {
       writer..writeByte(8)..write(obj.posterId);
+		}
+		if (obj.attachmentDeleted) {
+			writer..writeByte(11)..write(true);
 		}
 		if (obj.foolfuukaLinkedPostThreadIds != null) {
       writer..writeByte(12)..write(obj.foolfuukaLinkedPostThreadIds);
