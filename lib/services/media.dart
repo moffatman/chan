@@ -253,9 +253,14 @@ class MediaConversion {
 	}
 
 	Future<MediaConversionResult?> getDestinationIfSatisfiesConstraints() async {
-		final file = getDestination();
+		File file = getDestination();
 		if (!(await file.exists())) {
-			return null;
+			if (inputFile.scheme == 'file') {
+				file = File(inputFile.path);
+			}
+			else {
+				return null;
+			}
 		}
 		final stat = await file.stat();
 		MediaScan? scan;
