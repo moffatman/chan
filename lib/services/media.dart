@@ -350,7 +350,7 @@ class MediaConversion {
 					_session = await pool.withResource(() {
 						final args = [
 							'-hwaccel', 'auto',
-							if (headers.isNotEmpty) ...[
+							if (headers.isNotEmpty && inputFile.scheme != 'file') ...[
 								"-headers",
 								headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
 							],
