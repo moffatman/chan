@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui show Image, PictureRecorder;
 
@@ -10,6 +11,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -265,7 +267,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	}
 
 	Future<Captcha4ChanCustomChallenge> _requestChallenge() async {
-		final challengeResponse = await widget.site.client.getUri(widget.request.challengeUrl);
+		final challengeResponse = await widget.site.client.getUri(widget.request.challengeUrl, options: Options(
+			headers: {
+				if (Platform.isAndroid) 'user-agent': 'Mozilla/5.0 (X11; U; Linux armv7l like Android; en-us) AppleWebKit/531.2+ (KHTML, like Gecko) Version/5.0 Safari/533.2+ Kindle/3.0+'
+			}
+		));
 		if (challengeResponse.statusCode != 200) {
 			throw Captcha4ChanCustomException('Got status code ${challengeResponse.statusCode}');
 		}
