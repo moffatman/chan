@@ -589,6 +589,8 @@ class SavedSettings extends HiveObject {
 	int captcha4ChanCustomNumLetters;
 	@HiveField(105)
 	bool tabMenuHidesWhenScrollingDown;
+	@HiveField(106)
+	bool doubleTapScrollToReplies;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -696,6 +698,7 @@ class SavedSettings extends HiveObject {
 		String? userAgent,
 		int? captcha4ChanCustomNumLetters,
 		bool? tabMenuHidesWhenScrollingDown,
+		bool? doubleTapScrollToReplies,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -829,7 +832,8 @@ class SavedSettings extends HiveObject {
 		launchCount = launchCount ?? 0,
 		userAgent = userAgent ?? userAgents.first,
 		captcha4ChanCustomNumLetters = captcha4ChanCustomNumLetters ?? 6,
-		tabMenuHidesWhenScrollingDown = tabMenuHidesWhenScrollingDown ?? true {
+		tabMenuHidesWhenScrollingDown = tabMenuHidesWhenScrollingDown ?? true,
+		doubleTapScrollToReplies = doubleTapScrollToReplies ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1658,6 +1662,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get tabMenuHidesWhenScrollingDown => _settings.tabMenuHidesWhenScrollingDown;
 	set tabMenuHidesWhenScrollingDown(bool setting) {
 		_settings.tabMenuHidesWhenScrollingDown = setting;
+		_settings.save();
+		notifyListeners();
+	}
+	
+	bool get doubleTapScrollToReplies => _settings.doubleTapScrollToReplies;
+	set doubleTapScrollToReplies(bool setting) {
+		_settings.doubleTapScrollToReplies = setting;
 		_settings.save();
 		notifyListeners();
 	}

@@ -222,13 +222,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       userAgent: fields[103] as String?,
       captcha4ChanCustomNumLetters: fields[104] as int?,
       tabMenuHidesWhenScrollingDown: fields[105] as bool?,
+      doubleTapScrollToReplies: fields[106] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(102)
+      ..writeByte(103)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -432,7 +433,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(104)
       ..write(obj.captcha4ChanCustomNumLetters)
       ..writeByte(105)
-      ..write(obj.tabMenuHidesWhenScrollingDown);
+      ..write(obj.tabMenuHidesWhenScrollingDown)
+      ..writeByte(106)
+      ..write(obj.doubleTapScrollToReplies);
   }
 
   @override

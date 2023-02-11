@@ -4,6 +4,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -105,6 +106,7 @@ class _PostsPageState extends State<PostsPage> {
 	Widget build(BuildContext context) {
 		final attachments = replies.expand<Attachment>((a) => a.post?.attachments ?? []).toList();
 		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.thread.posts.tryFirstWhere((p) => p.id == widget.postIdForBackground);
+		final doubleTapScrollToReplies = context.select<EffectiveSettings, bool>((s) => s.doubleTapScrollToReplies);
 		return ChangeNotifierProvider.value(
 			value: widget.zone,
 			child: OverscrollModalPage.sliver(
@@ -160,7 +162,8 @@ class _PostsPageState extends State<PostsPage> {
 										) : PostRow(
 											post: reply.post!,
 											onTap: widget.onTap == null ? null : () => widget.onTap!(reply.post!),
-											onDoubleTap: widget.zone.onNeedScrollToPost == null ? null : () => widget.zone.onNeedScrollToPost!(reply.post!),
+											onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null
+																		? null : () => widget.zone.onNeedScrollToPost!(reply.post!),
 											onThumbnailTap: (attachment) {
 												showGallery(
 													context: context,

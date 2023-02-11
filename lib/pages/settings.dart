@@ -968,6 +968,22 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.hand_point_right),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Double-tap scrolls to replies in thread')
+						),
+						CupertinoSwitch(
+							value: settings.doubleTapScrollToReplies,
+							onChanged: (newValue) {
+								settings.doubleTapScrollToReplies = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 32)
 			]
 		);
