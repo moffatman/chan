@@ -71,14 +71,23 @@ class Site4Chan extends ImageboardSite {
 	@override
 	final String imageUrl;
 	final String captchaKey;
-	final Map<String, _ThreadCacheEntry> _threadCache = {};
-	final Map<String, _CatalogCache> _catalogCaches = {};
-	final Map<PersistCookieJar, bool> _passEnabled = {};
-	final _lastActionTime = {
+	Map<String, _ThreadCacheEntry> _threadCache = {};
+	Map<String, _CatalogCache> _catalogCaches = {};
+	Map<PersistCookieJar, bool> _passEnabled = {};
+	Map<ImageboardAction, Map<String, DateTime>> _lastActionTime = {
 		ImageboardAction.postReply: <String, DateTime>{},
 		ImageboardAction.postReplyWithImage: <String, DateTime>{},
 		ImageboardAction.postThread: <String, DateTime>{},
 	};
+
+	@override
+	void migrateFromPrevious(Site4Chan oldSite) {
+		super.migrateFromPrevious(oldSite);
+		_threadCache = oldSite._threadCache;
+		_catalogCaches = oldSite._catalogCaches;
+		_passEnabled = oldSite._passEnabled;
+		_lastActionTime = oldSite._lastActionTime;
+	}
 
 	String _sysUrl(String board) => persistence.getBoard(board).isWorksafe ? sysBlueUrl : sysRedUrl;
 

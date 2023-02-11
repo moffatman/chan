@@ -697,15 +697,15 @@ abstract class ImageboardSiteArchive {
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
-	final Map<String, Map<String, String>> memoizedWifiHeaders = {};
-	final Map<String, Map<String, String>> memoizedCellularHeaders = {};
+	Map<String, Map<String, String>> _memoizedWifiHeaders = {};
+	Map<String, Map<String, String>> _memoizedCellularHeaders = {};
 	final List<ImageboardSiteArchive> archives;
 	ImageboardSite(this.archives) : super();
 	Future<void> ensureCookiesMemoized(Uri url) async {
-		memoizedWifiHeaders.putIfAbsent(url.host, () => {
+		_memoizedWifiHeaders.putIfAbsent(url.host, () => {
 
 		})['cookie'] = (await Persistence.wifiCookies.loadForRequest(url)).join('; ');
-		memoizedCellularHeaders.putIfAbsent(url.host, () => {
+		_memoizedCellularHeaders.putIfAbsent(url.host, () => {
 
 		})['cookie'] = (await Persistence.cellularCookies.loadForRequest(url)).join('; ');
 	}
@@ -713,12 +713,12 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		if (settings.connectivity == ConnectivityResult.mobile) {
 			return {
 				'user-agent': Persistence.settings.userAgent,
-				...memoizedCellularHeaders[url.host] ?? {}
+				..._memoizedCellularHeaders[url.host] ?? {}
 			};
 		}
 		return {
 				'user-agent': Persistence.settings.userAgent,
-				...memoizedWifiHeaders[url.host] ?? {}
+				..._memoizedWifiHeaders[url.host] ?? {}
 			};
 	}
 	Uri get passIconUrl => Uri.https('boards.chance.surf', '/minileaf.gif');
@@ -908,6 +908,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	];
 	List<ThreadVariant> get threadVariants => const [];
 	String formatBoardName(ImageboardBoard board) => '/${board.name}/';
+	@mustCallSuper
+	void migrateFromPrevious(covariant ImageboardSite oldSite) {
+		_memoizedWifiHeaders = oldSite._memoizedWifiHeaders;
+		_memoizedCellularHeaders = oldSite._memoizedCellularHeaders;
+	}
 }
 
 ImageboardSite makeSite(dynamic data) {

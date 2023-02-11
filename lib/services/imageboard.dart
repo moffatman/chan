@@ -50,6 +50,7 @@ class Imageboard extends ChangeNotifier {
 		try {
 			final newSite = makeSite(siteData);
 			if (newSite != site) {
+				newSite.migrateFromPrevious(site);
 				site = newSite;
 				site.persistence = persistence;
 				notifyListeners();

@@ -98,6 +98,14 @@ extension _RedditApiName on ThreadVariant {
 class SiteReddit extends ImageboardSite {
 	(int, DateTime)? _earliestKnown;
 	(int, DateTime)? _latestKnown;
+
+	@override
+	void migrateFromPrevious(SiteReddit oldSite) {
+		super.migrateFromPrevious(oldSite);
+		_earliestKnown = oldSite._earliestKnown;
+		_latestKnown = oldSite._latestKnown;
+	}
+
 	void _updateTimeEstimateData(int id, DateTime time) {
 		if (_earliestKnown == null || id < _earliestKnown!.$0) {
 			_earliestKnown = (id, time);

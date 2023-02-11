@@ -97,6 +97,14 @@ class SiteHackerNews extends ImageboardSite {
 	@override
 	String get baseUrl => 'news.ycombinator.com';
 
+	Map<CatalogVariant?, List<int>> _lastCatalogIds = {};
+
+	@override
+	void migrateFromPrevious(SiteHackerNews oldSite) {
+		super.migrateFromPrevious(oldSite);
+		_lastCatalogIds = oldSite._lastCatalogIds;
+	}
+
 	static PostNodeSpan makeSpan(String text) {
 		final body = parseFragment(text);
 		Iterable<PostSpan> visit(Iterable<dom.Node> nodes) sync* {
@@ -407,7 +415,6 @@ class SiteHackerNews extends ImageboardSite {
 		return ids.toList();
 	}
 
-	final _lastCatalogIds = <CatalogVariant?, List<int>>{};
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
 		final List<int> data;
