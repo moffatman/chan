@@ -470,11 +470,14 @@ class RecaptchaRequest extends CaptchaRequest {
 
 class Chan4CustomCaptchaRequest extends CaptchaRequest {
 	final Uri challengeUrl;
+	final Map<String, String> challengeHeaders;
+
 	Chan4CustomCaptchaRequest({
-		required this.challengeUrl
+		required this.challengeUrl,
+		required this.challengeHeaders
 	});
 	@override
-	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl)';
+	String toString() => 'Chan4CustomCaptchaRequest(challengeUrl: $challengeUrl, challengeHeaders: $challengeHeaders)';
 }
 
 class SecurimageCaptchaRequest extends CaptchaRequest {
@@ -969,6 +972,7 @@ ImageboardSite makeSite(dynamic data) {
 			sysUrl: data['sysUrl'],
 			baseUrl: data['baseUrl'],
 			staticUrl: data['staticUrl'],
+			captchaUserAgents: (data['captchaUserAgents'] as Map).cast<String, String>(),
 			archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
 				final boards = (archive['boards'] as List<dynamic>?)?.map((b) => ImageboardBoard(
 					title: b['title'],

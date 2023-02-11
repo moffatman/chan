@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui show Image, PictureRecorder;
 
@@ -268,9 +267,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 
 	Future<Captcha4ChanCustomChallenge> _requestChallenge() async {
 		final challengeResponse = await widget.site.client.getUri(widget.request.challengeUrl, options: Options(
-			headers: {
-				if (Platform.isAndroid) 'user-agent': 'Mozilla/5.0 (X11; U; Linux armv7l like Android; en-us) AppleWebKit/531.2+ (KHTML, like Gecko) Version/5.0 Safari/533.2+ Kindle/3.0+'
-			}
+			headers: widget.request.challengeHeaders
 		));
 		if (challengeResponse.statusCode != 200) {
 			throw Captcha4ChanCustomException('Got status code ${challengeResponse.statusCode}');

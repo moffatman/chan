@@ -71,6 +71,7 @@ class Site4Chan extends ImageboardSite {
 	@override
 	final String imageUrl;
 	final String captchaKey;
+	final Map<String, String> captchaUserAgents;
 	Map<String, _ThreadCacheEntry> _threadCache = {};
 	Map<String, _CatalogCache> _catalogCaches = {};
 	Map<PersistCookieJar, bool> _passEnabled = {};
@@ -527,12 +528,16 @@ class Site4Chan extends ImageboardSite {
 		if (_passEnabled.putIfAbsent(Persistence.currentCookies, () => false)) {
 			return NoCaptchaRequest();
 		}
+		final userAgent = captchaUserAgents[Platform.operatingSystem];
 		return Chan4CustomCaptchaRequest(
 			challengeUrl: Uri.https(_sysUrl(board), '/captcha', {
 				'framed': '1',
 				'board': board,
 				if (threadId != null) 'thread_id': threadId.toString()
-			})
+			}),
+			challengeHeaders: {
+				if (userAgent != null) 'user-agent': userAgent
+			}
 		);
 	}
 
@@ -767,7 +772,8 @@ class Site4Chan extends ImageboardSite {
 		required this.imageUrl,
 		required this.name,
 		required this.captchaKey,
-		List<ImageboardSiteArchive> archives = const []
+		List<ImageboardSiteArchive> archives = const [],
+		required this.captchaUserAgents
 	}) : sysRedUrl = sysUrl, sysBlueUrl = sysUrl.replaceAll('chan.', 'channel.'), super(archives);
 
   @override
