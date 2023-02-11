@@ -1156,9 +1156,6 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 					continue;
 				}
 				if (i > treeModeFurthestSeenIndexBottom) {
-					if (_youIds.contains(items[i].item.id)) {
-						_redCountBelow++;
-					}
 					if (items[i].representsKnownStubChildren.isNotEmpty) {
 						for (final stubChild in items[i].representsKnownStubChildren) {
 							if (stubChild.childId > widget.lastSeenIdBeforeLastUpdate) {
@@ -1171,6 +1168,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 					}
 					else if (items[i].item.id > widget.lastSeenIdBeforeLastUpdate) {
 						_whiteCountBelow++;
+						if (_youIds.contains(items[i].item.id)) {
+							_redCountBelow++;
+						}
 					}
 					else {
 						_greyCount++;
@@ -1186,9 +1186,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 					}
 					else if (items[i].item.id > widget.lastSeenIdBeforeLastUpdate) {
 						_whiteCountAbove++;
-					}
-					if (_youIds.contains(items[i].item.id)) {
-						_redCountAbove++;
+						if (_youIds.contains(items[i].item.id)) {
+							_redCountAbove++;
+						}
 					}
 				}
 				else if (i > lastVisibleIndex) {
@@ -1209,6 +1209,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 				else if ((items.length - 1) > treeModeFurthestSeenIndexBottom) {
 					if (items.last.item.id > widget.lastSeenIdBeforeLastUpdate) {
 						_whiteCountBelow++;
+						if (_youIds.contains(items.last.item.id)) {
+							_redCountBelow++;
+						}
 					}
 				}
 				else if (lastVisibleIndex < (items.length - 1)) {
