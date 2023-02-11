@@ -424,6 +424,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 						onPointerDown: (event) {
 							_pointersDownCount++;
 						},
+						onPointerCancel: (event) {
+							_pointersDownCount--;
+						},
 						onPointerUp: (event) {
 							_pointersDownCount--;
 							_afterScroll();
