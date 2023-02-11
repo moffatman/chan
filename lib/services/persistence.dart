@@ -534,7 +534,7 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 		final deadline = DateTime.now().subtract(const Duration(days: 3));
 		boards.removeWhere((k, v) => (v.additionalDataTime == null || v.additionalDataTime!.isBefore(deadline)) && !browserState.favouriteBoards.contains(v.name));
 		for (final newBoard in newBoards) {
-			if (boards[newBoard.name] == null || newBoard.additionalDataTime != null) {
+			if (boards[newBoard.name]?.additionalDataTime == null) {
 				boards[newBoard.name] = newBoard;
 			}
 		}
