@@ -1036,7 +1036,7 @@ class AttachmentViewer extends StatelessWidget {
 			child: SizedBox.fromSize(
 				size: size,
 				child: CooperativeInAppBrowser(
-					initialUrlRequest: URLRequest(url: controller.attachment.url)
+					initialUrlRequest: URLRequest(url: WebUri.uri(controller.attachment.url))
 				)
 			)
 		);

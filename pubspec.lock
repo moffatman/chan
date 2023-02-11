@@ -474,10 +474,18 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_inappwebview
-      sha256: d28043f7d2a4708bc3b1656278739d738fa0412c80121572f73e875bc1fd8ece
+      sha256: "6d6c741ddba1dba5229d63ba75767064791a7ce845196b45e31105e93d67c949"
       url: "https://pub.dev"
     source: hosted
-    version: "5.7.2+2"
+    version: "6.0.0-beta.22"
+  flutter_inappwebview_internal_annotations:
+    dependency: transitive
+    description:
+      name: flutter_inappwebview_internal_annotations
+      sha256: "064a8ccbc76217dcd3b0fd6c6ea6f549e69b2849a0233b5bb46af9632c3ce2ff"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:

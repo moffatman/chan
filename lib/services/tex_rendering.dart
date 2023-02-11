@@ -64,13 +64,11 @@ class TeXRendering {
 		});
 		final loadCompleter = Completer<void>();
 		final webView = HeadlessInAppWebView(
-			initialOptions: InAppWebViewGroupOptions(
-				crossPlatform: InAppWebViewOptions(
-					transparentBackground: true
-				)
+			initialSettings: InAppWebViewSettings(
+				transparentBackground: true
 			),
 			initialUrlRequest: URLRequest(
-				url: Uri.http('localhost:${server.port}', _indexHtmlPath)
+				url: WebUri.uri(Uri.http('localhost:${server.port}', _indexHtmlPath))
 			),
 			onLoadStop: (controller, url) {
 				loadCompleter.complete();

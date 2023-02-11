@@ -426,14 +426,10 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 			}
 			else {
 				try {
-					await ChromeSafariBrowser().open(url: url, options: ChromeSafariBrowserClassOptions(
-						android: AndroidChromeCustomTabsOptions(
-							toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor
-						),
-						ios: IOSSafariOptions(
-							preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
-							preferredControlTintColor: CupertinoTheme.of(context).primaryColor
-						)
+					await ChromeSafariBrowser().open(url: WebUri.uri(url), settings: ChromeSafariBrowserSettings(
+						toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor,
+						preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
+						preferredControlTintColor: CupertinoTheme.of(context).primaryColor
 					));
 				}
 				on PlatformException {

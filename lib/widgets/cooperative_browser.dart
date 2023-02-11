@@ -151,10 +151,8 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 												..onStart = (_) {})
 										},
 										initialUrlRequest: widget.initialUrlRequest,
-										initialOptions: InAppWebViewGroupOptions(
-											crossPlatform: InAppWebViewOptions(
-												userAgent: Persistence.settings.userAgent
-											)
+										initialSettings: InAppWebViewSettings(
+											userAgent: Persistence.settings.userAgent
 										),
 									)
 								),
@@ -221,10 +219,10 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 													}
 													else {
 														_controller?.loadUrl(urlRequest: URLRequest(
-															url: Uri.https('archive.today', '/', {
+															url: WebUri(Uri.https('archive.today', '/', {
 																'run': '1',
 																'url': url.toString()
-															})
+															}).toString())
 														));
 													}
 												},

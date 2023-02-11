@@ -51,21 +51,20 @@ class CloudflareInterceptor extends Interceptor {
 		bool skipHeadless = false,
 		InAppWebViewInitialData? initialData,
 		URLRequest? initialUrlRequest,
+		required String userAgent,
 		required Uri cookieUrl,
 	}) async {
 		assert(initialData != null || initialUrlRequest != null);
 		await CookieManager.instance().deleteAllCookies();
-		final initialOptions = InAppWebViewGroupOptions(
-			crossPlatform: InAppWebViewOptions(
-				clearCache: true,
-				cacheEnabled: false,
-				userAgent: Persistence.settings.userAgent
-			)
+		final initialSettings = InAppWebViewSettings(
+			userAgent: userAgent,
+			clearCache: true,
+			clearSessionCache: true
 		);
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<String?> callback) => (controller, uri) async {
 			final title = await controller.getTitle() ?? '';
 			if (!_titleMatches(title)) {
-				final cookies = await CookieManager.instance().getCookies(url: uri!);
+				final cookies = await CookieManager.instance().getCookies(url: WebUri.uri(uri!));
 				await Persistence.currentCookies.saveFromResponse(uri, cookies.map((cookie) {
 					final newCookie = io.Cookie(cookie.name, cookie.value);
 					newCookie.domain = cookie.domain;
@@ -78,20 +77,21 @@ class CloudflareInterceptor extends Interceptor {
 					return newCookie;
 				}).toList());
 				final html = await controller.getHtml() ?? '';
-				final jsonAsHtmlPattern = RegExp(r'<html><head><\/head><body><pre style="word-wrap: break-word; white-space: pre-wrap;">(.*)<\/pre><\/body><\/html>');
-				final jsonAsHtmlMatch = jsonAsHtmlPattern.firstMatch(html);
-				if (jsonAsHtmlMatch != null) {
-					callback(jsonAsHtmlMatch.group(1)!);
+				if (html.contains('<pre')) {
+					// Raw JSON response, but web-view has put it within a <pre>
+					final document = parse(html);
+					callback(document.querySelector('pre')!.innerHtml);
 				}
 				else {
 					callback(html);
 				}
 			}
 		};
+		HeadlessInAppWebView? headlessWebView;
 		if (!skipHeadless) {
 			final headlessCompleter = Completer<String?>();
-			final headlessWebView = HeadlessInAppWebView(
-				initialOptions: initialOptions,
+			headlessWebView = HeadlessInAppWebView(
+				initialSettings: initialSettings,
 				initialUrlRequest: initialUrlRequest,
 				initialData: initialData,
 				onLoadStop: buildOnLoadStop(headlessCompleter.complete)
@@ -106,19 +106,20 @@ class CloudflareInterceptor extends Interceptor {
 				headlessCompleter.future,
 				Future.delayed(const Duration(seconds: 7))
 			]);
-			await headlessWebView.dispose();
 			if (headlessCompleter.isCompleted) {
+				headlessWebView.dispose();
 				return headlessCompleter.future;
 			}
 		}
-		return await Navigator.of(ImageboardRegistry.instance.context!).push<String?>(FullWidthCupertinoPageRoute(
+		final ret = await Navigator.of(ImageboardRegistry.instance.context!).push<String?>(FullWidthCupertinoPageRoute(
 			builder: (context) => CupertinoPageScaffold(
 				navigationBar: const CupertinoNavigationBar(
 					transitionBetweenRoutes: false,
 					middle: Text('Cloudflare Login')
 				),
 				child: InAppWebView(
-					initialOptions: initialOptions,
+					headlessWebView: headlessWebView,
+					initialSettings: initialSettings,
 					initialUrlRequest: initialUrlRequest,
 					initialData: initialData,
 					onLoadStop: buildOnLoadStop(Navigator.of(context).pop)
@@ -127,6 +128,8 @@ class CloudflareInterceptor extends Interceptor {
 			// ignore: use_build_context_synchronously
 			showAnimations: ImageboardRegistry.instance.context!.read<EffectiveSettings?>()?.showAnimations ?? true
 		));
+		headlessWebView?.dispose();
+		return ret;
 	}
 
 	@override
@@ -143,8 +146,9 @@ class CloudflareInterceptor extends Interceptor {
 				}
 				final data = await _useWebview(
 					cookieUrl: options.uri,
+					userAgent: options.headers['user-agent'] ?? Persistence.settings.userAgent,
 					initialUrlRequest: URLRequest(
-						url: options.uri,
+						url: WebUri.uri(options.uri),
 						method: options.method,
 						headers: {
 							for (final h in options.headers.entries) h.key: h.value
@@ -180,9 +184,10 @@ class CloudflareInterceptor extends Interceptor {
 		if (_responseMatches(response)) {
 			final data = await _useWebview(
 				cookieUrl: response.requestOptions.uri,
+				userAgent: response.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
 				initialData: InAppWebViewInitialData(
 					data: response.data,
-					baseUrl: response.realUri
+					baseUrl: WebUri.uri(response.realUri)
 				)
 			);
 			if (data != null) {
@@ -205,9 +210,10 @@ class CloudflareInterceptor extends Interceptor {
 		if (err.type == DioErrorType.response && err.response != null && _responseMatches(err.response!)) {
 			final data = await _useWebview(
 				cookieUrl: err.requestOptions.uri,
+				userAgent: err.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
 				initialData: InAppWebViewInitialData(
 					data: err.response!.data,
-					baseUrl: err.response!.realUri
+					baseUrl: WebUri.uri(err.response!.realUri)
 				)
 			);
 			if (data != null) {

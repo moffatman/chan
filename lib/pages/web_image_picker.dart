@@ -47,7 +47,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 		urlController = TextEditingController();
 		urlFocusNode = FocusNode();
 		pullToRefreshController = PullToRefreshController(
-			options: PullToRefreshOptions(
+			settings: PullToRefreshSettings(
 				color: Colors.blue,
 			),
 			onRefresh: () async {
@@ -78,7 +78,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 						if (url.scheme.isEmpty) {
 							url = Uri.parse("https://www.google.com/search?tbm=isch&q=$value");
 						}
-						webViewController?.loadUrl(urlRequest: URLRequest(url: url));
+						webViewController?.loadUrl(urlRequest: URLRequest(url: WebUri.uri(url)));
 					},
 				)
 			),
@@ -89,18 +89,12 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 							child: Stack(
 								children: [
 									InAppWebView(
-										initialOptions: InAppWebViewGroupOptions(
-											crossPlatform: InAppWebViewOptions(
-												mediaPlaybackRequiresUserGesture: false,
-												transparentBackground: true,
-												userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Mobile/15E148 Safari/604.1'
-											),
-											android: AndroidInAppWebViewOptions(
-												useHybridComposition: true,
-											),
-											ios: IOSInAppWebViewOptions(
-												allowsInlineMediaPlayback: true,
-											)
+										initialSettings: InAppWebViewSettings(
+											mediaPlaybackRequiresUserGesture: false,
+											transparentBackground: true,
+											userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Mobile/15E148 Safari/604.1',
+											useHybridComposition: true,
+											allowsInlineMediaPlayback: true,
 										),
 										pullToRefreshController: pullToRefreshController,
 										onWebViewCreated: (controller) {
@@ -112,10 +106,10 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												if (url.toString() != 'about:blank') urlController.text = this.url;
 											});
 										},
-										androidOnPermissionRequest: (controller, origin, resources) async {
-											return PermissionRequestResponse(
-												resources: resources,
-												action: PermissionRequestResponseAction.GRANT
+										onPermissionRequest: (controller, request) async {
+											return PermissionResponse(
+												resources: request.resources,
+												action: PermissionResponseAction.GRANT
 											);
 										},
 										onLoadStop: (controller, url) async {
@@ -126,7 +120,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												if (url.toString() != 'about:blank') urlController.text = this.url;
 											});
 										},
-										onLoadError: (controller, url, code, message) {
+										onReceivedError: (controller, url, code) {
 											pullToRefreshController.endRefreshing();
 										},
 										onProgressChanged: (controller, progress) {
