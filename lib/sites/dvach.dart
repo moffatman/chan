@@ -73,6 +73,7 @@ class SiteDvach extends ImageboardSite {
 			board.maxImageSizeBytes = data['max_files_size'];
 			board.maxWebmSizeBytes = data['max_files_size'];
 			board.pageCount = data['max_pages'];
+			board.additionalDataTime = DateTime.now();
 		}
 		catch (e, st) {
 			print(e);

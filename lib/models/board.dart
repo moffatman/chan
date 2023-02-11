@@ -17,8 +17,8 @@ class ImageboardBoard {
 	final int? imageCooldown;
 	final bool? spoilers;
 	DateTime? additionalDataTime;
-	String? subdomain;
-	Uri? icon;
+	final String? subdomain;
+	final Uri? icon;
 
 	ImageboardBoard({
 		required this.name,
