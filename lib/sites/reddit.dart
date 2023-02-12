@@ -492,23 +492,23 @@ class SiteReddit extends ImageboardSite {
 		}
 	}
 
-	static String _getCatalogSuffix(CatalogVariant? variant) => const {
-			CatalogVariant.redditHot: '/hot.json',
-			CatalogVariant.redditNew: '/new.json',
-			CatalogVariant.redditRising: '/rising.json',
-			CatalogVariant.redditControversialPastHour: '/controversial.json?t=hour',
-			CatalogVariant.redditControversialPast24Hours: '/controversial.json?t=day',
-			CatalogVariant.redditControversialPastWeek: '/controversial.json?t=week',
-			CatalogVariant.redditControversialPastMonth: '/controversial.json?t=month',
-			CatalogVariant.redditControversialPastYear: '/controversial.json?t=year',
-			CatalogVariant.redditControversialAllTime: '/controversial.json?t=all',
-			CatalogVariant.redditTopPastHour: '/top.json?t=hour',
-			CatalogVariant.redditTopPast24Hours: '/top.json?t=day',
-			CatalogVariant.redditTopPastWeek: '/top.json?t=week',
-			CatalogVariant.redditTopPastMonth: '/top.json?t=month',
-			CatalogVariant.redditTopPastYear: '/top.json?t=year',
-			CatalogVariant.redditTopAllTime: '/top.json?t=all',
-		}[variant] ?? '.json';
+	static (String, Map<String, String>) _getCatalogSuffix(CatalogVariant? variant) => const {
+			CatalogVariant.redditHot: ('/hot.json', <String, String>{}),
+			CatalogVariant.redditNew: ('/new.json', <String, String>{}),
+			CatalogVariant.redditRising: ('/rising.json', <String, String>{}),
+			CatalogVariant.redditControversialPastHour: ('/controversial.json', {'t': 'hour'}),
+			CatalogVariant.redditControversialPast24Hours: ('/controversial.json', {'t': 'day'}),
+			CatalogVariant.redditControversialPastWeek: ('/controversial.json', {'t': 'week'}),
+			CatalogVariant.redditControversialPastMonth: ('/controversial.json', {'t': 'month'}),
+			CatalogVariant.redditControversialPastYear: ('/controversial.json', {'t': 'year'}),
+			CatalogVariant.redditControversialAllTime: ('/controversial.json', {'t': 'all'}),
+			CatalogVariant.redditTopPastHour: ('/top.json', {'t': 'hour'}),
+			CatalogVariant.redditTopPast24Hours: ('/top.json', {'t': 'day'}),
+			CatalogVariant.redditTopPastWeek: ('/top.json', {'t': 'week'}),
+			CatalogVariant.redditTopPastMonth: ('/top.json', {'t': 'month'}),
+			CatalogVariant.redditTopPastYear: ('/top.json', {'t': 'year'}),
+			CatalogVariant.redditTopAllTime: ('/top.json', {'t': 'all'}),
+		}[variant] ?? ('.json', <String, String>{});
 
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
@@ -520,7 +520,8 @@ class SiteReddit extends ImageboardSite {
 				Future.error(e, st);
 			}
 		}
-		final response = await client.get('https://$baseUrl/r/$board${_getCatalogSuffix(variant)}');
+		final suffix = _getCatalogSuffix(variant);
+		final response = await client.getUri(Uri.https(baseUrl, '/r/$board${suffix.$0}', suffix.$1));
 		return (response.data['data']['children'] as List<dynamic>).map((d) => _makeThread(d['data'])..currentPage = 1).toList();
 	}
 
@@ -614,8 +615,10 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/r/${after.board}${_getCatalogSuffix(variant)}', {
-			'after': 't3_${toRedditId(after.id)}'
+		final suffix = _getCatalogSuffix(variant);
+		final response = await client.getUri(Uri.https(baseUrl, '/r/${after.board}${suffix.$0}', {
+			'after': 't3_${toRedditId(after.id)}',
+			...suffix.$1
 		}));
 		final newPage = (after.currentPage ?? 1) + 1;
 		return (response.data['data']['children'] as List<dynamic>).map((d) => _makeThread(d['data'])..currentPage = newPage).toList();
