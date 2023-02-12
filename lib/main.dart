@@ -600,22 +600,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			// ignore this, it is handled elsewhere
 		}
 		else {
-			for (final imageboard in ImageboardRegistry.instance.imageboards) {
-				BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(link);
-				for (final archive in imageboard.site.archives) {
-					if (dest != null) {
-						break;
-					}
-					dest = await archive.decodeUrl(link);
-				}
-				if (dest != null) {
-					_onNotificationTapped(imageboard, dest);
-					return;
-				}
-			}
-			final dest = await devImageboard?.site.decodeUrl(link);
+			final dest = await modalLoad(context, 'Checking url...', () => ImageboardRegistry.instance.decodeUrl(link), wait: const Duration(milliseconds: 50));
 			if (dest != null) {
-				_onDevNotificationTapped(dest);
+				_onNotificationTapped(dest.$0, dest.$1);
+				return;
+			}
+			final devDest = await devImageboard?.site.decodeUrl(link);
+			if (devDest != null) {
+				_onDevNotificationTapped(devDest);
 				return;
 			}
 			if (!mounted) return;

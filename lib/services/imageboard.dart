@@ -3,6 +3,7 @@
 import 'dart:math';
 
 import 'package:chan/models/board.dart';
+import 'package:chan/models/thread.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -288,6 +289,24 @@ class ImageboardRegistry extends ChangeNotifier {
 			}
 		}
 		await Future.wait(futures);
+	}
+
+	Future<(Imageboard, BoardThreadOrPostIdentifier, bool)?> decodeUrl(String url) async {
+		for (final imageboard in ImageboardRegistry.instance.imageboards) {
+			BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(url);
+			bool usedArchive = false;
+			for (final archive in imageboard.site.archives) {
+				if (dest != null) {
+					break;
+				}
+				dest = await archive.decodeUrl(url);
+				usedArchive = true;
+			}
+			if (dest != null) {
+				return (imageboard, dest, usedArchive);
+			}
+		}
+		return null;
 	}
 }
 

@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:chan/models/attachment.dart';
-import 'package:chan/models/thread.dart';
 import 'package:chan/pages/board.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/thread.dart';
@@ -100,27 +100,34 @@ void showToast({
 	);
 }
 
-Future<void> modalLoad(BuildContext context, String title, Future Function() work) async {
+Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function() work, {wait = Duration.zero}) async {
 	final rootNavigator = Navigator.of(context, rootNavigator: true);
-	showCupertinoDialog(
-		context: context,
-		barrierDismissible: false,
-		builder: (context) => CupertinoAlertDialog(
-			title: Text(title),
-			content: Column(
-				mainAxisSize: MainAxisSize.min,
-				children: const [
-					SizedBox(height: 8),
-					LinearProgressIndicator()
-				]	
+	final timer = Timer(wait, () {
+		showCupertinoDialog(
+			context: context,
+			barrierDismissible: false,
+			builder: (context) => CupertinoAlertDialog(
+				title: Text(title),
+				content: Column(
+					mainAxisSize: MainAxisSize.min,
+					children: const [
+						SizedBox(height: 8),
+						LinearProgressIndicator()
+					]	
+				)
 			)
-		)
-	);
+		);
+	});
 	try {
-		await work();
+		return await work();
 	}
 	finally {
-		rootNavigator.pop();
+		if (timer.isActive) {
+			timer.cancel();
+		}
+		else {
+			rootNavigator.pop();
+		}
 	}
 }
 
@@ -339,22 +346,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 	}
 	else {
 		final settings = context.read<EffectiveSettings>();
-		(Imageboard, BoardThreadOrPostIdentifier, bool)? imageboardTarget;
-		for (final imageboard in ImageboardRegistry.instance.imageboards) {
-			BoardThreadOrPostIdentifier? dest = await imageboard.site.decodeUrl(url.toString());
-			bool usedArchive = false;
-			for (final archive in imageboard.site.archives) {
-				if (dest != null) {
-					break;
-				}
-				dest = await archive.decodeUrl(url.toString());
-				usedArchive = true;
-			}
-			if (dest != null) {
-				imageboardTarget = (imageboard, dest, usedArchive);
-				break;
-			}
-		}
+		final imageboardTarget = await modalLoad(context, 'Checking url...', () => ImageboardRegistry.instance.decodeUrl(url.toString()), wait: const Duration(milliseconds: 50));
 		openInChance() {
 			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 				builder: (ctx) => ImageboardScope(
