@@ -2892,17 +2892,24 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 								barrierDismissible: true,
 								builder: (context) => CupertinoAlertDialog(
 									title: const Text('Edit User-Agent'),
-									content: Padding(
-										padding: const EdgeInsets.only(top: 10),
-										child: CupertinoTextField(
-											autofocus: true,
-											controller: controller,
-											smartDashesType: SmartDashesType.disabled,
-											smartQuotesType: SmartQuotesType.disabled,
-											minLines: 5,
-											maxLines: 5,
-											onSubmitted: (s) => Navigator.pop(context, s)
-										)
+									content: Column(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											const SizedBox(height: 10),
+											if (ImageboardRegistry.instance.getImageboard('4chan') != null) ...[
+												const Text('This user-agent might be overridden for 4chan captcha requests to work with the Cloudflare check.'),
+												const SizedBox(height: 10)
+											],
+											CupertinoTextField(
+												autofocus: true,
+												controller: controller,
+												smartDashesType: SmartDashesType.disabled,
+												smartQuotesType: SmartQuotesType.disabled,
+												minLines: 5,
+												maxLines: 5,
+												onSubmitted: (s) => Navigator.pop(context, s)
+											)
+										]
 									),
 									actions: [
 										CupertinoDialogAction(

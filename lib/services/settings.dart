@@ -854,6 +854,13 @@ class SavedSettings extends HiveObject {
 				}
 				this.appliedMigrations.add('catalogVariant');
 			}
+			if (!this.appliedMigrations.contains('uar')) {
+				// uar means userAgentReset
+				if (Platform.isAndroid && !userAgents.contains(this.userAgent) && this.contentSettings.sites.containsKey('4chan')) {
+					this.userAgent = userAgents.first;
+				}
+				this.appliedMigrations.add('uar');
+			}
 		}
 
 	@override
