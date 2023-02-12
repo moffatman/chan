@@ -86,12 +86,17 @@ Future<void> setHandoffUrl(String? url) async {
 	}
 }
 
-EdgeInsets additionalSafeAreaInsets = EdgeInsets.zero;
-Future<void> setAdditionalSafeAreaInsets(EdgeInsets insets) async {
+final _additionalSafeAreaInsetsMap = <String, EdgeInsets>{};
+EdgeInsets sumAdditionalSafeAreaInsets() => _additionalSafeAreaInsetsMap.values.fold(EdgeInsets.zero, (sum, a) => sum + a);
+Future<void> setAdditionalSafeAreaInsets(String key, EdgeInsets insetsForKey) async {
 	if (!Platform.isIOS) {
 		return;
 	}
-	additionalSafeAreaInsets = insets;
+	if (_additionalSafeAreaInsetsMap[key] == insetsForKey) {
+		return;
+	}
+	_additionalSafeAreaInsetsMap[key] = insetsForKey;
+	final insets = sumAdditionalSafeAreaInsets();
 	await _platform.invokeMethod('setAdditionalSafeAreaInsets', {
 		'top': insets.top,
 		'left': insets.left,

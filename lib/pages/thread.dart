@@ -972,7 +972,8 @@ class _ThreadPageState extends State<ThreadPage> {
 																		lastSeenIdBeforeLastUpdate: lastSeenIdBeforeLastUpdate,
 																		searching: _searching,
 																		passedFirstLoad: _passedFirstLoad,
-																		blocked: blocked
+																		blocked: blocked,
+																		boardSemanticId: widget.boardSemanticId
 																	)
 																)
 															),
@@ -1068,6 +1069,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 	final bool searching;
 	final bool passedFirstLoad;
 	final bool blocked;
+	final int boardSemanticId;
 	
 	const ThreadPositionIndicator({
 		required this.persistentState,
@@ -1082,6 +1084,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 		required this.searching,
 		required this.passedFirstLoad,
 		required this.blocked,
+		required this.boardSemanticId,
 		Key? key
 	}) : super(key: key);
 
@@ -1107,6 +1110,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	int _lastListControllerItemsLength = 0;
 	int _lastFirstVisibleIndex = -1;
 	int _lastLastVisibleIndex = -1;
+	final _animatedPaddingKey = GlobalKey();
 
 	Future<bool> _updateCounts() async {
 		await WidgetsBinding.instance.endOfFrame;
@@ -1334,8 +1338,50 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			widget.listController.state?.updatingNow.addListener(_onUpdatingNowChange);
 		}
 		if (widget.searching && !oldWidget.searching) {
-			_buttonsAnimationController.reverse();
+			_hideMenu();
 		}
+	}
+
+	@override
+	void didChangeDependencies() {
+		super.didChangeDependencies();
+		final masterDetailHint = context.read<MasterDetailHint?>();
+		final foreground = masterDetailHint == null // Dev board in settings
+				 	|| masterDetailHint.primaryInterceptorKey.currentState?.primaryScrollControllerTracker.value != null;
+		if (foreground) {
+			_scheduleAdditionalSafeAreaInsetsShow();
+		}
+		else {
+			_scheduleAdditionalSafeAreaInsetsHide();
+		}
+	}
+
+	void _scheduleAdditionalSafeAreaInsetsShow() async {
+		await Future.delayed(const Duration(milliseconds: 100));
+		final box = _animatedPaddingKey.currentContext?.findRenderObject() as RenderBox?;
+		if (box != null) {
+			final bounds = Rect.fromPoints(
+				box.localToGlobal(box.paintBounds.topLeft),
+				// The padding for the primary button is already accounted for in 'main'
+				box.localToGlobal(box.paintBounds.bottomRight - const Offset(0, 50))
+			);
+			setAdditionalSafeAreaInsets('menu${widget.boardSemanticId}', EdgeInsets.only(bottom: bounds.height));
+		}
+	}
+
+	void _scheduleAdditionalSafeAreaInsetsHide() async {
+		await Future.delayed(const Duration(milliseconds: 100));
+		setAdditionalSafeAreaInsets('menu${widget.boardSemanticId}', EdgeInsets.zero);
+	}
+
+	void _showMenu() {
+		_buttonsAnimationController.forward();
+		_scheduleAdditionalSafeAreaInsetsShow();
+	}
+
+	void _hideMenu() {
+		_buttonsAnimationController.reverse();
+		_scheduleAdditionalSafeAreaInsetsHide();
 	}
 
 	Future<void> _onUpdatingNowChange() async {
@@ -1370,6 +1416,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 						)
 					),
 					child: AnimatedPadding(
+						key: _animatedPaddingKey,
 						duration: const Duration(milliseconds: 200),
 						curve: Curves.ease,
 						padding: EdgeInsets.only(bottom: _whiteCountAbove > 0 ? 100 : 50),
@@ -1522,7 +1569,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											onPressed: button.$2 == null ? null : () {
 												lightHapticFeedback();
 												button.$2?.call();
-												_buttonsAnimationController.reverse();
+												_hideMenu();
 											},
 											child: Row(
 												mainAxisSize: MainAxisSize.min,
@@ -1713,10 +1760,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 									onPressed: () {
 										lightHapticFeedback();
 										if (_buttonsAnimation.value > 0.5) {
-											_buttonsAnimationController.reverse();
+											_hideMenu();
 										}
 										else {
-											_buttonsAnimationController.forward();
+											_showMenu();
 										}
 									}
 								)
@@ -1736,5 +1783,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		widget.persistentState.lastSeenPostIdNotifier.removeListener(_updateCounts);
 		_buttonsAnimationController.dispose();
 		_waitForRebuildTimer?.cancel();
+		WidgetsBinding.instance.addPostFrameCallback((_) {
+			_scheduleAdditionalSafeAreaInsetsHide();
+		});
 	}
 }

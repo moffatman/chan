@@ -201,6 +201,7 @@ class _ChanAppState extends State<ChanApp> {
 									if (settings.whichTheme == Brightness.dark) {
 										theme = settings.makeDarkTheme(context);
 									}
+									final additionalSafeAreaInsets = sumAdditionalSafeAreaInsets();
 									return MediaQuery(
 										data: mq.copyWith(
 											boldText: false,
@@ -714,7 +715,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	Future<void> _setAdditionalSafeAreaInsets() async {
-		await setAdditionalSafeAreaInsets(EdgeInsets.only(
+		await setAdditionalSafeAreaInsets('main', EdgeInsets.only(
 			bottom: 60 + (_isInTabletLayout ? 0 : 44 + (showTabPopup ? 80 : 0))
 		) * settings.interfaceScale);
 	}
