@@ -972,7 +972,7 @@ ImageboardSite makeSite(dynamic data) {
 			sysUrl: data['sysUrl'],
 			baseUrl: data['baseUrl'],
 			staticUrl: data['staticUrl'],
-			captchaUserAgents: (data['captchaUserAgents'] as Map).cast<String, String>(),
+			captchaUserAgents: (data['captchaUserAgents'] as Map?)?.cast<String, String>() ?? {},
 			archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
 				final boards = (archive['boards'] as List<dynamic>?)?.map((b) => ImageboardBoard(
 					title: b['title'],
