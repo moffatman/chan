@@ -60,7 +60,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	bool _popping = false;
 
 	bool isPhoneSoftwareKeyboard() {
-		 return MediaQuery.viewInsetsOf(context).bottom > 100;
+		return MediaQueryData.fromWindow(WidgetsBinding.instance.window).viewInsets.bottom > 100;
 	}
 
 	void _fetchBoards() {
@@ -199,9 +199,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 				_popping = true;
 				Navigator.pop(context);
 			}
-			else if (scrollController.position.isScrollingNotifier.value == true && isPhoneSoftwareKeyboard()) {
-				context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus = false;
-			}
 		}
 	}
 
@@ -234,7 +231,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										textAlign: TextAlign.center,
 										focusNode: _focusNode,
 										onTap: () {
-											settings.boardSwitcherHasKeyboardFocus = true;
 											scrollController.jumpTo(scrollController.position.pixels);
 										},
 										onSubmitted: (String board) {
@@ -396,6 +392,22 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																					onValueChanged: (setting) {
 																						settings.useBoardSwitcherList = setting;
 																					}
+																				),
+																				const SizedBox(height: 8),
+																				Row(
+																					children: [
+																						const Expanded(
+																							child: Text('Show keyboard when opening'),
+																						),
+																						const SizedBox(width: 8),
+																						CupertinoSwitch(
+																							value: settings.boardSwitcherHasKeyboardFocus,
+																							onChanged: (v) {
+																								settings.boardSwitcherHasKeyboardFocus = v;
+																								setDialogState(() {});
+																							}
+																						)
+																					]
 																				)
 																			]
 																		)
