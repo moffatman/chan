@@ -496,7 +496,12 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	bool get canShare => (attachment.type == AttachmentType.webm && Platform.isAndroid) || (overrideSource ?? _cachedFile) != null;
+	bool get _playsDirectlyWithoutCaching =>
+		(attachment.type == AttachmentType.webm && Platform.isAndroid) ||
+		(attachment.type == AttachmentType.mp4) ||
+		(attachment.type == AttachmentType.mp3);
+
+	bool get canShare => _playsDirectlyWithoutCaching || (overrideSource ?? _cachedFile) != null;
 
 	Future<File> getFile() async {
 		if (overrideSource != null) {
@@ -505,13 +510,17 @@ class AttachmentViewerController extends ChangeNotifier {
 		else if (_cachedFile != null) {
 			return _cachedFile!;
 		}
-		else if (attachment.type == AttachmentType.webm && Platform.isAndroid) {
-			final response = await site.client.get((await _getGoodSource()).toString(), options: Options(
+		else if (_playsDirectlyWithoutCaching) {
+			final source = await _getGoodSource();
+			if (source.isScheme('file')) {
+				return File(source.path);
+			}
+			final response = await site.client.getUri(source, options: Options(
 				responseType: ResponseType.bytes
 			));
 			final systemTempDirectory = Persistence.temporaryDirectory;
 			final directory = await (Directory('${systemTempDirectory.path}/webmcache')).create(recursive: true);
-			return await File('${directory.path}${attachment.id}.webm').writeAsBytes(response.data);
+			return await File('${directory.path}${attachment.id}${attachment.ext}').writeAsBytes(response.data);
 		}
 		else {
 			throw Exception('No file available');
