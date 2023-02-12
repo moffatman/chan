@@ -152,7 +152,6 @@ class Notifications {
 	List<BoardWatch> get boardWatches => persistence.browserState.boardWatches;
 	static final Map<String, List<Map<String, dynamic>>> _unrecognizedByUserId = {};
 	static ApnsPushConnectorOnly? _apnsConnector;
-	static String? _lastUnifiedPushEndpoint;
 	static final List<Completer<String>> _unifiedPushNewEndpointCompleters = [];
 	static final _client = Dio(BaseOptions(
 		headers: {
@@ -226,7 +225,7 @@ class Notifications {
 
 	@pragma('vm:entry-point')
 	static Future<void> onNewUnifiedPushEndpoint(String endpoint, String instance) async {
-		_lastUnifiedPushEndpoint = endpoint;
+		Persistence.settings.lastUnifiedPushEndpoint = endpoint;
 		for (final completer in _unifiedPushNewEndpointCompleters) {
 			completer.complete(endpoint);
 		}
@@ -236,7 +235,7 @@ class Notifications {
 
 	@pragma('vm:entry-point')
 	static Future<void> onUnifiedPushUnregistered(String instance) async {
-		_lastUnifiedPushEndpoint = null;
+		Persistence.settings.lastUnifiedPushEndpoint = null;
 		_reinitializeChildren();
 	}
 
@@ -288,12 +287,17 @@ class Notifications {
 		print('_onBackgroundLocalNotificationTapped(response: $response)');
 	}
 
-	static Future<void> tryUnifiedPushDistributor(String distributor) async {
+	static Future<String> _waitForNextUnifiedPushEndpoint() {
 		final completer = Completer<String>();
 		_unifiedPushNewEndpointCompleters.add(completer);
+		return completer.future;
+	}
+
+	static Future<void> tryUnifiedPushDistributor(String distributor) async {
+		final future = _waitForNextUnifiedPushEndpoint();
 		await UnifiedPush.saveDistributor(distributor);
 		await UnifiedPush.registerApp();
-		await completer.future.timeout(const Duration(milliseconds: 300), onTimeout: () async {
+		await future.timeout(const Duration(milliseconds: 300), onTimeout: () async {
 			await UnifiedPush.unregister();
 			throw TimeoutException('Distributor did not provide an endpoint');
 		});
@@ -306,6 +310,7 @@ class Notifications {
 		final distributors = await UnifiedPush.getDistributors();
 		if (distributors.length == 1) {
 			await UnifiedPush.saveDistributor(distributors.single);
+			await UnifiedPush.registerApp();
 		}
 		for (final distributor in distributors) {
 			try {
@@ -336,7 +341,20 @@ class Notifications {
 					onMessage: onUnifiedPushMessage
 				);
 				if (Persistence.settings.usePushNotifications ?? false) {
+					if (Persistence.settings.lastUnifiedPushEndpoint == null) {
+						// Force re-register of URL
+						await UnifiedPush.unregister();
+					}
 					await registerUnifiedPush();
+					if (Persistence.settings.lastUnifiedPushEndpoint == null) {
+						try {
+							await _waitForNextUnifiedPushEndpoint().timeout(const Duration(milliseconds: 300));
+						}
+						on TimeoutException {
+							// Throw async to report to crashlytics
+							Future.error(TimeoutException('Timed out waiting for initial UnifiedPush endpoint'));
+						}
+					}
 				}
 				final initial = await FlutterLocalNotificationsPlugin().getNotificationAppLaunchDetails();
 				if (initial?.didNotificationLaunchApp ?? false) {
@@ -394,7 +412,7 @@ class Notifications {
 
 	static Future<_NotificationsToken?> _getToken() async {
 		if (Platform.isAndroid) {
-			final endpoint = _lastUnifiedPushEndpoint;
+			final endpoint = Persistence.settings.lastUnifiedPushEndpoint;
 			if (endpoint != null) {
 				return _UnifiedPushNotificationsToken(endpoint);
 			}

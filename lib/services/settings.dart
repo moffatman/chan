@@ -591,6 +591,8 @@ class SavedSettings extends HiveObject {
 	bool tabMenuHidesWhenScrollingDown;
 	@HiveField(106)
 	bool doubleTapScrollToReplies;
+	@HiveField(107)
+	String? lastUnifiedPushEndpoint;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -699,6 +701,7 @@ class SavedSettings extends HiveObject {
 		int? captcha4ChanCustomNumLetters,
 		bool? tabMenuHidesWhenScrollingDown,
 		bool? doubleTapScrollToReplies,
+		this.lastUnifiedPushEndpoint,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1671,6 +1674,12 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.doubleTapScrollToReplies = setting;
 		_settings.save();
 		notifyListeners();
+	}
+
+	String? get lastUnifiedPushEndpoint => _settings.lastUnifiedPushEndpoint;
+	set lastUnifiedPushEndpoint(String? setting) {
+		_settings.lastUnifiedPushEndpoint = setting;
+		_settings.save();
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];
