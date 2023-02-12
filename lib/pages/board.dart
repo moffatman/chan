@@ -101,6 +101,7 @@ class _BoardPageState extends State<BoardPage> {
 	final _threadPullTabKey = GlobalKey();
 	int _page = 1;
 	DateTime? _lastCatalogUpdateTime;
+	bool _searching = false;
 
 	CatalogVariant? get _defaultBoardVariant => context.read<Persistence?>()?.browserState.catalogVariants[board?.name];
 	CatalogVariant get _defaultGlobalVariant {
@@ -149,6 +150,7 @@ class _BoardPageState extends State<BoardPage> {
 		else if (context.findAncestorStateOfType<NavigatorState>()?.canPop() == false) {
 			_lastSelectedThread = context.read<PersistentBrowserTab?>()?.thread;
 		}
+		_searching = widget.initialSearch?.isNotEmpty ?? false;
 	}
 
 	void _selectBoard() async {
@@ -780,7 +782,15 @@ class _BoardPageState extends State<BoardPage> {
 												children: [
 													RefreshableList<Thread>(
 														initialFilter: widget.initialSearch,
-														onFilterChanged: widget.onSearchChanged,
+														onFilterChanged: (newFilter) {
+															widget.onSearchChanged?.call(newFilter);
+															bool newSearching = newFilter != null;
+															if (newSearching != _searching) {
+																setState(() {
+																	_searching = newSearching;
+																});
+															}
+														},
 														filterableAdapter: (t) => t,
 														allowReordering: true,
 														onWantAutosave: (thread) async {
@@ -866,8 +876,13 @@ class _BoardPageState extends State<BoardPage> {
 																					padding: EdgeInsets.zero,
 																					onPressed: () async {
 																						lightHapticFeedback();
-																						await scrollToTop();
-																						_page = _listController.items.first.item.currentPage ?? 1;
+																						if (_searching) {
+																							_listController.state?.closeSearch();
+																						}
+																						else {
+																							await scrollToTop();
+																							_page = _listController.items.first.item.currentPage ?? 1;
+																						}
 																					},
 																					child: Container(
 																						decoration: BoxDecoration(
@@ -878,7 +893,11 @@ class _BoardPageState extends State<BoardPage> {
 																						margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
 																						child: Row(
 																							mainAxisSize: MainAxisSize.min,
-																							children: [
+																							children: _searching ? [
+																								Icon(CupertinoIcons.search, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+																								const SizedBox(width: 8),
+																								Icon(CupertinoIcons.xmark, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
+																							] : [
 																								Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
 																								SizedBox(
 																									width: 25,
