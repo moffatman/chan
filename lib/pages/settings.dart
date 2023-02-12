@@ -279,7 +279,7 @@ class SettingsPage extends StatelessWidget {
 									]
 								),
 								onPressed: () async {
-									await settings.updateContentSettings();
+									await modalLoad(context, 'Synchronizing...', () => settings.updateContentSettings());
 									// ignore: use_build_context_synchronously
 									showToast(
 										context: context,
