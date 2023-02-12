@@ -428,7 +428,7 @@ class Notifications {
 
 	String _calculateDigest() {
 		final boards = [
-			...threadWatches.where((w) => !w.zombie).map((w) => w.board),
+			...threadWatches.where((w) => !w.zombie && w.push).map((w) => w.board),
 			...boardWatches.map((w) => w.board)
 		];
 		boards.sort((a, b) => a.compareTo(b));
