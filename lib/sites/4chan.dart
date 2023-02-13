@@ -886,10 +886,10 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	bool operator ==(Object other) => (other is Site4Chan) && (other.name == name) && (other.imageUrl == imageUrl) && (other.captchaKey == captchaKey) && (other.apiUrl == apiUrl) && (other.sysRedUrl == sysRedUrl) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && listEquals(other.archives, archives);
+	bool operator ==(Object other) => (other is Site4Chan) && (other.name == name) && (other.imageUrl == imageUrl) && (other.captchaKey == captchaKey) && (other.apiUrl == apiUrl) && (other.sysRedUrl == sysRedUrl) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && listEquals(other.archives, archives) && mapEquals(other.captchaUserAgents, captchaUserAgents);
 
 	@override
-	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysRedUrl, baseUrl, staticUrl, archives);
+	int get hashCode => Object.hash(name, imageUrl, captchaKey, apiUrl, sysRedUrl, baseUrl, staticUrl, archives, captchaUserAgents);
 	
 	@override
 	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
