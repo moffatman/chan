@@ -271,9 +271,9 @@ class SettingsPage extends StatelessWidget {
 						children: [
 							CupertinoButton.filled(
 								padding: const EdgeInsets.all(8),
-								child: Row(
+								child: const Row(
 									mainAxisSize: MainAxisSize.min,
-									children: const [
+									children: [
 										Text('Synchronize '),
 										Icon(Icons.sync_rounded, size: 16)
 									]
@@ -292,9 +292,9 @@ class SettingsPage extends StatelessWidget {
 								const SizedBox(width: 16),
 								CupertinoButton.filled(
 									padding: const EdgeInsets.all(8),
-									child: Row(
+									child: const Row(
 										mainAxisSize: MainAxisSize.min,
-										children: const [
+										children: [
 											Text('Remove site '),
 											Icon(CupertinoIcons.delete, size: 16)
 										]
@@ -348,9 +348,9 @@ class SettingsPage extends StatelessWidget {
 							const SizedBox(width: 16),
 							CupertinoButton.filled(
 								padding: const EdgeInsets.all(8),
-								child: Row(
+								child: const Row(
 									mainAxisSize: MainAxisSize.min,
-									children: const [
+									children: [
 										Text('Edit preferences '),
 										Icon(Icons.launch_rounded, size: 16)
 									]
@@ -441,11 +441,11 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 				Row(
 					crossAxisAlignment: CrossAxisAlignment.start,
 					children: [
-						Padding(
-							padding: const EdgeInsets.only(top: 4),
+						const Padding(
+							padding: EdgeInsets.only(top: 4),
 							child: Row(
 								mainAxisSize: MainAxisSize.min,
-								children: const [
+								children: [
 									Icon(CupertinoIcons.scope),
 									SizedBox(width: 8),
 									Text('Filters'),
@@ -626,8 +626,8 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					]
 				),
 				const SizedBox(height: 32),
-				Row(
-					children: const [
+				const Row(
+					children: [
 						Icon(CupertinoIcons.cloud_download),
 						SizedBox(width: 8),
 						Expanded(
@@ -690,8 +690,8 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 				),
 				const SizedBox(height: 32),
 				if (Platform.isAndroid) ...[
-					Row(
-						children: const [
+					const Row(
+						children: [
 							Icon(CupertinoIcons.play_rectangle),
 							SizedBox(width: 8),
 							Expanded(
@@ -754,8 +754,8 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					]
 				),
 				const SizedBox(height: 32),
-				Row(
-					children: const [
+				const Row(
+					children: [
 						Icon(CupertinoIcons.globe),
 						SizedBox(width: 8),
 						Text('Links open...')
@@ -1177,8 +1177,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 16),
-				Row(
-					children: const [
+				const Row(
+					children: [
 						Icon(CupertinoIcons.macwindow),
 						SizedBox(width: 8),
 						Expanded(
@@ -1188,28 +1188,28 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				const SizedBox(height: 16),
 				CupertinoAdaptiveSegmentedControl<TristateSystemSetting>(
-					children: {
+					children: const {
 						TristateSystemSetting.a: Padding(
-							padding: const EdgeInsets.all(8),
+							padding: EdgeInsets.all(8),
 							child: Wrap(
 								alignment: WrapAlignment.center,
 								spacing: 8,
-								children: const [
+								children: [
 									Icon(CupertinoIcons.hand_draw),
 									Text('Touch')
 								]
 							)
 						),
-						TristateSystemSetting.system: const Padding(
+						TristateSystemSetting.system: Padding(
 							padding: EdgeInsets.all(8),
 							child: Text('Automatic')
 						),
 						TristateSystemSetting.b: Padding(
-							padding: const EdgeInsets.all(8),
+							padding: EdgeInsets.all(8),
 							child: Wrap(
 								alignment: WrapAlignment.center,
 								spacing: 8,
-								children: const [
+								children: [
 									Icon(Icons.mouse),
 									Text('Mouse')
 								]
@@ -1238,8 +1238,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 32),
-				Row(
-					children: const [
+				const Row(
+					children: [
 						Icon(CupertinoIcons.paintbrush),
 						SizedBox(width: 8),
 						Expanded(
@@ -1249,27 +1249,27 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<TristateSystemSetting>(
-					children: {
+					children: const {
 						TristateSystemSetting.a: Padding(
-							padding: const EdgeInsets.all(8),
+							padding: EdgeInsets.all(8),
 							child: Row(
 								mainAxisSize: MainAxisSize.min,
-								children: const [
+								children: [
 									Icon(CupertinoIcons.sun_max),
 									SizedBox(width: 8),
 									Text('Light')
 								]
 							)
 						),
-						TristateSystemSetting.system: const Padding(
+						TristateSystemSetting.system: Padding(
 							padding: EdgeInsets.all(8),
 							child: Text('Follow System', textAlign: TextAlign.center)
 						),
 						TristateSystemSetting.b: Padding(
-							padding: const EdgeInsets.all(8),
+							padding: EdgeInsets.all(8),
 							child: Row(
 								mainAxisSize: MainAxisSize.min,
-								children: const [
+								children: [
 									Icon(CupertinoIcons.moon),
 									SizedBox(width: 8),
 									Text('Dark')
@@ -1295,9 +1295,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					Row(
 						children: [
 							const SizedBox(width: 16),
-							Icon(theme.$4),
+							Icon(theme.$5),
 							const SizedBox(width: 8),
-							Text(theme.$2),
+							Text(theme.$3),
 							const SizedBox(width: 16),
 							Expanded(
 								child: Row(
@@ -1320,7 +1320,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																		children: [
 																			const Icon(CupertinoIcons.paintbrush),
 																			const SizedBox(width: 8),
-																			Text('Picking ${theme.$0}')
+																			Text('Picking ${theme.$1}')
 																		]
 																	)
 																),
@@ -1357,7 +1357,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																										child: AutoSizeText(themeNames[i], style: TextStyle(
 																											fontSize: 18,
 																											color: settings.themes[themeNames[i]]?.primaryColor,
-																											fontWeight: themeNames[i] == theme.$2 ? FontWeight.bold : null
+																											fontWeight: themeNames[i] == theme.$3 ? FontWeight.bold : null
 																										))
 																									),
 																									Container(
@@ -1495,10 +1495,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															)
 														);
 														if (selectedKey != null) {
-															theme.$3(selectedKey);
+															theme.$4(selectedKey);
 														}
 													},
-													child: Text('Pick ${theme.$0}', textAlign: TextAlign.center)
+													child: Text('Pick ${theme.$1}', textAlign: TextAlign.center)
 												)
 											)
 										)
@@ -1510,30 +1510,30 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					Container(
 						margin: const EdgeInsets.only(left: 16, right: 16),
 						decoration: BoxDecoration(
-							color: theme.$1.barColor,
+							color: theme.$2.barColor,
 							borderRadius: const BorderRadius.all(Radius.circular(8))
 						),
 						child: SingleChildScrollView(
 							scrollDirection: Axis.horizontal,
 							child: Row(
 								children: <(String, Color, ValueChanged<Color>, Color?)>[
-									('Primary', theme.$1.primaryColor, (c) => theme.$1.primaryColor = c, theme.$1.copiedFrom?.primaryColor),
-									('Secondary', theme.$1.secondaryColor, (c) => theme.$1.secondaryColor = c, theme.$1.copiedFrom?.secondaryColor),
-									('Bar', theme.$1.barColor, (c) => theme.$1.barColor = c, theme.$1.copiedFrom?.barColor),
-									('Background', theme.$1.backgroundColor, (c) => theme.$1.backgroundColor = c, theme.$1.copiedFrom?.backgroundColor),
-									('Quote', theme.$1.quoteColor, (c) => theme.$1.quoteColor = c, theme.$1.copiedFrom?.quoteColor)
+									('Primary', theme.$2.primaryColor, (c) => theme.$2.primaryColor = c, theme.$2.copiedFrom?.primaryColor),
+									('Secondary', theme.$2.secondaryColor, (c) => theme.$2.secondaryColor = c, theme.$2.copiedFrom?.secondaryColor),
+									('Bar', theme.$2.barColor, (c) => theme.$2.barColor = c, theme.$2.copiedFrom?.barColor),
+									('Background', theme.$2.backgroundColor, (c) => theme.$2.backgroundColor = c, theme.$2.copiedFrom?.backgroundColor),
+									('Quote', theme.$2.quoteColor, (c) => theme.$2.quoteColor = c, theme.$2.copiedFrom?.quoteColor)
 								].map((color) => Column(
 									mainAxisSize: MainAxisSize.min,
 									children: [
 										const SizedBox(height: 16),
-										Text(color.$0, style: TextStyle(color: theme.$1.primaryColor)),
+										Text(color.$1, style: TextStyle(color: theme.$2.primaryColor)),
 										const SizedBox(height: 16),
 										GestureDetector(
 											child: Container(
 												decoration: BoxDecoration(
 													borderRadius: const BorderRadius.all(Radius.circular(8)),
-													border: Border.all(color: theme.$1.primaryColor),
-													color: color.$1
+													border: Border.all(color: theme.$2.primaryColor),
+													color: color.$2
 												),
 												width: 50,
 												height: 50
@@ -1543,7 +1543,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 													barrierDismissible: true,
 													context: context,
 													builder: (context) => CupertinoActionSheet(
-														title: Text('Select ${color.$0} Color'),
+														title: Text('Select ${color.$1} Color'),
 														message: Theme(
 															data: ThemeData(
 																textTheme: Theme.of(context).textTheme.apply(
@@ -1560,8 +1560,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																		Material(
 																			color: Colors.transparent,
 																			child: ColorPicker(
-																				pickerColor: color.$1,
-																				onColorChanged: color.$2,
+																				pickerColor: color.$2,
+																				onColorChanged: color.$3,
 																				enableAlpha: false,
 																				portraitOnly: true,
 																				displayThumbColor: true,
@@ -1570,12 +1570,12 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																		),
 																		CupertinoButton(
 																			padding: const EdgeInsets.all(8),
-																			color: color.$3,
-																			onPressed: color.$1 == color.$3 ? null : () {
-																				color.$2(color.$3!);
+																			color: color.$4,
+																			onPressed: color.$2 == color.$4 ? null : () {
+																				color.$3(color.$4!);
 																				settings.handleThemesAltered();
 																			},
-																			child: Text('Reset to original color', style: TextStyle(color: (color.$3?.computeLuminance() ?? 0) > 0.5 ? Colors.black : Colors.white))
+																			child: Text('Reset to original color', style: TextStyle(color: (color.$4?.computeLuminance() ?? 0) > 0.5 ? Colors.black : Colors.white))
 																		)
 																	]
 																)
@@ -1615,8 +1615,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						}
 					)
 				),
-				Row(
-					children: const [
+				const Row(
+					children: [
 						Icon(CupertinoIcons.square_fill_line_vertical_square),
 						SizedBox(width: 8),
 						Expanded(
@@ -1661,9 +1661,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				Center(
 					child: CupertinoButton.filled(
 						padding: const EdgeInsets.all(16),
-						child: Row(
+						child: const Row(
 							mainAxisSize: MainAxisSize.min,
-							children: const [
+							children: [
 								Icon(CupertinoIcons.square_list),
 								SizedBox(width: 8),
 								Text('Edit post details')
@@ -1910,8 +1910,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 32),
-				Row(
-					children: const [
+				const Row(
+					children: [
 						Icon(CupertinoIcons.rectangle_stack),
 						SizedBox(width: 8),
 						Expanded(
@@ -1921,12 +1921,12 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<bool>(
-					children: {
+					children: const {
 						false: Padding(
-							padding: const EdgeInsets.all(8),
+							padding: EdgeInsets.all(8),
 							child: Row(
 								mainAxisSize: MainAxisSize.min,
-								children: const [
+								children: [
 									Icon(CupertinoIcons.rectangle_grid_1x2),
 									SizedBox(width: 8),
 									Text('Rows')
@@ -1934,10 +1934,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 							)
 						),
 						true: Padding(
-							padding: const EdgeInsets.all(8),
+							padding: EdgeInsets.all(8),
 							child: Row(
 								mainAxisSize: MainAxisSize.min,
-								children: const [
+								children: [
 									Icon(CupertinoIcons.rectangle_split_3x3),
 									SizedBox(width: 8),
 									Text('Grid')
@@ -1954,9 +1954,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				Center(
 					child: settings.useCatalogGrid ? CupertinoButton.filled(
 						padding: const EdgeInsets.all(16),
-						child: Row(
+						child: const Row(
 							mainAxisSize: MainAxisSize.min,
-							children: const [
+							children: [
 								Icon(CupertinoIcons.resize),
 								SizedBox(width: 8),
 								Text('Edit catalog grid item layout')
@@ -2119,9 +2119,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						}
 					) : CupertinoButton.filled(
 						padding: const EdgeInsets.all(16),
-						child: Row(
+						child: const Row(
 							mainAxisSize: MainAxisSize.min,
-							children: const [
+							children: [
 								Icon(CupertinoIcons.resize_v),
 								SizedBox(width: 8),
 								Text('Edit catalog row item height')
@@ -2201,9 +2201,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				Center(
 					child: CupertinoButton.filled(
 						padding: const EdgeInsets.all(16),
-						child: Row(
+						child: const Row(
 							mainAxisSize: MainAxisSize.min,
-							children: const [
+							children: [
 								Icon(CupertinoIcons.square_list),
 								SizedBox(width: 8),
 								Text('Edit catalog item details')
@@ -2575,12 +2575,12 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				const SizedBox(height: 16),
 				CupertinoSegmentedControl<bool>(
-					children: {
+					children: const {
 						false: Padding(
-							padding: const EdgeInsets.all(8),
+							padding: EdgeInsets.all(8),
 							child: Row(
 								mainAxisSize: MainAxisSize.min,
-								children: const [
+								children: [
 									Icon(CupertinoIcons.list_bullet),
 									SizedBox(width: 8),
 									Text('Linear')
@@ -2588,10 +2588,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 							)
 						),
 						true: Padding(
-							padding: const EdgeInsets.all(8),
+							padding: EdgeInsets.all(8),
 							child: Row(
 								mainAxisSize: MainAxisSize.min,
-								children: const [
+								children: [
 									Icon(CupertinoIcons.list_bullet_indent),
 									SizedBox(width: 8),
 									Text('Tree')
@@ -2765,8 +2765,8 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					]
 				),
 				const SizedBox(height: 32),
-				Row(
-					children: const [
+				const Row(
+					children: [
 						Icon(CupertinoIcons.calendar),
 						SizedBox(width: 8),
 						Expanded(
@@ -2806,8 +2806,8 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					)
 				),
 				const SizedBox(height: 16),
-				Row(
-					children: const [
+				const Row(
+					children: [
 						Icon(CupertinoIcons.photo_on_rectangle),
 						SizedBox(width: 8),
 						Expanded(
@@ -2853,9 +2853,9 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 				const SizedBox(height: 16),
 				Center(
 					child: CupertinoButton.filled(
-						child: Row(
+						child: const Row(
 							mainAxisSize: MainAxisSize.min,
-							children: const [
+							children: [
 								Icon(CupertinoIcons.wifi),
 								SizedBox(width: 8),
 								Text('Clear Wi-Fi cookies')
@@ -2869,9 +2869,9 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 				const SizedBox(height: 16),
 				Center(
 					child: CupertinoButton.filled(
-						child: Row(
+						child: const Row(
 							mainAxisSize: MainAxisSize.min,
-							children: const [
+							children: [
 								Icon(CupertinoIcons.antenna_radiowaves_left_right),
 								SizedBox(width: 8),
 								Text('Clear cellular cookies')
@@ -2936,9 +2936,9 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 								settings.userAgent = newUserAgent;
 							}
 						},
-						child: Row(
+						child: const Row(
 							mainAxisSize: MainAxisSize.min,
-							children: const [
+							children: [
 								Icon(CupertinoIcons.globe),
 								SizedBox(width: 8),
 								Text('Edit user agent')
@@ -3073,7 +3073,7 @@ class SettingsThreadsPanel extends StatelessWidget {
 					}).toList();
 					return (days, oldThreads);
 				}).toList();
-				oldThreadRows.removeRange(oldThreadRows.lastIndexWhere((r) => r.$1.isNotEmpty) + 1, oldThreadRows.length);
+				oldThreadRows.removeRange(oldThreadRows.lastIndexWhere((r) => r.$2.isNotEmpty) + 1, oldThreadRows.length);
 				confirmDelete(List<PersistentThreadState> toDelete) async {
 					final confirmed = await showCupertinoDialog<bool>(
 						context: context,
@@ -3130,11 +3130,11 @@ class SettingsThreadsPanel extends StatelessWidget {
 							...oldThreadRows.map((entry) {
 								return TableRow(
 									children: [
-										Text('Over ${entry.$0} days old', textAlign: TextAlign.left),
-										Text(entry.$1.length.toString(), textAlign: TextAlign.right),
+										Text('Over ${entry.$1} days old', textAlign: TextAlign.left),
+										Text(entry.$2.length.toString(), textAlign: TextAlign.right),
 										CupertinoButton(
 											padding: EdgeInsets.zero,
-											onPressed: entry.$1.isEmpty ? null : () => confirmDelete(entry.$1),
+											onPressed: entry.$2.isEmpty ? null : () => confirmDelete(entry.$2),
 											child: const Text('Delete')
 										)
 									]
@@ -3290,12 +3290,12 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 					('Filename', _filenameController, null),
 					('Text', _textController, 5),
 				]) ...[
-					Text(field.$0),
+					Text(field.$1),
 					Padding(
 						padding: const EdgeInsets.all(16),
 						child: CupertinoTextField(
-							controller: field.$1,
-							minLines: field.$2,
+							controller: field.$2,
+							minLines: field.$3,
 							maxLines: null,
 							smartDashesType: SmartDashesType.disabled,
 							smartQuotesType: SmartQuotesType.disabled,

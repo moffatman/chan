@@ -41,7 +41,7 @@ Future<void> hideStatusBar() async {
 Size? _lastSize;
 
 void _guessWorkaround() {
-	final currentSize = MediaQueryData.fromWindow(WidgetsBinding.instance.window).size;
+	final currentSize = MediaQueryData.fromView(WidgetsBinding.instance.window).size;
 	Persistence.settings.useStatusBarWorkaround = currentSize != _lastSize && _lastSize != null;
 	if (Persistence.settings.useStatusBarWorkaround == true) {
 		Persistence.settings.save();

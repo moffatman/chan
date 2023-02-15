@@ -150,16 +150,16 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		(AnimationController, Future<void>)? e;
 		if (_startValue != 0) {
 			s = _constantVelocityAnimation(_startValue, 0, reversed: _startValue < value);
-			_replaceStartValueController(s.$0);
+			_replaceStartValueController(s.$1);
 		}
 		if (_endValue != value) {
 			e = _constantVelocityAnimation(_endValue, value);
-			_replaceEndValueController(e.$0);
+			_replaceEndValueController(e.$1);
 		}
 		setState(() {});
-		await s?.$1;
+		await s?.$2;
 		if (!mounted) return;
-		await e?.$1;
+		await e?.$2;
 		if (!mounted) return;
 	}
 
@@ -169,16 +169,16 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		// animate both angles forward
 		if (_sweepAngle - _continuousSweepAngle > 0.001) {
 			final x = _constantVelocityAnimation(_startValue, _endValue - _continuousSweepAngle);
-			_replaceStartValueController(x.$0);
+			_replaceStartValueController(x.$1);
 			setState(() {});
-			await x.$1;
+			await x.$2;
 			if (!mounted) return;
 		}
 		if (_continuousSweepAngle - _sweepAngle > 0.001) {
 			final x = _constantVelocityAnimation(_endValue, _startValue + _continuousSweepAngle);
-			_replaceEndValueController(x.$0);
+			_replaceEndValueController(x.$1);
 			setState(() {});
-			await x.$1;
+			await x.$2;
 			if (!mounted) return;
 		}
 		if (mounted) {

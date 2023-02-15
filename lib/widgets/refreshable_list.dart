@@ -1016,9 +1016,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			values.insertAll(0, pinnedValues);
 			if (widget.useTree) {
 				final tree = _reassembleAsTree(values);
-				values = tree.$0;
+				values = tree.$1;
 				_filterCollapsedItems.clear();
-				for (final collapsed in tree.$1) {
+				for (final collapsed in tree.$2) {
 					if (_filterCollapsedExpandedItems.any((x) => listEquals(x, collapsed))) {
 						continue;
 					}
@@ -1653,12 +1653,12 @@ class RefreshableListController<T extends Object> {
 			item.cachedOffset = newOffset;
 			final keys = _itemCacheCallbacks.keys.toList();
 			for (final position in keys) {
-				if (position.$1 && index >= position.$0) {
+				if (position.$2 && index >= position.$1) {
 					// scrolling down
 					_itemCacheCallbacks[position]?.forEach((c) => c.complete());
 					_itemCacheCallbacks.remove(position);
 				}
-				else if (!position.$1 && index <= position.$0) {
+				else if (!position.$2 && index <= position.$1) {
 					// scrolling up
 					_itemCacheCallbacks[position]?.forEach((c) => c.complete());
 					_itemCacheCallbacks.remove(position);

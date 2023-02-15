@@ -108,9 +108,9 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function() 
 			barrierDismissible: false,
 			builder: (context) => CupertinoAlertDialog(
 				title: Text(title),
-				content: Column(
+				content: const Column(
 					mainAxisSize: MainAxisSize.min,
-					children: const [
+					children: [
 						SizedBox(height: 8),
 						LinearProgressIndicator()
 					]	
@@ -351,14 +351,14 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 				builder: (ctx) => ImageboardScope(
 					imageboardKey: null,
-					imageboard: imageboardTarget!.$0,
-					child: imageboardTarget.$1.threadId == null ? BoardPage(
-						initialBoard: imageboardTarget.$0.persistence.getBoard(imageboardTarget.$1.board),
+					imageboard: imageboardTarget!.$1,
+					child: imageboardTarget.$2.threadId == null ? BoardPage(
+						initialBoard: imageboardTarget.$1.persistence.getBoard(imageboardTarget.$2.board),
 						semanticId: -1
 					) : ThreadPage(
-						thread: imageboardTarget.$1.threadIdentifier!,
-						initialPostId: imageboardTarget.$1.postId,
-						initiallyUseArchive: imageboardTarget.$2,
+						thread: imageboardTarget.$2.threadIdentifier!,
+						initialPostId: imageboardTarget.$2.postId,
+						initiallyUseArchive: imageboardTarget.$3,
 						boardSemanticId: -1
 					)
 				),

@@ -51,7 +51,7 @@ class IncognitoPersistence implements Persistence {
     print('IncognitoPersistence.dispose()');
     print(StackTrace.current);
 		for (final pair in _ephemeralThreadStates.values) {
-			pair.$1.dispose();
+			pair.$2.dispose();
 		}
 	}
 
@@ -77,7 +77,7 @@ class IncognitoPersistence implements Persistence {
 
   @override
   PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
-    return _ephemeralThreadStates[thread]?.$0 ?? parent.getThreadStateIfExists(thread);
+    return _ephemeralThreadStates[thread]?.$1 ?? parent.getThreadStateIfExists(thread);
   }
 
   @override
@@ -94,7 +94,7 @@ class IncognitoPersistence implements Persistence {
 
   @override
   Listenable listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
-		return _ephemeralThreadStates[thread]?.$1 ?? parent.listenForPersistentThreadStateChanges(thread);
+		return _ephemeralThreadStates[thread]?.$2 ?? parent.listenForPersistentThreadStateChanges(thread);
 	}
 
   @override
@@ -129,7 +129,7 @@ class IncognitoPersistence implements Persistence {
 	
 	@override
 	Future<void> ephemeralThreadStateDidUpdate(PersistentThreadState state) async {
-		await Future.microtask(() => _ephemeralThreadStates[state.identifier]?.$1.didUpdate());
+		await Future.microtask(() => _ephemeralThreadStates[state.identifier]?.$2.didUpdate());
 	}
 
   @override

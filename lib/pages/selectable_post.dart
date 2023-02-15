@@ -88,9 +88,9 @@ class SelectablePostPage extends StatelessWidget {
 											onQuoteText(post.span.buildText());
 											WeakNavigator.pop(context);
 										},
-										child: Row(
+										child: const Row(
 											mainAxisSize: MainAxisSize.min,
-											children: const [
+											children: [
 												Icon(CupertinoIcons.text_quote),
 												SizedBox(width: 8),
 												Text('Quote all')

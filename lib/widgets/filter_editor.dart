@@ -415,10 +415,10 @@ class _FilterEditorState extends State<FilterEditor> {
 													('Notify', notify, (v) => notify = v),
 													('Collapse (tree mode)', collapse, (v) => collapse = v),
 												].map((t) => CupertinoListTile(
-													title: Text(t.$0),
-													trailing: t.$1 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+													title: Text(t.$1),
+													trailing: t.$2 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap: () {
-														t.$2(!t.$1);
+														t.$3(!t.$2);
 														hide = !(highlight || pinToTop || autoSave || notify || collapse);
 														setInnerState(() {});
 													},
@@ -610,9 +610,9 @@ class _FilterEditorState extends State<FilterEditor> {
 																if (filter.value.hasFile == true) const WidgetSpan(
 																	child: Icon(CupertinoIcons.doc)
 																)
-																else if (filter.value.hasFile == false) WidgetSpan(
+																else if (filter.value.hasFile == false) const WidgetSpan(
 																	child: Stack(
-																		children: const [
+																		children: [
 																			Icon(CupertinoIcons.doc),
 																			Icon(CupertinoIcons.xmark)
 																		]
@@ -630,11 +630,11 @@ class _FilterEditorState extends State<FilterEditor> {
 														final newFilter = await editFilter(filter.value);
 														if (newFilter != null) {
 															final lines = settings.filterConfiguration.split('\n');
-															if (newFilter.$0) {
+															if (newFilter.$1) {
 																lines.removeAt(filter.key);
 															}
 															else {
-																lines[filter.key] = newFilter.$1!.toStringConfiguration();
+																lines[filter.key] = newFilter.$2!.toStringConfiguration();
 															}
 															settings.filterConfiguration = lines.join('\n');
 															regexController.text = settings.filterConfiguration;
@@ -675,8 +675,8 @@ class _FilterEditorState extends State<FilterEditor> {
 								leading: const Icon(CupertinoIcons.plus),
 								onTap: () async {
 									final newFilter = await editFilter(null);
-									if (newFilter?.$1 != null) {
-										settings.filterConfiguration += '\n${newFilter!.$1!.toStringConfiguration()}';
+									if (newFilter?.$2 != null) {
+										settings.filterConfiguration += '\n${newFilter!.$2!.toStringConfiguration()}';
 										regexController.text = settings.filterConfiguration;
 									}
 								}

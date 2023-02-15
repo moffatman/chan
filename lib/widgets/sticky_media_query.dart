@@ -28,23 +28,23 @@ class _StickyMediaQueryState extends State<StickyMediaQuery> {
 		final data = map.update(MediaQuery.of(context).orientation, (old) {
 			return (
 				MediaQuery.of(context).padding.clamp(EdgeInsets.only(
-					left: widget.left ? old.$0.left : 0,
-					top: widget.top ? old.$0.top : 0,
-					right: widget.right ? old.$0.right : 0,
-					bottom: widget.bottom ? old.$0.bottom : 0
-				), const EdgeInsets.all(double.infinity)).resolve(TextDirection.ltr),
-				MediaQuery.of(context).padding.clamp(EdgeInsets.only(
 					left: widget.left ? old.$1.left : 0,
 					top: widget.top ? old.$1.top : 0,
 					right: widget.right ? old.$1.right : 0,
 					bottom: widget.bottom ? old.$1.bottom : 0
+				), const EdgeInsets.all(double.infinity)).resolve(TextDirection.ltr),
+				MediaQuery.of(context).padding.clamp(EdgeInsets.only(
+					left: widget.left ? old.$2.left : 0,
+					top: widget.top ? old.$2.top : 0,
+					right: widget.right ? old.$2.right : 0,
+					bottom: widget.bottom ? old.$2.bottom : 0
 				), const EdgeInsets.all(double.infinity)).resolve(TextDirection.ltr)
 			);
 		}, ifAbsent: () => (MediaQuery.of(context).padding, MediaQuery.of(context).viewPadding));
 		return MediaQuery(
 			data: MediaQuery.of(context).copyWith(
-				padding: data.$0,
-				viewPadding: data.$1
+				padding: data.$1,
+				viewPadding: data.$2
 			),
 			child: widget.child
 		);

@@ -582,11 +582,11 @@ class _GalleryPageState extends State<GalleryPage> {
 																	child: CupertinoButton.filled(
 																		padding: const EdgeInsets.all(8),
 																		onPressed: _downloadAll,
-																		child: FittedBox(
+																		child: const FittedBox(
 																			fit: BoxFit.contain,
 																			child: Column(
 																				mainAxisSize: MainAxisSize.min,
-																				children: const [
+																				children: [
 																					Icon(CupertinoIcons.cloud_download, size: 50),
 																					Text('Download all')
 																				]
@@ -675,9 +675,9 @@ class _GalleryPageState extends State<GalleryPage> {
 																				borderRadius: BorderRadius.circular(8),
 																				color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.5)
 																			),
-																			child: Row(
+																			child: const Row(
 																				mainAxisSize: MainAxisSize.min,
-																				children: const [
+																				children: [
 																					Icon(CupertinoIcons.arrow_left),
 																					SizedBox(width: 8),
 																					Text('Scroll horizontally'),

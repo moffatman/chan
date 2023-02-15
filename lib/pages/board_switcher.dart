@@ -60,7 +60,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	bool _popping = false;
 
 	bool isPhoneSoftwareKeyboard() {
-		return MediaQueryData.fromWindow(WidgetsBinding.instance.window).viewInsets.bottom > 100;
+		return MediaQueryData.fromView(WidgetsBinding.instance.window).viewInsets.bottom > 100;
 	}
 
 	void _fetchBoards() {
@@ -344,9 +344,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																			crossAxisAlignment: CrossAxisAlignment.stretch,
 																			children: [
 																				CupertinoButton(
-																					child: Row(
+																					child: const Row(
 																						mainAxisAlignment: MainAxisAlignment.center,
-																						children: const [
+																						children: [
 																							Icon(CupertinoIcons.add),
 																							Text(' Add board')
 																						]

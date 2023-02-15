@@ -471,7 +471,7 @@ class PostQuoteLinkSpan extends PostSpan {
 						)
 					),
 					child: Text.rich(
-						span.$0,
+						span.$1,
 						textScaleFactor: 1
 					)
 				);
@@ -480,13 +480,13 @@ class PostQuoteLinkSpan extends PostSpan {
 						child: Builder(
 							builder: (context) {
 								if (!zone.stackIds.contains(postId)) {
-									zone.registerLineTapTarget('$board/$threadId/$postId', context, span.$1.onTap ?? () {});
+									zone.registerLineTapTarget('$board/$threadId/$postId', context, span.$2.onTap ?? () {});
 								}
 								return popup;
 							}
 						)
 					)
-				), span.$1);
+				), span.$2);
 			}
 		}
 	}
@@ -495,7 +495,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		final pair = _build(context, zone, settings, options);
 		final span = TextSpan(
 			children: [
-				pair.$0
+				pair.$1
 			]
 		);
 		if (options.addExpandingPosts && (initialThreadId == zone.thread.id && board == zone.thread.board)) {
@@ -1206,7 +1206,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		for (final pair in _lineTapCallbacks.values) {
 			final RenderBox? box;
 			try {
-				box = pair.$0.findRenderObject() as RenderBox?;
+				box = pair.$1.findRenderObject() as RenderBox?;
 			}
 			catch (e) {
 				continue;
@@ -1219,7 +1219,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 				final y1 = box.localToGlobal(box.paintBounds.bottomRight).dy;
 				if (position.dy < y1) {
 					if (runCallback) {
-						pair.$1();
+						pair.$2();
 					}
 					return true;
 				}

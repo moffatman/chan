@@ -298,3 +298,21 @@ class PostAdapter extends TypeAdapter<Post> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class PostIdentifier {
+	final String board;
+	final int threadId;
+	final int postId;
+	PostIdentifier(this.board, this.threadId, this.postId);
+
+	@override
+	String toString() => 'PostIdentifier: /$board/$threadId/$postId';
+
+	@override
+	bool operator == (dynamic other) => (other is PostIdentifier) && (other.board == board) && (other.threadId == threadId) && (other.postId == postId);
+	@override
+	int get hashCode => Object.hash(board, threadId, postId);
+
+	ThreadIdentifier get thread => ThreadIdentifier(board, threadId);
+	BoardThreadOrPostIdentifier get boardThreadOrPostId => BoardThreadOrPostIdentifier(board, threadId, postId);
+}

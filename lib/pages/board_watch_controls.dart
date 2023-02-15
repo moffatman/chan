@@ -69,13 +69,13 @@ class _BoardWatchControlsPage extends State<BoardWatchControlsPage> {
 										(_BoardWatchingStatus.threadsOnly, 'Threads only'),
 										(_BoardWatchingStatus.threadsAndPosts, 'All posts (not reliable')
 									].map((v) => CupertinoListTile(
-										title: Text(v.$1),
-										trailing: status == v.$0 ? const Icon(CupertinoIcons.check_mark, size: 18) : const SizedBox.shrink(),
+										title: Text(v.$2),
+										trailing: status == v.$1 ? const Icon(CupertinoIcons.check_mark, size: 18) : const SizedBox.shrink(),
 										onTap: () {
-											if (v.$0 != _BoardWatchingStatus.off) {
+											if (v.$1 != _BoardWatchingStatus.off) {
 												widget.imageboard.notifications.subscribeToBoard(
 													boardName: widget.board.name,
-													threadsOnly: v.$0 == _BoardWatchingStatus.threadsOnly
+													threadsOnly: v.$1 == _BoardWatchingStatus.threadsOnly
 												);
 											}
 											else {

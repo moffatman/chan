@@ -336,7 +336,7 @@ class MediaConversion {
 						}
 						if (maximumDimension != null) {
 							final fittedSize = applyBoxFit(BoxFit.contain, Size(scan.width!.toDouble(), scan.height!.toDouble()), Size.square(maximumDimension!.toDouble())).destination;
-							if (newSize == null || fittedSize.width < newSize.$0) {
+							if (newSize == null || fittedSize.width < newSize.$1) {
 								newSize = (fittedSize.width.round(), fittedSize.height.round());
 							}
 						}
@@ -380,7 +380,7 @@ class MediaConversion {
 									...['-vcodec', 'h264_videotoolbox']
 								else
 									...['-c:v', 'libx264', '-preset', 'medium', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'],
-							if (newSize != null) ...['-vf', 'scale=${newSize.$0}:${newSize.$1}'],
+							if (newSize != null) ...['-vf', 'scale=${newSize.$1}:${newSize.$2}'],
 							if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
 							convertedFile.path
 						];

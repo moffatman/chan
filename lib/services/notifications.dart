@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:chan/main.dart';
+import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
@@ -22,20 +23,16 @@ import 'package:rxdart/rxdart.dart';
 import 'package:unifiedpush/unifiedpush.dart';
 
 abstract class PushNotification {
-	final ThreadIdentifier thread;
-	final int? postId;
+	final PostIdentifier target;
 	const PushNotification({
-		required this.thread,
-		required this.postId
+		required this.target
 	});
-	BoardThreadOrPostIdentifier get target => BoardThreadOrPostIdentifier(thread.board, thread.id, postId);
-	bool get isThread => postId == null || thread.id == postId;
+	bool get isThread => target.threadId == target.postId;
 }
 
 class ThreadWatchNotification extends PushNotification {
 	const ThreadWatchNotification({
-		required super.thread,
-		required super.postId
+		required super.target
 	});
 }
 
@@ -43,8 +40,7 @@ class BoardWatchNotification extends PushNotification {
 	final String filter;
 
 	const BoardWatchNotification({
-		required super.thread,
-		required super.postId,
+		required super.target,
 		required this.filter
 	});
 }
@@ -141,7 +137,7 @@ class Notifications {
 	static String? staticError;
 	String? error;
 	static final Map<String, Notifications> _children = {};
-	final tapStream = BehaviorSubject<BoardThreadOrPostIdentifier>();
+	final tapStream = BehaviorSubject<PostIdentifier>();
 	final foregroundStream = BehaviorSubject<PushNotification>();
 	final Persistence persistence;
 	ThreadWatcher? localWatcher;
@@ -181,22 +177,20 @@ class Notifications {
 			PushNotification notification;
 			if (data['type'] == 'thread') {
 				notification = ThreadWatchNotification(
-					thread: ThreadIdentifier(data['board']!, int.parse(data['threadId']!)),
-					postId: int.tryParse(data['postId'] ?? '')
+					target: PostIdentifier(data['board']!, int.parse(data['threadId']!), int.parse(data['postId']!))
 				);
 			}
 			else if (data['type'] == 'board') {
 				notification = BoardWatchNotification(
-					thread: ThreadIdentifier(data['board']!, int.parse(data['threadId']!)),
-					postId: int.tryParse(data['postId'] ?? ''),
+					target: PostIdentifier(data['board']!, int.parse(data['threadId']!), int.parse(data['postId']!)),
 					filter: data['filter']!
 				);
 			}
 			else {
 				throw Exception('Unknown notification type ${data['type']}');
 			}
-			await child.localWatcher?.updateThread(notification.thread);
-			if (child.getThreadWatch(notification.thread)?.foregroundMuted != true) {
+			await child.localWatcher?.updateThread(notification.target.thread);
+			if (child.getThreadWatch(notification.target.thread)?.foregroundMuted != true) {
 				child.foregroundStream.add(notification);
 			}
 		}
@@ -215,10 +209,10 @@ class Notifications {
 			return;
 		}
 		if (data['type'] == 'thread' || data['type'] == 'board') {
-			child.tapStream.add(BoardThreadOrPostIdentifier(
+			child.tapStream.add(PostIdentifier(
 				data['board']!,
 				int.parse(data['threadId']!),
-				int.tryParse(data['postId'] ?? '')
+				int.parse(data['postId']!)
 			));
 		}
 	}

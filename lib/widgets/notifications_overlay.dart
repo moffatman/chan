@@ -26,7 +26,7 @@ class OverlayNotification {
 		required this.autoCloseAnimation
 	});
 
-	bool get isMuted => imageboard.notifications.getThreadWatch(notification.thread)?.foregroundMuted ?? false;
+	bool get isMuted => imageboard.notifications.getThreadWatch(notification.target.thread)?.foregroundMuted ?? false;
 
 	@override
 	String toString() => 'OverlayNotification(imageboard: $imageboard, notification: $notification)';
@@ -62,7 +62,7 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		if (n.autoCloseAnimation!.isAnimating) {
 			return;
 		}
-		if (!(n.imageboard.persistence.getThreadStateIfExists(n.notification.thread)?.freshYouIds().contains(n.notification.postId) ?? false)) {
+		if (!(n.imageboard.persistence.getThreadStateIfExists(n.notification.target.thread)?.freshYouIds().contains(n.notification.target.postId) ?? false)) {
 			n.autoCloseAnimation!.forward().then((_) => closeNotification(n));
 		}
 	}
@@ -101,7 +101,7 @@ class NotificationsOverlayState extends State<NotificationsOverlay> with TickerP
 		if (!shown.contains(notification)) {
 			return;
 		}
-		notification.imageboard.notifications.foregroundMuteThread(notification.notification.thread);
+		notification.imageboard.notifications.foregroundMuteThread(notification.notification.target.thread);
 		closeNotification(notification);
 	}
 
@@ -191,33 +191,31 @@ class NotificationContent extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final threadState = context.read<Persistence>().getThreadStateIfExists(notification.thread);
+		final threadState = context.read<Persistence>().getThreadStateIfExists(notification.target.thread);
 		final thread = threadState?.thread;
 		Post? post;
 		bool isYou = false;
-		if (notification.postId != null) {
-			post = thread?.posts.tryFirstWhere((p) => p.id == notification.postId);
-		}
+		post = thread?.posts.tryFirstWhere((p) => p.id == notification.target.postId);
 		if (threadState != null) {
-			isYou = threadState.youIds.contains(notification.postId);
+			isYou = threadState.youIds.contains(notification.target.postId);
 		}
 		String title;
 		if (notification is BoardWatchNotification) {
-			title = 'New ${notification.isThread ? 'thread' : 'post'} matching "${(notification as BoardWatchNotification).filter}" on /${notification.thread.board}/';
+			title = 'New ${notification.isThread ? 'thread' : 'post'} matching "${(notification as BoardWatchNotification).filter}" on /${notification.target.board}/';
 		}
 		else if (post == null) {
-			title = 'New post in /${notification.thread.board}/${notification.thread.id}';
+			title = 'New post in /${notification.target.board}/${notification.target.threadId}';
 		}
 		else {
-			title = 'New ${isYou ? 'reply' : 'post'} in /${notification.thread.board}/${notification.thread.id}';
+			title = 'New ${isYou ? 'reply' : 'post'} in /${notification.target.board}/${notification.target.threadId}';
 		}
 		return IgnorePointer(
 			child: ChangeNotifierProvider<PostSpanZoneData>(
 				create: (context) => PostSpanRootZoneData(
 				site: context.read<ImageboardSite>(),
 					thread: thread ?? Thread(
-						board: notification.thread.board,
-						id: notification.thread.id,
+						board: notification.target.board,
+						id: notification.target.threadId,
 						isDeleted: false,
 						isArchived: false,
 						title: '',
@@ -228,7 +226,7 @@ class NotificationContent extends StatelessWidget {
 						posts_: [],
 						attachments: []
 					),
-					threadState: context.read<Persistence>().getThreadStateIfExists(notification.thread),
+					threadState: context.read<Persistence>().getThreadStateIfExists(notification.target.thread),
 					semanticRootIds: [-10]
 				),
 				builder: (context, _) => ConstrainedBox(

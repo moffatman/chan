@@ -842,8 +842,8 @@ class _ThreadPageState extends State<ThreadPage> {
 																							GestureDetector(
 																								behavior: HitTestBehavior.opaque,
 																								onTap: _switchToLive,
-																								child: Row(
-																									children: const [
+																								child: const Row(
+																									children: [
 																										Icon(CupertinoIcons.archivebox),
 																										SizedBox(width: 8),
 																										Text('Archived')
@@ -1566,17 +1566,17 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											disabledColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.4),
 											padding: const EdgeInsets.all(8),
 											minSize: 0,
-											onPressed: button.$2 == null ? null : () {
+											onPressed: button.$3 == null ? null : () {
 												lightHapticFeedback();
-												button.$2?.call();
+												button.$3?.call();
 												_hideMenu();
 											},
 											child: Row(
 												mainAxisSize: MainAxisSize.min,
 												children: [
-													Text(button.$0),
+													Text(button.$1),
 													const SizedBox(width: 8),
-													button.$1
+													button.$2
 												]
 											)
 										),

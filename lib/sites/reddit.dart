@@ -107,10 +107,10 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	void _updateTimeEstimateData(int id, DateTime time) {
-		if (_earliestKnown == null || id < _earliestKnown!.$0) {
+		if (_earliestKnown == null || id < _earliestKnown!.$1) {
 			_earliestKnown = (id, time);
 		}
-		if (_latestKnown == null || id > _latestKnown!.$0) {
+		if (_latestKnown == null || id > _latestKnown!.$1) {
 			_latestKnown = (id, time);
 		}
 	}
@@ -118,8 +118,8 @@ class SiteReddit extends ImageboardSite {
 		if (_earliestKnown == null || _latestKnown == null) {
 			return DateTime(2000);
 		}
-		final slope = (_latestKnown!.$1.millisecondsSinceEpoch - _earliestKnown!.$1.millisecondsSinceEpoch) / (_latestKnown!.$0 - _earliestKnown!.$0);
-		return DateTime.fromMillisecondsSinceEpoch((slope * (id - _earliestKnown!.$0)).round() + _earliestKnown!.$1.millisecondsSinceEpoch);
+		final slope = (_latestKnown!.$2.millisecondsSinceEpoch - _earliestKnown!.$2.millisecondsSinceEpoch) / (_latestKnown!.$1 - _earliestKnown!.$1);
+		return DateTime.fromMillisecondsSinceEpoch((slope * (id - _earliestKnown!.$1)).round() + _earliestKnown!.$2.millisecondsSinceEpoch);
 	}
 
 	SiteReddit() : super([]);
@@ -521,7 +521,7 @@ class SiteReddit extends ImageboardSite {
 			}
 		}
 		final suffix = _getCatalogSuffix(variant);
-		final response = await client.getUri(Uri.https(baseUrl, '/r/$board${suffix.$0}', suffix.$1));
+		final response = await client.getUri(Uri.https(baseUrl, '/r/$board${suffix.$1}', suffix.$2));
 		return (response.data['data']['children'] as List<dynamic>).map((d) => _makeThread(d['data'])..currentPage = 1).toList();
 	}
 
@@ -616,9 +616,9 @@ class SiteReddit extends ImageboardSite {
 	@override
 	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async {
 		final suffix = _getCatalogSuffix(variant);
-		final response = await client.getUri(Uri.https(baseUrl, '/r/${after.board}${suffix.$0}', {
+		final response = await client.getUri(Uri.https(baseUrl, '/r/${after.board}${suffix.$1}', {
 			'after': 't3_${toRedditId(after.id)}',
-			...suffix.$1
+			...suffix.$2
 		}));
 		final newPage = (after.currentPage ?? 1) + 1;
 		return (response.data['data']['children'] as List<dynamic>).map((d) => _makeThread(d['data'])..currentPage = newPage).toList();

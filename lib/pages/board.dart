@@ -615,40 +615,40 @@ class _BoardPageState extends State<BoardPage> {
 								if (choice == null) {
 									return;
 								}
-								if (choice.$0 == null) {
-									if (choice.$1 == _ThreadSortingMethodScope.tab) {
+								if (choice.$1 == null) {
+									if (choice.$2 == _ThreadSortingMethodScope.tab) {
 										_variant = null;
 										widget.onCatalogVariantChanged?.call(_variant);
 									}
-									else if (choice.$1 == _ThreadSortingMethodScope.board) {
+									else if (choice.$2 == _ThreadSortingMethodScope.board) {
 										persistence?.browserState.catalogVariants.remove(board?.name);
 									}
 									setState(() {});
 									return;
 								}
-								switch (choice.$1) {
+								switch (choice.$2) {
 									case _ThreadSortingMethodScope.global:
 										if (site?.isReddit ?? false) {
-											settings.redditCatalogVariant = choice.$0!;
+											settings.redditCatalogVariant = choice.$1!;
 										}
 										else if (site?.isHackerNews ?? false) {
-											settings.hackerNewsCatalogVariant = choice.$0!;
+											settings.hackerNewsCatalogVariant = choice.$1!;
 										}
 										else {
-											settings.catalogVariant = choice.$0!;
+											settings.catalogVariant = choice.$1!;
 										}
 										break;
 									case _ThreadSortingMethodScope.board:
-										persistence?.browserState.catalogVariants[board!.name] = choice.$0!;
+										persistence?.browserState.catalogVariants[board!.name] = choice.$1!;
 										persistence?.didUpdateBrowserState();
 										break;
 									case _ThreadSortingMethodScope.tab:
 										final otherwiseDefault = _defaultBoardVariant ?? _defaultGlobalVariant;
-										if (otherwiseDefault == choice.$0!) {
+										if (otherwiseDefault == choice.$1!) {
 											_variant = null;
 										}
 										else {
-											_variant = choice.$0!;
+											_variant = choice.$1!;
 										}
 										widget.onCatalogVariantChanged?.call(_variant);
 										setState(() {});

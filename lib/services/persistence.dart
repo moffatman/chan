@@ -425,7 +425,7 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 	}
 
 	PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
-		return _cachedEphemeralThreadStates[thread]?.$0 ?? threadStateBox.get('${thread.board}/${thread.id}');
+		return _cachedEphemeralThreadStates[thread]?.$1 ?? threadStateBox.get('${thread.board}/${thread.id}');
 	}
 
 	static final Map<String, Map<ThreadIdentifier, (PersistentThreadState, EasyListenable)>> _cachedEphemeralThreadStatesById = {};
@@ -445,13 +445,13 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 			return newState;
 		}
 		else {
-			return _cachedEphemeralThreadStates.putIfAbsent(thread, () => (PersistentThreadState(ephemeralOwner: this), EasyListenable())).$0;
+			return _cachedEphemeralThreadStates.putIfAbsent(thread, () => (PersistentThreadState(ephemeralOwner: this), EasyListenable())).$1;
 		}
 	}
 
 	@override
 	Future<void> ephemeralThreadStateDidUpdate(PersistentThreadState state) async {
-		await Future.microtask(() => _cachedEphemeralThreadStates[state.identifier]?.$1.didUpdate());
+		await Future.microtask(() => _cachedEphemeralThreadStates[state.identifier]?.$2.didUpdate());
 	}
 
 	ImageboardBoard getBoard(String boardName) {
@@ -527,7 +527,7 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 	}
 
 	Listenable listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
-		return _cachedEphemeralThreadStates[thread]?.$1 ?? threadStateBox.listenable(keys: ['${thread.board}/${thread.id}']);
+		return _cachedEphemeralThreadStates[thread]?.$2 ?? threadStateBox.listenable(keys: ['${thread.board}/${thread.id}']);
 	}
 
 	Future<void> storeBoards(List<ImageboardBoard> newBoards) async {
@@ -568,7 +568,7 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 	static void didChangeBrowserHistoryStatus() {
 		for (final x in _cachedEphemeralThreadStatesById.values) {
 			for (final y in x.values) {
-				y.$1.dispose();
+				y.$2.dispose();
 			}
 		}
 		_cachedEphemeralThreadStatesById.clear();

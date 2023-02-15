@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:chan/firebase_options.dart';
+import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/history.dart';
@@ -190,7 +191,8 @@ class _ChanAppState extends State<ChanApp> {
 					ChangeNotifierProvider.value(value: settings)
 				],
 				child: SettingsSystemListener(
-					child: MediaQuery.fromWindow(
+					child: MediaQuery.fromView(
+						view: WidgetsBinding.instance.window,
 						child: StickyMediaQuery(
 							top: true,
 							child: Builder(
@@ -215,7 +217,6 @@ class _ChanAppState extends State<ChanApp> {
 												filter: settings.filter,
 												child: CupertinoApp(
 													title: 'Chance',
-													useInheritedMediaQuery: true,
 													debugShowCheckedModeBanner: false,
 													theme: theme,
 													home: Builder(
@@ -336,7 +337,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	late Listenable browseCountListenable;
 	final activeBrowserTab = ValueNotifier<int>(0);
 	final _tabListController = ScrollController();
-	StreamSubscription<BoardThreadOrPostIdentifier>? _devNotificationsSubscription;
+	StreamSubscription<PostIdentifier>? _devNotificationsSubscription;
 	Imageboard? devImageboard;
 	final devTab = PersistentBrowserTab();
 	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
@@ -346,7 +347,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool _isScrolling = false;
 	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
-	final Map<String, ({Notifications notifications, StreamSubscription<BoardThreadOrPostIdentifier> subscription})> _notificationsSubscriptions = {};
+	final Map<String, ({Notifications notifications, StreamSubscription<PostIdentifier> subscription})> _notificationsSubscriptions = {};
 	late StreamSubscription<String?> _linkSubscription;
 	late StreamSubscription<String?> _fakeLinkSubscription;
 	late StreamSubscription<List<SharedMediaFile>> _sharedFilesSubscription;
@@ -401,7 +402,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		return false;
 	}
 
-	void _onDevNotificationTapped(BoardThreadOrPostIdentifier id) async {
+	void _onDevNotificationTapped(PostIdentifier id) async {
 		_tabController.index = 4;
 		_lastIndex = 4;
 		if (showTabPopup) {
@@ -413,12 +414,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		for (int i = 0; i < 200 && _settingsNavigatorKey.currentState == null; i++) {
 			await Future.delayed(const Duration(milliseconds: 50));
 		}
-		if (devTab.threadController?.items.tryFirst?.item.threadIdentifier != id.threadIdentifier) {
+		if (devTab.threadController?.items.tryFirst?.item.threadIdentifier != id.thread) {
 			_settingsNavigatorKey.currentState?.popUntil((r) => r.isFirst);
 			_settingsNavigatorKey.currentState?.push(
 				FullWidthCupertinoPageRoute(
 					builder: (context) => ThreadPage(
-						thread: id.threadIdentifier!,
+						thread: id.thread,
 						initialPostId: id.postId,
 						boardSemanticId: -1
 					),
@@ -426,7 +427,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				)
 			);
 		}
-		else if (id.postId != null) {
+		else if (id.postId != id.threadId) {
 			try {
 				await devTab.threadController?.animateTo((p) => p.id == id.postId);
 			}
@@ -603,10 +604,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		else {
 			final dest = await modalLoad(context, 'Checking url...', () => ImageboardRegistry.instance.decodeUrl(link), wait: const Duration(milliseconds: 50));
 			if (dest != null) {
-				_onNotificationTapped(dest.$0, dest.$1);
+				_onNotificationTapped(dest.$1, dest.$2);
 				return;
 			}
-			final devDest = await devImageboard?.site.decodeUrl(link);
+			final devDest = (await devImageboard?.site.decodeUrl(link))?.postIdentifier;
 			if (devDest != null) {
 				_onDevNotificationTapped(devDest);
 				return;
@@ -1483,7 +1484,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			if (_notificationsSubscriptions[board.key]?.notifications != board.notifications) {
 				_notificationsSubscriptions[board.key]?.subscription.cancel();
 				_notificationsSubscriptions[board.key] = (notifications: board.notifications, subscription: board.notifications.tapStream.listen((target) {
-					_onNotificationTapped(board, target);
+					_onNotificationTapped(board, target.boardThreadOrPostId);
 				}));
 			}
 		}

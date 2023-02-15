@@ -341,9 +341,9 @@ class _SavedPageState extends State<SavedPage> {
 																	watch.imageboard.notifications.removeWatch(watch.item);
 																}
 															} : null,
-															child: Row(
+															child: const Row(
 																mainAxisSize: MainAxisSize.min,
-																children: const [
+																children: [
 																	Icon(CupertinoIcons.xmark),
 																	SizedBox(width: 8),
 																	Flexible(
@@ -761,9 +761,9 @@ class _SavedPageState extends State<SavedPage> {
 														item.imageboard.persistence.deleteSavedAttachment(item.item.attachment);
 													}
 												} : null,
-												child: Row(
+												child: const Row(
 													mainAxisSize: MainAxisSize.min,
-													children: const [
+													children: [
 														Icon(CupertinoIcons.xmark),
 														SizedBox(width: 8),
 														Flexible(
@@ -938,9 +938,9 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 															CupertinoButton(
 																padding: EdgeInsets.zero,
 																onPressed: () => openBrowser(context, Uri.https('unifiedpush.org', '/users/distributors/')),
-																child: Row(
+																child: const Row(
 																	mainAxisSize: MainAxisSize.min,
-																	children: const [
+																	children: [
 																		Text('More info', style: TextStyle(fontSize: 15)),
 																		Icon(CupertinoIcons.chevron_right, size: 15)
 																	]

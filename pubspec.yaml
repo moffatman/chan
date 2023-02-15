@@ -46,7 +46,7 @@ dependencies:
   url_launcher: ^6.0.12
   highlight: ^0.7.0
   flutter_highlight: ^0.7.0
-  google_fonts: ^3.0.1
+  google_fonts: ^4.0.3
   file_picker: ^5.0.0
   flutter_colorpicker: ^1.0.3
   photo_manager: ^2.0.0-dev.6

@@ -280,8 +280,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void checkForSpamFilteredPost(Post post) {
-		if (post.board != _spamFilteredPostId?.$0) return;
-		if (post.id != _spamFilteredPostId?.$1) return;
+		if (post.board != _spamFilteredPostId?.$1) return;
+		if (post.id != _spamFilteredPostId?.$2) return;
 		final similarity = post.span.buildText().similarityTo(_textFieldController.text);
 		print('Spam filter similarity: $similarity');
 		if (similarity > 0.90) {
@@ -1388,14 +1388,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							) : _attachmentProgress != null ? Row(
 								mainAxisSize: MainAxisSize.min,
 								children: [
-									Text(_attachmentProgress!.$0),
+									Text(_attachmentProgress!.$1),
 									const SizedBox(width: 16),
 									SizedBox(
 										width: 100,
 										child: ClipRRect(
 											borderRadius: BorderRadius.circular(4),
 											child: ValueListenableBuilder<double?>(
-												valueListenable: _attachmentProgress!.$1,
+												valueListenable: _attachmentProgress!.$2,
 												builder: (context, value, _) => LinearProgressIndicator(
 													value: value,
 													minHeight: 20,
