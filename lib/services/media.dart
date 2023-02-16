@@ -256,7 +256,7 @@ class MediaConversion {
 		File file = getDestination();
 		if (!(await file.exists())) {
 			if (inputFile.scheme == 'file') {
-				file = File(inputFile.path);
+				file = File(inputFile.toStringFFMPEG());
 			}
 			else {
 				return null;
