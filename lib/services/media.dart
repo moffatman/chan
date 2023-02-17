@@ -253,9 +253,11 @@ class MediaConversion {
 	}
 
 	Future<MediaConversionResult?> getDestinationIfSatisfiesConstraints() async {
+		bool isOriginalFile = false;
 		File file = getDestination();
 		if (!(await file.exists())) {
 			if (inputFile.scheme == 'file') {
+				isOriginalFile = true;
 				file = File(inputFile.toStringFFMPEG());
 			}
 			else {
@@ -281,6 +283,15 @@ class MediaConversion {
 			return null;
 		}
 		if ((maximumDurationInSeconds != null) && (scan!.duration != null) && (scan.duration!.inSeconds > maximumDurationInSeconds!)) {
+			return null;
+		}
+		final maxDimension = maximumDimension ?? 9999999;
+		final width = scan?.width ?? 0;
+		final height = scan?.height ?? 0;
+		if (width > maxDimension || height > maxDimension) {
+			return null;
+		}
+		if (soundSource != null && isOriginalFile) {
 			return null;
 		}
 		return MediaConversionResult(file, scan?.hasAudio ?? false);
