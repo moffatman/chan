@@ -1665,6 +1665,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									label: 'Settings'
 								)
 							],
+							onUpSwipe: () {
+								setState(() {
+									showTabPopup = true;
+								});
+							},
 							onLeftSwipe: () {
 								if (_tabController.index != 0) {
 									return;
@@ -1813,11 +1818,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 class ChanceCupertinoTabBar extends CupertinoTabBar {
 	final VoidCallback onLeftSwipe;
 	final VoidCallback onRightSwipe;
+	final VoidCallback onUpSwipe;
 
   const ChanceCupertinoTabBar({
 		required super.items,
 		required this.onLeftSwipe,
 		required this.onRightSwipe,
+		required this.onUpSwipe,
 		super.backgroundColor,
 		super.activeColor,
 		super.inactiveColor,
@@ -1845,6 +1852,7 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
     return ChanceCupertinoTabBar(
 			onLeftSwipe: onLeftSwipe,
 			onRightSwipe: onRightSwipe,
+			onUpSwipe: onUpSwipe,
       key: key ?? this.key,
       items: items ?? this.items,
       backgroundColor: backgroundColor ?? this.backgroundColor,
@@ -1863,7 +1871,10 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 		return GestureDetector(
 			behavior: HitTestBehavior.translucent,
 			onHorizontalDragEnd: (details) {
-				if (details.velocity.pixelsPerSecond.dx > 0) {
+				if ((-1 * details.velocity.pixelsPerSecond.dy) > details.velocity.pixelsPerSecond.dx) {
+					onUpSwipe();
+				}
+				else if (details.velocity.pixelsPerSecond.dx > 0) {
 					onLeftSwipe();
 				}
 				else if (details.velocity.pixelsPerSecond.dx < 0) {
