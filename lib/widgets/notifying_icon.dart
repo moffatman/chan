@@ -42,6 +42,9 @@ class StationaryNotifyingIcon extends StatelessWidget {
 								padding: const EdgeInsets.all(2),
 								child: AutoSizeText(
 									primary.toString(),
+									maxLines: 1,
+									minFontSize: 0,
+									textAlign: TextAlign.center,
 									style: const TextStyle(
 										color: Colors.white
 									)
@@ -58,7 +61,7 @@ class StationaryNotifyingIcon extends StatelessWidget {
 								height: 20,
 								alignment: Alignment.center,
 								padding: const EdgeInsets.all(2),
-								child:AutoSizeText(
+								child: AutoSizeText(
 									secondary.toString(),
 									maxLines: 1,
 									minFontSize: 0,
