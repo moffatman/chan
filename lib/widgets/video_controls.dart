@@ -1,4 +1,5 @@
 import 'package:chan/services/settings.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mutex/mutex.dart';
@@ -100,10 +101,6 @@ class _VideoControlsState extends State<VideoControls> {
 		_currentlyWithinLongPress = false;
 	});
 
-	String _formatDuration(Duration d) {
-		return '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
-	}
-
 	@override
 	Widget build(BuildContext context) {
 		final primaryColor = CupertinoTheme.of(context).primaryColor;
@@ -119,7 +116,7 @@ class _VideoControlsState extends State<VideoControls> {
 							width: 40,
 							child: FittedBox(
 								fit: BoxFit.scaleDown,
-								child: Text(_formatDuration(positionValue), style: TextStyle(color: primaryColor))
+								child: Text(formatDuration(positionValue), style: TextStyle(color: primaryColor))
 							)
 						)
 					),
@@ -156,7 +153,7 @@ class _VideoControlsState extends State<VideoControls> {
 						width: 40,
 						child: FittedBox(
 							fit: BoxFit.scaleDown,
-							child: Text(_formatDuration(value.duration), style: TextStyle(color: primaryColor))
+							child: Text(formatDuration(value.duration), style: TextStyle(color: primaryColor))
 						)
 					),
 					if (widget.hasAudio) AnimatedBuilder(

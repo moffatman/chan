@@ -89,6 +89,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final TextEditingController _filenameController;
 	late final FocusNode _textFocusNode;
 	bool loading = false;
+	MediaScan? _attachmentScan;
 	File? attachment;
 	String? get attachmentExt => attachment?.path.split('.').last.toLowerCase();
 	bool _showOptions = false;
@@ -187,6 +188,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_subjectFieldController.text = widget.initialSubject;
 			_optionsFieldController.text = widget.initialOptions;
 			attachment = null;
+			_attachmentScan = null;
 			spoiler = false;
 			flag = null;
 			widget.onFilePathChanged?.call(null);
@@ -292,6 +294,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_subjectFieldController.clear();
 			_filenameController.clear();
 			attachment = null;
+			_attachmentScan = null;
 			widget.onFilePathChanged?.call(null);
 			_showAttachmentOptions = false;
 			_spamFilteredPostId = null;
@@ -484,6 +487,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				throw Exception('Unsupported file type: $ext');
 			}
 			if (file != null) {
+				_attachmentScan = await MediaScan.scan(file.uri);
 				setState(() {
 					attachment = file;
 				});
@@ -747,6 +751,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				_subjectFieldController.clear();
 				_filenameController.clear();
 				attachment = null;
+				_attachmentScan = null;
 				widget.onFilePathChanged?.call(null);
 				_showAttachmentOptions = false;
 			}
@@ -1054,9 +1059,41 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					const SizedBox(width: 8),
 					Flexible(
 						child: (attachment != null) ? Row(
-							mainAxisAlignment: MainAxisAlignment.center,
+							mainAxisAlignment: MainAxisAlignment.end,
 							crossAxisAlignment: CrossAxisAlignment.center,
 							children: [
+								Column(
+									crossAxisAlignment: CrossAxisAlignment.end,
+									children: [
+										CupertinoButton(
+											padding: EdgeInsets.zero,
+											minSize: 30,
+											child: const Icon(CupertinoIcons.xmark),
+											onPressed: () {
+												widget.onFilePathChanged?.call(null);
+												setState(() {
+													attachment = null;
+													_attachmentScan = null;
+													_showAttachmentOptions = false;
+													_filenameController.clear();
+												});
+											}
+										),
+										const Spacer(),
+										if (attachmentExt == 'mp4' || attachmentExt == 'webm') Text(
+											[
+												if (_attachmentScan?.codec != null) _attachmentScan!.codec!.toUpperCase(),
+												if (_attachmentScan?.hasAudio == true) 'with audio'
+												else 'no audio',
+												if (_attachmentScan?.duration != null) formatDuration(_attachmentScan!.duration!),
+												if (_attachmentScan?.bitrate != null) '${(_attachmentScan!.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps'
+											].join(', '),
+											style: const TextStyle(color: Colors.grey)
+										),
+										if (_attachmentScan?.width != null && _attachmentScan?.height != null) Text('${_attachmentScan?.width}x${_attachmentScan?.height}', style: const TextStyle(color: Colors.grey)),
+									]
+								),
+								const SizedBox(width: 8),
 								Flexible(
 									child: GestureDetector(
 										child: Hero(
@@ -1078,22 +1115,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												allowContextMenu: false,
 												allowScroll: false
 											);
-										}
-									)
-								),
-								const SizedBox(width: 8),
-								Center(
-									child: CupertinoButton(
-										padding: EdgeInsets.zero,
-										minSize: 30,
-										child: const Icon(CupertinoIcons.xmark),
-										onPressed: () {
-											widget.onFilePathChanged?.call(null);
-											setState(() {
-												attachment = null;
-												_showAttachmentOptions = false;
-												_filenameController.clear();
-											});
 										}
 									)
 								)

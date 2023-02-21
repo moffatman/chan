@@ -174,6 +174,10 @@ String formatRelativeTime(DateTime time) {
 	return timeDiff;
 }
 
+String formatDuration(Duration d) {
+	return '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
+}
+
 class TransparentRoute<T> extends PageRoute<T> {
 	final bool showAnimations;
 	final bool? showAnimationsForward;
