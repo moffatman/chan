@@ -130,6 +130,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	int lastSeenIdBeforeLastUpdate = pow(2, 50).toInt();
 	bool _searching = false;
 	bool _passedFirstLoad = false;
+	bool _showingWatchMenu = false;
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -407,9 +408,14 @@ class _ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<void> _showWatchMenu() async {
+		if (_showingWatchMenu) {
+			return;
+		}
+		_showingWatchMenu = true;
 		await _weakNavigatorKey.currentState?.push(ThreadWatchControlsPage(
 			thread: widget.thread
 		));
+		_showingWatchMenu = false;
 	}
 
 	Future<Thread> _getUpdatedThread() async {
