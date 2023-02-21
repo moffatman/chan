@@ -12,8 +12,50 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mime/mime.dart';
 import 'package:provider/provider.dart';
+part 'web_image_picker.g.dart';
+
+@HiveType(typeId: 35)
+enum WebImageSearchMethod {
+	@HiveField(0)
+	google,
+	@HiveField(1)
+	yandex,
+	@HiveField(2)
+	duckDuckGo;
+	String get name {
+		switch (this) {
+			case google:
+				return 'Google';
+			case yandex:
+				return 'Yandex';
+			case duckDuckGo:
+				return 'DuckDuckGo';
+		}
+	}
+	Uri searchUrl(String query) {
+		switch (this) {
+			case google:
+				return Uri.https('www.google.com', '/search', {
+					'tbm': 'isch',
+					'q': query
+				});
+			case yandex:
+				return Uri.https('yandex.com', '/images/search', {
+					'text': query
+				});
+			case duckDuckGo:
+				return Uri.https('duckduckgo.com', '/', {
+					'q': query,
+					't': 'h_',
+					'iax': 'images',
+					'ia': 'images'
+				});
+		}
+	}
+}
 
 extension ToCssRgba on Color {
 	String toCssRgba() => 'rgba($red, $green, $blue, $opacity)';
@@ -36,7 +78,9 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 
 	late final PullToRefreshController pullToRefreshController;
 	String url = "";
-	bool finishedInitialLoad = false;
+	bool startedInitialLoad = false;
+	bool canGoBack = false;
+	bool canGoForward = false;
 	double progress = 0;
 	late final TextEditingController urlController;
 	late final FocusNode urlFocusNode;
@@ -65,6 +109,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
@@ -74,12 +119,47 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 					smartDashesType: SmartDashesType.disabled,
 					smartQuotesType: SmartQuotesType.disabled,
 					onSubmitted: (value) {
-						var url = Uri.parse(value);
+						Uri url = Uri.parse(value);
 						if (url.scheme.isEmpty) {
-							url = Uri.parse("https://www.google.com/search?tbm=isch&q=$value");
+							url = settings.webImageSearchMethod.searchUrl(value);
 						}
 						webViewController?.loadUrl(urlRequest: URLRequest(url: WebUri.uri(url)));
 					},
+					onSuffixTap: () {
+						urlController.clear();
+						urlFocusNode.requestFocus();
+					},
+				),
+				trailing: Padding(
+					padding: const EdgeInsets.only(left: 8),
+					child: CupertinoButton(
+						minSize: 0,
+						padding: EdgeInsets.zero,
+						onPressed: () async {
+							final choice = await showCupertinoModalPopup<WebImageSearchMethod>(
+								context: context,
+								builder: (context) => CupertinoActionSheet(
+									title: const Text('Search'),
+									actions: WebImageSearchMethod.values.map((entry) => CupertinoActionSheetAction(
+										child: Text(entry.name, style: TextStyle(
+											fontWeight: entry == settings.webImageSearchMethod ? FontWeight.bold : null
+										)),
+										onPressed: () {
+											Navigator.of(context, rootNavigator: true).pop(entry);
+										}
+									)).toList(),
+									cancelButton: CupertinoActionSheetAction(
+										child: const Text('Cancel'),
+										onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+									)
+								)
+							);
+							if (choice != null) {
+								settings.webImageSearchMethod = choice;
+							}
+						},
+						child: const Icon(CupertinoIcons.gear)
+					)
 				)
 			),
 			child: SafeArea(
@@ -102,6 +182,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										},
 										onLoadStart: (controller, url) {
 											setState(() {
+												startedInitialLoad = true;
 												this.url = url.toString();
 												if (url.toString() != 'about:blank') urlController.text = this.url;
 											});
@@ -115,7 +196,6 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										onLoadStop: (controller, url) async {
 											pullToRefreshController.endRefreshing();
 											setState(() {
-												finishedInitialLoad = true;
 												this.url = url.toString();
 												if (url.toString() != 'about:blank') urlController.text = this.url;
 											});
@@ -123,7 +203,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 										onReceivedError: (controller, url, code) {
 											pullToRefreshController.endRefreshing();
 										},
-										onProgressChanged: (controller, progress) {
+										onProgressChanged: (controller, progress) async {
 											if (progress == 100) {
 												pullToRefreshController.endRefreshing();
 											}
@@ -132,15 +212,20 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												if (url.toString() != 'about:blank') urlController.text = url;
 											});
 										},
-										onUpdateVisitedHistory: (controller, url, androidIsReload) {
+										onTitleChanged: (controller, title) async {
+											canGoBack = await controller.canGoBack();
+											canGoForward = await controller.canGoForward();
+										},
+										onUpdateVisitedHistory: (controller, url, androidIsReload) async {
+											canGoBack = await controller.canGoBack();
+											canGoForward = await controller.canGoForward();
 											setState(() {
 												this.url = url.toString();
 												if (url.toString() != 'about:blank') urlController.text = this.url;
 											});
 										}
 									),
-									if (finishedInitialLoad && progress < 1.0) LinearProgressIndicator(value: progress)
-									else Container()
+									if (startedInitialLoad && progress < 1.0) LinearProgressIndicator(value: progress)
 								],
 							),
 						),
@@ -148,16 +233,16 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 							alignment: MainAxisAlignment.center,
 							children: <Widget>[
 								ElevatedButton(
-									child: const Icon(CupertinoIcons.arrow_left),
-									onPressed: () {
+									onPressed: canGoBack ? () {
 										webViewController?.goBack();
-									}
+									} : null,
+									child: const Icon(CupertinoIcons.arrow_left)
 								),
 								ElevatedButton(
-									child: const Icon(CupertinoIcons.arrow_right),
-									onPressed: () {
+									onPressed: canGoForward ? () {
 										webViewController?.goForward();
-									}
+									} : null,
+									child: const Icon(CupertinoIcons.arrow_right)
 								),
 								ElevatedButton(
 									child: const Icon(CupertinoIcons.photo),
@@ -267,7 +352,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																					)
 																				)
 																			),
-																			showAnimations: context.read<EffectiveSettings>().showAnimations
+																			showAnimations: settings.showAnimations
 																		));
 																		if (selectedThumbnail != null && mounted) {
 																			Navigator.of(context).pop(selectedThumbnail);
@@ -279,7 +364,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 													)
 												)
 											),
-											showAnimations: context.read<EffectiveSettings>().showAnimations
+											showAnimations: settings.showAnimations
 										));
 										if (pickedBytes != null) {
 											String? ext = lookupMimeType('', headerBytes: pickedBytes)?.split('/').last;

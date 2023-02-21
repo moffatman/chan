@@ -8,6 +8,7 @@ import 'package:chan/models/flag.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/incognito.dart';
@@ -139,6 +140,7 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 		Hive.registerAdapter(ThreadWatchAdapter());
 		Hive.registerAdapter(BoardWatchAdapter());
 		Hive.registerAdapter(PersistentBrowserStateAdapter());
+		Hive.registerAdapter(WebImageSearchMethodAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
 		wifiCookies = PersistCookieJar(

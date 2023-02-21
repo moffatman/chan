@@ -224,13 +224,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       tabMenuHidesWhenScrollingDown: fields[105] as bool?,
       doubleTapScrollToReplies: fields[106] as bool?,
       lastUnifiedPushEndpoint: fields[107] as String?,
+      webImageSearchMethod: fields[108] as WebImageSearchMethod?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(104)
+      ..writeByte(105)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -438,7 +439,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(106)
       ..write(obj.doubleTapScrollToReplies)
       ..writeByte(107)
-      ..write(obj.lastUnifiedPushEndpoint);
+      ..write(obj.lastUnifiedPushEndpoint)
+      ..writeByte(108)
+      ..write(obj.webImageSearchMethod);
   }
 
   @override

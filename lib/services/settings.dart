@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:chan/models/board.dart';
+import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
@@ -593,6 +594,8 @@ class SavedSettings extends HiveObject {
 	bool doubleTapScrollToReplies;
 	@HiveField(107)
 	String? lastUnifiedPushEndpoint;
+	@HiveField(108)
+	WebImageSearchMethod webImageSearchMethod;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -702,6 +705,7 @@ class SavedSettings extends HiveObject {
 		bool? tabMenuHidesWhenScrollingDown,
 		bool? doubleTapScrollToReplies,
 		this.lastUnifiedPushEndpoint,
+		WebImageSearchMethod? webImageSearchMethod,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -836,7 +840,8 @@ class SavedSettings extends HiveObject {
 		userAgent = userAgent ?? userAgents.first,
 		captcha4ChanCustomNumLetters = captcha4ChanCustomNumLetters ?? 6,
 		tabMenuHidesWhenScrollingDown = tabMenuHidesWhenScrollingDown ?? true,
-		doubleTapScrollToReplies = doubleTapScrollToReplies ?? true {
+		doubleTapScrollToReplies = doubleTapScrollToReplies ?? true,
+		webImageSearchMethod = webImageSearchMethod ?? WebImageSearchMethod.google {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1687,6 +1692,13 @@ class EffectiveSettings extends ChangeNotifier {
 	set lastUnifiedPushEndpoint(String? setting) {
 		_settings.lastUnifiedPushEndpoint = setting;
 		_settings.save();
+	}
+
+	WebImageSearchMethod get webImageSearchMethod => _settings.webImageSearchMethod;
+	set webImageSearchMethod(WebImageSearchMethod setting) {
+		_settings.webImageSearchMethod = setting;
+		_settings.save();
+		notifyListeners();
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];
