@@ -256,7 +256,7 @@ class MediaConversion {
 		bool isOriginalFile = false;
 		File file = getDestination();
 		if (!(await file.exists())) {
-			if (inputFile.scheme == 'file') {
+			if (inputFile.scheme == 'file' && inputFile.path.split('.').last == outputFileExtension) {
 				isOriginalFile = true;
 				file = File(inputFile.toStringFFMPEG());
 			}
