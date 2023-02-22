@@ -106,8 +106,8 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 
 	void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
 		_touchGlobalKey?.currentState?.setScale(
-			blur: 20 - (25 * max(details.localOffsetFromOrigin.dy / min(400, MediaQuery.sizeOf(context).height - _touchStart!.dy), (-1 * details.localOffsetFromOrigin.dy) / min(400, _touchStart!.dy)).abs().clamp(0, 1)),
-			scale: 0.1 + (1.1 * (details.localOffsetFromOrigin.dx / min(400, MediaQuery.sizeOf(context).width)).abs()).clamp(0, 0.9)
+			blur: 20 - (25 * max(details.localOffsetFromOrigin.dy / min(400, MediaQuery.sizeOf(context).shortestSide - _touchStart!.dy), (-1 * details.localOffsetFromOrigin.dy) / min(400, _touchStart!.dy)).abs().clamp(0, 1)),
+			scale: 0.1 + (1.1 * (details.localOffsetFromOrigin.dx / min(400, MediaQuery.sizeOf(context).shortestSide)).abs()).clamp(0, 0.9)
 		);
 	}
 
