@@ -37,6 +37,27 @@ class _FilterEditorState extends State<FilterEditor> {
 	}
 
 	@override
+	void didUpdateWidget(FilterEditor oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (!widget.showRegex && oldWidget.showRegex) {
+			// Save regex changes upon switching back to wizard
+			if (dirty) {
+				WidgetsBinding.instance.addPostFrameCallback((_) {
+					_save();
+				});
+			}
+		}
+	}
+
+	void _save() {
+		context.read<EffectiveSettings>().filterConfiguration = regexController.text;
+		regexFocusNode.unfocus();
+		setState(() {
+			dirty = false;
+		});
+	}
+
+	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
 		final filters = <int, CustomFilter>{};
@@ -534,13 +555,7 @@ class _FilterEditorState extends State<FilterEditor> {
 									padding: EdgeInsets.zero,
 									minSize: 0,
 									child: const Text('Save'),
-									onPressed: () {
-										settings.filterConfiguration = regexController.text;
-										regexFocusNode.unfocus();
-										setState(() {
-											dirty = false;
-										});
-									}
+									onPressed: _save
 								)
 							]
 						),
