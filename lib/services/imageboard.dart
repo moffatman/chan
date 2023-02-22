@@ -215,17 +215,17 @@ class ImageboardRegistry extends ChangeNotifier {
 							return;
 						}
 						final site = _sites[entry.key]!.site;
-						final savedFields = site.getSavedLoginFields();
+						final savedFields = site.loginSystem?.getSavedLoginFields();
 						if (savedFields != null && settings.connectivity == ConnectivityResult.wifi) {
 							try {
-								await site.login(savedFields);
+								await site.loginSystem!.login(savedFields);
 								print('Auto-logged in');
 							}
 							catch (e) {
 								showToast(
 									context: context,
 									icon: CupertinoIcons.exclamationmark_triangle,
-									message: 'Failed to log in to ${site.getLoginSystemName()}'
+									message: 'Failed to log in to ${site.loginSystem?.name}'
 								);
 								print('Problem auto-logging in: $e');
 							}

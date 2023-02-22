@@ -16,7 +16,22 @@ enum AttachmentType {
 	@HiveField(4)
 	pdf,
 	@HiveField(5)
-	url
+	url;
+	static AttachmentType fromFilename(String filename) {
+		final ext = filename.split('.').last.toLowerCase();
+		switch (ext) {
+			case 'webm':
+				return AttachmentType.webm;
+			case 'mp4':
+				return AttachmentType.mp4;
+			case 'pdf':
+				return AttachmentType.pdf;
+			case 'mp3':
+				return AttachmentType.mp3;
+			default:
+				return AttachmentType.image;
+		}
+	}
 }
 
 extension IsVideo on AttachmentType {

@@ -345,11 +345,6 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
-
-	}
-
-	@override
 	Future<PostReceipt> createThread({required String board, String name = '', String options = '', String subject = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
 		// TODO: implement createThread
 		throw UnimplementedError();
@@ -375,11 +370,6 @@ class SiteHackerNews extends ImageboardSite {
 	Future<void> deletePost(String board, PostReceipt receipt) {
 		// TODO: implement deletePost
 		throw UnimplementedError();
-	}
-
-	@override
-	DateTime? getActionAllowedTime(String board, ImageboardAction action) {
-		return null;
 	}
 
 	@override
@@ -437,12 +427,6 @@ class SiteHackerNews extends ImageboardSite {
 		return await Future.wait(data.take(catalogThreadsPerPage).map(_getThreadForCatalog));
 	}
 
-	@override
-	List<ImageboardSiteLoginField> getLoginFields() => [];
-
-	@override
-	String? getLoginSystemName() => null;
-
 	Future<List<Post>> _getMoreThread(_HNObject item) async {
 		final posts = <Post>[];
 		Future<void> dumpNode(_HNObject item2) async {
@@ -477,12 +461,6 @@ class SiteHackerNews extends ImageboardSite {
 	Future<Post> getPost(String board, int id) async {
 		final item = await _getAlgolia(id);
 		return _makePost(item);
-	}
-
-	@override
-	Uri getPostReportUrl(String board, int id) {
-		// TODO: implement getPostReportUrl
-		throw UnimplementedError();
 	}
 
 	@override
@@ -521,12 +499,6 @@ class SiteHackerNews extends ImageboardSite {
 
 	@override
 	String get imageUrl => baseUrl;
-
-	@override
-	Future<void> login(Map<ImageboardSiteLoginField, String> fields) {
-		// TODO: implement login
-		throw UnimplementedError();
-	}
 
 	@override
 	String get name => 'Hacker News';

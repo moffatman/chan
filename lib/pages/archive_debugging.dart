@@ -37,11 +37,6 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  DateTime? getActionAllowedTime(String board, ImageboardAction action) {
-    return null;
-  }
-
-  @override
   Future<List<ImageboardBoard>> getBoards() {
     return archive.getBoards();
   }
@@ -64,11 +59,6 @@ class WrappedArchive extends ImageboardSite {
   @override
   Future<Post> getPostFromArchive(String board, int id) {
     return archive.getPost(board, id);
-  }
-
-  @override
-  Uri getPostReportUrl(String board, int id) {
-    throw UnimplementedError();
   }
 
   @override
@@ -105,26 +95,6 @@ class WrappedArchive extends ImageboardSite {
   @override
   Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) {
     return archive.search(query, page: page, lastResult: lastResult);
-  }
-
-  @override
-  List<ImageboardSiteLoginField> getLoginFields() {
-    return [];
-  }
-
-  @override
-  Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
-    
-  }
-
-  @override
-  Future<void> login(Map<ImageboardSiteLoginField, String> fields) {
-    throw UnimplementedError();
-  }
-
-  @override
-  String? getLoginSystemName() {
-    return null;
   }
 
   @override

@@ -149,7 +149,7 @@ class SettingsPage extends StatelessWidget {
 							barrierDismissible: true,
 							builder: (context) => CupertinoAlertDialog(
 								content: SettingsLoginPanel(
-									site: site
+									loginSystem: site.loginSystem!
 								),
 								actions: [
 									CupertinoDialogAction(
@@ -560,9 +560,9 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Icon(CupertinoIcons.lock),
 						const SizedBox(width: 8),
 						Expanded(
-							child: Text(_loginSystemImageboard.site.getLoginSystemName() ?? 'No login system')
+							child: Text(_loginSystemImageboard.site.loginSystem?.name ?? 'No login system')
 						),
-						if (_loginSystemImageboard.site.getLoginSystemName() != null) ...[
+						if (_loginSystemImageboard.site.loginSystem != null) ...[
 							CupertinoButton.filled(
 								padding: const EdgeInsets.all(8),
 								onPressed: () {
@@ -571,7 +571,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 										barrierDismissible: true,
 										builder: (context) => CupertinoAlertDialog(
 											content: SettingsLoginPanel(
-												site: _loginSystemImageboard.site
+												loginSystem: _loginSystemImageboard.site.loginSystem!
 											),
 											actions: [
 												CupertinoDialogAction(
@@ -582,7 +582,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 										)
 									);
 								},
-								child: Text(_loginSystemImageboard.site.getSavedLoginFields() == null ? 'Logged out' : 'Logged in')
+								child: Text(_loginSystemImageboard.site.loginSystem?.getSavedLoginFields() == null ? 'Logged out' : 'Logged in')
 							),
 							const SizedBox(width: 8)
 						],
@@ -3324,9 +3324,9 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 }
 
 class SettingsLoginPanel extends StatefulWidget {
-	final ImageboardSite site;
+	final ImageboardSiteLoginSystem loginSystem;
 	const SettingsLoginPanel({
-		required this.site,
+		required this.loginSystem,
 		Key? key
 	}) : super(key: key);
 
@@ -3339,7 +3339,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 	bool loading = true;
 
 	Future<void> _updateStatus() async {
-		final newSavedFields = widget.site.getSavedLoginFields();
+		final newSavedFields = widget.loginSystem.getSavedLoginFields();
 		setState(() {
 			savedFields = newSavedFields;
 			loading = false;
@@ -3354,12 +3354,12 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 
 	Future<void> _login() async {
 		final fields = {
-			for (final field in widget.site.getLoginFields()) field: ''
+			for (final field in widget.loginSystem.getLoginFields()) field: ''
 		};
 		final cont = await showCupertinoDialog<bool>(
 			context: context,
 			builder: (context) => CupertinoAlertDialog(
-				title: Text('${widget.site.getLoginSystemName()!} Login'),
+				title: Text('${widget.loginSystem.name} Login'),
 				content: ListBody(
 					children: [
 						const SizedBox(height: 8),
@@ -3394,12 +3394,12 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 		if (cont == true) {
 			print(fields);
 			try {
-				await widget.site.login(fields);
-				widget.site.persistence.browserState.loginFields.clear();
-				widget.site.persistence.browserState.loginFields.addAll({
+				await widget.loginSystem.login(fields);
+				widget.loginSystem.parent.persistence.browserState.loginFields.clear();
+				widget.loginSystem.parent.persistence.browserState.loginFields.addAll({
 					for (final field in fields.entries) field.key.formKey: field.value
 				});
-				widget.site.persistence.didUpdateBrowserState();
+				widget.loginSystem.parent.persistence.didUpdateBrowserState();
 			}
 			catch (e) {
 				if (!mounted) return;
@@ -3430,8 +3430,8 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 										loading = true;
 									});
 									try {
-										await widget.site.clearLoginCookies(true);
-										await widget.site.clearSavedLoginFields();
+										await widget.loginSystem.clearLoginCookies(true);
+										await widget.loginSystem.clearSavedLoginFields();
 									}
 									catch (e) {
 										await alertError(context, e.toStringDio());
@@ -3460,7 +3460,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 					padding: const EdgeInsets.only(left: 16),
 					child: Align(
 						alignment: Alignment.topLeft,
-						child: Text('Try to use ${widget.site.getLoginSystemName()} on mobile networks?')
+						child: Text('Try to use ${widget.loginSystem.name} on mobile networks?')
 					)
 				),
 				const SizedBox(height: 16),

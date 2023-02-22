@@ -27,7 +27,8 @@ class SiteLainchan extends ImageboardSite {
 	final String name;
 	final int? maxUploadSizeBytes;
 
-	final Map<PersistCookieJar, bool> _adminEnabled = {};
+	@override
+	late final SiteLainchanLoginSystem loginSystem = SiteLainchanLoginSystem(this);
 
 	SiteLainchan({
 		required this.baseUrl,
@@ -268,7 +269,7 @@ class SiteLainchan extends ImageboardSite {
 	}) async {
 		final now = DateTime.now().subtract(const Duration(seconds: 5));
 		final password = List.generate(12, (i) => random.nextInt(16).toRadixString(16)).join();
-		final referer = _getWebUrl(board, threadId: threadId, mod: _adminEnabled.putIfAbsent(Persistence.currentCookies, () => false));
+		final referer = _getWebUrl(board, threadId: threadId, mod: loginSystem._adminEnabled.putIfAbsent(Persistence.currentCookies, () => false));
 		final page = await client.get(referer, options: Options(validateStatus: (x) => true));
 		final Map<String, dynamic> fields = {
 			for (final field in parse(page.data).querySelector('form[name="post"]')?.querySelectorAll('input[type="text"], input[type="submit"], input[type="hidden"], textarea') ?? [])
@@ -417,18 +418,13 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	DateTime? getActionAllowedTime(String board, ImageboardAction action) {
-		return DateTime.now().subtract(const Duration(days: 1));
-	}
-
-	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
 		return NoCaptchaRequest();
 	}
 
 	@override
-	Uri getPostReportUrl(String board, int id) {
-		return Uri.https(baseUrl, '/report.php?post=delete_$id&board=$board');
+	Uri getPostReportUrl(String board, int threadId, int postId) {
+		return Uri.https(baseUrl, '/report.php?post=delete_$postId&board=$board');
 	}
 
 	@override
@@ -454,62 +450,6 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	String get imageUrl => baseUrl;
-
-  @override
-  List<ImageboardSiteLoginField> getLoginFields() {
-    return const [
-			ImageboardSiteLoginField(
-				displayName: 'Username',
-				formKey: 'username'
-			),
-			ImageboardSiteLoginField(
-				displayName: 'Password',
-				formKey: 'password'
-			)
-		];
-  }
-
-  @override
-  Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
-		final jars = fromBothWifiAndCellular ? [
-			Persistence.wifiCookies,
-			Persistence.cellularCookies
-		] : [
-			Persistence.currentCookies
-		];
-		for (final jar in jars) {
-			await jar.delete(Uri.https(baseUrl, '/'), true);
-			await jar.delete(Uri.https(baseUrl, '/mod.php'), true);
-			_adminEnabled[jar] = false;
-		}
-  }
-
-  @override
-  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
-    final response = await client.post(
-			'https://$baseUrl/mod.php?/',
-			data: {
-				for (final field in fields.entries) field.key.formKey: field.value,
-				'login': 'Continue'
-			},
-			options: Options(
-				contentType: Headers.formUrlEncodedContentType,
-				followRedirects: false,
-				validateStatus: (x) => true
-			),
-		);
-		final document = parse(response.data);
-		if (document.querySelector('h2') != null) {
-			await clearLoginCookies(false);
-			throw ImageboardSiteLoginException(document.querySelector('h2')!.text);
-		}
-		_adminEnabled[Persistence.currentCookies] = true;
-  }
-
-  @override
-  String? getLoginSystemName() {
-    return 'Administrator';
-  }
 
 	@override
 	String get siteType => 'lainchan';
@@ -542,4 +482,67 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	bool get supportsPushNotifications => true;
+}
+
+class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
+	@override
+	final SiteLainchan parent;
+
+	final Map<PersistCookieJar, bool> _adminEnabled = {};
+
+	SiteLainchanLoginSystem(this.parent);
+
+  @override
+  List<ImageboardSiteLoginField> getLoginFields() {
+    return const [
+			ImageboardSiteLoginField(
+				displayName: 'Username',
+				formKey: 'username'
+			),
+			ImageboardSiteLoginField(
+				displayName: 'Password',
+				formKey: 'password'
+			)
+		];
+  }
+
+  @override
+  Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
+		final jars = fromBothWifiAndCellular ? [
+			Persistence.wifiCookies,
+			Persistence.cellularCookies
+		] : [
+			Persistence.currentCookies
+		];
+		for (final jar in jars) {
+			await jar.delete(Uri.https(parent.baseUrl, '/'), true);
+			await jar.delete(Uri.https(parent.baseUrl, '/mod.php'), true);
+			_adminEnabled[jar] = false;
+		}
+  }
+
+  @override
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
+    final response = await parent.client.post(
+			'https://${parent.baseUrl}/mod.php?/',
+			data: {
+				for (final field in fields.entries) field.key.formKey: field.value,
+				'login': 'Continue'
+			},
+			options: Options(
+				contentType: Headers.formUrlEncodedContentType,
+				followRedirects: false,
+				validateStatus: (x) => true
+			),
+		);
+		final document = parse(response.data);
+		if (document.querySelector('h2') != null) {
+			await clearLoginCookies(false);
+			throw ImageboardSiteLoginException(document.querySelector('h2')!.text);
+		}
+		_adminEnabled[Persistence.currentCookies] = true;
+  }
+
+  @override
+  String get name => 'Administrator';
 }

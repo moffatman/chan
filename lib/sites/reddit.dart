@@ -292,11 +292,6 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
-
-	}
-
-	@override
 	Future<PostReceipt> createThread({required String board, String name = '', String options = '', String subject = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
 		// TODO: implement createThread
 		throw UnimplementedError();
@@ -460,11 +455,6 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	DateTime? getActionAllowedTime(String board, ImageboardAction action) {
-		return null;
-	}
-
-	@override
 	Future<List<ImageboardBoard>> getBoards() async {
 		final response = await client.get(Uri.https(baseUrl, '/subreddits/popular.json').toString());
 		return (response.data['data']['children'] as List<dynamic>).map((c) => _makeBoard(c['data'])).toList();
@@ -524,12 +514,6 @@ class SiteReddit extends ImageboardSite {
 		final response = await client.getUri(Uri.https(baseUrl, '/r/$board${suffix.$1}', suffix.$2));
 		return (response.data['data']['children'] as List<dynamic>).map((d) => _makeThread(d['data'])..currentPage = 1).toList();
 	}
-
-	@override
-	List<ImageboardSiteLoginField> getLoginFields() => [];
-
-	@override
-	String? getLoginSystemName() => null;
 
 	@override
 	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds) async {
@@ -631,12 +615,6 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Uri getPostReportUrl(String board, int id) {
-		// TODO: implement getPostReportUrl
-		throw UnimplementedError();
-	}
-
-	@override
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
 		// TODO: implement getSpoilerImageUrl
 		throw UnimplementedError();
@@ -718,12 +696,6 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	String get imageUrl => 'i.redd.it';
-
-	@override
-	Future<void> login(Map<ImageboardSiteLoginField, String> fields) {
-		// TODO: implement login
-		throw UnimplementedError();
-	}
 
 	@override
 	String get name => 'Reddit';

@@ -74,7 +74,6 @@ class Site4Chan extends ImageboardSite {
 	final Map<String, String> captchaUserAgents;
 	Map<String, _ThreadCacheEntry> _threadCache = {};
 	Map<String, _CatalogCache> _catalogCaches = {};
-	Map<PersistCookieJar, bool> _passEnabled = {};
 	Map<ImageboardAction, Map<String, DateTime>> _lastActionTime = {
 		ImageboardAction.postReply: <String, DateTime>{},
 		ImageboardAction.postReplyWithImage: <String, DateTime>{},
@@ -82,11 +81,14 @@ class Site4Chan extends ImageboardSite {
 	};
 
 	@override
+	late final Site4ChanPassLoginSystem loginSystem = Site4ChanPassLoginSystem(this);
+
+	@override
 	void migrateFromPrevious(Site4Chan oldSite) {
 		super.migrateFromPrevious(oldSite);
 		_threadCache = oldSite._threadCache;
 		_catalogCaches = oldSite._catalogCaches;
-		_passEnabled = oldSite._passEnabled;
+		loginSystem._passEnabled = oldSite.loginSystem._passEnabled;
 		_lastActionTime = oldSite._lastActionTime;
 	}
 
@@ -525,7 +527,7 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		if (_passEnabled.putIfAbsent(Persistence.currentCookies, () => false)) {
+		if (loginSystem._passEnabled.putIfAbsent(Persistence.currentCookies, () => false)) {
 			return NoCaptchaRequest();
 		}
 		final userAgent = captchaUserAgents[Platform.operatingSystem];
@@ -707,7 +709,7 @@ class Site4Chan extends ImageboardSite {
 				cooldownSeconds = b.threadCooldown ?? 0;
 				break;
 		}
-		if (_passEnabled.putIfAbsent(Persistence.cellularCookies, () => false)) {
+		if (loginSystem._passEnabled.putIfAbsent(Persistence.cellularCookies, () => false)) {
 			cooldownSeconds ~/= 2;
 		}
 		return lastActionTime?.add(Duration(seconds: cooldownSeconds));
@@ -757,10 +759,10 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Uri getPostReportUrl(String board, int id) {
+	Uri getPostReportUrl(String board, int threadId, int postId) {
 		return Uri.https(_sysUrl(board), '/$board/imgboard.php', {
 			'mode': 'report',
-			'no': id.toString()
+			'no': postId.toString()
 		});
 	}
 
@@ -776,75 +778,7 @@ class Site4Chan extends ImageboardSite {
 		required this.captchaUserAgents
 	}) : sysRedUrl = sysUrl, sysBlueUrl = sysUrl.replaceAll('chan.', 'channel.'), super(archives);
 
-  @override
-  List<ImageboardSiteLoginField> getLoginFields() {
-    return const [
-			ImageboardSiteLoginField(
-				displayName: 'Token',
-				formKey: 'id'
-			),
-			ImageboardSiteLoginField(
-				displayName: 'PIN',
-				formKey: 'pin',
-				inputType: TextInputType.number
-			)
-		];
-  }
 
-  @override
-  Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
-		if (!fromBothWifiAndCellular && _passEnabled[Persistence.currentCookies] == false) {
-			// No need to clear
-			return;
-		}
-		final jars = fromBothWifiAndCellular ? [
-			Persistence.wifiCookies,
-			Persistence.cellularCookies
-		] : [
-			Persistence.currentCookies
-		];
-		for (final jar in jars) {
-			for (final sysUrl in [sysRedUrl, sysBlueUrl]) {
-				final toSave = (await jar.loadForRequest(Uri.https(sysUrl, '/'))).where((cookie) {
-					return cookie.name == 'cf_clearance';
-				}).toList();
-				await jar.delete(Uri.https(sysUrl, '/'), true);
-				await jar.delete(Uri.https(sysUrl, '/'), true);
-				await jar.saveFromResponse(Uri.https(sysUrl, '/'), toSave);
-			}
-			_passEnabled[jar] = false;
-		}
-  }
-
-  @override
-  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
-		for (final sysUrl in [sysRedUrl, sysBlueUrl]) {
-			final response = await client.post(
-				Uri.https(sysUrl, '/auth').toString(),
-				data: FormData.fromMap({
-					for (final field in fields.entries) field.key.formKey: field.value
-				})
-			);
-			final document = parse(response.data);
-			final message = document.querySelector('h2')?.text;
-			if (message == null) {
-				_passEnabled[Persistence.currentCookies] = false;
-				await clearLoginCookies(false);
-				throw const ImageboardSiteLoginException('Unexpected response, contact developer');
-			}
-			if (!message.contains('Success!')) {
-				_passEnabled[Persistence.currentCookies] = false;
-				await clearLoginCookies(false);
-				throw ImageboardSiteLoginException(message);
-			}
-		}
-		_passEnabled[Persistence.currentCookies] = true;
-  }
-
-  @override
-  String? getLoginSystemName() {
-    return '4chan Pass';
-  }
 
 	@override
 	Uri get passIconUrl => Uri.https(staticUrl, '/image/minileaf.gif');
@@ -945,4 +879,81 @@ class Site4Chan extends ImageboardSite {
 			variants: [CatalogVariant.chan4NativeArchive]
 		)
 	];
+}
+
+class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
+	@override
+	final Site4Chan parent;
+
+	Map<PersistCookieJar, bool> _passEnabled = {};
+
+	Site4ChanPassLoginSystem(this.parent);
+
+  @override
+  List<ImageboardSiteLoginField> getLoginFields() {
+    return const [
+			ImageboardSiteLoginField(
+				displayName: 'Token',
+				formKey: 'id'
+			),
+			ImageboardSiteLoginField(
+				displayName: 'PIN',
+				formKey: 'pin',
+				inputType: TextInputType.number
+			)
+		];
+  }
+
+  @override
+  Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
+		if (!fromBothWifiAndCellular && _passEnabled[Persistence.currentCookies] == false) {
+			// No need to clear
+			return;
+		}
+		final jars = fromBothWifiAndCellular ? [
+			Persistence.wifiCookies,
+			Persistence.cellularCookies
+		] : [
+			Persistence.currentCookies
+		];
+		for (final jar in jars) {
+			for (final sysUrl in [parent.sysRedUrl, parent.sysBlueUrl]) {
+				final toSave = (await jar.loadForRequest(Uri.https(sysUrl, '/'))).where((cookie) {
+					return cookie.name == 'cf_clearance';
+				}).toList();
+				await jar.delete(Uri.https(sysUrl, '/'), true);
+				await jar.delete(Uri.https(sysUrl, '/'), true);
+				await jar.saveFromResponse(Uri.https(sysUrl, '/'), toSave);
+			}
+			_passEnabled[jar] = false;
+		}
+  }
+
+  @override
+  Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
+		for (final sysUrl in [parent.sysRedUrl, parent.sysBlueUrl]) {
+			final response = await parent.client.post(
+				Uri.https(sysUrl, '/auth').toString(),
+				data: FormData.fromMap({
+					for (final field in fields.entries) field.key.formKey: field.value
+				})
+			);
+			final document = parse(response.data);
+			final message = document.querySelector('h2')?.text;
+			if (message == null) {
+				_passEnabled[Persistence.currentCookies] = false;
+				await clearLoginCookies(false);
+				throw const ImageboardSiteLoginException('Unexpected response, contact developer');
+			}
+			if (!message.contains('Success!')) {
+				_passEnabled[Persistence.currentCookies] = false;
+				await clearLoginCookies(false);
+				throw ImageboardSiteLoginException(message);
+			}
+		}
+		_passEnabled[Persistence.currentCookies] = true;
+  }
+
+  @override
+  String get name => '4chan Pass';
 }

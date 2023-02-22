@@ -298,11 +298,6 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	DateTime? getActionAllowedTime(String board, ImageboardAction action) {
-		return null;
-	}
-
-	@override
 	String getWebUrl(String board, [int? threadId, int? postId]) {
 		String threadUrl = Uri.https(baseUrl, '/$board/').toString();
 		if (threadId != null) {
@@ -318,33 +313,8 @@ class SiteDvach extends ImageboardSite {
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => SiteLainchan.decodeGenericUrl(baseUrl, url);
 
 	@override
-	Uri getPostReportUrl(String board, int id) {
-		throw UnimplementedError();
-	}
-
-	@override
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread}) {
 		throw UnimplementedError();
-	}
-
-	@override
-	List<ImageboardSiteLoginField> getLoginFields() {
-		return [];
-	}
-
-	@override
-	String? getLoginSystemName() {
-		return null;
-	}
-
-	@override
-	Future<void> login(Map<ImageboardSiteLoginField, String> fields) {
-		throw UnimplementedError();
-	}
-
-	@override
-	Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
-
 	}
 
 	@override

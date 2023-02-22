@@ -509,14 +509,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 	Future<void> _solveCaptcha() async {
 		final site = context.read<ImageboardSite>();
 		final settings = context.read<EffectiveSettings>();
-		final savedFields = site.getSavedLoginFields();
+		final savedFields = site.loginSystem?.getSavedLoginFields();
 		if (savedFields != null) {
 			bool shouldAutoLogin = settings.connectivity != ConnectivityResult.mobile;
 			if (!shouldAutoLogin) {
 				settings.autoLoginOnMobileNetwork ??= await showCupertinoDialog<bool>(
 					context: context,
 					builder: (context) => CupertinoAlertDialog(
-						title: Text('Use ${site.getLoginSystemName()} on mobile networks?'),
+						title: Text('Use ${site.loginSystem?.name} on mobile networks?'),
 						actions: [
 							CupertinoDialogAction(
 								child: const Text('Never'),
@@ -552,21 +552,21 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			}
 			if (shouldAutoLogin) {
 				try {
-					await site.login(savedFields);
+					await site.loginSystem?.login(savedFields);
 				}
 				catch (e) {
 					if (mounted) {
 						showToast(
 							context: context,
 							icon: CupertinoIcons.exclamationmark_triangle,
-							message: 'Failed to log in to ${site.getLoginSystemName()}'
+							message: 'Failed to log in to ${site.loginSystem?.name}'
 						);
 					}
 					print('Problem auto-logging in: $e');
 				}
 			}
 			else {
-				await site.clearLoginCookies(false);
+				await site.loginSystem?.clearLoginCookies(false);
 			}
 		}
 		try {

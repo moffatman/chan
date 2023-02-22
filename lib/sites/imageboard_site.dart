@@ -21,6 +21,7 @@ import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/hacker_news.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:chan/sites/lainchan_org.dart';
+import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/sites/reddit.dart';
 import 'package:chan/sites/soyjak.dart';
 import 'package:chan/util.dart';
@@ -752,7 +753,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		String? overrideFilename,
 		ImageboardBoardFlag? flag
 	});
-	DateTime? getActionAllowedTime(String board, ImageboardAction action);
+	DateTime? getActionAllowedTime(String board, ImageboardAction action) => null;
 	Future<void> deletePost(String board, PostReceipt receipt);
 	Future<Post> getPostFromArchive(String board, int id) async {
 		final Map<String, String> errorMessages = {};
@@ -828,30 +829,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		throw Exception('Search failed - exhausted all archives$s');
 	}
 	Uri getSpoilerImageUrl(Attachment attachment, {ThreadIdentifier? thread});
-	Uri getPostReportUrl(String board, int id);
+	Uri getPostReportUrl(String board, int threadId, int postId) => Uri.parse(getWebUrl(board, threadId, postId));
 	late Persistence persistence;
-	String? getLoginSystemName();
-	List<ImageboardSiteLoginField> getLoginFields();
-	Future<void> login(Map<ImageboardSiteLoginField, String> fields);
-	Map<ImageboardSiteLoginField, String>? getSavedLoginFields() {
-		 if (persistence.browserState.loginFields.isNotEmpty) {
-			 try {
-					final savedFields = {
-						for (final field in getLoginFields()) field: persistence.browserState.loginFields[field.formKey]!
-					};
-					return savedFields;
-			 }
-			 catch (e) {
-				 // Probably a field isn't present
-			 }
-		 }
-		 return null;
-	}
-	Future<void> clearSavedLoginFields() async {
-		persistence.browserState.loginFields.clear();
-		await persistence.didUpdateBrowserState();
-	}
-	Future<void> clearLoginCookies(bool fromBothWifiAndCellular);
+	ImageboardSiteLoginSystem? get loginSystem => null;
 	List<ImageboardEmote> getEmotes() => [];
 	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) async => [];
 	String get siteType;
@@ -916,6 +896,32 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		_memoizedWifiHeaders = oldSite._memoizedWifiHeaders;
 		_memoizedCellularHeaders = oldSite._memoizedCellularHeaders;
 	}
+}
+
+abstract class ImageboardSiteLoginSystem {
+	ImageboardSite get parent;
+	String get name;
+	List<ImageboardSiteLoginField> getLoginFields();
+	Future<void> login(Map<ImageboardSiteLoginField, String> fields);
+	Map<ImageboardSiteLoginField, String>? getSavedLoginFields() {
+		 if (parent.persistence.browserState.loginFields.isNotEmpty) {
+			 try {
+					final savedFields = {
+						for (final field in getLoginFields()) field: parent.persistence.browserState.loginFields[field.formKey]!
+					};
+					return savedFields;
+			 }
+			 catch (e) {
+				 // Probably a field isn't present
+			 }
+		 }
+		 return null;
+	}
+	Future<void> clearSavedLoginFields() async {
+		parent.persistence.browserState.loginFields.clear();
+		await parent.persistence.didUpdateBrowserState();
+	}
+	Future<void> clearLoginCookies(bool fromBothWifiAndCellular);
 }
 
 ImageboardSite makeSite(dynamic data) {
@@ -1001,6 +1007,19 @@ ImageboardSite makeSite(dynamic data) {
 					throw UnknownArchiveTypeException(data['type']);
 				}
 			}).toList()
+		);
+	}
+	else if (data['type'] == 'lynxchan') {
+		final boards = (data['boards'] as List).map((b) => ImageboardBoard(
+			title: b['title'],
+			name: b['name'],
+			isWorksafe: b['isWorksafe'],
+			webmAudioAllowed: true
+		)).toList();
+		return SiteLynxchan(
+			name: data['name'],
+			baseUrl: data['baseUrl'],
+			boards: boards
 		);
 	}
 	else {

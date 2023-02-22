@@ -134,11 +134,6 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<void> clearLoginCookies(bool fromBothWifiAndCellular) async {
-
-	}
-
-	@override
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
 		final baseBaseUrl = RegExp(r'[^.]+\.[^.]+$').firstMatch(baseUrl)?.group(0);
 		final pattern = RegExp(r'https?:\/\/(.*\.)?' + (baseBaseUrl ?? baseUrl).replaceAll('.', r'\.') + r'\/([^\/]+)\/((res\/(\d+)\.html?(#sd(\d+))?.*)|(index\.html?))?$');
@@ -156,9 +151,6 @@ class SiteFutaba extends ImageboardSite {
 	Future<void> deletePost(String board, PostReceipt receipt) {
 		throw UnimplementedError('2chan posting is not implemented');
 	}
-
-	@override
-	DateTime? getActionAllowedTime(String board, ImageboardAction action) => null;
 
 	@override
 	Future<List<ImageboardBoard>> getBoards() async {
@@ -217,18 +209,7 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	List<ImageboardSiteLoginField> getLoginFields() => [];
-
-	@override
-	String? getLoginSystemName() => null;
-
-	@override
 	Future<Post> getPost(String board, int id) {
-		throw UnimplementedError();
-	}
-
-	@override
-	Uri getPostReportUrl(String board, int id) {
 		throw UnimplementedError();
 	}
 
@@ -370,11 +351,6 @@ class SiteFutaba extends ImageboardSite {
 
 	@override
 	String get imageUrl => baseUrl;
-
-	@override
-	Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
-		throw UnimplementedError();
-	}
 
 	Future<PostReceipt> _post({
 		required String board,

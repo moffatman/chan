@@ -29,6 +29,8 @@ class PostSpanFormatAdapter extends TypeAdapter<PostSpanFormat> {
         return PostSpanFormat.hackerNews;
       case 7:
         return PostSpanFormat.stub;
+      case 8:
+        return PostSpanFormat.lynxchan;
       default:
         return PostSpanFormat.chan4;
     }
@@ -60,6 +62,9 @@ class PostSpanFormatAdapter extends TypeAdapter<PostSpanFormat> {
         break;
       case PostSpanFormat.stub:
         writer.writeByte(7);
+        break;
+      case PostSpanFormat.lynxchan:
+        writer.writeByte(8);
         break;
     }
   }

@@ -611,7 +611,7 @@ class PostRow extends StatelessWidget {
 					child: const Text('Report post'),
 					trailingIcon: CupertinoIcons.exclamationmark_octagon,
 					onPressed: () {
-						openBrowser(context, context.read<ImageboardSite>().getPostReportUrl(latestPost.board, latestPost.id));
+						openBrowser(context, context.read<ImageboardSite>().getPostReportUrl(latestPost.board, latestPost.threadId, latestPost.id));
 					}
 				),
 				if (receipt != null) ContextMenuAction(

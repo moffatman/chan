@@ -7,6 +7,7 @@ import 'package:chan/sites/futaba.dart';
 import 'package:chan/sites/fuuka.dart';
 import 'package:chan/sites/hacker_news.dart';
 import 'package:chan/sites/lainchan.dart';
+import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/sites/reddit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
@@ -34,7 +35,9 @@ enum PostSpanFormat {
 	@HiveField(6)
 	hackerNews,
 	@HiveField(7)
-	stub
+	stub,
+	@HiveField(8)
+	lynxchan
 }
 
 class Post implements Filterable {
@@ -72,6 +75,8 @@ class Post implements Filterable {
 				return const PostNodeSpan([
 					PostTextSpan('Stub post')
 				]);
+			case PostSpanFormat.lynxchan:
+				return SiteLynxchan.makeSpan(board, threadId, text);
 		}
 	}
 	PostNodeSpan get span {
