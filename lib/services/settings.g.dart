@@ -225,13 +225,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       doubleTapScrollToReplies: fields[106] as bool?,
       lastUnifiedPushEndpoint: fields[107] as String?,
       webImageSearchMethod: fields[108] as WebImageSearchMethod?,
+      showIPNumberOnPosts: fields[109] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(105)
+      ..writeByte(106)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -441,7 +442,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(107)
       ..write(obj.lastUnifiedPushEndpoint)
       ..writeByte(108)
-      ..write(obj.webImageSearchMethod);
+      ..write(obj.webImageSearchMethod)
+      ..writeByte(109)
+      ..write(obj.showIPNumberOnPosts);
   }
 
   @override
@@ -643,6 +646,8 @@ class PostDisplayFieldAdapter extends TypeAdapter<PostDisplayField> {
         return PostDisplayField.relativeTime;
       case 8:
         return PostDisplayField.postId;
+      case 9:
+        return PostDisplayField.ipNumber;
       default:
         return PostDisplayField.name;
     }
@@ -677,6 +682,9 @@ class PostDisplayFieldAdapter extends TypeAdapter<PostDisplayField> {
         break;
       case PostDisplayField.postId:
         writer.writeByte(8);
+        break;
+      case PostDisplayField.ipNumber:
+        writer.writeByte(9);
         break;
     }
   }

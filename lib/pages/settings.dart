@@ -1092,7 +1092,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					passSinceYear: 2020,
 					flag: flag,
 					attachments: [attachment],
-					spanFormat: PostSpanFormat.chan4
+					spanFormat: PostSpanFormat.chan4,
+					ipNumber: 1
 				)
 			]
 		);
@@ -1693,7 +1694,17 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															child: IgnorePointer(
 																child: _buildFakePostRow()
 															)
-															),
+														),
+														Row(
+															children: [
+																const Text('Show IP address #'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showIPNumberOnPosts,
+																	onChanged: (d) => settings.showIPNumberOnPosts = d
+																)
+															]
+														),
 														Row(
 															children: [
 																const Text('Show name'),

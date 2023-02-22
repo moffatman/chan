@@ -388,6 +388,16 @@ class Site4Chan extends ImageboardSite {
 				uniqueIPCount: data['posts'][0]['unique_ips'],
 				customSpoilerId: data['posts'][0]['custom_spoiler']
 			);
+			if (output.posts_.length == output.uniqueIPCount) {
+				for (int i = 0; i < output.posts_.length; i++) {
+					output.posts_[i].ipNumber = i + 1;
+				}
+			}
+			else if (output.uniqueIPCount == 1) {
+				for (final post in output.posts_) {
+					post.ipNumber = 1;
+				}
+			}
 			_threadCache['${thread.board}/${thread.id}'] = _ThreadCacheEntry(
 				thread: output,
 				lastModified: response.headers.value('last-modified')!

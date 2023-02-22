@@ -87,7 +87,34 @@ class Thread implements Filterable {
 		}
 	}
 
-	void mergePosts(List<Post> otherPosts, void Function(List<Post> list, Post newPost) placeNewPost) {
+	void _markNewIPs(Thread other) {
+		if (other.uniqueIPCount != null && uniqueIPCount != null) {
+			Thread newer;
+			Thread older;
+			if (other.uniqueIPCount! > uniqueIPCount!) {
+				newer = other;
+				older = this;
+			}
+			else if (other.uniqueIPCount! < uniqueIPCount!) {
+				newer = this;
+				older = other;
+			}
+			else {
+				return;
+			}
+			if ((newer.posts.length - older.posts.length) == (newer.uniqueIPCount! - older.uniqueIPCount!)) {
+				int ipNumber = older.uniqueIPCount! + 1;
+				for (final newPost in newer.posts.skip(older.posts.length)) {
+					newPost.ipNumber = ipNumber++;
+				}
+			}
+		}
+	}
+
+	void mergePosts(Thread? other, List<Post> otherPosts, void Function(List<Post> list, Post newPost) placeNewPost) {
+		if (other != null) {
+			_markNewIPs(other);
+		}
 		final postIdToListIndex = {
 			for (final pair in posts_.asMap().entries) pair.value.id: pair.key
 		};
@@ -98,6 +125,9 @@ class Thread implements Filterable {
 				if (postToReplace.isStub) {
 					posts_.removeAt(indexToReplace);
 					posts_.insert(indexToReplace, newChild);
+				}
+				else {
+					postToReplace.ipNumber ??= newChild.ipNumber;
 				}
 			}
 			else {

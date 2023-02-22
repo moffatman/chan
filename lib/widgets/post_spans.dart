@@ -1542,7 +1542,20 @@ List<InlineSpan> buildPostInfoRow({
 			style: TextStyle(fontWeight: FontWeight.w600, color: settings.theme.quoteColor.shiftHue(40).shiftSaturation(-0.3))
 		),
 		for (final field in settings.postDisplayFieldOrder)
-			if (field == PostDisplayField.name) ...[
+			if (field == PostDisplayField.ipNumber && settings.showIPNumberOnPosts && post.ipNumber != null) ...[
+				WidgetSpan(
+					child: Icon(CupertinoIcons.person_fill, color: settings.theme.secondaryColor, size: 16),
+					alignment: PlaceholderAlignment.middle
+				),
+				TextSpan(
+					text: '${post.ipNumber} ',
+					style: TextStyle(
+						color: settings.theme.secondaryColor,
+						fontWeight: FontWeight.w600
+					)
+				)
+			]
+			else if (field == PostDisplayField.name) ...[
 				if (settings.showNameOnPosts && !(settings.hideDefaultNamesOnPosts && post.name == site.defaultUsername)) TextSpan(
 					text: settings.filterProfanity(post.name) + (isYourPost ? ' (You)' : ''),
 					style: TextStyle(fontWeight: FontWeight.w600, color: isYourPost ? settings.theme.secondaryColor : null)

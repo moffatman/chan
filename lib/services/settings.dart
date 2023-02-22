@@ -314,6 +314,8 @@ enum PostDisplayField {
 	relativeTime,
 	@HiveField(8)
 	postId,
+	@HiveField(9)
+	ipNumber,
 }
 
 extension PostDisplayFieldName on PostDisplayField {
@@ -337,6 +339,8 @@ extension PostDisplayFieldName on PostDisplayField {
 				return 'Relative Time';
 			case PostDisplayField.postId:
 				return 'Post ID';
+			case PostDisplayField.ipNumber:
+				return 'IP Address #';
 		}
 	}
 }
@@ -596,6 +600,8 @@ class SavedSettings extends HiveObject {
 	String? lastUnifiedPushEndpoint;
 	@HiveField(108)
 	WebImageSearchMethod webImageSearchMethod;
+	@HiveField(109)
+	bool showIPNumberOnPosts;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -706,6 +712,7 @@ class SavedSettings extends HiveObject {
 		bool? doubleTapScrollToReplies,
 		this.lastUnifiedPushEndpoint,
 		WebImageSearchMethod? webImageSearchMethod,
+		bool? showIPNumberOnPosts,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -776,6 +783,7 @@ class SavedSettings extends HiveObject {
 		automaticCacheClearDays = automaticCacheClearDays ?? 60,
 		alwaysAutoloadTappedAttachment = alwaysAutoloadTappedAttachment ?? true,
 		postDisplayFieldOrder = postDisplayFieldOrder ?? [
+			PostDisplayField.ipNumber,
 			PostDisplayField.name,
 			PostDisplayField.posterId,
 			PostDisplayField.attachmentInfo,
@@ -841,7 +849,8 @@ class SavedSettings extends HiveObject {
 		captcha4ChanCustomNumLetters = captcha4ChanCustomNumLetters ?? 6,
 		tabMenuHidesWhenScrollingDown = tabMenuHidesWhenScrollingDown ?? true,
 		doubleTapScrollToReplies = doubleTapScrollToReplies ?? true,
-		webImageSearchMethod = webImageSearchMethod ?? WebImageSearchMethod.google {
+		webImageSearchMethod = webImageSearchMethod ?? WebImageSearchMethod.google,
+		showIPNumberOnPosts = showIPNumberOnPosts ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -865,6 +874,9 @@ class SavedSettings extends HiveObject {
 					this.userAgent = userAgents.first;
 				}
 				this.appliedMigrations.add('uar');
+			}
+			if (!this.postDisplayFieldOrder.contains(PostDisplayField.ipNumber)) {
+				this.postDisplayFieldOrder.insert(0, PostDisplayField.ipNumber);
 			}
 		}
 
@@ -1697,6 +1709,13 @@ class EffectiveSettings extends ChangeNotifier {
 	WebImageSearchMethod get webImageSearchMethod => _settings.webImageSearchMethod;
 	set webImageSearchMethod(WebImageSearchMethod setting) {
 		_settings.webImageSearchMethod = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showIPNumberOnPosts => _settings.showIPNumberOnPosts;
+	set showIPNumberOnPosts(bool setting) {
+		_settings.showIPNumberOnPosts = setting;
 		_settings.save();
 		notifyListeners();
 	}

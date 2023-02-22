@@ -101,6 +101,7 @@ class Post implements Filterable {
 	final int? parentId;
 	bool hasOmittedReplies;
 	bool deleted;
+	int? ipNumber;
 
 	Post({
 		required this.board,
@@ -122,7 +123,8 @@ class Post implements Filterable {
 		this.upvotes,
 		this.parentId,
 		this.hasOmittedReplies = false,
-		this.deleted = false
+		this.deleted = false,
+		this.ipNumber
 	});
 
 	@override
@@ -232,6 +234,7 @@ class PostAdapter extends TypeAdapter<Post> {
 			//fields[19] was used for int omittedChildrenCount
 			hasOmittedReplies: fields[20] as bool? ?? false,
 			deleted: fields[21] as bool? ?? false,
+			ipNumber: fields[22] as int?,
     );
   }
 
@@ -286,6 +289,9 @@ class PostAdapter extends TypeAdapter<Post> {
 		}
 		if (obj.deleted) {
 			writer..writeByte(21)..write(true);
+		}
+		if (obj.ipNumber != null) {
+			writer..writeByte(22)..write(obj.ipNumber);
 		}
 		// End with field zero (terminator)
 		writer
