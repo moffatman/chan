@@ -56,6 +56,10 @@ class _InjectingNavigatorState extends NavigatorState {
 		super.pop(result);
 	}
 
+	/// Allow input to bottom route during transition.
+	@override
+	bool get overrideShouldIgnoreFocusRequest => false;
+
 	@override
 	void dispose() {
 		super.dispose();
