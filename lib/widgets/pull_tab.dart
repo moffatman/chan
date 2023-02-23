@@ -70,7 +70,7 @@ class _PullTabState extends State<PullTab> {
 
 	bool get disabled => widget.tab == null;
 	bool get rtl => widget.position == PullTabPosition.left;
-	bool get inActive => dragDistance.abs() > (width / 6);
+	bool get inActive => dragDistance > (width / 6);
 
 	@override
 	void didUpdateWidget(PullTab oldWidget) {
@@ -85,7 +85,7 @@ class _PullTabState extends State<PullTab> {
 	void _handleDragUpdate(DragUpdateDetails details) {
 		if (disabled) return;
 		setState(() {
-			dragDistance += details.delta.dx;
+			dragDistance += details.delta.dx * (rtl ? -1 : 1);
 			//scrollDistance += details.delta.dy;
 		});
 	}
@@ -126,9 +126,9 @@ class _PullTabState extends State<PullTab> {
 						visible: dragDistance != 0,
 						child: IgnorePointer(
 							child: Transform.translate(
-								offset: Offset((rtl ? width : -width) + dragDistance.clamp(-300, 300), scrollDistance),
+								offset: Offset((rtl ? width : -width) + ((rtl ? -1 : 1) * dragDistance.clamp(-300, 300)), scrollDistance),
 								child: Opacity(
-									opacity: (dragDistance.abs() / (width / 6)).clamp(0, 1),
+									opacity: (dragDistance / (width / 6)).clamp(0, 1),
 									child: Align(
 										alignment: Alignment.centerRight,
 										child: Container(
