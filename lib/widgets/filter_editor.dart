@@ -554,8 +554,8 @@ class _FilterEditorState extends State<FilterEditor> {
 								if (dirty) CupertinoButton(
 									padding: EdgeInsets.zero,
 									minSize: 0,
-									child: const Text('Save'),
-									onPressed: _save
+									onPressed: _save,
+									child: const Text('Save')
 								)
 							]
 						),
