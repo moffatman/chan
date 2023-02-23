@@ -136,7 +136,7 @@ String formatTime(DateTime time) {
 	final notToday = (now.day != time.day) || (now.month != time.month) || (now.year != time.year);
 	String prefix = '';
 	const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-	if (notToday) {
+	if (notToday || Persistence.settings.exactTimeShowsDayOfWeekForToday) {
 		if (now.difference(time).inDays > 7) {
 			prefix = '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} ';
 		}
@@ -144,7 +144,12 @@ String formatTime(DateTime time) {
 			prefix = '${days[time.weekday]} ';
 		}
 	}
-	return '$prefix${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
+	if (Persistence.settings.exactTimeIsTwelveHour) {
+		return '$prefix${((time.hour - 1) % 12) + 1}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')} ${time.hour >= 12 ? 'PM' : 'AM'}';
+	}
+	else {
+		return '$prefix${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
+	}
 }
 
 String formatRelativeTime(DateTime time) {

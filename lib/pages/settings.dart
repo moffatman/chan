@@ -2661,6 +2661,38 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.clock),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('12-hour time')
+						),
+						CupertinoSwitch(
+							value: settings.exactTimeIsTwelveHour,
+							onChanged: (newValue) {
+								settings.exactTimeIsTwelveHour = newValue;
+							}
+						)
+					]
+				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.calendar),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Show day-of-week even if today')
+						),
+						CupertinoSwitch(
+							value: settings.exactTimeShowsDayOfWeekForToday,
+							onChanged: (newValue) {
+								settings.exactTimeShowsDayOfWeekForToday = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 16)
 			]
 		);

@@ -229,13 +229,15 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showNoBeforeIdOnPosts: fields[110] as bool?,
       blurEffects: fields[111] as bool?,
       scrollbarsOnLeft: fields[112] as bool?,
+      exactTimeIsTwelveHour: fields[113] as bool?,
+      exactTimeShowsDayOfWeekForToday: fields[114] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(109)
+      ..writeByte(111)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -453,7 +455,11 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(111)
       ..write(obj.blurEffects)
       ..writeByte(112)
-      ..write(obj.scrollbarsOnLeft);
+      ..write(obj.scrollbarsOnLeft)
+      ..writeByte(113)
+      ..write(obj.exactTimeIsTwelveHour)
+      ..writeByte(114)
+      ..write(obj.exactTimeShowsDayOfWeekForToday);
   }
 
   @override

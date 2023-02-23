@@ -608,6 +608,10 @@ class SavedSettings extends HiveObject {
 	bool blurEffects;
 	@HiveField(112)
 	bool scrollbarsOnLeft;
+	@HiveField(113)
+	bool exactTimeIsTwelveHour;
+	@HiveField(114)
+	bool exactTimeShowsDayOfWeekForToday;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -722,6 +726,8 @@ class SavedSettings extends HiveObject {
 		bool? showNoBeforeIdOnPosts,
 		bool? blurEffects,
 		bool? scrollbarsOnLeft,
+		bool? exactTimeIsTwelveHour,
+		bool? exactTimeShowsDayOfWeekForToday,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -862,7 +868,9 @@ class SavedSettings extends HiveObject {
 		showIPNumberOnPosts = showIPNumberOnPosts ?? true,
 		showNoBeforeIdOnPosts = showNoBeforeIdOnPosts ?? false,
 		blurEffects = blurEffects ?? true,
-		scrollbarsOnLeft = scrollbarsOnLeft ?? false {
+		scrollbarsOnLeft = scrollbarsOnLeft ?? false,
+		exactTimeIsTwelveHour = exactTimeIsTwelveHour ?? false,
+		exactTimeShowsDayOfWeekForToday = exactTimeShowsDayOfWeekForToday ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1749,6 +1757,20 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get scrollbarsOnLeft => _settings.scrollbarsOnLeft;
 	set scrollbarsOnLeft(bool setting) {
 		_settings.scrollbarsOnLeft = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get exactTimeIsTwelveHour => _settings.exactTimeIsTwelveHour;
+	set exactTimeIsTwelveHour(bool setting) {
+		_settings.exactTimeIsTwelveHour = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get exactTimeShowsDayOfWeekForToday => _settings.exactTimeShowsDayOfWeekForToday;
+	set exactTimeShowsDayOfWeekForToday(bool setting) {
+		_settings.exactTimeShowsDayOfWeekForToday = setting;
 		_settings.save();
 		notifyListeners();
 	}
