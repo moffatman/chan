@@ -227,13 +227,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       webImageSearchMethod: fields[108] as WebImageSearchMethod?,
       showIPNumberOnPosts: fields[109] as bool?,
       showNoBeforeIdOnPosts: fields[110] as bool?,
+      blurEffects: fields[111] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(107)
+      ..writeByte(108)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -447,7 +448,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(109)
       ..write(obj.showIPNumberOnPosts)
       ..writeByte(110)
-      ..write(obj.showNoBeforeIdOnPosts);
+      ..write(obj.showNoBeforeIdOnPosts)
+      ..writeByte(111)
+      ..write(obj.blurEffects);
   }
 
   @override

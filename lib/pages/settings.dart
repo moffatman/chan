@@ -2627,7 +2627,23 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						setState(() {});
 					}
 				),
-				const SizedBox(height: 16),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.wand_stars),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Blur effects')
+						),
+						CupertinoSwitch(
+							value: settings.blurEffects,
+							onChanged: (newValue) {
+								settings.blurEffects = newValue;
+							}
+						)
+					]
+				),
+				const SizedBox(height: 16)
 			]
 		);
 	}

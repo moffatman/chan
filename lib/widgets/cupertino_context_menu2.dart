@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:chan/services/persistence.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart' show GestureRecognizer, LongPressDownDetails, LongPressGestureRecognizer, PointerDeviceKind, VelocityTracker, kLongPressTimeout, kMinFlingVelocity;
@@ -404,10 +405,10 @@ class _CupertinoContextMenuState2 extends State<CupertinoContextMenu2> with Tick
     _route = _ContextMenuRoute<void>(
       actions: widget.actions,
       barrierLabel: 'Dismiss',
-      filter: ui.ImageFilter.blur(
+      filter: Persistence.settings.blurEffects ? ui.ImageFilter.blur(
         sigmaX: 5.0,
         sigmaY: 5.0,
-      ),
+      ) : null,
       contextMenuLocation: _contextMenuLocation,
       previousChildRect: _decoyChildEndRect!,
       dragUpdateStream: _dragUpdateStream.stream,

@@ -224,10 +224,10 @@ class TransparentRoute<T> extends PageRoute<T> {
 	Widget buildTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
 		return FadeTransition(
 			opacity: animation,
-			child: BackdropFilter(
+			child: Persistence.settings.blurEffects ? BackdropFilter(
 				filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
 				child: child
-			)
+			) : child
 		);
 	}
 }

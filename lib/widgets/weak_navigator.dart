@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -216,6 +217,9 @@ class _AnimatedBlur extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!Persistence.settings.blurEffects) {
+      return child;
+    }
     return AnimatedBuilder(
       animation: animation,
       builder: (context, child) => ImageFiltered(
