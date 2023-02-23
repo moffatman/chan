@@ -606,6 +606,8 @@ class SavedSettings extends HiveObject {
 	bool showNoBeforeIdOnPosts;
 	@HiveField(111)
 	bool blurEffects;
+	@HiveField(112)
+	bool scrollbarsOnLeft;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -719,6 +721,7 @@ class SavedSettings extends HiveObject {
 		bool? showIPNumberOnPosts,
 		bool? showNoBeforeIdOnPosts,
 		bool? blurEffects,
+		bool? scrollbarsOnLeft,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -858,7 +861,8 @@ class SavedSettings extends HiveObject {
 		webImageSearchMethod = webImageSearchMethod ?? WebImageSearchMethod.google,
 		showIPNumberOnPosts = showIPNumberOnPosts ?? true,
 		showNoBeforeIdOnPosts = showNoBeforeIdOnPosts ?? false,
-		blurEffects = blurEffects ?? true {
+		blurEffects = blurEffects ?? true,
+		scrollbarsOnLeft = scrollbarsOnLeft ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1738,6 +1742,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get blurEffects => _settings.blurEffects;
 	set blurEffects(bool setting) {
 		_settings.blurEffects = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get scrollbarsOnLeft => _settings.scrollbarsOnLeft;
+	set scrollbarsOnLeft(bool setting) {
+		_settings.scrollbarsOnLeft = setting;
 		_settings.save();
 		notifyListeners();
 	}

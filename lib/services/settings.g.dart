@@ -228,13 +228,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showIPNumberOnPosts: fields[109] as bool?,
       showNoBeforeIdOnPosts: fields[110] as bool?,
       blurEffects: fields[111] as bool?,
+      scrollbarsOnLeft: fields[112] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(108)
+      ..writeByte(109)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -450,7 +451,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(110)
       ..write(obj.showNoBeforeIdOnPosts)
       ..writeByte(111)
-      ..write(obj.blurEffects);
+      ..write(obj.blurEffects)
+      ..writeByte(112)
+      ..write(obj.scrollbarsOnLeft);
   }
 
   @override

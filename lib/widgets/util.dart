@@ -754,9 +754,11 @@ class MaybeCupertinoScrollbar extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		if (context.watch<EffectiveSettings>().showScrollbars) {
+		final settings = context.watch<EffectiveSettings>();
+		if (settings.showScrollbars) {
 			return CupertinoScrollbar(
 				controller: controller,
+				scrollbarOrientation: settings.scrollbarsOnLeft ? ScrollbarOrientation.left : null,
 				child: child
 			);
 		}

@@ -2456,20 +2456,38 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					)
 				),
 				const SizedBox(height: 16),
-				Row(
+				const Row(
 					children: [
-						const Icon(CupertinoIcons.arrow_up_down),
-						const SizedBox(width: 8),
-						const Expanded(
-							child: Text('Show scrollbars')
-						),
-						CupertinoSwitch(
-							value: settings.showScrollbars,
-							onChanged: (newValue) {
-								settings.showScrollbars = newValue;
-							}
+						Icon(CupertinoIcons.arrow_up_down),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Scrollbar location')
 						)
 					]
+				),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<(bool, bool?)>(
+					children: const {
+						(true, true): Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Left')
+						),
+						(false, null): Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Off')
+						),
+						(true, false): Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Right')
+						)
+					},
+					groupValue: (settings.showScrollbars, settings.showScrollbars ? settings.scrollbarsOnLeft : null),
+					onValueChanged: (newValue) {
+						settings.showScrollbars = newValue.$1;
+						if (newValue.$2 != null) {
+							settings.scrollbarsOnLeft = newValue.$2!;
+						}
+					}
 				),
 				const SizedBox(height: 32),
 				Row(
