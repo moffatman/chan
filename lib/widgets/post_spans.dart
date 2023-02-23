@@ -1624,7 +1624,7 @@ List<InlineSpan> buildPostInfoRow({
 					)
 				),
 				TextSpan(
-					text: '${showBoardName ? '${zone.site.formatBoardName(zone.site.persistence.getBoard(post.board)).replaceFirst(RegExp(r'\/$'), '')}/' : ''}${post.id} ',
+					text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}${showBoardName ? '${zone.site.formatBoardName(zone.site.persistence.getBoard(post.board)).replaceFirst(RegExp(r'\/$'), '')}/' : ''}${post.id} ',
 					style: TextStyle(color: settings.theme.primaryColor.withOpacity(0.5)),
 					recognizer: interactive ? (TapGestureRecognizer()..onTap = () {
 						context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.id);

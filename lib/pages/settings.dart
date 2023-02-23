@@ -1815,6 +1815,16 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																)
 															]
 														),
+														Row(
+															children: [
+																const Text('Show "No." before ID'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showNoBeforeIdOnPosts,
+																	onChanged: (d) => settings.showNoBeforeIdOnPosts = d
+																)
+															]
+														),
 														CupertinoButton.filled(
 															child: const Text('Adjust order'),
 															onPressed: () async {

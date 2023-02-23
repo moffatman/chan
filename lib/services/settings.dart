@@ -602,6 +602,8 @@ class SavedSettings extends HiveObject {
 	WebImageSearchMethod webImageSearchMethod;
 	@HiveField(109)
 	bool showIPNumberOnPosts;
+	@HiveField(110)
+	bool showNoBeforeIdOnPosts;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -713,6 +715,7 @@ class SavedSettings extends HiveObject {
 		this.lastUnifiedPushEndpoint,
 		WebImageSearchMethod? webImageSearchMethod,
 		bool? showIPNumberOnPosts,
+		bool? showNoBeforeIdOnPosts,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -850,7 +853,8 @@ class SavedSettings extends HiveObject {
 		tabMenuHidesWhenScrollingDown = tabMenuHidesWhenScrollingDown ?? true,
 		doubleTapScrollToReplies = doubleTapScrollToReplies ?? true,
 		webImageSearchMethod = webImageSearchMethod ?? WebImageSearchMethod.google,
-		showIPNumberOnPosts = showIPNumberOnPosts ?? true {
+		showIPNumberOnPosts = showIPNumberOnPosts ?? true,
+		showNoBeforeIdOnPosts = showNoBeforeIdOnPosts ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1716,6 +1720,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showIPNumberOnPosts => _settings.showIPNumberOnPosts;
 	set showIPNumberOnPosts(bool setting) {
 		_settings.showIPNumberOnPosts = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showNoBeforeIdOnPosts => _settings.showNoBeforeIdOnPosts;
+	set showNoBeforeIdOnPosts(bool setting) {
+		_settings.showNoBeforeIdOnPosts = setting;
 		_settings.save();
 		notifyListeners();
 	}

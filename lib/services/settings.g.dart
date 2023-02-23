@@ -226,13 +226,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       lastUnifiedPushEndpoint: fields[107] as String?,
       webImageSearchMethod: fields[108] as WebImageSearchMethod?,
       showIPNumberOnPosts: fields[109] as bool?,
+      showNoBeforeIdOnPosts: fields[110] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(106)
+      ..writeByte(107)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -444,7 +445,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(108)
       ..write(obj.webImageSearchMethod)
       ..writeByte(109)
-      ..write(obj.showIPNumberOnPosts);
+      ..write(obj.showIPNumberOnPosts)
+      ..writeByte(110)
+      ..write(obj.showNoBeforeIdOnPosts);
   }
 
   @override
