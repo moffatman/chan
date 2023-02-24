@@ -53,7 +53,7 @@ dependencies:
   flutter_tex: ^4.0.3+4
   uni_links: ^0.5.1
   crypto: ^3.0.1
-  fluttertoast: ^8.0.8
+  fluttertoast: ^8.2.1
   test: ^1.20.1
   flutter_exif_rotation: ^0.5.0
   normal: ^0.6.0
