@@ -449,7 +449,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				onCollapseOrExpand: _onTreeCollapseOrExpand,
 				onCollapsedItemsChanged: widget.onCollapsedItemsChanged
 			);
-			update();
+			if (!widget.disableUpdates) {
+				update();
+			}
 		}
 		else if (oldWidget.disableUpdates != widget.disableUpdates) {
 			autoUpdateTimer?.cancel();
