@@ -315,7 +315,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final bool disableUpdates;
 	final bool disableBottomUpdates;
 	final Widget? footer;
-	final Size? gridSize;
+	final SliverGridDelegate? gridDelegate;
 	final String? initialFilter;
 	final ValueChanged<String?>? onFilterChanged;
 	final bool allowReordering;
@@ -342,7 +342,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.initialList,
 		this.disableUpdates = false,
 		this.disableBottomUpdates = false,
-		this.gridSize,
+		this.gridDelegate,
 		this.footer,
 		this.initialFilter,
 		this.onFilterChanged,
@@ -1213,12 +1213,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 											)
 										),
 										if (values.isNotEmpty)
-											if (widget.gridSize != null) SliverGrid(
+											if (widget.gridDelegate != null) SliverGrid(
 												key: PageStorageKey('grid for ${widget.id}'),
-												gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-													maxCrossAxisExtent: widget.gridSize!.width,
-													childAspectRatio: widget.gridSize!.aspectRatio
-												),
+												gridDelegate: widget.gridDelegate!,
 												delegate: SliverDontRebuildChildBuilderDelegate(
 													(context, i) => Builder(
 														builder: (context) {
@@ -1299,12 +1296,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 												),
 											),
 											if (_showFilteredValues) 
-												if (widget.gridSize != null) SliverGrid(
+												if (widget.gridDelegate != null) SliverGrid(
 													key: PageStorageKey('filtered grid for ${widget.id}'),
-													gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-														maxCrossAxisExtent: widget.gridSize!.width,
-														childAspectRatio: widget.gridSize!.aspectRatio
-													),
+													gridDelegate: widget.gridDelegate!,
 													delegate: SliverDontRebuildChildBuilderDelegate(
 														(context, i) => Stack(
 															children: [

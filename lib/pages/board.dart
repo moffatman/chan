@@ -822,7 +822,10 @@ class _BoardPageState extends State<BoardPage> {
 																(a, b) => b.imageCount.compareTo(a.imageCount)
 														],
 														reverseSort: variant.reverseAfterSorting,
-														gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
+														gridDelegate: settings.useCatalogGrid ? SliverGridDelegateWithMaxCrossAxisExtent(
+															maxCrossAxisExtent: settings.catalogGridWidth,
+															childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
+														) : null,
 														controller: _listController,
 														listUpdater: () => site.getCatalog(board!.name, variant: variant).then((list) async {
 															for (final thread in list) {

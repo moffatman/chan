@@ -28,7 +28,10 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 		final persistence = context.watch<Persistence>();
 		final settings = context.watch<EffectiveSettings>();
 		return RefreshableList<Thread>(
-			gridSize: settings.useCatalogGrid ? Size(settings.catalogGridWidth, settings.catalogGridHeight) : null,
+			gridDelegate: settings.useCatalogGrid ? SliverGridDelegateWithMaxCrossAxisExtent(
+				maxCrossAxisExtent: settings.catalogGridWidth,
+				childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
+			) : null,
 			filterableAdapter: (t) => t,
 			listUpdater: () async {
 				final thread = await widget.site.getThread(ThreadIdentifier('g', 85712241));

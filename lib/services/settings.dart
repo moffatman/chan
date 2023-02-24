@@ -612,6 +612,8 @@ class SavedSettings extends HiveObject {
 	bool exactTimeIsTwelveHour;
 	@HiveField(114)
 	bool exactTimeShowsDayOfWeekForToday;
+	@HiveField(115)
+	double attachmentsPageMaxCrossAxisExtent;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -728,6 +730,7 @@ class SavedSettings extends HiveObject {
 		bool? scrollbarsOnLeft,
 		bool? exactTimeIsTwelveHour,
 		bool? exactTimeShowsDayOfWeekForToday,
+		double? attachmentsPageMaxCrossAxisExtent,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -870,7 +873,8 @@ class SavedSettings extends HiveObject {
 		blurEffects = blurEffects ?? true,
 		scrollbarsOnLeft = scrollbarsOnLeft ?? false,
 		exactTimeIsTwelveHour = exactTimeIsTwelveHour ?? false,
-		exactTimeShowsDayOfWeekForToday = exactTimeShowsDayOfWeekForToday ?? false {
+		exactTimeShowsDayOfWeekForToday = exactTimeShowsDayOfWeekForToday ?? false,
+		attachmentsPageMaxCrossAxisExtent = attachmentsPageMaxCrossAxisExtent ?? 400 {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1771,6 +1775,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get exactTimeShowsDayOfWeekForToday => _settings.exactTimeShowsDayOfWeekForToday;
 	set exactTimeShowsDayOfWeekForToday(bool setting) {
 		_settings.exactTimeShowsDayOfWeekForToday = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	double get attachmentsPageMaxCrossAxisExtent => _settings.attachmentsPageMaxCrossAxisExtent;
+	set attachmentsPageMaxCrossAxisExtent(double setting) {
+		_settings.attachmentsPageMaxCrossAxisExtent = setting;
 		_settings.save();
 		notifyListeners();
 	}

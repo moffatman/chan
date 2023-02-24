@@ -608,6 +608,8 @@ class AttachmentViewer extends StatelessWidget {
 	final VoidCallback? onTap;
 	final bool allowContextMenu;
 	final EdgeInsets layoutInsets;
+	final bool useHeroDestinationWidget;
+	final bool allowGestures;
 
 	const AttachmentViewer({
 		required this.controller,
@@ -617,6 +619,8 @@ class AttachmentViewer extends StatelessWidget {
 		this.fill = true,
 		this.allowContextMenu = true,
 		this.layoutInsets = EdgeInsets.zero,
+		this.useHeroDestinationWidget = false,
+		this.allowGestures = true,
 		Key? key
 	}) : super(key: key);
 
@@ -663,7 +667,7 @@ class AttachmentViewer extends StatelessWidget {
 		ImageProvider image = ExtendedNetworkImageProvider(
 			source.toString(),
 			cache: true,
-			headers: context.read<ImageboardSite>().getHeaders(source)
+			headers: controller.site.getHeaders(source)
 		);
 		if (source.scheme == 'file') {
 			image = ExtendedFileImageProvider(
@@ -697,122 +701,125 @@ class AttachmentViewer extends StatelessWidget {
 				);
 			}
 		}
-		buildChild(bool useRealGestureKey) => ExtendedImage(
-			image: image,
-			extendedImageGestureKey: useRealGestureKey ? controller.gestureKey : null,
-			color: const Color.fromRGBO(238, 242, 255, 1),
-			colorBlendMode: BlendMode.dstOver,
-			enableSlideOutPage: true,
-			gaplessPlayback: true,
-			fit: BoxFit.contain,
-			mode: ExtendedImageMode.gesture,
-			width: size?.width ?? double.infinity,
-			height: size?.height ?? double.infinity,
-			enableLoadState: true,
-			handleLoadingProgress: true,
-			layoutInsets: layoutInsets,
-			rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
-			loadStateChanged: (loadstate) {
-				// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback
-				if (!controller.cacheCompleted || controller.showLoadingProgress) {
-					double? loadingValue;
-					if (controller.cacheCompleted) {
-						loadingValue = 1;
-					}
-					if (loadstate.loadingProgress?.cumulativeBytesLoaded != null && loadstate.loadingProgress?.expectedTotalBytes != null) {
-						// If we got image download completion, we can check if it's cached
-						loadingValue = loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes!;
-						if ((source != attachment.thumbnailUrl) && loadingValue == 1) {
+		buildChild(bool useRealGestureKey) => AbsorbPointer(
+			absorbing: !allowGestures,
+			child: ExtendedImage(
+				image: image,
+				extendedImageGestureKey: useRealGestureKey ? controller.gestureKey : null,
+				color: const Color.fromRGBO(238, 242, 255, 1),
+				colorBlendMode: BlendMode.dstOver,
+				enableSlideOutPage: true,
+				gaplessPlayback: true,
+				fit: BoxFit.contain,
+				mode: ExtendedImageMode.gesture,
+				width: size?.width ?? double.infinity,
+				height: size?.height ?? double.infinity,
+				enableLoadState: true,
+				handleLoadingProgress: true,
+				layoutInsets: layoutInsets,
+				rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
+				loadStateChanged: (loadstate) {
+					// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback
+					if (!controller.cacheCompleted || controller.showLoadingProgress) {
+						double? loadingValue;
+						if (controller.cacheCompleted) {
+							loadingValue = 1;
+						}
+						if (loadstate.loadingProgress?.cumulativeBytesLoaded != null && loadstate.loadingProgress?.expectedTotalBytes != null) {
+							// If we got image download completion, we can check if it's cached
+							loadingValue = loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes!;
+							if ((source != attachment.thumbnailUrl) && loadingValue == 1) {
+								getCachedImageFile(source.toString()).then((file) {
+									if (file != null) {
+										controller.onCacheCompleted(file);
+									}
+								});
+							}
+						}
+						else if (loadstate.extendedImageInfo?.image.width == attachment.width && (source != attachment.thumbnailUrl)) {
+							// If the displayed image looks like the full image, we can check cache
 							getCachedImageFile(source.toString()).then((file) {
 								if (file != null) {
 									controller.onCacheCompleted(file);
 								}
 							});
 						}
-					}
-					else if (loadstate.extendedImageInfo?.image.width == attachment.width && (source != attachment.thumbnailUrl)) {
-						// If the displayed image looks like the full image, we can check cache
-						getCachedImageFile(source.toString()).then((file) {
-							if (file != null) {
-								controller.onCacheCompleted(file);
+						loadstate.returnLoadStateChangedWidget = true;
+						buildContent(context, _) {
+							Widget child = Container();
+							if (controller.errorMessage != null) {
+								child = Center(
+									child: ErrorMessageCard(controller.errorMessage!, remedies: {
+											'Retry': () => controller.reloadFullAttachment(),
+											if (!controller.checkArchives) 'Try archives': () => controller.tryArchives()
+										}
+									)
+								);
 							}
-						});
-					}
-					loadstate.returnLoadStateChangedWidget = true;
-					buildContent(context, _) {
-						Widget child = Container();
-						if (controller.errorMessage != null) {
-							child = Center(
-								child: ErrorMessageCard(controller.errorMessage!, remedies: {
-										'Retry': () => controller.reloadFullAttachment(),
-										if (!controller.checkArchives) 'Try archives': () => controller.tryArchives()
-									}
+							else if (controller.showLoadingProgress || !controller.isFullResolution) {
+								child = _centeredLoader(
+									active: controller.isFullResolution,
+									value: loadingValue
+								);
+							}
+							final Rect? rect = controller.gestureKey.currentState?.gestureDetails?.destinationRect;
+							child = Transform.scale(
+								scale: (controller.gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (controller.gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
+								child: child
+							);
+							if (rect == null) {
+								return Positioned.fill(
+									child: child
+								);
+							}
+							else {
+								return Positioned.fromRect(
+									rect: rect,
+									child: child
+								);
+							}
+						}
+						return Stack(
+							children: [
+								loadstate.completedWidget,
+								if (controller.redrawGestureListenable != null) AnimatedBuilder(
+									animation: controller.redrawGestureListenable!,
+									builder: buildContent
 								)
-							);
-						}
-						else if (controller.showLoadingProgress || !controller.isFullResolution) {
-							child = _centeredLoader(
-								active: controller.isFullResolution,
-								value: loadingValue
-							);
-						}
-						final Rect? rect = controller.gestureKey.currentState?.gestureDetails?.destinationRect;
-						child = Transform.scale(
-							scale: (controller.gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (controller.gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
-							child: child
+								else buildContent(context, null)
+							]
 						);
-						if (rect == null) {
-							return Positioned.fill(
-								child: child
-							);
-						}
-						else {
-							return Positioned.fromRect(
-								rect: rect,
-								child: child
-							);
-						}
 					}
-					return Stack(
-						children: [
-							loadstate.completedWidget,
-							if (controller.redrawGestureListenable != null) AnimatedBuilder(
-								animation: controller.redrawGestureListenable!,
-								builder: buildContent
-							)
-							else buildContent(context, null)
-						]
+					return null;
+				},
+				initGestureConfigHandler: (state) {
+					return GestureConfig(
+						inPageView: true,
+						gestureDetailsIsChanged: (details) {
+							if (details?.totalScale != null) {
+								onScaleChanged?.call(details!.totalScale!);
+							}
+						}
+					);
+				},
+				heroBuilderForSlidingPage: (Widget result) {
+					return Hero(
+						tag: _tag,
+						child: result,
+						flightShuttleBuilder: (ctx, animation, direction, from, to) => AnimatedBuilder(
+							animation: animation,
+							builder: (ctx, child) => Padding(
+								padding: layoutInsets * animation.value,
+								child: child
+							),
+							child: useHeroDestinationWidget ? to.widget : from.widget
+						)
 					);
 				}
-				return null;
-			},
-			initGestureConfigHandler: (state) {
-				return GestureConfig(
-					inPageView: true,
-					gestureDetailsIsChanged: (details) {
-						if (details?.totalScale != null) {
-							onScaleChanged?.call(details!.totalScale!);
-						}
-					}
-				);
-			},
-			heroBuilderForSlidingPage: (Widget result) {
-				return Hero(
-					tag: _tag,
-					child: result,
-					flightShuttleBuilder: (ctx, animation, direction, from, to) => AnimatedBuilder(
-						animation: animation,
-						builder: (ctx, child) => Padding(
-							padding: layoutInsets * animation.value,
-							child: child
-						),
-						child: from.widget
-					)
-				);
-			}
+			)
 		);
 		return DoubleTapDragDetector(
-			shouldStart: () => controller.isFullResolution,
+			shouldStart: () => controller.isFullResolution && allowGestures,
 			onSingleTap: onTap,
 			onDoubleTapDrag: (details) {
 				final state = controller.gestureKey.currentState!;
@@ -922,7 +929,7 @@ class AttachmentViewer extends StatelessWidget {
 				return Hero(
 					tag: _tag,
 					child: result,
-					flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
+					flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget
 				);
 			},
 			child: SizedBox.fromSize(
@@ -937,17 +944,20 @@ class AttachmentViewer extends StatelessWidget {
 							gaplessPlayback: true,
 							revealSpoilers: true
 						),
-						if (controller.videoPlayerController != null) GestureDetector(
-							behavior: HitTestBehavior.translucent,
-							onLongPressStart: (x) => controller._onLongPressStart(),
-							onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.sizeOf(context).width / 2)),
-							onLongPressEnd: (x) => controller._onLongPressEnd(),
-							child: Center(
-								child: RotatedBox(
-									quarterTurns: controller.rotate90DegreesClockwise ? 1 : 0,
-									child: AspectRatio(
-										aspectRatio: aspectRatio,
-										child: VideoPlayer(controller.videoPlayerController!)
+						if (controller.videoPlayerController != null) AbsorbPointer(
+							absorbing: !allowGestures,
+							child: GestureDetector(
+								behavior: HitTestBehavior.translucent,
+								onLongPressStart: (x) => controller._onLongPressStart(),
+								onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.sizeOf(context).width / 2)),
+								onLongPressEnd: (x) => controller._onLongPressEnd(),
+								child: Center(
+									child: RotatedBox(
+										quarterTurns: controller.rotate90DegreesClockwise ? 1 : 0,
+										child: AspectRatio(
+											aspectRatio: aspectRatio,
+											child: VideoPlayer(controller.videoPlayerController!)
+										)
 									)
 								)
 							)
@@ -999,7 +1009,7 @@ class AttachmentViewer extends StatelessWidget {
 				return Hero(
 					tag: _tag,
 					child: result,
-					flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
+					flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget
 				);
 			},
 			child: SizedBox.fromSize(
@@ -1039,7 +1049,7 @@ class AttachmentViewer extends StatelessWidget {
 				return Hero(
 					tag: _tag,
 					child: result,
-					flightShuttleBuilder: (ctx, animation, direction, from, to) => from.widget
+					flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget
 				);
 			},
 			child: SizedBox.fromSize(

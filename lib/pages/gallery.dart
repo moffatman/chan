@@ -83,6 +83,7 @@ class GalleryPage extends StatefulWidget {
 	final bool allowContextMenu;
 	final bool allowChrome;
 	final bool updateOverlays;
+	final bool useHeroDestinationWidget;
 
 	const GalleryPage({
 		required this.attachments,
@@ -98,6 +99,7 @@ class GalleryPage extends StatefulWidget {
 		this.allowChrome = true,
 		this.allowContextMenu = true,
 		this.updateOverlays = true,
+		this.useHeroDestinationWidget = false,
 		Key? key
 	}) : super(key: key);
 
@@ -897,6 +899,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																	},
 																	layoutInsets: layoutInsets,
 																	allowContextMenu: widget.allowContextMenu,
+																	useHeroDestinationWidget: widget.useHeroDestinationWidget,
 																)
 															)
 														)
@@ -1061,6 +1064,7 @@ Future<Attachment?> showGalleryPretagged({
 	ValueChanged<TaggedAttachment>? onChange,
 	bool fullscreen = true,
 	bool allowScroll = true,
+	bool useHeroDestinationWidget = false,
 }) async {
 	final imageboard = context.read<Imageboard>();
 	final showAnimations = context.read<EffectiveSettings>().showAnimations;
@@ -1081,6 +1085,7 @@ Future<Attachment?> showGalleryPretagged({
 				allowChrome: allowChrome,
 				allowContextMenu: allowContextMenu,
 				allowScroll: allowScroll,
+				useHeroDestinationWidget: useHeroDestinationWidget,
 			)
 		),
 		showAnimations: showAnimations
