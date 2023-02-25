@@ -90,81 +90,84 @@ class ThreadRow extends StatelessWidget {
 			padding: settings.useFullWidthForCatalogCounters ? const EdgeInsets.all(4) : const EdgeInsets.all(2),
 			child: SizedBox(
 				width: settings.useFullWidthForCatalogCounters ? double.infinity : null,
-				child: Wrap(
-					verticalDirection: VerticalDirection.up,
-					alignment: WrapAlignment.end,
-					runSpacing: 4,
-					crossAxisAlignment: WrapCrossAlignment.center,
-					children: [
-						const SizedBox(width: 4),
-						if (latestThread.isSticky) ... [
-							Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
+				height: 20 * settings.textScale,
+				child: FittedBox(
+					alignment: Alignment.centerRight,
+					fit: BoxFit.scaleDown,
+					child: Row(
+						mainAxisSize: MainAxisSize.min,
+						crossAxisAlignment: CrossAxisAlignment.center,
+						children: [
 							const SizedBox(width: 4),
-						],
-						if (latestThread.isArchived) ... [
-							Icon(CupertinoIcons.archivebox, color: grey, size: 18),
-							const SizedBox(width: 4),
-						],
-						if (settings.showTimeInCatalogStats) FittedBox(
-							fit: BoxFit.contain,
-								child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									if (settings.showClockIconInCatalog) ...[
-										Icon(CupertinoIcons.clock, color: otherMetadataColor, size: 18),
-										const SizedBox(width: 4)
-									],
-									Text(latestThread.time.year < 2000 ? '—' : formatRelativeTime(latestThread.time), style: TextStyle(color: otherMetadataColor)),
-									const SizedBox(width: 4),
-								]
-							)
-						),
-						if (site.isReddit || site.isHackerNews) FittedBox(
-							fit: BoxFit.contain,
-								child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Icon(CupertinoIcons.arrow_up, color: otherMetadataColor, size: 18),
-									const SizedBox(width: 2),
-									Text(latestThread.posts_.first.upvotes?.toString() ?? '—', style: TextStyle(color: otherMetadataColor)),
-									const SizedBox(width: 6),
-								]
-							)
-						),
-						FittedBox(
-							fit: BoxFit.contain,
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
-									const SizedBox(width: 4),
-									if ((latestReplyCount - unseenReplyCount) == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
-									else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
-									if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
-									if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)),
-									const SizedBox(width: 2),
-								]
-							)
-						),
-						if (settings.showImageCountInCatalog && site.showImageCount) FittedBox(
-							fit: BoxFit.contain,
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									const SizedBox(width: 6),
-									Icon(CupertinoIcons.photo, size: 18, color: imageCountColor),
-									const SizedBox(width: 4),
-									if (latestImageCount > unseenImageCount) ...[
-										Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
-										if (unseenImageCount > 0) Text('+$unseenImageCount'),
+							if (latestThread.isSticky) ... [
+								Icon(CupertinoIcons.pin, color: otherMetadataColor, size: 18),
+								const SizedBox(width: 4),
+							],
+							if (latestThread.isArchived) ... [
+								Icon(CupertinoIcons.archivebox, color: grey, size: 18),
+								const SizedBox(width: 4),
+							],
+							if (settings.showTimeInCatalogStats) FittedBox(
+								fit: BoxFit.contain,
+									child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										if (settings.showClockIconInCatalog) ...[
+											Icon(CupertinoIcons.clock, color: otherMetadataColor, size: 18),
+											const SizedBox(width: 4)
+										],
+										Text(latestThread.time.year < 2000 ? '—' : formatRelativeTime(latestThread.time), style: TextStyle(color: otherMetadataColor)),
+										const SizedBox(width: 4),
 									]
-									else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
-									else Text('$unseenImageCount', style: TextStyle(color: threadState?.lastSeenPostId != null ? grey : null)),
-									const SizedBox(width: 2)
-								]
+								)
+							),
+							if (site.isReddit || site.isHackerNews) FittedBox(
+								fit: BoxFit.contain,
+									child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										Icon(CupertinoIcons.arrow_up, color: otherMetadataColor, size: 18),
+										const SizedBox(width: 2),
+										Text(latestThread.posts_.first.upvotes?.toString() ?? '—', style: TextStyle(color: otherMetadataColor)),
+										const SizedBox(width: 6),
+									]
+								)
+							),
+							FittedBox(
+								fit: BoxFit.contain,
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
+										const SizedBox(width: 4),
+										if ((latestReplyCount - unseenReplyCount) == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
+										else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
+										if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
+										if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)),
+										const SizedBox(width: 2),
+									]
+								)
+							),
+							if (settings.showImageCountInCatalog && site.showImageCount) FittedBox(
+								fit: BoxFit.contain,
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										const SizedBox(width: 6),
+										Icon(CupertinoIcons.photo, size: 18, color: imageCountColor),
+										const SizedBox(width: 4),
+										if (latestImageCount > unseenImageCount) ...[
+											Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
+											if (unseenImageCount > 0) Text('+$unseenImageCount'),
+										]
+										else if (unseenImageCount == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
+										else Text('$unseenImageCount', style: TextStyle(color: threadState?.lastSeenPostId != null ? grey : null)),
+										const SizedBox(width: 2)
+									]
+								)
 							)
-						)
-					]
+						]
+					)
 				)
 			)
 		);

@@ -1972,6 +1972,20 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					}
 				),
 				const SizedBox(height: 16),
+				Row(
+					children: [
+						const SizedBox(width: 16),
+						const Expanded(
+							child: Text('Show counters in their own row'),
+						),
+						CupertinoSwitch(
+							value: settings.useFullWidthForCatalogCounters,
+							onChanged: (d) => settings.useFullWidthForCatalogCounters = d
+						),
+						const SizedBox(width: 16)
+					]
+				),
+				const SizedBox(height: 16),
 				Center(
 					child: settings.useCatalogGrid ? CupertinoButton.filled(
 						padding: const EdgeInsets.all(16),
@@ -2260,17 +2274,6 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																size: Size(settings.catalogGridWidth, settings.catalogGridHeight),
 																child: _buildFakeThreadRow()
 															)
-														),
-														Row(
-															children: [
-																const Expanded(
-																	child: Text('Show counters in their own row'),
-																),
-																CupertinoSwitch(
-																	value: settings.useFullWidthForCatalogCounters,
-																	onChanged: (d) => settings.useFullWidthForCatalogCounters = d
-																)
-															]
 														),
 														Row(
 															children: [
