@@ -893,6 +893,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String formatBoardName(ImageboardBoard board) => '/${board.name}/';
 	@mustCallSuper
 	void migrateFromPrevious(covariant ImageboardSite oldSite) {
+		_catalogCache.addAll(oldSite._catalogCache);
 		_memoizedWifiHeaders = oldSite._memoizedWifiHeaders;
 		_memoizedCellularHeaders = oldSite._memoizedCellularHeaders;
 	}
