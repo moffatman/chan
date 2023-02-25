@@ -491,6 +491,7 @@ class _BoardPageState extends State<BoardPage> {
 				child: GestureDetector(
 					child: ThreadRow(
 						contentFocus: settings.useCatalogGrid,
+						contentFocusBorderRadiusAndPadding: settings.catalogGridModeCellBorderRadiusAndMargin,
 						thread: thread,
 						isSelected: isSelected,
 						semanticParentIds: [widget.semanticId],

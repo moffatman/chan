@@ -1102,6 +1102,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 	Widget _buildFakeThreadRow({bool contentFocus = true}) {
 		return ThreadRow(
 			contentFocus: contentFocus,
+			contentFocusBorderRadiusAndPadding: context.watch<EffectiveSettings>().catalogGridModeCellBorderRadiusAndMargin,
 			isSelected: false,
 			thread: _makeFakeThread()
 		);
@@ -2121,9 +2122,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 													),
 													const SizedBox(height: 8),
 													Row(
-														mainAxisAlignment: MainAxisAlignment.spaceBetween,
 														children: [
-															const Text('Thumbnail behind text'),
+															const Expanded(
+																child: Text('Thumbnail behind text')
+															),
 															CupertinoSwitch(
 																value: settings.catalogGridModeAttachmentInBackground,
 																onChanged: (v) {
@@ -2135,10 +2137,27 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														]
 													),
 													const SizedBox(height: 8),
+													Row(
+														children: [
+															const Expanded(
+																child: Text('Rounded corners and margin')
+															),
+															CupertinoSwitch(
+																value: settings.catalogGridModeCellBorderRadiusAndMargin,
+																onChanged: (v) {
+																	setDialogState(() {
+																		settings.catalogGridModeCellBorderRadiusAndMargin = v;
+																	});
+																}
+															)
+														]
+													),
+													const SizedBox(height: 8),
 													SizedBox.fromSize(
 														size: size,
 														child: ThreadRow(
 															contentFocus: true,
+															contentFocusBorderRadiusAndPadding: settings.catalogGridModeCellBorderRadiusAndMargin,
 															isSelected: false,
 															thread: _makeFakeThread()
 														)

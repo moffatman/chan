@@ -232,13 +232,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       exactTimeIsTwelveHour: fields[113] as bool?,
       exactTimeShowsDayOfWeekForToday: fields[114] as bool?,
       attachmentsPageMaxCrossAxisExtent: fields[115] as double?,
+      catalogGridModeCellBorderRadiusAndMargin: fields[116] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(112)
+      ..writeByte(113)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -462,7 +463,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(114)
       ..write(obj.exactTimeShowsDayOfWeekForToday)
       ..writeByte(115)
-      ..write(obj.attachmentsPageMaxCrossAxisExtent);
+      ..write(obj.attachmentsPageMaxCrossAxisExtent)
+      ..writeByte(116)
+      ..write(obj.catalogGridModeCellBorderRadiusAndMargin);
   }
 
   @override
