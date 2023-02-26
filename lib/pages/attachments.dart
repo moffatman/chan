@@ -244,7 +244,7 @@ class SliverStaggeredGridDelegate extends SliverGridDelegate {
 
 	@override
 	SliverGridLayout getLayout(SliverConstraints constraints) {
-		final columnCount = constraints.crossAxisExtent ~/ maxCrossAxisExtent;
+		final columnCount = max(1, constraints.crossAxisExtent ~/ maxCrossAxisExtent);
 		final width = constraints.crossAxisExtent / columnCount;
 		final columns = List.generate(columnCount, (_) => <StaggeredGridMember>[]);
 		final columnHeightRunningTotals = List.generate(columnCount, (_) => 0.0);
@@ -269,7 +269,7 @@ class SliverStaggeredGridDelegate extends SliverGridDelegate {
 				int shortestColumn = -1;
 				double shortestHeight = double.infinity;
 				int tallestColumn = -1;
-				double tallestHeight = 0;
+				double tallestHeight = -1;
 				for (int i = 0; i < columns.length; i++) {
 					final height = columns[i].last.height + columns[i].last.offset;
 					if (height < shortestHeight) {
@@ -312,7 +312,6 @@ class SliverStaggeredGridDelegate extends SliverGridDelegate {
 
 	@override
 	bool shouldRelayout(SliverStaggeredGridDelegate oldDelegate) {
-		print(!listEquals(aspectRatios, oldDelegate.aspectRatios) || maxCrossAxisExtent != oldDelegate.maxCrossAxisExtent);
 		return !listEquals(aspectRatios, oldDelegate.aspectRatios) || maxCrossAxisExtent != oldDelegate.maxCrossAxisExtent;
 	}
 	
