@@ -186,7 +186,10 @@ class PostRow extends StatelessWidget {
 								minSize: 0,
 								child: Container(
 									alignment: Alignment.center,
-									width: settings.thumbnailSize,
+									constraints: BoxConstraints(
+										minWidth: settings.thumbnailSize,
+										minHeight: 75
+									),
 									child: Stack(
 										children: [
 											AttachmentThumbnail(
