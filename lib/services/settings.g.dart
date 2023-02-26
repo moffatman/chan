@@ -234,13 +234,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       attachmentsPageMaxCrossAxisExtent: fields[115] as double?,
       catalogGridModeCellBorderRadiusAndMargin: fields[116] as bool?,
       catalogGridModeShowMoreImageIfLessText: fields[117] as bool?,
+      showPostNumberOnPosts: fields[118] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(114)
+      ..writeByte(115)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -468,7 +469,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(116)
       ..write(obj.catalogGridModeCellBorderRadiusAndMargin)
       ..writeByte(117)
-      ..write(obj.catalogGridModeShowMoreImageIfLessText);
+      ..write(obj.catalogGridModeShowMoreImageIfLessText)
+      ..writeByte(118)
+      ..write(obj.showPostNumberOnPosts);
   }
 
   @override
@@ -672,6 +675,8 @@ class PostDisplayFieldAdapter extends TypeAdapter<PostDisplayField> {
         return PostDisplayField.postId;
       case 9:
         return PostDisplayField.ipNumber;
+      case 10:
+        return PostDisplayField.postNumber;
       default:
         return PostDisplayField.name;
     }
@@ -709,6 +714,9 @@ class PostDisplayFieldAdapter extends TypeAdapter<PostDisplayField> {
         break;
       case PostDisplayField.ipNumber:
         writer.writeByte(9);
+        break;
+      case PostDisplayField.postNumber:
+        writer.writeByte(10);
         break;
     }
   }

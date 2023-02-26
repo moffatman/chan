@@ -1544,7 +1544,11 @@ List<InlineSpan> buildPostInfoRow({
 			style: TextStyle(fontWeight: FontWeight.w600, color: settings.theme.quoteColor.shiftHue(40).shiftSaturation(-0.3))
 		),
 		for (final field in settings.postDisplayFieldOrder)
-			if (field == PostDisplayField.ipNumber && settings.showIPNumberOnPosts && post.ipNumber != null) ...[
+			if (field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && !zone.tree) TextSpan(
+				text: '#${zone.thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1} ',
+				style: TextStyle(color: settings.theme.primaryColor.withOpacity(0.5))
+			)
+			else if (field == PostDisplayField.ipNumber && settings.showIPNumberOnPosts && post.ipNumber != null) ...[
 				WidgetSpan(
 					child: Icon(CupertinoIcons.person_fill, color: settings.theme.secondaryColor, size: 16),
 					alignment: PlaceholderAlignment.middle

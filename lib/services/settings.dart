@@ -295,6 +295,8 @@ enum PostDisplayField {
 	postId,
 	@HiveField(9)
 	ipNumber,
+	@HiveField(10)
+	postNumber
 }
 
 extension PostDisplayFieldName on PostDisplayField {
@@ -320,6 +322,8 @@ extension PostDisplayFieldName on PostDisplayField {
 				return 'Post ID';
 			case PostDisplayField.ipNumber:
 				return 'IP Address #';
+			case PostDisplayField.postNumber:
+				return 'Post #';
 		}
 	}
 }
@@ -597,6 +601,8 @@ class SavedSettings extends HiveObject {
 	bool catalogGridModeCellBorderRadiusAndMargin;
 	@HiveField(117)
 	bool catalogGridModeShowMoreImageIfLessText;
+	@HiveField(118)
+	bool showPostNumberOnPosts;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -716,6 +722,7 @@ class SavedSettings extends HiveObject {
 		double? attachmentsPageMaxCrossAxisExtent,
 		bool? catalogGridModeCellBorderRadiusAndMargin,
 		bool? catalogGridModeShowMoreImageIfLessText,
+		bool? showPostNumberOnPosts,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -786,6 +793,7 @@ class SavedSettings extends HiveObject {
 		automaticCacheClearDays = automaticCacheClearDays ?? 60,
 		alwaysAutoloadTappedAttachment = alwaysAutoloadTappedAttachment ?? true,
 		postDisplayFieldOrder = postDisplayFieldOrder ?? [
+			PostDisplayField.postNumber,
 			PostDisplayField.ipNumber,
 			PostDisplayField.name,
 			PostDisplayField.posterId,
@@ -861,7 +869,8 @@ class SavedSettings extends HiveObject {
 		exactTimeShowsDayOfWeekForToday = exactTimeShowsDayOfWeekForToday ?? false,
 		attachmentsPageMaxCrossAxisExtent = attachmentsPageMaxCrossAxisExtent ?? 400,
 		catalogGridModeCellBorderRadiusAndMargin = catalogGridModeCellBorderRadiusAndMargin ?? false,
-		catalogGridModeShowMoreImageIfLessText = catalogGridModeShowMoreImageIfLessText ?? true {
+		catalogGridModeShowMoreImageIfLessText = catalogGridModeShowMoreImageIfLessText ?? true,
+		showPostNumberOnPosts = showPostNumberOnPosts ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -888,6 +897,9 @@ class SavedSettings extends HiveObject {
 			}
 			if (!this.postDisplayFieldOrder.contains(PostDisplayField.ipNumber)) {
 				this.postDisplayFieldOrder.insert(0, PostDisplayField.ipNumber);
+			}
+			if (!this.postDisplayFieldOrder.contains(PostDisplayField.postNumber)) {
+				this.postDisplayFieldOrder.insert(0, PostDisplayField.postNumber);
 			}
 			if (getInappropriateUserAgents().contains(this.userAgent) && !userAgents.contains(this.userAgent)) {
 				// To handle user-agents breaking with OS updates
@@ -1787,6 +1799,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get catalogGridModeShowMoreImageIfLessText => _settings.catalogGridModeShowMoreImageIfLessText;
 	set catalogGridModeShowMoreImageIfLessText(bool setting) {
 		_settings.catalogGridModeShowMoreImageIfLessText = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showPostNumberOnPosts => _settings.showPostNumberOnPosts;
+	set showPostNumberOnPosts(bool setting) {
+		_settings.showPostNumberOnPosts = setting;
 		_settings.save();
 		notifyListeners();
 	}

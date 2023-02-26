@@ -1698,6 +1698,16 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														),
 														Row(
 															children: [
+																const Text('Show Post #'),
+																const Spacer(),
+																CupertinoSwitch(
+																	value: settings.showPostNumberOnPosts,
+																	onChanged: (d) => settings.showPostNumberOnPosts = d
+																)
+															]
+														),
+														Row(
+															children: [
 																const Text('Show IP address #'),
 																const Spacer(),
 																CupertinoSwitch(
@@ -1846,13 +1856,40 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																				height: 350,
 																				child: ReorderableListView(
 																					children: context.select<EffectiveSettings, List<PostDisplayField>>((s) => s.postDisplayFieldOrder).asMap().entries.map((pair) {
-																						final disabled = (pair.value == PostDisplayField.name && !settings.showNameOnPosts && !settings.showTripOnPosts) ||
-																							(pair.value == PostDisplayField.attachmentInfo && !settings.showFilenameOnPosts && !settings.showFilesizeOnPosts && !settings.showFileDimensionsOnPosts) ||
-																							(pair.value == PostDisplayField.pass && !settings.showPassOnPosts) ||
-																							(pair.value == PostDisplayField.flag && !settings.showFlagOnPosts) ||
-																							(pair.value == PostDisplayField.countryName && !settings.showCountryNameOnPosts) ||
-																							(pair.value == PostDisplayField.absoluteTime && !settings.showAbsoluteTimeOnPosts) ||
-																							(pair.value == PostDisplayField.relativeTime && !settings.showRelativeTimeOnPosts);
+																						final bool disabled;
+																						switch (pair.value) {
+																							case PostDisplayField.name:
+																								disabled = !settings.showNameOnPosts && !settings.showTripOnPosts;
+																								break;
+																							case PostDisplayField.attachmentInfo:
+																								disabled = !settings.showFilenameOnPosts && !settings.showFilesizeOnPosts && !settings.showFileDimensionsOnPosts;
+																								break;
+																							case PostDisplayField.pass:
+																								disabled = !settings.showPassOnPosts;
+																								break;
+																							case PostDisplayField.flag:
+																								disabled = !settings.showFlagOnPosts;
+																								break;
+																							case PostDisplayField.countryName:
+																								disabled = !settings.showCountryNameOnPosts;
+																								break;
+																							case PostDisplayField.absoluteTime:
+																								disabled = !settings.showAbsoluteTimeOnPosts;
+																								break;
+																							case PostDisplayField.relativeTime:
+																								disabled = !settings.showRelativeTimeOnPosts;
+																								break;
+																							case PostDisplayField.ipNumber:
+																								disabled = !settings.showIPNumberOnPosts;
+																								break;
+																							case PostDisplayField.postNumber:
+																								disabled = !settings.showPostNumberOnPosts;
+																								break;
+																							case PostDisplayField.posterId:
+																							case PostDisplayField.postId:
+																								disabled = false;
+																								break;
+																						}
 																						return ReorderableDragStartListener(
 																							index: pair.key,
 																							key: ValueKey(pair.key),
