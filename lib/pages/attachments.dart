@@ -151,7 +151,8 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 										initialAttachment: attachment,
 										isAttachmentAlreadyDownloaded: widget.threadState?.isAttachmentDownloaded,
 										onAttachmentDownload: widget.threadState?.didDownloadAttachment,
-										useHeroDestinationWidget: true
+										useHeroDestinationWidget: true,
+										heroOtherEndIsBoxFitCover: false
 									);
 									_getController(attachment).isPrimary = true;
 								},
@@ -164,7 +165,8 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 											builder: (context, child) => AttachmentViewer(
 												controller: _getController(attachment),
 												allowGestures: false,
-												semanticParentIds: const [-101]
+												semanticParentIds: const [-101],
+												heroOtherEndIsBoxFitCover: false
 											)
 										)
 									)

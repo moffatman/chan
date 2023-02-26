@@ -513,7 +513,8 @@ class _BoardPageState extends State<BoardPage> {
 								onChange: (attachment) {
 									_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
 								},
-								semanticParentIds: [widget.semanticId]
+								semanticParentIds: [widget.semanticId],
+								heroOtherEndIsBoxFitCover: settings.useCatalogGrid
 							);
 						},
 						baseOptions: PostSpanRenderOptions(
@@ -771,7 +772,8 @@ class _BoardPageState extends State<BoardPage> {
 															onChange: (attachment) {
 																_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
 															},
-															semanticParentIds: [widget.semanticId]
+															semanticParentIds: [widget.semanticId],
+															heroOtherEndIsBoxFitCover: settings.useCatalogGrid
 														);
 													}
 												}

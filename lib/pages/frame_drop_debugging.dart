@@ -94,7 +94,8 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 									context: context,
 									attachments: [initialAttachment],
 									initialAttachment: initialAttachment,
-									semanticParentIds: [-99]
+									semanticParentIds: [-99],
+									heroOtherEndIsBoxFitCover: settings.useCatalogGrid
 								);
 							}
 						),

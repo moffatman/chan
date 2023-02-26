@@ -84,6 +84,7 @@ class GalleryPage extends StatefulWidget {
 	final bool allowChrome;
 	final bool updateOverlays;
 	final bool useHeroDestinationWidget;
+	final bool heroOtherEndIsBoxFitCover;
 
 	const GalleryPage({
 		required this.attachments,
@@ -100,6 +101,7 @@ class GalleryPage extends StatefulWidget {
 		this.allowContextMenu = true,
 		this.updateOverlays = true,
 		this.useHeroDestinationWidget = false,
+		required this.heroOtherEndIsBoxFitCover,
 		Key? key
 	}) : super(key: key);
 
@@ -900,6 +902,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																	layoutInsets: layoutInsets,
 																	allowContextMenu: widget.allowContextMenu,
 																	useHeroDestinationWidget: widget.useHeroDestinationWidget,
+																	heroOtherEndIsBoxFitCover: widget.heroOtherEndIsBoxFitCover,
 																)
 															)
 														)
@@ -1065,6 +1068,7 @@ Future<Attachment?> showGalleryPretagged({
 	bool fullscreen = true,
 	bool allowScroll = true,
 	bool useHeroDestinationWidget = false,
+	required bool heroOtherEndIsBoxFitCover,
 }) async {
 	final imageboard = context.read<Imageboard>();
 	final showAnimations = context.read<EffectiveSettings>().showAnimations;
@@ -1086,6 +1090,7 @@ Future<Attachment?> showGalleryPretagged({
 				allowContextMenu: allowContextMenu,
 				allowScroll: allowScroll,
 				useHeroDestinationWidget: useHeroDestinationWidget,
+				heroOtherEndIsBoxFitCover: heroOtherEndIsBoxFitCover,
 			)
 		),
 		showAnimations: showAnimations
@@ -1115,6 +1120,7 @@ Future<Attachment?> showGallery({
 	ValueChanged<Attachment>? onChange,
 	bool fullscreen = true,
 	bool allowScroll = true,
+	required bool heroOtherEndIsBoxFitCover,
 }) => showGalleryPretagged(
 	context: context,
 	attachments: attachments.map((attachment) => TaggedAttachment(
@@ -1134,5 +1140,6 @@ Future<Attachment?> showGallery({
 	allowContextMenu: allowContextMenu,
 	onChange: onChange == null ? null : (x) => onChange(x.attachment),
 	fullscreen: fullscreen,
-	allowScroll: allowScroll
+	allowScroll: allowScroll,
+	heroOtherEndIsBoxFitCover: heroOtherEndIsBoxFitCover
 );

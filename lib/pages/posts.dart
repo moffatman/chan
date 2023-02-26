@@ -179,7 +179,8 @@ class _PostsPageState extends State<PostsPage> {
 													semanticParentIds: context.read<PostSpanZoneData>().stackIds,
 													onChange: (attachment) {
 														Scrollable.ensureVisible(context, alignment: 0.5, duration: const Duration(milliseconds: 200));
-													}
+													},
+													heroOtherEndIsBoxFitCover: false
 												);
 											}
 										)

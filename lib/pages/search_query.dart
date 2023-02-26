@@ -200,7 +200,8 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									onThumbnailTap: (attachment) => showGallery(
 										context: context,
 										attachments: [attachment],
-										semanticParentIds: [-7]
+										semanticParentIds: [-7],
+										heroOtherEndIsBoxFitCover: false
 									),
 									showCrossThreadLabel: false,
 									showBoardName: true,
@@ -221,7 +222,8 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									onThumbnailTap: (attachment) => showGallery(
 										context: context,
 										attachments: [attachment],
-										semanticParentIds: [-7]
+										semanticParentIds: [-7],
+										heroOtherEndIsBoxFitCover: false
 									),
 									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.item == row,
 									countsUnreliable: true,

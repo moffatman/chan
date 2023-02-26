@@ -1477,7 +1477,8 @@ class ExpandingPost extends StatelessWidget {
 										showGallery(
 											context: context,
 											attachments: [attachment],
-											semanticParentIds: zone.stackIds
+											semanticParentIds: zone.stackIds,
+											heroOtherEndIsBoxFitCover: false
 										);
 									},
 									shrinkWrap: true

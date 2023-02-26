@@ -317,7 +317,8 @@ class _SavedPageState extends State<SavedPage> {
 																									final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
 																									_watchedListController.animateTo((p) => p.item.threadIdentifier == threadId);
 																								},
-																								semanticParentIds: [-4]
+																								semanticParentIds: [-4],
+																								heroOtherEndIsBoxFitCover: false
 																							);
 																						}
 																					)
@@ -446,7 +447,8 @@ class _SavedPageState extends State<SavedPage> {
 																onChange: (attachment) {
 																	_threadListController.animateTo((p) => p.item.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 																},
-																semanticParentIds: [-4]
+																semanticParentIds: [-4],
+																heroOtherEndIsBoxFitCover: false
 															);
 														}
 													)
@@ -555,7 +557,8 @@ class _SavedPageState extends State<SavedPage> {
 														onChange: (attachment) {
 															_yourPostsListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.post.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 														},
-														semanticParentIds: [-8]
+														semanticParentIds: [-8],
+														heroOtherEndIsBoxFitCover: false
 													);
 												}
 											)
@@ -661,7 +664,8 @@ class _SavedPageState extends State<SavedPage> {
 															onChange: (attachment) {
 																_postListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.item.post.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 															},
-															semanticParentIds: [-2]
+															semanticParentIds: [-2],
+															heroOtherEndIsBoxFitCover: false
 														);
 													}
 												)
@@ -798,7 +802,8 @@ class _SavedPageState extends State<SavedPage> {
 									},
 									allowScroll: poppedOut,
 									allowPop: poppedOut,
-									updateOverlays: false
+									updateOverlays: false,
+									heroOtherEndIsBoxFitCover: false
 								)
 							);
 						}

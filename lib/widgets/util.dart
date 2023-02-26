@@ -350,7 +350,8 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 					threadId: null
 				)
 			],
-			semanticParentIds: []
+			semanticParentIds: [],
+			heroOtherEndIsBoxFitCover: false
 		);
 	}
 	else {
@@ -422,7 +423,8 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 					allowChrome: false,
 					semanticParentIds: [],
 					fullscreen: false,
-					allowScroll: false
+					allowScroll: false,
+					heroOtherEndIsBoxFitCover: false
 				);
 			}
 			else {

@@ -36,7 +36,8 @@ class PopupAttachment extends StatelessWidget {
 				builder: (context, child) => AttachmentViewer(
 					controller: controller,
 					semanticParentIds: const [-1, -1],
-					fill: isWithinScalerBlurrer
+					fill: isWithinScalerBlurrer,
+					heroOtherEndIsBoxFitCover: false
 				)
 			),
 			setup: () => _makeController(context),

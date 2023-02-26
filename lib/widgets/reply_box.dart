@@ -1113,7 +1113,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												},
 												allowChrome: false,
 												allowContextMenu: false,
-												allowScroll: false
+												allowScroll: false,
+												heroOtherEndIsBoxFitCover: false
 											);
 										}
 									)

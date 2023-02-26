@@ -378,7 +378,8 @@ class _ThreadPageState extends State<ThreadPage> {
 				_listController.animateTo((p) => p.attachments.any((a) {
 					return a.id == attachment.attachment.id;
 				}));
-			}
+			},
+			heroOtherEndIsBoxFitCover: false
 		);
 	}
 

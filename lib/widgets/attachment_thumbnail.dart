@@ -159,6 +159,14 @@ class AttachmentThumbnail extends StatelessWidget {
 			flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
 				return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
 			},
+			createRectTween: (startRect, endRect) {
+				if (startRect != null && endRect != null && fit == BoxFit.cover) {
+					final startRectSize = attachment.type == AttachmentType.image ? MediaQuery.paddingOf(context).deflateSize(startRect.size) : startRect.size;
+					final fittedStartSize = applyBoxFit(BoxFit.contain, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), startRectSize).destination;
+					startRect = Alignment.center.inscribe(fittedStartSize, startRect);
+				}
+				return RectTween(begin: startRect, end: endRect);
+			}
 		) : child;
 	}
 }

@@ -40,6 +40,11 @@ void _recordUrlTime(Uri url, Duration loadTime) {
 
 const _minUrlTime = Duration(milliseconds: 500);
 
+// If the Hero endRect doesn't match up with the hero destination widget origin,
+// flutter will keep trying to recalculate it.
+// It's a lazy fix, but works, if we just cache the first result.
+final Map <String, (DateTime, Rect)> _heroEndRectCache = {};
+
 Duration _estimateUrlTime(Uri url) {
 	final times = _domainLoadTimes[url.host] ?? <Duration>[];
 	final time = (times.fold(Duration.zero, (Duration a, b) => a + b) * 1.5) ~/ max(times.length, 1);
@@ -610,6 +615,7 @@ class AttachmentViewer extends StatelessWidget {
 	final EdgeInsets layoutInsets;
 	final bool useHeroDestinationWidget;
 	final bool allowGestures;
+	final bool heroOtherEndIsBoxFitCover;
 
 	const AttachmentViewer({
 		required this.controller,
@@ -621,6 +627,7 @@ class AttachmentViewer extends StatelessWidget {
 		this.layoutInsets = EdgeInsets.zero,
 		this.useHeroDestinationWidget = false,
 		this.allowGestures = true,
+		required this.heroOtherEndIsBoxFitCover,
 		Key? key
 	}) : super(key: key);
 
@@ -658,6 +665,28 @@ class AttachmentViewer extends StatelessWidget {
 			)
 		)
 	);
+
+	Tween<Rect?> _createRectTween(Rect? startRect, Rect? endRect) {
+		if (startRect != null &&
+				endRect != null &&
+				attachment.width != null &&
+				attachment.height != null &&
+				heroOtherEndIsBoxFitCover &&
+				DateTime.now().difference(_heroEndRectCache[attachment.globalId]?.$1 ?? DateTime(2000)) > const Duration(seconds: 1)) {
+			if (attachment.type == AttachmentType.image) {
+				endRect = layoutInsets.deflateRect(endRect);
+				endRect = endRect.shift(Offset(0, -layoutInsets.vertical / 2));
+			}
+			final fittedEndSize = applyBoxFit(BoxFit.contain, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), endRect.size).destination;
+			endRect = Alignment.center.inscribe(fittedEndSize, endRect);
+			if (attachment.type == AttachmentType.image) {
+				endRect = layoutInsets.inflateRect(endRect);
+				endRect = endRect.shift(Offset(0, layoutInsets.vertical / 2));
+			}
+			_heroEndRectCache[attachment.globalId] = (DateTime.now(), endRect);
+		}
+		return RectTween(begin: startRect, end: _heroEndRectCache[attachment.globalId]?.$2 ?? endRect);
+	}
 
 	Widget _buildImage(BuildContext context, Size? size, bool passedFirstBuild) {
 		Uri source = attachment.thumbnailUrl;
@@ -805,7 +834,6 @@ class AttachmentViewer extends StatelessWidget {
 				heroBuilderForSlidingPage: (Widget result) {
 					return Hero(
 						tag: _tag,
-						child: result,
 						flightShuttleBuilder: (ctx, animation, direction, from, to) => AnimatedBuilder(
 							animation: animation,
 							builder: (ctx, child) => Padding(
@@ -813,7 +841,9 @@ class AttachmentViewer extends StatelessWidget {
 								child: child
 							),
 							child: useHeroDestinationWidget ? to.widget : from.widget
-						)
+						),
+						createRectTween: _createRectTween,
+						child: result
 					);
 				}
 			)
@@ -928,8 +958,9 @@ class AttachmentViewer extends StatelessWidget {
 			heroBuilderForSlidingPage: (Widget result) {
 				return Hero(
 					tag: _tag,
-					child: result,
-					flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget
+					flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget,
+					createRectTween: _createRectTween,
+					child: result
 				);
 			},
 			child: SizedBox.fromSize(
@@ -1008,8 +1039,9 @@ class AttachmentViewer extends StatelessWidget {
 			heroBuilderForSlidingPage: (Widget result) {
 				return Hero(
 					tag: _tag,
-					child: result,
-					flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget
+					flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget,
+					createRectTween: _createRectTween,
+					child: result
 				);
 			},
 			child: SizedBox.fromSize(
@@ -1048,8 +1080,9 @@ class AttachmentViewer extends StatelessWidget {
 			heroBuilderForSlidingPage: (Widget result) {
 				return Hero(
 					tag: _tag,
-					child: result,
-					flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget
+					flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget,
+					createRectTween: _createRectTween,
+					child: result
 				);
 			},
 			child: SizedBox.fromSize(

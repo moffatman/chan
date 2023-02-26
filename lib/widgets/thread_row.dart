@@ -395,7 +395,10 @@ class ThreadRow extends StatelessWidget {
 										attachment: attachment,
 										thread: latestThread.identifier,
 										onLoadError: onThumbnailLoadError,
-										hero: null
+										hero: TaggedAttachment(
+											attachment: attachment,
+											semanticParentIds: semanticParentIds
+										)
 									),
 									if (attachment.soundSource != null || attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned(
 										top: settings.catalogGridModeAttachmentInBackground ? 0 : null,
