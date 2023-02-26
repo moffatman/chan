@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:chan/main.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
@@ -54,10 +55,12 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	Offset? _touchStart;
 	OverlayEntry? _touchEntry;
 	late final LongPressGestureRecognizer recognizer;
+	PointerEvent? _wouldStartIfNotScrolling;
 
 	@override
 	void initState() {
 		super.initState();
+		isScrolling.addListener(_onIsScrollingChange);
 		recognizer = LongPressGestureRecognizer(
 			duration: kLongPressTimeout ~/ 2,
 			postAcceptSlopTolerance: 99999
@@ -67,6 +70,15 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		..onLongPressEnd = _onLongPressEnd
 		..onLongPressCancel = _onLongPressDone
 		..gestureSettings = context.findAncestorWidgetOfExactType<MediaQuery>()?.data.gestureSettings;
+	}
+
+	void _onIsScrollingChange() {
+		if (!isScrolling.value && _wouldStartIfNotScrolling != null) {
+			_maybeStart(_wouldStartIfNotScrolling!);
+		}
+		else if (isScrolling.value) {
+			_maybeStop();
+		}
 	}
 
 	void _onLongPressStart(LongPressStartDetails details) {
@@ -126,88 +138,105 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 
 	void _onLongPressEnd(LongPressEndDetails details) => _onLongPressDone();
 
+	void _maybeStart(PointerEvent event) {
+		if (isScrolling.value) {
+			_wouldStartIfNotScrolling = event;
+			return;
+		}
+		if (!context.read<EffectiveSettings>().supportMouse.value) {
+			return;
+		}
+		if (_entry != null) {
+			return;
+		}
+		final RenderBox? childBox = context.findRenderObject() as RenderBox?;
+		if (childBox == null || !childBox.attached) {
+			return;
+		}
+		_cleanupTimer?.cancel();
+		if (_value == null) {
+			_value = widget.setup?.call();
+		}
+		else {
+			_value = widget.softSetup?.call(_value);
+		}
+		if (widget.style == HoverPopupStyle.attached) {
+			final childTop = childBox.localToGlobal(Offset.zero).dy;
+			final childBottom = childBox.localToGlobal(Offset(0, childBox.size.height)).dy;
+			final childCenterHorizontal = childBox.localToGlobal(Offset(childBox.size.width / 2, 0)).dx;
+			final topOfUsableSpace = MediaQuery.sizeOf(context).height / 2;
+			final left = childBox.localToGlobal(Offset.zero).dx;
+			final cblg = childBox.localToGlobal(Offset(childBox.size.width, 0)).dx;
+			_entry = OverlayEntry(
+				builder: (_) {
+					final showOnRight = childCenterHorizontal > (MediaQuery.sizeOf(context).width / 2);
+					return Positioned(
+						right: showOnRight ? (MediaQuery.sizeOf(context).width - cblg) : null,
+						left: showOnRight ? null : left,
+						bottom: (childTop > topOfUsableSpace) ? MediaQuery.sizeOf(context).height - childTop : null,
+						top: (childTop > topOfUsableSpace) ? null : childBottom,
+						child: ConstrainedBox(
+							constraints: BoxConstraints(
+								maxWidth: MediaQuery.sizeOf(context).width / 2
+							),
+							child: ImageboardScope(
+								imageboardKey: null,
+								imageboard: context.read<Imageboard>(),
+								child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!
+							)
+						)
+					);
+				}
+			);
+		}
+		else if (widget.style == HoverPopupStyle.floating) {
+			_globalKey = GlobalKey();
+			final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
+			_entry = OverlayEntry(
+				builder: (_) => _FloatingHoverPopup(
+					key: _globalKey,
+					scale: scale,
+					anchor: widget.anchor,
+					initialMousePosition: event.position,
+					child: ImageboardScope(
+						imageboardKey: null,
+						imageboard: context.read<Imageboard>(),
+						child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!
+					)
+				)
+			);
+		}
+		Overlay.of(context, rootOverlay: true).insert(_entry!);
+	}
+
+	void _maybeStop() {
+		if (_entry == null) {
+			return;
+		}
+		widget.softCleanup?.call(_value);
+		_cleanupTimer = Timer(widget.valueLifetime, () {
+			widget.cleanup?.call(_value);
+			_value = null;
+		});
+		_entry?.remove();
+		_entry = null;
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		return Listener(
 			onPointerDown: (e) => recognizer.addPointer(e),
 			child: MouseRegion(
 				onEnter: (event) {
-					if (!context.read<EffectiveSettings>().supportMouse.value) {
-						return;
-					}
-					if (_entry != null) {
-						return;
-					}
-					final RenderBox? childBox = context.findRenderObject() as RenderBox?;
-					if (childBox == null || !childBox.attached) {
-						return;
-					}
-					_cleanupTimer?.cancel();
-					if (_value == null) {
-						_value = widget.setup?.call();
-					}
-					else {
-						_value = widget.softSetup?.call(_value);
-					}
-					if (widget.style == HoverPopupStyle.attached) {
-						final childTop = childBox.localToGlobal(Offset.zero).dy;
-						final childBottom = childBox.localToGlobal(Offset(0, childBox.size.height)).dy;
-						final childCenterHorizontal = childBox.localToGlobal(Offset(childBox.size.width / 2, 0)).dx;
-						final topOfUsableSpace = MediaQuery.sizeOf(context).height / 2;
-						final left = childBox.localToGlobal(Offset.zero).dx;
-						final cblg = childBox.localToGlobal(Offset(childBox.size.width, 0)).dx;
-						_entry = OverlayEntry(
-							builder: (_) {
-								final showOnRight = childCenterHorizontal > (MediaQuery.sizeOf(context).width / 2);
-								return Positioned(
-									right: showOnRight ? (MediaQuery.sizeOf(context).width - cblg) : null,
-									left: showOnRight ? null : left,
-									bottom: (childTop > topOfUsableSpace) ? MediaQuery.sizeOf(context).height - childTop : null,
-									top: (childTop > topOfUsableSpace) ? null : childBottom,
-									child: ConstrainedBox(
-										constraints: BoxConstraints(
-											maxWidth: MediaQuery.sizeOf(context).width / 2
-										),
-										child: ImageboardScope(
-											imageboardKey: null,
-											imageboard: context.read<Imageboard>(),
-											child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!
-										)
-									)
-								);
-							}
-						);
-					}
-					else if (widget.style == HoverPopupStyle.floating) {
-						_globalKey = GlobalKey();
-						final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
-						_entry = OverlayEntry(
-							builder: (_) => _FloatingHoverPopup(
-								key: _globalKey,
-								scale: scale,
-								anchor: widget.anchor,
-								initialMousePosition: event.position,
-								child: ImageboardScope(
-									imageboardKey: null,
-									imageboard: context.read<Imageboard>(),
-									child: (widget.popupBuilder?.call(_value, false) ?? widget.popup)!
-								)
-							)
-						);
-					}
-					Overlay.of(context, rootOverlay: true).insert(_entry!);
+					_maybeStart(event);
 				},
 				onHover: (event) {
+					_maybeStart(event);
 					_globalKey?.currentState?.updateMousePosition(event.position);
 				},
 				onExit: (event) {
-					widget.softCleanup?.call(_value);
-					_cleanupTimer = Timer(widget.valueLifetime, () {
-						widget.cleanup?.call(_value);
-						_value = null;
-					});
-					_entry?.remove();
-					_entry = null;
+					_wouldStartIfNotScrolling = null;
+					_maybeStop();
 				},
 				child: widget.child
 			)
@@ -218,6 +247,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	void dispose() {
 		super.dispose();
 		_entry?.remove();
+		isScrolling.removeListener(_onIsScrollingChange);
 	}
 }
 

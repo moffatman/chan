@@ -470,6 +470,7 @@ class PostQuoteLinkSpan extends PostSpan {
 							)
 						)
 					),
+					key: ValueKey(thisPostInThread),
 					child: Text.rich(
 						span.$1,
 						textScaleFactor: 1

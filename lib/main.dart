@@ -329,6 +329,9 @@ class ChanHomePage extends StatefulWidget {
 	@override
 	createState() => _ChanHomePageState();
 }
+
+final isScrolling = ValueNotifier(false);
+
 class _ChanHomePageState extends State<ChanHomePage> {
 	int _lastIndex = 0;
 	final _keys = <int, GlobalKey>{};
@@ -344,7 +347,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	final _tabletWillPopZones = <int, WillPopZone>{};
 	final _settingsNavigatorKey = GlobalKey<NavigatorState>();
 	bool _queuedUpdateTabs = false;
-	bool _isScrolling = false;
 	final _savedMasterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	final PersistentBrowserTab _savedFakeTab = PersistentBrowserTab();
 	final Map<String, ({Notifications notifications, StreamSubscription<PostIdentifier> subscription})> _notificationsSubscriptions = {};
@@ -364,7 +366,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	}
 
 	void _didUpdateTabs() {
-		if (_isScrolling) {
+		if (isScrolling.value) {
 			_queuedUpdateTabs = true;
 		}
 		else {
@@ -374,10 +376,10 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	bool _onScrollNotification(Notification notification) {
 		if (notification is ScrollStartNotification) {
-			_isScrolling = true;
+			isScrolling.value = true;
 		}
 		else if (notification is ScrollEndNotification) {
-			_isScrolling = false;
+			isScrolling.value = false;
 			if (_queuedUpdateTabs) {
 				Persistence.didUpdateTabs();
 			}

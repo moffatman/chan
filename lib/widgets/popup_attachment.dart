@@ -30,7 +30,7 @@ class PopupAttachment extends StatelessWidget {
 	Widget build(BuildContext context) {
 		return HoverPopup<AttachmentViewerController>(
 			style: HoverPopupStyle.floating,
-			child: child,
+			key: ValueKey(attachment),
 			popupBuilder: (controller, isWithinScalerBlurrer) => AnimatedBuilder(
 				animation: controller!,
 				builder: (context, child) => AttachmentViewer(
@@ -58,7 +58,8 @@ class PopupAttachment extends StatelessWidget {
 			},
 			cleanup: (controller) {
 				controller?.dispose();
-			}
+			},
+			child: child
 		);
 	}
 }
