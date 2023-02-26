@@ -72,6 +72,7 @@ class _PaddedRectClipper extends CustomClipper<Rect> {
 class GalleryPage extends StatefulWidget {
 	final List<TaggedAttachment> attachments;
 	final Map<Attachment, int> replyCounts;
+	final Map<Attachment, Uri> initialGoodSources;
 	final Map<Attachment, Uri> overrideSources;
 	final bool Function(Attachment)? isAttachmentAlreadyDownloaded;
 	final ValueChanged<Attachment>? onAttachmentDownload;
@@ -90,6 +91,7 @@ class GalleryPage extends StatefulWidget {
 		required this.attachments,
 		this.replyCounts = const {},
 		this.overrideSources = const {},
+		this.initialGoodSources = const {},
 		this.isAttachmentAlreadyDownloaded,
 		this.onAttachmentDownload,
 		required this.initialAttachment,
@@ -236,6 +238,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				site: context.read<ImageboardSite>(),
 				isPrimary: attachment == currentAttachment,
 				overrideSource: widget.overrideSources[attachment.attachment],
+				initialGoodSource: widget.initialGoodSources[attachment.attachment],
 				isDownloaded: widget.isAttachmentAlreadyDownloaded?.call(attachment.attachment) ?? false,
 				onDownloaded: () => widget.onAttachmentDownload?.call(attachment.attachment)
 			);
@@ -1057,6 +1060,7 @@ Future<Attachment?> showGalleryPretagged({
 	required BuildContext context,
 	required List<TaggedAttachment> attachments,
 	Map<Attachment, Uri> overrideSources = const {},
+	Map<Attachment, Uri> initialGoodSources = const {},
 	Map<Attachment, int> replyCounts = const {},
 	bool Function(Attachment)? isAttachmentAlreadyDownloaded,
 	ValueChanged<Attachment>? onAttachmentDownload,
@@ -1081,6 +1085,7 @@ Future<Attachment?> showGalleryPretagged({
 				attachments: attachments,
 				replyCounts: replyCounts,
 				overrideSources: overrideSources,
+				initialGoodSources: initialGoodSources,
 				isAttachmentAlreadyDownloaded: isAttachmentAlreadyDownloaded,
 				onAttachmentDownload: onAttachmentDownload,
 				initialAttachment: initialAttachment,
@@ -1109,6 +1114,7 @@ Future<Attachment?> showGallery({
 	required BuildContext context,
 	required List<Attachment> attachments,
 	Map<Attachment, Uri> overrideSources = const {},
+	Map<Attachment, Uri> initialGoodSources = const {},
 	Map<Attachment, int> replyCounts = const {},
 	bool Function(Attachment)? isAttachmentAlreadyDownloaded,
 	ValueChanged<Attachment>? onAttachmentDownload,
@@ -1128,6 +1134,7 @@ Future<Attachment?> showGallery({
 		semanticParentIds: semanticParentIds
 	)).toList(),
 	overrideSources: overrideSources,
+	initialGoodSources: initialGoodSources,
 	replyCounts: replyCounts,
 	isAttachmentAlreadyDownloaded: isAttachmentAlreadyDownloaded,
 	onAttachmentDownload: onAttachmentDownload,

@@ -3,9 +3,10 @@ import 'dart:ui';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:provider/provider.dart';
@@ -86,18 +87,14 @@ class AttachmentThumbnail extends StatelessWidget {
 				)
 			);
 		}
-		String url = spoiler ? s.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString();
-		if (url.endsWith('.jp')) {
-			// Sometimes 4plebs has strange thumbnails which are blocked from hotlinking, just fallback to the full image
-			if (attachment.ext != '.webm' && ((attachment.sizeInBytes ?? 0) < 300000) || settings.connectivity == ConnectivityResult.wifi) {
-				// Only use the full-res image if less than 300 KB or we are on Wi-Fi
-				url = attachment.url.toString();
-			}
-		}
+		final url = spoiler ? s.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString();
 		ImageProvider image = ExtendedNetworkImageProvider(
 			url,
 			cache: true,
-			headers: s.getHeaders(attachment.thumbnailUrl)
+			headers: {
+				...s.getHeaders(attachment.thumbnailUrl) ?? {},
+				if (attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
+			}
 		);
 		Widget child = ExtendedImage(
 			image: image,
@@ -160,10 +157,19 @@ class AttachmentThumbnail extends StatelessWidget {
 				return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
 			},
 			createRectTween: (startRect, endRect) {
-				if (startRect != null && endRect != null && fit == BoxFit.cover) {
-					final startRectSize = attachment.type == AttachmentType.image ? MediaQuery.paddingOf(context).deflateSize(startRect.size) : startRect.size;
-					final fittedStartSize = applyBoxFit(BoxFit.contain, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), startRectSize).destination;
-					startRect = Alignment.center.inscribe(fittedStartSize, startRect);
+				if (startRect != null && endRect != null) {
+					if (attachment.type == AttachmentType.image) {
+						// Need to deflate the original startRect because it has inbuilt layoutInsets
+						// This AttachmentThumbnail will always fill its size
+						final rootPadding = MediaQueryData.fromView(WidgetsBinding.instance.window).padding - sumAdditionalSafeAreaInsets();
+						startRect = rootPadding.deflateRect(startRect);
+					}
+					if (fit == BoxFit.cover && attachment.width != null && attachment.height != null) {
+						// This is AttachmentViewer -> AttachmentThumbnail (cover)
+						// Need to shrink the startRect, so it only contains the image
+						final fittedStartSize = applyBoxFit(BoxFit.contain, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), startRect.size).destination;
+						startRect = Alignment.center.inscribe(fittedStartSize, startRect);
+					}
 				}
 				return RectTween(begin: startRect, end: endRect);
 			}

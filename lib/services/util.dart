@@ -17,6 +17,10 @@ String makeRandomBase64String(int length) {
 	return base64Url.encode(List.generate(length, (i) => random.nextInt(256)));
 }
 
+String makeRandomUserAgent() {
+	return makeRandomBase64String(random.nextInt(30) + 10);
+}
+
 String describeCount(int count, String noun) {
 	if (count == 1) {
 		return '$count $noun';

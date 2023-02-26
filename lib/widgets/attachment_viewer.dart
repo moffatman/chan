@@ -43,7 +43,7 @@ const _minUrlTime = Duration(milliseconds: 500);
 // If the Hero endRect doesn't match up with the hero destination widget origin,
 // flutter will keep trying to recalculate it.
 // It's a lazy fix, but works, if we just cache the first result.
-final Map <String, (DateTime, Rect)> _heroEndRectCache = {};
+final Map <String, (DateTime, Rect, Rect)> _heroRectCache = {};
 
 Duration _estimateUrlTime(Uri url) {
 	final times = _domainLoadTimes[url.host] ?? <Duration>[];
@@ -107,6 +107,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _loadingProgressHideScheduled = false;
 	bool _thumbnailHideScheduled = false;
 	bool _showThumbnailBehindVideo = true;
+	bool? _useRandomUserAgent;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -151,6 +152,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		this.redrawGestureListenable,
 		required this.site,
 		this.overrideSource,
+		Uri? initialGoodSource,
 		this.onDownloaded,
 		bool isPrimary = false,
 		bool isDownloaded = false,
@@ -161,6 +163,8 @@ class AttachmentViewerController extends ChangeNotifier {
 			}
 		});
 		// optimistic
+		_goodImageSource = initialGoodSource;
+		_isFullResolution = initialGoodSource != null;
 		if (attachment.type == AttachmentType.image) {
 			getCachedImageFile(attachment.url.toString()).then((file) {
 				if (file != null && _cachedFile == null) {
@@ -183,13 +187,20 @@ class AttachmentViewerController extends ChangeNotifier {
 		_isPrimary = val;
 	}
 
+	Map<String, String> _getHeaders(Uri url) {
+		return {
+			...site.getHeaders(url) ?? {},
+			if (_useRandomUserAgent ?? attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
+		};
+	}
+
 	Future<Uri> _getGoodSource() async {
 		if (overrideSource != null) {
 			return overrideSource!;
 		}
-		Response result = await site.client.head(attachment.url.toString(), options: Options(
+		Response result = await site.client.headUri(attachment.url, options: Options(
 			validateStatus: (_) => true,
-			headers: site.getHeaders(attachment.url)
+			headers: _getHeaders(attachment.url)
 		));
 		if (result.statusCode == 200) {
 			return attachment.url;
@@ -203,7 +214,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (corrected) {
 			result = await site.client.head(correctedUrl, options: Options(
 				validateStatus: (_) => true,
-				headers: site.getHeaders(attachment.url)
+				headers: _getHeaders(Uri.parse(correctedUrl))
 			));
 			if (result.statusCode == 200) {
 				return Uri.parse(correctedUrl);
@@ -220,13 +231,18 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 				final check = await site.client.head(newAttachment.url.toString(), options: Options(
 					validateStatus: (_) => true,
-					headers: context.read<ImageboardSite>().getHeaders(newAttachment.url)
+					headers: _getHeaders(newAttachment.url)
 				));
 				if (check.statusCode != 200) {
 					throw AttachmentNotArchivedException(attachment);
 				}
 			});
-			return archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)!.url;
+			final goodAttachment = archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)!;
+			_useRandomUserAgent = goodAttachment.useRandomUseragent;
+			return goodAttachment.url;
+		}
+		else {
+			_useRandomUserAgent = null;
 		}
 		if (result.statusCode == 404) {
 			throw AttachmentNotFoundException(attachment);
@@ -309,7 +325,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					await ExtendedNetworkImageProvider(
 						goodImageSource.toString(),
 						cache: true,
-						headers: site.getHeaders(goodImageSource!)
+						headers: _getHeaders(goodImageSource!)
 					).getNetworkImageData();
 					final file = await getCachedImageFile(goodImageSource.toString());
 					if (file != null && _cachedFile?.path != file.path) {
@@ -326,7 +342,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 				transcode |= soundSource != null;
 				if (!transcode) {
-					final scan = await MediaScan.scan(url, headers: site.getHeaders(url) ?? {});
+					final scan = await MediaScan.scan(url, headers: _getHeaders(url));
 					if (_isDisposed) {
 						return;
 					}
@@ -346,7 +362,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (!transcode) {
 					_videoPlayerController = VideoPlayerController.network(
 						url.toString(),
-						httpHeaders: site.getHeaders(url) ?? {},
+						httpHeaders: _getHeaders(url),
 						videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true)
 					);
 					await _videoPlayerController!.initialize();
@@ -376,7 +392,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					_scheduleHidingOfVideoThumbnail();
 				}
 				else {
-					_ongoingConversion = MediaConversion.toMp4(url, headers: site.getHeaders(url) ?? {}, soundSource: soundSource);
+					_ongoingConversion = MediaConversion.toMp4(url, headers: _getHeaders(url), soundSource: soundSource);
 					_ongoingConversion!.progress.addListener(_onConversionProgressUpdate);
 					_ongoingConversion!.start();
 					final result = await _ongoingConversion!.result;
@@ -521,7 +537,8 @@ class AttachmentViewerController extends ChangeNotifier {
 				return File(source.path);
 			}
 			final response = await site.client.getUri(source, options: Options(
-				responseType: ResponseType.bytes
+				responseType: ResponseType.bytes,
+				headers: _getHeaders(source)
 			));
 			final systemTempDirectory = Persistence.temporaryDirectory;
 			final directory = await (Directory('${systemTempDirectory.path}/webmcache')).create(recursive: true);
@@ -671,32 +688,43 @@ class AttachmentViewer extends StatelessWidget {
 				endRect != null &&
 				attachment.width != null &&
 				attachment.height != null &&
-				heroOtherEndIsBoxFitCover &&
-				DateTime.now().difference(_heroEndRectCache[attachment.globalId]?.$1 ?? DateTime(2000)) > const Duration(seconds: 1)) {
-			if (attachment.type == AttachmentType.image) {
+				DateTime.now().difference(_heroRectCache[attachment.globalId]?.$1 ?? DateTime(2000)) > const Duration(seconds: 1)) {
+			if (useHeroDestinationWidget) {
+				// This is AttachmentViewer -> AttachmentViewer
+				if (startRect.topLeft == Offset.zero) {
+					// This is a pop, need to shrink the startRect as the child does not have layoutInsets
+					startRect = layoutInsets.deflateRect(startRect);
+				}
+				else {
+					// This is a push, need to grow the startRect as the child has LayoutInsets
+					startRect = layoutInsets.inflateRect(startRect);
+				}
+			}
+			else if (attachment.type == AttachmentType.image) {
+				// This is AttachmentThumbnail -> AttachmentViewer
+				// Need to deflate the rect as AttachmentThumbnail does not know about the layoutInsets
 				endRect = layoutInsets.deflateRect(endRect);
-				endRect = endRect.shift(Offset(0, -layoutInsets.vertical / 2));
 			}
-			final fittedEndSize = applyBoxFit(BoxFit.contain, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), endRect.size).destination;
-			endRect = Alignment.center.inscribe(fittedEndSize, endRect);
-			if (attachment.type == AttachmentType.image) {
-				endRect = layoutInsets.inflateRect(endRect);
-				endRect = endRect.shift(Offset(0, layoutInsets.vertical / 2));
+			if (heroOtherEndIsBoxFitCover) {
+				// The flight child will try to cover its rect. Need to restrict it based on the image aspect ratio.
+				final fittedEndSize = applyBoxFit(BoxFit.contain, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), endRect.size).destination;
+				endRect = Alignment.center.inscribe(fittedEndSize, endRect);
 			}
-			_heroEndRectCache[attachment.globalId] = (DateTime.now(), endRect);
+			_heroRectCache[attachment.globalId] = (DateTime.now(), startRect, endRect);
 		}
-		return RectTween(begin: startRect, end: _heroEndRectCache[attachment.globalId]?.$2 ?? endRect);
+		return RectTween(begin: _heroRectCache[attachment.globalId]?.$2 ?? startRect, end: _heroRectCache[attachment.globalId]?.$3 ?? endRect);
 	}
 
 	Widget _buildImage(BuildContext context, Size? size, bool passedFirstBuild) {
 		Uri source = attachment.thumbnailUrl;
-		if (controller.goodImageSource != null && (passedFirstBuild || source.toString().length < 6)) {
-			source = controller.goodImageSource!;
+		final goodSource = controller.goodImageSource;
+		if (goodSource != null && ((!goodSource.path.endsWith('.gif') || passedFirstBuild) || source.toString().length < 6)) {
+			source = goodSource;
 		}
 		ImageProvider image = ExtendedNetworkImageProvider(
 			source.toString(),
 			cache: true,
-			headers: controller.site.getHeaders(source)
+			headers: controller._getHeaders(source)
 		);
 		if (source.scheme == 'file') {
 			image = ExtendedFileImageProvider(
@@ -834,14 +862,7 @@ class AttachmentViewer extends StatelessWidget {
 				heroBuilderForSlidingPage: (Widget result) {
 					return Hero(
 						tag: _tag,
-						flightShuttleBuilder: (ctx, animation, direction, from, to) => AnimatedBuilder(
-							animation: animation,
-							builder: (ctx, child) => Padding(
-								padding: layoutInsets * animation.value,
-								child: child
-							),
-							child: useHeroDestinationWidget ? to.widget : from.widget
-						),
+						flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget,
 						createRectTween: _createRectTween,
 						child: result
 					);
@@ -973,7 +994,8 @@ class AttachmentViewer extends StatelessWidget {
 							height: double.infinity,
 							rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
 							gaplessPlayback: true,
-							revealSpoilers: true
+							revealSpoilers: true,
+							site: controller.site
 						),
 						if (controller.videoPlayerController != null) AbsorbPointer(
 							absorbing: !allowGestures,
@@ -1054,7 +1076,8 @@ class AttachmentViewer extends StatelessWidget {
 							height: double.infinity,
 							rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
 							gaplessPlayback: true,
-							revealSpoilers: true
+							revealSpoilers: true,
+							site: controller.site
 						),
 						Center(
 							child: ErrorMessageCard(

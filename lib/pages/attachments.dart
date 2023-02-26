@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -148,6 +150,11 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 									await showGalleryPretagged(
 										context: context,
 										attachments: widget.attachments,
+										initialGoodSources: {
+											for (final controller in _controllers.values)
+												if (controller.goodImageSource != null)
+													controller.attachment: controller.goodImageSource!
+										},
 										initialAttachment: attachment,
 										isAttachmentAlreadyDownloaded: widget.threadState?.isAttachmentDownloaded,
 										onAttachmentDownload: widget.threadState?.didDownloadAttachment,
@@ -160,12 +167,22 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 									ignoring: false,
 									child: Hero(
 										tag: attachment,
+										createRectTween: (startRect, endRect) {
+											if (startRect != null && endRect != null && attachment.attachment.type == AttachmentType.image) {
+												// Need to deflate the original startRect because it has inbuilt layoutInsets
+												// This AttachmentViewer doesn't know about them.
+												final rootPadding = MediaQueryData.fromView(WidgetsBinding.instance.window).padding - sumAdditionalSafeAreaInsets();
+												startRect = rootPadding.deflateRect(startRect);
+											}
+											return RectTween(begin: startRect, end: endRect);
+										},
 										child: AnimatedBuilder(
 											animation: _getController(attachment),
 											builder: (context, child) => AttachmentViewer(
 												controller: _getController(attachment),
 												allowGestures: false,
 												semanticParentIds: const [-101],
+												useHeroDestinationWidget: true,
 												heroOtherEndIsBoxFitCover: false
 											)
 										)

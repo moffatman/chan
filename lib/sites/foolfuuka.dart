@@ -183,7 +183,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				width: int.parse(data['media']['media_w']),
 				height: int.parse(data['media']['media_h']),
 				threadId: int.tryParse(data['thread_num']),
-				sizeInBytes: int.tryParse(data['media']['media_size'])
+				sizeInBytes: int.tryParse(data['media']['media_size']),
+				useRandomUseragent: useRandomUseragent
 			);
 		}
 		return null;
@@ -244,7 +245,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			},
 			options: Options(
 				headers: {
-					if (useRandomUseragent) 'user-agent': makeRandomBase64String(random.nextInt(30) + 10)
+					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
 				}
 			)
 		);
@@ -327,7 +328,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			options: Options(
 				validateStatus: (x) => true,
 				headers: {
-					if (useRandomUseragent) 'user-agent': makeRandomBase64String(random.nextInt(30) + 10)
+					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
 				}
 			)
 		);
@@ -352,7 +353,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			},
 			options: Options(
 				headers: {
-					if (useRandomUseragent) 'user-agent': makeRandomBase64String(random.nextInt(30) + 10)
+					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
 				}
 			)
 		);
@@ -367,7 +368,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/archives').toString(), options: Options(
 			validateStatus: (x) => true,
 			headers: {
-				if (useRandomUseragent) 'user-agent': makeRandomBase64String(random.nextInt(30) + 10)
+				if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
 			}
 		));
 		if (response.statusCode != 200) {
@@ -433,7 +434,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			options: Options(
 				validateStatus: (x) => true,
 				headers: {
-					if (useRandomUseragent) 'user-agent': makeRandomBase64String(random.nextInt(30) + 10)
+					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
 				}
 			)
 		);
