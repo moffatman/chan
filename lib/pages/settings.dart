@@ -2153,6 +2153,22 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														]
 													),
 													const SizedBox(height: 8),
+													Row(
+														children: [
+															const Expanded(
+																child: Text('Show more image if text is short')
+															),
+															CupertinoSwitch(
+																value: settings.catalogGridModeShowMoreImageIfLessText,
+																onChanged: (v) {
+																	setDialogState(() {
+																		settings.catalogGridModeShowMoreImageIfLessText = v;
+																	});
+																}
+															)
+														]
+													),
+													const SizedBox(height: 8),
 													SizedBox.fromSize(
 														size: size,
 														child: ThreadRow(

@@ -595,6 +595,8 @@ class SavedSettings extends HiveObject {
 	double attachmentsPageMaxCrossAxisExtent;
 	@HiveField(116)
 	bool catalogGridModeCellBorderRadiusAndMargin;
+	@HiveField(117)
+	bool catalogGridModeShowMoreImageIfLessText;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -713,6 +715,7 @@ class SavedSettings extends HiveObject {
 		bool? exactTimeShowsDayOfWeekForToday,
 		double? attachmentsPageMaxCrossAxisExtent,
 		bool? catalogGridModeCellBorderRadiusAndMargin,
+		bool? catalogGridModeShowMoreImageIfLessText,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -857,7 +860,8 @@ class SavedSettings extends HiveObject {
 		exactTimeIsTwelveHour = exactTimeIsTwelveHour ?? false,
 		exactTimeShowsDayOfWeekForToday = exactTimeShowsDayOfWeekForToday ?? false,
 		attachmentsPageMaxCrossAxisExtent = attachmentsPageMaxCrossAxisExtent ?? 400,
-		catalogGridModeCellBorderRadiusAndMargin = catalogGridModeCellBorderRadiusAndMargin ?? false {
+		catalogGridModeCellBorderRadiusAndMargin = catalogGridModeCellBorderRadiusAndMargin ?? false,
+		catalogGridModeShowMoreImageIfLessText = catalogGridModeShowMoreImageIfLessText ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1776,6 +1780,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get catalogGridModeCellBorderRadiusAndMargin => _settings.catalogGridModeCellBorderRadiusAndMargin;
 	set catalogGridModeCellBorderRadiusAndMargin(bool setting) {
 		_settings.catalogGridModeCellBorderRadiusAndMargin = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get catalogGridModeShowMoreImageIfLessText => _settings.catalogGridModeShowMoreImageIfLessText;
+	set catalogGridModeShowMoreImageIfLessText(bool setting) {
+		_settings.catalogGridModeShowMoreImageIfLessText = setting;
 		_settings.save();
 		notifyListeners();
 	}

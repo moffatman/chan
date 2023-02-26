@@ -475,6 +475,7 @@ class ThreadRow extends StatelessWidget {
 				];
 			}
 			else {
+				final gridTextMaxHeight = (settings.catalogGridHeight / 2) - 20;
 				return [
 					Column(
 						mainAxisSize: MainAxisSize.min,
@@ -483,7 +484,10 @@ class ThreadRow extends StatelessWidget {
 								child: att
 							),
 							ConstrainedBox(
-								constraints: BoxConstraints(minHeight: 25, maxHeight: (settings.catalogGridHeight / 2) - 20),
+								constraints: BoxConstraints(
+									minHeight: settings.catalogGridModeShowMoreImageIfLessText ? 25 : gridTextMaxHeight,
+									maxHeight: gridTextMaxHeight
+								),
 								child: txt
 							)
 						]
