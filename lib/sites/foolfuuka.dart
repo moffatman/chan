@@ -237,12 +237,11 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (!(await getBoards()).any((b) => b.name == board)) {
 			throw BoardNotFoundException(board);
 		}
-		final response = await client.get(
-			Uri.https(baseUrl, '/_/api/chan/post').toString(),
-			queryParameters: {
+		final response = await client.getUri(
+			Uri.https(baseUrl, '/_/api/chan/post', {
 				'board': board,
 				'num': id.toString()
-			},
+			}),
 			options: Options(
 				headers: {
 					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
@@ -319,12 +318,11 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (!(await getBoards()).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}
-		final response = await client.get(
-			Uri.https(baseUrl, '/_/api/chan/thread').toString(),
-			queryParameters: {
+		final response = await client.getUri(
+			Uri.https(baseUrl, '/_/api/chan/thread', {
 				'board': thread.board,
 				'num': thread.id.toString()
-			},
+			}),
 			options: Options(
 				validateStatus: (x) => true,
 				headers: {
@@ -346,12 +344,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	}
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
-		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/index').toString(),
-			queryParameters: {
-				'board': board,
-				'page': '1'
-			},
-			options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/index', {
+			'board': board,
+			'page': '1'
+		}), options: Options(
 				headers: {
 					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
 				}
@@ -365,7 +361,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		), response.data)).toList());
 	}
 	Future<List<ImageboardBoard>> _getBoards() async {
-		final response = await client.get(Uri.https(baseUrl, '/_/api/chan/archives').toString(), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/archives'), options: Options(
 			validateStatus: (x) => true,
 			headers: {
 				if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
@@ -417,9 +413,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (unknownBoards.isNotEmpty) {
 			throw BoardNotFoundException(unknownBoards.first);
 		}
-		final response = await client.get(
-			Uri.https(baseUrl, '/_/api/chan/search').toString(),
-			queryParameters: {
+		final response = await client.getUri(
+			Uri.https(baseUrl, '/_/api/chan/search', {
 				'text': query.query,
 				'page': page.toString(),
 				if (query.boards.isNotEmpty) 'boards': query.boards.join('.'),
@@ -430,7 +425,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				if (query.md5 != null) 'image': query.md5,
 				if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) 'deleted': 'deleted'
 				else if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) 'deleted': 'not-deleted'
-			},
+			}),
 			options: Options(
 				validateStatus: (x) => true,
 				headers: {

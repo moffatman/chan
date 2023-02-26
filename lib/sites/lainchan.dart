@@ -175,7 +175,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
-		final response = await client.get(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json').toString(), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), options: Options(
 			validateStatus: (x) => true
 		));
 		if (response.statusCode == 404 || response.redirects.tryLast?.location.pathSegments.tryLast == '404.html') {
@@ -205,7 +205,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
-		final response = await client.get(Uri.https(baseUrl, '/$board/catalog.json').toString(), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
 			validateStatus: (x) => true
 		));
 		if (response.statusCode != 200) {
@@ -241,7 +241,7 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	Future<List<ImageboardBoard>> getBoards() async {
-		final response = await client.get(Uri.https(baseUrl, '/boards.json').toString(), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '/boards.json'), options: Options(
 			responseType: ResponseType.json
 		));
 		return (response.data['boards'] as List<dynamic>).map((board) => ImageboardBoard(
@@ -299,8 +299,8 @@ class SiteLainchan extends ImageboardSite {
 			fields['captcha_cookie'] = captchaSolution.cookie;
 			fields['captcha_text'] = captchaSolution.response;
 		}
-		final response = await client.post(
-			Uri.https(baseUrl, '/post.php').toString(),
+		final response = await client.postUri(
+			Uri.https(baseUrl, '/post.php'),
 			data: FormData.fromMap(fields),
 			options: Options(
 				responseType: ResponseType.plain,
@@ -397,8 +397,8 @@ class SiteLainchan extends ImageboardSite {
 
 	@override
 	Future<void> deletePost(String board, PostReceipt receipt) async {
-		final response = await client.post(
-			Uri.https(baseUrl, '/post.php').toString(),
+		final response = await client.postUri(
+			Uri.https(baseUrl, '/post.php'),
 			data: FormData.fromMap({
 				'board': board,
 				'delete_${receipt.id}': 'on',
@@ -523,8 +523,8 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
 
   @override
   Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
-    final response = await parent.client.post(
-			'https://${parent.baseUrl}/mod.php?/',
+    final response = await parent.client.postUri(
+			Uri.https(parent.baseUrl, '/mod.php?/'),
 			data: {
 				for (final field in fields.entries) field.key.formKey: field.value,
 				'login': 'Continue'

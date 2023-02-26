@@ -456,16 +456,16 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<List<ImageboardBoard>> getBoards() async {
-		final response = await client.get(Uri.https(baseUrl, '/subreddits/popular.json').toString());
+		final response = await client.getUri(Uri.https(baseUrl, '/subreddits/popular.json'));
 		return (response.data['data']['children'] as List<dynamic>).map((c) => _makeBoard(c['data'])).toList();
 	}
 
 	@override
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async {
-		final response = await client.get(Uri.https('api.$baseUrl', '/subreddits/search').toString(), queryParameters: {
+		final response = await client.getUri(Uri.https('api.$baseUrl', '/subreddits/search', {
 			'q': query,
 			'typeahead_active': true
-		});
+		}));
 		return (response.data['data']['children'] as List<dynamic>).map((c) => _makeBoard(c['data'])).toList();
 	}
 
@@ -476,7 +476,7 @@ class SiteReddit extends ImageboardSite {
 
 	Future<void> _updateBoardIfNeeded(String board) async {
 		if (persistence.boards[board]?.additionalDataTime?.isBefore(DateTime.now().subtract(const Duration(days: 3))) ?? true) {
-			final response = await client.get(Uri.https(baseUrl, '/r/$board/about.json').toString());
+			final response = await client.getUri(Uri.https(baseUrl, '/r/$board/about.json'));
 			persistence.boards[board] = _makeBoard(response.data['data'])..additionalDataTime = DateTime.now();
 			persistence.didUpdateBrowserState();
 		}

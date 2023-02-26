@@ -33,7 +33,7 @@ class SiteDvach extends ImageboardSite {
 
 	@override
 	Future<List<ImageboardBoard>> getBoards() async {
-		final response = await client.get(Uri.https(baseUrl, '/').toString(), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '/'), options: Options(
 			responseType: ResponseType.plain
 		));
 		final document = parse(response.data);
@@ -126,7 +126,7 @@ class SiteDvach extends ImageboardSite {
 
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
-		final response = await client.get(Uri.https(baseUrl, '/$board/catalog.json').toString(), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
 			validateStatus: (s) => true
 		));
 		if (response.statusCode == 404) {
@@ -158,7 +158,7 @@ class SiteDvach extends ImageboardSite {
 
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
-		final response = await client.get(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json').toString());
+		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'));
 		if (response.data['board'] != null) {
 			_updateBoardInformation(response.data['board']);
 		}
@@ -178,7 +178,7 @@ class SiteDvach extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		final response = await client.get(Uri.https(baseUrl, '/api/captcha/settings/$board').toString(), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '/api/captcha/settings/$board'), options: Options(
 			responseType: ResponseType.json
 		));
 		if (response.data['result'] == 0) {
@@ -222,8 +222,8 @@ class SiteDvach extends ImageboardSite {
 			if (file != null) 'formimages[]': await MultipartFile.fromFile(file.path, filename: overrideFilename),
 			if (threadId != null) 'thread': threadId.toString()
 		};
-		final response = await client.post(
-			Uri.https(baseUrl, '/user/posting').toString(),
+		final response = await client.postUri(
+			Uri.https(baseUrl, '/user/posting'),
 			data: FormData.fromMap(fields),
 			options: Options(
 				responseType: ResponseType.json,

@@ -320,7 +320,7 @@ class Site4Chan extends ImageboardSite {
 	Future<int?> _getThreadPage(ThreadIdentifier thread) async {
 		final now = DateTime.now();
 		if (_catalogCaches[thread.board] == null || now.difference(_catalogCaches[thread.board]!.lastUpdated).compareTo(_catalogCacheLifetime) > 0) {
-			final response = await client.get(Uri.https(apiUrl, '/${thread.board}/catalog.json').toString(), options: Options(
+			final response = await client.getUri(Uri.https(apiUrl, '/${thread.board}/catalog.json'), options: Options(
 				validateStatus: (x) => true
 			));
 			if (response.statusCode != 200) {
@@ -357,8 +357,8 @@ class Site4Chan extends ImageboardSite {
 				'If-Modified-Since': _threadCache['${thread.board}/${thread.id}']!.lastModified
 			};
 		}
-		final response = await client.get(
-			Uri.https(apiUrl,'/${thread.board}/thread/${thread.id}.json').toString(),
+		final response = await client.getUri(
+			Uri.https(apiUrl,'/${thread.board}/thread/${thread.id}.json'),
 			options: Options(
 				headers: headers,
 				validateStatus: (x) => true
@@ -423,7 +423,7 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	Future<List<Thread>> _getArchive(String board) async {
-		final response = await client.get(Uri.https(baseUrl, '/$board/archive').toString(), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '/$board/archive'), options: Options(
 			validateStatus: (x) => true
 		));
 		if (response.statusCode != 200) {
@@ -474,7 +474,7 @@ class Site4Chan extends ImageboardSite {
 		if (variant == CatalogVariant.chan4NativeArchive) {
 			return _getArchive(board);
 		}
-		final response = await client.get(Uri.https(apiUrl, '/$board/catalog.json').toString(), options: Options(
+		final response = await client.getUri(Uri.https(apiUrl, '/$board/catalog.json'), options: Options(
 			validateStatus: (x) => true
 		));
 		if (response.statusCode != 200) {
@@ -513,7 +513,7 @@ class Site4Chan extends ImageboardSite {
 	}
 	@override
 	Future<List<ImageboardBoard>> getBoards() async {
-		final response = await client.get(Uri.https(apiUrl, '/boards.json').toString());
+		final response = await client.getUri(Uri.https(apiUrl, '/boards.json'));
 		return (response.data['boards'] as List<dynamic>).map((board) {
 			return ImageboardBoard(
 				name: board['board'],
@@ -568,8 +568,8 @@ class Site4Chan extends ImageboardSite {
 		ImageboardBoardFlag? flag
 	}) async {
 		final password = makeRandomBase64String(66);
-		final response = await client.post(
-			Uri.https(_sysUrl(board), '/$board/post').toString(),
+		final response = await client.postUri(
+			Uri.https(_sysUrl(board), '/$board/post'),
 			data: FormData.fromMap({
 				if (threadId != null) 'resto': threadId.toString(),
 				if (subject != null) 'sub': subject,
@@ -727,8 +727,8 @@ class Site4Chan extends ImageboardSite {
 
 	@override
 	Future<void> deletePost(String board, PostReceipt receipt) async {
-		final response = await client.post(
-			Uri.https(_sysUrl(board), '/$board/imgboard.php').toString(),
+		final response = await client.postUri(
+			Uri.https(_sysUrl(board), '/$board/imgboard.php'),
 			data: FormData.fromMap({
 				receipt.id.toString(): 'delete',
 				'mode': 'usrdel',
@@ -819,7 +819,7 @@ class Site4Chan extends ImageboardSite {
 	@override
 	Future<List<ImageboardBoardFlag>> getBoardFlags(String board) {
 		return _boardFlags.putIfAbsent(board, () => AsyncMemoizer<List<ImageboardBoardFlag>>()).runOnce(() async {
-			final response = await client.get(Uri.https(baseUrl, '/$board/').toString());
+			final response = await client.getUri(Uri.https(baseUrl, '/$board/'));
 			final doc = parse(response.data);
 			return doc.querySelector('select[name="flag"]')?.querySelectorAll('option').map((e) => ImageboardBoardFlag(
 				code: e.attributes['value'] ?? '0',
@@ -942,8 +942,8 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
   @override
   Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
 		for (final sysUrl in [parent.sysRedUrl, parent.sysBlueUrl]) {
-			final response = await parent.client.post(
-				Uri.https(sysUrl, '/auth').toString(),
+			final response = await parent.client.postUri(
+				Uri.https(sysUrl, '/auth'),
 				data: FormData.fromMap({
 					for (final field in fields.entries) field.key.formKey: field.value
 				})

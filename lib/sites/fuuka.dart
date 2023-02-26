@@ -160,7 +160,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 	}
 	@override
 	Future<Post> getPost(String board, int id) async {		
-		final response = await client.get(Uri.https(baseUrl, '/$board/post/$id').toString());
+		final response = await client.getUri(Uri.https(baseUrl, '/$board/post/$id'));
 		final thread = await _makeThread(response.data, board, int.parse(_threadLinkMatcher.firstMatch(response.redirects.last.location.path)!.group(2)!));
 		return thread.posts.firstWhere((t) => t.id == id);
 	}
@@ -192,18 +192,17 @@ class FuukaArchive extends ImageboardSiteArchive {
 		if (!(await getBoards()).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}
-		final response = await client.get(
-			Uri.https(baseUrl, '/${thread.board}/thread/${thread.id}').toString(),
-			queryParameters: {
+		final response = await client.getUri(
+			Uri.https(baseUrl, '/${thread.board}/thread/${thread.id}', {
 				'board': thread.board,
 				'num': thread.id.toString()
-			}
+			})
 		);
 		return _makeThread(parse(response.data).body!, thread.board, thread.id);
 	}
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
-		final response = await client.get(Uri.https(baseUrl, '/$board/').toString(), options: Options(validateStatus: (x) => true));
+		final response = await client.getUri(Uri.https(baseUrl, '/$board/'), options: Options(validateStatus: (x) => true));
 		final document = parse(response.data);
 		int? threadId;
 		dom.Element e = dom.Element.tag('div');
@@ -242,9 +241,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 		if (unknownBoards.isNotEmpty) {
 			throw BoardNotFoundException(unknownBoards.first);
 		}
-		final response = await client.get(
-			Uri.https(baseUrl, '/${query.boards.first}/').toString(),
-			queryParameters: {
+		final response = await client.getUri(
+			Uri.https(baseUrl, '/${query.boards.first}/', {
 				'task': 'search2',
 				'ghost': 'yes',
 				'search_text': query.query,
@@ -254,7 +252,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 				'offset': (page * 24).toString(),
 				if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) 'search_del': 'yes'
 				else if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) 'search_del': 'no'
-		}, options: Options(
+		}), options: Options(
 			responseType: ResponseType.plain
 		));
 		if (response.statusCode != 200) {

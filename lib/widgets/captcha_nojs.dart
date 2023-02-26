@@ -154,11 +154,10 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 	}
 
 	Future<CaptchaNoJSChallenge> _requestChallenge() async {
-		final challengeResponse = await widget.site.client.get(
-			Uri.https('www.google.com', '/recaptcha/api/fallback').toString(),
-			queryParameters: {
+		final challengeResponse = await widget.site.client.getUri(
+			Uri.https('www.google.com', '/recaptcha/api/fallback', {
 				'k': widget.request.key
-			},
+			}),
 			options: Options(
 				headers: {
 					'Referer': widget.request.sourceUrl,
@@ -204,11 +203,10 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 			errorMessage = null;
 			challenge = null;
 		});
-		final submissionResponse = await widget.site.client.post(
-			Uri.https('www.google.com', '/recaptcha/api/fallback').toString(),
-			queryParameters: {
+		final submissionResponse = await widget.site.client.postUri(
+			Uri.https('www.google.com', '/recaptcha/api/fallback', {
 				'k': widget.request.key
-			},
+			}),
 			data: 'c=${chal.responseKey}${chal.subimages.expand((r) => r).where((s) => s.selected).map((s) => '&response=${s.id}').join()}',
 			options: Options(
 				contentType: Headers.formUrlEncodedContentType,

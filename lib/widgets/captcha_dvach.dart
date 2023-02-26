@@ -58,7 +58,7 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 	}
 
 	Future<CaptchaDvachChallenge> _requestChallenge() async {
-		final idResponse = await widget.site.client.get(Uri.https(widget.site.baseUrl, '/api/captcha/2chcaptcha/id').toString(), options: Options(
+		final idResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/api/captcha/2chcaptcha/id'), options: Options(
 			responseType: ResponseType.json
 		));
 		if (idResponse.statusCode != 200) {
@@ -70,9 +70,9 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 		final String id = idResponse.data['id'];
 		final String inputType = idResponse.data['input'];
 		final DateTime expiresAt = DateTime.now().add(widget.request.challengeLifetime);
-		final imageResponse = await widget.site.client.get(Uri.https(widget.site.baseUrl, '/api/captcha/2chcaptcha/show').toString(), queryParameters: {
+		final imageResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/api/captcha/2chcaptcha/show', {
 			'id': id
-		}, options: Options(
+		}), options: Options(
 			responseType: ResponseType.bytes
 		));
 		if (imageResponse.statusCode != 200) {

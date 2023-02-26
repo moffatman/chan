@@ -57,10 +57,10 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 	}
 
 	Future<CaptchaSecurimageChallenge> _requestChallenge() async {
-		final challengeResponse = await widget.site.client.get(widget.request.challengeUrl.toString(), queryParameters: {
+		final challengeResponse = await widget.site.client.getUri(widget.request.challengeUrl.replace(queryParameters: {
 			'mode': 'get',
 			'extra': 'abcdefghijklmnopqrstuvwxyz'
-		}, options: Options(
+		}), options: Options(
 			responseType: ResponseType.json
 		));
 		if (challengeResponse.statusCode != 200) {

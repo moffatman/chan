@@ -154,7 +154,7 @@ class SiteFutaba extends ImageboardSite {
 
 	@override
 	Future<List<ImageboardBoard>> getBoards() async {
-		final response = await client.get(Uri.https(baseUrl, '/index2.html').toString(), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '/index2.html'), options: Options(
 			responseType: ResponseType.bytes
 		));
 		final document = await parse(response.data);
@@ -180,7 +180,7 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	Future<dom.Document> _getCatalogPage(String board, String page) async {
-		final response = await client.get('https://${boardDomain(board)}/$board/$page.htm', options: Options(
+		final response = await client.getUri(Uri.https(boardDomain(board), '/$board/$page.htm'), options: Options(
 			responseType: ResponseType.bytes,
 			validateStatus: (status) => status == 200 || status == 404
 		));

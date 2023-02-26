@@ -28,7 +28,7 @@ class SiteFrenschan extends SiteSoyjak {
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
 		final broken = await super.getThread(thread);
-		final response = await client.get(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html').toString());
+		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html'));
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.post-image').map((e) => e.attributes['src']).toList();
 		for (final attachment in broken.posts_.expand((p) => p.attachments)) {
@@ -47,7 +47,7 @@ class SiteFrenschan extends SiteSoyjak {
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
 		final broken = await super.getCatalog(board);
-		final response = await client.get(Uri.https(baseUrl, '/$board/catalog.html').toString());
+		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.html'));
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.thread-image').map((e) => e.attributes['src']).toList();
 		for (final attachment in broken.expand((t) => t.attachments)) {
