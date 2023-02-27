@@ -464,7 +464,7 @@ class SiteReddit extends ImageboardSite {
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async {
 		final response = await client.getUri(Uri.https('api.$baseUrl', '/subreddits/search', {
 			'q': query,
-			'typeahead_active': true
+			'typeahead_active': 'true'
 		}));
 		return (response.data['data']['children'] as List<dynamic>).map((c) => _makeBoard(c['data'])).toList();
 	}
