@@ -128,6 +128,16 @@ class Thread implements Filterable {
 				}
 				else {
 					postToReplace.ipNumber ??= newChild.ipNumber;
+					if (postToReplace.attachmentDeleted && !newChild.attachmentDeleted) {
+						postToReplace.attachments.clear();
+						postToReplace.attachments.addAll(newChild.attachments);
+						postToReplace.attachmentDeleted = false;
+						if (postToReplace.id == id && attachmentDeleted) {
+							attachments.clear();
+							attachments.addAll(newChild.attachments);
+							attachmentDeleted = false;
+						}
+					}
 				}
 			}
 			else {

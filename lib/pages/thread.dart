@@ -394,11 +394,13 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
-	Future<void> _switchToArchive() async {
-		persistentState.useArchive = true;
-		await persistentState.save();
+	Future<void> _replacePostFromArchive(Post post) async {
+		final tmpPersistentState = persistentState;
+		final site = context.read<ImageboardSite>();
+		final asArchived = await site.getPostFromArchive(post.board, post.id);
+		tmpPersistentState.thread?.mergePosts(null, [asArchived], site.placeOrphanPost);
+		await tmpPersistentState.save();
 		setState(() {});
-		await _listController.blockAndUpdate();
 	}
 
 	Future<void> _switchToLive() async {
@@ -889,7 +891,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																						semanticParentIds: context.read<PostSpanZoneData>().stackIds
 																					));
 																				},
-																				onRequestArchive: _switchToArchive,
+																				onRequestArchive: () => _replacePostFromArchive(post),
 																				highlight: useTree && post.id > lastSeenIdBeforeLastUpdate,
 																			);
 																		},
@@ -902,7 +904,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																						semanticParentIds: context.read<PostSpanZoneData>().stackIds
 																					));
 																				},
-																				onRequestArchive: _switchToArchive,
+																				onRequestArchive: () => _replacePostFromArchive(post),
 																				onTap: () {
 																					resetPage();
 																					Future.delayed(const Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
