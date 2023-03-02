@@ -130,7 +130,7 @@ class ThreadWatcher extends ChangeNotifier {
 		this.watchForStickyOnBoards = const []
 	}) {
 		controller.registerWatcher(this);
-		_boxSubscription = persistence.threadStateBox.watch().listen(_threadUpdated);
+		_boxSubscription = Persistence.sharedThreadStateBox.watch().listen(_threadUpdated);
 		_setInitialCounts();
 		settings.filterListenable.addListener(_didUpdateFilter);
 		persistence.hiddenMD5sListenable.addListener(_didUpdateFilter);
@@ -142,11 +142,21 @@ class ThreadWatcher extends ChangeNotifier {
 
 	Future<void> _setInitialCounts() async {
 		for (final watch in persistence.browserState.threadWatches) {
+			await persistence.getThreadStateIfExists(watch.threadIdentifier)?.ensureThreadLoaded();
 			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount(_filter) ?? 0;
 			if (!watch.localYousOnly) {
 				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
 			}
 			await Future.microtask(() => {});
+		}
+		if (watchForStickyOnBoards.isNotEmpty) {
+			for (final threadState in Persistence.sharedThreadStateBox.values) {
+				if (threadState.imageboardKey == imageboardKey && watchForStickyOnBoards.contains(threadState.board)) {
+					// We don't know whether this thread is sticky.
+					// Need to load it in any case to be sure not to miss it later in update().
+					threadState.ensureThreadLoaded(preinit: false);
+				}
+			}
 		}
 		_updateCounts();
 		if (!_initialCountsDone.isCompleted) {
@@ -202,6 +212,9 @@ class ThreadWatcher extends ChangeNotifier {
 		// Update notification counters when last-seen-id is saved to disk
 		if (event.value is PersistentThreadState) {
 			final newThreadState = event.value as PersistentThreadState;
+			if (newThreadState.imageboardKey != imageboardKey) {
+				return;
+			}
 			if (newThreadState.thread != null) {
 				if (_unseenStickyThreads.contains(newThreadState.identifier)) {
 					_unseenStickyThreads.remove(newThreadState.identifier);
@@ -279,7 +292,7 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 			final threadState = persistence.getThreadState(watch.threadIdentifier);
 			if (threadState.identifier == ThreadIdentifier('', 0)) {
-				print('Cleaning up watch for deleted thread ${persistence.id}/${watch.board}/${watch.threadId}');
+				print('Cleaning up watch for deleted thread ${persistence.imageboardKey}/${watch.board}/${watch.threadId}');
 				await threadState.delete();
 				notifications.removeWatch(watch);
 			}
@@ -302,7 +315,7 @@ class ThreadWatcher extends ChangeNotifier {
 			_lastCatalogs[board] ??= await site.getCatalog(board);
 			_unseenStickyThreads.addAll(_lastCatalogs[board]!.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).map((t) => t.identifier).toList());
 			// Update sticky threads for (you)s
-			final stickyThreadStates = persistence.threadStateBox.values.where((s) => s.board == board && s.thread != null && s.thread!.isSticky);
+			final stickyThreadStates = Persistence.sharedThreadStateBox.values.where((s) => s.board == board && s.thread != null && s.thread!.isSticky);
 			for (final threadState in stickyThreadStates) {
 				if (threadState.youIds.isNotEmpty) {
 					try {
@@ -381,7 +394,7 @@ class ThreadWatcherController extends ChangeNotifier {
 	Future<void> update() async {
 		updatingNow = true;
 		notifyListeners();
-		if (!ImageboardRegistry.instance.initialized) {
+		if (!ImageboardRegistry.instance.initialized || _watchers.isEmpty) {
 			lastUpdate = DateTime.now();
 			nextUpdate = lastUpdate!.add(_briefInterval);
 			nextUpdateTimer?.cancel();

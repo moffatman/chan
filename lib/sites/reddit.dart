@@ -478,9 +478,11 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	Future<void> _updateBoardIfNeeded(String board) async {
-		if (persistence.boards[board]?.additionalDataTime?.isBefore(DateTime.now().subtract(const Duration(days: 3))) ?? true) {
+		final boardAge = DateTime.now().difference(persistence.maybeGetBoard(board)?.additionalDataTime ?? DateTime(2000));
+		if (boardAge > const Duration(days: 3)) {
 			final response = await client.getUri(Uri.https(baseUrl, '/r/$board/about.json'));
-			persistence.boards[board] = _makeBoard(response.data['data'])..additionalDataTime = DateTime.now();
+			final newBoard = _makeBoard(response.data['data'])..additionalDataTime = DateTime.now();
+			await persistence.setBoard(board, newBoard);
 			persistence.didUpdateBrowserState();
 		}
 	}

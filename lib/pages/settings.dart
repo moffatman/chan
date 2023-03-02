@@ -2784,8 +2784,6 @@ class SettingsDataPage extends StatefulWidget {
 }
 
 class _SettingsDataPageState extends State<SettingsDataPage> {
-	Imageboard _threadsPanelImageboard = ImageboardRegistry.instance.imageboards.first;
-
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
@@ -2979,39 +2977,16 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 				),
 				const SettingsCachePanel(),
 				const SizedBox(height: 16),
-				Row(
+				const Row(
 					children: [
-						const Icon(CupertinoIcons.archivebox),
-						const SizedBox(width: 8),
-						const Expanded(
+						Icon(CupertinoIcons.archivebox),
+						SizedBox(width: 8),
+						Expanded(
 							child: Text('Cached threads and history')
-						),
-						CupertinoButton.filled(
-							padding: const EdgeInsets.all(8),
-							onPressed: () async {
-								final newImageboard = await _pickImageboard(context, _threadsPanelImageboard);
-								if (newImageboard != null) {
-									setState(() {
-										_threadsPanelImageboard = newImageboard;
-									});
-								}
-							},
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									ImageboardIcon(
-										imageboardKey: _threadsPanelImageboard.key
-									),
-									const SizedBox(width: 8),
-									Text(_threadsPanelImageboard.site.name)
-								]
-							)
 						)
 					]
 				),
-				SettingsThreadsPanel(
-					persistence: _threadsPanelImageboard.persistence
-				),
+				const SettingsThreadsPanel(),
 				const SizedBox(height: 16),
 				Center(
 					child: CupertinoButton.filled(
@@ -3217,16 +3192,14 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 }
 
 class SettingsThreadsPanel extends StatelessWidget {
-	final Persistence persistence;
 	const SettingsThreadsPanel({
-		required this.persistence,
 		Key? key
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
 		return ValueListenableBuilder(
-			valueListenable: persistence.threadStateBox.listenable(),
+			valueListenable: Persistence.sharedThreadStateBox.listenable(),
 			builder: (context, Box<PersistentThreadState> threadStateBox, child) {
 				final oldThreadRows = [0, 7, 14, 30, 60, 90, 180].map((days) {
 					final cutoff = DateTime.now().subtract(Duration(days: days));

@@ -328,6 +328,8 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final bool reverseSort;
 	final List<List<int>>? initialCollapsedItems;
 	final ValueChanged<List<List<int>>>? onCollapsedItemsChanged;
+	final Duration minUpdateDuration;
+	final Listenable? updateAnimation;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -357,6 +359,8 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.reverseSort = false,
 		this.initialCollapsedItems,
 		this.onCollapsedItemsChanged,
+		this.minUpdateDuration = const Duration(milliseconds: 500),
+		this.updateAnimation,
 		Key? key
 	}) : super(key: key);
 
@@ -421,11 +425,16 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			onCollapseOrExpand: _onTreeCollapseOrExpand,
 			onCollapsedItemsChanged: widget.onCollapsedItemsChanged
 		);
+		widget.updateAnimation?.addListener(update);
 	}
 
 	@override
 	void didUpdateWidget(RefreshableList<T> oldWidget) {
 		super.didUpdateWidget(oldWidget);
+		if (oldWidget.updateAnimation != widget.updateAnimation) {
+			oldWidget.updateAnimation?.removeListener(update);
+			widget.updateAnimation?.addListener(update);
+		}
 		if (oldWidget.id != widget.id) {
 			autoUpdateTimer?.cancel();
 			autoUpdateTimer = null;
@@ -461,9 +470,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				resetTimer();
 			}
 		}
-		else if (widget.disableUpdates && !listEquals(oldWidget.initialList, widget.initialList)) {
+		else if ((widget.disableUpdates || originalList == null) && !listEquals(oldWidget.initialList, widget.initialList)) {
 			originalList = widget.initialList;
 			sortedList = null;
+			if (originalList != null) {
+				_sortList();
+			}
 		}
 		if ((!listEquals(widget.sortMethods, oldWidget.sortMethods) ||
 		     widget.reverseSort != oldWidget.reverseSort ||
@@ -476,6 +488,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	@override
 	void dispose() {
 		super.dispose();
+		widget.updateAnimation?.removeListener(update);
 		autoUpdateTimer?.cancel();
 		_searchController.dispose();
 		_searchFocusNode.dispose();
@@ -549,7 +562,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				errorType = null;
 				updatingNow.value = true;
 			});
-			Duration minUpdateDuration = const Duration(milliseconds: 500);
+			Duration minUpdateDuration = widget.minUpdateDuration;
 			if (widget.controller?.scrollController?.positions.length == 1 && (widget.controller!.scrollController!.position.pixels > 0 && (widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent))) {
 				minUpdateDuration = const Duration(seconds: 1);
 			}

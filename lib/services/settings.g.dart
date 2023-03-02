@@ -137,7 +137,8 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       savedAttachmentsBySite: (fields[20] as Map?)?.map((dynamic k,
               dynamic v) =>
           MapEntry(k as String, (v as Map).cast<String, SavedAttachment>())),
-      boardsBySite: (fields[21] as Map?)?.map((dynamic k, dynamic v) =>
+      deprecatedBoardsBySite: (fields[21] as Map?)?.map((dynamic k,
+              dynamic v) =>
           MapEntry(k as String, (v as Map).cast<String, ImageboardBoard>())),
       twoPaneBreakpoint: fields[22] as double?,
       twoPaneSplit: fields[23] as int?,
@@ -279,7 +280,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(20)
       ..write(obj.savedAttachmentsBySite)
       ..writeByte(21)
-      ..write(obj.boardsBySite)
+      ..write(obj.deprecatedBoardsBySite)
       ..writeByte(22)
       ..write(obj.twoPaneBreakpoint)
       ..writeByte(23)

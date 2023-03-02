@@ -172,6 +172,7 @@ class Post implements Filterable {
 	Iterable<String> get md5s => attachments.map((a) => a.md5);
 
 	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board, threadId);
+	PostIdentifier get identifier => PostIdentifier(board, threadId, id);
 
 	@override
 	int get replyCount => replyIds.length;
@@ -315,6 +316,8 @@ class PostIdentifier {
 	final int threadId;
 	final int postId;
 	PostIdentifier(this.board, this.threadId, this.postId);
+
+	PostIdentifier.thread(ThreadIdentifier identifier) : board = identifier.board, threadId = identifier.id, postId = identifier.id;
 
 	@override
 	String toString() => 'PostIdentifier: /$board/$threadId/$postId';

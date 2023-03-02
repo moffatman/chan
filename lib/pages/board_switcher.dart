@@ -65,10 +65,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 
 	void _fetchBoards() {
 		if (widget.currentlyPickingFavourites) {
-			boards = currentImageboard.persistence.boards.values.map(currentImageboard.scope).toList();
+			boards = currentImageboard.persistence.boards.map(currentImageboard.scope).toList();
 		}
 		else {
-			boards = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.boards.values.map(i.scope)).toList();
+			boards = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.boards.map(i.scope)).toList();
 		}
 		boards.sort((a, b) => a.item.name.compareTo(b.item.name));
 	}
@@ -493,7 +493,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 															child: const Text('Remove'),
 															trailingIcon: CupertinoIcons.delete,
 															onPressed: () {
-																imageboard.persistence.boards.removeWhere((k, v) => v == board);
+																imageboard.persistence.removeBoard(board.name);
 																_fetchBoards();
 																setState(() {});
 															}
@@ -656,7 +656,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 															child: const Text('Remove'),
 															trailingIcon: CupertinoIcons.delete,
 															onPressed: () {
-																imageboard.persistence.boards.removeWhere((k, v) => v == board);
+																imageboard.persistence.removeBoard(board.name);
 																_fetchBoards();
 																setState(() {});
 															}

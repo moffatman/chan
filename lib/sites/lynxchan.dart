@@ -130,7 +130,7 @@ class SiteLynxchan extends ImageboardSite {
 
 	void _updateBoardInformation(Map<String, dynamic> data) async {
 		try {
-			final board = persistence.boards[data['boardName']]!;
+			final board = persistence.maybeGetBoard(data['boardName'])!;
 			board.maxCommentCharacters = data['maxMessageLength'];
 			final fileSizeParts = (data['maxFileSize'] as String).split(' ');
 			double maxFileSize = double.parse(fileSizeParts.first);

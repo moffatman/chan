@@ -161,6 +161,8 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 	late GlobalKey<NavigatorState> masterKey;
 	late GlobalKey<PrimaryScrollControllerInjectingNavigatorState> _masterInterceptorKey;
 	late GlobalKey _masterContentKey;
+	late GlobalKey _tabBarViewKey;
+	final Map<int, GlobalKey> _masterPaneKeys = {};
 	late GlobalKey<NavigatorState> detailKey;
 	late GlobalKey<PrimaryScrollControllerInjectingNavigatorState> _detailInterceptorKey;
 	late GlobalKey _detailContentKey;
@@ -178,6 +180,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		masterKey = GlobalKey<NavigatorState>(debugLabel: '${widget.id} masterKey');
 		_masterInterceptorKey = GlobalKey(debugLabel: '${widget.id} _masterInterceptorKey');
 		_masterContentKey = GlobalKey(debugLabel: '${widget.id} _masterContentKey');
+		_tabBarViewKey = GlobalKey(debugLabel: '${widget.id} _tabBarViewKey');
 		detailKey = GlobalKey<NavigatorState>(debugLabel: '${widget.id} detailKey}');
 		_detailInterceptorKey = GlobalKey(debugLabel: '${widget.id} _detailInterceptorKey');
 		_detailContentKey = GlobalKey(debugLabel: '${widget.id} _detailContentKey');
@@ -296,15 +299,19 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 						animation: _rebuild,
 						builder: (context, _) {
 							Widget child = TabBarView(
+								key: _tabBarViewKey,
 								controller: _tabController,
 								physics: panes.length > 1 ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
-								children: panes.asMap().entries.map((entry) => AnimatedBuilder(
-									animation: _tabController,
-									builder: (context, child) => entry.key == _tabController.index ? child! : PrimaryScrollController.none(
-										child: child!
-									),
-									child: Builder(
-										builder: (context) => entry.value.buildMaster(context, () => _onNewValue(entry.value), !onePane)
+								children: panes.asMap().entries.map((entry) => KeepAliver(
+									key: _masterPaneKeys.putIfAbsent(entry.key, () => GlobalKey(debugLabel: '${widget.id} _masterPaneKeys[${entry.key}]')),
+									child: AnimatedBuilder(
+										animation: _tabController,
+										builder: (context, child) => entry.key == _tabController.index ? child! : PrimaryScrollController.none(
+											child: child!
+										),
+										child: Builder(
+											builder: (context) => entry.value.buildMaster(context, () => _onNewValue(entry.value), !onePane)
+										)
 									)
 								)).toList()
 							);

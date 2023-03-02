@@ -410,7 +410,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(20)
 	Map<String, Map<String, SavedAttachment>> savedAttachmentsBySite;
 	@HiveField(21)
-	Map<String, Map<String, ImageboardBoard>> boardsBySite;
+	Map<String, Map<String, ImageboardBoard>> deprecatedBoardsBySite;
 	@HiveField(22)
 	double twoPaneBreakpoint;
 	@HiveField(23)
@@ -625,7 +625,7 @@ class SavedSettings extends HiveObject {
 		Map<String, PersistentBrowserState>? browserStateBySite,
 		Map<String, Map<String, SavedPost>>? savedPostsBySite,
 		Map<String, Map<String, SavedAttachment>>? savedAttachmentsBySite,
-		Map<String, Map<String, ImageboardBoard>>? boardsBySite,
+		Map<String, Map<String, ImageboardBoard>>? deprecatedBoardsBySite,
 		double? twoPaneBreakpoint,
 		int? twoPaneSplit,
 		bool? useCatalogGrid,
@@ -751,7 +751,7 @@ class SavedSettings extends HiveObject {
 		browserStateBySite = browserStateBySite ?? {},
 		savedPostsBySite = savedPostsBySite ?? {},
 		savedAttachmentsBySite = savedAttachmentsBySite ?? {},
-		boardsBySite = boardsBySite ?? {},
+		deprecatedBoardsBySite = deprecatedBoardsBySite ?? {},
 		twoPaneBreakpoint = twoPaneBreakpoint ?? 700,
 		twoPaneSplit = twoPaneSplit ?? twoPaneSplitDenominator ~/ 4,
 		useCatalogGrid = useCatalogGrid ?? false,
@@ -1022,7 +1022,7 @@ class EffectiveSettings extends ChangeNotifier {
 	}
 
 	bool showImages(BuildContext context, String board) {
-		return _settings.contentSettings.images && ((context.read<Persistence>().boards[board]?.isWorksafe ?? false) || _settings.contentSettings.nsfwImages);
+		return _settings.contentSettings.images && ((context.read<Persistence>().maybeGetBoard(board)?.isWorksafe ?? false) || _settings.contentSettings.nsfwImages);
 	}
 
 	String filterProfanity(String input) {

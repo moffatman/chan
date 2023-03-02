@@ -1074,3 +1074,26 @@ Future<bool> confirm(BuildContext context, String message) async {
 		)
 	)) ?? false;
 }
+
+class KeepAliver extends StatefulWidget {
+	final Widget child;
+
+	const KeepAliver({
+		required this.child,
+		super.key
+	});
+
+	@override
+	createState() => _KeepAliverState();
+}
+
+class _KeepAliverState extends State<KeepAliver> with AutomaticKeepAliveClientMixin {
+	@override
+	Widget build(BuildContext context) {
+		super.build(context);
+		return widget.child;
+	}
+
+	@override
+	bool get wantKeepAlive => true;
+}

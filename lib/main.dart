@@ -277,6 +277,8 @@ class _ChanAppState extends State<ChanApp> {
 	}
 }
 
+final splashStage = ValueNotifier<String?>(null);
+
 class ChanSplashPage extends StatelessWidget {
 	const ChanSplashPage({
 		super.key
@@ -289,20 +291,39 @@ class ChanSplashPage extends StatelessWidget {
 			height: double.infinity,
 			alignment: Alignment.center,
 			color: context.select<EffectiveSettings, Color>((s) => s.theme.backgroundColor),
-			child: Transform.scale(
-				scale: 1 / (
-					2.0 * MediaQuery.of(context).devicePixelRatio *
-					context.select<EffectiveSettings, double>((s) => s.interfaceScale)
-				),
-				child: ColorFiltered(
-					colorFilter: ColorFilter.mode(
-						context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
-						BlendMode.srcATop
+			child: Column(
+				mainAxisSize: MainAxisSize.min,
+				children: [
+					const SizedBox(height: 50),
+					Transform.scale(
+						scale: 1 / (
+							2.0 * MediaQuery.of(context).devicePixelRatio *
+							context.select<EffectiveSettings, double>((s) => s.interfaceScale)
+						),
+						child: ColorFiltered(
+							colorFilter: ColorFilter.mode(
+								context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+								BlendMode.srcATop
+							),
+							child: const Image(
+								image: AssetImage('assets/splash.png')
+							)
+						)
 					),
-					child: const Image(
-						image: AssetImage('assets/splash.png')
+					ValueListenableBuilder<String?>(
+						valueListenable: splashStage,
+						builder: (context, stage, _) => SizedBox(
+							height: 50,
+							child: stage == null ? null : Text(
+								stage,
+								style: TextStyle(
+									color: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColor),
+									fontSize: 18
+								)
+							)
+						)
 					)
-				)
+				]
 			)
 		);
 	}

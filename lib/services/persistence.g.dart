@@ -50,12 +50,16 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return PersistentThreadState()
+    return PersistentThreadState(
+      imageboardKey: fields[18] == null ? '' : fields[18] as String,
+      board: fields[19] == null ? '' : fields[19] as String,
+      id: fields[20] == null ? 0 : fields[20] as int,
+    )
       ..lastSeenPostId = fields[0] as int?
       ..lastOpenedTime = fields[1] as DateTime
       ..savedTime = fields[6] as DateTime?
       ..receipts = (fields[3] as List).cast<PostReceipt>()
-      .._thread = fields[4] as Thread?
+      .._deprecatedThread = fields[4] as Thread?
       ..useArchive = fields[5] as bool
       ..postsMarkedAsYou =
           fields[7] == null ? [] : (fields[7] as List).cast<int>()
@@ -82,7 +86,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
   @override
   void write(BinaryWriter writer, PersistentThreadState obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(20)
       ..writeByte(0)
       ..write(obj.lastSeenPostId)
       ..writeByte(1)
@@ -92,7 +96,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..writeByte(3)
       ..write(obj.receipts)
       ..writeByte(4)
-      ..write(obj._thread)
+      ..write(obj._deprecatedThread)
       ..writeByte(5)
       ..write(obj.useArchive)
       ..writeByte(7)
@@ -116,7 +120,13 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..writeByte(16)
       ..write(obj.collapsedItems)
       ..writeByte(17)
-      ..write(obj.downloadedAttachmentIds);
+      ..write(obj.downloadedAttachmentIds)
+      ..writeByte(18)
+      ..write(obj.imageboardKey)
+      ..writeByte(19)
+      ..write(obj.board)
+      ..writeByte(20)
+      ..write(obj.id);
   }
 
   @override

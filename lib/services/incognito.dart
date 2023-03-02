@@ -7,7 +7,6 @@ import 'dart:io';
 
 import 'package:chan/services/persistence.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive/hive.dart';
 import 'package:chan/util.dart';
 
 class IncognitoPersistence implements Persistence {
@@ -16,14 +15,8 @@ class IncognitoPersistence implements Persistence {
 
 	IncognitoPersistence(this.parent);
 
-	@override
-  Box<PersistentThreadState> get threadStateBox => parent.threadStateBox;
-
   @override
   void addListener(VoidCallback listener) => parent.addListener;
-
-  @override
-  Map<String, ImageboardBoard> get boards => parent.boards;
 
   @override
   PersistentBrowserState get browserState => parent.browserState;
@@ -70,7 +63,12 @@ class IncognitoPersistence implements Persistence {
 		if (existing != null) {
 			return existing;
 		}
-		final newState = PersistentThreadState(ephemeralOwner: this);
+		final newState = PersistentThreadState(
+			imageboardKey: imageboardKey,
+			board: thread.board,
+			id: thread.id,
+			ephemeralOwner: this
+		);
 		_ephemeralThreadStates[thread] = (newState, EasyListenable());
 		return newState;
   }
@@ -87,7 +85,7 @@ class IncognitoPersistence implements Persistence {
   EasyListenable get hiddenMD5sListenable => parent.hiddenMD5sListenable;
 
   @override
-  String get id => parent.id;
+  String get imageboardKey => parent.imageboardKey;
 
   @override
   Future<void> initialize() => parent.initialize();
@@ -134,4 +132,16 @@ class IncognitoPersistence implements Persistence {
 
   @override
   String toString() => 'IncognitoPersistence(parent: $parent)';
+  
+  @override
+  ImageboardBoard? maybeGetBoard(String boardName) => parent.maybeGetBoard(boardName);
+  
+  @override
+  Future<void> setBoard(String boardName, ImageboardBoard board) => parent.setBoard(boardName, board);
+
+	@override
+	Future<void> removeBoard(String boardName) => parent.removeBoard(boardName);
+	
+	@override
+	Iterable<ImageboardBoard> get boards => parent.boards;
 }
