@@ -89,6 +89,7 @@ class ThreadRow extends StatelessWidget {
 					top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)),
 				) : Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 			),
+			margin: settings.useFullWidthForCatalogCounters ? EdgeInsets.zero : const EdgeInsets.only(left: 10),
 			padding: settings.useFullWidthForCatalogCounters ? const EdgeInsets.all(4) : const EdgeInsets.all(2),
 			child: SizedBox(
 				width: settings.useFullWidthForCatalogCounters ? double.infinity : null,
