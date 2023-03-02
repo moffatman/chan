@@ -26,7 +26,6 @@ import 'package:chan/widgets/thread_spans.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/widgets/util.dart';
@@ -576,13 +575,8 @@ class PostCodeSpan extends PostSpan {
 			work: () async {
 				final receivePort = ReceivePort();
 				String? language;
-				if (kDebugMode) {
-					language = highlight.parse(text, autoDetection: true).language;
-				}
-				else {
-					await Isolate.spawn(_detectLanguageIsolate, _DetectLanguageParam(text, receivePort.sendPort));
-					language = await receivePort.first as String?;
-				}
+				await Isolate.spawn(_detectLanguageIsolate, _DetectLanguageParam(text, receivePort.sendPort));
+				language = await receivePort.first as String?;
 				const theme = atomOneDarkReasonableTheme;
 				final nodes = highlight.parse(text.replaceAll('\t', ' ' * 4), language: language ?? 'plaintext').nodes!;
 				final List<TextSpan> spans = [];
