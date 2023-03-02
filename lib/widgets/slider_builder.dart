@@ -27,6 +27,7 @@ class _SliderBuilderState extends State<SliderBuilder> {
 	late final WeakPanGestureRecognizer _recognizingRecognizer;
 	late final GestureArenaTeam _team;
 	VoidCallback? pop;
+	bool _disposing = false;
 	bool _disposeDelayed = false;
 	double factor = 0;
 	bool insertedEarly = false;
@@ -93,7 +94,7 @@ class _SliderBuilderState extends State<SliderBuilder> {
 			_claimingRecognizer.dispose();
 			_recognizingRecognizer.dispose();
 		}
-		if (mounted) {
+		if (mounted && !_disposing) {
 			setState(() {
 				factor = 0;
 			});
@@ -123,6 +124,7 @@ class _SliderBuilderState extends State<SliderBuilder> {
 	@override
 	void dispose() {
 		if (pop == null) {
+			_disposing = true;
 			_recognizingRecognizer.dispose();
 			_claimingRecognizer.dispose();
 		}
