@@ -1,3 +1,4 @@
+import 'package:chan/models/flag.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/search.dart';
 import 'package:chan/services/persistence.dart';
@@ -421,6 +422,7 @@ class SiteReddit extends ImageboardSite {
 		final asPost = Post(
 			board: data['subreddit'],
 			name: data['author'],
+			flag: _makeAuthorFlag(data),
 			time: DateTime.fromMillisecondsSinceEpoch(data['created'].toInt() * 1000),
 			threadId: id,
 			id: id,
@@ -440,6 +442,7 @@ class SiteReddit extends ImageboardSite {
 			attachments: asPost.attachments,
 			replyCount: data['num_comments'],
 			imageCount: 0,
+			flair: _makeLinkFlag(data),
 			id: id,
 			suggestedVariant: (data['suggested_sort']?.isNotEmpty ?? false) ? _RedditApiName.toVariant(data['suggested_sort']) : null
 		);
@@ -526,7 +529,8 @@ class SiteReddit extends ImageboardSite {
 				'link_id': 't3_${toRedditId(thread.id)}',
 				'children': 'c1:${childIdsToGet.map((cid) => 't1_${toRedditId(cid.childId)}').join(',')}',
 				'api_type': 'json',
-				'renderstyle': 'html'
+				'renderstyle': 'html',
+				'r': thread.board
 			}));
 			final things = response.data['json']['data']['things'];
 			for (final thing in things) {
@@ -537,10 +541,26 @@ class SiteReddit extends ImageboardSite {
 				else {
 					final id = fromRedditId(thing['data']['id'].split('_')[1]);
 					final doc = parseFragment(HtmlUnescape().convert(thing['data']['content']));
+					ImageboardMultiFlag? flag;
+					final flair = doc.querySelector('.flairrichtext');
+					if (flair != null) {
+						flag = ImageboardMultiFlag(
+							parts: flair.children.map((c) {
+								final imageUrl = RegExp(r'background-image: *url\((.*)\)').firstMatch(c.attributes['style'] ?? '')?.group(1);
+								return ImageboardFlag(
+									imageHeight: imageUrl == null ? 0 : 16,
+									imageWidth: imageUrl == null ? 0 : 16,
+									name: c.text,
+									imageUrl: imageUrl ?? ''
+								);
+							}).toList()
+						);
+					}
 					final post = Post(
 						board: thread.board,
 						text: thing['data']['contentText'],
 						name: doc.querySelector('.author')?.text ?? '',
+						flag: flag,
 						time: DateTime.tryParse(doc.querySelector('.live-timestamp')?.attributes['datetime'] ?? '') ?? DateTime(2000),
 						threadId: thread.id,
 						parentId: parentId,
@@ -620,6 +640,34 @@ class SiteReddit extends ImageboardSite {
 		throw UnimplementedError();
 	}
 
+	Flag? _makeAuthorFlag(Map<String, dynamic> data) {
+		if (data['author_flair_richtext'] != null) {
+			return ImageboardMultiFlag(
+				parts: (data['author_flair_richtext'] as List).map((part) {
+					if (part['e'] == 'text') {
+						return ImageboardFlag.text(part['t']);
+					}
+					else {
+						return ImageboardFlag(
+							imageHeight: 16,
+							imageWidth: 16,
+							imageUrl: part['u'],
+							name: ''
+						);
+					}
+				}).toList()
+			);
+		}
+		return null;
+	}
+
+	Flag? _makeLinkFlag(Map<String, dynamic> data) {
+		if (data['link_flair_text'] != null) {
+			return ImageboardFlag.text(data['link_flair_text']);
+		}
+		return null;
+	}
+
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
@@ -635,6 +683,7 @@ class SiteReddit extends ImageboardSite {
 						board: thread.board,
 						text: unescape.convert(child['body']),
 						name: child['author'],
+						flag: _makeAuthorFlag(child),
 						time: DateTime.fromMillisecondsSinceEpoch(child['created'].toInt() * 1000),
 						threadId: thread.id,
 						id: id,

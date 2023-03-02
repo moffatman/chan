@@ -199,8 +199,7 @@ class SiteLainchan extends ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(firstPost['time'] * 1000),
 			replyCount: posts.length - 1,
 			imageCount: posts.skip(1).expand((p) => p.attachments).length,
-			posts_: posts,
-			flag: posts.first.flag
+			posts_: posts
 		);
 	}
 	@override
@@ -230,8 +229,7 @@ class SiteLainchan extends ImageboardSite {
 					imageCount: threadData['images'],
 					isSticky: threadData['sticky'] == 1,
 					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
-					currentPage: page['page'],
-					flag: _makeFlag(threadData)
+					currentPage: page['page']
 				);
 				threads.add(thread);
 			}

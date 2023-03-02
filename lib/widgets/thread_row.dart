@@ -208,13 +208,13 @@ class ThreadRow extends StatelessWidget {
 				),
 				spaceSpan
 			],
-			if (settings.showFlagInCatalogHeader && latestThread.flag != null) ...[
-				FlagSpan(latestThread.flag!),
+			if (settings.showFlagInCatalogHeader && latestThread.posts_.first.flag != null) ...[
+				FlagSpan(latestThread.posts_.first.flag!),
 				spaceSpan
 			],
-			if (settings.showCountryNameInCatalogHeader && latestThread.flag != null) ...[
+			if (settings.showCountryNameInCatalogHeader && latestThread.posts_.first.flag != null) ...[
 				TextSpan(	
-					text: latestThread.flag!.name,
+					text: latestThread.posts_.first.flag!.name,
 					style: TextStyle(
 						fontSize: subheaderFontSize
 					)
@@ -251,7 +251,7 @@ class ThreadRow extends StatelessWidget {
 				)
 			)
 		];
-		if (thread.title?.isNotEmpty == true) {
+		if (latestThread.title?.isNotEmpty == true) {
 			final titleSpan = PostTextSpan(latestThread.title!).build(context, PostSpanRootZoneData(thread: thread, site: site), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
 				baseTextStyle: site.classicCatalogStyle ? const TextStyle(fontWeight: FontWeight.bold) : null
 			));
@@ -271,6 +271,14 @@ class ThreadRow extends StatelessWidget {
 					headerRow.insert(0, const TextSpan(text: '\n'));
 				}
 				headerRow.insert(0, titleSpan);
+				if (!latestThread.title!.contains(latestThread.flair?.name ?? '')) {
+					headerRow.insert(0, TextSpan(	
+						text: '${latestThread.flair!.name} ',
+						style: const TextStyle(
+							color: Colors.grey
+						)
+					));
+				}
 			}
 		}
 		List<Widget> rowChildren() => [
@@ -400,6 +408,19 @@ class ThreadRow extends StatelessWidget {
 											semanticParentIds: semanticParentIds
 										)
 									),
+									if (!settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '')) Positioned(
+										top: 0,
+										left: 0,
+										child: Container(
+											decoration: BoxDecoration(
+												borderRadius: const BorderRadius.only(bottomRight: Radius.circular(6)),
+												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+												border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+											),
+											padding: const EdgeInsets.all(2),
+											child: Text(latestThread.flair!.name)
+										)
+									),
 									if (attachment.soundSource != null || attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned(
 										top: settings.catalogGridModeAttachmentInBackground ? 0 : null,
 										bottom: settings.catalogGridModeAttachmentInBackground ? null : 0,
@@ -439,9 +460,13 @@ class ThreadRow extends StatelessWidget {
 							child: Text.rich(
 								TextSpan(
 									children: [
-										if (thread.title != null) TextSpan(
+										if (latestThread.title?.isNotEmpty ?? false) TextSpan(
 											text: '${settings.filterProfanity(latestThread.title!)}\n',
 											style: site.classicCatalogStyle ? const TextStyle(fontWeight: FontWeight.bold) : null,
+										),
+										if (settings.useCatalogGrid && settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '')) TextSpan(
+											text: '${latestThread.flair?.name}\n',
+											style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 15)
 										),
 										if (site.classicCatalogStyle) latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
 											maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0),
@@ -476,6 +501,9 @@ class ThreadRow extends StatelessWidget {
 			}
 			else {
 				final gridTextMaxHeight = (settings.catalogGridHeight / 2) - 20;
+				if (atts.isEmpty) {
+					return [txt];
+				}
 				return [
 					Column(
 						mainAxisSize: MainAxisSize.min,

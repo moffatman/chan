@@ -5,13 +5,16 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class _Flag extends StatelessWidget {
+class _ImageboardFlag extends StatelessWidget {
 	final ImageboardFlag flag;
 
-	const _Flag(this.flag);
+	const _ImageboardFlag(this.flag);
 
 	@override
 	Widget build(BuildContext context) {
+		if (flag.imageWidth == 0 || flag.imageHeight == 0) {
+			return const SizedBox.shrink();
+		}
 		return SizedBox(
 			width: flag.imageWidth,
 			height: flag.imageHeight,
@@ -25,8 +28,36 @@ class _Flag extends StatelessWidget {
 	}
 }
 
+class _Flag extends StatelessWidget {
+	final Flag flag;
+
+	const _Flag(this.flag);
+
+	@override
+	Widget build(BuildContext context) {
+		if (flag is ImageboardFlag) {
+			return _ImageboardFlag(flag as ImageboardFlag);
+		}
+		bool paddingBeforeNextImage = false;
+		final children = <Widget>[];
+		for (final part in (flag as ImageboardMultiFlag).parts) {
+			if (part.imageUrl.isNotEmpty && paddingBeforeNextImage) {
+				children.add(const SizedBox(width: 4));
+			}
+			children.add(_ImageboardFlag(part));
+			if (part.imageUrl.isNotEmpty) {
+				paddingBeforeNextImage = true;
+			}
+		}
+		return Row(
+			mainAxisSize: MainAxisSize.min,
+			children: children
+		);
+	}
+}
+
 class FlagSpan extends WidgetSpan {
-	FlagSpan(ImageboardFlag flag) : super(
+	FlagSpan(Flag flag) : super(
 		child: _Flag(flag),
 		alignment: PlaceholderAlignment.middle
 	);

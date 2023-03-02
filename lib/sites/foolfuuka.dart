@@ -309,7 +309,6 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: op['sticky'] == 1,
 			time: posts.first.time,
-			flag: _makeFlag(op),
 			uniqueIPCount: int.tryParse(op['unique_ips'] ?? '')
 		);
 	}

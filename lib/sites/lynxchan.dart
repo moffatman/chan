@@ -280,8 +280,7 @@ class SiteLynxchan extends ImageboardSite {
 			isSticky: response.data['pinned'],
 			time: op.time,
 			attachments: op.attachments,
-			isArchived: response.data['archived'],
-			flag: op.flag
+			isArchived: response.data['archived']
 		);
 	}
 

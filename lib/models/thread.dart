@@ -23,7 +23,7 @@ class Thread implements Filterable {
 	final String? title;
 	bool isSticky;
 	final DateTime time;
-	final ImageboardFlag? flag;
+	final Flag? flair;
 	int? currentPage;
 	int? uniqueIPCount;
 	int? customSpoilerId;
@@ -43,7 +43,7 @@ class Thread implements Filterable {
 		required this.title,
 		required this.isSticky,
 		required this.time,
-		this.flag,
+		this.flair,
 		this.currentPage,
 		this.uniqueIPCount,
 		this.customSpoilerId,
@@ -276,7 +276,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       title: fields[8] as String?,
       isSticky: fields[9] as bool,
       time: fields[10] as DateTime,
-      flag: fields[11] as ImageboardFlag?,
+      flair: fields[11] as ImageboardFlag?,
       currentPage: fields[12] as int?,
       uniqueIPCount: fields[13] as int?,
       customSpoilerId: fields[14] as int?,
@@ -312,8 +312,8 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       ..write(obj.attachmentDeleted)
       ..writeByte(16)
       ..write(obj.attachments);
-		if (obj.flag != null) {
-      writer..writeByte(11)..write(obj.flag);
+		if (obj.flair != null) {
+      writer..writeByte(11)..write(obj.flair);
 		}
 		if (obj.currentPage != null) {
 			writer..writeByte(12)..write(obj.currentPage);

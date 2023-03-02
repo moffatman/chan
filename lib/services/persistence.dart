@@ -122,6 +122,7 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 		Hive.registerAdapter(AttachmentTypeAdapter());
 		Hive.registerAdapter(AttachmentAdapter());
 		Hive.registerAdapter(ImageboardFlagAdapter());
+		Hive.registerAdapter(ImageboardMultiFlagAdapter());
 		Hive.registerAdapter(PostSpanFormatAdapter());
 		Hive.registerAdapter(PostAdapter());
 		Hive.registerAdapter(ThreadAdapter());

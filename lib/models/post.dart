@@ -50,7 +50,7 @@ class Post implements Filterable {
 	@override
 	final int id;
 	Attachment? deprecatedAttachment;
-	final ImageboardFlag? flag;
+	final Flag? flag;
 	final String? posterId;
 	PostSpanFormat spanFormat;
 	PostNodeSpan? _span;
@@ -220,7 +220,7 @@ class PostAdapter extends TypeAdapter<Post> {
       threadId: fields[4] as int,
       id: fields[5] as int,
       spanFormat: fields[9] as PostSpanFormat,
-      flag: fields[7] as ImageboardFlag?,
+      flag: fields[7] as Flag?,
       deprecatedAttachment: fields[6] as Attachment?,
       attachmentDeleted: fields[11] == null ? false : fields[11] as bool,
       posterId: fields[8] as String?,

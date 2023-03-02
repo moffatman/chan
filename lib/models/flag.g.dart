@@ -48,3 +48,37 @@ class ImageboardFlagAdapter extends TypeAdapter<ImageboardFlag> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class ImageboardMultiFlagAdapter extends TypeAdapter<ImageboardMultiFlag> {
+  @override
+  final int typeId = 36;
+
+  @override
+  ImageboardMultiFlag read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return ImageboardMultiFlag(
+      parts: (fields[0] as List).cast<ImageboardFlag>(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, ImageboardMultiFlag obj) {
+    writer
+      ..writeByte(1)
+      ..writeByte(0)
+      ..write(obj.parts);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ImageboardMultiFlagAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

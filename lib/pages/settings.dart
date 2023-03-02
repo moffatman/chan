@@ -1079,7 +1079,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 			time: DateTime.now().subtract(const Duration(minutes: 5)),
 			title: 'Example thread',
 			isSticky: false,
-			flag: flag,
+			flair: ImageboardFlag.text('Category'),
 			posts_: [
 				Post(
 					board: 'tv',

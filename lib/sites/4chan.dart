@@ -383,7 +383,6 @@ class Site4Chan extends ImageboardSite {
 				title: (title == null) ? null : unescape.convert(title),
 				isSticky: data['posts'][0]['sticky'] == 1,
 				time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
-				flag: _makeFlag(data['posts'][0], thread.board),
 				currentPage: await _getThreadPage(thread),
 				uniqueIPCount: data['posts'][0]['unique_ips'],
 				customSpoilerId: data['posts'][0]['custom_spoiler']
@@ -503,7 +502,6 @@ class Site4Chan extends ImageboardSite {
 					title: (title == null) ? null : unescape.convert(title),
 					isSticky: threadData['sticky'] == 1,
 					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
-					flag: _makeFlag(threadData, board),
 					currentPage: page['page']
 				);
 				threads.add(thread);
