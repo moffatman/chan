@@ -426,11 +426,11 @@ class _ThreadPageState extends State<ThreadPage> {
 		final site = context.read<ImageboardSite>();
 		final notifications = context.read<Notifications>();
 		lastPageNumber = persistentState.thread?.currentPage;
+		final bool firstLoad = tmpPersistentState.thread == null;
 		// The thread might switch in this interval
 		final newThread = tmpPersistentState.useArchive ?
 			await site.getThreadFromArchive(widget.thread) :
 			await site.getThread(widget.thread, variant: tmpPersistentState.variant);
-		final bool firstLoad = tmpPersistentState.thread == null;
 		bool shouldScroll = false;
 		final watch = notifications.getThreadWatch(widget.thread);
 		if (watch != null && newThread.identifier == widget.thread && mounted) {
