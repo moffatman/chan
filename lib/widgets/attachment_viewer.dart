@@ -229,6 +229,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (newAttachment == null) {
 					throw AttachmentNotFoundException(attachment);
 				}
+				_useRandomUserAgent = newAttachment.useRandomUseragent;
 				final check = await site.client.head(newAttachment.url.toString(), options: Options(
 					validateStatus: (_) => true,
 					headers: _getHeaders(newAttachment.url)
