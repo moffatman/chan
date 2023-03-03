@@ -107,7 +107,7 @@ _IDColor _calculateIdColor(String id) {
 	}
 	final background = Color.fromARGB(255, (hash >> 24) & 0xFF, (hash >> 16) & 0xFF, (hash >> 8) & 0xFF);
 	return _IDColor(
-		foreground: (((background.red * 0.299) + (background.blue * 0.587) + (background.green * 0.114)) > 125) ? Colors.black : Colors.white,
+		foreground: (((background.red * 0.299) + (background.green * 0.587) + (background.blue * 0.114)) > 125) ? Colors.black : Colors.white,
 		background: background
 	);
 }
