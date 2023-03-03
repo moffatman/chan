@@ -712,7 +712,12 @@ abstract class ImageboardSiteArchive {
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url);
 	void placeOrphanPost(List<Post> posts, Post post) {
 		final index = posts.indexWhere((p) => p.id > post.id);
-		posts.insert(index, post);
+		if (index == -1) {
+			posts.add(post);
+		}
+		else {
+			posts.insert(index, post);
+		}
 		post.deleted = true;
 	}
 }
