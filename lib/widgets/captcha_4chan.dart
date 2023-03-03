@@ -708,6 +708,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 										child: CupertinoTextField(
 											focusNode: _solutionNode,
 											enableIMEPersonalizedLearning: false,
+											keyboardType: TextInputType.visiblePassword,
 											controller: _solutionController,
 											autocorrect: false,
 											placeholder: 'Captcha text',
