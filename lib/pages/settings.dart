@@ -984,6 +984,22 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.rectangle_expand_vertical),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Tapping background closes all replies')
+						),
+						CupertinoSwitch(
+							value: settings.overscrollModalTapPopsAll,
+							onChanged: (newValue) {
+								settings.overscrollModalTapPopsAll = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 32)
 			]
 		);

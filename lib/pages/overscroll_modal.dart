@@ -93,7 +93,12 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 			// Simulate onTap for the Spacers which fill the transparent space
 			// It's done here rather than using GestureDetector so it works during scroll-in
 			if (WeakNavigator.of(context) != null) {
-				WeakNavigator.of(context)!.popAllExceptFirst(animated: true);
+				if (context.read<EffectiveSettings>().overscrollModalTapPopsAll) {
+					WeakNavigator.of(context)!.popAllExceptFirst(animated: true);
+				}
+				else {
+					WeakNavigator.of(context)!.pop();
+				}
 			}
 			else {
 				Navigator.of(context).pop();

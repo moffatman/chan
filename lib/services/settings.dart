@@ -603,6 +603,8 @@ class SavedSettings extends HiveObject {
 	bool catalogGridModeShowMoreImageIfLessText;
 	@HiveField(118)
 	bool showPostNumberOnPosts;
+	@HiveField(119)
+	bool overscrollModalTapPopsAll;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -723,6 +725,7 @@ class SavedSettings extends HiveObject {
 		bool? catalogGridModeCellBorderRadiusAndMargin,
 		bool? catalogGridModeShowMoreImageIfLessText,
 		bool? showPostNumberOnPosts,
+		bool? overscrollModalTapPopsAll,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -870,7 +873,8 @@ class SavedSettings extends HiveObject {
 		attachmentsPageMaxCrossAxisExtent = attachmentsPageMaxCrossAxisExtent ?? 400,
 		catalogGridModeCellBorderRadiusAndMargin = catalogGridModeCellBorderRadiusAndMargin ?? false,
 		catalogGridModeShowMoreImageIfLessText = catalogGridModeShowMoreImageIfLessText ?? true,
-		showPostNumberOnPosts = showPostNumberOnPosts ?? true {
+		showPostNumberOnPosts = showPostNumberOnPosts ?? true,
+		overscrollModalTapPopsAll = overscrollModalTapPopsAll ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1806,6 +1810,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showPostNumberOnPosts => _settings.showPostNumberOnPosts;
 	set showPostNumberOnPosts(bool setting) {
 		_settings.showPostNumberOnPosts = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get overscrollModalTapPopsAll => _settings.overscrollModalTapPopsAll;
+	set overscrollModalTapPopsAll(bool setting) {
+		_settings.overscrollModalTapPopsAll = setting;
 		_settings.save();
 		notifyListeners();
 	}
