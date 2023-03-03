@@ -1577,10 +1577,18 @@ List<InlineSpan> buildPostInfoRow({
 			else if (field == PostDisplayField.posterId && post.posterId != null) ...[
 				IDSpan(
 					id: post.posterId!,
-					onPressed: interactive ? () => WeakNavigator.push(context, PostsPage(
-						postsIdsToShow: zone.thread.posts.where((p) => p.posterId == post.posterId).map((p) => p.id).toList(),
-						zone: zone
-					)) : null
+					onPressed: interactive ? () {
+						final postIdsToShow = zone.thread.posts.where((p) => p.posterId == post.posterId).map((p) => p.id).toList();
+						if (postIdsToShow.isEmpty) {
+							alertError(context, 'Could not find any posts with ID "${post.posterId}". This is likely a problem with Chance...');
+						}
+						else {
+							WeakNavigator.push(context, PostsPage(
+								postsIdsToShow: postIdsToShow,
+								zone: zone
+							));
+						}
+					} : null
 				),
 				const TextSpan(text: ' ')
 			]
