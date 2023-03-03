@@ -1646,7 +1646,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											_willHideOnPanEnd = ((WidgetsBinding.instance.window.physicalSize.height / r) - event.globalPosition.dy) < (WidgetsBinding.instance.window.viewInsets.bottom / r);
 											if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= 0)) {
 												// touch not above keyboard
-												settings.replyBoxHeightOffset = min(MediaQuery.sizeOf(context).height / 2, max(0, settings.replyBoxHeightOffset - event.delta.dy));
+												settings.replyBoxHeightOffset = min(MediaQuery.sizeOf(context).height / 2 - kMinInteractiveDimensionCupertino, max(0, settings.replyBoxHeightOffset - event.delta.dy));
 											}
 										});
 									},
