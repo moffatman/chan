@@ -367,7 +367,7 @@ class SiteHackerNews extends ImageboardSite {
 	String get defaultUsername => '';
 
 	@override
-	Future<void> deletePost(String board, PostReceipt receipt) {
+	Future<void> deletePost(String board, int threadId, PostReceipt receipt) {
 		// TODO: implement deletePost
 		throw UnimplementedError();
 	}

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:chan/models/flag.dart';
@@ -12,9 +13,11 @@ import 'dart:io';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:html/parser.dart';
 import 'package:html/dom.dart' as dom;
+import 'package:mime/mime.dart';
 
 extension _Unescape on String? {
 	String? get _unescaped => this == null ? null : unescape.convert(this!);
@@ -28,7 +31,7 @@ class SiteLynxchan extends ImageboardSite {
 	final List<ImageboardBoard> boards;
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
-		final body = parseFragment(data);
+		final body = parseFragment(data.trimRight());
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
 		for (final node in body.nodes) {
@@ -94,14 +97,99 @@ class SiteLynxchan extends ImageboardSite {
 				imageHeight: 11
 			);
 		}
+		else if ((data['flagCode'] as String?)?.startsWith('-') ?? false) {
+			return ImageboardFlag(
+				name: '',
+				imageUrl: Uri.https(baseUrl, '/.static/flags/${data['flagCode'].split('-')[1]}.png').toString(),
+				imageWidth: 16,
+				imageHeight: 11
+			);
+		}
 		return null;
 	}
 
-	@override
-	Future<PostReceipt> createThread({required String board, String name = '', String options = '', String subject = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
-		// TODO: implement createThread
-		throw UnimplementedError();
+	Future<PostReceipt> _post({
+		required String board,
+		int? threadId,
+		String name = '',
+		String? subject,
+		String options = '',
+		required String text,
+		required CaptchaSolution captchaSolution,
+		File? file,
+		bool? spoiler,
+		String? overrideFilename,
+		ImageboardBoardFlag? flag
+	}) async {
+		final password = makeRandomBase64String(16).substring(0, 8);
+		String? fileSha256;
+		bool fileAlreadyUploaded = false;
+		if (file != null) {
+			fileSha256 = sha256.convert(await file.readAsBytes()).bytes.map((b) => b.toRadixString(16)).join();
+			final filePresentResponse = await client.getUri(Uri.https(baseUrl, '/checkFileIdentifier.js', {
+				'json': '1',
+				'identifier': fileSha256
+			}));
+			if (filePresentResponse.data['status'] != 'ok') {
+				throw PostFailedException('Error checking if file was already uploaded: ${filePresentResponse.data['error'] ?? filePresentResponse.data}');
+			}
+			fileAlreadyUploaded = filePresentResponse.data['data'];
+		}
+		final response = await client.postUri(Uri.https(baseUrl, threadId == null ? '/newThread.js' : '/replyThread.js', {
+			'json': '1'
+		}), data: FormData.fromMap({
+			if (name.isNotEmpty) 'name': name,
+			if (options.isNotEmpty )'email': options,
+			'message': text,
+			'subject': subject,
+			'password': password,
+			'boardUri': board,
+			if (threadId != null) 'threadId': threadId.toString(),
+			if (captchaSolution is LynxchanCaptchaSolution)
+				'captcha': captchaSolution.id,
+			if (spoiler ?? false) 'spoiler': 'spoiler',
+			if (flag != null) 'flag': flag.code,
+			if (file != null) ...{
+				'fileSha256': fileSha256,
+				'fileMime': lookupMimeType(file.path),
+				'fileSpoiler': (spoiler ?? false) ? 'spoiler': '',
+				'fileName': overrideFilename ?? file.path.split('/').last,
+				if (!fileAlreadyUploaded) 'files': await MultipartFile.fromFile(file.path, filename: overrideFilename)
+			}
+		}));
+		if (response.data['status'] != 'ok') {
+			throw PostFailedException(response.data['error'] ?? response.data.toString());
+		}
+		return PostReceipt(
+			id: response.data['data'],
+			password: password
+		);
 	}
+
+	@override
+	Future<PostReceipt> createThread({
+		required String board,
+		String name = '',
+		String options = '',
+		String subject = '',
+		required String text,
+		required CaptchaSolution captchaSolution,
+		File? file,
+		bool? spoiler,
+		String? overrideFilename,
+		ImageboardBoardFlag? flag
+	}) => _post(
+		board: board,
+		name: name,
+		options: options,
+		subject: subject,
+		text: text,
+		captchaSolution: captchaSolution,
+		file: file,
+		spoiler: spoiler,
+		overrideFilename: overrideFilename,
+		flag: flag
+	);
 
 	@override
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async {
@@ -112,9 +200,18 @@ class SiteLynxchan extends ImageboardSite {
 	String get defaultUsername => 'Anon';
 
 	@override
-	Future<void> deletePost(String board, PostReceipt receipt) {
-		// TODO: implement deletePost
-		throw UnimplementedError();
+	Future<void> deletePost(String board, int threadId, PostReceipt receipt) async {
+		final response = await client.postUri(Uri.https(baseUrl, '/contentActions.js', {
+			'json': '1'
+		}), data: {
+			'action': 'delete',
+			'password': receipt.password,
+			'confirmation': 'true',
+			'meta-$threadId-${receipt.id}': 'true'
+		});
+		if (response.data['status'] != 'ok') {
+			throw DeletionFailedException(response.data['data'] ?? response.data);
+		}
 	}
 
 	@override
@@ -124,25 +221,30 @@ class SiteLynxchan extends ImageboardSite {
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
-		// TODO: implement getCaptchaRequest
-		return NoCaptchaRequest();
+		final captchaMode = persistence.maybeGetBoard(board)?.captchaMode ?? 0;
+		if (captchaMode == 0 ||
+				(captchaMode == 1 && threadId != null)) {
+			return NoCaptchaRequest();
+		}
+		return LynxchanCaptchaRequest();
 	}
 
-	void _updateBoardInformation(Map<String, dynamic> data) async {
+	void _updateBoardInformation(String boardName, Map<String, dynamic> data) async {
 		try {
-			final board = persistence.maybeGetBoard(data['boardName'])!;
+			final board = persistence.maybeGetBoard(boardName)!;
 			board.maxCommentCharacters = data['maxMessageLength'];
 			final fileSizeParts = (data['maxFileSize'] as String).split(' ');
 			double maxFileSize = double.parse(fileSizeParts.first);
-			if (fileSizeParts[1].toLowerCase().startsWith('M')) {
+			if (fileSizeParts[1].toLowerCase().startsWith('m')) {
 				maxFileSize *= 1024 * 1024;
 			}
-			else if (fileSizeParts[1].toLowerCase().startsWith('K')) {
+			else if (fileSizeParts[1].toLowerCase().startsWith('k')) {
 				maxFileSize *= 1024;
 			}
 			else {
 				throw Exception('Unexpected file-size unit: ${fileSizeParts[1]}');
 			}
+			board.captchaMode = data['captchaMode'];
 			board.maxImageSizeBytes = maxFileSize.round();
 			board.maxWebmSizeBytes = maxFileSize.round();
 			board.pageCount = data['pageCount'];
@@ -161,7 +263,7 @@ class SiteLynxchan extends ImageboardSite {
 		if (response.statusCode == 404) {
 			throw BoardNotFoundException(board);
 		}
-		_updateBoardInformation(response.data);
+		_updateBoardInformation(board, response.data);
 		return (response.data['threads'] as List).map((obj) {
 			final op = Post(
 				board: board,
@@ -238,6 +340,7 @@ class SiteLynxchan extends ImageboardSite {
 			capcode: obj['signedRole'],
 			time: DateTime.parse(obj['creation']),
 			threadId: threadId,
+			posterId: obj['id'],
 			id: id,
 			spanFormat: PostSpanFormat.lynxchan,
 			attachments: (obj['files'] as List).map((f) => Attachment(
@@ -303,10 +406,28 @@ class SiteLynxchan extends ImageboardSite {
 	String get imageUrl => baseUrl;
 
 	@override
-	Future<PostReceipt> postReply({required ThreadIdentifier thread, String name = '', String options = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
-		// TODO: implement postReply
-		throw UnimplementedError();
-	}
+	Future<PostReceipt> postReply({
+		required ThreadIdentifier thread,
+		String name = '',
+		String options = '',
+		required String text,
+		required CaptchaSolution captchaSolution,
+		File? file,
+		bool? spoiler,
+		String? overrideFilename,
+		ImageboardBoardFlag? flag
+	}) => _post(
+		board: thread.board,
+		threadId: thread.id,
+		name: name,
+		options: options,
+		text: text,
+		captchaSolution: captchaSolution,
+		file: file,
+		spoiler: spoiler,
+		overrideFilename: overrideFilename,
+		flag: flag
+	);
 
 	@override
 	String get siteData => baseUrl;
@@ -316,7 +437,4 @@ class SiteLynxchan extends ImageboardSite {
 
 	@override
 	bool get hasPagedCatalog => true;
-
-	@override
-	bool get supportsPosting => false;
 }

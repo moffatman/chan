@@ -32,7 +32,7 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<void> deletePost(String board, PostReceipt receipt) {
+  Future<void> deletePost(String board, int threadId, PostReceipt receipt) {
     throw UnimplementedError();
   }
 

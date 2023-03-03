@@ -622,7 +622,7 @@ class PostRow extends StatelessWidget {
 					trailingIcon: CupertinoIcons.delete,
 					isDestructiveAction: true,
 					onPressed: () async {
-						await site.deletePost(latestPost.board, receipt);
+						await site.deletePost(latestPost.board, latestPost.threadId, receipt);
 						// ignore: use_build_context_synchronously
 						showToast(context: context, message: 'Deleted post /${latestPost.board}/${receipt.id}', icon: CupertinoIcons.delete);
 					}

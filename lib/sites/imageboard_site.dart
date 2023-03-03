@@ -497,6 +497,11 @@ class DvachCaptchaRequest extends CaptchaRequest {
 	});
 }
 
+class LynxchanCaptchaRequest extends CaptchaRequest {
+	@override
+	String toString() => 'LynxchanCaptchaRequest()';
+}
+
 abstract class CaptchaSolution {
 	DateTime? get expiresAt;
 	bool get cloudflare => false;
@@ -566,6 +571,18 @@ class DvachCaptchaSolution extends CaptchaSolution {
 	});
 	@override
 	String toString() => 'DvachCaptchaSolution(id: $id, response: $response)';
+}
+
+class LynxchanCaptchaSolution extends CaptchaSolution {
+	final String id;
+	@override
+	final DateTime expiresAt;
+	LynxchanCaptchaSolution({
+		required this.id,
+		required this.expiresAt
+	});
+	@override
+	String toString() => 'LynxchanCaptchaSolution(id: $id)';
 }
 
 class ImageboardArchiveSearchResult {
@@ -754,7 +771,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		ImageboardBoardFlag? flag
 	});
 	DateTime? getActionAllowedTime(String board, ImageboardAction action) => null;
-	Future<void> deletePost(String board, PostReceipt receipt);
+	Future<void> deletePost(String board, int threadId, PostReceipt receipt);
 	Future<Post> getPostFromArchive(String board, int id) async {
 		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {

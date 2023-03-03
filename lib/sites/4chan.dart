@@ -724,7 +724,7 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<void> deletePost(String board, PostReceipt receipt) async {
+	Future<void> deletePost(String board, int threadId, PostReceipt receipt) async {
 		final response = await client.postUri(
 			Uri.https(_sysUrl(board), '/$board/imgboard.php'),
 			data: FormData.fromMap({

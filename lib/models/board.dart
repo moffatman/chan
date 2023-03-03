@@ -19,6 +19,7 @@ class ImageboardBoard {
 	DateTime? additionalDataTime;
 	final String? subdomain;
 	final Uri? icon;
+	int? captchaMode;
 
 	ImageboardBoard({
 		required this.name,
@@ -38,7 +39,8 @@ class ImageboardBoard {
 		this.spoilers,
 		this.additionalDataTime,
 		this.subdomain,
-		this.icon
+		this.icon,
+		this.captchaMode
 	});
 
 	@override
@@ -63,10 +65,11 @@ class ImageboardBoard {
 		(other.spoilers == spoilers) &&
 		(other.additionalDataTime == additionalDataTime) &&
 		(other.subdomain == subdomain) &&
-		(other.icon == icon);
+		(other.icon == icon) &&
+		(other.captchaMode == captchaMode);
 
 	@override
-	int get hashCode => Object.hash(name, title, isWorksafe, webmAudioAllowed, maxImageSizeBytes, maxWebmSizeBytes, maxWebmDurationSeconds, maxCommentCharacters, threadCommentLimit, threadImageLimit, pageCount, threadCooldown, replyCooldown, imageCooldown, spoilers, additionalDataTime, subdomain, icon);
+	int get hashCode => Object.hash(name, title, isWorksafe, webmAudioAllowed, maxImageSizeBytes, maxWebmSizeBytes, maxWebmDurationSeconds, maxCommentCharacters, threadCommentLimit, threadImageLimit, pageCount, threadCooldown, replyCooldown, imageCooldown, spoilers, additionalDataTime, subdomain, icon, captchaMode);
 }
 
 class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
@@ -112,6 +115,7 @@ class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
       additionalDataTime: fields[15] as DateTime?,
       subdomain: fields[16] as String?,
 			icon: fields[17] as Uri?,
+			captchaMode: fields[18] as int?,
     );
   }
 
@@ -166,6 +170,9 @@ class ImageboardBoardAdapter extends TypeAdapter<ImageboardBoard> {
 		}
 		if (obj.icon != null) {
 			writer..writeByte(17)..write(obj.icon);
+		}
+		if (obj.captchaMode != null) {
+			writer..writeByte(18)..write(obj.captchaMode);
 		}
 		writer
 			..writeByte(0)

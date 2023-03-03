@@ -293,7 +293,7 @@ class SiteDvach extends ImageboardSite {
 	);
 
 	@override
-	Future<void> deletePost(String board, PostReceipt receipt) async {
+	Future<void> deletePost(String board, int threadId, PostReceipt receipt) async {
 		throw UnimplementedError();
 	}
 
