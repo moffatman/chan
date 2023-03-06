@@ -450,7 +450,7 @@ class MediaConversion {
 						if (await convertedFile.exists()) {
 							await convertedFile.delete();
 						}
-						if (outputFileExtension == 'mp4' &&
+						if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') &&
 								_isVideoToolboxSupported &&
 								!_hasVideoToolboxFailed &&
 								((await results.getAllLogsAsString())?.contains('Error while opening encoder') ?? false)) {
