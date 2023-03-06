@@ -111,7 +111,7 @@ class Thread implements Filterable {
 		}
 	}
 
-	void mergePosts(Thread? other, List<Post> otherPosts, void Function(List<Post> list, Post newPost) placeNewPost) {
+	void mergePosts(Thread? other, List<Post> otherPosts, int Function(List<Post> list, Post newPost) placeNewPost) {
 		if (other != null) {
 			_markNewIPs(other);
 		}
@@ -141,7 +141,14 @@ class Thread implements Filterable {
 				}
 			}
 			else {
-				placeNewPost(posts_, newChild);
+				final newIndex = placeNewPost(posts_, newChild);
+				postIdToListIndex.updateAll((postId, listIndex) {
+					if (listIndex >= newIndex) {
+						return listIndex + 1;
+					}
+					return listIndex;
+				});
+				postIdToListIndex[newChild.id] = newIndex;
 				// This only handles single-parent case but no real imageboards have omitted replies
 				final parentIndex = postIdToListIndex[newChild.parentId];
 				if (parentIndex != null) {

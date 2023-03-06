@@ -710,15 +710,17 @@ abstract class ImageboardSiteArchive {
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult});
 	String getWebUrl(String board, [int? threadId, int? postId]);
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url);
-	void placeOrphanPost(List<Post> posts, Post post) {
+	int placeOrphanPost(List<Post> posts, Post post) {
 		final index = posts.indexWhere((p) => p.id > post.id);
+		post.deleted = true;
 		if (index == -1) {
 			posts.add(post);
+			return posts.length - 1;
 		}
 		else {
 			posts.insert(index, post);
+			return index;
 		}
-		post.deleted = true;
 	}
 }
 
