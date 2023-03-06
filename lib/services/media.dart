@@ -285,7 +285,7 @@ class MediaConversion {
 		final fileExtension = inputFile.pathSegments.last.split('.').last;
 		if (requiresSubdirectory) {
 			subdir += '/${filename.replaceFirst('.$fileExtension', '')}';
-			Directory('${Persistence.temporaryDirectory.path}/webmcache/$subdir').createSync();
+			Directory('${Persistence.temporaryDirectory.path}/webmcache/$subdir').createSync(recursive: true);
 		}
 		return File('${Persistence.temporaryDirectory.path}/webmcache/$subdir/${filename.replaceFirst('.$fileExtension', '$cacheKey.$outputFileExtension')}');
 	}
