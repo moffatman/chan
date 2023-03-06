@@ -552,6 +552,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 		_currentlyWithinLongPress = false;
 		_overlayText = null;
+		_waitingOnSwap = false;
 		notifyListeners();
 	}
 
