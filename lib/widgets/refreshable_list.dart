@@ -192,7 +192,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	final List<List<int>> filterCollapsedItems;
 	final ValueChanged<List<List<int>>>? onCollapsedItemsChanged;
 	final ValueChanged<List<int>>? onFilterCollapsedItemExpanded;
-	final ValueChanged<RefreshableListItem<T>>? onCollapseOrExpand;
+	final void Function(RefreshableListItem<T> item, bool looseEquality)? onCollapseOrExpand;
 	final Set<List<int>> loadingOmittedItems = {};
 
 	_RefreshableTreeItems({
@@ -261,7 +261,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		];
 		loadingOmittedItems.removeWhere((w) => listEquals(w, x));
 		notifyListeners();
-		onCollapseOrExpand?.call(item);
+		onCollapseOrExpand?.call(item, true);
 	}
 
 	void hideItem(List<int> parentIds, int thisId, RefreshableListItem<T> item) {
@@ -270,7 +270,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			thisId
 		]);
 		onCollapsedItemsChanged?.call(collapsedItems);
-		onCollapseOrExpand?.call(item);
+		onCollapseOrExpand?.call(item, false);
 		notifyListeners();
 	}
 
@@ -289,7 +289,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		if (filterCollapsedItemsLengthBefore != filterCollapsedItems.length) {
 			onFilterCollapsedItemExpanded?.call(x);
 		}
-		onCollapseOrExpand?.call(item);
+		onCollapseOrExpand?.call(item, false);
 		notifyListeners();
 	}
 }
@@ -510,12 +510,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		_filterCollapsedExpandedItems.add(item);
 	}
 
-	Future<void> _onTreeCollapseOrExpand(RefreshableListItem<T> item) async {
+	Future<void> _onTreeCollapseOrExpand(RefreshableListItem<T> item, bool looseEquality) async {
 		Duration total = Duration.zero;
 		while (total < _treeAnimationDuration) {
 			const incremental = Duration(milliseconds: 50);
 			await Future.delayed(incremental);
-			widget.controller?.invalidateAfter(item);
+			widget.controller?.invalidateAfter(item, looseEquality);
 			widget.controller?._scrollStream.add(null);
 			total += incremental;
 		}
@@ -1637,8 +1637,10 @@ class RefreshableListController<T extends Object> {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onSlowScroll);
 		SchedulerBinding.instance.endOfFrame.then((_) => _onScrollControllerNotification());
 	}
-	void invalidateAfter(RefreshableListItem<T> item) {
-		final index = _items.indexWhere((i) => i.item == item);
+	void invalidateAfter(RefreshableListItem<T> item, bool looseEquality) {
+		final index = looseEquality ?
+			_items.indexWhere((i) => i.item.item == item.item) :
+			_items.indexWhere((i) => i.item == item);
 		if (index == -1) {
 			print('Could not find $item in list to invalidate after');
 		}
