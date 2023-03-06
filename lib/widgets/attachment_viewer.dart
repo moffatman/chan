@@ -13,6 +13,7 @@ import 'package:chan/services/share.dart';
 import 'package:chan/services/soundposts.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -22,9 +23,11 @@ import 'package:chan/widgets/cooperative_browser.dart';
 import 'package:chan/widgets/cupertino_context_menu2.dart';
 import 'package:chan/widgets/double_tap_drag_detector.dart';
 import 'package:chan/widgets/util.dart';
+import 'package:chan/widgets/video_controls.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:photo_manager/photo_manager.dart';
@@ -90,7 +93,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	Uri? _goodImageSource;
 	File? _cachedFile;
 	bool _isPrimary = false;
-	MediaConversion? _ongoingConversion;
+	StreamingMP4Conversion? _ongoingConversion;
+	final _conversionDisposers = <VoidCallback>[];
 	bool _rotate90DegreesClockwise = false;
 	bool _checkArchives = false;
 	bool _showLoadingProgress = false;
@@ -105,9 +109,15 @@ class AttachmentViewerController extends ChangeNotifier {
 	GestureDetails? _gestureDetailsOnDoubleTapDragStart;
 	StreamSubscription<List<double>>? _longPressFactorSubscription;
 	bool _loadingProgressHideScheduled = false;
-	bool _thumbnailHideScheduled = false;
-	bool _showThumbnailBehindVideo = true;
+	bool _audioOnlyShowScheduled = false;
+	bool _showAudioOnly = false;
 	bool? _useRandomUserAgent;
+	Duration? _duration;
+	File? _videoFileToSwapIn;
+	ValueListenable<double?> _videoLoadingProgress = ValueNotifier(null);
+	bool _swapIncoming = false;
+	bool _waitingOnSwap = false;
+	Duration? _swapStartTime;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -117,7 +127,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	/// Whether the loading spinner should be displayed
 	bool get showLoadingProgress => _showLoadingProgress;
 	/// Conversion process of a video attachment
-	final videoLoadingProgress = ValueNotifier<double?>(null);
+	ValueListenable<double?> get videoLoadingProgress => _videoLoadingProgress;
 	/// A VideoPlayerController to enable playing back video attachments
 	VideoPlayerController? get videoPlayerController => _videoPlayerController;
 	/// Whether the attachment is a video that has an audio track
@@ -138,12 +148,18 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool get checkArchives => _checkArchives;
 	/// Modal text which should be overlayed on the attachment
 	String? get overlayText => _overlayText;
+	// Whether the modal text should be dimmed
+	bool get dimOverlayText => _swapIncoming;
 	/// Whether the image has already been downloaded
 	bool get isDownloaded => _isDownloaded;
 	/// Key to use for loading spinner
 	final loadingSpinnerKey = GlobalKey();
-	/// Whether to show thumbnail behind video player
-	bool get showThumbnailBehindVideo => _showThumbnailBehindVideo;
+	/// The duration of the video, if known
+	Duration? get duration => _duration;
+	/// Whether a seekable version of the video is incoming
+	bool get swapIncoming => _swapIncoming;
+	/// Whether a seekable version of the file is ready to swap in
+	bool get swapAvailable => _videoFileToSwapIn != null;
 
 
 	AttachmentViewerController({
@@ -251,11 +267,6 @@ class AttachmentViewerController extends ChangeNotifier {
 		throw HTTPStatusException(result.statusCode!);
 	}
 
-	void _onConversionProgressUpdate() {
-		videoLoadingProgress.value = _ongoingConversion?.progress.value;
-		notifyListeners();
-	}
-
 	void _scheduleHidingOfLoadingProgress() async {
 		if (_loadingProgressHideScheduled) return;
 		_loadingProgressHideScheduled = true;
@@ -266,19 +277,19 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	void _scheduleHidingOfVideoThumbnail() async {
-		if (_thumbnailHideScheduled) return;
-		_thumbnailHideScheduled = true;
+	void _scheduleShowingOfAudioOnly() async {
+		if (_audioOnlyShowScheduled) return;
+		_audioOnlyShowScheduled = true;
 		await Future.delayed(const Duration(milliseconds: 100));
 		if (_isDisposed) return;
-		_showThumbnailBehindVideo = false;
+		_showAudioOnly = true;
 		notifyListeners();
 	}
 
 	void goToThumbnail() {
 		_isFullResolution = false;
 		_showLoadingProgress = false;
-		_showThumbnailBehindVideo = true;
+		_showAudioOnly = false;
 		_videoPlayerController?.dispose();
 		_videoPlayerController = null;
 		_goodImageSource = null;
@@ -296,14 +307,13 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 		final settings = context.read<EffectiveSettings>();
 		_errorMessage = null;
-		videoLoadingProgress.value = null;
 		_goodImageSource = null;
 		_videoPlayerController?.dispose();
 		_videoPlayerController = null;
 		_cachedFile = null;
 		_isFullResolution = true;
 		_showLoadingProgress = false;
-		_showThumbnailBehindVideo = true;
+		_showAudioOnly = false;
 		notifyListeners();
 		final startTime = DateTime.now();
 		Future.delayed(_estimateUrlTime(attachment.thumbnailUrl), () {
@@ -390,15 +400,35 @@ class AttachmentViewerController extends ChangeNotifier {
 						return;
 					}
 					_scheduleHidingOfLoadingProgress();
-					_scheduleHidingOfVideoThumbnail();
+					_scheduleShowingOfAudioOnly();
 				}
 				else {
-					_ongoingConversion = MediaConversion.toMp4(url, headers: _getHeaders(url), soundSource: soundSource);
-					_ongoingConversion!.progress.addListener(_onConversionProgressUpdate);
-					_ongoingConversion!.start();
-					final result = await _ongoingConversion!.result;
+					_ongoingConversion = StreamingMP4Conversion(url, headers: _getHeaders(url), soundSource: soundSource);
+					final result = await _ongoingConversion!.start();
+					_conversionDisposers.add(_ongoingConversion!.dispose);
 					_ongoingConversion = null;
-					_videoPlayerController = VideoPlayerController.file(result.file, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+					bool isAudioOnly = false;
+					if (result is StreamingMP4ConvertedFile) {
+						_videoPlayerController = VideoPlayerController.file(result.mp4File, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+						_cachedFile = result.mp4File;
+						isAudioOnly = result.isAudioOnly;
+					}
+					else if (result is StreamingMP4ConversionStream) {
+						_duration = result.duration;
+						_videoPlayerController = VideoPlayerController.network(result.hlsStream.toString(), formatHint: VideoFormat.hls, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+						_videoLoadingProgress = result.progress;
+						_swapIncoming = true;
+						result.mp4File.then((mp4File) async {
+							_cachedFile = mp4File;
+							_videoFileToSwapIn = mp4File;
+							if (_waitingOnSwap) {
+								await potentiallySwapVideo();
+							}
+							_videoLoadingProgress = ValueNotifier(null);
+							_swapIncoming = false;
+							notifyListeners();
+						});
+					}
 					if (_isDisposed) {
 						return;
 					}
@@ -425,10 +455,11 @@ class AttachmentViewerController extends ChangeNotifier {
 					if (_isDisposed) {
 						return;
 					}
-					_cachedFile = result.file;
 					_hasAudio = result.hasAudio;
 					_scheduleHidingOfLoadingProgress();
-					_scheduleHidingOfVideoThumbnail();
+					if (isAudioOnly) {
+						_scheduleShowingOfAudioOnly();
+					}
 				}
 				if (_isDisposed) return;
 				notifyListeners();
@@ -484,9 +515,11 @@ class AttachmentViewerController extends ChangeNotifier {
 		_playingBeforeLongPress = videoPlayerController!.value.isPlaying;
 		_millisecondsBeforeLongPress = videoPlayerController!.value.position.inMilliseconds;
 		_currentlyWithinLongPress = true;
-		_overlayText = _formatPosition(videoPlayerController!.value.position, videoPlayerController!.value.duration);
+		_overlayText = _formatPosition(videoPlayerController!.value.position, duration ?? videoPlayerController!.value.duration);
+		_waitingOnSwap = _swapIncoming;
 		notifyListeners();
 		videoPlayerController!.pause();
+		potentiallySwapVideo();
 	}
 
 	void _onLongPressUpdate(double factor) {
@@ -495,11 +528,14 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	void _onCoalescedLongPressUpdate(double factor) async {
 		if (_currentlyWithinLongPress) {
-			final duration = videoPlayerController!.value.duration.inMilliseconds;
+			final duration = (this.duration ?? videoPlayerController!.value.duration).inMilliseconds;
 			final newPosition = Duration(milliseconds: ((_millisecondsBeforeLongPress + (duration * factor)).clamp(0, duration)).round());
-			_overlayText = _formatPosition(newPosition, videoPlayerController!.value.duration);
+			_overlayText = _formatPosition(newPosition, this.duration ?? videoPlayerController!.value.duration);
 			notifyListeners();
-			if (!_seeking) {
+			if (_waitingOnSwap) {
+				_swapStartTime = newPosition;
+			}
+			else if (!_seeking) {
 				_seeking = true;
 				await videoPlayerController!.seekTo(newPosition);
 				await videoPlayerController!.play();
@@ -509,7 +545,8 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 	}
 
-	void _onLongPressEnd() {
+	Future<void> _onLongPressEnd() async {
+		await potentiallySwapVideo();
 		if (_playingBeforeLongPress) {
 			videoPlayerController!.play();
 		}
@@ -607,16 +644,37 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
+	Future<void> potentiallySwapVideo() async {
+		if (_videoFileToSwapIn != null) {
+			final newFile = _videoFileToSwapIn!;
+			_videoFileToSwapIn = null;
+			final oldController = _videoPlayerController;
+			_videoPlayerController = VideoPlayerController.file(newFile, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+			await _videoPlayerController!.initialize();
+			await _videoPlayerController!.setLooping(true);
+			final newPosition = _swapStartTime ?? oldController?.value.position;
+			if (newPosition != null) {
+				await _videoPlayerController!.seekTo(newPosition);
+			}
+			await _videoPlayerController!.play();
+			await _videoPlayerController!.pause();
+			notifyListeners();
+			WidgetsBinding.instance.addPostFrameCallback((_) {
+				oldController?.dispose();
+			});
+		}
+	}
+
 	@override
 	void dispose() {
 		_isDisposed = true;
 		super.dispose();
-		_ongoingConversion?.progress.removeListener(_onConversionProgressUpdate);
-		_ongoingConversion?.cancel();
+		for (final disposer in _conversionDisposers) {
+			disposer();
+		}
 		videoPlayerController?.pause().then((_) => videoPlayerController?.dispose());
 		_longPressFactorStream.close();
 		_vp9Controllers.remove(this);
-		videoLoadingProgress.dispose();
 	}
 
 	@override
@@ -987,24 +1045,72 @@ class AttachmentViewer extends StatelessWidget {
 			},
 			child: SizedBox.fromSize(
 				size: size,
-				child: Stack(
-					children: [
-						if (controller.showThumbnailBehindVideo) AttachmentThumbnail(
-							attachment: attachment,
-							width: double.infinity,
-							height: double.infinity,
-							rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
-							gaplessPlayback: true,
-							revealSpoilers: true,
-							site: controller.site
-						),
-						if (controller.videoPlayerController != null) AbsorbPointer(
-							absorbing: !allowGestures,
-							child: GestureDetector(
-								behavior: HitTestBehavior.translucent,
-								onLongPressStart: (x) => controller._onLongPressStart(),
-								onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.sizeOf(context).width / 2)),
-								onLongPressEnd: (x) => controller._onLongPressEnd(),
+				child: GestureDetector(
+					behavior: HitTestBehavior.translucent,
+					onLongPressStart: (x) => controller._onLongPressStart(),
+					onLongPressMoveUpdate: (x) => controller._onLongPressUpdate(x.offsetFromOrigin.dx / (MediaQuery.sizeOf(context).width / 2)),
+					onLongPressEnd: (x) => controller._onLongPressEnd(),
+					child: Stack(
+						children: [
+							Positioned.fill(
+								child: FittedBox(
+									child: Padding(
+										// Sometimes it's very slightly off from the video.
+										// This errs to have it too small rather than too large.
+										padding: const EdgeInsets.all(1),
+										child: AttachmentThumbnail(
+											attachment: attachment,
+											width: attachment.width?.toDouble() ?? double.infinity,
+											height: attachment.height?.toDouble() ?? double.infinity,
+											rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
+											gaplessPlayback: true,
+											revealSpoilers: true,
+											site: controller.site
+										)
+									)
+								)
+							),
+							if (controller._showAudioOnly) Positioned.fill(
+								child: Center(
+									child: RotatedBox(
+										quarterTurns: controller.rotate90DegreesClockwise ? 1 : 0,
+										child: Container(
+											padding: const EdgeInsets.all(8),
+											decoration: const BoxDecoration(
+												color: Colors.black54,
+												borderRadius: BorderRadius.all(Radius.circular(8))
+											),
+											child: IntrinsicWidth(
+												child: Column(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														const SizedBox(height: 10),
+														const Row(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																SizedBox(width: 64),
+																Icon(CupertinoIcons.waveform, size: 32, color: Colors.white),
+																Text(
+																	'Audio only',
+																	style: TextStyle(
+																		fontSize: 32,
+																		color: Colors.white
+																	)
+																),
+																SizedBox(width: 64)
+															]
+														),
+														const SizedBox(height: 10),
+														VideoControls(controller: controller, showMuteButton: false),
+														const SizedBox(height: 10)
+													]
+												)
+											)
+										)
+									)
+								)
+							),
+							if (controller.videoPlayerController != null) IgnorePointer(
 								child: Center(
 									child: RotatedBox(
 										quarterTurns: controller.rotate90DegreesClockwise ? 1 : 0,
@@ -1014,44 +1120,66 @@ class AttachmentViewer extends StatelessWidget {
 										)
 									)
 								)
-							)
-						),
-						if (controller.showLoadingProgress) ValueListenableBuilder(
-							valueListenable: controller.videoLoadingProgress,
-							builder: (context, double? loadingProgress, child) => _centeredLoader(
-								active: controller.isFullResolution,
-								value: loadingProgress
-							)
-						),
-						if (controller.errorMessage != null) Center(
-							child: ErrorMessageCard(controller.errorMessage!, remedies: {
-								'Retry': () => controller.reloadFullAttachment(),
-								if (!controller.checkArchives) 'Try archives': () => controller.tryArchives()
-							})
-						),
-						AnimatedSwitcher(
-							duration: const Duration(milliseconds: 250),
-							child: (controller.overlayText != null) ? Center(
-								child: RotatedBox(
-									quarterTurns: controller.rotate90DegreesClockwise ? 1 : 0,
-									child: Container(
-										padding: const EdgeInsets.all(8),
-										decoration: const BoxDecoration(
-											color: Colors.black54,
-											borderRadius: BorderRadius.all(Radius.circular(8))
-										),
-										child: Text(
-											controller.overlayText!,
-											style: const TextStyle(
-												fontSize: 32,
-												color: Colors.white
+							),
+							if (controller.showLoadingProgress) ValueListenableBuilder(
+								valueListenable: controller.videoLoadingProgress,
+								builder: (context, double? loadingProgress, child) => _centeredLoader(
+									active: controller.isFullResolution,
+									value: loadingProgress
+								)
+							),
+							if (controller.errorMessage != null) Center(
+								child: ErrorMessageCard(controller.errorMessage!, remedies: {
+									'Retry': () => controller.reloadFullAttachment(),
+									if (!controller.checkArchives) 'Try archives': () => controller.tryArchives()
+								})
+							),
+							AnimatedSwitcher(
+								duration: const Duration(milliseconds: 250),
+								child: (controller.overlayText != null) ? Center(
+									child: RotatedBox(
+										quarterTurns: controller.rotate90DegreesClockwise ? 1 : 0,
+										child: Container(
+											padding: const EdgeInsets.all(8),
+											margin: EdgeInsets.only(
+												top: 12,
+												bottom: controller.swapIncoming ? 0 : 12
+											),
+											decoration: const BoxDecoration(
+												color: Colors.black54,
+												borderRadius: BorderRadius.all(Radius.circular(8))
+											),
+											child: IntrinsicWidth(
+												child: Column(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Text(
+															controller.overlayText!,
+															style: TextStyle(
+																fontSize: 32,
+																color: Colors.white.withOpacity(controller.dimOverlayText ? 0.5 : 1)
+															)
+														),
+														if (controller.swapIncoming) Padding(
+															padding: const EdgeInsets.symmetric(vertical: 4),
+															child: ValueListenableBuilder(
+																valueListenable: controller.videoLoadingProgress,
+																builder: (context, double? value, _) => LinearProgressIndicator(
+																	color: Colors.white,
+																	backgroundColor: Colors.black,
+																	value: value
+																)
+															)
+														)
+													]
+												)
 											)
 										)
 									)
-								)
-							) : Container()
-						)
-					]
+								) : const SizedBox.shrink()
+							)
+						]
+					)
 				)
 			)
 		);

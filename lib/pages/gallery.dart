@@ -489,8 +489,7 @@ class _GalleryPageState extends State<GalleryPage> {
 						mainAxisSize: MainAxisSize.min,
 						children: [
 							if (currentController.videoPlayerController != null) VideoControls(
-								controller: currentController.videoPlayerController!,
-								hasAudio: currentController.hasAudio
+								controller: currentController
 							),
 							SizedBox(
 								height: _thumbnailSize + 8,

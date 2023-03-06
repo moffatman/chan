@@ -37,9 +37,10 @@ class MediaConversionFFMpegException implements Exception {
 class MediaConversionResult {
 	final File file;
 	final bool hasAudio;
-	MediaConversionResult(this.file, this.hasAudio);
+	final bool isAudioOnly;
+	MediaConversionResult(this.file, this.hasAudio, this.isAudioOnly);
 	@override
-	String toString() => 'MediaConversionResult(file: ${file.path}, hasAudio: $hasAudio)';
+	String toString() => 'MediaConversionResult(file: ${file.path}, hasAudio: $hasAudio, isAudioOnly: $isAudioOnly)';
 }
 
 class _MediaScanCacheEntry {
@@ -64,6 +65,7 @@ class MediaScan {
 	final int? width;
 	final int? height;
 	final String? codec;
+	final double? videoFramerate;
 
 	MediaScan({
 		required this.hasAudio,
@@ -71,7 +73,8 @@ class MediaScan {
 		required this.bitrate,
 		required this.width,
 		required this.height,
-		required this.codec
+		required this.codec,
+		required this.videoFramerate
 	});
 
 	static final Map<_MediaScanCacheEntry, MediaScan> _mediaScanCache = {};
@@ -108,9 +111,17 @@ class MediaScan {
 					final seconds = double.tryParse(data['format']?['duration'] ?? '');
 					int width = 0;
 					int height = 0;
+					double? videoFramerate;
 					for (final stream in (data['streams'] as List<dynamic>)) {
 						width = max(width, stream['width'] ?? 0);
 						height = max(height, stream['height'] ?? 0);
+						if (stream['codec_type'] == 'video') {
+							final avgFramerateFractionString = stream['avg_frame_rate'] as String?;
+							final match = RegExp(r'^(\d+)\/(\d+)$').firstMatch(avgFramerateFractionString ?? '');
+							if (match != null) {
+								videoFramerate = int.parse(match.group(1)!) / int.parse(match.group(2)!);
+							}
+						}
 					}
 					completer.complete(MediaScan(
 						hasAudio: (data['streams'] as List<dynamic>).any((s) => s['codec_type'] == 'audio'),
@@ -118,7 +129,8 @@ class MediaScan {
 						bitrate: int.tryParse(data['format']?['bit_rate'] ?? ''),
 						width: width == 0 ? null : width,
 						height: height == 0 ? null : height,
-						codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name']
+						codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name'],
+						videoFramerate: videoFramerate
 					));
 				}
 				catch (e, st) {
@@ -145,6 +157,8 @@ class MediaScan {
 		}
 	}
 
+	bool get isAudioOnly => videoFramerate?.isNaN ?? true;
+
 	@override
 	String toString() => 'MediaScan(hasAudio: $hasAudio, duration: $duration, bitrate: $bitrate)';
 }
@@ -164,8 +178,11 @@ class MediaConversion {
 	final Map<String, String> headers;
 	int _additionalScaleDownFactor = 1;
 	final Uri? soundSource;
+	final bool requiresSubdirectory;
+	final bool copyStreams;
 
 	FFmpegSession? _session;
+	MediaScan? cachedScan;
 
 	static final pool = Pool(Platform.numberOfProcessors);
 
@@ -182,18 +199,35 @@ class MediaConversion {
 		this.extraOptions = const [],
 		this.cacheKey = '',
 		this.headers = const {},
-		this.soundSource
+		this.soundSource,
+		this.requiresSubdirectory = false,
+		this.copyStreams = false
 	});
 
 	static MediaConversion toMp4(Uri inputFile, {
 		Map<String, String> headers = const {},
-		Uri? soundSource
+		Uri? soundSource,
+		bool copyStreams = false
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
 			outputFileExtension: 'mp4',
 			headers: headers,
-			soundSource: soundSource
+			soundSource: soundSource,
+			copyStreams: copyStreams
+		);
+	}
+
+	static MediaConversion toHLS(Uri inputFile, {
+		Map<String, String> headers = const {},
+		Uri? soundSource
+	}) {
+		return MediaConversion(
+			inputFile: inputFile,
+			outputFileExtension: 'm3u8',
+			headers: headers,
+			soundSource: soundSource,
+			requiresSubdirectory: true
 		);
 	}
 
@@ -249,6 +283,10 @@ class MediaConversion {
 		}
 		final filename = inputFile.pathSegments.last;
 		final fileExtension = inputFile.pathSegments.last.split('.').last;
+		if (requiresSubdirectory) {
+			subdir += '/${filename.replaceFirst('.$fileExtension', '')}';
+			Directory('${Persistence.temporaryDirectory.path}/webmcache/$subdir').createSync();
+		}
 		return File('${Persistence.temporaryDirectory.path}/webmcache/$subdir/${filename.replaceFirst('.$fileExtension', '$cacheKey.$outputFileExtension')}');
 	}
 
@@ -294,7 +332,7 @@ class MediaConversion {
 		if (soundSource != null && isOriginalFile) {
 			return null;
 		}
-		return MediaConversionResult(file, scan?.hasAudio ?? false);
+		return MediaConversionResult(file, scan?.hasAudio ?? false, scan?.isAudioOnly ?? false);
 	}
 
 	Future<void> start() async {
@@ -316,7 +354,7 @@ class MediaConversion {
 					throw Exception('Media conversions disabled on desktop');
 				}
 				else {
-					final scan = await MediaScan.scan(inputFile, headers: headers);
+					final scan = cachedScan = await MediaScan.scan(inputFile, headers: headers);
 					int outputBitrate = scan.bitrate ?? 2000000;
 					int? outputDurationInMilliseconds = scan.duration?.inMilliseconds;
 					if (outputFileExtension == 'webm' || outputFileExtension == 'mp4') {
@@ -329,7 +367,7 @@ class MediaConversion {
 					}
 					(int, int)? newSize;
 					if (scan.width != null && scan.height != null) {
-						if (outputFileExtension != 'jpg' && outputFileExtension != 'png') {
+						if (outputFileExtension != 'jpg' && outputFileExtension != 'png' && maximumSizeInBytes != null) {
 							double scaleDownFactorSq = (outputBitrate/(2 * scan.width! * scan.height!)) / _additionalScaleDownFactor;
 							if (scaleDownFactorSq < 1) {
 								final newWidth = (scan.width! * (sqrt(scaleDownFactorSq) / 2)).round() * 2;
@@ -363,7 +401,7 @@ class MediaConversion {
 					});
 					final bitrateString = '${(outputBitrate / 1000).floor()}K';
 					final ffmpegCompleter = Completer<Session>();
-					_session = await pool.withResource(() {
+					_session = await pool.withResource(() async {
 						final args = [
 							'-hwaccel', 'auto',
 							if (headers.isNotEmpty && inputFile.scheme != 'file') ...[
@@ -371,7 +409,7 @@ class MediaConversion {
 								headers.entries.map((h) => "${h.key}: ${h.value}").join('\r\n')
 							],
 							'-i', inputFile.toStringFFMPEG(),
-							if (soundSource != null) ...[
+							if (soundSource != null && !copyStreams) ...[
 								'-i', soundSource!.toStringFFMPEG(),
 								'-map', '0:v:0',
 								'-map', '1:a:0',
@@ -386,12 +424,20 @@ class MediaConversion {
 							if (outputFileExtension == 'jpg' || outputFileExtension == 'png') ...['-pix_fmt', 'rgba'],
 							if (outputFileExtension == 'png') ...['-pred', 'mixed'],
 							if (outputFileExtension == 'webm') ...['-crf', '10'],
-							if (outputFileExtension == 'mp4')
+							if (outputFileExtension == 'm3u8') ...[
+								'-f', 'hls',
+								'-hls_playlist_type', 'event',
+								'-hls_init_time', '3',
+								'-hls_time', '3',
+								'-hls_flags', 'split_by_time'
+							],
+							if ((outputFileExtension == 'mp4' || outputFileExtension == 'm3u8') && !copyStreams)
 								if (_isVideoToolboxSupported && !_hasVideoToolboxFailed)
 									...['-vcodec', 'h264_videotoolbox']
 								else
 									...['-c:v', 'libx264', '-preset', 'medium', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2'],
-							if (newSize != null) ...['-vf', 'scale=${newSize.$1}:${newSize.$2}'],
+							if (copyStreams) ...['-acodec', 'copy', '-vcodec', 'copy', '-c', 'copy']
+							else if (newSize != null) ...['-vf', 'scale=${newSize.$1}:${newSize.$2}'],
 							if (maximumDurationInSeconds != null) ...['-t', maximumDurationInSeconds.toString()],
 							convertedFile.path
 						];
@@ -422,7 +468,7 @@ class MediaConversion {
 							return;
 						}
 						else {
-							_completer!.complete(MediaConversionResult(convertedFile, soundSource != null || scan.hasAudio));
+							_completer!.complete(MediaConversionResult(convertedFile, soundSource != null || scan.hasAudio, scan.isAudioOnly));
 						}
 					}
 				}
