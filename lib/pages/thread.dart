@@ -877,9 +877,6 @@ class _ThreadPageState extends State<ThreadPage> {
 																				}
 																			)
 																		},
-																		listExtender: (persistentState.thread?.isSticky == true && !site.isReddit && !site.isHackerNews) ? (Post after) async {
-																			return (await _getUpdatedThread()).posts.where((p) => p.id > after.id).toList();
-																		} : null,
 																		listUpdater: () async {
 																			return (await _getUpdatedThread()).posts;
 																		},
