@@ -149,15 +149,6 @@ class ThreadWatcher extends ChangeNotifier {
 			}
 			await Future.microtask(() => {});
 		}
-		if (watchForStickyOnBoards.isNotEmpty) {
-			for (final threadState in Persistence.sharedThreadStateBox.values) {
-				if (threadState.imageboardKey == imageboardKey && watchForStickyOnBoards.contains(threadState.board)) {
-					// We don't know whether this thread is sticky.
-					// Need to load it in any case to be sure not to miss it later in update().
-					threadState.ensureThreadLoaded(preinit: false);
-				}
-			}
-		}
 		_updateCounts();
 		if (!_initialCountsDone.isCompleted) {
 			_initialCountsDone.complete();
@@ -315,8 +306,9 @@ class ThreadWatcher extends ChangeNotifier {
 			_lastCatalogs[board] ??= await site.getCatalog(board);
 			_unseenStickyThreads.addAll(_lastCatalogs[board]!.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).map((t) => t.identifier).toList());
 			// Update sticky threads for (you)s
-			final stickyThreadStates = Persistence.sharedThreadStateBox.values.where((s) => s.board == board && s.thread != null && s.thread!.isSticky);
+			final stickyThreadStates = _lastCatalogs[board]!.where((t) => t.isSticky).map((t) => persistence.getThreadStateIfExists(t.identifier)).where((s) => s != null).map((s) => s!).toList();
 			for (final threadState in stickyThreadStates) {
+				await threadState.ensureThreadLoaded(preinit: false);
 				if (threadState.youIds.isNotEmpty) {
 					try {
 						final newThread = await site.getThread(threadState.thread!.identifier);
