@@ -52,7 +52,6 @@ class _VideoControlsState extends State<VideoControls> {
 			old.controller.removeListener(_onControllerUpdate);
 			widget.controller.addListener(_onControllerUpdate);
 			videoPlayerController = widget.controller.videoPlayerController!;
-			value = videoPlayerController.value;
 		}
 	}
 
