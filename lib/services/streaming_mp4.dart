@@ -57,7 +57,7 @@ void _handleRequest(HttpRequest request) async {
 Future<(HttpServer, StreamSubscription<HttpRequest>)> _startServer() async {
 	final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
 	print('started http server on port ${server.port}');
-	final stream = server.listen(_handleRequest);
+	final stream = server.listen(_handleRequest, cancelOnError: false);
 	return (server, stream);
 }
 
