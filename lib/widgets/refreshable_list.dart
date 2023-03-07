@@ -1909,6 +1909,18 @@ class RefreshableListController<T extends Object> {
 		final index = lastVisibleIndex;
 		return index < 0 ? null : _items[index].item.item;
 	}
+	bool isOnscreen(T item) {
+		if (scrollController?.hasOnePosition ?? false) {
+			return _items.any((i) {
+				return (i.item.item == item) &&
+							 (i.cachedHeight != null) &&
+							 (i.cachedOffset != null) && 
+							 (i.cachedOffset! + i.cachedHeight! > scrollController!.position.pixels) &&
+							 (i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
+			});
+		}
+		return false;
+	}
 	Future<void> blockAndUpdate() async {
 		state?.originalList = null;
 		state?.sortedList = null;

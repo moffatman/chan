@@ -201,6 +201,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			videoPlayerController?.pause();
 		}
 		_isPrimary = val;
+		notifyListeners();
 	}
 
 	Map<String, String> _getHeaders(Uri url) {
@@ -298,11 +299,11 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	Future<void> _loadFullAttachment(bool startImageDownload, {bool force = false}) async {
+	Future<void> _loadFullAttachment(bool background, {bool force = false}) async {
 		if (attachment.type == AttachmentType.image && goodImageSource != null && !force) {
 			return;
 		}
-		if (attachment.type == AttachmentType.webm && ((videoPlayerController != null && !force) || _ongoingConversion != null)) {
+		if (attachment.type.isVideo && ((videoPlayerController != null && !force) || _ongoingConversion != null)) {
 			return;
 		}
 		final settings = context.read<EffectiveSettings>();
@@ -332,7 +333,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 				if (_isDisposed) return;
 				notifyListeners();
-				if (startImageDownload && attachment.type == AttachmentType.image) {
+				if (background && attachment.type == AttachmentType.image) {
 					await ExtendedNetworkImageProvider(
 						goodImageSource.toString(),
 						cache: true,
@@ -370,98 +371,68 @@ class AttachmentViewerController extends ChangeNotifier {
 						}
 					}
 				}
+				bool isAudioOnly = false;
 				if (!transcode) {
 					_videoPlayerController = VideoPlayerController.network(
 						url.toString(),
 						httpHeaders: _getHeaders(url),
 						videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true)
 					);
-					await _videoPlayerController!.initialize();
-					if (_isDisposed) {
-						return;
-					}
-					if (settings.muteAudio.value || settings.alwaysStartVideosMuted) {
-						if (!settings.muteAudio.value) {
-							settings.setMuteAudio(true);
-						}
-						await _videoPlayerController?.setVolume(0);
-						if (_isDisposed) {
-							return;
-						}
-					}
-					await videoPlayerController!.setLooping(true);
-					if (_isDisposed) {
-						return;
-					}
-					if (isPrimary) {
-						await videoPlayerController!.play();
-					}
-					if (_isDisposed) {
-						return;
-					}
-					_scheduleHidingOfLoadingProgress();
-					_scheduleShowingOfAudioOnly();
 				}
 				else {
 					_ongoingConversion = StreamingMP4Conversion(url, headers: _getHeaders(url), soundSource: soundSource);
 					final result = await _ongoingConversion!.start();
 					_conversionDisposers.add(_ongoingConversion!.dispose);
 					_ongoingConversion = null;
-					bool isAudioOnly = false;
 					if (result is StreamingMP4ConvertedFile) {
-						_videoPlayerController = VideoPlayerController.file(result.mp4File, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+						if (!background) {
+							_videoPlayerController = VideoPlayerController.file(result.mp4File, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+						}
 						_cachedFile = result.mp4File;
 						isAudioOnly = result.isAudioOnly;
 					}
 					else if (result is StreamingMP4ConversionStream) {
 						_duration = result.duration;
-						_videoPlayerController = VideoPlayerController.network(result.hlsStream.toString(), formatHint: VideoFormat.hls, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+						if (!background) {
+							_videoPlayerController = VideoPlayerController.network(result.hlsStream.toString(), formatHint: VideoFormat.hls, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+						}
 						_videoLoadingProgress = result.progress;
 						_swapIncoming = true;
 						result.mp4File.then((mp4File) async {
 							_cachedFile = mp4File;
 							_videoFileToSwapIn = mp4File;
-							if (_waitingOnSwap) {
+							if (_waitingOnSwap && !background) {
 								await potentiallySwapVideo();
 							}
 							_videoLoadingProgress = ValueNotifier(null);
 							_swapIncoming = false;
 							notifyListeners();
 						});
+						_hasAudio = result.hasAudio;
 					}
-					if (_isDisposed) {
-						return;
-					}
+				}
+				if (_isDisposed) return;
+				if (_videoPlayerController != null) {
 					await _videoPlayerController!.initialize();
-					if (_isDisposed) {
-						return;
-					}
+					if (_isDisposed) return;
 					if (settings.muteAudio.value || settings.alwaysStartVideosMuted) {
 						if (!settings.muteAudio.value) {
 							settings.setMuteAudio(true);
 						}
 						await _videoPlayerController?.setVolume(0);
-						if (_isDisposed) {
-							return;
-						}
+						if (_isDisposed) return;
 					}
 					await _videoPlayerController!.setLooping(true);
-					if (_isDisposed) {
-						return;
-					}
+					if (_isDisposed) return;
 					if (isPrimary) {
 						await _videoPlayerController!.play();
 					}
-					if (_isDisposed) {
-						return;
-					}
-					_hasAudio = result.hasAudio;
+					if (_isDisposed) return;
 					_scheduleHidingOfLoadingProgress();
 					if (isAudioOnly) {
 						_scheduleShowingOfAudioOnly();
 					}
 				}
-				if (_isDisposed) return;
 				notifyListeners();
 			}
 		}
@@ -652,13 +623,18 @@ class AttachmentViewerController extends ChangeNotifier {
 			final oldController = _videoPlayerController;
 			_videoPlayerController = VideoPlayerController.file(newFile, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
 			await _videoPlayerController!.initialize();
+			if (_isDisposed) return;
 			await _videoPlayerController!.setLooping(true);
+			if (_isDisposed) return;
 			final newPosition = _swapStartTime ?? oldController?.value.position;
 			if (newPosition != null) {
 				await _videoPlayerController!.seekTo(newPosition);
+				if (_isDisposed) return;
 			}
 			await _videoPlayerController!.play();
+			if (_isDisposed) return;
 			await _videoPlayerController!.pause();
+			if (_isDisposed) return;
 			notifyListeners();
 			WidgetsBinding.instance.addPostFrameCallback((_) {
 				oldController?.dispose();
@@ -693,6 +669,8 @@ class AttachmentViewer extends StatelessWidget {
 	final bool useHeroDestinationWidget;
 	final bool allowGestures;
 	final bool heroOtherEndIsBoxFitCover;
+	final bool videoThumbnailMicroPadding;
+	final bool onlyRenderVideoWhenPrimary;
 
 	const AttachmentViewer({
 		required this.controller,
@@ -705,6 +683,8 @@ class AttachmentViewer extends StatelessWidget {
 		this.useHeroDestinationWidget = false,
 		this.allowGestures = true,
 		required this.heroOtherEndIsBoxFitCover,
+		this.videoThumbnailMicroPadding = true,
+		this.onlyRenderVideoWhenPrimary = false,
 		Key? key
 	}) : super(key: key);
 
@@ -1058,7 +1038,7 @@ class AttachmentViewer extends StatelessWidget {
 									child: Padding(
 										// Sometimes it's very slightly off from the video.
 										// This errs to have it too small rather than too large.
-										padding: const EdgeInsets.all(1),
+										padding: videoThumbnailMicroPadding ? const EdgeInsets.all(1) : EdgeInsets.zero,
 										child: AttachmentThumbnail(
 											attachment: attachment,
 											width: attachment.width?.toDouble() ?? double.infinity,
@@ -1111,7 +1091,7 @@ class AttachmentViewer extends StatelessWidget {
 									)
 								)
 							),
-							if (controller.videoPlayerController != null) IgnorePointer(
+							if (controller.videoPlayerController != null && (controller.isPrimary || !onlyRenderVideoWhenPrimary)) IgnorePointer(
 								child: Center(
 									child: RotatedBox(
 										quarterTurns: controller.rotate90DegreesClockwise ? 1 : 0,

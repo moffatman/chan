@@ -15,6 +15,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:mutex/mutex.dart';
 import 'package:provider/provider.dart';
 
 class AttachmentsPage extends StatefulWidget {
@@ -37,10 +38,31 @@ class AttachmentsPage extends StatefulWidget {
 class _AttachmentsPageState extends State<AttachmentsPage> {
 	final Map<TaggedAttachment, AttachmentViewerController> _controllers = {};
 	late final RefreshableListController<TaggedAttachment> _controller;
-	AttachmentViewerController? _lastPrimary;
+	TaggedAttachment? _lastPrimary;
+	AttachmentViewerController? get _lastPrimaryController {
+		if (_lastPrimary == null) {
+			return null;
+		}
+		return _controllers[_lastPrimary!];
+	}
 	bool _showAdjustmentOverlay = false;
 	double _lastScale = 1;
 	final _listKey = GlobalKey();
+	final _loadingLock = Mutex();
+	final _loadingQueue = <AttachmentViewerController>[];
+	TaggedAttachment? _lastMiddleVisibleItem;
+
+	void _queueLoading(AttachmentViewerController controller) {
+		_loadingQueue.add(controller);
+		_loadingLock.protect(() async {
+			if (_loadingQueue.isEmpty) {
+				return;
+			}
+			// LIFO stack
+			final item = _loadingQueue.removeLast();
+			await Future.microtask(() => item.preloadFullAttachment());
+		});
+	}
 
 	@override
 	void initState() {
@@ -57,14 +79,28 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 	}
 
 	void _onSlowScroll() {
-		final lastItem = _controller.middleVisibleItem;
-		if (lastItem != null) {
-			widget.onChange?.call(lastItem);
-			final primary = _controllers[lastItem];
-			if (primary != _lastPrimary) {
-				_lastPrimary?.isPrimary = false;
-				_controllers[lastItem]?.isPrimary = true;
-				_lastPrimary = primary;
+		final middleVisibleItem = _controller.middleVisibleItem;
+		if (middleVisibleItem != null) {
+			if (middleVisibleItem != _lastMiddleVisibleItem) {
+				widget.onChange?.call(middleVisibleItem);
+			}
+			final maxColumnWidth = context.read<EffectiveSettings>().attachmentsPageMaxCrossAxisExtent;
+			final screenWidth = (context.findRenderObject() as RenderBox?)?.paintBounds.width ?? double.infinity;
+			final columnCount = max(1, screenWidth ~/ maxColumnWidth);
+			if (columnCount == 1) {
+				// This is one-column view
+				if (middleVisibleItem != _lastMiddleVisibleItem) {
+					if (_lastMiddleVisibleItem != null) {
+						_getController(_lastMiddleVisibleItem!).isPrimary = false;
+					}
+					_getController(middleVisibleItem).isPrimary = true;
+				}
+			}
+			_lastMiddleVisibleItem = middleVisibleItem;
+		}
+		if (_lastPrimary != null) {
+			if (!_controller.isOnscreen(_lastPrimary!)) {
+				_lastPrimaryController?.isPrimary = false;
 			}
 		}
 	}
@@ -78,7 +114,12 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 				isPrimary: false
 			);
 			if (context.watch<EffectiveSettings>().autoloadAttachments) {
-				Future.microtask(() => controller.loadFullAttachment());
+				if (attachment.attachment.type.isVideo) {
+					_queueLoading(controller);
+				}
+				else {
+					Future.microtask(() => controller.preloadFullAttachment());
+				}
 			}
 			return controller;
 		});
@@ -143,51 +184,76 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 								}).toList(),
 								maxCrossAxisExtent: maxCrossAxisExtent
 							),
-							itemBuilder: (context, attachment) => CupertinoButton(
-								padding: EdgeInsets.zero,
-								onPressed: () async {
-									_getController(attachment).isPrimary = false;
-									await showGalleryPretagged(
-										context: context,
-										attachments: widget.attachments,
-										initialGoodSources: {
-											for (final controller in _controllers.values)
-												if (controller.goodImageSource != null)
-													controller.attachment: controller.goodImageSource!
-										},
-										initialAttachment: attachment,
-										isAttachmentAlreadyDownloaded: widget.threadState?.isAttachmentDownloaded,
-										onAttachmentDownload: widget.threadState?.didDownloadAttachment,
-										useHeroDestinationWidget: true,
-										heroOtherEndIsBoxFitCover: false
-									);
-									_getController(attachment).isPrimary = true;
-								},
-								child: IgnorePointer(
-									ignoring: false,
-									child: Hero(
-										tag: attachment,
-										createRectTween: (startRect, endRect) {
-											if (startRect != null && endRect != null && attachment.attachment.type == AttachmentType.image) {
-												// Need to deflate the original startRect because it has inbuilt layoutInsets
-												// This AttachmentViewer doesn't know about them.
-												final rootPadding = MediaQueryData.fromView(WidgetsBinding.instance.window).padding - sumAdditionalSafeAreaInsets();
-												startRect = rootPadding.deflateRect(startRect);
-											}
-											return RectTween(begin: startRect, end: endRect);
-										},
-										child: AnimatedBuilder(
-											animation: _getController(attachment),
-											builder: (context, child) => AttachmentViewer(
-												controller: _getController(attachment),
-												allowGestures: false,
-												semanticParentIds: const [-101],
+							itemBuilder: (context, attachment) => Stack(
+								alignment: Alignment.center,
+								children: [
+									CupertinoButton(
+										padding: EdgeInsets.zero,
+										onPressed: () async {
+											final wasPrimary = _getController(attachment).isPrimary;
+											_getController(attachment).isPrimary = false;
+											await showGalleryPretagged(
+												context: context,
+												attachments: widget.attachments,
+												initialGoodSources: {
+													for (final controller in _controllers.values)
+														if (controller.goodImageSource != null)
+															controller.attachment: controller.goodImageSource!
+												},
+												initialAttachment: attachment,
+												isAttachmentAlreadyDownloaded: widget.threadState?.isAttachmentDownloaded,
+												onAttachmentDownload: widget.threadState?.didDownloadAttachment,
 												useHeroDestinationWidget: true,
 												heroOtherEndIsBoxFitCover: false
+											);
+											_getController(attachment).isPrimary = wasPrimary;
+											Future.microtask(() => _getController(attachment).loadFullAttachment());
+										},
+										child: IgnorePointer(
+											child: Hero(
+												tag: attachment,
+												createRectTween: (startRect, endRect) {
+													if (startRect != null && endRect != null && attachment.attachment.type == AttachmentType.image) {
+														// Need to deflate the original startRect because it has inbuilt layoutInsets
+														// This AttachmentViewer doesn't know about them.
+														final rootPadding = MediaQueryData.fromView(WidgetsBinding.instance.window).padding - sumAdditionalSafeAreaInsets();
+														startRect = rootPadding.deflateRect(startRect);
+													}
+													return RectTween(begin: startRect, end: endRect);
+												},
+												child: AnimatedBuilder(
+													animation: _getController(attachment),
+													builder: (context, child) => SizedBox.expand(
+														child: AttachmentViewer(
+															controller: _getController(attachment),
+															allowGestures: false,
+															semanticParentIds: const [-101],
+															useHeroDestinationWidget: true,
+															heroOtherEndIsBoxFitCover: false,
+															videoThumbnailMicroPadding: false,
+															onlyRenderVideoWhenPrimary: true
+														)
+													)
+												)
+											)
+										)
+									),
+									AnimatedBuilder(
+										animation: _getController(attachment),
+										builder: (context, child) => Visibility(
+											visible: (attachment.attachment.type.isVideo && !_getController(attachment).isPrimary),
+											child: CupertinoButton(
+												onPressed: () {
+													_lastPrimaryController?.isPrimary = false;
+													Future.microtask(() => _getController(attachment).loadFullAttachment());
+													_lastPrimary = attachment;
+													_lastPrimaryController?.isPrimary = true;
+												},
+												child: const Icon(CupertinoIcons.play_fill, size: 50)
 											)
 										)
 									)
-								)
+								]
 							)
 						)
 					),
@@ -228,6 +294,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 		for (final controller in _controllers.values) {
 			controller.dispose();
 		}
+		_loadingQueue.clear();
 	}
 }
 
