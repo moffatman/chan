@@ -374,9 +374,6 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 		if (deletedCount > 0) {
 			print('Deleted $deletedCount files totalling ${(deletedSize / 1000000).toStringAsFixed(1)} MB');
 		}
-		else {
-			print('nutting');
-		}
 	}
 
 	Future<void> _cleanupThreads(Duration olderThan) async {
