@@ -356,7 +356,7 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 		int deletedSize = 0;
 		int deletedCount = 0;
 		await for (final child in temporaryDirectory.list(recursive: true)) {
-			final stat = child.statSync();
+			final stat = await child.stat();
 			if (stat.type == FileSystemEntityType.file) {
 				// Probably something from file_pickers
 				if (deadline == null || stat.accessed.compareTo(deadline) < 0) {
@@ -373,6 +373,9 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 		}
 		if (deletedCount > 0) {
 			print('Deleted $deletedCount files totalling ${(deletedSize / 1000000).toStringAsFixed(1)} MB');
+		}
+		else {
+			print('nutting');
 		}
 	}
 
