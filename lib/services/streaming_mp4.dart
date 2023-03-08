@@ -38,27 +38,52 @@ class StreamingMP4ConvertedFile implements StreamingMP4ConversionResult {
 	Duration? get duration => null;
 }
 
-(HttpServer, StreamSubscription<HttpRequest>)? _server;
+final _server = _Server();
 
-void _handleRequest(HttpRequest request) async {
-	final root = '${Persistence.temporaryDirectory.path}/webmcache';
-	final file = File('$root${Uri.decodeFull(request.uri.path)}');
-	if (!await file.exists() || !file.parent.path.startsWith(root)) {
-		request.response.statusCode = 404;
+class _Server {
+	HttpServer? _httpServer;
+
+	Future<void> _handleRequest(HttpRequest request) async {
+		final root = '${Persistence.temporaryDirectory.path}/webmcache';
+		final file = File('$root${Uri.decodeFull(request.uri.path)}');
+		if (!await file.exists() || !file.parent.path.startsWith(root)) {
+			request.response.statusCode = 404;
+			await request.response.close();
+			return;
+		}
+		request.response.contentLength = await file.length();
+		request.response.headers.set(HttpHeaders.contentTypeHeader, lookupMimeType(file.path) ?? 'video/mp4');
+		await request.response.addStream(file.openRead());
 		await request.response.close();
-		return;
 	}
-	request.response.contentLength = await file.length();
-	request.response.headers.set(HttpHeaders.contentTypeHeader, lookupMimeType(file.path) ?? 'video/mp4');
-	await request.response.addStream(file.openRead());
-	await request.response.close();
+
+	Future<void> ensureRunning() async {
+		if (_httpServer == null) {
+			_httpServer = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
+			print('started http server on port $port');
+			_httpServer!.listen(_handleRequest, cancelOnError: false, onDone: () => _restart(false));
+		}
+	}
+
+	Future<void> _restart(bool needClose) async {
+		if (needClose) {
+			await _httpServer?.close().timeout(const Duration(seconds: 1), onTimeout: () => _httpServer?.close(force: true));
+		}
+		_httpServer = null;
+		await ensureRunning();
+	}
+
+	Future<void> restartIfRunning() async {
+		if (_httpServer != null) {
+			await _restart(true);
+		}
+	}
+
+	static const port = 4070;
 }
 
-Future<(HttpServer, StreamSubscription<HttpRequest>)> _startServer() async {
-	final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-	print('started http server on port ${server.port}');
-	final stream = server.listen(_handleRequest, cancelOnError: false);
-	return (server, stream);
+Future<void> restartServerIfRunning() async {
+	await _server.restartIfRunning();
 }
 
 class StreamingMP4Conversion {
@@ -105,7 +130,6 @@ class StreamingMP4Conversion {
 	}
 
 	Future<StreamingMP4ConversionResult> start() async {
-		_server ??= await _startServer();
 		final mp4Conversion = MediaConversion.toMp4(inputFile, headers: headers, soundSource: soundSource);
 		final existingResult = await mp4Conversion.getDestinationIfSatisfiesConstraints();
 		if (existingResult != null) {
@@ -117,11 +141,12 @@ class StreamingMP4Conversion {
 		await Future.any([_waitForTwoTSFiles(streamingConversion.getDestination().parent), streamingConversion.result]);
 		if (await _areThereTwoTSFiles(streamingConversion.getDestination().parent)) {
 			await Future.delayed(const Duration(milliseconds: 50));
+			await _server.ensureRunning();
 			return StreamingMP4ConversionStream(
 				hlsStream: Uri(
 					scheme: 'http',
 					host: 'localhost',
-					port: _server!.$1.port,
+					port: _Server.port,
 					path: streamingConversion.getDestination().path.replaceFirst('${Persistence.temporaryDirectory.path}/webmcache/', '')
 				),
 				progress: streamingConversion.progress,

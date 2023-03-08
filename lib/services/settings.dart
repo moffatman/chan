@@ -9,6 +9,7 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/user_agents.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -1900,6 +1901,7 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 	void didChangeAppLifecycleState(AppLifecycleState state) {
 		if (state == AppLifecycleState.resumed) {
 			_checkConnectivity();
+			restartServerIfRunning();
 			context.read<EffectiveSettings>()._runAppResumeCallbacks();
 		}
 	}
