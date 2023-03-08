@@ -1470,31 +1470,42 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												quarterTurns: 1,
 												child: Icon(CupertinoIcons.rectangle_split_3x1, size: 19)
 											),
-											() {
+											() async {
 												const commonParentIds = [-101];
 												final nextPostWithImage = widget.listController.items.skip(max(0, widget.listController.firstVisibleIndex - 1)).firstWhere((p) => p.item.attachments.isNotEmpty, orElse: () {
 													return widget.listController.items.take(widget.listController.firstVisibleIndex).lastWhere((p) => p.item.attachments.isNotEmpty);
 												});
 												final imageboard = context.read<Imageboard>();
-												Navigator.of(context).push(FullWidthCupertinoPageRoute(
+												final attachments = widget.listController.items.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
+													attachment: a,
+													semanticParentIds: commonParentIds.followedBy(item.parentIds)
+												))).toList();
+												final initialAttachment = TaggedAttachment(
+													attachment: nextPostWithImage.item.attachments.first,
+													semanticParentIds: commonParentIds.followedBy(nextPostWithImage.parentIds)
+												);
+												final found = <Attachment, TaggedAttachment>{};
+												for (final a in attachments) {
+													found.putIfAbsent(a.attachment, () => a);
+												}
+												found[initialAttachment.attachment] = initialAttachment;
+												attachments.removeWhere((a) => found[a.attachment] != a);
+												final dest = await Navigator.of(context).push<TaggedAttachment>(FullWidthCupertinoPageRoute(
 													builder: (context) => ImageboardScope(
 														imageboardKey: null,
 														imageboard: imageboard,
 														child: AttachmentsPage(
-															attachments: widget.listController.items.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
-																attachment: a,
-																semanticParentIds: commonParentIds.followedBy(item.parentIds)
-															))).toList(),
-															initialAttachment: TaggedAttachment(
-																attachment: nextPostWithImage.item.attachments.first,
-																semanticParentIds: commonParentIds.followedBy(nextPostWithImage.parentIds)
-															),
+															attachments: attachments,
+															initialAttachment: initialAttachment,
 															threadState: widget.persistentState
 															//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
 														)
 													),
 													showAnimations: context.read<EffectiveSettings>().showAnimations)
 												);
+												if (dest != null) {
+													widget.listController.animateTo((p) => p.attachments.contains(dest.attachment));
+												}
 											}
 										),
 										('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch),

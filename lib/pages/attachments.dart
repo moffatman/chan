@@ -9,6 +9,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
+import 'package:chan/widgets/cupertino_context_menu2.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -209,30 +210,38 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 											_getController(attachment).isPrimary = wasPrimary;
 											Future.microtask(() => _getController(attachment).loadFullAttachment());
 										},
-										child: IgnorePointer(
-											child: Hero(
-												tag: attachment,
-												createRectTween: (startRect, endRect) {
-													if (startRect != null && endRect != null && attachment.attachment.type == AttachmentType.image) {
-														// Need to deflate the original startRect because it has inbuilt layoutInsets
-														// This AttachmentViewer doesn't know about them.
-														final rootPadding = MediaQueryData.fromView(WidgetsBinding.instance.window).padding - sumAdditionalSafeAreaInsets();
-														startRect = rootPadding.deflateRect(startRect);
-													}
-													return RectTween(begin: startRect, end: endRect);
-												},
-												child: AnimatedBuilder(
-													animation: _getController(attachment),
-													builder: (context, child) => SizedBox.expand(
-														child: AttachmentViewer(
-															controller: _getController(attachment),
-															allowGestures: false,
-															semanticParentIds: const [-101],
-															useHeroDestinationWidget: true,
-															heroOtherEndIsBoxFitCover: false,
-															videoThumbnailMicroPadding: false,
-															onlyRenderVideoWhenPrimary: true
-														)
+										child: Hero(
+											tag: attachment,
+											createRectTween: (startRect, endRect) {
+												if (startRect != null && endRect != null && attachment.attachment.type == AttachmentType.image) {
+													// Need to deflate the original startRect because it has inbuilt layoutInsets
+													// This AttachmentViewer doesn't know about them.
+													final rootPadding = MediaQueryData.fromView(WidgetsBinding.instance.window).padding - sumAdditionalSafeAreaInsets();
+													startRect = rootPadding.deflateRect(startRect);
+												}
+												return RectTween(begin: startRect, end: endRect);
+											},
+											child: AnimatedBuilder(
+												animation: _getController(attachment),
+												builder: (context, child) => SizedBox.expand(
+													child: AttachmentViewer(
+														controller: _getController(attachment),
+														allowGestures: false,
+														semanticParentIds: const [-101],
+														useHeroDestinationWidget: true,
+														heroOtherEndIsBoxFitCover: false,
+														videoThumbnailMicroPadding: false,
+														onlyRenderVideoWhenPrimary: true,
+														additionalContextMenuActions: [
+															CupertinoContextMenuAction2(
+																trailingIcon: CupertinoIcons.return_icon,
+																onPressed: () {
+																	Navigator.of(context, rootNavigator: true).pop();
+																	Navigator.pop(context, attachment);
+																},
+																child: const Text('Scroll to post')
+															)
+														]
 													)
 												)
 											)

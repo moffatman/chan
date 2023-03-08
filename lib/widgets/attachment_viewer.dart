@@ -674,6 +674,7 @@ class AttachmentViewer extends StatelessWidget {
 	final bool heroOtherEndIsBoxFitCover;
 	final bool videoThumbnailMicroPadding;
 	final bool onlyRenderVideoWhenPrimary;
+	final List<CupertinoContextMenuAction2> additionalContextMenuActions;
 
 	const AttachmentViewer({
 		required this.controller,
@@ -688,6 +689,7 @@ class AttachmentViewer extends StatelessWidget {
 		required this.heroOtherEndIsBoxFitCover,
 		this.videoThumbnailMicroPadding = true,
 		this.onlyRenderVideoWhenPrimary = false,
+		this.additionalContextMenuActions = const [],
 		Key? key
 	}) : super(key: key);
 
@@ -992,7 +994,8 @@ class AttachmentViewer extends StatelessWidget {
 							'url': attachment.url.toString()
 						})),
 						child: const Text('Search SauceNAO')
-					)
+					),
+					...additionalContextMenuActions
 				],
 				child: buildChild(true),
 				previewBuilder: (context, animation, child) => IgnorePointer(
