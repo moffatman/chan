@@ -875,7 +875,16 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get supportsPosting => true;
 	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds) async => throw UnimplementedError();
 	/// If an empty list is returned from here, the bottom of the catalog has been reached.
-	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async => [];
+	@protected
+	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) async => [];
+	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async {
+		final moreCatalog = await getMoreCatalogImpl(after, variant: variant);
+		_catalogCache.addAll({
+			for (final t in moreCatalog)
+				t.identifier: t
+		});
+		return moreCatalog;
+	}
 	bool get isHackerNews => false;
 	bool get isReddit => false;
 	bool get supportsMultipleBoards => true;

@@ -197,7 +197,7 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) async {
 		try {
 			final pageNumber = (after.currentPage ?? 0) + 1;
 			final doc = await _getCatalogPage(after.board, pageNumber.toString());

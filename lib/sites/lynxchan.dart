@@ -312,7 +312,7 @@ class SiteLynxchan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) async {
 		try {
 			return _getCatalogPage(after.board, (after.currentPage ?? 0) + 1);
 		}

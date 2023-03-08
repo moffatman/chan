@@ -442,7 +442,7 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) async {
 		if (variant == CatalogVariant.hackerNewsSecondChancePool) {
 			final ids = await _getSecondChancePoolIds(after.id);
 			return await Future.wait(ids.map(_getThreadForCatalog));
