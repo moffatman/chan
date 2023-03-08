@@ -482,6 +482,9 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	void _onLongPressStart() {
+		if (videoPlayerController == null) {
+			 return;
+		}
 		mediumHapticFeedback();
 		_playingBeforeLongPress = videoPlayerController!.value.isPlaying;
 		_millisecondsBeforeLongPress = videoPlayerController!.value.position.inMilliseconds;
