@@ -87,7 +87,7 @@ class _FilterEditorState extends State<FilterEditor> {
 			final labelController = TextEditingController(text: filter.label);
 			final patternFields = filter.patternFields.toList();
 			bool? hasFile = filter.hasFile;
-			bool threadOnly = filter.threadOnly;
+			bool? threadsOnly = filter.threadsOnly;
 			final List<String> boards = filter.boards.toList();
 			final List<String> excludeBoards = filter.excludeBoards.toList();
 			int? minRepliedTo = filter.minRepliedTo;
@@ -218,21 +218,25 @@ class _FilterEditorState extends State<FilterEditor> {
 									),
 									Padding(
 										padding: const EdgeInsets.all(16),
-										child: CupertinoSegmentedControl<bool>(
-											groupValue: threadOnly,
+										child: CupertinoSegmentedControl<NullSafeOptional>(
+											groupValue: threadsOnly.value,
 											onValueChanged: (v) {
 												setInnerState(() {
-													threadOnly = v;
+													threadsOnly = v.value;
 												});
 											},
 											children: const {
-												false: Padding(
+												NullSafeOptional.null_: Padding(
 													padding: EdgeInsets.all(8),
 													child: Text('All posts')
 												),
-												true: Padding(
+												NullSafeOptional.true_: Padding(
 													padding: EdgeInsets.all(8),
 													child: Text('Threads only')
+												),
+												NullSafeOptional.false_: Padding(
+													padding: EdgeInsets.all(8),
+													child: Text('Replies only')
 												)
 											}
 										)
@@ -464,7 +468,7 @@ class _FilterEditorState extends State<FilterEditor> {
 										boards: boards,
 										excludeBoards: excludeBoards,
 										hasFile: hasFile,
-										threadOnly: threadOnly,
+										threadsOnly: threadsOnly,
 										minRepliedTo: minRepliedTo,
 										minReplyCount: minReplyCount,
 										maxReplyCount: maxReplyCount,
@@ -537,6 +541,7 @@ class _FilterEditorState extends State<FilterEditor> {
 														'`;file:only` Only apply to posts with files\n'
 														'`;file:no` Only apply to posts without files\n'
 														'`;thread` Only apply to threads\n'
+														'`;reply` Only apply to replies\n'
 														'`;type:<list>` Only apply regex filter to certain fields\n'
 														'The list of possible fields is $allPatternFields\n'
 														'The default fields that are searched are $defaultPatternFields'
@@ -621,7 +626,8 @@ class _FilterEditorState extends State<FilterEditor> {
 																if (filter.value.minReplyCount != null && filter.value.maxReplyCount != null) TextSpan(text: '${filter.value.minReplyCount}-${filter.value.maxReplyCount} replies')
 																else if (filter.value.minReplyCount != null) TextSpan(text: '>=${filter.value.minReplyCount} replies')
 																else if (filter.value.maxReplyCount != null) TextSpan(text: '<=${filter.value.maxReplyCount} replies'),
-																if (filter.value.threadOnly) const TextSpan(text: 'Threads only'),
+																if (filter.value.threadsOnly == true) const TextSpan(text: 'Threads only')
+																else if (filter.value.threadsOnly == false) const TextSpan(text: 'Replies only'),
 																if (filter.value.hasFile == true) const WidgetSpan(
 																	child: Icon(CupertinoIcons.doc)
 																)

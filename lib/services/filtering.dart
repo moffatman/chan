@@ -87,7 +87,7 @@ class CustomFilter implements Filter {
 	List<String> boards;
 	List<String> excludeBoards;
 	bool? hasFile;
-	bool threadOnly;
+	bool? threadsOnly;
 	int? minRepliedTo;
 	bool disabled;
 	int? minReplyCount;
@@ -102,7 +102,7 @@ class CustomFilter implements Filter {
 		this.boards = const [],
 		this.excludeBoards = const [],
 		this.hasFile,
-		this.threadOnly = false,
+		this.threadsOnly,
 		this.minRepliedTo,
 		this.minReplyCount,
 		this.maxReplyCount
@@ -135,7 +135,7 @@ class CustomFilter implements Filter {
 		if (hasFile != null && hasFile != item.hasFile) {
 			return null;
 		}
-		if (threadOnly == true && !item.isThread) {
+		if (threadsOnly == !item.isThread) {
 			return null;
 		}
 		if (minRepliedTo != null && item.repliedToIds.length < minRepliedTo!) {
@@ -210,7 +210,10 @@ class CustomFilter implements Filter {
 				filter.hasFile = false;
 			}
 			else if (s == 'thread') {
-				filter.threadOnly = true;
+				filter.threadsOnly = true;
+			}
+			else if (s == 'reply') {
+				filter.threadsOnly = false;
 			}
 			else if (s.startsWith('minReplied')) {
 				filter.minRepliedTo = int.tryParse(s.split(':')[1]);
@@ -288,8 +291,11 @@ class CustomFilter implements Filter {
 		else if (hasFile == false) {
 			out.write(';file:no');
 		}
-		if (threadOnly) {
+		if (threadsOnly == true) {
 			out.write(';thread');
+		}
+		else if (threadsOnly == false) {
+			out.write(';reply');
 		}
 		if (minRepliedTo != null) {
 			out.write(';minReplied:$minRepliedTo');
@@ -304,7 +310,7 @@ class CustomFilter implements Filter {
 	}
 
 	@override
-	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadOnly: $threadOnly, minRepliedTo: $minRepliedTo, minReplyCount: $minReplyCount, maxReplyCount: $maxReplyCount)';
+	String toString() => 'CustomFilter(configuration: $configuration, pattern: $pattern, patternFields: $patternFields, outputType: $outputType, boards: $boards, excludeBoards: $excludeBoards, hasFile: $hasFile, threadsOnly: $threadsOnly, minRepliedTo: $minRepliedTo, minReplyCount: $minReplyCount, maxReplyCount: $maxReplyCount)';
 
 	@override
 	operator == (dynamic other) => other is CustomFilter && other.configuration == configuration;
