@@ -620,7 +620,11 @@ class Site4Chan extends ImageboardSite {
 				if (errSpan.text.toLowerCase().contains('ban') || errSpan.text.toLowerCase().contains('warn')) {
 					throw BannedException(errSpan.text);
 				}
-				throw PostFailedException(errSpan.text);
+				String message = errSpan.text;
+				if (response.cloudflare && message.toLowerCase().contains('our system thinks your post is spam')) {
+					message += '\n--\nNote from Chance: This occurs often when encountering Cloudflare. The post will likely be accepted if you try resubmitting it.';
+				}
+				throw PostFailedException(message);
 			}
 			else {
 				print(response.data);
