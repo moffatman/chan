@@ -30,6 +30,7 @@ class Thread implements Filterable {
 	bool attachmentDeleted;
 	final List<Attachment> attachments;
 	ThreadVariant? suggestedVariant;
+	String? archiveName;
 	Thread({
 		required this.posts_,
 		this.isArchived = false,
@@ -48,7 +49,8 @@ class Thread implements Filterable {
 		this.uniqueIPCount,
 		this.customSpoilerId,
 		required this.attachments,
-		this.suggestedVariant
+		this.suggestedVariant,
+		this.archiveName
 	}) {
 		if (deprecatedAttachment != null) {
 			attachments.insert(0, deprecatedAttachment!);
@@ -299,7 +301,8 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       customSpoilerId: fields[14] as int?,
       attachments:
           fields[16] == null ? [] : (fields[16] as List).cast<Attachment>(),
-			suggestedVariant: fields[17] as ThreadVariant?
+			suggestedVariant: fields[17] as ThreadVariant?,
+			archiveName: fields[18] as String?
     );
   }
 
@@ -343,6 +346,9 @@ class ThreadAdapter extends TypeAdapter<Thread> {
 		}
 		if (obj.suggestedVariant != null) {
 			writer..writeByte(17)..write(obj.suggestedVariant);
+		}
+		if (obj.archiveName != null) {
+			writer..writeByte(18)..write(obj.archiveName);
 		}
 		writer
       ..writeByte(0)

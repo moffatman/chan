@@ -817,6 +817,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 				if (validate != null) {
 					await validate(thread_);
 				}
+				thread_.archiveName = archive.name;
 				return thread_;
 			}
 			catch(e) {
