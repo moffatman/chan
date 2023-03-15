@@ -9,6 +9,7 @@ import 'package:mime/mime.dart';
 abstract class StreamingMP4ConversionResult {
 	bool get hasAudio;
 	Duration? get duration;
+	bool get isAudioOnly;
 }
 
 class StreamingMP4ConversionStream implements StreamingMP4ConversionResult {
@@ -19,12 +20,15 @@ class StreamingMP4ConversionStream implements StreamingMP4ConversionResult {
 	final bool hasAudio;
 	@override
 	final Duration? duration;
+	@override
+	final bool isAudioOnly;
 	const StreamingMP4ConversionStream({
 		required this.hlsStream,
 		required this.mp4File,
 		required this.progress,
 		required this.hasAudio,
-		required this.duration
+		required this.duration,
+		required this.isAudioOnly
 	});
 }
 
@@ -33,6 +37,7 @@ class StreamingMP4ConvertedFile implements StreamingMP4ConversionResult {
 	const StreamingMP4ConvertedFile(this.mp4File, this.hasAudio, this.isAudioOnly);
 	@override
 	final bool hasAudio;
+	@override
 	final bool isAudioOnly;
 	@override
 	Duration? get duration => null;
@@ -130,6 +135,7 @@ class StreamingMP4Conversion {
 	}
 
 	Future<StreamingMP4ConversionResult> start() async {
+		final surelyAudioOnly = ['jpg', 'jpeg', 'png'].contains(inputFile.path.split('.').last.toLowerCase());
 		final mp4Conversion = MediaConversion.toMp4(inputFile, headers: headers, soundSource: soundSource);
 		final existingResult = await mp4Conversion.getDestinationIfSatisfiesConstraints();
 		if (existingResult != null) {
@@ -152,13 +158,14 @@ class StreamingMP4Conversion {
 				progress: streamingConversion.progress,
 				mp4File: _joinedCompleter.future,
 				hasAudio: streamingConversion.cachedScan?.hasAudio ?? false,
-				duration: streamingConversion.cachedScan?.duration
+				duration: streamingConversion.cachedScan?.duration,
+				isAudioOnly: surelyAudioOnly || (streamingConversion.cachedScan?.isAudioOnly ?? false)
 			);
 		}
 		else {
 			// Better to just wait and return the mp4
 			final file = await _joinedCompleter.future;
-			return StreamingMP4ConvertedFile(file, streamingConversion.cachedScan?.hasAudio ?? false, streamingConversion.cachedScan?.isAudioOnly ?? false);
+			return StreamingMP4ConvertedFile(file, streamingConversion.cachedScan?.hasAudio ?? false, surelyAudioOnly || (streamingConversion.cachedScan?.isAudioOnly ?? false));
 		}
 	}
 

@@ -397,6 +397,7 @@ class AttachmentViewerController extends ChangeNotifier {
 							_videoPlayerController = VideoPlayerController.network(result.hlsStream.toString(), formatHint: VideoFormat.hls, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
 						}
 						_videoLoadingProgress = result.progress;
+						isAudioOnly = result.isAudioOnly;
 						_swapIncoming = true;
 						result.mp4File.then((mp4File) async {
 							_cachedFile = mp4File;

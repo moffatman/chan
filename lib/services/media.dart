@@ -160,7 +160,7 @@ class MediaScan {
 	bool get isAudioOnly => videoFramerate?.isNaN ?? true;
 
 	@override
-	String toString() => 'MediaScan(hasAudio: $hasAudio, duration: $duration, bitrate: $bitrate)';
+	String toString() => 'MediaScan(hasAudio: $hasAudio, duration: $duration, bitrate: $bitrate, width: $width, height: $height, codec: $codec, videoFramerate: $videoFramerate)';
 }
 
 class MediaConversion {
@@ -393,7 +393,7 @@ class MediaConversion {
 					bool passedFirstEvent = false;
 					FFmpegKitConfig.enableStatisticsCallback((stats) {
 						if (stats.getSessionId() == _session?.getSessionId()) {
-							if (scan.duration != null && passedFirstEvent && outputDurationInMilliseconds != null) {
+							if (passedFirstEvent && outputDurationInMilliseconds != null) {
 								progress.value = (stats.getTime() / outputDurationInMilliseconds).clamp(0, 1);
 							}
 							passedFirstEvent = true;
