@@ -537,7 +537,7 @@ class SiteReddit extends ImageboardSite {
 			final things = response.data['json']['data']['things'];
 			for (final thing in things) {
 				final parentId = fromRedditId(thing['data']['parent'].split('_')[1]);
-				if (thing['data']['id'] == 't1__') {
+				if (thing['kind'] == 'more' || thing['data']['id'] == 't1__') {
 					newPosts[parentId]?.hasOmittedReplies = true;
 				}
 				else {
@@ -563,7 +563,7 @@ class SiteReddit extends ImageboardSite {
 						text: thing['data']['contentText'],
 						name: doc.querySelector('.author')?.text ?? '',
 						flag: flag,
-						time: DateTime.tryParse(doc.querySelector('.live-timestamp')?.attributes['datetime'] ?? '') ?? DateTime(2000),
+						time: DateTime.tryParse(doc.querySelector('.live-timestamp')?.attributes['datetime'] ?? '') ?? _estimateTime(id),
 						threadId: thread.id,
 						parentId: parentId,
 						id: id,
