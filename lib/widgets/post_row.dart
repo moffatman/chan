@@ -46,6 +46,8 @@ class PostRow extends StatelessWidget {
 	final bool showBoardName;
 	final bool showYourPostBorder;
 	final bool highlight;
+	final Widget? overrideReplyCount;
+	final bool dim;
 
 	const PostRow({
 		required this.post,
@@ -63,6 +65,8 @@ class PostRow extends StatelessWidget {
 		this.showYourPostBorder = true,
 		this.highlight = false,
 		this.baseOptions,
+		this.overrideReplyCount,
+		this.dim = false,
 		Key? key
 	}) : super(key: key);
 
@@ -128,7 +132,7 @@ class PostRow extends StatelessWidget {
 		content(double factor) => PostSpanZone(
 			postId: latestPost.id,
 			builder: (ctx) => Padding(
-				padding: const EdgeInsets.all(8),
+				padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 				child: IgnorePointer(
 					ignoring: !allowTappingLinks,
 					child: ConditionalOnTapUp(
@@ -159,14 +163,33 @@ class PostRow extends StatelessWidget {
 										(baseOptions ?? PostSpanRenderOptions()).copyWith(
 											showCrossThreadLabel: showCrossThreadLabel,
 											shrinkWrap: shrinkWrap,
-											postInject: replyIds.isEmpty ? null : TextSpan(
+											postInject: overrideReplyCount != null ? WidgetSpan(
+												alignment: PlaceholderAlignment.top,
+												child: Visibility(
+													visible: false,
+													maintainSize: true,
+													maintainAnimation: true,
+													maintainState: true,
+													child: Padding(
+														padding: const EdgeInsets.only(left: 8, right: 8),
+														child: overrideReplyCount!
+													)
+												)
+											) : (replyIds.isEmpty ? null : TextSpan(
 												text: List.filled(replyIds.length.toString().length + 4, '1').join(),
 												style: const TextStyle(color: Colors.transparent)
-											)
+											))
+										)
+									),
+									const WidgetSpan(
+										child: SizedBox(
+											width: double.infinity,
+											height: 16
 										)
 									)
 								]
-							)
+							),
+							overflow: TextOverflow.fade
 						)
 					)
 				)
@@ -177,58 +200,61 @@ class PostRow extends StatelessWidget {
 				const SizedBox(width: 8),
 				if (latestPost.attachments.isNotEmpty && settings.showImages(context, latestPost.board)) Padding(
 					padding: (settings.imagesOnRight && replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32) : EdgeInsets.zero,
-					child: Column(
-						mainAxisSize: MainAxisSize.min,
-						children: latestPost.attachments.map((attachment) => PopupAttachment(
-							attachment: attachment,
-							child: CupertinoButton(
-								padding: EdgeInsets.zero,
-								minSize: 0,
-								child: Container(
-									alignment: Alignment.center,
-									constraints: BoxConstraints(
-										minWidth: settings.thumbnailSize,
-										minHeight: 75
-									),
-									child: Stack(
-										children: [
-											AttachmentThumbnail(
-												attachment: attachment,
-												thread: latestPost.threadIdentifier,
-												onLoadError: onThumbnailLoadError,
-												hero: TaggedAttachment(
+					child: ClippingBox(
+						fade: true,
+						child: Column(
+							mainAxisSize: MainAxisSize.min,
+							children: latestPost.attachments.map((attachment) => PopupAttachment(
+								attachment: attachment,
+								child: CupertinoButton(
+									padding: EdgeInsets.zero,
+									minSize: 0,
+									child: Container(
+										alignment: Alignment.center,
+										constraints: BoxConstraints(
+											minWidth: settings.thumbnailSize,
+											minHeight: 75
+										),
+										child: Stack(
+											children: [
+												AttachmentThumbnail(
 													attachment: attachment,
-													semanticParentIds: parentZone.stackIds
+													thread: latestPost.threadIdentifier,
+													onLoadError: onThumbnailLoadError,
+													hero: TaggedAttachment(
+														attachment: attachment,
+														semanticParentIds: parentZone.stackIds
+													),
+													shrinkHeight: true,
+													shrinkWidth: true
 												),
-												shrinkHeight: true,
-												shrinkWidth: true
-											),
-											if (attachment.soundSource != null || attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned.fill(
-												child: Align(
-													alignment: Alignment.bottomRight,
-													child: Container(
-														decoration: BoxDecoration(
-															borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-															color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-															border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-														),
-														padding: const EdgeInsets.all(2),
-														child: attachment.soundSource != null ?
-															const Icon(CupertinoIcons.volume_up, size: 16) :
-															attachment.type.isVideo ?
-																const Icon(CupertinoIcons.play_arrow_solid, size: 16) :
-																const Icon(CupertinoIcons.link, size: 16)
+												if (attachment.soundSource != null || attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned.fill(
+													child: Align(
+														alignment: Alignment.bottomRight,
+														child: Container(
+															decoration: BoxDecoration(
+																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+															),
+															padding: const EdgeInsets.all(2),
+															child: attachment.soundSource != null ?
+																const Icon(CupertinoIcons.volume_up, size: 16) :
+																attachment.type.isVideo ?
+																	const Icon(CupertinoIcons.play_arrow_solid, size: 16) :
+																	const Icon(CupertinoIcons.link, size: 16)
+														)
 													)
 												)
-											)
-										]
-									)
-								),
-								onPressed: () {
-									onThumbnailTap?.call(attachment);
-								}
-							)
-						)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
+											]
+										)
+									),
+									onPressed: () {
+										onThumbnailTap?.call(attachment);
+									}
+								)
+							)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
+						)
 					)
 				)
 				else if (latestPost.attachmentDeleted) Center(
@@ -261,7 +287,6 @@ class PostRow extends StatelessWidget {
 					)
 				},
 				child: Container(
-					padding: const EdgeInsets.only(bottom: 8),
 					decoration: BoxDecoration(
 						border: border,
 						color: isSelected ?
@@ -270,68 +295,92 @@ class PostRow extends StatelessWidget {
 					),
 					child: Stack(
 						children: [
-							Column(
-								mainAxisSize: MainAxisSize.min,
-								crossAxisAlignment: CrossAxisAlignment.start,
-								children: [
-									const SizedBox(height: 8),
-									Padding(
-										padding: const EdgeInsets.only(left: 8, right: 8),
-										child: PostSpanZone(
-											postId: latestPost.id,
-											builder: (ctx) => ValueListenableBuilder<bool>(
-												valueListenable: settings.supportMouse,
-												builder: (context, supportMouse, child) => Text.rich(
-													TextSpan(
-														children: [
-															...buildPostInfoRow(
-																post: latestPost,
-																isYourPost: isYourPost,
-																showSiteIcon: showSiteIcon,
-																showBoardName: showBoardName,
-																settings: settings,
-																site: site,
-																context: context,
-																zone: ctx.watch<PostSpanZoneData>()
-															),
-															if (supportMouse) ...[
-																...replyIds.map((id) => PostQuoteLinkSpan(
-																	board: latestPost.board,
-																	threadId: latestPost.threadId,
-																	postId: id,
-																	dead: false
-																).build(ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
-																	showCrossThreadLabel: showCrossThreadLabel,
-																	addExpandingPosts: false,
-																	shrinkWrap: shrinkWrap
-																))),
-																...replyIds.map((id) => WidgetSpan(
-																	child: ExpandingPost(id: id),
-																))
-															].expand((span) => [span, const TextSpan(text: ' ')])
-														]
+							Opacity(
+								opacity: dim ? 0.5 : 1,
+								child: Column(
+									mainAxisSize: MainAxisSize.min,
+									crossAxisAlignment: CrossAxisAlignment.start,
+									children: [
+										const SizedBox(height: 8),
+										Padding(
+											padding: const EdgeInsets.only(left: 8, right: 8),
+											child: PostSpanZone(
+												postId: latestPost.id,
+												builder: (ctx) => ValueListenableBuilder<bool>(
+													valueListenable: settings.supportMouse,
+													builder: (context, supportMouse, child) => Text.rich(
+														TextSpan(
+															children: [
+																...buildPostInfoRow(
+																	post: latestPost,
+																	isYourPost: isYourPost,
+																	showSiteIcon: showSiteIcon,
+																	showBoardName: showBoardName,
+																	settings: settings,
+																	site: site,
+																	context: context,
+																	zone: ctx.watch<PostSpanZoneData>()
+																),
+																if (supportMouse) ...[
+																	...replyIds.map((id) => PostQuoteLinkSpan(
+																		board: latestPost.board,
+																		threadId: latestPost.threadId,
+																		postId: id,
+																		dead: false
+																	).build(ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+																		showCrossThreadLabel: showCrossThreadLabel,
+																		addExpandingPosts: false,
+																		shrinkWrap: shrinkWrap
+																	))),
+																	...replyIds.map((id) => WidgetSpan(
+																		child: ExpandingPost(id: id),
+																	))
+																].expand((span) => [span, const TextSpan(text: ' ')])
+															]
+														)
 													)
 												)
 											)
+										),
+										const SizedBox(height: 2),
+										Flexible(
+											child: Row(
+												crossAxisAlignment: CrossAxisAlignment.start,
+												mainAxisAlignment: MainAxisAlignment.start,
+												mainAxisSize: MainAxisSize.min,
+												children: settings.imagesOnRight ? mainRow.reversed.toList() : mainRow
+											)
 										)
-									),
-									const SizedBox(height: 2),
-									Flexible(
-										child: Row(
-											crossAxisAlignment: CrossAxisAlignment.start,
-											mainAxisAlignment: MainAxisAlignment.start,
-											mainAxisSize: MainAxisSize.min,
-											children: settings.imagesOnRight ? mainRow.reversed.toList() : mainRow
+									]
+								)
+							),
+							if (overrideReplyCount != null) Positioned.fill(
+								child: Align(
+									alignment: Alignment.bottomRight,
+									child: DecoratedBox(
+										decoration: BoxDecoration(
+											gradient: LinearGradient(
+												begin: Alignment.centerRight,
+												end: Alignment.centerLeft,
+												colors: [
+													settings.theme.backgroundColor,
+													settings.theme.backgroundColor.withOpacity(0)
+												]
+											)
+										),
+										child: Padding(
+											padding: const EdgeInsets.all(16),
+											child: overrideReplyCount!
 										)
 									)
-								]
-							),
-							if (replyIds.isNotEmpty) Positioned.fill(
+								)
+							)
+							else if (replyIds.isNotEmpty) Positioned.fill(
 								child: Align(
 									alignment: Alignment.bottomRight,
 									child: CupertinoButton(
 										alignment: Alignment.bottomRight,
-										padding: const EdgeInsets.only(bottom: 8, right: 16),
+										padding: const EdgeInsets.only(bottom: 16, right: 16),
 										onPressed: openReplies,
 										child: Transform.scale(
 											alignment: Alignment.bottomRight,
@@ -361,24 +410,27 @@ class PostRow extends StatelessWidget {
 							if (savedPost != null || translatedPostSnapshot != null) Positioned.fill(
 								child: Align(
 									alignment: Alignment.topRight,
-									child: Container(
-										decoration: BoxDecoration(
-											borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
-											color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-											border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-										),
-										padding: const EdgeInsets.only(top: 2, bottom: 2, left: 6, right: 6),
-										child: Row(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												if (translatedPostSnapshot != null) const Icon(Icons.translate),
-												if (translatedPostSnapshot?.hasError ?? false) GestureDetector(
-													onTap: () => alertError(context, translatedPostSnapshot?.error?.toStringDio() ?? 'Unknown'),
-													child: const Icon(CupertinoIcons.exclamationmark_triangle)
-												)
-												else if (translatedPostSnapshot?.hasData == false) const CupertinoActivityIndicator(),
-												if (savedPost != null) const Icon(CupertinoIcons.bookmark_fill, size: 18)
-											]
+									child: Opacity(
+										opacity: dim ? 0.5 : 1,
+										child: Container(
+											decoration: BoxDecoration(
+												borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
+												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+												border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+											),
+											padding: const EdgeInsets.only(top: 2, bottom: 2, left: 6, right: 6),
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													if (translatedPostSnapshot != null) const Icon(Icons.translate),
+													if (translatedPostSnapshot?.hasError ?? false) GestureDetector(
+														onTap: () => alertError(context, translatedPostSnapshot?.error?.toStringDio() ?? 'Unknown'),
+														child: const Icon(CupertinoIcons.exclamationmark_triangle)
+													)
+													else if (translatedPostSnapshot?.hasData == false) const CupertinoActivityIndicator(),
+													if (savedPost != null) const Icon(CupertinoIcons.bookmark_fill, size: 18)
+												]
+											)
 										)
 									)
 								)

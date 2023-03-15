@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/pages/board.dart';
@@ -230,7 +230,7 @@ class TransparentRoute<T> extends PageRoute<T> {
 		return FadeTransition(
 			opacity: animation,
 			child: Persistence.settings.blurEffects ? BackdropFilter(
-				filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+				filter: ui.ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
 				child: child
 			) : child
 		);
@@ -774,41 +774,83 @@ class MaybeCupertinoScrollbar extends StatelessWidget {
 }
 
 class _RenderTrulyUnconstrainedBox extends RenderProxyBox {
-	_RenderTrulyUnconstrainedBox();
+	bool fade;
+	bool _hasVerticalOverflow = false;
+
+	_RenderTrulyUnconstrainedBox({
+		required this.fade
+	});
+
   @override
   void performLayout() {
     if (child != null) {
       child!.layout(constraints.copyWith(maxHeight: double.infinity), parentUsesSize: true);
       size = constraints.constrain(child!.size);
+			_hasVerticalOverflow = child!.size.height > size.height;
     } else {
       size = computeSizeForNoChild(constraints);
+			_hasVerticalOverflow = false;
+    }
+  }
+
+	@override
+  void paint(PaintingContext context, Offset offset) {
+    if (child != null) {
+			if (fade && _hasVerticalOverflow) {
+				context.canvas.saveLayer(offset & size, Paint());
+				context.paintChild(child!, offset);
+				context.canvas.translate(offset.dx, offset.dy);
+				final Paint paint = Paint()
+          ..blendMode = BlendMode.modulate
+          ..shader = ui.Gradient.linear(
+              Offset(0.0, size.height - (size.height ~/ 4)),
+              Offset(0.0, size.height),
+              <Color>[const Color(0xFFFFFFFF), const Color(0x00FFFFFF)],
+            );
+        context.canvas.drawRect(Offset.zero & size, paint);
+				context.canvas.restore();
+			}
+			else {
+				context.paintChild(child!, offset);
+			}
     }
   }
 }
 
 class _TrulyUnconstrainedBox extends SingleChildRenderObjectWidget {
+	final bool fade;
+
 	const _TrulyUnconstrainedBox({
-		Key? key,
-		required Widget child
-	}) : super(key: key, child: child);
+		required super.child,
+		required this.fade
+	});
 
 	@override
 	_RenderTrulyUnconstrainedBox createRenderObject(BuildContext context) {
-		return _RenderTrulyUnconstrainedBox();
+		return _RenderTrulyUnconstrainedBox(fade: fade);
+	}
+	
+	@override
+	void updateRenderObject(BuildContext context, _RenderTrulyUnconstrainedBox renderObject) {
+		renderObject.fade = fade;
 	}
 }
 
 class ClippingBox extends StatelessWidget {
 	final Widget child;
+	final bool fade;
+
 	const ClippingBox({
 		Key? key,
-		required this.child
+		required this.child,
+		this.fade = false
 	}) : super(key: key);
 
 	@override
 	Widget build(BuildContext context) {
 		return ClipRect(
 			child: _TrulyUnconstrainedBox(
+				fade: fade,
 				child: child
 			)
 		);
@@ -905,7 +947,7 @@ Future<void> editStringList({
 								alignment: Alignment.bottomCenter,
 								child: ClipRect(
 									child: BackdropFilter(
-										filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+										filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
 											child: Container(
 											color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.1),
 											child: Column(

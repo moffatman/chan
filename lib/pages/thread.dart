@@ -557,6 +557,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			if ((site.isReddit || site.isHackerNews) && !useTree) (a, b) => a.id.compareTo(b.id)
 		];
 		zone.tree = useTree;
+		final treeModeInitiallyCollapseSecondLevelReplies = context.select<Persistence, bool>((s) => s.browserState.treeModeInitiallyCollapseSecondLevelReplies);
 		return WillPopScope(
 			onWillPop: () async {
 				if (_replyBoxKey.currentState?.show ?? false) {
@@ -794,8 +795,9 @@ class _ThreadPageState extends State<ThreadPage> {
 																		initialList: persistentState.thread?.posts,
 																		useTree: useTree,
 																		initialCollapsedItems: persistentState.collapsedItems,
-																		onCollapsedItemsChanged: (newCollapsedItems) {
+																		onCollapsedItemsChanged: (newCollapsedItems, newPrimarySubtreeParents) {
 																			persistentState.collapsedItems = newCollapsedItems.toList();
+																			persistentState.primarySubtreeParents = newPrimarySubtreeParents;
 																			_saveQueued = true;
 																		},
 																		treeAdapter: RefreshableTreeAdapter(
@@ -820,7 +822,8 @@ class _ThreadPageState extends State<ThreadPage> {
 																				return post.span.estimateLines(
 																					(width / (0.55 * fontSize * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil().toDouble()
 																				).ceil() * fontSize;
-																			}
+																			},
+																			initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies
 																		),
 																		footer: Container(
 																			padding: const EdgeInsets.all(16),
@@ -917,12 +920,48 @@ class _ThreadPageState extends State<ThreadPage> {
 																		collapsedItemBuilder: ({
 																			required BuildContext context,
 																			required Post? value,
-																			required int collapsedChildrenCount,
+																			required Set<int> collapsedChildIds,
 																			required bool loading,
+																			required double? peekContentHeight,
 																			required List<ParentAndChildIdentifier>? stubChildIds
 																		}) {
 																			final settings = context.watch<EffectiveSettings>();
-																			final unseenCount = value?.replyIds.where((id) => id > lastSeenIdBeforeLastUpdate).length ?? 0;
+																			final unseenCount = collapsedChildIds.where((id) => id > lastSeenIdBeforeLastUpdate).length;
+																			if (peekContentHeight != null && value != null) {
+																				final style = TextStyle(
+																					color: settings.theme.secondaryColor,
+																					fontWeight: FontWeight.bold
+																				);
+																				final post = PostRow(
+																					post: value,
+																					dim: peekContentHeight.isFinite,
+																					overrideReplyCount: Row(
+																						mainAxisSize: MainAxisSize.min,
+																						children: [
+																							RotatedBox(
+																								quarterTurns: 1,
+																								child: Icon(CupertinoIcons.chevron_right_2, size: 14, color: settings.theme.secondaryColor)
+																							),
+																							if (collapsedChildIds.isNotEmpty) Text(
+																								' ${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''}',
+																								style: style
+																							),
+																							if (unseenCount > 0) Text(
+																								' ($unseenCount new)',
+																								style: style
+																							)
+																						]
+																					)
+																				);
+																				return IgnorePointer(
+																					child: ConstrainedBox(
+																						constraints: BoxConstraints(
+																							maxHeight: peekContentHeight
+																						),
+																						child: post
+																					)
+																				);
+																			}
 																			return IgnorePointer(
 																				child: Container(
 																					width: double.infinity,
@@ -949,8 +988,8 @@ class _ThreadPageState extends State<ThreadPage> {
 																								const CupertinoActivityIndicator(),
 																								const Text(' ')
 																							],
-																							if (collapsedChildrenCount > 0) Text(
-																								'$collapsedChildrenCount '
+																							if (collapsedChildIds.isNotEmpty) Text(
+																								'${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''} '
 																							),
 																							if (unseenCount > 0) Text(
 																								'($unseenCount new) '
@@ -1164,7 +1203,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			}
 			// TODO: Determine if this needs to be / can be memoized
 			for (int i = 0; i < items.length - 1; i++) {
-				if (items[i].preCollapsed) {
+				if (items[i].isHidden.isDuplicate) {
 					continue;
 				}
 				if (i > treeModeFurthestSeenIndexBottom) {
@@ -1207,7 +1246,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 					_greyCount += max(1, items[i].representsKnownStubChildren.length);
 				}
 			}
-			if (!items.last.preCollapsed) {
+			if (!items.last.filterCollapsed) {
 				if (items.last.representsKnownStubChildren.isNotEmpty) {
 					for (final stubChild in items.last.representsKnownStubChildren) {
 						if (stubChild.childId > widget.lastSeenIdBeforeLastUpdate) {
@@ -1556,10 +1595,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												int targetIndex = widget.listController.items.toList().asMap().entries.tryFirstWhere((entry) {
 													return entry.key > treeModeFurthestSeenIndexBottom &&
 														(entry.value.item.id > widget.lastSeenIdBeforeLastUpdate || entry.value.representsKnownStubChildren.any((id) => id.childId > widget.lastSeenIdBeforeLastUpdate)) &&
-														!entry.value.preCollapsed;
+														!entry.value.filterCollapsed;
 												})?.key ?? -1;
 												if (targetIndex != -1) {
-													while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)) == TreeItemCollapseType.childCollapsed) {
+													while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)).isHidden) {
 														// Align to parent if the target has been collapsed
 														targetIndex++;
 													}
@@ -1694,10 +1733,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 										int targetIndex = widget.listController.items.toList().asMap().entries.tryLastWhere((entry) {
 											return entry.key < treeModeFurthestSeenIndexTop &&
 												(entry.value.item.id > widget.lastSeenIdBeforeLastUpdate || entry.value.representsKnownStubChildren.any((id) => id.childId > widget.lastSeenIdBeforeLastUpdate)) &&
-												!entry.value.preCollapsed;
+												!entry.value.filterCollapsed;
 										})?.key ?? -1;
 										if (targetIndex != -1) {
-											while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)) == TreeItemCollapseType.childCollapsed) {
+											while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)).isHidden) {
 												// Align to parent if the target has been collapsed
 												targetIndex--;
 											}

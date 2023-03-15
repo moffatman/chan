@@ -855,6 +855,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	String imageboardKey;
 	// Don't persist this
 	Thread? _thread;
+	@HiveField(21, defaultValue: {})
+	Map<int, int> primarySubtreeParents = {};
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
@@ -1174,6 +1176,8 @@ class PersistentBrowserState {
 	final Map<String, CatalogVariant> catalogVariants;
 	@HiveField(18, defaultValue: {})
 	final Map<String, String> postingNames;
+	@HiveField(19, defaultValue: false)
+	bool treeModeInitiallyCollapseSecondLevelReplies;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -1190,7 +1194,8 @@ class PersistentBrowserState {
 		required this.deprecatedBoardReverseSortings,
 		required this.catalogVariants,
 		required this.postingNames,
-		this.useTree
+		this.useTree,
+		this.treeModeInitiallyCollapseSecondLevelReplies = false
 	}) : hiddenImageMD5s = hiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};

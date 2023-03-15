@@ -237,13 +237,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       catalogGridModeShowMoreImageIfLessText: fields[117] as bool?,
       showPostNumberOnPosts: fields[118] as bool?,
       overscrollModalTapPopsAll: fields[119] as bool?,
+      treeModeCollapsedPostsShowBody: fields[120] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(116)
+      ..writeByte(117)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -475,7 +476,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(118)
       ..write(obj.showPostNumberOnPosts)
       ..writeByte(119)
-      ..write(obj.overscrollModalTapPopsAll);
+      ..write(obj.overscrollModalTapPopsAll)
+      ..writeByte(120)
+      ..write(obj.treeModeCollapsedPostsShowBody);
   }
 
   @override

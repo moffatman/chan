@@ -2736,6 +2736,57 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						setState(() {});
 					}
 				),
+				AnimatedSize(
+					duration: const Duration(milliseconds: 250),
+					curve: Curves.ease,
+					alignment: Alignment.bottomCenter,
+					child: (_threadLayoutImageboard.persistence.browserState.useTree ?? _threadLayoutImageboard.site.useTree) ? Column(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							const SizedBox(height: 16),
+							Row(
+								children: [
+									const SizedBox(width: 16),
+									const Icon(CupertinoIcons.return_icon),
+									const SizedBox(width: 8),
+									const Expanded(
+										child: Text('Initially hide nested replies')
+									),
+									CupertinoSwitch(
+										value: _threadLayoutImageboard.persistence.browserState.treeModeInitiallyCollapseSecondLevelReplies,
+										onChanged: (newValue) {
+											_threadLayoutImageboard.persistence.browserState.treeModeInitiallyCollapseSecondLevelReplies = newValue;
+											_threadLayoutImageboard.persistence.didUpdateBrowserState();
+											setState(() {});
+										}
+									),
+									const SizedBox(width: 16)
+								]
+							),
+							const SizedBox(height: 16),
+							Row(
+								children: [
+									const SizedBox(width: 16),
+									const RotatedBox(
+										quarterTurns: 1,
+										child: Icon(CupertinoIcons.chevron_right_2)
+									),
+									const SizedBox(width: 8),
+									const Expanded(
+										child: Text('Collapsed posts show body')
+									),
+									CupertinoSwitch(
+										value: settings.treeModeCollapsedPostsShowBody,
+										onChanged: (newValue) {
+											settings.treeModeCollapsedPostsShowBody = newValue;
+										}
+									),
+									const SizedBox(width: 16)
+								]
+							)
+						]
+					) : const SizedBox(width: double.infinity)
+				),
 				const SizedBox(height: 32),
 				Row(
 					children: [

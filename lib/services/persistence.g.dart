@@ -80,13 +80,15 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
               .map((dynamic e) => (e as List).cast<int>())
               .toList()
       ..downloadedAttachmentIds =
-          fields[17] == null ? [] : (fields[17] as List).cast<String>();
+          fields[17] == null ? [] : (fields[17] as List).cast<String>()
+      ..primarySubtreeParents =
+          fields[21] == null ? {} : (fields[21] as Map).cast<int, int>();
   }
 
   @override
   void write(BinaryWriter writer, PersistentThreadState obj) {
     writer
-      ..writeByte(20)
+      ..writeByte(21)
       ..writeByte(0)
       ..write(obj.lastSeenPostId)
       ..writeByte(1)
@@ -123,6 +125,8 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..write(obj.downloadedAttachmentIds)
       ..writeByte(18)
       ..write(obj.imageboardKey)
+      ..writeByte(21)
+      ..write(obj.primarySubtreeParents)
       ..writeByte(19)
       ..write(obj.board)
       ..writeByte(20)
@@ -322,13 +326,15 @@ class PersistentBrowserStateAdapter
       postingNames:
           fields[18] == null ? {} : (fields[18] as Map).cast<String, String>(),
       useTree: fields[16] as bool?,
+      treeModeInitiallyCollapseSecondLevelReplies:
+          fields[19] == null ? false : fields[19] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -358,7 +364,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(17)
       ..write(obj.catalogVariants)
       ..writeByte(18)
-      ..write(obj.postingNames);
+      ..write(obj.postingNames)
+      ..writeByte(19)
+      ..write(obj.treeModeInitiallyCollapseSecondLevelReplies);
   }
 
   @override
