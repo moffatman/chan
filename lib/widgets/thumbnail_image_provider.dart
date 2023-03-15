@@ -20,9 +20,15 @@ class ThumbnailImageProvider extends ImageProvider<ThumbnailImageProvider> {
 			codec: () async {
 				assert(key == this);
 				final conversion = MediaConversion.extractThumbnail(file.uri);
-				conversion.start();
-				final result = await conversion.result;
-				final bytes = await result.file.readAsBytes();
+				Uint8List bytes;
+				if (await conversion.getDestination().exists()) {
+					bytes = await conversion.getDestination().readAsBytes();
+				}
+				else {
+					conversion.start();
+					final result = await conversion.result;
+					bytes = await result.file.readAsBytes();
+				}
 				return await decode(await ImmutableBuffer.fromUint8List(bytes));
 			}(),
 			scale: key.scale
