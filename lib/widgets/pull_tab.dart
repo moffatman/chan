@@ -26,11 +26,13 @@ class PullTab extends StatefulWidget {
 	final Widget child;
 	final PullTabTab? tab;
 	final PullTabPosition position;
+	final bool enabled;
 
 	const PullTab({
 		required this.child,
 		required this.tab,
 		this.position = PullTabPosition.right,
+		this.enabled = true,
 		Key? key
 	}) : super(key: key);
 	@override
@@ -179,10 +181,16 @@ class _PullTabState extends State<PullTab> {
 				]
 			),
 			onPointerDown: (e) {
+				if (!widget.enabled) {
+					return;
+				}
 				_recognizingRecognizer.addPointer(e);
 				_claimingRecognizer.addPointer(e);
 			},
 			onPointerPanZoomStart: (e) {
+				if (!widget.enabled) {
+					return;
+				}
 				_recognizingRecognizer.addPointerPanZoom(e);
 				_claimingRecognizer.addPointerPanZoom(e);
 			}
