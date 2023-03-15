@@ -65,22 +65,20 @@ class _Server {
 	Future<void> ensureRunning() async {
 		if (_httpServer == null) {
 			_httpServer = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
-			print('started http server on port $port');
-			_httpServer!.listen(_handleRequest, cancelOnError: false, onDone: () => _restart(false));
+			_httpServer!.listen(_handleRequest, cancelOnError: false, onDone: () {
+				_httpServer = null;
+				ensureRunning();
+			});
 		}
-	}
-
-	Future<void> _restart(bool needClose) async {
-		if (needClose) {
-			await _httpServer?.close().timeout(const Duration(seconds: 1), onTimeout: () => _httpServer?.close(force: true));
-		}
-		_httpServer = null;
-		await ensureRunning();
 	}
 
 	Future<void> restartIfRunning() async {
 		if (_httpServer != null) {
-			await _restart(true);
+			await () async {
+				await _httpServer?.close();
+			}().timeout(const Duration(seconds: 1), onTimeout: () async {
+				await _httpServer?.close(force: true);
+			});
 		}
 	}
 
