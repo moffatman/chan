@@ -379,6 +379,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	// Sometimes duplicate links are received due to use of multiple link handling packages
 	({DateTime time, String link})? _lastLink;
 	bool _hidTabPopupFromScroll = false;
+	double _accumulatedScrollDelta = 0;
 
 	bool get showTabPopup => _showTabPopup;
 	set showTabPopup(bool setting) {
@@ -407,15 +408,18 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 		else if (settings.tabMenuHidesWhenScrollingDown && notification is ScrollUpdateNotification) {
 			if (notification.metrics.axis == Axis.vertical && notification.dragDetails != null && notification.metrics.extentAfter > 100) {
-				final delta = notification.scrollDelta ?? 0;
-				if (delta > 0 && showTabPopup) {
+				_accumulatedScrollDelta += notification.scrollDelta ?? 0;
+				_accumulatedScrollDelta = _accumulatedScrollDelta.clamp(-51, 51);
+				if (_accumulatedScrollDelta > 50 && showTabPopup) {
 					setState(() {
+						_accumulatedScrollDelta = 0;
 						showTabPopup = false;
 						_hidTabPopupFromScroll = true;
 					});
 				}
-				else if (delta < 0 && _hidTabPopupFromScroll) {
+				else if (_accumulatedScrollDelta < -50 && _hidTabPopupFromScroll) {
 					setState(() {
+						_accumulatedScrollDelta = 0;
 						showTabPopup = true;
 						_hidTabPopupFromScroll = false;
 					});
