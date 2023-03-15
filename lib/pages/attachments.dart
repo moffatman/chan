@@ -138,7 +138,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 			(_controller.scrollController?.position as ScrollPositionWithSingleContext?)?.pointerScroll(-details.focalPointDelta.dy);
 		}
 		else {
-			context.read<EffectiveSettings>().attachmentsPageMaxCrossAxisExtent += 100 * (details.scale - _lastScale);
+			context.read<EffectiveSettings>().attachmentsPageMaxCrossAxisExtent = max(100, context.read<EffectiveSettings>().attachmentsPageMaxCrossAxisExtent + (100 * (details.scale - _lastScale)));
 			_lastScale = details.scale;
 		}
 	}
@@ -283,7 +283,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 										children: [
 											const Icon(CupertinoIcons.resize),
 											const SizedBox(height: 16),
-											Text('Column width: ${maxCrossAxisExtent.round()} px')
+											Text('Max column width: ${maxCrossAxisExtent.round()} px')
 										]
 									)
 								)
@@ -320,7 +320,7 @@ class SliverStaggeredGridDelegate extends SliverGridDelegate {
 
 	@override
 	SliverGridLayout getLayout(SliverConstraints constraints) {
-		final columnCount = max(1, constraints.crossAxisExtent ~/ maxCrossAxisExtent);
+		final columnCount = (constraints.crossAxisExtent / maxCrossAxisExtent).ceil();
 		final width = constraints.crossAxisExtent / columnCount;
 		final columns = List.generate(columnCount, (_) => <StaggeredGridMember>[]);
 		final columnHeightRunningTotals = List.generate(columnCount, (_) => 0.0);
