@@ -522,7 +522,7 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
   @override
   Future<void> login(Map<ImageboardSiteLoginField, String> fields) async {
     final response = await parent.client.postUri(
-			Uri.https(parent.baseUrl, '/mod.php?/'),
+			Uri.https(parent.baseUrl, '/mod.php'),
 			data: {
 				for (final field in fields.entries) field.key.formKey: field.value,
 				'login': 'Continue'
