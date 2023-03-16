@@ -608,6 +608,8 @@ class SavedSettings extends HiveObject {
 	bool overscrollModalTapPopsAll;
 	@HiveField(120)
 	bool squareThumbnails;
+	@HiveField(121)
+	bool alwaysShowSpoilers;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -730,6 +732,7 @@ class SavedSettings extends HiveObject {
 		bool? showPostNumberOnPosts,
 		bool? overscrollModalTapPopsAll,
 		bool? squareThumbnails,
+		bool? alwaysShowSpoilers,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -879,7 +882,8 @@ class SavedSettings extends HiveObject {
 		catalogGridModeShowMoreImageIfLessText = catalogGridModeShowMoreImageIfLessText ?? true,
 		showPostNumberOnPosts = showPostNumberOnPosts ?? true,
 		overscrollModalTapPopsAll = overscrollModalTapPopsAll ?? true,
-		squareThumbnails = squareThumbnails ?? false {
+		squareThumbnails = squareThumbnails ?? false,
+		alwaysShowSpoilers = alwaysShowSpoilers ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1829,6 +1833,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get squareThumbnails => _settings.squareThumbnails;
 	set squareThumbnails(bool setting) {
 		_settings.squareThumbnails = setting;
+		_settings.save();
+		notifyListeners();
+	}
+	
+	bool get alwaysShowSpoilers => _settings.alwaysShowSpoilers;
+	set alwaysShowSpoilers(bool setting) {
+		_settings.alwaysShowSpoilers = setting;
 		_settings.save();
 		notifyListeners();
 	}

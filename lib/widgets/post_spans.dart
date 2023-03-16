@@ -1132,7 +1132,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	String? postFromArchiveError(int id) => null;
 	final Map<int, bool> _shouldShowSpoiler = {};
 	bool shouldShowSpoiler(int id) {
-		return _shouldShowSpoiler[id] ?? false;
+		return _shouldShowSpoiler[id] ?? Persistence.settings.alwaysShowSpoilers;
 	}
 	void showSpoiler(int id) {
 		_shouldShowSpoiler[id] = true;

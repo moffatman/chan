@@ -238,13 +238,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showPostNumberOnPosts: fields[118] as bool?,
       overscrollModalTapPopsAll: fields[119] as bool?,
       squareThumbnails: fields[120] as bool?,
+      alwaysShowSpoilers: fields[121] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(117)
+      ..writeByte(118)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -478,7 +479,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(119)
       ..write(obj.overscrollModalTapPopsAll)
       ..writeByte(120)
-      ..write(obj.squareThumbnails);
+      ..write(obj.squareThumbnails)
+      ..writeByte(121)
+      ..write(obj.alwaysShowSpoilers);
   }
 
   @override

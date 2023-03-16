@@ -1000,6 +1000,22 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.exclamationmark_octagon),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Always show spoilers')
+						),
+						CupertinoSwitch(
+							value: settings.alwaysShowSpoilers,
+							onChanged: (newValue) {
+								settings.alwaysShowSpoilers = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 32)
 			]
 		);

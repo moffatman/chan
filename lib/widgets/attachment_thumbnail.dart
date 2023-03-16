@@ -92,7 +92,7 @@ class AttachmentThumbnail extends StatelessWidget {
 				)
 			);
 		}
-		final url = spoiler ? s.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString();
+		final url = (spoiler && !settings.alwaysShowSpoilers) ? s.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl.toString();
 		ImageProvider image = ExtendedNetworkImageProvider(
 			url,
 			cache: true,
