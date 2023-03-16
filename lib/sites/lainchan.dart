@@ -57,7 +57,7 @@ class SiteLainchan extends ImageboardSite {
 					elements.add(const PostLineBreakSpan());
 				}
 				else if (node.localName == 'a' && node.attributes['href'] != null) {
-					final match = RegExp(r'^\/([^\/]+)\/\/?res\/(\d+).html#(\d+)').firstMatch(node.attributes['href']!);
+					final match = RegExp(r'^\/([^\/]+)\/\/?(?:(?:res)|(?:thread))\/(\d+).html#(\d+)').firstMatch(node.attributes['href']!);
 					if (match != null) {
 						elements.add(PostQuoteLinkSpan(
 							board: match.group(1)!,
@@ -173,9 +173,13 @@ class SiteLainchan extends ImageboardSite {
 	Future<Post> getPost(String board, int id) {
 		throw Exception('Not implemented');
 	}
+
+	@protected
+	String get res => 'res';
+
 	@override
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), options: Options(
+		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/$res/${thread.id}.json'), options: Options(
 			validateStatus: (x) => true
 		));
 		if (response.statusCode == 404 || response.redirects.tryLast?.location.pathSegments.tryLast == '404.html') {
@@ -433,7 +437,7 @@ class SiteLainchan extends ImageboardSite {
 	String _getWebUrl(String board, {int? threadId, int? postId, bool mod = false}) {
 		String threadUrl = 'https://$baseUrl/${mod ? 'mod.php?/' : ''}$board/';
 		if (threadId != null) {
-			threadUrl += 'res/$threadId.html';
+			threadUrl += '$res/$threadId.html';
 			if (postId != null) {
 				threadUrl += '#q$postId';
 			}

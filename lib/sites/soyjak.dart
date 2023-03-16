@@ -30,4 +30,7 @@ class SiteSoyjak extends SiteLainchanOrg {
 
 	@override
 	String get defaultUsername => 'Chud';
+
+	@override
+	String get res => 'thread';
 }
