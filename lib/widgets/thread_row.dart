@@ -508,6 +508,7 @@ class ThreadRow extends StatelessWidget {
 				return [
 					Column(
 						mainAxisSize: MainAxisSize.min,
+						crossAxisAlignment: CrossAxisAlignment.stretch,
 						children: [
 							for (final att in atts) Expanded(
 								child: att
