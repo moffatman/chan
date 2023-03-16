@@ -328,13 +328,15 @@ class PersistentBrowserStateAdapter
       useTree: fields[16] as bool?,
       treeModeInitiallyCollapseSecondLevelReplies:
           fields[19] == null ? false : fields[19] as bool,
+      treeModeCollapsedPostsShowBody:
+          fields[20] == null ? false : fields[20] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(16)
+      ..writeByte(17)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -366,7 +368,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(18)
       ..write(obj.postingNames)
       ..writeByte(19)
-      ..write(obj.treeModeInitiallyCollapseSecondLevelReplies);
+      ..write(obj.treeModeInitiallyCollapseSecondLevelReplies)
+      ..writeByte(20)
+      ..write(obj.treeModeCollapsedPostsShowBody);
   }
 
   @override

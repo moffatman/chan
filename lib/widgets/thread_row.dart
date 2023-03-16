@@ -310,8 +310,9 @@ class ThreadRow extends StatelessWidget {
 														attachment: attachment,
 														semanticParentIds: semanticParentIds
 													),
-													shrinkHeight: true,
-													shrinkWidth: true
+													fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+													shrinkHeight: !settings.squareThumbnails,
+													shrinkWidth: !settings.squareThumbnails
 												),
 												if (attachment.soundSource != null || attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned.fill(
 													child: Align(

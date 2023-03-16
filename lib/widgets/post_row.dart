@@ -132,7 +132,7 @@ class PostRow extends StatelessWidget {
 		content(double factor) => PostSpanZone(
 			postId: latestPost.id,
 			builder: (ctx) => Padding(
-				padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
+				padding: const EdgeInsets.only(top: 10, left: 10, right: 10),
 				child: IgnorePointer(
 					ignoring: !allowTappingLinks,
 					child: ConditionalOnTapUp(
@@ -181,10 +181,11 @@ class PostRow extends StatelessWidget {
 											))
 										)
 									),
+									// In practice this is the height of a line of text
 									const WidgetSpan(
 										child: SizedBox(
 											width: double.infinity,
-											height: 16
+											height: 0
 										)
 									)
 								]
@@ -197,63 +198,67 @@ class PostRow extends StatelessWidget {
 		);
 		innerChild(BuildContext context, double slideFactor) {
 			final mainRow = [
-				const SizedBox(width: 8),
+				const SizedBox(width: 10),
 				if (latestPost.attachments.isNotEmpty && settings.showImages(context, latestPost.board)) Padding(
 					padding: (settings.imagesOnRight && replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32) : EdgeInsets.zero,
 					child: ClippingBox(
 						fade: true,
 						child: Column(
 							mainAxisSize: MainAxisSize.min,
-							children: latestPost.attachments.map((attachment) => PopupAttachment(
-								attachment: attachment,
-								child: CupertinoButton(
-									padding: EdgeInsets.zero,
-									minSize: 0,
-									child: Container(
-										alignment: Alignment.center,
-										constraints: BoxConstraints(
-											minWidth: settings.thumbnailSize,
-											minHeight: 75
-										),
-										child: Stack(
-											children: [
-												AttachmentThumbnail(
-													attachment: attachment,
-													thread: latestPost.threadIdentifier,
-													onLoadError: onThumbnailLoadError,
-													hero: TaggedAttachment(
+							children: [
+								...latestPost.attachments.map((attachment) => PopupAttachment(
+									attachment: attachment,
+									child: CupertinoButton(
+										padding: EdgeInsets.zero,
+										minSize: 0,
+										child: Container(
+											alignment: Alignment.center,
+											constraints: BoxConstraints(
+												minWidth: settings.thumbnailSize,
+												minHeight: 75
+											),
+											child: Stack(
+												children: [
+													AttachmentThumbnail(
 														attachment: attachment,
-														semanticParentIds: parentZone.stackIds
+														thread: latestPost.threadIdentifier,
+														onLoadError: onThumbnailLoadError,
+														hero: TaggedAttachment(
+															attachment: attachment,
+															semanticParentIds: parentZone.stackIds
+														),
+														fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+														shrinkHeight: !settings.squareThumbnails,
+														shrinkWidth: !settings.squareThumbnails
 													),
-													shrinkHeight: true,
-													shrinkWidth: true
-												),
-												if (attachment.soundSource != null || attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned.fill(
-													child: Align(
-														alignment: Alignment.bottomRight,
-														child: Container(
-															decoration: BoxDecoration(
-																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-															),
-															padding: const EdgeInsets.all(2),
-															child: attachment.soundSource != null ?
-																const Icon(CupertinoIcons.volume_up, size: 16) :
-																attachment.type.isVideo ?
-																	const Icon(CupertinoIcons.play_arrow_solid, size: 16) :
-																	const Icon(CupertinoIcons.link, size: 16)
+													if (attachment.soundSource != null || attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned.fill(
+														child: Align(
+															alignment: Alignment.bottomRight,
+															child: Container(
+																decoration: BoxDecoration(
+																	borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																	border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+																),
+																padding: const EdgeInsets.all(2),
+																child: attachment.soundSource != null ?
+																	const Icon(CupertinoIcons.volume_up, size: 16) :
+																	attachment.type.isVideo ?
+																		const Icon(CupertinoIcons.play_arrow_solid, size: 16) :
+																		const Icon(CupertinoIcons.link, size: 16)
+															)
 														)
 													)
-												)
-											]
-										)
-									),
-									onPressed: () {
-										onThumbnailTap?.call(attachment);
-									}
-								)
-							)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
+												]
+											)
+										),
+										onPressed: () {
+											onThumbnailTap?.call(attachment);
+										}
+									)
+								)).expand((x) => [const SizedBox(height: 10), x]),
+								const SizedBox(height: 10)
+							]
 						)
 					)
 				)
@@ -303,7 +308,7 @@ class PostRow extends StatelessWidget {
 									children: [
 										const SizedBox(height: 8),
 										Padding(
-											padding: const EdgeInsets.only(left: 8, right: 8),
+											padding: const EdgeInsets.only(left: 10, right: 10),
 											child: PostSpanZone(
 												postId: latestPost.id,
 												builder: (ctx) => ValueListenableBuilder<bool>(

@@ -1082,8 +1082,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 			filename: 'example.png',
 			md5: '',
 			sizeInBytes: 150634,
-			url: Uri.parse('https://picsum.photos/800'),
-			thumbnailUrl: Uri.parse('https://picsum.photos/200'),
+			url: Uri.parse('https://picsum.photos/800/600'),
+			thumbnailUrl: Uri.parse('https://picsum.photos/200/150'),
 			threadId: 99999
 		);
 		return Thread(
@@ -1671,6 +1671,22 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 							value: settings.blurThumbnails,
 							onChanged: (newValue) {
 								settings.blurThumbnails = newValue;
+							}
+						)
+					]
+				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.square),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Square thumbnails')
+						),
+						CupertinoSwitch(
+							value: settings.squareThumbnails,
+							onChanged: (newValue) {
+								settings.squareThumbnails = newValue;
 							}
 						)
 					]
@@ -2776,9 +2792,11 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 										child: Text('Collapsed posts show body')
 									),
 									CupertinoSwitch(
-										value: settings.treeModeCollapsedPostsShowBody,
+										value: _threadLayoutImageboard.persistence.browserState.treeModeCollapsedPostsShowBody,
 										onChanged: (newValue) {
-											settings.treeModeCollapsedPostsShowBody = newValue;
+											_threadLayoutImageboard.persistence.browserState.treeModeCollapsedPostsShowBody = newValue;
+											_threadLayoutImageboard.persistence.didUpdateBrowserState();
+											setState(() {});
 										}
 									),
 									const SizedBox(width: 16)

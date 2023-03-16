@@ -258,6 +258,7 @@ class RefreshableTreeAdapter<T extends Object> {
 	final double Function(T item, double width) estimateHeight;
 	final bool Function(T item) getIsStub;
 	final bool initiallyCollapseSecondLevelReplies;
+	final bool collapsedItemsShowBody;
 
 	const RefreshableTreeAdapter({
 		required this.getId,
@@ -268,7 +269,8 @@ class RefreshableTreeAdapter<T extends Object> {
 		required this.wrapTreeChild,
 		required this.estimateHeight,
 		required this.getIsStub,
-		required this.initiallyCollapseSecondLevelReplies
+		required this.initiallyCollapseSecondLevelReplies,
+		required this.collapsedItemsShowBody
 	});
 }
 
@@ -899,7 +901,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					value: value.item,
 					collapsedChildIds: value.treeDescendantIds,
 					loading: loadingOmittedItems,
-					peekContentHeight: context.select<EffectiveSettings, bool>((s) => s.treeModeCollapsedPostsShowBody) ? double.infinity : null,
+					peekContentHeight: (widget.treeAdapter?.collapsedItemsShowBody ?? false) ? double.infinity : null,
 					stubChildIds: null
 				);
 				if (value.filterCollapsed && collapsed != null) {
@@ -979,7 +981,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 									}
 								}
 							}
-							else if (value.treeDescendantIds.isNotEmpty || !context.read<EffectiveSettings>().treeModeCollapsedPostsShowBody) {
+							else if (value.treeDescendantIds.isNotEmpty || !(widget.treeAdapter?.collapsedItemsShowBody ?? false)) {
 								context.read<_RefreshableTreeItems>().hideItem(value.parentIds, id!, value);
 								widget.controller?._alignToItemIfPartiallyAboveFold(value);
 							}

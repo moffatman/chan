@@ -381,7 +381,7 @@ class _ThreadPageState extends State<ThreadPage> {
 					return a.id == attachment.attachment.id;
 				}));
 			},
-			heroOtherEndIsBoxFitCover: false
+			heroOtherEndIsBoxFitCover: settings.squareThumbnails
 		);
 	}
 
@@ -558,6 +558,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		];
 		zone.tree = useTree;
 		final treeModeInitiallyCollapseSecondLevelReplies = context.select<Persistence, bool>((s) => s.browserState.treeModeInitiallyCollapseSecondLevelReplies);
+		final treeModeCollapsedPostsShowBody = context.select<Persistence, bool>((s) => s.browserState.treeModeCollapsedPostsShowBody);
 		return WillPopScope(
 			onWillPop: () async {
 				if (_replyBoxKey.currentState?.show ?? false) {
@@ -823,7 +824,8 @@ class _ThreadPageState extends State<ThreadPage> {
 																					(width / (0.55 * fontSize * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil().toDouble()
 																				).ceil() * fontSize;
 																			},
-																			initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies
+																			initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies,
+																			collapsedItemsShowBody: treeModeCollapsedPostsShowBody
 																		),
 																		footer: Container(
 																			padding: const EdgeInsets.all(16),

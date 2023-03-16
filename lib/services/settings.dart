@@ -607,7 +607,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(119)
 	bool overscrollModalTapPopsAll;
 	@HiveField(120)
-	bool treeModeCollapsedPostsShowBody;
+	bool squareThumbnails;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -729,7 +729,7 @@ class SavedSettings extends HiveObject {
 		bool? catalogGridModeShowMoreImageIfLessText,
 		bool? showPostNumberOnPosts,
 		bool? overscrollModalTapPopsAll,
-		bool? treeModeCollapsedPostsShowBody,
+		bool? squareThumbnails,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -879,7 +879,7 @@ class SavedSettings extends HiveObject {
 		catalogGridModeShowMoreImageIfLessText = catalogGridModeShowMoreImageIfLessText ?? true,
 		showPostNumberOnPosts = showPostNumberOnPosts ?? true,
 		overscrollModalTapPopsAll = overscrollModalTapPopsAll ?? true,
-		treeModeCollapsedPostsShowBody = treeModeCollapsedPostsShowBody ?? false {
+		squareThumbnails = squareThumbnails ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1826,9 +1826,9 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	bool get treeModeCollapsedPostsShowBody => _settings.treeModeCollapsedPostsShowBody;
-	set treeModeCollapsedPostsShowBody(bool setting) {
-		_settings.treeModeCollapsedPostsShowBody = setting;
+	bool get squareThumbnails => _settings.squareThumbnails;
+	set squareThumbnails(bool setting) {
+		_settings.squareThumbnails = setting;
 		_settings.save();
 		notifyListeners();
 	}

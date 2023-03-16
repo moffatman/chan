@@ -1178,6 +1178,8 @@ class PersistentBrowserState {
 	final Map<String, String> postingNames;
 	@HiveField(19, defaultValue: false)
 	bool treeModeInitiallyCollapseSecondLevelReplies;
+	@HiveField(20, defaultValue: false)
+	bool treeModeCollapsedPostsShowBody;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -1195,7 +1197,8 @@ class PersistentBrowserState {
 		required this.catalogVariants,
 		required this.postingNames,
 		this.useTree,
-		this.treeModeInitiallyCollapseSecondLevelReplies = false
+		this.treeModeInitiallyCollapseSecondLevelReplies = false,
+		this.treeModeCollapsedPostsShowBody = false
 	}) : hiddenImageMD5s = hiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};
