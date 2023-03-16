@@ -189,59 +189,53 @@ class _FilterEditorState extends State<FilterEditor> {
 											]
 										)
 									),
-									const SizedBox(height: 16),
-									Container(
-										padding: const EdgeInsets.all(16),
-										alignment: Alignment.center,
-										child: CupertinoSegmentedControl<NullSafeOptional>(
-											groupValue: hasFile.value,
-											onValueChanged: (v) {
-												setInnerState(() {
-													hasFile = v.value;
-												});
-											},
-											children: const {
-												NullSafeOptional.null_: Padding(
-													padding: EdgeInsets.all(8),
-													child: Text('All posts', textAlign: TextAlign.center)
-												),
-												NullSafeOptional.false_: Padding(
-													padding: EdgeInsets.all(8),
-													child: Text('Without images', textAlign: TextAlign.center)
-												),
-												NullSafeOptional.true_: Padding(
-													padding: EdgeInsets.all(8),
-													child: Text('With images', textAlign: TextAlign.center)
+									const SizedBox(height: 32),
+									ClipRRect(
+										borderRadius: BorderRadius.circular(8),
+										child: CupertinoListSection(
+											topMargin: 0,
+											margin: EdgeInsets.zero,
+											children: [
+												for (final field in [null, false, true]) CupertinoListTile(
+													title: Text(const{
+														null: 'All posts',
+														false: 'Without images',
+														true: 'With images'
+													}[field]!),
+													trailing: hasFile == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+													onTap:() {
+														setInnerState(() {
+															hasFile = field;
+														});
+													}
 												)
-											}
+											]
 										)
 									),
-									Padding(
-										padding: const EdgeInsets.all(16),
-										child: CupertinoSegmentedControl<NullSafeOptional>(
-											groupValue: threadsOnly.value,
-											onValueChanged: (v) {
-												setInnerState(() {
-													threadsOnly = v.value;
-												});
-											},
-											children: const {
-												NullSafeOptional.null_: Padding(
-													padding: EdgeInsets.all(8),
-													child: Text('All posts')
-												),
-												NullSafeOptional.true_: Padding(
-													padding: EdgeInsets.all(8),
-													child: Text('Threads only')
-												),
-												NullSafeOptional.false_: Padding(
-													padding: EdgeInsets.all(8),
-													child: Text('Replies only')
+									const SizedBox(height: 32),
+									ClipRRect(
+										borderRadius: BorderRadius.circular(8),
+										child: CupertinoListSection(
+											topMargin: 0,
+											margin: EdgeInsets.zero,
+											children: [
+												for (final field in [null, true, false]) CupertinoListTile(
+													title: Text(const{
+														null: 'All posts',
+														true: 'Threads only',
+														false: 'Replies only'
+													}[field]!),
+													trailing: threadsOnly == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+													onTap:() {
+														setInnerState(() {
+															threadsOnly = field;
+														});
+													}
 												)
-											}
+											]
 										)
 									),
-									const SizedBox(height: 16),
+									const SizedBox(height: 32),
 									CupertinoButton.filled(
 										padding: const EdgeInsets.all(16),
 										onPressed: () async {
