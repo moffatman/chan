@@ -734,7 +734,7 @@ class AttachmentViewer extends StatelessWidget {
 				endRect != null &&
 				attachment.width != null &&
 				attachment.height != null &&
-				DateTime.now().difference(_heroRectCache[attachment.globalId]?.$1 ?? DateTime(2000)) > const Duration(seconds: 1)) {
+				DateTime.now().difference(_heroRectCache[attachment.globalId]?.$1 ?? DateTime(2000)) > const Duration(milliseconds: 300)) {
 			if (useHeroDestinationWidget) {
 				// This is AttachmentViewer -> AttachmentViewer
 				if (startRect.topLeft == Offset.zero) {
