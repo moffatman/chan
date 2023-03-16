@@ -77,6 +77,11 @@ class AttachmentThumbnail extends StatelessWidget {
 		final spoiler = attachment.spoiler && !revealSpoilers;
 		double effectiveWidth = width ?? settings.thumbnailSize;
 		double effectiveHeight = height ?? settings.thumbnailSize;
+		if (rotate90DegreesClockwise) {
+			final tmp = effectiveWidth;
+			effectiveWidth = effectiveHeight;
+			effectiveHeight = tmp;
+		}
 		final s = site ?? context.watch<ImageboardSite?>();
 		if (s == null) {
 			return SizedBox(
