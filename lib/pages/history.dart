@@ -40,6 +40,7 @@ class _HistoryPageState extends State<HistoryPage> {
 	final _masterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	late final RefreshableListController<PersistentThreadState> _listController;
 	late final ValueNotifier<ImageboardScoped<PostIdentifier>?> _valueInjector;
+	DateTime _lastUpdate = DateTime.now();
 
 	@override
 	void initState() {
@@ -69,7 +70,16 @@ class _HistoryPageState extends State<HistoryPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final threadStateBoxesAnimation = FilteringListenable(Persistence.sharedThreadStateBox.listenable(), () => widget.isActive);
+		final threadStateBoxesAnimation = FilteringListenable(Persistence.sharedThreadStateBox.listenable(), () {
+			if (widget.isActive) {
+				final now = DateTime.now();
+				if (now.difference(_lastUpdate) > const Duration(seconds: 1)) {
+					_lastUpdate = now;
+					return true;
+				}
+			}
+			return false;
+		});
 		return MultiMasterDetailPage(
 			showChrome: false,
 			id: 'history',
