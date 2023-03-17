@@ -400,6 +400,9 @@ class AttachmentViewerController extends ChangeNotifier {
 						isAudioOnly = result.isAudioOnly;
 						_swapIncoming = true;
 						result.mp4File.then((mp4File) async {
+							if (_isDisposed) {
+								return;
+							}
 							_cachedFile = mp4File;
 							_videoFileToSwapIn = mp4File;
 							if (_waitingOnSwap && !background) {
