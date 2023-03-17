@@ -24,7 +24,7 @@ class VideoControls extends StatefulWidget {
 }
 
 class _VideoControlsState extends State<VideoControls> {
-	late VideoPlayerController videoPlayerController;
+	VideoPlayerController? videoPlayerController;
 	late VideoPlayerValue value;
 	late bool wasAlreadyPlaying;
 	final position = ValueNotifier(Duration.zero);
@@ -36,9 +36,9 @@ class _VideoControlsState extends State<VideoControls> {
 	@override
 	void initState() {
 		super.initState();
-		videoPlayerController = widget.controller.videoPlayerController!;
-		videoPlayerController.addListener(_onVideoPlayerControllerUpdate);
-		value = videoPlayerController.value;
+		videoPlayerController = widget.controller.videoPlayerController;
+		videoPlayerController?.addListener(_onVideoPlayerControllerUpdate);
+		value = videoPlayerController?.value ?? VideoPlayerValue.uninitialized();
 		position.value = value.position;
 		wasAlreadyPlaying = value.isPlaying;
 		widget.controller.addListener(_onControllerUpdate);
@@ -60,21 +60,21 @@ class _VideoControlsState extends State<VideoControls> {
 			return;
 		}
 		if (widget.controller.videoPlayerController != videoPlayerController) {
-			videoPlayerController.removeListener(_onVideoPlayerControllerUpdate);
-			if (widget.controller.videoPlayerController != null) {
-				// If a force-reload occurs it could be null.
-				videoPlayerController = widget.controller.videoPlayerController!;
-				videoPlayerController.addListener(_onVideoPlayerControllerUpdate);
-			}
+			videoPlayerController?.removeListener(_onVideoPlayerControllerUpdate);
+			videoPlayerController = widget.controller.videoPlayerController;
+			videoPlayerController?.addListener(_onVideoPlayerControllerUpdate);
 		}
 		setState(() {});
 	}
 
 	void _onVideoPlayerControllerUpdate() {
 		if (!mounted) return;
-		setState(() {
-			value = videoPlayerController.value;
-		});
+		final v = videoPlayerController?.value;
+		if (v != null) {
+			setState(() {
+				value = v;
+			});
+		}
 	}
 
 	void _updatePosition() async {
@@ -82,7 +82,7 @@ class _VideoControlsState extends State<VideoControls> {
 			return;
 		}
 		if (!_currentlyWithinLongPress) {
-			final newPosition = await videoPlayerController.position;
+			final newPosition = await videoPlayerController?.position;
 			if (newPosition != null) {
 				position.value = newPosition;
 			}
@@ -93,7 +93,7 @@ class _VideoControlsState extends State<VideoControls> {
 	Future<void> _onLongPressStart() => _mutex.protect(() async {
 		_playingBeforeLongPress = value.isPlaying;
 		if (!widget.controller.swapIncoming || widget.controller.swapAvailable) {
-			await videoPlayerController.pause();
+			await videoPlayerController?.pause();
 			await widget.controller.potentiallySwapVideo();
 		}
 		_currentlyWithinLongPress = true;
@@ -108,9 +108,9 @@ class _VideoControlsState extends State<VideoControls> {
 					if (widget.controller.swapIncoming) {
 						return;
 					}
-					await videoPlayerController.seekTo(newPosition);
-					await videoPlayerController.play();
-					await videoPlayerController.pause();
+					await videoPlayerController?.seekTo(newPosition);
+					await videoPlayerController?.play();
+					await videoPlayerController?.pause();
 					await Future.delayed(const Duration(milliseconds: 50));
 				});
 			}
@@ -123,7 +123,7 @@ class _VideoControlsState extends State<VideoControls> {
 	Future<void> _onLongPressEnd() => _mutex.protect(() async {
 		await widget.controller.potentiallySwapVideo();
 		if (_playingBeforeLongPress) {
-			await videoPlayerController.play();
+			await videoPlayerController?.play();
 		}
 		_currentlyWithinLongPress = false;
 	});
@@ -208,11 +208,11 @@ class _VideoControlsState extends State<VideoControls> {
 							onPressed: () async {
 								final settings = context.read<EffectiveSettings>();
 								if (value.volume > 0) {
-									await videoPlayerController.setVolume(0);
+									await videoPlayerController?.setVolume(0);
 									settings.setMuteAudio(true);
 								}
 								else {
-									await videoPlayerController.setVolume(1);
+									await videoPlayerController?.setVolume(1);
 									settings.setMuteAudio(false);
 								}
 							}
@@ -223,11 +223,11 @@ class _VideoControlsState extends State<VideoControls> {
 						child: Icon((_currentlyWithinLongPress ? _playingBeforeLongPress : value.isPlaying) ? CupertinoIcons.pause_fill : CupertinoIcons.play_arrow_solid),
 						onPressed: () async {
 							if (value.isPlaying) {
-								await videoPlayerController.pause();
+								await videoPlayerController?.pause();
 								await widget.controller.potentiallySwapVideo();
 							}
 							else {
-								await videoPlayerController.play();
+								await videoPlayerController?.play();
 							}
 						},
 					)
@@ -240,6 +240,6 @@ class _VideoControlsState extends State<VideoControls> {
 	void dispose() {
 		super.dispose();
 		widget.controller.removeListener(_onControllerUpdate);
-		videoPlayerController.removeListener(_onVideoPlayerControllerUpdate);
+		videoPlayerController?.removeListener(_onVideoPlayerControllerUpdate);
 	}
 }
