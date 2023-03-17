@@ -1,6 +1,5 @@
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
