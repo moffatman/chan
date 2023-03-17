@@ -167,10 +167,15 @@ class StreamingMP4Conversion {
 		}
 	}
 
-	void dispose() {
+	Future<void> _waitAndCleanup() async {
+		await _joinedCompleter.future;
 		final junkFolder = _streamingConversion?.getDestination().parent;
 		if (junkFolder != null) {
 			junkFolder.delete(recursive: true);
 		}
+	}
+
+	void dispose() {
+		_waitAndCleanup();
 	}
 }
