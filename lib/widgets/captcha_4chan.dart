@@ -559,7 +559,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									const SizedBox(width: 16),
 									SizedBox(
 										width: 32,
-										child: seconds > 0 ? Text('$seconds') : Container()
+										child: seconds > 0 ? Text('$seconds') : const SizedBox.shrink()
 									)
 								]
 							)

@@ -367,7 +367,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		_shouldShowPosition.value = true;
 		await Future.delayed(const Duration(seconds: 1));
 		if (mounted && currentIndex == index) {
-			_shouldShowPosition.value = false;
+			//_shouldShowPosition.value = false;
 		}
 	}
 
@@ -1003,7 +1003,7 @@ class _GalleryPageState extends State<GalleryPage> {
 											),
 											builder: (context, child) => AnimatedSwitcher(
 												duration: const Duration(milliseconds: 300),
-												child: _shouldShowPosition.value ? child : Container()
+												child: _shouldShowPosition.value ? child : const SizedBox.shrink()
 											)
 										),
 										Visibility(

@@ -849,7 +849,7 @@ class AttachmentViewer extends StatelessWidget {
 						}
 						loadstate.returnLoadStateChangedWidget = true;
 						buildContent(context, _) {
-							Widget child = Container();
+							Widget child = const SizedBox.shrink();
 							if (controller.errorMessage != null) {
 								child = Center(
 									child: ErrorMessageCard(controller.errorMessage!, remedies: {

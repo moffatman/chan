@@ -126,7 +126,7 @@ class _TabSwitchingViewState extends State<TabSwitchingView> {
                 child: Provider.value(
                   value: willPopZones[index],
                   child: Builder(builder: (BuildContext context) {
-                    return shouldBuildTab[index] ? widget.tabBuilder(context, index) : Container();
+                    return shouldBuildTab[index] ? widget.tabBuilder(context, index) : const SizedBox.shrink();
                   }),
                 ),
               ),

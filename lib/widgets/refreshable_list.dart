@@ -1401,8 +1401,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 									physics: isOnMac ? const BouncingScrollPhysics(decelerationRate: ScrollDecelerationRate.fast, parent: AlwaysScrollableScrollPhysics()) : const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
 									slivers: [
 										SliverSafeArea(
-											sliver: widget.disableUpdates ? SliverToBoxAdapter(
-												child: Container()
+											sliver: widget.disableUpdates ? const SliverToBoxAdapter(
+												child: SizedBox.shrink()
 											) : CupertinoSliverRefreshControl(
 												onRefresh: _updateWithHapticFeedback,
 												refreshTriggerPullDistance: 125
@@ -1689,10 +1689,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 												)
 											)
 										)
-										else if (widget.disableUpdates) SliverSafeArea(
+										else if (widget.disableUpdates) const SliverSafeArea(
 											top: false,
 											sliver: SliverToBoxAdapter(
-												child: Container()
+												child: SizedBox.shrink()
 											)
 										),
 										if (!widget.disableUpdates && !widget.disableBottomUpdates) SliverSafeArea(
