@@ -426,6 +426,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					await _videoPlayerController!.setLooping(true);
 					if (_isDisposed) return;
 					if (isPrimary) {
+						await _videoPlayerController!.seekTo(Duration.zero);
 						await _videoPlayerController!.play();
 					}
 					if (_isDisposed) return;
