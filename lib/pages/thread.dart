@@ -967,7 +967,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																			return IgnorePointer(
 																				child: Container(
 																					width: double.infinity,
-																					padding: const EdgeInsets.all(8),
+																					padding: const EdgeInsets.all(10),
 																					color: useTree && (value?.id ?? (stubChildIds ?? []).map((x) => x.childId).fold<int>(0, max)) > lastSeenIdBeforeLastUpdate ? CupertinoTheme.of(context).primaryColorWithBrightness(0.1) : null,
 																					child: Row(
 																						children: [

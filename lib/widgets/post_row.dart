@@ -306,7 +306,7 @@ class PostRow extends StatelessWidget {
 									mainAxisSize: MainAxisSize.min,
 									crossAxisAlignment: CrossAxisAlignment.start,
 									children: [
-										const SizedBox(height: 8),
+										const SizedBox(height: 10),
 										Padding(
 											padding: const EdgeInsets.only(left: 10, right: 10),
 											child: PostSpanZone(
