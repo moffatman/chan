@@ -858,11 +858,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																							GestureDetector(
 																								behavior: HitTestBehavior.opaque,
 																								onTap: _switchToLive,
-																								child: const Row(
+																								child: Row(
 																									children: [
-																										Icon(CupertinoIcons.archivebox),
-																										SizedBox(width: 8),
-																										Text('Archived')
+																										const Icon(CupertinoIcons.archivebox),
+																										const SizedBox(width: 8),
+																										Text(persistentState.thread!.archiveName ?? 'Archived')
 																									]
 																								)
 																							),
@@ -1757,7 +1757,6 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												],
 												if (!widget.blocked && widget.persistentState.useArchive) ...[
 													Icon(CupertinoIcons.archivebox, color: settings.theme.primaryColor.withOpacity(0.5)),
-													if (widget.thread?.archiveName != null) Text(' ${widget.thread?.archiveName}', style: TextStyle(color: settings.theme.primaryColor.withOpacity(0.5))),
 													const SizedBox(width: 8)
 												],
 												if (_redCountBelow > 0) Container(
