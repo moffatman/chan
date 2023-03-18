@@ -1112,6 +1112,7 @@ class EffectiveSettings extends ChangeNotifier {
 			barBackgroundColor: lightTheme.barColor,
 			primaryColor: lightTheme.primaryColor,
 			primaryContrastingColor: lightTheme.backgroundColor,
+			applyThemeToAll: true,
 			textTheme: CupertinoTextThemeData(
 				textStyle: TextStyle(
 					fontFamily: '.SF Pro Text',
@@ -1149,6 +1150,7 @@ class EffectiveSettings extends ChangeNotifier {
 			barBackgroundColor: darkTheme.barColor,
 			primaryColor: darkTheme.primaryColor,
 			primaryContrastingColor: darkTheme.backgroundColor,
+			applyThemeToAll: true,
 			textTheme: CupertinoTextThemeData(
 				textStyle: TextStyle(
 					fontFamily: '.SF Pro Text',
