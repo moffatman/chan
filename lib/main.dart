@@ -77,6 +77,7 @@ void main() async {
 			}
 			await Persistence.initializeStatic();
 			await Notifications.initializeStatic();
+			await updateDynamicColors();
 			runApp(const ChanApp());
 		}
 		catch (e, st) {

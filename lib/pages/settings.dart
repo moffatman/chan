@@ -1360,44 +1360,53 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																),
 																content: StatefulBuilder(
 																	builder: (context, setDialogState) {
-																		final themeNames = settings.themes.keys.toList();
-																		themeNames.sort();
+																		final themes = settings.themes.entries.toList();
+																		themes.sort((a, b) => a.key.compareTo(b.key));
 																		return SizedBox(
 																			width: 200,
 																			height: 350,
 																			child: ListView.separated(
-																				itemCount: themeNames.length,
+																				itemCount: themes.length,
 																				separatorBuilder: (context, i) => const SizedBox(height: 16),
 																				itemBuilder: (context, i) => GestureDetector(
 																					onTap: () {
-																						Navigator.pop(context, themeNames[i]);
+																						Navigator.pop(context, themes[i].key);
 																					},
 																					child: CupertinoTheme(
 																						data: CupertinoTheme.of(context).copyWith(
-																							primaryColor: settings.themes[themeNames[i]]?.primaryColor,
-																							primaryContrastingColor: settings.themes[themeNames[i]]?.backgroundColor,
-																							brightness: (settings.themes[themeNames[i]]?.primaryColor.computeLuminance() ?? 0) > 0.5 ? Brightness.dark : Brightness.light
+																							primaryColor: themes[i].value.primaryColor,
+																							primaryContrastingColor: themes[i].value.backgroundColor,
+																							brightness: themes[i].value.primaryColor.computeLuminance() > 0.5 ? Brightness.dark : Brightness.light
 																						),
 																						child: Container(
 																							decoration: BoxDecoration(
 																								borderRadius: const BorderRadius.all(Radius.circular(8)),
-																								color: settings.themes[themeNames[i]]?.backgroundColor
+																								color: themes[i].value.backgroundColor
 																							),
 																							child: Column(
 																								mainAxisSize: MainAxisSize.min,
 																								children: [
 																									Padding(
 																										padding: const EdgeInsets.all(16),
-																										child: AutoSizeText(themeNames[i], style: TextStyle(
-																											fontSize: 18,
-																											color: settings.themes[themeNames[i]]?.primaryColor,
-																											fontWeight: themeNames[i] == theme.$3 ? FontWeight.bold : null
-																										))
+																										child: Row(
+																											mainAxisSize: MainAxisSize.min,
+																											children: [
+																												if (themes[i].value.locked) Padding(
+																													padding: const EdgeInsets.only(right: 4),
+																													child: Icon(CupertinoIcons.lock, color: themes[i].value.primaryColor)
+																												),
+																												AutoSizeText(themes[i].key, style: TextStyle(
+																													fontSize: 18,
+																													color: themes[i].value.primaryColor,
+																													fontWeight: themes[i].key == theme.$3 ? FontWeight.bold : null
+																												))
+																											]
+																										)
 																									),
 																									Container(
 																										//margin: const EdgeInsets.all(4),
 																										decoration: BoxDecoration(
-																											color: settings.themes[themeNames[i]]?.barColor,
+																											color: themes[i].value.barColor,
 																											borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8))
 																										),
 																										child: Row(
@@ -1411,23 +1420,22 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																																scheme: 'chance',
 																																host: 'theme',
 																																queryParameters: {
-																																	'name': themeNames[i],
-																																	'data': settings.themes[themeNames[i]]!.encode()
+																																	'name': themes[i].key,
+																																	'data': themes[i].value.encode()
 																																}
 																															).toString()
 																														));
 																														showToast(
 																															context: context,
-																															message: 'Copied ${themeNames[i]} to clipboard',
+																															message: 'Copied ${themes[i].key} to clipboard',
 																															icon: CupertinoIcons.doc_on_clipboard
 																														);
 																													}
 																												),
 																												CupertinoButton(
-																													child: const Icon(CupertinoIcons.textformat),
-																													onPressed: () async {
-																														final controller = TextEditingController(text: themeNames[i]);
-																														controller.selection = TextSelection(baseOffset: 0, extentOffset: themeNames[i].length);
+																													onPressed: themes[i].value.locked ? null : () async {
+																														final controller = TextEditingController(text: themes[i].key);
+																														controller.selection = TextSelection(baseOffset: 0, extentOffset: themes[i].key.length);
 																														final newName = await showCupertinoDialog<String>(
 																															context: context,
 																															barrierDismissible: true,
@@ -1454,35 +1462,36 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																															)
 																														);
 																														if (newName != null) {
-																															final effectiveName = settings.addTheme(newName, settings.themes[themeNames[i]]!);
-																															settings.themes.remove(themeNames[i]);
-																															if (settings.lightThemeKey == themeNames[i]) {
+																															final effectiveName = settings.addTheme(newName, themes[i].value);
+																															settings.themes.remove(themes[i].key);
+																															if (settings.lightThemeKey == themes[i].key) {
 																																settings.lightThemeKey = effectiveName;
 																															}
-																															if (settings.darkThemeKey == themeNames[i]) {
+																															if (settings.darkThemeKey == themes[i].key) {
 																																settings.darkThemeKey = effectiveName;
 																															}
 																															settings.handleThemesAltered();
 																															setDialogState(() {});
 																														}
 																														controller.dispose();
-																													}
+																													},
+																													child: const Icon(CupertinoIcons.textformat)
 																												),
 																												CupertinoButton(
 																													child: const Icon(CupertinoIcons.doc_on_doc),
 																													onPressed: () {
-																														settings.addTheme(themeNames[i], settings.themes[themeNames[i]]!);
+																														settings.addTheme(themes[i].key, themes[i].value);
 																														settings.handleThemesAltered();
 																														setDialogState(() {});
 																													}
 																												),
 																												CupertinoButton(
-																													onPressed: (themeNames[i] == settings.darkThemeKey || themeNames[i] == settings.lightThemeKey) ? null : () async {
+																													onPressed: (themes[i].value.locked || themes[i].key == settings.darkThemeKey || themes[i].key == settings.lightThemeKey) ? null : () async {
 																														final consent = await showCupertinoDialog<bool>(
 																															context: context,
 																															barrierDismissible: true,
 																															builder: (context) => CupertinoAlertDialog(
-																																title: Text('Delete ${themeNames[i]}?'),
+																																title: Text('Delete ${themes[i].key}?'),
 																																actions: [
 																																	CupertinoDialogAction(
 																																		child: const Text('Cancel'),
@@ -1501,7 +1510,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																															)
 																														);
 																														if (consent == true) {
-																															settings.themes.remove(themeNames[i]);
+																															settings.themes.remove(themes[i].key);
 																															settings.handleThemesAltered();
 																															setDialogState(() {});
 																														}
@@ -1562,17 +1571,23 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 										const SizedBox(height: 16),
 										Text(color.$1, style: TextStyle(color: theme.$2.primaryColor)),
 										const SizedBox(height: 16),
-										GestureDetector(
+										CupertinoButton(
+											padding: EdgeInsets.zero,
 											child: Container(
 												decoration: BoxDecoration(
 													borderRadius: const BorderRadius.all(Radius.circular(8)),
-													border: Border.all(color: theme.$2.primaryColor),
+													border: Border.all(color: color.$2 == theme.$2.primaryColor ? theme.$2.barColor : theme.$2.primaryColor),
 													color: color.$2
 												),
 												width: 50,
-												height: 50
+												height: 50,
+												child: theme.$2.locked ? Icon(CupertinoIcons.lock, color: color.$2 == theme.$2.primaryColor ? theme.$2.barColor : theme.$2.primaryColor) : null
 											),
-											onTap: () async {
+											onPressed: () async {
+												if (theme.$2.locked) {
+													alertError(context, 'This theme is locked. Make a copy of it if you want to change its colours.');
+													return;
+												}
 												await showCupertinoModalPopup(
 													barrierDismissible: true,
 													context: context,

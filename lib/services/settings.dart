@@ -15,6 +15,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -199,6 +200,8 @@ class SavedTheme {
 	Color quoteColor;
 	@HiveField(5)
 	SavedTheme? copiedFrom;
+	@HiveField(6, defaultValue: false)
+	bool locked;
 
 	SavedTheme({
 		required this.backgroundColor,
@@ -206,6 +209,7 @@ class SavedTheme {
 		required this.primaryColor,
 		required this.secondaryColor,
 		this.quoteColor = _defaultQuoteColor,
+		this.locked = false,
 		this.copiedFrom
 	});
 
@@ -250,7 +254,8 @@ class SavedTheme {
 		primaryColor = original.primaryColor,
 		secondaryColor = original.secondaryColor,
 		quoteColor = original.quoteColor,
-		copiedFrom = original;
+		copiedFrom = original,
+		locked = false;
 	
 	@override
 	bool operator ==(dynamic other) => (other is SavedTheme) &&
@@ -258,11 +263,12 @@ class SavedTheme {
 		barColor == other.barColor &&
 		primaryColor == other.primaryColor &&
 		secondaryColor == other.secondaryColor &&
-		quoteColor == other.quoteColor;// &&
+		quoteColor == other.quoteColor &&
+		locked == other.locked;// &&
 		//copiedFrom == other.copiedFrom;
 
 	@override
-	int get hashCode => Object.hash(backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, copiedFrom);
+	int get hashCode => Object.hash(backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, copiedFrom, locked);
 
 	Color primaryColorWithBrightness(double factor) {
 		return Color.fromRGBO(
@@ -272,6 +278,40 @@ class SavedTheme {
 			primaryColor.opacity
 		);
 	}
+}
+
+const _dynamicLightKey = 'Dynamic (Light)';
+const _dynamicDarkKey = 'Dynamic (Dark)';
+
+Future<bool> updateDynamicColors() async {
+	if (!Platform.isAndroid) {
+		return false;
+	}
+	final colors = await DynamicColorPlugin.getCorePalette();
+	if (colors != null) {
+		final light = SavedTheme(
+			backgroundColor: Color(colors.neutral.get(99)),
+			barColor: Color(colors.neutralVariant.get(90)),
+			primaryColor: Color(colors.primary.get(10)),
+			secondaryColor: Color(colors.primary.get(40)),
+			quoteColor: _defaultQuoteColor,
+			locked: true
+		);
+		final dark = SavedTheme(
+			backgroundColor: Color(colors.neutral.get(10)),
+			barColor: Color(colors.neutralVariant.get(30)),
+			primaryColor: Color(colors.primary.get(99)),
+			secondaryColor: Color(colors.primary.get(70)),
+			quoteColor: _defaultQuoteColor,
+			locked: true
+		);
+		final updated = ((Persistence.settings.lightThemeKey == _dynamicLightKey) && (light != Persistence.settings.themes[_dynamicLightKey])) ||
+		                ((Persistence.settings.darkThemeKey == _dynamicDarkKey) && (dark != Persistence.settings.themes[_dynamicDarkKey]));
+		Persistence.settings.themes[_dynamicLightKey] = light;
+		Persistence.settings.themes[_dynamicDarkKey] = dark;
+		return updated;
+	}
+	return false;
 }
 
 @HiveType(typeId: 30)
@@ -1922,11 +1962,15 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 	}
 
 	@override
-	void didChangeAppLifecycleState(AppLifecycleState state) {
+	void didChangeAppLifecycleState(AppLifecycleState state) async {
 		if (state == AppLifecycleState.resumed) {
 			_checkConnectivity();
 			restartServerIfRunning();
-			context.read<EffectiveSettings>()._runAppResumeCallbacks();
+			final settings = context.read<EffectiveSettings>();
+			settings._runAppResumeCallbacks();
+			if (await updateDynamicColors()) {
+				settings.handleThemesAltered();
+			}
 		}
 	}
 
