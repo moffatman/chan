@@ -132,7 +132,7 @@ class PostRow extends StatelessWidget {
 		content(double factor) => PostSpanZone(
 			postId: latestPost.id,
 			builder: (ctx) => Padding(
-				padding: const EdgeInsets.only(top: 10, left: 10, right: 10),
+				padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
 				child: IgnorePointer(
 					ignoring: !allowTappingLinks,
 					child: ConditionalOnTapUp(
@@ -198,7 +198,7 @@ class PostRow extends StatelessWidget {
 		);
 		innerChild(BuildContext context, double slideFactor) {
 			final mainRow = [
-				const SizedBox(width: 10),
+				const SizedBox(width: 8),
 				if (latestPost.attachments.isNotEmpty && settings.showImages(context, latestPost.board)) Padding(
 					padding: (settings.imagesOnRight && replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32) : EdgeInsets.zero,
 					child: ClippingBox(
@@ -256,8 +256,8 @@ class PostRow extends StatelessWidget {
 											onThumbnailTap?.call(attachment);
 										}
 									)
-								)).expand((x) => [const SizedBox(height: 10), x]),
-								const SizedBox(height: 10)
+								)).expand((x) => [const SizedBox(height: 8), x]),
+								const SizedBox(height: 8)
 							]
 						)
 					)
@@ -306,9 +306,9 @@ class PostRow extends StatelessWidget {
 									mainAxisSize: MainAxisSize.min,
 									crossAxisAlignment: CrossAxisAlignment.start,
 									children: [
-										const SizedBox(height: 10),
+										const SizedBox(height: 8),
 										Padding(
-											padding: const EdgeInsets.only(left: 10, right: 10),
+											padding: const EdgeInsets.only(left: 8, right: 8),
 											child: PostSpanZone(
 												postId: latestPost.id,
 												builder: (ctx) => ValueListenableBuilder<bool>(
