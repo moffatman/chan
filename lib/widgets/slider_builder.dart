@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
