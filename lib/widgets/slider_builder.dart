@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
@@ -111,6 +112,9 @@ class _SliderBuilderState extends State<SliderBuilder> {
 				builder: (context, smoothedFactor, child) => widget.builder(context, smoothedFactor)
 			),
 			onPointerDown: (e) {
+				if (eventTooCloseToEdge(e)) {
+					return;
+				}
 				_recognizingRecognizer.addPointer(e);
 				_claimingRecognizer.addPointer(e);
 			},

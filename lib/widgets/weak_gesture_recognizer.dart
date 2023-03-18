@@ -6,15 +6,29 @@
 // allowing to change the width of area where back swipe gesture is accepted
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 
 extension WithinRange on num {
   withinRange(num low, num high) {
     return this >= low && this <= high;
   }
+}
+
+bool eventTooCloseToEdge(PointerEvent event) {
+  if (Platform.isAndroid) {
+    final relativeX = (event.position.dx * WidgetsBinding.instance.window.devicePixelRatio) / WidgetsBinding.instance.window.physicalSize.width;
+    final relativeToCenter = (0.5 - relativeX).abs();
+    if (relativeToCenter >= 0.45) {
+      // Within 5% of edge, it could conflict with system gestures.
+      return true;
+    }
+  }
+  return false;
 }
 
 enum _DragState {
