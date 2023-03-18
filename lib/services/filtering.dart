@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
+import 'package:weak_map/weak_map.dart';
 
 const allPatternFields = ['text', 'subject', 'name', 'filename', 'postID', 'posterID', 'flag', 'capcode'];
 const defaultPatternFields = ['subject', 'name', 'filename', 'text'];
@@ -61,11 +62,21 @@ abstract class Filter {
 class FilterCache implements Filter {
 	Filter wrappedFilter;
 	FilterCache(this.wrappedFilter);
-	final Map<Filterable, FilterResult?> _cache = {};
+	// Need to use two seperate maps as we can't store null in [_cache]
+	final WeakMap<Filterable, bool?> _contains = WeakMap();
+	final WeakMap<Filterable, FilterResult?> _cache = WeakMap();
 
 	@override
 	FilterResult? filter(Filterable item) {
-		return _cache.putIfAbsent(item, () => wrappedFilter.filter(item));
+		if (_contains.get(item) != true) {
+			_contains.add(key: item, value: true);
+			final result = wrappedFilter.filter(item);
+			if (result != null) {
+				_cache.add(key: item, value: result);
+			}
+			return result;
+		}
+		return _cache.get(item);
 	}
 
 	@override

@@ -1512,6 +1512,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
+  weak_map:
+    dependency: "direct main"
+    description:
+      name: weak_map
+      sha256: "10b77d47f1a010bb15a91c828adc90c669b38bf3d97ad3910587adbf6d267b2b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
   web_socket_channel:
     dependency: transitive
     description:
