@@ -185,7 +185,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			getCachedImageFile(attachment.url.toString()).then((file) {
 				if (file != null && _cachedFile == null) {
 					_cachedFile = file;
-					_goodImageSource = attachment.url;
+					_goodImageSource = Uri.parse(attachment.url);
 					_isFullResolution = true;
 					notifyListeners();
 				}
@@ -215,12 +215,13 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (overrideSource != null) {
 			return overrideSource!;
 		}
-		Response result = await site.client.headUri(attachment.url, options: Options(
+		final attachmentUrl = Uri.parse(attachment.url);
+		Response result = await site.client.headUri(attachmentUrl, options: Options(
 			validateStatus: (_) => true,
-			headers: _getHeaders(attachment.url)
+			headers: _getHeaders(attachmentUrl)
 		));
 		if (result.statusCode == 200) {
-			return attachment.url;
+			return attachmentUrl;
 		}
 		// handle issue with timestamps in url
 		bool corrected = false;
@@ -249,7 +250,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				_useRandomUserAgent = newAttachment.useRandomUseragent;
 				final check = await site.client.head(newAttachment.url.toString(), options: Options(
 					validateStatus: (_) => true,
-					headers: _getHeaders(newAttachment.url)
+					headers: _getHeaders(Uri.parse(newAttachment.url))
 				));
 				if (check.statusCode != 200) {
 					throw AttachmentNotArchivedException(attachment);
@@ -257,7 +258,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			});
 			final goodAttachment = archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)!;
 			_useRandomUserAgent = goodAttachment.useRandomUseragent;
-			return goodAttachment.url;
+			return Uri.parse(goodAttachment.url);
 		}
 		else {
 			_useRandomUserAgent = null;
@@ -317,7 +318,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		_showAudioOnly = false;
 		notifyListeners();
 		final startTime = DateTime.now();
-		Future.delayed(_estimateUrlTime(attachment.thumbnailUrl), () {
+		Future.delayed(_estimateUrlTime(Uri.parse(attachment.thumbnailUrl)), () {
 			if (_loadingProgressHideScheduled) return;
 			_showLoadingProgress = true;
 			if (_isDisposed) return;
@@ -766,7 +767,7 @@ class AttachmentViewer extends StatelessWidget {
 	}
 
 	Widget _buildImage(BuildContext context, Size? size, bool passedFirstBuild) {
-		Uri source = attachment.thumbnailUrl;
+		Uri source = Uri.parse(attachment.thumbnailUrl);
 		final goodSource = controller.goodImageSource;
 		if (goodSource != null && ((!goodSource.path.endsWith('.gif') || passedFirstBuild) || source.toString().length < 6)) {
 			source = goodSource;
@@ -835,7 +836,7 @@ class AttachmentViewer extends StatelessWidget {
 						if (loadstate.loadingProgress?.cumulativeBytesLoaded != null && loadstate.loadingProgress?.expectedTotalBytes != null) {
 							// If we got image download completion, we can check if it's cached
 							loadingValue = loadstate.loadingProgress!.cumulativeBytesLoaded / loadstate.loadingProgress!.expectedTotalBytes!;
-							if ((source != attachment.thumbnailUrl) && loadingValue == 1) {
+							if ((source != Uri.parse(attachment.thumbnailUrl)) && loadingValue == 1) {
 								getCachedImageFile(source.toString()).then((file) {
 									if (file != null) {
 										controller.onCacheCompleted(file);
@@ -843,7 +844,7 @@ class AttachmentViewer extends StatelessWidget {
 								});
 							}
 						}
-						else if (loadstate.extendedImageInfo?.image.width == attachment.width && (source != attachment.thumbnailUrl)) {
+						else if (loadstate.extendedImageInfo?.image.width == attachment.width && (source != Uri.parse(attachment.thumbnailUrl))) {
 							// If the displayed image looks like the full image, we can check cache
 							getCachedImageFile(source.toString()).then((file) {
 								if (file != null) {
@@ -1232,7 +1233,7 @@ class AttachmentViewer extends StatelessWidget {
 			child: SizedBox.fromSize(
 				size: size,
 				child: CooperativeInAppBrowser(
-					initialUrlRequest: URLRequest(url: WebUri.uri(controller.attachment.url))
+					initialUrlRequest: URLRequest(url: WebUri.uri(Uri.parse(controller.attachment.url)))
 				)
 			)
 		);

@@ -64,7 +64,11 @@ class ThreadRow extends StatelessWidget {
 		Color? replyCountColor;
 		Color? imageCountColor;
 		Color? otherMetadataColor;
-		final threadAsUrl = latestThread.attachments.tryFirstWhere((a) => a.type == AttachmentType.url)?.url.host.replaceFirst(RegExp(r'^www\.'), '');
+		String? threadAsUrl;
+		final firstUrl = latestThread.attachments.tryFirstWhere((a) => a.type == AttachmentType.url)?.url;
+		if (firstUrl != null) {
+			threadAsUrl = Uri.parse(firstUrl).host.replaceFirst(RegExp(r'^www\.'), '');
+		}
 		if (threadState?.lastSeenPostId != null) {
 			final filter = Filter.of(context);
 			if (threadState?.useTree ?? context.read<Persistence>().browserState.useTree ?? site.useTree) {

@@ -34,7 +34,7 @@ class SiteFrenschan extends SiteSoyjak {
 		for (final attachment in broken.posts_.expand((p) => p.attachments)) {
 			final thumbnailUrl = thumbnailUrls.tryFirstWhere((u) => u?.contains(attachment.id) ?? false);
 			if (thumbnailUrl != null) {
-				attachment.thumbnailUrl = Uri.https(baseUrl, thumbnailUrl);
+				attachment.thumbnailUrl = Uri.https(baseUrl, thumbnailUrl).toString();
 			}
 		}
 		// Copy corrected thumbnail URLs to thread from posts_.first
@@ -53,7 +53,7 @@ class SiteFrenschan extends SiteSoyjak {
 		for (final attachment in broken.expand((t) => t.attachments)) {
 			final thumbnailUrl = thumbnailUrls.tryFirstWhere((u) => u?.contains(attachment.id.toString()) ?? false);
 			if (thumbnailUrl != null) {
-				attachment.thumbnailUrl = Uri.https(baseUrl, thumbnailUrl);
+				attachment.thumbnailUrl = Uri.https(baseUrl, thumbnailUrl).toString();
 			}
 		}
 		return broken;

@@ -785,8 +785,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			try {
 				final post = await archive.getPost(board, id);
 				for (final attachment in post.attachments) {
-					await ensureCookiesMemoized(attachment.thumbnailUrl);
-					await ensureCookiesMemoized(attachment.url);
+					await ensureCookiesMemoized(Uri.parse(attachment.thumbnailUrl));
+					await ensureCookiesMemoized(Uri.parse(attachment.url));
 				}
 				return post;
 			}
@@ -811,8 +811,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			try {
 				final thread_ = await archive.getThread(thread).timeout(const Duration(seconds: 10));
 				for (final attachment in thread_.attachments) {
-					await ensureCookiesMemoized(attachment.thumbnailUrl);
-					await ensureCookiesMemoized(attachment.url);
+					await ensureCookiesMemoized(Uri.parse(attachment.thumbnailUrl));
+					await ensureCookiesMemoized(Uri.parse(attachment.url));
 				}
 				if (validate != null) {
 					await validate(thread_);

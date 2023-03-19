@@ -236,8 +236,7 @@ class PostNodeSpan extends PostSpan {
 
 class PostTextSpan extends PostSpan {
 	final String text;
-	final bool underlined;
-	const PostTextSpan(this.text, {this.underlined = false});
+	const PostTextSpan(this.text);
 
 	@override
 	InlineSpan build(context, zone, settings, options) {
@@ -274,10 +273,7 @@ class PostTextSpan extends PostSpan {
 		}
 		return TextSpan(
 			children: children,
-			style: underlined ? options.baseTextStyle.copyWith(
-				color: options.overrideTextColor,
-				decoration: TextDecoration.underline
-			) : options.baseTextStyle.copyWith(
+			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor
 			),
 			recognizer: options.recognizer,
@@ -292,8 +288,32 @@ class PostTextSpan extends PostSpan {
 	}
 }
 
-class PostLineBreakSpan extends PostTextSpan {
-	const PostLineBreakSpan() : super('\n');
+class PostUnderlinedSpan extends PostSpan {
+	final PostSpan child;
+
+	const PostUnderlinedSpan(this.child);
+
+	@override
+	InlineSpan build(context, zone, settings, options) {
+		return child.build(context, zone, settings, options.copyWith(
+			baseTextStyle: options.baseTextStyle.copyWith(
+				decoration: TextDecoration.underline
+			)
+		));
+	}
+
+	@override
+	String buildText() => child.buildText();
+}
+
+class PostLineBreakSpan extends PostSpan {
+	const PostLineBreakSpan();
+
+	@override
+	InlineSpan build(context, zone, settings, options) =>  const TextSpan(text: '\n');
+
+	@override
+	String buildText() => '\n';
 }
 
 class PostQuoteSpan extends PostSpan {

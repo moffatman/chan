@@ -130,7 +130,7 @@ class SiteFutaba extends ImageboardSite {
 				elements.addAll(Site4Chan.parsePlaintext((node.text ?? '').replaceAllMapped(_idRemapPattern, (m) => '${m.group(1) ?? ''}>${m.group(2)!}')));
 			}
 		}
-		return PostNodeSpan(elements);
+		return PostNodeSpan(elements.toList(growable: false));
 	}
 
 	@override
@@ -278,8 +278,8 @@ class SiteFutaba extends ImageboardSite {
 				id: fileUrl.split('/').last.split('.').first,
 				ext: '.$ext',
 				filename: filename,
-				url: Uri.https(boardDomain(board), fileUrl),
-				thumbnailUrl: Uri.https(boardDomain(board), fileThumbnailUrl),
+				url: Uri.https(boardDomain(board), fileUrl).toString(),
+				thumbnailUrl: Uri.https(boardDomain(board), fileThumbnailUrl).toString(),
 				md5: makeRandomBase64String(32), // no md5 provided by fuutaba
 				width: null,
 				height: null,

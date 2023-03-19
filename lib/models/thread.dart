@@ -1,4 +1,5 @@
 import 'package:chan/models/flag.dart';
+import 'package:chan/models/intern.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/filtering.dart';
@@ -19,7 +20,6 @@ class Thread implements Filterable {
 	final int id;
 	@override
 	final String board;
-	Attachment? deprecatedAttachment;
 	final String? title;
 	bool isSticky;
 	final DateTime time;
@@ -28,7 +28,7 @@ class Thread implements Filterable {
 	int? uniqueIPCount;
 	int? customSpoilerId;
 	bool attachmentDeleted;
-	final List<Attachment> attachments;
+	List<Attachment> attachments;
 	ThreadVariant? suggestedVariant;
 	String? archiveName;
 	Thread({
@@ -38,9 +38,8 @@ class Thread implements Filterable {
 		required this.replyCount,
 		required this.imageCount,
 		required this.id,
-		this.deprecatedAttachment,
 		this.attachmentDeleted = false,
-		required this.board,
+		required String board,
 		required this.title,
 		required this.isSticky,
 		required this.time,
@@ -51,12 +50,7 @@ class Thread implements Filterable {
 		required this.attachments,
 		this.suggestedVariant,
 		this.archiveName
-	}) {
-		if (deprecatedAttachment != null) {
-			attachments.insert(0, deprecatedAttachment!);
-			deprecatedAttachment = null;
-		}
-	}
+	}) : board = intern(board);
 	
 	bool _initialized = false;
 	List<Post> get posts {
@@ -131,12 +125,10 @@ class Thread implements Filterable {
 				else {
 					postToReplace.ipNumber ??= newChild.ipNumber;
 					if (postToReplace.attachmentDeleted && !newChild.attachmentDeleted) {
-						postToReplace.attachments.clear();
-						postToReplace.attachments.addAll(newChild.attachments);
+						postToReplace.attachments = newChild.attachments;
 						postToReplace.attachmentDeleted = false;
 						if (postToReplace.id == id && attachmentDeleted) {
-							attachments.clear();
-							attachments.addAll(newChild.attachments);
+							attachments = newChild.attachments;
 							attachmentDeleted = false;
 						}
 					}
@@ -226,7 +218,7 @@ class ThreadIdentifier {
 	final String board;
 	@HiveField(1)
 	final int id;
-	ThreadIdentifier(this.board, this.id);
+	ThreadIdentifier(String board, this.id) : board = intern(board);
 
 	@override
 	String toString() => 'ThreadIdentifier: /$board/$id';
@@ -241,7 +233,7 @@ class BoardThreadOrPostIdentifier {
 	final String board;
 	final int? threadId;
 	final int? postId;
-	BoardThreadOrPostIdentifier(this.board, [this.threadId, this.postId]);
+	BoardThreadOrPostIdentifier(String board, [this.threadId, this.postId]) : board = intern(board);
 	@override
 	String toString() => '/$board/$threadId/$postId';
 	ThreadIdentifier? get threadIdentifier => threadId == null ? null : ThreadIdentifier(board, threadId!);
@@ -282,6 +274,11 @@ class ThreadAdapter extends TypeAdapter<Thread> {
 				for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
 			};
 		}
+		final deprecatedAttachment = fields[7] as Attachment?;
+		List<Attachment> fallbackAttachments = const [];
+		if (deprecatedAttachment != null) {
+			fallbackAttachments = [deprecatedAttachment].toList(growable: false);
+		}
     return Thread(
       posts_: (fields[0] as List).cast<Post>(),
       isArchived: fields[1] as bool,
@@ -289,7 +286,6 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       replyCount: fields[3] as int,
       imageCount: fields[4] as int,
       id: fields[5] as int,
-      deprecatedAttachment: fields[7] as Attachment?,
       attachmentDeleted: fields[15] == null ? false : fields[15] as bool,
       board: fields[6] as String,
       title: fields[8] as String?,
@@ -299,8 +295,7 @@ class ThreadAdapter extends TypeAdapter<Thread> {
       currentPage: fields[12] as int?,
       uniqueIPCount: fields[13] as int?,
       customSpoilerId: fields[14] as int?,
-      attachments:
-          fields[16] == null ? [] : (fields[16] as List).cast<Attachment>(),
+      attachments: (fields[16] as List?)?.cast<Attachment>().toList(growable: false) ?? fallbackAttachments,
 			suggestedVariant: fields[17] as ThreadVariant?,
 			archiveName: fields[18] as String?
     );

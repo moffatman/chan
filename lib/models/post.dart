@@ -1,4 +1,5 @@
 import 'package:chan/models/flag.dart';
+import 'package:chan/models/intern.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/sites/4chan.dart';
@@ -49,7 +50,6 @@ class Post implements Filterable {
 	final int threadId;
 	@override
 	final int id;
-	Attachment? deprecatedAttachment;
 	final Flag? flag;
 	final String? posterId;
 	PostSpanFormat spanFormat;
@@ -96,7 +96,7 @@ class Post implements Filterable {
 	String? trip;
 	int? passSinceYear;
 	String? capcode;
-	final List<Attachment> attachments;
+	List<Attachment> attachments;
 	final int? upvotes;
 	final int? parentId;
 	bool hasOmittedReplies;
@@ -104,16 +104,15 @@ class Post implements Filterable {
 	int? ipNumber;
 
 	Post({
-		required this.board,
+		required String board,
 		required this.text,
-		required this.name,
+		required String name,
 		required this.time,
 		this.trip,
 		required this.threadId,
 		required this.id,
 		required this.spanFormat,
 		this.flag,
-		this.deprecatedAttachment,
 		this.attachmentDeleted = false,
 		this.posterId,
 		this.foolfuukaLinkedPostThreadIds,
@@ -125,7 +124,7 @@ class Post implements Filterable {
 		this.hasOmittedReplies = false,
 		this.deleted = false,
 		this.ipNumber
-	});
+	}) : board = intern(board), name = intern(name);
 
 	@override
 	String toString() {
@@ -162,10 +161,10 @@ class Post implements Filterable {
 	List<int>? _repliedToIds;
 	@override
 	List<int> get repliedToIds {
-		_repliedToIds ??= id == threadId ? [] : [
+		_repliedToIds ??= id == threadId ? const [] : [
 			if (parentId != null) parentId!,
 			...span.referencedPostIds(board)
-		];
+		].toList(growable: false);
 		return _repliedToIds!;
 	}
 	@override
@@ -212,6 +211,11 @@ class PostAdapter extends TypeAdapter<Post> {
 				for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
 			};
 		}
+		final deprecatedAttachment = fields[6] as Attachment?;
+		List<Attachment> fallbackAttachments = const [];
+		if (deprecatedAttachment != null) {
+			fallbackAttachments = [deprecatedAttachment].toList(growable: false);
+		}
     return Post(
       board: fields[0] as String,
       text: fields[1] as String,
@@ -222,14 +226,12 @@ class PostAdapter extends TypeAdapter<Post> {
       id: fields[5] as int,
       spanFormat: fields[9] as PostSpanFormat,
       flag: fields[7] as Flag?,
-      deprecatedAttachment: fields[6] as Attachment?,
       attachmentDeleted: fields[11] == null ? false : fields[11] as bool,
       posterId: fields[8] as String?,
       foolfuukaLinkedPostThreadIds: (fields[12] as Map?)?.cast<String, int>(),
       passSinceYear: fields[14] as int?,
       capcode: fields[15] as String?,
-      attachments:
-          fields[16] == null ? [] : (fields[16] as List).cast<Attachment>(),
+      attachments: (fields[16] as List?)?.cast<Attachment>().toList(growable: false) ?? fallbackAttachments,
 			upvotes: fields[17] as int?,
 			parentId: fields[18] as int?,
 			//fields[19] was used for int omittedChildrenCount
@@ -254,9 +256,7 @@ class PostAdapter extends TypeAdapter<Post> {
       ..writeByte(5)
       ..write(obj.id)
       ..writeByte(9)
-      ..write(obj.spanFormat)
-      ..writeByte(16)
-      ..write(obj.attachments);
+      ..write(obj.spanFormat);
 		if (obj.flag != null) {
       writer..writeByte(7)..write(obj.flag);
 		}
@@ -277,6 +277,9 @@ class PostAdapter extends TypeAdapter<Post> {
 		}
 		if (obj.capcode != null) {
       writer..writeByte(15)..write(obj.capcode);
+		}
+		if (obj.attachments.isNotEmpty) {
+			writer..writeByte(16)..write(obj.attachments);
 		}
 		if (obj.upvotes != null) {
 			writer..writeByte(17)..write(obj.upvotes);

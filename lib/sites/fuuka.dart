@@ -84,7 +84,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 				elements.addAll(Site4Chan.parsePlaintext(node.text ?? ''));
 			}
 		}
-		return PostNodeSpan(elements);
+		return PostNodeSpan(elements.toList(growable: false));
 	}
 	Attachment? _makeAttachment(dom.Element? element, int threadId) {
 		if (element != null) {
@@ -117,8 +117,8 @@ class FuukaArchive extends ImageboardSiteArchive {
 				filename: fileDetailsMatch.group(5)!,
 				ext: ext,
 				type: ext == '.webm' ? AttachmentType.webm : AttachmentType.image,
-				url: Uri.parse('https:$url'),
-				thumbnailUrl: Uri.parse('https:${element.querySelector('.thumb')!.attributes['src']!}'),
+				url: 'https://$url',
+				thumbnailUrl: 'https:${element.querySelector('.thumb')!.attributes['src']!}',
 				md5: element.parent!.querySelectorAll('a').firstWhere((x) => x.text == 'View same').attributes['href']!.split('/').last,
 				spoiler: false,
 				width: int.parse(fileDetailsMatch.group(3)!),

@@ -980,12 +980,12 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		final settings = context.watch<EffectiveSettings>();
 		final fakeAttachment = Attachment(
 			ext: '.$attachmentExt',
-			url: Uri.https('', ''),
+			url: '',
 			type: attachmentExt == 'webm' || attachmentExt == 'mp4' ? AttachmentType.webm : AttachmentType.image,
 			md5: '',
 			id: attachment?.uri.toString() ?? 'zz',
 			filename: attachment?.uri.pathSegments.last ?? '',
-			thumbnailUrl: Uri.https('', ''),
+			thumbnailUrl: '',
 			board: widget.board,
 			width: null,
 			height: null,

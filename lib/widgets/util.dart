@@ -341,8 +341,8 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 					id: id,
 					ext: '.webm',
 					filename: '$id.webm',
-					url: url,
-					thumbnailUrl: Uri.https(context.read<ImageboardSite>().imageUrl, '/$board/${id}s.jpg'),
+					url: url.toString(),
+					thumbnailUrl: Uri.https(context.read<ImageboardSite>().imageUrl, '/$board/${id}s.jpg').toString(),
 					md5: '',
 					width: null,
 					height: null,
@@ -407,10 +407,10 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 					id: '',
 					ext: '',
 					filename: '',
-					url: url,
+					url: url.toString(),
 					thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
 						'url': url.toString()
-					}),
+					}).toString(),
 					md5: '',
 					width: null,
 					height: null,

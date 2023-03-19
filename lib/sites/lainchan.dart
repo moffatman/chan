@@ -86,7 +86,7 @@ class SiteLainchan extends ImageboardSite {
 				elements.addAll(parsePlaintext(node.text ?? ''));
 			}
 		}
-		return PostNodeSpan(elements);
+		return PostNodeSpan(elements.toList(growable: false));
 	}
 
 	@protected
@@ -119,8 +119,8 @@ class SiteLainchan extends ImageboardSite {
 				filename: unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
 				ext: ext,
 				board: board,
-				url: getAttachmentUrl(board, '$id$ext'),
-				thumbnailUrl: type == AttachmentType.mp3 ? Uri.https(baseUrl, '/static/mp3.png') : getThumbnailUrl(board, '$id${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}'),
+				url: getAttachmentUrl(board, '$id$ext').toString(),
+				thumbnailUrl: (type == AttachmentType.mp3 ? Uri.https(baseUrl, '/static/mp3.png') : getThumbnailUrl(board, '$id${type == AttachmentType.image ? (imageThumbnailExtension ?? ext) : '.jpg'}')).toString(),
 				md5: data['md5'],
 				spoiler: data['spoiler'] == 1,
 				width: data['w'],
@@ -191,8 +191,8 @@ class SiteLainchan extends ImageboardSite {
 		final firstPost = response.data['posts'][0];
 		final List<Post> posts = (response.data['posts'] ?? []).map<Post>((postData) => _makePost(thread.board, thread.id, postData)).toList();
 		for (final attachment in posts.first.attachments) {
-			await ensureCookiesMemoized(attachment.url);
-			await ensureCookiesMemoized(attachment.thumbnailUrl);
+			await ensureCookiesMemoized(Uri.parse(attachment.url));
+			await ensureCookiesMemoized(Uri.parse(attachment.thumbnailUrl));
 		}
 		return Thread(
 			board: thread.board,

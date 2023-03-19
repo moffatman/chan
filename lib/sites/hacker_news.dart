@@ -175,7 +175,7 @@ class SiteHackerNews extends ImageboardSite {
 				}
 			}
 		}
-		return PostNodeSpan(visit(body.nodes).toList());
+		return PostNodeSpan(visit(body.nodes).toList(growable: false));
 	}
 
 	static Attachment _makeAttachment(int threadId, Uri url) => Attachment(
@@ -184,10 +184,10 @@ class SiteHackerNews extends ImageboardSite {
 		id: url.toString(),
 		ext: '',
 		filename: '',
-		url: url,
+		url: url.toString(),
 		thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
 			'url': url.toString()
-		}),
+		}).toString(),
 		md5: '',
 		width: null,
 		height: null,

@@ -1,3 +1,4 @@
+import 'package:chan/models/intern.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive/hive.dart';
 
@@ -43,8 +44,8 @@ class Attachment {
 	final String ext;
 	final String filename;
 	final AttachmentType type;
-	final Uri url;
-	Uri thumbnailUrl;
+	final String url;
+	String thumbnailUrl;
 	final String md5;
 	final bool spoiler;
 	final int? width;
@@ -55,9 +56,9 @@ class Attachment {
 	final bool useRandomUseragent;
 	Attachment({
 		required this.type,
-		required this.board,
+		required String board,
 		required this.id,
-		required this.ext,
+		required String ext,
 		required this.filename,
 		required this.url,
 		required this.thumbnailUrl,
@@ -68,7 +69,7 @@ class Attachment {
 		required this.threadId,
 		required this.sizeInBytes,
 		this.useRandomUseragent = false
-	}) : spoiler = spoiler ?? false;
+	}) : spoiler = spoiler ?? false, board = intern(board), ext = intern(ext);
 
 	bool? get isLandscape => (width == null || height == null) ? null : width! > height!;
 
@@ -129,14 +130,22 @@ class AttachmentAdapter extends TypeAdapter<Attachment> {
 				for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
 			};
 		}
+		dynamic url = fields[5];
+		if (url is Uri) {
+			url = url.toString();
+		}
+		dynamic thumbnailUrl = fields[6];
+		if (thumbnailUrl is Uri) {
+			thumbnailUrl = thumbnailUrl.toString();
+		}
     return Attachment(
       type: fields[4] as AttachmentType,
       board: fields[0] as String,
       id: fields[13] == null ? '${fields[1]}' : fields[13] as String,
       ext: fields[2] as String,
       filename: fields[3] as String,
-      url: fields[5] as Uri,
-      thumbnailUrl: fields[6] as Uri,
+      url: url,
+      thumbnailUrl: thumbnailUrl,
       md5: fields[7] as String,
       spoiler: fields[8] as bool?,
       width: fields[9] as int?,

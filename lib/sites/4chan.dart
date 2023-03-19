@@ -208,7 +208,7 @@ class Site4Chan extends ImageboardSite {
 									if (tableRows.isNotEmpty) {
 										tableRows.add(const PostLineBreakSpan());
 									}
-									tableRows.add(PostTextSpan(row.firstChild!.text!, underlined: true));
+									tableRows.add(PostUnderlinedSpan(PostTextSpan(row.firstChild!.text!)));
 								}
 								else {
 									subtable.add(row.children.map((c) => PostTextSpan(c.text)).toList());
@@ -244,7 +244,7 @@ class Site4Chan extends ImageboardSite {
 				elements.addAll(parsePlaintext(node.text ?? ''));
 			}
 		}
-		return PostNodeSpan(elements);
+		return PostNodeSpan(elements.toList(growable: false));
 	}
 
 	ImageboardFlag? _makeFlag(dynamic data, String board) {
@@ -285,7 +285,7 @@ class Site4Chan extends ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(data['time'] * 1000),
 			id: data['no'],
 			threadId: threadId,
-			attachments: a == null ? [] : [a],
+			attachments: a == null ? const [] : [a].toList(growable: false),
 			attachmentDeleted: data['filedeleted'] == 1,
 			spanFormat: PostSpanFormat.chan4,
 			flag: _makeFlag(data, board),
@@ -304,8 +304,8 @@ class Site4Chan extends ImageboardSite {
 				filename: unescape.convert(data['filename'] ?? '') + (data['ext'] ?? ''),
 				ext: ext,
 				board: board,
-				url: Uri.https(imageUrl, '/$board/$id$ext'),
-				thumbnailUrl: Uri.https(imageUrl, '/$board/${id}s.jpg'),
+				url: Uri.https(imageUrl, '/$board/$id$ext').toString(),
+				thumbnailUrl: Uri.https(imageUrl, '/$board/${id}s.jpg').toString(),
 				md5: data['md5'],
 				spoiler: data['spoiler'] == 1,
 				width: data['w'],
@@ -402,8 +402,8 @@ class Site4Chan extends ImageboardSite {
 				lastModified: response.headers.value('last-modified')!
 			);
 			for (final attachment in output.attachments) {
-				await ensureCookiesMemoized(attachment.url);
-				await ensureCookiesMemoized(attachment.thumbnailUrl);
+				await ensureCookiesMemoized(Uri.parse(attachment.url));
+				await ensureCookiesMemoized(Uri.parse(attachment.thumbnailUrl));
 			}
 		}
 		else if (!(response.statusCode == 304 && headers != null)) {
@@ -461,7 +461,7 @@ class Site4Chan extends ImageboardSite {
 						threadId: id,
 						id: id,
 						spanFormat: PostSpanFormat.chan4,
-						attachments: []
+						attachments: const []
 					)
 				]
 			);

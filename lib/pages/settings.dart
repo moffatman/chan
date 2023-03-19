@@ -1098,8 +1098,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 			filename: 'example.png',
 			md5: '',
 			sizeInBytes: 150634,
-			url: Uri.parse('https://picsum.photos/800/600'),
-			thumbnailUrl: Uri.parse('https://picsum.photos/200/150'),
+			url: 'https://picsum.photos/800/600',
+			thumbnailUrl: 'https://picsum.photos/200/150',
 			threadId: 99999
 		);
 		return Thread(

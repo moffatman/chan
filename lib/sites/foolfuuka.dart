@@ -157,7 +157,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				elements.addAll(Site4Chan.parsePlaintext(node.text ?? ''));
 			}
 		}
-		return PostNodeSpan(elements);
+		return PostNodeSpan(elements.toList(growable: false));
 	}
 	Attachment? _makeAttachment(dynamic data) {
 		if (data['media'] != null) {
@@ -176,8 +176,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				filename: data['media']['media_filename'],
 				ext: '.${serverFilenameParts.last}',
 				type: (serverFilenameParts.last == 'webm' || serverFilenameParts.last == 'web') ? AttachmentType.webm : AttachmentType.image,
-				url: url,
-				thumbnailUrl: thumbnailUrl,
+				url: url.toString(),
+				thumbnailUrl: thumbnailUrl.toString(),
 				md5: data['media']['safe_media_hash'],
 				spoiler: data['media']['spoiler'] == '1',
 				width: int.parse(data['media']['media_w']),

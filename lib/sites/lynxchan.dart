@@ -78,7 +78,7 @@ class SiteLynxchan extends ImageboardSite {
 				elements.addAll(SiteLainchan.parsePlaintext(node.text ?? ''));
 			}
 		}
-		return PostNodeSpan(elements);
+		return PostNodeSpan(elements.toList(growable: false));
 	}
 
 	SiteLynxchan({
@@ -281,8 +281,8 @@ class SiteLynxchan extends ImageboardSite {
 					id: f['path'],
 					ext: '.${(f['path'] as String).split('.').last}',
 					filename: f['originalName'],
-					url: Uri.https(baseUrl, f['path']),
-					thumbnailUrl: Uri.https(baseUrl, f['thumb']),
+					url: Uri.https(baseUrl, f['path']).toString(),
+					thumbnailUrl: Uri.https(baseUrl, f['thumb']).toString(),
 					md5: '',
 					width: f['width'],
 					height: f['height'],
@@ -349,8 +349,8 @@ class SiteLynxchan extends ImageboardSite {
 				id: f['path'],
 				ext: '.${(f['path'] as String).split('.').last}',
 				filename: f['originalName'],
-				url: Uri.https(baseUrl, f['path']),
-				thumbnailUrl: Uri.https(baseUrl, f['thumb']),
+				url: Uri.https(baseUrl, f['path']).toString(),
+				thumbnailUrl: Uri.https(baseUrl, f['thumb']).toString(),
 				md5: '',
 				width: f['width'],
 				height: f['height'],
