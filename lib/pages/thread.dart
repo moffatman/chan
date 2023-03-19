@@ -937,6 +937,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																				final post = PostRow(
 																					post: value,
 																					dim: peekContentHeight.isFinite,
+																					highlight: useTree && value.id > lastSeenIdBeforeLastUpdate,
 																					overrideReplyCount: Row(
 																						mainAxisSize: MainAxisSize.min,
 																						children: [
