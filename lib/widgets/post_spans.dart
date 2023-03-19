@@ -1196,13 +1196,14 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	}
 
 	PostSpanZoneData childZoneFor(int postId) {
-		if (!_children.containsKey(postId)) {
-			_children[postId] = PostSpanChildZoneData(
-				parent: this,
-				postId: postId
-			);
+		// Assuming that when a new childZone is requested, there will be some old one to cleanup
+		for (final child in _children.values) {
+			child._lineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
 		}
-		return _children[postId]!;
+		return _children.putIfAbsent(postId, () => PostSpanChildZoneData(
+			parent: this,
+			postId: postId
+		));
 	}
 
 	void notifyAllListeners() {

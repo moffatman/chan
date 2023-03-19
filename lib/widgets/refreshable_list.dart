@@ -1940,6 +1940,11 @@ class RefreshableListController<T extends Object> {
 		}
 	}
 	Future<void> _onSlowScroll(void update) async {
+		for (final item in _items) {
+			if (item.context?.mounted == false) {
+				item.context = null;
+			}
+		}
 		slowScrolls.didUpdate();
 	}
 	void _onScrollControllerNotification() {
