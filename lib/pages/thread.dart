@@ -1102,6 +1102,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (_foreground) {
 			setHandoffUrl(null);
 		}
+		zone.dispose();
 	}
 }
 
