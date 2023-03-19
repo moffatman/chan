@@ -1,7 +1,13 @@
 import 'package:linkify/linkify.dart';
 
 final _looseUrlRegex = RegExp(
-  r'^(.*?)((https?:\/\/)?(www\.)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b[-a-zA-Z0-9@:%_\+.~#?&//=]*)',
+  r'^(.*?)((https?:\/\/)?(?:www\.)?([-a-zA-Z0-9@:%_.\+~#=]{1,256}\.[a-z]{2,})\b[-a-zA-Z0-9@:%_\+.~#?&//=]*)',
+  caseSensitive: false,
+  dotAll: true,
+);
+
+final _wikipediaUrlRegex = RegExp(
+  r'^(.*?)((https?:\/\/)?((?:[^\.]+\.)?wikipedia\.org)\/[-a-zA-Z0-9@:%_\+.~#?&//=]*\([^\)]+\))',
   caseSensitive: false,
   dotAll: true,
 );
@@ -20,9 +26,9 @@ class LooseUrlLinkifier extends Linkifier {
 
     for (final element in elements) {
       if (element is TextElement) {
-        var match = _looseUrlRegex.firstMatch(element.text);
+        final match = _wikipediaUrlRegex.firstMatch(element.text) ?? _looseUrlRegex.firstMatch(element.text);
 
-        if (match == null || (match.group(5)?.contains('..') ?? false)) {
+        if (match == null || (match.group(4)?.contains('..') ?? false)) {
           list.add(element);
         } else {
           final text = element.text.replaceFirst(match.group(0)!, '');
@@ -32,7 +38,7 @@ class LooseUrlLinkifier extends Linkifier {
           }
 
           if (match.group(2)?.isNotEmpty == true) {
-            var originalUrl = match.group(2)!;
+            String originalUrl = match.group(2)!;
             String? end;
 
             if ((options.excludeLastPeriod) &&
@@ -41,7 +47,7 @@ class LooseUrlLinkifier extends Linkifier {
               originalUrl = originalUrl.substring(0, originalUrl.length - 1);
             }
 
-            var url = originalUrl;
+            String url = originalUrl;
 
             if (!originalUrl.startsWith(_protocolIdentifierRegex)) {
               originalUrl = (options.defaultToHttps ? "https://" : "http://") +
