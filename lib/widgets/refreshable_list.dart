@@ -2028,8 +2028,7 @@ class RefreshableListController<T extends Object> {
 	}
 	double? _estimateOffset(int targetIndex) {
 		final heightedItems = _items.map((i) => i.cachedHeight).where((i) => i != null);
-		if (heightedItems.length < 2) return null;
-		final averageItemHeight = heightedItems.reduce((a, b) => a! + b!)! / heightedItems.length;
+		final averageItemHeight = heightedItems.map((i) => i!).fold<double>(0, (a, b) => a + b) / heightedItems.length;
 		int nearestDistance = _items.length + 1;
 		double? estimate;
 		for (int i = 0; i < _items.length; i++) {
