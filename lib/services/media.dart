@@ -184,7 +184,7 @@ class MediaConversion {
 	FFmpegSession? _session;
 	MediaScan? cachedScan;
 
-	static final pool = Pool(Platform.numberOfProcessors);
+	static final pool = Pool(sqrt(Platform.numberOfProcessors).ceil());
 
 	static bool get _isVideoToolboxSupported => Platform.isIOS && !RegExp(r'Version 15\.[01]').hasMatch(Platform.operatingSystemVersion);
 	bool _hasVideoToolboxFailed = false;
