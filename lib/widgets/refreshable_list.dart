@@ -597,15 +597,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			onCollapseOrExpand: _onTreeCollapseOrExpand,
 			onManuallyCollapsedItemsChanged: widget.onCollapsedItemsChanged,
 		);
-		widget.updateAnimation?.addListener(update);
+		widget.updateAnimation?.addListener(_onUpdateAnimation);
 	}
 
 	@override
 	void didUpdateWidget(RefreshableList<T> oldWidget) {
 		super.didUpdateWidget(oldWidget);
 		if (oldWidget.updateAnimation != widget.updateAnimation) {
-			oldWidget.updateAnimation?.removeListener(update);
-			widget.updateAnimation?.addListener(update);
+			oldWidget.updateAnimation?.removeListener(_onUpdateAnimation);
+			widget.updateAnimation?.addListener(_onUpdateAnimation);
 		}
 		if (oldWidget.id != widget.id) {
 			autoUpdateTimer?.cancel();
@@ -665,7 +665,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	@override
 	void dispose() {
 		super.dispose();
-		widget.updateAnimation?.removeListener(update);
+		widget.updateAnimation?.removeListener(_onUpdateAnimation);
 		autoUpdateTimer?.cancel();
 		_searchController.dispose();
 		_searchFocusNode.dispose();
@@ -744,6 +744,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		finally {
 			_refreshableTreeItems.itemLoadingOmittedItemsEnded(value.parentIds, id, value);
+		}
+	}
+
+	void _onUpdateAnimation() {
+		if (lastUpdateTime == null || (DateTime.now().difference(lastUpdateTime!) > const Duration(seconds: 1))) {
+			update();
 		}
 	}
 
