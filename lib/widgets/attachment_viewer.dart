@@ -73,8 +73,8 @@ class AttachmentNotArchivedException implements Exception {
 	String toString() => 'Attachment not archived';
 }
 
-const _maxVp9Controllers = 3;
-final List<AttachmentViewerController> _vp9Controllers = [];
+const _maxVideoControllers = 3;
+final List<AttachmentViewerController> _videoControllers = [];
 
 class AttachmentViewerController extends ChangeNotifier {
 	// Parameters
@@ -292,8 +292,11 @@ class AttachmentViewerController extends ChangeNotifier {
 		_isFullResolution = false;
 		_showLoadingProgress = false;
 		_showAudioOnly = false;
-		_videoPlayerController?.dispose();
+		final controller = videoPlayerController;
 		_videoPlayerController = null;
+		if (controller != null) {
+			controller.pause().then((_) => controller.dispose());
+		}
 		_goodImageSource = null;
 		_longPressFactorSubscription?.cancel();
 		_longPressFactorStream.close();
@@ -360,16 +363,15 @@ class AttachmentViewerController extends ChangeNotifier {
 						return;
 					}
 					_hasAudio = scan.hasAudio;
-					if (scan.codec == 'vp9') {
-						if (settings.webmTranscoding == WebmTranscodingSetting.vp9) {
-							transcode = true;
-						}
-						else {
-							_vp9Controllers.add(this);
-							if (_vp9Controllers.length > _maxVp9Controllers) {
-								_vp9Controllers.removeAt(0).goToThumbnail();
-							}
-						}
+					if (scan.codec == 'vp9' && settings.webmTranscoding == WebmTranscodingSetting.vp9) {
+						transcode = true;
+					}
+				}
+				_videoControllers.add(this);
+				if (_videoControllers.length > _maxVideoControllers) {
+					final removed = _videoControllers.removeAt(0);
+					if (!removed._isDisposed) {
+						removed.goToThumbnail();
 					}
 				}
 				bool isAudioOnly = false;
@@ -386,7 +388,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					_conversionDisposers.add(_ongoingConversion!.dispose);
 					_ongoingConversion = null;
 					if (result is StreamingMP4ConvertedFile) {
-						if (!background) {
+						if (isPrimary || !background) {
 							_videoPlayerController = VideoPlayerController.file(result.mp4File, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
 						}
 						_cachedFile = result.mp4File;
@@ -394,7 +396,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					}
 					else if (result is StreamingMP4ConversionStream) {
 						_duration = result.duration;
-						if (!background) {
+						if (isPrimary || !background) {
 							_videoPlayerController = VideoPlayerController.network(result.hlsStream.toString(), formatHint: VideoFormat.hls, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
 						}
 						_videoLoadingProgress = result.progress;
@@ -660,7 +662,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 		videoPlayerController?.pause().then((_) => videoPlayerController?.dispose());
 		_longPressFactorStream.close();
-		_vp9Controllers.remove(this);
+		_videoControllers.remove(this);
 	}
 
 	@override
