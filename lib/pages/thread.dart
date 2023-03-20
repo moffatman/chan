@@ -151,7 +151,7 @@ class _ThreadPageState extends State<ThreadPage> {
 					if (useTree) {
 						final lastListIndex = _listController.lastVisibleIndex;
 						if (lastListIndex != -1) {
-							newLastId = _listController.items.take(lastListIndex).map((l) => l.item.id).reduce(max);
+							newLastId = _listController.items.take(lastListIndex).map((l) => l.item.id).fold<int>(0, max);
 						}
 					}
 					else {
