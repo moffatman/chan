@@ -288,10 +288,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		});
 		_listController.slowScrolls.addListener(_onSlowScroll);
 		context.read<PersistentBrowserTab?>()?.threadController = _listController;
-		final int? explicitScrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread];
-		if (explicitScrollToId != null || !(useTree && (context.read<ImageboardSite>().isReddit || context.read<ImageboardSite>().isHackerNews))) {
-			_blockAndScrollToPostIfNeeded();
-		}
+		_scrollIfWarranted();
 	}
 
 	@override
@@ -320,9 +317,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			);
 			_maybeUpdateWatch();
 			persistentState.save();
-			if (!useTree) {
-				_blockAndScrollToPostIfNeeded(const Duration(milliseconds: 100));
-			}
+			_scrollIfWarranted();
 			setState(() {});
 		}
 		else if (widget.initialPostId != old.initialPostId && widget.initialPostId != null) {
@@ -336,6 +331,13 @@ class _ThreadPageState extends State<ThreadPage> {
 		_checkForeground();
 		_parentTab = context.watch<PersistentBrowserTab?>();
 		setHandoffUrl(_foreground ? context.read<ImageboardSite>().getWebUrl(widget.thread.board, widget.thread.id) : null);
+	}
+
+	Future<void> _scrollIfWarranted([Duration delayBeforeScroll = Duration.zero]) async {
+		final int? explicitScrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread];
+		if (explicitScrollToId != widget.thread.id && (explicitScrollToId != null || !(useTree && (context.read<ImageboardSite>().isReddit || context.read<ImageboardSite>().isHackerNews)))) {
+			await _blockAndScrollToPostIfNeeded(delayBeforeScroll);
+		}
 	}
 
 	void _showGallery({bool initiallyShowChrome = false, TaggedAttachment? initialAttachment}) {
@@ -487,16 +489,11 @@ class _ThreadPageState extends State<ThreadPage> {
 			// Trigger update of counts in case new post is drawn fully onscreen
 			_listController.slowScrolls.didUpdate();
 		});
-		if (shouldScroll && !useTree) {
-			_blockAndScrollToPostIfNeeded(const Duration(milliseconds: 500))
-				.then((_) async {
-					await _listController.waitForItemBuild(0);
-					_runPostUpdateCallbacks();
-				});
-		}
-		else {
-			_listController.waitForItemBuild(0).then((_) => _runPostUpdateCallbacks());
-		}
+		_scrollIfWarranted(const Duration(milliseconds: 500))
+			.then((_) async {
+				await _listController.waitForItemBuild(0);
+				_runPostUpdateCallbacks();
+			});
 		_passedFirstLoad = true;
 		setState(() {});
 		return newThread;
