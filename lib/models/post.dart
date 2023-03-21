@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chan/models/flag.dart';
 import 'package:chan/models/intern.dart';
 import 'package:chan/models/thread.dart';
@@ -12,12 +14,16 @@ import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/sites/reddit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
+import 'package:pool/pool.dart';
 
 import '../widgets/post_spans.dart';
 
 import 'attachment.dart';
 
 part 'post.g.dart';
+
+// Avoid creating too many small threads
+final _makeSpanPool = Pool((Platform.numberOfProcessors / 2).ceil());
 
 @HiveType(typeId: 13)
 enum PostSpanFormat {
@@ -85,7 +91,7 @@ class Post implements Filterable {
 	}
 	Future<void> preinit() async {
 		if (text.length > 500) {
-			_span = await compute<Post, PostNodeSpan>((p) => p._makeSpan(), this);
+			_span = await _makeSpanPool.withResource(() => compute<Post, PostNodeSpan>((p) => p._makeSpan(), this));
 		}
 		else {
 			_span = _makeSpan();

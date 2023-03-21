@@ -834,7 +834,7 @@ class _BoardPageState extends State<BoardPage> {
 														listUpdater: () => site.getCatalog(board!.name, variant: variant).then((list) async {
 															for (final thread in list) {
 																await thread.preinit(catalog: true);
-																await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded(catalog: true);
+																await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
 															}
 															_lastCatalogUpdateTime = DateTime.now();
 															if (settings.hideOldStickiedThreads && list.length > 100) {
@@ -853,7 +853,7 @@ class _BoardPageState extends State<BoardPage> {
 														listExtender: (after) => site.getMoreCatalog(after, variant: variant).then((list) async {
 															for (final thread in list) {
 																await thread.preinit(catalog: true);
-																await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded(catalog: true);
+																await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
 															}
 															return list;
 														}),

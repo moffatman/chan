@@ -5,6 +5,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:hive/hive.dart';
 
 part 'thread.g.dart';
@@ -72,14 +73,18 @@ class Thread implements Filterable {
 		return posts_;
 	}
 
+	Future<void> _fullPreinit() async {
+		for (final post in posts_) {
+			await post.preinit();
+		}
+	}
+
 	Future<void> preinit({bool catalog = false}) async {
 		if (catalog) {
 			await posts_.first.preinit();
 		}
 		else {
-			for (final post in posts_) {
-				await post.preinit();
-			}
+			await SchedulerBinding.instance.scheduleTask(_fullPreinit, Priority.touch);
 		}
 	}
 

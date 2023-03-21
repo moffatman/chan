@@ -216,14 +216,14 @@ class _HistoryPageState extends State<HistoryPage> {
 									states = Persistence.sharedThreadStateBox.values.where((s) => s.imageboard != null).toList();
 									states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
 									final part = states.take(_historyPageSize).toList();
-									await Future.wait(part.map((p) => p.ensureThreadLoaded(catalog: true)));
+									await Future.wait(part.map((p) => p.ensureThreadLoaded()));
 									return part.where((p) => p.thread != null).toList();
 								},
 								listExtender: (after) async {
 									final index = states.indexOf(after);
 									if (index != -1) {
 										final part = states.skip(index + 1).take(_historyPageSize).toList();
-										await Future.wait(part.map((p) => p.ensureThreadLoaded(catalog: true)));
+										await Future.wait(part.map((p) => p.ensureThreadLoaded()));
 										return part.where((p) => p.thread != null).toList();
 									}
 									return [];
