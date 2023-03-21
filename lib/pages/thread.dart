@@ -489,11 +489,16 @@ class _ThreadPageState extends State<ThreadPage> {
 			// Trigger update of counts in case new post is drawn fully onscreen
 			_listController.slowScrolls.didUpdate();
 		});
-		_scrollIfWarranted(const Duration(milliseconds: 500))
-			.then((_) async {
-				await _listController.waitForItemBuild(0);
-				_runPostUpdateCallbacks();
-			});
+		if (shouldScroll) {
+			_scrollIfWarranted(const Duration(milliseconds: 500))
+				.then((_) async {
+					await _listController.waitForItemBuild(0);
+					_runPostUpdateCallbacks();
+				});
+		}
+		else {
+			_listController.waitForItemBuild(0).then((_) => _runPostUpdateCallbacks());
+		}
 		_passedFirstLoad = true;
 		setState(() {});
 		return newThread;
