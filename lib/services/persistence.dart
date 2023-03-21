@@ -255,6 +255,14 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 
 	static Future<void> initializeStatic() async {
 		await Hive.initFlutter();
+		Hive.registerAdapter(PostAdapter());
+		Hive.registerAdapter(PostSpanFormatAdapter());
+		Hive.registerAdapter(ImageboardBoardAdapter());
+		Hive.registerAdapter(UriAdapter());
+		Hive.registerAdapter(AttachmentAdapter());
+		Hive.registerAdapter(AttachmentTypeAdapter());
+		Hive.registerAdapter(PersistentThreadStateAdapter());
+		Hive.registerAdapter(PostReceiptAdapter());
 		Hive.registerAdapter(ColorAdapter());
 		Hive.registerAdapter(SavedThemeAdapter());
 		Hive.registerAdapter(TristateSystemSettingAdapter());
@@ -267,17 +275,9 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 		Hive.registerAdapter(SettingsQuickActionAdapter());
 		Hive.registerAdapter(WebmTranscodingSettingAdapter());
 		Hive.registerAdapter(SavedSettingsAdapter());
-		Hive.registerAdapter(UriAdapter());
-		Hive.registerAdapter(AttachmentTypeAdapter());
-		Hive.registerAdapter(AttachmentAdapter());
 		Hive.registerAdapter(ImageboardFlagAdapter());
 		Hive.registerAdapter(ImageboardMultiFlagAdapter());
-		Hive.registerAdapter(PostSpanFormatAdapter());
-		Hive.registerAdapter(PostAdapter());
 		Hive.registerAdapter(ThreadAdapter());
-		Hive.registerAdapter(ImageboardBoardAdapter());
-		Hive.registerAdapter(PostReceiptAdapter());
-		Hive.registerAdapter(PersistentThreadStateAdapter());
 		Hive.registerAdapter(ImageboardArchiveSearchQueryAdapter());
 		Hive.registerAdapter(PostTypeFilterAdapter());
 		Hive.registerAdapter(MediaFilterAdapter());
