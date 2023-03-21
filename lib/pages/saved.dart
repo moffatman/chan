@@ -114,6 +114,7 @@ class _SavedPageState extends State<SavedPage> {
 	final _yourPostsListKey = GlobalKey();
 	final _savedAttachmentsAnimatedBuilderKey = GlobalKey();
 	late final ScrollController _savedAttachmentsController;
+	late final EasyListenable _removeArchivedHack;
 
 	@override
 	void initState() {
@@ -123,6 +124,19 @@ class _SavedPageState extends State<SavedPage> {
 		_postListController = RefreshableListController();
 		_yourPostsListController = RefreshableListController();
 		_savedAttachmentsController = ScrollController();
+		_removeArchivedHack = EasyListenable();
+	}
+
+	@override
+	void didUpdateWidget(SavedPage oldWidget) {
+		super.didUpdateWidget(oldWidget);
+		if (widget.isActive && !oldWidget.isActive) {
+			_watchedListController.update();
+			_threadListController.update();
+			_postListController.update();
+			_yourPostsListController.update();
+			_removeArchivedHack.didUpdate();
+		}
 	}
 
 	Widget _placeholder(String message) {
@@ -238,7 +252,11 @@ class _SavedPageState extends State<SavedPage> {
 										child: RefreshableList<ImageboardScoped<ThreadWatch>>(
 											filterableAdapter: null,
 											controller: _watchedListController,
-											listUpdater: _loadWatches,
+											listUpdater: () async {
+												final list = await _loadWatches();
+												_watchedListController.waitForItemBuild(0).then((_) => _removeArchivedHack.didUpdate());
+												return list;
+											},
 											minUpdateDuration: Duration.zero,
 											updateAnimation: persistencesAnimation,
 											key: _watchedThreadsListKey,
@@ -260,8 +278,9 @@ class _SavedPageState extends State<SavedPage> {
 															),
 															ContextMenuAction(
 																child: const Text('Unwatch'),
-																onPressed: () {
-																	watch.imageboard.notifications.removeWatch(watch.item);
+																onPressed: () async {
+																	await watch.imageboard.notifications.removeWatch(watch.item);
+																	_watchedListController.update();
 																},
 																trailingIcon: CupertinoIcons.xmark,
 																isDestructiveAction: true
@@ -273,6 +292,7 @@ class _SavedPageState extends State<SavedPage> {
 																	final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
 																	threadState.savedTime = null;
 																	threadState.save();
+																	_threadListController.update();
 																}
 															)
 															else ContextMenuAction(
@@ -343,26 +363,29 @@ class _SavedPageState extends State<SavedPage> {
 												);
 											},
 											filterHint: 'Search watched threads',
-											footer: Container(
+											footer: Padding(
 												padding: const EdgeInsets.all(16),
-												child: CupertinoButton(
-													padding: const EdgeInsets.all(8),
-													onPressed: (_watchedListController.items.any((w) => w.item.item.zombie)) ? () {
-														final toRemove = _watchedListController.items.where((w) => w.item.item.zombie).toList();
-														for (final watch in toRemove) {
-															watch.item.imageboard.notifications.removeWatch(watch.item.item);
-														}
-														_watchedListController.update();
-													} : null,
-													child: const Row(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															Icon(CupertinoIcons.xmark),
-															SizedBox(width: 8),
-															Flexible(
-																child: Text('Remove archived', textAlign: TextAlign.center)
-															)
-														]
+												child: AnimatedBuilder(
+													animation: _removeArchivedHack,
+													builder: (context, _) => CupertinoButton(
+														padding: const EdgeInsets.all(8),
+														onPressed: (_watchedListController.items.any((w) => w.item.item.zombie)) ? () async {
+															final toRemove = _watchedListController.items.where((w) => w.item.item.zombie).toList();
+															for (final watch in toRemove) {
+																await watch.item.imageboard.notifications.removeWatch(watch.item.item);
+															}
+															_watchedListController.update();
+														} : null,
+														child: const Row(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																Icon(CupertinoIcons.xmark),
+																SizedBox(width: 8),
+																Flexible(
+																	child: Text('Remove archived', textAlign: TextAlign.center)
+																)
+															]
+														)
 													)
 												)
 											)
@@ -429,6 +452,7 @@ class _SavedPageState extends State<SavedPage> {
 												onPressed: () {
 													state.savedTime = null;
 													state.save();
+													_threadListController.update();
 												},
 												trailingIcon: CupertinoIcons.xmark,
 												isDestructiveAction: true
@@ -837,6 +861,7 @@ class _SavedPageState extends State<SavedPage> {
 		_threadListController.dispose();
 		_postListController.dispose();
 		_savedAttachmentsController.dispose();
+		_removeArchivedHack.dispose();
 	}
 }
 

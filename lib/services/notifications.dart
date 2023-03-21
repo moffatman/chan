@@ -598,7 +598,7 @@ void subscribeToBoard({
 		persistence.didUpdateBrowserState();
 	}
 
-	void removeWatch(Watch watch) async {
+	Future<void> removeWatch(Watch watch) async {
 		if (Persistence.settings.usePushNotifications == true && watch.push) {
 			_delete(watch);
 		}

@@ -1887,7 +1887,7 @@ class _BuiltRefreshableListItem<T extends Object> {
 	@override
 	String toString() => '_RefreshableListItem(item: $item, cachedOffset: $cachedOffset, cachedHeight: $cachedHeight)';
 }
-class RefreshableListController<T extends Object> {
+class RefreshableListController<T extends Object> extends ChangeNotifier {
 	List<_BuiltRefreshableListItem<RefreshableListItem<T>>> _items = [];
 	Iterable<RefreshableListItem<T>> get items => _items.map((i) => i.item);
 	int get itemsLength => _items.length;
@@ -1975,7 +1975,9 @@ class RefreshableListController<T extends Object> {
 			scrollController?.addListener(_onScrollControllerNotification);
 		}
 	}
+	@override
 	void dispose() {
+		super.dispose();
 		_scrollStream.close();
 		_slowScrollSubscription.cancel();
 		scrollController?.removeListener(_onScrollControllerNotification);
@@ -2024,6 +2026,7 @@ class RefreshableListController<T extends Object> {
 			_items = items.map((item) => _BuiltRefreshableListItem(item)..cachedHeight = oldCachedHeights[item]).toList();
 		}
 		_items.tryFirst?.cachedOffset = oldFirstOffset;
+		notifyListeners();
 	}
 	void registerItem(int index, RefreshableListItem<T> item, BuildContext context) {
 		if (index < _items.length) {
