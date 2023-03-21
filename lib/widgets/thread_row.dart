@@ -568,6 +568,7 @@ class ThreadRow extends StatelessWidget {
 								mainAxisSize: MainAxisSize.min,
 								children: [
 									if (watch != null) Icon(CupertinoIcons.bell_fill, color: otherMetadataColor, size: 18),
+									if (watch?.localYousOnly == false) Icon(CupertinoIcons.asterisk_circle, color: otherMetadataColor, size: 18),
 									if (threadState?.savedTime != null) Icon(CupertinoIcons.bookmark_fill, color: otherMetadataColor, size: 18)
 								]
 							)
