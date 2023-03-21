@@ -496,6 +496,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final void Function(List<List<int>>, Map<int, int>)? onCollapsedItemsChanged;
 	final Duration minUpdateDuration;
 	final Listenable? updateAnimation;
+	final bool canTapFooter;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -528,6 +529,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.onCollapsedItemsChanged,
 		this.minUpdateDuration = const Duration(milliseconds: 500),
 		this.updateAnimation,
+		this.canTapFooter = true,
 		Key? key
 	}) : super(key: key);
 
@@ -1672,7 +1674,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 											child: RepaintBoundary(
 												child: GestureDetector(
 													behavior: HitTestBehavior.opaque,
-													onTap: updatingNow.value ? null : () {
+													onTap: (!widget.canTapFooter || updatingNow.value) ? null : () {
 														lightHapticFeedback();
 														Future.delayed(const Duration(milliseconds: 17), () {
 															widget.controller?.scrollController?.animateTo(

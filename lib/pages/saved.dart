@@ -243,6 +243,7 @@ class _SavedPageState extends State<SavedPage> {
 											updateAnimation: persistencesAnimation,
 											key: _watchedThreadsListKey,
 											id: 'watched',
+											canTapFooter: false,
 											itemBuilder: (itemContext, watch) {
 												final isSelected = selected(itemContext, watch);
 												return ImageboardScope(
@@ -351,6 +352,7 @@ class _SavedPageState extends State<SavedPage> {
 														for (final watch in toRemove) {
 															watch.item.imageboard.notifications.removeWatch(watch.item.item);
 														}
+														_watchedListController.update();
 													} : null,
 													child: const Row(
 														mainAxisSize: MainAxisSize.min,
