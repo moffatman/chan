@@ -76,6 +76,19 @@ class AttachmentNotArchivedException implements Exception {
 const _maxVideoControllers = 3;
 final List<AttachmentViewerController> _videoControllers = [];
 
+extension on AndroidGallerySavePathOrganizing {
+	List<String> subfoldersFor(Attachment attachment) {
+		switch (this) {
+			case AndroidGallerySavePathOrganizing.noSubfolders:
+				return [];
+			case AndroidGallerySavePathOrganizing.boardSubfolders:
+				return [attachment.board];
+			case AndroidGallerySavePathOrganizing.boardAndThreadSubfolders:
+				return [attachment.board, attachment.threadId.toString()];
+		}
+	}
+}
+
 class AttachmentViewerController extends ChangeNotifier {
 	// Parameters
 	final BuildContext context;
@@ -610,6 +623,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					await saveFile(
 						sourcePath: source.path,
 						destinationDir: settings.androidGallerySavePath!,
+						destinationSubfolders: settings.androidGallerySavePathOrganizing.subfoldersFor(attachment),
 						destinationName: attachment.id.toString() + attachment.ext
 					);
 					_isDownloaded = true;

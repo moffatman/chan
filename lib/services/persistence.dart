@@ -291,6 +291,7 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 		Hive.registerAdapter(BoardWatchAdapter());
 		Hive.registerAdapter(PersistentBrowserStateAdapter());
 		Hive.registerAdapter(WebImageSearchMethodAdapter());
+		Hive.registerAdapter(AndroidGallerySavePathOrganizingAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
 		wifiCookies = PersistCookieJar(

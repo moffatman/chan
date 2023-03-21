@@ -6,11 +6,13 @@ class CupertinoAdaptiveSegmentedControl<T extends Object> extends StatelessWidge
 	final Map<T, Widget> children;
 	final ValueChanged<T> onValueChanged;
 	final T? groupValue;
+	final bool alwaysVertical;
 
 	const CupertinoAdaptiveSegmentedControl({
 		required this.children,
 		required this.onValueChanged,
 		this.groupValue,
+		this.alwaysVertical = false,
 		super.key
 	});
 
@@ -18,7 +20,7 @@ class CupertinoAdaptiveSegmentedControl<T extends Object> extends StatelessWidge
 	Widget build(BuildContext context) {
 		return LayoutBuilder(
 			builder: (context, constraints) {
-				if (constraints.maxWidth < (65 * children.length)) {
+				if (alwaysVertical || (constraints.maxWidth < (65 * children.length))) {
 					return ClipRRect(
 						borderRadius: BorderRadius.circular(8),
 						child: CupertinoListSection(

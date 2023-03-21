@@ -2923,7 +2923,41 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 								settings.androidGallerySavePath = await pickDirectory();
 							}
 						)
-					)
+					),
+					const SizedBox(height: 32),
+					const Row(
+						children: [
+							Icon(CupertinoIcons.folder),
+							SizedBox(width: 8),
+							Expanded(
+								child: Text('Media saving folder structure')
+							)
+						]
+					),
+					Padding(
+						padding: const EdgeInsets.all(16),
+						child: CupertinoAdaptiveSegmentedControl<AndroidGallerySavePathOrganizing>(
+							alwaysVertical: true,
+							children: const {
+								AndroidGallerySavePathOrganizing.noSubfolders: Padding(
+									padding: EdgeInsets.all(8),
+									child: Text('No subfolders', textAlign: TextAlign.left, maxLines: 3)
+								),
+								AndroidGallerySavePathOrganizing.boardSubfolders: Padding(
+									padding: EdgeInsets.all(8),
+									child: Text('Per-board subfolders', textAlign: TextAlign.left, maxLines: 3)
+								),
+								AndroidGallerySavePathOrganizing.boardAndThreadSubfolders: Padding(
+									padding: EdgeInsets.all(8),
+									child: Text('Per-board and per-thread subfolders', textAlign: TextAlign.left, maxLines: 3)
+								)
+							},
+							groupValue: settings.androidGallerySavePathOrganizing,
+							onValueChanged: (setting) {
+								settings.androidGallerySavePathOrganizing = setting;
+							}
+						)
+					),
 				],
 				const SizedBox(height: 16),
 				Row(

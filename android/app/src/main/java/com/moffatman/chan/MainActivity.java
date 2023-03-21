@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 import io.flutter.embedding.android.FlutterFragmentActivity;
 import io.flutter.embedding.engine.FlutterEngine;
@@ -66,8 +67,18 @@ public class MainActivity extends FlutterFragmentActivity {
                         try {
                             String sourcePath = call.argument("sourcePath");
                             String destinationDir = call.argument("destinationDir");
+                            List<String> destinationSubfolders = call.argument("destinationSubfolders");
                             String destinationName = call.argument("destinationName");
                             DocumentFile dir = DocumentFile.fromTreeUri(this, Uri.parse(destinationDir));
+                            for (String subdirName : destinationSubfolders) {
+                                DocumentFile subdir = dir.findFile(subdirName);
+                                if (subdir != null && subdir.isDirectory()) {
+                                    dir = subdir;
+                                }
+                                else {
+                                    dir = dir.createDirectory(subdirName);
+                                }
+                            }
                             DocumentFile file = dir.createFile(MimeTypeMap.getFileExtensionFromUrl(destinationName), destinationName);
                             ParcelFileDescriptor destinationFileDescriptor = getContentResolver().openFileDescriptor(file.getUri(), "w");
                             File sourceFile = new File(sourcePath);

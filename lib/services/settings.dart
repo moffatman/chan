@@ -412,6 +412,16 @@ extension SettingsQuickActionName on SettingsQuickAction? {
 	}
 }
 
+@HiveType(typeId: 37)
+enum AndroidGallerySavePathOrganizing {
+	@HiveField(0)
+	noSubfolders,
+	@HiveField(1)
+	boardSubfolders,
+	@HiveField(2)
+	boardAndThreadSubfolders
+}
+
 @HiveType(typeId: 0)
 class SavedSettings extends HiveObject {
 	@HiveField(0)
@@ -650,6 +660,8 @@ class SavedSettings extends HiveObject {
 	bool squareThumbnails;
 	@HiveField(121)
 	bool alwaysShowSpoilers;
+	@HiveField(122)
+	AndroidGallerySavePathOrganizing androidGallerySavePathOrganizing;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -773,6 +785,7 @@ class SavedSettings extends HiveObject {
 		bool? overscrollModalTapPopsAll,
 		bool? squareThumbnails,
 		bool? alwaysShowSpoilers,
+		AndroidGallerySavePathOrganizing? androidGallerySavePathOrganizing,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -923,7 +936,8 @@ class SavedSettings extends HiveObject {
 		showPostNumberOnPosts = showPostNumberOnPosts ?? true,
 		overscrollModalTapPopsAll = overscrollModalTapPopsAll ?? true,
 		squareThumbnails = squareThumbnails ?? false,
-		alwaysShowSpoilers = alwaysShowSpoilers ?? false {
+		alwaysShowSpoilers = alwaysShowSpoilers ?? false,
+		androidGallerySavePathOrganizing = androidGallerySavePathOrganizing ?? AndroidGallerySavePathOrganizing.noSubfolders {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1882,6 +1896,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get alwaysShowSpoilers => _settings.alwaysShowSpoilers;
 	set alwaysShowSpoilers(bool setting) {
 		_settings.alwaysShowSpoilers = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	AndroidGallerySavePathOrganizing get androidGallerySavePathOrganizing => _settings.androidGallerySavePathOrganizing;
+	set androidGallerySavePathOrganizing(AndroidGallerySavePathOrganizing setting) {
+		_settings.androidGallerySavePathOrganizing = setting;
 		_settings.save();
 		notifyListeners();
 	}

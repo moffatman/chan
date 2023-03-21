@@ -16,11 +16,13 @@ Future<String> pickDirectory() async {
 Future<void> saveFile({
 	required String sourcePath,
 	required String destinationDir,
+	required List<String> destinationSubfolders,
 	required String destinationName
 }) async {
 	await _platform.invokeMethod('saveFile', {
 		'sourcePath': sourcePath,
 		'destinationDir': destinationDir,
+		'destinationSubfolders': destinationSubfolders,
 		'destinationName': destinationName
 	});
 }
