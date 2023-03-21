@@ -72,7 +72,7 @@ class ThreadRow extends StatelessWidget {
 		if (threadState?.lastSeenPostId != null) {
 			final filter = Filter.of(context);
 			if (threadState?.useTree ?? context.read<Persistence>().browserState.useTree ?? site.useTree) {
-				unseenReplyCount = ((latestReplyCount) - (threadState!.thread?.replyCount ?? 0));
+				unseenReplyCount = (threadState?.unseenReplyCount(filter) ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
 			}
 			else {
 				unseenReplyCount = (threadState?.unseenReplyCount(filter) ?? 0) + ((latestReplyCount + 1) - latestThread.posts.length);
