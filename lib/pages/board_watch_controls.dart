@@ -2,9 +2,11 @@ import 'package:chan/models/board.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/filter_editor.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
 
 enum _BoardWatchingStatus {
 	off,
@@ -70,6 +72,8 @@ class _BoardWatchControlsPage extends State<BoardWatchControlsPage> {
 										(_BoardWatchingStatus.threadsAndPosts, 'All posts (not reliable')
 									].map((v) => CupertinoListTile(
 										title: Text(v.$2),
+										backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+										backgroundColorActivated: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColorWithBrightness(0.5)),
 										trailing: status == v.$1 ? const Icon(CupertinoIcons.check_mark, size: 18) : const SizedBox.shrink(),
 										onTap: () {
 											if (v.$1 != _BoardWatchingStatus.off) {

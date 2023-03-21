@@ -144,6 +144,8 @@ class _FilterEditorState extends State<FilterEditor> {
 											margin: EdgeInsets.zero,
 											children: [
 												CupertinoListTile(
+													backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+													backgroundColorActivated: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColorWithBrightness(0.5)),
 													title: const Text('Case-sensitive'),
 													trailing: isCaseSensitive ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap: () {
@@ -174,6 +176,8 @@ class _FilterEditorState extends State<FilterEditor> {
 														'flag': 'Flag',
 														'capcode': 'Capcode'
 													}[field] ?? field),
+													backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+													backgroundColorActivated: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColorWithBrightness(0.5)),
 													trailing: patternFields.contains(field) ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap:() {
 														if (patternFields.contains(field)) {
@@ -201,6 +205,8 @@ class _FilterEditorState extends State<FilterEditor> {
 														false: 'Without images',
 														true: 'With images'
 													}[field]!),
+													backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+													backgroundColorActivated: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColorWithBrightness(0.5)),
 													trailing: hasFile == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap:() {
 														setInnerState(() {
@@ -224,6 +230,8 @@ class _FilterEditorState extends State<FilterEditor> {
 														true: 'Threads only',
 														false: 'Replies only'
 													}[field]!),
+													backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+													backgroundColorActivated: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColorWithBrightness(0.5)),
 													trailing: threadsOnly == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap:() {
 														setInnerState(() {
@@ -402,6 +410,8 @@ class _FilterEditorState extends State<FilterEditor> {
 													CupertinoListTile(
 														title: const Text('Hide'),
 														trailing: hide ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+														backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+														backgroundColorActivated: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColorWithBrightness(0.5)),
 														onTap: () {
 															if (!hide) {
 																hide = true;
@@ -435,6 +445,8 @@ class _FilterEditorState extends State<FilterEditor> {
 												].map((t) => CupertinoListTile(
 													title: Text(t.$1),
 													trailing: t.$2 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
+													backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+													backgroundColorActivated: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColorWithBrightness(0.5)),
 													onTap: () {
 														t.$3(!t.$2);
 														hide = !(highlight || pinToTop || autoSave || notify || collapse);
@@ -600,6 +612,8 @@ class _FilterEditorState extends State<FilterEditor> {
 												opacity: filter.value.disabled ? 0.5 : 1,
 												child: CupertinoListTile(
 													title: Text(filter.value.label.isNotEmpty ? filter.value.label : filter.value.pattern.pattern),
+													backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+													backgroundColorActivated: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColorWithBrightness(0.5)),
 													leading: FittedBox(fit: BoxFit.contain, child: Column(
 														mainAxisAlignment: MainAxisAlignment.spaceBetween,
 														children: [
@@ -658,7 +672,8 @@ class _FilterEditorState extends State<FilterEditor> {
 											)
 										),
 										Material(
-											type: MaterialType.transparency,
+											type: MaterialType.canvas,
+											color: settings.theme.barColor,
 											child: Checkbox(
 												activeColor: CupertinoTheme.of(context).primaryColor,
 												checkColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
@@ -679,6 +694,8 @@ class _FilterEditorState extends State<FilterEditor> {
 							if (filters.isEmpty) CupertinoListTile(
 								title: const Text('Suggestion: Add a mass-reply filter'),
 								leading: const Icon(CupertinoIcons.lightbulb),
+								backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+								backgroundColorActivated: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColorWithBrightness(0.5)),
 								onTap: () async {
 									settings.filterConfiguration += '\nMass-reply//;minReplied:10';
 									regexController.text = settings.filterConfiguration;
@@ -687,6 +704,8 @@ class _FilterEditorState extends State<FilterEditor> {
 							CupertinoListTile(
 								title: const Text('New filter'),
 								leading: const Icon(CupertinoIcons.plus),
+								backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+								backgroundColorActivated: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColorWithBrightness(0.5)),
 								onTap: () async {
 									final newFilter = await editFilter(null);
 									if (newFilter?.$2 != null) {
