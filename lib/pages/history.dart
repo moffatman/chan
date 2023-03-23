@@ -99,14 +99,11 @@ class _HistoryPageState extends State<HistoryPage> {
 													barrierDismissible: true,
 													builder: (context) => StatefulBuilder(
 														builder: (context, setDialogState) {
-															final states = Persistence.sharedThreadStateBox.keys.map((k) => ImageboardScoped(
-																imageboard: ImageboardRegistry.instance.getImageboard(k.split('/').first)!,
-																item: Persistence.sharedThreadStateBox.get(k)!
-															)).where((i) => i.item.savedTime == null && i.item.thread != null && (includeThreadsYouRepliedTo || i.item.youIds.isEmpty)).toList();
-															final thisSessionStates = states.where((s) => s.item.lastOpenedTime.compareTo(_appLaunchTime) >= 0).toList();
+															final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime == null && (includeThreadsYouRepliedTo || i.youIds.isEmpty)).toList();
+															final thisSessionStates = states.where((s) => s.lastOpenedTime.compareTo(_appLaunchTime) >= 0).toList();
 															final now = DateTime.now();
-															final lastDayStates = states.where((s) => now.difference(s.item.lastOpenedTime).inDays < 1);
-															final lastWeekStates = states.where((s) => now.difference(s.item.lastOpenedTime).inDays < 7);
+															final lastDayStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 1);
+															final lastWeekStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 7);
 															return CupertinoAlertDialog(
 																title: const Text('Clear history'),
 																content: Column(
@@ -136,7 +133,7 @@ class _HistoryPageState extends State<HistoryPage> {
 																		onPressed: () async {
 																			Navigator.pop(context);
 																			for (final state in thisSessionStates) {
-																				await state.item.delete();
+																				await state.delete();
 																			}
 																		},
 																		isDestructiveAction: true,
@@ -146,7 +143,7 @@ class _HistoryPageState extends State<HistoryPage> {
 																		onPressed: () async {
 																			Navigator.pop(context);
 																			for (final state in lastDayStates) {
-																				await state.item.delete();
+																				await state.delete();
 																			}
 																		},
 																		isDestructiveAction: true,
@@ -156,7 +153,7 @@ class _HistoryPageState extends State<HistoryPage> {
 																		onPressed: () async {
 																			Navigator.pop(context);
 																			for (final state in lastWeekStates) {
-																				await state.item.delete();
+																				await state.delete();
 																			}
 																		},
 																		isDestructiveAction: true,
@@ -166,7 +163,7 @@ class _HistoryPageState extends State<HistoryPage> {
 																		onPressed: () async {
 																			Navigator.pop(context);
 																			for (final state in states) {
-																				await state.item.delete();
+																				await state.delete();
 																			}
 																		},
 																		isDestructiveAction: true,
