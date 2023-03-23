@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
@@ -1077,36 +1078,41 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							mainAxisAlignment: MainAxisAlignment.end,
 							crossAxisAlignment: CrossAxisAlignment.center,
 							children: [
-								Column(
-									crossAxisAlignment: CrossAxisAlignment.end,
-									children: [
-										CupertinoButton(
-											padding: EdgeInsets.zero,
-											minSize: 30,
-											child: const Icon(CupertinoIcons.xmark),
-											onPressed: () {
-												widget.onFilePathChanged?.call(null);
-												setState(() {
-													attachment = null;
-													_attachmentScan = null;
-													_showAttachmentOptions = false;
-													_filenameController.clear();
-												});
-											}
-										),
-										const Spacer(),
-										if (attachmentExt == 'mp4' || attachmentExt == 'webm') Text(
-											[
-												if (_attachmentScan?.codec != null) _attachmentScan!.codec!.toUpperCase(),
-												if (_attachmentScan?.hasAudio == true) 'with audio'
-												else 'no audio',
-												if (_attachmentScan?.duration != null) formatDuration(_attachmentScan!.duration!),
-												if (_attachmentScan?.bitrate != null) '${(_attachmentScan!.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps'
-											].join(', '),
-											style: const TextStyle(color: Colors.grey)
-										),
-										if (_attachmentScan?.width != null && _attachmentScan?.height != null) Text('${_attachmentScan?.width}x${_attachmentScan?.height}', style: const TextStyle(color: Colors.grey)),
-									]
+								Flexible(
+									child: Column(
+										mainAxisAlignment: MainAxisAlignment.spaceBetween,
+										crossAxisAlignment: CrossAxisAlignment.end,
+										children: [
+											CupertinoButton(
+												padding: EdgeInsets.zero,
+												minSize: 30,
+												child: const Icon(CupertinoIcons.xmark),
+												onPressed: () {
+													widget.onFilePathChanged?.call(null);
+													setState(() {
+														attachment = null;
+														_attachmentScan = null;
+														_showAttachmentOptions = false;
+														_filenameController.clear();
+													});
+												}
+											),
+											if (attachmentExt == 'mp4' || attachmentExt == 'webm') Flexible(
+												child: AutoSizeText(
+												[
+													if (_attachmentScan?.codec != null) _attachmentScan!.codec!.toUpperCase(),
+													if (_attachmentScan?.hasAudio == true) 'with audio'
+													else 'no audio',
+													if (_attachmentScan?.duration != null) formatDuration(_attachmentScan!.duration!),
+													if (_attachmentScan?.bitrate != null) '${(_attachmentScan!.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
+													if (_attachmentScan?.width != null && _attachmentScan?.height != null) '${_attachmentScan?.width}x${_attachmentScan?.height}'
+												].join(', '),
+												style: const TextStyle(color: Colors.grey),
+												maxLines: 3,
+												textAlign: TextAlign.right
+											))
+										]
+									)
 								),
 								const SizedBox(width: 8),
 								Flexible(
