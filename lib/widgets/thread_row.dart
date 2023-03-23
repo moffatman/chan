@@ -394,6 +394,7 @@ class ThreadRow extends StatelessWidget {
 				)
 			)
 		];
+		final showFlairInContentFocus = !settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '');
 		List<Widget> buildContentFocused() {
 			final atts = latestThread.attachments.map((attachment) => LayoutBuilder(
 				builder: (context, constraints) {
@@ -412,19 +413,6 @@ class ThreadRow extends StatelessWidget {
 										hero: TaggedAttachment(
 											attachment: attachment,
 											semanticParentIds: semanticParentIds
-										)
-									),
-									if (!settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '')) Positioned(
-										top: 0,
-										left: 0,
-										child: Container(
-											decoration: BoxDecoration(
-												borderRadius: const BorderRadius.only(bottomRight: Radius.circular(6)),
-												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-												border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-											),
-											padding: const EdgeInsets.all(2),
-											child: Text(latestThread.flair!.name)
 										)
 									),
 									if (attachment.soundSource != null || attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned(
@@ -466,6 +454,9 @@ class ThreadRow extends StatelessWidget {
 							child: Text.rich(
 								TextSpan(
 									children: [
+										if (showFlairInContentFocus && latestThread.attachments.isEmpty) const TextSpan(
+											text: '\n'
+										),
 										if (latestThread.title?.isNotEmpty ?? false) TextSpan(
 											text: '${settings.filterProfanity(latestThread.title!)}\n',
 											style: site.classicCatalogStyle ? const TextStyle(fontWeight: FontWeight.bold) : null,
@@ -552,6 +543,19 @@ class ThreadRow extends StatelessWidget {
 					child: Align(
 						alignment: Alignment.bottomRight,
 						child: makeCounters()
+					)
+				),
+				if (contentFocus && showFlairInContentFocus) Positioned(
+					top: 0,
+					left: 0,
+					child: Container(
+						decoration: BoxDecoration(
+							borderRadius: const BorderRadius.only(bottomRight: Radius.circular(6)),
+							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+							border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+						),
+						padding: const EdgeInsets.all(2),
+						child: Text(latestThread.flair!.name)
 					)
 				),
 				if (watch != null || threadState?.savedTime != null) Positioned.fill(
