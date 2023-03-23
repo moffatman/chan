@@ -332,7 +332,7 @@ class MediaConversion {
 		if (soundSource != null && isOriginalFile) {
 			return null;
 		}
-		return MediaConversionResult(file, scan?.hasAudio ?? false, scan?.isAudioOnly ?? false);
+		return MediaConversionResult(file, soundSource != null || (scan?.hasAudio ?? false), scan?.isAudioOnly ?? false);
 	}
 
 	Future<void> start() async {

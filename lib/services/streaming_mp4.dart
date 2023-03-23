@@ -155,7 +155,7 @@ class StreamingMP4Conversion {
 				),
 				progress: streamingConversion.progress,
 				mp4File: _joinedCompleter.future,
-				hasAudio: streamingConversion.cachedScan?.hasAudio ?? false,
+				hasAudio: soundSource != null || (streamingConversion.cachedScan?.hasAudio ?? false),
 				duration: streamingConversion.cachedScan?.duration,
 				isAudioOnly: surelyAudioOnly || (streamingConversion.cachedScan?.isAudioOnly ?? false)
 			);
@@ -163,7 +163,7 @@ class StreamingMP4Conversion {
 		else {
 			// Better to just wait and return the mp4
 			final file = await _joinedCompleter.future;
-			return StreamingMP4ConvertedFile(file, streamingConversion.cachedScan?.hasAudio ?? false, surelyAudioOnly || (streamingConversion.cachedScan?.isAudioOnly ?? false));
+			return StreamingMP4ConvertedFile(file, soundSource != null || (streamingConversion.cachedScan?.hasAudio ?? false), surelyAudioOnly || (streamingConversion.cachedScan?.isAudioOnly ?? false));
 		}
 	}
 

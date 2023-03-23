@@ -400,12 +400,13 @@ class AttachmentViewerController extends ChangeNotifier {
 					final result = await _ongoingConversion!.start();
 					_conversionDisposers.add(_ongoingConversion!.dispose);
 					_ongoingConversion = null;
+					_hasAudio = result.hasAudio;
+					isAudioOnly = result.isAudioOnly;
 					if (result is StreamingMP4ConvertedFile) {
 						if (isPrimary || !background) {
 							_videoPlayerController = VideoPlayerController.file(result.mp4File, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
 						}
 						_cachedFile = result.mp4File;
-						isAudioOnly = result.isAudioOnly;
 					}
 					else if (result is StreamingMP4ConversionStream) {
 						_duration = result.duration;
@@ -413,7 +414,6 @@ class AttachmentViewerController extends ChangeNotifier {
 							_videoPlayerController = VideoPlayerController.network(result.hlsStream.toString(), formatHint: VideoFormat.hls, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
 						}
 						_videoLoadingProgress = result.progress;
-						isAudioOnly = result.isAudioOnly;
 						_swapIncoming = true;
 						result.mp4File.then((mp4File) async {
 							if (_isDisposed) {
@@ -428,7 +428,6 @@ class AttachmentViewerController extends ChangeNotifier {
 							_swapIncoming = false;
 							notifyListeners();
 						});
-						_hasAudio = result.hasAudio;
 					}
 				}
 				if (_isDisposed) return;
