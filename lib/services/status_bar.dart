@@ -42,9 +42,12 @@ Size? _lastSize;
 
 void _guessWorkaround() {
 	final currentSize = MediaQueryData.fromView(WidgetsBinding.instance.window).size;
-	Persistence.settings.useStatusBarWorkaround = currentSize != _lastSize && _lastSize != null;
-	if (Persistence.settings.useStatusBarWorkaround == true) {
-		Persistence.settings.save();
+	if (currentSize != _lastSize && _lastSize != null) {
+		final previousValue = Persistence.settings.useStatusBarWorkaround;
+		Persistence.settings.useStatusBarWorkaround ??= true;
+		if (Persistence.settings.useStatusBarWorkaround != previousValue) {
+			Persistence.settings.save();
+		}
 	}
 	_lastSize = currentSize;
 }
