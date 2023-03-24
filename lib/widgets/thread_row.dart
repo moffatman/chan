@@ -257,8 +257,8 @@ class ThreadRow extends StatelessWidget {
 			)
 		];
 		if (latestThread.title?.isNotEmpty == true) {
-			final titleSpan = PostTextSpan(latestThread.title!).build(context, PostSpanRootZoneData(thread: thread, site: site), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
-				baseTextStyle: site.classicCatalogStyle ? const TextStyle(fontWeight: FontWeight.bold) : null
+			final titleSpan = PostTextSpan(settings.filterProfanity(latestThread.title!)).build(context, PostSpanRootZoneData(thread: thread, site: site), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+				baseTextStyle: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, color: settings.theme.titleColor) : null
 			));
 			if (site.classicCatalogStyle) {
 				if (headerRow.isNotEmpty) {
@@ -459,7 +459,7 @@ class ThreadRow extends StatelessWidget {
 										),
 										if (latestThread.title?.isNotEmpty ?? false) TextSpan(
 											text: '${settings.filterProfanity(latestThread.title!)}\n',
-											style: site.classicCatalogStyle ? const TextStyle(fontWeight: FontWeight.bold) : null,
+											style: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, color: settings.theme.titleColor) : null,
 										),
 										if (settings.useCatalogGrid && settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '')) TextSpan(
 											text: '${latestThread.flair?.name}\n',

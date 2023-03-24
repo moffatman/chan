@@ -70,6 +70,9 @@ class SavedThemeAdapter extends TypeAdapter<SavedTheme> {
       quoteColor: fields[4] == null
           ? const Color.fromRGBO(120, 153, 34, 1.0)
           : fields[4] as Color,
+      titleColor: fields[7] == null
+          ? const Color.fromRGBO(87, 153, 57, 1.0)
+          : fields[7] as Color,
       locked: fields[6] == null ? false : fields[6] as bool,
       copiedFrom: fields[5] as SavedTheme?,
     );
@@ -78,7 +81,7 @@ class SavedThemeAdapter extends TypeAdapter<SavedTheme> {
   @override
   void write(BinaryWriter writer, SavedTheme obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.backgroundColor)
       ..writeByte(1)
@@ -92,7 +95,9 @@ class SavedThemeAdapter extends TypeAdapter<SavedTheme> {
       ..writeByte(5)
       ..write(obj.copiedFrom)
       ..writeByte(6)
-      ..write(obj.locked);
+      ..write(obj.locked)
+      ..writeByte(7)
+      ..write(obj.titleColor);
   }
 
   @override

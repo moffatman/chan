@@ -185,6 +185,7 @@ class ColorAdapter extends TypeAdapter<Color> {
 }
 
 const _defaultQuoteColor = Color.fromRGBO(120, 153, 34, 1);
+const _defaultTitleColor = Color.fromRGBO(87, 153, 57, 1);
 
 @HiveType(typeId: 25)
 class SavedTheme {
@@ -202,6 +203,8 @@ class SavedTheme {
 	SavedTheme? copiedFrom;
 	@HiveField(6, defaultValue: false)
 	bool locked;
+	@HiveField(7, defaultValue: _defaultTitleColor)
+	Color titleColor;
 
 	SavedTheme({
 		required this.backgroundColor,
@@ -209,6 +212,7 @@ class SavedTheme {
 		required this.primaryColor,
 		required this.secondaryColor,
 		this.quoteColor = _defaultQuoteColor,
+		this.titleColor = _defaultTitleColor,
 		this.locked = false,
 		this.copiedFrom
 	});
@@ -218,12 +222,17 @@ class SavedTheme {
 		if (b.length < 15) {
 			throw Exception('Data has been truncated');
 		}
+		Color? titleColor;
+		if (b.length >= 18) {
+			titleColor = Color.fromARGB(255, b[15], b[16], b[17]);
+		}
 		final theme = SavedTheme(
 			backgroundColor: Color.fromARGB(255, b[0], b[1], b[2]),
 			barColor: Color.fromARGB(255, b[3], b[4], b[5]),
 			primaryColor: Color.fromARGB(255, b[6], b[7], b[8]),
 			secondaryColor: Color.fromARGB(255, b[9], b[10], b[11]),
-			quoteColor: Color.fromARGB(255, b[12], b[13], b[14])
+			quoteColor: Color.fromARGB(255, b[12], b[13], b[14]),
+			titleColor: titleColor ?? _defaultTitleColor
 		);
 		return SavedTheme.copyFrom(theme);
 	}
@@ -244,7 +253,10 @@ class SavedTheme {
 			secondaryColor.blue,
 			quoteColor.red,
 			quoteColor.green,
-			quoteColor.blue
+			quoteColor.blue,
+			titleColor.red,
+			titleColor.green,
+			titleColor.blue
 		]);
 	}
 
@@ -255,7 +267,8 @@ class SavedTheme {
 		secondaryColor = original.secondaryColor,
 		quoteColor = original.quoteColor,
 		copiedFrom = original,
-		locked = false;
+		locked = false,
+		titleColor = original.titleColor;
 	
 	@override
 	bool operator ==(dynamic other) => (other is SavedTheme) &&
@@ -264,11 +277,12 @@ class SavedTheme {
 		primaryColor == other.primaryColor &&
 		secondaryColor == other.secondaryColor &&
 		quoteColor == other.quoteColor &&
-		locked == other.locked;// &&
+		locked == other.locked &&
+		titleColor == other.titleColor;// &&
 		//copiedFrom == other.copiedFrom;
 
 	@override
-	int get hashCode => Object.hash(backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, copiedFrom, locked);
+	int get hashCode => Object.hash(backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, copiedFrom, locked, titleColor);
 
 	Color primaryColorWithBrightness(double factor) {
 		return Color.fromRGBO(

@@ -522,7 +522,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											child: SizedBox(
 												height: 150,
 												child: SavedThemeThumbnail(
-													theme: theme
+													theme: theme,
+													showTitle: true
 												)
 											)
 										),

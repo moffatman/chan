@@ -3,9 +3,11 @@ import 'package:flutter/widgets.dart';
 
 class SavedThemeThumbnail extends StatelessWidget {
 	final SavedTheme theme;
+	final bool showTitle;
 
 	const SavedThemeThumbnail({
 		required this.theme,
+		this.showTitle = false,
 		Key? key
 	}) : super(key: key);
 
@@ -27,6 +29,7 @@ class SavedThemeThumbnail extends StatelessWidget {
 									mainAxisSize: MainAxisSize.min,
 									crossAxisAlignment: CrossAxisAlignment.start,
 									children: [
+										if (showTitle) Text('Title', style: TextStyle(color: theme.titleColor, fontWeight: FontWeight.w600)),
 										Text('>>1 (OP)', style: TextStyle(color: theme.secondaryColor, decoration: TextDecoration.underline)),
 										Text('>Quote', style: TextStyle(color: theme.quoteColor)),
 										Text('Text', style: TextStyle(color: theme.primaryColor))

@@ -1564,7 +1564,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									('Secondary', theme.$2.secondaryColor, (c) => theme.$2.secondaryColor = c, theme.$2.copiedFrom?.secondaryColor),
 									('Bar', theme.$2.barColor, (c) => theme.$2.barColor = c, theme.$2.copiedFrom?.barColor),
 									('Background', theme.$2.backgroundColor, (c) => theme.$2.backgroundColor = c, theme.$2.copiedFrom?.backgroundColor),
-									('Quote', theme.$2.quoteColor, (c) => theme.$2.quoteColor = c, theme.$2.copiedFrom?.quoteColor)
+									('Quote', theme.$2.quoteColor, (c) => theme.$2.quoteColor = c, theme.$2.copiedFrom?.quoteColor),
+									('Title', theme.$2.titleColor, (c) => theme.$2.titleColor = c, theme.$2.copiedFrom?.titleColor)
 								].map((color) => Column(
 									mainAxisSize: MainAxisSize.min,
 									children: [
