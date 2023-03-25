@@ -381,9 +381,26 @@ class SiteReddit extends ImageboardSite {
 					sizeInBytes: null
 				));
 			}
+			else if (data['preview']?['reddit_video_preview']?['hls_url'] != null) {
+				attachments.add(Attachment(
+					type: AttachmentType.mp4,
+					board: data['subreddit'],
+					threadId: id,
+					id: data['name'],
+					ext: '.mp4',
+					filename: 'video',
+					url: unescape.convert(data['preview']['reddit_video_preview']['hls_url']),
+					thumbnailUrl: unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']),
+					md5: '',
+					width: data['preview']['reddit_video_preview']['width'],
+					height: data['preview']['reddit_video_preview']['height'],
+					sizeInBytes: null
+				));
+			}
 			else {
-				final imageUrl = unescape.convert(data['preview']['images'][0]['source']['url']);
-				bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => data['url'].endsWith(e));
+				final url = data['url'];
+				final path = Uri.tryParse(url)?.path ?? '';
+				bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => path.endsWith(e));
 				attachments.add(Attachment(
 					type: isDirectLink ? AttachmentType.image : AttachmentType.url,
 					board: data['subreddit'],
@@ -391,7 +408,7 @@ class SiteReddit extends ImageboardSite {
 					id: data['name'],
 					ext: isDirectLink ? '.png' : '',
 					filename: isDirectLink ? 'preview' : '',
-					url: data['url'],
+					url: url,
 					width: data['preview']['images'][0]['source']['width'],
 					height: data['preview']['images'][0]['source']['height'],
 					md5: '',
@@ -402,8 +419,10 @@ class SiteReddit extends ImageboardSite {
 		}
 		else if (!(data['is_self'] ?? false) && data['url'] != null) {
 			final url = data['url'];
+			final path = Uri.tryParse(url)?.path ?? '';
+			bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => path.endsWith(e));
 			attachments.add(Attachment(
-				type: AttachmentType.url,
+				type: isDirectLink ? AttachmentType.image : AttachmentType.url,
 				board: data['subreddit'],
 				threadId: id,
 				id: data['name'],
