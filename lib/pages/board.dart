@@ -756,6 +756,9 @@ class _BoardPageState extends State<BoardPage> {
 										child: CallbackShortcuts(
 											bindings: {
 												LogicalKeySet(LogicalKeyboardKey.keyG): () {
+													if (_listController.state?.searchHasFocus ?? false) {
+														return;
+													}
 													if (board != null && context.read<EffectiveSettings>().showImages(context, board!.name)) {
 														final nextThreadWithImage = _listController.items.skip(max(0, _listController.firstVisibleIndex)).firstWhere((t) => t.item.attachments.isNotEmpty, orElse: () {
 															return _listController.items.firstWhere((t) => t.item.attachments.isNotEmpty);

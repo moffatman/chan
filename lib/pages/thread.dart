@@ -749,6 +749,9 @@ class _ThreadPageState extends State<ThreadPage> {
 											actions: {
 												OpenGalleryIntent: CallbackAction<OpenGalleryIntent>(
 													onInvoke: (i) {
+														if (_listController.state?.searchHasFocus ?? false) {
+															return;
+														}
 														if (context.read<EffectiveSettings>().showImages(context, widget.thread.board)) {
 															RefreshableListItem<Post>? nextPostWithImage = _listController.items.skip(_listController.firstVisibleIndex).tryFirstWhere((p) => p.item.attachments.isNotEmpty);
 															nextPostWithImage ??= _listController.items.take(_listController.firstVisibleIndex).tryFirstWhere((p) => p.item.attachments.isNotEmpty);
