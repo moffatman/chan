@@ -802,10 +802,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			});
 		}
 		WidgetsBinding.instance.addPostFrameCallback((_) {
-			if (isInTabletLayout) {
-				return;
+			if (_tabListController.hasOnePosition) {
+				_tabListController.jumpTo(((Persistence.currentTabIndex + 1) / Persistence.tabs.length) * _tabListController.position.maxScrollExtent);
 			}
-			_tabListController.jumpTo(((Persistence.currentTabIndex + 1) / Persistence.tabs.length) * _tabListController.position.maxScrollExtent);
 		});
 	}
 
@@ -1752,7 +1751,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						),
 						tabBuilder: (context, index) => CupertinoTabView(
 							navigatorKey: _tabNavigatorKeys.putIfAbsent(index, () => GlobalKey<NavigatorState>()),
-							builder: (context) => Column(
+							builder: (context) => index == 0 ? Column(
 								children: [
 									Expanded(
 										child: AnimatedBuilder(
@@ -1782,6 +1781,9 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										)
 									)
 								]
+							) : AnimatedBuilder(
+								animation: _tabController,
+								builder: (context, child) => _buildTab(context, index, _tabController.index == index)
 							)
 						)
 					)
