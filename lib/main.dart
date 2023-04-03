@@ -1302,8 +1302,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								)
 							);
 							final threadState = Persistence.tabs[i].thread == null ? null : Persistence.tabs[i].persistence?.getThreadStateIfExists(Persistence.tabs[i].thread!);
+							Future.microtask(() => Persistence.tabs[i].unseen.value = threadState?.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
 							if (threadState != null) {
-								Future.microtask(() => Persistence.tabs[i].unseen.value = threadState.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
 								final attachment = threadState.thread?.attachments.tryFirst;
 								injectIcon = attachment != null;
 								icon = StationaryNotifyingIcon(
