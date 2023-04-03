@@ -46,7 +46,7 @@ class SiteFrenschan extends SiteSoyjak {
 
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
-		final broken = await super.getCatalog(board);
+		final broken = await super.getCatalogImpl(board);
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.html'));
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.thread-image').map((e) => e.attributes['src']).toList();
