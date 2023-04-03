@@ -189,6 +189,9 @@ class AttachmentAdapter extends TypeAdapter<Attachment> {
 		if (obj.sizeInBytes != null) {
       writer..writeByte(12)..write(obj.sizeInBytes);
 		}
+		if (obj.useRandomUseragent) {
+			writer..writeByte(14)..write(obj.useRandomUseragent);
+		}
 		writer
       ..writeByte(13)
       ..write(obj.id);
