@@ -426,7 +426,7 @@ class _SavedPageState extends State<SavedPage> {
 							listUpdater: () async {
 								final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime != null && i.imageboard != null).toList();
 								await Future.wait(states.map((s) => s.ensureThreadLoaded()));
-								return states;
+								return states.where((s) => s.thread != null).toList();
 							},
 							minUpdateDuration: Duration.zero,
 							id: 'saved',
