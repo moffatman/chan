@@ -49,9 +49,9 @@ class _PostThreadCombo {
 
 Future<List<ImageboardScoped<ThreadWatch>>> _loadWatches() async {
 	final watches = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.browserState.threadWatches.map(i.scope)).toList();
-	for (final watch in watches) {
+	await Future.wait(watches.map((watch) async {
 		await watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier)?.ensureThreadLoaded();
-	}
+	}));
 	final d = DateTime(2000);
 	if (Persistence.settings.watchedThreadsSortingMethod == ThreadSortingMethod.lastReplyByYouTime) {
 		mergeSort<ImageboardScoped<ThreadWatch>>(watches, compare: (a, b) {
