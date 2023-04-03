@@ -94,6 +94,8 @@ class Attachment {
 		).destination;
 	}
 
+	bool get isVideoOrGif => type.isVideo || ext.toLowerCase().endsWith('gif');
+
 	String get globalId => '${board}_$id';
 
 	@override

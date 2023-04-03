@@ -318,7 +318,7 @@ class ThreadRow extends StatelessWidget {
 													shrinkHeight: !settings.squareThumbnails,
 													shrinkWidth: !settings.squareThumbnails
 												),
-												if (attachment.soundSource != null || attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned.fill(
+												if (attachment.soundSource != null || attachment.isVideoOrGif || attachment.type == AttachmentType.url) Positioned.fill(
 													child: Align(
 														alignment: Alignment.bottomRight,
 														child: Container(
@@ -330,7 +330,7 @@ class ThreadRow extends StatelessWidget {
 															padding: const EdgeInsets.all(2),
 															child: attachment.soundSource != null ?
 																const Icon(CupertinoIcons.volume_up, size: 16) :
-																attachment.type.isVideo ?
+																attachment.isVideoOrGif ?
 																	const Icon(CupertinoIcons.play_arrow_solid, size: 16) :
 																	const Icon(CupertinoIcons.link, size: 16)
 														)
@@ -415,7 +415,7 @@ class ThreadRow extends StatelessWidget {
 											semanticParentIds: semanticParentIds
 										)
 									),
-									if (attachment.soundSource != null || attachment.type.isVideo || attachment.type == AttachmentType.url) Positioned(
+									if (attachment.soundSource != null || attachment.isVideoOrGif || attachment.type == AttachmentType.url) Positioned(
 										top: settings.catalogGridModeAttachmentInBackground ? 0 : null,
 										bottom: settings.catalogGridModeAttachmentInBackground ? null : 0,
 										right: 0,
@@ -430,7 +430,7 @@ class ThreadRow extends StatelessWidget {
 											padding: const EdgeInsets.all(2),
 											child: attachment.soundSource != null ?
 												const Icon(CupertinoIcons.volume_up) :
-												attachment.type.isVideo ?
+												attachment.isVideoOrGif ?
 													const Icon(CupertinoIcons.play_arrow_solid) :
 													const Icon(CupertinoIcons.link)
 										)
