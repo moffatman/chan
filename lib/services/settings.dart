@@ -676,6 +676,8 @@ class SavedSettings extends HiveObject {
 	bool alwaysShowSpoilers;
 	@HiveField(122)
 	AndroidGallerySavePathOrganizing androidGallerySavePathOrganizing;
+	@HiveField(123)
+	AutoloadAttachmentsSetting fullQualityThumbnails;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -800,6 +802,7 @@ class SavedSettings extends HiveObject {
 		bool? squareThumbnails,
 		bool? alwaysShowSpoilers,
 		AndroidGallerySavePathOrganizing? androidGallerySavePathOrganizing,
+		AutoloadAttachmentsSetting? fullQualityThumbnails,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -951,7 +954,8 @@ class SavedSettings extends HiveObject {
 		overscrollModalTapPopsAll = overscrollModalTapPopsAll ?? true,
 		squareThumbnails = squareThumbnails ?? false,
 		alwaysShowSpoilers = alwaysShowSpoilers ?? false,
-		androidGallerySavePathOrganizing = androidGallerySavePathOrganizing ?? AndroidGallerySavePathOrganizing.noSubfolders {
+		androidGallerySavePathOrganizing = androidGallerySavePathOrganizing ?? AndroidGallerySavePathOrganizing.noSubfolders,
+		fullQualityThumbnails = fullQualityThumbnails ?? AutoloadAttachmentsSetting.never {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1919,6 +1923,17 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.androidGallerySavePathOrganizing = setting;
 		_settings.save();
 		notifyListeners();
+	}
+
+	AutoloadAttachmentsSetting get fullQualityThumbnailsSetting => _settings.fullQualityThumbnails;
+	set fullQualityThumbnailsSetting(AutoloadAttachmentsSetting setting) {
+		_settings.fullQualityThumbnails = setting;
+		_settings.save();
+		notifyListeners();
+	}
+	bool get fullQualityThumbnails {
+		return (fullQualityThumbnailsSetting == AutoloadAttachmentsSetting.always) ||
+			((fullQualityThumbnailsSetting == AutoloadAttachmentsSetting.wifi) && (connectivity == ConnectivityResult.wifi));
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];

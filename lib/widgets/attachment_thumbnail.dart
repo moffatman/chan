@@ -92,12 +92,18 @@ class AttachmentThumbnail extends StatelessWidget {
 				)
 			);
 		}
-		final url = (spoiler && !settings.alwaysShowSpoilers) ? s.getSpoilerImageUrl(attachment, thread: thread).toString() : attachment.thumbnailUrl;
+		String url = attachment.thumbnailUrl;
+		if (context.select<EffectiveSettings, bool>((s) => s.fullQualityThumbnails) && attachment.type == AttachmentType.image) {
+			url = attachment.url;
+		}
+		if (spoiler && !settings.alwaysShowSpoilers) {
+			url = s.getSpoilerImageUrl(attachment, thread: thread).toString();
+		}
 		ImageProvider image = ExtendedNetworkImageProvider(
 			url,
 			cache: true,
 			headers: {
-				...s.getHeaders(Uri.parse(attachment.thumbnailUrl)) ?? {},
+				...s.getHeaders(Uri.parse(url)) ?? {},
 				if (attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 			}
 		);

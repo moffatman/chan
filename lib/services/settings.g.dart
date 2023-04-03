@@ -249,13 +249,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       alwaysShowSpoilers: fields[121] as bool?,
       androidGallerySavePathOrganizing:
           fields[122] as AndroidGallerySavePathOrganizing?,
+      fullQualityThumbnails: fields[123] as AutoloadAttachmentsSetting?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(119)
+      ..writeByte(120)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -493,7 +494,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(121)
       ..write(obj.alwaysShowSpoilers)
       ..writeByte(122)
-      ..write(obj.androidGallerySavePathOrganizing);
+      ..write(obj.androidGallerySavePathOrganizing)
+      ..writeByte(123)
+      ..write(obj.fullQualityThumbnails);
   }
 
   @override

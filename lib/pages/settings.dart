@@ -657,6 +657,37 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					}
 				),
 				const SizedBox(height: 32),
+				const Row(
+					children: [
+						Icon(Icons.high_quality),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Full-quality image thumbnails')
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
+					children: const {
+						AutoloadAttachmentsSetting.never: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Never')
+						),
+						AutoloadAttachmentsSetting.wifi: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('When on Wi\u200d-\u200dFi', textAlign: TextAlign.center)
+						),
+						AutoloadAttachmentsSetting.always: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Always')
+						)
+					},
+					groupValue: settings.fullQualityThumbnailsSetting,
+					onValueChanged: (newValue) {
+						settings.fullQualityThumbnailsSetting = newValue;
+					}
+				),
+				const SizedBox(height: 32),
 				Row(
 					children: [
 						const Icon(Icons.touch_app_outlined),
