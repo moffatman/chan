@@ -298,7 +298,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		}
 		final attachment = widget.attachments[index];
 		widget.onChange?.call(attachment);
-		if (context.read<EffectiveSettings>().autoloadAttachments) {
+		if (context.read<EffectiveSettings>().autoloadAttachments && !attachment.attachment.isRateLimited) {
 			_getController(attachment).loadFullAttachment().then((x) {
 				if (mounted) {
 					_currentAttachmentChanged.didUpdate();
@@ -341,7 +341,7 @@ class _GalleryPageState extends State<GalleryPage> {
 		currentIndex = index;
 		if (!_animatingNow) {
 			final settings = context.read<EffectiveSettings>();
-			if (settings.autoloadAttachments) {
+			if (settings.autoloadAttachments && !attachment.attachment.isRateLimited) {
 				_getController(attachment).loadFullAttachment().then((x) {
 					if (!mounted) return;
 					_currentAttachmentChanged.didUpdate();

@@ -114,7 +114,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 				site: context.read<ImageboardSite>(),
 				isPrimary: false
 			);
-			if (context.watch<EffectiveSettings>().autoloadAttachments) {
+			if (context.watch<EffectiveSettings>().autoloadAttachments && !attachment.attachment.isRateLimited) {
 				if (attachment.attachment.type.isVideo) {
 					_queueLoading(controller);
 				}

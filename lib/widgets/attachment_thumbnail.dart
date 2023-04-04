@@ -93,7 +93,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			);
 		}
 		String url = attachment.thumbnailUrl;
-		if (context.select<EffectiveSettings, bool>((s) => s.fullQualityThumbnails) && attachment.type == AttachmentType.image) {
+		if (context.select<EffectiveSettings, bool>((s) => s.fullQualityThumbnails) && attachment.type == AttachmentType.image && !attachment.isRateLimited) {
 			url = attachment.url;
 		}
 		if (spoiler && !settings.alwaysShowSpoilers) {

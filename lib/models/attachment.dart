@@ -54,6 +54,7 @@ class Attachment {
 	final int? sizeInBytes;
 	String id;
 	final bool useRandomUseragent;
+	final bool isRateLimited;
 	Attachment({
 		required this.type,
 		required String board,
@@ -68,7 +69,8 @@ class Attachment {
 		required this.height,
 		required this.threadId,
 		required this.sizeInBytes,
-		this.useRandomUseragent = false
+		this.useRandomUseragent = false,
+		this.isRateLimited = false
 	}) : spoiler = spoiler ?? false, board = intern(board), ext = intern(ext);
 
 	bool? get isLandscape => (width == null || height == null) ? null : width! > height!;
@@ -154,7 +156,8 @@ class AttachmentAdapter extends TypeAdapter<Attachment> {
       height: fields[10] as int?,
       threadId: fields[11] as int?,
       sizeInBytes: fields[12] as int?,
-			useRandomUseragent: fields[14] as bool? ?? false
+			useRandomUseragent: fields[14] as bool? ?? false,
+			isRateLimited: fields[15] as bool? ?? false,
     );
   }
 
@@ -191,6 +194,9 @@ class AttachmentAdapter extends TypeAdapter<Attachment> {
 		}
 		if (obj.useRandomUseragent) {
 			writer..writeByte(14)..write(obj.useRandomUseragent);
+		}
+		if (obj.isRateLimited) {
+			writer..writeByte(15)..write(obj.isRateLimited);
 		}
 		writer
       ..writeByte(13)

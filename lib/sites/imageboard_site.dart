@@ -705,6 +705,17 @@ abstract class ImageboardSiteArchive {
 		});
 		return catalog;
 	}
+	/// If an empty list is returned from here, the bottom of the catalog has been reached.
+	@protected
+	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) async => [];
+	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async {
+		final moreCatalog = await getMoreCatalogImpl(after, variant: variant);
+		_catalogCache.addAll({
+			for (final t in moreCatalog)
+				t.identifier: t
+		});
+		return moreCatalog;
+	}
 	Thread? getThreadFromCatalogCache(ThreadIdentifier identifier) => _catalogCache[identifier];
 	Future<List<ImageboardBoard>> getBoards();
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult});
@@ -722,6 +733,7 @@ abstract class ImageboardSiteArchive {
 			return index;
 		}
 	}
+	bool get hasPagedCatalog => false;
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
@@ -867,7 +879,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	Future<String> getBannedReason(CaptchaSolution captchaSolution) async => 'Unknown';
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async => [];
 	bool get allowsArbitraryBoards => false;
-	bool get hasPagedCatalog => false;
 	bool get classicCatalogStyle => true;
 	bool get explicitIds => true;
 	bool get useTree => false;
@@ -875,17 +886,6 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get supportsSearch => archives.isNotEmpty;
 	bool get supportsPosting => true;
 	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds) async => throw UnimplementedError();
-	/// If an empty list is returned from here, the bottom of the catalog has been reached.
-	@protected
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) async => [];
-	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async {
-		final moreCatalog = await getMoreCatalogImpl(after, variant: variant);
-		_catalogCache.addAll({
-			for (final t in moreCatalog)
-				t.identifier: t
-		});
-		return moreCatalog;
-	}
 	bool get isHackerNews => false;
 	bool get isReddit => false;
 	bool get supportsMultipleBoards => true;
@@ -1027,7 +1027,8 @@ ImageboardSite makeSite(dynamic data) {
 						baseUrl: archive['baseUrl'],
 						staticUrl: archive['staticUrl'],
 						boards: boards,
-						useRandomUseragent: archive['useRandomUseragent'] ?? false
+						useRandomUseragent: archive['useRandomUseragent'] ?? false,
+						hasAttachmentRateLimit: archive['hasAttachmentRateLimit'] ?? false,
 					);
 				}
 				else if (archive['type'] == 'fuuka') {

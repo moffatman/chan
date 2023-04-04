@@ -8,7 +8,6 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'dart:io';
 
-import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:dio/dio.dart';
@@ -48,7 +47,12 @@ class WrappedArchive extends ImageboardSite {
 
   @override
   Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) {
-    return archive.getCatalog(board);
+    return archive.getCatalogImpl(board, variant: variant);
+  }
+
+  @override
+  Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) {
+    return archive.getMoreCatalogImpl(after, variant: variant);
   }
 
   @override
@@ -88,6 +92,9 @@ class WrappedArchive extends ImageboardSite {
   String get name => archive.name;
 
   @override
+  bool get hasPagedCatalog => archive.hasPagedCatalog;
+
+  @override
   Future<PostReceipt> postReply({required ThreadIdentifier thread, String name = '', String options = '', required String text, required CaptchaSolution captchaSolution, File? file, bool? spoiler, String? overrideFilename, ImageboardBoardFlag? flag}) {
     throw UnimplementedError();
   }
@@ -122,7 +129,7 @@ class ArchiveDebuggingPage extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final site = context.watch<ImageboardSite>() as Site4Chan;
+		final site = context.watch<ImageboardSite>();
 		return CupertinoPageScaffold(
 			navigationBar: const CupertinoNavigationBar(
 				transitionBetweenRoutes: false,

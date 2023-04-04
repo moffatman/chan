@@ -31,6 +31,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	@override
 	final String name;
 	final bool useRandomUseragent;
+	final bool hasAttachmentRateLimit;
 	ImageboardFlag? _makeFlag(dynamic data) {
 		if (data['poster_country'] != null && data['poster_country'].isNotEmpty) {
 			return ImageboardFlag(
@@ -184,7 +185,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				height: int.parse(data['media']['media_h']),
 				threadId: int.tryParse(data['thread_num']),
 				sizeInBytes: int.tryParse(data['media']['media_size']),
-				useRandomUseragent: useRandomUseragent
+				useRandomUseragent: useRandomUseragent,
+				isRateLimited: hasAttachmentRateLimit
 			);
 		}
 		return null;
@@ -288,7 +290,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	Future<Thread> getThreadContainingPost(String board, int id) async {
 		throw Exception('Unimplemented');
 	}
-	Future<Thread> _makeThread(ThreadIdentifier thread, dynamic data) async {
+	Future<Thread> _makeThread(ThreadIdentifier thread, dynamic data, {int? currentPage}) async {
 		final op = data[thread.id.toString()]['op'];
 		var replies = data[thread.id.toString()]['posts'] ?? [];
 		if (replies is Map) {
@@ -309,7 +311,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			title: (title == null) ? null : unescape.convert(title),
 			isSticky: op['sticky'] == 1,
 			time: posts.first.time,
-			uniqueIPCount: int.tryParse(op['unique_ips'] ?? '')
+			uniqueIPCount: int.tryParse(op['unique_ips'] ?? ''),
+			currentPage: currentPage
 		);
 	}
 	@override
@@ -341,11 +344,11 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}
 		return _makeThread(thread, data);
 	}
-	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
+
+	Future<List<Thread>> _getCatalog(String board, int pageNumber) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/index', {
 			'board': board,
-			'page': '1'
+			'page': pageNumber.toString()
 		}), options: Options(
 				headers: {
 					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
@@ -357,8 +360,15 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}).map((threadIdStr) => _makeThread(ThreadIdentifier(
 			board,
 			int.parse(threadIdStr)
-		), response.data)).toList());
+		), response.data, currentPage: pageNumber)).toList());
 	}
+
+	@override
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) => _getCatalog(board, 1);
+
+	@override
+	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) => _getCatalog(after.board, (after.currentPage ?? 0) + 1);
+
 	Future<List<ImageboardBoard>> _getBoards() async {
 		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/archives'), options: Options(
 			validateStatus: (x) => true,
@@ -474,6 +484,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		required this.staticUrl,
 		required this.name,
 		this.useRandomUseragent = false,
+		this.hasAttachmentRateLimit = false,
 		this.boards
 	}) : super() {
 		client.interceptors.add(HTTP429BackoffInterceptor(
@@ -482,8 +493,11 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 	}
 
 	@override
-	bool operator == (Object other) => (other is FoolFuukaArchive) && (other.name == name) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && (other.useRandomUseragent == useRandomUseragent) && listEquals(other.boards, boards);
+	bool get hasPagedCatalog => true;
 
 	@override
-	int get hashCode => Object.hash(name, baseUrl, staticUrl, useRandomUseragent, boards);
+	bool operator == (Object other) => (other is FoolFuukaArchive) && (other.name == name) && (other.baseUrl == baseUrl) && (other.staticUrl == staticUrl) && (other.useRandomUseragent == useRandomUseragent) && listEquals(other.boards, boards) && (other.hasAttachmentRateLimit == hasAttachmentRateLimit);
+
+	@override
+	int get hashCode => Object.hash(name, baseUrl, staticUrl, useRandomUseragent, boards, hasAttachmentRateLimit);
 }
