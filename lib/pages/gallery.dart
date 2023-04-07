@@ -729,7 +729,7 @@ class _GalleryPageState extends State<GalleryPage> {
 				return ((details?.pointerCount ?? 0) == 0) && widget.allowPop && (a >= 0.25 && a <= 0.75) && (state?.imageGestureState?.gestureDetails?.totalScale ?? 1) <= 1;
 			},
 			child: CupertinoTheme(
-				data: settings.makeDarkTheme(context),
+				data: settings.darkTheme.cupertinoThemeData,
 				child: CupertinoPageScaffold(
 					backgroundColor: Colors.transparent,
 					navigationBar: showChrome ? CupertinoNavigationBar(

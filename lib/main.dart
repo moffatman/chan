@@ -200,10 +200,6 @@ class _ChanAppState extends State<ChanApp> {
 								builder: (BuildContext context) {
 									final settings = context.watch<EffectiveSettings>();
 									final mq = MediaQuery.of(context);
-									CupertinoThemeData theme = settings.makeLightTheme(context);
-									if (settings.whichTheme == Brightness.dark) {
-										theme = settings.makeDarkTheme(context);
-									}
 									final additionalSafeAreaInsets = sumAdditionalSafeAreaInsets();
 									return MediaQuery(
 										data: mq.copyWith(
@@ -219,7 +215,7 @@ class _ChanAppState extends State<ChanApp> {
 												child: CupertinoApp(
 													title: 'Chance',
 													debugShowCheckedModeBanner: false,
-													theme: theme,
+													theme: settings.theme.cupertinoThemeData,
 													home: Builder(
 														builder: (BuildContext context) {
 															ImageboardRegistry.instance.context = context;

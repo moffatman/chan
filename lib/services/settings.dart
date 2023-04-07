@@ -292,6 +292,43 @@ class SavedTheme {
 			primaryColor.opacity
 		);
 	}
+
+	CupertinoThemeData get cupertinoThemeData => CupertinoThemeData(
+		brightness: primaryColor.computeLuminance() > backgroundColor.computeLuminance() ? Brightness.dark : Brightness.light,
+		scaffoldBackgroundColor: backgroundColor,
+		barBackgroundColor: barColor,
+		primaryColor: primaryColor,
+		primaryContrastingColor: backgroundColor,
+		applyThemeToAll: true,
+		textTheme: CupertinoTextThemeData(
+			textStyle: TextStyle(
+				fontFamily: '.SF Pro Text',
+				fontSize: 17.0,
+				letterSpacing: -0.41,
+				fontWeight: WidgetsBinding.instance.window.accessibilityFeatures.boldText ? FontWeight.w500 : null,
+				color: primaryColor
+			),
+			actionTextStyle: TextStyle(color: secondaryColor),
+			navActionTextStyle: TextStyle(color: primaryColor),
+			navTitleTextStyle: TextStyle(
+				inherit: false,
+				fontFamily: '.SF Pro Text',
+				fontSize: 17.0,
+				letterSpacing: -0.41,
+				fontWeight: FontWeight.w600,
+				color: primaryColor,
+				decoration: TextDecoration.none,
+			),
+			navLargeTitleTextStyle: TextStyle(
+				inherit: false,
+				fontFamily: '.SF Pro Display',
+				fontSize: 34.0,
+				fontWeight: FontWeight.w700,
+				letterSpacing: 0.41,
+				color: primaryColor,
+			)
+		)
+	);
 }
 
 const _dynamicLightKey = 'Dynamic (Light)';
@@ -1175,83 +1212,6 @@ class EffectiveSettings extends ChangeNotifier {
 	void handleThemesAltered() {
 		_settings.save();
 		notifyListeners();
-	}
-
-	CupertinoThemeData makeLightTheme(BuildContext context) {
-		return CupertinoThemeData(
-			brightness: Brightness.light,
-			scaffoldBackgroundColor: lightTheme.backgroundColor,
-			barBackgroundColor: lightTheme.barColor,
-			primaryColor: lightTheme.primaryColor,
-			primaryContrastingColor: lightTheme.backgroundColor,
-			applyThemeToAll: true,
-			textTheme: CupertinoTextThemeData(
-				textStyle: TextStyle(
-					fontFamily: '.SF Pro Text',
-					fontSize: 17.0,
-					letterSpacing: -0.41,
-					fontWeight: MediaQuery.boldTextOf(context) ? FontWeight.w500 : null,
-					color: lightTheme.primaryColor
-				),
-				actionTextStyle: TextStyle(color: lightTheme.secondaryColor),
-				navActionTextStyle: TextStyle(color: lightTheme.primaryColor),
-				navTitleTextStyle: TextStyle(
-  				inherit: false,
-					fontFamily: '.SF Pro Text',
-					fontSize: 17.0,
-					letterSpacing: -0.41,
-					fontWeight: FontWeight.w600,
-					color: lightTheme.primaryColor,
-					decoration: TextDecoration.none,
-				),
-				navLargeTitleTextStyle: TextStyle(
-					inherit: false,
-					fontFamily: '.SF Pro Display',
-					fontSize: 34.0,
-					fontWeight: FontWeight.w700,
-					letterSpacing: 0.41,
-					color: lightTheme.primaryColor,
-				)
-			)
-		);
-	}
-	CupertinoThemeData makeDarkTheme(BuildContext context) {
-		return CupertinoThemeData(
-			brightness: Brightness.dark,
-			scaffoldBackgroundColor: darkTheme.backgroundColor,
-			barBackgroundColor: darkTheme.barColor,
-			primaryColor: darkTheme.primaryColor,
-			primaryContrastingColor: darkTheme.backgroundColor,
-			applyThemeToAll: true,
-			textTheme: CupertinoTextThemeData(
-				textStyle: TextStyle(
-					fontFamily: '.SF Pro Text',
-					fontSize: 17.0,
-					letterSpacing: -0.41,
-					fontWeight: MediaQuery.boldTextOf(context) ? FontWeight.w500 : null,
-					color: darkTheme.primaryColor
-				),
-				actionTextStyle: TextStyle(color: darkTheme.secondaryColor),
-				navActionTextStyle: TextStyle(color: darkTheme.primaryColor),
-				navTitleTextStyle: TextStyle(
-  				inherit: false,
-					fontFamily: '.SF Pro Text',
-					fontSize: 17.0,
-					letterSpacing: -0.41,
-					fontWeight: FontWeight.w600,
-					color: darkTheme.primaryColor,
-					decoration: TextDecoration.none,
-				),
-				navLargeTitleTextStyle: TextStyle(
-					inherit: false,
-					fontFamily: '.SF Pro Display',
-					fontSize: 34.0,
-					fontWeight: FontWeight.w700,
-					letterSpacing: 0.41,
-					color: darkTheme.primaryColor,
-				)
-			)
-		);
 	}
 
 	double get twoPaneBreakpoint => _settings.twoPaneBreakpoint;
