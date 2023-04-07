@@ -44,7 +44,9 @@ enum PostSpanFormat {
 	@HiveField(7)
 	stub,
 	@HiveField(8)
-	lynxchan
+	lynxchan,
+	@HiveField(9)
+	chan4Search
 }
 
 class Post implements Filterable {
@@ -83,6 +85,8 @@ class Post implements Filterable {
 				]);
 			case PostSpanFormat.lynxchan:
 				return SiteLynxchan.makeSpan(board, threadId, text);
+			case PostSpanFormat.chan4Search:
+				return Site4Chan.makeSpan(board, threadId, text, fromSearch: true);
 		}
 	}
 	PostNodeSpan get span {

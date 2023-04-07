@@ -778,7 +778,7 @@ class SiteReddit extends ImageboardSite {
 
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/r/${query.boards.first}/search.json', {
+		final response = await client.getUri(Uri.https(baseUrl, query.boards.isEmpty ? '/search.json' : '/r/${query.boards.first}/search.json', {
 			'q': query.query,
 			'restrict_sr': 'true',
 			if (lastResult != null)

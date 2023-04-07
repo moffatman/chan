@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:async/async.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/models/flag.dart';
+import 'package:chan/models/search.dart';
 import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/persistence.dart';
@@ -59,6 +60,54 @@ class _CatalogCache {
 	});
 }
 
+class _QuoteLinkElement extends LinkifyElement {
+	final int id;
+	_QuoteLinkElement(this.id) : super('>>$id');
+
+  @override
+  bool operator ==(other) => (other is _QuoteLinkElement) && (other.id == id);
+
+	@override
+	int get hashCode => id.hashCode;
+}
+
+class _QuoteLinkLinkifier extends Linkifier {
+  const _QuoteLinkLinkifier();
+
+  @override
+  List<LinkifyElement> parse(elements, options) {
+    final list = <LinkifyElement>[];
+
+    for (final element in elements) {
+      if (element is TextElement) {
+				String text = element.text;
+				while (text.isNotEmpty) {
+        	final match = RegExp(r'(?:^|(?<= ))>>(\d+)').firstMatch(element.text);
+					if (match == null) {
+						if (text == element.text) {
+							list.add(element);
+						}
+						else {
+							list.addAll(parse([TextElement(text)], options));
+						}
+						break;
+					}
+					if (match.start > 0) {
+						list.addAll(parse([TextElement(text.substring(0, match.start))], options));
+					}
+					list.add(_QuoteLinkElement(int.tryParse(match.group(1) ?? '') ?? 0));
+					text = text.substring(match.end);
+				}
+      } else {
+        list.add(element);
+      }
+    }
+
+    return list;
+  }
+}
+
+
 class Site4Chan extends ImageboardSite {
 	@override
 	final String name;
@@ -68,6 +117,7 @@ class Site4Chan extends ImageboardSite {
 	final String sysRedUrl;
 	final String sysBlueUrl;
 	final String apiUrl;
+	final String searchUrl;
 	@override
 	final String imageUrl;
 	final String captchaKey;
@@ -94,9 +144,24 @@ class Site4Chan extends ImageboardSite {
 
 	String _sysUrl(String board) => persistence.getBoard(board).isWorksafe ? sysBlueUrl : sysRedUrl;
 
-	static List<PostSpan> parsePlaintext(String text) {
-		return linkify(text, linkifiers: const [LooseUrlLinkifier(), ChanceLinkifier()]).map((elem) {
-			if (elem is UrlElement) {
+	static List<PostSpan> parsePlaintext(String text, {ThreadIdentifier? fromSearchThread}) {
+		return linkify(text, linkifiers: fromSearchThread != null ? const [
+			LooseUrlLinkifier(),
+			ChanceLinkifier(),
+			_QuoteLinkLinkifier()
+		] : const [
+			LooseUrlLinkifier(),
+			ChanceLinkifier()
+		]).map((elem) {
+			if (elem is _QuoteLinkElement) {
+				return PostQuoteLinkSpan(
+					board: fromSearchThread!.board,
+					threadId: fromSearchThread.id,
+					postId: elem.id,
+					dead: false
+				);
+			}
+			else if (elem is UrlElement) {
 				return PostLinkSpan(elem.url, name: elem.text);
 			}
 			else {
@@ -105,8 +170,9 @@ class Site4Chan extends ImageboardSite {
 		}).toList();
 	}
 
-	static PostNodeSpan makeSpan(String board, int threadId, String data) {
-		final body = parseFragment(data.replaceAll('<wbr>', '').replaceAllMapped(RegExp(r'\[math\](.+?)\[\/math\]'), (match) {
+	static PostNodeSpan makeSpan(String board, int threadId, String data, {bool fromSearch = false}) {
+		final fromSearchThread = fromSearch ? ThreadIdentifier(board, threadId) : null;
+		final body = parseFragment((fromSearch ? data.trim() : data).replaceAll('<wbr>', '').replaceAllMapped(RegExp(r'\[math\](.+?)\[\/math\]'), (match) {
 			return '<tex>${match.group(1)!}</tex>';
 		}).replaceAllMapped(RegExp(r'\[eqn\](.+?)\[\/eqn\]'), (match) {
 			return '<tex>${match.group(1)!}</tex>';
@@ -237,11 +303,11 @@ class Site4Chan extends ImageboardSite {
 					elements.add(PostBoldSpan(makeSpan(board, threadId, node.innerHtml)));
 				}
 				else {
-					elements.addAll(parsePlaintext(node.text));
+					elements.addAll(parsePlaintext(node.text, fromSearchThread: fromSearchThread));
 				}
 			}
 			else {
-				elements.addAll(parsePlaintext(node.text ?? ''));
+				elements.addAll(parsePlaintext(node.text ?? '', fromSearchThread: fromSearchThread));
 			}
 		}
 		return PostNodeSpan(elements.toList(growable: false));
@@ -787,7 +853,8 @@ class Site4Chan extends ImageboardSite {
 		required this.name,
 		required this.captchaKey,
 		List<ImageboardSiteArchive> archives = const [],
-		required this.captchaUserAgents
+		required this.captchaUserAgents,
+		required this.searchUrl
 	}) : sysRedUrl = sysUrl, sysBlueUrl = sysUrl.replaceAll('chan.', 'channel.'), super(archives);
 
 
@@ -891,6 +958,85 @@ class Site4Chan extends ImageboardSite {
 			variants: [CatalogVariant.chan4NativeArchive]
 		)
 	];
+
+	@override
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
+		if (query.boards.isNotEmpty) {
+			return searchArchives(query, page: page, lastResult: lastResult);
+		}
+		final response = await client.getUri(Uri.https(searchUrl, '/', {
+			'q': query.query,
+			if (page > 1) 'o': ((page - 1) * 10).toString()
+		}));
+		final document = parse(response.data);
+		final threads = document.querySelectorAll('.thread').map((thread) {
+			print(thread.querySelector('.fileText a')?.attributes);
+			final threadIdentifierMatch = thread.querySelectorAll('.fileText a').map((e) {
+				return RegExp(r'([^\/]+)\/thread\/(\d+)').firstMatch(e.attributes['href'] ?? '');
+			}).firstWhere((m) => m != null)!;
+			final board = threadIdentifierMatch.group(1)!;
+			final threadId = int.parse(threadIdentifierMatch.group(2)!);
+			Attachment? attachment;
+			final file = thread.querySelector('.file');
+			if (file != null) {
+				final thumb = file.querySelector('.fileThumb')!;
+				final fullUrl = 'https:${thumb.attributes['href']!}';
+				final ext = '.${fullUrl.split('.').last}';
+				final metadata = RegExp(r'\(\s+([\d\.]+)(Mi|Ki)?B,\s+(\d+)x(\d+)\s+\)').firstMatch(file.querySelector('.fileText')!.text)!;
+				int multiplier = 1;
+				final fileSizePrefix = metadata.group(2)!.toLowerCase();
+				if (fileSizePrefix.startsWith('m')) {
+					multiplier = 1000 * 1000;
+				} else if (fileSizePrefix.startsWith('k')) {
+					multiplier = 1000;
+				}
+				attachment = Attachment(
+					board: board,
+					id: fullUrl.split('/').last.split('.').first,
+					type: ext == '.webm' ? AttachmentType.webm : (ext == '.pdf' ? AttachmentType.pdf : AttachmentType.image),
+					ext: ext,
+					filename: file.querySelectorAll('.fileText a').last.text.trim(),
+					url: fullUrl,
+					thumbnailUrl: 'https:${thumb.querySelector('img')!.attributes['src']!}',
+					md5: thumb.querySelector('img')!.attributes['data-md5']!,
+					width: int.parse(metadata.group(3)!),
+					height: int.parse(metadata.group(4)!),
+					threadId: threadId,
+					sizeInBytes: (double.parse(metadata.group(1)!) * multiplier).round()
+				);
+			}
+			final posts = thread.querySelectorAll('.post').map((post) {
+				final postId = int.parse(RegExp(r'\d+').firstMatch(post.id)!.group(0)!);
+				return Post(
+					board: board,
+					text: post.querySelector('.postMessage')!.innerHtml,
+					name: post.querySelector('.name')!.text.trim(),
+					time: DateTime.fromMillisecondsSinceEpoch(1000 * int.parse(post.querySelector('.dateTime')!.attributes['data-utc']!)),
+					threadId: threadId,
+					id: postId,
+					spanFormat: PostSpanFormat.chan4Search,
+					attachments: (postId != threadId || attachment == null) ? const [] : [attachment]
+				);
+			}).toList();
+			return ImageboardArchiveSearchResult.thread(Thread(
+				posts_: posts,
+				replyCount: 0,
+				imageCount: 0,
+				id: threadId,
+				board: board,
+				title: thread.querySelector('.subject')?.text.trim(),
+				isSticky: false,
+				time: posts.first.time,
+				attachments: posts.first.attachments
+			));
+		}).toList();
+		return ImageboardArchiveSearchResultPage(
+			posts: threads,
+			page: page,
+			maxPage: int.parse(document.querySelectorAll('.pages a').last.text.trim()),
+			archive: this
+		);
+	}
 }
 
 class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {

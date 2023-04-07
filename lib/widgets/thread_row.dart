@@ -10,6 +10,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/popup_attachment.dart';
+import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/thread_spans.dart';
@@ -34,6 +35,7 @@ class ThreadRow extends StatelessWidget {
 	final bool countsUnreliable;
 	final PostSpanRenderOptions? baseOptions;
 	final bool dimReadThreads;
+	final bool showLastReplies;
 
 	const ThreadRow({
 		required this.thread,
@@ -48,6 +50,7 @@ class ThreadRow extends StatelessWidget {
 		this.semanticParentIds = const [],
 		this.baseOptions,
 		this.dimReadThreads = false,
+		this.showLastReplies = false,
 		Key? key
 	}) : super(key: key);
 
@@ -147,7 +150,7 @@ class ThreadRow extends StatelessWidget {
 									children: [
 										Icon(CupertinoIcons.reply, size: 18, color: replyCountColor),
 										const SizedBox(width: 4),
-										if ((latestReplyCount - unseenReplyCount) == 0 && (countsUnreliable && latestThread == thread)) const Text('—')
+										if (countsUnreliable && latestThread == thread) const Text('—')
 										else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
 										if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
 										if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)),
@@ -384,7 +387,31 @@ class ThreadRow extends StatelessWidget {
 													)
 												)
 											]
-											else countersPlaceholder
+											else countersPlaceholder,
+											// Uuse thread and not latestThread
+											// The last replies should be only those from the catalog/search query
+											if (showLastReplies) ...thread.posts.skip(max(1, thread.posts.length - 3)).map((post) => WidgetSpan(
+												child: Padding(
+													padding: const EdgeInsets.only(bottom: 16),
+													child: Row(
+														mainAxisSize: MainAxisSize.min,
+														crossAxisAlignment: CrossAxisAlignment.start,
+														children: [
+															Text('>>', style: TextStyle(color: settings.theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold)),
+															const SizedBox(width: 4),
+															Flexible(
+																child: PostRow(
+																	post: post,
+																	baseOptions: baseOptions,
+																	shrinkWrap: true,
+																	highlight: true,
+																	showPostNumber: false
+																)
+															)
+														]
+													)
+												)
+											))
 										]
 									)
 								)

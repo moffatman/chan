@@ -93,12 +93,14 @@ class ThreadPage extends StatefulWidget {
 	final int? initialPostId;
 	final bool initiallyUseArchive;
 	final int boardSemanticId;
+	final String? initialSearch;
 
 	const ThreadPage({
 		required this.thread,
 		this.initialPostId,
 		this.initiallyUseArchive = false,
 		required this.boardSemanticId,
+		this.initialSearch,
 		Key? key
 	}) : super(key: key);
 
@@ -289,6 +291,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		_listController.slowScrolls.addListener(_onSlowScroll);
 		context.read<PersistentBrowserTab?>()?.threadController = _listController;
 		_scrollIfWarranted();
+		_searching |= widget.initialSearch?.isNotEmpty ?? false;
 	}
 
 	@override
@@ -323,6 +326,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		else if (widget.initialPostId != old.initialPostId && widget.initialPostId != null) {
 			_listController.animateTo((post) => post.id == widget.initialPostId!, orElseLast: (post) => post.id <= widget.initialPostId!, alignment: 0.0, duration: const Duration(milliseconds: 500));
 		}
+		_searching |= widget.initialSearch?.isNotEmpty ?? false;
 	}
 
 	@override
@@ -789,6 +793,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																	},
 																	child: RefreshableList<Post>(
 																		filterableAdapter: (t) => t,
+																		initialFilter: widget.initialSearch,
 																		onFilterChanged: (filter) {
 																			_searching = filter != null;
 																			setState(() {});

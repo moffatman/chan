@@ -588,12 +588,6 @@ class LynxchanCaptchaSolution extends CaptchaSolution {
 class ImageboardArchiveSearchResult {
 	final Post? post;
 	final Thread? thread;
-	ImageboardArchiveSearchResult({
-		this.post,
-		this.thread
-	}) {
-		assert(post != null || thread != null);
-	}
 
 	const ImageboardArchiveSearchResult.post(Post this.post) : thread = null;
 	const ImageboardArchiveSearchResult.thread(Thread this.thread) : post = null;
@@ -602,6 +596,15 @@ class ImageboardArchiveSearchResult {
 	int get id => (post?.id ?? thread?.id)!;
 
 	@override toString() => 'ImageboardArchiveSearchResult(${post ?? thread})';
+
+	@override
+	bool operator == (Object other) =>
+		(other is ImageboardArchiveSearchResult) &&
+		(other.post == post) &&
+		(other.thread == thread);
+	
+	@override
+	int get hashCode => Object.hash(post, thread);
 }
 
 class ImageboardArchiveSearchResultPage {
@@ -734,6 +737,7 @@ abstract class ImageboardSiteArchive {
 		}
 	}
 	bool get hasPagedCatalog => false;
+	bool get isArchive => this is! ImageboardSite;
 }
 
 abstract class ImageboardSite extends ImageboardSiteArchive {
@@ -848,7 +852,9 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	}
 
 	@override
-	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
+	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) => searchArchives(query, page: page, lastResult: lastResult);
+
+	Future<ImageboardArchiveSearchResultPage> searchArchives(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
 		String s = '';
 		for (final archive in archives) {
 			try {
@@ -890,6 +896,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get isReddit => false;
 	bool get supportsMultipleBoards => true;
 	bool get supportsSearchOptions => true;
+	bool get supportsGlobalSearchOptions => false;
 	bool get supportsPushNotifications => false;
 	List<CatalogVariantGroup> get catalogVariantGroups => const [
 		CatalogVariantGroup(
@@ -1014,6 +1021,7 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			staticUrl: data['staticUrl'],
 			captchaUserAgents: (data['captchaUserAgents'] as Map?)?.cast<String, String>() ?? {},
+			searchUrl: data['searchUrl'],
 			archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
 				final boards = (archive['boards'] as List<dynamic>?)?.map((b) => ImageboardBoard(
 					title: b['title'],

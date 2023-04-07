@@ -21,8 +21,8 @@ import 'package:provider/provider.dart';
 
 class SearchQueryPage extends StatefulWidget {
 	final ImageboardArchiveSearchQuery query;
-	final ImageboardScoped<ImageboardArchiveSearchResult>? selectedResult;
-	final ValueChanged<ImageboardScoped<ImageboardArchiveSearchResult>?> onResultSelected;
+	final SelectedSearchResult? selectedResult;
+	final ValueChanged<SelectedSearchResult?> onResultSelected;
 	const SearchQueryPage({
 		required this.query,
 		required this.selectedResult,
@@ -152,7 +152,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		);
 	}
 
-	Widget _build(BuildContext context, ImageboardScoped<ImageboardArchiveSearchResult>? currentValue, ValueChanged<ImageboardScoped<ImageboardArchiveSearchResult>?> setValue) {
+	Widget _build(BuildContext context, SelectedSearchResult? currentValue, ValueChanged<SelectedSearchResult?> setValue) {
 		if (result.error != null) {
 			return Center(
 				child: Column(
@@ -206,8 +206,14 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									showCrossThreadLabel: false,
 									showBoardName: true,
 									allowTappingLinks: false,
-									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.item == row,
-									onTap: () => setValue(context.read<Imageboard>().scope(row)),
+									showPostNumber: false,
+									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.result == row,
+									onTap: () => setValue(SelectedSearchResult(
+										imageboard: context.read<Imageboard>(),
+										result: row,
+										threadSearch: null,
+										fromArchive: result.data!.archive.isArchive
+									)),
 									baseOptions: PostSpanRenderOptions(
 										highlightString: widget.query.query
 									),
@@ -215,8 +221,15 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 							);
 						}
 						else {
+							final matchingPostIndex = row.thread!.posts_.indexWhere((p) => p.span.buildText().toLowerCase().contains(widget.query.query.toLowerCase()));
 							return GestureDetector(
-								onTap: () => setValue(context.read<Imageboard>().scope(row)),
+								onTap: () => setValue(SelectedSearchResult(
+									imageboard: context.read<Imageboard>(),
+									result: row,
+									// Only do a thread-search if we have a match in lastReplies and not OP
+									threadSearch: (matchingPostIndex > 0) ? widget.query.query : null,
+									fromArchive: result.data!.archive.isArchive
+								)),
 								child: ThreadRow(
 									thread: row.thread!,
 									onThumbnailTap: (attachment) => showGallery(
@@ -225,9 +238,11 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										semanticParentIds: [-7],
 										heroOtherEndIsBoxFitCover: false
 									),
-									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.item == row,
+									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.result == row,
 									countsUnreliable: true,
+									semanticParentIds: const [-7],
 									showBoardName: true,
+									showLastReplies: true,
 									baseOptions: PostSpanRenderOptions(
 										highlightString: widget.query.query.isEmpty ? null : widget.query.query
 									),
@@ -295,9 +310,10 @@ openSearch({
 								imageboardKey: null,
 								imageboard: result.imageboard,
 								child: ThreadPage(
-									thread: result.item.threadIdentifier,
-									initialPostId: result.item.id,
-									initiallyUseArchive: true,
+									thread: result.result.threadIdentifier,
+									initialPostId: result.result.id,
+									initiallyUseArchive: result.fromArchive,
+									initialSearch: result.threadSearch,
 									boardSemanticId: -1
 								)
 							),

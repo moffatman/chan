@@ -48,6 +48,7 @@ class PostRow extends StatelessWidget {
 	final bool highlight;
 	final Widget? overrideReplyCount;
 	final bool dim;
+	final bool showPostNumber;
 
 	const PostRow({
 		required this.post,
@@ -67,6 +68,7 @@ class PostRow extends StatelessWidget {
 		this.baseOptions,
 		this.overrideReplyCount,
 		this.dim = false,
+		this.showPostNumber = true,
 		Key? key
 	}) : super(key: key);
 
@@ -324,7 +326,8 @@ class PostRow extends StatelessWidget {
 																	settings: settings,
 																	site: site,
 																	context: context,
-																	zone: ctx.watch<PostSpanZoneData>()
+																	zone: ctx.watch<PostSpanZoneData>(),
+																	showPostNumber: showPostNumber
 																),
 																if (supportMouse) ...[
 																	...replyIds.map((id) => PostQuoteLinkSpan(

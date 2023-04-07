@@ -33,11 +33,13 @@ class BoardSwitcherPage extends StatefulWidget {
 	final bool Function(Imageboard imageboard)? filterImageboards;
 	final String? initialImageboardKey;
 	final bool currentlyPickingFavourites;
+	final bool allowPickingWholeSites;
 
 	const BoardSwitcherPage({
 		this.currentlyPickingFavourites = false,
 		this.filterImageboards,
 		this.initialImageboardKey,
+		this.allowPickingWholeSites = false,
 		Key? key
 	}) : super(key: key);
 
@@ -68,7 +70,19 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			boards = currentImageboard.persistence.boards.map(currentImageboard.scope).toList();
 		}
 		else {
-			boards = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.boards.map(i.scope)).toList();
+			boards = allImageboards.expand((i) => i.persistence.boards.map(i.scope)).toList();
+			if (widget.allowPickingWholeSites) {
+				for (final imageboard in allImageboards) {
+					if (imageboard.site.supportsMultipleBoards) {
+						boards.add(imageboard.scope(ImageboardBoard(
+							name: '',
+							title: imageboard.site.name,
+							isWorksafe: false,
+							webmAudioAllowed: false
+						)));
+					}
+				}
+			}
 		}
 		boards.sort((a, b) => a.item.name.compareTo(b.item.name));
 	}
@@ -79,7 +93,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		scrollController = ScrollController();
 		_backgroundColor = ValueNotifier<Color?>(null);
 		_focusNode = FocusNode();
-		allImageboards = ImageboardRegistry.instance.imageboards.toList();
+		allImageboards = ImageboardRegistry.instance.imageboards.where((i) => widget.filterImageboards?.call(i) ?? true).toList();
 		currentImageboardIndex = allImageboards.indexOf(ImageboardRegistry.instance.getImageboard(widget.initialImageboardKey ?? '____nothing') ?? allImageboards.first);
 		if (currentImageboardIndex == -1) {
 			currentImageboardIndex = 0;
@@ -121,9 +135,11 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		final settings = context.read<EffectiveSettings>();
 		final normalized = searchString.toLowerCase();
 		List<ImageboardScoped<ImageboardBoard>> filteredBoards = boards.where((board) {
-			return board.item.name.toLowerCase().contains(normalized) || board.item.title.toLowerCase().contains(normalized);
+			return
+				settings.showBoard(board.item) &&
+				(board.item.name.toLowerCase().contains(normalized) ||
+				 board.item.title.toLowerCase().contains(normalized));
 		}).toList();
-		filteredBoards = filteredBoards.where((b) => settings.showBoard(b.item)).toList();
 		if (searchString.isNotEmpty) {
 			mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
 				return a.item.name.length - b.item.name.length;
@@ -172,7 +188,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 			filteredBoards = filteredBoards.where((b) => favs.any((f) => f.imageboard == b.imageboard && f.item == b.item.name)).toList();
 		}
 		mergeSort<ImageboardScoped<ImageboardBoard>>(filteredBoards, compare: (a, b) {
-			return (b.item.name.toLowerCase().startsWith(normalized) ? 1 : 0) - (a.item.name.startsWith(normalized) ? 1 : 0);
+			return ((b.item.name.isEmpty ? b.item.title : b.item.name).toLowerCase().startsWith(normalized) ? 1 : 0) - ((a.item.name.isEmpty ? a.item.title : a.item.name).startsWith(normalized) ? 1 : 0);
 		});
 		if (searchString.isNotEmpty && !settings.onlyShowFavouriteBoardsInSwitcher) {
 			if (currentImageboard.site.allowsArbitraryBoards) {
@@ -538,14 +554,14 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																					crossAxisAlignment: CrossAxisAlignment.stretch,
 																					children: [
 																						AutoSizeText(
-																							imageboard.site.supportsMultipleBoards ? imageboard.site.formatBoardName(board) : board.title,
+																							board.name.isNotEmpty ? imageboard.site.formatBoardName(board) : board.title,
 																							maxFontSize: 20,
 																							minFontSize: 13,
 																							maxLines: 1,
 																							textAlign: TextAlign.left,
 																							overflow: TextOverflow.ellipsis
 																						),
-																						if (imageboard.site.supportsMultipleBoards) AutoSizeText(
+																						if (board.name.isNotEmpty) AutoSizeText(
 																							board.title,
 																							maxFontSize: 15,
 																							minFontSize: 13,
@@ -694,7 +710,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																		crossAxisAlignment: CrossAxisAlignment.center,
 																		children: [
 																			const SizedBox(height: 20),
-																			if (imageboard.site.supportsMultipleBoards) Flexible(
+																			if (board.name.isNotEmpty) Flexible(
 																				child: Center(
 																					child: AutoSizeText(
 																						imageboard.site.formatBoardName(board),
@@ -711,7 +727,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																				child: Center(
 																					child: AutoSizeText(
 																						board.title,
-																						maxFontSize: imageboard.site.supportsMultipleBoards ? 14 : double.infinity,
+																						maxFontSize: board.name.isNotEmpty ? 14 : double.infinity,
 																						maxLines: 2,
 																						textAlign: TextAlign.center,
 																						overflow: TextOverflow.ellipsis

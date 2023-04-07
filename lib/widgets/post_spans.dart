@@ -1542,7 +1542,8 @@ List<InlineSpan> buildPostInfoRow({
 	required ImageboardSite site,
 	required BuildContext context,
 	required PostSpanZoneData zone,
-	bool interactive = true
+	bool interactive = true,
+	bool showPostNumber = true
 }) {
 	return [
 		if (post.deleted) ...[
@@ -1559,7 +1560,7 @@ List<InlineSpan> buildPostInfoRow({
 			style: TextStyle(fontWeight: FontWeight.w600, color: settings.theme.titleColor)
 		),
 		for (final field in settings.postDisplayFieldOrder)
-			if (field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && !zone.tree) TextSpan(
+			if (showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && !zone.tree) TextSpan(
 				text: '#${zone.thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1} ',
 				style: TextStyle(color: settings.theme.primaryColor.withOpacity(0.5))
 			)

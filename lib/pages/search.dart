@@ -21,6 +21,31 @@ import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:provider/provider.dart';
 import 'board_switcher.dart';
 
+class SelectedSearchResult {
+	final Imageboard imageboard;
+	final ImageboardArchiveSearchResult result;
+	final String? threadSearch;
+	final bool fromArchive;
+
+	const SelectedSearchResult({
+		required this.imageboard,
+		required this.result,
+		required this.threadSearch,
+		required this.fromArchive
+	});
+
+	@override
+	bool operator == (Object other) =>
+		(other is SelectedSearchResult) &&
+		(other.imageboard == imageboard) &&
+		(other.result == result) &&
+		(other.threadSearch == threadSearch) &&
+		(other.fromArchive == fromArchive);
+	
+	@override
+	int get hashCode => Object.hash(imageboard, result, threadSearch, fromArchive);
+}
+
 class SearchPage extends StatefulWidget {
 	const SearchPage({
 		Key? key
@@ -32,7 +57,7 @@ class SearchPage extends StatefulWidget {
 
 class SearchPageState extends State<SearchPage> {
 	final _masterDetailKey = GlobalKey<MultiMasterDetailPageState>();
-	late final ValueNotifier<ImageboardScoped<ImageboardArchiveSearchResult>?> _valueInjector;
+	late final ValueNotifier<SelectedSearchResult?> _valueInjector;
 
 	@override
 	void initState() {
@@ -46,7 +71,7 @@ class SearchPageState extends State<SearchPage> {
 		_masterDetailKey.currentState!.masterKey.currentState!.push(FullWidthCupertinoPageRoute(
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _valueInjector,
-				builder: (context, ImageboardScoped<ImageboardArchiveSearchResult>? selectedResult, child) {
+				builder: (context, SelectedSearchResult? selectedResult, child) {
 					final child = SearchQueryPage(
 						query: query,
 						selectedResult: _valueInjector.value,
@@ -75,7 +100,7 @@ class SearchPageState extends State<SearchPage> {
 			key: _masterDetailKey,
 			showChrome: false,
 			paneCreator: () => [
-				MultiMasterPane<ImageboardScoped<ImageboardArchiveSearchResult>>(
+				MultiMasterPane<SelectedSearchResult>(
 					masterBuilder: (context, currentValue, setValue) {
 						final v = context.watch<MasterDetailHint>().currentValue;
 						WidgetsBinding.instance.addPostFrameCallback((_){
@@ -90,9 +115,10 @@ class SearchPageState extends State<SearchPage> {
 							imageboardKey: null,
 							imageboard: post.imageboard,
 							child: ThreadPage(
-								thread: post.item.threadIdentifier,
-								initialPostId: post.item.id,
-								initiallyUseArchive: true,
+								thread: post.result.threadIdentifier,
+								initialPostId: post.result.id,
+								initiallyUseArchive: post.fromArchive,
+								initialSearch: post.threadSearch,
 								boardSemanticId: -1
 							)
 						) : Builder(
@@ -176,7 +202,6 @@ class _SearchComposePageState extends State<SearchComposePage> {
 	bool _searchFocused = false;
 	bool _showingPicker = false;
 	late String? _lastImageboardKey;
-	late String? _lastBoardName;
 
 	@override
 	void initState() {
@@ -184,12 +209,9 @@ class _SearchComposePageState extends State<SearchComposePage> {
 		_controller = TextEditingController();
 		_focusNode = FocusNode();
 		_lastImageboardKey = Persistence.tabs[Persistence.currentTabIndex].imageboardKey;
-		_lastBoardName = Persistence.tabs[Persistence.currentTabIndex].board?.name;
 		query = ImageboardArchiveSearchQuery(
 			imageboardKey: _lastImageboardKey,
-			boards: [
-				if (_lastBoardName != null) _lastBoardName!
-			]
+			boards: []
 		);
 		_focusNode.addListener(() {
 			final bool isFocused = _focusNode.hasFocus;
@@ -252,16 +274,21 @@ class _SearchComposePageState extends State<SearchComposePage> {
 
 	@override
 	Widget build(BuildContext context) {
-		final currentBoardName = Persistence.tabs[Persistence.currentTabIndex].board?.name ?? 'tv';
-		if (currentBoardName != _lastBoardName) {
-			if (query.boards.isEmpty || query.boards.first == _lastBoardName) {
-				query.boards = [currentBoardName];
-			}
-			_lastBoardName = currentBoardName;
+		if (!ImageboardRegistry.instance.imageboards.any((i) => i.site.supportsSearch)) {
+			return const Center(
+				child: ErrorMessageCard('No added sites with search support')
+			);
 		}
+		final currentImageboard = Persistence.tabs[Persistence.currentTabIndex].imageboard;
+		if (currentImageboard?.key != _lastImageboardKey && (currentImageboard?.site.supportsSearch ?? false)) {
+			if (query.imageboardKey == _lastImageboardKey) {
+				query.imageboardKey = currentImageboard?.key;
+			}
+		}
+		_lastImageboardKey = currentImageboard?.key;
 		final imageboard = ImageboardRegistry.instance.getImageboard(query.imageboardKey ?? '');
 		final String? boardName;
-		if (imageboard != null) {
+		if (imageboard != null && query.boards.isNotEmpty) {
 			boardName = imageboard.site.formatBoardName(imageboard.persistence.getBoard(query.boards.first));
 		}
 		else {
@@ -289,7 +316,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 													ImageboardIcon(imageboardKey: query.imageboardKey),
 													const SizedBox(width: 4),
 												],
-												if (imageboard?.site.supportsMultipleBoards ?? true) Text(boardName ?? '/${query.boards.first}', style: const TextStyle(
+												if (query.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) Text(boardName ?? '/${query.boards.first}', style: const TextStyle(
 													color: Colors.white
 												))
 											]
@@ -298,14 +325,15 @@ class _SearchComposePageState extends State<SearchComposePage> {
 											final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 												builder: (ctx) => BoardSwitcherPage(
 													initialImageboardKey: query.imageboardKey,
-													filterImageboards: (b) => b.site.supportsSearch
+													filterImageboards: (b) => b.site.supportsSearch,
+													allowPickingWholeSites: true
 												),
 												showAnimations: context.read<EffectiveSettings>().showAnimations
 											));
 											if (newBoard != null) {
 												setState(() {
 													query.imageboardKey = newBoard.imageboard.key;
-													query.boards = [newBoard.item.name];
+													query.boards = newBoard.item.name.isEmpty ? [] : [newBoard.item.name];
 												});
 											}
 										}
@@ -329,7 +357,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 													ImageboardIcon(imageboardKey: query.imageboardKey),
 													const SizedBox(width: 4),
 												],
-												if (imageboard?.site.supportsMultipleBoards ?? true) Text(boardName ?? '/${query.boards.first}', style: const TextStyle(
+												if (query.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) Text(boardName ?? '/${query.boards.first}', style: const TextStyle(
 													color: Colors.white
 												))
 											]
@@ -395,7 +423,11 @@ class _SearchComposePageState extends State<SearchComposePage> {
 				duration: const Duration(milliseconds: 300),
 				switchInCurve: Curves.easeIn,
 				switchOutCurve: Curves.easeOut,
-				child: (_searchFocused && query.imageboardKey != null && (ImageboardRegistry.instance.getImageboard(query.imageboardKey!)?.site.supportsSearchOptions ?? false)) ? ListView(
+				child: (_searchFocused &&
+				        query.imageboardKey != null &&
+								(ImageboardRegistry.instance.getImageboard(query.imageboardKey!)?.site.supportsSearchOptions ?? false) &&
+								(query.boards.isNotEmpty || (ImageboardRegistry.instance.getImageboard(query.imageboardKey!)?.site.supportsGlobalSearchOptions ?? false))
+								) ? ListView(
 					key: const ValueKey(true),
 					children: [
 						const SizedBox(height: 16),
@@ -575,7 +607,7 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 	final imageboard = ImageboardRegistry.instance.getImageboard(q.imageboardKey ?? '');
 	return [
 		if (ImageboardRegistry.instance.count > 1 && q.imageboardKey != null) ImageboardIcon(imageboardKey: q.imageboardKey),
-		if (imageboard?.site.supportsMultipleBoards ?? true) ...q.boards.map((boardName) {
+		if (q.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) ...q.boards.map((boardName) {
 			final board = imageboard?.persistence.getBoard(boardName);
 			final formattedBoardName = board == null ? null : imageboard!.site.formatBoardName(board);
 			return _SearchQueryFilterTag(formattedBoardName ?? '/$boardName/');
