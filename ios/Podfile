@@ -39,6 +39,10 @@ def fix_config(config)
   if config.build_settings['DEVELOPMENT_TEAM'].nil?
     config.build_settings['DEVELOPMENT_TEAM'] = 'P93D6XYN8G'
   end
+  # https://github.com/ponnamkarthik/FlutterToast/issues/431
+  if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] == '8.0'
+    config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '11.0'
+  end
 end
 
 post_install do |installer|
