@@ -1021,7 +1021,7 @@ ImageboardSite makeSite(dynamic data) {
 			baseUrl: data['baseUrl'],
 			staticUrl: data['staticUrl'],
 			captchaUserAgents: (data['captchaUserAgents'] as Map?)?.cast<String, String>() ?? {},
-			searchUrl: data['searchUrl'],
+			searchUrl: data['searchUrl'] ?? '',
 			archives: (data['archives'] ?? []).map<ImageboardSiteArchive>((archive) {
 				final boards = (archive['boards'] as List<dynamic>?)?.map((b) => ImageboardBoard(
 					title: b['title'],
