@@ -220,6 +220,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	final _pickerKeys = List.generate(6, (i) => GlobalKey());
 	double _guessingProgress = 0.0;
 	CancelableOperation<Chan4CustomCaptchaGuess>? _guessInProgress;
+	bool _offerGuess = false;
 
 	int get numLetters => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters;
 	set numLetters(int setting) => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters = setting;
@@ -228,6 +229,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		setState(() {
 			_guessingProgress = 0.0;
 			_greyOutPickers = true;
+			_offerGuess = false;
 		});
 		try {
 			_guessInProgress?.cancel();
@@ -640,6 +642,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 															if (_solutionController.text.toUpperCase() == _lastGuessText.toUpperCase()) {
 																_animateGuess();
 															}
+															else {
+																setState(() {
+																	_offerGuess = true;
+																});
+															}
 														}
 													)
 												)
@@ -718,25 +725,45 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 								)
 							),
 							if (context.read<EffectiveSettings>().useNewCaptchaForm) ...[
-								CupertinoSegmentedControl<int>(
-									children: const {
-										5: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('5 letters')
+								Row(
+									mainAxisAlignment: MainAxisAlignment.center,
+									children: [
+										const SizedBox(width: 40),
+										CupertinoSegmentedControl<int>(
+											children: const {
+												5: Padding(
+													padding: EdgeInsets.all(8),
+													child: Text('5 letters')
+												),
+												6: Padding(
+													padding: EdgeInsets.all(8),
+													child: Text('6 letters')
+												)
+											},
+											groupValue: numLetters,
+											onValueChanged: (x) {
+												if (x != numLetters) {
+													numLetters = x;
+													if (x == 6 || _solutionController.text.toUpperCase() == _lastGuessText.toUpperCase()) {
+														WidgetsBinding.instance.addPostFrameCallback((_) => _animateGuess());
+													}
+													else {
+														_offerGuess = true;
+													}
+													setState(() {});
+												}
+											}
 										),
-										6: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('6 letters')
+										SizedBox(
+											width: 40,
+											child: _offerGuess ? CupertinoButton(
+												padding: EdgeInsets.zero,
+												minSize: 0,
+												onPressed: _animateGuess,
+												child: const Icon(CupertinoIcons.goforward)
+											) : null
 										)
-									},
-									groupValue: numLetters,
-									onValueChanged: (x) {
-										if (x != numLetters) {
-											numLetters = x;
-											setState(() {});
-											WidgetsBinding.instance.addPostFrameCallback((_) => _animateGuess());
-										}
-									}
+									]
 								),
 								IgnorePointer(
 									ignoring: _greyOutPickers,
