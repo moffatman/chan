@@ -327,10 +327,10 @@ class PostAdapter extends TypeAdapter<Post> {
 class PostIdentifier {
 	final String board;
 	final int threadId;
-	final int postId;
+	final int? postId;
 	PostIdentifier(this.board, this.threadId, this.postId);
 
-	PostIdentifier.thread(ThreadIdentifier identifier) : board = identifier.board, threadId = identifier.id, postId = identifier.id;
+	PostIdentifier.thread(ThreadIdentifier identifier) : board = identifier.board, threadId = identifier.id, postId = null;
 
 	@override
 	String toString() => 'PostIdentifier: /$board/$threadId/$postId';
