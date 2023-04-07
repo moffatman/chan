@@ -487,7 +487,14 @@ class _BoardPageState extends State<BoardPage> {
 							setState(() {});
 						}
 					),
-					...buildImageSearchActions(context, () => whichAttachment(context, thread.attachments))
+					...buildImageSearchActions(context, () => whichAttachment(context, thread.attachments)),
+					ContextMenuAction(
+						child: const Text('Report thread'),
+						trailingIcon: CupertinoIcons.exclamationmark_octagon,
+						onPressed: () {
+							openBrowser(context, context.read<ImageboardSite>().getPostReportUrl(thread.board, thread.id, thread.id));
+						}
+					)
 				],
 				maxHeight: settings.maxCatalogRowHeight,
 				child: GestureDetector(
