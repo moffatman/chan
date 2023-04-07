@@ -1,16 +1,13 @@
 import 'package:chan/pages/selectable_post.dart';
 import 'package:chan/services/filtering.dart';
-import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/soundposts.dart';
-import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
-import 'package:chan/models/search.dart';
 import 'package:chan/pages/posts.dart';
-import 'package:chan/pages/search_query.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -75,7 +72,6 @@ class PostRow extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final rootContext = context;
-		final imageboard = context.watch<Imageboard>();
 		final site = context.watch<ImageboardSite>();
 		final notifications = context.watch<Notifications>();
 		final savedPost = context.select<Persistence, SavedPost?>((p) => p.getSavedPost(post));
@@ -448,37 +444,6 @@ class PostRow extends StatelessWidget {
 				)
 			);
 		}
-		Future<Attachment?> whichAttachment() async {
-			if (latestPost.attachments.isEmpty) {
-				return null;
-			}
-			else if (latestPost.attachments.length == 1) {
-				return latestPost.attachments.first;
-			}
-			return await showCupertinoDialog(
-				context: context,
-				barrierDismissible: true,
-				builder: (context) => CupertinoAlertDialog(
-					title: const Text('Which file?'),
-					content: ImageboardScope(
-						imageboardKey: null,
-						imageboard: imageboard,
-						child: SizedBox(
-							height: 350,
-							child: GridView(
-								gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 1),
-								children: latestPost.attachments.map((a) => CupertinoButton(
-									child: AttachmentThumbnail(
-										attachment: a
-									),
-									onPressed: () => Navigator.pop(context, a)
-								)).toList()
-							)
-						)
-					)
-				)
-			);
-		}
 		return ContextMenu(
 			actions: [
 				if (site.supportsPosting && context.read<GlobalKey<ReplyBoxState>?>()?.currentState != null) ContextMenuAction(
@@ -627,7 +592,7 @@ class PostRow extends StatelessWidget {
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () async {
 							final persistence = context.read<Persistence>();
-							final attachment = await whichAttachment();
+							final attachment = await whichAttachment(context, latestPost.attachments);
 							if (attachment == null) {
 								return;
 							}
@@ -687,70 +652,7 @@ class PostRow extends StatelessWidget {
 						showToast(context: context, message: 'Deleted post /${latestPost.board}/${receipt.id}', icon: CupertinoIcons.delete);
 					}
 				),
-				if (latestPost.attachments.isNotEmpty) ...[
-					if (context.watch<ImageboardSite?>()?.supportsSearch ?? false) ContextMenuAction(
-						child: const Text('Search archives'),
-						trailingIcon: Icons.image_search,
-						onPressed: () async {
-							final imageboardKey = context.read<Imageboard>().key;
-							final attachment = await whichAttachment();
-							if (attachment == null) {
-								return;
-							}
-							// ignore: use_build_context_synchronously
-							openSearch(context: context, query: ImageboardArchiveSearchQuery(
-								imageboardKey: imageboardKey,
-								boards: [latestPost.board],
-								md5: attachment.md5
-							));
-						}
-					),
-					ContextMenuAction(
-						child: const Text('Search Google'),
-						trailingIcon: Icons.image_search,
-						onPressed: () async {
-							final attachment = await whichAttachment();
-							if (attachment == null) {
-								return;
-							}
-							// ignore: use_build_context_synchronously
-							openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
-								'image_url': attachment.url.toString(),
-								'safe': 'off',
-								'sbisrc': 'is'
-							}));
-						}
-					),
-					ContextMenuAction(
-						child: const Text('Search Yandex'),
-						trailingIcon: Icons.image_search,
-						onPressed: () async {
-							final attachment = await whichAttachment();
-							if (attachment == null) {
-								return;
-							}
-							// ignore: use_build_context_synchronously
-							openBrowser(context, Uri.https('yandex.com', '/images/search', {
-								'rpt': 'imageview',
-								'url': attachment.url.toString()
-							}));
-						}
-					),
-					ContextMenuAction(
-						child: const Text('Search SauceNAO'),
-						trailingIcon: Icons.image_search,
-						onPressed: () async {
-							final attachment = await whichAttachment();
-							if (attachment == null) {
-								return;
-							}
-							// ignore: use_build_context_synchronously
-							openBrowser(context, Uri.https('saucenao.com', '/search.php', {
-								'url': attachment.url.toString()
-							}));
-						}
-					)
-				]
+				if (latestPost.attachments.isNotEmpty) ...buildImageSearchActions(context, () => whichAttachment(context, latestPost.attachments))
 			],
 			child: (replyIds.isNotEmpty) ? SliderBuilder(
 				popup: PostsPage(

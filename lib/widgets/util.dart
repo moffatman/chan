@@ -12,6 +12,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:flutter/cupertino.dart';
@@ -1138,4 +1139,36 @@ class _KeepAliverState extends State<KeepAliver> with AutomaticKeepAliveClientMi
 
 	@override
 	bool get wantKeepAlive => true;
+}
+
+Future<Attachment?> whichAttachment(BuildContext context, List<Attachment> attachments) async {
+	if (attachments.isEmpty) {
+		return null;
+	}
+	else if (attachments.length == 1) {
+		return attachments.first;
+	}
+	return await showCupertinoDialog(
+		context: context,
+		barrierDismissible: true,
+		builder: (innerContext) => CupertinoAlertDialog(
+			title: const Text('Which file?'),
+			content: ImageboardScope(
+				imageboardKey: null,
+				imageboard: context.read<Imageboard>(),
+				child: SizedBox(
+					height: 350,
+					child: GridView(
+						gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 1),
+						children: attachments.map((a) => CupertinoButton(
+							child: AttachmentThumbnail(
+								attachment: a
+							),
+							onPressed: () => Navigator.pop(innerContext, a)
+						)).toList()
+					)
+				)
+			)
+		)
+	);
 }

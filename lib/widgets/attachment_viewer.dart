@@ -3,12 +3,10 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
-import 'package:chan/models/search.dart';
 import 'package:chan/models/thread.dart';
-import 'package:chan/pages/search_query.dart';
-import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/soundposts.dart';
 import 'package:chan/services/storage.dart';
@@ -981,41 +979,12 @@ class AttachmentViewer extends StatelessWidget {
 						key: controller.contextMenuShareButtonKey,
 						child: const Text('Share')
 					),
-					if (context.watch<ImageboardSite?>()?.supportsSearch ?? false) CupertinoContextMenuAction2(
-						trailingIcon: Icons.image_search,
-						onPressed: () {
-							openSearch(context: context, query: ImageboardArchiveSearchQuery(
-								imageboardKey: context.read<Imageboard>().key,
-								boards: [attachment.board],
-								md5: attachment.md5)
-							);
-						},
-						child: const Text('Search archives')
-					),
-					CupertinoContextMenuAction2(
-						trailingIcon: Icons.image_search,
-						onPressed: () => openBrowser(context, Uri.https('www.google.com', '/searchbyimage', {
-							'image_url': attachment.url.toString(),
-							'safe': 'off',
-							'sbisrc': 'is'
-						})),
-						child: const Text('Search Google')
-					),
-					CupertinoContextMenuAction2(
-						trailingIcon: Icons.image_search,
-						onPressed: () => openBrowser(context, Uri.https('yandex.com', '/images/search', {
-							'rpt': 'imageview',
-							'url': attachment.url.toString()
-						})),
-						child: const Text('Search Yandex')
-					),
-					CupertinoContextMenuAction2(
-						trailingIcon: Icons.image_search,
-						onPressed: () => openBrowser(context, Uri.https('saucenao.com', '/search.php', {
-							'url': attachment.url.toString()
-						})),
-						child: const Text('Search SauceNAO')
-					),
+					...buildImageSearchActions(context, () async => attachment).map((a) => CupertinoContextMenuAction2(
+						isDestructiveAction: a.isDestructiveAction,
+						onPressed: a.onPressed,
+						trailingIcon: a.trailingIcon,
+						child: a.child,
+					)),
 					...additionalContextMenuActions
 				],
 				child: buildChild(true),

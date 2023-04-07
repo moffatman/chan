@@ -10,6 +10,7 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -485,7 +486,8 @@ class _BoardPageState extends State<BoardPage> {
 							context.read<Persistence>().didUpdateHiddenMD5s();
 							setState(() {});
 						}
-					)
+					),
+					...buildImageSearchActions(context, () => whichAttachment(context, thread.attachments))
 				],
 				maxHeight: settings.maxCatalogRowHeight,
 				child: GestureDetector(
