@@ -28,6 +28,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mutex/mutex.dart';
 import 'package:provider/provider.dart';
 import 'package:unifiedpush/unifiedpush.dart';
 
@@ -47,7 +48,8 @@ class _PostThreadCombo {
 	int get hashCode => Object.hash(imageboard, post, threadState);
 }
 
-Future<List<ImageboardScoped<ThreadWatch>>> _loadWatches() async {
+final _watchMutex = ReadWriteMutex();
+Future<List<ImageboardScoped<ThreadWatch>>> _loadWatches() => _watchMutex.protectRead(() async {
 	final watches = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.browserState.threadWatches.map(i.scope)).toList();
 	await Future.wait(watches.map((watch) async {
 		await watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier)?.ensureThreadLoaded();
@@ -85,7 +87,7 @@ Future<List<ImageboardScoped<ThreadWatch>>> _loadWatches() async {
 		}
 	});
 	return watches;
-}
+});
 
 class SavedPage extends StatefulWidget {
 	final bool isActive;
@@ -370,11 +372,13 @@ class _SavedPageState extends State<SavedPage> {
 													builder: (context, _) => CupertinoButton(
 														padding: const EdgeInsets.all(8),
 														onPressed: (_watchedListController.items.any((w) => w.item.item.zombie)) ? () async {
-															final toRemove = _watchedListController.items.where((w) => w.item.item.zombie).toList();
-															for (final watch in toRemove) {
-																await watch.item.imageboard.notifications.removeWatch(watch.item.item);
-															}
-															_watchedListController.update();
+															await _watchMutex.protectWrite(() async {
+																_watchedListController.update(); // Should wait until mutex releases
+																final toRemove = _watchedListController.items.where((w) => w.item.item.zombie).toList();
+																for (final watch in toRemove) {
+																	await watch.item.imageboard.notifications.removeWatch(watch.item.item);
+																}
+															});
 														} : null,
 														child: const Row(
 															mainAxisSize: MainAxisSize.min,

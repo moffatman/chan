@@ -308,3 +308,17 @@ void insertIntoSortedList<T>({
 		Future.error(e);
 	}
 }
+
+extension WaitUntil<T> on ValueListenable<T> {
+	Future<void> waitUntil(bool Function(T) predicate) {
+		final completer = Completer<void>();
+		void closure() {
+			if (predicate(value)) {
+				completer.complete();
+				removeListener(closure);
+			}
+		}
+		addListener(closure);
+		return completer.future;
+	}
+}

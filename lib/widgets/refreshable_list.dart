@@ -566,6 +566,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	List<RefreshableListItem<T>> filteredValues = [];
 	late _RefreshableTreeItems _refreshableTreeItems;
 	int forceRebuildId = 0;
+	Timer? _trailingUpdateAnimationTimer;
 
 	@override
 	void initState() {
@@ -751,8 +752,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	void _onUpdateAnimation() {
-		if (lastUpdateTime == null || (DateTime.now().difference(lastUpdateTime!) > const Duration(seconds: 1))) {
+		if (DateTime.now().difference(lastUpdateTime ?? DateTime(2000)) > const Duration(seconds: 1)) {
 			update();
+		}
+		else {
+			_trailingUpdateAnimationTimer?.cancel();
+			_trailingUpdateAnimationTimer = Timer(const Duration(seconds: 1), _onUpdateAnimation);
 		}
 	}
 
