@@ -50,11 +50,28 @@ class _FasterSnappingPageScrollPhysics extends ScrollPhysics {
   }
 
   @override
+  SpringDescription get spring => SpringDescription.withDampingRatio(
+		mass: 0.3,
+		stiffness: 150,
+		ratio: 1.1,
+	);
+}
+
+class _VeryFastSnappingPageScrollPhysics extends ScrollPhysics {
+  const _VeryFastSnappingPageScrollPhysics({ScrollPhysics? parent})
+      : super(parent: parent);
+
+  @override
+  _VeryFastSnappingPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return _VeryFastSnappingPageScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
   SpringDescription get spring => const SpringDescription(
-        mass: 80,
-        stiffness: 100,
-        damping: 2,
-      );
+		mass: 80,
+		stiffness: 100,
+		damping: 2,
+	);
 }
 
 class _PaddedRectClipper extends CustomClipper<Rect> {
@@ -857,7 +874,7 @@ class _GalleryPageState extends State<GalleryPage> {
 										KeyedSubtree(
 											key: _pageControllerKey,
 											child: ExtendedImageGesturePageView.builder(
-												physics: settings.showAnimations ? null : const _FasterSnappingPageScrollPhysics(),
+												physics: settings.showAnimations ? const _FasterSnappingPageScrollPhysics() : const _VeryFastSnappingPageScrollPhysics(),
 												canScrollPage: (x) => settings.allowSwipingInGallery && widget.allowScroll && widget.attachments.length > 1,
 												onPageChanged: _onPageChanged,
 												controller: pageController,
