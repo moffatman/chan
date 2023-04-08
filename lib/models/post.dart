@@ -94,6 +94,9 @@ class Post implements Filterable {
 		return _span!;
 	}
 	Future<void> preinit() async {
+		if (_span != null) {
+			return;
+		}
 		if (text.length > 500) {
 			_span = await _makeSpanPool.withResource(() => compute<Post, PostNodeSpan>((p) => p._makeSpan(), this));
 		}
