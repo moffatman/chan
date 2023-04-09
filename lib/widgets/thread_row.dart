@@ -390,28 +390,39 @@ class ThreadRow extends StatelessWidget {
 											else countersPlaceholder,
 											// Uuse thread and not latestThread
 											// The last replies should be only those from the catalog/search query
-											if (showLastReplies) ...thread.posts.skip(max(1, thread.posts.length - 3)).map((post) => WidgetSpan(
-												child: Padding(
-													padding: const EdgeInsets.only(bottom: 16),
-													child: Row(
-														mainAxisSize: MainAxisSize.min,
-														crossAxisAlignment: CrossAxisAlignment.start,
-														children: [
-															Text('>>', style: TextStyle(color: settings.theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold)),
-															const SizedBox(width: 4),
-															Flexible(
-																child: PostRow(
-																	post: post,
-																	baseOptions: baseOptions,
-																	shrinkWrap: true,
-																	highlight: true,
-																	showPostNumber: false
-																)
-															)
-														]
+											if (showLastReplies) ...[
+												if (thread.posts.length > 1) const WidgetSpan(
+													child: SizedBox(
+														width: double.infinity,
+														height: 16
 													)
-												)
-											))
+												),
+												...thread.posts.skip(max(1, thread.posts.length - 3)).map((post) => WidgetSpan(
+													child: TransformedMediaQuery(
+														transformation: (mq) => mq.copyWith(textScaleFactor: 1),
+														child: Padding(
+															padding: const EdgeInsets.only(bottom: 16),
+															child: Row(
+																mainAxisSize: MainAxisSize.min,
+																crossAxisAlignment: CrossAxisAlignment.start,
+																children: [
+																	Text('>>', style: TextStyle(color: settings.theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold)),
+																	const SizedBox(width: 4),
+																	Flexible(
+																		child: PostRow(
+																			post: post,
+																			baseOptions: baseOptions,
+																			shrinkWrap: true,
+																			highlight: true,
+																			showPostNumber: false
+																		)
+																	)
+																]
+															)
+														)
+													)
+												))
+											]
 										]
 									)
 								)
