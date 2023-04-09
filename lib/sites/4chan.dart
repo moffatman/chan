@@ -969,8 +969,22 @@ class Site4Chan extends ImageboardSite {
 			if (page > 1) 'o': ((page - 1) * 10).toString()
 		}));
 		final document = parse(response.data);
-		final threads = document.querySelectorAll('.thread').map((thread) {
-			print(thread.querySelector('.fileText a')?.attributes);
+		final threads = document.querySelectorAll('.thread').expand((thread) {
+			if (thread.querySelector('.post.op') == null) {
+				return thread.querySelectorAll('.post.reply').map((post) {
+					final linkMatch = RegExp(r'([^\/]+)\/thread\/(\d+)#p(\d+)').firstMatch(post.querySelector('.postNum.desktop a')!.attributes['href']!)!;
+					return ImageboardArchiveSearchResult.post(Post(
+						board: linkMatch.group(1)!,
+						text: post.querySelector('.postMessage')!.innerHtml,
+						name: post.querySelector('.name')!.text.trim(),
+						time: DateTime.fromMillisecondsSinceEpoch(1000 * int.parse(post.querySelector('.dateTime')!.attributes['data-utc']!)),
+						threadId: int.parse(linkMatch.group(2)!),
+						id: int.parse(linkMatch.group(3)!),
+						spanFormat: PostSpanFormat.chan4Search,
+						attachments: const []
+					));
+				});
+			}
 			final threadIdentifierMatch = thread.querySelectorAll('.fileText a').map((e) {
 				return RegExp(r'([^\/]+)\/thread\/(\d+)').firstMatch(e.attributes['href'] ?? '');
 			}).firstWhere((m) => m != null)!;
@@ -1018,7 +1032,7 @@ class Site4Chan extends ImageboardSite {
 					attachments: (postId != threadId || attachment == null) ? const [] : [attachment]
 				);
 			}).toList();
-			return ImageboardArchiveSearchResult.thread(Thread(
+			return [ImageboardArchiveSearchResult.thread(Thread(
 				posts_: posts,
 				replyCount: 0,
 				imageCount: 0,
@@ -1028,7 +1042,7 @@ class Site4Chan extends ImageboardSite {
 				isSticky: false,
 				time: posts.first.time,
 				attachments: posts.first.attachments
-			));
+			))];
 		}).toList();
 		return ImageboardArchiveSearchResultPage(
 			posts: threads,
