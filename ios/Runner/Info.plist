@@ -107,5 +107,7 @@
 		<false/>
 		<key>flutter_apns.disable_swizzling</key>
 		<true/>
+		<key>FLTEnableImpeller</key>
+		<false/>
 	</dict>
 </plist>
