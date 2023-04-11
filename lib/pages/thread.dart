@@ -115,6 +115,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	final _replyBoxKey = GlobalKey<ReplyBoxState>();
 	final _listKey = GlobalKey<RefreshableListState>();
 
+	bool _buildRefreshableList = false;
 	late final RefreshableListController<Post> _listController;
 	late PostSpanRootZoneData zone;
 	bool blocked = false;
@@ -290,7 +291,19 @@ class _ThreadPageState extends State<ThreadPage> {
 		});
 		_listController.slowScrolls.addListener(_onSlowScroll);
 		context.read<PersistentBrowserTab?>()?.threadController = _listController;
-		_scrollIfWarranted();
+		if (!(context.read<MasterDetailHint?>()?.twoPane ?? false) &&
+		    persistentState.lastSeenPostId != null &&
+				(persistentState.thread?.posts_.length ?? 0) > 20) {
+			// Likely to lag if building/scrolling done during page transition animation
+			Future.delayed(const Duration(milliseconds: 450), () => setState(() {
+				_buildRefreshableList = true;
+			}));
+			_scrollIfWarranted(const Duration(milliseconds: 500));
+		}
+		else {
+			_buildRefreshableList = true;
+			_scrollIfWarranted();
+		}
 		_searching |= widget.initialSearch?.isNotEmpty ?? false;
 	}
 
@@ -795,7 +808,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																		}
 																		return false;
 																	},
-																	child: RefreshableList<Post>(
+																	child: _buildRefreshableList ? RefreshableList<Post>(
 																		filterableAdapter: (t) => t,
 																		initialFilter: widget.initialSearch,
 																		onFilterChanged: (filter) {
@@ -1018,7 +1031,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																			);
 																		},
 																		filterHint: 'Search in thread'
-																	)
+																	) : const SizedBox.expand()
 																)
 															),
 															SafeArea(
