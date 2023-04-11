@@ -1037,7 +1037,19 @@ class _ThreadPageState extends State<ThreadPage> {
 																		searching: _searching,
 																		passedFirstLoad: _passedFirstLoad,
 																		blocked: blocked,
-																		boardSemanticId: widget.boardSemanticId
+																		boardSemanticId: widget.boardSemanticId,
+																		developerModeButtons: [
+																			('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
+																				final id = _listController.lastVisibleItem?.id;
+																				if (id != null) {
+																					lastSeenIdBeforeLastUpdate = id;
+																					persistentState.lastSeenPostId = id;
+																					persistentState.lastSeenPostIdNotifier.value = id;
+																					persistentState.save();
+																					setState(() {});
+																				}
+																			})
+																		],
 																	)
 																)
 															),
@@ -1135,6 +1147,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 	final bool passedFirstLoad;
 	final bool blocked;
 	final int boardSemanticId;
+	final List<(String, Widget, VoidCallback)> developerModeButtons;
 	
 	const ThreadPositionIndicator({
 		required this.persistentState,
@@ -1150,6 +1163,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 		required this.passedFirstLoad,
 		required this.blocked,
 		required this.boardSemanticId,
+		this.developerModeButtons = const [],
 		Key? key
 	}) : super(key: key);
 
@@ -1628,14 +1642,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											}
 										}),
 										('Scroll to bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom),
-										if (developerMode) ('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
-											final id = widget.listController.lastVisibleItem?.id;
-											if (id != null) {
-												widget.persistentState.lastSeenPostId = id;
-												widget.persistentState.lastSeenPostIdNotifier.value = id;
-												widget.persistentState.save();
-											}
-										})
+										if (developerMode) ...widget.developerModeButtons
 									]) Padding(
 										padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
 										child: CupertinoButton.filled(
