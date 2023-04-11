@@ -1,5 +1,5 @@
+import 'package:chan/main.dart';
 import 'package:chan/models/post.dart';
-import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/history_search.dart';
 import 'package:chan/pages/master_detail.dart';
@@ -22,11 +22,9 @@ final _appLaunchTime = DateTime.now();
 
 class HistoryPage extends StatefulWidget {
 	final bool isActive;
-	final void Function(String, ThreadIdentifier)? onWantOpenThreadInNewTab;
 
 	const HistoryPage({
 		required this.isActive,
-		this.onWantOpenThreadInNewTab,
 		Key? key
 	}) : super(key: key);
 
@@ -230,14 +228,15 @@ class _HistoryPageState extends State<HistoryPage> {
 								sortMethods: const [],
 								itemBuilder: (itemContext, state) {
 									final isSelected = selectedThread(itemContext, state.imageboard!.scope(PostIdentifier.thread(state.identifier)));
+									final openInNewTabZone = context.read<OpenInNewTabZone?>();
 									return ContextMenu(
 										maxHeight: 125,
 										actions: [
-											if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+											if (openInNewTabZone != null) ContextMenuAction(
 												child: const Text('Open in new tab'),
 												trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
 												onPressed: () {
-													widget.onWantOpenThreadInNewTab?.call(state.imageboardKey, state.identifier);
+													openInNewTabZone.onWantOpenThreadInNewTab(state.imageboardKey, state.identifier);
 												}
 											),
 											ContextMenuAction(

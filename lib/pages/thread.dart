@@ -723,11 +723,15 @@ class _ThreadPageState extends State<ThreadPage> {
 										onPressed: () {
 											final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 											final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+											final openInNewTabZone = context.read<OpenInNewTabZone?>();
 											shareOne(
 												context: context,
 												text: site.getWebUrl(widget.thread.board, widget.thread.id),
 												type: "text",
-												sharePositionOrigin: (offset != null && size != null) ? offset & size : null
+												sharePositionOrigin: (offset != null && size != null) ? offset & size : null,
+												additionalOptions: {
+													if (openInNewTabZone != null) 'Open in new tab': () => openInNewTabZone.onWantOpenThreadInNewTab(context.read<Imageboard>().key, widget.thread)
+												}
 											);
 										}
 									),

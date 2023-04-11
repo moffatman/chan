@@ -341,6 +341,14 @@ void clearOverlayNotifications(Notifications notifications, Watch watch) {
 	}*/
 }
 
+class OpenInNewTabZone {
+	final void Function(String, ThreadIdentifier) onWantOpenThreadInNewTab;
+
+	const OpenInNewTabZone({
+		required this.onWantOpenThreadInNewTab
+	});
+}
+
 class ChanHomePage extends StatefulWidget {
 	const ChanHomePage({Key? key}) : super(key: key);
 
@@ -946,8 +954,22 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			);
 		}
 		else if (index == 1) {
-			child = ChangeNotifierProvider.value(
-				value: _savedFakeTab,
+			child = MultiProvider(
+				providers: [
+					ChangeNotifierProvider.value(
+						value: _savedFakeTab
+					),
+					Provider.value(
+						value: OpenInNewTabZone(
+							onWantOpenThreadInNewTab: (imageboardKey, thread) => _addNewTab(
+								withImageboardKey: imageboardKey,
+								withBoard: thread.board,
+								withThreadId: thread.id,
+								activate: true
+							)
+						)
+					)
+				],
 				child: SavedPage(
 					isActive: active,
 					masterDetailKey: _savedMasterDetailKey,
@@ -963,21 +985,33 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			);
 		}
 		else if (index == 2) {
-			child = HistoryPage(
-				isActive: active,
-				onWantOpenThreadInNewTab: (imageboardKey, thread) {
-					_addNewTab(
+			child = Provider.value(
+				value: OpenInNewTabZone(
+					onWantOpenThreadInNewTab: (imageboardKey, thread) => _addNewTab(
 						withImageboardKey: imageboardKey,
 						withBoard: thread.board,
 						withThreadId: thread.id,
 						activate: true
-					);
-				}
+					)
+				),
+				child: HistoryPage(
+					isActive: active,
+				)
 			);
 		}
 		else if (index == 3) {
-			child = SearchPage(
-				key: _searchPageKey
+			child = Provider.value(
+				value: OpenInNewTabZone(
+					onWantOpenThreadInNewTab: (imageboardKey, thread) => _addNewTab(
+						withImageboardKey: imageboardKey,
+						withBoard: thread.board,
+						withThreadId: thread.id,
+						activate: true
+					)
+				),
+				child: SearchPage(
+					key: _searchPageKey
+				)
 			);
 		}
 		else {
