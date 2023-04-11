@@ -87,14 +87,14 @@ mixin CupertinoRouteTransitionMixin<T> on PageRoute<T> {
 	Duration get transitionDuration {
 		return (this is! FullWidthCupertinoPageRoute ||
 						((this as FullWidthCupertinoPageRoute).showAnimationsForward ?? (this as FullWidthCupertinoPageRoute).showAnimations)) ?
-							const Duration(milliseconds: 400) : Duration.zero;
+							const Duration(milliseconds: 500) : Duration.zero;
 	}
 
 	@override
 	Duration get reverseTransitionDuration {
 		return (this is! FullWidthCupertinoPageRoute ||
 					  (this as FullWidthCupertinoPageRoute).showAnimations) ?
-						 const Duration(milliseconds: 400) : Duration.zero;
+						 const Duration(milliseconds: 500) : Duration.zero;
 	}
 
 	@override
@@ -286,8 +286,8 @@ class CupertinoPageTransition extends StatelessWidget {
 				? primaryRouteAnimation
 				: CurvedAnimation(
 					parent: primaryRouteAnimation,
-					curve: Curves.linearToEaseOut,
-					reverseCurve: Curves.easeInToLinear,
+					curve: Curves.fastEaseInToSlowEaseOut,
+					reverseCurve: Curves.fastEaseInToSlowEaseOut.flipped,
 				)
 			).drive(_kRightMiddleTween),
 		_secondaryPositionAnimation =
@@ -295,8 +295,8 @@ class CupertinoPageTransition extends StatelessWidget {
 				? secondaryRouteAnimation
 				: CurvedAnimation(
 					parent: secondaryRouteAnimation,
-					curve: Curves.linearToEaseOut,
-					reverseCurve: Curves.easeInToLinear,
+					curve: Curves.fastEaseInToSlowEaseOut,
+					reverseCurve: Curves.fastEaseInToSlowEaseOut.flipped,
 				)
 			).drive(_kMiddleLeftTween),
 		_primaryShadowAnimation =
@@ -304,7 +304,7 @@ class CupertinoPageTransition extends StatelessWidget {
 				? primaryRouteAnimation
 				: CurvedAnimation(
 					parent: primaryRouteAnimation,
-					curve: Curves.linearToEaseOut,
+					curve: Curves.fastEaseInToSlowEaseOut,
 				)
 			).drive(_kGradientShadowTween),
 		super(key: key);
