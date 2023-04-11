@@ -117,6 +117,11 @@ class PostRow extends StatelessWidget {
 			}
 			return false;
 		});
+		final backgroundColor = isSelected ?
+			CupertinoTheme.of(context).primaryColorWithBrightness(0.4) :
+			highlight ?
+				CupertinoTheme.of(context).primaryColorWithBrightness(0.1) :
+				CupertinoTheme.of(context).scaffoldBackgroundColor;
 		openReplies() {
 			if (replyIds.isNotEmpty) {
 				WeakNavigator.push(context, PostsPage(
@@ -292,9 +297,7 @@ class PostRow extends StatelessWidget {
 				child: Container(
 					decoration: BoxDecoration(
 						border: border,
-						color: isSelected ?
-							CupertinoTheme.of(context).primaryColorWithBrightness(0.4) :
-								highlight ? CupertinoTheme.of(context).primaryColorWithBrightness(0.1) : CupertinoTheme.of(context).scaffoldBackgroundColor,
+						color: backgroundColor,
 					),
 					child: Stack(
 						children: [
@@ -367,8 +370,8 @@ class PostRow extends StatelessWidget {
 												begin: Alignment.centerRight,
 												end: Alignment.centerLeft,
 												colors: [
-													settings.theme.backgroundColor,
-													settings.theme.backgroundColor.withOpacity(0)
+													backgroundColor,
+													backgroundColor.withOpacity(0)
 												]
 											)
 										),
