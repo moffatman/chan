@@ -671,22 +671,17 @@ class _FilterEditorState extends State<FilterEditor> {
 												)
 											)
 										),
-										Material(
-											type: MaterialType.canvas,
-											color: settings.theme.barColor,
-											child: Checkbox(
-												activeColor: CupertinoTheme.of(context).primaryColor,
-												checkColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
-												fillColor: MaterialStateColor.resolveWith((states) => CupertinoTheme.of(context).primaryColor),
-												value: !filter.value.disabled,
-												onChanged: (value) {
-													filter.value.disabled = !filter.value.disabled;
-													final lines = settings.filterConfiguration.split('\n');
-													lines[filter.key] = filter.value.toStringConfiguration();
-													settings.filterConfiguration = lines.join('\n');
-													regexController.text = settings.filterConfiguration;
-												}
-											)
+										CupertinoCheckbox(
+											activeColor: CupertinoTheme.of(context).primaryColor,
+											checkColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
+											value: !filter.value.disabled,
+											onChanged: (value) {
+												filter.value.disabled = !filter.value.disabled;
+												final lines = settings.filterConfiguration.split('\n');
+												lines[filter.key] = filter.value.toStringConfiguration();
+												settings.filterConfiguration = lines.join('\n');
+												regexController.text = settings.filterConfiguration;
+											}
 										)
 									]
 								);
