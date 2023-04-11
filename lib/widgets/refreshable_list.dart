@@ -139,10 +139,6 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 	bool shouldRebuild(SliverDontRebuildChildBuilderDelegate oldDelegate) => !listEquals(list, oldDelegate.list) || id != oldDelegate.id;
 }
 
-bool _shouldIgnoreForHeightEstimation<T extends Object>(RefreshableListItem<T> item) {
-	return item.isHidden.isHidden;
-}
-
 class _TreeNode<T extends Object> {
 	final T item;
 	final int id;
@@ -185,8 +181,6 @@ class RefreshableListItem<T extends Object> {
 	final List<int> parentIds;
 	final Set<int> treeDescendantIds;
 	final int? _depth;
-	// Do not consider for equality
-	TreeItemCollapseType? isHidden;
 
 	RefreshableListItem({
 		required this.item,
@@ -315,6 +309,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	final ValueChanged<int>? onAutomaticallyCollapsedTopLevelItemExpanded;
 	final void Function(RefreshableListItem<T> item, bool looseEquality)? onCollapseOrExpand;
 	final Set<List<int>> loadingOmittedItems = {};
+	final Map<(List<int>, int?, bool), TreeItemCollapseType?> _cache = {};
 
 	_RefreshableTreeItems({
 		required this.manuallyCollapsedItems,
@@ -328,59 +323,61 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	});
 
 	TreeItemCollapseType? isItemHidden(List<int> parentIds, int? thisId, bool representsStubChildren) {
-		// Need to check all parent prefixes
-		for (int d = 0; d < parentIds.length; d++) {
-			final primaryParent = primarySubtreeParents[parentIds[d]] ?? defaultPrimarySubtreeParents[parentIds[d]];
-			final theParentId = d == 0 ? -1 : parentIds[d - 1];
-			if (primaryParent != null && primaryParent != theParentId) {
-				return TreeItemCollapseType.mutuallyChildCollapsed;
-			}
-		}
-		if (parentIds.isNotEmpty) {
-			if (automaticallyCollapsedTopLevelItems.contains(parentIds.first)) {
-				return TreeItemCollapseType.childCollapsed;
-			}
-		}
-		// By iterating reversed it will properly handle collapses within collapses
-		for (final collapsed in manuallyCollapsedItems.reversed.followedBy(automaticallyCollapsedItems)) {
-			if (collapsed.length > parentIds.length + 1) {
-				continue;
-			}
-			bool keepGoing = true;
-			for (int i = 0; i < collapsed.length - 1 && keepGoing; i++) {
-				keepGoing = collapsed[i] == parentIds[i];
-			}
-			if (!keepGoing) {
-				continue;
-			}
-			if (collapsed.length == parentIds.length + 1) {
-				if (collapsed.last == thisId) {
-					return TreeItemCollapseType.collapsed;
+		return _cache.putIfAbsent((parentIds, thisId, representsStubChildren), () {
+			// Need to check all parent prefixes
+			for (int d = 0; d < parentIds.length; d++) {
+				final primaryParent = primarySubtreeParents[parentIds[d]] ?? defaultPrimarySubtreeParents[parentIds[d]];
+				final theParentId = d == 0 ? -1 : parentIds[d - 1];
+				if (primaryParent != null && primaryParent != theParentId) {
+					return TreeItemCollapseType.mutuallyChildCollapsed;
 				}
-				continue;
 			}
-			if (collapsed.last == parentIds[collapsed.length - 1]) {
-				return TreeItemCollapseType.childCollapsed;
+			if (parentIds.isNotEmpty) {
+				if (automaticallyCollapsedTopLevelItems.contains(parentIds.first)) {
+					return TreeItemCollapseType.childCollapsed;
+				}
 			}
-		}
-		if (parentIds.isEmpty && automaticallyCollapsedTopLevelItems.contains(thisId)) {
-			if (representsStubChildren) {
-				return TreeItemCollapseType.childCollapsed;
+			// By iterating reversed it will properly handle collapses within collapses
+			for (final collapsed in manuallyCollapsedItems.reversed.followedBy(automaticallyCollapsedItems)) {
+				if (collapsed.length > parentIds.length + 1) {
+					continue;
+				}
+				bool keepGoing = true;
+				for (int i = 0; i < collapsed.length - 1 && keepGoing; i++) {
+					keepGoing = collapsed[i] == parentIds[i];
+				}
+				if (!keepGoing) {
+					continue;
+				}
+				if (collapsed.length == parentIds.length + 1) {
+					if (collapsed.last == thisId) {
+						return TreeItemCollapseType.collapsed;
+					}
+					continue;
+				}
+				if (collapsed.last == parentIds[collapsed.length - 1]) {
+					return TreeItemCollapseType.childCollapsed;
+				}
 			}
-			else {
-				return TreeItemCollapseType.topLevelCollapsed;
+			if (parentIds.isEmpty && automaticallyCollapsedTopLevelItems.contains(thisId)) {
+				if (representsStubChildren) {
+					return TreeItemCollapseType.childCollapsed;
+				}
+				else {
+					return TreeItemCollapseType.topLevelCollapsed;
+				}
 			}
-		}
-		final personalPrimarySubtreeParent = primarySubtreeParents[thisId] ?? defaultPrimarySubtreeParents[thisId];
-		if (personalPrimarySubtreeParent != null && personalPrimarySubtreeParent != (parentIds.tryLast ?? -1)) {
-			if (representsStubChildren) {
-				return TreeItemCollapseType.mutuallyChildCollapsed;
+			final personalPrimarySubtreeParent = primarySubtreeParents[thisId] ?? defaultPrimarySubtreeParents[thisId];
+			if (personalPrimarySubtreeParent != null && personalPrimarySubtreeParent != (parentIds.tryLast ?? -1)) {
+				if (representsStubChildren) {
+					return TreeItemCollapseType.mutuallyChildCollapsed;
+				}
+				else {
+					return TreeItemCollapseType.mutuallyCollapsed;
+				}
 			}
-			else {
-				return TreeItemCollapseType.mutuallyCollapsed;
-			}
-		}
-		return null;
+			return null;
+		});
 	}
 
   bool isItemLoadingOmittedItems(List<int> parentIds, int? thisId) {
@@ -423,6 +420,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			...parentIds,
 			thisId
 		]);
+		_cache.removeWhere((key, value) => key.$2 == thisId || key.$1.contains(thisId));
 		onManuallyCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
 		onCollapseOrExpand?.call(item, false);
 		notifyListeners();
@@ -433,6 +431,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			...parentIds,
 			thisId
 		];
+		_cache.removeWhere((key, value) => key.$2 == thisId || key.$1.contains(thisId));
 		final manuallyCollapsedItemsLengthBefore = manuallyCollapsedItems.length;
 		manuallyCollapsedItems.removeWhere((w) => listEquals(w, x));
 		if (manuallyCollapsedItemsLengthBefore != manuallyCollapsedItems.length) {
@@ -452,6 +451,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 
 	void swapSubtreeTo(int thisId, List<int> parentIds, RefreshableListItem<T> item) {
 		primarySubtreeParents[thisId] = parentIds.tryLast ?? -1;
+		_cache.removeWhere((key, value) => key.$2 == thisId || key.$1.contains(thisId));
 		onManuallyCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
 		onCollapseOrExpand?.call(item, false);
 		notifyListeners();
@@ -878,6 +878,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		await update(hapticFeedback: true, extend: true);
 	}
 
+	bool _shouldIgnoreForHeightEstimation(RefreshableListItem<T> item) {
+		final id = widget.treeAdapter?.getId(item.item);
+		if (id == null) {
+			return false;
+		}
+		return _refreshableTreeItems.isItemHidden(item.parentIds, id, item.representsStubChildren).isHidden;
+	}
+
 	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value) {
 		Widget child;
 		Widget? collapsed;
@@ -926,22 +934,22 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 			if (widget.treeAdapter != null && widget.useTree) {
-				value.isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value.parentIds, id, value.representsStubChildren));
+				final isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value.parentIds, id, value.representsStubChildren));
 				if (value.parentIds.isNotEmpty) {
 					child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
 				}
-				if (value.isHidden.isHidden) {
+				if (isHidden.isHidden) {
 					// Avoid possible heavy build+layout cost for hidden items
 					child = const SizedBox(width: double.infinity);
 				}
-				else if (value.isHidden == TreeItemCollapseType.mutuallyCollapsed ||
-				         value.isHidden == TreeItemCollapseType.topLevelCollapsed) {
+				else if (isHidden == TreeItemCollapseType.mutuallyCollapsed ||
+				         isHidden == TreeItemCollapseType.topLevelCollapsed) {
 					child = widget.collapsedItemBuilder?.call(
 						context: context,
 						value: value.item,
 						collapsedChildIds: value.treeDescendantIds,
 						loading: loadingOmittedItems,
-						peekContentHeight: value.isHidden == TreeItemCollapseType.mutuallyCollapsed ? 90 : double.infinity,
+						peekContentHeight: isHidden == TreeItemCollapseType.mutuallyCollapsed ? 90 : double.infinity,
 						stubChildIds: null
 					) ?? Container(
 						height: 30,
@@ -957,7 +965,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						firstCurve: Curves.ease,
 						//secondCurve: Curves.ease,
 						firstChild: child,
-						secondChild: (!value.isHidden.isHidden && !value.representsStubChildren) ? (collapsed ?? const SizedBox(
+						secondChild: (!isHidden.isHidden && !value.representsStubChildren) ? (collapsed ?? const SizedBox(
 							height: 30,
 							width: double.infinity,
 							child: Text('Something hidden')
@@ -965,7 +973,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							height: 0,
 							width: double.infinity
 						),
-						crossFadeState: value.isHidden == null ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+						crossFadeState: isHidden == null ? CrossFadeState.showFirst : CrossFadeState.showSecond,
 					);
 				}
 				child = AnimatedSize(
@@ -978,13 +986,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					behavior: HitTestBehavior.translucent,
 					onTap: loadingOmittedItems ? null : () async {
 						if (!value.representsStubChildren) {
-							if (value.isHidden == TreeItemCollapseType.mutuallyCollapsed) {
+							if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
 								context.read<_RefreshableTreeItems>().swapSubtreeTo(id!, value.parentIds, value);
 								Future.delayed(_treeAnimationDuration, () => widget.controller?._alignToItemIfPartiallyAboveFold(value));
 							}
-							else if (value.isHidden != null) {
+							else if (isHidden != null) {
 								context.read<_RefreshableTreeItems>().unhideItem(value.parentIds, id!, value);
-								if (value.isHidden == TreeItemCollapseType.topLevelCollapsed) {
+								if (isHidden == TreeItemCollapseType.topLevelCollapsed) {
 									final stubParent = widget.controller?.items.tryFirstWhere((otherItem) {
 										return otherItem.item == value.item &&
 												otherItem.parentIds == value.parentIds &&

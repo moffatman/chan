@@ -1235,7 +1235,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			}
 			// TODO: Determine if this needs to be / can be memoized
 			for (int i = 0; i < items.length - 1; i++) {
-				if (items[i].isHidden.isDuplicate) {
+				if (widget.listController.isItemHidden(items[i]).isDuplicate) {
 					continue;
 				}
 				if (i > treeModeFurthestSeenIndexBottom) {
