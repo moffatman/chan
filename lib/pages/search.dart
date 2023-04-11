@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:chan/models/board.dart';
 import 'package:chan/models/search.dart';
+import 'package:chan/models/thread.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/search_query.dart';
 import 'package:chan/pages/thread.dart';
@@ -10,6 +11,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_thin_button.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -107,7 +109,8 @@ class SearchPageState extends State<SearchPage> {
 							_valueInjector.value = v;
 						});
 						return SearchComposePage(
-							onSearchComposed: onSearchComposed
+							onSearchComposed: onSearchComposed,
+							onManualResult: (result) => setValue(result)
 						);
 					},
 					detailBuilder: (post, poppedOut) => BuiltDetailPane(
@@ -184,9 +187,11 @@ final _clearedDate = DateTime.fromMillisecondsSinceEpoch(0);
 
 class SearchComposePage extends StatefulWidget {
 	final ValueChanged<ImageboardArchiveSearchQuery> onSearchComposed;
+	final ValueChanged<SelectedSearchResult> onManualResult;
 
 	const SearchComposePage({
 		required this.onSearchComposed,
+		required this.onManualResult,
 		Key? key
 	}) : super(key: key);
 
@@ -412,6 +417,114 @@ class _SearchComposePageState extends State<SearchComposePage> {
 											boards: query.boards
 										);
 										setState(() {});
+									}
+								),
+								CupertinoButton(
+									padding: const EdgeInsets.only(left: 8),
+									child: const Icon(CupertinoIcons.number_square),
+									onPressed: () async {
+										final idController = TextEditingController();
+										final initialBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+											builder: (ctx) => const BoardSwitcherPage(),
+											showAnimations: context.read<EffectiveSettings>().showAnimations
+										));
+										if (context.mounted && initialBoard != null) {
+											ImageboardScoped<ImageboardBoard> board = initialBoard;
+											final target = await showCupertinoDialog<(Imageboard, String, int)>(
+												context: context,
+												barrierDismissible: true,
+												builder: (context) => StatefulBuilder(
+													builder: (context, setInnerState) => CupertinoAlertDialog(
+														title: const Text('Go to post'),
+														content: Column(
+															mainAxisSize: MainAxisSize.min,
+															children: [
+																const SizedBox(height: 8),
+																CupertinoButton(
+																	onPressed: () async {
+																		final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+																			builder: (ctx) => const BoardSwitcherPage(),
+																			showAnimations: context.read<EffectiveSettings>().showAnimations
+																		));
+																		if (newBoard != null) {
+																			setInnerState(() {
+																				board = newBoard;
+																			});
+																		}
+																	},
+																	child: Row(
+																		mainAxisSize: MainAxisSize.min,
+																		children: [
+																			ImageboardIcon(imageboardKey: board.imageboard.key, boardName: board.item.name),
+																			const SizedBox(width: 4),
+																			Text(board.item.name, style: const TextStyle(
+																				color: Colors.white
+																			))
+																		]
+																	)
+																),
+																const SizedBox(height: 8),
+																CupertinoTextField(
+																	controller: idController,
+																	enableIMEPersonalizedLearning: false,
+																	placeholder: 'Post ID',
+																	autofocus: true,
+																	keyboardType: TextInputType.number,
+																	onChanged: (_) => setInnerState(() {}),
+																	onSubmitted: (str) {
+																		Navigator.of(context).pop((board.imageboard, board.item.name, int.parse(idController.text)));
+																	}
+																)
+															]
+														),
+														actions: [
+															CupertinoDialogAction(
+																child: const Text('Cancel'),
+																onPressed: () {
+																	Navigator.of(context).pop();
+																}
+															),
+															CupertinoDialogAction(
+																isDefaultAction: true,
+																onPressed: int.tryParse(idController.text) != null ? () {
+																	Navigator.of(context).pop((board.imageboard, board.item.name, int.parse(idController.text)));
+																} : null,
+																child: const Text('OK')
+															)
+														]
+													)
+												)
+											);
+											idController.dispose();
+											if (target != null) {
+												try {
+													try {
+														final thread = await target.$1.site.getThread(ThreadIdentifier(target.$2, target.$3));
+														widget.onManualResult(SelectedSearchResult(
+															fromArchive: false,
+															threadSearch: null,
+															imageboard: target.$1,
+															result: ImageboardArchiveSearchResult.thread(thread)
+														));
+													}
+													on ThreadNotFoundException {
+														// Not a thread
+													}
+													final post = await target.$1.site.getPostFromArchive(target.$2, target.$3);
+													widget.onManualResult(SelectedSearchResult(
+														fromArchive: true,
+														threadSearch: null,
+														imageboard: target.$1,
+														result: ImageboardArchiveSearchResult.post(post)
+													));
+												}
+												catch (e) {
+													if (context.mounted) {
+														alertError(context, e.toStringDio());
+													}
+												}
+											}
+										}
 									}
 								)
 							]
