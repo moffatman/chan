@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
@@ -90,6 +91,8 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 	late double _globalDistanceMoved;
 
 	bool isFlingGesture(VelocityEstimate estimate, PointerDeviceKind kind);
+
+  DragEndDetails? _considerFling(VelocityEstimate estimate, PointerDeviceKind kind);
 
 	Offset _getDeltaForDetails(Offset delta);
 	double? _getPrimaryValueFromOffset(Offset value);
@@ -382,40 +385,26 @@ abstract class WeakDragGestureRecognizer extends OneSequenceGestureRecognizer {
 	}
 
 	void _checkEnd(int pointer) {
-		assert(_initialButtons == kPrimaryButton);
 		if (onEnd == null) {
 			return;
 		}
 
 		final VelocityTracker tracker = _velocityTrackers[pointer]!;
-
-		final DragEndDetails details;
-		final String Function() debugReport;
-
 		final VelocityEstimate? estimate = tracker.getVelocityEstimate();
-		if (estimate != null && isFlingGesture(estimate, tracker.kind)) {
-			final Velocity velocity = Velocity(pixelsPerSecond: estimate.pixelsPerSecond)
-				.clampMagnitude(minFlingVelocity ?? kMinFlingVelocity, maxFlingVelocity ?? kMaxFlingVelocity);
-			details = DragEndDetails(
-				velocity: velocity,
-				primaryVelocity: _getPrimaryValueFromOffset(velocity.pixelsPerSecond),
-			);
-			debugReport = () {
-				return '$estimate; fling at $velocity.';
-			};
+
+		DragEndDetails? details;
+		final String Function() debugReport;
+		if (estimate == null) {
+			debugReport = () => 'Could not estimate velocity.';
 		} else {
-			details = DragEndDetails(
-				velocity: Velocity.zero,
-				primaryVelocity: 0.0,
-			);
-			debugReport = () {
-				if (estimate == null) {
-					return 'Could not estimate velocity.';
-				}
-				return '$estimate; judged to not be a fling.';
-			};
+			details = _considerFling(estimate, tracker.kind);
+			debugReport = (details != null)
+				? () => '$estimate; fling at ${details!.velocity}.'
+				: () => '$estimate; judged to not be a fling.';
 		}
-		invokeCallback<void>('onEnd', () => onEnd!(details), debugReport: debugReport);
+		details ??= DragEndDetails(primaryVelocity: 0.0);
+
+		invokeCallback<void>('onEnd', () => onEnd!(details!), debugReport: debugReport);
 	}
 
 	void _checkCancel() {
@@ -455,6 +444,19 @@ class WeakVerticalDragGestureRecognizer extends WeakDragGestureRecognizer {
 		return estimate.pixelsPerSecond.dy.abs() > minVelocity && estimate.offset.dy.abs() > minDistance;
 	}
 
+  @override
+  DragEndDetails? _considerFling(VelocityEstimate estimate, PointerDeviceKind kind) {
+    if (!isFlingGesture(estimate, kind)) {
+      return null;
+    }
+    final double maxVelocity = maxFlingVelocity ?? kMaxFlingVelocity;
+    final double dy = clampDouble(estimate.pixelsPerSecond.dy, -maxVelocity, maxVelocity);
+    return DragEndDetails(
+      velocity: Velocity(pixelsPerSecond: Offset(0, dy)),
+      primaryVelocity: dy,
+    );
+  }
+
 	@override
 	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop) {
 		return (sign != null && _globalDistanceMoved.sign == sign!.sign) &&  _globalDistanceMoved.abs() > (weakness * computeHitSlop(event.kind, gestureSettings)) || (
@@ -490,6 +492,19 @@ class WeakHorizontalDragGestureRecognizer extends WeakDragGestureRecognizer {
 		final double minDistance = minFlingDistance ?? computeHitSlop(kind, gestureSettings);
 		return estimate.pixelsPerSecond.dx.abs() > minVelocity && estimate.offset.dx.abs() > minDistance;
 	}
+
+  @override
+  DragEndDetails? _considerFling(VelocityEstimate estimate, PointerDeviceKind kind) {
+    if (!isFlingGesture(estimate, kind)) {
+      return null;
+    }
+    final double maxVelocity = maxFlingVelocity ?? kMaxFlingVelocity;
+    final double dx = clampDouble(estimate.pixelsPerSecond.dx, -maxVelocity, maxVelocity);
+    return DragEndDetails(
+      velocity: Velocity(pixelsPerSecond: Offset(dx, 0)),
+      primaryVelocity: dx,
+    );
+  }
 
 	@override
 	bool _hasSufficientGlobalDistanceToAccept(PointerEvent event, double? deviceTouchSlop) {
@@ -536,6 +551,16 @@ class WeakPanGestureRecognizer extends WeakDragGestureRecognizer {
 		return estimate.pixelsPerSecond.distanceSquared > minVelocity * minVelocity
 				&& estimate.offset.distanceSquared > minDistance * minDistance;
 	}
+
+  @override
+  DragEndDetails? _considerFling(VelocityEstimate estimate, PointerDeviceKind kind) {
+    if (!isFlingGesture(estimate, kind)) {
+      return null;
+    }
+    final Velocity velocity = Velocity(pixelsPerSecond: estimate.pixelsPerSecond)
+        .clampMagnitude(minFlingVelocity ?? kMinFlingVelocity, maxFlingVelocity ?? kMaxFlingVelocity);
+    return DragEndDetails(velocity: velocity);
+  }
 
   bool _globalMovementDirectionIsOK() {
     if (shouldAcceptRegardlessOfGlobalMovementDirection?.call(_initialPosition.local) ?? false) {
