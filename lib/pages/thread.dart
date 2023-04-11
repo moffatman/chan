@@ -825,7 +825,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																			wrapTreeChild: (child, parentIds) {
 																				PostSpanZoneData childZone = zone;
 																				for (final id in parentIds) {
-																					childZone = childZone.childZoneFor(id);
+																					childZone = childZone.childZoneFor(id, inTree: true);
 																				}
 																				return ChangeNotifierProvider.value(
 																					value: childZone,

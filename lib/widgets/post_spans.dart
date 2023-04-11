@@ -1123,7 +1123,7 @@ class PostSpanZone extends StatelessWidget {
 }
 
 abstract class PostSpanZoneData extends ChangeNotifier {
-	final Map<int, PostSpanZoneData> _children = {};
+	final Map<(int, bool), PostSpanZoneData> _children = {};
 	Thread get thread;
 	ImageboardSite get site;
 	Iterable<int> get stackIds;
@@ -1133,6 +1133,7 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	bool disposed = false;
 	List<Comparator<Post>> get postSortingMethods;
 	bool get tree;
+	bool get inTree;
 
 	final Map<int, bool> _shouldExpandPost = {};
 	bool shouldExpandPost(int id) {
@@ -1195,14 +1196,15 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		return _futures[id] as AsyncSnapshot<T>;
 	}
 
-	PostSpanZoneData childZoneFor(int postId) {
+	PostSpanZoneData childZoneFor(int postId, {bool inTree = false}) {
 		// Assuming that when a new childZone is requested, there will be some old one to cleanup
 		for (final child in _children.values) {
 			child._lineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
 		}
-		return _children.putIfAbsent(postId, () => PostSpanChildZoneData(
+		return _children.putIfAbsent((postId, inTree), () => PostSpanChildZoneData(
 			parent: this,
-			postId: postId
+			postId: postId,
+			inTree: inTree
 		));
 	}
 
@@ -1265,10 +1267,13 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 class PostSpanChildZoneData extends PostSpanZoneData {
 	final int postId;
 	final PostSpanZoneData parent;
+	@override
+	final bool inTree;
 
 	PostSpanChildZoneData({
 		required this.parent,
-		required this.postId
+		required this.postId,
+		required this.inTree
 	});
 
 	@override
@@ -1351,6 +1356,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	List<Comparator<Post>> postSortingMethods;
 	@override
 	bool tree;
+	@override
+	bool get inTree => false;
 
 	PostSpanRootZoneData({
 		required this.thread,

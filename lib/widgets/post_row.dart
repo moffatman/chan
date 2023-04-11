@@ -479,7 +479,7 @@ class PostRow extends StatelessWidget {
 						);
 					}
 				),
-				if (parentZone.stackIds.length > 2 && parentZone.onNeedScrollToPost != null) ContextMenuAction(
+				if (!parentZone.inTree && parentZone.stackIds.length > 2 && parentZone.onNeedScrollToPost != null) ContextMenuAction(
 					child: const Text('Scroll to post'),
 					trailingIcon: CupertinoIcons.return_icon,
 					onPressed: () => parentZone.onNeedScrollToPost!(latestPost)
