@@ -964,10 +964,15 @@ class Site4Chan extends ImageboardSite {
 		if (query.boards.isNotEmpty) {
 			return searchArchives(query, page: page, lastResult: lastResult);
 		}
+		final userAgent = captchaUserAgents[Platform.operatingSystem];
 		final response = await client.getUri(Uri.https(searchUrl, '/', {
 			'q': query.query,
 			if (page > 1) 'o': ((page - 1) * 10).toString()
-		}));
+		}), options: Options(
+			headers: {
+				if (userAgent != null) 'user-agent': userAgent
+			}
+		));
 		final document = parse(response.data);
 		final threads = document.querySelectorAll('.thread').expand((thread) {
 			if (thread.querySelector('.post.op') == null) {
