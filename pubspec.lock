@@ -303,7 +303,7 @@ packages:
     description:
       path: "."
       ref: chan_master
-      resolved-ref: b09ff05dae300783bb6f043bc0c214b64a077170
+      resolved-ref: bc2d49c46d6b0d15cad2e86e2c357c6e4c4a04eb
       url: "https://github.com/moffatman/extended_image.git"
     source: git
     version: "7.0.2"
