@@ -80,6 +80,9 @@ class Thread implements Filterable {
 	}
 
 	Future<void> preinit({bool catalog = false}) async {
+		if (posts_.last.isInitialized) {
+			return;
+		}
 		if (catalog) {
 			await posts_.first.preinit();
 		}

@@ -29,12 +29,12 @@ class HistoryPage extends StatefulWidget {
 	}) : super(key: key);
 
 	@override
-	createState() => _HistoryPageState();
+	createState() => HistoryPageState();
 }
 
 const _historyPageSize = 50;
 
-class _HistoryPageState extends State<HistoryPage> {
+class HistoryPageState extends State<HistoryPage> {
 	final _masterDetailKey = GlobalKey<MultiMasterDetailPageState>();
 	late final RefreshableListController<PersistentThreadState> _listController;
 	late final ValueNotifier<ImageboardScoped<PostIdentifier>?> _valueInjector;
@@ -64,6 +64,8 @@ class _HistoryPageState extends State<HistoryPage> {
 			settings: dontAutoPopSettings
 		));
 	}
+
+	Future<void> updateList() => _listController.update();
 
 	@override
 	Widget build(BuildContext context) {
@@ -179,19 +181,17 @@ class _HistoryPageState extends State<HistoryPage> {
 											},
 											child: const Icon(CupertinoIcons.delete)
 										),
-										AnimatedBuilder(
-											animation: Persistence.browserHistoryStatusListenable,
-											builder: (context, _) => CupertinoButton(
+										Builder(
+											builder: (context) => CupertinoButton(
 												padding: EdgeInsets.zero,
-												child: Icon(Persistence.enableHistory ? CupertinoIcons.stop : CupertinoIcons.play),
+												child: Icon(context.select<EffectiveSettings, bool>((s) => s.recordThreadsInHistory) ? CupertinoIcons.stop : CupertinoIcons.play),
 												onPressed: () {
-													Persistence.enableHistory = !Persistence.enableHistory;
-													Persistence.didChangeBrowserHistoryStatus();
+													context.read<EffectiveSettings>().recordThreadsInHistory = !context.read<EffectiveSettings>().recordThreadsInHistory;
 													threadSetter(context.read<MasterDetailHint>().currentValue);
 													showToast(
 														context: context,
-														message: Persistence.enableHistory ? 'History resumed' : 'History stopped',
-														icon: Persistence.enableHistory ? CupertinoIcons.play : CupertinoIcons.stop
+														message: context.read<EffectiveSettings>().recordThreadsInHistory ? 'History resumed' : 'History stopped',
+														icon: context.read<EffectiveSettings>().recordThreadsInHistory ? CupertinoIcons.play : CupertinoIcons.stop
 													);
 												}
 											)
@@ -208,10 +208,21 @@ class _HistoryPageState extends State<HistoryPage> {
 								controller: _listController,
 								updateAnimation: threadStateBoxesAnimation,
 								listUpdater: () async {
-									states = Persistence.sharedThreadStateBox.values.where((s) => s.imageboard != null).toList();
+									final now = DateTime.now();
+									states = Persistence.sharedThreadStateBox.values.where((s) => s.imageboard != null && s.showInHistory).toList();
 									states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
 									final part = states.take(_historyPageSize).toList();
-									await Future.wait(part.map((p) => p.ensureThreadLoaded()));
+									final futures = <Future<void>>[];
+									for (final p in part) {
+										if (p.thread?.posts_.last.isInitialized ?? false) {
+											continue;
+										}
+										futures.add(p.ensureThreadLoaded());
+									}
+									if (futures.isNotEmpty) {
+										await Future.wait(futures);
+									}
+									print('Loading history took ${(DateTime.now().difference(now).inMicroseconds / 1000).toStringAsFixed(1)} ms');
 									return part.where((p) => p.thread != null).toList();
 								},
 								listExtender: (after) async {
@@ -238,6 +249,16 @@ class _HistoryPageState extends State<HistoryPage> {
 												onPressed: () {
 													openInNewTabZone.onWantOpenThreadInNewTab(state.imageboardKey, state.identifier);
 												}
+											),
+											ContextMenuAction(
+												child: const Text('Hide'),
+												onPressed: () async {
+													state.showInHistory = false;
+													await state.save();
+													_listController.update();
+												},
+												trailingIcon: CupertinoIcons.eye_slash,
+												isDestructiveAction: true
 											),
 											ContextMenuAction(
 												child: const Text('Remove'),

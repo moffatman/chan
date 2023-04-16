@@ -775,7 +775,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			});
 			Duration minUpdateDuration = widget.minUpdateDuration;
 			if (widget.controller?.scrollController?.positions.length == 1 && (widget.controller!.scrollController!.position.pixels > 0 && (widget.controller!.scrollController!.position.pixels <= widget.controller!.scrollController!.position.maxScrollExtent))) {
-				minUpdateDuration = const Duration(seconds: 1);
+				minUpdateDuration *= 2;
 			}
 			final lastItem = widget.controller?._items.tryLast?.item;
 			if (extend && widget.treeAdapter != null && ((lastItem?.representsStubChildren ?? false))) {

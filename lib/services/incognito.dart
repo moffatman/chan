@@ -9,7 +9,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:flutter/foundation.dart';
 import 'package:chan/util.dart';
 
-class IncognitoPersistence implements Persistence {
+class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
 	final Persistence parent;
 	final _ephemeralThreadStates = <ThreadIdentifier, (PersistentThreadState, EasyListenable)>{};
 
@@ -67,6 +67,7 @@ class IncognitoPersistence implements Persistence {
 			imageboardKey: imageboardKey,
 			board: thread.board,
 			id: thread.id,
+			showInHistory: true,
 			ephemeralOwner: this
 		);
 		_ephemeralThreadStates[thread] = (newState, EasyListenable());

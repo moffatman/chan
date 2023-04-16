@@ -56,7 +56,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 		setState(() {});
 		denom = Persistence.sharedThreadStateBox.values.length;
 		await Future.wait(Persistence.sharedThreadStateBox.values.map((threadState) async {
-			if (threadState.imageboard == null || !mounted) {
+			if (threadState.imageboard == null || !threadState.showInHistory || !mounted) {
 				numer++;
 				return;
 			}

@@ -54,6 +54,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       imageboardKey: fields[18] == null ? '' : fields[18] as String,
       board: fields[19] == null ? '' : fields[19] as String,
       id: fields[20] == null ? 0 : fields[20] as int,
+      showInHistory: fields[22] == null ? true : fields[22] as bool,
     )
       ..lastSeenPostId = fields[0] as int?
       ..lastOpenedTime = fields[1] as DateTime
@@ -88,7 +89,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
   @override
   void write(BinaryWriter writer, PersistentThreadState obj) {
     writer
-      ..writeByte(21)
+      ..writeByte(22)
       ..writeByte(0)
       ..write(obj.lastSeenPostId)
       ..writeByte(1)
@@ -127,6 +128,8 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..write(obj.imageboardKey)
       ..writeByte(21)
       ..write(obj.primarySubtreeParents)
+      ..writeByte(22)
+      ..write(obj.showInHistory)
       ..writeByte(19)
       ..write(obj.board)
       ..writeByte(20)

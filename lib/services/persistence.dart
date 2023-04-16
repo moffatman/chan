@@ -78,7 +78,7 @@ bool defaultCompactionStrategy(int entries, int deletedEntries) {
 }
 
 
-class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
+class Persistence extends ChangeNotifier {
 	final String imageboardKey;
 	Persistence(this.imageboardKey);
 	static late final Box<PersistentThreadState> _sharedThreadStateBox;
@@ -108,9 +108,6 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 		}
 		return wifiCookies;
 	}
-	// Do not persist
-	static bool enableHistory = true;
-	static final browserHistoryStatusListenable = EasyListenable();
 	static final tabsListenable = EasyListenable();
 	static final recentSearchesListenable = EasyListenable();
 	static String get _settingsBoxName => 'settings';
@@ -441,7 +438,8 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 					final newTs = PersistentThreadState(
 						imageboardKey: imageboardKey,
 						board: ts.board,
-						id: ts.id
+						id: ts.id,
+						showInHistory: true
 					);
 					newTs.lastSeenPostId = ts.lastSeenPostId;
 					newTs.lastOpenedTime = ts.lastOpenedTime;
@@ -596,11 +594,9 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 	}
 
 	PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
-		return _cachedEphemeralThreadStates[thread]?.$1 ?? sharedThreadStateBox.get(getThreadStateBoxKey(imageboardKey, thread));
+		return sharedThreadStateBox.get(getThreadStateBoxKey(imageboardKey, thread));
 	}
 
-	static final Map<String, Map<ThreadIdentifier, (PersistentThreadState, EasyListenable)>> _cachedEphemeralThreadStatesById = {};
-	Map<ThreadIdentifier, (PersistentThreadState, EasyListenable)> get _cachedEphemeralThreadStates => _cachedEphemeralThreadStatesById.putIfAbsent(imageboardKey, () => {});
 	PersistentThreadState getThreadState(ThreadIdentifier thread, {bool updateOpenedTime = false}) {
 		final existingState = sharedThreadStateBox.get(getThreadStateBoxKey(imageboardKey, thread));
 		if (existingState != null) {
@@ -610,28 +606,14 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 			}
 			return existingState;
 		}
-		else if (enableHistory) {
-			final newState = PersistentThreadState(
-				imageboardKey: imageboardKey,
-				board: thread.board,
-				id: thread.id
-			);
-			sharedThreadStateBox.put(getThreadStateBoxKey(imageboardKey, thread), newState);
-			return newState;
-		}
-		else {
-			return _cachedEphemeralThreadStates.putIfAbsent(thread, () => (PersistentThreadState(
-				imageboardKey: imageboardKey,
-				board: thread.board,
-				id: thread.id,
-				ephemeralOwner: this
-			), EasyListenable())).$1;
-		}
-	}
-
-	@override
-	Future<void> ephemeralThreadStateDidUpdate(PersistentThreadState state) async {
-		await Future.microtask(() => _cachedEphemeralThreadStates[state.identifier]?.$2.didUpdate());
+		final newState = PersistentThreadState(
+			imageboardKey: imageboardKey,
+			board: thread.board,
+			id: thread.id,
+			showInHistory: Persistence.settings.recordThreadsInHistory
+		);
+		sharedThreadStateBox.put(getThreadStateBoxKey(imageboardKey, thread), newState);
+		return newState;
 	}
 
 	ImageboardBoard? maybeGetBoard(String boardName) => _sharedBoardsBox.get('$imageboardKey/$boardName');
@@ -721,7 +703,7 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 	static String getThreadStateBoxKey(String imageboardKey, ThreadIdentifier thread) => '$imageboardKey/${thread.board}/${thread.id}';
 
 	Listenable listenForPersistentThreadStateChanges(ThreadIdentifier thread) {
-		return _cachedEphemeralThreadStates[thread]?.$2 ?? sharedThreadStateBox.listenable(keys: [getThreadStateBoxKey(imageboardKey, thread)]);
+		return sharedThreadStateBox.listenable(keys: [getThreadStateBoxKey(imageboardKey, thread)]);
 	}
 
 	Future<void> storeBoards(List<ImageboardBoard> newBoards) async {
@@ -766,16 +748,6 @@ class Persistence extends ChangeNotifier implements EphemeralThreadStateOwner {
 	Future<void> didUpdateSavedPost() async {
 		settings.save();
 		savedPostsListenable.didUpdate();
-	}
-
-	static void didChangeBrowserHistoryStatus() {
-		for (final x in _cachedEphemeralThreadStatesById.values) {
-			for (final y in x.values) {
-				y.$2.dispose();
-			}
-		}
-		_cachedEphemeralThreadStatesById.clear();
-		browserHistoryStatusListenable.didUpdate();
 	}
 
 	@override
@@ -858,6 +830,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	Thread? _thread;
 	@HiveField(21, defaultValue: {})
 	Map<int, int> primarySubtreeParents = {};
+	@HiveField(22, defaultValue: true)
+	bool showInHistory;
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
@@ -867,7 +841,8 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		required this.imageboardKey,
 		required this.board,
 		required this.id,
-		this.ephemeralOwner
+		required this.showInHistory,
+		this.ephemeralOwner,
 	}) : lastOpenedTime = DateTime.now();
 
 	void _invalidate() {
@@ -880,7 +855,6 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		if (preinit) {
 			await _thread?.preinit(catalog: catalog);
 		}
-		save();
 	}
 
 	Thread? get thread => _thread;

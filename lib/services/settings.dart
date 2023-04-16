@@ -715,6 +715,8 @@ class SavedSettings extends HiveObject {
 	AndroidGallerySavePathOrganizing androidGallerySavePathOrganizing;
 	@HiveField(123)
 	AutoloadAttachmentsSetting fullQualityThumbnails;
+	@HiveField(124)
+	bool recordThreadsInHistory;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -840,6 +842,7 @@ class SavedSettings extends HiveObject {
 		bool? alwaysShowSpoilers,
 		AndroidGallerySavePathOrganizing? androidGallerySavePathOrganizing,
 		AutoloadAttachmentsSetting? fullQualityThumbnails,
+		bool? recordThreadsInHistory,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -992,7 +995,8 @@ class SavedSettings extends HiveObject {
 		squareThumbnails = squareThumbnails ?? false,
 		alwaysShowSpoilers = alwaysShowSpoilers ?? false,
 		androidGallerySavePathOrganizing = androidGallerySavePathOrganizing ?? AndroidGallerySavePathOrganizing.noSubfolders,
-		fullQualityThumbnails = fullQualityThumbnails ?? AutoloadAttachmentsSetting.never {
+		fullQualityThumbnails = fullQualityThumbnails ?? AutoloadAttachmentsSetting.never,
+		recordThreadsInHistory = recordThreadsInHistory ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1894,6 +1898,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get fullQualityThumbnails {
 		return (fullQualityThumbnailsSetting == AutoloadAttachmentsSetting.always) ||
 			((fullQualityThumbnailsSetting == AutoloadAttachmentsSetting.wifi) && (connectivity == ConnectivityResult.wifi));
+	}
+
+	bool get recordThreadsInHistory => _settings.recordThreadsInHistory;
+	set recordThreadsInHistory(bool setting) {
+		_settings.recordThreadsInHistory = setting;
+		_settings.save();
+		notifyListeners();
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];

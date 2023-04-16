@@ -596,7 +596,7 @@ class ThreadRow extends StatelessWidget {
 						child: Text(latestThread.flair!.name)
 					)
 				),
-				if (watch != null || threadState?.savedTime != null) Positioned.fill(
+				if (watch != null || threadState?.savedTime != null || threadState?.showInHistory == false) Positioned.fill(
 					child: Align(
 						alignment: Alignment.topRight,
 						child: Container(
@@ -611,7 +611,8 @@ class ThreadRow extends StatelessWidget {
 								children: [
 									if (watch != null) Icon(CupertinoIcons.bell_fill, color: otherMetadataColor, size: 18),
 									if (watch?.localYousOnly == false) Icon(CupertinoIcons.asterisk_circle, color: otherMetadataColor, size: 18),
-									if (threadState?.savedTime != null) Icon(CupertinoIcons.bookmark_fill, color: otherMetadataColor, size: 18)
+									if (threadState?.savedTime != null) Icon(CupertinoIcons.bookmark_fill, color: otherMetadataColor, size: 18),
+									if (threadState?.showInHistory == false) Icon(CupertinoIcons.eye_slash, color: otherMetadataColor, size: 18)
 								]
 							)
 						)

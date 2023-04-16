@@ -647,20 +647,53 @@ class _ThreadPageState extends State<ThreadPage> {
 										onPressed: _showWatchMenu,
 										child: Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill)
 									),
-									CupertinoButton(
+									if (!persistentState.showInHistory) CupertinoButton(
 										padding: EdgeInsets.zero,
-										onPressed: persistentState.incognito ? null : () {
+										onPressed: () {
 											lightHapticFeedback();
-											if (persistentState.savedTime != null) {
-												persistentState.savedTime = null;
-											}
-											else {
-												persistentState.savedTime = DateTime.now();
-											}
+											persistentState.showInHistory = true;
+											showToast(
+												context: context,
+												message: 'Thread restored to history',
+												icon: CupertinoIcons.archivebox
+											);
 											persistentState.save();
 											setState(() {});
 										},
-										child: Icon(persistentState.savedTime == null ? CupertinoIcons.bookmark : CupertinoIcons.bookmark_fill)
+										child: const Icon(CupertinoIcons.eye_slash)
+									)
+									else GestureDetector(
+										onLongPress: () {
+											lightHapticFeedback();
+											persistentState.savedTime = null;
+											persistentState.showInHistory = false;
+											showToast(
+												context: context,
+												message: 'Thread hidden from history',
+												icon: CupertinoIcons.eye_slash
+											);
+											persistentState.save();
+											setState(() {});
+										},
+										child: CupertinoButton(
+											padding: EdgeInsets.zero,
+											onPressed: persistentState.incognito ? null : () {
+												lightHapticFeedback();
+												if (persistentState.savedTime != null) {
+													persistentState.savedTime = null;
+												}
+												else {
+													persistentState.savedTime = DateTime.now();
+												}
+												persistentState.save();
+												setState(() {});
+											},
+											child: Icon(persistentState.incognito ?
+																		CupertinoIcons.eye_slash :
+																		persistentState.savedTime == null ?
+																			CupertinoIcons.bookmark :
+																			CupertinoIcons.bookmark_fill)
+										)
 									),
 									if (site.threadVariants.isNotEmpty) CupertinoButton(
 										padding: EdgeInsets.zero,

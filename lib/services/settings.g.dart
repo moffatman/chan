@@ -250,13 +250,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       androidGallerySavePathOrganizing:
           fields[122] as AndroidGallerySavePathOrganizing?,
       fullQualityThumbnails: fields[123] as AutoloadAttachmentsSetting?,
+      recordThreadsInHistory: fields[124] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(120)
+      ..writeByte(121)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -496,7 +497,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(122)
       ..write(obj.androidGallerySavePathOrganizing)
       ..writeByte(123)
-      ..write(obj.fullQualityThumbnails);
+      ..write(obj.fullQualityThumbnails)
+      ..writeByte(124)
+      ..write(obj.recordThreadsInHistory);
   }
 
   @override

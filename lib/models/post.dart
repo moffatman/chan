@@ -62,6 +62,7 @@ class Post implements Filterable {
 	final String? posterId;
 	PostSpanFormat spanFormat;
 	PostNodeSpan? _span;
+	bool get isInitialized => _span != null;
 	Map<String, int>? foolfuukaLinkedPostThreadIds;
 	PostNodeSpan _makeSpan() {
 		switch (spanFormat) {

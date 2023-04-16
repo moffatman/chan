@@ -381,6 +381,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	late StreamSubscription<List<SharedMediaFile>> _sharedFilesSubscription;
 	late StreamSubscription<String> _sharedTextSubscription;
 	final _searchPageKey = GlobalKey<SearchPageState>();
+	final _historyPageKey = GlobalKey<HistoryPageState>();
 	// Sometimes duplicate links are received due to use of multiple link handling packages
 	({DateTime time, String link})? _lastLink;
 	bool _hidTabPopupFromScroll = false;
@@ -736,12 +737,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		}
 	}
 
-	void _browserHistoryStatusListener() {
-		if (mounted) {
-			setState(() {});
-		}
-	}
-
 	void _tabsListener() {
 		if (mounted) {
 			activeBrowserTab.value = Persistence.currentTabIndex;
@@ -759,7 +754,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		super.initState();
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 		activeBrowserTab.value = Persistence.currentTabIndex;
-		Persistence.browserHistoryStatusListenable.addListener(_browserHistoryStatusListener);
 		Persistence.tabsListenable.addListener(_tabsListener);
 		_setupDevSite();
 		if (!_initialConsume) {
@@ -996,6 +990,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				),
 				child: HistoryPage(
 					isActive: active,
+					key: _historyPageKey
 				)
 			);
 		}
@@ -1174,6 +1169,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						else {
 							_tabletWillPopZones[index]?.callback?.call();
 						}
+					} else if (index == 2) {
+						await _historyPageKey.currentState?.updateList();
 					}
 					_tabController.index = max(0, index);
 					_lastIndex = max(0, index);
@@ -1520,12 +1517,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 
 	void _toggleHistory() {
 		mediumHapticFeedback();
-		Persistence.enableHistory = !Persistence.enableHistory;
-		Persistence.didChangeBrowserHistoryStatus();
+		settings.recordThreadsInHistory = !settings.recordThreadsInHistory;
 		showToast(
 			context: context,
-			message: Persistence.enableHistory ? 'History resumed' : 'History stopped',
-			icon: Persistence.enableHistory ? CupertinoIcons.play : CupertinoIcons.stop
+			message: settings.recordThreadsInHistory ? 'History resumed' : 'History stopped',
+			icon: settings.recordThreadsInHistory ? CupertinoIcons.play : CupertinoIcons.stop
 		);
 	}
 
@@ -1612,7 +1608,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												),
 												GestureDetector(
 													onLongPress: _toggleHistory,
-													child: _buildTabletIcon(2, Persistence.enableHistory ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History')
+													child: _buildTabletIcon(2, context.select<EffectiveSettings, bool>((s) => s.recordThreadsInHistory) ? const Icon(CupertinoIcons.archivebox) : const Icon(CupertinoIcons.eye_slash), hideTabletLayoutLabels ? null : 'History')
 												),
 												_buildTabletIcon(3, const Icon(CupertinoIcons.search), hideTabletLayoutLabels ? null : 'Search'),
 												GestureDetector(
@@ -1703,7 +1699,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								BottomNavigationBarItem(
 									icon: GestureDetector(
 										onLongPress: _toggleHistory,
-										child: Persistence.enableHistory ? const Icon(CupertinoIcons.archivebox, size: 28) : const Icon(CupertinoIcons.eye_slash, size: 28)
+										child: context.select<EffectiveSettings, bool>((s) => s.recordThreadsInHistory) ? const Icon(CupertinoIcons.archivebox, size: 28) : const Icon(CupertinoIcons.eye_slash, size: 28)
 									),
 									label: 'History'
 								),
@@ -1755,6 +1751,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								Persistence.currentTabIndex++;
 								_didUpdateTabs();
 								setState(() {});
+							},
+							beforeCopiedOnTap: (index) async {
+								if (index == 2) {
+									await _historyPageKey.currentState?.updateList();
+								}
 							},
 							onTap: (index) {
 								lightHapticFeedback();
@@ -1859,7 +1860,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	@override
 	void dispose() {
 		super.dispose();
-		Persistence.browserHistoryStatusListenable.removeListener(_browserHistoryStatusListener);
 		Persistence.tabsListenable.removeListener(_tabsListener);
 		devImageboard?.dispose();
 		_tabListController.dispose();
@@ -1880,12 +1880,14 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 	final VoidCallback onLeftSwipe;
 	final VoidCallback onRightSwipe;
 	final VoidCallback onUpSwipe;
+	final FutureOr Function(int index)? beforeCopiedOnTap;
 
   const ChanceCupertinoTabBar({
 		required super.items,
 		required this.onLeftSwipe,
 		required this.onRightSwipe,
 		required this.onUpSwipe,
+		required this.beforeCopiedOnTap,
 		super.backgroundColor,
 		super.activeColor,
 		super.inactiveColor,
@@ -1914,6 +1916,7 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 			onLeftSwipe: onLeftSwipe,
 			onRightSwipe: onRightSwipe,
 			onUpSwipe: onUpSwipe,
+			beforeCopiedOnTap: beforeCopiedOnTap,
       key: key ?? this.key,
       items: items ?? this.items,
       backgroundColor: backgroundColor ?? this.backgroundColor,
@@ -1923,7 +1926,10 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
       height: height ?? this.height,
       border: border ?? this.border,
       currentIndex: currentIndex ?? this.currentIndex,
-      onTap: onTap ?? this.onTap,
+      onTap: (index) async {
+					await beforeCopiedOnTap?.call(index);
+					(onTap ?? this.onTap)?.call(index);
+			},
     );
   }
 	
