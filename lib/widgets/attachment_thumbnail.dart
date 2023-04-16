@@ -119,7 +119,8 @@ class AttachmentThumbnail extends StatelessWidget {
 			colorBlendMode: BlendMode.dstOver,
 			fit: fit,
 			alignment: alignment,
-			gaplessPlayback: gaplessPlayback,
+			key: gaplessPlayback ? null : ValueKey(url),
+			gaplessPlayback: true,
 			rotate90DegreesClockwise: rotate90DegreesClockwise,
 			//filterQuality: FilterQuality.high,
 			loadStateChanged: (loadstate) {
