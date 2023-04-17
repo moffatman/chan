@@ -211,3 +211,5 @@ dependency_overrides:
       url: https://github.com/moffatman/media-kit.git
       ref: main
       path: libs/windows/media_kit_libs_windows_video_encoders_gpl
+  sky_engine:
+    path: ../engine/src/out/host_debug/gen/dart-pkg/sky_engine
