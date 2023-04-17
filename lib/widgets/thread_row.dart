@@ -292,83 +292,100 @@ class ThreadRow extends StatelessWidget {
 				}
 			}
 		}
-		List<Widget> rowChildren() => [
-			const SizedBox(width: 8),
-			if (latestThread.attachments.isNotEmpty && settings.showImages(context, latestThread.board)) Padding(
-				padding: const EdgeInsets.only(top: 8, bottom: 8),
-				child: ClippingBox(
-					child: Column(
-						mainAxisSize: MainAxisSize.min,
-						children: latestThread.attachments.map((attachment) => PopupAttachment(
-							attachment: attachment,
-							child: CupertinoButton(
-								padding: EdgeInsets.zero,
-								minSize: 0,
-								child: ConstrainedBox(
-									constraints: BoxConstraints(
-										minHeight: 75,
-										minWidth: settings.thumbnailSize
-									),
-									child: Center(
-										child: Stack(
-											children: [
-												AttachmentThumbnail(
-													onLoadError: onThumbnailLoadError,
-													attachment: attachment,
-													thread: latestThread.identifier,
-													hero: TaggedAttachment(
+		List<Widget> rowChildren() {
+			final Widget? attachments;
+			if (latestThread.attachments.isNotEmpty && settings.showImages(context, latestThread.board)) {
+				attachments = Padding(
+					padding: const EdgeInsets.only(bottom: 8, right: 8),
+					child: ClippingBox(
+						child: Column(
+							mainAxisSize: MainAxisSize.min,
+							children: latestThread.attachments.map((attachment) => PopupAttachment(
+								attachment: attachment,
+								child: CupertinoButton(
+									padding: EdgeInsets.zero,
+									minSize: 0,
+									child: ConstrainedBox(
+										constraints: BoxConstraints(
+											//minHeight: 75,
+											minWidth: settings.thumbnailSize
+										),
+										child: Center(
+											child: Stack(
+												children: [
+													AttachmentThumbnail(
+														onLoadError: onThumbnailLoadError,
 														attachment: attachment,
-														semanticParentIds: semanticParentIds
+														thread: latestThread.identifier,
+														hero: TaggedAttachment(
+															attachment: attachment,
+															semanticParentIds: semanticParentIds
+														),
+														fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+														shrinkHeight: !settings.squareThumbnails,
+														shrinkWidth: !settings.squareThumbnails
 													),
-													fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
-													shrinkHeight: !settings.squareThumbnails,
-													shrinkWidth: !settings.squareThumbnails
-												),
-												if (attachment.icon != null) Positioned.fill(
-													child: Align(
-														alignment: Alignment.bottomRight,
-														child: Container(
-															decoration: BoxDecoration(
-																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-															),
-															padding: const EdgeInsets.all(2),
-															child: Icon(attachment.icon, size: 16)
+													if (attachment.icon != null) Positioned.fill(
+														child: Align(
+															alignment: Alignment.bottomRight,
+															child: Container(
+																decoration: BoxDecoration(
+																	borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																	border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+																),
+																padding: const EdgeInsets.all(2),
+																child: Icon(attachment.icon, size: 16)
+															)
 														)
 													)
-												)
-											]
+												]
+											)
 										)
-									)
-								),
-								onPressed: () => onThumbnailTap?.call(attachment)
-							)
-						)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
+									),
+									onPressed: () => onThumbnailTap?.call(attachment)
+								)
+							)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
+						)
 					)
-				)
-			)
-			else if (latestThread.attachmentDeleted) Center(
-				child: SizedBox(
-					width: settings.thumbnailSize,
-					height: settings.thumbnailSize,
-					child: const Icon(CupertinoIcons.xmark_square, size: 36)
-				)
-			),
-			Expanded(
-				child: Container(
-					constraints: const BoxConstraints(minHeight: 75),
-					padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
-					child: ChangeNotifierProvider<PostSpanZoneData>(
-						create: (ctx) => PostSpanRootZoneData(
-							thread: latestThread,
-							site: site
-						),
-						child: IgnorePointer(
+				);
+			}
+			else if (latestThread.attachmentDeleted) {
+				attachments = Center(
+					child: SizedBox(
+						width: settings.thumbnailSize,
+						height: settings.thumbnailSize,
+						child: const Icon(CupertinoIcons.xmark_square, size: 36)
+					)
+				);
+			}
+			else {
+				attachments = null;
+			}
+			return [
+				const SizedBox(width: 8),
+				if (!site.classicCatalogStyle && attachments != null) Padding(
+					padding: const EdgeInsets.only(top: 8),
+					child: attachments,
+				),
+				Expanded(
+					child: Container(
+						constraints: const BoxConstraints(minHeight: 75),
+						padding: const EdgeInsets.only(top: 8, right: 8),
+						child: ChangeNotifierProvider<PostSpanZoneData>(
+							create: (ctx) => PostSpanRootZoneData(
+								thread: latestThread,
+								site: site
+							),
 							child: LayoutBuilder(
 								builder: (context, constraints) => Text.rich(
 									TextSpan(
 										children: [
+											if (site.classicCatalogStyle && attachments != null) WidgetSpan(
+												child: Container(color: Colors.transparent, child: IntrinsicWidth(child: attachments)),
+												floating: PlaceholderFloating.left,
+												alignment: PlaceholderAlignment.top
+											),
 											if (headerRow.isNotEmpty) TextSpan(
 												children: [
 													...headerRow,
@@ -379,6 +396,7 @@ class ThreadRow extends StatelessWidget {
 												latestThread.posts_.first.span.build(
 													context, context.watch<PostSpanZoneData>(), settings,
 													(baseOptions ?? PostSpanRenderOptions()).copyWith(
+														// TODO: ignorePointer
 														avoidBuggyClippers: true,
 														maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
 														charactersPerLine: (constraints.maxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
@@ -408,12 +426,14 @@ class ThreadRow extends StatelessWidget {
 																	Text('>>', style: TextStyle(color: settings.theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold)),
 																	const SizedBox(width: 4),
 																	Flexible(
-																		child: PostRow(
-																			post: post,
-																			baseOptions: baseOptions,
-																			shrinkWrap: true,
-																			highlight: true,
-																			showPostNumber: true
+																		child: IgnorePointer(
+																			child: PostRow(
+																				post: post,
+																				baseOptions: baseOptions,
+																				shrinkWrap: true,
+																				highlight: true,
+																				showPostNumber: true
+																			)
 																		)
 																	)
 																]
@@ -430,8 +450,8 @@ class ThreadRow extends StatelessWidget {
 						)
 					)
 				)
-			)
-		];
+			];
+		}
 		final showFlairInContentFocus = !settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '');
 		List<Widget> buildContentFocused() {
 			final atts = latestThread.attachments.map((attachment) => LayoutBuilder(

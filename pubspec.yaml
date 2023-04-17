@@ -169,3 +169,5 @@ dependency_overrides:
       url: https://github.com/moffatman/dio.git
       path: dio
   markdown: ^7.0.1 # Needed to resolve a conflict with flutter_tex
+  sky_engine:
+    path: ../engine/src/out/host_debug/gen/dart-pkg/sky_engine
