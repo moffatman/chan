@@ -231,3 +231,5 @@ dependency_overrides:
       ref: master
   analyzer: ^6.7.0
   dart_style: ^2.3.6
+  sky_engine:
+    path: ../engine/src/out/host_debug/gen/dart-pkg/sky_engine
