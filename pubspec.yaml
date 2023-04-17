@@ -174,3 +174,5 @@ dependency_overrides:
       path: dio
   markdown: ^7.0.1 # Needed to resolve a conflict with flutter_tex
   screenshot: ^2.1.0 # Needed to run with current moffatman/flutter tag
+  sky_engine:
+    path: ../engine/src/out/host_debug/gen/dart-pkg/sky_engine
