@@ -227,3 +227,5 @@ dependency_overrides:
       url: https://github.com/moffatman/hive.git
       ref: master
       path: hive_generator
+  sky_engine:
+    path: ../engine/src/out/host_debug/gen/dart-pkg/sky_engine
