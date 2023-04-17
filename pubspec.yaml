@@ -162,3 +162,5 @@ dependency_overrides:
   flutter_inappwebview:
     git:
       url: https://github.com/moffatman/flutter_inappwebview.git
+  sky_engine:
+    path: ../engine/src/out/host_debug/gen/dart-pkg/sky_engine

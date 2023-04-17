@@ -285,6 +285,64 @@ class PostRow extends StatelessWidget {
 				);
 			}
 		}
+		final Widget? attachments;
+		if (smallAttachments.isNotEmpty && settings.showImages(context, latestPost.board)) {
+			attachments = Padding(
+				padding: (settings.imagesOnRight && replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32, right: 8) : const EdgeInsets.only(right: 8),
+				child: Column(
+					crossAxisAlignment: CrossAxisAlignment.start,
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						...smallAttachments.map((attachment) => PopupAttachment(
+							attachment: attachment,
+							child: CupertinoButton(
+								padding: EdgeInsets.zero,
+								minSize: 0,
+								child: ConstrainedBox(
+									constraints: const BoxConstraints(
+										//minHeight: 75
+									),
+									child: AttachmentThumbnail(
+										attachment: attachment,
+										revealSpoilers: revealSpoilerImages,
+										thread: latestPost.threadIdentifier,
+										onLoadError: onThumbnailLoadError,
+										hero: TaggedAttachment(
+											attachment: attachment,
+											semanticParentIds: parentZone.stackIds
+										),
+										fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+										shrinkHeight: !settings.squareThumbnails,
+										showIconInCorner: (
+											backgroundColor: theme.backgroundColor,
+											borderColor: theme.primaryColorWithBrightness(0.2)
+										)
+									)
+								),
+								onPressed: () {
+									onThumbnailTap?.call(attachment);
+								}
+							)
+						)).expand((x) => [x, const SizedBox(height: 8)])
+					]
+				)
+			);
+		}
+		else if (latestPost.attachmentDeleted) {
+			attachments = Center(
+				child: SizedBox(
+					width: 75,
+					height: 75,
+					child: CupertinoButton(
+						onPressed: onRequestArchive,
+						child: const Icon(CupertinoIcons.question_square, size: 36)
+					)
+				)
+			);
+		}
+		else {
+			attachments = null;
+		}
 		content(double factor) => PostSpanZone(
 			postId: latestPost.id,
 			style: expandedInline ? PostSpanZoneStyle.expandedInline : null,
@@ -302,6 +360,11 @@ class PostRow extends StatelessWidget {
 						child: Text.rich(
 							TextSpan(
 								children: [
+									if (attachments != null) WidgetSpan(
+										child: IntrinsicWidth(child: attachments),
+										floating: PlaceholderFloating.left,
+										alignment: PlaceholderAlignment.top
+									),
 									if (
 										(
 											// We are not in tree view OR
@@ -352,6 +415,7 @@ class PostRow extends StatelessWidget {
 											))
 										)
 									),
+									const TextSpan(text: '\n'),
 									// In practice this is the height of a line of text
 									if (!shrinkWrap) const WidgetSpan(
 										child: SizedBox(
@@ -359,7 +423,6 @@ class PostRow extends StatelessWidget {
 											height: 0
 										)
 									)
-									else const TextSpan(text: '\n')
 								]
 							),
 							overflow: TextOverflow.fade
@@ -371,59 +434,6 @@ class PostRow extends StatelessWidget {
 		innerChild(BuildContext context, double slideFactor) {
 			final mainRow = [
 				const SizedBox(width: 8),
-				if (smallAttachments.isNotEmpty && settings.showImages(context, latestPost.board)) Padding(
-					padding: (settings.imagesOnRight && replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32) : EdgeInsets.zero,
-					child: ClippingBox(
-						fade: true,
-						child: Column(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								...smallAttachments.map((attachment) => PopupAttachment(
-									attachment: attachment,
-									child: CupertinoButton(
-										padding: EdgeInsets.zero,
-										minSize: 0,
-										child: ConstrainedBox(
-											constraints: const BoxConstraints(
-												minHeight: 75
-											),
-											child: AttachmentThumbnail(
-												attachment: attachment,
-												revealSpoilers: revealSpoilerImages,
-												thread: latestPost.threadIdentifier,
-												onLoadError: onThumbnailLoadError,
-												hero: TaggedAttachment(
-													attachment: attachment,
-													semanticParentIds: parentZone.stackIds
-												),
-												fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
-												shrinkHeight: !settings.squareThumbnails,
-												showIconInCorner: (
-													backgroundColor: theme.backgroundColor,
-													borderColor: theme.primaryColorWithBrightness(0.2)
-												)
-											)
-										),
-										onPressed: () {
-											onThumbnailTap?.call(attachment);
-										}
-									)
-								)).expand((x) => [const SizedBox(height: 8), x]),
-								const SizedBox(height: 8)
-							]
-						)
-					)
-				)
-				else if (latestPost.attachmentDeleted) Center(
-					child: SizedBox(
-						width: 75,
-						height: 75,
-						child: CupertinoButton(
-							onPressed: onRequestArchive,
-							child: const Icon(CupertinoIcons.question_square, size: 36)
-						)
-					)
-				),
 				if (shrinkWrap) Flexible(
 					child: content(slideFactor)
 				)
