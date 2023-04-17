@@ -1505,9 +1505,11 @@ packages:
     source: hosted
     version: "2.0.0"
   sky_engine:
-    dependency: transitive
-    description: flutter
-    source: sdk
+    dependency: "direct overridden"
+    description:
+      path: "../engine/src/out/host_debug/gen/dart-pkg/sky_engine"
+      relative: true
+    source: path
     version: "0.0.99"
   source_gen:
     dependency: transitive
