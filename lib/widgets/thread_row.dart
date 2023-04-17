@@ -530,69 +530,86 @@ class ThreadRow extends StatelessWidget {
 			final headerLines = (headerRow.fold(0, (s, e) => s + e.toPlainText().length) / charactersPerLine).lazyCeil();
 			maxSpanLines = totalLines - headerLines;
 		}
-		List<Widget> rowChildren() => [
-			const SizedBox(width: 8),
-			if (latestThread.attachments.isNotEmpty && settings.showImages(context, latestThread.board)) Padding(
-				padding: const EdgeInsets.only(top: 8, bottom: 8),
-				child: ClippingBox(
-					child: Column(
-						mainAxisSize: MainAxisSize.min,
-						children: latestThread.attachments.map((attachment) => PopupAttachment(
-							attachment: attachment,
-							child: CupertinoInkwell(
-								padding: EdgeInsets.zero,
-								minimumSize: Size.zero,
-								onPressed: onThumbnailTap?.bind1(attachment),
-								child: ConstrainedBox(
-									constraints: BoxConstraints(
-										minHeight: 75,
-										maxHeight: attachment.type == AttachmentType.url ? 75 : double.infinity
-									),
-									child: AttachmentThumbnail(
-										onLoadError: onThumbnailLoadError,
-										attachment: attachment,
-										mayObscure: true,
-										hero: TaggedAttachment(
-											attachment: attachment,
-											semanticParentIds: semanticParentIds,
-											imageboard: imageboard
+		List<Widget> rowChildren() {
+			final Widget? attachments;
+			if (latestThread.attachments.isNotEmpty && settings.showImages(context, latestThread.board)) {
+				attachments = Padding(
+					padding: const EdgeInsets.only(bottom: 8, right: 8),
+					child: ClippingBox(
+						child: Column(
+							mainAxisSize: MainAxisSize.min,
+							children: latestThread.attachments.map((attachment) => PopupAttachment(
+								attachment: attachment,
+								child: CupertinoInkwell(
+									padding: EdgeInsets.zero,
+									minimumSize: Size.zero,
+									onPressed: onThumbnailTap?.bind1(attachment),
+									child: ConstrainedBox(
+										constraints: BoxConstraints(
+											//minHeight: 75,
+											maxHeight: attachment.type == AttachmentType.url ? 75 : double.infinity
 										),
-										fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
-										shrinkHeight: !settings.squareThumbnails,
-										hide: hideThumbnails,
-										cornerIcon: AttachmentThumbnailCornerIcon(
-											backgroundColor: backgroundColor,
-											borderColor: borderColor,
-											size: null
+										child: AttachmentThumbnail(
+											onLoadError: onThumbnailLoadError,
+											attachment: attachment,
+											mayObscure: true,
+											hero: TaggedAttachment(
+												attachment: attachment,
+												semanticParentIds: semanticParentIds,
+												imageboard: imageboard
+											),
+											fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+											shrinkHeight: !settings.squareThumbnails,
+											hide: hideThumbnails,
+											cornerIcon: AttachmentThumbnailCornerIcon(
+												backgroundColor: backgroundColor,
+												borderColor: borderColor,
+												size: null
+											)
 										)
 									)
 								)
-							)
-						)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
+							)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
+						)
 					)
-				)
-			)
-			else if (latestThread.attachmentDeleted) Center(
-				child: SizedBox(
-					width: settings.thumbnailSize,
-					height: settings.thumbnailSize,
-					child: const Icon(CupertinoIcons.xmark_square, size: 36)
-				)
-			),
-			Expanded(
-				child: Container(
-					constraints: const BoxConstraints(minHeight: 75),
-					padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
-					child: ChangeNotifierProvider<PostSpanZoneData>(
-						create: (ctx) => PostSpanRootZoneData(
-							thread: latestThread,
-							imageboard: imageboard,
-							style: PostSpanZoneStyle.linear
-						),
-						builder: (context, _) => IgnorePointer(
-							child: Text.rich(
+				);
+			}
+			else if (latestThread.attachmentDeleted) {
+				attachments = Center(
+					child: SizedBox(
+						width: settings.thumbnailSize,
+						height: settings.thumbnailSize,
+						child: const Icon(CupertinoIcons.xmark_square, size: 36)
+					)
+				);
+			}
+			else {
+				attachments = null;
+			}
+			return [
+				const SizedBox(width: 8),
+				if (!site.classicCatalogStyle && attachments != null) Padding(
+					padding: const EdgeInsets.only(top: 8),
+					child: attachments,
+				),
+				Expanded(
+					child: Container(
+						constraints: const BoxConstraints(minHeight: 75),
+						padding: const EdgeInsets.only(top: 8, right: 8),
+						child: ChangeNotifierProvider<PostSpanZoneData>(
+							create: (ctx) => PostSpanRootZoneData(
+								thread: latestThread,
+								imageboard: imageboard,
+								style: PostSpanZoneStyle.linear
+							),
+							builder: (context, _) => Text.rich(
 								TextSpan(
 									children: [
+										if (site.classicCatalogStyle && attachments != null) WidgetSpan(
+											child: Container(color: Colors.transparent, child: IntrinsicWidth(child: attachments)),
+											floating: PlaceholderFloating.left,
+											alignment: PlaceholderAlignment.top
+										),
 										if (headerRow.isNotEmpty) TextSpan(
 											children: [
 												...headerRow,
@@ -635,12 +652,14 @@ class ThreadRow extends StatelessWidget {
 																Text('>>', style: TextStyle(color: theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold, fontVariations: CommonFontVariations.bold)),
 																const SizedBox(width: 4),
 																Flexible(
-																	child: PostRow(
-																		post: post,
-																		baseOptions: baseOptions,
-																		shrinkWrap: true,
-																		highlight: 1,
-																		showPostNumber: true
+																	child: IgnorePointer(
+																		child: PostRow(
+																			post: post,
+																			baseOptions: baseOptions,
+																			shrinkWrap: true,
+																			highlight: 1,
+																			showPostNumber: true
+																		)
 																	)
 																)
 															]
@@ -656,8 +675,8 @@ class ThreadRow extends StatelessWidget {
 						)
 					)
 				)
-			)
-		];
+			];
+		}
 		Widget buildContentFocused() {
 			final attachment = latestThread.attachments.tryFirst;
 			Widget? att = attachment == null || !settings.showImages(context, thread.board) ? null : Column(
