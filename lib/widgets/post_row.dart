@@ -167,9 +167,11 @@ class PostRow extends StatelessWidget {
 									alignment: Alignment.center,
 									constraints: BoxConstraints(
 										minWidth: settings.thumbnailSize,
+										maxWidth: settings.thumbnailSize,
 										//minHeight: 75
 									),
 									child: Stack(
+										alignment: Alignment.bottomRight,
 										children: [
 											AttachmentThumbnail(
 												attachment: attachment,
@@ -183,19 +185,14 @@ class PostRow extends StatelessWidget {
 												shrinkHeight: !settings.squareThumbnails,
 												shrinkWidth: !settings.squareThumbnails
 											),
-											if (attachment.icon != null) Positioned.fill(
-												child: Align(
-													alignment: Alignment.bottomRight,
-													child: Container(
-														decoration: BoxDecoration(
-															borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-															color: theme.backgroundColor,
-															border: Border.all(color: theme.primaryColorWithBrightness(0.2))
-														),
-														padding: const EdgeInsets.all(2),
-														child: Icon(attachment.icon, size: 16)
-													)
-												)
+											if (attachment.icon != null) Container(
+												decoration: BoxDecoration(
+													borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+													color: theme.backgroundColor,
+													border: Border.all(color: theme.primaryColorWithBrightness(0.2))
+												),
+												padding: const EdgeInsets.all(2),
+												child: Icon(attachment.icon, size: 16)
 											)
 										]
 									)
@@ -203,8 +200,8 @@ class PostRow extends StatelessWidget {
 								onPressed: () {
 									onThumbnailTap?.call(attachment);
 								}
-							)
-						)).expand((x) => [x, const SizedBox(height: 8)])
+							))
+						).expand((x) => [const SizedBox(height: 8), x]).skip(1)
 					]
 				)
 			);
@@ -241,9 +238,9 @@ class PostRow extends StatelessWidget {
 							TextSpan(
 								children: [
 									if (attachments != null) WidgetSpan(
-										child: IntrinsicWidth(child: attachments),
+										child: attachments,
 										floating: PlaceholderFloating.left,
-										alignment: PlaceholderAlignment.top
+										alignment: PlaceholderAlignment.middle
 									),
 									if ((!parentZone.tree || (post.parentId != latestPost.threadId && (baseOptions?.highlightString?.isNotEmpty ?? false))) && !site.explicitIds && post.parentId != null) ...[
 										PostQuoteLinkSpan(
@@ -283,7 +280,8 @@ class PostRow extends StatelessWidget {
 									const TextSpan(text: '\n'),
 									// In practice this is the height of a line of text
 									const WidgetSpan(
-										child: SizedBox.shrink()
+										child: SizedBox.shrink(),
+										floating: PlaceholderFloating.left
 									)
 								]
 							),

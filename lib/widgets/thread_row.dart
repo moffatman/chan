@@ -269,57 +269,51 @@ class ThreadRow extends StatelessWidget {
 			final Widget? attachments;
 			if (latestThread.attachments.isNotEmpty && settings.showImages(context, latestThread.board)) {
 				attachments = Padding(
-					padding: const EdgeInsets.only(bottom: 8, right: 8),
-					child: ClippingBox(
-						child: Column(
-							mainAxisSize: MainAxisSize.min,
-							children: latestThread.attachments.map((attachment) => PopupAttachment(
-								attachment: attachment,
-								child: CupertinoButton(
-									padding: EdgeInsets.zero,
-									minSize: 0,
-									child: ConstrainedBox(
-										constraints: BoxConstraints(
-											//minHeight: 75,
-											minWidth: settings.thumbnailSize
-										),
-										child: Center(
-											child: Stack(
-												children: [
-													AttachmentThumbnail(
-														onLoadError: onThumbnailLoadError,
-														attachment: attachment,
-														thread: latestThread.identifier,
-														hero: TaggedAttachment(
-															attachment: attachment,
-															semanticParentIds: semanticParentIds
-														),
-														fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
-														shrinkHeight: !settings.squareThumbnails,
-														shrinkWidth: !settings.squareThumbnails
-													),
-													if (attachment.icon != null) Positioned.fill(
-														child: Align(
-															alignment: Alignment.bottomRight,
-															child: Container(
-																decoration: BoxDecoration(
-																	borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																	color: theme.backgroundColor,
-																	border: Border.all(color: theme.primaryColorWithBrightness(0.2))
-																),
-																padding: const EdgeInsets.all(2),
-																child: Icon(attachment.icon, size: 16)
-															)
-														)
-													)
-												]
-											)
-										)
+					padding: const EdgeInsets.only(right: 8),
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: latestThread.attachments.map((attachment) => PopupAttachment(
+							attachment: attachment,
+							child: CupertinoButton(
+								padding: EdgeInsets.zero,
+								minSize: 0,
+								child: Container(
+									constraints: BoxConstraints(
+										//minHeight: 75,
+										minWidth: settings.thumbnailSize,
+										maxWidth: settings.thumbnailSize,
 									),
-									onPressed: () => onThumbnailTap?.call(attachment)
-								)
-							)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
-						)
+									alignment: Alignment.center,
+									child: Stack(
+										alignment: Alignment.bottomRight,
+										children: [
+											AttachmentThumbnail(
+												onLoadError: onThumbnailLoadError,
+												attachment: attachment,
+												thread: latestThread.identifier,
+												hero: TaggedAttachment(
+													attachment: attachment,
+													semanticParentIds: semanticParentIds
+												),
+												fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+												shrinkHeight: !settings.squareThumbnails,
+												shrinkWidth: !settings.squareThumbnails
+											),
+											if (attachment.icon != null) Container(
+												decoration: BoxDecoration(
+													borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
+													color: theme.backgroundColor,
+													border: Border.all(color: theme.primaryColorWithBrightness(0.2))
+												),
+												padding: const EdgeInsets.all(2),
+												child: Icon(attachment.icon, size: 16)
+											)
+										]
+									)
+								),
+								onPressed: () => onThumbnailTap?.call(attachment)
+							)
+						)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
 					)
 				);
 			}
@@ -355,9 +349,9 @@ class ThreadRow extends StatelessWidget {
 									TextSpan(
 										children: [
 											if (site.classicCatalogStyle && attachments != null) WidgetSpan(
-												child: Container(color: Colors.transparent, child: IntrinsicWidth(child: attachments)),
+												child: attachments,
 												floating: PlaceholderFloating.left,
-												alignment: PlaceholderAlignment.top
+												alignment: PlaceholderAlignment.middle
 											),
 											if (headerRow.isNotEmpty) TextSpan(
 												children: [
