@@ -389,9 +389,9 @@ class PostRow extends StatelessWidget {
 							TextSpan(
 								children: [
 									if (attachments != null) WidgetSpan(
-										child: IntrinsicWidth(child: attachments),
+										child: attachments,
 										floating: PlaceholderFloating.left,
-										alignment: PlaceholderAlignment.top
+										alignment: PlaceholderAlignment.middle
 									),
 									if (
 										// The site uses parentIds
@@ -442,11 +442,9 @@ class PostRow extends StatelessWidget {
 									),
 									const TextSpan(text: '\n'),
 									// In practice this is the height of a line of text
-									if (!shrinkWrap) const WidgetSpan(
-										child: SizedBox(
-											width: double.infinity,
-											height: 0
-										)
+									const WidgetSpan(
+										child: SizedBox.shrink(),
+										floating: PlaceholderFloating.left
 									)
 								]
 							),
