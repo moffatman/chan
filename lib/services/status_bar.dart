@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chan/services/persistence.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -41,7 +42,7 @@ Future<void> hideStatusBar() async {
 Size? _lastSize;
 
 void _guessWorkaround() {
-	final currentSize = MediaQueryData.fromView(WidgetsBinding.instance.window).size;
+	final currentSize = MediaQueryData.fromView(PlatformDispatcher.instance.views.first).size;
 	if (currentSize != _lastSize && _lastSize != null) {
 		final previousValue = Persistence.settings.useStatusBarWorkaround;
 		Persistence.settings.useStatusBarWorkaround ??= true;

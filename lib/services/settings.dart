@@ -17,10 +17,10 @@ import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:linkify/linkify.dart';
 import 'package:profanity_filter/profanity_filter.dart';
 import 'package:provider/provider.dart';
@@ -305,7 +305,7 @@ class SavedTheme {
 				fontFamily: '.SF Pro Text',
 				fontSize: 17.0,
 				letterSpacing: -0.41,
-				fontWeight: WidgetsBinding.instance.window.accessibilityFeatures.boldText ? FontWeight.w500 : null,
+				fontWeight: PlatformDispatcher.instance.accessibilityFeatures.boldText ? FontWeight.w500 : null,
 				color: primaryColor
 			),
 			actionTextStyle: TextStyle(color: secondaryColor),
@@ -1080,7 +1080,7 @@ class EffectiveSettings extends ChangeNotifier {
 		else if (_settings.theme == TristateSystemSetting.a) {
 			return Brightness.light;
 		}
-		return _systemBrightness ?? SchedulerBinding.instance.window.platformBrightness;
+		return _systemBrightness ?? PlatformDispatcher.instance.platformBrightness;
 	}
 
 	bool get hideOldStickiedThreads => _settings.hideOldStickiedThreads;
@@ -1997,7 +1997,7 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 
 	@override
 	void didChangePlatformBrightness() {
-		context.read<EffectiveSettings>().systemBrightness = SchedulerBinding.instance.window.platformBrightness;
+		context.read<EffectiveSettings>().systemBrightness = PlatformDispatcher.instance.platformBrightness;
 	}
 
 	@override

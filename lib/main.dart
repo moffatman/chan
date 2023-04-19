@@ -193,7 +193,7 @@ class _ChanAppState extends State<ChanApp> {
 				],
 				child: SettingsSystemListener(
 					child: MediaQuery.fromView(
-						view: WidgetsBinding.instance.window,
+						view: View.of(context),
 						child: StickyMediaQuery(
 							top: true,
 							child: Builder(

@@ -62,7 +62,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	bool _popping = false;
 
 	bool isPhoneSoftwareKeyboard() {
-		return MediaQueryData.fromView(WidgetsBinding.instance.window).viewInsets.bottom > 100;
+		return MediaQueryData.fromView(View.of(context)).viewInsets.bottom > 100;
 	}
 
 	void _fetchBoards() {

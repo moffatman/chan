@@ -1647,9 +1647,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										_panStartDy = event.globalPosition.dy;
 									},
 									onPanUpdate: (event) {
-										final r = WidgetsBinding.instance.window.devicePixelRatio;
+										final view = PlatformDispatcher.instance.views.first;
+										final r = view.devicePixelRatio;
 										setState(() {
-											_willHideOnPanEnd = ((WidgetsBinding.instance.window.physicalSize.height / r) - event.globalPosition.dy) < (WidgetsBinding.instance.window.viewInsets.bottom / r);
+											_willHideOnPanEnd = ((view.physicalSize.height / r) - event.globalPosition.dy) < (view.viewInsets.bottom / r);
 											if (!_willHideOnPanEnd && (event.globalPosition.dy < _panStartDy || settings.replyBoxHeightOffset >= 0)) {
 												// touch not above keyboard
 												settings.replyBoxHeightOffset = min(MediaQuery.sizeOf(context).height / 2 - kMinInteractiveDimensionCupertino, max(0, settings.replyBoxHeightOffset - event.delta.dy));

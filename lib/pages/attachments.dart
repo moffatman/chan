@@ -216,7 +216,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 												if (startRect != null && endRect != null && attachment.attachment.type == AttachmentType.image) {
 													// Need to deflate the original startRect because it has inbuilt layoutInsets
 													// This AttachmentViewer doesn't know about them.
-													final rootPadding = MediaQueryData.fromView(WidgetsBinding.instance.window).padding - sumAdditionalSafeAreaInsets();
+													final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
 													startRect = rootPadding.deflateRect(startRect);
 												}
 												return RectTween(begin: startRect, end: endRect);

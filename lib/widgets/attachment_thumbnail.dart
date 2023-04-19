@@ -173,7 +173,7 @@ class AttachmentThumbnail extends StatelessWidget {
 					if (attachment.type == AttachmentType.image) {
 						// Need to deflate the original startRect because it has inbuilt layoutInsets
 						// This AttachmentThumbnail will always fill its size
-						final rootPadding = MediaQueryData.fromView(WidgetsBinding.instance.window).padding - sumAdditionalSafeAreaInsets();
+						final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
 						startRect = rootPadding.deflateRect(startRect);
 					}
 					if (fit == BoxFit.cover && attachment.width != null && attachment.height != null) {

@@ -22,7 +22,8 @@ extension WithinRange on num {
 
 bool eventTooCloseToEdge(PointerEvent event) {
   if (Platform.isAndroid) {
-    final relativeX = (event.position.dx * WidgetsBinding.instance.window.devicePixelRatio) / WidgetsBinding.instance.window.physicalSize.width;
+		final view = PlatformDispatcher.instance.views.first;
+    final relativeX = (event.position.dx * view.devicePixelRatio) / view.physicalSize.width;
     final relativeToCenter = (0.5 - relativeX).abs();
     if (relativeToCenter >= 0.45) {
       // Within 5% of edge, it could conflict with system gestures.
