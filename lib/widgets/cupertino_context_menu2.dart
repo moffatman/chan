@@ -57,7 +57,6 @@ class _CupertinoContextMenuActionState extends State<CupertinoContextMenuAction2
     darkColor: Color(0xFF3F3F40),
   );
   static const TextStyle _kActionSheetActionStyle = TextStyle(
-    fontFamily: '.SF UI Text',
     inherit: false,
     fontSize: 18.0,
     fontWeight: FontWeight.w400,
@@ -90,16 +89,16 @@ class _CupertinoContextMenuActionState extends State<CupertinoContextMenuAction2
     if (widget.isDefaultAction) {
       return _kActionSheetActionStyle.copyWith(
         fontWeight: FontWeight.w600,
-      );
+      ).merge(Persistence.settings.textStyle);
     }
     if (widget.isDestructiveAction) {
       return _kActionSheetActionStyle.copyWith(
         color: CupertinoColors.destructiveRed,
-      );
+      ).merge(Persistence.settings.textStyle);
     }
     return _kActionSheetActionStyle.copyWith(
       color: CupertinoDynamicColor.resolve(CupertinoColors.label, context)
-    );
+    ).merge(Persistence.settings.textStyle);
   }
 
   @override

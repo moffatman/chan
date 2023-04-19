@@ -5,6 +5,7 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
@@ -140,7 +141,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 								context: context,
 								builder: (context) => CupertinoActionSheet(
 									title: const Text('Search'),
-									actions: WebImageSearchMethod.values.map((entry) => CupertinoActionSheetAction(
+									actions: WebImageSearchMethod.values.map((entry) => CupertinoActionSheetAction2(
 										child: Text(entry.name, style: TextStyle(
 											fontWeight: entry == settings.webImageSearchMethod ? FontWeight.bold : null
 										)),
@@ -148,7 +149,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											Navigator.of(context, rootNavigator: true).pop(entry);
 										}
 									)).toList(),
-									cancelButton: CupertinoActionSheetAction(
+									cancelButton: CupertinoActionSheetAction2(
 										child: const Text('Cancel'),
 										onPressed: () => Navigator.of(context, rootNavigator: true).pop()
 									)

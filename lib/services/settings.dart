@@ -21,6 +21,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:linkify/linkify.dart';
 import 'package:profanity_filter/profanity_filter.dart';
 import 'package:provider/provider.dart';
@@ -301,32 +302,40 @@ class SavedTheme {
 		primaryContrastingColor: backgroundColor,
 		applyThemeToAll: true,
 		textTheme: CupertinoTextThemeData(
-			textStyle: TextStyle(
-				fontFamily: '.SF Pro Text',
+			textStyle: Persistence.settings.textStyle.copyWith(
 				fontSize: 17.0,
 				letterSpacing: -0.41,
 				fontWeight: PlatformDispatcher.instance.accessibilityFeatures.boldText ? FontWeight.w500 : null,
 				color: primaryColor
 			),
-			actionTextStyle: TextStyle(color: secondaryColor),
-			navActionTextStyle: TextStyle(color: primaryColor),
-			navTitleTextStyle: TextStyle(
+			actionTextStyle: Persistence.settings.textStyle.copyWith(
+				color: secondaryColor
+			),
+			navActionTextStyle: Persistence.settings.textStyle.copyWith(
+				color: primaryColor
+			),
+			navTitleTextStyle: Persistence.settings.textStyle.copyWith(
 				inherit: false,
-				fontFamily: '.SF Pro Text',
 				fontSize: 17.0,
 				letterSpacing: -0.41,
 				fontWeight: FontWeight.w600,
 				color: primaryColor,
 				decoration: TextDecoration.none,
 			),
-			navLargeTitleTextStyle: TextStyle(
+			navLargeTitleTextStyle: Persistence.settings.textStyle.copyWith(
 				inherit: false,
-				fontFamily: '.SF Pro Display',
 				fontSize: 34.0,
 				fontWeight: FontWeight.w700,
 				letterSpacing: 0.41,
 				color: primaryColor,
-			)
+			),
+			tabLabelTextStyle: Persistence.settings.textStyle.copyWith(
+				inherit: false,
+				fontSize: 10.0,
+				fontWeight: FontWeight.w500,
+				letterSpacing: -0.24,
+				color: CupertinoColors.inactiveGray,
+			),
 		)
 	);
 }
@@ -717,6 +726,8 @@ class SavedSettings extends HiveObject {
 	AutoloadAttachmentsSetting fullQualityThumbnails;
 	@HiveField(124)
 	bool recordThreadsInHistory;
+	@HiveField(125)
+	String? fontFamily;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -843,6 +854,7 @@ class SavedSettings extends HiveObject {
 		AndroidGallerySavePathOrganizing? androidGallerySavePathOrganizing,
 		AutoloadAttachmentsSetting? fullQualityThumbnails,
 		bool? recordThreadsInHistory,
+		this.fontFamily,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1036,6 +1048,18 @@ class SavedSettings extends HiveObject {
 	@override
 	Future<void> save() async {
 		await runWhenIdle(const Duration(milliseconds: 500), super.save);
+	}
+
+
+	TextStyle get textStyle {
+		if (fontFamily == null) {
+			return const TextStyle(
+				fontFamily: '.SF Pro Text'
+			);
+		}
+		return GoogleFonts.asMap()[fontFamily!]?.call() ?? TextStyle(
+			fontFamily: fontFamily!
+		);
 	}
 }
 
@@ -1903,6 +1927,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get recordThreadsInHistory => _settings.recordThreadsInHistory;
 	set recordThreadsInHistory(bool setting) {
 		_settings.recordThreadsInHistory = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	String? get fontFamily => _settings.fontFamily;
+	set fontFamily(String? setting) {
+		_settings.fontFamily = setting;
 		_settings.save();
 		notifyListeners();
 	}

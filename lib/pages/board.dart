@@ -16,6 +16,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -210,7 +211,7 @@ class _BoardPageState extends State<BoardPage> {
 		builder: (context) => CupertinoActionSheet(
 			title: Text(variant.name),
 			actions: [
-				if (context.read<ImageboardSite>().supportsMultipleBoards) CupertinoActionSheetAction(
+				if (context.read<ImageboardSite>().supportsMultipleBoards) CupertinoActionSheetAction2(
 					child: Row(
 						children: [
 							const SizedBox(width: 40),
@@ -234,7 +235,7 @@ class _BoardPageState extends State<BoardPage> {
 						Navigator.pop(context, (variant, _ThreadSortingMethodScope.board));
 					}
 				),
-				CupertinoActionSheetAction(
+				CupertinoActionSheetAction2(
 					child: Row(
 						children: [
 							const SizedBox(width: 40),
@@ -260,7 +261,7 @@ class _BoardPageState extends State<BoardPage> {
 					currentVariant: currentVariant
 				))
 			],
-			cancelButton: CupertinoActionSheetAction(
+			cancelButton: CupertinoActionSheetAction2(
 				child: const Text('Cancel'),
 				onPressed: () => Navigator.pop(context)
 			)
@@ -617,7 +618,7 @@ class _BoardPageState extends State<BoardPage> {
 											v: v,
 											currentVariant: variant
 										)).toList(),
-										cancelButton: CupertinoActionSheetAction(
+										cancelButton: CupertinoActionSheetAction2(
 											child: const Text('Cancel'),
 											onPressed: () => Navigator.pop(context)
 										)

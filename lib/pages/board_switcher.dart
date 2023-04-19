@@ -5,6 +5,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
@@ -280,7 +281,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								await showCupertinoDialog(
 									barrierDismissible: true,
 									context: context,
-									builder: (context) => CupertinoAlertDialog(
+									builder: (context) => CupertinoAlertDialog2(
 										title: Padding(
 											padding: const EdgeInsets.only(bottom: 16),
 											child: Row(
@@ -436,7 +437,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											)
 										),
 										actions: [
-											CupertinoDialogAction(
+											CupertinoDialogAction2(
 												child: const Text('Close'),
 												onPressed: () => Navigator.pop(context)
 											)

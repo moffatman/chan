@@ -7,6 +7,7 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -1615,11 +1616,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																				showCupertinoDialog(
 																					context: context,
 																					barrierDismissible: true,
-																					builder: (context) => CupertinoAlertDialog(
+																					builder: (context) => CupertinoAlertDialog2(
 																						title: const Text('Filter reason'),
 																						content: Text(filteredValues[i].filterReason ?? 'Unknown'),
 																						actions: [
-																							CupertinoDialogAction(
+																							CupertinoDialogAction2(
 																								child: const Text('OK'),
 																								onPressed: () => Navigator.pop(context)
 																							)

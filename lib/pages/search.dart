@@ -12,6 +12,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_thin_button.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -434,7 +435,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 												context: context,
 												barrierDismissible: true,
 												builder: (context) => StatefulBuilder(
-													builder: (context, setInnerState) => CupertinoAlertDialog(
+													builder: (context, setInnerState) => CupertinoAlertDialog2(
 														title: const Text('Go to post'),
 														content: Column(
 															mainAxisSize: MainAxisSize.min,
@@ -478,13 +479,13 @@ class _SearchComposePageState extends State<SearchComposePage> {
 															]
 														),
 														actions: [
-															CupertinoDialogAction(
+															CupertinoDialogAction2(
 																child: const Text('Cancel'),
 																onPressed: () {
 																	Navigator.of(context).pop();
 																}
 															),
-															CupertinoDialogAction(
+															CupertinoDialogAction2(
 																isDefaultAction: true,
 																onPressed: int.tryParse(idController.text) != null ? () {
 																	Navigator.of(context).pop((board.imageboard, board.item.name, int.parse(idController.text)));

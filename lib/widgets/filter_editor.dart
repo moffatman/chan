@@ -1,5 +1,6 @@
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -277,7 +278,7 @@ class _FilterEditorState extends State<FilterEditor> {
 											await showCupertinoDialog(
 												context: context,
 												barrierDismissible: true,
-												builder: (context) => CupertinoAlertDialog(
+												builder: (context) => CupertinoAlertDialog2(
 													title: const Text('Set minimum replied-to posts count'),
 													actions: [
 														CupertinoButton(
@@ -319,7 +320,7 @@ class _FilterEditorState extends State<FilterEditor> {
 											await showCupertinoDialog(
 												context: context,
 												barrierDismissible: true,
-												builder: (context) => CupertinoAlertDialog(
+												builder: (context) => CupertinoAlertDialog2(
 													title: const Text('Set minimum reply count'),
 													actions: [
 														CupertinoButton(
@@ -361,7 +362,7 @@ class _FilterEditorState extends State<FilterEditor> {
 											await showCupertinoDialog(
 												context: context,
 												barrierDismissible: true,
-												builder: (context) => CupertinoAlertDialog(
+												builder: (context) => CupertinoAlertDialog2(
 													title: const Text('Set maximum reply count'),
 													actions: [
 														CupertinoButton(
@@ -459,12 +460,12 @@ class _FilterEditorState extends State<FilterEditor> {
 							)
 						),
 						actions: [
-							if (originalFilter != null) CupertinoDialogAction(
+							if (originalFilter != null) CupertinoDialogAction2(
 								isDestructiveAction: true,
 								onPressed: () => Navigator.pop(context, const (true, null)),
 								child: const Text('Delete')
 							),
-							CupertinoDialogAction(
+							CupertinoDialogAction2(
 								onPressed: () {
 									Navigator.pop(context, (false, CustomFilter(
 										pattern: RegExp(patternController.text, caseSensitive: isCaseSensitive),
@@ -490,7 +491,7 @@ class _FilterEditorState extends State<FilterEditor> {
 								child: originalFilter == null ? const Text('Add') : const Text('Save')
 							)
 						],
-						cancelButton: CupertinoDialogAction(
+						cancelButton: CupertinoDialogAction2(
 							onPressed: () => Navigator.pop(context),
 							child: const Text('Cancel')
 						)

@@ -12,6 +12,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
+import 'package:chan/services/installed_fonts.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
@@ -21,6 +22,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/version.dart';
 import 'package:chan/widgets/cupertino_adaptive_segmented_control.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/filter_editor.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
@@ -34,6 +36,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -147,12 +150,12 @@ class SettingsPage extends StatelessWidget {
 						showCupertinoDialog(
 							context: context,
 							barrierDismissible: true,
-							builder: (context) => CupertinoAlertDialog(
+							builder: (context) => CupertinoAlertDialog2(
 								content: SettingsLoginPanel(
 									loginSystem: site.loginSystem!
 								),
 								actions: [
-									CupertinoDialogAction(
+									CupertinoDialogAction2(
 										onPressed: () => Navigator.pop(context),
 										child: const Text('Close')
 									)
@@ -308,17 +311,17 @@ class SettingsPage extends StatelessWidget {
 											final toDelete = await showCupertinoDialog<String>(
 												context: context,
 												barrierDismissible: true,
-												builder: (context) => CupertinoAlertDialog(
+												builder: (context) => CupertinoAlertDialog2(
 													title: const Text('Which site?'),
 													actions: [
-														for (final i in imageboards.entries) CupertinoDialogAction(
+														for (final i in imageboards.entries) CupertinoDialogAction2(
 															isDestructiveAction: true,
 															onPressed: () {
 																Navigator.of(context).pop(i.key);
 															},
 															child: Text(i.value)
 														),
-														CupertinoDialogAction(
+														CupertinoDialogAction2(
 															isDefaultAction: true,
 															child: const Text('Cancel'),
 															onPressed: () {
@@ -569,12 +572,12 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 									showCupertinoDialog(
 										context: context,
 										barrierDismissible: true,
-										builder: (context) => CupertinoAlertDialog(
+										builder: (context) => CupertinoAlertDialog2(
 											content: SettingsLoginPanel(
 												loginSystem: _loginSystemImageboard.site.loginSystem!
 											),
 											actions: [
-												CupertinoDialogAction(
+												CupertinoDialogAction2(
 													onPressed: () => Navigator.pop(context),
 													child: const Text('Close')
 												)
@@ -851,7 +854,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 								await showCupertinoDialog(
 									context: context,
 									barrierDismissible: true,
-									builder: (context) => CupertinoAlertDialog(
+									builder: (context) => CupertinoAlertDialog2(
 										title: const Text('Set maximum file upload dimension'),
 										actions: [
 											CupertinoButton(
@@ -924,12 +927,12 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 										final newAction = await showCupertinoDialog<SettingsQuickAction>(
 											context: context,
 											barrierDismissible: true,
-											builder: (context) => CupertinoAlertDialog(
+											builder: (context) => CupertinoAlertDialog2(
 												title: const Text('Pick Settings icon long-press action'),
 												actions: [
 													...SettingsQuickAction.values,
 													null
-												].map((action) => CupertinoDialogAction(
+												].map((action) => CupertinoDialogAction2(
 													isDefaultAction: action == settings.settingsQuickAction,
 													onPressed: () {
 														tapped = true;
@@ -1303,6 +1306,107 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.textformat_alt),
+						const SizedBox(width: 8),
+						Text('Font: ${settings.fontFamily ?? 'default'}'),
+						Expanded(
+							child: Row(
+								mainAxisAlignment: MainAxisAlignment.end,
+								children: [
+									Flexible(
+										child: Padding(
+											padding: const EdgeInsets.only(left: 16),
+											child: CupertinoButton.filled(
+												padding: const EdgeInsets.all(8),
+												onPressed: () async {
+													final availableFonts = await showCupertinoDialog<List<String>>(
+														barrierDismissible: true,
+														context: context,
+														builder: (context) => CupertinoAlertDialog2(
+															title: const Text('Choose a font list', textAlign: TextAlign.center),
+															actions: [
+																CupertinoDialogAction2(
+																	child: const Text('Device Fonts'),
+																	onPressed: () async {
+																		try {
+																			Navigator.pop(context, await getInstalledFontFamilies());
+																		}
+																		catch (e) {
+																			alertError(context, e.toStringDio());
+																		}
+																	}
+																),
+																CupertinoDialogAction2(
+																	child: const Text('Google Fonts'),
+																	onPressed: () => Navigator.pop(context, GoogleFonts.asMap().keys.toList())
+																),
+																CupertinoDialogAction2(
+																	child: const Text('Reset to default'),
+																	onPressed: () => Navigator.pop(context, <String>[])
+																),
+																CupertinoDialogAction2(
+																	child: const Text('Cancel'),
+																	onPressed: () => Navigator.pop(context)
+																)
+															]
+														)
+													);
+													if (!mounted || availableFonts == null) {
+														return;
+													}
+													if (availableFonts.isEmpty) {
+														settings.fontFamily = null;
+														settings.handleThemesAltered();
+														return;
+													}
+													final selectedFont = await showCupertinoDialog<String>(
+														barrierDismissible: true,
+														context: context,
+														builder: (context) => CupertinoAlertDialog2(
+															title: const Text('Choose a font', textAlign: TextAlign.center),
+															content: SizedBox(
+																width: 200,
+																height: 350,
+																child: CupertinoScrollbar(
+																	child: ListView.separated(
+																		itemCount: availableFonts.length,
+																		separatorBuilder: (context, i) => Divider(
+																			height: 0,
+																			thickness: 0,
+																			color: CupertinoTheme.of(context).primaryColor
+																		),
+																		itemBuilder: (context, i) => CupertinoDialogAction2(
+																			onPressed: () => Navigator.pop(context, availableFonts[i]),
+																			child: Text(availableFonts[i])
+																		)
+																	)
+																)
+															),
+															actions: [
+																CupertinoDialogAction2(
+																	child: const Text('Close'),
+																	onPressed: () => Navigator.pop(context)
+																)
+															]
+														)
+													);
+													if (selectedFont != null) {
+														settings.fontFamily = selectedFont;
+														settings.handleThemesAltered();
+													}
+												},
+												child: const Text('Pick font')
+											)
+										)
+									),
+								]
+							)
+						)
+					]
+				),
+				const SizedBox(height: 32),
 				const Row(
 					children: [
 						Icon(CupertinoIcons.paintbrush),
@@ -1377,7 +1481,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														final selectedKey = await showCupertinoDialog<String>(
 															barrierDismissible: true,
 															context: context,
-															builder: (context) => CupertinoAlertDialog(
+															builder: (context) => CupertinoAlertDialog2(
 																title: Padding(
 																	padding: const EdgeInsets.only(bottom: 16),
 																	child: Row(
@@ -1470,7 +1574,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																														final newName = await showCupertinoDialog<String>(
 																															context: context,
 																															barrierDismissible: true,
-																															builder: (context) => CupertinoAlertDialog(
+																															builder: (context) => CupertinoAlertDialog2(
 																																title: const Text('Enter new name'),
 																																content: CupertinoTextField(
 																																	autofocus: true,
@@ -1480,11 +1584,11 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																																	onSubmitted: (s) => Navigator.pop(context, s)
 																																),
 																																actions: [
-																																	CupertinoDialogAction(
+																																	CupertinoDialogAction2(
 																																		child: const Text('Cancel'),
 																																		onPressed: () => Navigator.pop(context)
 																																	),
-																																	CupertinoDialogAction(
+																																	CupertinoDialogAction2(
 																																		isDefaultAction: true,
 																																		child: const Text('Rename'),
 																																		onPressed: () => Navigator.pop(context, controller.text)
@@ -1521,16 +1625,16 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																														final consent = await showCupertinoDialog<bool>(
 																															context: context,
 																															barrierDismissible: true,
-																															builder: (context) => CupertinoAlertDialog(
+																															builder: (context) => CupertinoAlertDialog2(
 																																title: Text('Delete ${themes[i].key}?'),
 																																actions: [
-																																	CupertinoDialogAction(
+																																	CupertinoDialogAction2(
 																																		child: const Text('Cancel'),
 																																		onPressed: () {
 																																			Navigator.of(context).pop();
 																																		}
 																																	),
-																																	CupertinoDialogAction(
+																																	CupertinoDialogAction2(
 																																		isDestructiveAction: true,
 																																		onPressed: () {
 																																			Navigator.of(context).pop(true);
@@ -1561,7 +1665,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																	}
 																),
 																actions: [
-																	CupertinoDialogAction(
+																	CupertinoDialogAction2(
 																		child: const Text('Close'),
 																		onPressed: () => Navigator.pop(context)
 																	)
@@ -1938,7 +2042,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																	barrierDismissible: true,
 																	context: context,
 																	builder: (context) => StatefulBuilder(
-																		builder: (context, setDialogState) => CupertinoAlertDialog(
+																		builder: (context, setDialogState) => CupertinoAlertDialog2(
 																			title: const Text('Reorder post details'),
 																			actions: [
 																				CupertinoButton(
@@ -2575,10 +2679,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 								showCupertinoDialog<bool>(
 									context: context,
 									barrierDismissible: true,
-									builder: (context) => CupertinoAlertDialog(
+									builder: (context) => CupertinoAlertDialog2(
 										content: Text('When the screen is at least ${settings.twoPaneBreakpoint.round()} pixels wide, two columns will be used.\nThe board catalog will be on the left and the current thread will be on the right.'),
 										actions: [
-											CupertinoDialogAction(
+											CupertinoDialogAction2(
 												child: const Text('OK'),
 												onPressed: () {
 													Navigator.of(context).pop();
@@ -2727,10 +2831,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									showCupertinoDialog<bool>(
 										context: context,
 										barrierDismissible: true,
-										builder: (context) => CupertinoAlertDialog(
+										builder: (context) => CupertinoAlertDialog2(
 											content: const Text('Some devices have a bug in their Android ROM, where the status bar cannot be properly hidden.\n\nIf this workaround is enabled, the status bar will not be hidden when opening the gallery.'),
 											actions: [
-												CupertinoDialogAction(
+												CupertinoDialogAction2(
 													child: const Text('OK'),
 													onPressed: () {
 														Navigator.of(context).pop();
@@ -3006,10 +3110,10 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 								showCupertinoDialog<bool>(
 									context: context,
 									barrierDismissible: true,
-									builder: (context) => CupertinoAlertDialog(
+									builder: (context) => CupertinoAlertDialog2(
 										content: const Text('Send the captcha images you solve to a database to improve the automated solver. No other information about your posts will be collected.'),
 										actions: [
-											CupertinoDialogAction(
+											CupertinoDialogAction2(
 												child: const Text('OK'),
 												onPressed: () {
 													Navigator.of(context).pop();
@@ -3044,10 +3148,10 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 								showCupertinoDialog<bool>(
 									context: context,
 									barrierDismissible: true,
-									builder: (context) => CupertinoAlertDialog(
+									builder: (context) => CupertinoAlertDialog2(
 										content: const Text('Crash stack traces and uncaught exceptions will be used to help fix bugs. No personal information will be collected.'),
 										actions: [
-											CupertinoDialogAction(
+											CupertinoDialogAction2(
 												child: const Text('OK'),
 												onPressed: () {
 													Navigator.of(context).pop();
@@ -3083,10 +3187,10 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 								showCupertinoDialog<bool>(
 									context: context,
 									barrierDismissible: true,
-									builder: (context) => CupertinoAlertDialog(
+									builder: (context) => CupertinoAlertDialog2(
 										content: const Text('Links to sites such as YouTube will show the thumbnail and title of the page instead of the link URL.'),
 										actions: [
-											CupertinoDialogAction(
+											CupertinoDialogAction2(
 												child: const Text('OK'),
 												onPressed: () {
 													Navigator.of(context).pop();
@@ -3209,7 +3313,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 							final newUserAgent = await showCupertinoDialog<String>(
 								context: context,
 								barrierDismissible: true,
-								builder: (context) => CupertinoAlertDialog(
+								builder: (context) => CupertinoAlertDialog2(
 									title: const Text('Edit User-Agent'),
 									content: Column(
 										mainAxisSize: MainAxisSize.min,
@@ -3231,19 +3335,19 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 										]
 									),
 									actions: [
-										CupertinoDialogAction(
+										CupertinoDialogAction2(
 											child: const Text('Random'),
 											onPressed: () {
 												final idx = userAgents.indexOf(controller.text) + 1;
 												controller.text = userAgents[idx % userAgents.length];
 											}
 										),
-										CupertinoDialogAction(
+										CupertinoDialogAction2(
 											isDefaultAction: true,
 											child: const Text('Save'),
 											onPressed: () => Navigator.pop(context, controller.text.isEmpty ? null : controller.text)
 										),
-										CupertinoDialogAction(
+										CupertinoDialogAction2(
 											child: const Text('Cancel'),
 											onPressed: () => Navigator.pop(context)
 										)
@@ -3394,17 +3498,17 @@ class SettingsThreadsPanel extends StatelessWidget {
 				confirmDelete(List<PersistentThreadState> toDelete) async {
 					final confirmed = await showCupertinoDialog<bool>(
 						context: context,
-						builder: (context) => CupertinoAlertDialog(
+						builder: (context) => CupertinoAlertDialog2(
 							title: const Text('Confirm deletion'),
 							content: Text('${describeCount(toDelete.length, 'thread')} will be deleted'),
 							actions: [
-								CupertinoDialogAction(
+								CupertinoDialogAction2(
 									child: const Text('Cancel'),
 									onPressed: () {
 										Navigator.of(context).pop();
 									}
 								),
-								CupertinoDialogAction(
+								CupertinoDialogAction2(
 									isDestructiveAction: true,
 									onPressed: () {
 										Navigator.of(context).pop(true);
@@ -3675,7 +3779,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 		};
 		final cont = await showCupertinoDialog<bool>(
 			context: context,
-			builder: (context) => CupertinoAlertDialog(
+			builder: (context) => CupertinoAlertDialog2(
 				title: Text('${widget.loginSystem.name} Login'),
 				content: ListBody(
 					children: [
@@ -3697,11 +3801,11 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 					]
 				),
 				actions: [
-					CupertinoDialogAction(
+					CupertinoDialogAction2(
 						child: const Text('Cancel'),
 						onPressed: () => Navigator.pop(context)
 					),
-					CupertinoDialogAction(
+					CupertinoDialogAction2(
 						child: const Text('Login'),
 						onPressed: () => Navigator.pop(context, true)
 					)
@@ -3811,7 +3915,7 @@ Future<Imageboard?> _pickImageboard(BuildContext context, Imageboard current) {
 		context: context,
 		builder: (context) => CupertinoActionSheet(
 			title: const Text('Select site'),
-			actions: ImageboardRegistry.instance.imageboards.map((imageboard) => CupertinoActionSheetAction(
+			actions: ImageboardRegistry.instance.imageboards.map((imageboard) => CupertinoActionSheetAction2(
 				child: Row(
 					mainAxisSize: MainAxisSize.min,
 					children: [
@@ -3826,7 +3930,7 @@ Future<Imageboard?> _pickImageboard(BuildContext context, Imageboard current) {
 					Navigator.of(context, rootNavigator: true).pop(imageboard);
 				}
 			)).toList(),
-			cancelButton: CupertinoActionSheetAction(
+			cancelButton: CupertinoActionSheetAction2(
 				child: const Text('Cancel'),
 				onPressed: () => Navigator.of(context, rootNavigator: true).pop()
 			)

@@ -14,6 +14,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/translation.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/hover_popup.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
@@ -1046,7 +1047,7 @@ class PostPopupSpan extends PostSpan {
 							textAlign: TextAlign.left,
 						),
 						actions: [
-							CupertinoActionSheetAction(
+							CupertinoActionSheetAction2(
 								child: const Text('Close'),
 								onPressed: () {
 									Navigator.of(context).pop(true);

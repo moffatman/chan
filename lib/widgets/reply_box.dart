@@ -24,6 +24,7 @@ import 'package:chan/widgets/captcha_dvach.dart';
 import 'package:chan/widgets/captcha_lynxchan.dart';
 import 'package:chan/widgets/captcha_securimage.dart';
 import 'package:chan/widgets/captcha_nojs.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
@@ -517,29 +518,29 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			if (!shouldAutoLogin) {
 				settings.autoLoginOnMobileNetwork ??= await showCupertinoDialog<bool>(
 					context: context,
-					builder: (context) => CupertinoAlertDialog(
+					builder: (context) => CupertinoAlertDialog2(
 						title: Text('Use ${site.loginSystem?.name} on mobile networks?'),
 						actions: [
-							CupertinoDialogAction(
+							CupertinoDialogAction2(
 								child: const Text('Never'),
 								onPressed: () {
 									Navigator.of(context).pop(false);
 								}
 							),
-							CupertinoDialogAction(
+							CupertinoDialogAction2(
 								child: const Text('Not now'),
 								onPressed: () {
 									Navigator.of(context).pop();
 								}
 							),
-							CupertinoDialogAction(
+							CupertinoDialogAction2(
 								child: const Text('Just once'),
 								onPressed: () {
 									shouldAutoLogin = true;
 									Navigator.of(context).pop();
 								}
 							),
-							CupertinoDialogAction(
+							CupertinoDialogAction2(
 								child: const Text('Always'),
 								onPressed: () {
 									Navigator.of(context).pop(true);
@@ -711,17 +712,17 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				// ignore: use_build_context_synchronously
 				settings.contributeCaptchas ??= await showCupertinoDialog<bool>(
 					context: context,
-					builder: (context) => CupertinoAlertDialog(
+					builder: (context) => CupertinoAlertDialog2(
 						title: const Text('Contribute captcha solutions?'),
 						content: const Text('The captcha images you solve will be collected to improve the automated solver'),
 						actions: [
-							CupertinoDialogAction(
+							CupertinoDialogAction2(
 								child: const Text('No'),
 								onPressed: () {
 									Navigator.of(context).pop(false);
 								}
 							),
-							CupertinoDialogAction(
+							CupertinoDialogAction2(
 								child: const Text('Yes'),
 								onPressed: () {
 									Navigator.of(context).pop(true);
@@ -813,11 +814,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				await showCupertinoDialog(
 					context: context,
 					builder: (context) {
-						return CupertinoAlertDialog(
+						return CupertinoAlertDialog2(
 							title: const Text('Error'),
 							content: Text(e.toString()),
 							actions: [
-								CupertinoDialogAction(
+								CupertinoDialogAction2(
 									child: const Text('See reason'),
 									onPressed: () async {
 										if (bannedCaptchaRequest is RecaptchaRequest) {
@@ -842,7 +843,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										}
 									}
 								),
-								CupertinoDialogAction(
+								CupertinoDialogAction2(
 									child: const Text('OK'),
 									onPressed: () {
 										Navigator.of(context).pop();
@@ -1315,7 +1316,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						final content = await showCupertinoDialog<String>(
 							context: context,
 							barrierDismissible: true,
-							builder: (context) => CupertinoAlertDialog(
+							builder: (context) => CupertinoAlertDialog2(
 								title: Text('${snippet.name} block'),
 								content: Padding(
 									padding: const EdgeInsets.only(top: 16),
@@ -1331,17 +1332,17 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									)
 								),
 								actions: [
-									CupertinoDialogAction(
+									CupertinoDialogAction2(
 										child: const Text('Cancel'),
 										onPressed: () => Navigator.pop(context)
 									),
-									if (snippet.previewBuilder != null) CupertinoDialogAction(
+									if (snippet.previewBuilder != null) CupertinoDialogAction2(
 										child: const Text('Preview'),
 										onPressed: () {
 											showCupertinoDialog<bool>(
 												context: context,
 												barrierDismissible: true,
-												builder: (context) => CupertinoAlertDialog(
+												builder: (context) => CupertinoAlertDialog2(
 													title: Text('${snippet.name} preview'),
 													content: ChangeNotifierProvider<PostSpanZoneData>(
 														create: (context) => PostSpanRootZoneData(
@@ -1357,7 +1358,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 														)
 													),
 													actions: [
-														CupertinoDialogAction(
+														CupertinoDialogAction2(
 															isDefaultAction: true,
 															child: const Text('Close'),
 															onPressed: () => Navigator.pop(context)
@@ -1367,7 +1368,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											);
 										}
 									),
-									CupertinoDialogAction(
+									CupertinoDialogAction2(
 										isDefaultAction: true,
 										onPressed: () => Navigator.pop(context, controller.text),
 										child: const Text('Insert')

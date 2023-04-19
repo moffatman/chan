@@ -8,6 +8,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -92,7 +93,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						final selectedPage = await showCupertinoDialog<int>(
 							context: context,
 							barrierDismissible: true,
-							builder: (context) => CupertinoAlertDialog(
+							builder: (context) => CupertinoAlertDialog2(
 								title: const Text('Go to page'),
 								content: Padding(
 									padding: const EdgeInsets.only(top: 8),
@@ -107,13 +108,13 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									)
 								),
 								actions: [
-									CupertinoDialogAction(
+									CupertinoDialogAction2(
 										child: const Text('Cancel'),
 										onPressed: () {
 											Navigator.of(context).pop();
 										}
 									),
-									CupertinoDialogAction(
+									CupertinoDialogAction2(
 										isDefaultAction: true,
 										onPressed: () {
 											Navigator.of(context).pop(int.tryParse(controller.text));

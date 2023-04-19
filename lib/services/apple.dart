@@ -104,3 +104,11 @@ Future<void> setAdditionalSafeAreaInsets(String key, EdgeInsets insetsForKey) as
 		'bottom': insets.bottom
 	});
 }
+
+Future<List<String>> getUIFontFamilyNames() async {
+	final result = await _platform.invokeListMethod<String>('getUIFontFamilyNames');
+	if (result == null) {
+		throw Exception('Error listing local fonts');
+	}
+	return result;
+}

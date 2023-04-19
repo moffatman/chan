@@ -92,6 +92,9 @@ import Foundation
         }
         result(nil)
       }
+      else if (call.method == "getUIFontFamilyNames") {
+        result(UIFont.familyNames)
+      }
       else {
         result(FlutterMethodNotImplemented)
       }

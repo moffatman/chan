@@ -23,6 +23,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -599,11 +600,11 @@ class _ThreadPageState extends State<ThreadPage> {
 									showCupertinoDialog(
 										context: context,
 										barrierDismissible: true,
-										builder: (context) => CupertinoAlertDialog(
+										builder: (context) => CupertinoAlertDialog2(
 											title: const Text('Thread title'),
 											content: Text(title),
 											actions: [
-												CupertinoDialogAction(
+												CupertinoDialogAction2(
 													child: const Text('OK'),
 													onPressed: () => Navigator.pop(context)
 												)
@@ -722,7 +723,7 @@ class _ThreadPageState extends State<ThreadPage> {
 												context: context,
 												builder: (context) => CupertinoActionSheet(
 													title: const Text('Thread Sorting'),
-													actions: site.threadVariants.map((variant) => CupertinoActionSheetAction(
+													actions: site.threadVariants.map((variant) => CupertinoActionSheetAction2(
 														child: Row(
 															children: [
 																SizedBox(
@@ -746,7 +747,7 @@ class _ThreadPageState extends State<ThreadPage> {
 															Navigator.of(context).pop(variant);
 														}
 													)).toList(),
-													cancelButton: CupertinoActionSheetAction(
+													cancelButton: CupertinoActionSheetAction2(
 														child: const Text('Cancel'),
 														onPressed: () => Navigator.of(context).pop()
 													)

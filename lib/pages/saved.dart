@@ -16,6 +16,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -168,7 +169,7 @@ class _SavedPageState extends State<SavedPage> {
 							actions: {
 								ThreadSortingMethod.lastPostTime: 'Last Reply',
 								ThreadSortingMethod.lastReplyByYouTime: 'Last Reply by You',
-							}.entries.map((entry) => CupertinoActionSheetAction(
+							}.entries.map((entry) => CupertinoActionSheetAction2(
 								child: Text(entry.value, style: TextStyle(
 									fontWeight: entry.key == settings.watchedThreadsSortingMethod ? FontWeight.bold : null
 								)),
@@ -177,7 +178,7 @@ class _SavedPageState extends State<SavedPage> {
 									Navigator.of(context, rootNavigator: true).pop();
 								}
 							)).toList(),
-							cancelButton: CupertinoActionSheetAction(
+							cancelButton: CupertinoActionSheetAction2(
 								child: const Text('Cancel'),
 								onPressed: () => Navigator.of(context, rootNavigator: true).pop()
 							)
@@ -204,7 +205,7 @@ class _SavedPageState extends State<SavedPage> {
 							actions: {
 								ThreadSortingMethod.savedTime: 'Saved Date',
 								ThreadSortingMethod.lastPostTime: 'Posted Date',
-							}.entries.map((entry) => CupertinoActionSheetAction(
+							}.entries.map((entry) => CupertinoActionSheetAction2(
 								child: Text(entry.value, style: TextStyle(
 									fontWeight: entry.key == settings.savedThreadsSortingMethod ? FontWeight.bold : null
 								)),
@@ -213,7 +214,7 @@ class _SavedPageState extends State<SavedPage> {
 									Navigator.of(context, rootNavigator: true).pop();
 								}
 							)).toList(),
-							cancelButton: CupertinoActionSheetAction(
+							cancelButton: CupertinoActionSheetAction2(
 								child: const Text('Cancel'),
 								onPressed: () => Navigator.of(context, rootNavigator: true).pop()
 							)
@@ -783,15 +784,15 @@ class _SavedPageState extends State<SavedPage> {
 													final ok = await showCupertinoDialog<bool>(
 														context: context,
 														barrierDismissible: true,
-														builder: (context) => CupertinoAlertDialog(
+														builder: (context) => CupertinoAlertDialog2(
 															title: const Text('Are you sure?'),
 															content: const Text('All saved attachments will be removed.'),
 															actions: [
-																CupertinoDialogAction(
+																CupertinoDialogAction2(
 																	onPressed: () => Navigator.pop(context),
 																	child: const Text('Cancel')
 																),
-																CupertinoDialogAction(
+																CupertinoDialogAction2(
 																	isDestructiveAction: true,
 																	onPressed: () => Navigator.pop(context, true),
 																	child: const Text('Delete all')
@@ -974,7 +975,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 											final newDistributor = await showCupertinoDialog<String>(
 												context: context,
 												barrierDismissible: true,
-												builder: (context) => CupertinoAlertDialog(
+												builder: (context) => CupertinoAlertDialog2(
 													title: const Text('UnifiedPush Distributor'),
 													content: Column(
 														mainAxisSize: MainAxisSize.min,
@@ -997,12 +998,12 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 														]
 													),
 													actions: [
-														...distributors.map((distributor) => CupertinoDialogAction(
+														...distributors.map((distributor) => CupertinoDialogAction2(
 															isDefaultAction: distributor == currentDistributor,
 															onPressed: () => Navigator.pop(context, distributor),
 															child: Text(distributor == 'com.moffatman.chan' ? 'Firebase (requires Google services)' : distributor)
 														)),
-														CupertinoDialogAction(
+														CupertinoDialogAction2(
 															onPressed: () => Navigator.pop(context),
 															child: const Text('Cancel')
 														)

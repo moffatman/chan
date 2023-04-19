@@ -12,6 +12,7 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/version.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_apns_only/flutter_apns_only.dart';
@@ -79,17 +80,17 @@ Future<void> promptForPushNotificationsIfNeeded(BuildContext context) async {
 	if (settings.usePushNotifications == null) {
 		final choice = await showCupertinoDialog<bool>(
 			context: context,
-			builder: (context) => CupertinoAlertDialog(
+			builder: (context) => CupertinoAlertDialog2(
 				title: const Text('Use push notifications?'),
 				content: const Text('Notifications for (You)s will be sent while the app is closed.\nFor this to work, the thread IDs you want to be notified about will be sent to a notification server.'),
 				actions: [
-					CupertinoDialogAction(
+					CupertinoDialogAction2(
 						child: const Text('No'),
 						onPressed: () {
 							Navigator.of(context).pop(false);
 						}
 					),
-					CupertinoDialogAction(
+					CupertinoDialogAction2(
 						child: const Text('Yes'),
 						onPressed: () {
 							Navigator.of(context).pop(true);

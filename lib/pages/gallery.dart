@@ -13,6 +13,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
@@ -393,17 +394,17 @@ class _GalleryPageState extends State<GalleryPage> {
 		final shouldDownload = await showCupertinoDialog<bool>(
 			context: context,
 			barrierDismissible: true,
-			builder: (context) => CupertinoAlertDialog(
+			builder: (context) => CupertinoAlertDialog2(
 				title: const Text('Download all?'),
 				content: Text("${describeCount(toDownload.length, 'attachment')} will be saved to your library"),
 				actions: [
-					CupertinoDialogAction(
+					CupertinoDialogAction2(
 						child: const Text('No'),
 						onPressed: () {
 							Navigator.of(context).pop(false);
 						}
 					),
-					CupertinoDialogAction(
+					CupertinoDialogAction2(
 						isDefaultAction: true,
 						child: const Text('Yes'),
 						onPressed: () {
@@ -419,7 +420,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			showCupertinoDialog(
 				context: context,
 				barrierDismissible: false,
-				builder: (context) => CupertinoAlertDialog(
+				builder: (context) => CupertinoAlertDialog2(
 					title: const Text('Bulk Download'),
 					content: ValueListenableBuilder<int>(
 						valueListenable: loadingStream,
@@ -435,7 +436,7 @@ class _GalleryPageState extends State<GalleryPage> {
 						)
 					),
 					actions: [
-						CupertinoDialogAction(
+						CupertinoDialogAction2(
 							isDestructiveAction: true,
 							child: const Text('Cancel'),
 							onPressed: () {

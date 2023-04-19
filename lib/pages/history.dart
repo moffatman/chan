@@ -9,6 +9,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/context_menu.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/refreshable_list.dart';
@@ -104,7 +105,7 @@ class HistoryPageState extends State<HistoryPage> {
 															final now = DateTime.now();
 															final lastDayStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 1);
 															final lastWeekStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 7);
-															return CupertinoAlertDialog(
+															return CupertinoAlertDialog2(
 																title: const Text('Clear history'),
 																content: Column(
 																	mainAxisSize: MainAxisSize.min,
@@ -129,7 +130,7 @@ class HistoryPageState extends State<HistoryPage> {
 																	]
 																),
 																actions: [
-																	CupertinoDialogAction(
+																	CupertinoDialogAction2(
 																		onPressed: () async {
 																			Navigator.pop(context);
 																			for (final state in thisSessionStates) {
@@ -139,7 +140,7 @@ class HistoryPageState extends State<HistoryPage> {
 																		isDestructiveAction: true,
 																		child: Text('This session (${thisSessionStates.length})')
 																	),
-																	CupertinoDialogAction(
+																	CupertinoDialogAction2(
 																		onPressed: () async {
 																			Navigator.pop(context);
 																			for (final state in lastDayStates) {
@@ -149,7 +150,7 @@ class HistoryPageState extends State<HistoryPage> {
 																		isDestructiveAction: true,
 																		child: Text('Today (${lastDayStates.length})')
 																	),
-																	CupertinoDialogAction(
+																	CupertinoDialogAction2(
 																		onPressed: () async {
 																			Navigator.pop(context);
 																			for (final state in lastWeekStates) {
@@ -159,7 +160,7 @@ class HistoryPageState extends State<HistoryPage> {
 																		isDestructiveAction: true,
 																		child: Text('This week (${lastWeekStates.length})')
 																	),
-																	CupertinoDialogAction(
+																	CupertinoDialogAction2(
 																		onPressed: () async {
 																			Navigator.pop(context);
 																			for (final state in states) {
@@ -169,7 +170,7 @@ class HistoryPageState extends State<HistoryPage> {
 																		isDestructiveAction: true,
 																		child: Text('All time (${states.length})')
 																	),
-																	CupertinoDialogAction(
+																	CupertinoDialogAction2(
 																		onPressed: () => Navigator.pop(context),
 																		child: const Text('Cancel')
 																	)

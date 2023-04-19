@@ -25,6 +25,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -514,7 +515,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					await showCupertinoDialog(
 						context: context,
 						barrierDismissible: true,
-						builder: (dialogContext) => CupertinoAlertDialog(
+						builder: (dialogContext) => CupertinoAlertDialog2(
 							title: Text('Import $name?'),
 							content: DefaultTextStyle(
 								style: DefaultTextStyle.of(context).style,
@@ -539,7 +540,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								)
 							),
 							actions: [
-								CupertinoDialogAction(
+								CupertinoDialogAction2(
 									isDefaultAction: settings.whichTheme == Brightness.light,
 									onPressed: settings.lightTheme == theme ? null : () {
 										String effectiveName = name;
@@ -552,7 +553,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									},
 									child: const Text('Use as light theme')
 								),
-								CupertinoDialogAction(
+								CupertinoDialogAction2(
 									isDefaultAction: settings.whichTheme == Brightness.dark,
 									onPressed: settings.darkTheme == theme ? null : () {
 										String effectiveName = name;
@@ -565,7 +566,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									},
 									child: const Text('Use as dark theme')
 								),
-								CupertinoDialogAction(
+								CupertinoDialogAction2(
 									onPressed: match != null ? null : () {
 										settings.addTheme(name, theme);
 										settings.handleThemesAltered();
@@ -573,7 +574,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									},
 									child: const Text('Just import')
 								),
-								CupertinoDialogAction(
+								CupertinoDialogAction2(
 									child: const Text('Cancel'),
 									onPressed: () {
 										Navigator.of(dialogContext).pop();
@@ -650,15 +651,15 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			final open = await showCupertinoDialog<bool>(
 				context: context,
 				barrierDismissible: true,
-				builder: (context) => CupertinoAlertDialog(
+				builder: (context) => CupertinoAlertDialog2(
 					title: const Text('Unrecognized link'),
 					content: Text('No site supports opening "$link"'),
 					actions: [
-						CupertinoDialogAction(
+						CupertinoDialogAction2(
 							onPressed: () => Navigator.pop(context, true),
 							child: const Text('Open in browser')
 						),
-						CupertinoDialogAction(
+						CupertinoDialogAction2(
 							onPressed: () => Navigator.pop(context, false),
 							child: const Text('Close')
 						)
@@ -773,17 +774,17 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				if (!mounted) return;
 				final choice = await showCupertinoDialog<bool>(
 					context: context,
-					builder: (context) => CupertinoAlertDialog(
+					builder: (context) => CupertinoAlertDialog2(
 						title: const Text('Contribute crash data?'),
 						content: const Text('Crash stack traces and uncaught exceptions will be used to help fix bugs. No personal information will be collected.'),
 						actions: [
-							CupertinoDialogAction(
+							CupertinoDialogAction2(
 								child: const Text('No'),
 								onPressed: () {
 									Navigator.of(context).pop(false);
 								}
 							),
-							CupertinoDialogAction(
+							CupertinoDialogAction2(
 								child: const Text('Yes'),
 								onPressed: () {
 									Navigator.of(context).pop(true);
@@ -1220,14 +1221,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									final shouldCloseOthers = await showCupertinoDialog<bool>(
 										context: context,
 										barrierDismissible: true,
-										builder: (context) => CupertinoAlertDialog(
+										builder: (context) => CupertinoAlertDialog2(
 											title: const Text('Close all other tabs?'),
 											actions: [
-												CupertinoDialogAction(
+												CupertinoDialogAction2(
 													onPressed: () => Navigator.of(context).pop(false),
 													child: const Text('No')
 												),
-												CupertinoDialogAction(
+												CupertinoDialogAction2(
 													onPressed: () => Navigator.of(context).pop(true),
 													isDestructiveAction: true,
 													child: const Text('Yes')
@@ -1445,16 +1446,16 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		return (await showCupertinoDialog<bool>(
 			context: context,
 			barrierDismissible: true,
-			builder: (context) => CupertinoAlertDialog(
+			builder: (context) => CupertinoAlertDialog2(
 				title: const Text('Exit the app?'),
 				actions: [
-					CupertinoDialogAction(
+					CupertinoDialogAction2(
 						child: const Text('Cancel'),
 						onPressed: () {
 							Navigator.of(context).pop(false);
 						}
 					),
-					CupertinoDialogAction(
+					CupertinoDialogAction2(
 						isDestructiveAction: true,
 						onPressed: () {
 							Navigator.of(context).pop(true);

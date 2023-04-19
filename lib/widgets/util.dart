@@ -13,6 +13,7 @@ import 'package:chan/services/share.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:flutter/cupertino.dart';
@@ -46,15 +47,15 @@ Future<void> alertError(BuildContext context, String error, {
 		context: context,
 		barrierDismissible: barrierDismissible,
 		builder: (context) {
-			return CupertinoAlertDialog(
+			return CupertinoAlertDialog2(
 				title: const Text('Error'),
 				content: Text(error),
 				actions: [
-					for (final action in actions.entries) CupertinoDialogAction(
+					for (final action in actions.entries) CupertinoDialogAction2(
 						onPressed: action.value,
 						child: Text(action.key)
 					),
-					CupertinoDialogAction(
+					CupertinoDialogAction2(
 						child: const Text('OK'),
 						onPressed: () {
 							Navigator.of(context).pop();
@@ -107,7 +108,7 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function() 
 		showCupertinoDialog(
 			context: context,
 			barrierDismissible: false,
-			builder: (context) => CupertinoAlertDialog(
+			builder: (context) => CupertinoAlertDialog2(
 				title: Text(title),
 				content: const Column(
 					mainAxisSize: MainAxisSize.min,
@@ -867,7 +868,7 @@ Future<void> editStringList({
 	await showCupertinoDialog(
 		barrierDismissible: true,
 		context: context,
-		builder: (context) => CupertinoAlertDialog(
+		builder: (context) => CupertinoAlertDialog2(
 			title: Padding(
 				padding: const EdgeInsets.only(bottom: 16),
 				child: Text(title)
@@ -890,7 +891,7 @@ Future<void> editStringList({
 											final newItem = await showCupertinoDialog<String>(
 												context: context,
 												barrierDismissible: true,
-												builder: (context) => CupertinoAlertDialog(
+												builder: (context) => CupertinoAlertDialog2(
 													title: Text('Edit $name'),
 													content: CupertinoTextField(
 														autofocus: true,
@@ -902,11 +903,11 @@ Future<void> editStringList({
 														onSubmitted: (s) => Navigator.pop(context, s)
 													),
 													actions: [
-														CupertinoDialogAction(
+														CupertinoDialogAction2(
 															child: const Text('Cancel'),
 															onPressed: () => Navigator.pop(context)
 														),
-														CupertinoDialogAction(
+														CupertinoDialogAction2(
 															isDefaultAction: true,
 															child: const Text('Change'),
 															onPressed: () => Navigator.pop(context, controller.text)
@@ -968,7 +969,7 @@ Future<void> editStringList({
 															final newItem = await showCupertinoDialog<String>(
 																context: context,
 																barrierDismissible: true,
-																builder: (context) => CupertinoAlertDialog(
+																builder: (context) => CupertinoAlertDialog2(
 																	title: Text('New $name'),
 																	content: CupertinoTextField(
 																		autofocus: true,
@@ -980,11 +981,11 @@ Future<void> editStringList({
 																		onSubmitted: (s) => Navigator.pop(context, s)
 																	),
 																	actions: [
-																		CupertinoDialogAction(
+																		CupertinoDialogAction2(
 																			child: const Text('Cancel'),
 																			onPressed: () => Navigator.pop(context)
 																		),
-																		CupertinoDialogAction(
+																		CupertinoDialogAction2(
 																			isDefaultAction: true,
 																			child: const Text('Add'),
 																			onPressed: () => Navigator.pop(context, controller.text)
@@ -1010,7 +1011,7 @@ Future<void> editStringList({
 				)
 			),
 			actions: [
-				CupertinoDialogAction(
+				CupertinoDialogAction2(
 					child: const Text('Close'),
 					onPressed: () => Navigator.pop(context)
 				)
@@ -1097,16 +1098,16 @@ Future<bool> confirm(BuildContext context, String message) async {
 	return (await showCupertinoDialog<bool>(
 		context: context,
 		barrierDismissible: true,
-		builder: (context) => CupertinoAlertDialog(
+		builder: (context) => CupertinoAlertDialog2(
 			title: Text(message),
 			actions: [
-				CupertinoDialogAction(
+				CupertinoDialogAction2(
 					child: const Text('Cancel'),
 					onPressed: () {
 						Navigator.of(context).pop();
 					}
 				),
-				CupertinoDialogAction(
+				CupertinoDialogAction2(
 					isDefaultAction: true,
 					onPressed: () {
 						Navigator.of(context).pop(true);
@@ -1151,7 +1152,7 @@ Future<Attachment?> whichAttachment(BuildContext context, List<Attachment> attac
 	return await showCupertinoDialog(
 		context: context,
 		barrierDismissible: true,
-		builder: (innerContext) => CupertinoAlertDialog(
+		builder: (innerContext) => CupertinoAlertDialog2(
 			title: const Text('Which file?'),
 			content: ImageboardScope(
 				imageboardKey: null,
