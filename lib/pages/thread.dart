@@ -1236,6 +1236,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	int _lastFirstVisibleIndex = -1;
 	int _lastLastVisibleIndex = -1;
 	final _animatedPaddingKey = GlobalKey();
+	ValueNotifier<bool>? _lastUpdatingNow;
 
 	Future<bool> _updateCounts() async {
 		await WidgetsBinding.instance.endOfFrame;
@@ -1399,7 +1400,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			curve: Curves.ease
 		);
 		widget.listController.slowScrolls.addListener(_onSlowScroll);
-		widget.listController.state?.updatingNow.addListener(_onUpdatingNowChange);
+		_lastUpdatingNow = widget.listController.state?.updatingNow;
+		_lastUpdatingNow?.addListener(_onUpdatingNowChange);
 		widget.persistentState.lastSeenPostIdNotifier.addListener(_updateCounts);
 		if (widget.thread != null) {
 			_filteredPosts = widget.persistentState.filteredPosts(widget.filter);
@@ -1458,9 +1460,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			oldWidget.listController.slowScrolls.removeListener(_onSlowScroll);
 			widget.listController.slowScrolls.addListener(_onSlowScroll);
 		}
-		if (widget.listController.state?.updatingNow != oldWidget.listController.state?.updatingNow) {
-			oldWidget.listController.state?.updatingNow.removeListener(_onUpdatingNowChange);
-			widget.listController.state?.updatingNow.addListener(_onUpdatingNowChange);
+		if (widget.listController.state?.updatingNow != _lastUpdatingNow) {
+			_lastUpdatingNow?.removeListener(_onUpdatingNowChange);
+			_lastUpdatingNow = widget.listController.state?.updatingNow;
+			_lastUpdatingNow?.addListener(_onUpdatingNowChange);
 		}
 		if (widget.searching && !oldWidget.searching) {
 			_hideMenu();
