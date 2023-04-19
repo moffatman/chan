@@ -534,47 +534,45 @@ class ThreadRow extends StatelessWidget {
 			final Widget? attachments;
 			if (latestThread.attachments.isNotEmpty && settings.showImages(context, latestThread.board)) {
 				attachments = Padding(
-					padding: const EdgeInsets.only(bottom: 8, right: 8),
-					child: ClippingBox(
-						child: Column(
-							mainAxisSize: MainAxisSize.min,
-							children: latestThread.attachments.map((attachment) {
-								final taggedAttachment = TaggedAttachment(
-									attachment: attachment,
-									semanticParentIds: semanticParentIds,
-									postId: latestThread.id,
-									imageboard: imageboard
-								);
-								return PopupAttachment(
-									attachment: attachment,
-									child: CupertinoInkwell(
-										padding: EdgeInsets.zero,
-										minimumSize: Size.zero,
-										onPressed: onThumbnailTap?.bind1(taggedAttachment),
-										child: ConstrainedBox(
-											constraints: BoxConstraints(
-												//minHeight: 75,
-												maxHeight: attachment.type == AttachmentType.url ? 75 : double.infinity
-											),
-											child: AttachmentThumbnail(
-												onLoadError: onThumbnailLoadError,
-												attachment: attachment,
-												mayObscure: true,
-												hero: taggedAttachment,
-												fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
-												shrinkHeight: !settings.squareThumbnails,
-												hide: hideThumbnails,
-												cornerIcon: AttachmentThumbnailCornerIcon(
-													backgroundColor: backgroundColor,
-													borderColor: borderColor,
-													size: null
-												)
+					padding: const EdgeInsets.only(right: 8),
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: latestThread.attachments.map((attachment) {
+							final taggedAttachment = TaggedAttachment(
+								attachment: attachment,
+								semanticParentIds: semanticParentIds,
+								postId: latestThread.id,
+								imageboard: imageboard
+							);
+							return PopupAttachment(
+								attachment: attachment,
+								child: CupertinoInkwell(
+									padding: EdgeInsets.zero,
+									minimumSize: Size.zero,
+									onPressed: onThumbnailTap?.bind1(taggedAttachment),
+									child: ConstrainedBox(
+										constraints: BoxConstraints(
+											//minHeight: 75,
+											maxHeight: attachment.type == AttachmentType.url ? 75 : double.infinity
+										),
+										child: AttachmentThumbnail(
+											onLoadError: onThumbnailLoadError,
+											attachment: attachment,
+											mayObscure: true,
+											hero: taggedAttachment,
+											fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
+											shrinkHeight: !settings.squareThumbnails,
+											hide: hideThumbnails,
+											cornerIcon: AttachmentThumbnailCornerIcon(
+												backgroundColor: backgroundColor,
+												borderColor: borderColor,
+												size: null
 											)
 										)
 									)
-								);
-							}).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
-						)
+								)
+							);
+						}).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
 					)
 				);
 			}
@@ -610,9 +608,9 @@ class ThreadRow extends StatelessWidget {
 								TextSpan(
 									children: [
 										if (site.classicCatalogStyle && attachments != null) WidgetSpan(
-											child: Container(color: Colors.transparent, child: IntrinsicWidth(child: attachments)),
+											child: attachments,
 											floating: PlaceholderFloating.left,
-											alignment: PlaceholderAlignment.top
+											alignment: PlaceholderAlignment.middle
 										),
 										if (headerRow.isNotEmpty) TextSpan(
 											children: [
