@@ -63,6 +63,7 @@ class PostSpanRenderOptions {
 	final bool revealYourPosts;
 	final bool ensureTrailingNewline;
 	final bool hiddenWithinSpoiler;
+	final bool ignorePointer;
 	const PostSpanRenderOptions({
 		this.recognizer,
 		this.overrideRecognizer = false,
@@ -83,7 +84,8 @@ class PostSpanRenderOptions {
 		this.imageShareMode = false,
 		this.revealYourPosts = true,
 		this.ensureTrailingNewline = false,
-		this.hiddenWithinSpoiler = false
+		this.hiddenWithinSpoiler = false,
+		this.ignorePointer = false
 	});
 	TapGestureRecognizer? get overridingRecognizer => overrideRecognizer ? recognizer : null;
 
@@ -104,7 +106,8 @@ class PostSpanRenderOptions {
 		InlineSpan? postInject,
 		bool removePostInject = false,
 		bool? ensureTrailingNewline,
-		bool? hiddenWithinSpoiler
+		bool? hiddenWithinSpoiler,
+		bool? ignorePointer
 	}) => PostSpanRenderOptions(
 		recognizer: recognizer ?? this.recognizer,
 		overrideRecognizer: overrideRecognizer ?? this.overrideRecognizer,
@@ -125,7 +128,8 @@ class PostSpanRenderOptions {
 		imageShareMode: imageShareMode,
 		revealYourPosts: revealYourPosts,
 		ensureTrailingNewline: ensureTrailingNewline ?? this.ensureTrailingNewline,
-		hiddenWithinSpoiler: hiddenWithinSpoiler ?? this.hiddenWithinSpoiler
+		hiddenWithinSpoiler: hiddenWithinSpoiler ?? this.hiddenWithinSpoiler,
+		ignorePointer: ignorePointer ?? this.ignorePointer
 	);
 }
 
@@ -288,7 +292,7 @@ class PostTextSpan extends PostSpan {
 				pos += nonHighlightedParts[i].length;
 				children.add(TextSpan(
 					text: nonHighlightedParts[i],
-					recognizer: options.recognizer
+					recognizer: options.ignorePointer ? null : options.recognizer
 				));
 				if ((i + 1) < nonHighlightedParts.length) {
 					children.add(TextSpan(
@@ -297,7 +301,7 @@ class PostTextSpan extends PostSpan {
 							color: Colors.black,
 							backgroundColor: Colors.yellow
 						),
-						recognizer: options.recognizer
+						recognizer: options.ignorePointer ? null : options.recognizer
 					));
 					pos += options.highlightString!.length;
 				}
@@ -306,7 +310,7 @@ class PostTextSpan extends PostSpan {
 		else {
 			children.add(TextSpan(
 				text: str,
-				recognizer: options.recognizer
+				recognizer: options.ignorePointer ? null : options.recognizer
 			));
 		}
 		return TextSpan(
@@ -314,7 +318,7 @@ class PostTextSpan extends PostSpan {
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor
 			),
-			recognizer: options.recognizer,
+			recognizer: options.ignorePointer ? null : options.recognizer,
 			onEnter: options.onEnter,
 			onExit: options.onExit
 		);
@@ -460,7 +464,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				decoration: TextDecoration.underline,
 				decorationColor: options.overrideTextColor ?? color
 			),
-			recognizer: recognizer
+			recognizer: options.ignorePointer ? null : recognizer
 		), recognizer);
 	}
   (TextSpan, TapGestureRecognizer) _buildDeadLink(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options) {
@@ -485,7 +489,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				decoration: TextDecoration.underline,
 				decorationColor: options.overrideTextColor ?? theme.secondaryColor
 			),
-			recognizer: recognizer
+			recognizer: options.ignorePointer ? null : recognizer
 		), recognizer);
 	}
 	(TextSpan, TapGestureRecognizer, bool) _buildNormalLink(BuildContext context, PostSpanZoneData zone, Settings settings, SavedTheme theme, PostSpanRenderOptions options, int? threadId) {
@@ -550,7 +554,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				decorationColor: options.overrideTextColor ?? color.shiftSaturation(expandedImmediatelyAbove ? -0.5 : 0),
 				decorationStyle: expandedSomewhereAbove ? TextDecorationStyle.dashed : null
 			),
-			recognizer: recognizer,
+			recognizer: options.ignorePointer ? null : recognizer,
 			onEnter: options.onEnter,
 			onExit: options.onExit
 		), recognizer, enableUnconditionalInteraction);
@@ -701,7 +705,7 @@ class PostBoardLink extends PostSpan {
 				decorationColor: options.overrideTextColor ?? theme.secondaryColor,
 				decoration: TextDecoration.underline
 			),
-			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
+			recognizer: options.ignorePointer ? null : options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
 				(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
 					builder: (ctx) => ImageboardScope(
 						imageboardKey: null,
@@ -893,7 +897,7 @@ class PostSpoilerSpan extends PostSpan {
 				backgroundColor: hiddenColor,
 				color: showSpoiler ? visibleColor : null
 			),
-			recognizer: toggleRecognizer,
+			recognizer: options.ignorePointer ? null : toggleRecognizer,
 			onEnter: onEnter,
 			onExit: onExit
 		);
@@ -1106,7 +1110,7 @@ class PostCatalogSearchSpan extends PostSpan {
 				decorationColor: theme.secondaryColor,
 				color: theme.secondaryColor
 			),
-			recognizer: TapGestureRecognizer()..onTap = () => (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
+			recognizer: options.ignorePointer ? null : (TapGestureRecognizer()..onTap = () => (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
 				builder: (ctx) => ImageboardScope(
 					imageboardKey: null,
 					imageboard: context.read<Imageboard>(),
@@ -1118,7 +1122,7 @@ class PostCatalogSearchSpan extends PostSpan {
 						allowChangingBoard: false
 					)
 				)
-			)),
+			))),
 			onEnter: options.onEnter,
 			onExit: options.onExit
 		);
@@ -1299,7 +1303,7 @@ class PostPopupSpan extends PostSpan {
 				decoration: TextDecoration.underline,
 				decorationColor: options.overrideTextColor ?? options.baseTextStyle.color
 			),
-			recognizer: options.overridingRecognizer ?? TapGestureRecognizer()..onTap = () {
+			recognizer: options.ignorePointer ? null : (options.overridingRecognizer ?? TapGestureRecognizer()..onTap = () {
 				showAdaptiveModalPopup(
 					context: context,
 					builder: (context) => AdaptiveActionSheet(
@@ -1319,7 +1323,7 @@ class PostPopupSpan extends PostSpan {
 					)
 				);
 			}
-		);
+		));
 	}
 
 	@override
