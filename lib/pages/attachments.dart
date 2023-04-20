@@ -205,7 +205,18 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 												isAttachmentAlreadyDownloaded: widget.threadState?.isAttachmentDownloaded,
 												onAttachmentDownload: widget.threadState?.didDownloadAttachment,
 												useHeroDestinationWidget: true,
-												heroOtherEndIsBoxFitCover: false
+												heroOtherEndIsBoxFitCover: false,
+												additionalContextMenuActionsBuilder: (attachment) => [
+													CupertinoContextMenuAction2(
+														trailingIcon: CupertinoIcons.return_icon,
+														onPressed: () {
+															Navigator.of(context, rootNavigator: true).pop();
+															Navigator.of(context, rootNavigator: true).pop();
+															Navigator.pop(context, attachment);
+														},
+														child: const Text('Scroll to post')
+													)
+												]
 											);
 											_getController(attachment).isPrimary = wasPrimary;
 											Future.microtask(() => _getController(attachment).loadFullAttachment());

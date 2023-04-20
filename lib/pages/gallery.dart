@@ -13,6 +13,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/cupertino_context_menu2.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
@@ -104,6 +105,7 @@ class GalleryPage extends StatefulWidget {
 	final bool updateOverlays;
 	final bool useHeroDestinationWidget;
 	final bool heroOtherEndIsBoxFitCover;
+	final List<CupertinoContextMenuAction2> Function(TaggedAttachment)? additionalContextMenuActionsBuilder;
 
 	const GalleryPage({
 		required this.attachments,
@@ -122,6 +124,7 @@ class GalleryPage extends StatefulWidget {
 		this.updateOverlays = true,
 		this.useHeroDestinationWidget = false,
 		required this.heroOtherEndIsBoxFitCover,
+		this.additionalContextMenuActionsBuilder,
 		Key? key
 	}) : super(key: key);
 
@@ -922,6 +925,7 @@ class _GalleryPageState extends State<GalleryPage> {
 																	allowContextMenu: widget.allowContextMenu,
 																	useHeroDestinationWidget: widget.useHeroDestinationWidget,
 																	heroOtherEndIsBoxFitCover: widget.heroOtherEndIsBoxFitCover,
+																	additionalContextMenuActions: widget.additionalContextMenuActionsBuilder?.call(attachment) ?? []
 																)
 															)
 														)
@@ -1089,6 +1093,7 @@ Future<Attachment?> showGalleryPretagged({
 	bool allowScroll = true,
 	bool useHeroDestinationWidget = false,
 	required bool heroOtherEndIsBoxFitCover,
+	List<CupertinoContextMenuAction2> Function(TaggedAttachment)? additionalContextMenuActionsBuilder,
 }) async {
 	final imageboard = context.read<Imageboard>();
 	final showAnimations = context.read<EffectiveSettings>().showAnimations;
@@ -1112,6 +1117,7 @@ Future<Attachment?> showGalleryPretagged({
 				allowScroll: allowScroll,
 				useHeroDestinationWidget: useHeroDestinationWidget,
 				heroOtherEndIsBoxFitCover: heroOtherEndIsBoxFitCover,
+				additionalContextMenuActionsBuilder: additionalContextMenuActionsBuilder,
 			)
 		),
 		showAnimations: showAnimations
@@ -1143,6 +1149,7 @@ Future<Attachment?> showGallery({
 	bool fullscreen = true,
 	bool allowScroll = true,
 	required bool heroOtherEndIsBoxFitCover,
+	List<CupertinoContextMenuAction2> Function(TaggedAttachment)? additionalContextMenuActionsBuilder,
 }) => showGalleryPretagged(
 	context: context,
 	attachments: attachments.map((attachment) => TaggedAttachment(
@@ -1164,5 +1171,6 @@ Future<Attachment?> showGallery({
 	onChange: onChange == null ? null : (x) => onChange(x.attachment),
 	fullscreen: fullscreen,
 	allowScroll: allowScroll,
-	heroOtherEndIsBoxFitCover: heroOtherEndIsBoxFitCover
+	heroOtherEndIsBoxFitCover: heroOtherEndIsBoxFitCover,
+	additionalContextMenuActionsBuilder: additionalContextMenuActionsBuilder
 );
