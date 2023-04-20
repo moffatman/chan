@@ -418,11 +418,11 @@ class _SavedPageState extends State<SavedPage> {
 					icon: CupertinoIcons.tray_full,
 					masterBuilder: (context, selectedThread, threadSetter) {
 						Comparator<PersistentThreadState> sortMethod = (a, b) => 0;
+						final noDate = DateTime.fromMillisecondsSinceEpoch(0);
 						if (settings.savedThreadsSortingMethod == ThreadSortingMethod.savedTime) {
-							sortMethod = (a, b) => b.savedTime!.compareTo(a.savedTime!);
+							sortMethod = (a, b) => (b.savedTime ?? noDate).compareTo(a.savedTime ?? noDate);
 						}
 						else if (settings.savedThreadsSortingMethod == ThreadSortingMethod.lastPostTime) {
-							final noDate = DateTime.fromMillisecondsSinceEpoch(0);
 							sortMethod = (a, b) => (b.thread?.posts.last.time ?? noDate).compareTo(a.thread?.posts.last.time ?? noDate);
 						}
 						return RefreshableList<PersistentThreadState>(
