@@ -194,7 +194,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		_isFullResolution = initialGoodSource != null;
 		if (attachment.type == AttachmentType.image) {
 			getCachedImageFile(attachment.url.toString()).then((file) {
-				if (file != null && _cachedFile == null) {
+				if (file != null && _cachedFile == null && !_isDisposed) {
 					_cachedFile = file;
 					_goodImageSource = Uri.parse(attachment.url);
 					_isFullResolution = true;
