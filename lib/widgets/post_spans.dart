@@ -857,7 +857,7 @@ class PostLinkSpan extends PostSpan {
 			}
 		}
 		return PostTextSpan(name ?? url).build(context, zone, settings, options.copyWith(
-			recognizer: TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(cleanedUrl)),
+			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () => openBrowser(context, Uri.parse(cleanedUrl))),
 			baseTextStyle: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline
 			)
