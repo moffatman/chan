@@ -487,7 +487,7 @@ class PostRow extends StatelessWidget {
 		final Widget? attachments;
 		if (smallAttachments.isNotEmpty && settings.showImages(context, latestPost.board)) {
 			attachments = Padding(
-				padding: (settings.imagesOnRight && replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32, right: 8) : const EdgeInsets.only(right: 8),
+				padding: settings.imagesOnRight ? const EdgeInsets.only(left: 8) : const EdgeInsets.only(right: 8),
 				child: Column(
 					crossAxisAlignment: CrossAxisAlignment.start,
 					mainAxisSize: MainAxisSize.min,
@@ -507,7 +507,7 @@ class PostRow extends StatelessWidget {
 									onPressed: onThumbnailTap?.bind1(taggedAttachment),
 									child: ConstrainedBox(
 										constraints: const BoxConstraints(
-											//minHeight: 75
+											minHeight: 51
 										),
 										child: AttachmentThumbnail(
 											attachment: attachment,
@@ -527,7 +527,7 @@ class PostRow extends StatelessWidget {
 									)
 								)
 							);
-						}).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
+						}).expand((x) => [x, const SizedBox(height: 8)])
 					]
 				)
 			);
@@ -574,7 +574,7 @@ class PostRow extends StatelessWidget {
 								children: [
 									if (attachments != null) WidgetSpan(
 										child: attachments,
-										floating: PlaceholderFloating.left,
+										floating: settings.imagesOnRight ? PlaceholderFloating.right : PlaceholderFloating.left,
 										alignment: PlaceholderAlignment.middle
 									),
 									if (
@@ -797,7 +797,7 @@ class PostRow extends StatelessWidget {
 												crossAxisAlignment: CrossAxisAlignment.start,
 												mainAxisAlignment: MainAxisAlignment.start,
 												mainAxisSize: MainAxisSize.min,
-												children: settings.imagesOnRight ? mainRow.reversed.toList() : mainRow
+												children: mainRow
 											)
 										),
 										if (cloverStyleRepliesButton) SizedBox(
