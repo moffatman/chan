@@ -189,8 +189,9 @@ class SettingsPage extends StatelessWidget {
 									)
 								);
 							}
-							final children = (snapshot.data ?? []).where((t) => t.isSticky).map<Widget>((thread) => GestureDetector(
-								onTap: () => Navigator.push(context, adaptivePageRoute(
+							final children = (snapshot.data ?? []).where((t) => t.isSticky).map<Widget>((thread) => CupertinoButton(
+								padding: EdgeInsets.zero,
+								onPressed: () => Navigator.push(context, adaptivePageRoute(
 									builder: (context) => ThreadPage(
 										thread: thread.identifier,
 										boardSemanticId: -1,
@@ -200,9 +201,11 @@ class SettingsPage extends StatelessWidget {
 									constraints: const BoxConstraints(
 										maxHeight: 125
 									),
-									child: ThreadRow(
-										thread: thread,
-										isSelected: false
+									child: ClipRect(
+										child: ThreadRow(
+											thread: thread,
+											isSelected: false
+										)
 									)
 								)
 							)).toList();
