@@ -1173,3 +1173,58 @@ Future<Attachment?> whichAttachment(BuildContext context, List<Attachment> attac
 		)
 	);
 }
+
+Future<DateTime?> pickDate({
+	required BuildContext context,
+	DateTime? initialDate
+}) async {
+	DateTime chosenDate = initialDate ?? DateTime.now();
+	final choice = await showCupertinoModalPopup<bool>(
+		context: context,
+		builder: (context) => Container(
+			color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+			child: SafeArea(
+				child: Column(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						SizedBox(
+							height: 300,
+							child: CupertinoDatePicker(
+								mode: CupertinoDatePickerMode.date,
+								initialDateTime: initialDate,
+								onDateTimeChanged: (newDate) {
+									chosenDate = newDate;
+								}
+							)
+						),
+						Row(
+							mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+							children: [
+								CupertinoButton(
+									child: const Text('Cancel'),
+									onPressed: () => Navigator.of(context).pop()
+								),
+								CupertinoButton(
+									child: const Text('Clear Date'),
+									onPressed: () => Navigator.of(context).pop(false)
+								),
+								CupertinoButton(
+									child: const Text('Done'),
+									onPressed: () => Navigator.of(context).pop(true)
+								)
+							]
+						)
+					]
+				)
+			)
+		)
+	);
+	switch (choice) {
+		case null:
+			return initialDate;
+		case false:
+			return null;
+		case true:
+			return chosenDate;
+	}
+}

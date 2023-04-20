@@ -322,3 +322,9 @@ extension WaitUntil<T> on ValueListenable<T> {
 		return completer.future;
 	}
 }
+
+extension Conversions on DateTime {
+	DateTime get startOfDay => DateTime(year, month, day, 0, 0, 0);
+	DateTime get endOfDay => DateTime(year, month, day, 23, 59, 59);
+	String get toISO8601Date => '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
+}

@@ -1,9 +1,15 @@
+import 'package:chan/models/board.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
+import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
+import 'package:chan/util.dart';
+import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -44,6 +50,11 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	int numer = 0;
 	int denom = 1;
 	List<ImageboardScoped<HistorySearchResult>>? results;
+	ImageboardScoped<ImageboardBoard>? _filterBoard;
+	DateTime? _filterDateStart;
+	DateTime? _filterDateEnd;
+	bool? _filterHasAttachment;
+	bool? _filterContainsLink;
 
 	@override
 	void initState() {
@@ -56,20 +67,38 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 		setState(() {});
 		denom = Persistence.sharedThreadStateBox.values.length;
 		await Future.wait(Persistence.sharedThreadStateBox.values.map((threadState) async {
-			if (threadState.imageboard == null || !threadState.showInHistory || !mounted) {
+			if (threadState.imageboard == null ||
+			    !threadState.showInHistory ||
+					!mounted ||
+					(_filterBoard != null &&
+					(_filterBoard!.imageboard != threadState.imageboard ||
+						_filterBoard!.item.name != threadState.board))) {
 				numer++;
 				return;
 			}
 			final thread = threadState.thread ?? await Persistence.getCachedThread(threadState.imageboardKey, threadState.board, threadState.id);
 			if (thread != null) {
 				for (final post in thread.posts) {
-					if (post.span.buildText().contains(RegExp(RegExp.escape(widget.query), caseSensitive: false))) {
-						if (post.id == thread.id) {
-							theseResults.add(threadState.imageboard!.scope(HistorySearchResult(thread, null)));
-						}
-						else {
-							theseResults.add(threadState.imageboard!.scope(HistorySearchResult(thread, post)));
-						}
+					if (widget.query.isNotEmpty && !post.span.buildText().contains(RegExp(RegExp.escape(widget.query), caseSensitive: false))) {
+						continue;
+					}
+					if (_filterContainsLink != null && _filterContainsLink != post.span.containsLink) {
+						continue;
+					}
+					if (_filterHasAttachment != null && _filterHasAttachment != post.attachments.isNotEmpty) {
+						continue;
+					}
+					if (_filterDateStart != null && _filterDateStart!.isAfter(post.time)) {
+						continue;
+					}
+					if (_filterDateEnd != null && _filterDateEnd!.isBefore(post.time)) {
+						continue;
+					}
+					if (post.id == thread.id) {
+						theseResults.add(threadState.imageboard!.scope(HistorySearchResult(thread, null)));
+					}
+					else {
+						theseResults.add(threadState.imageboard!.scope(HistorySearchResult(thread, post)));
 					}
 				}
 			}
@@ -95,9 +124,192 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					child: Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							Text('${results != null ? '${results?.length} results' : 'Searching'}: ${widget.query}'),
+							Text('${results != null ? '${results?.length} results' : 'Searching'}${widget.query.isNotEmpty ? ' for "${widget.query}"' : ''}'),
+							...[
+								if (_filterBoard != null) Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										ImageboardIcon(
+											imageboardKey: _filterBoard!.imageboard.key,
+											boardName: _filterBoard!.item.name
+										),
+										const SizedBox(width: 8),
+										Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item))
+									]
+								),
+								if (_filterDateStart != null && _filterDateEnd != null)
+									Text(_filterDateStart!.startOfDay == _filterDateEnd!.startOfDay ?
+										_filterDateStart!.toISO8601Date :
+										'${_filterDateStart?.toISO8601Date} -> ${_filterDateEnd?.toISO8601Date}')
+								else ...[
+									if (_filterDateStart != null) Text('After ${_filterDateStart?.toISO8601Date}'),
+									if (_filterDateEnd != null) Text('Before ${_filterDateEnd?.toISO8601Date}')
+								],
+								if (_filterHasAttachment != null)
+									_filterHasAttachment! ? const Text('With attachment(s)') : const Text('Without attachment(s)'),
+								if (_filterContainsLink != null)
+									_filterContainsLink! ? const Text('Containing link(s)') : const Text('Not containing link(s)')
+							].map((child) => Container(
+								margin: const EdgeInsets.only(left: 4, right: 4),
+								padding: const EdgeInsets.all(4),
+								decoration: BoxDecoration(
+									color: CupertinoTheme.of(context).primaryColor.withOpacity(0.3),
+									borderRadius: const BorderRadius.all(Radius.circular(4))
+								),
+								child: child
+							))
 						]
 					)
+				),
+				trailing: CupertinoButton(
+					minSize: 0,
+					padding: EdgeInsets.zero,
+					onPressed: () async {
+						bool anyChange = false;
+						await showCupertinoModalPopup(
+							context: context,
+							builder: (context) => StatefulBuilder(
+								builder: (context, setDialogState) => CupertinoActionSheet(
+									title: const Text('History filters'),
+									message: DefaultTextStyle(
+										style: DefaultTextStyle.of(context).style,
+										child: Column(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												Row(
+													mainAxisAlignment: MainAxisAlignment.center,
+													children: [
+														CupertinoButton.filled(
+															padding: const EdgeInsets.all(8),
+															onPressed: () async {
+																final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+																	builder: (ctx) => BoardSwitcherPage(
+																		initialImageboardKey: _filterBoard?.imageboard.key
+																	),
+																	showAnimations: context.read<EffectiveSettings>().showAnimations
+																));
+																if (newBoard != null) {
+																	_filterBoard = newBoard;
+																	setDialogState(() {});
+																	anyChange = true;
+																}
+															},
+															child: Row(
+																mainAxisSize: MainAxisSize.min,
+																children: _filterBoard == null ? const [
+																	Text('Board: any')
+																] : [
+																	const Text('Board: '),
+																	ImageboardIcon(
+																		imageboardKey: _filterBoard!.imageboard.key,
+																		boardName: _filterBoard!.item.name
+																	),
+																	const SizedBox(width: 8),
+																	Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item))
+																]
+															)
+														),
+														if (_filterBoard != null) CupertinoButton(
+															padding: EdgeInsets.zero,
+															onPressed: () {
+																_filterBoard = null;
+																anyChange = true;
+																setDialogState(() {});
+															},
+															child: const Icon(CupertinoIcons.xmark)
+														)
+													]
+												),
+												const SizedBox(height: 16),
+												CupertinoButton.filled(
+													padding: const EdgeInsets.all(8),
+													onPressed: () async {
+														_filterDateStart = (await pickDate(
+															context: context,
+															initialDate: _filterDateStart
+														))?.startOfDay;
+														setDialogState(() {});
+														anyChange = true;
+													},
+													child: Text(_filterDateStart == null ? 'Pick Start Date' : 'Start Date: ${_filterDateStart?.toISO8601Date}')
+												),
+												const SizedBox(height: 16),
+												CupertinoButton.filled(
+													padding: const EdgeInsets.all(8),
+													onPressed: () async {
+														_filterDateEnd = (await pickDate(
+															context: context,
+															initialDate: _filterDateEnd
+														))?.endOfDay;
+														setDialogState(() {});
+														anyChange = true;
+													},
+													child: Text(_filterDateStart == null ? 'Pick End Date' : 'End Date: ${_filterDateEnd?.toISO8601Date}')
+												),
+												const SizedBox(height: 16),
+												CupertinoSegmentedControl<NullSafeOptional>(
+													groupValue: _filterHasAttachment.value,
+													children: const {
+														NullSafeOptional.false_: Padding(
+															padding: EdgeInsets.all(8),
+															child: Text('Only without attachment(s)', textAlign: TextAlign.center)
+														),
+														NullSafeOptional.null_: Padding(
+															padding: EdgeInsets.all(8),
+															child: Text('Any', textAlign: TextAlign.center)
+														),
+														NullSafeOptional.true_: Padding(
+															padding: EdgeInsets.all(8),
+															child: Text('Only with attachment(s)', textAlign: TextAlign.center)
+														)
+													},
+													onValueChanged: (v) {
+														_filterHasAttachment = v.value;
+														setDialogState(() {});
+														anyChange = true;
+													}
+												),
+												const SizedBox(height: 16),
+												CupertinoSegmentedControl<NullSafeOptional>(
+													groupValue: _filterContainsLink.value,
+													children: const {
+														NullSafeOptional.false_: Padding(
+															padding: EdgeInsets.all(8),
+															child: Text('Only without link(s)', textAlign: TextAlign.center)
+														),
+														NullSafeOptional.null_: Padding(
+															padding: EdgeInsets.all(8),
+															child: Text('Any', textAlign: TextAlign.center)
+														),
+														NullSafeOptional.true_: Padding(
+															padding: EdgeInsets.all(8),
+															child: Text('Only with link(s)', textAlign: TextAlign.center)
+														)
+													},
+													onValueChanged: (v) {
+														_filterContainsLink = v.value;
+														setDialogState(() {});
+														anyChange = true;
+													}
+												)
+											]
+										)
+									),
+									actions: [
+										CupertinoActionSheetAction2(
+											onPressed: () => Navigator.pop(context),
+											child: const Text('Done')
+										)
+									]
+								)
+							)
+						);
+						if (anyChange) {
+							setState(() {});
+							_runQuery();
+						}
+					},
+					child: const Icon(CupertinoIcons.slider_horizontal_3)
 				)
 			),
 			child: (results == null) ? Center(
@@ -145,6 +357,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 										),
 										showCrossThreadLabel: false,
 										showBoardName: true,
+										showSiteIcon: ImageboardRegistry.instance.count > 1,
 										allowTappingLinks: false,
 										isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
 										onTap: () => widget.onResultSelected(row.imageboard.scope(row.item.identifier)),
@@ -174,6 +387,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 											isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
 											countsUnreliable: true,
 											showBoardName: true,
+											showSiteIcon: ImageboardRegistry.instance.count > 1,
 											baseOptions: PostSpanRenderOptions(
 												highlightString: widget.query.isEmpty ? null : widget.query
 											),

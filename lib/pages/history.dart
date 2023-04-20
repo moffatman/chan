@@ -204,6 +204,7 @@ class HistoryPageState extends State<HistoryPage> {
 								filterableAdapter: (t) => t,
 								filterAlternative: FilterAlternative(
 									name: 'full history',
+									suggestWhenFilterEmpty: true,
 									handler: _onFullHistorySearch
 								),
 								controller: _listController,

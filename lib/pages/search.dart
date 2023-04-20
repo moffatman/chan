@@ -184,8 +184,6 @@ extension _ConvertToPrivate on MediaFilter {
 	}
 }
 
-final _clearedDate = DateTime.fromMillisecondsSinceEpoch(0);
-
 class SearchComposePage extends StatefulWidget {
 	final ValueChanged<ImageboardArchiveSearchQuery> onSearchComposed;
 	final ValueChanged<SelectedSearchResult> onManualResult;
@@ -204,7 +202,6 @@ class _SearchComposePageState extends State<SearchComposePage> {
 	late final TextEditingController _controller;
 	late final FocusNode _focusNode;
 	late ImageboardArchiveSearchQuery query;
-	DateTime? _chosenDate;
 	bool _searchFocused = false;
 	bool _showingPicker = false;
 	late String? _lastImageboardKey;
@@ -232,50 +229,6 @@ class _SearchComposePageState extends State<SearchComposePage> {
 
 	void _onRecentSearchesUpdate() {
 		setState(() {});
-	}
-
-	Future<DateTime?> _getDate(DateTime? initialDate) {
-		_chosenDate = initialDate ?? DateTime.now();
-		return showCupertinoModalPopup<DateTime>(
-			context: context,
-			builder: (context) => Container(
-				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-				child: SafeArea(
-					child: Column(
-						mainAxisSize: MainAxisSize.min,
-						children: [
-							SizedBox(
-								height: 300,
-								child: CupertinoDatePicker(
-									mode: CupertinoDatePickerMode.date,
-									initialDateTime: initialDate,
-									onDateTimeChanged: (newDate) {
-										_chosenDate = newDate;
-									}
-								)
-							),
-							Row(
-								mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-								children: [
-									CupertinoButton(
-										child: const Text('Cancel'),
-										onPressed: () => Navigator.of(context).pop()
-									),
-									CupertinoButton(
-										child: const Text('Clear Date'),
-										onPressed: () => Navigator.of(context).pop(_clearedDate)
-									),
-									CupertinoButton(
-										child: const Text('Done'),
-										onPressed: () => Navigator.of(context).pop(_chosenDate)
-									)
-								]
-							)
-						]
-					)
-				)
-			)
-		);
 	}
 
 	@override
@@ -623,16 +576,19 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										child: CupertinoThinButton(
 											filled: query.startDate != null,
 											child: Text(
-												(query.startDate != null) ? 'Posted after ${query.startDate!.year}-${query.startDate!.month.toString().padLeft(2, '0')}-${query.startDate!.day.toString().padLeft(2, '0')}' : 'Posted after...',
+												(query.startDate != null) ? 'Posted after ${query.startDate!.toISO8601Date}' : 'Posted after...',
 												textAlign: TextAlign.center
 											),
 											onPressed: () async {
 												_showingPicker = true;
-												final newDate = await _getDate(query.startDate);
+												final newDate = await pickDate(
+													context: context,
+													initialDate: query.startDate
+												);
 												_showingPicker = false;
 												if (newDate != null) {
 													setState(() {
-														query.startDate = (newDate == _clearedDate) ? null : newDate;
+														query.startDate = newDate;
 													});
 												}
 											}
@@ -645,16 +601,19 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										child: CupertinoThinButton(
 											filled: query.endDate != null,
 											child: Text(
-												(query.endDate != null) ? 'Posted before ${query.endDate!.year}-${query.endDate!.month.toString().padLeft(2, '0')}-${query.endDate!.day.toString().padLeft(2, '0')}' : 'Posted before...',
+												(query.endDate != null) ? 'Posted before ${query.endDate!.toISO8601Date}' : 'Posted before...',
 												textAlign: TextAlign.center
 											),
 											onPressed: () async {
 												_showingPicker = true;
-												final newDate = await _getDate(query.endDate);
+												final newDate = await pickDate(
+													context: context,
+													initialDate: query.endDate
+												);
 												_showingPicker = false;
 												if (newDate != null) {
 													setState(() {
-														query.endDate = (newDate == _clearedDate) ? null : newDate;
+														query.endDate = newDate;
 													});
 												}
 											}
@@ -732,8 +691,8 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.mediaFilter == MediaFilter.onlyWithNoMedia) const _SearchQueryFilterTag('Without images'),
 		if (q.postTypeFilter == PostTypeFilter.onlyOPs) const _SearchQueryFilterTag('Threads'),
 		if (q.postTypeFilter == PostTypeFilter.onlyReplies) const _SearchQueryFilterTag('Replies'),
-		if (q.startDate != null) _SearchQueryFilterTag('After ${q.startDate!.year}-${q.startDate!.month.toString().padLeft(2, '0')}-${q.startDate!.day.toString().padLeft(2, '0')}'),
-		if (q.endDate != null) _SearchQueryFilterTag('Before ${q.endDate!.year}-${q.endDate!.month.toString().padLeft(2, '0')}-${q.endDate!.day.toString().padLeft(2, '0')}'),
+		if (q.startDate != null) _SearchQueryFilterTag('After ${q.startDate!.toISO8601Date}'),
+		if (q.endDate != null) _SearchQueryFilterTag('Before ${q.endDate!.toISO8601Date}'),
 		if (q.md5 != null) _SearchQueryFilterTag('MD5: ${q.md5}'),
 		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.trash)),
 		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.trash_slash))

@@ -31,10 +31,12 @@ class ItemNotFoundException implements Exception {
 class FilterAlternative {
 	final String name;
 	final void Function(String) handler;
+	final bool suggestWhenFilterEmpty;
 
 	const FilterAlternative({
 		required this.name,
-		required this.handler
+		required this.handler,
+		this.suggestWhenFilterEmpty = false
 	});
 }
 
@@ -1475,7 +1477,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 												)
 											)
 										),
-										if (filteredValues.isNotEmpty && widget.filterAlternative != null) SliverToBoxAdapter(
+										if (widget.filterAlternative != null &&
+										    ((_searchFilter?.text.isNotEmpty ?? false) ||
+												 (_searchTapped && widget.filterAlternative!.suggestWhenFilterEmpty))) SliverToBoxAdapter(
 											child: Container(
 												decoration: BoxDecoration(
 													border: Border(
@@ -1487,7 +1491,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 													padding: const EdgeInsets.all(16),
 													onPressed: () {
 														_searchFocusNode.unfocus();
-														widget.filterAlternative!.handler(_searchFilter!.text);
+														widget.filterAlternative!.handler(_searchFilter?.text ?? '');
 													},
 													child: Row(
 														children: [

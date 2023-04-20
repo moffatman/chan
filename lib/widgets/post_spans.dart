@@ -116,6 +116,7 @@ abstract class PostSpan {
 	InlineSpan build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options);
 	String buildText();
 	double estimateLines(double charactersPerLine) => buildText().length / charactersPerLine;
+	bool get containsLink => false;
 }
 
 class _PostWrapperSpan extends PostSpan {
@@ -233,6 +234,9 @@ class PostNodeSpan extends PostSpan {
 		lines += lineGuess.ceil();
 		return lines;
 	}
+
+	@override
+	bool get containsLink => children.any((c) => c.containsLink);
 }
 
 class PostTextSpan extends PostSpan {
@@ -305,6 +309,9 @@ class PostUnderlinedSpan extends PostSpan {
 
 	@override
 	String buildText() => child.buildText();
+
+	@override
+	bool get containsLink => child.containsLink;
 }
 
 class PostLineBreakSpan extends PostSpan {
@@ -332,6 +339,9 @@ class PostQuoteSpan extends PostSpan {
 	String buildText() {
 		return child.buildText();
 	}
+
+	@override
+	bool get containsLink => child.containsLink;
 }
 
 class PostQuoteLinkSpan extends PostSpan {
@@ -698,6 +708,9 @@ class PostSpoilerSpan extends PostSpan {
 	String buildText() {
 		return '[spoiler]${child.buildText()}[/spoiler]';
 	}
+
+	@override
+	bool get containsLink => child.containsLink;
 }
 
 class PostLinkSpan extends PostSpan {
@@ -859,6 +872,9 @@ class PostLinkSpan extends PostSpan {
 			return url;
 		}
 	}
+
+	@override
+	bool get containsLink => true;
 }
 
 class PostCatalogSearchSpan extends PostSpan {
@@ -963,6 +979,8 @@ class PostColorSpan extends PostSpan {
 	}
 	@override
 	buildText() => child.buildText();
+	@override
+	bool get containsLink => child.containsLink;
 }
 
 class PostBoldSpan extends PostSpan {
@@ -977,6 +995,8 @@ class PostBoldSpan extends PostSpan {
 	}
 	@override
 	buildText() => child.buildText();
+	@override
+	bool get containsLink => child.containsLink;
 }
 
 class PostItalicSpan extends PostSpan {
@@ -991,6 +1011,8 @@ class PostItalicSpan extends PostSpan {
 	}
 	@override
 	buildText() => child.buildText();
+	@override
+	bool get containsLink => child.containsLink;
 }
 
 class PostSuperscriptSpan extends PostSpan {
@@ -1005,6 +1027,8 @@ class PostSuperscriptSpan extends PostSpan {
 	}
 	@override
 	buildText() => child.buildText();
+	@override
+	bool get containsLink => child.containsLink;
 }
 
 class PostStrikethroughSpan extends PostSpan {
@@ -1019,6 +1043,8 @@ class PostStrikethroughSpan extends PostSpan {
 	}
 	@override
 	buildText() => child.buildText();
+	@override
+	bool get containsLink => child.containsLink;
 }
 
 
