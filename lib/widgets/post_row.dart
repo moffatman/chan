@@ -134,7 +134,7 @@ class PostRow extends StatelessWidget {
 		final Widget? attachments;
 		if (latestPost.attachments.isNotEmpty && settings.showImages(context, latestPost.board)) {
 			attachments = Padding(
-				padding: (settings.imagesOnRight && replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32, right: 8) : const EdgeInsets.only(right: 8),
+				padding: settings.imagesOnRight ? const EdgeInsets.only(left: 8) : const EdgeInsets.only(right: 8),
 				child: Column(
 					crossAxisAlignment: CrossAxisAlignment.start,
 					mainAxisSize: MainAxisSize.min,
@@ -149,7 +149,7 @@ class PostRow extends StatelessWidget {
 									constraints: BoxConstraints(
 										minWidth: settings.thumbnailSize,
 										maxWidth: settings.thumbnailSize,
-										//minHeight: 75
+										minHeight: 51
 									),
 									child: Stack(
 										alignment: Alignment.bottomRight,
@@ -182,7 +182,7 @@ class PostRow extends StatelessWidget {
 									onThumbnailTap?.call(attachment);
 								}
 							))
-						).expand((x) => [const SizedBox(height: 8), x]).skip(1)
+						).expand((x) => [x, const SizedBox(height: 8)])
 					]
 				)
 			);
@@ -220,7 +220,7 @@ class PostRow extends StatelessWidget {
 								children: [
 									if (attachments != null) WidgetSpan(
 										child: attachments,
-										floating: PlaceholderFloating.left,
+										floating: settings.imagesOnRight ? PlaceholderFloating.right : PlaceholderFloating.left,
 										alignment: PlaceholderAlignment.middle
 									),
 									if ((!parentZone.tree || (post.parentId != latestPost.threadId && (baseOptions?.highlightString?.isNotEmpty ?? false))) && !site.explicitIds && post.parentId != null) ...[
@@ -253,17 +253,19 @@ class PostRow extends StatelessWidget {
 														child: overrideReplyCount!
 													)
 												)
-											) : (replyIds.isEmpty ? null : TextSpan(
-												text: List.filled(replyIds.length.toString().length + 4, '1').join(),
-												style: const TextStyle(color: Colors.transparent)
+											) : (replyIds.isEmpty ? null : WidgetSpan(
+												child: Text(
+													List.filled(replyIds.length.toString().length + 4, '1').join(),
+													style: const TextStyle(color: Colors.transparent)
+												),
+												floating: PlaceholderFloating.right
 											))
 										)
 									),
 									const TextSpan(text: '\n'),
 									// In practice this is the height of a line of text
 									const WidgetSpan(
-										child: SizedBox.shrink(),
-										floating: PlaceholderFloating.left
+										child: SizedBox.shrink()
 									)
 								]
 							),
@@ -357,7 +359,7 @@ class PostRow extends StatelessWidget {
 												crossAxisAlignment: CrossAxisAlignment.start,
 												mainAxisAlignment: MainAxisAlignment.start,
 												mainAxisSize: MainAxisSize.min,
-												children: settings.imagesOnRight ? mainRow.reversed.toList() : mainRow
+												children: mainRow
 											)
 										)
 									]
