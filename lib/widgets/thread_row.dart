@@ -260,6 +260,7 @@ class ThreadRow extends StatelessWidget {
 		);
 		final countersPlaceholder = WidgetSpan(
 			alignment: PlaceholderAlignment.top,
+			floating: PlaceholderFloating.right,
 			child: Visibility(
 				visible: false,
 				maintainState: true,
@@ -362,7 +363,7 @@ class ThreadRow extends StatelessWidget {
 			final Widget? attachments;
 			if (latestThread.attachments.isNotEmpty && settings.showImages(context, latestThread.board)) {
 				attachments = Padding(
-					padding: const EdgeInsets.only(right: 8),
+					padding: settings.imagesOnRight ? const EdgeInsets.only(left: 8) : const EdgeInsets.only(right: 8),
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
 						children: latestThread.attachments.map((attachment) => PopupAttachment(
@@ -370,9 +371,10 @@ class ThreadRow extends StatelessWidget {
 							child: CupertinoButton(
 								padding: EdgeInsets.zero,
 								minSize: 0,
+								onPressed: onThumbnailTap == null ? null : () => onThumbnailTap?.call(attachment),
 								child: ConstrainedBox(
 									constraints: BoxConstraints(
-										//minHeight: 75,
+										minHeight: 51,
 										maxHeight: attachment.type == AttachmentType.url ? 75 : double.infinity
 									),
 									child: AttachmentThumbnail(
@@ -391,10 +393,9 @@ class ThreadRow extends StatelessWidget {
 											size: null
 										)
 									)
-								),
-								onPressed: () => onThumbnailTap?.call(attachment)
+								)
 							)
-						)).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
+						)).expand((x) => [x, const SizedBox(height: 8)]).toList()
 					)
 				);
 			}
@@ -431,7 +432,7 @@ class ThreadRow extends StatelessWidget {
 									children: [
 										if (site.classicCatalogStyle && attachments != null) WidgetSpan(
 											child: attachments,
-											floating: PlaceholderFloating.left,
+											floating: settings.imagesOnRight ? PlaceholderFloating.right : PlaceholderFloating.left,
 											alignment: PlaceholderAlignment.middle
 										),
 										if (headerRow.isNotEmpty) TextSpan(
@@ -444,6 +445,7 @@ class ThreadRow extends StatelessWidget {
 											latestThread.posts_.first.span.build(
 												context, context.watch<PostSpanZoneData>(), settings, theme,
 												(baseOptions ?? const PostSpanRenderOptions()).copyWith(
+														ignorePointer: true,
 													avoidBuggyClippers: true,
 													maxLines: 1 + (approxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
 													charactersPerLine: (approxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
@@ -504,6 +506,7 @@ class ThreadRow extends StatelessWidget {
 			Widget? att = attachment == null ? null : PopupAttachment(
 				attachment: attachment,
 				child: GestureDetector(
+					onTap: onThumbnailTap == null ? null : () => onThumbnailTap?.call(attachment),
 					child: Stack(
 						fit: StackFit.expand,
 						children: [
@@ -544,8 +547,7 @@ class ThreadRow extends StatelessWidget {
 								)
 							)
 						]
-					),
-					onTap: () => onThumbnailTap?.call(attachment)
+					)
 				)
 			);
 			final txt = Padding(
@@ -628,7 +630,7 @@ class ThreadRow extends StatelessWidget {
 		) : Row(
 			crossAxisAlignment: site.classicCatalogStyle ? CrossAxisAlignment.start : CrossAxisAlignment.center,
 			mainAxisSize: MainAxisSize.max,
-			children: settings.imagesOnRight ? rowChildren().reversed.toList() : rowChildren()
+			children: rowChildren()
 		);
 		if (dimThisThread) {
 			content = Opacity(
