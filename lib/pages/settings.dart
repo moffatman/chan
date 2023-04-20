@@ -116,8 +116,9 @@ class _SettingsPageState extends State<SettingsPage> {
 								)
 							);
 						}
-						final children = (snapshot.data ?? []).map<Widget>((thread) => GestureDetector(
-							onTap: () => Navigator.push(context, adaptivePageRoute(
+						final children = (snapshot.data ?? []).map<Widget>((thread) => CupertinoButton(
+							padding: EdgeInsets.zero,
+							onPressed: () => Navigator.push(context, adaptivePageRoute(
 								builder: (context) => ThreadPage(
 									thread: thread.identifier,
 									boardSemanticId: -1,
@@ -126,12 +127,6 @@ class _SettingsPageState extends State<SettingsPage> {
 							child: Container(
 								constraints: const BoxConstraints(
 									maxHeight: 125
-								),
-								foregroundDecoration: BoxDecoration(
-									border: Border(
-										top: BorderSide(color: settings.theme.primaryColorWithBrightness(0.2)),
-										bottom: BorderSide(color: settings.theme.primaryColorWithBrightness(0.2))
-									)
 								),
 								child: ThreadRow(
 									thread: thread,
