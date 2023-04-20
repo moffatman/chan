@@ -911,7 +911,7 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	}).fold<int>(0, (a, b) => a + b);
 
 	@override
-	String toString() => 'PersistentThreadState(key: $imageboardKey/$board/$id, lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime, useArchive: $useArchive)';
+	String toString() => 'PersistentThreadState(key: $imageboardKey/$board/$id, lastSeenPostId: $lastSeenPostId, receipts: $receipts, lastOpenedTime: $lastOpenedTime, savedTime: $savedTime, useArchive: $useArchive, showInHistory: $showInHistory)';
 
 	@override
 	@HiveField(19, defaultValue: '')
