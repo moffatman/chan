@@ -566,7 +566,8 @@ class PostBoardLink extends PostSpan {
 					imageboard: context.read<Imageboard>(),
 						child: BoardPage(
 							initialBoard: context.read<Persistence>().getBoard(board),
-							semanticId: -1
+							semanticId: -1,
+							allowChangingBoard: false
 						)
 					),
 					showAnimations: context.read<EffectiveSettings>().showAnimations
@@ -899,7 +900,8 @@ class PostCatalogSearchSpan extends PostSpan {
 					child: BoardPage(
 						initialBoard: context.read<Persistence>().getBoard(board),
 						initialSearch: query,
-						semanticId: -1
+						semanticId: -1,
+						allowChangingBoard: false
 					)
 				),
 				showAnimations: context.read<EffectiveSettings>().showAnimations
