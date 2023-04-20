@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:chan/services/apple.dart';
 
-final _pattern = RegExp(r'(.*).ttf');
+final _pattern = RegExp(r'([^/]+).ttf');
 
 Future<List<String>> getInstalledFontFamilies() async {
 	if (Platform.isAndroid) {
