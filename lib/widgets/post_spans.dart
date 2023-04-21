@@ -1152,7 +1152,7 @@ class PostSpanZone extends StatelessWidget {
 }
 
 abstract class PostSpanZoneData extends ChangeNotifier {
-	final Map<(int, bool), PostSpanZoneData> _children = {};
+	final Map<(int, bool, int?), PostSpanZoneData> _children = {};
 	Thread get thread;
 	ImageboardSite get site;
 	Iterable<int> get stackIds;
@@ -1225,16 +1225,21 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		return _futures[id] as AsyncSnapshot<T>;
 	}
 
-	PostSpanZoneData childZoneFor(int postId, {bool inTree = false}) {
+	PostSpanZoneData childZoneFor(int postId, {bool inTree = false, int? fakeHoistedRootId}) {
 		// Assuming that when a new childZone is requested, there will be some old one to cleanup
 		for (final child in _children.values) {
 			child._lineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
 		}
-		return _children.putIfAbsent((postId, inTree), () => PostSpanChildZoneData(
+		return _children.putIfAbsent((postId, inTree, fakeHoistedRootId), () => PostSpanChildZoneData(
 			parent: this,
 			postId: postId,
-			inTree: inTree
+			inTree: inTree,
+			fakeHoistedRootId: fakeHoistedRootId
 		));
+	}
+
+	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId) {
+		throw Exception('not possible');
 	}
 
 	void notifyAllListeners() {
@@ -1298,11 +1303,13 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	final PostSpanZoneData parent;
 	@override
 	final bool inTree;
+	final int? fakeHoistedRootId;
 
 	PostSpanChildZoneData({
 		required this.parent,
 		required this.postId,
-		required this.inTree
+		required this.inTree,
+		this.fakeHoistedRootId
 	});
 
 	@override
@@ -1322,6 +1329,13 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 
 	@override
 	Iterable<int> get stackIds {
+		if (fakeHoistedRootId != null) {
+			return [
+				fakeHoistedRootId!,
+				...parent.stackIds,
+				postId
+			];
+		}
 		return parent.stackIds.followedBy([postId]);
 	}
 
@@ -1362,6 +1376,11 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	List<Comparator<Post>> get postSortingMethods => parent.postSortingMethods;
 	@override
 	bool get tree => parent.tree;
+
+	@override
+	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId) {
+		return parent.childZoneFor(postId, fakeHoistedRootId: fakeHoistedRootId);
+	}
 }
 
 

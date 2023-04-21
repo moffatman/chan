@@ -105,10 +105,11 @@ class _PostsPageState extends State<PostsPage> {
 	@override
 	Widget build(BuildContext context) {
 		final attachments = replies.expand<Attachment>((a) => a.post?.attachments ?? []).toList();
+		final subzone = widget.zone.hoistFakeRootZoneFor(0); // To avoid conflict with same semanticIds in tree
 		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.thread.posts.tryFirstWhere((p) => p.id == widget.postIdForBackground);
 		final doubleTapScrollToReplies = context.select<EffectiveSettings, bool>((s) => s.doubleTapScrollToReplies);
 		return ChangeNotifierProvider.value(
-			value: widget.zone,
+			value: subzone,
 			child: OverscrollModalPage.sliver(
 				background: postForBackground == null ? null : PostRow(
 					post: postForBackground,
@@ -176,7 +177,7 @@ class _PostsPageState extends State<PostsPage> {
 													isAttachmentAlreadyDownloaded: widget.zone.threadState?.isAttachmentDownloaded,
 													onAttachmentDownload: widget.zone.threadState?.didDownloadAttachment,
 													initialAttachment: attachment,
-													semanticParentIds: context.read<PostSpanZoneData>().stackIds,
+													semanticParentIds: subzone.stackIds,
 													onChange: (attachment) {
 														Scrollable.ensureVisible(context, alignment: 0.5, duration: const Duration(milliseconds: 200));
 													},
