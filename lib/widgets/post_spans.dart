@@ -1530,7 +1530,7 @@ class ExpandingPost extends StatelessWidget {
 											context: context,
 											attachments: [attachment],
 											semanticParentIds: zone.stackIds,
-											heroOtherEndIsBoxFitCover: false
+											heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 										);
 									},
 									shrinkWrap: true

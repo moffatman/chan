@@ -180,7 +180,7 @@ class _PostsPageState extends State<PostsPage> {
 													onChange: (attachment) {
 														Scrollable.ensureVisible(context, alignment: 0.5, duration: const Duration(milliseconds: 200));
 													},
-													heroOtherEndIsBoxFitCover: false
+													heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 												);
 											}
 										)

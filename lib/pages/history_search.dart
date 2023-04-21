@@ -353,7 +353,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 											context: context,
 											attachments: [attachment],
 											semanticParentIds: [-11],
-											heroOtherEndIsBoxFitCover: false
+											heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 										),
 										showCrossThreadLabel: false,
 										showBoardName: true,
@@ -382,7 +382,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 												context: context,
 												attachments: [attachment],
 												semanticParentIds: [-11],
-												heroOtherEndIsBoxFitCover: false
+												heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 											),
 											isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
 											countsUnreliable: true,

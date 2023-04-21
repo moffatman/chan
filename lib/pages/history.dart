@@ -298,7 +298,7 @@ class HistoryPageState extends State<HistoryPage> {
 																	_listController.animateTo((p) => p.thread!.attachments.any((a) => a.id == attachment.id));
 																},
 																semanticParentIds: [-3],
-																heroOtherEndIsBoxFitCover: false
+																heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 															);
 														}
 													)

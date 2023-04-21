@@ -202,7 +202,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										context: context,
 										attachments: [attachment],
 										semanticParentIds: [-7],
-										heroOtherEndIsBoxFitCover: false
+										heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 									),
 									showCrossThreadLabel: false,
 									showBoardName: true,
@@ -237,7 +237,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 										context: context,
 										attachments: [attachment],
 										semanticParentIds: [-7],
-										heroOtherEndIsBoxFitCover: false
+										heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 									),
 									isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && currentValue?.result == row,
 									countsUnreliable: true,

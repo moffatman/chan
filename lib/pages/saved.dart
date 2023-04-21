@@ -353,7 +353,7 @@ class _SavedPageState extends State<SavedPage> {
 																						_watchedListController.animateTo((p) => p.item.threadIdentifier == threadId);
 																					},
 																					semanticParentIds: [-4],
-																					heroOtherEndIsBoxFitCover: false
+																					heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 																				);
 																			}
 																		);
@@ -490,7 +490,7 @@ class _SavedPageState extends State<SavedPage> {
 																_threadListController.animateTo((p) => p.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 															},
 															semanticParentIds: [-4],
-															heroOtherEndIsBoxFitCover: false
+															heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 														);
 													}
 												)
@@ -600,7 +600,7 @@ class _SavedPageState extends State<SavedPage> {
 														_yourPostsListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.post.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 													},
 													semanticParentIds: [-8],
-													heroOtherEndIsBoxFitCover: false
+													heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 												);
 											}
 										)
@@ -706,7 +706,7 @@ class _SavedPageState extends State<SavedPage> {
 															_postListController.animateTo((p) => p.imageboard.persistence.getThreadStateIfExists(p.item.post.threadIdentifier)?.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 														},
 														semanticParentIds: [-2],
-														heroOtherEndIsBoxFitCover: false
+														heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 													);
 												}
 											)
