@@ -921,9 +921,9 @@ class PostLinkSpan extends PostSpan {
 				}
 
 				if (tapChild != null) {
-					onTap() {
+					final onTap = options.ignorePointer ? null : () {
 						openBrowser(context, cleanedUri!);
-					}
+					};
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
 						child: options.avoidBuggyClippers ? GestureDetector(
