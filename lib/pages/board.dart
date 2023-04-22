@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/pages/board_watch_controls.dart';
@@ -535,6 +536,10 @@ class _BoardPageState extends State<BoardPage> {
 				)
 			);
 		}
+		String navigationBarBoardName = 'Select Imageboard';
+		if (imageboard != null) {
+			navigationBarBoardName = board != null ? imageboard.site.formatBoardName(board!) : 'Select Board';
+		}
 		return CupertinoPageScaffold(
 			resizeToAvoidBottomInset: false,
 			navigationBar: CupertinoNavigationBar(
@@ -548,25 +553,33 @@ class _BoardPageState extends State<BoardPage> {
 				) : null,
 				middle: GestureDetector(
 					onTap: widget.allowChangingBoard ? _selectBoard : null,
-					child: Row(
-						mainAxisSize: MainAxisSize.min,
+					child: Wrap(
+						alignment: WrapAlignment.center,
 						children: [
-							if (context.read<PersistentBrowserTab?>()?.incognito ?? false) ...[
-								const Icon(CupertinoIcons.eyeglasses),
-								const Text(' ')
-							],
-							if (imageboard != null) ...[
-								if (ImageboardRegistry.instance.count > 1) ...[
-									ImageboardIcon(
-										boardName: board?.name
-									),
-									const Text(' ')
-								],
-								if (board != null) Text(imageboard.site.formatBoardName(board!))
-								else const Text('Select Board')
-							]
-							else const Text('Select Imageboard'),
-							if (widget.allowChangingBoard) const Icon(Icons.arrow_drop_down)
+							Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									if (context.read<PersistentBrowserTab?>()?.incognito ?? false) ...[
+										const Icon(CupertinoIcons.eyeglasses),
+										const Text(' ')
+									],
+									if (imageboard != null) ...[
+										if (ImageboardRegistry.instance.count > 1) ...[
+											ImageboardIcon(
+												boardName: board?.name
+											),
+											const Text(' ')
+										]
+									]
+								]
+							),
+							Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									Flexible(child: AutoSizeText(navigationBarBoardName, minFontSize: 9, maxLines: 1)),
+									if (widget.allowChangingBoard) const Icon(Icons.arrow_drop_down)
+								]
+							)
 						]
 					)
 				),
