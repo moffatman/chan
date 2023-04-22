@@ -21,12 +21,14 @@ class CupertinoAlertDialog2 extends StatelessWidget {
 			title: title == null ? null : Builder(
 				builder: (context) => DefaultTextStyle(
 					style: DefaultTextStyle.of(context).style.merge(Persistence.settings.textStyle),
+					textAlign: TextAlign.center,
 					child: title!
 				)
 			),
 			content: content == null ? null : Builder(
 				builder: (context) => DefaultTextStyle(
 					style: DefaultTextStyle.of(context).style.merge(Persistence.settings.textStyle),
+					textAlign: TextAlign.center,
 					child: content!
 				)
 			),
@@ -58,6 +60,7 @@ class CupertinoDialogAction2 extends StatelessWidget {
 			child: Builder(
 				builder: (context) => DefaultTextStyle(
 					style: DefaultTextStyle.of(context).style.merge(Persistence.settings.textStyle),
+					textAlign: TextAlign.center,
 					child: child
 				)
 			)
@@ -82,6 +85,7 @@ class CupertinoActionSheetAction2 extends StatelessWidget {
 			child: Builder(
 				builder: (context) => DefaultTextStyle(
 					style: DefaultTextStyle.of(context).style.merge(Persistence.settings.textStyle),
+					textAlign: TextAlign.center,
 					child: child
 				)
 			)
