@@ -1497,14 +1497,14 @@ class PostLinkSpan extends PostTerminalSpan {
 							)
 						);
 					}
-					onTap() {
+					final onTap = options.ignorePointer ? null : () {
 						if (imageboardTarget != null) {
 							openImageboardTarget(context, imageboardTarget);
 						}
 						else {
 							openBrowser(context, cleanedUri!);
 						}
-					}
+					};
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
 						child: GestureDetector(
