@@ -7,20 +7,15 @@ import 'package:html/parser.dart';
 
 class SiteFrenschan extends SiteSoyjak {
 	SiteFrenschan({
-		required String baseUrl,
-		required String name,
-		List<ImageboardSiteArchive> archives = const []
-	}) : super(
-		baseUrl: baseUrl,
-		name: name,
-		archives: archives
-	);
+		required super.baseUrl,
+		required super.name,
+		super.archives = const [],
+		super.faviconPath = '/favicon.ico',
+		super.defaultUsername = 'Fren'
+	});
 
 	@override
 	String? get imageThumbnailExtension => null;
-
-	@override
-	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
 
 	@override
 	String get siteType => 'frenschan';
@@ -71,7 +66,4 @@ class SiteFrenschan extends SiteSoyjak {
 
 	@override
 	int get hashCode => Object.hash(baseUrl, name, archives);
-	
-	@override
-	String get defaultUsername => 'Fren';
 }

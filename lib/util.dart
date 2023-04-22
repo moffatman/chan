@@ -13,6 +13,18 @@ extension SafeWhere<T> on Iterable<T> {
 	T? get trySingle => length == 1 ? single : null;
 }
 
+extension MapOnce<T> on Iterable<T> {
+	U? tryMapOnce<U extends Object>(U? Function(T v) f) {
+		for (final item in this) {
+			final mapped = f(item);
+			if (mapped != null) {
+				return mapped;
+			}
+		}
+		return null;
+	}
+}
+
 extension BinarySafeWhere<T> on List<T> {
 	int binarySearchFirstIndexWhere(bool Function(T v) f) {
 		if (isEmpty) {

@@ -22,6 +22,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/captcha_dvach.dart';
 import 'package:chan/widgets/captcha_lynxchan.dart';
+import 'package:chan/widgets/captcha_secucap.dart';
 import 'package:chan/widgets/captcha_securimage.dart';
 import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
@@ -636,6 +637,20 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
 					builder: (context) => OverscrollModalPage(
 						child: CaptchaLynxchan(
+							request: captchaRequest,
+							onCaptchaSolved: (key) => Navigator.of(context).pop(key),
+							site: site
+						)
+					),
+					showAnimations: context.read<EffectiveSettings>().showAnimations
+				));
+				showReplyBox();
+			}
+			else if (captchaRequest is SecucapCaptchaRequest) {
+				hideReplyBox();
+				_captchaSolution = await Navigator.of(context, rootNavigator: true).push<CaptchaSolution>(TransparentRoute(
+					builder: (context) => OverscrollModalPage(
+						child: CaptchaSecucap(
 							request: captchaRequest,
 							onCaptchaSolved: (key) => Navigator.of(context).pop(key),
 							site: site

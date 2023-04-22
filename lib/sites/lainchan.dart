@@ -26,6 +26,9 @@ class SiteLainchan extends ImageboardSite {
 	@override
 	final String name;
 	final int? maxUploadSizeBytes;
+	final String faviconPath;
+	@override
+	final String defaultUsername;
 
 	@override
 	late final SiteLainchanLoginSystem loginSystem = SiteLainchanLoginSystem(this);
@@ -34,7 +37,9 @@ class SiteLainchan extends ImageboardSite {
 		required this.baseUrl,
 		required this.name,
 		this.maxUploadSizeBytes,
-		List<ImageboardSiteArchive> archives = const []
+		List<ImageboardSiteArchive> archives = const [],
+		this.faviconPath = '/favicon.ico',
+		this.defaultUsername = 'Anonymous'
 	}) : super(archives);
 
 	static List<PostSpan> parsePlaintext(String text) {
@@ -301,6 +306,9 @@ class SiteLainchan extends ImageboardSite {
 			fields['captcha_cookie'] = captchaSolution.cookie;
 			fields['captcha_text'] = captchaSolution.response;
 		}
+		else if (captchaSolution is SecucapCaptchaSolution) {
+			fields['captcha'] = captchaSolution.response;
+		}
 		final response = await client.postUri(
 			Uri.https(baseUrl, '/post.php'),
 			data: FormData.fromMap(fields),
@@ -471,16 +479,13 @@ class SiteLainchan extends ImageboardSite {
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url) async => decodeGenericUrl(baseUrl, url);
 
 	@override
-	bool operator ==(Object other) => (other is SiteLainchan) && (other.baseUrl == baseUrl) && (other.name == name) && (other.maxUploadSizeBytes == maxUploadSizeBytes) && listEquals(other.archives, archives);
+	bool operator ==(Object other) => (other is SiteLainchan) && (other.baseUrl == baseUrl) && (other.name == name) && (other.maxUploadSizeBytes == maxUploadSizeBytes) && listEquals(other.archives, archives) && (other.faviconPath == faviconPath) && (other.defaultUsername == defaultUsername);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, maxUploadSizeBytes, archives);
+	int get hashCode => Object.hash(baseUrl, name, maxUploadSizeBytes, archives, faviconPath, defaultUsername);
 	
 	@override
-	Uri get iconUrl => Uri.https(baseUrl, '/favicon.ico');
-
-	@override
-	String get defaultUsername => 'Anonymous';
+	Uri get iconUrl => Uri.https(baseUrl, faviconPath);
 
 	@override
 	bool get supportsPushNotifications => true;

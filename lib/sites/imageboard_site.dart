@@ -14,6 +14,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/dvach.dart';
+import 'package:chan/sites/erischan.dart';
 import 'package:chan/sites/foolfuuka.dart';
 import 'package:chan/sites/frenschan.dart';
 import 'package:chan/sites/futaba.dart';
@@ -498,8 +499,21 @@ class DvachCaptchaRequest extends CaptchaRequest {
 }
 
 class LynxchanCaptchaRequest extends CaptchaRequest {
+	final String board;
+	LynxchanCaptchaRequest({
+		required this.board
+	});
 	@override
-	String toString() => 'LynxchanCaptchaRequest()';
+	String toString() => 'LynxchanCaptchaRequest(board: $board)';
+}
+
+class SecucapCaptchaRequest extends CaptchaRequest {
+	final Uri challengeUrl;
+	SecucapCaptchaRequest({
+		required this.challengeUrl
+	});
+	@override
+	String toString() => 'SecucapCaptchaRequest(challengeUrl: $challengeUrl)';
 }
 
 abstract class CaptchaSolution {
@@ -575,14 +589,28 @@ class DvachCaptchaSolution extends CaptchaSolution {
 
 class LynxchanCaptchaSolution extends CaptchaSolution {
 	final String id;
+	final String answer;
 	@override
 	final DateTime expiresAt;
 	LynxchanCaptchaSolution({
 		required this.id,
+		required this.answer,
 		required this.expiresAt
 	});
 	@override
 	String toString() => 'LynxchanCaptchaSolution(id: $id)';
+}
+
+class SecucapCaptchaSolution extends CaptchaSolution {
+	final String response;
+	@override
+	final DateTime expiresAt;
+	SecucapCaptchaSolution({
+		required this.response,
+		required this.expiresAt
+	});
+	@override
+	String toString() => 'SecucapCaptchaSolution(response: $response)';
 }
 
 class ImageboardArchiveSearchResult {
@@ -989,7 +1017,9 @@ ImageboardSite makeSite(dynamic data) {
 	else if (data['type'] == 'lainchan_org') {
 		return SiteLainchanOrg(
 			name: data['name'],
-			baseUrl: data['baseUrl']
+			baseUrl: data['baseUrl'],
+			faviconPath: data['faviconPath'] ?? '/favicon.ico',
+			defaultUsername: data['defaultUsername'] ?? 'Anonymous'
 		);
 	}
 	else if (data['type'] == 'dvach') {
@@ -1010,6 +1040,12 @@ ImageboardSite makeSite(dynamic data) {
 	}
 	else if (data['type'] == 'hackernews') {
 		return SiteHackerNews();
+	}
+	else if (data['type'] == 'erischan') {
+		return SiteErischan(
+			name: data['name'],
+			baseUrl: data['baseUrl']
+		);
 	}
 	else if (data['type'] == '4chan') {
 		return Site4Chan(
@@ -1054,7 +1090,7 @@ ImageboardSite makeSite(dynamic data) {
 		);
 	}
 	else if (data['type'] == 'lynxchan') {
-		final boards = (data['boards'] as List).map((b) => ImageboardBoard(
+		final boards = (data['boards'] as List?)?.map((b) => ImageboardBoard(
 			title: b['title'],
 			name: b['name'],
 			isWorksafe: b['isWorksafe'],

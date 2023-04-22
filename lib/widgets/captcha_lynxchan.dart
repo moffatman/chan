@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
-import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -59,9 +59,11 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 	}
 
 	Future<CaptchaLynxchanChallenge> _requestChallenge() async {
+		Persistence.currentCookies.delete(Uri.https(widget.site.baseUrl, '/captcha.js'), true);
 		final lastSolvedCaptcha = widget.site.persistence.browserState.loginFields[_loginFieldLastSolvedCaptchaKey];
-		final idResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/noCookieCaptcha.js', {
-			'json': '1',
+		final idResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/captcha.js', {
+			'boardUri': widget.request.board,
+			'd': (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
 			if (lastSolvedCaptcha != null) 'solvedCaptcha': lastSolvedCaptcha
 		}), options: Options(
 			responseType: ResponseType.json
@@ -69,11 +71,22 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		if (idResponse.statusCode != 200) {
 			throw CaptchaLynxchanException('Got status code ${idResponse.statusCode}');
 		}
-		if (idResponse.data['error'] != null) {
-			throw CaptchaLynxchanException(idResponse.data['error']['message']);
+		final String id;
+		final String imagePath;
+		if (idResponse.data is String) {
+			id = (idResponse.headers['set-cookie']?.tryMapOnce((cookie) {
+				return RegExp(r'captchaid=([^;]+)').firstMatch(cookie)?.group(1);
+			})!)!;
+			imagePath = '/captcha.js?captchaId=${id.substring(0, 24)}';
 		}
-		final String id = idResponse.data['data'];
-		final imageResponse = await widget.site.client.getUri(Uri.https(widget.site.baseUrl, '/.global/captchas/${id.substring(0, 24)}'), options: Options(
+		else {
+			if (idResponse.data['error'] != null) {
+				throw CaptchaLynxchanException(idResponse.data['error']['message']);
+			}
+			id = idResponse.data['data'];
+			imagePath = '/.global/captchas/${id.substring(0, 24)}';
+		}
+		final imageResponse = await widget.site.client.get('https://${widget.site.baseUrl}$imagePath', options: Options(
 			responseType: ResponseType.bytes
 		));
 		if (imageResponse.statusCode != 200) {
@@ -105,35 +118,14 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		}
 	}
 
-	Future<LynxchanCaptchaSolution> _solve(String answer) async {
-		final solutionResponse = await widget.site.client.postUri(Uri.https(widget.site.baseUrl, '/solveCaptcha.js', {
-			'json': '1'
-		}), data: {
-			'captchaId': challenge!.id,
-			'answer': answer
-		}, options: Options(
-			responseType: ResponseType.json
+	void _solve(String answer) {
+		widget.onCaptchaSolved(LynxchanCaptchaSolution(
+			id: challenge!.id,
+			answer: answer,
+			expiresAt: challenge!.expiresAt
 		));
-		if (solutionResponse.data['status'] == 'ok') {
-			return LynxchanCaptchaSolution(
-				expiresAt: challenge!.expiresAt,
-				id: challenge!.id
-			);
-		}
-		throw CaptchaLynxchanException(solutionResponse.data['data'] ?? 'Unknown error: ${solutionResponse.data}');
-	}
-
-	Future<void> _trySolve(String answer) async {
-		try {
-			widget.onCaptchaSolved(await modalLoad(context, 'Submitting...', () => _solve(answer)));
-			widget.site.persistence.browserState.loginFields[_loginFieldLastSolvedCaptchaKey] = challenge!.id;
-			widget.site.persistence.didUpdateBrowserState();
-		}
-		catch (e, st) {
-			print(e);
-			print(st);
-			alertError(context, e.toStringDio());
-		}
+		widget.site.persistence.browserState.loginFields[_loginFieldLastSolvedCaptchaKey] = challenge!.id;
+		widget.site.persistence.didUpdateBrowserState();
 	}
 
 	Widget _build(BuildContext context) {
@@ -208,7 +200,7 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 							enableIMEPersonalizedLearning: false,
 							autocorrect: false,
 							placeholder: 'Captcha text',
-							onSubmitted: _trySolve,
+							onSubmitted: _solve,
 						)
 					)
 				]

@@ -1,5 +1,4 @@
 import 'package:chan/models/board.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -7,14 +6,12 @@ import 'package:html/parser.dart';
 
 class SiteLainchanOrg extends SiteLainchan {
 	SiteLainchanOrg({
-		required String baseUrl,
-		required String name,
-		List<ImageboardSiteArchive> archives = const []
-	}) : super(
-		baseUrl: baseUrl,
-		name: name,
-		archives: archives
-	);
+		required super.baseUrl,
+		required super.name,
+		super.archives = const [],
+		super.faviconPath,
+		super.defaultUsername
+	});
 
 	@override
 	Future<List<ImageboardBoard>> getBoards() async {
@@ -38,10 +35,10 @@ class SiteLainchanOrg extends SiteLainchan {
 	String get siteData => baseUrl;
 
 	@override
-	bool operator ==(Object other) => (other is SiteLainchanOrg) && (other.baseUrl == baseUrl) && (other.name == name) && listEquals(other.archives, archives);
+	bool operator ==(Object other) => (other is SiteLainchanOrg) && (other.baseUrl == baseUrl) && (other.name == name) && listEquals(other.archives, archives) && (other.faviconPath == faviconPath) && (other.defaultUsername == defaultUsername);
 
 	@override
-	int get hashCode => Object.hash(baseUrl, name, archives);
+	int get hashCode => Object.hash(baseUrl, name, archives, faviconPath, defaultUsername);
 
 	@override
 	bool get supportsPushNotifications => false;

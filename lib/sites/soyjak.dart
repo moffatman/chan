@@ -1,23 +1,17 @@
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan_org.dart';
 import 'package:flutter/foundation.dart';
 
 class SiteSoyjak extends SiteLainchanOrg {
 	SiteSoyjak({
-		required String baseUrl,
-		required String name,
-		List<ImageboardSiteArchive> archives = const []
-	}) : super(
-		baseUrl: baseUrl,
-		name: name,
-		archives: archives
-	);
+		required super.baseUrl,
+		required super.name,
+		super.archives = const [],
+		super.faviconPath = '/static/favicon.png',
+		super.defaultUsername = 'Chud'
+	});
 
 	@override
 	String? get imageThumbnailExtension => null;
-
-	@override
-	Uri get iconUrl => Uri.https(baseUrl, '/static/favicon.png');
 
 	@override
 	String get siteType => 'soyjak';
@@ -27,9 +21,6 @@ class SiteSoyjak extends SiteLainchanOrg {
 
 	@override
 	int get hashCode => Object.hash(baseUrl, name, archives);
-
-	@override
-	String get defaultUsername => 'Chud';
 
 	@override
 	String get res => 'thread';

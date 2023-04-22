@@ -28,7 +28,7 @@ class SiteLynxchan extends ImageboardSite {
 	final String name;
 	@override
 	final String baseUrl;
-	final List<ImageboardBoard> boards;
+	final List<ImageboardBoard>? boards;
 
 	static PostNodeSpan makeSpan(String board, int threadId, String data) {
 		final body = parseFragment(data.trimRight());
@@ -130,10 +130,15 @@ class SiteLynxchan extends ImageboardSite {
 				'json': '1',
 				'identifier': fileSha256
 			}));
-			if (filePresentResponse.data['status'] != 'ok') {
-				throw PostFailedException('Error checking if file was already uploaded: ${filePresentResponse.data['error'] ?? filePresentResponse.data}');
+			if (filePresentResponse.data is bool) {
+				fileAlreadyUploaded = filePresentResponse.data;
 			}
-			fileAlreadyUploaded = filePresentResponse.data['data'];
+			else {
+				if (filePresentResponse.data['status'] != 'ok') {
+					throw PostFailedException('Error checking if file was already uploaded: ${filePresentResponse.data['error'] ?? filePresentResponse.data}');
+				}
+				fileAlreadyUploaded = filePresentResponse.data['data'];
+			}
 		}
 		final response = await client.postUri(Uri.https(baseUrl, threadId == null ? '/newThread.js' : '/replyThread.js', {
 			'json': '1'
@@ -145,8 +150,10 @@ class SiteLynxchan extends ImageboardSite {
 			'password': password,
 			'boardUri': board,
 			if (threadId != null) 'threadId': threadId.toString(),
-			if (captchaSolution is LynxchanCaptchaSolution)
-				'captcha': captchaSolution.id,
+			if (captchaSolution is LynxchanCaptchaSolution) ...{
+				'captchaId': captchaSolution.id,
+				'captcha': captchaSolution.answer
+			},
 			if (spoiler ?? false) 'spoiler': 'spoiler',
 			if (flag != null) 'flag': flag.code,
 			if (file != null) ...{
@@ -156,7 +163,23 @@ class SiteLynxchan extends ImageboardSite {
 				'fileName': overrideFilename ?? file.path.split('/').last,
 				if (!fileAlreadyUploaded) 'files': await MultipartFile.fromFile(file.path, filename: overrideFilename)
 			}
-		}));
+		}), options: Options(
+			validateStatus: (x) => true
+		));
+		if (response.data is String) {
+			final document = parse(response.data);
+			if (response.statusCode != 200) {
+				throw PostFailedException(document.querySelector('#errorLabel')?.text ?? 'HTTP Error ${response.statusCode}');
+			}
+			final match = RegExp(r'(\d+)\.html#(\d+)?').firstMatch(document.querySelector('#linkRedirect')?.attributes['href'] ?? '');
+			if (match != null) {
+				return PostReceipt(
+					id: match.group(2) != null ? int.parse(match.group(2)!) : int.parse(match.group(1)!),
+					password: password
+				);
+			}
+			throw PostFailedException(document.querySelector('title')?.text ?? 'Unknown error');
+		}
 		if (response.data['status'] != 'ok') {
 			throw PostFailedException(response.data['error'] ?? response.data.toString());
 		}
@@ -216,7 +239,26 @@ class SiteLynxchan extends ImageboardSite {
 
 	@override
 	Future<List<ImageboardBoard>> getBoards() async {
-		return boards;
+		if (boards != null) {
+			return boards!;
+		}
+		final response = await client.getUri(Uri.https(baseUrl, '/boards.js'));
+		final document = parse(response.data);
+		final list = <ImageboardBoard>[];
+		final linkPattern = RegExp(r'^\/([^/]+)\/ - (.*)$');
+		for (final col1 in document.querySelectorAll('#divBoards .col1')) {
+			final match = linkPattern.firstMatch(col1.querySelector('.linkBoard')?.text ?? '');
+			if (match == null) {
+				continue;
+			}
+			list.add(ImageboardBoard(
+				name: match.group(1)!,
+				title: match.group(2)!,
+				isWorksafe: col1.querySelector('.indicatorSfw') != null,
+				webmAudioAllowed: true
+			));
+		}
+		return list;
 	}
 
 	@override
@@ -226,7 +268,9 @@ class SiteLynxchan extends ImageboardSite {
 				(captchaMode == 1 && threadId != null)) {
 			return NoCaptchaRequest();
 		}
-		return LynxchanCaptchaRequest();
+		return LynxchanCaptchaRequest(
+			board: board
+		);
 	}
 
 	void _updateBoardInformation(String boardName, Map<String, dynamic> data) async {
@@ -292,7 +336,7 @@ class SiteLynxchan extends ImageboardSite {
 			);
 			return Thread(
 				posts_: [op],
-				replyCount: (obj['omittedPosts'] ?? 0) + (obj['posts'] as List).length,
+				replyCount: (obj['omittedPosts'] ?? obj['ommitedPosts'] ?? 0) + (obj['posts'] as List).length,
 				imageCount: (obj['omittedFiles'] ?? 0) + (obj['posts'] as List).fold<int>(0, (c, p) => c + (p['files'] as List).length),
 				id: op.id,
 				board: board,
@@ -343,19 +387,20 @@ class SiteLynxchan extends ImageboardSite {
 			posterId: obj['id'],
 			id: id,
 			spanFormat: PostSpanFormat.lynxchan,
-			attachments: (obj['files'] as List).map((f) => Attachment(
-				type: AttachmentType.fromFilename(f['path']),
+			attachments: (obj['files'] as List).asMap().entries.map((e) => Attachment(
+				type: AttachmentType.fromFilename(e.value['path']),
 				board: board,
-				id: f['path'],
-				ext: '.${(f['path'] as String).split('.').last}',
-				filename: f['originalName'],
-				url: Uri.https(baseUrl, f['path']).toString(),
-				thumbnailUrl: Uri.https(baseUrl, f['thumb']).toString(),
+				// Lynxchan dedupes images. Prepend some uniqueness here to avoid Hero problems later.
+				id: '$id-${e.key}-${e.value['path']}',
+				ext: '.${(e.value['path'] as String).split('.').last}',
+				filename: e.value['originalName'],
+				url: Uri.https(baseUrl, e.value['path']).toString(),
+				thumbnailUrl: Uri.https(baseUrl, e.value['thumb']).toString(),
 				md5: '',
-				width: f['width'],
-				height: f['height'],
+				width: e.value['width'],
+				height: e.value['height'],
 				threadId: obj['threadId'],
-				sizeInBytes: f['size']
+				sizeInBytes: e.value['size']
 			)).toList()
 		);
 	}
@@ -383,7 +428,7 @@ class SiteLynxchan extends ImageboardSite {
 			isSticky: response.data['pinned'],
 			time: op.time,
 			attachments: op.attachments,
-			isArchived: response.data['archived']
+			isArchived: response.data['archived'] ?? false
 		);
 	}
 
