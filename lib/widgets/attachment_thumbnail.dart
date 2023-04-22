@@ -147,6 +147,10 @@ class AttachmentThumbnail extends StatelessWidget {
 						)
 					);
 				}
+				else if (loadstate.extendedImageLoadState == LoadState.completed) {
+					attachment.width ??= loadstate.extendedImageInfo?.image.width;
+					attachment.height ??= loadstate.extendedImageInfo?.image.height;
+				}
 				return null;
 			}
 		);

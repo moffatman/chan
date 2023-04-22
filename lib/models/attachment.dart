@@ -48,8 +48,8 @@ class Attachment {
 	String thumbnailUrl;
 	final String md5;
 	final bool spoiler;
-	final int? width;
-	final int? height;
+	int? width;
+	int? height;
 	final int? threadId;
 	final int? sizeInBytes;
 	String id;
