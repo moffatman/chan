@@ -617,13 +617,23 @@ class AttachmentViewerController extends ChangeNotifier {
 				settings.androidGallerySavePath ??= await pickDirectory();
 				if (settings.androidGallerySavePath != null) {
 					File source = (await getFile());
-					await saveFile(
-						sourcePath: source.path,
-						destinationDir: settings.androidGallerySavePath!,
-						destinationSubfolders: settings.androidGallerySavePathOrganizing.subfoldersFor(attachment),
-						destinationName: attachment.id.toString() + attachment.ext
-					);
-					_isDownloaded = true;
+					try {
+						await saveFile(
+							sourcePath: source.path,
+							destinationDir: settings.androidGallerySavePath!,
+							destinationSubfolders: settings.androidGallerySavePathOrganizing.subfoldersFor(attachment),
+							destinationName: attachment.id.toString() + attachment.ext
+						);
+						_isDownloaded = true;
+					}
+					on DirectoryNotFoundException {
+						settings.androidGallerySavePath = null;
+						rethrow;
+					}
+					on InsufficientPermissionException {
+						settings.androidGallerySavePath = null;
+						rethrow;
+					}
 				}
 			}
 			else {

@@ -5,6 +5,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.UriPermission;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
@@ -42,18 +43,25 @@ public class MainActivity extends FlutterFragmentActivity {
             public Intent createIntent(@NonNull Context context, Uri input) {
                 Intent intent = super.createIntent(context, input);
                 intent.addFlags(
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION |
                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION |
-                    Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
+                    Intent.FLAG_GRANT_PREFIX_URI_PERMISSION |
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
                 );
                 return intent;
             }
         }, uri -> {
             if (uri != null) {
-                getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                getContentResolver().takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                );
                 if (folderResult != null) {
                     folderResult.success(uri.toString());
+                    return;
                 }
             }
+            folderResult.success(null);
         });
         super.configureFlutterEngine(flutterEngine);
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), STORAGE_CHANNEL).setMethodCallHandler(
@@ -69,7 +77,22 @@ public class MainActivity extends FlutterFragmentActivity {
                             String destinationDir = call.argument("destinationDir");
                             List<String> destinationSubfolders = call.argument("destinationSubfolders");
                             String destinationName = call.argument("destinationName");
-                            DocumentFile dir = DocumentFile.fromTreeUri(this, Uri.parse(destinationDir));
+                            Uri destination = Uri.parse(destinationDir);
+                            boolean sufficientPermission = false;
+                            for (UriPermission permission : getContentResolver().getPersistedUriPermissions()) {
+                                if (permission.getUri().equals(destination)) {
+                                    sufficientPermission = permission.isWritePermission() && (destinationSubfolders.isEmpty() || permission.isReadPermission());
+                                }
+                            }
+                            if (!sufficientPermission) {
+                                result.error("InsufficientPermission", "Permissions not enough or have expired", null);
+                                return;
+                            }
+                            DocumentFile dir = DocumentFile.fromTreeUri(this, destination);
+                            if (!dir.exists()) {
+                                result.error("DirectoryNotFound", "Supplied directory does not exist", null);
+                                return;
+                            }
                             for (String subdirName : destinationSubfolders) {
                                 DocumentFile subdir = dir.findFile(subdirName);
                                 if (subdir != null && subdir.isDirectory()) {
