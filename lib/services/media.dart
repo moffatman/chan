@@ -235,7 +235,9 @@ class MediaConversion {
 		int? maximumSizeInBytes,
 		int? maximumDurationInSeconds,
 		required bool stripAudio,
-		int? maximumDimension
+		int? maximumDimension,
+		Map<String, String> headers = const {},
+		Uri? soundSource
 	}) {
 		return MediaConversion(
 			inputFile: inputFile,
@@ -244,7 +246,9 @@ class MediaConversion {
 			maximumDurationInSeconds: maximumDurationInSeconds,
 			maximumDimension: maximumDimension,
 			stripAudio: stripAudio,
-			extraOptions: ['-c:a', 'libvorbis', '-c:v', 'libvpx', '-cpu-used', '2']
+			extraOptions: ['-c:a', 'libvorbis', '-c:v', 'libvpx', '-cpu-used', '2'],
+			headers: headers,
+			soundSource: soundSource
 		);
 	}
 

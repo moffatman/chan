@@ -43,6 +43,24 @@ class StreamingMP4ConvertedFile implements StreamingMP4ConversionResult {
 	Duration? get duration => null;
 }
 
+class StreamingMP4ConvertingFile implements StreamingMP4ConversionResult {
+	final Future<File> mp4File;
+	final ValueListenable<double?> progress;
+	@override
+	final bool hasAudio;
+	@override
+	final Duration? duration;
+	@override
+	final bool isAudioOnly;
+	const StreamingMP4ConvertingFile({
+		required this.mp4File,
+		required this.progress,
+		required this.hasAudio,
+		required this.duration,
+		required this.isAudioOnly
+	});
+}
+
 final _server = _Server();
 
 class _Server {
@@ -134,6 +152,18 @@ class StreamingMP4Conversion {
 
 	Future<StreamingMP4ConversionResult> start() async {
 		final surelyAudioOnly = ['jpg', 'jpeg', 'png'].contains(inputFile.path.split('.').last.toLowerCase());
+		if (Platform.isAndroid) {
+			final scan = await MediaScan.scan(inputFile, headers: headers);
+			final conversion = MediaConversion.toWebm(inputFile, headers: headers, soundSource: soundSource, stripAudio: false);
+			conversion.start();
+			return StreamingMP4ConvertingFile(
+				mp4File: conversion.result.then((r) => r.file),
+				hasAudio: scan.hasAudio,
+				progress: conversion.progress,
+				duration: scan.duration,
+				isAudioOnly: surelyAudioOnly || scan.isAudioOnly
+			);
+		}
 		final mp4Conversion = MediaConversion.toMp4(inputFile, headers: headers, soundSource: soundSource);
 		final existingResult = await mp4Conversion.getDestinationIfSatisfiesConstraints();
 		if (existingResult != null) {

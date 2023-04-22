@@ -27,6 +27,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
@@ -45,6 +46,8 @@ const _minUrlTime = Duration(milliseconds: 500);
 // flutter will keep trying to recalculate it.
 // It's a lazy fix, but works, if we just cache the first result.
 final Map <String, (DateTime, Rect, Rect)> _heroRectCache = {};
+
+final Set<Uri> _problematicVideos = {};
 
 Duration _estimateUrlTime(Uri url) {
 	final times = _domainLoadTimes[url.host] ?? <Duration>[];
@@ -363,9 +366,9 @@ class AttachmentViewerController extends ChangeNotifier {
 			else if (soundSource != null || attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
 				final url = await _getGoodSource();
 				_recordUrlTime(url, DateTime.now().difference(startTime));
-				bool transcode = false;
+				bool transcode = _problematicVideos.contains(url);
 				if (attachment.type == AttachmentType.webm) {
-					transcode = settings.webmTranscoding == WebmTranscodingSetting.always;
+					transcode |= settings.webmTranscoding == WebmTranscodingSetting.always;
 				}
 				transcode |= soundSource != null;
 				if (!transcode) {
@@ -427,10 +430,47 @@ class AttachmentViewerController extends ChangeNotifier {
 							notifyListeners();
 						});
 					}
+					else if (result is StreamingMP4ConvertingFile) {
+						_duration = result.duration;
+						_videoLoadingProgress = result.progress;
+						result.mp4File.then((mp4File) async {
+							if (_isDisposed) {
+								return;
+							}
+							_cachedFile = mp4File;
+							_videoFileToSwapIn = mp4File;
+							if (isPrimary && !background) {
+								await potentiallySwapVideo(play: true);
+							}
+							_videoLoadingProgress = ValueNotifier(null);
+							notifyListeners();
+						});
+					}
 				}
 				if (_isDisposed) return;
 				if (_videoPlayerController != null) {
-					await _videoPlayerController!.initialize();
+					try {
+						await _videoPlayerController!.initialize();
+					}
+					catch (e) {
+						if (!transcode &&
+						    e is PlatformException &&
+								(e.message?.contains('ExoPlaybackException') ?? false)) {
+							_videoPlayerController?.dispose();
+							_videoPlayerController = null;
+							_problematicVideos.add(url);
+							Future.microtask(() => _loadFullAttachment(background, force: force));
+							if (context.mounted) {
+								showToast(
+									context: context,
+									message: 'Problem with playback, running fallback conversion...',
+									icon: CupertinoIcons.ant
+								);
+							}
+							return;
+						}
+						rethrow;
+					}
 					if (_isDisposed) return;
 					if (settings.muteAudio.value || settings.alwaysStartVideosMuted) {
 						if (!settings.muteAudio.value) {
@@ -648,13 +688,23 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	Future<void> potentiallySwapVideo() async {
+	Future<void> potentiallySwapVideo({bool play = false}) async {
 		if (_videoFileToSwapIn != null) {
+			final settings = context.read<EffectiveSettings>();
 			final newFile = _videoFileToSwapIn!;
 			_videoFileToSwapIn = null;
 			final oldController = _videoPlayerController;
 			_videoPlayerController = VideoPlayerController.file(newFile, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
 			await _videoPlayerController!.initialize();
+			if (_isDisposed) return;
+			final mute = oldController?.value.volume.isZero ?? settings.muteAudio.value || settings.alwaysStartVideosMuted;
+			if (mute) {
+				if (!settings.muteAudio.value) {
+					settings.setMuteAudio(true);
+				}
+				await _videoPlayerController?.setVolume(0);
+				if (_isDisposed) return;
+			}
 			if (_isDisposed) return;
 			await _videoPlayerController!.setLooping(true);
 			if (_isDisposed) return;
@@ -665,8 +715,10 @@ class AttachmentViewerController extends ChangeNotifier {
 			}
 			await _videoPlayerController!.play();
 			if (_isDisposed) return;
-			await _videoPlayerController!.pause();
-			if (_isDisposed) return;
+			if (!play) {
+				await _videoPlayerController!.pause();
+				if (_isDisposed) return;
+			}
 			notifyListeners();
 			WidgetsBinding.instance.addPostFrameCallback((_) {
 				oldController?.dispose();
