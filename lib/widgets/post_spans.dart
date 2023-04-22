@@ -1411,7 +1411,7 @@ class PostLinkSpan extends PostSpan {
 							)
 						);
 					}
-					onTap() {
+					final onTap = options.ignorePointer ? null : () {
 						final imageboardTarget = snapshot?.data?.imageboardTarget;
 						if (imageboardTarget != null) {
 							openImageboardTarget(context, imageboardTarget);
@@ -1419,7 +1419,7 @@ class PostLinkSpan extends PostSpan {
 						else {
 							openBrowser(context, cleanedUri!);
 						}
-					}
+					};
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
 						child: CupertinoButton(
