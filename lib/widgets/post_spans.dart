@@ -1014,9 +1014,9 @@ class PostLinkSpan extends PostSpan {
 				}
 
 				if (tapChild != null) {
-					onTap() {
+					final onTap = options.ignorePointer ? null : () {
 						openBrowser(context, cleanedUri!);
-					}
+					};
 					return TextualWidgetSpan(
 						alignment: PlaceholderAlignment.middle,
 						text: buildText(),
