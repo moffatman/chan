@@ -25,7 +25,8 @@ class ImageboardNotFoundException implements Exception {
 class Imageboard extends ChangeNotifier {
 	final EffectiveSettings settings;
 	dynamic siteData;
-	late ImageboardSite site;
+	ImageboardSite? _site;
+	ImageboardSite get site => _site!;
 	late final Persistence persistence;
 	late final ThreadWatcher threadWatcher;
 	late final Notifications notifications;
@@ -50,9 +51,11 @@ class Imageboard extends ChangeNotifier {
 	void updateSiteData(dynamic siteData) {
 		try {
 			final newSite = makeSite(siteData);
-			if (newSite != site) {
-				newSite.migrateFromPrevious(site);
-				site = newSite;
+			if (newSite != _site) {
+				if (_site != null) {
+					newSite.migrateFromPrevious(_site!);
+				}
+				_site = newSite;
 				site.persistence = persistence;
 				notifyListeners();
 			}
@@ -68,7 +71,7 @@ class Imageboard extends ChangeNotifier {
 		bool isNewSiteAfterStartup = false
 	}) async {
 		try {
-			site = makeSite(siteData);
+			_site = makeSite(siteData);
 			persistence = Persistence(key);
 			await persistence.initialize();
 			site.persistence = persistence;
