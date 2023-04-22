@@ -2215,7 +2215,7 @@ class PostLinkSpan extends PostTerminalSpan {
 							)
 						);
 					}
-					onTap() {
+					final onTap = options.ignorePointer ? null : () {
 						if (imageboardTarget != null) {
 							openImageboardTarget(context, (ImageboardRegistry.instance.getImageboard(imageboardTarget.$1) ?? zone.imageboard, imageboardTarget.$2, imageboardTarget.$3));
 						}
@@ -2238,7 +2238,7 @@ class PostLinkSpan extends PostTerminalSpan {
 						else {
 							openBrowser(context, cleanedUri!);
 						}
-					}
+					};
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
 						child: GestureDetector(
