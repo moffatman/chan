@@ -2247,7 +2247,7 @@ class PostLinkSpan extends PostTerminalSpan {
 							)
 						);
 					}
-					onTap() {
+					final onTap = options.ignorePointer ? null : () {
 						final isSelfLink =
 								(imageboardTarget?.$1 == zone.imageboard.key) &&
 								(imageboardTarget?.$2.threadIdentifier == post.threadIdentifier) &&
@@ -2274,7 +2274,7 @@ class PostLinkSpan extends PostTerminalSpan {
 						else {
 							openBrowser(context, cleanedUri!, useChanceIfPossible: !isSelfLink);
 						}
-					}
+					};
 					return WidgetSpan(
 						alignment: PlaceholderAlignment.middle,
 						child: GestureDetector(
