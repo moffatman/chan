@@ -707,6 +707,44 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					]
 				),
 				const SizedBox(height: 32),
+				const Row(
+					children: [
+						Icon(CupertinoIcons.cloud_download),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Preload attachments when opening threads')
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
+					children: const {
+						AutoloadAttachmentsSetting.never: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Never')
+						),
+						AutoloadAttachmentsSetting.wifi: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('When on Wi\u200d-\u200dFi', textAlign: TextAlign.center)
+						),
+						AutoloadAttachmentsSetting.always: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Always')
+						)
+					},
+					groupValue: settings.autoCacheAttachmentsSetting,
+					onValueChanged: (newValue) async {
+						if (newValue == AutoloadAttachmentsSetting.always) {
+							final ok = await confirm(context, 'Are you sure? This will consume a large amount of mobile data.');
+							if (!ok) {
+								setState(() {}); // Fix stuck button press-state
+								return;
+							}
+						}
+						settings.autoCacheAttachmentsSetting = newValue;
+					}
+				),
+				const SizedBox(height: 32),
 				Row(
 					children: [
 						const Icon(CupertinoIcons.volume_off),

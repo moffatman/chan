@@ -90,6 +90,29 @@ extension on AndroidGallerySavePathOrganizing {
 	}
 }
 
+Future<File?> optimisticallyFindCachedFile(Attachment attachment) async {
+	if (attachment.type == AttachmentType.pdf || attachment.type == AttachmentType.url) {
+		// Not cacheable
+		return null;
+	}
+	if (attachment.type == AttachmentType.image) {
+		return await getCachedImageFile(attachment.url);
+	}
+	if (attachment.type == AttachmentType.webm) {
+		final conversion = MediaConversion.toMp4(Uri.parse(attachment.url));
+		final file = conversion.getDestination();
+		if (await file.exists()) {
+			return file;
+		}
+		// Fall through in case WEBM is directly playing
+	}
+	final file = VideoServer.instance.optimisticallyGetFile(Uri.parse(attachment.url));
+	if (await file.exists()) {
+		return file;
+	}
+	return null;
+}
+
 class AttachmentViewerController extends ChangeNotifier {
 	// Parameters
 	final BuildContext context;
@@ -390,11 +413,24 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 				bool isAudioOnly = false;
 				if (!transcode) {
-					_videoPlayerController = VideoPlayerController.network(
-						url.toString(),
-						httpHeaders: _getHeaders(url),
-						videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true)
+					final progressNotifier = ValueNotifier<double?>(null);
+					final hash = await VideoServer.instance.startCachingDownload(
+						uri: url,
+						headers: _getHeaders(url),
+						onCached: onCacheCompleted,
+						onProgressChanged: (currentBytes, totalBytes) {
+							progressNotifier.value = currentBytes / totalBytes;
+						},
+						force: force
 					);
+					if (_isDisposed) return;
+					if (!background) {
+						_videoPlayerController = VideoPlayerController.network(
+							VideoServer.instance.getUri(hash).toString(),
+							videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true)
+						);
+					}
+					_videoLoadingProgress = progressNotifier;
 				}
 				else {
 					_ongoingConversion = StreamingMP4Conversion(url, headers: _getHeaders(url), soundSource: soundSource);
@@ -429,6 +465,10 @@ class AttachmentViewerController extends ChangeNotifier {
 							_swapIncoming = false;
 							notifyListeners();
 						});
+						if (!isPrimary && background) {
+							// Wait for full conversion during preload
+							await result.mp4File;
+						}
 					}
 					else if (result is StreamingMP4ConvertingFile) {
 						_duration = result.duration;

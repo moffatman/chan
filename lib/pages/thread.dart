@@ -23,6 +23,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
@@ -135,6 +136,9 @@ class _ThreadPageState extends State<ThreadPage> {
 	bool _searching = false;
 	bool _passedFirstLoad = false;
 	bool _showingWatchMenu = false;
+	final Map<Attachment, bool> _cached = {};
+	final List<Attachment> _cachingQueue = [];
+	final _indicatorKey = GlobalKey<_ThreadPositionIndicatorState>();
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -252,6 +256,7 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	void _onSlowScroll() {
 		final lastItem = _listController.lastVisibleItem;
+		_updateCached();
 		if (persistentState.thread != null && !_unnaturallyScrolling && lastItem != null) {
 			final newLastSeen = lastItem.id;
 			if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
@@ -259,6 +264,54 @@ class _ThreadPageState extends State<ThreadPage> {
 				persistentState.lastSeenPostIdNotifier.value = newLastSeen;
 				_saveQueued = true;
 			}
+		}
+	}
+
+	Future<void> _updateCached() async {
+		final attachments = _listController.items.expand((p) => p.item.attachments).toSet();
+		await Future.wait(attachments.map((attachment) async {
+			if (_cached[attachment] == true) return;
+			_cached[attachment] = (await (await optimisticallyFindCachedFile(attachment))?.exists()) ?? false;
+		}));
+	}
+
+	Future<void> _cacheAttachments({required bool automatic}) async {
+		await _updateCached();
+		if (!mounted) {
+			return;
+		}
+		_cachingQueue.clear();
+		print('CLEAR!');
+		_cachingQueue.addAll(_cached.entries.where((e) => !e.value).map((e) => e.key));
+		print('LENGTH IS ${_cachingQueue.length}');
+		while (_cachingQueue.isNotEmpty) {
+			if (automatic && !settings.autoCacheAttachments) {
+				_cachingQueue.clear();
+				showToast(
+					context: context,
+					icon: Icons.cell_tower,
+					message: 'Stopping preload'
+				);
+				break;
+			}
+			final attachment = _cachingQueue.removeAt(0);
+			final controller = AttachmentViewerController(
+				context: context,
+				attachment: attachment,
+				site: context.read<ImageboardSite>()
+			);
+			try {
+				await controller.preloadFullAttachment();
+			}
+			catch (e) {
+				showToast(
+					context: context,
+					message: 'Error getting attachment: ${e.toStringDio()}',
+					icon: CupertinoIcons.exclamationmark_triangle
+				);
+			}
+			_cached[attachment] = true;
+			_indicatorKey.currentState?.setState(() {});
 		}
 	}
 
@@ -306,12 +359,18 @@ class _ThreadPageState extends State<ThreadPage> {
 			_scrollIfWarranted();
 		}
 		_searching |= widget.initialSearch?.isNotEmpty ?? false;
+		if (settings.autoCacheAttachments) {
+			_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
+		}
 	}
 
 	@override
 	void didUpdateWidget(ThreadPage old) {
 		super.didUpdateWidget(old);
 		if (widget.thread != old.thread) {
+			_cached.clear();
+			_cachingQueue.clear();
+			print('CLEAR!');
 			_saveQueued = false;
 			_passedFirstLoad = false;
 			_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
@@ -335,6 +394,9 @@ class _ThreadPageState extends State<ThreadPage> {
 			_maybeUpdateWatch();
 			persistentState.save();
 			_scrollIfWarranted();
+			if (settings.autoCacheAttachments) {
+				_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
+			}
 			setState(() {});
 		}
 		else if (widget.initialPostId != old.initialPostId && widget.initialPostId != null) {
@@ -492,6 +554,9 @@ class _ThreadPageState extends State<ThreadPage> {
 					}
 				}
 			});
+			if (settings.autoCacheAttachments) {
+				_postUpdateCallbacks.add(() => _cacheAttachments(automatic: true));
+			}
 		}
 		else if (newThread.currentPage != lastPageNumber) {
 			lastPageNumber = newThread.currentPage;
@@ -1072,6 +1137,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																child: Align(
 																	alignment: reverseIndicatorPosition ? Alignment.bottomLeft : Alignment.bottomRight,
 																	child: ThreadPositionIndicator(
+																		key: _indicatorKey,
 																		reversed: reverseIndicatorPosition,
 																		persistentState: persistentState,
 																		thread: persistentState.thread,
@@ -1086,7 +1152,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																		blocked: blocked,
 																		boardSemanticId: widget.boardSemanticId,
 																		developerModeButtons: [
-																			('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
+																			[('Override last-seen', const Icon(CupertinoIcons.arrow_up_down), () {
 																				final id = _listController.lastVisibleItem?.id;
 																				if (id != null) {
 																					lastSeenIdBeforeLastUpdate = id;
@@ -1095,8 +1161,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																					persistentState.save();
 																					setState(() {});
 																				}
-																			})
+																			})]
 																		],
+																		cachedAttachments: _cached,
+																		attachmentsCachingQueue: _cachingQueue,
+																		startCaching: () => _cacheAttachments(automatic: false)
 																	)
 																)
 															),
@@ -1177,6 +1246,8 @@ class _ThreadPageState extends State<ThreadPage> {
 			setHandoffUrl(null);
 		}
 		zone.dispose();
+		_cachingQueue.clear();
+		print('CLEAR!');
 	}
 }
 
@@ -1194,7 +1265,10 @@ class ThreadPositionIndicator extends StatefulWidget {
 	final bool passedFirstLoad;
 	final bool blocked;
 	final int boardSemanticId;
-	final List<(String, Widget, VoidCallback)> developerModeButtons;
+	final List<List<(String, Widget, VoidCallback)>> developerModeButtons;
+	final Map<Attachment, bool> cachedAttachments;
+	final List<Attachment> attachmentsCachingQueue;
+	final VoidCallback startCaching;
 	
 	const ThreadPositionIndicator({
 		required this.persistentState,
@@ -1210,6 +1284,9 @@ class ThreadPositionIndicator extends StatefulWidget {
 		required this.passedFirstLoad,
 		required this.blocked,
 		required this.boardSemanticId,
+		required this.cachedAttachments,
+		required this.attachmentsCachingQueue,
+		required this.startCaching,
 		this.developerModeButtons = const [],
 		Key? key
 	}) : super(key: key);
@@ -1240,20 +1317,21 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	ValueNotifier<bool>? _lastUpdatingNow;
 
 	Future<bool> _updateCounts() async {
+		final site = context.read<ImageboardSite>();
 		await WidgetsBinding.instance.endOfFrame;
 		if (!mounted) return false;
 		final lastVisibleIndex = widget.listController.lastVisibleIndex;
 		if (lastVisibleIndex == -1 || (!widget.useTree && _filteredPosts == null) || (widget.useTree && _filteredItems == null)) {
 			if (!widget.passedFirstLoad && widget.useTree) {
 				if (widget.thread == null) {
-					_greyCount = context.read<ImageboardSite>().getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount ?? 0;
+					_greyCount = site.getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount ?? 0;
 					setState(() {});
 				}
 				return false;
 			}
 			if (widget.useTree) {
 				assert(widget.thread != null);
-				final catalogReplyCount = context.read<ImageboardSite>().getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount;
+				final catalogReplyCount = site.getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount;
 				if (catalogReplyCount != null) {
 					_greyCount = widget.thread?.replyCount ?? 0;
 					_whiteCountBelow = max(0, catalogReplyCount - _greyCount);
@@ -1261,7 +1339,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			}
 			else {
 				_whiteCountBelow = widget.thread?.replyCount ??
-					context.read<ImageboardSite>().getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount
+					site.getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount
 					?? 0;
 				_greyCount = 0;
 			}
@@ -1279,7 +1357,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			_redCountAbove = 0;
 			_redCountBelow = 0;
 			if (!widget.passedFirstLoad) {
-				_whiteCountBelow += max(0, (context.read<ImageboardSite>().getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount ?? 0) - (widget.thread?.replyCount ?? 0));
+				_whiteCountBelow += max(0, (site.getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount ?? 0) - (widget.thread?.replyCount ?? 0));
 			}
 			// TODO: Determine if this needs to be / can be memoized
 			for (int i = 0; i < items.length - 1; i++) {
@@ -1526,6 +1604,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		final radiusEnd = widget.reversed ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : const BorderRadius.only(topRight: radius, bottomRight: radius);
 		scrollToBottom() => widget.listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0);
 		final youIds = widget.persistentState.youIds;
+		final uncachedCount = widget.cachedAttachments.values.where((v) => !v).length;
+		final uncachedMB = (widget.cachedAttachments.entries.map((e) => e.value ? 0 : e.key.sizeInBytes ?? 0).fold(0, (a, b) => a + b) / (1024*1024));
+		final uncachedMBIsUncertain = widget.cachedAttachments.entries.any((e) => !e.value && e.key.sizeInBytes == null);
+		final cachingButtonLabel = '${uncachedMB.ceil()}${uncachedMBIsUncertain ? '+' : ''} MB';
 		return Stack(
 			alignment: widget.reversed ? Alignment.bottomLeft : Alignment.bottomRight,
 			children: [
@@ -1557,13 +1639,13 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 								crossAxisAlignment: widget.reversed ? CrossAxisAlignment.start : CrossAxisAlignment.end,
 								mainAxisSize: MainAxisSize.min,
 								children: [
-									for (final button in [
-										('Scroll to top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), () => widget.listController.scrollController?.animateTo(
+									for (final buttons in [
+										[('Top', const Icon(CupertinoIcons.arrow_up_to_line, size: 19), () => widget.listController.scrollController?.animateTo(
 											0,
 											duration: const Duration(milliseconds: 200),
 											curve: Curves.ease
-										)),
-										(describeCount(youIds.length, 'submission'), const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
+										))],
+										[(describeCount(youIds.length, 'submission'), const Icon(CupertinoIcons.person, size: 19), youIds.isEmpty ? null : () {
 												WeakNavigator.push(context, PostsPage(
 													zone: widget.zone,
 													postsIdsToShow: youIds,
@@ -1573,8 +1655,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 													}
 												)
 											);
-										}),
-										(describeCount(_youIds.length, '(You)'), const Icon(CupertinoIcons.reply_all, size: 19), _youIds.isEmpty ? null : () {
+										})],
+										[(describeCount(_youIds.length, '(You)'), const Icon(CupertinoIcons.reply_all, size: 19), _youIds.isEmpty ? null : () {
 												WeakNavigator.push(context, PostsPage(
 													zone: widget.zone,
 													postsIdsToShow: _youIds,
@@ -1584,8 +1666,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 													}
 												)
 											);
-										}),
-										(
+										})],
+										[(
 											describeCount((widget.thread?.imageCount ?? 0) + 1, 'image'),
 											const RotatedBox(
 												quarterTurns: 1,
@@ -1628,28 +1710,32 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 													widget.listController.animateTo((p) => p.attachments.contains(dest.attachment));
 												}
 											}
-										),
-										('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch),
-										if (widget.persistentState.useArchive) ('Live', const ImageboardIcon(), () {
+										), (
+											uncachedCount == 0 ? '' : 'Preload $uncachedCount${uncachedMB == 0 ? '' : ' (${uncachedMBIsUncertain ? '>' : ''}${uncachedMB.ceil()} MB)'}',
+											const Icon(CupertinoIcons.cloud_download, size: 19),
+											(widget.attachmentsCachingQueue.isEmpty && widget.cachedAttachments.values.any((v) => !v)) ? widget.startCaching : null
+										)],
+										[('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch)],
+										if (widget.persistentState.useArchive) [('Live', const ImageboardIcon(), () {
 											widget.persistentState.useArchive = false;
 											widget.persistentState.save();
 											setState(() {});
 											widget.listController.blockAndUpdate();
-										})
-										else ('Archive', const Icon(CupertinoIcons.archivebox, size: 19), () async {
+										})]
+										else [('Archive', const Icon(CupertinoIcons.archivebox, size: 19), () async {
 											widget.persistentState.useArchive = true;
 											widget.persistentState.save();
 											setState(() {});
 											widget.listController.blockAndUpdate();
-										}),
-										if (widget.persistentState.autoTranslate) ('Original', const Icon(Icons.translate, size: 19), () {
+										})],
+										if (widget.persistentState.autoTranslate) [('Original', const Icon(Icons.translate, size: 19), () {
 											widget.persistentState.autoTranslate = false;
 											widget.persistentState.translatedPosts.clear();
 											widget.zone.clearTranslatedPosts();
 											widget.persistentState.save();
 											setState(() {});
-										})
-										else ('Translate', const Icon(Icons.translate, size: 19), () async {
+										})]
+										else [('Translate', const Icon(Icons.translate, size: 19), () async {
 											widget.persistentState.autoTranslate = true;
 											for (final post in widget.persistentState.thread?.posts ?? []) {
 												if (widget.zone.translatedPost(post.id) == null) {
@@ -1663,56 +1749,64 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											}
 											widget.persistentState.save();
 											setState(() {});
-										}),
-										if (widget.useTree) ('Linear', const Icon(CupertinoIcons.list_bullet), () => setState(() {
+										})],
+										if (widget.useTree) [('Linear', const Icon(CupertinoIcons.list_bullet), () => setState(() {
 											widget.persistentState.useTree = false;
 											widget.persistentState.save();
-										}))
-										else ('Tree', const Icon(CupertinoIcons.list_bullet_indent), () => setState(() {
+										}))]
+										else [('Tree', const Icon(CupertinoIcons.list_bullet_indent), () => setState(() {
 											widget.persistentState.useTree = true;
 											widget.persistentState.save();
-										})),
-										('Scroll to new posts', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), _whiteCountBelow <= 0 ? null : () {
-											if (widget.useTree) {
-												int targetIndex = widget.listController.items.toList().asMap().entries.tryFirstWhere((entry) {
-													return entry.key > treeModeFurthestSeenIndexBottom &&
-														(entry.value.item.id > widget.lastSeenIdBeforeLastUpdate || entry.value.representsKnownStubChildren.any((id) => id.childId > widget.lastSeenIdBeforeLastUpdate)) &&
-														!entry.value.filterCollapsed;
-												})?.key ?? -1;
-												if (targetIndex != -1) {
-													while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)).isHidden) {
-														// Align to parent if the target has been collapsed
-														targetIndex++;
+										}))],
+										[
+											('New posts', const Icon(CupertinoIcons.arrow_down, size: 19), _whiteCountBelow <= 0 ? null : () {
+												if (widget.useTree) {
+													int targetIndex = widget.listController.items.toList().asMap().entries.tryFirstWhere((entry) {
+														return entry.key > treeModeFurthestSeenIndexBottom &&
+															(entry.value.item.id > widget.lastSeenIdBeforeLastUpdate || entry.value.representsKnownStubChildren.any((id) => id.childId > widget.lastSeenIdBeforeLastUpdate)) &&
+															!entry.value.filterCollapsed;
+													})?.key ?? -1;
+													if (targetIndex != -1) {
+														while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)).isHidden) {
+															// Align to parent if the target has been collapsed
+															targetIndex++;
+														}
+														widget.listController.animateToIndex(targetIndex);
 													}
-													widget.listController.animateToIndex(targetIndex);
 												}
-											}
-											else {
-												widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0);
-											}
-										}),
-										('Scroll to bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom),
+												else {
+													widget.listController.animateTo((post) => post.id == widget.persistentState.lastSeenPostId, alignment: 1.0);
+												}
+											}),
+											('Bottom', const Icon(CupertinoIcons.arrow_down_to_line, size: 19), scrollToBottom)
+										],
 										if (developerMode) ...widget.developerModeButtons
 									]) Padding(
 										padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-										child: CupertinoButton.filled(
-											disabledColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.4),
-											padding: const EdgeInsets.all(8),
-											minSize: 0,
-											onPressed: button.$3 == null ? null : () {
-												lightHapticFeedback();
-												button.$3?.call();
-												_hideMenu();
-											},
-											child: Row(
-												mainAxisSize: MainAxisSize.min,
-												children: [
-													Text(button.$1),
-													const SizedBox(width: 8),
-													button.$2
-												]
-											)
-										),
+										child: Row(
+											mainAxisSize: MainAxisSize.min,
+											children: buttons.expand((button) => [
+												const SizedBox(width: 8),
+												CupertinoButton.filled(
+													disabledColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.4),
+													padding: const EdgeInsets.all(8),
+													minSize: 0,
+													onPressed: button.$3 == null ? null : () {
+														lightHapticFeedback();
+														button.$3?.call();
+														_hideMenu();
+													},
+													child: Row(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															Text(button.$1),
+															if (button.$1.isNotEmpty) const SizedBox(width: 8),
+															button.$2
+														]
+													)
+												)
+											]).skip(1).toList()
+										)
 									)
 								]
 							)
@@ -1819,89 +1913,126 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 										}
 									}
 								),
-								CupertinoButton(
-									padding: EdgeInsets.zero,
-									child: Builder(
-										builder: (context) {
-											List<Widget> children = [
-												if (!widget.blocked && (widget.listController.state?.updatingNow.value ?? false) && widget.listController.state?.originalList != null) ...[
-													const CupertinoActivityIndicator(),
-													const SizedBox(width: 8),
-												],
-												if (!widget.blocked && widget.persistentState.useArchive) ...[
-													Icon(CupertinoIcons.archivebox, color: settings.theme.primaryColor.withOpacity(0.5)),
-													const SizedBox(width: 8)
-												],
-												if (_redCountBelow > 0) Container(
-													decoration: BoxDecoration(
-														borderRadius: radiusStart,
-														color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
-													),
+								Builder(
+									builder: (context) {
+										final children = [
+											if (!widget.blocked && widget.attachmentsCachingQueue.isNotEmpty) ...[
+												CupertinoButton.filled(
+													onPressed: () async {
+														final cancel = await confirm(context, 'Cancel preloading?');
+														if (mounted && cancel) {
+															widget.attachmentsCachingQueue.clear(); // Hacky...
+														}
+													},
 													padding: const EdgeInsets.all(8),
-													child: Text(
-														_redCountBelow.toString(),
-														textAlign: TextAlign.center
+													minSize: 0,
+													child: Row(
+														mainAxisSize: MainAxisSize.min,
+														crossAxisAlignment: CrossAxisAlignment.center,
+														children: [
+															const Icon(CupertinoIcons.photo, size: 19	),
+															ConstrainedBox(
+																constraints: BoxConstraints(
+																	minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * cachingButtonLabel.length)
+																),
+																child: Text(cachingButtonLabel, textAlign: TextAlign.center),
+															),
+															CupertinoActivityIndicator(
+																color: settings.theme.backgroundColor
+															),
+														]
 													)
 												),
-												if (_whiteCountBelow == 0 || _greyCount > 0) Container(
-													decoration: BoxDecoration(
-														borderRadius: (_redCountBelow > 0) ? (_whiteCountBelow > 0 ? null : radiusEnd) : (_whiteCountBelow > 0 ? radiusStart : radiusAlone),
-														color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
-													),
-													padding: const EdgeInsets.all(8),
-													child: Container(
-														constraints: BoxConstraints(
-															minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * _greyCount.toString().length)
-														),
-														child: Text(
-															_greyCount.toString(),
-															style: TextStyle(
-																color: CupertinoTheme.of(context).scaffoldBackgroundColor
+												const SizedBox(width: 8)
+											],
+											if (!widget.blocked && (widget.listController.state?.updatingNow.value ?? false) && widget.listController.state?.originalList != null) ...[
+												const CupertinoActivityIndicator(),
+												const SizedBox(width: 8),
+											],
+											if (!widget.blocked && widget.persistentState.useArchive) ...[
+												Icon(CupertinoIcons.archivebox, color: settings.theme.primaryColor.withOpacity(0.5)),
+												const SizedBox(width: 8)
+											],
+											CupertinoButton(
+												padding: EdgeInsets.zero,
+												child: Builder(
+													builder: (context) {
+														final indicatorParts = [
+															if (_redCountBelow > 0) Container(
+																decoration: BoxDecoration(
+																	borderRadius: radiusStart,
+																	color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
+																),
+																padding: const EdgeInsets.all(8),
+																child: Text(
+																	_redCountBelow.toString(),
+																	textAlign: TextAlign.center
+																)
 															),
-															textAlign: TextAlign.center
-														)
-													)
+															if (_whiteCountBelow == 0 || _greyCount > 0) Container(
+																decoration: BoxDecoration(
+																	borderRadius: (_redCountBelow > 0) ? (_whiteCountBelow > 0 ? null : radiusEnd) : (_whiteCountBelow > 0 ? radiusStart : radiusAlone),
+																	color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
+																),
+																padding: const EdgeInsets.all(8),
+																child: Container(
+																	constraints: BoxConstraints(
+																		minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * _greyCount.toString().length)
+																	),
+																	child: Text(
+																		_greyCount.toString(),
+																		style: TextStyle(
+																			color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																		),
+																		textAlign: TextAlign.center
+																	)
+																)
+															),
+															if (_whiteCountBelow > 0) Container(
+																decoration: BoxDecoration(
+																	borderRadius: (_redCountBelow <= 0 && _greyCount <= 0) ? radiusAlone : radiusEnd,
+																	color: CupertinoTheme.of(context).primaryColor
+																),
+																padding: const EdgeInsets.all(8),
+																child: Container(
+																	constraints: BoxConstraints(
+																		minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * _whiteCountBelow.toString().length)
+																	),
+																	child: Text(
+																		_whiteCountBelow.toString(),
+																		style: TextStyle(
+																			color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																		),
+																		textAlign: TextAlign.center
+																	)
+																)
+															)
+														];
+														return Row(
+															mainAxisSize: MainAxisSize.min,
+															children: widget.reversed ? indicatorParts.reversed.toList() : indicatorParts
+														);
+													}
 												),
-												if (_whiteCountBelow > 0) Container(
-													decoration: BoxDecoration(
-														borderRadius: (_redCountBelow <= 0 && _greyCount <= 0) ? radiusAlone : radiusEnd,
-														color: CupertinoTheme.of(context).primaryColor
-													),
-													padding: const EdgeInsets.all(8),
-													child: Container(
-														constraints: BoxConstraints(
-															minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * _whiteCountBelow.toString().length)
-														),
-														child: Text(
-															_whiteCountBelow.toString(),
-															style: TextStyle(
-																color: CupertinoTheme.of(context).scaffoldBackgroundColor
-															),
-															textAlign: TextAlign.center
-														)
-													)
-												)
-											];
-											if (widget.reversed) {
-												children = children.reversed.toList();
-											}
-											return Padding(
-												padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-												child: Row(
-													mainAxisSize: MainAxisSize.min,
-													children: children
-												)
-											);
-										}
-									),
-									onPressed: () {
-										lightHapticFeedback();
-										if (_buttonsAnimation.value > 0.5) {
-											_hideMenu();
-										}
-										else {
-											_showMenu();
-										}
+												onPressed: () {
+													lightHapticFeedback();
+													if (_buttonsAnimation.value > 0.5) {
+														_hideMenu();
+													}
+													else {
+														_showMenu();
+													}
+												}
+											)
+										];
+										return Padding(
+											padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												crossAxisAlignment: CrossAxisAlignment.center,
+												children: widget.reversed ? children.reversed.toList() : children
+											)
+										);
 									}
 								)
 							]

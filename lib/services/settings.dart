@@ -728,6 +728,8 @@ class SavedSettings extends HiveObject {
 	bool recordThreadsInHistory;
 	@HiveField(125)
 	String? fontFamily;
+	@HiveField(126)
+	AutoloadAttachmentsSetting autoCacheAttachments;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -855,6 +857,7 @@ class SavedSettings extends HiveObject {
 		AutoloadAttachmentsSetting? fullQualityThumbnails,
 		bool? recordThreadsInHistory,
 		this.fontFamily,
+		AutoloadAttachmentsSetting? autoCacheAttachments,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1008,7 +1011,8 @@ class SavedSettings extends HiveObject {
 		alwaysShowSpoilers = alwaysShowSpoilers ?? false,
 		androidGallerySavePathOrganizing = androidGallerySavePathOrganizing ?? AndroidGallerySavePathOrganizing.noSubfolders,
 		fullQualityThumbnails = fullQualityThumbnails ?? AutoloadAttachmentsSetting.never,
-		recordThreadsInHistory = recordThreadsInHistory ?? true {
+		recordThreadsInHistory = recordThreadsInHistory ?? true,
+		autoCacheAttachments = autoCacheAttachments ?? AutoloadAttachmentsSetting.never {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1938,6 +1942,17 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
+	AutoloadAttachmentsSetting get autoCacheAttachmentsSetting => _settings.autoCacheAttachments;
+	set autoCacheAttachmentsSetting(AutoloadAttachmentsSetting setting) {
+		_settings.autoCacheAttachments = setting;
+		_settings.save();
+		notifyListeners();
+	}
+	bool get autoCacheAttachments {
+		return (autoCacheAttachmentsSetting == AutoloadAttachmentsSetting.always) ||
+			((autoCacheAttachmentsSetting == AutoloadAttachmentsSetting.wifi) && (connectivity == ConnectivityResult.wifi));
+	}
+
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {
 		_appResumeCallbacks.add(task);
@@ -2017,7 +2032,7 @@ class _SettingsSystemListenerState extends State<SettingsSystemListener> with Wi
 	void didChangeAppLifecycleState(AppLifecycleState state) async {
 		if (state == AppLifecycleState.resumed) {
 			_checkConnectivity();
-			restartServerIfRunning();
+			VideoServer.instance.restartIfRunning();
 			final settings = context.read<EffectiveSettings>();
 			settings._runAppResumeCallbacks();
 			if (await updateDynamicColors()) {

@@ -2004,14 +2004,16 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		overscrollFactor.dispose();
 	}
 	void newContentId(String contentId) {
-		this.contentId = contentId;
-		_items = [];
-		for (final cbs in _itemCacheCallbacks.values) {
-			for (final cb in cbs) {
-				cb.completeError(Exception('page changed'));
+		if (this.contentId != null && this.contentId != contentId) {
+			for (final cbs in _itemCacheCallbacks.values) {
+				for (final cb in cbs) {
+					cb.completeError(Exception('page changed'));
+				}
 			}
+			_items = [];
+			_itemCacheCallbacks.clear();
 		}
-		_itemCacheCallbacks.clear();
+		this.contentId = contentId;
 	}
 	void setItems(List<RefreshableListItem<T>> items) {
 		final oldFirstOffset = _items.tryFirst?.cachedOffset;

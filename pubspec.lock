@@ -312,7 +312,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: c03e69e1860846fde44447de8c441f1729dc95ae
+      resolved-ref: "7c233e7903f64c1dec37b09a03420af80230eda0"
       url: "https://github.com/moffatman/extended_image_library.git"
     source: git
     version: "3.4.0"

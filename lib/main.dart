@@ -20,6 +20,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -77,6 +78,8 @@ void main() async {
 				FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
 			}
 			await Persistence.initializeStatic();
+			final webmcache = await Directory('${Persistence.temporaryDirectory.path}/webmcache').create(recursive: true);
+			VideoServer.initializeStatic(webmcache);
 			await Notifications.initializeStatic();
 			await updateDynamicColors();
 			runApp(const ChanApp());

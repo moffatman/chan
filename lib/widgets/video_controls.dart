@@ -169,7 +169,7 @@ class _VideoControlsState extends State<VideoControls> {
 									child: Stack(
 										alignment: Alignment.bottomCenter,
 										children: [
-											if (widget.controller.swapIncoming) ValueListenableBuilder(
+											if (widget.controller.swapIncoming || widget.controller.showLoadingProgress) ValueListenableBuilder(
 												valueListenable: widget.controller.videoLoadingProgress,
 												builder: (context, double? value, _) => LinearProgressIndicator(
 													minHeight: 44,
