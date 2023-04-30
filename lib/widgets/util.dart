@@ -12,6 +12,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
@@ -138,7 +139,10 @@ String formatTime(DateTime time) {
 	final notToday = (now.day != time.day) || (now.month != time.month) || (now.year != time.year);
 	String prefix = '';
 	const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-	if (notToday || Persistence.settings.exactTimeShowsDayOfWeekForToday) {
+	if (Persistence.settings.exactTimeIsISO8601) {
+		prefix = '${time.toISO8601Date} ';
+	}
+	else if (notToday || Persistence.settings.exactTimeShowsDayOfWeekForToday) {
 		if (now.difference(time).inDays > 7) {
 			prefix = '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} ';
 		}

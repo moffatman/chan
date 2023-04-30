@@ -3047,15 +3047,33 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					children: [
 						const Icon(CupertinoIcons.calendar),
 						const SizedBox(width: 8),
+						Expanded(
+							child: Text('ISO 8601 dates (e.g. ${DateTime.now().toISO8601Date})')
+						),
+						CupertinoSwitch(
+							value: settings.exactTimeIsISO8601,
+							onChanged: (newValue) {
+								settings.exactTimeIsISO8601 = newValue;
+							}
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				Row(
+					children: [
+						const SizedBox(width: 16),
+						const Icon(CupertinoIcons.calendar),
+						const SizedBox(width: 8),
 						const Expanded(
 							child: Text('Show day-of-week even if today')
 						),
 						CupertinoSwitch(
 							value: settings.exactTimeShowsDayOfWeekForToday,
-							onChanged: (newValue) {
+							onChanged: settings.exactTimeIsISO8601 ? null : (newValue) {
 								settings.exactTimeShowsDayOfWeekForToday = newValue;
 							}
-						)
+						),
+						const SizedBox(width: 16)
 					]
 				),
 				const SizedBox(height: 16)

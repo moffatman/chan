@@ -730,6 +730,8 @@ class SavedSettings extends HiveObject {
 	String? fontFamily;
 	@HiveField(126)
 	AutoloadAttachmentsSetting autoCacheAttachments;
+	@HiveField(127)
+	bool exactTimeIsISO8601;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -858,6 +860,7 @@ class SavedSettings extends HiveObject {
 		bool? recordThreadsInHistory,
 		this.fontFamily,
 		AutoloadAttachmentsSetting? autoCacheAttachments,
+		bool? exactTimeIsISO8601,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1012,7 +1015,8 @@ class SavedSettings extends HiveObject {
 		androidGallerySavePathOrganizing = androidGallerySavePathOrganizing ?? AndroidGallerySavePathOrganizing.noSubfolders,
 		fullQualityThumbnails = fullQualityThumbnails ?? AutoloadAttachmentsSetting.never,
 		recordThreadsInHistory = recordThreadsInHistory ?? true,
-		autoCacheAttachments = autoCacheAttachments ?? AutoloadAttachmentsSetting.never {
+		autoCacheAttachments = autoCacheAttachments ?? AutoloadAttachmentsSetting.never,
+		exactTimeIsISO8601 = exactTimeIsISO8601 ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1951,6 +1955,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get autoCacheAttachments {
 		return (autoCacheAttachmentsSetting == AutoloadAttachmentsSetting.always) ||
 			((autoCacheAttachmentsSetting == AutoloadAttachmentsSetting.wifi) && (connectivity == ConnectivityResult.wifi));
+	}
+
+	bool get exactTimeIsISO8601 => _settings.exactTimeIsISO8601;
+	set exactTimeIsISO8601(bool setting) {
+		_settings.exactTimeIsISO8601 = setting;
+		_settings.save();
+		notifyListeners();
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];
