@@ -210,7 +210,6 @@ class HistoryPageState extends State<HistoryPage> {
 								controller: _listController,
 								updateAnimation: threadStateBoxesAnimation,
 								listUpdater: () async {
-									final now = DateTime.now();
 									states = Persistence.sharedThreadStateBox.values.where((s) => s.imageboard != null && s.showInHistory).toList();
 									states.sort((a, b) => b.lastOpenedTime.compareTo(a.lastOpenedTime));
 									final part = states.take(_historyPageSize).toList();
@@ -224,7 +223,6 @@ class HistoryPageState extends State<HistoryPage> {
 									if (futures.isNotEmpty) {
 										await Future.wait(futures);
 									}
-									print('Loading history took ${(DateTime.now().difference(now).inMicroseconds / 1000).toStringAsFixed(1)} ms');
 									return part.where((p) => p.thread != null).toList();
 								},
 								listExtender: (after) async {
