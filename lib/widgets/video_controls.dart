@@ -38,7 +38,7 @@ class _VideoControlsState extends State<VideoControls> {
 		super.initState();
 		videoPlayerController = widget.controller.videoPlayerController;
 		videoPlayerController?.addListener(_onVideoPlayerControllerUpdate);
-		value = videoPlayerController?.value ?? VideoPlayerValue.uninitialized();
+		value = videoPlayerController?.value ?? const VideoPlayerValue.uninitialized();
 		position.value = value.position;
 		wasAlreadyPlaying = value.isPlaying;
 		widget.controller.addListener(_onControllerUpdate);

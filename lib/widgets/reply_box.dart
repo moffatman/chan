@@ -1264,7 +1264,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 													if (item.type == ContextMenuButtonType.paste) {
 														return item.copyWith(
 															onPressed: () {
-																item.onPressed();
+																item.onPressed?.call();
 																_handleImagePaste(manual: false);
 															}
 														);
