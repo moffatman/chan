@@ -281,9 +281,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			return;
 		}
 		_cachingQueue.clear();
-		print('CLEAR!');
 		_cachingQueue.addAll(_cached.entries.where((e) => !e.value).map((e) => e.key));
-		print('LENGTH IS ${_cachingQueue.length}');
 		while (_cachingQueue.isNotEmpty) {
 			if (automatic && !settings.autoCacheAttachments) {
 				_cachingQueue.clear();
@@ -370,7 +368,6 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (widget.thread != old.thread) {
 			_cached.clear();
 			_cachingQueue.clear();
-			print('CLEAR!');
 			_saveQueued = false;
 			_passedFirstLoad = false;
 			_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
@@ -1247,7 +1244,6 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 		zone.dispose();
 		_cachingQueue.clear();
-		print('CLEAR!');
 	}
 }
 
