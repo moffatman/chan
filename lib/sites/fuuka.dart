@@ -181,6 +181,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 			board: board,
 			attachments: posts[0].attachments,
 			replyCount: posts.length - 1,
+			isArchived: true,
 			imageCount: posts.skip(1).expand((post) => post.attachments).length
 		);
 	}
