@@ -77,9 +77,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 				return;
 			}
 			final thread = threadState.thread ?? await Persistence.getCachedThread(threadState.imageboardKey, threadState.board, threadState.id);
+			final query = RegExp(RegExp.escape(widget.query), caseSensitive: false);
 			if (thread != null) {
 				for (final post in thread.posts) {
-					if (widget.query.isNotEmpty && !post.span.buildText().contains(RegExp(RegExp.escape(widget.query), caseSensitive: false))) {
+					if (widget.query.isNotEmpty && !post.span.buildText().contains(query)) {
 						continue;
 					}
 					if (_filterContainsLink != null && _filterContainsLink != post.span.containsLink) {
