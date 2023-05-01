@@ -617,7 +617,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							throw Exception(response.data['error']);
 						}
 						if (!mounted) return;
-						await modalLoad(context, 'Setting up ${site.name}...', () async {
+						await modalLoad(context, 'Setting up ${site.name}...', (_) async {
 							await settings.updateContentSettings();
 							await Future.delayed(const Duration(milliseconds: 500)); // wait for rebuild of ChanHomePage
 						});
@@ -640,7 +640,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			// ignore this, it is handled elsewhere
 		}
 		else {
-			final dest = await modalLoad(context, 'Checking url...', () => ImageboardRegistry.instance.decodeUrl(link), wait: const Duration(milliseconds: 50));
+			final dest = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(link), wait: const Duration(milliseconds: 50));
 			if (dest != null) {
 				_onNotificationTapped(dest.$1, dest.$2);
 				return;

@@ -282,7 +282,7 @@ class SettingsPage extends StatelessWidget {
 									]
 								),
 								onPressed: () async {
-									await modalLoad(context, 'Synchronizing...', () => settings.updateContentSettings());
+									await modalLoad(context, 'Synchronizing...', (_) => settings.updateContentSettings());
 									// ignore: use_build_context_synchronously
 									showToast(
 										context: context,
@@ -332,7 +332,7 @@ class SettingsPage extends StatelessWidget {
 												)
 											);
 											if (toDelete != null && context.mounted) {
-												await modalLoad(context, 'Cleaning up...', () async {
+												await modalLoad(context, 'Cleaning up...', (_) async {
 													ImageboardRegistry.instance.getImageboard(toDelete)?.deleteAllData();
 													final response = await Dio().delete('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$toDelete');
 													if (response.data['error'] != null) {

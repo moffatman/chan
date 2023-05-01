@@ -279,7 +279,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			final archivedThread = await site.getThreadFromArchive(ThreadIdentifier(
 				attachment.board,
 				attachment.threadId!
-			), validate: (thread) async {
+			), customValidator: (thread) async {
 				final newAttachment = thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id);
 				if (newAttachment == null) {
 					throw AttachmentNotFoundException(attachment);

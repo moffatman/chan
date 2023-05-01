@@ -166,6 +166,7 @@ class Persistence extends ChangeNotifier {
 		final backupBoxName = '$_backupBoxPrefix$name';
 		final backupBoxPath = '${documentsDirectory.path}/$backupBoxName.hive${gzip ? '.gz' : ''}';
 		LazyBox<T> box;
+		bool backupCorrupted = false;
 		try {
 			box = await Hive.openLazyBox<T>(boxName, compactionStrategy: compactionStrategy, crashRecovery: false);
 			_backupBox(boxPath, backupBoxPath, gzip: gzip);
@@ -178,7 +179,15 @@ class Persistence extends ChangeNotifier {
 				if (await File(boxPath).exists()) {
 					await File(boxPath).copy('${documentsDirectory.path}/$boxName.broken.hive');
 					if (gzip) {
-						await copyUngzipped(backupBoxPath, boxPath);
+						try {
+							await copyUngzipped(backupBoxPath, boxPath);
+						}
+						on FormatException {
+							// Backup box is corrupted
+							backupCorrupted = true;
+							await File(backupBoxPath).rename('${documentsDirectory.path}/$backupBoxName.broken.hive.gz');
+							await File(boxPath).delete();
+						}
 					}
 					else {
 						await File(backupBoxPath).copy(boxPath);
@@ -187,7 +196,15 @@ class Persistence extends ChangeNotifier {
 				else if (await File(boxPath.toLowerCase()).exists()) {
 					await File(boxPath.toLowerCase()).copy('${documentsDirectory.path}/$boxName.broken.hive');
 					if (gzip) {
-						await copyUngzipped(backupBoxPath, boxPath.toLowerCase());
+						try {
+							await copyUngzipped(backupBoxPath, boxPath.toLowerCase());
+						}
+						on FormatException {
+							// Backup box is corrupted
+							backupCorrupted = true;
+							await File(backupBoxPath).rename('${documentsDirectory.path}/$backupBoxName.broken.hive.gz');
+							await File(boxPath.toLowerCase()).delete();
+						}
 					}
 					else {
 						await File(backupBoxPath).copy(boxPath.toLowerCase());
@@ -195,7 +212,14 @@ class Persistence extends ChangeNotifier {
 				}
 				box = await Hive.openLazyBox<T>(boxName, compactionStrategy: compactionStrategy);
 				Future.delayed(const Duration(seconds: 5), () {
-					alertError(ImageboardRegistry.instance.context!, 'Database corruption\nDatabase was restored to backup from $backupTime (${formatRelativeTime(backupTime)} ago)');
+					String message = 'Database corruption\n';
+					if (backupCorrupted) {
+						message += 'The backup was also corrupted. Data may have been permanently lost.';
+					}
+					else {
+						message += 'Database was restored to backup from $backupTime (${formatRelativeTime(backupTime)} ago)';
+					}
+					alertError(ImageboardRegistry.instance.context!, message);
 				});
 			}
 			else {
@@ -593,7 +617,10 @@ class Persistence extends ChangeNotifier {
 		settings.save();
 	}
 
-	PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
+	PersistentThreadState? getThreadStateIfExists(ThreadIdentifier? thread) {
+		if (thread == null) {
+			return null;
+		}
 		return sharedThreadStateBox.get(getThreadStateBoxKey(imageboardKey, thread));
 	}
 

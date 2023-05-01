@@ -12,6 +12,7 @@ import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/cookies.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/4chan.dart';
 import 'package:chan/sites/dvach.dart';
 import 'package:chan/sites/erischan.dart';
@@ -849,34 +850,61 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			throw BoardNotArchivedException(board);
 		}
 	}
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? validate}) async {
+	Future<void> _defaultArchivedThreadValidator(Thread thread) async {
+		final opAttachment = thread.attachments.tryFirst ?? thread.posts_.tryFirst?.attachments.tryFirst;
+		if (opAttachment != null) {
+			await client.head(opAttachment.url, options: Options(
+				headers: {
+					...getHeaders(Uri.parse(opAttachment.url)) ?? {},
+					if (opAttachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
+				}
+			));
+		}
+	}
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator}) async {
 		final Map<String, String> errorMessages = {};
-		for (final archive in archives) {
-			try {
-				final thread_ = await archive.getThread(thread).timeout(const Duration(seconds: 10));
-				for (final attachment in thread_.attachments) {
-					await ensureCookiesMemoized(Uri.parse(attachment.thumbnailUrl));
-					await ensureCookiesMemoized(Uri.parse(attachment.url));
+		Thread? fallback;
+		final validator = customValidator ?? _defaultArchivedThreadValidator;
+		final completer = Completer<Thread>();
+		() async {
+			await Future.wait(archives.map((archive) async {
+				try {
+					final thread_ = await archive.getThread(thread).timeout(const Duration(seconds: 10));
+					if (completer.isCompleted) return null;
+					for (final attachment in thread_.attachments) {
+						await ensureCookiesMemoized(Uri.parse(attachment.thumbnailUrl));
+						await ensureCookiesMemoized(Uri.parse(attachment.url));
+					}
+					thread_.archiveName = archive.name;
+					fallback = thread_;
+					if (completer.isCompleted) return null;
+					await validator(thread_);
+					if (!completer.isCompleted) {
+						completer.complete(thread_);
+					}
+					return thread_;
 				}
-				if (validate != null) {
-					await validate(thread_);
+				catch(e) {
+					if (e is! BoardNotFoundException) {
+						print('Error getting $thread from ${archive.name}: ${e.toStringDio()}');
+						errorMessages[archive.name] = e.toStringDio();
+					}
 				}
-				thread_.archiveName = archive.name;
-				return thread_;
+			}));
+			if (completer.isCompleted) {
+				// Do nothing, the thread was already returned
 			}
-			catch(e) {
-				if (e is! BoardNotFoundException) {
-					print('Error getting $thread from ${archive.name}: ${e.toStringDio()}');
-					errorMessages[archive.name] = e.toStringDio();
-				}
+			else if (fallback != null) {
+				completer.complete(fallback);
 			}
-		}
-		if (errorMessages.isNotEmpty) {
-			throw ImageboardArchiveException(errorMessages);
-		}
-		else {
-			throw BoardNotArchivedException(thread.board);
-		}
+			else if (errorMessages.isNotEmpty) {
+				completer.completeError(ImageboardArchiveException(errorMessages));
+			}
+			else {
+				completer.completeError(BoardNotArchivedException(thread.board));
+			}
+		}();
+		return completer.future;
 	}
 
 	@override

@@ -2047,7 +2047,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			_items = items.map((item) => _BuiltRefreshableListItem(item)..cachedHeight = oldCachedHeights[item]).toList();
 		}
 		_items.tryFirst?.cachedOffset = oldFirstOffset;
-		notifyListeners();
+		WidgetsBinding.instance.addPostFrameCallback((_) => notifyListeners());
 	}
 	void registerItem(int index, RefreshableListItem<T> item, BuildContext context) {
 		if (index < _items.length) {

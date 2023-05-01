@@ -75,7 +75,7 @@ class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
   }
 
   @override
-  PersistentThreadState? getThreadStateIfExists(ThreadIdentifier thread) {
+  PersistentThreadState? getThreadStateIfExists(ThreadIdentifier? thread) {
     return _ephemeralThreadStates[thread]?.$1 ?? parent.getThreadStateIfExists(thread);
   }
 

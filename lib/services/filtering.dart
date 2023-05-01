@@ -51,6 +51,32 @@ abstract class Filterable {
 	int get replyCount;
 }
 
+class EmptyFilterable implements Filterable {
+	@override
+	final int id;
+	const EmptyFilterable(this.id);
+	@override
+	String? getFilterFieldText(String fieldName) => null;
+
+  @override
+  String get board => '';
+
+  @override
+  bool get hasFile => false;
+
+  @override
+  bool get isThread => false;
+
+	@override
+	List<int> get repliedToIds => [];
+
+	@override
+	int get replyCount => 0;
+
+	@override
+	Iterable<String> get md5s => [];
+}
+
 abstract class Filter {
 	FilterResult? filter(Filterable item);
 

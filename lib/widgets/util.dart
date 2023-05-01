@@ -103,26 +103,50 @@ void showToast({
 	);
 }
 
-Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function() work, {wait = Duration.zero}) async {
+class ModalLoadController {
+	final progress = ValueNotifier<double?>(null);
+	bool cancelled = false;
+
+	void dispose() {
+		progress.dispose();
+	}
+}
+
+Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(ModalLoadController controller) work, {Duration wait = Duration.zero, bool cancellable = false}) async {
 	final rootNavigator = Navigator.of(context, rootNavigator: true);
+	final controller = ModalLoadController();
 	final timer = Timer(wait, () {
 		showCupertinoDialog(
 			context: context,
 			barrierDismissible: false,
-			builder: (context) => CupertinoAlertDialog2(
-				title: Text(title),
-				content: const Column(
-					mainAxisSize: MainAxisSize.min,
-					children: [
-						SizedBox(height: 8),
-						LinearProgressIndicator()
-					]	
+			builder: (context) => StatefulBuilder(
+				builder: (context, setDialogState) => CupertinoAlertDialog2(
+					title: Text(title),
+					content: Column(
+						mainAxisSize: MainAxisSize.min,
+						children: [
+							const SizedBox(height: 16),
+							ValueListenableBuilder(
+								valueListenable: controller.progress,
+								builder: (context, value, _) => LinearProgressIndicator(value: value)
+							),
+							if (cancellable) CupertinoButton(
+								padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
+								minSize: 0,
+								onPressed: controller.cancelled ? null : () {
+									controller.cancelled = true;
+									setDialogState(() {});
+								},
+								child: const Text('Cancel')
+							)
+						]	
+					)
 				)
 			)
 		);
 	});
 	try {
-		return await work();
+		return await work(controller);
 	}
 	finally {
 		if (timer.isActive) {
@@ -131,6 +155,7 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function() 
 		else {
 			rootNavigator.pop();
 		}
+		Future.delayed(const Duration(seconds: 1), controller.dispose);
 	}
 }
 
@@ -362,7 +387,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 	}
 	else {
 		final settings = context.read<EffectiveSettings>();
-		final imageboardTarget = await modalLoad(context, 'Checking url...', () => ImageboardRegistry.instance.decodeUrl(url.toString()), wait: const Duration(milliseconds: 50));
+		final imageboardTarget = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url.toString()), wait: const Duration(milliseconds: 50));
 		openInChance() {
 			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 				builder: (ctx) => ImageboardScope(

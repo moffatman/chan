@@ -450,26 +450,24 @@ class _SearchComposePageState extends State<SearchComposePage> {
 												)
 											);
 											idController.dispose();
-											if (target != null) {
+											if (mounted && target != null) {
 												try {
-													try {
-														final thread = await target.$1.site.getThread(ThreadIdentifier(target.$2, target.$3));
-														widget.onManualResult(SelectedSearchResult(
-															fromArchive: false,
-															threadSearch: null,
-															imageboard: target.$1,
-															result: ImageboardArchiveSearchResult.thread(thread)
-														));
-													}
-													on ThreadNotFoundException {
-														// Not a thread
-													}
-													final post = await target.$1.site.getPostFromArchive(target.$2, target.$3);
+													final result = await modalLoad(context, 'Finding post...', (controller) async {
+														try {
+															final thread = await target.$1.site.getThread(ThreadIdentifier(target.$2, target.$3));
+															return ImageboardArchiveSearchResult.thread(thread);
+														}
+														on ThreadNotFoundException {
+															// Not a thread
+														}
+														final post = await target.$1.site.getPostFromArchive(target.$2, target.$3);
+														return ImageboardArchiveSearchResult.post(post);
+													});
 													widget.onManualResult(SelectedSearchResult(
 														fromArchive: true,
 														threadSearch: null,
 														imageboard: target.$1,
-														result: ImageboardArchiveSearchResult.post(post)
+														result: result
 													));
 												}
 												catch (e) {

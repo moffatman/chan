@@ -13,37 +13,12 @@ class ScrollingDebuggingPage extends StatefulWidget {
 	createState() => _ScrollingDebuggingPage();
 }
 
-class FakeItem implements Filterable {
-	@override
-	final int id;
-	const FakeItem(this.id);
-	@override
-	String? getFilterFieldText(String fieldName) => null;
-
-  @override
-  String get board => '';
-
-  @override
-  bool get hasFile => false;
-
-  @override
-  bool get isThread => false;
-
-	@override
-	List<int> get repliedToIds => [];
-
-	@override
-	int get replyCount => 0;
-
-	@override
-	Iterable<String> get md5s => [];
-}
 
 class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
-	final controller = RefreshableListController<FakeItem>();
+	final controller = RefreshableListController<EmptyFilterable>();
 	int count = 30;
 	bool showBox = false;
-	List<FakeItem>? list;
+	List<EmptyFilterable>? list;
 	@override
 	Widget build(BuildContext context) {
 		return CupertinoPageScaffold(
@@ -73,7 +48,7 @@ class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
 			child: Column(
 				children: [
 					Expanded(
-						child: RefreshableList<FakeItem>(
+						child: RefreshableList<EmptyFilterable>(
 							filterableAdapter: null,
 							id: 'debuggingList',
 							controller: controller,
@@ -89,7 +64,7 @@ class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
 									});
 								});
 								//await Future.delayed(const Duration(milliseconds: 150));
-								list = List.generate(count++, (i) => FakeItem(i));
+								list = List.generate(count++, (i) => EmptyFilterable(i));
 								return list;
 							},
 							footer: const SizedBox(

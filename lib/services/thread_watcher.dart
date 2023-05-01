@@ -328,8 +328,8 @@ class ThreadWatcher extends ChangeNotifier {
 		_updateCounts();
 	}
 
-	void fixBrokenThread(ThreadIdentifier thread) {
-		fixBrokenLock.protect(() async {
+	Future<void> fixBrokenThread(ThreadIdentifier thread) async {
+		await fixBrokenLock.protect(() async {
 			if (fixedThreads.contains(thread)) {
 				// fixed while we were waiting
 				return;

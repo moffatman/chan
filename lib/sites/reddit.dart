@@ -823,7 +823,7 @@ class SiteReddit extends ImageboardSite {
 	bool get hasPagedCatalog => true;
 
 	@override
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? validate}) => getThread(thread);
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator}) => getThread(thread);
 
 	@override
 	List<CatalogVariantGroup> get catalogVariantGroups => const [
