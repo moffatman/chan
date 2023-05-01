@@ -1512,6 +1512,11 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 		}
 		notifyListeners();
 	}
+
+	@override
+	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId) {
+		return childZoneFor(0, fakeHoistedRootId: fakeHoistedRootId);
+	}
 }
 
 class ExpandingPost extends StatelessWidget {
