@@ -35,7 +35,7 @@ dynamic _decode(String data) {
 
 class CloudflareInterceptor extends Interceptor {
 	static bool _titleMatches(String title) {
-		return title.contains('Cloudflare') || title.contains('Just a moment') || title.contains('Please wait');
+		return title.contains('Cloudflare') || title.contains('Just a moment') || title.contains('Please wait') || title.contains('Verification Required');
 	}
 
 	static bool _responseMatches(Response response) {
