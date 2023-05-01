@@ -117,7 +117,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 				filename: fileDetailsMatch.group(5)!,
 				ext: ext,
 				type: ext == '.webm' ? AttachmentType.webm : AttachmentType.image,
-				url: 'https://$url',
+				url: 'https:$url',
 				thumbnailUrl: 'https:${element.querySelector('.thumb')!.attributes['src']!}',
 				md5: element.parent!.querySelectorAll('a').firstWhere((x) => x.text == 'View same').attributes['href']!.split('/').last,
 				spoiler: false,
