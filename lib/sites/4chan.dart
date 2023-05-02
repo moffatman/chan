@@ -1104,12 +1104,14 @@ class Site4ChanPassLoginSystem extends ImageboardSiteLoginSystem {
     return const [
 			ImageboardSiteLoginField(
 				displayName: 'Token',
-				formKey: 'id'
+				formKey: 'id',
+				autofillHints: [AutofillHints.username]
 			),
 			ImageboardSiteLoginField(
 				displayName: 'PIN',
 				formKey: 'pin',
-				inputType: TextInputType.number
+				inputType: TextInputType.number,
+				autofillHints: [AutofillHints.password]
 			)
 		];
   }

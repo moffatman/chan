@@ -656,10 +656,12 @@ class ImageboardSiteLoginField {
 	final String displayName;
 	final String formKey;
 	final TextInputType? inputType;
+	final List<String>? autofillHints;
 	const ImageboardSiteLoginField({
 		required this.displayName,
 		required this.formKey,
-		this.inputType
+		this.inputType,
+		this.autofillHints
 	});
 
 	@override

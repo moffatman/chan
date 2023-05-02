@@ -3790,6 +3790,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 								},
 								smartDashesType: SmartDashesType.disabled,
 								smartQuotesType: SmartQuotesType.disabled,
+								autofillHints: field.autofillHints,
 								keyboardType: field.inputType
 							),
 							const SizedBox(height: 16),

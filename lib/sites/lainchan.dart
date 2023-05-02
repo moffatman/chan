@@ -11,6 +11,7 @@ import 'package:chan/widgets/post_spans.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:html/parser.dart' show parse, parseFragment;
 import 'package:html/dom.dart' as dom;
 import 'package:linkify/linkify.dart';
@@ -504,11 +505,13 @@ class SiteLainchanLoginSystem extends ImageboardSiteLoginSystem {
     return const [
 			ImageboardSiteLoginField(
 				displayName: 'Username',
-				formKey: 'username'
+				formKey: 'username',
+				autofillHints: [AutofillHints.username]
 			),
 			ImageboardSiteLoginField(
 				displayName: 'Password',
-				formKey: 'password'
+				formKey: 'password',
+				autofillHints: [AutofillHints.password]
 			)
 		];
   }
