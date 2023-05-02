@@ -353,7 +353,7 @@ class _GalleryPageState extends State<GalleryPage> {
 			return false;
 		}
 		final displayIsLandscape = MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;
-		return attachment.isLandscape != null && displayIsLandscape != attachment.isLandscape;
+		return attachment.aspectRatio != 1 && displayIsLandscape != (attachment.aspectRatio > 1);
 	}
 
 	void _onPageChanged(int index) async {

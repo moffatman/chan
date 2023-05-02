@@ -73,8 +73,6 @@ class Attachment {
 		this.isRateLimited = false
 	}) : spoiler = spoiler ?? false, board = intern(board), ext = intern(ext);
 
-	bool? get isLandscape => (width == null || height == null) ? null : width! > height!;
-
 	double get aspectRatio {
 		if (width == null || height == null) {
 			return 1;
