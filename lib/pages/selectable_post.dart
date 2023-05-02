@@ -76,6 +76,7 @@ class SelectablePostPage extends StatelessWidget {
 														sharePositionOrigin: null
 													);
 												},
+												label: 'Share'
 											)
 										]
 									),
