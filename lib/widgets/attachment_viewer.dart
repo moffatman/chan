@@ -280,7 +280,8 @@ class AttachmentViewerController extends ChangeNotifier {
 				attachment.board,
 				attachment.threadId!
 			), customValidator: (thread) async {
-				final newAttachment = thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id);
+				final newAttachment = thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)
+					?? thread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.filename == attachment.filename && a.id.contains(attachment.id));
 				if (newAttachment == null) {
 					throw AttachmentNotFoundException(attachment);
 				}
@@ -293,7 +294,8 @@ class AttachmentViewerController extends ChangeNotifier {
 					throw AttachmentNotArchivedException(attachment);
 				}
 			});
-			final goodAttachment = archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)!;
+			final goodAttachment = archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)
+				?? archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.filename == attachment.filename && a.id.contains(attachment.id))!;
 			_useRandomUserAgent = goodAttachment.useRandomUseragent;
 			return Uri.parse(goodAttachment.url);
 		}
