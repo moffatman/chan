@@ -424,7 +424,8 @@ class ThreadRow extends StatelessWidget {
 												))
 											]
 										]
-									)
+									),
+									overflow: TextOverflow.fade
 								)
 							)
 						)
