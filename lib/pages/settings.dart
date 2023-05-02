@@ -3057,6 +3057,22 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const SizedBox(width: 16)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.number_square),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Overlay indicators and buttons in gallery')
+						),
+						CupertinoSwitch(
+							value: settings.showOverlaysInGallery,
+							onChanged: (newValue) {
+								settings.showOverlaysInGallery = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 16)
 			]
 		);

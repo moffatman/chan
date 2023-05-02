@@ -734,6 +734,8 @@ class SavedSettings extends HiveObject {
 	bool exactTimeIsISO8601;
 	@HiveField(128)
 	bool unsafeImagePeeking;
+	@HiveField(129)
+	bool showOverlaysInGallery;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -864,6 +866,7 @@ class SavedSettings extends HiveObject {
 		AutoloadAttachmentsSetting? autoCacheAttachments,
 		bool? exactTimeIsISO8601,
 		bool? unsafeImagePeeking,
+		bool? showOverlaysInGallery,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1020,7 +1023,8 @@ class SavedSettings extends HiveObject {
 		recordThreadsInHistory = recordThreadsInHistory ?? true,
 		autoCacheAttachments = autoCacheAttachments ?? AutoloadAttachmentsSetting.never,
 		exactTimeIsISO8601 = exactTimeIsISO8601 ?? false,
-		unsafeImagePeeking = unsafeImagePeeking ?? false {
+		unsafeImagePeeking = unsafeImagePeeking ?? false,
+		showOverlaysInGallery = showOverlaysInGallery ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1971,6 +1975,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get unsafeImagePeeking => _settings.unsafeImagePeeking;
 	set unsafeImagePeeking(bool setting) {
 		_settings.unsafeImagePeeking = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showOverlaysInGallery => _settings.showOverlaysInGallery;
+	set showOverlaysInGallery(bool setting) {
+		_settings.showOverlaysInGallery = setting;
 		_settings.save();
 		notifyListeners();
 	}

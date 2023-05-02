@@ -940,65 +940,70 @@ class _GalleryPageState extends State<GalleryPage> {
 										),
 										Align(
 											alignment: Alignment.bottomRight,
-											child: Row(
-												mainAxisSize: MainAxisSize.min,
-												crossAxisAlignment: CrossAxisAlignment.end,
-												children: [
-													ValueListenableBuilder<bool>(
-														valueListenable: settings.muteAudio,
-														builder: (context, muted, _) => AnimatedBuilder(
+											child: Padding(
+												padding: showChrome ? EdgeInsets.only(
+													bottom: (settings.showThumbnailsInGallery ? MediaQuery.sizeOf(context).height * 0.2 : (44 + MediaQuery.paddingOf(context).bottom)) - (currentController.videoPlayerController == null ? 44 : 0) - 16,
+													right: 8
+												) : const EdgeInsets.only(right: 8),
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													crossAxisAlignment: CrossAxisAlignment.end,
+													children: [
+														ValueListenableBuilder<bool>(
+															valueListenable: settings.muteAudio,
+															builder: (context, muted, _) => AnimatedBuilder(
+																animation: _currentAttachmentChanged,
+																builder: (context, _) => AnimatedSwitcher(
+																	duration: const Duration(milliseconds: 300),
+																	child: (currentController.hasAudio && !showChrome && settings.showOverlaysInGallery) ? Align(
+																		key: ValueKey<bool>(muted),
+																		alignment: Alignment.bottomLeft,
+																		child: CupertinoButton(
+																			padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+																			child: muted ? const Icon(CupertinoIcons.volume_off) : const Icon(CupertinoIcons.volume_up),
+																			onPressed: () {
+																				if (muted) {
+																					currentController.videoPlayerController?.setVolume(1);
+																					settings.setMuteAudio(false);
+																				}
+																				else {
+																					currentController.videoPlayerController?.setVolume(0);
+																					settings.setMuteAudio(true);
+																				}
+																			}
+																		)
+																	) : const SizedBox.shrink()
+																)
+															)
+														),
+														AnimatedBuilder(
 															animation: _currentAttachmentChanged,
-															builder: (context, _) => AnimatedSwitcher(
-																duration: const Duration(milliseconds: 300),
-																child: currentController.hasAudio ? Align(
-																	key: ValueKey<bool>(muted),
-																	alignment: Alignment.bottomLeft,
-																	child: CupertinoButton(
+															builder: (context, _) => AnimatedBuilder(
+																animation: _rotationsChanged,
+																builder: (context, _) => AnimatedSwitcher(
+																	duration: const Duration(milliseconds: 300),
+																	child: (_rotationAppropriate(currentAttachment.attachment) && !_hideRotateButton && (showChrome || settings.showOverlaysInGallery)) ? CupertinoButton(
 																		padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-																		child: muted ? const Icon(CupertinoIcons.volume_off) : const Icon(CupertinoIcons.volume_up),
+																		child: Transform(
+																			alignment: Alignment.center,
+																			transform: !currentController.rotate90DegreesClockwise ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
+																			child: const Icon(CupertinoIcons.rotate_left)
+																		),
 																		onPressed: () {
-																			if (muted) {
-																				currentController.videoPlayerController?.setVolume(1);
-																				settings.setMuteAudio(false);
+																			if (currentController.rotate90DegreesClockwise) {
+																				currentController.unrotate();
 																			}
 																			else {
-																				currentController.videoPlayerController?.setVolume(0);
-																				settings.setMuteAudio(true);
+																				currentController.rotate();
 																			}
+																			_rotationsChanged.didUpdate();
 																		}
-																	)
-																) : const SizedBox.shrink()
+																	) : const SizedBox.shrink()
+																)
 															)
 														)
-													),
-													AnimatedBuilder(
-														animation: _currentAttachmentChanged,
-														builder: (context, _) => AnimatedBuilder(
-															animation: _rotationsChanged,
-															builder: (context, _) => AnimatedSwitcher(
-																duration: const Duration(milliseconds: 300),
-																child: (_rotationAppropriate(currentAttachment.attachment) && !_hideRotateButton) ? CupertinoButton(
-																	padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-																	child: Transform(
-																		alignment: Alignment.center,
-																		transform: !currentController.rotate90DegreesClockwise ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
-																		child: const Icon(CupertinoIcons.rotate_left)
-																	),
-																	onPressed: () {
-																		if (currentController.rotate90DegreesClockwise) {
-																			currentController.unrotate();
-																		}
-																		else {
-																			currentController.rotate();
-																		}
-																		_rotationsChanged.didUpdate();
-																	}
-																) : const SizedBox.shrink()
-															)
-														)
-													),
-													const SizedBox(width: 8)
-												]
+													]
+												)
 											)
 										),
 										AnimatedBuilder(
@@ -1025,7 +1030,7 @@ class _GalleryPageState extends State<GalleryPage> {
 											),
 											builder: (context, child) => AnimatedSwitcher(
 												duration: const Duration(milliseconds: 300),
-												child: _shouldShowPosition.value ? child : const SizedBox.shrink()
+												child: _shouldShowPosition.value && (showChrome || settings.showOverlaysInGallery) ? child : const SizedBox.shrink()
 											)
 										),
 										Visibility(
