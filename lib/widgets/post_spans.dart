@@ -13,6 +13,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/translation.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
@@ -1435,6 +1436,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 
 	@override
 	Future<void> loadPostFromArchive(int id) async {
+		lightHapticFeedback();
 		try {
 			_postFromArchiveErrors.remove(id);
 			_isLoadingPostFromArchive[id] = true;
@@ -1449,6 +1451,7 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 			print(st);
 			_postFromArchiveErrors[id] = e.toStringDio();
 		}
+		lightHapticFeedback();
 		_isLoadingPostFromArchive[id] = false;
 		notifyAllListeners();
 	}
