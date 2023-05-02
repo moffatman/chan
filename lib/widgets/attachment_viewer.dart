@@ -433,6 +433,7 @@ class AttachmentViewerController extends ChangeNotifier {
 						);
 					}
 					_videoLoadingProgress = progressNotifier;
+					notifyListeners();
 				}
 				else {
 					_ongoingConversion = StreamingMP4Conversion(url, headers: _getHeaders(url), soundSource: soundSource);
@@ -831,7 +832,7 @@ class AttachmentViewer extends StatelessWidget {
 			child: AnimatedSwitcher(
 				duration: const Duration(milliseconds: 300),
 				child: active ? TweenAnimationBuilder<double>(
-					tween: Tween(begin: 0, end: (controller.cacheCompleted || controller.videoPlayerController != null) ? 0 : 1),
+					tween: Tween(begin: 0, end: controller.cacheCompleted ? 0 : 1),
 					duration: const Duration(milliseconds: 250),
 					curve: Curves.ease,
 					builder: (context, v, child) => Transform.scale(
