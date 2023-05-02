@@ -507,7 +507,7 @@ class _BoardPageState extends State<BoardPage> {
 						isSelected: isSelected,
 						semanticParentIds: [widget.semanticId],
 						dimReadThreads: settings.dimReadThreads,
-						countsUnreliable: variant.countsUnreliable,
+						countsUnreliable: thread.replyCount < 0,
 						onThumbnailTap: (initialAttachment) {
 							final attachments = _listController.items.expand((_) => _.item.attachments).toList();
 							// It might not be in the list if the thread has been filtered
@@ -883,7 +883,7 @@ class _BoardPageState extends State<BoardPage> {
 															}
 															return list;
 														}),
-														disableBottomUpdates: !site.hasPagedCatalog,
+														disableBottomUpdates: !(variant.hasPagedCatalog ?? site.hasPagedCatalog),
 														id: '${site.name} /${board!.name}/${variant.dataId}',
 														itemBuilder: (context, thread) => itemBuilder(context, thread),
 														filteredItemBuilder: (context, thread, resetPage, filterText) => itemBuilder(context, thread, highlightString: filterText),

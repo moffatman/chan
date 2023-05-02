@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -37,6 +38,8 @@ import '../models/thread.dart';
 import 'package:dio/dio.dart';
 
 part 'imageboard_site.g.dart';
+
+const _preferredArchiveApiRoot = 'https://push.chance.surf';
 
 class PostNotFoundException implements Exception {
 	String board;
@@ -343,12 +346,12 @@ extension CatalogVariantMetadata on CatalogVariant {
 		CatalogVariant.hackerNewsJobs: 'Jobs',
 		CatalogVariant.hackerNewsSecondChancePool: 'Second Chance'
 	}[this]!;
-	bool get countsUnreliable {
+	bool? get hasPagedCatalog {
 		switch (this) {
 			case CatalogVariant.chan4NativeArchive:
 				return true;
 			default:
-				return false;
+				return null;
 		}
 	}
 	String get dataId {
@@ -993,6 +996,21 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		_catalogCache.addAll(oldSite._catalogCache);
 		_memoizedWifiHeaders = oldSite._memoizedWifiHeaders;
 		_memoizedCellularHeaders = oldSite._memoizedCellularHeaders;
+	}
+	@protected
+	Future<Map<int, String>> queryPreferredArchive(String board, List<int> threadIds) async {
+		final sorted = threadIds.toList()..sort();
+		final diffs = List.generate(sorted.length - 1, (i) => sorted[i + 1] - sorted[i]);
+		final response = await client.get('$_preferredArchiveApiRoot/ops', queryParameters: {
+			'siteType': siteType,
+			'siteData': siteData,
+			'board': board,
+			'base': sorted.first.toString(),
+			'diffs': base64Url.encode(gzip.encode(utf8.encode(diffs.join(','))))
+		});
+		return {
+			for (final entry in (response.data as Map).entries) int.parse(entry.key): entry.value
+		};
 	}
 }
 

@@ -1,5 +1,7 @@
 // ignore_for_file: file_names
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:async/async.dart';
 import 'package:chan/models/board.dart';
@@ -487,7 +489,8 @@ class Site4Chan extends ImageboardSite {
 		throw Exception('Not implemented');
 	}
 
-	Future<List<Thread>> _getArchive(String board) async {
+	static const _kArchivePageSize = 100;
+	Future<List<Thread>> _getArchive(String board, int? after) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/archive'), options: Options(
 			validateStatus: (x) => true
 		));
@@ -500,8 +503,27 @@ class Site4Chan extends ImageboardSite {
 			}
 		}
 		final document = parse(response.data);
-		return document.querySelector('#arc-list tbody')!.querySelectorAll('tr').map((tr) {
+		final trs = document.querySelector('#arc-list tbody')!.querySelectorAll('tr').toList();
+		final ids = trs.map((tr) => int.parse(tr.children.first.text)).toList();
+		int startIndex;
+		if (after == null) {
+			startIndex = 0;
+		}
+		else {
+			startIndex = ids.indexOf(after) + 1;
+		}
+		final endIndex = min(ids.length, startIndex + _kArchivePageSize);
+		final selectedIds = ids.sublist(startIndex, endIndex);
+		if (selectedIds.isEmpty) {
+			return [];
+		}
+		final cache = await queryPreferredArchive(board, selectedIds);
+		return trs.sublist(startIndex, endIndex).map((tr) {
 			final id = int.parse(tr.children.first.text);
+			final cachedJson = cache[id];
+			if (cachedJson != null) {
+				return _makeThread(board, jsonDecode(cachedJson));
+			}
 			final excerptNode = tr.children[1];
 			String? subject;
 			if (excerptNode.children.isNotEmpty && excerptNode.children.first.localName == 'b') {
@@ -510,8 +532,8 @@ class Site4Chan extends ImageboardSite {
 			}
 			final text = excerptNode.innerHtml;
 			return Thread(
-				replyCount: 0,
-				imageCount: 0,
+				replyCount: -1,
+				imageCount: -1,
 				id: id,
 				board: board,
 				title: subject,
@@ -534,10 +556,30 @@ class Site4Chan extends ImageboardSite {
 		}).toList();
 	}
 
+	Thread _makeThread(String board, dynamic threadData, {int? currentPage}) {
+		final String? title = threadData['sub'];
+		final int threadId = threadData['no'];
+		final Post threadAsPost = _makePost(board, threadId, threadData);
+		final List<Post> lastReplies = ((threadData['last_replies'] ?? []) as List<dynamic>).map((postData) => _makePost(board, threadId, postData)).toList();
+		final a = _makeAttachment(board, threadId, threadData);
+		return Thread(
+			board: board,
+			id: threadId,
+			replyCount: threadData['replies'],
+			imageCount: threadData['images'],
+			attachments: a == null ? [] : [a],
+			posts_: [threadAsPost, ...lastReplies],
+			title: (title == null) ? null : unescape.convert(title),
+			isSticky: threadData['sticky'] == 1,
+			time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
+			currentPage: currentPage
+		);
+	}
+
 	@override
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
 		if (variant == CatalogVariant.chan4NativeArchive) {
-			return _getArchive(board);
+			return _getArchive(board, null);
 		}
 		final response = await client.getUri(Uri.https(apiUrl, '/$board/catalog.json'), options: Options(
 			validateStatus: (x) => true
@@ -553,24 +595,7 @@ class Site4Chan extends ImageboardSite {
 		final List<Thread> threads = [];
 		for (final page in response.data) {
 			for (final threadData in page['threads']) {
-				final String? title = threadData['sub'];
-				final int threadId = threadData['no'];
-				final Post threadAsPost = _makePost(board, threadId, threadData);
-				final List<Post> lastReplies = ((threadData['last_replies'] ?? []) as List<dynamic>).map((postData) => _makePost(board, threadId, postData)).toList();
-				final a = _makeAttachment(board, threadId, threadData);
-				Thread thread = Thread(
-					board: board,
-					id: threadId,
-					replyCount: threadData['replies'],
-					imageCount: threadData['images'],
-					attachments: a == null ? [] : [a],
-					posts_: [threadAsPost, ...lastReplies],
-					title: (title == null) ? null : unescape.convert(title),
-					isSticky: threadData['sticky'] == 1,
-					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
-					currentPage: page['page']
-				);
-				threads.add(thread);
+				threads.add(_makeThread(board, threadData, currentPage: page['page']));
 			}
 		}
 		return threads;
@@ -597,6 +622,14 @@ class Site4Chan extends ImageboardSite {
 				spoilers: board['spoilers'] == 1
 			);
 		}).toList();
+	}
+
+	@override
+	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) async {
+		if (variant == CatalogVariant.chan4NativeArchive) {
+			return _getArchive(after.board, after.id);
+		}
+		return [];
 	}
 
 	@override
