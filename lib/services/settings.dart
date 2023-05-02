@@ -732,6 +732,8 @@ class SavedSettings extends HiveObject {
 	AutoloadAttachmentsSetting autoCacheAttachments;
 	@HiveField(127)
 	bool exactTimeIsISO8601;
+	@HiveField(128)
+	bool unsafeImagePeeking;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -861,6 +863,7 @@ class SavedSettings extends HiveObject {
 		this.fontFamily,
 		AutoloadAttachmentsSetting? autoCacheAttachments,
 		bool? exactTimeIsISO8601,
+		bool? unsafeImagePeeking,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1016,7 +1019,8 @@ class SavedSettings extends HiveObject {
 		fullQualityThumbnails = fullQualityThumbnails ?? AutoloadAttachmentsSetting.never,
 		recordThreadsInHistory = recordThreadsInHistory ?? true,
 		autoCacheAttachments = autoCacheAttachments ?? AutoloadAttachmentsSetting.never,
-		exactTimeIsISO8601 = exactTimeIsISO8601 ?? false {
+		exactTimeIsISO8601 = exactTimeIsISO8601 ?? false,
+		unsafeImagePeeking = unsafeImagePeeking ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1960,6 +1964,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get exactTimeIsISO8601 => _settings.exactTimeIsISO8601;
 	set exactTimeIsISO8601(bool setting) {
 		_settings.exactTimeIsISO8601 = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get unsafeImagePeeking => _settings.unsafeImagePeeking;
+	set unsafeImagePeeking(bool setting) {
+		_settings.unsafeImagePeeking = setting;
 		_settings.save();
 		notifyListeners();
 	}

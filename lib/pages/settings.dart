@@ -1088,6 +1088,25 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.exclamationmark_square),
+						const SizedBox(width: 8),
+						const Text('Unsafe image peeking'),
+						const SizedBox(width: 8),
+						const _SettingsHelpButton(
+							helpText: 'When holding and dragging to peek at an image, it will start larger and will not be blurred.'
+						),
+						const Spacer(),
+						CupertinoSwitch(
+							value: settings.unsafeImagePeeking,
+							onChanged: (newValue) {
+								settings.unsafeImagePeeking = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 32)
 			]
 		);
@@ -2709,27 +2728,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 							child: Text('Two-pane breakpoint: ${settings.twoPaneBreakpoint.round()} pixels')
 						),
 						const SizedBox(width: 8),
-						CupertinoButton(
-							minSize: 0,
-							padding: EdgeInsets.zero,
-							child: const Icon(CupertinoIcons.question_circle),
-							onPressed: () {
-								showCupertinoDialog<bool>(
-									context: context,
-									barrierDismissible: true,
-									builder: (context) => CupertinoAlertDialog2(
-										content: Text('When the screen is at least ${settings.twoPaneBreakpoint.round()} pixels wide, two columns will be used.\nThe board catalog will be on the left and the current thread will be on the right.'),
-										actions: [
-											CupertinoDialogAction2(
-												child: const Text('OK'),
-												onPressed: () {
-													Navigator.of(context).pop();
-												}
-											)
-										]
-									)
-								);
-							}
+						_SettingsHelpButton(
+							helpText: 'When the screen is at least ${settings.twoPaneBreakpoint.round()} pixels wide, two columns will be used.\nThe board catalog will be on the left and the current thread will be on the right.'
 						)
 					]
 				),
@@ -2861,27 +2861,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 							const SizedBox(width: 8),
 							const Text('Use status bar workaround'),
 							const SizedBox(width: 8),
-							CupertinoButton(
-								minSize: 0,
-								padding: EdgeInsets.zero,
-								child: const Icon(CupertinoIcons.question_circle),
-								onPressed: () {
-									showCupertinoDialog<bool>(
-										context: context,
-										barrierDismissible: true,
-										builder: (context) => CupertinoAlertDialog2(
-											content: const Text('Some devices have a bug in their Android ROM, where the status bar cannot be properly hidden.\n\nIf this workaround is enabled, the status bar will not be hidden when opening the gallery.'),
-											actions: [
-												CupertinoDialogAction2(
-													child: const Text('OK'),
-													onPressed: () {
-														Navigator.of(context).pop();
-													}
-												)
-											]
-										)
-									);
-								}
+							const _SettingsHelpButton(
+								helpText: 'Some devices have a bug in their Android ROM, where the status bar cannot be properly hidden.\n\nIf this workaround is enabled, the status bar will not be hidden when opening the gallery.'
 							),
 							const Spacer(),
 							CupertinoSwitch(
@@ -3158,27 +3139,8 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 						const SizedBox(width: 8),
 						const Text('Contribute captcha data'),
 						const SizedBox(width: 8),
-						CupertinoButton(
-							minSize: 0,
-							padding: EdgeInsets.zero,
-							child: const Icon(CupertinoIcons.question_circle),
-							onPressed: () {
-								showCupertinoDialog<bool>(
-									context: context,
-									barrierDismissible: true,
-									builder: (context) => CupertinoAlertDialog2(
-										content: const Text('Send the captcha images you solve to a database to improve the automated solver. No other information about your posts will be collected.'),
-										actions: [
-											CupertinoDialogAction2(
-												child: const Text('OK'),
-												onPressed: () {
-													Navigator.of(context).pop();
-												}
-											)
-										]
-									)
-								);
-							}
+						const _SettingsHelpButton(
+							helpText: 'Send the captcha images you solve to a database to improve the automated solver. No other information about your posts will be collected.'
 						),
 						const Spacer(),
 						CupertinoSwitch(
@@ -3196,27 +3158,8 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 						const SizedBox(width: 8),
 						const Text('Contribute crash data'),
 						const SizedBox(width: 8),
-						CupertinoButton(
-							minSize: 0,
-							padding: EdgeInsets.zero,
-							child: const Icon(CupertinoIcons.question_circle),
-							onPressed: () {
-								showCupertinoDialog<bool>(
-									context: context,
-									barrierDismissible: true,
-									builder: (context) => CupertinoAlertDialog2(
-										content: const Text('Crash stack traces and uncaught exceptions will be used to help fix bugs. No personal information will be collected.'),
-										actions: [
-											CupertinoDialogAction2(
-												child: const Text('OK'),
-												onPressed: () {
-													Navigator.of(context).pop();
-												}
-											)
-										]
-									)
-								);
-							}
+						const _SettingsHelpButton(
+							helpText: 'Crash stack traces and uncaught exceptions will be used to help fix bugs. No personal information will be collected.'
 						),
 						const Spacer(),
 						CupertinoSwitch(
@@ -3235,27 +3178,8 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 						const SizedBox(width: 8),
 						const Text('Show rich links'),
 						const SizedBox(width: 8),
-						CupertinoButton(
-							minSize: 0,
-							padding: EdgeInsets.zero,
-							child: const Icon(CupertinoIcons.question_circle),
-							onPressed: () {
-								showCupertinoDialog<bool>(
-									context: context,
-									barrierDismissible: true,
-									builder: (context) => CupertinoAlertDialog2(
-										content: const Text('Links to sites such as YouTube will show the thumbnail and title of the page instead of the link URL.'),
-										actions: [
-											CupertinoDialogAction2(
-												child: const Text('OK'),
-												onPressed: () {
-													Navigator.of(context).pop();
-												}
-											)
-										]
-									)
-								);
-							}
+						const _SettingsHelpButton(
+							helpText: 'Links to sites such as YouTube will show the thumbnail and title of the page instead of the link URL.'
 						),
 						const Spacer(),
 						CupertinoSwitch(
@@ -3992,4 +3916,38 @@ Future<Imageboard?> _pickImageboard(BuildContext context, Imageboard current) {
 			)
 		)
 	);
+}
+
+class _SettingsHelpButton extends StatelessWidget {
+	final String helpText;
+
+	const _SettingsHelpButton({
+		required this.helpText
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		return CupertinoButton(
+			minSize: 0,
+			padding: EdgeInsets.zero,
+			child: const Icon(CupertinoIcons.question_circle),
+			onPressed: () {
+				showCupertinoDialog<bool>(
+					context: context,
+					barrierDismissible: true,
+					builder: (context) => CupertinoAlertDialog2(
+						content: Text(helpText),
+						actions: [
+							CupertinoDialogAction2(
+								child: const Text('OK'),
+								onPressed: () {
+									Navigator.of(context).pop();
+								}
+							)
+						]
+					)
+				);
+			}
+		);
+	}
 }

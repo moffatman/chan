@@ -11,6 +11,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
+const _kSafeScaleStart = 0.1;
+const _kUnsafeScaleStart = 0.4;
+
 enum HoverPopupStyle {
 	attached,
 	floating
@@ -117,9 +120,11 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	}
 
 	void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
+		final unsafe = context.read<EffectiveSettings>().unsafeImagePeeking;
+		final minimumScale = unsafe ? _kUnsafeScaleStart : _kSafeScaleStart;
 		_touchGlobalKey?.currentState?.setScale(
-			blur: 20 - (25 * max(details.localOffsetFromOrigin.dy / min(400, MediaQuery.sizeOf(context).shortestSide - _touchStart!.dy), (-1 * details.localOffsetFromOrigin.dy) / min(400, _touchStart!.dy)).abs().clamp(0, 1)),
-			scale: 0.1 + (1.1 * (details.localOffsetFromOrigin.dx / min(400, MediaQuery.sizeOf(context).shortestSide)).abs()).clamp(0, 0.9)
+			blur: unsafe ? 0 : 20 - (25 * max(details.localOffsetFromOrigin.dy / min(400, MediaQuery.sizeOf(context).shortestSide - _touchStart!.dy), (-1 * details.localOffsetFromOrigin.dy) / min(400, _touchStart!.dy)).abs().clamp(0, 1)),
+			scale: minimumScale + (1.1 * ((unsafe ? details.localOffsetFromOrigin.distance : details.localOffsetFromOrigin.dx) / min(400, MediaQuery.sizeOf(context).shortestSide)).abs()).clamp(0, 1 - minimumScale)
 		);
 	}
 
@@ -358,7 +363,16 @@ class _ScalerBlurrer extends StatefulWidget {
 
 class _ScalerBlurrerState extends State<_ScalerBlurrer> {
 	double blur = 50.0;
-	double scale = 0.1;
+	double scale = _kSafeScaleStart;
+
+	@override
+	void initState() {
+		super.initState();
+		if (context.read<EffectiveSettings>().unsafeImagePeeking) {
+			blur = 0;
+			scale = _kUnsafeScaleStart;
+		}
+	}
 
 	void setScale({
 		required double blur,
