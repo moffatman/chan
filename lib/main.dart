@@ -1724,8 +1724,21 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								)
 							],
 							onUpSwipe: () {
+								if (showTabPopup) {
+									return;
+								}
+								mediumHapticFeedback();
 								setState(() {
 									showTabPopup = true;
+								});
+							},
+							onDownSwipe: () {
+								if (!showTabPopup) {
+									return;
+								}
+								mediumHapticFeedback();
+								setState(() {
+									showTabPopup = false;
 								});
 							},
 							onLeftSwipe: () {
@@ -1800,18 +1813,29 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										expanded: showTabPopup,
 										duration: const Duration(milliseconds: 200),
 										curve: Curves.ease,
-										child: Container(
-											color: CupertinoTheme.of(context).barBackgroundColor,
-											child: Row(
-												children: [
-													Expanded(
-														child: AnimatedBuilder(
-															animation: activeBrowserTab,
-															builder: (context, _) => _buildTabList(Axis.horizontal)
-														)
-													),
-													_buildNewTabIcon(axis: Axis.horizontal)
-												]
+										child: GestureDetector(
+											behavior: HitTestBehavior.translucent,
+											onVerticalDragEnd: (details) {
+												if (details.velocity.pixelsPerSecond.dy > 0 && showTabPopup) {
+													mediumHapticFeedback();
+													setState(() {
+														showTabPopup = false;
+													});
+												}
+											},
+											child: Container(
+												color: CupertinoTheme.of(context).barBackgroundColor,
+												child: Row(
+													children: [
+														Expanded(
+															child: AnimatedBuilder(
+																animation: activeBrowserTab,
+																builder: (context, _) => _buildTabList(Axis.horizontal)
+															)
+														),
+														_buildNewTabIcon(axis: Axis.horizontal)
+													]
+												)
 											)
 										)
 									)
@@ -1884,6 +1908,7 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 	final VoidCallback onLeftSwipe;
 	final VoidCallback onRightSwipe;
 	final VoidCallback onUpSwipe;
+	final VoidCallback onDownSwipe;
 	final FutureOr Function(int index)? beforeCopiedOnTap;
 
   const ChanceCupertinoTabBar({
@@ -1891,6 +1916,7 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 		required this.onLeftSwipe,
 		required this.onRightSwipe,
 		required this.onUpSwipe,
+		required this.onDownSwipe,
 		required this.beforeCopiedOnTap,
 		super.backgroundColor,
 		super.activeColor,
@@ -1920,6 +1946,7 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 			onLeftSwipe: onLeftSwipe,
 			onRightSwipe: onRightSwipe,
 			onUpSwipe: onUpSwipe,
+			onDownSwipe: onDownSwipe,
 			beforeCopiedOnTap: beforeCopiedOnTap,
       key: key ?? this.key,
       items: items ?? this.items,
@@ -1944,6 +1971,9 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 			onPanEnd: (details) {
 				if ((-1 * details.velocity.pixelsPerSecond.dy) > details.velocity.pixelsPerSecond.dx.abs()) {
 					onUpSwipe();
+				}
+				else if (details.velocity.pixelsPerSecond.dy > details.velocity.pixelsPerSecond.dx.abs()) {
+					onDownSwipe();
 				}
 				else if (details.velocity.pixelsPerSecond.dx > 0) {
 					onLeftSwipe();
