@@ -1360,389 +1360,398 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				curve: Curves.easeInOutCubic,
 				parent: _footerShakeAnimation
 			);
-			return NotificationListener<ScrollNotification>(
-				key: ValueKey(widget.id),
-				onNotification: (notification) {
-					if (updatingNow.value) {
+			return WillPopScope(
+				onWillPop: () async {
+					if (_searchTapped) {
+						closeSearch();
 						return false;
 					}
-					final bool isScrollEnd = (notification is ScrollEndNotification) || (notification is ScrollUpdateNotification && notification.dragDetails == null);
-					final bool plausible = DateTime.now().difference(_lastPointerUpTime) < const Duration(milliseconds: 100);
-					if (widget.controller != null && isScrollEnd && plausible) {
-						if (!_overscrollEndingNow) {
-							double overscroll = widget.controller!.scrollController!.position.pixels - widget.controller!.scrollController!.position.maxScrollExtent;
-							if (overscroll > _overscrollTriggerThreshold && !widget.disableUpdates && !widget.disableBottomUpdates) {
-								_overscrollEndingNow = true;
-								lightHapticFeedback();
-								_updateOrExtendWithHapticFeedback();
+					return true;
+				},
+					child: NotificationListener<ScrollNotification>(
+					key: ValueKey(widget.id),
+					onNotification: (notification) {
+						if (updatingNow.value) {
+							return false;
+						}
+						final bool isScrollEnd = (notification is ScrollEndNotification) || (notification is ScrollUpdateNotification && notification.dragDetails == null);
+						final bool plausible = DateTime.now().difference(_lastPointerUpTime) < const Duration(milliseconds: 100);
+						if (widget.controller != null && isScrollEnd && plausible) {
+							if (!_overscrollEndingNow) {
+								double overscroll = widget.controller!.scrollController!.position.pixels - widget.controller!.scrollController!.position.maxScrollExtent;
+								if (overscroll > _overscrollTriggerThreshold && !widget.disableUpdates && !widget.disableBottomUpdates) {
+									_overscrollEndingNow = true;
+									lightHapticFeedback();
+									_updateOrExtendWithHapticFeedback();
+								}
 							}
 						}
-					}
-					else {
-						_overscrollEndingNow = false;
-					}
-					return false;
-					// Auto update here
-				},
-				child: Listener(
-					onPointerDown:(e) {
-						_pointerDownCount++;
+						else {
+							_overscrollEndingNow = false;
+						}
+						return false;
+						// Auto update here
 					},
-					onPointerUp: (e) {
-						_lastPointerUpTime = DateTime.now();
-						_pointerDownCount--;
-					},
-					onPointerCancel: (e) {
-						_lastPointerUpTime = DateTime.now();
-						_pointerDownCount--;
-					},
-					onPointerPanZoomStart: (e) {
-						_pointerDownCount++;
-					},
-					onPointerPanZoomEnd: (e) {
-						_lastPointerUpTime = DateTime.now();
-						_pointerDownCount--;
-					},
-					child: GestureDetector(
-						onTapUp: (e) {
-							if (widget.controller?.scrollController != null && (widget.controller!.scrollController!.position.userScrollDirection != ScrollDirection.idle) && _pointerDownCount == 0) {
-								widget.controller!.scrollController!.jumpTo(widget.controller!.scrollController!.position.pixels);
-							}
-							widget.controller?.cancelCurrentAnimation();
-							final footerBox = _footerKey.currentContext?.findRenderObject() as RenderBox?;
-							final footerTop = footerBox?.localToGlobal(footerBox.paintBounds.topLeft).dy ?? double.infinity;
-							if (e.globalPosition.dy > footerTop) {
-								_updateOrExtendWithHapticFeedback();
-							}
+					child: Listener(
+						onPointerDown:(e) {
+							_pointerDownCount++;
 						},
-						child: MaybeCupertinoScrollbar(
-							controller: widget.controller?.scrollController,
-							child: ChangeNotifierProvider.value(
-								value: _refreshableTreeItems,
-								child: CustomScrollView(
-									key: _scrollViewKey,
-									cacheExtent: 250,
-									controller: widget.controller?.scrollController,
-									physics: isOnMac ? const BouncingScrollPhysics(decelerationRate: ScrollDecelerationRate.fast, parent: AlwaysScrollableScrollPhysics()) : const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-									slivers: [
-										SliverSafeArea(
-											sliver: widget.disableUpdates ? const SliverToBoxAdapter(
-												child: SizedBox.shrink()
-											) : CupertinoSliverRefreshControl(
-												onRefresh: _updateWithHapticFeedback,
-												refreshTriggerPullDistance: 125
-											),
-											bottom: false
-										),
-										if ((sortedList?.isNotEmpty ?? false) && widget.filterableAdapter != null) SliverToBoxAdapter(
-											child: Container(
-												height: kMinInteractiveDimensionCupertino * context.select<EffectiveSettings, double>((s) => s.textScale),
-												padding: const EdgeInsets.all(4),
-												child: Row(
-													mainAxisSize: MainAxisSize.min,
-													children: [
-														Expanded(
-															child: Center(
-																child: CupertinoSearchTextField(
-																	prefixIcon: const Padding(
-																		padding: EdgeInsets.only(top: 2),
-																		child: Icon(CupertinoIcons.search)
-																	),
-																	onTap: () {
-																		setState(() {
-																			_searchTapped = true;
-																		});
-																		widget.onFilterChanged?.call('');
-																	},
-																	onChanged: (searchText) {
-																		setState(() {
-																			_searchFilter = SearchFilter(searchText.toLowerCase());
-																		});
-																		widget.onFilterChanged?.call(searchText);
-																	},
-																	controller: _searchController,
-																	focusNode: _searchFocusNode,
-																	placeholder: widget.filterHint,
-																	smartQuotesType: SmartQuotesType.disabled,
-																	smartDashesType: SmartDashesType.disabled
-																)
-															),
-														),
-														if (_searchTapped) CupertinoButton(
-															padding: const EdgeInsets.only(left: 8),
-															onPressed: closeSearch,
-															child: const Text('Cancel')
-														)
-													]
-												)
-											)
-										),
-										if (widget.filterAlternative != null &&
-										    ((_searchFilter?.text.isNotEmpty ?? false) ||
-												 (_searchTapped && widget.filterAlternative!.suggestWhenFilterEmpty))) SliverToBoxAdapter(
-											child: Container(
-												decoration: BoxDecoration(
-													border: Border(
-														top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)),
-														bottom: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
-													)
+						onPointerUp: (e) {
+							_lastPointerUpTime = DateTime.now();
+							_pointerDownCount--;
+						},
+						onPointerCancel: (e) {
+							_lastPointerUpTime = DateTime.now();
+							_pointerDownCount--;
+						},
+						onPointerPanZoomStart: (e) {
+							_pointerDownCount++;
+						},
+						onPointerPanZoomEnd: (e) {
+							_lastPointerUpTime = DateTime.now();
+							_pointerDownCount--;
+						},
+						child: GestureDetector(
+							onTapUp: (e) {
+								if (widget.controller?.scrollController != null && (widget.controller!.scrollController!.position.userScrollDirection != ScrollDirection.idle) && _pointerDownCount == 0) {
+									widget.controller!.scrollController!.jumpTo(widget.controller!.scrollController!.position.pixels);
+								}
+								widget.controller?.cancelCurrentAnimation();
+								final footerBox = _footerKey.currentContext?.findRenderObject() as RenderBox?;
+								final footerTop = footerBox?.localToGlobal(footerBox.paintBounds.topLeft).dy ?? double.infinity;
+								if (e.globalPosition.dy > footerTop) {
+									_updateOrExtendWithHapticFeedback();
+								}
+							},
+							child: MaybeCupertinoScrollbar(
+								controller: widget.controller?.scrollController,
+								child: ChangeNotifierProvider.value(
+									value: _refreshableTreeItems,
+									child: CustomScrollView(
+										key: _scrollViewKey,
+										cacheExtent: 250,
+										controller: widget.controller?.scrollController,
+										physics: isOnMac ? const BouncingScrollPhysics(decelerationRate: ScrollDecelerationRate.fast, parent: AlwaysScrollableScrollPhysics()) : const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+										slivers: [
+											SliverSafeArea(
+												sliver: widget.disableUpdates ? const SliverToBoxAdapter(
+													child: SizedBox.shrink()
+												) : CupertinoSliverRefreshControl(
+													onRefresh: _updateWithHapticFeedback,
+													refreshTriggerPullDistance: 125
 												),
-												child: CupertinoButton(
-													padding: const EdgeInsets.all(16),
-													onPressed: () {
-														_searchFocusNode.unfocus();
-														widget.filterAlternative!.handler(_searchFilter?.text ?? '');
-													},
+												bottom: false
+											),
+											if ((sortedList?.isNotEmpty ?? false) && widget.filterableAdapter != null) SliverToBoxAdapter(
+												child: Container(
+													height: kMinInteractiveDimensionCupertino * context.select<EffectiveSettings, double>((s) => s.textScale),
+													padding: const EdgeInsets.all(4),
 													child: Row(
+														mainAxisSize: MainAxisSize.min,
 														children: [
-															const Icon(CupertinoIcons.search),
-															const SizedBox(width: 8),
-															Text('Search ${widget.filterAlternative?.name}')
+															Expanded(
+																child: Center(
+																	child: CupertinoSearchTextField(
+																		prefixIcon: const Padding(
+																			padding: EdgeInsets.only(top: 2),
+																			child: Icon(CupertinoIcons.search)
+																		),
+																		onTap: () {
+																			setState(() {
+																				_searchTapped = true;
+																			});
+																			widget.onFilterChanged?.call('');
+																		},
+																		onChanged: (searchText) {
+																			setState(() {
+																				_searchFilter = SearchFilter(searchText.toLowerCase());
+																			});
+																			widget.onFilterChanged?.call(searchText);
+																		},
+																		controller: _searchController,
+																		focusNode: _searchFocusNode,
+																		placeholder: widget.filterHint,
+																		smartQuotesType: SmartQuotesType.disabled,
+																		smartDashesType: SmartDashesType.disabled
+																	)
+																),
+															),
+															if (_searchTapped) CupertinoButton(
+																padding: const EdgeInsets.only(left: 8),
+																onPressed: closeSearch,
+																child: const Text('Cancel')
+															)
 														]
 													)
 												)
-											)
-										),
-										if (values.isNotEmpty)
-											if (widget.gridDelegate != null) SliverGrid(
-												key: PageStorageKey('grid for ${widget.id}'),
-												gridDelegate: widget.gridDelegate!,
-												delegate: SliverDontRebuildChildBuilderDelegate(
-													(context, i) => Builder(
-														builder: (context) {
-															widget.controller?.registerItem(i, values[i], context);
-															return _itemBuilder(context, values[i]);
-														}
+											),
+											if (widget.filterAlternative != null &&
+													((_searchFilter?.text.isNotEmpty ?? false) ||
+													(_searchTapped && widget.filterAlternative!.suggestWhenFilterEmpty))) SliverToBoxAdapter(
+												child: Container(
+													decoration: BoxDecoration(
+														border: Border(
+															top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)),
+															bottom: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+														)
 													),
-													list: values,
-													id: '${_searchFilter?.text}${widget.sortMethods}$forceRebuildId',
-													didFinishLayout: widget.controller?.didFinishLayout,
-													childCount: values.length,
-													addRepaintBoundaries: false,
-													addAutomaticKeepAlives: false,
-													shouldIgnoreForHeightEstimation: _shouldIgnoreForHeightEstimation
-												)
-											)
-											else SliverList(
-												key: _sliverListKey,
-												delegate: SliverDontRebuildChildBuilderDelegate(
-													(context, childIndex) {
-														return Builder(
-															key: ValueKey(values[childIndex]),
-															builder: (context) {
-																widget.controller?.registerItem(childIndex, values[childIndex], context);
-																return _itemBuilder(context, values[childIndex]);
-															}
-														);
-													},
-													separatorBuilder: (context, childIndex) {
-														int depth = values[childIndex].depth;
-														if (childIndex < (values.length - 1)) {
-															depth = min(depth, values[childIndex + 1].depth);
-														}
-														return Padding(
-															padding: EdgeInsets.only(left: pow(depth, 0.70) * 20),
-															child: Divider(
-																thickness: 1,
-																height: 0,
-																color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
-															)
-														);
-													},
-													list: values,
-													id: '${_searchFilter?.text}${widget.sortMethods}$forceRebuildId',
-													childCount: values.length * 2,
-													findChildIndexCallback: (key) {
-														if (key is ValueKey) {
-															final idx = values.indexOf(key.value) * 2;
-															if (idx >= 0) {
-																return idx;
-															}
-														}
-														return null;
-													},
-													shouldIgnoreForHeightEstimation: _shouldIgnoreForHeightEstimation,
-													didFinishLayout: (startIndex, endIndex) {
-														widget.controller?.didFinishLayout.call((startIndex / 2).ceil(), (endIndex / 2).floor());
-													},
-													addAutomaticKeepAlives: false,
-													addRepaintBoundaries: false,
-												)
-											),
-										if (values.isEmpty)
-											const SliverToBoxAdapter(
-													child: SizedBox(
-														height: 100,
-														child: Center(
-															child: Text('Nothing to see here')
+													child: CupertinoButton(
+														padding: const EdgeInsets.all(16),
+														onPressed: () {
+															_searchFocusNode.unfocus();
+															widget.filterAlternative!.handler(_searchFilter?.text ?? '');
+														},
+														child: Row(
+															children: [
+																const Icon(CupertinoIcons.search),
+																const SizedBox(width: 8),
+																Text('Search ${widget.filterAlternative?.name}')
+															]
 														)
 													)
-												),
-										if (filteredValues.isNotEmpty) ...[
-											SliverToBoxAdapter(
-												child: GestureDetector(
-													onTap: () {
-														setState(() {
-															_showFilteredValues = !_showFilteredValues;
-														});
-													},
-													child: SizedBox(
-														height: 50,
-														child: Center(
-															child: Text(
-																(_showFilteredValues ? 'Showing ' : '') + describeCount(filteredValues.length, 'filtered item'),
-																style: TextStyle(
-																	color: CupertinoTheme.of(context).primaryColorWithBrightness(0.4)
-																)
-															)
-														)
-													)
-												),
+												)
 											),
-											if (_showFilteredValues) 
+											if (values.isNotEmpty)
 												if (widget.gridDelegate != null) SliverGrid(
-													key: PageStorageKey('filtered grid for ${widget.id}'),
+													key: PageStorageKey('grid for ${widget.id}'),
 													gridDelegate: widget.gridDelegate!,
 													delegate: SliverDontRebuildChildBuilderDelegate(
-														(context, i) => Stack(
-															children: [
-																Builder(
-																	builder: (context) => _itemBuilder(context, filteredValues[i])
-																),
-																Align(
-																	alignment: Alignment.topRight,
-																	child: Padding(
-																		padding: const EdgeInsets.only(top: 8, right: 8),
-																		child: CupertinoButton.filled(
-																			padding: EdgeInsets.zero,
-																			child: const Icon(CupertinoIcons.question),
-																			onPressed: () {
-																				showCupertinoDialog(
-																					context: context,
-																					barrierDismissible: true,
-																					builder: (context) => CupertinoAlertDialog2(
-																						title: const Text('Filter reason'),
-																						content: Text(filteredValues[i].filterReason ?? 'Unknown'),
-																						actions: [
-																							CupertinoDialogAction2(
-																								child: const Text('OK'),
-																								onPressed: () => Navigator.pop(context)
-																							)
-																						]
-																					)
-																				);
-																			}
-																		)
-																	)
-																)
-															]
+														(context, i) => Builder(
+															builder: (context) {
+																widget.controller?.registerItem(i, values[i], context);
+																return _itemBuilder(context, values[i]);
+															}
 														),
-														list: filteredValues,
-														id: '$forceRebuildId',
-														childCount: filteredValues.length,
+														list: values,
+														id: '${_searchFilter?.text}${widget.sortMethods}$forceRebuildId',
+														didFinishLayout: widget.controller?.didFinishLayout,
+														childCount: values.length,
 														addRepaintBoundaries: false,
 														addAutomaticKeepAlives: false,
 														shouldIgnoreForHeightEstimation: _shouldIgnoreForHeightEstimation
 													)
 												)
 												else SliverList(
-													key: PageStorageKey('filtered list for ${widget.id}'),
+													key: _sliverListKey,
 													delegate: SliverDontRebuildChildBuilderDelegate(
 														(context, childIndex) {
-															return Stack(
+															return Builder(
+																key: ValueKey(values[childIndex]),
+																builder: (context) {
+																	widget.controller?.registerItem(childIndex, values[childIndex], context);
+																	return _itemBuilder(context, values[childIndex]);
+																}
+															);
+														},
+														separatorBuilder: (context, childIndex) {
+															int depth = values[childIndex].depth;
+															if (childIndex < (values.length - 1)) {
+																depth = min(depth, values[childIndex + 1].depth);
+															}
+															return Padding(
+																padding: EdgeInsets.only(left: pow(depth, 0.70) * 20),
+																child: Divider(
+																	thickness: 1,
+																	height: 0,
+																	color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+																)
+															);
+														},
+														list: values,
+														id: '${_searchFilter?.text}${widget.sortMethods}$forceRebuildId',
+														childCount: values.length * 2,
+														findChildIndexCallback: (key) {
+															if (key is ValueKey) {
+																final idx = values.indexOf(key.value) * 2;
+																if (idx >= 0) {
+																	return idx;
+																}
+															}
+															return null;
+														},
+														shouldIgnoreForHeightEstimation: _shouldIgnoreForHeightEstimation,
+														didFinishLayout: (startIndex, endIndex) {
+															widget.controller?.didFinishLayout.call((startIndex / 2).ceil(), (endIndex / 2).floor());
+														},
+														addAutomaticKeepAlives: false,
+														addRepaintBoundaries: false,
+													)
+												),
+											if (values.isEmpty)
+												const SliverToBoxAdapter(
+														child: SizedBox(
+															height: 100,
+															child: Center(
+																child: Text('Nothing to see here')
+															)
+														)
+													),
+											if (filteredValues.isNotEmpty) ...[
+												SliverToBoxAdapter(
+													child: GestureDetector(
+														onTap: () {
+															setState(() {
+																_showFilteredValues = !_showFilteredValues;
+															});
+														},
+														child: SizedBox(
+															height: 50,
+															child: Center(
+																child: Text(
+																	(_showFilteredValues ? 'Showing ' : '') + describeCount(filteredValues.length, 'filtered item'),
+																	style: TextStyle(
+																		color: CupertinoTheme.of(context).primaryColorWithBrightness(0.4)
+																	)
+																)
+															)
+														)
+													),
+												),
+												if (_showFilteredValues) 
+													if (widget.gridDelegate != null) SliverGrid(
+														key: PageStorageKey('filtered grid for ${widget.id}'),
+														gridDelegate: widget.gridDelegate!,
+														delegate: SliverDontRebuildChildBuilderDelegate(
+															(context, i) => Stack(
 																children: [
 																	Builder(
-																		builder: (context) => _itemBuilder(context, filteredValues[childIndex])
+																		builder: (context) => _itemBuilder(context, filteredValues[i])
 																	),
-																	IgnorePointer(
-																		child: Align(
-																			alignment: Alignment.topRight,
-																			child: Container(
-																				padding: const EdgeInsets.all(4),
-																				color: CupertinoTheme.of(context).primaryColor,
-																				child: Text('Filter reason:\n${filteredValues[childIndex].filterReason}', style: TextStyle(
-																					color: CupertinoTheme.of(context).scaffoldBackgroundColor
-																				))
+																	Align(
+																		alignment: Alignment.topRight,
+																		child: Padding(
+																			padding: const EdgeInsets.only(top: 8, right: 8),
+																			child: CupertinoButton.filled(
+																				padding: EdgeInsets.zero,
+																				child: const Icon(CupertinoIcons.question),
+																				onPressed: () {
+																					showCupertinoDialog(
+																						context: context,
+																						barrierDismissible: true,
+																						builder: (context) => CupertinoAlertDialog2(
+																							title: const Text('Filter reason'),
+																							content: Text(filteredValues[i].filterReason ?? 'Unknown'),
+																							actions: [
+																								CupertinoDialogAction2(
+																									child: const Text('OK'),
+																									onPressed: () => Navigator.pop(context)
+																								)
+																							]
+																						)
+																					);
+																				}
 																			)
 																		)
 																	)
 																]
-															);
-														},
-														separatorBuilder: (context, childIndex) => Divider(
-															thickness: 1,
-															height: 0,
-															color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
-														),
-														list: filteredValues,
-														id: '$forceRebuildId',
-														childCount: filteredValues.length * 2,
-														addRepaintBoundaries: false,
-														addAutomaticKeepAlives: false,
-														shouldIgnoreForHeightEstimation: _shouldIgnoreForHeightEstimation
+															),
+															list: filteredValues,
+															id: '$forceRebuildId',
+															childCount: filteredValues.length,
+															addRepaintBoundaries: false,
+															addAutomaticKeepAlives: false,
+															shouldIgnoreForHeightEstimation: _shouldIgnoreForHeightEstimation
+														)
 													)
-												)
-										],
-										if (widget.footer != null && widget.disableUpdates) SliverSafeArea(
-											top: false,
-											sliver: SliverToBoxAdapter(
-												child: widget.footer
-											)
-										)
-										else if (widget.footer != null && !widget.disableUpdates) SliverToBoxAdapter(
-											child: RepaintBoundary(
-												child: GestureDetector(
-													behavior: HitTestBehavior.opaque,
-													onTap: (!widget.canTapFooter || updatingNow.value) ? null : () {
-														lightHapticFeedback();
-														Future.delayed(const Duration(milliseconds: 17), () {
-															widget.controller?.scrollController?.animateTo(
-																widget.controller!.scrollController!.position.maxScrollExtent,
-																duration: const Duration(milliseconds: 250),
-																curve: Curves.ease
-															);
-														});
-														_footerShakeAnimation.forward(from: 0);
-														_updateOrExtendWithHapticFeedback();
-													},
-													child: AnimatedBuilder(
-														animation: shakeAnimation,
-														builder: (context, child) => Transform.scale(
-															scale: 1.0 - 0.2*sin(pi * shakeAnimation.value),
-															child: child
-														),
-														child: widget.footer
+													else SliverList(
+														key: PageStorageKey('filtered list for ${widget.id}'),
+														delegate: SliverDontRebuildChildBuilderDelegate(
+															(context, childIndex) {
+																return Stack(
+																	children: [
+																		Builder(
+																			builder: (context) => _itemBuilder(context, filteredValues[childIndex])
+																		),
+																		IgnorePointer(
+																			child: Align(
+																				alignment: Alignment.topRight,
+																				child: Container(
+																					padding: const EdgeInsets.all(4),
+																					color: CupertinoTheme.of(context).primaryColor,
+																					child: Text('Filter reason:\n${filteredValues[childIndex].filterReason}', style: TextStyle(
+																						color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																					))
+																				)
+																			)
+																		)
+																	]
+																);
+															},
+															separatorBuilder: (context, childIndex) => Divider(
+																thickness: 1,
+																height: 0,
+																color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+															),
+															list: filteredValues,
+															id: '$forceRebuildId',
+															childCount: filteredValues.length * 2,
+															addRepaintBoundaries: false,
+															addAutomaticKeepAlives: false,
+															shouldIgnoreForHeightEstimation: _shouldIgnoreForHeightEstimation
+														)
 													)
+											],
+											if (widget.footer != null && widget.disableUpdates) SliverSafeArea(
+												top: false,
+												sliver: SliverToBoxAdapter(
+													child: widget.footer
 												)
 											)
-										)
-										else if (widget.disableUpdates) const SliverSafeArea(
-											top: false,
-											sliver: SliverToBoxAdapter(
-												child: SizedBox.shrink()
-											)
-										),
-										if (!widget.disableUpdates && !widget.disableBottomUpdates) SliverSafeArea(
-											top: false,
-											sliver: SliverToBoxAdapter(
+											else if (widget.footer != null && !widget.disableUpdates) SliverToBoxAdapter(
 												child: RepaintBoundary(
-													child: RefreshableListFooter(
-														key: _footerKey,
-														updater: _updateOrExtendWithHapticFeedback,
-														updatingNow: updatingNow.value,
-														lastUpdateTime: lastUpdateTime,
-														nextUpdateTime: nextUpdateTime,
-														errorMessage: errorMessage,
-														remedy: widget.remedies[errorType]?.call(context, _updateOrExtendWithHapticFeedback),
-														overscrollFactor: widget.controller?.overscrollFactor,
-														pointerDownNow: () {
-															return _pointerDownCount > 0;
-														}
+													child: GestureDetector(
+														behavior: HitTestBehavior.opaque,
+														onTap: (!widget.canTapFooter || updatingNow.value) ? null : () {
+															lightHapticFeedback();
+															Future.delayed(const Duration(milliseconds: 17), () {
+																widget.controller?.scrollController?.animateTo(
+																	widget.controller!.scrollController!.position.maxScrollExtent,
+																	duration: const Duration(milliseconds: 250),
+																	curve: Curves.ease
+																);
+															});
+															_footerShakeAnimation.forward(from: 0);
+															_updateOrExtendWithHapticFeedback();
+														},
+														child: AnimatedBuilder(
+															animation: shakeAnimation,
+															builder: (context, child) => Transform.scale(
+																scale: 1.0 - 0.2*sin(pi * shakeAnimation.value),
+																child: child
+															),
+															child: widget.footer
+														)
 													)
 												)
 											)
-										)
-									]
+											else if (widget.disableUpdates) const SliverSafeArea(
+												top: false,
+												sliver: SliverToBoxAdapter(
+													child: SizedBox.shrink()
+												)
+											),
+											if (!widget.disableUpdates && !widget.disableBottomUpdates) SliverSafeArea(
+												top: false,
+												sliver: SliverToBoxAdapter(
+													child: RepaintBoundary(
+														child: RefreshableListFooter(
+															key: _footerKey,
+															updater: _updateOrExtendWithHapticFeedback,
+															updatingNow: updatingNow.value,
+															lastUpdateTime: lastUpdateTime,
+															nextUpdateTime: nextUpdateTime,
+															errorMessage: errorMessage,
+															remedy: widget.remedies[errorType]?.call(context, _updateOrExtendWithHapticFeedback),
+															overscrollFactor: widget.controller?.overscrollFactor,
+															pointerDownNow: () {
+																return _pointerDownCount > 0;
+															}
+														)
+													)
+												)
+											)
+										]
+									)
 								)
 							)
 						)
