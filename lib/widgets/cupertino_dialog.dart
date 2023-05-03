@@ -71,10 +71,12 @@ class CupertinoDialogAction2 extends StatelessWidget {
 class CupertinoActionSheetAction2 extends StatelessWidget {
 	final Widget child;
 	final VoidCallback onPressed;
+	final bool isDefaultAction;
 
 	const CupertinoActionSheetAction2({
 		required this.onPressed,
 		required this.child,
+		this.isDefaultAction = false,
 		super.key
 	});
 
@@ -82,6 +84,7 @@ class CupertinoActionSheetAction2 extends StatelessWidget {
 	Widget build(BuildContext context) {
 		return CupertinoActionSheetAction(
 			onPressed: onPressed,
+			isDefaultAction: isDefaultAction,
 			child: Builder(
 				builder: (context) => DefaultTextStyle(
 					style: DefaultTextStyle.of(context).style.merge(Persistence.settings.textStyle),

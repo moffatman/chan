@@ -57,10 +57,9 @@ class _ContextMenuState extends State<ContextMenu> {
 		final threadWatcher = context.select<ThreadWatcher?, ThreadWatcher?>((w) => w);
 		final notifications = context.watch<Notifications?>();
 		final iconSize = 24 * context.select<EffectiveSettings, double>((s) => s.textScale);
+		final interfaceScale = context.select<EffectiveSettings, double>((s) => s.interfaceScale);
 		final child = GestureDetector(
 			onSecondaryTapUp: (event) {
-				final topOfUsableSpace = MediaQuery.sizeOf(context).height * 0.8;
-				final showOnRight = event.globalPosition.dx > (MediaQuery.sizeOf(context).width - 210);
 				_overlayEntry = OverlayEntry(
 					builder: (context) {
 						return Stack(
@@ -72,48 +71,46 @@ class _ContextMenuState extends State<ContextMenu> {
 										onSecondaryTap: () => _overlayEntry?.remove()
 									)
 								),
-								Positioned(
-									right: showOnRight ? MediaQuery.sizeOf(context).width - event.globalPosition.dx : null,
-									left: showOnRight ? null : event.globalPosition.dx,
-									bottom: (event.globalPosition.dy > topOfUsableSpace) ? MediaQuery.sizeOf(context).height - event.globalPosition.dy : null,
-									top: (event.globalPosition.dy > topOfUsableSpace) ? null : event.globalPosition.dy,
-									width: 200,
+								CustomSingleChildLayout(
+									delegate: _ContextMenuLayoutDelegate(
+										rightClickPosition: event.globalPosition.scale(1 / interfaceScale, 1 / interfaceScale)
+									),
 									child: Container(
 										decoration: BoxDecoration(
 											border: Border.all(color: Colors.grey),
-											borderRadius: const BorderRadius.all(Radius.circular(4))
+											borderRadius: const BorderRadius.all(Radius.circular(4)),
+											color: CupertinoTheme.of(context).scaffoldBackgroundColor
 										),
-										child: Column(
-											mainAxisSize: MainAxisSize.min,
-											crossAxisAlignment: CrossAxisAlignment.stretch,
-											children: widget.actions.map((action) {
-												return GestureDetector(
-													child: Container(
-														decoration: BoxDecoration(
-															color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-														),
-														height: 50,
+										margin: const EdgeInsets.only(bottom: 8, right: 8),
+										child: IntrinsicWidth(
+											child: Column(
+												mainAxisSize: MainAxisSize.min,
+												crossAxisAlignment: CrossAxisAlignment.start,
+												children: widget.actions.map((action) {
+													return CupertinoButton(
 														padding: const EdgeInsets.all(16),
-														alignment: Alignment.center,
+														onPressed: () async {
+															_overlayEntry?.remove();
+															try {
+																await action.onPressed();
+															}
+															catch (e) {
+																alertError(context, e.toStringDio());
+															}
+														},
 														child: Row(
+															mainAxisSize: MainAxisSize.min,
+															mainAxisAlignment: MainAxisAlignment.spaceBetween,
 															children: [
 																action.child,
 																const Spacer(),
+																const SizedBox(width: 8),
 																Icon(action.trailingIcon, size: iconSize)
 															]
 														)
-													),
-													onTap: () async {
-														_overlayEntry?.remove();
-														try {
-															await action.onPressed();
-														}
-														catch (e) {
-															alertError(context, e.toStringDio());
-														}
-													}
-												);
-											}).toList()
+													);
+												}).toList()
+											)
 										)
 									)
 								)
@@ -190,5 +187,34 @@ class _ContextMenuState extends State<ContextMenu> {
 			);
 		}
 		return child;
+	}
+}
+
+class _ContextMenuLayoutDelegate extends SingleChildLayoutDelegate {
+	final Offset rightClickPosition;
+
+	const _ContextMenuLayoutDelegate({
+		required this.rightClickPosition
+	});
+
+	@override
+	BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+		return constraints;
+	}
+
+	@override
+	Offset getPositionForChild(Size size, Size childSize) {
+		final y = min(size.height - childSize.height, rightClickPosition.dy);
+		if (rightClickPosition.dx > (size.width - childSize.width)) {
+			// Put it to the left of mouse
+			return Offset(rightClickPosition.dx - childSize.width, y);
+		}
+		return Offset(rightClickPosition.dx, y);
+	}
+
+
+	@override
+	bool shouldRelayout(_ContextMenuLayoutDelegate oldDelegate) {
+		return rightClickPosition != oldDelegate.rightClickPosition;
 	}
 }
