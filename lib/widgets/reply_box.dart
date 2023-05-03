@@ -116,6 +116,18 @@ class ReplyBoxState extends State<ReplyBox> {
 	(String, ValueListenable<double?>)? _attachmentProgress;
 	(String, int)? _spamFilteredPostId;
 	bool get hasSpamFilteredPostToCheck => _spamFilteredPostId != null;
+	static List<String> _previouslyUsedNames = [];
+
+	Future<void> _checkPreviouslyUsedNames() async {
+		_previouslyUsedNames = (await Future.wait(Persistence.sharedThreadStateBox.values.map<Future<Iterable<String>>>((state) async {
+			if (state.youIds.isEmpty) {
+				return const [];
+			}
+			final thread = await state.getThread();
+			return thread?.posts_.where((p) => state.youIds.contains(p.id) && p.name.trim() != (state.imageboard?.site.defaultUsername ?? 'Anonymous')).map((p) => p.name.trim()).toList() ?? const [];
+		}))).expand((s) => s).toSet().toList()..sort();
+		setState(() {});
+	}
 
 	bool get _haveValidCaptcha {
 		if (_captchaSolution == null) {
@@ -256,6 +268,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	}
 
 	void showReplyBox() {
+		_checkPreviouslyUsedNames();
 		if (_nameFieldController.text.isEmpty && (context.read<Persistence>().browserState.postingNames[widget.board]?.isNotEmpty ?? false)) {
 			_nameFieldController.text = context.read<Persistence>().browserState.postingNames[widget.board] ?? '';
 			_showOptions = true;
@@ -1183,6 +1196,31 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 							smartDashesType: SmartDashesType.disabled,
 							smartQuotesType: SmartQuotesType.disabled,
+							suffix: CupertinoButton(
+								padding: const EdgeInsets.only(right: 8),
+								minSize: 0,
+								onPressed: _previouslyUsedNames.isEmpty ? null : () async {
+									final choice = await showCupertinoModalPopup<String>(
+										context: context,
+										builder: (context) => CupertinoActionSheet(
+											title: const Text('Previously-used names'),
+											actions: _previouslyUsedNames.map((name) => CupertinoActionSheetAction2(
+												onPressed: () => Navigator.pop(context, name),
+												isDefaultAction: _nameFieldController.text == name,
+												child: Text(name)
+											)).toList(),
+											cancelButton: CupertinoActionSheetAction2(
+												child: const Text('Cancel'),
+												onPressed: () => Navigator.of(context).pop()
+											)
+										)
+									);
+									if (choice != null) {
+										_nameFieldController.text = choice;
+									}
+								},
+								child: const Icon(CupertinoIcons.list_bullet, size: 20)
+							),
 							onChanged: (s) {
 								context.read<Persistence>().browserState.postingNames[widget.board] = s;
 								context.read<Persistence>().didUpdateBrowserState();
@@ -1316,6 +1354,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			});
 		};
 		final expandOptions = loading ? null : () {
+			_checkPreviouslyUsedNames();
 			setState(() {
 				_showOptions = !_showOptions;
 			});

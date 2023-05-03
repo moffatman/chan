@@ -884,6 +884,10 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		}
 	}
 
+	Future<Thread?> getThread() async {
+		return _thread ?? (await Persistence.getCachedThread(imageboardKey, board, id));
+	}
+
 	Thread? get thread => _thread;
 	set thread(Thread? newThread) {
 		if (newThread != _thread) {
