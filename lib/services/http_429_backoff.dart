@@ -26,7 +26,12 @@ class HTTP429BackoffInterceptor extends Interceptor {
 				final response = await client.requestUri(
 					err.requestOptions.uri,
 					data: err.requestOptions.data,
-					cancelToken: err.requestOptions.cancelToken
+					cancelToken: err.requestOptions.cancelToken,
+					options: Options(
+						headers: err.requestOptions.headers,
+						extra: err.requestOptions.extra,
+						validateStatus: err.requestOptions.validateStatus
+					)
 				);
 				handler.resolve(response);
 			}
