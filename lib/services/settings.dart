@@ -736,6 +736,8 @@ class SavedSettings extends HiveObject {
 	bool unsafeImagePeeking;
 	@HiveField(129)
 	bool showOverlaysInGallery;
+	@HiveField(130)
+	double verticalTwoPaneMinimumPaneSize;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -867,6 +869,7 @@ class SavedSettings extends HiveObject {
 		bool? exactTimeIsISO8601,
 		bool? unsafeImagePeeking,
 		bool? showOverlaysInGallery,
+		double? verticalTwoPaneMinimumPaneSize,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1024,7 +1027,8 @@ class SavedSettings extends HiveObject {
 		autoCacheAttachments = autoCacheAttachments ?? AutoloadAttachmentsSetting.never,
 		exactTimeIsISO8601 = exactTimeIsISO8601 ?? false,
 		unsafeImagePeeking = unsafeImagePeeking ?? false,
-		showOverlaysInGallery = showOverlaysInGallery ?? true {
+		showOverlaysInGallery = showOverlaysInGallery ?? true,
+		verticalTwoPaneMinimumPaneSize = verticalTwoPaneMinimumPaneSize ?? -400 {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1982,6 +1986,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get showOverlaysInGallery => _settings.showOverlaysInGallery;
 	set showOverlaysInGallery(bool setting) {
 		_settings.showOverlaysInGallery = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	double get verticalTwoPaneMinimumPaneSize => _settings.verticalTwoPaneMinimumPaneSize;
+	set verticalTwoPaneMinimumPaneSize(double setting) {
+		_settings.verticalTwoPaneMinimumPaneSize = setting;
 		_settings.save();
 		notifyListeners();
 	}

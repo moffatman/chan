@@ -256,13 +256,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       exactTimeIsISO8601: fields[127] as bool?,
       unsafeImagePeeking: fields[128] as bool?,
       showOverlaysInGallery: fields[129] as bool?,
+      verticalTwoPaneMinimumPaneSize: fields[130] as double?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(126)
+      ..writeByte(127)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -514,7 +515,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(128)
       ..write(obj.unsafeImagePeeking)
       ..writeByte(129)
-      ..write(obj.showOverlaysInGallery);
+      ..write(obj.showOverlaysInGallery)
+      ..writeByte(130)
+      ..write(obj.verticalTwoPaneMinimumPaneSize);
   }
 
   @override

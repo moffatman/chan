@@ -2768,6 +2768,46 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					)
 				),
 				const SizedBox(height: 16),
+				Row(
+					children: [
+						const RotatedBox(
+							quarterTurns: 1,
+							child: Icon(CupertinoIcons.sidebar_left)
+						),
+						const SizedBox(width: 8),
+						Expanded(
+							child: Text.rich(
+								TextSpan(
+									children: [
+										const TextSpan(text: 'Vertical two-pane split\n'),
+										TextSpan(text: 'Minimum pane height: ${settings.verticalTwoPaneMinimumPaneSize.abs().round()} px', style: TextStyle(
+											color: settings.theme.primaryColorWithBrightness(settings.verticalTwoPaneMinimumPaneSize.isNegative ? 0.5 : 0.8)
+										))
+									]
+								)
+							)
+						),
+						CupertinoSwitch(
+							value: !settings.verticalTwoPaneMinimumPaneSize.isNegative,
+							onChanged: (newValue) {
+								settings.verticalTwoPaneMinimumPaneSize = settings.verticalTwoPaneMinimumPaneSize.abs() * (newValue ? 1 : -1);
+							}
+						)
+					]
+				),
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: CupertinoSlider(
+						min: 100,
+						max: 1000,
+						divisions: 36,
+						value: settings.verticalTwoPaneMinimumPaneSize.abs(),
+						onChanged: settings.verticalTwoPaneMinimumPaneSize.isNegative ? null : (newValue) {
+							settings.verticalTwoPaneMinimumPaneSize = newValue;
+						}
+					)
+				),
+				const SizedBox(height: 16),
 				const Row(
 					children: [
 						Icon(CupertinoIcons.arrow_up_down),

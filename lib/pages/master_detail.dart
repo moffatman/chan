@@ -287,7 +287,9 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		onePane = MediaQuery.sizeOf(context).width < settings.twoPaneBreakpoint;
+		final horizontalSplit = MediaQuery.sizeOf(context).width >= settings.twoPaneBreakpoint;
+		final verticalSplit = !settings.verticalTwoPaneMinimumPaneSize.isNegative && MediaQuery.sizeOf(context).height >= (settings.verticalTwoPaneMinimumPaneSize * 2);
+		onePane = !(horizontalSplit || verticalSplit);
 		final masterNavigator = Provider.value(
 			value: masterKey,
 			child: ClipRect(
@@ -401,7 +403,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 			),
 			child: WillPopScope(
 				onWillPop: _onWillPop,
-				child: onePane ? masterNavigator : Row(
+				child: onePane ? masterNavigator : (horizontalSplit ? Row(
 					children: [
 						Flexible(
 							flex: settings.twoPaneSplit,
@@ -418,7 +420,26 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 							child: detailNavigator
 						)
 					]
-				)
+				) : Column(
+					children: [
+						SizedBox(
+							height: settings.verticalTwoPaneMinimumPaneSize.abs(),
+							child: PrimaryScrollController.none(
+								child: masterNavigator
+							)
+						),
+						Divider(
+							height: 0,
+							color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+						),
+						Expanded(
+							child: TransformedMediaQuery(
+								transformation: (data) => data.removePadding(removeTop: true),
+								child: detailNavigator
+							)
+						)
+					]
+				))
 			)
 		);
 	}
