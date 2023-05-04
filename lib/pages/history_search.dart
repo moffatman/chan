@@ -65,6 +65,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	Future<void> _runQuery() async {
 		final theseResults = <ImageboardScoped<HistorySearchResult>>[];
 		setState(() {});
+		numer = 0;
 		denom = Persistence.sharedThreadStateBox.values.length;
 		await Future.wait(Persistence.sharedThreadStateBox.values.map((threadState) async {
 			if (threadState.imageboard == null ||
@@ -76,7 +77,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 				numer++;
 				return;
 			}
-			final thread = threadState.thread ?? await Persistence.getCachedThread(threadState.imageboardKey, threadState.board, threadState.id);
+			final thread = await threadState.getThread();
 			final query = RegExp(RegExp.escape(widget.query), caseSensitive: false);
 			if (thread != null) {
 				for (final post in thread.posts) {
@@ -306,7 +307,9 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 							)
 						);
 						if (anyChange) {
-							setState(() {});
+							setState(() {
+								results = null;
+							});
 							_runQuery();
 						}
 					},
