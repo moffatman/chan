@@ -153,9 +153,12 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards() async {
+	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/index2.html'), options: Options(
-			responseType: ResponseType.bytes
+			responseType: ResponseType.bytes,
+			extra: {
+				kInteractive: interactive
+			}
 		));
 		final document = await parse(response.data);
 		return document.querySelectorAll('td a').where((e) {
@@ -179,10 +182,13 @@ class SiteFutaba extends ImageboardSite {
 		return NoCaptchaRequest();
 	}
 
-	Future<dom.Document> _getCatalogPage(String board, String page) async {
+	Future<dom.Document> _getCatalogPage(String board, String page, {required bool interactive}) async {
 		final response = await client.getUri(Uri.https(boardDomain(board), '/$board/$page.htm'), options: Options(
 			responseType: ResponseType.bytes,
-			validateStatus: (status) => status == 200 || status == 404
+			validateStatus: (status) => status == 200 || status == 404,
+			extra: {
+				kInteractive: interactive
+			}
 		));
 		if (response.statusCode == 404) {
 			throw BoardNotFoundException(board);
@@ -191,16 +197,16 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
-		final doc0 = await _getCatalogPage(board, 'futaba');
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
+		final doc0 = await _getCatalogPage(board, 'futaba', interactive: interactive);
 		return doc0.querySelectorAll('.thre').map((e) => _makeThread(e, board)..currentPage = 0).toList();
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) async {
 		try {
 			final pageNumber = (after.currentPage ?? 0) + 1;
-			final doc = await _getCatalogPage(after.board, pageNumber.toString());
+			final doc = await _getCatalogPage(after.board, pageNumber.toString(), interactive: interactive);
 			return doc.querySelectorAll('.thre').map((e) => _makeThread(e, after.board)..currentPage = pageNumber).toList();
 		}
 		on BoardNotFoundException {
@@ -209,7 +215,7 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<Post> getPost(String board, int id) {
+	Future<Post> getPost(String board, int id, {required bool interactive}) {
 		throw UnimplementedError();
 	}
 
@@ -325,9 +331,12 @@ class SiteFutaba extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
 		final response = await client.get(getWebUrl(thread.board, thread.id), options: Options(
-			responseType: ResponseType.bytes
+			responseType: ResponseType.bytes,
+			extra: {
+				kInteractive: interactive
+			}
 		));
 		final document = await parse(response.data);
 		return _makeThread(document.querySelector('.thre')!, thread.board);

@@ -32,9 +32,12 @@ class SiteDvach extends ImageboardSite {
 	}) : super(archives);
 
 	@override
-	Future<List<ImageboardBoard>> getBoards() async {
+	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/'), options: Options(
-			responseType: ResponseType.plain
+			responseType: ResponseType.plain,
+			extra: {
+				kInteractive: interactive
+			}
 		));
 		final document = parse(response.data);
 		final boards = <ImageboardBoard>[];
@@ -61,7 +64,7 @@ class SiteDvach extends ImageboardSite {
 
 
 	@override
-	Future<Post> getPost(String board, int id) {
+	Future<Post> getPost(String board, int id, {required bool interactive}) {
 		throw UnimplementedError();
 	}
 
@@ -125,9 +128,12 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
-			validateStatus: (s) => true
+			validateStatus: (s) => true,
+			extra: {
+				kInteractive: interactive
+			}
 		));
 		if (response.statusCode == 404) {
 			throw BoardNotFoundException(board);
@@ -157,8 +163,12 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
-		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'));
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), options: Options(
+			extra: {
+				kInteractive: interactive
+			}
+		));
 		if (response.data['board'] != null) {
 			_updateBoardInformation(response.data['board']);
 		}

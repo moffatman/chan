@@ -248,14 +248,17 @@ class AttachmentViewerController extends ChangeNotifier {
 		};
 	}
 
-	Future<Uri> _getGoodSource() async {
+	Future<Uri> _getGoodSource({required bool interactive}) async {
 		if (overrideSource != null) {
 			return overrideSource!;
 		}
 		final attachmentUrl = Uri.parse(attachment.url);
 		Response result = await site.client.headUri(attachmentUrl, options: Options(
 			validateStatus: (_) => true,
-			headers: _getHeaders(attachmentUrl)
+			headers: _getHeaders(attachmentUrl),
+			extra: {
+				kInteractive: interactive
+			}
 		));
 		if (result.statusCode == 200) {
 			return attachmentUrl;
@@ -269,7 +272,10 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (corrected) {
 			result = await site.client.head(correctedUrl, options: Options(
 				validateStatus: (_) => true,
-				headers: _getHeaders(Uri.parse(correctedUrl))
+				headers: _getHeaders(Uri.parse(correctedUrl)),
+				extra: {
+					kInteractive: interactive
+				}
 			));
 			if (result.statusCode == 200) {
 				return Uri.parse(correctedUrl);
@@ -288,12 +294,15 @@ class AttachmentViewerController extends ChangeNotifier {
 				_useRandomUserAgent = newAttachment.useRandomUseragent;
 				final check = await site.client.head(newAttachment.url.toString(), options: Options(
 					validateStatus: (_) => true,
-					headers: _getHeaders(Uri.parse(newAttachment.url))
+					headers: _getHeaders(Uri.parse(newAttachment.url)),
+					extra: {
+						kInteractive: interactive
+					}
 				));
 				if (check.statusCode != 200) {
 					throw AttachmentNotArchivedException(attachment);
 				}
-			});
+			}, interactive: interactive);
 			final goodAttachment = archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.id == attachment.id)
 				?? archivedThread.posts.expand((p) => p.attachments).tryFirstWhere((a) => a.filename == attachment.filename && a.id.contains(attachment.id))!;
 			_useRandomUserAgent = goodAttachment.useRandomUseragent;
@@ -369,7 +378,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		try {
 			final soundSource = attachment.soundSource;
 			if (soundSource == null && (attachment.type == AttachmentType.image || attachment.type == AttachmentType.pdf)) {
-				_goodImageSource = await _getGoodSource();
+				_goodImageSource = await _getGoodSource(interactive: !background);
 				_recordUrlTime(_goodImageSource!, DateTime.now().difference(startTime));
 				if (_goodImageSource?.scheme == 'file') {
 					_cachedFile = File(_goodImageSource!.path);
@@ -389,7 +398,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 			}
 			else if (soundSource != null || attachment.type == AttachmentType.webm || attachment.type == AttachmentType.mp4 || attachment.type == AttachmentType.mp3) {
-				final url = await _getGoodSource();
+				final url = await _getGoodSource(interactive: !background);
 				_recordUrlTime(url, DateTime.now().difference(startTime));
 				bool transcode = _problematicVideos.contains(url);
 				if (attachment.type == AttachmentType.webm) {
@@ -646,7 +655,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			return _cachedFile!;
 		}
 		else if (_playsDirectlyWithoutCaching) {
-			final source = await _getGoodSource();
+			final source = await _getGoodSource(interactive: true);
 			if (source.isScheme('file')) {
 				return File(source.path);
 			}

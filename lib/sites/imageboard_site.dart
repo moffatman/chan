@@ -40,6 +40,7 @@ import 'package:dio/dio.dart';
 part 'imageboard_site.g.dart';
 
 const _preferredArchiveApiRoot = 'https://push.chance.surf';
+const kInteractive = 'interactive';
 
 class PostNotFoundException implements Exception {
 	String board;
@@ -730,12 +731,12 @@ abstract class ImageboardSiteArchive {
 		client.interceptors.add(CloudflareInterceptor());
 	}
 	String get name;
-	Future<Post> getPost(String board, int id);
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant});
+	Future<Post> getPost(String board, int id, {required bool interactive});
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive});
 	@protected
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant});
-	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant}) async {
-		final catalog = await getCatalogImpl(board, variant: variant);
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive});
+	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required bool interactive}) async {
+		final catalog = await getCatalogImpl(board, variant: variant, interactive: interactive);
 		_catalogCache.addAll({
 			for (final t in catalog)
 				t.identifier: t
@@ -744,9 +745,9 @@ abstract class ImageboardSiteArchive {
 	}
 	/// If an empty list is returned from here, the bottom of the catalog has been reached.
 	@protected
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) async => [];
-	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant}) async {
-		final moreCatalog = await getMoreCatalogImpl(after, variant: variant);
+	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) async => [];
+	Future<List<Thread>> getMoreCatalog(Thread after, {CatalogVariant? variant, required bool interactive}) async {
+		final moreCatalog = await getMoreCatalogImpl(after, variant: variant, interactive: interactive);
 		_catalogCache.addAll({
 			for (final t in moreCatalog)
 				t.identifier: t
@@ -754,7 +755,7 @@ abstract class ImageboardSiteArchive {
 		return moreCatalog;
 	}
 	Thread? getThreadFromCatalogCache(ThreadIdentifier identifier) => _catalogCache[identifier];
-	Future<List<ImageboardBoard>> getBoards();
+	Future<List<ImageboardBoard>> getBoards({required bool interactive});
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult});
 	String getWebUrl(String board, [int? threadId, int? postId]);
 	Future<BoardThreadOrPostIdentifier?> decodeUrl(String url);
@@ -829,11 +830,11 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	});
 	DateTime? getActionAllowedTime(String board, ImageboardAction action) => null;
 	Future<void> deletePost(String board, int threadId, PostReceipt receipt);
-	Future<Post> getPostFromArchive(String board, int id) async {
+	Future<Post> getPostFromArchive(String board, int id, {required bool interactive}) async {
 		final Map<String, String> errorMessages = {};
 		for (final archive in archives) {
 			try {
-				final post = await archive.getPost(board, id);
+				final post = await archive.getPost(board, id, interactive: interactive);
 				for (final attachment in post.attachments) {
 					await ensureCookiesMemoized(Uri.parse(attachment.thumbnailUrl));
 					await ensureCookiesMemoized(Uri.parse(attachment.url));
@@ -855,26 +856,28 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 			throw BoardNotArchivedException(board);
 		}
 	}
-	Future<void> _defaultArchivedThreadValidator(Thread thread) async {
-		final opAttachment = thread.attachments.tryFirst ?? thread.posts_.tryFirst?.attachments.tryFirst;
-		if (opAttachment != null) {
-			await client.head(opAttachment.url, options: Options(
-				headers: {
-					...getHeaders(Uri.parse(opAttachment.url)) ?? {},
-					if (opAttachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
-				}
-			));
-		}
-	}
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator}) async {
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required bool interactive}) async {
 		final Map<String, String> errorMessages = {};
 		Thread? fallback;
-		final validator = customValidator ?? _defaultArchivedThreadValidator;
+		final validator = customValidator ?? (Thread thread) async {
+			final opAttachment = thread.attachments.tryFirst ?? thread.posts_.tryFirst?.attachments.tryFirst;
+			if (opAttachment != null) {
+				await client.head(opAttachment.url, options: Options(
+					headers: {
+						...getHeaders(Uri.parse(opAttachment.url)) ?? {},
+						if (opAttachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
+					},
+					extra: {
+						kInteractive: interactive
+					}
+				));
+			}
+		};
 		final completer = Completer<Thread>();
 		() async {
 			await Future.wait(archives.map((archive) async {
 				try {
-					final thread_ = await archive.getThread(thread).timeout(const Duration(seconds: 10));
+					final thread_ = await archive.getThread(thread, interactive: interactive).timeout(const Duration(seconds: 10));
 					if (completer.isCompleted) return null;
 					for (final attachment in thread_.attachments) {
 						await ensureCookiesMemoized(Uri.parse(attachment.thumbnailUrl));
@@ -952,7 +955,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	bool get showImageCount => true;
 	bool get supportsSearch => archives.isNotEmpty;
 	bool get supportsPosting => true;
-	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds) async => throw UnimplementedError();
+	Future<List<Post>> getStubPosts(ThreadIdentifier thread, List<ParentAndChildIdentifier> postIds, {required bool interactive}) async => throw UnimplementedError();
 	bool get isHackerNews => false;
 	bool get isReddit => false;
 	bool get supportsMultipleBoards => true;

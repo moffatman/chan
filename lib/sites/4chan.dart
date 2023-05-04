@@ -385,11 +385,14 @@ class Site4Chan extends ImageboardSite {
 		return null;
 	}
 
-	Future<int?> _getThreadPage(ThreadIdentifier thread) async {
+	Future<int?> _getThreadPage(ThreadIdentifier thread, {required bool interactive}) async {
 		final now = DateTime.now();
 		if (_catalogCaches[thread.board] == null || now.difference(_catalogCaches[thread.board]!.lastUpdated).compareTo(_catalogCacheLifetime) > 0) {
 			final response = await client.getUri(Uri.https(apiUrl, '/${thread.board}/catalog.json'), options: Options(
-				validateStatus: (x) => true
+				validateStatus: (x) => true,
+				extra: {
+					kInteractive: interactive
+				}
 			));
 			if (response.statusCode != 200) {
 				if (response.statusCode == 404) {
@@ -418,7 +421,7 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
 		Map<String, String>? headers;
 		if (_threadCache['${thread.board}/${thread.id}'] != null) {
 			headers = {
@@ -429,7 +432,10 @@ class Site4Chan extends ImageboardSite {
 			Uri.https(apiUrl,'/${thread.board}/thread/${thread.id}.json'),
 			options: Options(
 				headers: headers,
-				validateStatus: (x) => true
+				validateStatus: (x) => true,
+				extra: {
+					kInteractive: interactive
+				}
 			)
 		);
 		if (response.statusCode == 200) {
@@ -451,7 +457,7 @@ class Site4Chan extends ImageboardSite {
 				title: (title == null) ? null : unescape.convert(title),
 				isSticky: data['posts'][0]['sticky'] == 1,
 				time: DateTime.fromMillisecondsSinceEpoch(data['posts'][0]['time'] * 1000),
-				currentPage: await _getThreadPage(thread),
+				currentPage: await _getThreadPage(thread, interactive: interactive),
 				uniqueIPCount: data['posts'][0]['unique_ips'],
 				customSpoilerId: data['posts'][0]['custom_spoiler']
 			);
@@ -480,19 +486,22 @@ class Site4Chan extends ImageboardSite {
 			}
 			return Future.error(HTTPStatusException(response.statusCode!));
 		}
-		_threadCache['${thread.board}/${thread.id}']!.thread.currentPage = await _getThreadPage(thread);
+		_threadCache['${thread.board}/${thread.id}']!.thread.currentPage = await _getThreadPage(thread, interactive: interactive);
 		return _threadCache['${thread.board}/${thread.id}']!.thread;
 	}
 
 	@override
-	Future<Post> getPost(String board, int id) async {
+	Future<Post> getPost(String board, int id, {required bool interactive}) async {
 		throw Exception('Not implemented');
 	}
 
 	static const _kArchivePageSize = 100;
-	Future<List<Thread>> _getArchive(String board, int? after) async {
+	Future<List<Thread>> _getArchive(String board, int? after, {required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/archive'), options: Options(
-			validateStatus: (x) => true
+			validateStatus: (x) => true,
+			extra: {
+				kInteractive: interactive
+			}
 		));
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
@@ -577,12 +586,15 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
 		if (variant == CatalogVariant.chan4NativeArchive) {
-			return _getArchive(board, null);
+			return _getArchive(board, null, interactive: interactive);
 		}
 		final response = await client.getUri(Uri.https(apiUrl, '/$board/catalog.json'), options: Options(
-			validateStatus: (x) => true
+			validateStatus: (x) => true,
+			extra: {
+				kInteractive: interactive
+			}
 		));
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
@@ -601,8 +613,12 @@ class Site4Chan extends ImageboardSite {
 		return threads;
 	}
 	@override
-	Future<List<ImageboardBoard>> getBoards() async {
-		final response = await client.getUri(Uri.https(apiUrl, '/boards.json'));
+	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
+		final response = await client.getUri(Uri.https(apiUrl, '/boards.json'), options: Options(
+			extra: {
+				kInteractive: interactive
+			}
+		));
 		return (response.data['boards'] as List<dynamic>).map((board) {
 			return ImageboardBoard(
 				name: board['board'],
@@ -625,9 +641,9 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) async {
 		if (variant == CatalogVariant.chan4NativeArchive) {
-			return _getArchive(after.board, after.id);
+			return _getArchive(after.board, after.id, interactive: interactive);
 		}
 		return [];
 	}

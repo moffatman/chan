@@ -36,8 +36,8 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<List<ImageboardBoard>> getBoards() {
-    return archive.getBoards();
+  Future<List<ImageboardBoard>> getBoards({required bool interactive}) {
+    return archive.getBoards(interactive: interactive);
   }
 
   @override
@@ -46,23 +46,23 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) {
-    return archive.getCatalogImpl(board, variant: variant);
+  Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) {
+    return archive.getCatalogImpl(board, variant: variant, interactive: interactive);
   }
 
   @override
-  Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) {
-    return archive.getMoreCatalogImpl(after, variant: variant);
+  Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) {
+    return archive.getMoreCatalogImpl(after, variant: variant, interactive: interactive);
   }
 
   @override
-  Future<Post> getPost(String board, int id) {
-    return archive.getPost(board, id);
+  Future<Post> getPost(String board, int id, {required bool interactive}) {
+    return archive.getPost(board, id, interactive: interactive);
   }
 
   @override
-  Future<Post> getPostFromArchive(String board, int id) {
-    return archive.getPost(board, id);
+  Future<Post> getPostFromArchive(String board, int id, {required bool interactive}) {
+    return archive.getPost(board, id, interactive: interactive);
   }
 
   @override
@@ -71,13 +71,13 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) {
-    return archive.getThread(thread);
+  Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) {
+    return archive.getThread(thread, interactive: interactive);
   }
 
   @override
-  Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator}) {
-    return archive.getThread(thread);
+  Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required bool interactive}) {
+    return archive.getThread(thread, interactive: interactive);
   }
 
   @override

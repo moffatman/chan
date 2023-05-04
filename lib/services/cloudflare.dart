@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
@@ -16,9 +17,27 @@ import 'package:provider/provider.dart';
 
 extension CloudflareWanted on RequestOptions {
 	bool get cloudflare => extra['cloudflare'] == true;
+	bool get interactive => extra[kInteractive] != false;
 }
 extension CloudflareHandled on Response {
 	bool get cloudflare => extra['cloudflare'] == true;
+	bool get interactive => extra[kInteractive] != false;
+}
+
+final _initialAllowNonInteractiveWebvieWhen = (timePasses: DateTime(2000), hostPasses: '');
+var _allowNonInteractiveWebviewWhen = _initialAllowNonInteractiveWebvieWhen;
+
+class CloudflareHandlerRateLimitException implements Exception {
+	final String message;
+	const CloudflareHandlerRateLimitException(this.message);
+	@override
+	String toString() => message;
+}
+
+class CloudflareHandlerInterruptedException implements Exception {
+	const CloudflareHandlerInterruptedException();
+	@override
+	String toString() => 'Cloudflare challenge handler interrupted';
 }
 
 dynamic _decode(String data) {
@@ -53,6 +72,7 @@ class CloudflareInterceptor extends Interceptor {
 		URLRequest? initialUrlRequest,
 		required String userAgent,
 		required Uri cookieUrl,
+		required bool interactive
 	}) async {
 		assert(initialData != null || initialUrlRequest != null);
 		await CookieManager.instance().deleteAllCookies();
@@ -111,6 +131,10 @@ class CloudflareInterceptor extends Interceptor {
 				return headlessCompleter.future;
 			}
 		}
+		if (!interactive && DateTime.now().isBefore(_allowNonInteractiveWebviewWhen.timePasses)) {
+			// User recently rejected a non-interactive cloudflare login, reject it
+			throw CloudflareHandlerRateLimitException('Too many Cloudflare challenges! Try again ${formatRelativeTime(_allowNonInteractiveWebviewWhen.timePasses)}');
+		}
 		final ret = await Navigator.of(ImageboardRegistry.instance.context!).push<String?>(FullWidthCupertinoPageRoute(
 			builder: (context) => CupertinoPageScaffold(
 				navigationBar: const CupertinoNavigationBar(
@@ -129,6 +153,18 @@ class CloudflareInterceptor extends Interceptor {
 			showAnimations: ImageboardRegistry.instance.context!.read<EffectiveSettings?>()?.showAnimations ?? true
 		));
 		headlessWebView?.dispose();
+		if (ret == null) {
+			// User closed the page manually, block non-interactive cloudflare challenges for a while
+			_allowNonInteractiveWebviewWhen = (
+				timePasses: DateTime.now().add(const Duration(minutes: 15)),
+				hostPasses: cookieUrl.host
+			);
+			throw const CloudflareHandlerInterruptedException();
+		}
+		if (cookieUrl.host == _allowNonInteractiveWebviewWhen.hostPasses) {
+			// Cloudflare passed on the previously-blocked host
+			_allowNonInteractiveWebviewWhen = _initialAllowNonInteractiveWebvieWhen;
+		}
 		return ret;
 	}
 
@@ -154,7 +190,8 @@ class CloudflareInterceptor extends Interceptor {
 							for (final h in options.headers.entries) h.key: h.value
 						},
 						body: options.data == null ? null : Uint8List.fromList(options.data)
-					)
+					),
+					interactive: options.interactive
 				);
 				if (data != null) {
 					handler.resolve(Response(
@@ -182,22 +219,32 @@ class CloudflareInterceptor extends Interceptor {
 	@override
 	void onResponse(Response response, ResponseInterceptorHandler handler) async {
 		if (_responseMatches(response)) {
-			final data = await _useWebview(
-				cookieUrl: response.requestOptions.uri,
-				userAgent: response.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
-				initialData: InAppWebViewInitialData(
-					data: response.data,
-					baseUrl: WebUri.uri(response.realUri)
-				)
-			);
-			if (data != null) {
-				handler.resolve(Response(
-					data: _decode(data),
-					statusCode: 200,
+			try {
+				final data = await _useWebview(
+					cookieUrl: response.requestOptions.uri,
+					userAgent: response.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
+					initialData: InAppWebViewInitialData(
+						data: response.data,
+						baseUrl: WebUri.uri(response.realUri)
+					),
+					interactive: response.requestOptions.interactive
+				);
+				if (data != null) {
+					handler.resolve(Response(
+						data: _decode(data),
+						statusCode: 200,
+						requestOptions: response.requestOptions,
+						extra: {
+							'cloudflare': true
+						}
+					));
+					return;
+				}
+			}
+			catch (e) {
+				handler.reject(DioError(
 					requestOptions: response.requestOptions,
-					extra: {
-						'cloudflare': true
-					}
+					error: e
 				));
 				return;
 			}
@@ -208,24 +255,33 @@ class CloudflareInterceptor extends Interceptor {
 	@override
 	void onError(DioError err, ErrorInterceptorHandler handler) async {
 		if (err.type == DioErrorType.response && err.response != null && _responseMatches(err.response!)) {
-			final data = await _useWebview(
-				cookieUrl: err.requestOptions.uri,
-				userAgent: err.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
-				initialData: InAppWebViewInitialData(
-					data: err.response!.data,
-					baseUrl: WebUri.uri(err.response!.realUri)
-				)
-			);
-			if (data != null) {
-				handler.resolve(Response(
-					data: _decode(data),
-					statusCode: 200,
+			try {
+				final data = await _useWebview(
+					cookieUrl: err.requestOptions.uri,
+					userAgent: err.requestOptions.headers['user-agent'] ?? Persistence.settings.userAgent,
+					initialData: InAppWebViewInitialData(
+						data: err.response!.data,
+						baseUrl: WebUri.uri(err.response!.realUri)
+					),
+					interactive: err.requestOptions.interactive
+				);
+				if (data != null) {
+					handler.resolve(Response(
+						data: _decode(data),
+						statusCode: 200,
+						requestOptions: err.requestOptions,
+						extra: {
+							'cloudflare': true
+						}
+					));
+					return;
+				}
+			}
+			catch (e) {
+				handler.reject(DioError(
 					requestOptions: err.requestOptions,
-					extra: {
-						'cloudflare': true
-					}
+					error: e
 				));
-				return;
 			}
 		}
 		handler.next(err);

@@ -1128,11 +1128,11 @@ class MissingThreadsControls extends StatelessWidget {
 						}
 						Thread? newThread;
 						try {
-							newThread = await thread.imageboard.site.getThread(thread.item);
+							newThread = await thread.imageboard.site.getThread(thread.item, interactive: true);
 						}
 						on ThreadNotFoundException {
 							try {
-								newThread = await thread.imageboard.site.getThreadFromArchive(thread.item);
+								newThread = await thread.imageboard.site.getThreadFromArchive(thread.item, interactive: true);
 							}
 							catch (e) {
 								showToast(

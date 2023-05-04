@@ -478,7 +478,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	Future<void> _replacePostFromArchive(Post post) async {
 		final tmpPersistentState = persistentState;
 		final site = context.read<ImageboardSite>();
-		final asArchived = await site.getPostFromArchive(post.board, post.id);
+		final asArchived = await site.getPostFromArchive(post.board, post.id, interactive: true);
 		tmpPersistentState.thread?.mergePosts(null, [asArchived], site.placeOrphanPost);
 		await tmpPersistentState.save();
 		setState(() {});
@@ -509,9 +509,10 @@ class _ThreadPageState extends State<ThreadPage> {
 		lastPageNumber = persistentState.thread?.currentPage;
 		final bool firstLoad = tmpPersistentState.thread == null;
 		// The thread might switch in this interval
+		_checkForeground();
 		final newThread = tmpPersistentState.useArchive ?
-			await site.getThreadFromArchive(widget.thread) :
-			await site.getThread(widget.thread, variant: tmpPersistentState.variant);
+			await site.getThreadFromArchive(widget.thread, interactive: _foreground) :
+			await site.getThread(widget.thread, variant: tmpPersistentState.variant, interactive: _foreground);
 		bool shouldScroll = false;
 		final watch = notifications.getThreadWatch(widget.thread);
 		if (watch != null && newThread.identifier == widget.thread && mounted) {
@@ -599,7 +600,7 @@ class _ThreadPageState extends State<ThreadPage> {
 				throw Exception('Thread not loaded');
 			}
 			final site = context.read<ImageboardSite>();
-			final newChildren = await site.getStubPosts(thread.identifier, ids);
+			final newChildren = await site.getStubPosts(thread.identifier, ids, interactive: true);
 			thread.mergePosts(null, newChildren, site.placeOrphanPost);
 			if (ids.length == 1 && ids.single.childId == ids.single.parentId) {
 				// Clear hasOmittedReplies in case it has only omitted shadowbanned replies

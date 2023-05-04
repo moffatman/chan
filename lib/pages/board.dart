@@ -857,7 +857,7 @@ class _BoardPageState extends State<BoardPage> {
 															childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
 														) : null,
 														controller: _listController,
-														listUpdater: () => site.getCatalog(board!.name, variant: variant).then((list) async {
+														listUpdater: () => site.getCatalog(board!.name, variant: variant, interactive: true).then((list) async {
 															for (final thread in list) {
 																await thread.preinit(catalog: true);
 																await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();
@@ -876,7 +876,7 @@ class _BoardPageState extends State<BoardPage> {
 															});
 															return list;
 														}),
-														listExtender: (after) => site.getMoreCatalog(after, variant: variant).then((list) async {
+														listExtender: (after) => site.getMoreCatalog(after, variant: variant, interactive: true).then((list) async {
 															for (final thread in list) {
 																await thread.preinit(catalog: true);
 																await persistence?.getThreadStateIfExists(thread.identifier)?.ensureThreadLoaded();

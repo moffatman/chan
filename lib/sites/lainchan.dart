@@ -176,7 +176,7 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<Post> getPost(String board, int id) {
+	Future<Post> getPost(String board, int id, {required bool interactive}) {
 		throw Exception('Not implemented');
 	}
 
@@ -184,9 +184,12 @@ class SiteLainchan extends ImageboardSite {
 	String get res => 'res';
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/$res/${thread.id}.json'), options: Options(
-			validateStatus: (x) => true
+			validateStatus: (x) => true,
+			extra: {
+				kInteractive: interactive
+			}
 		));
 		if (response.statusCode == 404 || response.redirects.tryLast?.location.pathSegments.tryLast == '404.html') {
 			throw ThreadNotFoundException(thread);
@@ -213,9 +216,12 @@ class SiteLainchan extends ImageboardSite {
 		);
 	}
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.json'), options: Options(
-			validateStatus: (x) => true
+			validateStatus: (x) => true,
+			extra: {
+				kInteractive: interactive
+			}
 		));
 		if (response.statusCode != 200) {
 			if (response.statusCode == 404) {
@@ -248,9 +254,12 @@ class SiteLainchan extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards() async {
+	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/boards.json'), options: Options(
-			responseType: ResponseType.json
+			responseType: ResponseType.json,
+			extra: {
+				kInteractive: interactive
+			}
 		));
 		return (response.data['boards'] as List<dynamic>).map((board) => ImageboardBoard(
 			name: board['board'],
@@ -336,14 +345,14 @@ class SiteLainchan extends ImageboardSite {
 			while (newPostId == null) {
 				await Future.delayed(const Duration(seconds: 2));
 				if (threadId == null) {
-					for (final thread in (await getCatalog(board)).reversed) {
+					for (final thread in (await getCatalog(board, interactive: true)).reversed) {
 						if (thread.title == subject && thread.posts[0].text == text && (thread.time.compareTo(now) >= 0)) {
 							newPostId = thread.id;
 						}
 					}
 				}
 				else {
-					for (final post in (await getThread(ThreadIdentifier(board, threadId))).posts) {
+					for (final post in (await getThread(ThreadIdentifier(board, threadId), interactive: true)).posts) {
 						if (post.text == text && (post.time.compareTo(now) >= 0)) {
 							newPostId = post.id;
 						}

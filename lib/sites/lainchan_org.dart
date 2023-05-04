@@ -1,4 +1,5 @@
 import 'package:chan/models/board.dart';
+import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/lainchan.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -14,9 +15,12 @@ class SiteLainchanOrg extends SiteLainchan {
 	});
 
 	@override
-	Future<List<ImageboardBoard>> getBoards() async {
+	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/'), options: Options(
-			responseType: ResponseType.plain
+			responseType: ResponseType.plain,
+			extra: {
+				kInteractive: interactive
+			}
 		));
 		final document = parse(response.data);
 		return document.querySelectorAll('.boardlist a').where((e) => e.attributes['title'] != null).map((e) => ImageboardBoard(

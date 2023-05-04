@@ -9,6 +9,7 @@ import 'dart:io';
 
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:dio/dio.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
@@ -249,13 +250,21 @@ class SiteHackerNews extends ImageboardSite {
 		}
 	}
 
-	Future<_HNObject> _getAlgolia(int id) async {
-		final response = await client.get('https://hn.algolia.com/api/v1/items/$id');
+	Future<_HNObject> _getAlgolia(int id, {required bool interactive}) async {
+		final response = await client.get('https://hn.algolia.com/api/v1/items/$id', options: Options(
+			extra: {
+				kInteractive: interactive
+			}
+		));
 		return await _makeHNObjectAlgolia(response.data);
 	}
 
-	Future<Thread> _getThreadForCatalog(int id) async {
-		final response = await client.get('https://hacker-news.firebaseio.com/v0/item/$id.json');
+	Future<Thread> _getThreadForCatalog(int id, {required bool interactive}) async {
+		final response = await client.get('https://hacker-news.firebaseio.com/v0/item/$id.json', options: Options(
+			extra: {
+				kInteractive: interactive
+			}
+		));
 		final d = response.data as Map;
 		String text;
 		switch (d['type']) {
@@ -267,7 +276,11 @@ class SiteHackerNews extends ImageboardSite {
 				break;
 			case 'poll':
 				final responses = await Future.wait<Map>(d['parts'].map((int part) async {
-					return (await client.get('https://hacker-news.firebaseio.com/v0/item/$part.json')).data;
+					return (await client.get('https://hacker-news.firebaseio.com/v0/item/$part.json', options: Options(
+						extra: {
+							kInteractive: interactive
+						}
+					))).data;
 				}));
 				text = '${d['text']}<ul>${responses.map((r) => '<li>${r['text']} - ${r['score']}</li>').join('\n')}</ul>';
 				break;
@@ -356,7 +369,7 @@ class SiteHackerNews extends ImageboardSite {
 		if (parsed != null) {
 			if (parsed.host == baseUrl && parsed.path == '/item' && parsed.queryParameters.containsKey('id')) {
 				int id = int.parse(parsed.queryParameters['id']!);
-				_HNObject object = await _getAlgolia(id);
+				_HNObject object = await _getAlgolia(id, interactive: true);
 				return BoardThreadOrPostIdentifier('', (object is _HNComment) ? object.story : id, id);
 			}
 		}
@@ -373,7 +386,7 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<List<ImageboardBoard>> getBoards() async {
+	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
 		return [ImageboardBoard(
 			name: '',
 			title: 'Hacker News',
@@ -392,10 +405,14 @@ class SiteHackerNews extends ImageboardSite {
 		return NoCaptchaRequest();
 	}
 
-	Future<List<int>> _getSecondChancePoolIds(int? after) async {
+	Future<List<int>> _getSecondChancePoolIds(int? after, {required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/pool', {
 			if (after != null) 'next': after.toString()
-		}));
+		}), options: Options(
+			extra: {
+				kInteractive: interactive
+			}
+		));
 		final doc = parse(response.data);
 		final ids = doc.querySelectorAll('.athing').map((e) => int.parse(e.id));
 		if (after != null) {
@@ -406,10 +423,10 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
 		final List<int> data;
 		if (variant == CatalogVariant.hackerNewsSecondChancePool) {
-			data = await _getSecondChancePoolIds(null);
+			data = await _getSecondChancePoolIds(null, interactive: interactive);
 		}
 		else {
 			final name = {
@@ -420,11 +437,15 @@ class SiteHackerNews extends ImageboardSite {
 				CatalogVariant.hackerNewsShow: 'showstories',
 				CatalogVariant.hackerNewsJobs: 'jobstories',
 			}[variant]!;
-			final response = await client.get('https://hacker-news.firebaseio.com/v0/$name.json');
+			final response = await client.get('https://hacker-news.firebaseio.com/v0/$name.json', options: Options(
+				extra: {
+					kInteractive: interactive
+				}
+			));
 			data = (response.data as List).cast<int>();
 		}
 		_lastCatalogIds[variant] = data;
-		return await Future.wait(data.take(catalogThreadsPerPage).map(_getThreadForCatalog));
+		return await Future.wait(data.take(catalogThreadsPerPage).map((d) => _getThreadForCatalog(d, interactive: interactive)));
 	}
 
 	Future<List<Post>> _getMoreThread(_HNObject item) async {
@@ -442,10 +463,10 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) async {
+	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) async {
 		if (variant == CatalogVariant.hackerNewsSecondChancePool) {
-			final ids = await _getSecondChancePoolIds(after.id);
-			return await Future.wait(ids.map(_getThreadForCatalog));
+			final ids = await _getSecondChancePoolIds(after.id, interactive: interactive);
+			return await Future.wait(ids.map((id) => _getThreadForCatalog(id, interactive: interactive)));
 		}
 		else {
 			final lastCatalogIds = _lastCatalogIds[variant];
@@ -453,13 +474,13 @@ class SiteHackerNews extends ImageboardSite {
 			if (index == -1) {
 				return [];
 			}
-			return await Future.wait(lastCatalogIds!.skip(index + 1).take(catalogThreadsPerPage).map(_getThreadForCatalog));
+			return await Future.wait(lastCatalogIds!.skip(index + 1).take(catalogThreadsPerPage).map((id) => _getThreadForCatalog(id, interactive: interactive)));
 		}
 	}
 
 	@override
-	Future<Post> getPost(String board, int id) async {
-		final item = await _getAlgolia(id);
+	Future<Post> getPost(String board, int id, {required bool interactive}) async {
+		final item = await _getAlgolia(id, interactive: interactive);
 		return _makePost(item);
 	}
 
@@ -470,8 +491,8 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
-		final item = await _getAlgolia(thread.id);
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+		final item = await _getAlgolia(thread.id, interactive: interactive);
 		if (item is! _HNStory) {
 			throw Exception('HN item ${thread.id} is not a thread');
 		}
@@ -539,7 +560,7 @@ class SiteHackerNews extends ImageboardSite {
 	bool get hasPagedCatalog => true;
 
 	@override
-	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator}) => getThread(thread);
+	Future<Thread> getThreadFromArchive(ThreadIdentifier thread, {Future<void> Function(Thread)? customValidator, required bool interactive}) => getThread(thread, interactive: interactive);
 
 	@override
 	List<CatalogVariantGroup> get catalogVariantGroups => const [

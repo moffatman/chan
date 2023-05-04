@@ -240,7 +240,7 @@ class ThreadWatcher extends ChangeNotifier {
 	Future<bool> _updateThread(PersistentThreadState threadState) async {
 		Thread? newThread;
 		try {
-			newThread = await site.getThread(threadState.identifier);
+			newThread = await site.getThread(threadState.identifier, interactive: false);
 		}
 		on ThreadNotFoundException {
 			final watch = persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == threadState.identifier);
@@ -250,7 +250,7 @@ class ThreadWatcher extends ChangeNotifier {
 				notifications.zombifyThreadWatch(watch);
 			}
 			try {
-				newThread = await site.getThreadFromArchive(threadState.identifier);
+				newThread = await site.getThreadFromArchive(threadState.identifier, interactive: false);
 			}
 			on ThreadNotFoundException {
 				return false;
@@ -303,7 +303,7 @@ class ThreadWatcher extends ChangeNotifier {
 		_lastCatalogs.clear();
 		_unseenStickyThreads.clear();
 		for (final board in watchForStickyOnBoards) {
-			_lastCatalogs[board] ??= await site.getCatalog(board);
+			_lastCatalogs[board] ??= await site.getCatalog(board, interactive: false);
 			_unseenStickyThreads.addAll(_lastCatalogs[board]!.where((t) => t.isSticky).where((t) => persistence.getThreadStateIfExists(t.identifier) == null).map((t) => t.identifier).toList());
 			// Update sticky threads for (you)s
 			final stickyThreadStates = _lastCatalogs[board]!.where((t) => t.isSticky).map((t) => persistence.getThreadStateIfExists(t.identifier)).where((s) => s != null).map((s) => s!).toList();
@@ -311,7 +311,7 @@ class ThreadWatcher extends ChangeNotifier {
 				await threadState.ensureThreadLoaded(preinit: false);
 				if (threadState.youIds.isNotEmpty) {
 					try {
-						final newThread = await site.getThread(threadState.thread!.identifier);
+						final newThread = await site.getThread(threadState.thread!.identifier, interactive: false);
 						if (newThread != threadState.thread) {
 							newThread.mergePosts(threadState.thread, threadState.thread?.posts_ ?? [], site.placeOrphanPost);
 							threadState.thread = newThread;

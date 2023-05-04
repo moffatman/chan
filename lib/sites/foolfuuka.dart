@@ -191,7 +191,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}
 		return null;
 	}
-	Future<Post> _makePost(dynamic data, {bool resolveIds = true}) async {
+	Future<Post> _makePost(dynamic data, {bool resolveIds = true, required bool interactive}) async {
 		final String board = data['board']['shortname'];
 		final int threadId = int.parse(data['thread_num']);
 		final int id = int.parse(data['num']);
@@ -202,7 +202,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			for (final match in postLinkMatcher.allMatches(data['comment_processed'] ?? '')) {
 				final board = match.group(1)!;
 				final postId = int.parse(match.group(2)!);
-				final threadId = await _getPostThreadId(board, postId);
+				final threadId = await _getPostThreadId(board, postId, interactive: interactive);
 				if (threadId != null) {
 					linkedPostThreadIds['$board/$postId'] = threadId;
 				}
@@ -235,8 +235,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			passSinceYear: passSinceYear
 		);
 	}
-	Future<dynamic> _getPostJson(String board, int id) async {
-		if (!(await getBoards()).any((b) => b.name == board)) {
+	Future<dynamic> _getPostJson(String board, int id, {required bool interactive}) async {
+		if (!(await getBoards(interactive: interactive)).any((b) => b.name == board)) {
 			throw BoardNotFoundException(board);
 		}
 		final response = await client.getUri(
@@ -247,6 +247,9 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			options: Options(
 				headers: {
 					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
+				},
+				extra: {
+					kInteractive: interactive
 				}
 			)
 		);
@@ -265,18 +268,18 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return response.data;
 	}
 	final _postThreadIdCache = <String, Map<int, int?>>{};
-	Future<int?> __getPostThreadId(String board, int postId) async {
+	Future<int?> __getPostThreadId(String board, int postId, {required bool interactive}) async {
 		try {
-			return int.parse((await _getPostJson(board, postId))['thread_num']);
+			return int.parse((await _getPostJson(board, postId, interactive: interactive))['thread_num']);
 		}
 		on PostNotFoundException {
 			return null;
 		}
 	}
-	Future<int?> _getPostThreadId(String board, int postId) async {
+	Future<int?> _getPostThreadId(String board, int postId, {required bool interactive}) async {
 		_postThreadIdCache[board] ??= {};
 		if (!_postThreadIdCache[board]!.containsKey(postId)) {
-			_postThreadIdCache[board]?[postId] = await __getPostThreadId(board, postId);
+			_postThreadIdCache[board]?[postId] = await __getPostThreadId(board, postId, interactive: interactive);
 		}
 		return _postThreadIdCache[board]?[postId];
 	}
@@ -284,19 +287,19 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		_postThreadIdCache.putIfAbsent(board, () => {}).putIfAbsent(postId, () => threadId);
 	}
 	@override
-	Future<Post> getPost(String board, int id) async {		
-		return _makePost(await _getPostJson(board, id));
+	Future<Post> getPost(String board, int id, {required bool interactive}) async {		
+		return _makePost(await _getPostJson(board, id, interactive: interactive), interactive: interactive);
 	}
 	Future<Thread> getThreadContainingPost(String board, int id) async {
 		throw Exception('Unimplemented');
 	}
-	Future<Thread> _makeThread(ThreadIdentifier thread, dynamic data, {int? currentPage}) async {
+	Future<Thread> _makeThread(ThreadIdentifier thread, dynamic data, {int? currentPage, required bool interactive}) async {
 		final op = data[thread.id.toString()]['op'];
 		var replies = data[thread.id.toString()]['posts'] ?? [];
 		if (replies is Map) {
 			replies = replies.entries.where((e) => int.tryParse(e.key) != null).map((e) => e.value);
 		}
-		final posts = (await Future.wait([op, ...replies].map(_makePost))).toList();
+		final posts = (await Future.wait([op, ...replies].map((d) => _makePost(d, interactive: interactive)))).toList();
 		final String? title = op['title'];
 		final a = _makeAttachment(op);
 		return Thread(
@@ -316,8 +319,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		);
 	}
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
-		if (!(await getBoards()).any((b) => b.name == thread.board)) {
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+		if (!(await getBoards(interactive: interactive)).any((b) => b.name == thread.board)) {
 			throw BoardNotFoundException(thread.board);
 		}
 		final response = await client.getUri(
@@ -329,6 +332,9 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				validateStatus: (x) => true,
 				headers: {
 					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
+				},
+				extra: {
+					kInteractive: interactive
 				}
 			)
 		);
@@ -342,16 +348,19 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		if (data['error'] != null) {
 			throw Exception(data['error']);
 		}
-		return _makeThread(thread, data);
+		return _makeThread(thread, data, interactive: interactive);
 	}
 
-	Future<List<Thread>> _getCatalog(String board, int pageNumber) async {
+	Future<List<Thread>> _getCatalog(String board, int pageNumber, {required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/index', {
 			'board': board,
 			'page': pageNumber.toString()
 		}), options: Options(
 				headers: {
 					if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
+				},
+				extra: {
+					kInteractive: interactive
 				}
 			)
 		);
@@ -360,20 +369,23 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}).map((threadIdStr) => _makeThread(ThreadIdentifier(
 			board,
 			int.parse(threadIdStr)
-		), response.data, currentPage: pageNumber)).toList());
+		), response.data, currentPage: pageNumber, interactive: interactive)).toList());
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) => _getCatalog(board, 1);
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) => _getCatalog(board, 1, interactive: interactive);
 
 	@override
-	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant}) => _getCatalog(after.board, (after.currentPage ?? 0) + 1);
+	Future<List<Thread>> getMoreCatalogImpl(Thread after, {CatalogVariant? variant, required bool interactive}) => _getCatalog(after.board, (after.currentPage ?? 0) + 1, interactive: interactive);
 
-	Future<List<ImageboardBoard>> _getBoards() async {
+	Future<List<ImageboardBoard>> _getBoards({required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/_/api/chan/archives'), options: Options(
 			validateStatus: (x) => true,
 			headers: {
 				if (useRandomUseragent) 'user-agent': makeRandomUserAgent()
+			},
+			extra: {
+				kInteractive: interactive
 			}
 		));
 		if (response.statusCode != 200) {
@@ -390,8 +402,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		}).toList();
 	}
 	@override
-	Future<List<ImageboardBoard>> getBoards() async {
-		boards ??= await _getBoards();
+	Future<List<ImageboardBoard>> getBoards({required bool interactive}) async {
+		boards ??= await _getBoards(interactive: interactive);
 		return boards!;
 	}
 
@@ -405,19 +417,19 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 					data['num']: {
 						'op': data
 					}
-				})
+				}, interactive: true)
 			);
 		}
 		else {
 			return ImageboardArchiveSearchResult.post(
-				await _makePost(data, resolveIds: false)
+				await _makePost(data, resolveIds: false, interactive: true)
 			);
 		}
 	}
 
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
-		final knownBoards = await getBoards();
+		final knownBoards = await getBoards(interactive: true);
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {
 			throw BoardNotFoundException(unknownBoards.first);

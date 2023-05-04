@@ -2,6 +2,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/sites/soyjak.dart';
 import 'package:chan/util.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart';
 
@@ -21,9 +22,13 @@ class SiteFrenschan extends SiteSoyjak {
 	String get siteType => 'frenschan';
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant}) async {
-		final broken = await super.getThread(thread);
-		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html'));
+	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+		final broken = await super.getThread(thread, interactive: interactive);
+		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html'), options: Options(
+			extra: {
+				kInteractive: interactive
+			}
+		));
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.post-image').map((e) => e.attributes['src']).toList();
 		for (final attachment in broken.posts_.expand((p) => p.attachments)) {
@@ -40,9 +45,11 @@ class SiteFrenschan extends SiteSoyjak {
 	}
 
 	@override
-	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant}) async {
-		final broken = await super.getCatalogImpl(board);
-		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.html'));
+	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive}) async {
+		final broken = await super.getCatalogImpl(board, interactive: interactive);
+		final response = await client.getUri(Uri.https(baseUrl, '/$board/catalog.html', {
+			kInteractive: interactive
+		}));
 		final document = parse(response.data);
 		final thumbnailUrls = document.querySelectorAll('img.thread-image').map((e) => e.attributes['src']).toList();
 		for (final attachment in broken.expand((t) => t.attachments)) {
