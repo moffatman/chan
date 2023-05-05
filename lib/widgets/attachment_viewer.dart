@@ -1099,6 +1099,24 @@ class AttachmentViewer extends StatelessWidget {
 						trailingIcon: a.trailingIcon,
 						child: a.child,
 					)),
+					if (context.select<EffectiveSettings, bool>((p) => p.areMD5sHidden([attachment.md5]))) CupertinoContextMenuAction2(
+						trailingIcon: CupertinoIcons.eye_slash_fill,
+						onPressed: () {
+							context.read<EffectiveSettings>().unHideByMD5s([attachment.md5]);
+							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
+							Navigator.pop(context);
+						},
+						child: const Text('Unhide by image')
+					)
+					else CupertinoContextMenuAction2(
+						trailingIcon: CupertinoIcons.eye_slash,
+						onPressed: () async {
+							context.read<EffectiveSettings>().hideByMD5(attachment.md5);
+							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
+							Navigator.pop(context);
+						},
+						child: const Text('Hide by image')
+					),
 					...additionalContextMenuActions
 				],
 				child: buildChild(true),
