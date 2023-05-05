@@ -835,7 +835,8 @@ class AttachmentViewer extends StatelessWidget {
 
 	Widget _centeredLoader({
 		required bool active,
-		required double? value
+		required double? value,
+		required bool useRealKey
 	}) => Builder(
 		builder: (context) => Center(
 			child: AnimatedSwitcher(
@@ -849,7 +850,7 @@ class AttachmentViewer extends StatelessWidget {
 						child: child
 					),
 					child: CircularLoadingIndicator(
-						key: controller.loadingSpinnerKey,
+						key: useRealKey ? controller.loadingSpinnerKey : null,
 						value: value
 					)
 				) : Icon(
@@ -994,7 +995,8 @@ class AttachmentViewer extends StatelessWidget {
 							else if (controller.showLoadingProgress || !controller.isFullResolution) {
 								child = _centeredLoader(
 									active: controller.isFullResolution,
-									value: loadingValue
+									value: loadingValue,
+									useRealKey: useRealGestureKey
 								);
 							}
 							final Rect? rect = controller.gestureKey.currentState?.gestureDetails?.destinationRect;
@@ -1234,7 +1236,8 @@ class AttachmentViewer extends StatelessWidget {
 								valueListenable: controller.videoLoadingProgress,
 								builder: (context, double? loadingProgress, child) => _centeredLoader(
 									active: controller.isFullResolution,
-									value: loadingProgress
+									value: loadingProgress,
+									useRealKey: true
 								)
 							),
 							if (controller.errorMessage != null) Center(
