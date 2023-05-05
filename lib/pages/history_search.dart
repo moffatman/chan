@@ -13,6 +13,7 @@ import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -337,10 +338,13 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 					)
 				)
 			) : MaybeCupertinoScrollbar(
-				child: ListView.separated(
-					itemCount: results!.length,
-					itemBuilder: (context, i) {
-						final row = results![i];
+				child: RefreshableList<ImageboardScoped<HistorySearchResult>>(
+					listUpdater: () => throw UnimplementedError(),
+					id: 'historysearch',
+					filterableAdapter: (i) => i.item.post ?? i.item.thread,
+					initialList: results,
+					disableUpdates: true,
+					itemBuilder: (context, row) {
 						if (row.item.post != null) {
 							return ImageboardScope(
 								imageboardKey: null,
@@ -400,12 +404,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 								)
 							);
 						}
-					},
-					separatorBuilder: (context, i) => Divider(
-						thickness: 1,
-						height: 0,
-						color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
-					)
+					}
 				)
 			)
 		);
