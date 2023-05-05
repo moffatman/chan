@@ -215,7 +215,7 @@ class _ChanAppState extends State<ChanApp> {
 										child: RootCustomScale(
 											scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
 											child: FilterZone(
-												filter: settings.filter,
+												filter: FilterGroup([settings.filter, settings.imageMD5Filter]),
 												child: CupertinoApp(
 													title: 'Chance',
 													debugShowCheckedModeBanner: false,

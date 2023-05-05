@@ -308,7 +308,7 @@ class PersistentBrowserStateAdapter
           ? {}
           : (fields[5] as Map).map((dynamic k, dynamic v) =>
               MapEntry(k as String, (v as List).cast<int>())),
-      hiddenImageMD5s:
+      deprecatedHiddenImageMD5s:
           fields[6] == null ? [] : (fields[6] as List).cast<String>(),
       loginFields:
           fields[7] == null ? {} : (fields[7] as Map).cast<String, String>(),
@@ -349,7 +349,7 @@ class PersistentBrowserStateAdapter
       ..writeByte(5)
       ..write(obj.autosavedIds)
       ..writeByte(6)
-      ..write(obj.hiddenImageMD5s.toList())
+      ..write(obj.deprecatedHiddenImageMD5s.toList())
       ..writeByte(7)
       ..write(obj.loginFields)
       ..writeByte(8)

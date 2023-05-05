@@ -431,7 +431,6 @@ class SettingsBehaviorPage extends StatefulWidget {
 
 class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 	bool showFilterRegex = false;
-	Imageboard _imageFilterImageboard = ImageboardRegistry.instance.imageboards.first;
 	Imageboard _loginSystemImageboard = ImageboardRegistry.instance.imageboards.first;
 
 	@override
@@ -520,40 +519,16 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						CupertinoButton.filled(
 							padding: const EdgeInsets.all(8),
 							onPressed: () async {
-								final md5sBefore = _imageFilterImageboard.persistence.browserState.hiddenImageMD5s;
+								final md5sBefore = Persistence.settings.hiddenImageMD5s;
 								await Navigator.of(context).push(FullWidthCupertinoPageRoute(
 									showAnimations: settings.showAnimations,
-									builder: (context) => SettingsImageFilterPage(
-										browserState: _imageFilterImageboard.persistence.browserState
-									)
+									builder: (context) => const SettingsImageFilterPage()
 								));
-								if (!setEquals(md5sBefore, _imageFilterImageboard.persistence.browserState.hiddenImageMD5s)) {
-									_imageFilterImageboard.persistence.didUpdateBrowserState();
+								if (!setEquals(md5sBefore, Persistence.settings.hiddenImageMD5s)) {
+									settings.didUpdateHiddenMD5s();
 								}
 							},
-							child: Text(describeCount(_imageFilterImageboard.persistence.browserState.hiddenImageMD5s.length, 'image'))
-						),
-						const SizedBox(width: 8),
-						CupertinoButton.filled(
-							padding: const EdgeInsets.all(8),
-							onPressed: () async {
-								final newImageboard = await _pickImageboard(context, _imageFilterImageboard);
-								if (newImageboard != null) {
-									setState(() {
-										_imageFilterImageboard = newImageboard;
-									});
-								}
-							},
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									ImageboardIcon(
-										imageboardKey: _imageFilterImageboard.key
-									),
-									const SizedBox(width: 8),
-									Text(_imageFilterImageboard.site.name)
-								]
-							)
+							child: Text(describeCount(Persistence.settings.hiddenImageMD5s.length, 'image'))
 						)
 					]
 				),
@@ -1114,9 +1089,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 }
 
 class SettingsImageFilterPage extends StatefulWidget {
-	final PersistentBrowserState browserState;
 	const SettingsImageFilterPage({
-		required this.browserState,
 		Key? key
 	}) : super(key: key);
 
@@ -1130,7 +1103,7 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 	@override
 	void initState() {
 		super.initState();
-		controller = TextEditingController(text: widget.browserState.hiddenImageMD5s.join('\n'));
+		controller = TextEditingController(text: Persistence.settings.hiddenImageMD5s.join('\n'));
 	}
 
 	@override
@@ -1144,7 +1117,7 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 					controller: controller,
 					enableIMEPersonalizedLearning: false,
 					onChanged: (s) {
-						widget.browserState.setHiddenImageMD5s(s.split('\n').where((x) => x.isNotEmpty));
+						context.read<EffectiveSettings>().setHiddenImageMD5s(s.split('\n').where((x) => x.isNotEmpty));
 					},
 					minLines: 10,
 					maxLines: 10

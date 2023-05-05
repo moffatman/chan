@@ -34,9 +34,6 @@ class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
   Future<void> didUpdateBrowserState() => parent.didUpdateBrowserState();
 
   @override
-  Future<void> didUpdateHiddenMD5s() => parent.didUpdateHiddenMD5s();
-
-  @override
   Future<void> didUpdateSavedPost() => parent.didUpdateSavedPost();
 
   @override
@@ -81,9 +78,6 @@ class IncognitoPersistence implements Persistence, EphemeralThreadStateOwner {
 
   @override
   bool get hasListeners => parent.hasListeners;
-
-  @override
-  EasyListenable get hiddenMD5sListenable => parent.hiddenMD5sListenable;
 
   @override
   String get imageboardKey => parent.imageboardKey;

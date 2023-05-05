@@ -738,6 +738,8 @@ class SavedSettings extends HiveObject {
 	bool showOverlaysInGallery;
 	@HiveField(130)
 	double verticalTwoPaneMinimumPaneSize;
+	@HiveField(131)
+	Set<String> hiddenImageMD5s;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -870,6 +872,7 @@ class SavedSettings extends HiveObject {
 		bool? unsafeImagePeeking,
 		bool? showOverlaysInGallery,
 		double? verticalTwoPaneMinimumPaneSize,
+		List<String>? hiddenImageMD5s,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1028,7 +1031,8 @@ class SavedSettings extends HiveObject {
 		exactTimeIsISO8601 = exactTimeIsISO8601 ?? false,
 		unsafeImagePeeking = unsafeImagePeeking ?? false,
 		showOverlaysInGallery = showOverlaysInGallery ?? true,
-		verticalTwoPaneMinimumPaneSize = verticalTwoPaneMinimumPaneSize ?? -400 {
+		verticalTwoPaneMinimumPaneSize = verticalTwoPaneMinimumPaneSize ?? -400,
+		hiddenImageMD5s = hiddenImageMD5s?.toSet() ?? {} {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1062,6 +1066,14 @@ class SavedSettings extends HiveObject {
 			if (getInappropriateUserAgents().contains(this.userAgent) && !userAgents.contains(this.userAgent)) {
 				// To handle user-agents breaking with OS updates
 				this.userAgent = userAgents.first;
+			}
+			if (!this.appliedMigrations.contains('uif')) {
+				// uif means unifiedImageFilter
+				this.hiddenImageMD5s.addAll(this.browserStateBySite.values.expand((s) => s.deprecatedHiddenImageMD5s));
+				for (final s in this.browserStateBySite.values) {
+					s.deprecatedHiddenImageMD5s.clear();
+				}
+				this.appliedMigrations.add('uif');
 			}
 		}
 
@@ -2006,6 +2018,40 @@ class EffectiveSettings extends ChangeNotifier {
 			task();
 		}
 		_appResumeCallbacks.clear();
+	}
+
+	bool areMD5sHidden(Iterable<String> md5s) {
+		return md5s.any(_settings.hiddenImageMD5s.contains);
+	}
+
+	late Filter imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet()));
+	void hideByMD5(String md5) {
+		_settings.hiddenImageMD5s.add(md5);
+		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet()));
+	}
+
+	void unHideByMD5s(Iterable<String> md5s) {
+		_settings.hiddenImageMD5s.removeAll(md5s);
+		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet()));
+	}
+
+	void setHiddenImageMD5s(Iterable<String> md5s) {
+		_settings.hiddenImageMD5s.clear();
+		_settings.hiddenImageMD5s.addAll(md5s.map((md5) {
+			switch (md5.length % 3) {
+				case 1:
+					return '$md5==';
+				case 2:
+					return '$md5=';
+			}
+			return md5;
+		}));
+		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet()));
+	}
+
+	Future<void> didUpdateHiddenMD5s() async {
+		notifyListeners();
+		await _settings.save();
 	}
 
 	EffectiveSettings() {

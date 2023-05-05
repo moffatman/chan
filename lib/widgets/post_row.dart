@@ -581,12 +581,12 @@ class PostRow extends StatelessWidget {
 							parentZone.threadState!.save();
 						}
 					),
-					if (context.select<Persistence, bool>((p) => p.browserState.areMD5sHidden(latestPost.md5s))) ContextMenuAction(
+					if (context.select<EffectiveSettings, bool>((p) => p.areMD5sHidden(latestPost.md5s))) ContextMenuAction(
 						child: Text('Unhide by image${latestPost.attachments.length != 1 ? 's' : ''}'),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
-							context.read<Persistence>().browserState.unHideByMD5s(latestPost.md5s);
-							context.read<Persistence>().didUpdateHiddenMD5s();
+							context.read<EffectiveSettings>().unHideByMD5s(latestPost.md5s);
+							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
 							parentZone.threadState!.save();
 						}
 					)
@@ -594,13 +594,13 @@ class PostRow extends StatelessWidget {
 						child: const Text('Hide by image'),
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () async {
-							final persistence = context.read<Persistence>();
+							final settings = context.read<EffectiveSettings>();
 							final attachment = await whichAttachment(context, latestPost.attachments);
 							if (attachment == null) {
 								return;
 							}
-							persistence.browserState.hideByMD5(attachment.md5);
-							persistence.didUpdateHiddenMD5s();
+							settings.hideByMD5(attachment.md5);
+							settings.didUpdateHiddenMD5s();
 							parentZone.threadState!.save();
 						}
 					)

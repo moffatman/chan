@@ -1,4 +1,3 @@
-import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/util.dart';
@@ -69,12 +68,7 @@ class ImageboardScope extends StatelessWidget {
 						Provider.value(value: b.notifications)
 					]
 				],
-				child: Builder(
-					builder: (context) => FilterZone(
-						filter: context.select<Persistence, Filter>((p) => p.browserState.imageMD5Filter),
-						child: child
-					)
-				)
+				child: child
 			)
 		);
 	}

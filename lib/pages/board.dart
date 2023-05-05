@@ -412,7 +412,7 @@ class _BoardPageState extends State<BoardPage> {
 		Widget itemBuilder(BuildContext context, Thread thread, {String? highlightString}) {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
 			final isThreadHidden = context.select<Persistence, bool>((p) => p.browserState.isThreadHidden(thread.board, thread.id));
-			final isImageHidden = context.select<Persistence, bool>((p) => p.browserState.areMD5sHidden(thread.md5s));
+			final isImageHidden = context.select<EffectiveSettings, bool>((p) => p.areMD5sHidden(thread.md5s));
 			final isSelected = widget.isThreadSelected?.call(context, thread.identifier) ?? false;
 			return ContextMenu(
 				actions: [
@@ -475,8 +475,8 @@ class _BoardPageState extends State<BoardPage> {
 						child: const Text('Unhide by image'),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
-							context.read<Persistence>().browserState.unHideByMD5s(thread.md5s);
-							context.read<Persistence>().didUpdateHiddenMD5s();
+							context.read<EffectiveSettings>().unHideByMD5s(thread.md5s);
+							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
 							setState(() {});
 						}
 					)
@@ -484,8 +484,8 @@ class _BoardPageState extends State<BoardPage> {
 						child: const Text('Hide by image'),
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () {
-							thread.md5s.forEach(context.read<Persistence>().browserState.hideByMD5);
-							context.read<Persistence>().didUpdateHiddenMD5s();
+							thread.md5s.forEach(context.read<EffectiveSettings>().hideByMD5);
+							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
 							setState(() {});
 						}
 					),

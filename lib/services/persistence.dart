@@ -96,7 +96,6 @@ class Persistence extends ChangeNotifier {
 	}
 	final savedAttachmentsListenable = EasyListenable();
 	final savedPostsListenable = EasyListenable();
-	final hiddenMD5sListenable = EasyListenable();
 	static late final SavedSettings settings;
 	static late final Directory temporaryDirectory;
 	static late final Directory documentsDirectory;
@@ -525,7 +524,7 @@ class Persistence extends ChangeNotifier {
 			hiddenIds: {},
 			favouriteBoards: [],
 			autosavedIds: {},
-			hiddenImageMD5s: [],
+			deprecatedHiddenImageMD5s: [],
 			loginFields: {},
 			threadWatches: [],
 			boardWatches: [],
@@ -760,11 +759,6 @@ class Persistence extends ChangeNotifier {
 	Future<void> didUpdateBrowserState() async {
 		settings.save();
 		notifyListeners();
-	}
-
-	Future<void> didUpdateHiddenMD5s() async {
-		hiddenMD5sListenable.didUpdate();
-		didUpdateBrowserState();
 	}
 
 	static Future<void> didUpdateRecentSearches() async {
@@ -1161,7 +1155,7 @@ class PersistentBrowserState {
 	@HiveField(5, defaultValue: {})
 	final Map<String, List<int>> autosavedIds;
 	@HiveField(6, defaultValue: [])
-	final Set<String> hiddenImageMD5s;
+	final Set<String> deprecatedHiddenImageMD5s;
 	@HiveField(7, defaultValue: {})
 	Map<String, String> loginFields;
 	@HiveField(8)
@@ -1192,7 +1186,7 @@ class PersistentBrowserState {
 		required this.hiddenIds,
 		required this.favouriteBoards,
 		required this.autosavedIds,
-		required List<String> hiddenImageMD5s,
+		required List<String> deprecatedHiddenImageMD5s,
 		required this.loginFields,
 		String? notificationsId,
 		required this.threadWatches,
@@ -1205,7 +1199,7 @@ class PersistentBrowserState {
 		this.useTree,
 		this.treeModeInitiallyCollapseSecondLevelReplies = false,
 		this.treeModeCollapsedPostsShowBody = false
-	}) : hiddenImageMD5s = hiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();
+	}) : deprecatedHiddenImageMD5s = deprecatedHiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};
 	Filter getCatalogFilter(String board) {
@@ -1224,40 +1218,6 @@ class PersistentBrowserState {
 	void unHideThread(String board, int id) {
 		_catalogFilters.remove(board);
 		hiddenIds[board]?.remove(id);
-	}
-
-	bool areMD5sHidden(Iterable<String> md5s) {
-		for (final md5 in md5s) {
-			if (hiddenImageMD5s.contains(md5)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	late Filter imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
-	void hideByMD5(String md5) {
-		hiddenImageMD5s.add(md5);
-		imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
-	}
-
-	void unHideByMD5s(Iterable<String> md5s) {
-		hiddenImageMD5s.removeAll(md5s);
-		imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
-	}
-
-	void setHiddenImageMD5s(Iterable<String> md5s) {
-		hiddenImageMD5s.clear();
-		hiddenImageMD5s.addAll(md5s.map((md5) {
-			switch (md5.length % 3) {
-				case 1:
-					return '$md5==';
-				case 2:
-					return '$md5=';
-			}
-			return md5;
-		}));
-		imageMD5Filter = MD5Filter(hiddenImageMD5s.toSet());
 	}
 }
 

@@ -143,7 +143,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
 		final savedPostsLength = persistentState.thread?.posts.where((p) => persistence.getSavedPost(p) != null).length ?? 0;
-		final hiddenMD5sLength = persistence.browserState.hiddenImageMD5s.length;
+		final hiddenMD5sLength = Persistence.settings.hiddenImageMD5s.length;
 		final currentSnapshot = _PersistentThreadStateSnapshot.of(persistentState);
 		if (currentSnapshot != lastPersistentThreadStateSnapshot ||
 				savedPostsLength != lastSavedPostsLength ||

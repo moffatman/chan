@@ -117,8 +117,9 @@ class ThreadWatcher extends ChangeNotifier {
 	final unseenCount = ValueNotifier<int>(0);
 	final unseenYouCount = ValueNotifier<int>(0);
 
-	Filter get _filter => FilterGroup([settings.filter, persistence.browserState.imageMD5Filter]);
+	Filter get _filter => FilterGroup([settings.filter, settings.imageMD5Filter]);
 	final _initialCountsDone = Completer<void>();
+	late Set<String> _lastHiddenImageMD5s;
 	
 	ThreadWatcher({
 		required this.imageboardKey,
@@ -133,11 +134,19 @@ class ThreadWatcher extends ChangeNotifier {
 		_boxSubscription = Persistence.sharedThreadStateBox.watch().listen(_threadUpdated);
 		_setInitialCounts();
 		settings.filterListenable.addListener(_didUpdateFilter);
-		persistence.hiddenMD5sListenable.addListener(_didUpdateFilter);
+		settings.addListener(_didUpdateSettings);
+		_lastHiddenImageMD5s = Persistence.settings.hiddenImageMD5s.toSet();
 	}
 
 	void _didUpdateFilter() {
 		_setInitialCounts();
+	}
+
+	void _didUpdateSettings() {
+		if (!setEquals(_lastHiddenImageMD5s, Persistence.settings.hiddenImageMD5s)) {
+			_didUpdateFilter();
+			_lastHiddenImageMD5s = Persistence.settings.hiddenImageMD5s.toSet();
+		}
 	}
 
 	Future<void> _setInitialCounts() async {
@@ -353,7 +362,7 @@ class ThreadWatcher extends ChangeNotifier {
 		unseenCount.dispose();
 		unseenYouCount.dispose();
 		settings.filterListenable.removeListener(_didUpdateFilter);
-		persistence.hiddenMD5sListenable.removeListener(_didUpdateFilter);
+		settings.removeListener(_didUpdateSettings);
 		super.dispose();
 	}
 }
