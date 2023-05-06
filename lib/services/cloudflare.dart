@@ -52,6 +52,36 @@ dynamic _decode(String data) {
 	return data;
 }
 
+
+typedef _CloudflareResponse = ({String? content, Uri? redirect});
+
+extension on _CloudflareResponse {
+	Response? response(RequestOptions options) {
+		if (content != null) {
+			return Response(
+				requestOptions: options,
+				data: _decode(content!),
+				statusCode: 200,
+				extra: {
+					'cloudflare': true
+				}
+			);
+		}
+		else if (redirect != null) {
+			return Response(
+				requestOptions: options,
+				isRedirect: true,
+				redirects: [RedirectRecord(302, 'GET', redirect!)],
+				statusCode: 302,
+				extra: {
+					'cloudflare': true
+				}
+			);
+		}
+		return null;
+	}
+} 
+
 class CloudflareInterceptor extends Interceptor {
 	static bool _titleMatches(String title) {
 		return title.contains('Cloudflare') || title.contains('Just a moment') || title.contains('Please wait') || title.contains('Verification Required');
@@ -66,7 +96,22 @@ class CloudflareInterceptor extends Interceptor {
 		return false;
 	}
 
-	Future<String?> _useWebview({
+	Future<void> _saveCookies(Uri uri) async {
+		final cookies = await CookieManager.instance().getCookies(url: WebUri.uri(uri));
+		await Persistence.currentCookies.saveFromResponse(uri, cookies.map((cookie) {
+			final newCookie = io.Cookie(cookie.name, cookie.value);
+			newCookie.domain = cookie.domain;
+			if (cookie.expiresDate != null) {
+				newCookie.expires = DateTime.fromMillisecondsSinceEpoch(cookie.expiresDate!);
+			}
+			newCookie.httpOnly = cookie.isHttpOnly ?? false;
+			newCookie.path = cookie.path;
+			newCookie.secure = cookie.isSecure ?? false;
+			return newCookie;
+		}).toList());
+	}
+
+	Future<_CloudflareResponse> _useWebview({
 		bool skipHeadless = false,
 		InAppWebViewInitialData? initialData,
 		URLRequest? initialUrlRequest,
@@ -81,35 +126,33 @@ class CloudflareInterceptor extends Interceptor {
 			clearCache: true,
 			clearSessionCache: true
 		);
-		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<String?> callback) => (controller, uri) async {
+		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<_CloudflareResponse> callback) => (controller, uri) async {
+			if (uri?.host.isEmpty ?? false) {
+				final correctedUri = uri!.replace(
+					scheme: cookieUrl.scheme,
+					host: cookieUrl.host
+				);
+				await _saveCookies(correctedUri);
+				callback((content: null, redirect: correctedUri));
+				return;
+			}
 			final title = await controller.getTitle() ?? '';
 			if (!_titleMatches(title)) {
-				final cookies = await CookieManager.instance().getCookies(url: WebUri.uri(uri!));
-				await Persistence.currentCookies.saveFromResponse(uri, cookies.map((cookie) {
-					final newCookie = io.Cookie(cookie.name, cookie.value);
-					newCookie.domain = cookie.domain;
-					if (cookie.expiresDate != null) {
-						newCookie.expires = DateTime.fromMillisecondsSinceEpoch(cookie.expiresDate!);
-					}
-					newCookie.httpOnly = cookie.isHttpOnly ?? false;
-					newCookie.path = cookie.path;
-					newCookie.secure = cookie.isSecure ?? false;
-					return newCookie;
-				}).toList());
+				await _saveCookies(uri!);
 				final html = await controller.getHtml() ?? '';
 				if (html.contains('<pre')) {
 					// Raw JSON response, but web-view has put it within a <pre>
 					final document = parse(html);
-					callback(document.querySelector('pre')!.innerHtml);
+					callback((content: document.querySelector('pre')!.innerHtml, redirect: null));
 				}
 				else {
-					callback(html);
+					callback((content: html, redirect: null));
 				}
 			}
 		};
 		HeadlessInAppWebView? headlessWebView;
 		if (!skipHeadless) {
-			final headlessCompleter = Completer<String?>();
+			final headlessCompleter = Completer<_CloudflareResponse>();
 			headlessWebView = HeadlessInAppWebView(
 				initialSettings: initialSettings,
 				initialUrlRequest: initialUrlRequest,
@@ -135,7 +178,7 @@ class CloudflareInterceptor extends Interceptor {
 			// User recently rejected a non-interactive cloudflare login, reject it
 			throw CloudflareHandlerRateLimitException('Too many Cloudflare challenges! Try again ${formatRelativeTime(_allowNonInteractiveWebviewWhen.timePasses)}');
 		}
-		final ret = await Navigator.of(ImageboardRegistry.instance.context!).push<String?>(FullWidthCupertinoPageRoute(
+		final ret = await Navigator.of(ImageboardRegistry.instance.context!).push<_CloudflareResponse>(FullWidthCupertinoPageRoute(
 			builder: (context) => CupertinoPageScaffold(
 				navigationBar: const CupertinoNavigationBar(
 					transitionBetweenRoutes: false,
@@ -193,15 +236,9 @@ class CloudflareInterceptor extends Interceptor {
 					),
 					interactive: options.interactive
 				);
-				if (data != null) {
-					handler.resolve(Response(
-						requestOptions: options,
-						data: _decode(data),
-						statusCode: 200,
-						extra: {
-							'cloudflare': true
-						}
-					));
+				final newResponse = data.response(options);
+				if (newResponse != null) {
+					handler.resolve(newResponse);
 					return;
 				}
 			}
@@ -229,15 +266,9 @@ class CloudflareInterceptor extends Interceptor {
 					),
 					interactive: response.requestOptions.interactive
 				);
-				if (data != null) {
-					handler.resolve(Response(
-						data: _decode(data),
-						statusCode: 200,
-						requestOptions: response.requestOptions,
-						extra: {
-							'cloudflare': true
-						}
-					));
+				final newResponse = data.response(response.requestOptions);
+				if (newResponse != null) {
+					handler.resolve(newResponse);
 					return;
 				}
 			}
@@ -265,15 +296,9 @@ class CloudflareInterceptor extends Interceptor {
 					),
 					interactive: err.requestOptions.interactive
 				);
-				if (data != null) {
-					handler.resolve(Response(
-						data: _decode(data),
-						statusCode: 200,
-						requestOptions: err.requestOptions,
-						extra: {
-							'cloudflare': true
-						}
-					));
+				final newResponse = data.response(err.requestOptions);
+				if (newResponse != null) {
+					handler.resolve(newResponse);
 					return;
 				}
 			}
