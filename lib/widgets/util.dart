@@ -839,6 +839,7 @@ class _RenderTrulyUnconstrainedBox extends RenderProxyBox {
               <Color>[const Color(0xFFFFFFFF), const Color(0x00FFFFFF)],
             );
         context.canvas.drawRect(Offset.zero & size, paint);
+				context.canvas.translate(-offset.dx, -offset.dy);
 				context.canvas.restore();
 			}
 			else {
