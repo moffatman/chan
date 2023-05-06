@@ -711,7 +711,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/r/${thread.board}/comments/${toRedditId(thread.id)}.json', {
 			if (variant?.redditApiName != null) 'sort': variant!.redditApiName!
 		}), options: Options(

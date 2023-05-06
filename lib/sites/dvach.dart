@@ -163,7 +163,7 @@ class SiteDvach extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.json'), options: Options(
 			extra: {
 				kInteractive: interactive

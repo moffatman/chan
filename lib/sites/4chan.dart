@@ -421,7 +421,7 @@ class Site4Chan extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
 		Map<String, String>? headers;
 		if (_threadCache['${thread.board}/${thread.id}'] != null) {
 			headers = {
@@ -475,10 +475,6 @@ class Site4Chan extends ImageboardSite {
 				thread: output,
 				lastModified: response.headers.value('last-modified')!
 			);
-			for (final attachment in output.attachments) {
-				await ensureCookiesMemoized(Uri.parse(attachment.url));
-				await ensureCookiesMemoized(Uri.parse(attachment.thumbnailUrl));
-			}
 		}
 		else if (!(response.statusCode == 304 && headers != null)) {
 			if (response.statusCode == 404) {

@@ -71,7 +71,7 @@ class WrappedArchive extends ImageboardSite {
   }
 
   @override
-  Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) {
+  Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) {
     return archive.getThread(thread, interactive: interactive);
   }
 

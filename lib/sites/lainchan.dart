@@ -184,7 +184,7 @@ class SiteLainchan extends ImageboardSite {
 	String get res => 'res';
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
 		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/$res/${thread.id}.json'), options: Options(
 			validateStatus: (x) => true,
 			extra: {
@@ -199,10 +199,6 @@ class SiteLainchan extends ImageboardSite {
 		}
 		final firstPost = response.data['posts'][0];
 		final List<Post> posts = (response.data['posts'] ?? []).map<Post>((postData) => _makePost(thread.board, thread.id, postData)).toList();
-		for (final attachment in posts.first.attachments) {
-			await ensureCookiesMemoized(Uri.parse(attachment.url));
-			await ensureCookiesMemoized(Uri.parse(attachment.thumbnailUrl));
-		}
 		return Thread(
 			board: thread.board,
 			id: thread.id,

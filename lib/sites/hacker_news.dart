@@ -491,7 +491,7 @@ class SiteHackerNews extends ImageboardSite {
 	}
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
 		final item = await _getAlgolia(thread.id, interactive: interactive);
 		if (item is! _HNStory) {
 			throw Exception('HN item ${thread.id} is not a thread');
