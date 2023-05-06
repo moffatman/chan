@@ -1621,7 +1621,7 @@ List<InlineSpan> buildPostInfoRow({
 		),
 		for (final field in settings.postDisplayFieldOrder)
 			if (showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts) TextSpan(
-				text: '#${zone.thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1} ',
+				text: '#${zone.thread.replyCount - ((zone.thread.posts.length - 1) - (zone.thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1))} ',
 				style: TextStyle(color: settings.theme.primaryColor.withOpacity(0.5))
 			)
 			else if (field == PostDisplayField.ipNumber && settings.showIPNumberOnPosts && post.ipNumber != null) ...[
