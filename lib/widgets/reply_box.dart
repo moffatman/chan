@@ -9,6 +9,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/overscroll_modal.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/clipboard_image.dart';
 import 'package:chan/services/embed.dart';
 import 'package:chan/services/media.dart';
@@ -1279,7 +1280,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								smartDashesType: SmartDashesType.disabled,
 								smartQuotesType: SmartQuotesType.disabled,
 								controller: _subjectFieldController,
-								spellCheckConfiguration: const SpellCheckConfiguration(),
+								spellCheckConfiguration: (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
 								maxLines: 1,
 								placeholder: 'Subject',
 								textCapitalization: TextCapitalization.sentences,
@@ -1296,7 +1297,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										smartDashesType: SmartDashesType.disabled,
 										smartQuotesType: SmartQuotesType.disabled,
 										controller: _textFieldController,
-										spellCheckConfiguration: const SpellCheckConfiguration(),
+										spellCheckConfiguration: (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
 										contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
 											anchors: editableTextState.contextMenuAnchors,
 											buttonItems: [
