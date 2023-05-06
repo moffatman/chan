@@ -29,6 +29,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:mutex/mutex.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
@@ -167,6 +168,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _swapIncoming = false;
 	bool _waitingOnSwap = false;
 	Duration? _swapStartTime;
+	final _lock = Mutex();
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -363,7 +365,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	Future<void> _loadFullAttachment(bool background, {bool force = false}) async {
+	Future<void> _loadFullAttachment(bool background, {bool force = false}) => _lock.protect(() async {
 		if (attachment.type == AttachmentType.image && goodImageSource != null && !force) {
 			return;
 		}
@@ -570,7 +572,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		finally {
 			_ongoingConversion = null;
 		}
-	}
+	});
 
 	Future<void> loadFullAttachment() => _loadFullAttachment(false);
 
@@ -912,7 +914,7 @@ class AttachmentViewer extends StatelessWidget {
 	}
 
 	Widget _buildImage(BuildContext context, Size? size, bool passedFirstBuild) {
-		Uri source = Uri.parse(attachment.thumbnailUrl);
+		Uri source = controller.overrideSource ?? Uri.parse(attachment.thumbnailUrl);
 		final goodSource = controller.goodImageSource;
 		if (goodSource != null && ((!goodSource.path.endsWith('.gif') || passedFirstBuild) || source.toString().length < 6)) {
 			source = goodSource;
@@ -1180,7 +1182,7 @@ class AttachmentViewer extends StatelessWidget {
 					onLongPressEnd: (x) => controller._onLongPressEnd(),
 					child: Stack(
 						children: [
-							Positioned.fill(
+							if (controller.overrideSource == null) Positioned.fill(
 								child: FittedBox(
 									child: Padding(
 										// Sometimes it's very slightly off from the video.
@@ -1197,6 +1199,9 @@ class AttachmentViewer extends StatelessWidget {
 										)
 									)
 								)
+							) else const Positioned.fill(
+								// Needed to enable tapping to reveal chrome via an ancestor GestureDetector
+								child: AbsorbPointer()
 							),
 							if (controller._showAudioOnly) Positioned.fill(
 								child: Center(

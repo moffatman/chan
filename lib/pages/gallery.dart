@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:math';
 import 'dart:ui';
@@ -16,6 +17,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_context_menu2.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
+import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
@@ -220,7 +222,11 @@ class _GalleryPageState extends State<GalleryPage> {
 	void didUpdateWidget(GalleryPage old) {
 		super.didUpdateWidget(old);
 		if (widget.initialAttachment != old.initialAttachment) {
+			if (old.initialAttachment != null) {
+				_getController(old.initialAttachment!).isPrimary = false;
+			}
 			currentIndex = (widget.initialAttachment != null) ? max(0, widget.attachments.indexOf(widget.initialAttachment!)) : 0;
+			pageController.jumpToPage(currentIndex);
 			if (context.read<EffectiveSettings>().autoloadAttachments) {
 				final attachment = widget.attachments[currentIndex];
 				_getController(attachment).loadFullAttachment().then((x) {
@@ -542,34 +548,33 @@ class _GalleryPageState extends State<GalleryPage> {
 																borderRadius: const BorderRadius.all(Radius.circular(4)),
 															),
 															child: Stack(
+																alignment: Alignment.center,
 																children: [
 																	ClipRRect(
 																		borderRadius: BorderRadius.circular(4),
-																		child: AttachmentThumbnail(
+																		child: widget.overrideSources[attachment.attachment]?.scheme != 'file' ? AttachmentThumbnail(
 																			gaplessPlayback: true,
-																			attachment: widget.attachments[index].attachment,
+																			attachment: attachment.attachment,
 																			width: _thumbnailSize,
 																			height: _thumbnailSize,
 																			fit: BoxFit.cover
+																		) : SavedAttachmentThumbnail(
+																			file: File(widget.overrideSources[attachment.attachment]!.toFilePath()),
+																			fit: BoxFit.cover
 																		)
 																	),
-																	if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) SizedBox(
-																		width: _thumbnailSize,
-																		child: Center(
-																			child: Container(
-																				decoration: BoxDecoration(
-																					borderRadius: BorderRadius.circular(4),
-																					color: Colors.black54
-																				),
-																				padding: const EdgeInsets.all(4),
-																				child: Text(
-																					widget.replyCounts[widget.attachments[index].attachment]!.toString(),
-																					style: const TextStyle(
-																						color: Colors.white70,
-																						fontSize: 14,
-																						fontWeight: FontWeight.bold
-																					)
-																				)
+																	if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Container(
+																		decoration: BoxDecoration(
+																			borderRadius: BorderRadius.circular(4),
+																			color: Colors.black54
+																		),
+																		padding: const EdgeInsets.all(4),
+																		child: Text(
+																			widget.replyCounts[widget.attachments[index].attachment]!.toString(),
+																			style: const TextStyle(
+																				color: Colors.white70,
+																				fontSize: 14,
+																				fontWeight: FontWeight.bold
 																			)
 																		)
 																	)
@@ -630,13 +635,16 @@ class _GalleryPageState extends State<GalleryPage> {
 													children: [
 														ClipRRect(
 															borderRadius: BorderRadius.circular(8),
-															child: AttachmentThumbnail(
+															child: widget.overrideSources[attachment.attachment]?.scheme != 'file' ? AttachmentThumbnail(
 																gaplessPlayback: true,
-																attachment: widget.attachments[index].attachment,
+																attachment: attachment.attachment,
 																hero: null,
 																width: 9999,
 																height: 9999,
 																fit: BoxFit.cover,
+															) : SavedAttachmentThumbnail(
+																file: File(widget.overrideSources[attachment.attachment]!.toFilePath()),
+																fit: BoxFit.cover
 															)
 														),
 														if (context.watch<EffectiveSettings>().showReplyCountsInGallery && ((widget.replyCounts[widget.attachments[index].attachment] ?? 0) > 0)) Center(

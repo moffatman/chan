@@ -94,7 +94,7 @@ Future<List<ImageboardScoped<ThreadWatch>>> _loadWatches() => _watchMutex.protec
 class SavedPage extends StatefulWidget {
 	final bool isActive;
 	final void Function(String, ThreadIdentifier)? onWantOpenThreadInNewTab;
-	final Key? masterDetailKey;
+	final GlobalKey<MultiMasterDetailPageState>? masterDetailKey;
 
 	const SavedPage({
 		required this.isActive,
@@ -119,6 +119,8 @@ class _SavedPageState extends State<SavedPage> {
 	final _savedAttachmentsAnimatedBuilderKey = GlobalKey();
 	late final ScrollController _savedAttachmentsController;
 	late final EasyListenable _removeArchivedHack;
+	final _galleryPageKey = GlobalKey();
+	List<ImageboardScoped<SavedAttachment>> _savedAttachments = [];
 
 	@override
 	void initState() {
@@ -799,6 +801,7 @@ class _SavedPageState extends State<SavedPage> {
 						builder: (context, child) {
 							final list = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.savedAttachments.values.map(i.scope)).toList();
 							list.sort((a, b) => b.item.savedTime.compareTo(a.item.savedTime));
+							_savedAttachments = list;
 							return CustomScrollView(
 								controller: _savedAttachmentsController,
 								slivers: [
@@ -898,12 +901,21 @@ class _SavedPageState extends State<SavedPage> {
 							child = ImageboardScope(
 								imageboardKey: selectedValue.imageboard.key,
 								child: GalleryPage(
+									key: _galleryPageKey,
 									initialAttachment: attachment,
-									attachments: [attachment],
+									attachments: _savedAttachments.map((l) => TaggedAttachment(
+										attachment: l.item.attachment,
+										semanticParentIds: poppedOut ? [-5] : [-6]
+									)).toList(),
 									overrideSources: {
-										selectedValue.item.attachment: selectedValue.item.file.uri
+										for (final l in _savedAttachments)
+											l.item.attachment: l.item.file.uri
 									},
-									allowScroll: poppedOut,
+									onChange: (a) {
+										final originalL = _savedAttachments.tryFirstWhere((l) => l.item.attachment == a.attachment);
+										widget.masterDetailKey?.currentState?.setValue(4, originalL);
+									},
+									allowScroll: true,
 									allowPop: poppedOut,
 									updateOverlays: false,
 									heroOtherEndIsBoxFitCover: false

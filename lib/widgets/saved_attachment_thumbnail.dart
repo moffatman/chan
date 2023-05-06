@@ -40,7 +40,7 @@ class _SavedAttachmentThumbnailState extends State<SavedAttachmentThumbnail> {
 	@override
 	void didUpdateWidget(SavedAttachmentThumbnail old) {
 		super.didUpdateWidget(old);
-		if (widget.file != old.file) {
+		if (widget.file.path != old.file.path) {
 			setState(() {
 				scan = null;
 			});

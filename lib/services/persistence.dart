@@ -13,6 +13,7 @@ import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/incognito.dart';
+import 'package:chan/services/media.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
@@ -77,6 +78,20 @@ bool defaultCompactionStrategy(int entries, int deletedEntries) {
       deletedEntries / entries > _deletedRatio;
 }
 
+class DurationAdapter extends TypeAdapter<Duration> {
+	@override
+	final int typeId = 39;
+
+	@override
+  Duration read(BinaryReader reader) {
+		return Duration(microseconds: reader.readInt());
+  }
+
+  @override
+  void write(BinaryWriter writer, Duration obj) {
+    writer.writeInt(obj.inMicroseconds);
+  }
+}
 
 class Persistence extends ChangeNotifier {
 	final String imageboardKey;
@@ -85,6 +100,7 @@ class Persistence extends ChangeNotifier {
 	static Box<PersistentThreadState> get sharedThreadStateBox => _sharedThreadStateBox;
 	static late final Box<ImageboardBoard> _sharedBoardsBox;
 	static late final LazyBox<Thread> _sharedThreadsBox;
+	static late final LazyBox<MediaScan> mediaScanBox;
 	Map<String, SavedAttachment> get savedAttachments => settings.savedAttachmentsBySite[imageboardKey]!;
 	Map<String, SavedPost> get savedPosts => settings.savedPostsBySite[imageboardKey]!;
 	static PersistentRecentSearches get recentSearches => settings.recentSearches;
@@ -113,6 +129,7 @@ class Persistence extends ChangeNotifier {
 	static String get _sharedThreadStatesBoxName => 'threadStates';
 	static String get _sharedBoardsBoxName => 'boards';
 	static String get _sharedThreadsBoxName => 'threads';
+	static String get _mediaScansBoxName => 'mediaScans';
 
 	static Future<Box<T>> _openBoxWithBackup<T>(String name, {
 		CompactionStrategy compactionStrategy = defaultCompactionStrategy,
@@ -312,6 +329,8 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(PersistentBrowserStateAdapter());
 		Hive.registerAdapter(WebImageSearchMethodAdapter());
 		Hive.registerAdapter(AndroidGallerySavePathOrganizingAdapter());
+		Hive.registerAdapter(MediaScanAdapter());
+		Hive.registerAdapter(DurationAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
 		wifiCookies = PersistCookieJar(
@@ -344,6 +363,7 @@ class Persistence extends ChangeNotifier {
 		}
 		_sharedThreadsBox = await _openLazyBoxWithBackup<Thread>(_sharedThreadsBoxName, gzip: true);
 		_startBoxBackupTimer(_sharedThreadsBoxName, gzip: true);
+		mediaScanBox = await Hive.openLazyBox<MediaScan>(_mediaScansBoxName);
 	}
 
 	static Future<Map<String, int>> getFilesystemCacheSizes() async {

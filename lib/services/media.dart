@@ -13,9 +13,12 @@ import 'package:ffmpeg_kit_flutter_full_gpl/ffprobe_kit.dart';
 import 'package:ffmpeg_kit_flutter_full_gpl/session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image/image.dart';
 import 'package:mutex/mutex.dart';
 import 'package:pool/pool.dart';
+
+part 'media.g.dart';
 
 extension HandleSpacesInPath on Uri {
 	String toStringFFMPEG() {
@@ -43,29 +46,24 @@ class MediaConversionResult {
 	String toString() => 'MediaConversionResult(file: ${file.path}, hasAudio: $hasAudio, isAudioOnly: $isAudioOnly)';
 }
 
-class _MediaScanCacheEntry {
-	final Uri file;
-	final int size;
-	_MediaScanCacheEntry({
-		required this.file,
-		required this.size
-	});
-
-	@override
-	bool operator == (dynamic o) => (o is _MediaScanCacheEntry) && (o.file == file) && (o.size == size);
-
-	@override
-	int get hashCode => Object.hash(file, size);
-}
-
+@HiveType(typeId: 38)
 class MediaScan {
+	@HiveField(0)
 	final bool hasAudio;
+	@HiveField(1)
 	final Duration? duration;
+	@HiveField(2)
 	final int? bitrate;
+	@HiveField(3)
 	final int? width;
+	@HiveField(4)
 	final int? height;
+	@HiveField(5)
 	final String? codec;
+	@HiveField(6)
 	final double? videoFramerate;
+	@HiveField(7)
+	final int? sizeInBytes;
 
 	MediaScan({
 		required this.hasAudio,
@@ -74,10 +72,10 @@ class MediaScan {
 		required this.width,
 		required this.height,
 		required this.codec,
-		required this.videoFramerate
+		required this.videoFramerate,
+		required this.sizeInBytes
 	});
 
-	static final Map<_MediaScanCacheEntry, MediaScan> _mediaScanCache = {};
 	static final _ffprobeLock = Mutex();
 
 	static Future<MediaScan> _scan(Uri file, {
@@ -130,7 +128,8 @@ class MediaScan {
 						width: width == 0 ? null : width,
 						height: height == 0 ? null : height,
 						codec: ((data['streams'] as List<dynamic>).tryFirstWhere((s) => s['codec_type'] == 'video') as Map<String, dynamic>?)?['codec_name'],
-						videoFramerate: videoFramerate
+						videoFramerate: videoFramerate,
+						sizeInBytes: int.tryParse(data['format']?['size'] ?? '')
 					));
 				}
 				catch (e, st) {
@@ -146,11 +145,13 @@ class MediaScan {
 	}) async {
 		if (file.scheme == 'file') {
 			final size = (await File(file.path).stat()).size;
-			final entry = _MediaScanCacheEntry(file: file, size: size);
-			if (_mediaScanCache[entry] == null) {
-				_mediaScanCache[entry] = await _scan(file);
+			final cachedScan = await Persistence.mediaScanBox.get(file.path);
+			if (cachedScan?.sizeInBytes == size) {
+				return cachedScan!;
 			}
-			return _mediaScanCache[entry]!;
+			final scan = await _scan(file);
+			Persistence.mediaScanBox.put(file.path, scan);
+			return scan;
 		}
 		else {
 			return _scan(file, headers: headers);
