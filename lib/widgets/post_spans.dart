@@ -1533,9 +1533,6 @@ class ExpandingPost extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final zone = context.watch<PostSpanZoneData>();
 		final post = zone.thread.posts.tryFirstWhere((p) => p.id == id) ?? zone.postFromArchive(id);
-		if (post == null) {
-			print('Could not find post with ID $id in zone for ${zone.thread.id}');
-		}
 		return zone.shouldExpandPost(id) ? TransformedMediaQuery(
 			transformation: (mq) => mq.copyWith(textScaleFactor: 1),
 			child: (post == null) ? Center(
