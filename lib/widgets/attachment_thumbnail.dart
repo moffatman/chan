@@ -7,6 +7,7 @@ import 'package:chan/services/apple.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:provider/provider.dart';
@@ -187,7 +188,7 @@ class AttachmentThumbnail extends StatelessWidget {
 						startRect = Alignment.center.inscribe(fittedStartSize, startRect);
 					}
 				}
-				return RectTween(begin: startRect, end: endRect);
+				return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
 			}
 		) : child;
 	}

@@ -259,7 +259,7 @@ class TransparentRoute<T> extends PageRoute<T> {
 	@override
 	Widget buildTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
 		return FadeTransition(
-			opacity: animation,
+			opacity: animation.drive(CurveTween(curve: Curves.ease)),
 			child: Persistence.settings.blurEffects ? BackdropFilter(
 				filter: ui.ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
 				child: child

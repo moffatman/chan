@@ -230,7 +230,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 													final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
 													startRect = rootPadding.deflateRect(startRect);
 												}
-												return RectTween(begin: startRect, end: endRect);
+												return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
 											},
 											child: AnimatedBuilder(
 												animation: _getController(attachment),

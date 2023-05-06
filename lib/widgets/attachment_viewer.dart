@@ -60,6 +60,18 @@ Duration _estimateUrlTime(Uri url) {
 
 const deviceGalleryAlbumName = 'Chance';
 
+class CurvedRectTween extends Tween<Rect?> {
+	final Curve curve;
+	CurvedRectTween({
+		this.curve = Curves.linear,
+		super.begin,
+		super.end
+	});
+
+	@override
+  Rect? lerp(double t) => Rect.lerp(begin, end, curve.transform(t));
+}
+
 class AttachmentNotFoundException implements Exception {
 	final Attachment attachment;
 	AttachmentNotFoundException(this.attachment);
@@ -892,7 +904,11 @@ class AttachmentViewer extends StatelessWidget {
 			}
 			_heroRectCache[attachment.globalId] = (DateTime.now(), startRect, endRect);
 		}
-		return RectTween(begin: _heroRectCache[attachment.globalId]?.$2 ?? startRect, end: _heroRectCache[attachment.globalId]?.$3 ?? endRect);
+		return CurvedRectTween(
+			curve: Curves.ease,
+			begin: _heroRectCache[attachment.globalId]?.$2 ?? startRect,
+			end: _heroRectCache[attachment.globalId]?.$3 ?? endRect
+		);
 	}
 
 	Widget _buildImage(BuildContext context, Size? size, bool passedFirstBuild) {
