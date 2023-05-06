@@ -447,6 +447,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				else {
 					_ongoingConversion = StreamingMP4Conversion(url, headers: _getHeaders(url), soundSource: soundSource);
 					final result = await _ongoingConversion!.start();
+					if (_isDisposed) return;
 					_conversionDisposers.add(_ongoingConversion!.dispose);
 					_ongoingConversion = null;
 					_hasAudio = result.hasAudio;
