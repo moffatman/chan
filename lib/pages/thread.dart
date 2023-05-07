@@ -290,6 +290,7 @@ class _ThreadPageState extends State<ThreadPage> {
 					icon: Icons.cell_tower,
 					message: 'Stopping preload'
 				);
+				_indicatorKey.currentState?.setState(() {});
 				break;
 			}
 			final attachment = _cachingQueue.removeAt(0);
