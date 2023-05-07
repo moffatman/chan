@@ -44,7 +44,9 @@ Future<void> mediumHapticFeedback() async {
 }
 
 Future<void> _copyGzipped((String, String) param) async {
-	await gzip.encoder.bind(File(param.$1).openRead()).pipe(File(param.$2).openWrite());
+	final tmpFile = File('${param.$2}.tmp');
+	await gzip.encoder.bind(File(param.$1).openRead()).pipe(tmpFile.openWrite());
+	await tmpFile.rename(param.$2);
 }
 
 Future<void> copyGzipped(String inputPath, String outputPath) async {
@@ -52,7 +54,9 @@ Future<void> copyGzipped(String inputPath, String outputPath) async {
 }
 
 Future<void> _copyUngzipped((String, String) param) async {
-	await gzip.decoder.bind(File(param.$1).openRead()).pipe(File(param.$2).openWrite());
+	final tmpFile = File('${param.$2}.tmp');
+	await gzip.decoder.bind(File(param.$1).openRead()).pipe(tmpFile.openWrite());
+	await tmpFile.rename(param.$2);
 }
 
 Future<void> copyUngzipped(String inputPath, String outputPath) async {
