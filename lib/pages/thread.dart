@@ -121,7 +121,6 @@ class _ThreadPageState extends State<ThreadPage> {
 	late final RefreshableListController<Post> _listController;
 	late PostSpanRootZoneData zone;
 	bool blocked = false;
-	bool _unnaturallyScrolling = false;
 	late Listenable _threadStateListenable;
 	Timer? _saveThreadStateDuringEditingTimer;
 	bool _saveQueued = false;
@@ -132,7 +131,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	bool _foreground = false;
 	PersistentBrowserTab? _parentTab;
 	final List<Function> _postUpdateCallbacks = [];
-	int lastSeenIdBeforeLastUpdate = pow(2, 50).toInt();
+	int lastSeenIdBeforeLastUpdate = 0;
 	bool _searching = false;
 	bool _passedFirstLoad = false;
 	bool _showingWatchMenu = false;
@@ -154,7 +153,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread != lastPersistentThreadStateSnapshot.thread) {
 			final tmpPersistentState = persistentState;
 			_postUpdateCallbacks.add(() {
-				if (mounted && persistentState == tmpPersistentState && !_unnaturallyScrolling) {
+				if (mounted && persistentState == tmpPersistentState && !blocked) {
 					int? newLastId;
 					if (useTree) {
 						final lastListIndex = _listController.lastVisibleIndex;
@@ -210,7 +209,6 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (persistentState.thread != null && scrollToId != null) {
 			setState(() {
 				blocked = true;
-				_unnaturallyScrolling = true;
 			});
 			await Future.delayed(delayBeforeScroll);
 			final alignment = (scrollToId == widget.initialPostId) ? 0.0 : 1.0;
@@ -234,8 +232,6 @@ class _ThreadPageState extends State<ThreadPage> {
 					blocked = false;
 				});
 			}
-			await Future.delayed(const Duration(milliseconds: 200));
-			_unnaturallyScrolling = false;
 		}
 	}
 
@@ -257,7 +253,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	void _onSlowScroll() {
 		final lastItem = _listController.lastVisibleItem;
 		_updateCached();
-		if (persistentState.thread != null && !_unnaturallyScrolling && lastItem != null) {
+		if (persistentState.thread != null && !blocked && lastItem != null) {
 			final newLastSeen = lastItem.id;
 			if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
 				persistentState.lastSeenPostId = newLastSeen;
@@ -361,6 +357,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (settings.autoCacheAttachments) {
 			_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
 		}
+		lastSeenIdBeforeLastUpdate = persistentState.lastSeenPostId ?? pow(2, 50).toInt();
 	}
 
 	@override
@@ -395,6 +392,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			if (settings.autoCacheAttachments) {
 				_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
 			}
+			lastSeenIdBeforeLastUpdate = persistentState.lastSeenPostId ?? pow(2, 50).toInt();
 			setState(() {});
 		}
 		else if (widget.initialPostId != old.initialPostId && widget.initialPostId != null) {
@@ -541,7 +539,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			}
 			await tmpPersistentState.save();
 			_postUpdateCallbacks.add(() async {
-				if (persistentState == tmpPersistentState && !_unnaturallyScrolling) {
+				if (persistentState == tmpPersistentState && !blocked) {
 					final lastItem = _listController.lastVisibleItem;
 					if (lastItem != null) {
 						tmpPersistentState.lastSeenPostId = max(tmpPersistentState.lastSeenPostId ?? 0, lastItem.id);
@@ -1306,7 +1304,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	Timer? _waitForRebuildTimer;
 	late final AnimationController _buttonsAnimationController;
 	late final Animation<double> _buttonsAnimation;
-	int treeModeFurthestSeenIndexTop = 0;
+	int treeModeFurthestSeenIndexTop = 9999999;
 	int treeModeFurthestSeenIndexBottom = 0;
 	int _lastListControllerItemsLength = 0;
 	int _lastFirstVisibleIndex = -1;
@@ -1438,6 +1436,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	}
 
 	Future<bool> _onSlowScroll() async {
+		if (widget.blocked) {
+			return false;
+		}
 		if (widget.useTree) {
 			_filteredItems ??= widget.listController.items.toList();
 			final firstVisibleIndex = widget.listController.firstVisibleIndex;
