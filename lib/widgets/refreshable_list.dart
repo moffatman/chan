@@ -19,7 +19,7 @@ import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 
 const double _overscrollTriggerThreshold = 100;
-const _treeAnimationDuration = Duration(milliseconds: 350);
+const _treeAnimationDuration = Duration(milliseconds: 250);
 
 class ItemNotFoundException implements Exception {
 	final String message;
