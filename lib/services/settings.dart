@@ -740,6 +740,8 @@ class SavedSettings extends HiveObject {
 	double verticalTwoPaneMinimumPaneSize;
 	@HiveField(131)
 	Set<String> hiddenImageMD5s;
+	@HiveField(132)
+	bool showLastRepliesInCatalog;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -873,6 +875,7 @@ class SavedSettings extends HiveObject {
 		bool? showOverlaysInGallery,
 		double? verticalTwoPaneMinimumPaneSize,
 		List<String>? hiddenImageMD5s,
+		bool? showLastRepliesInCatalog,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1032,7 +1035,8 @@ class SavedSettings extends HiveObject {
 		unsafeImagePeeking = unsafeImagePeeking ?? false,
 		showOverlaysInGallery = showOverlaysInGallery ?? true,
 		verticalTwoPaneMinimumPaneSize = verticalTwoPaneMinimumPaneSize ?? -400,
-		hiddenImageMD5s = hiddenImageMD5s?.toSet() ?? {} {
+		hiddenImageMD5s = hiddenImageMD5s?.toSet() ?? {},
+		showLastRepliesInCatalog = showLastRepliesInCatalog ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2005,6 +2009,13 @@ class EffectiveSettings extends ChangeNotifier {
 	double get verticalTwoPaneMinimumPaneSize => _settings.verticalTwoPaneMinimumPaneSize;
 	set verticalTwoPaneMinimumPaneSize(double setting) {
 		_settings.verticalTwoPaneMinimumPaneSize = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get showLastRepliesInCatalog => _settings.showLastRepliesInCatalog;
+	set showLastRepliesInCatalog(bool setting) {
+		_settings.showLastRepliesInCatalog = setting;
 		_settings.save();
 		notifyListeners();
 	}

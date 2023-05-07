@@ -414,7 +414,7 @@ class ThreadRow extends StatelessWidget {
 																			baseOptions: baseOptions,
 																			shrinkWrap: true,
 																			highlight: true,
-																			showPostNumber: false
+																			showPostNumber: true
 																		)
 																	)
 																]

@@ -1190,6 +1190,34 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					attachments: [attachment],
 					spanFormat: PostSpanFormat.chan4,
 					ipNumber: 1
+				),
+				Post(
+					board: 'tv',
+					text: 'This is the first reply to the OP.',
+					name: 'User',
+					trip: '!fdsa',
+					time: DateTime.now().subtract(const Duration(minutes: 4)),
+					threadId: 99999,
+					id: 100000,
+					passSinceYear: 2023,
+					flag: flag,
+					attachments: [],
+					spanFormat: PostSpanFormat.chan4,
+					ipNumber: 2
+				),
+				Post(
+					board: 'tv',
+					text: 'This is the second reply to the OP.',
+					name: 'User',
+					trip: '!fdsa',
+					time: DateTime.now().subtract(const Duration(minutes: 3)),
+					threadId: 99999,
+					id: 100001,
+					passSinceYear: 2023,
+					flag: flag,
+					attachments: [],
+					spanFormat: PostSpanFormat.chan4,
+					ipNumber: 2
 				)
 			]
 		);
@@ -2460,7 +2488,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 							children: [
 								Icon(CupertinoIcons.resize_v),
 								SizedBox(width: 8),
-								Text('Edit catalog row item height')
+								Text('Edit catalog row item layout')
 							]
 						),
 						onPressed: () async {
@@ -2483,11 +2511,29 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 												children: [
 													SizedBox(
 														height: settings.maxCatalogRowHeight,
-														child: ThreadRow(
-															contentFocus: false,
-															isSelected: false,
-															thread: _makeFakeThread()
+														child: ClipRect(
+															child: ThreadRow(
+																contentFocus: false,
+																isSelected: false,
+																thread: _makeFakeThread(),
+																showLastReplies: settings.showLastRepliesInCatalog
+															)
 														)
+													),
+													const SizedBox(height: 8),
+													Row(
+														children: [
+															const Expanded(
+																child: Text('Show last replies')
+															),
+															CupertinoSwitch(
+																value: settings.showLastRepliesInCatalog,
+																onChanged: (d) {
+																	settings.showLastRepliesInCatalog = d;
+																	setDialogState(() {});
+																}
+															)
+														]
 													),
 													const SizedBox(height: 8),
 													Text('Height: ${settings.maxCatalogRowHeight.round()}px'),
