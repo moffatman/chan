@@ -440,7 +440,9 @@ enum SettingsQuickAction {
 	@HiveField(3)
 	toggleInterfaceStyle,
 	@HiveField(4)
-	toggleListPositionIndicatorLocation
+	toggleListPositionIndicatorLocation,
+	@HiveField(5)
+	toggleVerticalTwoPaneSplit
 }
 
 @HiveType(typeId: 32)
@@ -466,6 +468,8 @@ extension SettingsQuickActionName on SettingsQuickAction? {
 				return 'Toggle interface style';
 			case SettingsQuickAction.toggleListPositionIndicatorLocation:
 				return 'Toggle list position indicator location';
+			case SettingsQuickAction.toggleVerticalTwoPaneSplit:
+				return 'Toggle vertical two-pane layout';
 			case null:
 				return 'None';
 		}

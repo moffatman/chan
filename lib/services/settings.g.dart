@@ -801,6 +801,8 @@ class SettingsQuickActionAdapter extends TypeAdapter<SettingsQuickAction> {
         return SettingsQuickAction.toggleInterfaceStyle;
       case 4:
         return SettingsQuickAction.toggleListPositionIndicatorLocation;
+      case 5:
+        return SettingsQuickAction.toggleVerticalTwoPaneSplit;
       default:
         return SettingsQuickAction.toggleTheme;
     }
@@ -823,6 +825,9 @@ class SettingsQuickActionAdapter extends TypeAdapter<SettingsQuickAction> {
         break;
       case SettingsQuickAction.toggleListPositionIndicatorLocation:
         writer.writeByte(4);
+        break;
+      case SettingsQuickAction.toggleVerticalTwoPaneSplit:
+        writer.writeByte(5);
         break;
     }
   }

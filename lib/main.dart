@@ -1514,6 +1514,14 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					message: settings.showListPositionIndicatorsOnLeft ? 'Moved list position indicators to left' : 'Moved list position indicators to right'
 				);
 				break;
+			case SettingsQuickAction.toggleVerticalTwoPaneSplit:
+				settings.verticalTwoPaneMinimumPaneSize = -1 * settings.verticalTwoPaneMinimumPaneSize;
+				showToast(
+					context: context,
+					icon: settings.verticalTwoPaneMinimumPaneSize.isNegative ? CupertinoIcons.rectangle : CupertinoIcons.rectangle_grid_1x2,
+					message: settings.verticalTwoPaneMinimumPaneSize.isNegative ? 'Disabled vertical two-pane layout' : 'Enabled vertical two-pane layout'
+				);
+				break;
 			case null:
 				break;
 		}
