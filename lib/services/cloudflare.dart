@@ -13,6 +13,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/parser.dart';
+import 'package:mutex/mutex.dart';
 import 'package:provider/provider.dart';
 
 extension CloudflareWanted on RequestOptions {
@@ -82,6 +83,8 @@ extension on _CloudflareResponse {
 	}
 } 
 
+final _lock = Mutex();
+
 class CloudflareInterceptor extends Interceptor {
 	static bool _titleMatches(String title) {
 		return title.contains('Cloudflare') || title.contains('Just a moment') || title.contains('Please wait') || title.contains('Verification Required');
@@ -118,7 +121,7 @@ class CloudflareInterceptor extends Interceptor {
 		required String userAgent,
 		required Uri cookieUrl,
 		required bool interactive
-	}) async {
+	}) => _lock.protect(() async {
 		assert(initialData != null || initialUrlRequest != null);
 		await CookieManager.instance().deleteAllCookies();
 		final initialSettings = InAppWebViewSettings(
@@ -209,7 +212,7 @@ class CloudflareInterceptor extends Interceptor {
 			_allowNonInteractiveWebviewWhen = _initialAllowNonInteractiveWebvieWhen;
 		}
 		return ret;
-	}
+	});
 
 	@override
 	void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
