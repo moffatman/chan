@@ -12,6 +12,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/cupertino_adaptive_segmented_control.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_thin_button.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
@@ -497,11 +498,11 @@ class _SearchComposePageState extends State<SearchComposePage> {
 					key: const ValueKey(true),
 					children: [
 						const SizedBox(height: 16),
-						CupertinoSegmentedControl<PostTypeFilter>(
+						CupertinoAdaptiveSegmentedControl<PostTypeFilter>(
 							children: const {
-								PostTypeFilter.none: Text('All posts'),
-								PostTypeFilter.onlyOPs: Text('Threads'),
-								PostTypeFilter.onlyReplies: Text('Replies')
+								PostTypeFilter.none: (null, 'All posts'),
+								PostTypeFilter.onlyOPs: (null, 'Threads'),
+								PostTypeFilter.onlyReplies: (null, 'Replies')
 							},
 							groupValue: query.postTypeFilter,
 							onValueChanged: (newValue) {
@@ -510,55 +511,37 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							}
 						),
 						const SizedBox(height: 16),
-						LayoutBuilder(
-							builder: (context, constraints) {
-								TextStyle? style;
-								if (constraints.maxWidth < 290) {
-									style = const TextStyle(
-										fontSize: 10
-									);
+						CupertinoAdaptiveSegmentedControl<_MediaFilter>(
+							children: const {
+								_MediaFilter.none: (null, 'All posts'),
+								_MediaFilter.onlyWithMedia: (null, 'With images'),
+								_MediaFilter.onlyWithNoMedia: (null, 'Without images'),
+								_MediaFilter.withSpecificMedia: (null, 'With MD5')
+							},
+							groupValue: query.md5 == null ? query.mediaFilter.value : _MediaFilter.withSpecificMedia,
+							onValueChanged: (newValue) async {
+								if (newValue.value != null) {
+									query.md5 = null;
+									query.mediaFilter = newValue.value!;
 								}
-								else if (constraints.maxWidth < 350) {
-									style = const TextStyle(
-										fontSize: 13
-									);
-								}
-								return CupertinoSegmentedControl<_MediaFilter>(
-									children: {
-										_MediaFilter.none: Text('All posts', textAlign: TextAlign.center, style: style),
-										_MediaFilter.onlyWithMedia: Text('With images', textAlign: TextAlign.center, style: style),
-										_MediaFilter.onlyWithNoMedia: Padding(
-											padding: const EdgeInsets.all(8),
-											child: Text('Without images', textAlign: TextAlign.center, style: style)
-										),
-										_MediaFilter.withSpecificMedia: Text('With MD5', textAlign: TextAlign.center, style: style)
-									},
-									groupValue: query.md5 == null ? query.mediaFilter.value : _MediaFilter.withSpecificMedia,
-									onValueChanged: (newValue) async {
-										if (newValue.value != null) {
-											query.md5 = null;
-											query.mediaFilter = newValue.value!;
-										}
-										else {
-											_showingPicker = true;
-											final file = await pickAttachment(context: context);
-											_showingPicker = false;
-											if (file != null) {
-												query.md5 = base64Encode(md5.convert(await file.readAsBytes()).bytes);
-												query.mediaFilter = MediaFilter.none;
-											}
-										}
-										setState(() {});
+								else {
+									_showingPicker = true;
+									final file = await pickAttachment(context: context);
+									_showingPicker = false;
+									if (file != null) {
+										query.md5 = base64Encode(md5.convert(await file.readAsBytes()).bytes);
+										query.mediaFilter = MediaFilter.none;
 									}
-								);
+								}
+								setState(() {});
 							}
 						),
 						const SizedBox(height: 16),
-						CupertinoSegmentedControl<PostDeletionStatusFilter>(
+						CupertinoAdaptiveSegmentedControl<PostDeletionStatusFilter>(
 							children: const {
-								PostDeletionStatusFilter.none: Text('All posts'),
-								PostDeletionStatusFilter.onlyDeleted: Text('Only deleted'),
-								PostDeletionStatusFilter.onlyNonDeleted: Text('Only non-deleted')
+								PostDeletionStatusFilter.none: (null, 'All posts'),
+								PostDeletionStatusFilter.onlyDeleted: (null, 'Only deleted'),
+								PostDeletionStatusFilter.onlyNonDeleted: (null, 'Only non-deleted')
 							},
 							groupValue: query.deletionStatusFilter,
 							onValueChanged: (newValue) {
@@ -567,56 +550,51 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							}
 						),
 						const SizedBox(height: 16),
-						Row(
+						Wrap(
+							runSpacing: 16,
+							alignment: WrapAlignment.center,
+							runAlignment: WrapAlignment.center,
 							children: [
-								Expanded(
-									child: Container(
-										padding: const EdgeInsets.only(left: 16, right: 8),
-										child: CupertinoThinButton(
-											filled: query.startDate != null,
-											child: Text(
-												(query.startDate != null) ? 'Posted after ${query.startDate!.toISO8601Date}' : 'Posted after...',
-												textAlign: TextAlign.center
-											),
-											onPressed: () async {
-												_showingPicker = true;
-												final newDate = await pickDate(
-													context: context,
-													initialDate: query.startDate
-												);
-												_showingPicker = false;
-												if (newDate != null) {
-													setState(() {
-														query.startDate = newDate;
-													});
-												}
-											}
-										)
+								Container(
+									padding: const EdgeInsets.symmetric(horizontal: 8),
+									child: CupertinoThinButton(
+										filled: query.startDate != null,
+										child: Text(
+											(query.startDate != null) ? 'Posted after ${query.startDate!.toISO8601Date}' : 'Posted after...',
+											textAlign: TextAlign.center
+										),
+										onPressed: () async {
+											_showingPicker = true;
+											final newDate = await pickDate(
+												context: context,
+												initialDate: query.startDate
+											);
+											_showingPicker = false;
+											setState(() {
+												query.startDate = newDate;
+											});
+										}
 									)
 								),
-								Expanded(
-									child: Container(
-										padding: const EdgeInsets.only(left: 8, right: 16),
-										child: CupertinoThinButton(
-											filled: query.endDate != null,
-											child: Text(
-												(query.endDate != null) ? 'Posted before ${query.endDate!.toISO8601Date}' : 'Posted before...',
-												textAlign: TextAlign.center
-											),
-											onPressed: () async {
-												_showingPicker = true;
-												final newDate = await pickDate(
-													context: context,
-													initialDate: query.endDate
-												);
-												_showingPicker = false;
-												if (newDate != null) {
-													setState(() {
-														query.endDate = newDate;
-													});
-												}
-											}
-										)
+								Container(
+									padding: const EdgeInsets.symmetric(horizontal: 8),
+									child: CupertinoThinButton(
+										filled: query.endDate != null,
+										child: Text(
+											(query.endDate != null) ? 'Posted before ${query.endDate!.toISO8601Date}' : 'Posted before...',
+											textAlign: TextAlign.center
+										),
+										onPressed: () async {
+											_showingPicker = true;
+											final newDate = await pickDate(
+												context: context,
+												initialDate: query.endDate
+											);
+											_showingPicker = false;
+											setState(() {
+												query.endDate = newDate;
+											});
+										}
 									)
 								)
 							]

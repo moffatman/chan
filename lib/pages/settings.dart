@@ -1315,32 +1315,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				const SizedBox(height: 16),
 				CupertinoAdaptiveSegmentedControl<TristateSystemSetting>(
 					children: const {
-						TristateSystemSetting.a: Padding(
-							padding: EdgeInsets.all(8),
-							child: Wrap(
-								alignment: WrapAlignment.center,
-								spacing: 8,
-								children: [
-									Icon(CupertinoIcons.hand_draw),
-									Text('Touch')
-								]
-							)
-						),
-						TristateSystemSetting.system: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Automatic')
-						),
-						TristateSystemSetting.b: Padding(
-							padding: EdgeInsets.all(8),
-							child: Wrap(
-								alignment: WrapAlignment.center,
-								spacing: 8,
-								children: [
-									Icon(Icons.mouse),
-									Text('Mouse')
-								]
-							)
-						)
+						TristateSystemSetting.a: (CupertinoIcons.hand_draw, 'Touch'),
+						TristateSystemSetting.system: (null, 'Automatic'),
+						TristateSystemSetting.b: (Icons.mouse, 'Mouse')
 					},
 					groupValue: settings.supportMouseSetting,
 					onValueChanged: (newValue) {
@@ -3154,7 +3131,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 		return _SettingsPage(
 			title: 'Data Settings',
 			children: [
-				if (Platform.isAndroid) ...[
+				if (Platform.isAndroid || true) ...[
 					const SizedBox(height: 16),
 					Center(
 						child: CupertinoButton.filled(
@@ -3185,20 +3162,10 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					Padding(
 						padding: const EdgeInsets.all(16),
 						child: CupertinoAdaptiveSegmentedControl<AndroidGallerySavePathOrganizing>(
-							alwaysVertical: true,
 							children: const {
-								AndroidGallerySavePathOrganizing.noSubfolders: Padding(
-									padding: EdgeInsets.all(8),
-									child: Text('No subfolders', textAlign: TextAlign.left, maxLines: 3)
-								),
-								AndroidGallerySavePathOrganizing.boardSubfolders: Padding(
-									padding: EdgeInsets.all(8),
-									child: Text('Per-board subfolders', textAlign: TextAlign.left, maxLines: 3)
-								),
-								AndroidGallerySavePathOrganizing.boardAndThreadSubfolders: Padding(
-									padding: EdgeInsets.all(8),
-									child: Text('Per-board and per-thread subfolders', textAlign: TextAlign.left, maxLines: 3)
-								)
+								AndroidGallerySavePathOrganizing.noSubfolders: (null, 'No subfolders'),
+								AndroidGallerySavePathOrganizing.boardSubfolders: (null, 'Per-board subfolders'),
+								AndroidGallerySavePathOrganizing.boardAndThreadSubfolders: (null, 'Per-board and per-thread subfolders')
 							},
 							groupValue: settings.androidGallerySavePathOrganizing,
 							onValueChanged: (setting) {
@@ -3279,26 +3246,11 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					padding: const EdgeInsets.all(16),
 					child: CupertinoAdaptiveSegmentedControl<int>(
 						children: const {
-							7: Padding(
-								padding: EdgeInsets.all(8),
-								child: Text('7 days', textAlign: TextAlign.center)
-							),
-							14: Padding(
-								padding: EdgeInsets.all(8),
-								child: Text('14 days', textAlign: TextAlign.center)
-							),
-							30: Padding(
-								padding: EdgeInsets.all(8),
-								child: Text('30 days', textAlign: TextAlign.center)
-							),
-							60: Padding(
-								padding: EdgeInsets.all(8),
-								child: Text('60 days', textAlign: TextAlign.center)
-							),
-							100000: Padding(
-								padding: EdgeInsets.all(8),
-								child: Text('Never', textAlign: TextAlign.center)
-							)
+							7: (null, '7 days'),
+							14: (null, '14 days'),
+							30: (null, '30 days'),
+							60: (null, '60 days'),
+							100000: (null, 'Never')
 						},
 						groupValue: context.watch<EffectiveSettings>().automaticCacheClearDays,
 						onValueChanged: (setting) {
