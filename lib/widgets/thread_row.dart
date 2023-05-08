@@ -299,7 +299,8 @@ class ThreadRow extends StatelessWidget {
 												),
 												fit: settings.squareThumbnails ? BoxFit.cover : BoxFit.contain,
 												shrinkHeight: !settings.squareThumbnails,
-												shrinkWidth: !settings.squareThumbnails
+												shrinkWidth: !settings.squareThumbnails,
+												heroScale: MediaQuery.textScaleFactorOf(context)
 											),
 											if (attachment.icon != null) Container(
 												decoration: BoxDecoration(
