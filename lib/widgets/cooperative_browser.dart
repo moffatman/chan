@@ -38,7 +38,7 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 	void initState() {
 		super.initState();
 		_pollAllowedDirections = Timer.periodic(const Duration(milliseconds: 75), (t) => _updateAllowedDirections());
-		_progress = ValueNotifier<double>(0);
+		_progress = ValueNotifier<double?>(0);
 	}
 
 	Future<void> _updateAllowedDirections() async {
