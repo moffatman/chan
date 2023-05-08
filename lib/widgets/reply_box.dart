@@ -20,6 +20,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
 import 'package:chan/widgets/captcha_dvach.dart';
 import 'package:chan/widgets/captcha_lynxchan.dart';
@@ -1154,6 +1155,20 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												attachment: fakeAttachment,
 												semanticParentIds: [_textFieldController.hashCode]
 											),
+											flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+												return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
+											},
+											createRectTween: (startRect, endRect) {
+												if (startRect != null && endRect != null) {
+													if (attachmentExt != 'webm') {
+														// Need to deflate the original startRect because it has inbuilt layoutInsets
+														// This SavedAttachmentThumbnail will always fill its size
+														final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
+														startRect = rootPadding.deflateRect(startRect);
+													}
+												}
+												return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
+											},
 											child: SavedAttachmentThumbnail(file: attachment!, fit: BoxFit.contain)
 										),
 										onTap: () async {

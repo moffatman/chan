@@ -880,8 +880,6 @@ class AttachmentViewer extends StatelessWidget {
 	Tween<Rect?> _createRectTween(Rect? startRect, Rect? endRect) {
 		if (startRect != null &&
 				endRect != null &&
-				attachment.width != null &&
-				attachment.height != null &&
 				DateTime.now().difference(_heroRectCache[attachment.globalId]?.$1 ?? DateTime(2000)) > const Duration(milliseconds: 300)) {
 			if (useHeroDestinationWidget) {
 				// This is AttachmentViewer -> AttachmentViewer
@@ -899,7 +897,9 @@ class AttachmentViewer extends StatelessWidget {
 				// Need to deflate the rect as AttachmentThumbnail does not know about the layoutInsets
 				endRect = layoutInsets.deflateRect(endRect);
 			}
-			if (heroOtherEndIsBoxFitCover) {
+			if (heroOtherEndIsBoxFitCover &&
+					attachment.width != null &&
+					attachment.height != null) {
 				// The flight child will try to cover its rect. Need to restrict it based on the image aspect ratio.
 				final fittedEndSize = applyBoxFit(BoxFit.contain, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), endRect.size).destination;
 				endRect = Alignment.center.inscribe(fittedEndSize, endRect);
