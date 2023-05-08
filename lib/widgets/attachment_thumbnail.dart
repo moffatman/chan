@@ -143,6 +143,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final bool expand;
 	final bool hide;
 	final bool suppressImageRebuild;
+	final double heroScale;
 
 	const AttachmentThumbnail({
 		required this.attachment,
@@ -163,10 +164,11 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.hide = false,
 		this.suppressImageRebuild = false,
 		required this.mayObscure,
+		this.heroScale = 1.0,
 		Key? key
 	}) : super(key: key);
 
-	static CreateRectTween makeCreateRectTween(BuildContext context, Attachment attachment, BoxFit fit) => (startRect, endRect) {
+	static CreateRectTween makeCreateRectTween(BuildContext context, Attachment attachment, BoxFit fit, {double heroScale = 1.0}) => (startRect, endRect) {
 		if (startRect != null && endRect != null) {
 			if (attachment.type == AttachmentType.image || attachment.type.isVideo) {
 				// Need to deflate the original startRect because it has inbuilt layoutInsets
@@ -180,6 +182,7 @@ class AttachmentThumbnail extends StatelessWidget {
 				final fittedStartSize = applyBoxFit(BoxFit.contain, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), startRect.size).destination;
 				startRect = Alignment.center.inscribe(fittedStartSize, startRect);
 			}
+			endRect = Rect.fromLTWH(endRect.left, endRect.top, endRect.width * heroScale, endRect.height * heroScale);
 		}
 		return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
 	};
@@ -187,7 +190,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	Widget _maybeHero(BuildContext context, Widget child) {
 		return (hero != null) ? Hero(
 			tag: hero!,
-			createRectTween: makeCreateRectTween(context, attachment, fit),
+			createRectTween: makeCreateRectTween(context, attachment, fit, heroScale: heroScale),
 			flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
 				return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
 			},
