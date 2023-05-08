@@ -586,6 +586,80 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					]
 				),
 				const SizedBox(height: 32),
+				const Row(
+					children: [
+						Icon(CupertinoIcons.question_square),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Load thumbnails')
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
+					children: const {
+						AutoloadAttachmentsSetting.never: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Never')
+						),
+						AutoloadAttachmentsSetting.wifi: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('When on Wi\u200d-\u200dFi', textAlign: TextAlign.center)
+						),
+						AutoloadAttachmentsSetting.always: Padding(
+							padding: EdgeInsets.all(8),
+							child: Text('Always')
+						)
+					},
+					groupValue: settings.loadThumbnailsSetting,
+					onValueChanged: (newValue) {
+						settings.loadThumbnailsSetting = newValue;
+					}
+				),
+				const SizedBox(height: 32),
+				IgnorePointer(
+					ignoring: settings.loadThumbnailsSetting == AutoloadAttachmentsSetting.never,
+					child: Opacity(
+						opacity: settings.loadThumbnailsSetting == AutoloadAttachmentsSetting.never ? 0.5 : 1.0,
+						child: Column(
+							crossAxisAlignment: CrossAxisAlignment.stretch,
+							mainAxisSize: MainAxisSize.min,
+							children: [
+								const Row(
+									children: [
+										Icon(Icons.high_quality),
+										SizedBox(width: 8),
+										Expanded(
+											child: Text('Full-quality image thumbnails')
+										)
+									]
+								),
+								const SizedBox(height: 16),
+								CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
+									children: const {
+										AutoloadAttachmentsSetting.never: Padding(
+											padding: EdgeInsets.all(8),
+											child: Text('Never')
+										),
+										AutoloadAttachmentsSetting.wifi: Padding(
+											padding: EdgeInsets.all(8),
+											child: Text('When on Wi\u200d-\u200dFi', textAlign: TextAlign.center)
+										),
+										AutoloadAttachmentsSetting.always: Padding(
+											padding: EdgeInsets.all(8),
+											child: Text('Always')
+										)
+									},
+									groupValue: settings.fullQualityThumbnailsSetting,
+									onValueChanged: (newValue) {
+										settings.fullQualityThumbnailsSetting = newValue;
+									}
+								)
+							]
+						)
+					)
+				),
+				const SizedBox(height: 32),
 				Row(
 					children: [
 						const Icon(CupertinoIcons.arrow_left_right_square_fill),
@@ -630,37 +704,6 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					groupValue: settings.autoloadAttachmentsSetting,
 					onValueChanged: (newValue) {
 						settings.autoloadAttachmentsSetting = newValue;
-					}
-				),
-				const SizedBox(height: 32),
-				const Row(
-					children: [
-						Icon(Icons.high_quality),
-						SizedBox(width: 8),
-						Expanded(
-							child: Text('Full-quality image thumbnails')
-						)
-					]
-				),
-				const SizedBox(height: 16),
-				CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
-					children: const {
-						AutoloadAttachmentsSetting.never: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Never')
-						),
-						AutoloadAttachmentsSetting.wifi: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('When on Wi\u200d-\u200dFi', textAlign: TextAlign.center)
-						),
-						AutoloadAttachmentsSetting.always: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Always')
-						)
-					},
-					groupValue: settings.fullQualityThumbnailsSetting,
-					onValueChanged: (newValue) {
-						settings.fullQualityThumbnailsSetting = newValue;
 					}
 				),
 				const SizedBox(height: 32),

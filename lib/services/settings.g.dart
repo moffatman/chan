@@ -259,13 +259,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       verticalTwoPaneMinimumPaneSize: fields[130] as double?,
       hiddenImageMD5s: (fields[131] as List?)?.cast<String>(),
       showLastRepliesInCatalog: fields[132] as bool?,
+      loadThumbnails: fields[133] as AutoloadAttachmentsSetting?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(129)
+      ..writeByte(130)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -523,7 +524,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(131)
       ..write(obj.hiddenImageMD5s.toList())
       ..writeByte(132)
-      ..write(obj.showLastRepliesInCatalog);
+      ..write(obj.showLastRepliesInCatalog)
+      ..writeByte(133)
+      ..write(obj.loadThumbnails);
   }
 
   @override

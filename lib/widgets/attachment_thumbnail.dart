@@ -108,62 +108,81 @@ class AttachmentThumbnail extends StatelessWidget {
 				if (attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 			}
 		);
-		Widget child = ExtendedImage(
-			image: image,
-			constraints: BoxConstraints(
-				maxWidth: effectiveWidth,
-				maxHeight: effectiveHeight
-			),
-			width: shrinkWidth ? null : effectiveWidth,
-			height: shrinkHeight ? null : effectiveHeight,
-			color: const Color.fromRGBO(238, 242, 255, 1),
-			colorBlendMode: BlendMode.dstOver,
-			fit: fit,
-			alignment: alignment,
-			key: gaplessPlayback ? null : ValueKey(url),
-			gaplessPlayback: true,
-			rotate90DegreesClockwise: rotate90DegreesClockwise,
-			//filterQuality: FilterQuality.high,
-			loadStateChanged: (loadstate) {
-				if (loadstate.extendedImageLoadState == LoadState.loading) {
-					return SizedBox(
-						width: effectiveWidth,
-						height: effectiveHeight,
-						child: const Center(
-							child: CupertinoActivityIndicator()
-						)
-					);
-				}
-				else if (loadstate.extendedImageLoadState == LoadState.failed ||
-					(((loadstate.extendedImageInfo?.image.height ?? 0) < 5) && ((loadstate.extendedImageInfo?.image.width ?? 0) < 5))) {
-					if (loadstate.extendedImageLoadState == LoadState.failed) {
-						onLoadError?.call(loadstate.lastException, loadstate.lastStack);
+		Widget child; 
+		if (settings.loadThumbnails) {
+			child = ExtendedImage(
+				image: image,
+				constraints: BoxConstraints(
+					maxWidth: effectiveWidth,
+					maxHeight: effectiveHeight
+				),
+				width: shrinkWidth ? null : effectiveWidth,
+				height: shrinkHeight ? null : effectiveHeight,
+				color: const Color.fromRGBO(238, 242, 255, 1),
+				colorBlendMode: BlendMode.dstOver,
+				fit: fit,
+				alignment: alignment,
+				key: gaplessPlayback ? null : ValueKey(url),
+				gaplessPlayback: true,
+				rotate90DegreesClockwise: rotate90DegreesClockwise,
+				//filterQuality: FilterQuality.high,
+				loadStateChanged: (loadstate) {
+					if (loadstate.extendedImageLoadState == LoadState.loading) {
+						return SizedBox(
+							width: effectiveWidth,
+							height: effectiveHeight,
+							child: const Center(
+								child: CupertinoActivityIndicator()
+							)
+						);
 					}
-					return Container(
-						width: effectiveWidth,
-						height: effectiveHeight,
-						color: settings.theme.barColor,
-						child: Center(
-							child: Icon(attachment.type == AttachmentType.url ? CupertinoIcons.compass : CupertinoIcons.exclamationmark_triangle_fill, size: max(24, 0.5 * min(effectiveWidth, effectiveHeight)))
-						)
-					);
+					else if (loadstate.extendedImageLoadState == LoadState.failed ||
+						(((loadstate.extendedImageInfo?.image.height ?? 0) < 5) && ((loadstate.extendedImageInfo?.image.width ?? 0) < 5))) {
+						if (loadstate.extendedImageLoadState == LoadState.failed) {
+							onLoadError?.call(loadstate.lastException, loadstate.lastStack);
+						}
+						return Container(
+							width: effectiveWidth,
+							height: effectiveHeight,
+							color: settings.theme.barColor,
+							child: Center(
+								child: Icon(attachment.type == AttachmentType.url ? CupertinoIcons.compass : CupertinoIcons.exclamationmark_triangle_fill, size: max(24, 0.5 * min(effectiveWidth, effectiveHeight)))
+							)
+						);
+					}
+					else if (loadstate.extendedImageLoadState == LoadState.completed) {
+						attachment.width ??= loadstate.extendedImageInfo?.image.width;
+						attachment.height ??= loadstate.extendedImageInfo?.image.height;
+					}
+					return null;
 				}
-				else if (loadstate.extendedImageLoadState == LoadState.completed) {
-					attachment.width ??= loadstate.extendedImageInfo?.image.width;
-					attachment.height ??= loadstate.extendedImageInfo?.image.height;
-				}
-				return null;
+			);
+			if (settings.blurThumbnails) {
+				child = ClipRect(
+					child: ImageFiltered(
+						imageFilter: ImageFilter.blur(
+							sigmaX: 7.0,
+							sigmaY: 7.0,
+							tileMode: TileMode.decal
+						),
+						child: child
+					)
+				);
 			}
-		);
-		if (settings.blurThumbnails) {
-			child = ClipRect(
-				child: ImageFiltered(
-					imageFilter: ImageFilter.blur(
-						sigmaX: 7.0,
-						sigmaY: 7.0,
-						tileMode: TileMode.decal
-					),
-					child: child
+		}
+		else {
+			child = Container(
+				width: effectiveWidth,
+				height: effectiveHeight,
+				color: settings.theme.barColor,
+				child: Center(
+					child: Icon(
+						(attachment.type == AttachmentType.url || attachment.type == AttachmentType.pdf) ?
+							CupertinoIcons.compass :
+							(attachment.isVideoOrGif || attachment.type == AttachmentType.mp3) ?
+								CupertinoIcons.play_arrow_solid : CupertinoIcons.photo,
+						size: max(24, 0.5 * min(effectiveWidth, effectiveHeight))
+					)
 				)
 			);
 		}

@@ -746,6 +746,8 @@ class SavedSettings extends HiveObject {
 	Set<String> hiddenImageMD5s;
 	@HiveField(132)
 	bool showLastRepliesInCatalog;
+	@HiveField(133)
+	AutoloadAttachmentsSetting loadThumbnails;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -880,6 +882,7 @@ class SavedSettings extends HiveObject {
 		double? verticalTwoPaneMinimumPaneSize,
 		List<String>? hiddenImageMD5s,
 		bool? showLastRepliesInCatalog,
+		AutoloadAttachmentsSetting? loadThumbnails,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1040,7 +1043,8 @@ class SavedSettings extends HiveObject {
 		showOverlaysInGallery = showOverlaysInGallery ?? true,
 		verticalTwoPaneMinimumPaneSize = verticalTwoPaneMinimumPaneSize ?? -400,
 		hiddenImageMD5s = hiddenImageMD5s?.toSet() ?? {},
-		showLastRepliesInCatalog = showLastRepliesInCatalog ?? false {
+		showLastRepliesInCatalog = showLastRepliesInCatalog ?? false,
+		loadThumbnails = loadThumbnails ?? AutoloadAttachmentsSetting.always {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2022,6 +2026,17 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.showLastRepliesInCatalog = setting;
 		_settings.save();
 		notifyListeners();
+	}
+
+	AutoloadAttachmentsSetting get loadThumbnailsSetting => _settings.loadThumbnails;
+	set loadThumbnailsSetting(AutoloadAttachmentsSetting setting) {
+		_settings.loadThumbnails = setting;
+		_settings.save();
+		notifyListeners();
+	}
+	bool get loadThumbnails {
+		return (loadThumbnailsSetting == AutoloadAttachmentsSetting.always) ||
+			((loadThumbnailsSetting == AutoloadAttachmentsSetting.wifi) && (connectivity == ConnectivityResult.wifi));
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];
