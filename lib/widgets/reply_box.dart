@@ -1127,14 +1127,16 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 													});
 												}
 											),
-											if (attachmentExt == 'mp4' || attachmentExt == 'webm') Flexible(
+											Flexible(
 												child: AutoSizeText(
 												[
-													if (_attachmentScan?.codec != null) _attachmentScan!.codec!.toUpperCase(),
-													if (_attachmentScan?.hasAudio == true) 'with audio'
-													else 'no audio',
-													if (_attachmentScan?.duration != null) formatDuration(_attachmentScan!.duration!),
-													if (_attachmentScan?.bitrate != null) '${(_attachmentScan!.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
+													if (attachmentExt == 'mp4' || attachmentExt == 'webm') ...[
+														if (_attachmentScan?.codec != null) _attachmentScan!.codec!.toUpperCase(),
+														if (_attachmentScan?.hasAudio == true) 'with audio'
+														else 'no audio',
+														if (_attachmentScan?.duration != null) formatDuration(_attachmentScan!.duration!),
+														if (_attachmentScan?.bitrate != null) '${(_attachmentScan!.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
+													],
 													if (_attachmentScan?.width != null && _attachmentScan?.height != null) '${_attachmentScan?.width}x${_attachmentScan?.height}'
 												].join(', '),
 												style: const TextStyle(color: Colors.grey),
