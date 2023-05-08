@@ -3172,7 +3172,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 		return _SettingsPage(
 			title: 'Data Settings',
 			children: [
-				if (Platform.isAndroid || true) ...[
+				if (Platform.isAndroid) ...[
 					const SizedBox(height: 16),
 					Center(
 						child: CupertinoButton.filled(
