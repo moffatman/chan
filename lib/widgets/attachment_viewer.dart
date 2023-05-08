@@ -1058,14 +1058,14 @@ class AttachmentViewer extends StatelessWidget {
 						}
 					);
 				},
-				heroBuilderForSlidingPage: (Widget result) {
+				heroBuilderForSlidingPage: controller.isPrimary ? (Widget result) {
 					return Hero(
 						tag: _tag,
 						flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget,
 						createRectTween: _createRectTween,
 						child: result
 					);
-				}
+				} : null
 			)
 		);
 		return DoubleTapDragDetector(
@@ -1165,14 +1165,14 @@ class AttachmentViewer extends StatelessWidget {
 
 	Widget _buildVideo(BuildContext context, Size? size) {
 		return ExtendedImageSlidePageHandler(
-			heroBuilderForSlidingPage: (Widget result) {
+			heroBuilderForSlidingPage: controller.isPrimary ? (Widget result) {
 				return Hero(
 					tag: _tag,
 					flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget,
 					createRectTween: _createRectTween,
 					child: result
 				);
-			},
+			} : null,
 			child: SizedBox.fromSize(
 				size: size,
 				child: GestureDetector(
@@ -1321,14 +1321,14 @@ class AttachmentViewer extends StatelessWidget {
 
 	Widget _buildPdf(BuildContext context, Size? size) {
 		return ExtendedImageSlidePageHandler(
-			heroBuilderForSlidingPage: (Widget result) {
+			heroBuilderForSlidingPage: controller.isPrimary ? (Widget result) {
 				return Hero(
 					tag: _tag,
 					flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget,
 					createRectTween: _createRectTween,
 					child: result
 				);
-			},
+			} : null,
 			child: SizedBox.fromSize(
 				size: size,
 				child: Stack(
@@ -1363,14 +1363,14 @@ class AttachmentViewer extends StatelessWidget {
 
 	Widget _buildBrowser(BuildContext context, Size? size) {
 		return ExtendedImageSlidePageHandler(
-			heroBuilderForSlidingPage: (Widget result) {
+			heroBuilderForSlidingPage: controller.isPrimary ? (Widget result) {
 				return Hero(
 					tag: _tag,
 					flightShuttleBuilder: (ctx, animation, direction, from, to) => useHeroDestinationWidget ? to.widget : from.widget,
 					createRectTween: _createRectTween,
 					child: result
 				);
-			},
+			} : null,
 			child: SizedBox.fromSize(
 				size: size,
 				child: CooperativeInAppBrowser(
