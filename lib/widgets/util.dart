@@ -20,6 +20,7 @@ import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -1257,4 +1258,91 @@ Future<DateTime?> pickDate({
 		case true:
 			return chosenDate;
 	}
+}
+
+class HybridScrollPhysics extends BouncingScrollPhysics {
+	const HybridScrollPhysics({
+		super.decelerationRate,
+		super.parent,
+	});
+
+	@override
+  HybridScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return HybridScrollPhysics(
+      parent: buildParent(ancestor),
+      decelerationRate: decelerationRate
+    );
+  }
+
+	bool _bouncingScrollSimulationWouldGoOutOfBounds({
+			required double position,
+			required double velocity,
+			required double leadingExtent,
+			required double trailingExtent,
+			required SpringDescription spring,
+			double constantDeceleration = 0,
+			required Tolerance tolerance
+	}) {
+		if (position < leadingExtent) {
+			return true;
+		} else if (position > trailingExtent) {
+			return true;
+		} else {
+			final frictionSimulation = FrictionSimulation(0.135, position, velocity, constantDeceleration: constantDeceleration);
+			final double finalX = frictionSimulation.finalX;
+			if (velocity > 0.0 && finalX > trailingExtent) {
+				return true;
+			} else if (velocity < 0.0 && finalX < leadingExtent) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
+
+	@override
+  double carriedMomentum(double existingVelocity) {
+    if (parent == null) {
+      return 0.0;
+    }
+    return parent!.carriedMomentum(existingVelocity);
+  }
+
+	@override
+  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
+    final Tolerance tolerance = toleranceFor(position);
+    if (velocity.abs() >= tolerance.velocity || position.outOfRange) {
+      double constantDeceleration;
+      switch (decelerationRate) {
+        case ScrollDecelerationRate.fast:
+          constantDeceleration = 1400;
+        case ScrollDecelerationRate.normal:
+          constantDeceleration = 0;
+      }
+			if (_bouncingScrollSimulationWouldGoOutOfBounds(
+				position: position.pixels,
+				velocity: velocity,
+				leadingExtent: position.minScrollExtent,
+				trailingExtent: position.maxScrollExtent,
+				spring: spring,
+				tolerance: tolerance,
+				constantDeceleration: constantDeceleration
+			)) {
+				return BouncingScrollSimulation(
+					spring: spring,
+					position: position.pixels,
+					velocity: velocity,
+					leadingExtent: position.minScrollExtent,
+					trailingExtent: position.maxScrollExtent,
+					tolerance: tolerance,
+					constantDeceleration: constantDeceleration
+				);
+			}
+    }
+    return ClampingScrollSimulation(
+      position: position.pixels,
+      velocity: velocity,
+      tolerance: tolerance,
+    );
+  }
 }

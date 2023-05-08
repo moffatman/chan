@@ -220,6 +220,10 @@ class _ChanAppState extends State<ChanApp> {
 													title: 'Chance',
 													debugShowCheckedModeBanner: false,
 													theme: settings.theme.cupertinoThemeData,
+													scrollBehavior: const CupertinoScrollBehavior().copyWith(
+														physics: Platform.isAndroid ? const HybridScrollPhysics() :
+															(isOnMac ? const BouncingScrollPhysics(decelerationRate: ScrollDecelerationRate.fast) : const BouncingScrollPhysics())
+													),
 													home: Builder(
 														builder: (BuildContext context) {
 															ImageboardRegistry.instance.context = context;
@@ -1296,7 +1300,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		return ReorderableList(
 			controller: _tabListController,
 			scrollDirection: axis,
-			physics: const BouncingScrollPhysics(),
 			onReorder: (oldIndex, newIndex) {
 				final currentTab = Persistence.tabs[activeBrowserTab.value];
 				if (oldIndex < newIndex) {

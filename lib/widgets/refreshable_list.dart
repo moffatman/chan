@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:chan/models/parent_and_child.dart';
-import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
@@ -1431,7 +1430,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 										key: _scrollViewKey,
 										cacheExtent: 250,
 										controller: widget.controller?.scrollController,
-										physics: isOnMac ? const BouncingScrollPhysics(decelerationRate: ScrollDecelerationRate.fast, parent: AlwaysScrollableScrollPhysics()) : const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+										physics: const AlwaysScrollableScrollPhysics(),
 										slivers: [
 											SliverSafeArea(
 												sliver: widget.disableUpdates ? const SliverToBoxAdapter(

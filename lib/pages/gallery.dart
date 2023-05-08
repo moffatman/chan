@@ -725,7 +725,6 @@ class _GalleryPageState extends State<GalleryPage> {
 					child: SingleChildScrollView(
 						controller: controller,
 						clipBehavior: Clip.none,
-						physics: const BouncingScrollPhysics(),
 						child: ClipRect(
 							clipper: const _PaddedRectClipper(EdgeInsets.only(bottom: 1000)),
 							child: Persistence.settings.blurEffects ? BackdropFilter(

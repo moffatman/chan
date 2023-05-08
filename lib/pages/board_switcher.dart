@@ -479,7 +479,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 									child: Text('No matching boards')
 								) : SafeArea(
 									child: settings.useBoardSwitcherList ? ListView.separated(
-										physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+										physics: const AlwaysScrollableScrollPhysics(),
 										controller: scrollController,
 										padding: const EdgeInsets.only(top: 4, bottom: 4),
 										separatorBuilder: (context, i) => const SizedBox(height: 2),
@@ -640,7 +640,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											}
 										}
 									) : GridView.extent(
-										physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+										physics: const AlwaysScrollableScrollPhysics(),
 										controller: scrollController,
 										padding: const EdgeInsets.only(top: 4, bottom: 4),
 										maxCrossAxisExtent: 125,

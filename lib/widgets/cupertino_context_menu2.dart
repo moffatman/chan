@@ -1349,7 +1349,6 @@ class _ContextMenuSheet extends StatelessWidget {
     final Widget menu = SizedBox(
       width: 250,
       child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
         child: Column(
           children: <Widget>[
             ClipRRect(

@@ -1633,7 +1633,6 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 						child: SingleChildScrollView(
 							reverse: true,
 							primary: false,
-							physics: const BouncingScrollPhysics(),
 							child: Column(
 								crossAxisAlignment: widget.reversed ? CrossAxisAlignment.start : CrossAxisAlignment.end,
 								mainAxisSize: MainAxisSize.min,
