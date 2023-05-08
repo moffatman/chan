@@ -522,7 +522,10 @@ class Site4Chan extends ImageboardSite {
 		if (selectedIds.isEmpty) {
 			return [];
 		}
-		final cache = await queryPreferredArchive(board, selectedIds);
+		final cache = await queryPreferredArchive(board, selectedIds).onError((e, st) {
+			print('Error querying preferred archive: $e');
+			return {};
+		});
 		return trs.sublist(startIndex, endIndex).map((tr) {
 			final id = int.parse(tr.children.first.text);
 			final cachedJson = cache[id];
