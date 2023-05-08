@@ -53,6 +53,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final ImageboardSite? site;
 	final bool shrinkHeight;
 	final bool shrinkWidth;
+	final double heroScale;
 
 	const AttachmentThumbnail({
 		required this.attachment,
@@ -69,6 +70,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.shrinkHeight = false,
 		this.shrinkWidth = false,
 		this.site,
+		this.heroScale = 1.0,
 		Key? key
 	}) : super(key: key);
 
@@ -211,6 +213,7 @@ class AttachmentThumbnail extends StatelessWidget {
 						final fittedStartSize = applyBoxFit(BoxFit.contain, Size(attachment.width!.toDouble(), attachment.height!.toDouble()), startRect.size).destination;
 						startRect = Alignment.center.inscribe(fittedStartSize, startRect);
 					}
+					endRect = Rect.fromLTWH(endRect.left, endRect.top, endRect.width * heroScale, endRect.height * heroScale);
 				}
 				return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
 			}
