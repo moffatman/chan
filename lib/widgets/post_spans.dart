@@ -1620,7 +1620,7 @@ List<InlineSpan> buildPostInfoRow({
 			style: TextStyle(fontWeight: FontWeight.w600, color: settings.theme.titleColor)
 		),
 		for (final field in settings.postDisplayFieldOrder)
-			if (showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts) TextSpan(
+			if (showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && site.explicitIds) TextSpan(
 				text: '#${zone.thread.replyCount - ((zone.thread.posts.length - 1) - (zone.thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1))} ',
 				style: TextStyle(color: settings.theme.primaryColor.withOpacity(0.5))
 			)
