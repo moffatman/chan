@@ -318,7 +318,8 @@ class PostRow extends StatelessWidget {
 										showIconInCorner: (
 											backgroundColor: theme.backgroundColor,
 											borderColor: theme.primaryColorWithBrightness(0.2)
-										)
+										),
+										heroScale: MediaQuery.textScaleFactorOf(context)
 									)
 								),
 								onPressed: () {
