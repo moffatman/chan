@@ -449,14 +449,14 @@ class AttachmentViewerController extends ChangeNotifier {
 						force: force
 					);
 					if (_isDisposed) return;
+					_videoLoadingProgress = progressNotifier;
+					notifyListeners();
 					if (!background) {
 						_videoPlayerController = VideoPlayerController.network(
 							VideoServer.instance.getUri(hash).toString(),
 							videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true)
 						);
 					}
-					_videoLoadingProgress = progressNotifier;
-					notifyListeners();
 				}
 				else {
 					_ongoingConversion = StreamingMP4Conversion(url, headers: _getHeaders(url), soundSource: soundSource);
