@@ -232,7 +232,8 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 			flag: _makeFlag(data),
 			posterId: data['poster_hash'],
 			foolfuukaLinkedPostThreadIds: linkedPostThreadIds,
-			passSinceYear: passSinceYear
+			passSinceYear: passSinceYear,
+			deleted: data['deleted'] == '1'
 		);
 	}
 	Future<dynamic> _getPostJson(String board, int id, {required bool interactive}) async {
@@ -304,7 +305,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		final a = _makeAttachment(op);
 		return Thread(
 			board: thread.board,
-			isDeleted: false,
+			isDeleted: op['deleted'] == '1',
 			replyCount: posts.length - 1,
 			imageCount: posts.skip(1).expand((post) => post.attachments).length,
 			isArchived: true,

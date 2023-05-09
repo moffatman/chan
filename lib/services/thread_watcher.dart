@@ -258,6 +258,12 @@ class ThreadWatcher extends ChangeNotifier {
 				print('Zombifying watch for ${threadState.identifier} since it is in 404 state');
 				notifications.zombifyThreadWatch(watch);
 			}
+			if (site.archives.isEmpty) {
+				// No archives possible
+				threadState.thread?.isDeleted = true;
+				threadState.save();
+				return true;
+			}
 			try {
 				newThread = await site.getThreadFromArchive(threadState.identifier, interactive: false);
 			}
@@ -304,7 +310,7 @@ class ThreadWatcher extends ChangeNotifier {
 			if (tab.imageboardKey == imageboardKey && tab.threadController == null && tab.thread != null) {
 				// Thread page widget hasn't yet been instantiated
 				final threadState = persistence.getThreadStateIfExists(tab.thread!);
-				if (threadState != null && threadState.thread?.isArchived != true) {
+				if (threadState != null && threadState.thread?.isArchived != true && threadState.thread?.isDeleted != true) {
 					await _updateThread(threadState);
 				}
 			}

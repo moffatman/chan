@@ -117,6 +117,10 @@ class ThreadRow extends StatelessWidget {
 								Icon(CupertinoIcons.archivebox, color: grey, size: 18),
 								const SizedBox(width: 4),
 							],
+							if (latestThread.isDeleted) ... [
+								Icon(CupertinoIcons.trash, color: grey, size: 18),
+								const SizedBox(width: 4),
+							],
 							if (settings.showTimeInCatalogStats) FittedBox(
 								fit: BoxFit.contain,
 									child: Row(

@@ -621,7 +621,10 @@ class _ThreadPageState extends State<ThreadPage> {
 			title = title.replaceFirst(RegExp(r'\/$'), '');
 			title += '/${widget.thread.id}';
 		}
-		if (persistentState.thread?.isArchived ?? false) {
+		if (persistentState.thread?.isDeleted ?? false) {
+			title = '(Deleted) $title';
+		}
+		else if (persistentState.thread?.isArchived ?? false) {
 			title = '(Archived) $title';
 		}
 		if (!site.supportsMultipleBoards) {
@@ -914,7 +917,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																		key: _listKey,
 																		sortMethods: zone.postSortingMethods,
 																		id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
-																		disableUpdates: persistentState.thread?.isArchived ?? false,
+																		disableUpdates: (persistentState.thread?.isDeleted ?? false) || (persistentState.thread?.isArchived ?? false),
 																		autoUpdateDuration: const Duration(seconds: 60),
 																		initialList: persistentState.thread?.posts,
 																		useTree: useTree,
@@ -977,15 +980,15 @@ class _ThreadPageState extends State<ThreadPage> {
 																							_limitCounter(persistentState.thread!.currentPage!, context.read<Persistence>().getBoard(widget.thread.board).pageCount),
 																							const Spacer()
 																						],
-																						if (persistentState.thread!.isArchived) ...[
+																						if (persistentState.thread!.isArchived || persistentState.thread!.isDeleted) ...[
 																							GestureDetector(
 																								behavior: HitTestBehavior.opaque,
 																								onTap: _switchToLive,
 																								child: Row(
 																									children: [
-																										const Icon(CupertinoIcons.archivebox),
+																										Icon(persistentState.thread!.isDeleted ? CupertinoIcons.trash : CupertinoIcons.archivebox),
 																										const SizedBox(width: 8),
-																										Text(persistentState.thread!.archiveName ?? 'Archived')
+																										Text(persistentState.thread!.archiveName ?? (persistentState.thread!.isDeleted ? 'Deleted' : 'Archived'))
 																									]
 																								)
 																							),
