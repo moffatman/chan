@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:chan/models/board.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/context_menu.dart';
@@ -14,6 +15,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 extension _Unnullify on ImageboardScoped<ImageboardBoard?> {
@@ -50,6 +52,7 @@ class BoardSwitcherPage extends StatefulWidget {
 
 class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	late final FocusNode _focusNode;
+	late final FocusNode _listenerFocusNode;
 	late List<Imageboard> allImageboards;
 	int currentImageboardIndex = 0;
 	Imageboard get currentImageboard => allImageboards[currentImageboardIndex];
@@ -61,6 +64,8 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	late final ValueNotifier<Color?> _backgroundColor;
 	int _pointersDownCount = 0;
 	bool _popping = false;
+	int _selectedIndex = 0;
+	bool _showSelectedItem = isOnMac;
 
 	bool isPhoneSoftwareKeyboard() {
 		return MediaQueryData.fromView(View.of(context)).viewInsets.bottom > 100;
@@ -94,6 +99,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		scrollController = ScrollController();
 		_backgroundColor = ValueNotifier<Color?>(null);
 		_focusNode = FocusNode();
+		_listenerFocusNode = FocusNode();
 		allImageboards = ImageboardRegistry.instance.imageboards.where((i) => widget.filterImageboards?.call(i) ?? true).toList();
 		currentImageboardIndex = allImageboards.indexOf(ImageboardRegistry.instance.getImageboard(widget.initialImageboardKey ?? '____nothing') ?? allImageboards.first);
 		if (currentImageboardIndex == -1) {
@@ -102,6 +108,15 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		currentImageboard.refreshBoards();
 		_fetchBoards();
 		scrollController.addListener(_onScroll);
+		Future.delayed(const Duration(milliseconds: 500), _checkForKeyboard);
+	}
+
+	void _checkForKeyboard() {
+		if (!mounted) {
+			return;
+		}
+		_showSelectedItem = !isPhoneSoftwareKeyboard();
+		setState(() {});
 	}
 
 	double _getOverscroll() {
@@ -227,6 +242,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		filteredBoards.addAll(allImageboards.where((i) {
 			return i != currentImageboard && i.site.allowsArbitraryBoards;
 		}).map((i) => i.scope(null)));
+		final effectiveSelectedIndex = min(_selectedIndex, filteredBoards.length - 1);
 		return Stack(
 			children: [
 				CupertinoPageScaffold(
@@ -238,38 +254,63 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							builder: (context, box) {
 								return SizedBox(
 									width: box.maxWidth * 0.75,
-									child: CupertinoTextField(
-										autofocus: settings.boardSwitcherHasKeyboardFocus,
-										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
-										smartDashesType: SmartDashesType.disabled,
-										smartQuotesType: SmartQuotesType.disabled,
-										autocorrect: false,
-										placeholder: 'Board...',
-										textAlign: TextAlign.center,
-										focusNode: _focusNode,
-										onTap: () {
-											scrollController.jumpTo(scrollController.position.pixels);
-										},
-										onSubmitted: (String board) {
-											if (filteredBoards.isNotEmpty) {
-												if (filteredBoards.first.item != null) {
-													Navigator.of(context).pop(filteredBoards.first.unnullify);
-													return;
-												}
-												setState(() {
-													currentImageboardIndex = allImageboards.indexOf(filteredBoards.first.imageboard);
-												});
-												typeahead = const (query: '', results: []);
-												_updateTypeaheadBoards(searchString);
+									child: KeyboardListener(
+										focusNode: _listenerFocusNode,
+										onKeyEvent: (e) {
+											if (e is! KeyDownEvent) {
+												return;
 											}
-											_focusNode.requestFocus();
+											switch (e.logicalKey) {
+												case LogicalKeyboardKey.arrowDown:
+													if (effectiveSelectedIndex < filteredBoards.length - 1) {
+														setState(() {
+															_selectedIndex++;
+														});
+													}
+													break;
+												case LogicalKeyboardKey.arrowUp:
+												if (effectiveSelectedIndex > 0) {
+													setState(() {
+														_selectedIndex--;
+													});
+												}
+												break;
+											}
 										},
-										onChanged: (String newSearchString) {
-											_updateTypeaheadBoards(newSearchString);
-											setState(() {
-												searchString = newSearchString;
-											});
-										}
+										child: CupertinoTextField(
+											autofocus: settings.boardSwitcherHasKeyboardFocus,
+											enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+											smartDashesType: SmartDashesType.disabled,
+											smartQuotesType: SmartQuotesType.disabled,
+											autocorrect: false,
+											placeholder: 'Board...',
+											textAlign: TextAlign.center,
+											focusNode: _focusNode,
+											onTap: () {
+												scrollController.jumpTo(scrollController.position.pixels);
+											},
+											onSubmitted: (String board) {
+												if (filteredBoards.isNotEmpty) {
+													final selected = filteredBoards[effectiveSelectedIndex];
+													if (selected.item != null) {
+														Navigator.of(context).pop(selected.unnullify);
+														return;
+													}
+													setState(() {
+														currentImageboardIndex = allImageboards.indexOf(selected.imageboard);
+													});
+													typeahead = const (query: '', results: []);
+													_updateTypeaheadBoards(searchString);
+												}
+												_focusNode.requestFocus();
+											},
+											onChanged: (String newSearchString) {
+												_updateTypeaheadBoards(newSearchString);
+												setState(() {
+													searchString = newSearchString;
+												});
+											}
+										)
 									)
 								);
 							}
@@ -487,6 +528,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										itemBuilder: (context, i) {
 											final board = filteredBoards[i].item;
 											final imageboard = filteredBoards[i].imageboard;
+											final isSelected = _showSelectedItem && i == effectiveSelectedIndex;
 											if (board != null) {
 												return ContextMenu(
 													actions: [
@@ -523,7 +565,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 															height: 64,
 															decoration: BoxDecoration(
 																borderRadius: const BorderRadius.all(Radius.circular(4)),
-																color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
+																color: board.isWorksafe ? Colors.blue.withOpacity(isSelected ? 0.3 : 0.1) : Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
 															),
 															child: Stack(
 																fit: StackFit.expand,
@@ -560,7 +602,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																							minFontSize: 13,
 																							maxLines: 1,
 																							textAlign: TextAlign.left,
-																							overflow: TextOverflow.ellipsis
+																							overflow: TextOverflow.ellipsis,
+																							style: TextStyle(
+																								fontWeight: isSelected ? FontWeight.bold : null
+																							)
 																						),
 																						if (board.name.isNotEmpty) AutoSizeText(
 																							board.title,
@@ -650,6 +695,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 										children: filteredBoards.map((item) {
 											final imageboard = item.imageboard;
 											final board = item.item;
+											final isSelected = _showSelectedItem && item == filteredBoards[effectiveSelectedIndex];
 											if (board != null) {
 												return ContextMenu(
 													actions: [
@@ -685,7 +731,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 															padding: const EdgeInsets.all(4),
 															decoration: BoxDecoration(
 																borderRadius: const BorderRadius.all(Radius.circular(4)),
-																color: board.isWorksafe ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1)
+																color: board.isWorksafe ? Colors.blue.withOpacity(isSelected ? 0.3 : 0.1) : Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
 															),
 															child: Stack(
 																children: [
@@ -718,8 +764,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																						textAlign: TextAlign.center,
 																						maxLines: 1,
 																						minFontSize: 0,
-																						style: const TextStyle(
-																							fontSize: 24
+																						style: TextStyle(
+																							fontSize: 24,
+																							fontWeight: isSelected ? FontWeight.bold : null
 																						)
 																					)
 																				)
