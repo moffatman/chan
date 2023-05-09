@@ -3116,22 +3116,20 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						)
 					]
 				),
-				const SizedBox(height: 16),
+				const SizedBox(height: 32),
 				Row(
 					children: [
-						const SizedBox(width: 16),
 						const Icon(CupertinoIcons.calendar),
 						const SizedBox(width: 8),
 						const Expanded(
-							child: Text('Show day-of-week even if today')
+							child: Text('Show date even if today')
 						),
 						CupertinoSwitch(
-							value: settings.exactTimeShowsDayOfWeekForToday,
-							onChanged: settings.exactTimeIsISO8601 ? null : (newValue) {
-								settings.exactTimeShowsDayOfWeekForToday = newValue;
+							value: settings.exactTimeShowsDateForToday,
+							onChanged: (newValue) {
+								settings.exactTimeShowsDateForToday = newValue;
 							}
-						),
-						const SizedBox(width: 16)
+						)
 					]
 				),
 				const SizedBox(height: 32),

@@ -709,7 +709,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(113)
 	bool exactTimeIsTwelveHour;
 	@HiveField(114)
-	bool exactTimeShowsDayOfWeekForToday;
+	bool exactTimeShowsDateForToday;
 	@HiveField(115)
 	double attachmentsPageMaxCrossAxisExtent;
 	@HiveField(116)
@@ -863,7 +863,7 @@ class SavedSettings extends HiveObject {
 		bool? blurEffects,
 		bool? scrollbarsOnLeft,
 		bool? exactTimeIsTwelveHour,
-		bool? exactTimeShowsDayOfWeekForToday,
+		bool? exactTimeShowsDateForToday,
 		double? attachmentsPageMaxCrossAxisExtent,
 		bool? catalogGridModeCellBorderRadiusAndMargin,
 		bool? catalogGridModeShowMoreImageIfLessText,
@@ -1026,7 +1026,7 @@ class SavedSettings extends HiveObject {
 		blurEffects = blurEffects ?? true,
 		scrollbarsOnLeft = scrollbarsOnLeft ?? false,
 		exactTimeIsTwelveHour = exactTimeIsTwelveHour ?? false,
-		exactTimeShowsDayOfWeekForToday = exactTimeShowsDayOfWeekForToday ?? false,
+		exactTimeShowsDateForToday = exactTimeShowsDateForToday ?? false,
 		attachmentsPageMaxCrossAxisExtent = attachmentsPageMaxCrossAxisExtent ?? 400,
 		catalogGridModeCellBorderRadiusAndMargin = catalogGridModeCellBorderRadiusAndMargin ?? false,
 		catalogGridModeShowMoreImageIfLessText = catalogGridModeShowMoreImageIfLessText ?? true,
@@ -1894,9 +1894,9 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	bool get exactTimeShowsDayOfWeekForToday => _settings.exactTimeShowsDayOfWeekForToday;
-	set exactTimeShowsDayOfWeekForToday(bool setting) {
-		_settings.exactTimeShowsDayOfWeekForToday = setting;
+	bool get exactTimeShowsDateForToday => _settings.exactTimeShowsDateForToday;
+	set exactTimeShowsDateForToday(bool setting) {
+		_settings.exactTimeShowsDateForToday = setting;
 		_settings.save();
 		notifyListeners();
 	}

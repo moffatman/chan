@@ -165,11 +165,11 @@ String formatTime(DateTime time) {
 	final notToday = (now.day != time.day) || (now.month != time.month) || (now.year != time.year);
 	String prefix = '';
 	const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-	if (Persistence.settings.exactTimeIsISO8601) {
-		prefix = '${time.toISO8601Date} ';
-	}
-	else if (notToday || Persistence.settings.exactTimeShowsDayOfWeekForToday) {
-		if (now.difference(time).inDays > 7) {
+	if (notToday || Persistence.settings.exactTimeShowsDateForToday) {
+		if (Persistence.settings.exactTimeIsISO8601) {
+			prefix = '${time.toISO8601Date} ';
+		}
+		else if (now.difference(time).inDays > 7) {
 			prefix = '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} ';
 		}
 		else {

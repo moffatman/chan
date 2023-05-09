@@ -239,7 +239,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       blurEffects: fields[111] as bool?,
       scrollbarsOnLeft: fields[112] as bool?,
       exactTimeIsTwelveHour: fields[113] as bool?,
-      exactTimeShowsDayOfWeekForToday: fields[114] as bool?,
+      exactTimeShowsDateForToday: fields[114] as bool?,
       attachmentsPageMaxCrossAxisExtent: fields[115] as double?,
       catalogGridModeCellBorderRadiusAndMargin: fields[116] as bool?,
       catalogGridModeShowMoreImageIfLessText: fields[117] as bool?,
@@ -488,7 +488,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(113)
       ..write(obj.exactTimeIsTwelveHour)
       ..writeByte(114)
-      ..write(obj.exactTimeShowsDayOfWeekForToday)
+      ..write(obj.exactTimeShowsDateForToday)
       ..writeByte(115)
       ..write(obj.attachmentsPageMaxCrossAxisExtent)
       ..writeByte(116)
