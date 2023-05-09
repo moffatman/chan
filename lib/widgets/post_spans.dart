@@ -378,6 +378,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				builder: (ctx) => ImageboardScope(
 					imageboardKey: null,
 					imageboard: context.read<Imageboard>(),
+					overridePersistence: context.read<Persistence>(),
 					child: ThreadPage(
 						thread: ThreadIdentifier(board, threadId),
 						initialPostId: postId,
@@ -563,8 +564,9 @@ class PostBoardLink extends PostSpan {
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
 				(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 					builder: (ctx) => ImageboardScope(
-					imageboardKey: null,
-					imageboard: context.read<Imageboard>(),
+						imageboardKey: null,
+						imageboard: context.read<Imageboard>(),
+						overridePersistence: context.read<Persistence>(),
 						child: BoardPage(
 							initialBoard: context.read<Persistence>().getBoard(board),
 							semanticId: -1,
@@ -898,6 +900,7 @@ class PostCatalogSearchSpan extends PostSpan {
 				builder: (ctx) => ImageboardScope(
 					imageboardKey: null,
 					imageboard: context.read<Imageboard>(),
+					overridePersistence: context.read<Persistence>(),
 					child: BoardPage(
 						initialBoard: context.read<Persistence>().getBoard(board),
 						initialSearch: query,

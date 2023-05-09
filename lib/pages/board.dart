@@ -191,6 +191,7 @@ class _BoardPageState extends State<BoardPage> {
 				builder: (ctx) => ImageboardScope(
 					imageboardKey: null,
 					imageboard: context.read<Imageboard>(),
+					overridePersistence: context.read<Persistence>(),
 					child: ThreadPage(
 						thread: identifier,
 						boardSemanticId: widget.semanticId,
