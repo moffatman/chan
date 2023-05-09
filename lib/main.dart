@@ -1026,8 +1026,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			else {
 				child = Actions(
 					actions: {
-						ExtendSelectionToLineBreakIntent: CallbackAction(
+						ExtendSelectionToLineBreakIntent: CallbackAction<ExtendSelectionToLineBreakIntent>(
 							onInvoke: (intent) {
+								if ((FocusManager.instance.primaryFocus?.rect.height ?? 0) < (MediaQuery.sizeOf(context).height * 0.75)) {
+									// Likely a text field is focused
+									return;
+								}
 								_settingsNavigatorKey.currentState?.maybePop();
 								return null;
 							}
@@ -1561,8 +1565,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			onNotification: _onScrollNotification,
 			child: Actions(
 				actions: {
-					ExtendSelectionToLineBreakIntent: CallbackAction(
+					ExtendSelectionToLineBreakIntent: CallbackAction<ExtendSelectionToLineBreakIntent>(
 						onInvoke: (intent) {
+							if ((FocusManager.instance.primaryFocus?.rect.height ?? 0) < (MediaQuery.sizeOf(context).height * 0.75)) {
+								// Likely a text field is focused
+								return;
+							}
 							_tabletWillPopZones[_tabController.index]?.callback?.call();
 							return null;
 						}
@@ -1658,8 +1666,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			onNotification: _onScrollNotification,
 			child: Actions(
 				actions: {
-					ExtendSelectionToLineBreakIntent: CallbackAction(
+					ExtendSelectionToLineBreakIntent: CallbackAction<ExtendSelectionToLineBreakIntent>(
 						onInvoke: (intent) {
+							if ((FocusManager.instance.primaryFocus?.rect.height ?? 0) < (MediaQuery.sizeOf(context).height * 0.75)) {
+								// Likely a text field is focused
+								return;
+							}
 							_tabNavigatorKeys[_tabController.index]?.currentState?.maybePop();
 							return null;
 						}
