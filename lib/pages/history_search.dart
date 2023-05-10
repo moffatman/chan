@@ -56,6 +56,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 	DateTime? _filterDateEnd;
 	bool? _filterHasAttachment;
 	bool? _filterContainsLink;
+	bool? _filterIsThread;
 
 	@override
 	void initState() {
@@ -83,6 +84,9 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 			if (thread != null) {
 				for (final post in thread.posts) {
 					if (widget.query.isNotEmpty && !post.span.buildText().contains(query)) {
+						continue;
+					}
+					if (_filterIsThread != null && _filterIsThread != (post.id == thread.id)) {
 						continue;
 					}
 					if (_filterContainsLink != null && _filterContainsLink != post.span.containsLink) {
@@ -148,6 +152,8 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 									if (_filterDateStart != null) Text('After ${_filterDateStart?.toISO8601Date}'),
 									if (_filterDateEnd != null) Text('Before ${_filterDateEnd?.toISO8601Date}')
 								],
+								if (_filterIsThread != null)
+									_filterIsThread! ? const Text('Threads') : const Text('Replies'),
 								if (_filterHasAttachment != null)
 									_filterHasAttachment! ? const Text('With attachment(s)') : const Text('Without attachment(s)'),
 								if (_filterContainsLink != null)
@@ -248,6 +254,29 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 														anyChange = true;
 													},
 													child: Text(_filterDateStart == null ? 'Pick End Date' : 'End Date: ${_filterDateEnd?.toISO8601Date}')
+												),
+												const SizedBox(height: 16),
+												CupertinoSegmentedControl<NullSafeOptional>(
+													groupValue: _filterIsThread.value,
+													children: const {
+														NullSafeOptional.false_: Padding(
+															padding: EdgeInsets.all(8),
+															child: Text('Only replies', textAlign: TextAlign.center)
+														),
+														NullSafeOptional.null_: Padding(
+															padding: EdgeInsets.all(8),
+															child: Text('Any', textAlign: TextAlign.center)
+														),
+														NullSafeOptional.true_: Padding(
+															padding: EdgeInsets.all(8),
+															child: Text('Only threads', textAlign: TextAlign.center)
+														)
+													},
+													onValueChanged: (v) {
+														_filterIsThread = v.value;
+														setDialogState(() {});
+														anyChange = true;
+													}
 												),
 												const SizedBox(height: 16),
 												CupertinoSegmentedControl<NullSafeOptional>(
