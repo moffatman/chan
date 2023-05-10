@@ -7,6 +7,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
+import 'package:chan/services/apple.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
@@ -16,6 +17,7 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
+import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -826,7 +828,21 @@ class _SavedPageState extends State<SavedPage> {
 																child: SavedAttachmentThumbnail(
 																	file: list[i].item.file,
 																	fit: BoxFit.contain
-																)
+																),
+																flightShuttleBuilder: (context, animation, direction, fromContext, toContext) {
+																	return (direction == HeroFlightDirection.push ? fromContext.widget as Hero : toContext.widget as Hero).child;
+																},
+																createRectTween: (startRect, endRect) {
+																	if (startRect != null && endRect != null) {
+																		if (list[i].item.attachment.type == AttachmentType.image) {
+																			// Need to deflate the original startRect because it has inbuilt layoutInsets
+																			// This SavedAttachmentThumbnail will always fill its size
+																			final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
+																			startRect = rootPadding.deflateRect(startRect);
+																		}
+																	}
+																	return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
+																}
 															)
 														),
 														onTap: () => setter(list[i])
