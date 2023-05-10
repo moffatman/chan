@@ -1954,6 +1954,16 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												Icon(CupertinoIcons.archivebox, color: settings.theme.primaryColor.withOpacity(0.5)),
 												const SizedBox(width: 8)
 											],
+											if (!widget.blocked && (widget.listController.state?.treeBuildingFailed ?? false)) ...[
+												CupertinoButton(
+													color: Colors.red,
+													padding: const EdgeInsets.all(8),
+													minSize: 0,
+													onPressed: () => alertError(context, 'Tree too complex!\nLarge reply chains mean this thread can not be shown in tree mode.'),
+													child: Icon(CupertinoIcons.exclamationmark, color: settings.theme.backgroundColor, size: 19)
+												),
+												const SizedBox(width: 8)
+											],
 											CupertinoButton(
 												padding: EdgeInsets.zero,
 												child: Builder(

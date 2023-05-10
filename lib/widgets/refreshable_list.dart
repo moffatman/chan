@@ -141,6 +141,10 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 	bool shouldRebuild(SliverDontRebuildChildBuilderDelegate oldDelegate) => !listEquals(list, oldDelegate.list) || id != oldDelegate.id;
 }
 
+class _TreeTooDeepException implements Exception {
+	const _TreeTooDeepException();
+}
+
 class _TreeNode<T extends Object> {
 	final T item;
 	final int id;
@@ -569,6 +573,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	late _RefreshableTreeItems _refreshableTreeItems;
 	int forceRebuildId = 0;
 	Timer? _trailingUpdateAnimationTimer;
+	bool _treeBuildingFailed = false;
+
+	bool get useTree => widget.useTree && !_treeBuildingFailed;
+	bool get treeBuildingFailed => _treeBuildingFailed;
 
 	@override
 	void initState() {
@@ -710,7 +718,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	void resetTimer() {
 		autoUpdateTimer?.cancel();
-		if (widget.autoUpdateDuration != null && !widget.useTree) {
+		if (widget.autoUpdateDuration != null && !useTree) {
 			autoUpdateTimer = Timer(widget.autoUpdateDuration!, update);
 			nextUpdateTime = DateTime.now().add(widget.autoUpdateDuration!);
 		}
@@ -893,7 +901,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		Widget? collapsed;
 		int? id = widget.treeAdapter?.getId(value.item);
 		bool loadingOmittedItems = false;
-		if (widget.treeAdapter != null && (widget.useTree || value.representsStubChildren)) {
+		if (widget.treeAdapter != null && (useTree || value.representsStubChildren)) {
 			loadingOmittedItems = context.select<_RefreshableTreeItems, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, id));
 		}
 		if (_searchFilter != null && widget.filteredItemBuilder != null) {
@@ -935,7 +943,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					);
 				}
 			}
-			if (widget.treeAdapter != null && widget.useTree) {
+			if (widget.treeAdapter != null && useTree) {
 				final isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value.parentIds, id, value.representsStubChildren));
 				if (value.parentIds.isNotEmpty) {
 					child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
@@ -1033,7 +1041,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				)
 			);
 		}
-		if (value.depth > 0 && widget.useTree) {
+		if (value.depth > 0 && useTree) {
 			child = Container(
 				margin: EdgeInsets.only(left: (pow(value.depth, 0.70) * 20) - 5),
 				decoration: BoxDecoration(
@@ -1078,7 +1086,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 		for (final item in linear) {
 			final id = adapter.getId(item.item);
-			final node = _TreeNode(item, id, adapter.getHasOmittedReplies(item.item));
+			final node = _TreeNode(item.copyWith(), id, adapter.getHasOmittedReplies(item.item));
 			treeMap[id] = node;
 			node.children.addAll(orphans[id] ?? []);
 			orphans.remove(id);
@@ -1164,6 +1172,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		final automaticallyCollapsed = <List<int>>[];
 		final Set<int> automaticallyTopLevelCollapsed = {};
 		Set<int> dumpNode(_TreeNode<RefreshableListItem<T>> node, List<int> parentIds, {bool addOmittedChildNode = true}) {
+			if (out.length > 15000) {
+				// Bail
+				throw const _TreeTooDeepException();
+			}
 			final item = node.item.copyWith(parentIds: parentIds);
 			out.add(item);
 			final ids = [
@@ -1186,6 +1198,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				automaticallyCollapsed.add(ids);
 			}
 			for (final child in node.children) {
+				if (child.id == node.id) {
+					print('Skipping recursive child of ${node.id}');
+					continue;
+				}
 				item.treeDescendantIds.add(child.id);
 				item.treeDescendantIds.addAll(dumpNode(child, ids.toList()));
 			}
@@ -1298,21 +1314,28 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					values.add(RefreshableListItem(item: item));
 				}
 			}
+			_treeBuildingFailed = false;
 			values.insertAll(0, pinnedValues);
 			if (widget.useTree) {
-				final tree = _reassembleAsTree(values);
-				values = tree.tree;
-				_automaticallyCollapsedItems.clear();
-				for (final collapsed in tree.automaticallyCollapsed) {
-					if (!_overrideExpandAutomaticallyCollapsedItems.any((x) => listEquals(x, collapsed))) {
-						_automaticallyCollapsedItems.add(collapsed);
+				try {
+					final tree = _reassembleAsTree(values);
+					values = tree.tree;
+					_automaticallyCollapsedItems.clear();
+					for (final collapsed in tree.automaticallyCollapsed) {
+						if (!_overrideExpandAutomaticallyCollapsedItems.any((x) => listEquals(x, collapsed))) {
+							_automaticallyCollapsedItems.add(collapsed);
+						}
+					}
+					_automaticallyCollapsedTopLevelItems.clear();
+					for (final id in tree.automaticallyTopLevelCollapsed) {
+						if (!_overrideExpandAutomaticallyCollapsedTopLevelItems.contains(id)) {
+							_automaticallyCollapsedTopLevelItems.add(id);
+						}
 					}
 				}
-				_automaticallyCollapsedTopLevelItems.clear();
-				for (final id in tree.automaticallyTopLevelCollapsed) {
-					if (!_overrideExpandAutomaticallyCollapsedTopLevelItems.contains(id)) {
-						_automaticallyCollapsedTopLevelItems.add(id);
-					}
+				on _TreeTooDeepException {
+					// TODO: Alert?
+					_treeBuildingFailed = true;
 				}
 			}
 			else if (widget.treeAdapter != null) {
@@ -2031,7 +2054,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			 items[0] == _items[0].item &&
 			 items[1] == _items[1].item &&
 			 items.length >= _items.length &&
-			 state?.widget.useTree != true) {
+			 state?.useTree != true) {
 			if (items.length < _items.length) {
 				_items = _items.sublist(0, items.length);
 			}
