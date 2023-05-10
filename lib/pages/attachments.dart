@@ -204,6 +204,13 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 							itemBuilder: (context, attachment) => Stack(
 								alignment: Alignment.center,
 								children: [
+									Positioned.fill(
+										child: DecoratedBox(
+											decoration: BoxDecoration(
+												color: HSVColor.fromAHSV(1, attachment.attachment.id.hashCode.toDouble() % 360, 0.5, 0.2).toColor()
+											)
+										)
+									),
 									CupertinoButton(
 										padding: EdgeInsets.zero,
 										onPressed: () async {
@@ -278,6 +285,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 														heroOtherEndIsBoxFitCover: false,
 														videoThumbnailMicroPadding: false,
 														onlyRenderVideoWhenPrimary: true,
+														fit: BoxFit.cover,
 														maxWidth: PlatformDispatcher.instance.views.first.physicalSize.width, // no zoom
 														additionalContextMenuActions: [
 															CupertinoContextMenuAction2(

@@ -824,6 +824,7 @@ class AttachmentViewer extends StatelessWidget {
 	final bool onlyRenderVideoWhenPrimary;
 	final List<CupertinoContextMenuAction2> additionalContextMenuActions;
 	final double? maxWidth;
+	final BoxFit fit;
 
 	const AttachmentViewer({
 		required this.controller,
@@ -840,6 +841,7 @@ class AttachmentViewer extends StatelessWidget {
 		this.onlyRenderVideoWhenPrimary = false,
 		this.additionalContextMenuActions = const [],
 		this.maxWidth,
+		this.fit = BoxFit.contain,
 		Key? key
 	}) : super(key: key);
 
@@ -973,7 +975,7 @@ class AttachmentViewer extends StatelessWidget {
 				colorBlendMode: BlendMode.dstOver,
 				enableSlideOutPage: true,
 				gaplessPlayback: true,
-				fit: BoxFit.contain,
+				fit: fit,
 				mode: ExtendedImageMode.gesture,
 				width: size?.width ?? double.infinity,
 				height: size?.height ?? double.infinity,
