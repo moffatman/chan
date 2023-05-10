@@ -671,17 +671,22 @@ class _FilterEditorState extends State<FilterEditor> {
 												)
 											)
 										),
-										CupertinoCheckbox(
-											activeColor: CupertinoTheme.of(context).primaryColor,
-											checkColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
-											value: !filter.value.disabled,
-											onChanged: (value) {
-												filter.value.disabled = !filter.value.disabled;
-												final lines = settings.filterConfiguration.split('\n');
-												lines[filter.key] = filter.value.toStringConfiguration();
-												settings.filterConfiguration = lines.join('\n');
-												regexController.text = settings.filterConfiguration;
-											}
+										DecoratedBox(
+											decoration: BoxDecoration(
+												color: context.select<EffectiveSettings, Color>((s) => s.theme.barColor)
+											),
+											child: CupertinoCheckbox(
+												activeColor: CupertinoTheme.of(context).primaryColor,
+												checkColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
+												value: !filter.value.disabled,
+												onChanged: (value) {
+													filter.value.disabled = !filter.value.disabled;
+													final lines = settings.filterConfiguration.split('\n');
+													lines[filter.key] = filter.value.toStringConfiguration();
+													settings.filterConfiguration = lines.join('\n');
+													regexController.text = settings.filterConfiguration;
+												}
+											)
 										)
 									]
 								);
