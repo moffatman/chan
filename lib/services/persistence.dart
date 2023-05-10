@@ -34,7 +34,8 @@ part 'persistence.g.dart';
 
 const _knownCacheDirs = {
 	cacheImageFolderName: 'Images',
-	'webmcache': 'Converted WEBM files',
+	'httpcache': 'Videos',
+	'webmcache': 'Converted videos',
 	'sharecache': 'Media exported for sharing',
 	'webpickercache': 'Images picked from web'
 };

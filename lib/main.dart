@@ -79,7 +79,12 @@ void main() async {
 			}
 			await Persistence.initializeStatic();
 			final webmcache = await Directory('${Persistence.temporaryDirectory.path}/webmcache').create(recursive: true);
-			VideoServer.initializeStatic(webmcache);
+			final oldHttpCache = Directory('${webmcache.path}/httpcache');
+			if (oldHttpCache.statSync().type == FileSystemEntityType.directory) {
+				await oldHttpCache.rename('${Persistence.temporaryDirectory.path}/httpcache');
+			}
+			final httpcache = await Directory('${Persistence.temporaryDirectory.path}/httpcache').create(recursive: true);
+			VideoServer.initializeStatic(webmcache, httpcache);
 			await Notifications.initializeStatic();
 			await updateDynamicColors();
 			runApp(const ChanApp());

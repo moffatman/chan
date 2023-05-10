@@ -89,16 +89,18 @@ class _CachingFile extends EasyListenable {
 class VideoServer {
 	final client = HttpClient();
 	static VideoServer? _server;
-	final Directory root;
+	final Directory webmRoot;
+	final Directory httpRoot;
 	final Map<String, _CachingFile> _caches = {};
 	HttpServer? _httpServer;
 	bool _stopped = false;
 	final bool bufferOutput;
 	final int port;
 
-	static void initializeStatic(Directory root, {bool bufferOutput = true, int port = 4070}) {
+	static void initializeStatic(Directory webmRoot, Directory httpRoot, {bool bufferOutput = true, int port = 4070}) {
 		_server = VideoServer(
-			root: root,
+			webmRoot: webmRoot,
+			httpRoot: httpRoot,
 			bufferOutput: bufferOutput,
 			port: port
 		);
@@ -112,7 +114,8 @@ class VideoServer {
 	static VideoServer get instance => _server!;
 
 	VideoServer({
-		required this.root,
+		required this.webmRoot,
+		required this.httpRoot,
 		required this.bufferOutput,
 		required this.port,
 	});
@@ -219,10 +222,7 @@ class VideoServer {
 		}
 	}
 
-	File getFile(String hash) {
-		final directory = Directory('${root.path}/httpcache')..createSync();
-		return File('${directory.path}/$hash');
-	}
+	File getFile(String hash) => File('${httpRoot.path}/$hash');
 
 	File optimisticallyGetFile(Uri uri) => getFile(_makeHash(uri));
 
@@ -253,8 +253,8 @@ class VideoServer {
 			}
 		}
 		else {
-			final file = File('${root.path}${Uri.decodeFull(request.uri.path)}');
-			if (!await file.exists() || !file.parent.path.startsWith(root.path)) {
+			final file = File('${webmRoot.path}${Uri.decodeFull(request.uri.path)}');
+			if (!await file.exists() || !file.parent.path.startsWith(webmRoot.path)) {
 				request.response.statusCode = 404;
 				await request.response.close();
 				return;
