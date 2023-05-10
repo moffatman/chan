@@ -255,7 +255,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	Map<String, String> _getHeaders(Uri url) {
+	Map<String, String> getHeaders(Uri url) {
 		return {
 			...site.getHeaders(url) ?? {},
 			if (_useRandomUserAgent ?? attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
@@ -269,7 +269,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		final attachmentUrl = Uri.parse(attachment.url);
 		Response result = await site.client.headUri(attachmentUrl, options: Options(
 			validateStatus: (_) => true,
-			headers: _getHeaders(attachmentUrl),
+			headers: getHeaders(attachmentUrl),
 			extra: {
 				kInteractive: interactive
 			}
@@ -286,7 +286,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		if (corrected) {
 			result = await site.client.head(correctedUrl, options: Options(
 				validateStatus: (_) => true,
-				headers: _getHeaders(Uri.parse(correctedUrl)),
+				headers: getHeaders(Uri.parse(correctedUrl)),
 				extra: {
 					kInteractive: interactive
 				}
@@ -308,7 +308,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				_useRandomUserAgent = newAttachment.useRandomUseragent;
 				final check = await site.client.head(newAttachment.url.toString(), options: Options(
 					validateStatus: (_) => true,
-					headers: _getHeaders(Uri.parse(newAttachment.url)),
+					headers: getHeaders(Uri.parse(newAttachment.url)),
 					extra: {
 						kInteractive: interactive
 					}
@@ -403,7 +403,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					await ExtendedNetworkImageProvider(
 						goodImageSource.toString(),
 						cache: true,
-						headers: _getHeaders(goodImageSource!)
+						headers: getHeaders(goodImageSource!)
 					).getNetworkImageData();
 					final file = await getCachedImageFile(goodImageSource.toString());
 					if (file != null && _cachedFile?.path != file.path) {
@@ -420,7 +420,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 				transcode |= soundSource != null;
 				if (!transcode) {
-					final scan = await MediaScan.scan(url, headers: _getHeaders(url));
+					final scan = await MediaScan.scan(url, headers: getHeaders(url));
 					if (_isDisposed) {
 						return;
 					}
@@ -441,7 +441,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					final progressNotifier = ValueNotifier<double?>(null);
 					final hash = await VideoServer.instance.startCachingDownload(
 						uri: url,
-						headers: _getHeaders(url),
+						headers: getHeaders(url),
 						onCached: onCacheCompleted,
 						onProgressChanged: (currentBytes, totalBytes) {
 							progressNotifier.value = currentBytes / totalBytes;
@@ -459,7 +459,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					}
 				}
 				else {
-					_ongoingConversion = StreamingMP4Conversion(url, headers: _getHeaders(url), soundSource: soundSource);
+					_ongoingConversion = StreamingMP4Conversion(url, headers: getHeaders(url), soundSource: soundSource);
 					final result = await _ongoingConversion!.start();
 					if (_isDisposed) return;
 					_conversionDisposers.add(_ongoingConversion!.dispose);
@@ -676,7 +676,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			}
 			final response = await site.client.getUri(source, options: Options(
 				responseType: ResponseType.bytes,
-				headers: _getHeaders(source)
+				headers: getHeaders(source)
 			));
 			final systemTempDirectory = Persistence.temporaryDirectory;
 			final directory = await (Directory('${systemTempDirectory.path}/webmcache')).create(recursive: true);
@@ -823,6 +823,7 @@ class AttachmentViewer extends StatelessWidget {
 	final bool videoThumbnailMicroPadding;
 	final bool onlyRenderVideoWhenPrimary;
 	final List<CupertinoContextMenuAction2> additionalContextMenuActions;
+	final double? maxWidth;
 
 	const AttachmentViewer({
 		required this.controller,
@@ -838,6 +839,7 @@ class AttachmentViewer extends StatelessWidget {
 		this.videoThumbnailMicroPadding = true,
 		this.onlyRenderVideoWhenPrimary = false,
 		this.additionalContextMenuActions = const [],
+		this.maxWidth,
 		Key? key
 	}) : super(key: key);
 
@@ -922,12 +924,18 @@ class AttachmentViewer extends StatelessWidget {
 		ImageProvider image = ExtendedNetworkImageProvider(
 			source.toString(),
 			cache: true,
-			headers: controller._getHeaders(source)
+			headers: controller.getHeaders(source)
 		);
 		if (source.scheme == 'file') {
 			image = ExtendedFileImageProvider(
 				File(source.toStringFFMPEG()),
 				imageCacheName: 'asdf'
+			);
+		}
+		if (maxWidth != null) {
+			image = ExtendedResizeImage(
+				image,
+				width: maxWidth!.ceil()
 			);
 		}
 		void onDoubleTap(ExtendedImageGestureState state) {

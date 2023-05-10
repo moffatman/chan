@@ -11,12 +11,14 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/cupertino_context_menu2.dart';
 import 'package:chan/widgets/refreshable_list.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:mutex/mutex.dart';
+import 'package:pool/pool.dart';
 import 'package:provider/provider.dart';
 
 class AttachmentsPage extends StatefulWidget {
@@ -49,18 +51,32 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 	bool _showAdjustmentOverlay = false;
 	double _lastScale = 1;
 	final _listKey = GlobalKey();
-	final _loadingLock = Mutex();
-	final _loadingQueue = <AttachmentViewerController>[];
+	final _videoLoadingLock = Mutex();
+	final _videoLoadingQueue = <AttachmentViewerController>[];
+	final _imageLoadingPool = Pool(3);
+	final _imageLoadingQueue = <AttachmentViewerController>[];
 	TaggedAttachment? _lastMiddleVisibleItem;
 
-	void _queueLoading(AttachmentViewerController controller) {
-		_loadingQueue.add(controller);
-		_loadingLock.protect(() async {
-			if (_loadingQueue.isEmpty) {
+	void _queueVideoLoading(AttachmentViewerController controller) {
+		_videoLoadingQueue.add(controller);
+		_videoLoadingLock.protect(() async {
+			if (_videoLoadingQueue.isEmpty) {
 				return;
 			}
 			// LIFO stack
-			final item = _loadingQueue.removeLast();
+			final item = _videoLoadingQueue.removeLast();
+			await Future.microtask(() => item.preloadFullAttachment());
+		});
+	}
+
+	void _queueImageLoading(AttachmentViewerController controller) {
+		_imageLoadingQueue.add(controller);
+		_imageLoadingPool.withResource(() async {
+			if (_imageLoadingQueue.isEmpty) {
+				return;
+			}
+			// LIFO stack
+			final item = _imageLoadingQueue.removeLast();
 			await Future.microtask(() => item.preloadFullAttachment());
 		});
 	}
@@ -116,10 +132,10 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 			);
 			if (context.watch<EffectiveSettings>().autoloadAttachments && !attachment.attachment.isRateLimited) {
 				if (attachment.attachment.type.isVideo) {
-					_queueLoading(controller);
+					_queueVideoLoading(controller);
 				}
 				else {
-					Future.microtask(() => controller.preloadFullAttachment());
+					_queueImageLoading(controller);
 				}
 			}
 			return controller;
@@ -193,6 +209,25 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 										onPressed: () async {
 											final wasPrimary = _getController(attachment).isPrimary;
 											_getController(attachment).isPrimary = false;
+											final goodSource = _getController(attachment).goodImageSource;
+											if (attachment.attachment.type == AttachmentType.image && goodSource != null) {
+												// Ensure full-resolution copy is loaded into the image cache
+												final stream = ExtendedNetworkImageProvider(
+													goodSource.toString(),
+													cache: true,
+													headers: _getController(attachment).getHeaders(goodSource)
+												).resolve(ImageConfiguration.empty);
+												final completer = Completer<void>();
+												stream.addListener(ImageStreamListener((image, synchronousCall) {
+													completer.complete();
+												}, onError: (e, st) {
+													completer.completeError(e, st);
+												}));
+												await completer.future;
+											}
+											if (!mounted) {
+												return;
+											}
 											await showGalleryPretagged(
 												context: context,
 												attachments: widget.attachments,
@@ -243,6 +278,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 														heroOtherEndIsBoxFitCover: false,
 														videoThumbnailMicroPadding: false,
 														onlyRenderVideoWhenPrimary: true,
+														maxWidth: PlatformDispatcher.instance.views.first.physicalSize.width, // no zoom
 														additionalContextMenuActions: [
 															CupertinoContextMenuAction2(
 																trailingIcon: CupertinoIcons.return_icon,
@@ -314,7 +350,8 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 		for (final controller in _controllers.values) {
 			controller.dispose();
 		}
-		_loadingQueue.clear();
+		_videoLoadingQueue.clear();
+		_imageLoadingQueue.clear();
 	}
 }
 
