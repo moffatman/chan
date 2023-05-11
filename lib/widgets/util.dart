@@ -1338,11 +1338,12 @@ class HybridScrollPhysics extends BouncingScrollPhysics {
 					constantDeceleration: constantDeceleration
 				);
 			}
+			return ClampingScrollSimulation(
+				position: position.pixels,
+				velocity: velocity,
+				tolerance: tolerance,
+			);
     }
-    return ClampingScrollSimulation(
-      position: position.pixels,
-      velocity: velocity,
-      tolerance: tolerance,
-    );
+    return null;
   }
 }
