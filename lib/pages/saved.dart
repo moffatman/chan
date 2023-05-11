@@ -121,7 +121,6 @@ class _SavedPageState extends State<SavedPage> {
 	final _savedAttachmentsAnimatedBuilderKey = GlobalKey(debugLabel: '_SavedPageState._savedAttachmentsAnimatedBuilderKey');
 	late final ScrollController _savedAttachmentsController;
 	late final EasyListenable _removeArchivedHack;
-	final _galleryPageKey = GlobalKey(debugLabel: '_SavedPageState._galleryPageKey');
 	List<ImageboardScoped<SavedAttachment>> _savedAttachments = [];
 
 	@override
@@ -917,7 +916,6 @@ class _SavedPageState extends State<SavedPage> {
 							child = ImageboardScope(
 								imageboardKey: selectedValue.imageboard.key,
 								child: GalleryPage(
-									key: _galleryPageKey,
 									initialAttachment: attachment,
 									attachments: _savedAttachments.map((l) => TaggedAttachment(
 										attachment: l.item.attachment,
@@ -929,7 +927,7 @@ class _SavedPageState extends State<SavedPage> {
 									},
 									onChange: (a) {
 										final originalL = _savedAttachments.tryFirstWhere((l) => l.item.attachment == a.attachment);
-										widget.masterDetailKey?.currentState?.setValue(4, originalL);
+										widget.masterDetailKey?.currentState?.setValue(4, originalL, updateDetailPane: false);
 									},
 									allowScroll: true,
 									allowPop: poppedOut,

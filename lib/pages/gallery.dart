@@ -222,6 +222,10 @@ class _GalleryPageState extends State<GalleryPage> {
 	void didUpdateWidget(GalleryPage old) {
 		super.didUpdateWidget(old);
 		if (widget.initialAttachment != old.initialAttachment) {
+			if (currentAttachment == widget.initialAttachment) {
+				// No need to update. This might be a recursive update.
+				return;
+			}
 			if (old.initialAttachment != null) {
 				_getController(old.initialAttachment!).isPrimary = false;
 			}

@@ -221,13 +221,13 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		}
 	}
 
-	void setValue(int index, dynamic value) {
+	void setValue(int index, dynamic value, {bool updateDetailPane = true}) {
 		if (panes[index].currentValue.value == value) {
 			return;
 		}
 		panes[index].currentValue.value = value;
 		panes[index].onValueChanged?.call(value);
-		_onNewValue(panes[index]);
+		_onNewValue(panes[index], updateDetailPane: updateDetailPane);
 	}
 
 	T? getValue<T>(int index) {
@@ -256,7 +256,10 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		}
 	}
 
-	void _onNewValue<T> (MultiMasterPane<T> pane, {bool? showAnimationsForward}) {
+	void _onNewValue<T> (MultiMasterPane<T> pane, {bool? showAnimationsForward, bool updateDetailPane = true}) {
+		if (!updateDetailPane) {
+			return;
+		}
 		if (onePane) {
 			if (pane.currentValue.value != null) {
 				_popMasterValueRoutes();
