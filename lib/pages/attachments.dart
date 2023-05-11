@@ -50,7 +50,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 	}
 	bool _showAdjustmentOverlay = false;
 	double _lastScale = 1;
-	final _listKey = GlobalKey();
+	final _listKey = GlobalKey(debugLabel: '_AttachmentsPageState._listKey');
 	final _videoLoadingLock = Mutex();
 	final _videoLoadingQueue = <AttachmentViewerController>[];
 	final _imageLoadingPool = Pool(3);

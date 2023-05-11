@@ -31,7 +31,7 @@ class _VideoControlsState extends State<VideoControls> {
 	bool _playingBeforeLongPress = false;
 	bool _currentlyWithinLongPress = false;
 	final _mutex = Mutex();
-	final _clipRRectKey = GlobalKey();
+	final _clipRRectKey = GlobalKey(debugLabel: '_VideoControlsState._clipRRectKey');
 
 	@override
 	void initState() {

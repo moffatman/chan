@@ -114,14 +114,14 @@ class _SavedPageState extends State<SavedPage> {
 	late final RefreshableListController<PersistentThreadState> _threadListController;
 	late final RefreshableListController<ImageboardScoped<SavedPost>> _postListController;
 	late final RefreshableListController<_PostThreadCombo> _yourPostsListController;
-	final _watchedThreadsListKey = GlobalKey();
-	final _savedThreadsListKey = GlobalKey();
-	final _savedPostsListKey = GlobalKey();
-	final _yourPostsListKey = GlobalKey();
-	final _savedAttachmentsAnimatedBuilderKey = GlobalKey();
+	final _watchedThreadsListKey = GlobalKey(debugLabel: '_SavedPageState._watchedThreadsListKey');
+	final _savedThreadsListKey = GlobalKey(debugLabel: '_SavedPageState._savedThreadsListKey');
+	final _savedPostsListKey = GlobalKey(debugLabel: '_SavedPageState._savedPostsListKey');
+	final _yourPostsListKey = GlobalKey(debugLabel: '_SavedPageState._yourPostsListKey');
+	final _savedAttachmentsAnimatedBuilderKey = GlobalKey(debugLabel: '_SavedPageState._savedAttachmentsAnimatedBuilderKey');
 	late final ScrollController _savedAttachmentsController;
 	late final EasyListenable _removeArchivedHack;
-	final _galleryPageKey = GlobalKey();
+	final _galleryPageKey = GlobalKey(debugLabel: '_SavedPageState._galleryPageKey');
 	List<ImageboardScoped<SavedAttachment>> _savedAttachments = [];
 
 	@override

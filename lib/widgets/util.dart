@@ -684,7 +684,7 @@ class RootCustomScale extends StatefulWidget {
 }
 
 class _RootCustomScaleState extends State<RootCustomScale> {
-	final _childKey = GlobalKey();
+	final _childKey = GlobalKey(debugLabel: '_RootCustomScaleState._childKey');
 	@override
 	Widget build(BuildContext context) {
 		final child = KeyedSubtree(

@@ -64,7 +64,7 @@ class _CupertinoContextMenuActionState extends State<CupertinoContextMenuAction2
     textBaseline: TextBaseline.alphabetic,
   );
 
-  final GlobalKey _globalKey = GlobalKey();
+  final GlobalKey _globalKey = GlobalKey(debugLabel: '_CupertinoContextMenuActionState._globalKey');
   bool _isPressed = false;
 
   void onTapDown(TapDownDetails details) {
@@ -333,7 +333,7 @@ class CupertinoContextMenu2 extends StatefulWidget {
 }
 
 class _CupertinoContextMenuState2 extends State<CupertinoContextMenu2> with TickerProviderStateMixin {
-  final GlobalKey _childGlobalKey = GlobalKey();
+  final GlobalKey _childGlobalKey = GlobalKey(debugLabel: '_CupertinoContextMenuState2._childGlobalKey');
   bool _childHidden = false;
   // Animated thi child while it's being long-pressed
   late AnimationController _glowController;
@@ -598,7 +598,7 @@ class _DecoyChildState extends State<_DecoyChild> with TickerProviderStateMixin 
   static const Color _lightModeMaskColor = Color(0xFF888888);
   static const Color _masklessColor = Color(0xFFFFFFFF);
 
-  final GlobalKey _childGlobalKey = GlobalKey();
+  final GlobalKey _childGlobalKey = GlobalKey(debugLabel: '_DecoyChildState._childGlobalKey');
   late Animation<Color> _mask;
   late Animation<Rect?> _rect;
 
@@ -718,7 +718,7 @@ class _ContextMenuRoute<T> extends PopupRoute<T> {
 
   final List<Widget> _actions;
   final _ContextMenuPreviewBuilderChildless? _builder;
-  final GlobalKey _childGlobalKey = GlobalKey();
+  final GlobalKey _childGlobalKey = GlobalKey(debugLabel: '_ContextMenuRoute._childGlobalKey');
   final _ContextMenuLocation _contextMenuLocation;
   final Stream<Offset> dragUpdateStream;
   final Stream<DragEndDetails> dragEndStream;
@@ -728,7 +728,7 @@ class _ContextMenuRoute<T> extends PopupRoute<T> {
   // The Rect of the child at the moment that the CupertinoContextMenu opens.
   final Rect _previousChildRect;
   double? _scale = 1.0;
-  final GlobalKey _sheetGlobalKey = GlobalKey();
+  final GlobalKey _sheetGlobalKey = GlobalKey(debugLabel: '_ContextMenuRoute._sheetGlobalKey');
 
   static final CurveTween _curve = CurveTween(
     curve: Curves.easeOutBack,

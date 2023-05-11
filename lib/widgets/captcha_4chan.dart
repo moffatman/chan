@@ -217,7 +217,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	List<double> _guessConfidences = List.generate(6, (i) => 1.0);
 	String _lastGuessText = "";
 	bool _greyOutPickers = true;
-	final _pickerKeys = List.generate(6, (i) => GlobalKey());
+	final _pickerKeys = List.generate(6, (i) => GlobalKey(debugLabel: '_Captcha4ChanCustomState._pickerKeys[$i]'));
 	double _guessingProgress = 0.0;
 	CancelableOperation<Chan4CustomCaptchaGuess>? _guessInProgress;
 	bool _offerGuess = false;

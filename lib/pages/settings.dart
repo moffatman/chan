@@ -55,7 +55,7 @@ class _SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<_SettingsPage> {
-	final scrollKey = GlobalKey();
+	final scrollKey = GlobalKey(debugLabel: '_SettingsPageState.scrollKey');
 
 	@override
 	Widget build(BuildContext context) {

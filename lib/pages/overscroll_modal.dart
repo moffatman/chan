@@ -41,8 +41,8 @@ class OverscrollModalPage extends StatefulWidget {
 
 class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	late final ScrollController _controller;
-	final GlobalKey _scrollKey = GlobalKey();
-	final GlobalKey _childKey = GlobalKey();
+	final GlobalKey _scrollKey = GlobalKey(debugLabel: '_OverscrollModalPageState._scrollKey');
+	final GlobalKey _childKey = GlobalKey(debugLabel: '_OverscrollModalPageState._childKey');
 	late double _scrollStopPosition;
 	Offset? _pointerDownPosition;
 	bool _pointerInSpacer = false;

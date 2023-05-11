@@ -1101,11 +1101,11 @@ class PersistentBrowserTab extends EasyListenable {
 	// Do not persist
 	final Map<ThreadIdentifier, int> initialPostId = {};
 	// Do not persist
-	final tabKey = GlobalKey();
+	final tabKey = GlobalKey(debugLabel: 'PersistentBrowserTab.tabKey');
 	// Do not persist
-	final boardKey = GlobalKey();
+	final boardKey = GlobalKey(debugLabel: 'PersistentBrowserTab.boardKey');
 	// Do not persist
-	final incognitoProviderKey = GlobalKey();
+	final incognitoProviderKey = GlobalKey(debugLabel: 'PersistentBrowserTab.incognitoProviderKey');
 	// Do not persist
 	final unseen = ValueNotifier(0);
 	@HiveField(5, defaultValue: '')

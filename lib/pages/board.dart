@@ -100,8 +100,8 @@ class _BoardPageState extends State<BoardPage> {
 	Completer<void>? _loadCompleter;
 	CatalogVariant? _variant;
 	ThreadIdentifier? _lastSelectedThread;
-	final _boardsPullTabKey = GlobalKey();
-	final _threadPullTabKey = GlobalKey();
+	final _boardsPullTabKey = GlobalKey(debugLabel: '_BoardPageState._boardsPullTabKey');
+	final _threadPullTabKey = GlobalKey(debugLabel: '_BoardPageState._threadPullTabKey');
 	int _page = 1;
 	DateTime? _lastCatalogUpdateTime;
 	bool _searching = false;

@@ -556,9 +556,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	DateTime? lastUpdateTime;
 	DateTime? nextUpdateTime;
 	Timer? autoUpdateTimer;
-	GlobalKey _scrollViewKey = GlobalKey();
-	GlobalKey _sliverListKey = GlobalKey();
-	GlobalKey _footerKey = GlobalKey();
+	GlobalKey _scrollViewKey = GlobalKey(debugLabel: 'RefreshableListState._scrollViewKey');
+	GlobalKey _sliverListKey = GlobalKey(debugLabel: 'RefreshableListState._sliverListKey');
+	GlobalKey _footerKey = GlobalKey(debugLabel: 'RefreshableListState._footerKey');
 	int _pointerDownCount = 0;
 	bool _showFilteredValues = false;
 	bool _searchTapped = false;
@@ -625,9 +625,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			autoUpdateTimer?.cancel();
 			autoUpdateTimer = null;
 			widget.controller?.newContentId(widget.id);
-			_scrollViewKey = GlobalKey();
-			_sliverListKey = GlobalKey();
-			_footerKey = GlobalKey();
+			_scrollViewKey = GlobalKey(debugLabel: 'RefreshableListState._scrollViewKey');
+			_sliverListKey = GlobalKey(debugLabel: 'RefreshableListState._sliverListKey');
+			_footerKey = GlobalKey(debugLabel: 'RefreshableListState._footerKey');
 			closeSearch();
 			originalList = widget.initialList;
 			sortedList = null;

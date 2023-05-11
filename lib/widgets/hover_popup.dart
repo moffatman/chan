@@ -99,7 +99,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 		else {
 			_value = widget.softSetup?.call(_value);
 		}
-		_touchGlobalKey = GlobalKey();
+		_touchGlobalKey = GlobalKey(debugLabel: '_HoverPopupState._touchGlobalKey');
 		_touchStart = details.globalPosition;
 		_touchEntry = OverlayEntry(
 			builder: (_) => ImageboardScope(
@@ -195,7 +195,7 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 			);
 		}
 		else if (widget.style == HoverPopupStyle.floating) {
-			_globalKey = GlobalKey();
+			_globalKey = GlobalKey(debugLabel: '_HoverPopupState._globalKey');
 			final scale = 1 / context.read<EffectiveSettings>().interfaceScale;
 			_entry = OverlayEntry(
 				builder: (_) => _FloatingHoverPopup(

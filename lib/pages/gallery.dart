@@ -144,12 +144,12 @@ class _GalleryPageState extends State<GalleryPage> {
 	late bool showChrome;
 	bool showChromeOnce = false;
 	bool showingOverlays = true;
-	final Key _pageControllerKey = GlobalKey();
-	final Key _thumbnailsKey = GlobalKey();
+	final Key _pageControllerKey = GlobalKey(debugLabel: 'GalleryPage._pageControllerKey');
+	final Key _thumbnailsKey = GlobalKey(debugLabel: 'GalleryPage._thumbnailsKey');
 	late final BehaviorSubject<void> _scrollCoalescer;
 	double? _lastpageControllerPixels;
 	bool _animatingNow = false;
-	final _shareButtonKey = GlobalKey();
+	final _shareButtonKey = GlobalKey(debugLabel: 'GalleryPage._shareButtonKey');
 	late final EasyListenable _slideListenable;
 	bool _hideRotateButton = false;
 	final Map<TaggedAttachment, AttachmentViewerController> _controllers = {};
@@ -157,7 +157,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	late final EasyListenable _currentAttachmentChanged;
 	late final EasyListenable _rotationsChanged;
 	late final DraggableScrollableController _scrollSheetController;
-	final _draggableScrollableSheetKey = GlobalKey();
+	final _draggableScrollableSheetKey = GlobalKey(debugLabel: 'GalleryPage._draggableScrollableSheetKey');
 	late StreamSubscription<List<void>> __onPageControllerUpdateSubscription;
 	bool _gridViewDesynced = false;
 	bool _thumbnailsDesynced = false;

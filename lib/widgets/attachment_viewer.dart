@@ -193,9 +193,9 @@ class AttachmentViewerController extends ChangeNotifier {
 	/// Whether to rotate the image 90 degrees clockwise
 	bool get rotate90DegreesClockwise => _rotate90DegreesClockwise;
 	/// A key to use to with ExtendedImage (to help maintain gestures when the image widget is replaced)
-	final gestureKey = GlobalKey<ExtendedImageGestureState>();
+	final gestureKey = GlobalKey<ExtendedImageGestureState>(debugLabel: 'AttachmentViewerController.gestureKey');
 	/// A key to use with CupertinoContextMenu share button
-	final contextMenuShareButtonKey = GlobalKey();
+	final contextMenuShareButtonKey = GlobalKey(debugLabel: 'AttachmentViewerController.contextMenuShareButtonKey');
 	/// Whether archive checking for this attachment is enabled
 	bool get checkArchives => _checkArchives;
 	/// Modal text which should be overlayed on the attachment
@@ -205,7 +205,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	/// Whether the image has already been downloaded
 	bool get isDownloaded => _isDownloaded;
 	/// Key to use for loading spinner
-	final loadingSpinnerKey = GlobalKey();
+	final loadingSpinnerKey = GlobalKey(debugLabel: 'AttachmentViewerController.loadingSpinnerKey');
 	/// The duration of the video, if known
 	Duration? get duration => _duration;
 	/// Whether a seekable version of the video is incoming

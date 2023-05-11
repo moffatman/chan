@@ -112,10 +112,10 @@ class ThreadPage extends StatefulWidget {
 
 class _ThreadPageState extends State<ThreadPage> {
 	late PersistentThreadState persistentState;
-	final _shareButtonKey = GlobalKey();
-	final _weakNavigatorKey = GlobalKey<WeakNavigatorState>();
-	final _replyBoxKey = GlobalKey<ReplyBoxState>();
-	final _listKey = GlobalKey<RefreshableListState>();
+	final _shareButtonKey = GlobalKey(debugLabel: '_ThreadPageState._shareButtonKey');
+	final _weakNavigatorKey = GlobalKey<WeakNavigatorState>(debugLabel: '_ThreadPageState._weakNavigatorKey');
+	final _replyBoxKey = GlobalKey<ReplyBoxState>(debugLabel: '_ThreadPageState._replyBoxKey');
+	final _listKey = GlobalKey<RefreshableListState>(debugLabel: '_ThreadPageState._listKey');
 
 	bool _buildRefreshableList = false;
 	late final RefreshableListController<Post> _listController;
@@ -1312,7 +1312,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	int _lastListControllerItemsLength = 0;
 	int _lastFirstVisibleIndex = -1;
 	int _lastLastVisibleIndex = -1;
-	final _animatedPaddingKey = GlobalKey();
+	final _animatedPaddingKey = GlobalKey(debugLabel: '_ThreadPositionIndicatorState._animatedPaddingKey');
 	ValueNotifier<bool>? _lastUpdatingNow;
 
 	Future<bool> _updateCounts() async {
