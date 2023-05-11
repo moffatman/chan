@@ -333,6 +333,27 @@ class VideoServer {
 				}
 			}();
 		}
+		else {
+			final cachingFile = _caches[hash];
+			if (cachingFile != null) {
+				void listener() {
+					onProgressChanged?.call(cachingFile.currentBytes, cachingFile.totalBytes);
+				}
+				cachingFile.addListener(listener);
+				() async {
+					try {
+						await cachingFile.completer.future;
+						onCached?.call(cachingFile.file);
+					}
+					on HttpException {
+						// Something went wrong
+					}
+					finally {
+						cachingFile.removeListener(listener);
+					}
+				}();
+			}
+		}
 		return hash;
 	}
 
