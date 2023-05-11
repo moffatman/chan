@@ -169,6 +169,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool _waitingOnSwap = false;
 	Duration? _swapStartTime;
 	final _lock = Mutex();
+	bool _hideVideoPlayerController = false;
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -180,7 +181,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	/// Conversion process of a video attachment
 	ValueListenable<double?> get videoLoadingProgress => _videoLoadingProgress;
 	/// A VideoPlayerController to enable playing back video attachments
-	VideoPlayerController? get videoPlayerController => _videoPlayerController;
+	VideoPlayerController? get videoPlayerController => _hideVideoPlayerController ? null : _videoPlayerController;
 	/// Whether the attachment is a video that has an audio track
 	bool get hasAudio => _hasAudio;
 	/// The Uri to use to load the image, if needed
@@ -377,6 +378,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		_goodImageSource = null;
 		_videoPlayerController?.dispose();
 		_videoPlayerController = null;
+		_hideVideoPlayerController = false;
 		_cachedFile = null;
 		_isFullResolution = true;
 		_showLoadingProgress = false;
@@ -452,6 +454,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					_videoLoadingProgress = progressNotifier;
 					notifyListeners();
 					if (!background) {
+						_hideVideoPlayerController = true;
 						_videoPlayerController = VideoPlayerController.network(
 							VideoServer.instance.getUri(hash).toString(),
 							videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true)
@@ -518,6 +521,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (_videoPlayerController != null) {
 					try {
 						await _videoPlayerController!.initialize();
+						_hideVideoPlayerController = false;
 					}
 					catch (e) {
 						if (!transcode &&
