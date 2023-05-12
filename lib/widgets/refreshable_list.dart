@@ -1334,7 +1334,6 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					}
 				}
 				on _TreeTooDeepException {
-					// TODO: Alert?
 					_treeBuildingFailed = true;
 				}
 			}
