@@ -44,8 +44,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	final GlobalKey _scrollKey = GlobalKey(debugLabel: '_OverscrollModalPageState._scrollKey');
 	final GlobalKey _childKey = GlobalKey(debugLabel: '_OverscrollModalPageState._childKey');
 	late double _scrollStopPosition;
-	Offset? _pointerDownPosition;
-	bool _pointerInSpacer = false;
+	final Map<int, (PointerDownEvent event, bool initiallyInSpacer, DateTime globalTime)> _pointersDown = {};
 	late final ValueNotifierAnimation<double> _opacity;
 	bool _popping = false;
 	bool _finishedPopIn = false;
@@ -78,8 +77,9 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		}
 	}
 
-	void _onPointerUp() {
-		if (_popping || _controller.positions.isEmpty) {
+	void _onPointerUp(int pointer) {
+		final downData = _pointersDown.remove(pointer);
+		if (_popping || _controller.positions.isEmpty || downData == null || _pointersDown.isNotEmpty) {
 			return;
 		}
 		final overscrollTop = _controller.position.minScrollExtent - _controller.position.pixels;
@@ -88,12 +88,12 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 			_popping = true;
 			WeakNavigator.pop(context);
 		}
-		else if (_pointerInSpacer) {
+		else if (downData.$2) {
 			_popping = true;
 			// Simulate onTap for the Spacers which fill the transparent space
 			// It's done here rather than using GestureDetector so it works during scroll-in
 			if (WeakNavigator.of(context) != null) {
-				if (context.read<EffectiveSettings>().overscrollModalTapPopsAll) {
+				if (context.read<EffectiveSettings>().overscrollModalTapPopsAll || DateTime.now().difference(downData.$3) > const Duration(seconds: 1)) {
 					WeakNavigator.of(context)!.popAllExceptFirst(animated: true);
 				}
 				else {
@@ -156,18 +156,18 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 							onPointerDown: (event) {
 								final RenderBox scrollBox = _scrollKey.currentContext!.findRenderObject()! as RenderBox;
 								final Offset childBoxOffset = ((_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.child!.parentData as SliverPhysicalParentData?)?.paintOffset ?? Offset.zero;
-								_pointerDownPosition = event.position;
-								_pointerInSpacer = event.position.dy < scrollBox.localToGlobal(childBoxOffset).dy || event.position.dy > scrollBox.localToGlobal(scrollBox.semanticBounds.bottomCenter - childBoxOffset).dy;
+								_pointersDown[event.pointer] = (event, event.position.dy < scrollBox.localToGlobal(childBoxOffset).dy || event.position.dy > scrollBox.localToGlobal(scrollBox.semanticBounds.bottomCenter - childBoxOffset).dy, DateTime.now());
 							},
 							onPointerMove: (event) {
-								if (_pointerInSpacer) {
-									if ((event.position - _pointerDownPosition!).distance > kTouchSlop) {
-										_pointerInSpacer = false;
+								final downData = _pointersDown[event.pointer];
+								if (downData?.$2 == true) {
+									if ((event.position - downData!.$1.position).distance > kTouchSlop) {
+										_pointersDown[event.pointer] = (downData.$1, false, downData.$3);
 									}
 								}
 							},
-							onPointerUp: (event) => _onPointerUp(),
-							onPointerPanZoomEnd: (event) => _onPointerUp(),
+							onPointerUp: (event) => _onPointerUp(event.pointer),
+							onPointerPanZoomEnd: (event) => _onPointerUp(event.pointer),
 							child: Actions(
 								actions: {
 									DismissIntent: CallbackAction<DismissIntent>(
