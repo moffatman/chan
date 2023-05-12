@@ -412,21 +412,25 @@ class ThreadFilter implements Filter {
 
 class MD5Filter implements Filter {
 	final Set<String> md5s;
-	MD5Filter(this.md5s);
+	final bool applyToThreads;
+	MD5Filter(this.md5s, this.applyToThreads);
 	@override
 	FilterResult? filter(Filterable item) {
+		if (!applyToThreads && item.isThread) {
+			return null;
+		}
 		return md5s.contains(item.getFilterFieldText('md5')) ?
 			FilterResult(const FilterResultType(hide: true), 'Matches filtered image') : null;
 	}
 
 	@override
-	String toString() => 'MD5Filter(md5s: $md5s)';
+	String toString() => 'MD5Filter(md5s: $md5s, applyToThreads: $applyToThreads)';
 
 	@override
-	operator == (dynamic other) => other is MD5Filter && setEquals(other.md5s, md5s);
+	operator == (dynamic other) => other is MD5Filter && setEquals(other.md5s, md5s) && other.applyToThreads == applyToThreads;
 
 	@override
-	int get hashCode => md5s.hashCode;
+	int get hashCode => Object.hash(md5s, applyToThreads);
 }
 
 class SearchFilter implements Filter {

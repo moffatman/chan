@@ -748,6 +748,8 @@ class SavedSettings extends HiveObject {
 	bool showLastRepliesInCatalog;
 	@HiveField(133)
 	AutoloadAttachmentsSetting loadThumbnails;
+	@HiveField(134)
+	bool applyImageFilterToThreads;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -883,6 +885,7 @@ class SavedSettings extends HiveObject {
 		List<String>? hiddenImageMD5s,
 		bool? showLastRepliesInCatalog,
 		AutoloadAttachmentsSetting? loadThumbnails,
+		bool? applyImageFilterToThreads,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1044,7 +1047,8 @@ class SavedSettings extends HiveObject {
 		verticalTwoPaneMinimumPaneSize = verticalTwoPaneMinimumPaneSize ?? -400,
 		hiddenImageMD5s = hiddenImageMD5s?.toSet() ?? {},
 		showLastRepliesInCatalog = showLastRepliesInCatalog ?? false,
-		loadThumbnails = loadThumbnails ?? AutoloadAttachmentsSetting.always {
+		loadThumbnails = loadThumbnails ?? AutoloadAttachmentsSetting.always,
+		applyImageFilterToThreads = applyImageFilterToThreads ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2039,6 +2043,14 @@ class EffectiveSettings extends ChangeNotifier {
 			((loadThumbnailsSetting == AutoloadAttachmentsSetting.wifi) && (connectivity == ConnectivityResult.wifi));
 	}
 
+	bool get applyImageFilterToThreads => _settings.applyImageFilterToThreads;
+	set applyImageFilterToThreads(bool setting) {
+		_settings.applyImageFilterToThreads = setting;
+		_settings.save();
+		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
+		notifyListeners();
+	}
+
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {
 		_appResumeCallbacks.add(task);
@@ -2054,15 +2066,15 @@ class EffectiveSettings extends ChangeNotifier {
 		return md5s.any(_settings.hiddenImageMD5s.contains);
 	}
 
-	late Filter imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet()));
+	late Filter imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
 	void hideByMD5(String md5) {
 		_settings.hiddenImageMD5s.add(md5);
-		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet()));
+		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
 	}
 
 	void unHideByMD5s(Iterable<String> md5s) {
 		_settings.hiddenImageMD5s.removeAll(md5s);
-		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet()));
+		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
 	}
 
 	void setHiddenImageMD5s(Iterable<String> md5s) {
@@ -2076,7 +2088,7 @@ class EffectiveSettings extends ChangeNotifier {
 			}
 			return md5;
 		}));
-		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet()));
+		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
 	}
 
 	Future<void> didUpdateHiddenMD5s() async {

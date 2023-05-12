@@ -523,7 +523,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 									settings.didUpdateHiddenMD5s();
 								}
 							},
-							child: Text(describeCount(Persistence.settings.hiddenImageMD5s.length, 'image'))
+							child: Text('${describeCount(Persistence.settings.hiddenImageMD5s.length, 'image')}...')
 						)
 					]
 				),
@@ -1146,9 +1146,27 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
 		return _SettingsPage(
 			title: 'Image Filter Settings',
 			children: [
+				Row(
+					children: [
+						const Icon(CupertinoIcons.list_bullet_below_rectangle),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Apply to thread OP images')
+						),
+						const SizedBox(width: 16),
+						CupertinoSwitch(
+							value: settings.applyImageFilterToThreads,
+							onChanged: (newValue) {
+								settings.applyImageFilterToThreads = newValue;
+							}
+						)
+					]
+				),
+				const SizedBox(height: 16),
 				const Text('One image MD5 per line'),
 				const SizedBox(height: 8),
 				CupertinoTextField(
