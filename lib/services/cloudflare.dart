@@ -130,7 +130,7 @@ class CloudflareInterceptor extends Interceptor {
 			clearSessionCache: true
 		);
 		void Function(InAppWebViewController, Uri?) buildOnLoadStop(ValueChanged<_CloudflareResponse> callback) => (controller, uri) async {
-			if (uri?.host.isEmpty ?? false) {
+			if ((uri?.host.isEmpty ?? false) && uri?.scheme != 'data') {
 				final correctedUri = uri!.replace(
 					scheme: cookieUrl.scheme,
 					host: cookieUrl.host
