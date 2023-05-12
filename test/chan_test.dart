@@ -73,7 +73,7 @@ void main() {
   group('Caching server', () {
     test('normal', () async {
       final root = await Directory.current.createTemp('caching_server_');
-      VideoServer.initializeStatic(root, port: 4071, bufferOutput: false);
+      VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false);
       final fakeServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final client = HttpClient();
       final requests = <HttpRequest>[];
@@ -169,7 +169,7 @@ void main() {
 
     test('status code', () async {
       final root = await Directory.current.createTemp('caching_server_');
-      VideoServer.initializeStatic(root, port: 4071, bufferOutput: false);
+      VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false);
       final fakeServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final client = HttpClient();
       final requests = <HttpRequest>[];
@@ -246,7 +246,7 @@ void main() {
         requests.add(request);
       });
       try {
-        VideoServer.initializeStatic(root, port: 4071, bufferOutput: false);
+        VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false);
         final hashFuture = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
         await Future.delayed(const Duration(milliseconds: 100));
         expect(requests.length, equals(1));
@@ -289,7 +289,7 @@ void main() {
 
     test('content', () async {
       final root = await Directory.current.createTemp('caching_server_');
-      VideoServer.initializeStatic(root, port: 4071, bufferOutput: false);
+      VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false);
       final fakeServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final client = HttpClient();
       final requests = <HttpRequest>[];
