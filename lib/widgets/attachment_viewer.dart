@@ -173,7 +173,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
-	bool get isFullResolution => _isFullResolution;
+	bool get isFullResolution => _isFullResolution || overrideSource != null;
 	/// Error that occured while loading the full quality attachment
 	String? get errorMessage => _errorMessage;
 	/// Whether the loading spinner should be displayed
