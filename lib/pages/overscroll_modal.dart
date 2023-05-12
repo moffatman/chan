@@ -44,7 +44,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	final GlobalKey _scrollKey = GlobalKey(debugLabel: '_OverscrollModalPageState._scrollKey');
 	final GlobalKey _childKey = GlobalKey(debugLabel: '_OverscrollModalPageState._childKey');
 	late double _scrollStopPosition;
-	final Map<int, (PointerDownEvent event, bool initiallyInSpacer, DateTime globalTime)> _pointersDown = {};
+	final Map<int, (Offset position, bool initiallyInSpacer, DateTime globalTime)> _pointersDown = {};
 	late final ValueNotifierAnimation<double> _opacity;
 	bool _popping = false;
 	bool _finishedPopIn = false;
@@ -75,6 +75,12 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 				});
 			}
 		}
+	}
+
+	void _onPointerDown(PointerEvent event) {
+		final RenderBox scrollBox = _scrollKey.currentContext!.findRenderObject()! as RenderBox;
+		final Offset childBoxOffset = ((_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.child!.parentData as SliverPhysicalParentData?)?.paintOffset ?? Offset.zero;
+		_pointersDown[event.pointer] = (event.position, event.position.dy < scrollBox.localToGlobal(childBoxOffset).dy || event.position.dy > scrollBox.localToGlobal(scrollBox.semanticBounds.bottomCenter - childBoxOffset).dy, DateTime.now());
 	}
 
 	void _onPointerUp(int pointer) {
@@ -153,15 +159,12 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 					),
 					RepaintBoundary(
 						child: Listener(
-							onPointerDown: (event) {
-								final RenderBox scrollBox = _scrollKey.currentContext!.findRenderObject()! as RenderBox;
-								final Offset childBoxOffset = ((_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.child!.parentData as SliverPhysicalParentData?)?.paintOffset ?? Offset.zero;
-								_pointersDown[event.pointer] = (event, event.position.dy < scrollBox.localToGlobal(childBoxOffset).dy || event.position.dy > scrollBox.localToGlobal(scrollBox.semanticBounds.bottomCenter - childBoxOffset).dy, DateTime.now());
-							},
+							onPointerDown: _onPointerDown,
+							onPointerPanZoomStart: _onPointerDown,
 							onPointerMove: (event) {
 								final downData = _pointersDown[event.pointer];
 								if (downData?.$2 == true) {
-									if ((event.position - downData!.$1.position).distance > kTouchSlop) {
+									if ((event.position - downData!.$1).distance > kTouchSlop) {
 										_pointersDown[event.pointer] = (downData.$1, false, downData.$3);
 									}
 								}
