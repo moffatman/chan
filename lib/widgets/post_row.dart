@@ -363,26 +363,24 @@ class PostRow extends StatelessWidget {
 			);
 		}
 		else if (latestPost.attachmentDeleted) {
-			attachments = Center(
-				child: SizedBox(
-					width: 75,
-					height: 75,
-					child:
-						parentZone.isLoadingPostFromArchive(post.board, post.id) ?
-							const CircularProgressIndicator.adaptive() :
-							switch (parentZone.postFromArchiveError(post.board, post.id)) {
-								(Object error, StackTrace stackTrace) => CupertinoInkwell(
-									onPressed: () => alertError(context, error, stackTrace, actions: {
-										'Retry': () => parentZone.loadPostFromArchive(post.board, post.id)
-									}),
-									child: const Icon(CupertinoIcons.exclamationmark_triangle, size: 36)
-								),
-								null => CupertinoInkwell(
-									onPressed: () => parentZone.loadPostFromArchive(post.board, post.id),
-									child: const Icon(CupertinoIcons.xmark_square, size: 36)
-								)
-							}
-				)
+			attachments = SizedBox(
+				width: 75,
+				height: 75,
+				child:
+					parentZone.isLoadingPostFromArchive(post.board, post.id) ?
+						const CircularProgressIndicator.adaptive() :
+						switch (parentZone.postFromArchiveError(post.board, post.id)) {
+							(Object error, StackTrace stackTrace) => CupertinoInkwell(
+								onPressed: () => alertError(context, error, stackTrace, actions: {
+									'Retry': () => parentZone.loadPostFromArchive(post.board, post.id)
+								}),
+								child: const Icon(CupertinoIcons.exclamationmark_triangle, size: 36)
+							),
+							null => CupertinoInkwell(
+								onPressed: () => parentZone.loadPostFromArchive(post.board, post.id),
+								child: const Icon(CupertinoIcons.xmark_square, size: 36)
+							)
+						}
 			);
 		}
 		else {
