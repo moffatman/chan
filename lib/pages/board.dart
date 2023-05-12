@@ -510,6 +510,7 @@ class _BoardPageState extends State<BoardPage> {
 						semanticParentIds: [widget.semanticId],
 						dimReadThreads: settings.dimReadThreads,
 						countsUnreliable: thread.replyCount < 0,
+						showBoardName: thread.board != board?.name,
 						onThumbnailTap: (initialAttachment) {
 							final attachments = _listController.items.expand((_) => _.item.attachments).toList();
 							// It might not be in the list if the thread has been filtered
