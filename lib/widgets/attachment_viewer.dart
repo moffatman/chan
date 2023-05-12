@@ -338,7 +338,6 @@ class AttachmentViewerController extends ChangeNotifier {
 		await Future.delayed(const Duration(milliseconds: 500));
 		if (_isDisposed) return;
 		_showLoadingProgress = false;
-		_loadingProgressHideScheduled = false;
 		notifyListeners();
 	}
 
@@ -378,11 +377,12 @@ class AttachmentViewerController extends ChangeNotifier {
 		_goodImageSource = null;
 		_videoPlayerController?.dispose();
 		_videoPlayerController = null;
-		_hideVideoPlayerController = false;
+		_hideVideoPlayerController = true;
 		_cachedFile = null;
 		_isFullResolution = true;
 		_showLoadingProgress = false;
 		_showAudioOnly = false;
+		_loadingProgressHideScheduled = false;
 		notifyListeners();
 		final startTime = DateTime.now();
 		Future.delayed(_estimateUrlTime(Uri.parse(attachment.thumbnailUrl)), () {
@@ -440,25 +440,34 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 				bool isAudioOnly = false;
 				if (!transcode) {
-					final progressNotifier = ValueNotifier<double?>(null);
-					final hash = await VideoServer.instance.startCachingDownload(
-						uri: url,
-						headers: getHeaders(url),
-						onCached: onCacheCompleted,
-						onProgressChanged: (currentBytes, totalBytes) {
-							progressNotifier.value = currentBytes / totalBytes;
-						},
-						force: force
-					);
-					if (_isDisposed) return;
-					_videoLoadingProgress = progressNotifier;
-					notifyListeners();
-					if (!background) {
-						_hideVideoPlayerController = true;
-						_videoPlayerController = VideoPlayerController.network(
-							VideoServer.instance.getUri(hash).toString(),
+					if (url.scheme == 'file') {
+						final file = File(url.toStringFFMPEG());
+						_videoPlayerController = VideoPlayerController.file(
+							file,
 							videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true)
 						);
+						onCacheCompleted(file);
+					}
+					else {
+						final progressNotifier = ValueNotifier<double?>(null);
+						final hash = await VideoServer.instance.startCachingDownload(
+							uri: url,
+							headers: getHeaders(url),
+							onCached: onCacheCompleted,
+							onProgressChanged: (currentBytes, totalBytes) {
+								progressNotifier.value = currentBytes / totalBytes;
+							},
+							force: force
+						);
+						if (_isDisposed) return;
+						_videoLoadingProgress = progressNotifier;
+						notifyListeners();
+						if (!background) {
+							_videoPlayerController = VideoPlayerController.network(
+								VideoServer.instance.getUri(hash).toString(),
+								videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true)
+							);
+						}
 					}
 				}
 				else {
