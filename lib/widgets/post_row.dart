@@ -208,14 +208,12 @@ class PostRow extends StatelessWidget {
 			);
 		}
 		else if (latestPost.attachmentDeleted) {
-			attachments = Center(
-				child: SizedBox(
-					width: 75,
-					height: 75,
-					child: CupertinoButton(
-						onPressed: onRequestArchive,
-						child: const Icon(CupertinoIcons.question_square, size: 36)
-					)
+			attachments = SizedBox(
+				width: 75,
+				height: 75,
+				child: CupertinoButton(
+					onPressed: onRequestArchive,
+					child: const Icon(CupertinoIcons.question_square, size: 36)
 				)
 			);
 		}
