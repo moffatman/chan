@@ -401,12 +401,10 @@ class ThreadRow extends StatelessWidget {
 				);
 			}
 			else if (latestThread.attachmentDeleted) {
-				attachments = Center(
-					child: SizedBox(
-						width: settings.thumbnailSize,
-						height: settings.thumbnailSize,
-						child: const Icon(CupertinoIcons.xmark_square, size: 36)
-					)
+				attachments = SizedBox(
+					width: settings.thumbnailSize,
+					height: settings.thumbnailSize,
+					child: const Icon(CupertinoIcons.xmark_square, size: 36)
 				);
 			}
 			else {
