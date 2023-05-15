@@ -206,6 +206,8 @@ class _Captcha4ChanCustomPainter extends CustomPainter{
 	}
 }
 
+typedef _PickerStuff = ({GlobalKey key, ValueKey<Chan4CustomCaptchaLetterKey> wrapperKey, FixedExtentScrollController controller});
+
 class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	String? errorMessage;
 	DateTime? tryAgainAt;
@@ -213,13 +215,14 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	int backgroundSlide = 0;
 	late final FocusNode _solutionNode;
 	late final TextEditingController _solutionController;
-	late final List<FixedExtentScrollController> _letterPickerControllers;
 	List<double> _guessConfidences = List.generate(6, (i) => 1.0);
-	String _lastGuessText = "";
+	Chan4CustomCaptchaGuesses? _lastGuesses;
+	late Chan4CustomCaptchaGuess _lastGuess;
 	bool _greyOutPickers = true;
-	final _pickerKeys = List.generate(6, (i) => GlobalKey(debugLabel: '_Captcha4ChanCustomState._pickerKeys[$i]'));
+	final Map<Chan4CustomCaptchaLetterKey, _PickerStuff> _pickerStuff = {};
+	final List<_PickerStuff> _orphanPickerStuff = [];
 	double _guessingProgress = 0.0;
-	CancelableOperation<Chan4CustomCaptchaGuess>? _guessInProgress;
+	CancelableOperation<Chan4CustomCaptchaGuesses>? _guessInProgress;
 	bool _offerGuess = false;
 
 	int get numLetters => context.read<EffectiveSettings>().captcha4ChanCustomNumLetters;
@@ -235,24 +238,40 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			_guessInProgress?.cancel();
 			_guessInProgress = guess(
 				await _screenshotImage(),
-				numLetters: numLetters,
+				maxNumLetters: 6,
 				onProgress: (progress) {
 					setState(() {
 						_guessingProgress = progress;
 					});
 				}
 			);
-			final bestGuess = await _guessInProgress!.value;
-			numLetters = bestGuess.numLetters;
-			setState(() {});
+			_lastGuesses = await _guessInProgress!.value;
+			numLetters = _lastGuesses!.likelyNumLetters;
 			final selection = _solutionController.selection;
-			_solutionController.text = bestGuess.guess;
+			final lastResolvedPickerStuff = {
+				for (int i = 0; i < _pickerStuff.length; i++)
+					i: _getPickerStuffForWidgetIndex(i)
+			};
+			_pickerStuff.clear();
+			final newGuess = _lastGuesses!.forNumLetters(numLetters);
+			_lastGuess = newGuess;
+			// We want widget-indexes to match up to same pickerStuff, not to keys
+			for (int i = 0; i < numLetters; i++) {
+				final key = newGuess.keys[i];
+				final previousPickerStuffInThisSlot = lastResolvedPickerStuff.remove(i);
+				if (previousPickerStuffInThisSlot != null) {
+					_pickerStuff[key] = previousPickerStuffInThisSlot;
+				}
+			}
+			for (final orphan in lastResolvedPickerStuff.values) {
+				_orphanPickerStuff.add(orphan);
+			}
+			_solutionController.text = newGuess.guess;
 			_solutionController.selection = TextSelection(
 				baseOffset: min(numLetters - 1, selection.baseOffset),
 				extentOffset: min(numLetters, selection.extentOffset)
 			);
-			_lastGuessText = bestGuess.guess;
-			_guessConfidences = bestGuess.confidences;
+			_guessConfidences = newGuess.confidences.toList();
 		}
 		catch (e, st) {
 			print(e);
@@ -265,6 +284,14 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		setState(() {
 			_greyOutPickers = false;
 		});
+	}
+
+	_PickerStuff _getPickerStuffForWidgetIndex(int i) {
+		return _pickerStuff.putIfAbsent(_lastGuess.keys[i], () => _orphanPickerStuff.tryRemoveFirst() ?? (
+			key: GlobalKey(debugLabel: '_Captcha4ChanCustomState._pickerStuff.key'),
+			wrapperKey: ValueKey(_lastGuess.keys[i]),
+			controller: FixedExtentScrollController()
+		));
 	}
 
 	Future<Captcha4ChanCustomChallenge> _requestChallenge() async {
@@ -343,17 +370,15 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					throw Captcha4ChanCustomException('Unknown error, maybe the captcha format has changed: ${challenge!.challenge}');
 				}
 			}
-			backgroundSlide = 0;
 			if (challenge!.backgroundImage != null) {
 				await _alignImage();
 				if (!mounted) return;
 			}
 			if (settings.useNewCaptchaForm) {
-				_solutionController.text = "00000";
-				setState(() {});
 				await _animateGuess();
 			}
 			else {
+				backgroundSlide = 0;
 				setState(() {});
 				_solutionNode.requestFocus();
 			}
@@ -498,12 +523,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 		if (!_modifyingFromPicker && _previousText != newText) {
 			for (int i = 0; i < numLetters; i++) {
-				if (i >= _previousText.length || _previousText[i] != newText[i]) {
-					if (i < _guessConfidences.length ) {
+				if (i >= _previousText.length || _previousText[i] != newText[i] || _previousText.length != newText.length) {
+					if (i < _guessConfidences.length && newText[i] != _lastGuess.guess[i]) {
 						_guessConfidences[i] = 1;
 					}
-					_letterPickerControllers[i].animateToItem(captchaLetters.indexOf(newText[i].toUpperCase()), duration: const Duration(milliseconds: 250), curve: Curves.elasticIn);
-					setState(() {});
+					WidgetsBinding.instance.addPostFrameCallback((_) => _getPickerStuffForWidgetIndex(i).controller.animateToItem(captchaLetters.indexOf(newText[i].toUpperCase()), duration: const Duration(milliseconds: 250), curve: Curves.elasticIn));
 				}
 			}
 		}
@@ -531,7 +555,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		super.initState();
 		_solutionNode = FocusNode();
 		_solutionController = TextEditingController();
-		_letterPickerControllers = List.generate(6, (i) => FixedExtentScrollController());
+		_lastGuess = Chan4CustomCaptchaGuess.dummy('0' * numLetters);
 		if (context.read<EffectiveSettings>().useNewCaptchaForm) {
 			_solutionController.text = "000000";
 			_solutionController.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
@@ -639,7 +663,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 															});
 														},
 														onChangeEnd: (newOffset) {
-															if (_solutionController.text.toUpperCase() == _lastGuessText.toUpperCase()) {
+															if (_solutionController.text.toUpperCase() == _lastGuess.guess.toUpperCase()) {
 																_animateGuess();
 															}
 															else {
@@ -693,7 +717,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 										actions: {
 											ExtendSelectionVerticallyToAdjacentLineIntent: CallbackAction<ExtendSelectionVerticallyToAdjacentLineIntent>(
 												onInvoke: (intent) {
-													final controller = _letterPickerControllers[_solutionController.selection.baseOffset];
+													final controller = _getPickerStuffForWidgetIndex(_solutionController.selection.baseOffset).controller;
 													if (intent.forward) {
 														controller.animateToItem(
 															controller.selectedItem + 1,
@@ -744,11 +768,28 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 											onValueChanged: (x) {
 												if (x != numLetters) {
 													numLetters = x;
-													if (x == 6 || _solutionController.text.toUpperCase() == _lastGuessText.toUpperCase()) {
-														WidgetsBinding.instance.addPostFrameCallback((_) => _animateGuess());
+													final selection = _solutionController.selection;
+													_lastGuess = _lastGuesses!.forNumLetters(numLetters);
+													_solutionController.text = _lastGuess.guess;
+													_solutionController.selection = TextSelection(
+														baseOffset: min(numLetters - 1, selection.baseOffset),
+														extentOffset: min(numLetters, selection.extentOffset)
+													);
+													_guessConfidences = _lastGuess.confidences.toList();
+													// We want keys to match up to same pickerStuff, not to widget-indexes
+													final tmp = _pickerStuff.keys.toSet();
+													for (final id in _lastGuess.keys.asMap().entries) {
+														if (_pickerStuff.containsKey(id.value)) {
+															// Same key in both guesses
+															tmp.remove(id.value);
+														}
 													}
-													else {
-														_offerGuess = true;
+													for (final orphanKey in tmp) {
+														// Old letter slot not in new guess
+														final orphan = _pickerStuff.remove(orphanKey);
+														if (orphan != null) {
+															_orphanPickerStuff.add(orphan);
+														}
 													}
 													setState(() {});
 												}
@@ -778,16 +819,16 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 													onReorder: (a, b) {
 														if (a < b) {
 															for (int i = a; i < b - 1; i++) {
-																final tmp = _letterPickerControllers[i].selectedItem;
-																_letterPickerControllers[i].jumpToItem(_letterPickerControllers[i + 1].selectedItem);
-																_letterPickerControllers[i + 1].jumpToItem(tmp);
+																final tmp = _getPickerStuffForWidgetIndex(i).controller.selectedItem;
+																_getPickerStuffForWidgetIndex(i).controller.jumpToItem(_getPickerStuffForWidgetIndex(i + 1).controller.selectedItem);
+																_getPickerStuffForWidgetIndex(i + 1).controller.jumpToItem(tmp);
 															}
 														}
 														else {
 															for (int i = a; i > b; i--) {
-																final tmp = _letterPickerControllers[i].selectedItem;
-																_letterPickerControllers[i].jumpToItem(_letterPickerControllers[i - 1].selectedItem);
-																_letterPickerControllers[i - 1].jumpToItem(tmp);
+																final tmp = _getPickerStuffForWidgetIndex(i).controller.selectedItem;
+																_getPickerStuffForWidgetIndex(i).controller.jumpToItem(_getPickerStuffForWidgetIndex(i - 1).controller.selectedItem);
+																_getPickerStuffForWidgetIndex(i - 1).controller.jumpToItem(tmp);
 															}
 														}
 													},
@@ -809,7 +850,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 														for (int i = 0; i < numLetters; i++) ...[
 															ReorderableDelayedDragStartListener(
 																index: i,
-																key: ValueKey(i),
+																key: _getPickerStuffForWidgetIndex(i).wrapperKey,
 																child: SizedBox(
 																	height: 200,
 																	width: min(constraints.maxWidth, 500) / numLetters,
@@ -820,12 +861,13 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																				onNotification: (notification) {
 																					if (notification is ScrollEndNotification && notification.metrics is FixedExtentMetrics) {
 																						_modifyingFromPicker = true;
+																						final newLetter = captchaLetters[(notification.metrics as FixedExtentMetrics).itemIndex];
 																						_solutionController.value = TextEditingValue(
-																							text: _solutionController.text.replaceRange(i, i + 1, captchaLetters[(notification.metrics as FixedExtentMetrics).itemIndex]),
+																							text: _solutionController.text.replaceRange(i, i + 1, newLetter),
 																							selection: _solutionController.selection,
 																							composing: TextRange.empty
 																						);
-																						if (_guessConfidences[i] != 1) {
+																						if (_guessConfidences[i] != 1 && _lastGuess.guess.substring(i, i + 1) != newLetter) {
 																							setState(() {
 																								_guessConfidences[i] = 1;
 																							});
@@ -840,8 +882,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																						physics: _ModifiedBouncingScrollPhysics()
 																					),
 																					child: CupertinoPicker.builder(
-																						key: _pickerKeys[i],
-																						scrollController: _letterPickerControllers[i],
+																						key: _getPickerStuffForWidgetIndex(i).key,
+																						scrollController: _getPickerStuffForWidgetIndex(i).controller,
 																						selectionOverlay: AnimatedBuilder(
 																							animation: _solutionController,
 																							builder: (context, child) => CupertinoPickerDefaultSelectionOverlay(
@@ -853,6 +895,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																						),
 																						childCount: captchaLetters.length,
 																						itemBuilder: (context, l) => Padding(
+																							key: ValueKey(captchaLetters[l]),
 																							padding: const EdgeInsets.all(6),
 																							child: Center(
 																								child: Text(captchaLetters[l],
@@ -877,8 +920,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																					GestureDetector(
 																						behavior: HitTestBehavior.translucent,
 																						onTap: () {
-																							_letterPickerControllers[i].animateToItem(
-																								_letterPickerControllers[i].selectedItem - 1,
+																							_getPickerStuffForWidgetIndex(i).controller.animateToItem(
+																								_getPickerStuffForWidgetIndex(i).controller.selectedItem - 1,
 																								duration: const Duration(milliseconds: 100),
 																								curve: Curves.ease
 																							);
@@ -896,8 +939,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																					GestureDetector(
 																						behavior: HitTestBehavior.translucent,
 																						onTap: () {
-																							_letterPickerControllers[i].animateToItem(
-																								_letterPickerControllers[i].selectedItem + 1,
+																							_getPickerStuffForWidgetIndex(i).controller.animateToItem(
+																								_getPickerStuffForWidgetIndex(i).controller.selectedItem + 1,
 																								duration: const Duration(milliseconds: 100),
 																								curve: Curves.ease
 																							);
@@ -981,8 +1024,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		super.dispose();
 		_solutionNode.dispose();
 		_solutionController.dispose();
-		for (final controller in _letterPickerControllers) {
-			controller.dispose();
+		for (final stuff in _pickerStuff.values.followedBy(_orphanPickerStuff)) {
+			stuff.controller.dispose();
 		}
 		_guessInProgress?.cancel();
 	}

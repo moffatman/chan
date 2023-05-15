@@ -19,16 +19,81 @@ class Chan4CustomCaptchaGuess {
 	final List<List<String>> alternatives;
 	final double confidence;
 	final List<double> confidences;
+	final List<Chan4CustomCaptchaLetterKey> keys;
 	const Chan4CustomCaptchaGuess({
 		required this.guess,
 		required this.numLetters,
 		required this.alternatives,
 		required this.confidence,
-		required this.confidences
+		required this.confidences,
+		required this.keys
 	});
 
+	factory Chan4CustomCaptchaGuess.dummy(String guess) {
+		return Chan4CustomCaptchaGuess(
+			guess: guess,
+			numLetters: guess.length,
+			alternatives: List.generate(guess.length, (_) => []),
+			confidence: 1,
+			confidences: List.generate(guess.length, (_) => 1),
+			keys: List.generate(guess.length, (i) => Chan4CustomCaptchaLetterKey._(i))
+		);
+	}
+
 	@override
-	String toString() => '_Chan4CustomCaptchaGuess(guess: $guess, alternatives: $alternatives, confidence: $confidence)';
+	String toString() => '_Chan4CustomCaptchaGuess(guess: $guess, alternatives: $alternatives, confidence: $confidence, confidences: $confidences, keys: $keys)';
+}
+
+class Chan4CustomCaptchaLetterKey {
+	final int _key;
+	const Chan4CustomCaptchaLetterKey._(this._key);
+
+	@override
+	bool operator == (Object other) => other is Chan4CustomCaptchaLetterKey && other._key == _key;
+	@override
+	int get hashCode => _key.hashCode;
+
+	@override
+	String toString() => 'Chan4CustomCaptchaLetterKey($_key)';
+}
+
+class Chan4CustomCaptchaGuesses {
+	final List<_LetterScore> _answersBest;
+	final int likelyNumLetters;
+
+	const Chan4CustomCaptchaGuesses._(this._answersBest, this.likelyNumLetters);
+
+	Chan4CustomCaptchaGuess forNumLetters(int numLetters) {
+		List<MapEntry<int, _LetterScore>> answersBest = _answersBest.asMap().entries.toList();
+		answersBest.sort((a, b) => b.value.score.compareTo(a.value.score));
+		answersBest = answersBest.sublist(0, numLetters);
+		answersBest.sort((a, b) => a.value.x - b.value.x);
+		final maxScore = answersBest.map((x) => x.value.score).reduce(max);
+		return Chan4CustomCaptchaGuess(
+			guess: answersBest.map((x) => x.value.letter).join(''),
+			numLetters: numLetters,
+			keys: answersBest.map((x) => Chan4CustomCaptchaLetterKey._(x.key)).toList(),
+			alternatives: [[], [], [], [], []],
+			confidence: (1 - Normal.cdf(
+				maxScore,
+				mean: 31.99121650969569,
+				variance: 5.6186633357112274
+			)) * (1 - Normal.cdf(
+				maxScore,
+				mean: 39.019931473509175,
+				variance: 8.9437836310256
+			)),
+			confidences: answersBest.map((x) => (1 - Normal.cdf(
+				x.value.score,
+				mean: 22.030712707662314,
+				variance: 6.6035697391139445
+			)) * (1 - Normal.cdf(
+				x.value.score,
+				mean: 32.892141079395095,
+				variance: 11.419233352647126
+			))).toList()
+		);
+	}
 }
 
 int _floodFillBuffer({
@@ -149,7 +214,6 @@ int _estimateNumLetters({
 		}
 	}
 	cols.sort();
-	print(cols);
 	if (cols[(cols.length * 0.8).floor()] == height) {
 		// at least 20% (by columns) is all white
 		return 5;
@@ -354,11 +418,6 @@ void _guess(_GuessParam param) async {
 	}
 	final primaryScores = await createScoreArray(_LetterImageType.primary);
 	List<_LetterScore>? secondaryScores;
-	final numLetters = param.numLetters ?? _estimateNumLetters(
-		buffer: captcha,
-		width: width,
-		height: height
-	);
 	// Pick best set of letters
 	Future<List<_LetterScore>> guess({
 		List<_LetterScore> deadAnswers = const [],
@@ -377,7 +436,7 @@ void _guess(_GuessParam param) async {
 				deadLetters[x].add(deadAnswer.letter);
 			}
 		}
-		for (int i = 0; i < numLetters; i++) {
+		for (int i = 0; i < param.maxNumLetters; i++) {
 			_LetterScore bestScore = primaryScores.first;
 			for (final score in primaryScores) {
 				if (deadLetters[score.x].contains(score.letter)) {
@@ -412,13 +471,12 @@ void _guess(_GuessParam param) async {
 			}
 			answers.add(bestScore);
 			if (sendUpdates) {
-				param.sendPort.send(_preprocessProportion + _scoreArrayProportion + _guessProportion * ((i + 1) / numLetters));
+				param.sendPort.send(_preprocessProportion + _scoreArrayProportion + _guessProportion * ((i + 1) / param.maxNumLetters));
 			}
 		}
 		return answers;
 	}
 	final answersBest = await guess(sendUpdates: true);
-	answersBest.sort((a, b) => a.x - b.x);
 	/*final answers2 = __guess(deadAnswers: answersBest);
 	final answers3 = __guess(deadAnswers: answersBest.followedBy(answers2).toList());
 	final alternativeAnswers = answers2.followedBy(answers3).toList();
@@ -431,51 +489,31 @@ void _guess(_GuessParam param) async {
 		}
 		return ret;
 	}).toList();*/
-	final maxScore = answersBest.map((x) => x.score).reduce(max);
 	param.sendPort.send(1.0);
-	param.sendPort.send(Chan4CustomCaptchaGuess(
-		guess: answersBest.map((x) => x.letter).join(''),
-		numLetters: numLetters,
-		//alternatives: alternatives,
-		alternatives: [[], [], [], [], []],
-		confidence: (1 - Normal.cdf(
-			maxScore,
-			mean: 31.99121650969569,
-			variance: 5.6186633357112274
-		)) * (1 - Normal.cdf(
-			maxScore,
-			mean: 39.019931473509175,
-			variance: 8.9437836310256
-		)),
-		confidences: answersBest.map((x) => (1 - Normal.cdf(
-			x.score,
-			mean: 22.030712707662314,
-			variance: 6.6035697391139445
-		)) * (1 - Normal.cdf(
-			x.score,
-			mean: 32.892141079395095,
-			variance: 11.419233352647126
-		))).toList()
-	));
+	param.sendPort.send(Chan4CustomCaptchaGuesses._(answersBest, _estimateNumLetters(
+		buffer: captcha,
+		width: width,
+		height: height
+	)));
 }
 
 class _GuessParam {
 	final ByteData rgbaData;
-	final int? numLetters;
+	final int maxNumLetters;
 	final int width;
 	final int height;
 	final SendPort sendPort;
 	const _GuessParam({
 		required this.rgbaData,
-		required this.numLetters,
+		required this.maxNumLetters,
 		required this.width,
 		required this.height,
 		required this.sendPort
 	});
 }
 
-CancelableOperation<Chan4CustomCaptchaGuess> guess(ui.Image image, {
-	required int? numLetters,
+CancelableOperation<Chan4CustomCaptchaGuesses> guess(ui.Image image, {
+	required int maxNumLetters,
 	ValueChanged<double>? onProgress
 }) {
 	Isolate? isolate;
@@ -484,7 +522,7 @@ CancelableOperation<Chan4CustomCaptchaGuess> guess(ui.Image image, {
 			final receivePort = ReceivePort();
 			isolate = await Isolate.spawn(_guess, _GuessParam(
 				rgbaData: (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!,
-				numLetters: numLetters,
+				maxNumLetters: maxNumLetters,
 				width: image.width,
 				height: image.height,
 				sendPort: receivePort.sendPort
@@ -493,7 +531,7 @@ CancelableOperation<Chan4CustomCaptchaGuess> guess(ui.Image image, {
 				if (datum is double) {
 					onProgress?.call(datum);
 				}
-				else if (datum is Chan4CustomCaptchaGuess) {
+				else if (datum is Chan4CustomCaptchaGuesses) {
 					return datum;
 				}
 			}

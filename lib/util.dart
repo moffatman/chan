@@ -13,6 +13,15 @@ extension SafeWhere<T> on Iterable<T> {
 	T? get trySingle => length == 1 ? single : null;
 }
 
+extension SafeRemoveFirst<T> on List<T> {
+	T? tryRemoveFirst() {
+		if (isEmpty) {
+			return null;
+		}
+		return removeAt(0);
+	}
+}
+
 extension MapOnce<T> on Iterable<T> {
 	U? tryMapOnce<U extends Object>(U? Function(T v) f) {
 		for (final item in this) {
