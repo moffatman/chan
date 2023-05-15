@@ -150,6 +150,7 @@ class ReplyBoxState extends State<ReplyBox> {
 				_lastFoundUrl = rawUrl;
 				_proposedAttachmentUrl = rawUrl;
 				if (mounted) setState(() {});
+				return;
 			}
 			catch (e) {
 				print('Url did not have a good response: ${e.toStringDio()}');
@@ -158,14 +159,27 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 		else {
 			final possibleEmbed = findEmbedUrl(text: _textFieldController.text, context: context);
+			print(possibleEmbed);
 			if (possibleEmbed != _lastFoundUrl && possibleEmbed != null) {
 				final embedData = await loadEmbedData(url: possibleEmbed, context: context);
 				_lastFoundUrl = possibleEmbed;
 				if (embedData?.thumbnailUrl != null) {
 					_proposedAttachmentUrl = embedData!.thumbnailUrl!;
 					if (mounted) setState(() {});
+					return;
 				}
 			}
+			else if (possibleEmbed != null) {
+				// Don't clear it
+				return;
+			}
+		}
+		if (rawUrl == null) {
+			// Nothing at all in the text
+			setState(() {
+				_proposedAttachmentUrl = null;
+				_lastFoundUrl = null;
+			});
 		}
 	}
 
