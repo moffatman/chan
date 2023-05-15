@@ -215,7 +215,7 @@ class MediaConversion {
 			outputFileExtension: 'mp4',
 			headers: headers,
 			soundSource: soundSource,
-			copyStreams: copyStreams
+			copyStreams: copyStreams || inputFile.path.endsWith('.m3u8')
 		);
 	}
 
@@ -286,7 +286,12 @@ class MediaConversion {
 		if (subdir.isEmpty) {
 			subdir = inputFile.pathSegments.take(inputFile.pathSegments.length - 1).join('_');
 		}
-		final filename = inputFile.pathSegments.last;
+		String filename = inputFile.pathSegments.last;
+		if (!filename.split('.').first.contains(RegExp(r'\d'))) {
+			// No numbers in the filename
+			// Probably the other pathSegments are the unique parts
+			filename = inputFile.pathSegments.join('_');
+		}
 		final fileExtension = inputFile.pathSegments.last.split('.').last;
 		if (requiresSubdirectory) {
 			subdir += '/${filename.replaceFirst('.$fileExtension', '')}';

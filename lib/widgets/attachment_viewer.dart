@@ -420,6 +420,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (attachment.type == AttachmentType.webm) {
 					transcode |= settings.webmTranscoding == WebmTranscodingSetting.always;
 				}
+				transcode |= url.path.endsWith('.m3u8');
 				transcode |= soundSource != null;
 				if (!transcode) {
 					final scan = await MediaScan.scan(url, headers: getHeaders(url));
