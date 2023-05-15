@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -7,6 +8,7 @@ import 'package:chan/widgets/saved_theme_thumbnail.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:linkify/linkify.dart';
 import 'package:provider/provider.dart';
 
 final _youtubeShortsRegex = RegExp(r'youtube.com\/shorts\/([^?]+)');
@@ -50,10 +52,14 @@ String? findEmbedUrl({
 	required String text,
 	required BuildContext context
 }) {
-	for (final regex in context.read<EffectiveSettings>().embedRegexes) {
-		final match = regex.firstMatch(text);
-		if (match != null) {
-			return match.group(0);
+	for (final element in linkify(text, linkifiers: const [LooseUrlLinkifier()])) {
+		if (element is UrlElement) {
+			for (final regex in context.read<EffectiveSettings>().embedRegexes) {
+				final match = regex.firstMatch(element.url);
+				if (match != null) {
+					return match.group(0);
+				}
+			}
 		}
 	}
 	return null;
