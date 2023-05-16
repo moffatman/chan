@@ -8,6 +8,7 @@ import 'package:chan/sites/4chan.dart';
 import 'dart:io';
 
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
 import 'package:html/dom.dart' as dom;
@@ -99,11 +100,13 @@ class SiteHackerNews extends ImageboardSite {
 	String get baseUrl => 'news.ycombinator.com';
 
 	Map<CatalogVariant?, List<int>> _lastCatalogIds = {};
+	Map<int, int> _cachedOpIds = {};
 
 	@override
 	void migrateFromPrevious(SiteHackerNews oldSite) {
 		super.migrateFromPrevious(oldSite);
 		_lastCatalogIds = oldSite._lastCatalogIds;
+		_cachedOpIds = oldSite._cachedOpIds;
 	}
 
 	static PostNodeSpan makeSpan(String text) {
@@ -369,8 +372,10 @@ class SiteHackerNews extends ImageboardSite {
 		if (parsed != null) {
 			if (parsed.host == baseUrl && parsed.path == '/item' && parsed.queryParameters.containsKey('id')) {
 				int id = int.parse(parsed.queryParameters['id']!);
-				_HNObject object = await _getAlgolia(id, interactive: true);
-				return BoardThreadOrPostIdentifier('', (object is _HNComment) ? object.story : id, id);
+				return BoardThreadOrPostIdentifier('', await _cachedOpIds.putIfAbsentAsync(id, () async {
+					final object = await _getAlgolia(id, interactive: true);
+					return object is _HNComment ? object.story : id;
+				}), id);
 			}
 		}
 		return null;

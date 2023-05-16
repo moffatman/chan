@@ -129,6 +129,18 @@ extension BinarySafeWhere<T> on List<T> {
 	}
 }
 
+extension AsyncPutIfAbsent<K, V> on Map<K, V> {
+	Future<V> putIfAbsentAsync(K key, Future<V> Function() ifAbsent) async {
+		final currentValue = this[key];
+		if (currentValue != null) {
+			return currentValue;
+		}
+		final newValue = await ifAbsent();
+		this[key] = newValue;
+		return newValue;
+	}
+}
+
 class ExpiringMutexResource<T> {
 	final Future<T> Function() _initializer;
 	final Future Function(T resource) _deinitializer;
