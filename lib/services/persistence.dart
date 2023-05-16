@@ -412,6 +412,32 @@ class Persistence extends ChangeNotifier {
 					}
 				}
 			}
+			else if (stat.type == FileSystemEntityType.directory) {
+				final dir = Directory(child.path);
+				if (!await dir.exists()) {
+					// Might have been deleted already, and we are in a cached recursive listing
+					continue;
+				}
+				try {
+					if (!await dir.list().isEmpty) {
+						// Don't delete non-empty directories
+						continue;
+					}
+				}
+				on PathNotFoundException {
+					// Race condition - deleted already?
+					continue;
+				}
+				if (deadline == null || stat.accessed.isBefore(deadline)) {
+					deletedCount++;
+					try {
+						await dir.delete();
+					}
+					catch (e) {
+						print('Error deleting directory: $e');
+					}
+				}
+			}
 		}
 		if (deletedCount > 0) {
 			print('Deleted $deletedCount files totalling ${(deletedSize / 1000000).toStringAsFixed(1)} MB');
