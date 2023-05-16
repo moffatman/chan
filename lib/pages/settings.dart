@@ -67,18 +67,17 @@ class _SettingsPageState extends State<_SettingsPage> {
 			),
 			child: SafeArea(
 				child: MaybeCupertinoScrollbar(
-					child: Align(
-						alignment: Alignment.center,
-						child: ConstrainedBox(
-							constraints: const BoxConstraints(
-								maxWidth: 500
-							),
-							child: Padding(
-								padding: const EdgeInsets.all(16),
-								child: ListView(
-									key: scrollKey,
-									children: widget.children
-								)
+					child: ListView.builder(
+						key: scrollKey,
+						padding: const EdgeInsets.all(16),
+						itemCount: widget.children.length,
+						itemBuilder: (context, i) => Align(
+							alignment: Alignment.center,
+							child: ConstrainedBox(
+								constraints: const BoxConstraints(
+									maxWidth: 500
+								),
+								child: widget.children[i]
 							)
 						)
 					)
