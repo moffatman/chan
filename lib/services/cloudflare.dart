@@ -42,7 +42,7 @@ class CloudflareHandlerInterruptedException implements Exception {
 }
 
 dynamic _decode(String data) {
-	if (data.startsWith('{')) {
+	if (data.startsWith('{') || data.startsWith('[')) {
 		try {
 			return jsonDecode(data);
 		}
@@ -146,7 +146,7 @@ class CloudflareInterceptor extends Interceptor {
 				if (html.contains('<pre')) {
 					// Raw JSON response, but web-view has put it within a <pre>
 					final document = parse(html);
-					callback((content: document.querySelector('pre')!.innerHtml, redirect: null));
+					callback((content: document.querySelector('pre')!.text, redirect: null));
 				}
 				else {
 					callback((content: html, redirect: null));
