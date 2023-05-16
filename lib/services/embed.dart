@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:chan/models/thread.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/linkifier.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -26,6 +28,7 @@ Future<bool> embedPossible({
 	required String url,
 	required BuildContext context
 }) async {
+	final embedRegexes = context.read<EffectiveSettings>().embedRegexes;
 	if (url.startsWith('chance://site/') || url.startsWith('chance://theme')) {
 		return true;
 	}
@@ -35,14 +38,17 @@ Future<bool> embedPossible({
 	if (url.contains('youtube.com/shorts')) {
 		return true;
 	}
+	if (await ImageboardRegistry.instance.decodeUrl(url) != null) {
+		return true;
+	}
 	if (kDebugMode) {
-		return context.read<EffectiveSettings>().embedRegexes.any((regex) => regex.hasMatch(url));
+		return embedRegexes.any((regex) => regex.hasMatch(url));
 	}
 	else {
 		return await compute<_EmbedParam, bool>((param) {
 			return param.regexes.any((regex) => regex.hasMatch(param.url));
 		}, _EmbedParam(
-			regexes: context.read<EffectiveSettings>().embedRegexes,
+			regexes: embedRegexes,
 			url: url
 		));
 	}
@@ -89,6 +95,7 @@ Future<EmbedData?> loadEmbedData({
 	required String url,
 	required BuildContext context
 }) async {
+	final client = context.read<ImageboardSite>().client;
 	if (url.startsWith('chance://site/')) {
 		try {
 			final response = await Dio().get(url.replaceFirst('chance://', '$contentSettingsApiRoot/'));
@@ -131,11 +138,39 @@ Future<EmbedData?> loadEmbedData({
 		);
 	}
 	else {
+		final target = await ImageboardRegistry.instance.decodeUrl(url);
+		if (target != null && target.$2.threadId != null) {
+			Thread? thread;
+			try {
+				if (!target.$3) {
+					thread = await target.$1.site.getThread(target.$2.threadIdentifier!, interactive: false);
+				}
+			}
+			on ThreadNotFoundException {
+				// Maybe dead?
+			}
+			thread ??= await target.$1.site.getThreadFromArchive(target.$2.threadIdentifier!, interactive: false);
+			final post = thread.posts_.tryFirstWhere((p) => p.id == target.$2.postId) ?? thread.posts_.first;
+			if (post.id == post.threadId) {
+				return EmbedData(
+					title: thread.title,
+					provider: target.$1.site.name,
+					author: post.name,
+					thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl
+				);
+			}
+			return EmbedData(
+				title: 'Reply to "${thread.title}"',
+				provider: target.$1.site.name,
+				author: post.name,
+				thumbnailUrl: post.attachments.tryFirst?.thumbnailUrl ?? thread.attachments.tryFirst?.thumbnailUrl
+			);
+		}
 		final youtubeShortsMatch = _youtubeShortsRegex.firstMatch(url);
 		if (youtubeShortsMatch != null) {
 			url = 'https://www.youtube.com/watch?v=${youtubeShortsMatch.group(1)}';
 		}
-		final response = await context.read<ImageboardSite>().client.get('https://noembed.com/embed', queryParameters: {
+		final response = await client.get('https://noembed.com/embed', queryParameters: {
 			'url': url
 		});
 		if (response.data != null) {
