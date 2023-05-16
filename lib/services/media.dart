@@ -228,7 +228,8 @@ class MediaConversion {
 			outputFileExtension: 'm3u8',
 			headers: headers,
 			soundSource: soundSource,
-			requiresSubdirectory: true
+			requiresSubdirectory: true,
+			copyStreams: inputFile.path.endsWith('.m3u8')
 		);
 	}
 
