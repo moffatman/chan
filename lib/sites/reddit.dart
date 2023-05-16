@@ -11,6 +11,7 @@ import 'package:chan/sites/4chan.dart';
 import 'dart:io';
 
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -94,6 +95,19 @@ extension _RedditApiName on ThreadVariant {
 				return ThreadVariant.redditQandA;
 		}
 		return null;
+	}
+}
+
+extension _ExtractGiphyGIFs on String {
+	static final _giphyRegex = RegExp(r'!\[gif\]\(giphy\|([^|)]+)(?:\|[^)]+)?\)');
+	String _matchReplaceAndAddGiphyImages(List<(String, String)> list) {
+		return replaceAllMapped(_giphyRegex, (match) {
+			list.add((
+				'https://media.giphy.com/media/${match.group(1)}/200w_s.gif',
+				'https://media.giphy.com/media/${match.group(1)}/giphy.gif'
+			));
+			return '';
+		});
 	}
 }
 
@@ -281,6 +295,14 @@ class SiteReddit extends ImageboardSite {
 					else if (node.localName == 'pre') {
 						yield PostCodeSpan(node.text);
 					}
+					else if (node.localName == 'crosspostparent') {
+						yield PostQuoteLinkSpan(
+							board: node.attributes['board']!,
+							threadId: fromRedditId(node.attributes['id']!),
+							postId: fromRedditId(node.attributes['id']!),
+							dead: false
+						);
+					}
 					else {
 						yield PostTextSpan(node.outerHtml);
 					}
@@ -328,77 +350,98 @@ class SiteReddit extends ImageboardSite {
 	Thread _makeThread(dynamic data) {
 		final id = fromRedditId(data['id']);
 		final attachments = <Attachment>[];
-		if (data['media_metadata'] != null) {
-			for (final item in data['media_metadata'].values) {
-				if (item['m'] == null && item['e'] == 'RedditVideo') {
+		void dumpAttachments(dynamic data) {
+			if (data['media_metadata'] != null) {
+				for (final item in data['media_metadata'].values) {
+					if (item['m'] == null && item['e'] == 'RedditVideo') {
+						attachments.add(Attachment(
+							type: AttachmentType.mp4,
+							board: data['subreddit'],
+							threadId: id,
+							id: item['id'],
+							ext: '.mp4',
+							filename: '${item['id']}.mp4',
+							url: unescape.convert(item['hlsUrl']),
+							thumbnailUrl: '',
+							md5: '',
+							width: item['x'],
+							height: item['y'],
+							sizeInBytes: null
+						));
+					}
+					else if (item['m'] != null) {
+						final ext = '.${item['m'].split('/').last}';
+						attachments.add(Attachment(
+							type: AttachmentType.image,
+							board: data['subreddit'],
+							threadId: id,
+							id: item['id'],
+							ext: ext,
+							filename: item['id'] + ext,
+							url: unescape.convert(item['s']['u'] ?? item['s']['gif']),
+							thumbnailUrl: unescape.convert(item['p'][0]['u']),
+							md5: '',
+							width: item['s']['x'],
+							height: item['s']['y'],
+							sizeInBytes: null
+						));
+					}
+				}
+			}
+			else if (data['preview'] != null) {
+				if (data['secure_media']?['reddit_video'] != null) {
 					attachments.add(Attachment(
 						type: AttachmentType.mp4,
 						board: data['subreddit'],
 						threadId: id,
-						id: item['id'],
+						id: data['name'],
 						ext: '.mp4',
-						filename: '${item['id']}.mp4',
-						url: unescape.convert(item['hlsUrl']),
-						thumbnailUrl: '',
+						filename: 'video',
+						url: unescape.convert(data['secure_media']['reddit_video']['hls_url']),
+						thumbnailUrl: unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']),
 						md5: '',
-						width: item['x'],
-						height: item['y'],
+						width: data['secure_media']['reddit_video']['width'],
+						height: data['secure_media']['reddit_video']['height'],
 						sizeInBytes: null
 					));
 				}
-				else if (item['m'] != null) {
-					final ext = '.${item['m'].split('/').last}';
+				else if (data['preview']?['reddit_video_preview']?['hls_url'] != null) {
 					attachments.add(Attachment(
-						type: AttachmentType.image,
+						type: AttachmentType.mp4,
 						board: data['subreddit'],
 						threadId: id,
-						id: item['id'],
-						ext: ext,
-						filename: item['id'] + ext,
-						url: unescape.convert(item['s']['u'] ?? item['s']['gif']),
-						thumbnailUrl: unescape.convert(item['p'][0]['u']),
+						id: data['name'],
+						ext: '.mp4',
+						filename: 'video',
+						url: unescape.convert(data['preview']['reddit_video_preview']['hls_url']),
+						thumbnailUrl: unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']),
 						md5: '',
-						width: item['s']['x'],
-						height: item['s']['y'],
+						width: data['preview']['reddit_video_preview']['width'],
+						height: data['preview']['reddit_video_preview']['height'],
 						sizeInBytes: null
 					));
 				}
+				else {
+					final url = data['url'];
+					final path = Uri.tryParse(url)?.path ?? '';
+					bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => path.endsWith(e));
+					attachments.add(Attachment(
+						type: isDirectLink ? AttachmentType.image : AttachmentType.url,
+						board: data['subreddit'],
+						threadId: id,
+						id: data['name'],
+						ext: isDirectLink ? '.png' : '',
+						filename: isDirectLink ? 'preview' : '',
+						url: url,
+						width: data['preview']['images'][0]['source']['width'],
+						height: data['preview']['images'][0]['source']['height'],
+						md5: '',
+						sizeInBytes: null,
+						thumbnailUrl: data['preview']['images'][0]['resolutions'].isNotEmpty ? unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']) : imageUrl
+					));
+				}
 			}
-		}
-		else if (data['preview'] != null) {
-			if (data['secure_media']?['reddit_video'] != null) {
-				attachments.add(Attachment(
-					type: AttachmentType.mp4,
-					board: data['subreddit'],
-					threadId: id,
-					id: data['name'],
-					ext: '.mp4',
-					filename: 'video',
-					url: unescape.convert(data['secure_media']['reddit_video']['hls_url']),
-					thumbnailUrl: unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']),
-					md5: '',
-					width: data['secure_media']['reddit_video']['width'],
-					height: data['secure_media']['reddit_video']['height'],
-					sizeInBytes: null
-				));
-			}
-			else if (data['preview']?['reddit_video_preview']?['hls_url'] != null) {
-				attachments.add(Attachment(
-					type: AttachmentType.mp4,
-					board: data['subreddit'],
-					threadId: id,
-					id: data['name'],
-					ext: '.mp4',
-					filename: 'video',
-					url: unescape.convert(data['preview']['reddit_video_preview']['hls_url']),
-					thumbnailUrl: unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']),
-					md5: '',
-					width: data['preview']['reddit_video_preview']['width'],
-					height: data['preview']['reddit_video_preview']['height'],
-					sizeInBytes: null
-				));
-			}
-			else {
+			else if (!(data['is_self'] ?? false) && data['url'] != null) {
 				final url = data['url'];
 				final path = Uri.tryParse(url)?.path ?? '';
 				bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => path.endsWith(e));
@@ -407,37 +450,27 @@ class SiteReddit extends ImageboardSite {
 					board: data['subreddit'],
 					threadId: id,
 					id: data['name'],
-					ext: isDirectLink ? '.png' : '',
-					filename: isDirectLink ? 'preview' : '',
+					ext: '',
+					filename: '',
 					url: url,
-					width: data['preview']['images'][0]['source']['width'],
-					height: data['preview']['images'][0]['source']['height'],
+					thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
+						'url': url
+					}).toString(),
 					md5: '',
-					sizeInBytes: null,
-					thumbnailUrl: data['preview']['images'][0]['resolutions'].isNotEmpty ? unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']) : imageUrl
+					width: null,
+					height: null,
+					sizeInBytes: null
 				));
 			}
 		}
-		else if (!(data['is_self'] ?? false) && data['url'] != null) {
-			final url = data['url'];
-			final path = Uri.tryParse(url)?.path ?? '';
-			bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => path.endsWith(e));
-			attachments.add(Attachment(
-				type: isDirectLink ? AttachmentType.image : AttachmentType.url,
-				board: data['subreddit'],
-				threadId: id,
-				id: data['name'],
-				ext: '',
-				filename: '',
-				url: url,
-				thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
-					'url': url
-				}).toString(),
-				md5: '',
-				width: null,
-				height: null,
-				sizeInBytes: null
-			));
+		String text = data['is_self'] ? unescape.convert(data['selftext']) : data['url'];
+		final Map? crosspostParent = (data['crosspost_parent_list'] as List?)?.tryFirstWhere((xp) => xp['name'] == data['crosspost_parent']);
+		if (crosspostParent != null) {
+			dumpAttachments(crosspostParent);
+			text = '<crosspostparent board="${crosspostParent['subreddit']}" id="${crosspostParent['id']}"></crosspostparent>\n$text';
+		}
+		if (attachments.isEmpty) {
+			dumpAttachments(data);
 		}
 		final asPost = Post(
 			board: data['subreddit'],
@@ -446,7 +479,7 @@ class SiteReddit extends ImageboardSite {
 			time: DateTime.fromMillisecondsSinceEpoch(data['created'].toInt() * 1000),
 			threadId: id,
 			id: id,
-			text: data['is_self'] ? unescape.convert(data['selftext']) : data['url'],
+			text: text,
 			spanFormat: PostSpanFormat.reddit,
 			attachments: data['is_self'] == true ? [] : attachments,
 			upvotes: (data['score_hidden'] == true || data['hide_score'] == true) ? null : data['score'],
@@ -594,9 +627,23 @@ class SiteReddit extends ImageboardSite {
 							}).toList()
 						);
 					}
+					final html = unescape.convert(thing['data']['contentHTML']);
+					final List<(String, String)> inlineImageUrls = [];
+					final text = (thing['data']['contentText'] as String).replaceAllMapped(RegExp(r'!\[img\]\(([^)]+)\)'), (match) {
+						final regex = r'href="([^"]+' + match.group(1)! + r'[^"]+)"';
+						final matchInHtml = RegExp(regex).firstMatch(html)?.group(1);
+						if (matchInHtml != null) {
+							inlineImageUrls.add((
+								matchInHtml,
+								matchInHtml
+							));
+							return '';
+						}
+						return match.group(0)!;
+					})._matchReplaceAndAddGiphyImages(inlineImageUrls);
 					final post = Post(
 						board: thread.board,
-						text: thing['data']['contentText'],
+						text: text,
 						name: doc.querySelector('.author')?.text ?? '',
 						flag: flag,
 						time: DateTime.tryParse(doc.querySelector('.live-timestamp')?.attributes['datetime'] ?? '') ?? _estimateTime(id),
@@ -604,7 +651,20 @@ class SiteReddit extends ImageboardSite {
 						parentId: parentId,
 						id: id,
 						spanFormat: PostSpanFormat.reddit,
-						attachments: [],
+						attachments: inlineImageUrls.map((url) => Attachment(
+							type: AttachmentType.image,
+							board: thread.board,
+							id: '${id}_${url.$2}',
+							ext: url.$2.substring(url.$2.lastIndexOf('.')).split('?').first,
+							filename: url.$2.substring(url.$2.lastIndexOf('/') + 1).split('?').first,
+							url: url.$2,
+							thumbnailUrl: url.$1,
+							md5: '',
+							width: null,
+							height: null,
+							threadId: thread.id,
+							sizeInBytes: null
+						)).toList(),
 						upvotes: int.tryParse(doc.querySelector('.score.unvoted')?.attributes['title'] ?? '')
 					);
 					_updateTimeEstimateData(post.id, post.time);
@@ -725,16 +785,37 @@ class SiteReddit extends ImageboardSite {
 				final child = childContainer['data'];
 				if (childContainer['kind'] == 't1') {
 					final id = fromRedditId(child['id']);
+					final List<(String, String)> inlineImageUrls = [];
+					final text = unescape.convert(child['body'])._matchReplaceAndAddGiphyImages(inlineImageUrls).replaceAllMapped(RegExp(r'https:\/\/(?:preview|i).redd.it\/\S+'), (match) {
+						inlineImageUrls.add((
+							match.group(0)!,
+							match.group(0)!
+						));
+						return '';
+					});
 					final post = Post(
 						board: thread.board,
-						text: unescape.convert(child['body']),
+						text: text,
 						name: child['author'],
 						flag: _makeAuthorFlag(child),
 						time: DateTime.fromMillisecondsSinceEpoch(child['created'].toInt() * 1000),
 						threadId: thread.id,
 						id: id,
 						spanFormat: PostSpanFormat.reddit,
-						attachments: [],
+						attachments: inlineImageUrls.map((url) => Attachment(
+							type: AttachmentType.image,
+							board: thread.board,
+							id: '${id}_${url.$2}',
+							ext: url.$2.substring(url.$2.lastIndexOf('.')).split('?').first,
+							filename: url.$2.substring(url.$2.lastIndexOf('/') + 1).split('?').first,
+							url: url.$2,
+							thumbnailUrl: url.$1,
+							md5: '',
+							width: null,
+							height: null,
+							threadId: thread.id,
+							sizeInBytes: null
+						)).toList(),
 						parentId: parentId,
 						upvotes: (child['score_hidden'] == true || child['hide_score'] == true) ? null : child['score'],
 						capcode: child['distinguished']
