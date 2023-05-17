@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
+import 'package:crypto/crypto.dart';
 import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_kit_config.dart';
 import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_session.dart';
@@ -285,7 +286,7 @@ class MediaConversion {
 	File getDestination() {
 		String subdir = inputFile.host;
 		if (subdir.isEmpty) {
-			subdir = inputFile.pathSegments.take(inputFile.pathSegments.length - 1).join('_');
+			subdir = base64.encode(md5.convert(utf8.encode(inputFile.pathSegments.take(inputFile.pathSegments.length - 1).join('_'))).bytes);
 		}
 		String filename = inputFile.pathSegments.last;
 		if (!filename.split('.').first.contains(RegExp(r'\d'))) {
