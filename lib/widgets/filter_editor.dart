@@ -1,4 +1,6 @@
+import 'package:chan/main.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/util.dart';
@@ -723,8 +725,33 @@ class _FilterEditorState extends State<FilterEditor> {
 
 	@override
 	void dispose() {
+		final lastText = regexController.text;
 		super.dispose();
 		regexController.dispose();
 		regexFocusNode.dispose();
+		if (dirty) {
+			Future.delayed(const Duration(milliseconds: 100), () => showCupertinoDialog(
+				context: ImageboardRegistry.instance.context!,
+				builder: (context) => CupertinoAlertDialog2(
+					title: const Text('Unsaved Regex'),
+					content: const Text('You left without saving your changes. Do you want to keep them?'),
+					actions: [
+						CupertinoDialogAction2(
+							isDestructiveAction: true,
+							onPressed: () => Navigator.pop(context),
+							child: const Text('Discard')
+						),
+						CupertinoDialogAction2(
+							isDefaultAction: true,
+							onPressed: () {
+								settings.filterConfiguration = lastText;
+								Navigator.pop(context);
+							},
+							child: const Text('Save')
+						)
+					]
+				)
+			));
+		}
 	}
 }
