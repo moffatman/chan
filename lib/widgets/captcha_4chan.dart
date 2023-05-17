@@ -939,6 +939,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																						onTap: () {
 																							_solutionController.selection = TextSelection(baseOffset: i, extentOffset: i + 1);
 																							_solutionNode.requestFocus();
+																							setState(() {});
 																						},
 																						child: const SizedBox(height: 50)
 																					),
