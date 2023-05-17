@@ -625,12 +625,18 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 							Flexible(
 								child: (challenge!.foregroundImage == null) ? const Text('Verification not required') : AspectRatio(
 									aspectRatio: challenge!.foregroundImage!.width / challenge!.foregroundImage!.height,
-									child: CustomPaint(
-										size: Size(challenge!.foregroundImage!.width.toDouble(), challenge!.foregroundImage!.height.toDouble()),
-										painter: _Captcha4ChanCustomPainter(
-											foregroundImage: challenge!.foregroundImage!,
-											backgroundImage: challenge!.backgroundImage,
-											backgroundSlide: backgroundSlide
+									child: GestureDetector(
+										onDoubleTap: () async {
+											await _alignImage();
+											await _animateGuess();
+										},
+										child: CustomPaint(
+											size: Size(challenge!.foregroundImage!.width.toDouble(), challenge!.foregroundImage!.height.toDouble()),
+											painter: _Captcha4ChanCustomPainter(
+												foregroundImage: challenge!.foregroundImage!,
+												backgroundImage: challenge!.backgroundImage,
+												backgroundSlide: backgroundSlide
+											)
 										)
 									)
 								)
