@@ -159,7 +159,6 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 		else {
 			final possibleEmbed = findEmbedUrl(text: _textFieldController.text, context: context);
-			print(possibleEmbed);
 			if (possibleEmbed != _lastFoundUrl && possibleEmbed != null) {
 				final embedData = await loadEmbedData(url: possibleEmbed, context: context);
 				_lastFoundUrl = possibleEmbed;
