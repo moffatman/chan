@@ -775,12 +775,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												if (x != numLetters) {
 													numLetters = x;
 													final selection = _solutionController.selection;
+													final oldGuess = _lastGuess;
 													_lastGuess = _lastGuesses!.forNumLetters(numLetters);
-													_solutionController.text = _lastGuess.guess;
-													_solutionController.selection = TextSelection(
-														baseOffset: min(numLetters - 1, selection.baseOffset),
-														extentOffset: min(numLetters, selection.extentOffset)
-													);
+													String newGuessText = _lastGuess.guess;
 													_guessConfidences = _lastGuess.confidences.toList();
 													// We want keys to match up to same pickerStuff, not to widget-indexes
 													final tmp = _pickerStuff.keys.toSet();
@@ -788,6 +785,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 														if (_pickerStuff.containsKey(id.value)) {
 															// Same key in both guesses
 															tmp.remove(id.value);
+															final indexInOldGuess = oldGuess.keys.indexOf(id.value);
+															if (indexInOldGuess != -1) {
+																// Copy the old letter, in case the user modified it
+																newGuessText = newGuessText.replaceRange(id.key, id.key + 1, _solutionController.text[indexInOldGuess]);
+															}
 														}
 													}
 													for (final orphanKey in tmp) {
@@ -797,6 +799,11 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 															_orphanPickerStuff.add(orphan);
 														}
 													}
+													_solutionController.text = newGuessText;
+													_solutionController.selection = TextSelection(
+														baseOffset: min(numLetters - 1, selection.baseOffset),
+														extentOffset: min(numLetters, selection.extentOffset)
+													);
 													setState(() {});
 												}
 											}
