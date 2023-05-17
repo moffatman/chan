@@ -182,6 +182,7 @@ class RefreshableListItem<T extends Object> {
 	final bool representsUnknownStubChildren;
 	final List<ParentAndChildIdentifier> representsKnownStubChildren;
 	final bool highlighted;
+	final bool pinned;
 	bool filterCollapsed;
 	final String? filterReason;
 	final List<int> parentIds;
@@ -191,6 +192,7 @@ class RefreshableListItem<T extends Object> {
 	RefreshableListItem({
 		required this.item,
 		this.highlighted = false,
+		this.pinned = false,
 		this.filterCollapsed = false,
 		this.filterReason,
 		this.parentIds = const [],
@@ -209,6 +211,7 @@ class RefreshableListItem<T extends Object> {
 		(other.representsUnknownStubChildren == representsUnknownStubChildren) &&
 		listEquals(other.representsKnownStubChildren, representsKnownStubChildren) &&
 		(other.highlighted == highlighted) &&
+		(other.pinned == pinned) &&
 		(other.filterCollapsed == filterCollapsed) &&
 		(other.filterReason == filterReason) &&
 		listEquals(other.parentIds, parentIds) &&
@@ -216,7 +219,7 @@ class RefreshableListItem<T extends Object> {
 		(other._depth == _depth);
 
 	@override
-	int get hashCode => Object.hash(item, representsUnknownStubChildren, representsKnownStubChildren.length, highlighted, filterCollapsed, filterReason, parentIds.length, treeDescendantIds.length, _depth);
+	int get hashCode => Object.hash(item, representsUnknownStubChildren, representsKnownStubChildren.length, highlighted, pinned, filterCollapsed, filterReason, parentIds.length, treeDescendantIds.length, _depth);
 
 	RefreshableListItem<T> copyWith({
 		List<int>? parentIds,
@@ -226,6 +229,7 @@ class RefreshableListItem<T extends Object> {
 	}) => RefreshableListItem(
 		item: item,
 		highlighted: highlighted,
+		pinned: pinned,
 		filterCollapsed: filterCollapsed,
 		filterReason: filterReason,
 		parentIds: parentIds ?? this.parentIds,
@@ -1036,7 +1040,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (value.highlighted) {
 			child = ClipRect(
 				child: ColorFiltered(
-					colorFilter: ColorFilter.mode(CupertinoTheme.of(context).textTheme.actionTextStyle.color?.withOpacity(0.2) ?? Colors.white.withOpacity(0.2), BlendMode.srcOver),
+					colorFilter: ColorFilter.mode(context.select<EffectiveSettings, Color>((s) => s.theme.secondaryColor).withOpacity(0.2), BlendMode.srcOver),
+					child: child
+				)
+			);
+		}
+		if (value.pinned) {
+			child = ClipRect(
+				child: ColorFiltered(
+					colorFilter: ColorFilter.mode(context.select<EffectiveSettings, Color>((s) => s.theme.secondaryColor).withOpacity(0.05), BlendMode.srcOver),
 					child: child
 				)
 			);
@@ -1287,7 +1299,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							pinned = true;
 							pinnedValues.add(RefreshableListItem(
 								item: item,
-								highlighted: true
+								highlighted: result.type.highlight,
+								pinned: true
 							));
 						}
 						if (result.type.autoSave) {
