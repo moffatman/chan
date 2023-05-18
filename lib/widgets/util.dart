@@ -215,6 +215,15 @@ String formatDuration(Duration d) {
 	return '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
 }
 
+String formatFilesize(int sizeInBytes) {
+	if (sizeInBytes > 1024*1024) {
+		return '${(sizeInBytes / (1024*1024)).round()} MB';
+	}
+	else {
+		return '${(sizeInBytes / 1024).round()} KB';
+	}
+}
+
 class TransparentRoute<T> extends PageRoute<T> {
 	final bool showAnimations;
 	final bool? showAnimationsForward;

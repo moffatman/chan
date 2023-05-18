@@ -1583,7 +1583,7 @@ String _makeAttachmentInfo({
 		if (settings.showFilesizeOnPosts || settings.showFileDimensionsOnPosts) {
 			final bracketParts = <String>[];
 			if (settings.showFilesizeOnPosts && attachment.sizeInBytes != null) {
-				bracketParts.add('${((attachment.sizeInBytes ?? 0) / 1024).round()} KB');
+				bracketParts.add(formatFilesize(attachment.sizeInBytes!));
 			}
 			if (settings.showFileDimensionsOnPosts && attachment.width != null && attachment.height != null) {
 				bracketParts.add('${attachment.width}x${attachment.height}');

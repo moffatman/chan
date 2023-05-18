@@ -51,7 +51,7 @@ class Attachment {
 	int? width;
 	int? height;
 	final int? threadId;
-	final int? sizeInBytes;
+	int? sizeInBytes;
 	String id;
 	final bool useRandomUseragent;
 	final bool isRateLimited;

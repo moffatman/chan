@@ -773,7 +773,7 @@ class _GalleryPageState extends State<GalleryPage> {
 								child: AutoSizeText(
 									currentAttachment.attachment.type == AttachmentType.url ?
 										currentAttachment.attachment.url.toString() :
-										"${currentAttachment.attachment.filename} (${currentAttachment.attachment.width}x${currentAttachment.attachment.height}${currentAttachment.attachment.sizeInBytes == null ? ')' : ', ${(currentAttachment.attachment.sizeInBytes! / 1024).round()} KB)'}",
+										"${currentAttachment.attachment.filename} (${currentAttachment.attachment.width}x${currentAttachment.attachment.height}${currentAttachment.attachment.sizeInBytes == null ? ')' : ', ${formatFilesize(currentAttachment.attachment.sizeInBytes!)})'}",
 									minFontSize: 8
 								)
 							)

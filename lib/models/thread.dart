@@ -4,6 +4,7 @@ import 'package:chan/models/post.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:hive/hive.dart';
@@ -132,6 +133,12 @@ class Thread implements Filterable {
 				}
 				else {
 					postToReplace.ipNumber ??= newChild.ipNumber;
+					for (final attachment in postToReplace.attachments) {
+						final otherAttachment = newChild.attachments.tryFirstWhere((a) => a.id == attachment.id);
+						attachment.sizeInBytes ??= otherAttachment?.sizeInBytes;
+						attachment.width ??= otherAttachment?.width;
+						attachment.height ??= otherAttachment?.height;
+					}
 					if (postToReplace.attachmentDeleted && !newChild.attachmentDeleted) {
 						postToReplace.attachments = newChild.attachments;
 						postToReplace.attachmentDeleted = false;

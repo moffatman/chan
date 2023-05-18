@@ -237,6 +237,7 @@ class AttachmentViewerController extends ChangeNotifier {
 			getCachedImageFile(attachment.url.toString()).then((file) {
 				if (file != null && _cachedFile == null && !_isDisposed) {
 					_cachedFile = file;
+					attachment.sizeInBytes ??= file.statSync().size;
 					_goodImageSource = Uri.parse(attachment.url);
 					_isFullResolution = true;
 					notifyListeners();
@@ -398,6 +399,7 @@ class AttachmentViewerController extends ChangeNotifier {
 				_recordUrlTime(_goodImageSource!, DateTime.now().difference(startTime));
 				if (_goodImageSource?.scheme == 'file') {
 					_cachedFile = File(_goodImageSource!.path);
+					attachment.sizeInBytes ??= _cachedFile!.statSync().size;
 				}
 				if (_isDisposed) return;
 				notifyListeners();
@@ -410,6 +412,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					final file = await getCachedImageFile(goodImageSource.toString());
 					if (file != null && _cachedFile?.path != file.path) {
 						_cachedFile = file;
+						attachment.sizeInBytes ??= file.statSync().size;
 					}
 				}
 			}
@@ -484,6 +487,7 @@ class AttachmentViewerController extends ChangeNotifier {
 							_videoPlayerController = VideoPlayerController.file(result.mp4File, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
 						}
 						_cachedFile = result.mp4File;
+						attachment.sizeInBytes ??= result.mp4File.statSync().size;
 					}
 					else if (result is StreamingMP4ConversionStream) {
 						_duration = result.duration;
@@ -497,6 +501,7 @@ class AttachmentViewerController extends ChangeNotifier {
 								return;
 							}
 							_cachedFile = mp4File;
+							attachment.sizeInBytes ??= mp4File.statSync().size;
 							_videoFileToSwapIn = mp4File;
 							if (_waitingOnSwap && !background) {
 								await potentiallySwapVideo();
@@ -518,6 +523,7 @@ class AttachmentViewerController extends ChangeNotifier {
 								return;
 							}
 							_cachedFile = mp4File;
+							attachment.sizeInBytes ??= mp4File.statSync().size;
 							_videoFileToSwapIn = mp4File;
 							if (isPrimary && !background) {
 								await potentiallySwapVideo(play: true);
@@ -606,6 +612,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	void onCacheCompleted(File file) {
 		_cachedFile = file;
+		attachment.sizeInBytes ??= file.statSync().size;
 		if (_isDisposed) return;
 		_scheduleHidingOfLoadingProgress();
 		notifyListeners();
