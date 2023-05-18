@@ -361,3 +361,19 @@ extension Conversions on DateTime {
 	DateTime get endOfDay => DateTime(year, month, day, 23, 59, 59);
 	String get toISO8601Date => '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
 }
+
+final Map<String, Mutex> _ephemeralLocks = {};
+Future<T> runEphemerallyLocked<T>(String key, Future<T> Function() criticalSection) async {
+	final lock = _ephemeralLocks.putIfAbsent(key, () {
+		return Mutex();
+	});
+	try {
+		return await lock.protect(criticalSection);
+	}
+	finally {
+		if (!(_ephemeralLocks[key]?.isLocked ?? false)) {
+			// No one else waiting
+			_ephemeralLocks.remove(key);
+		}
+	}
+}

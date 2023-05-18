@@ -73,17 +73,22 @@ class StreamingMP4ConvertingFile implements StreamingMP4ConversionResult {
 
 class _CachingFile extends EasyListenable {
 	final File file;
-	final int totalBytes;
+	int totalBytes;
 	final int statusCode;
 	int currentBytes;
 	final completer = Completer<void>();
 	final lock = Mutex();
+	final Map<String, String> headers;
 
 	_CachingFile({
 		required this.file,
 		required this.totalBytes,
-		required this.statusCode
+		required this.statusCode,
+		this.headers = const {}
 	}) : currentBytes = 0;
+
+	@override
+	String toString() => '_CachingFile(file: $file, statusCode: $statusCode, currentBytes: $currentBytes, totalBytes: $totalBytes, completer: $completer, lock: $lock, headers: $headers)';
 }
 
 class VideoServer {
@@ -92,6 +97,7 @@ class VideoServer {
 	final Directory webmRoot;
 	final Directory httpRoot;
 	final Map<String, _CachingFile> _caches = {};
+	final Map<String, Set<_CachingFile>> _children = {};
 	HttpServer? _httpServer;
 	bool _stopped = false;
 	final bool bufferOutput;
@@ -211,20 +217,21 @@ class VideoServer {
 				await file.lock.protect(() async {
 					file.removeListener(listener);
 					await handle.close();
-					try {
-						await request.response.close();
-					}
-					on HttpException {
-						// We might be closing the stream prematurely
-					}
 				});
+				try {
+					await request.response.flush();
+					await request.response.close();
+				}
+				on HttpException {
+					// We might be closing the stream prematurely
+				}
 			});
 		}
 	}
 
-	File getFile(String hash) => File('${httpRoot.path}/$hash');
+	File getFile(String digest) => File('${httpRoot.path}/${base64Url.encode(md5.convert(base64Url.decode(digest)).bytes)}');
 
-	File optimisticallyGetFile(Uri uri) => getFile(_makeHash(uri));
+	File optimisticallyGetFile(Uri uri) => getFile(_encodeDigest(uri));
 
 	Future<void> _handleRequest(HttpRequest request) async {
 		request.response.persistentConnection = request.persistentConnection;
@@ -234,10 +241,31 @@ class VideoServer {
 			await request.response.close();
 			return;
 		}
-		if (request.uri.path == '/') {
-			final String hash = request.uri.queryParameters['hash']!;
-			final file = getFile(hash);
-			final currentlyDownloading = _caches[hash];
+		if (request.uri.pathSegments.length > 1 && request.uri.pathSegments.tryFirst == 'digest') {
+			if (request.uri.pathSegments.length < 3) {
+				request.response.statusCode = 404;
+				await request.response.close();
+				return;
+			}
+			final rootDigest = request.uri.pathSegments[1];
+			final subpath = request.uri.pathSegments.sublist(2).join('/');
+			final String digest;
+			if (subpath.startsWith(_kRootUriName)) {
+				// This is the root file
+				digest = rootDigest;
+			}
+			else {
+				// The subpath is a sibling file to the root
+				final rootUri = _decodeDigest(rootDigest);
+				final subUri = rootUri.resolve('./$subpath');
+				digest = _encodeDigest(subUri);
+				await runEphemerallyLocked(digest, () async {
+					_caches[digest] ??= await _startCaching(subUri, _caches[rootDigest]?.headers ?? {});
+				});
+				_children.putIfAbsent(rootDigest, () => {}).add(_caches[digest]!);
+			}
+			final file = getFile(digest);
+			final currentlyDownloading = _caches[digest];
 			if (currentlyDownloading?.completer.isCompleted == false) {
 				// File is still downloading
 				_serveDownloadingFile(request, currentlyDownloading!);
@@ -247,7 +275,7 @@ class VideoServer {
 				await _serveFile(request, file);
 			}
 			else {
-				// Unrecognized hash
+				// Unrecognized digest
 				request.response.statusCode = 404;
 				await request.response.close();
 			}
@@ -263,23 +291,27 @@ class VideoServer {
 		}
 	}
 
-	static String _makeHash(Uri uri) {
-		final hash = base64UrlEncode(md5.convert(utf8.encode(uri.toString())).bytes);
-		return '$hash.${uri.path.split('.').last}';
+	static String _encodeDigest(Uri uri) {
+		return base64Url.encode(utf8.encode(uri.toString()));
+	}
+
+	static Uri _decodeDigest(String digest) {
+		return Uri.parse(utf8.decode(base64Url.decode(digest)));
 	}
 
 	Future<_CachingFile> _startCaching(Uri uri, Map<String, String> headers) async {
-		final hash = _makeHash(uri);
+		final digest = _encodeDigest(uri);
 		final httpRequest = await client.getUrl(uri);
 		for (final header in headers.entries) {
 			httpRequest.headers.set(header.key, header.value);
 		}
 		final response = await httpRequest.close();
-		final file = getFile(hash);
+		final file = getFile(digest);
 		final cachingFile = _CachingFile(
 			file: file,
 			totalBytes: response.contentLength,
-			statusCode: response.statusCode
+			statusCode: response.statusCode,
+			headers: headers
 		);
 		final handle = await file.open(mode: FileMode.writeOnly);
 		() async {
@@ -299,6 +331,11 @@ class VideoServer {
 				await file.delete();
 			}
 		}();
+		if (uri.path.endsWith('m3u8')) {
+			// contentLength is not trustworthy for some reason...
+			await cachingFile.completer.future;
+			cachingFile.totalBytes = cachingFile.currentBytes;
+		}
 		return cachingFile;
 	}
 
@@ -310,36 +347,17 @@ class VideoServer {
 		bool force = false
 	}) async {
 		await ensureRunning();
-		final hash = _makeHash(uri);
-		final existing = _caches[hash]?.completer.isCompleted;
-		if (existing == null || (existing == true && (force || !getFile(hash).existsSync()))) {
-			_caches[hash]?.dispose();
-			final cachingFile = await _startCaching(uri, headers);
-			void listener() {
-				onProgressChanged?.call(cachingFile.currentBytes, cachingFile.totalBytes);
-			}
-			cachingFile.addListener(listener);
-			_caches[hash] = cachingFile;
-			() async {
-				try {
-					await cachingFile.completer.future;
-					onCached?.call(cachingFile.file);
-				}
-				on HttpException {
-					// Something went wrong
-				}
-				finally {
-					cachingFile.removeListener(listener);
-				}
-			}();
-		}
-		else {
-			final cachingFile = _caches[hash];
-			if (cachingFile != null) {
+		final digest = _encodeDigest(uri);
+		final existing = _caches[digest]?.completer.isCompleted;
+		await runEphemerallyLocked(digest, () async {
+			if (existing == null || (existing == true && (force || !getFile(digest).existsSync()))) {
+				_caches[digest]?.dispose();
+				final cachingFile = await _startCaching(uri, headers);
 				void listener() {
 					onProgressChanged?.call(cachingFile.currentBytes, cachingFile.totalBytes);
 				}
 				cachingFile.addListener(listener);
+				_caches[digest] = cachingFile;
 				() async {
 					try {
 						await cachingFile.completer.future;
@@ -353,13 +371,53 @@ class VideoServer {
 					}
 				}();
 			}
-		}
-		return hash;
+			else {
+				final cachingFile = _caches[digest];
+				if (cachingFile != null) {
+					void listener() {
+						onProgressChanged?.call(cachingFile.currentBytes, cachingFile.totalBytes);
+					}
+					cachingFile.addListener(listener);
+					() async {
+						try {
+							await cachingFile.completer.future;
+							onCached?.call(cachingFile.file);
+						}
+						on HttpException {
+							// Something went wrong
+						}
+						finally {
+							cachingFile.removeListener(listener);
+						}
+					}();
+				}
+			}
+		});
+		return digest;
 	}
 
-	Uri getUri(String hash) => Uri.http('${InternetAddress.loopbackIPv4.address}:$port', '/', {
-		'hash': hash
-	});
+	Future<void> _cleanupCachedDownload(String digest) async {
+		for (final item in [
+			_caches.remove(digest),
+			..._children.remove(digest) ?? <_CachingFile>[]
+		]) {
+			if (item != null) {
+				try {
+					await item.file.delete();
+				}
+				on PathNotFoundException {
+					print('Unable to delete ${item.file}');
+				}
+			}
+		}
+	}
+
+	static const _kRootUriName = '__chanceroot';
+
+	Uri getUri(String digest) {
+		final extensionParts = _decodeDigest(digest).pathSegments.tryLast?.split('.');
+		return Uri.http('${InternetAddress.loopbackIPv4.address}:$port', '/digest/$digest/$_kRootUriName${(extensionParts?.isEmpty ?? true) ? '' : '.${extensionParts?.last}'}');
+	}
 
 	Future<void> ensureRunning() async {
 		if (_httpServer == null) {
@@ -404,24 +462,25 @@ class StreamingMP4Conversion {
 
 	MediaConversion? _streamingConversion;
 	final _joinedCompleter = Completer<File>();
+	String? _cachingServerDigest;
 
 	StreamingMP4Conversion(this.inputFile, {
 		this.headers = const {},
 		this.soundSource
 	});
 
-	Future<void> _handleJoining(MediaConversion streamingConversion) async {
-		try {
-			final joinedConversion = MediaConversion.toMp4((await streamingConversion.result).file.uri, copyStreams: true);
-			joinedConversion.start();
+	ValueNotifier<double?> _handleJoining(Uri hlsUri) {
+		final joinedConversion = MediaConversion.toMp4(hlsUri, copyStreams: true);
+		joinedConversion.start();
+		() async {
 			final joined = await joinedConversion.result;
 			final expected = MediaConversion.toMp4(inputFile, headers: headers, soundSource: soundSource).getDestination();
 			await joined.file.rename(expected.path);
 			_joinedCompleter.complete(expected);
-		}
-		catch (e, st) {
+		}().catchError((e, st) {
 			_joinedCompleter.completeError(e, st);
-		}
+		});
+		return joinedConversion.progress;
 	}
 
 	Future<bool> _areThereTwoTSFiles(Directory parent) async {
@@ -440,7 +499,7 @@ class StreamingMP4Conversion {
 		}
 	}
 
-	Future<StreamingMP4ConversionResult> start() async {
+	Future<StreamingMP4ConversionResult> start({bool force = false}) async {
 		final inputExtension = inputFile.path.split('.').last.toLowerCase();
 		final surelyAudioOnly = ['jpg', 'jpeg', 'png'].contains(inputExtension);
 		if (Platform.isAndroid && inputExtension == 'webm') {
@@ -460,9 +519,27 @@ class StreamingMP4Conversion {
 		if (existingResult != null) {
 			return StreamingMP4ConvertedFile(existingResult.file, existingResult.hasAudio, existingResult.isAudioOnly);
 		}
+		if (inputExtension == 'm3u8' && soundSource == null) {
+			await VideoServer.instance.ensureRunning();
+			final digest = _cachingServerDigest = await VideoServer.instance.startCachingDownload(
+				uri: inputFile,
+				headers: headers,
+				force: force
+			);
+			final bouncedUri = VideoServer.instance.getUri(digest);
+			final joinProgress = _handleJoining(bouncedUri);
+			return StreamingMP4ConversionStream(
+				hlsStream: bouncedUri,
+				mp4File: _joinedCompleter.future,
+				progress: joinProgress,
+				hasAudio: true, // assumption
+				duration: null,
+				isAudioOnly: false
+			);
+		}
 		final streamingConversion = _streamingConversion = MediaConversion.toHLS(inputFile, headers: headers, soundSource: soundSource);
 		streamingConversion.start();
-		_handleJoining(streamingConversion);
+		streamingConversion.result.then((result) => _handleJoining(result.file.uri));
 		await Future.any([_waitForTwoTSFiles(streamingConversion.getDestination().parent), streamingConversion.result]);
 		if (await _areThereTwoTSFiles(streamingConversion.getDestination().parent)) {
 			await Future.delayed(const Duration(milliseconds: 50));
@@ -493,6 +570,9 @@ class StreamingMP4Conversion {
 		final junkFolder = _streamingConversion?.getDestination().parent;
 		if (junkFolder != null) {
 			junkFolder.delete(recursive: true);
+		}
+		if (_cachingServerDigest != null) {
+			await VideoServer.instance._cleanupCachedDownload(_cachingServerDigest!);
 		}
 	}
 
