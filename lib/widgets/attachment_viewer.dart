@@ -1024,14 +1024,16 @@ class AttachmentViewer extends StatelessWidget {
 									)
 								);
 							}
-							else if (controller.showLoadingProgress || !controller.isFullResolution) {
+							else if (controller.gestureKey.currentState?.extendedImageSlidePageState?.popping != true && (controller.showLoadingProgress || !controller.isFullResolution)) {
 								child = _centeredLoader(
 									active: controller.isFullResolution,
 									value: loadingValue,
 									useRealKey: useRealGestureKey
 								);
 							}
-							final Rect? rect = controller.gestureKey.currentState?.gestureDetails?.destinationRect;
+							final Rect? rect = controller.gestureKey.currentState?.gestureDetails?.destinationRect?.shift(
+								controller.gestureKey.currentState?.extendedImageSlidePageState?.backOffsetAnimation?.value ?? Offset.zero
+							);
 							child = Transform.scale(
 								scale: (controller.gestureKey.currentState?.extendedImageSlidePageState?.scale ?? 1) * (controller.gestureKey.currentState?.gestureDetails?.totalScale ?? 1),
 								child: child
