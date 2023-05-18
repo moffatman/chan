@@ -4,7 +4,6 @@ import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/share.dart';
-import 'package:chan/services/soundposts.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/pages/posts.dart';
@@ -234,7 +233,7 @@ class PostRow extends StatelessWidget {
 														shrinkHeight: !settings.squareThumbnails,
 														shrinkWidth: !settings.squareThumbnails
 													),
-													if (attachment.soundSource != null || attachment.isVideoOrGif || attachment.type == AttachmentType.url) Positioned.fill(
+													if (attachment.icon != null) Positioned.fill(
 														child: Align(
 															alignment: Alignment.bottomRight,
 															child: Container(
@@ -244,11 +243,7 @@ class PostRow extends StatelessWidget {
 																	border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
 																),
 																padding: const EdgeInsets.all(2),
-																child: attachment.soundSource != null ?
-																	const Icon(CupertinoIcons.volume_up, size: 16) :
-																	attachment.isVideoOrGif ?
-																		const Icon(CupertinoIcons.play_arrow_solid, size: 16) :
-																		const Icon(CupertinoIcons.link, size: 16)
+																child: Icon(attachment.icon, size: 16)
 															)
 														)
 													)

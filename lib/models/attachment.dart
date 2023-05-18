@@ -1,5 +1,6 @@
 import 'package:chan/models/intern.dart';
-import 'package:flutter/rendering.dart';
+import 'package:chan/services/soundposts.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 
 part 'attachment.g.dart';
@@ -94,7 +95,23 @@ class Attachment {
 		).destination;
 	}
 
-	bool get isVideoOrGif => type.isVideo || ext.toLowerCase().endsWith('gif');
+	bool get isGif => ext.toLowerCase().endsWith('gif');
+
+	IconData? get icon {
+		if (soundSource != null || type == AttachmentType.mp3) {
+			return CupertinoIcons.volume_up;
+		}
+		if (type.isVideo) {
+			return CupertinoIcons.play_arrow_solid;
+		}
+		if (isGif) {
+			return CupertinoIcons.play_arrow;
+		}
+		if (type == AttachmentType.url || type == AttachmentType.pdf) {
+			return CupertinoIcons.link;
+		}
+		return null;
+	}
 
 	String get globalId => '${board}_$id';
 

@@ -185,10 +185,7 @@ class AttachmentThumbnail extends StatelessWidget {
 				color: settings.theme.barColor,
 				child: Center(
 					child: Icon(
-						(attachment.type == AttachmentType.url || attachment.type == AttachmentType.pdf) ?
-							CupertinoIcons.compass :
-							(attachment.isVideoOrGif || attachment.type == AttachmentType.mp3) ?
-								CupertinoIcons.play_arrow_solid : CupertinoIcons.photo,
+						attachment.icon ?? CupertinoIcons.photo,
 						size: max(24, 0.5 * min(effectiveWidth, effectiveHeight))
 					)
 				)
