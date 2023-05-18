@@ -600,10 +600,11 @@ packages:
   heic_to_jpg:
     dependency: "direct main"
     description:
-      name: heic_to_jpg
-      sha256: "48fce9176e722629e9d49513c4f9c10ca4a792408781fb24c0f7e50fd80be22f"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: HEAD
+      resolved-ref: "62d586e740373749cc3a164974d2e269ca7ea0dc"
+      url: "https://github.com/a7med-3laa/flutter_heic_to_jpg.git"
+    source: git
     version: "0.2.0"
   highlight:
     dependency: "direct main"
@@ -1047,8 +1048,8 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: d7c125caa686353e2a5c5910c5be272ca4709ddc
-      url: "https://github.com/krabbenprgr/receive_sharing_intent"
+      resolved-ref: abedc3d6d5b80df396e9c300fd1a052cbab08827
+      url: "https://github.com/AyushmanG26/receive_sharing_intent.git"
     source: git
     version: "1.4.5"
   rxdart:
