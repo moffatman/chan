@@ -196,6 +196,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	final gestureKey = GlobalKey<ExtendedImageGestureState>(debugLabel: 'AttachmentViewerController.gestureKey');
 	/// A key to use with CupertinoContextMenu share button
 	final contextMenuShareButtonKey = GlobalKey(debugLabel: 'AttachmentViewerController.contextMenuShareButtonKey');
+	/// Whether archive checking is possible for this attachment
+	bool get canCheckArchives => site.archives.isNotEmpty;
 	/// Whether archive checking for this attachment is enabled
 	bool get checkArchives => _checkArchives;
 	/// Modal text which should be overlayed on the attachment
@@ -1019,7 +1021,7 @@ class AttachmentViewer extends StatelessWidget {
 								child = Center(
 									child: ErrorMessageCard(controller.errorMessage!, remedies: {
 											'Retry': () => controller.reloadFullAttachment(),
-											if (!controller.checkArchives) 'Try archives': () => controller.tryArchives()
+											if (controller.canCheckArchives && !controller.checkArchives) 'Try archives': () => controller.tryArchives()
 										}
 									)
 								);
@@ -1280,7 +1282,7 @@ class AttachmentViewer extends StatelessWidget {
 							if (controller.errorMessage != null) Center(
 								child: ErrorMessageCard(controller.errorMessage!, remedies: {
 									'Retry': () => controller.reloadFullAttachment(),
-									if (!controller.checkArchives) 'Try archives': () => controller.tryArchives()
+									if (controller.canCheckArchives && !controller.checkArchives) 'Try archives': () => controller.tryArchives()
 								})
 							),
 							AnimatedSwitcher(

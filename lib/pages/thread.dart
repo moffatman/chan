@@ -509,9 +509,21 @@ class _ThreadPageState extends State<ThreadPage> {
 		final bool firstLoad = tmpPersistentState.thread == null;
 		// The thread might switch in this interval
 		_checkForeground();
-		final newThread = tmpPersistentState.useArchive ?
-			await site.getThreadFromArchive(widget.thread, interactive: _foreground) :
-			await site.getThread(widget.thread, variant: tmpPersistentState.variant, interactive: _foreground);
+		late final Thread newThread;
+		if (tmpPersistentState.useArchive) {
+			await site.getThreadFromArchive(widget.thread, interactive: _foreground);
+		}
+		else {
+			try {
+				newThread = await site.getThread(widget.thread, variant: tmpPersistentState.variant, interactive: _foreground);
+			}
+			on ThreadNotFoundException {
+				if (site.archives.isEmpty) {
+					tmpPersistentState.thread?.isDeleted = true;
+				}
+				rethrow;
+			}
+		}
 		bool shouldScroll = false;
 		final watch = notifications.getThreadWatch(widget.thread);
 		if (watch != null && newThread.identifier == widget.thread && mounted) {
@@ -999,7 +1011,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																			)
 																		),
 																		remedies: {
-																			ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
+																			if (site.archives.isNotEmpty) ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
 																				child: const Text('Try archive'),
 																				onPressed: () {
 																					persistentState.useArchive = true;
@@ -1717,7 +1729,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											(widget.attachmentsCachingQueue.isEmpty && widget.cachedAttachments.values.any((v) => !v)) ? widget.startCaching : null
 										)],
 										[('Search', const Icon(CupertinoIcons.search, size: 19), widget.listController.focusSearch)],
-										if (widget.persistentState.useArchive) [('Live', const ImageboardIcon(), () {
+										if (context.read<ImageboardSite>().archives.isEmpty) [('Archive', const Icon(CupertinoIcons.archivebox, size: 19), null)]
+										else if (widget.persistentState.useArchive) [('Live', const ImageboardIcon(), () {
 											widget.persistentState.useArchive = false;
 											widget.persistentState.save();
 											setState(() {});
