@@ -769,17 +769,17 @@ class AttachmentViewerController extends ChangeNotifier {
 				if (_isDisposed) return;
 			}
 			if (_isDisposed) return;
-			await _videoPlayerController!.setLooping(true);
+			await _videoPlayerController?.setLooping(true);
 			if (_isDisposed) return;
 			final newPosition = _swapStartTime ?? oldController?.value.position;
 			if (newPosition != null) {
-				await _videoPlayerController!.seekTo(newPosition);
+				await _videoPlayerController?.seekTo(newPosition);
 				if (_isDisposed) return;
 			}
-			await _videoPlayerController!.play();
+			await _videoPlayerController?.play();
 			if (_isDisposed) return;
 			if (!play) {
-				await _videoPlayerController!.pause();
+				await _videoPlayerController?.pause();
 				if (_isDisposed) return;
 			}
 			notifyListeners();
