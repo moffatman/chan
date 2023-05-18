@@ -206,7 +206,7 @@ class _Captcha4ChanCustomPainter extends CustomPainter{
 	}
 }
 
-typedef _PickerStuff = ({GlobalKey key, ValueKey<Chan4CustomCaptchaLetterKey> wrapperKey, FixedExtentScrollController controller});
+typedef _PickerStuff = ({GlobalKey key, UniqueKey wrapperKey, FixedExtentScrollController controller});
 
 class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	String? errorMessage;
@@ -289,7 +289,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 	_PickerStuff _getPickerStuffForWidgetIndex(int i) {
 		return _pickerStuff.putIfAbsent(_lastGuess.keys[i], () => _orphanPickerStuff.tryRemoveFirst() ?? (
 			key: GlobalKey(debugLabel: '_Captcha4ChanCustomState._pickerStuff.key'),
-			wrapperKey: ValueKey(_lastGuess.keys[i]),
+			wrapperKey: UniqueKey(),
 			controller: FixedExtentScrollController()
 		));
 	}
