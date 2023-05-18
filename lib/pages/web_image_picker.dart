@@ -260,7 +260,9 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 													displayHeight: rect.height,
 													top: rect.top,
 													left: rect.left,
-													alt: img.alt
+													alt: img.alt,
+													visible1: rect.bottom >= 0 && rect.right >= 0 && rect.top <= (window.innerHeight || document.documentElement.clientHeight) && rect.left <= (window.innerWidth || document.documentElement.clientWidth),
+													visible2: document.elementFromPoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2) == img
 												}
 											})'''
 										);
@@ -320,8 +322,10 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 												);
 											},
 										);
-										final fullImages = results.where((r) => r['width'] * r['height'] >= 10201).toList();
-										final thumbnails = results.where((r) => r['width'] * r['height'] < 10201).toList();
+										final noVisible2 = results.every((r) => !r['visible2']);
+										final fullImages = results.where((r) => r['visible1'] && (noVisible2 || r['visible2']) && r['width'] * r['height'] >= 10201).toList();
+										final thumbnails = results.where((r) => r['visible1'] && (noVisible2 || r['visible2']) && r['width'] * r['height'] < 10201).toList();
+										final offscreen = results.where((r) => !(r['visible1'] && (noVisible2 || r['visible2']))).toList();
 										if (!mounted) return;
 										final pickedBytes = await Navigator.of(context).push<Uint8List>(TransparentRoute(
 											builder: (context) => OverscrollModalPage(
@@ -334,10 +338,38 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 															const Text('Images'),
 															const SizedBox(height: 16),
 															makeGrid(context, fullImages),
+															if (offscreen.isNotEmpty) ...[
+																const SizedBox(height: 16),
+																CupertinoButton.filled(
+																	child: Text('${offscreen.length} Offscreen'),
+																	onPressed: () async {
+																		final selectedImage = await Navigator.of(context).push(TransparentRoute(
+																			builder: (innerContext) => OverscrollModalPage(
+																				child: Container(
+																					width: double.infinity,
+																					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																					padding: const EdgeInsets.all(16),
+																					child: Column(
+																						children: [
+																							const Text('Offscreen'),
+																							const SizedBox(height: 16),
+																							makeGrid(innerContext, offscreen)
+																						]
+																					)
+																				)
+																			),
+																			showAnimations: settings.showAnimations
+																		));
+																		if (selectedImage != null && mounted) {
+																			Navigator.of(context).pop(selectedImage);
+																		}
+																	}
+																)
+															],
 															if (thumbnails.isNotEmpty) ...[
 																const SizedBox(height: 16),
 																CupertinoButton.filled(
-																	child: const Text('Thumbnails'),
+																	child: Text('${thumbnails.length} Thumbnails'),
 																	onPressed: () async {
 																		final selectedThumbnail = await Navigator.of(context).push(TransparentRoute(
 																			builder: (innerContext) => OverscrollModalPage(
