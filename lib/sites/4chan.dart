@@ -84,7 +84,7 @@ class _QuoteLinkLinkifier extends Linkifier {
       if (element is TextElement) {
 				String text = element.text;
 				while (text.isNotEmpty) {
-        	final match = RegExp(r'(?:^|(?<= ))>>(\d+)').firstMatch(element.text);
+        	final match = RegExp(r'(?:^|(?<= ))>>(\d+)').firstMatch(text);
 					if (match == null) {
 						if (text == element.text) {
 							list.add(element);
