@@ -1804,7 +1804,18 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							onPressed: _updateWithHapticFeedback,
 							child: const Text('Retry')
 						),
-						if (widget.remedies[errorType] != null) widget.remedies[errorType]!(context, _updateWithHapticFeedback)
+						if (widget.remedies[errorType] != null) widget.remedies[errorType]!(context, _updateWithHapticFeedback),
+						if (widget.initialList?.isNotEmpty ?? false) CupertinoButton(
+							onPressed: () {
+								originalList = widget.initialList;
+								sortedList = originalList?.toList();
+								if (sortedList != null) {
+									_sortList();
+								}
+								setState(() {});
+							},
+							child: const Text('View cached')
+						)
 					]
 				)
 			);
