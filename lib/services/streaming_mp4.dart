@@ -259,9 +259,17 @@ class VideoServer {
 				final rootUri = _decodeDigest(rootDigest);
 				final subUri = rootUri.resolve('./$subpath');
 				digest = _encodeDigest(subUri);
-				await runEphemerallyLocked(digest, () async {
-					_caches[digest] ??= await _startCaching(subUri, _caches[rootDigest]?.headers ?? {});
-				});
+				try {
+					await runEphemerallyLocked(digest, () async {
+						_caches[digest] ??= await _startCaching(subUri, _caches[rootDigest]?.headers ?? {});
+					});
+				}
+				on HttpException {
+					// Something went wrong starting the download
+					request.response.statusCode = 502;
+					await request.response.close();
+					return;
+				}
 				_children.putIfAbsent(rootDigest, () => {}).add(_caches[digest]!);
 			}
 			final file = getFile(digest);
@@ -396,7 +404,7 @@ class VideoServer {
 		return digest;
 	}
 
-	Future<void> _cleanupCachedDownload(String digest) async {
+	Future<void> cleanupCachedDownloadTree(String digest) async {
 		for (final item in [
 			_caches.remove(digest),
 			..._children.remove(digest) ?? <_CachingFile>[]
@@ -572,7 +580,7 @@ class StreamingMP4Conversion {
 			junkFolder.delete(recursive: true);
 		}
 		if (_cachingServerDigest != null) {
-			await VideoServer.instance._cleanupCachedDownload(_cachingServerDigest!);
+			await VideoServer.instance.cleanupCachedDownloadTree(_cachingServerDigest!);
 		}
 	}
 

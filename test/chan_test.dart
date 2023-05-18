@@ -81,15 +81,15 @@ void main() {
         requests.add(request);
       });
       try {
-        final hashFuture = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
+        final digestFuture = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
         await Future.delayed(const Duration(milliseconds: 100));
         expect(requests.length, equals(1));
         requests[0].response.bufferOutput = false;
         requests[0].response.contentLength = 10000;
         requests[0].response.add(Uint8List(1000));
         await requests[0].response.flush();
-        final hash = await hashFuture;
-        final clientRequest = await client.getUrl(VideoServer.instance.getUri(hash));
+        final digest = await digestFuture;
+        final clientRequest = await client.getUrl(VideoServer.instance.getUri(digest));
         clientRequest.bufferOutput = false;
         final response = await clientRequest.close();
         await Future.delayed(const Duration(milliseconds: 100));
@@ -112,11 +112,11 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 100));
         expect(chunks.length, equals(2));
         expect(responseStreamSubscriptionIsDone, isTrue);
-        final file = VideoServer.instance.getFile(hash);
+        final file = VideoServer.instance.getFile(digest);
         expect(await file.exists(), isTrue);
         expect(await file.length(), equals(10000));
         // Try a second request, it shouldn't hit the original server, and should return all in one chunk.
-        final clientRequest2 = await client.getUrl(VideoServer.instance.getUri(hash));
+        final clientRequest2 = await client.getUrl(VideoServer.instance.getUri(digest));
         clientRequest2.bufferOutput = false;
         final response2 = await clientRequest2.close();
         chunks.clear();
@@ -142,7 +142,7 @@ void main() {
         requests[1].response.add(Uint8List(10000));
         await requests[0].response.close();
         await future2;
-        final clientRequest3 = await client.getUrl(VideoServer.instance.getUri(hash));
+        final clientRequest3 = await client.getUrl(VideoServer.instance.getUri(digest));
         clientRequest3.bufferOutput = false;
         final response3 = await clientRequest3.close();
         chunks.clear();
@@ -177,7 +177,7 @@ void main() {
         requests.add(request);
       });
       try {
-        final hashFuture = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
+        final digestFuture = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
         await Future.delayed(const Duration(milliseconds: 100));
         expect(requests.length, equals(1));
         requests[0].response.bufferOutput = false;
@@ -185,8 +185,8 @@ void main() {
         requests[0].response.contentLength = 10000;
         requests[0].response.add(Uint8List(1000));
         await requests[0].response.flush();
-        final hash = await hashFuture;
-        final clientRequest = await client.getUrl(VideoServer.instance.getUri(hash));
+        final digest = await digestFuture;
+        final clientRequest = await client.getUrl(VideoServer.instance.getUri(digest));
         clientRequest.bufferOutput = false;
         final response = await clientRequest.close();
         await Future.delayed(const Duration(milliseconds: 100));
@@ -209,11 +209,11 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 100));
         expect(chunks.length, equals(2));
         expect(responseStreamSubscriptionIsDone, isTrue);
-        final file = VideoServer.instance.getFile(hash);
+        final file = VideoServer.instance.getFile(digest);
         expect(await file.exists(), isTrue);
         expect(await file.length(), equals(10000));
         // Try again
-        final clientRequest2 = await client.getUrl(VideoServer.instance.getUri(hash));
+        final clientRequest2 = await client.getUrl(VideoServer.instance.getUri(digest));
         clientRequest2.bufferOutput = false;
         final response2 = await clientRequest2.close();
         chunks.clear();
@@ -247,15 +247,15 @@ void main() {
       });
       try {
         VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false);
-        final hashFuture = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
+        final digestFuture = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
         await Future.delayed(const Duration(milliseconds: 100));
         expect(requests.length, equals(1));
         requests[0].response.bufferOutput = false;
         requests[0].response.contentLength = 10000;
         requests[0].response.add(Uint8List(1000));
         await requests[0].response.flush();
-        final hash = await hashFuture;
-        final clientRequest = await client.getUrl(VideoServer.instance.getUri(hash));
+        final digest = await digestFuture;
+        final clientRequest = await client.getUrl(VideoServer.instance.getUri(digest));
         clientRequest.bufferOutput = false;
         final response = await clientRequest.close();
         await Future.delayed(const Duration(milliseconds: 100));
@@ -277,7 +277,7 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 200));
         expect(chunks.length, equals(1));
         expect(responseStreamSubscriptionIsErrored, isTrue);
-        final file = VideoServer.instance.getFile(hash);
+        final file = VideoServer.instance.getFile(digest);
         expect(await file.exists(), isFalse);
       }
       finally {
@@ -300,15 +300,15 @@ void main() {
         const int kLength = 10000;
         final random = Random();
         final buffer = Uint8List.fromList(List.generate(kLength, (i) => random.nextInt(256)));
-        final hashFuture = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
+        final digestFuture = VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}')));
         await Future.delayed(const Duration(milliseconds: 100));
         expect(requests.length, equals(1));
         requests[0].response.bufferOutput = false;
         requests[0].response.contentLength = kLength;
         requests[0].response.add(buffer.sublist(0, 10));
         await requests[0].response.flush();
-        final hash = await hashFuture;
-        final clientRequest = await client.getUrl(VideoServer.instance.getUri(hash));
+        final digest = await digestFuture;
+        final clientRequest = await client.getUrl(VideoServer.instance.getUri(digest));
         clientRequest.bufferOutput = false;
         const int rangeStart = 1;
         final rangeEndInclusive = 1 + random.nextInt(kLength ~/ 3) + kLength ~/ 2;
@@ -328,7 +328,7 @@ void main() {
         }
         await requests[0].response.close();
         await Future.delayed(const Duration(milliseconds: 100));
-        final file = VideoServer.instance.getFile(hash);
+        final file = VideoServer.instance.getFile(digest);
         expect(await file.exists(), isTrue);
         expect(await file.length(), equals(10000));
         final outputBuffer = (await toListFuture).expand((x) => x).toList();
@@ -352,7 +352,7 @@ void main() {
       });
       try {
         final uri1 = Uri.http('localhost:${fakeServer.port}', '/Dir1/File1.ext1');
-        final hashFuture = VideoServer.instance.startCachingDownload(uri: uri1);
+        final digestFuture = VideoServer.instance.startCachingDownload(uri: uri1);
         await Future.delayed(const Duration(milliseconds: 100));
         expect(requests.length, equals(1));
         expect(requests[0].requestedUri.path, equals('/Dir1/File1.ext1'));
@@ -360,9 +360,9 @@ void main() {
         requests[0].response.contentLength = 10000;
         requests[0].response.add(Uint8List(1000));
         await requests[0].response.flush();
-        final hash = await hashFuture;
-        final clientRequest = await client.getUrl(VideoServer.instance.getUri(hash));
-        expect(VideoServer.instance.getUri(hash).path, endsWith('.ext1'));
+        final digest = await digestFuture;
+        final clientRequest = await client.getUrl(VideoServer.instance.getUri(digest));
+        expect(VideoServer.instance.getUri(digest).path, endsWith('.ext1'));
         clientRequest.bufferOutput = false;
         final response = await clientRequest.close();
         await Future.delayed(const Duration(milliseconds: 100));
@@ -385,11 +385,11 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 100));
         expect(chunks.length, equals(2));
         expect(responseStreamSubscriptionIsDone, isTrue);
-        final file = VideoServer.instance.getFile(hash);
+        final file = VideoServer.instance.getFile(digest);
         expect(await file.exists(), isTrue);
         expect(await file.length(), equals(10000));
         // Now try a file relative to the first URI
-        final uri2 = VideoServer.instance.getUri(hash).resolve('./File2.ext2');
+        final uri2 = VideoServer.instance.getUri(digest).resolve('./File2.ext2');
         final clientRequest2 = await client.getUrl(uri2);
         clientRequest2.bufferOutput = false;
         final clientRequest2Future = clientRequest2.close();
@@ -418,6 +418,137 @@ void main() {
         final file2 = VideoServer.instance.optimisticallyGetFile(uri1.resolve('./File2.ext2'));
         expect(await file2.exists(), isTrue);
         expect(await file2.length(), equals(300));
+        await VideoServer.instance.cleanupCachedDownloadTree(digest);
+        expect(await file.exists(), isFalse);
+        expect(await file2.exists(), isFalse);
+      }
+      finally {
+        await root.delete(recursive: true);
+        fakeServer.close();
+        VideoServer.teardownStatic();
+      }
+    });
+
+    test('incomplete m3u8', () async {
+      final root = await Directory.current.createTemp('caching_server_');
+      final fakeServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final requests = <HttpRequest>[];
+      fakeServer.listen((request) {
+        requests.add(request);
+      });
+      try {
+        VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false);
+        String? digest;
+        bool digestErrored = false;
+        VideoServer.instance.startCachingDownload(uri: (Uri.http('localhost:${fakeServer.port}', '/test.m3u8'))).then((h) {
+          digest = h;
+        }).catchError((e) {
+          digestErrored = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(requests.length, equals(1));
+        requests[0].response.bufferOutput = false;
+        requests[0].response.contentLength = 10000;
+        requests[0].response.add(Uint8List(1000));
+        await requests[0].response.flush();
+        try {
+          await requests[0].response.close();
+        }
+        on HttpException {
+          // Expected, we are prematurely closing the stream
+        }
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(digest, isNull);
+        expect(digestErrored, isTrue);
+      }
+      finally {
+        await root.delete(recursive: true);
+        fakeServer.close();
+        VideoServer.teardownStatic();
+      }
+    });
+
+    test('Sibling incomplete m3u8s', () async {
+      final root = await Directory.current.createTemp('caching_server_');
+      VideoServer.initializeStatic(root, root, port: 4071, bufferOutput: false);
+      final fakeServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final client = HttpClient();
+      final requests = <HttpRequest>[];
+      fakeServer.listen((request) {
+        requests.add(request);
+      });
+      try {
+        final uri1 = Uri.http('localhost:${fakeServer.port}', '/Dir1/File1.ext1');
+        final digestFuture = VideoServer.instance.startCachingDownload(uri: uri1);
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(requests.length, equals(1));
+        expect(requests[0].requestedUri.path, equals('/Dir1/File1.ext1'));
+        requests[0].response.bufferOutput = false;
+        requests[0].response.contentLength = 10000;
+        requests[0].response.add(Uint8List(1000));
+        await requests[0].response.flush();
+        final digest = await digestFuture;
+        final clientRequest = await client.getUrl(VideoServer.instance.getUri(digest));
+        expect(VideoServer.instance.getUri(digest).path, endsWith('.ext1'));
+        clientRequest.bufferOutput = false;
+        final response = await clientRequest.close();
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(response.contentLength, equals(10000));
+        expect(response.statusCode, equals(200));
+        final chunks = <List<int>>[];
+        bool responseStreamSubscriptionIsDone = false;
+        response.listen(chunks.add, onDone: () {
+          responseStreamSubscriptionIsDone = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(chunks.length, equals(1));
+        expect(chunks[0].length, equals(1000));
+        requests[0].response.add(Uint8List(9000));
+        await requests[0].response.flush();
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(chunks.length, equals(2));
+        expect(chunks[1].length, equals(9000));
+        await requests[0].response.close();
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(chunks.length, equals(2));
+        expect(responseStreamSubscriptionIsDone, isTrue);
+        final file = VideoServer.instance.getFile(digest);
+        expect(await file.exists(), isTrue);
+        expect(await file.length(), equals(10000));
+        // Now try a m3u8 file relative to the first URI
+        final uri2 = VideoServer.instance.getUri(digest).resolve('./File2.m3u8');
+        final clientRequest2 = await client.getUrl(uri2);
+        clientRequest2.bufferOutput = false;
+        final clientRequest2Future = clientRequest2.close();
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(requests.length, equals(2));
+        expect(requests[1].requestedUri.path, equals('/Dir1/File2.m3u8'));
+        requests[1].response.bufferOutput = false;
+        requests[1].response.contentLength = 300;
+        requests[1].response.add(Uint8List(100));
+        await requests[1].response.flush();
+        try {
+          await requests[1].response.close();
+        }
+        on HttpException {
+          // Expected, we are prematurely closing the stream
+        }
+        final response2 = await clientRequest2Future;
+        expect(response2.statusCode, equals(502));
+        bool response2StreamSubscriptionIsDone = false;
+        bool response2StreamSubscriptionIsErrored = false;
+        final chunks2 = <List<int>>[];
+        response2.listen(chunks2.add, onDone: () {
+          response2StreamSubscriptionIsDone = true;
+        }, onError: () {
+          response2StreamSubscriptionIsErrored = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(chunks2.length, equals(0));
+        expect(response2StreamSubscriptionIsDone, isTrue);
+        expect(response2StreamSubscriptionIsErrored, isFalse);
+        final file2 = VideoServer.instance.optimisticallyGetFile(uri1.resolve('./File2.m3u8'));
+        expect(await file2.exists(), isFalse);
       }
       finally {
         await root.delete(recursive: true);
