@@ -6,6 +6,7 @@ import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
@@ -38,6 +39,7 @@ class AttachmentsPage extends StatefulWidget {
 	createState() => _AttachmentsPageState();
 }
 
+const int _kImageLoadingPoolSize = 3;
 class _AttachmentsPageState extends State<AttachmentsPage> {
 	final Map<TaggedAttachment, AttachmentViewerController> _controllers = {};
 	late final RefreshableListController<TaggedAttachment> _controller;
@@ -53,8 +55,8 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 	final _listKey = GlobalKey(debugLabel: '_AttachmentsPageState._listKey');
 	final _videoLoadingLock = Mutex();
 	final _videoLoadingQueue = <AttachmentViewerController>[];
-	final _imageLoadingPool = Pool(3);
-	final _imageLoadingQueue = <AttachmentViewerController>[];
+	final _imageLoadingPool = Pool(_kImageLoadingPoolSize);
+	final _imageLoadingQueue = <TaggedAttachment>[];
 	TaggedAttachment? _lastMiddleVisibleItem;
 
 	void _queueVideoLoading(AttachmentViewerController controller) {
@@ -69,16 +71,26 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 		});
 	}
 
-	void _queueImageLoading(AttachmentViewerController controller) {
-		_imageLoadingQueue.add(controller);
-		_imageLoadingPool.withResource(() async {
-			if (_imageLoadingQueue.isEmpty) {
+	Future<void> _imageQueueWorker() async {
+		if (_imageLoadingQueue.isEmpty) {
+			return;
+		}
+		// LIFO stack
+		final item = _imageLoadingQueue.removeLast();
+		if (_imageLoadingQueue.length > _kImageLoadingPoolSize) {
+			// Maybe reorder to prioritize onscreen items
+			if (random.nextBool() && !_controller.isOnscreen(item)) {
+				_imageLoadingQueue.insert(0, item);
+				_imageLoadingPool.withResource(_imageQueueWorker);
 				return;
 			}
-			// LIFO stack
-			final item = _imageLoadingQueue.removeLast();
-			await Future.microtask(() => item.preloadFullAttachment());
-		});
+		}
+		await Future.microtask(() => _getController(item).preloadFullAttachment());
+	}
+
+	void _queueImageLoading(TaggedAttachment attachment) {
+		_imageLoadingQueue.add(attachment);
+		_imageLoadingPool.withResource(_imageQueueWorker);
 	}
 
 	@override
@@ -135,7 +147,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 					_queueVideoLoading(controller);
 				}
 				else {
-					_queueImageLoading(controller);
+					_queueImageLoading(attachment);
 				}
 			}
 			return controller;
