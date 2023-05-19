@@ -431,16 +431,12 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				file = File(heicPath);
 				ext = 'jpg';
 			}
-			else if (ext == 'webp') {
-				file = await convertToJpg(file);
-				ext = 'jpg';
-			}
 			final size = (await file.stat()).size;
 			final scan = await MediaScan.scan(file.uri);
 			setState(() {
 				_attachmentProgress = null;
 			});
-			if (ext == 'jpg' || ext == 'jpeg') {
+			if (ext == 'jpg' || ext == 'jpeg' || ext == 'webp') {
 				file = await _showTranscodeWindow(
 					source: file,
 					size: size,

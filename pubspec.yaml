@@ -37,7 +37,6 @@ dependencies:
   auto_size_text: ^3.0.0
   hive: ^2.0.1
   hive_flutter: ^1.1.0
-  image: ^4.0.15
   image_picker: ^0.8.4
   heic_to_jpg: ^0.2.0
   mutex: ^3.0.0

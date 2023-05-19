@@ -15,7 +15,6 @@ import 'package:ffmpeg_kit_flutter_full_gpl/session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:image/image.dart';
 import 'package:mutex/mutex.dart';
 import 'package:pool/pool.dart';
 
@@ -493,28 +492,4 @@ class MediaConversion {
 	}
 
 	void cancel() => _session?.cancel();
-}
-
-class _ConvertParam {
-	final String inputPath;
-	final String temporaryDirectoryPath;
-	const _ConvertParam({
-		required this.inputPath,
-		required this.temporaryDirectoryPath
-	});
-}
-
-Future<File> convertToJpg(File input) async {
-	return File(await compute<_ConvertParam, String>((param) async {
-		final image = decodeImage(await File(param.inputPath).readAsBytes());
-		if (image == null) {
-			throw Exception('Failed to decode image');
-		}
-		final outputFile = File('${param.temporaryDirectoryPath}/${param.inputPath.split('/').last.replaceAll(RegExp(r'\.[^.]+$'), '.jpg')}');
-		await outputFile.writeAsBytes(encodeJpg(image));
-		return outputFile.path;
-	}, _ConvertParam(
-		inputPath: input.path,
-		temporaryDirectoryPath: Persistence.temporaryDirectory.path
-	)));
 }
