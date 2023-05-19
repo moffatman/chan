@@ -247,7 +247,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 												isAttachmentAlreadyDownloaded: widget.threadState?.isAttachmentDownloaded,
 												onAttachmentDownload: widget.threadState?.didDownloadAttachment,
 												useHeroDestinationWidget: true,
-												heroOtherEndIsBoxFitCover: false,
+												heroOtherEndIsBoxFitCover: true,
 												additionalContextMenuActionsBuilder: (attachment) => [
 													CupertinoContextMenuAction2(
 														trailingIcon: CupertinoIcons.return_icon,
@@ -266,11 +266,19 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 										child: Hero(
 											tag: attachment,
 											createRectTween: (startRect, endRect) {
-												if (startRect != null && endRect != null && attachment.attachment.type == AttachmentType.image) {
-													// Need to deflate the original startRect because it has inbuilt layoutInsets
-													// This AttachmentViewer doesn't know about them.
-													final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
-													startRect = rootPadding.deflateRect(startRect);
+												if (startRect != null && endRect != null) {
+													if (attachment.attachment.type == AttachmentType.image) {
+														// Need to deflate the original startRect because it has inbuilt layoutInsets
+														// This AttachmentViewer doesn't know about them.
+														final rootPadding = MediaQueryData.fromView(View.of(context)).padding - sumAdditionalSafeAreaInsets();
+														startRect = rootPadding.deflateRect(startRect);
+													}
+													if (attachment.attachment.width != null && attachment.attachment.height != null) {
+														// This is AttachmentViewer -> AttachmentThumbnail (cover)
+														// Need to shrink the startRect, so it only contains the image
+														final fittedStartSize = applyBoxFit(BoxFit.contain, Size(attachment.attachment.width!.toDouble(), attachment.attachment.height!.toDouble()), startRect.size).destination;
+														startRect = Alignment.center.inscribe(fittedStartSize, startRect);
+													}
 												}
 												return CurvedRectTween(curve: Curves.ease, begin: startRect, end: endRect);
 											},
@@ -282,7 +290,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 														allowGestures: false,
 														semanticParentIds: const [-101],
 														useHeroDestinationWidget: true,
-														heroOtherEndIsBoxFitCover: false,
+														heroOtherEndIsBoxFitCover: true,
 														videoThumbnailMicroPadding: false,
 														onlyRenderVideoWhenPrimary: true,
 														fit: BoxFit.cover,

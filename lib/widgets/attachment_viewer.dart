@@ -906,7 +906,7 @@ class AttachmentViewer extends StatelessWidget {
 				// Need to deflate the rect as AttachmentThumbnail does not know about the layoutInsets
 				endRect = layoutInsets.deflateRect(endRect);
 			}
-			if (heroOtherEndIsBoxFitCover &&
+			if ((useHeroDestinationWidget ? fit == BoxFit.cover : heroOtherEndIsBoxFitCover) &&
 					attachment.width != null &&
 					attachment.height != null) {
 				// The flight child will try to cover its rect. Need to restrict it based on the image aspect ratio.
