@@ -95,7 +95,7 @@ class ReplyBoxState extends State<ReplyBox> {
 	late final TextEditingController _filenameController;
 	late final FocusNode _textFocusNode;
 	bool loading = false;
-	MediaScan? _attachmentScan;
+	(MediaScan, FileStat)? _attachmentScan;
 	File? attachment;
 	String? get attachmentExt => attachment?.path.split('.').last.toLowerCase();
 	bool _showOptions = false;
@@ -515,7 +515,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				throw Exception('Unsupported file type: $ext');
 			}
 			if (file != null) {
-				_attachmentScan = await MediaScan.scan(file.uri);
+				_attachmentScan = (await MediaScan.scan(file.uri), await file.stat());
 				setState(() {
 					attachment = file;
 				});
@@ -1141,13 +1141,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												child: AutoSizeText(
 												[
 													if (attachmentExt == 'mp4' || attachmentExt == 'webm') ...[
-														if (_attachmentScan?.codec != null) _attachmentScan!.codec!.toUpperCase(),
-														if (_attachmentScan?.hasAudio == true) 'with audio'
+														if (_attachmentScan?.$1.codec != null) _attachmentScan!.$1.codec!.toUpperCase(),
+														if (_attachmentScan?.$1.hasAudio == true) 'with audio'
 														else 'no audio',
-														if (_attachmentScan?.duration != null) formatDuration(_attachmentScan!.duration!),
-														if (_attachmentScan?.bitrate != null) '${(_attachmentScan!.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
+														if (_attachmentScan?.$1.duration != null) formatDuration(_attachmentScan!.$1.duration!),
+														if (_attachmentScan?.$1.bitrate != null) '${(_attachmentScan!.$1.bitrate! / (1024 * 1024)).toStringAsFixed(1)} Mbps',
 													],
-													if (_attachmentScan?.width != null && _attachmentScan?.height != null) '${_attachmentScan?.width}x${_attachmentScan?.height}'
+													if (_attachmentScan?.$1.width != null && _attachmentScan?.$1.height != null) '${_attachmentScan?.$1.width}x${_attachmentScan?.$1.height}',
+													if (_attachmentScan?.$2.size != null) formatFilesize(_attachmentScan?.$2.size ?? 0)
 												].join(', '),
 												style: const TextStyle(color: Colors.grey),
 												maxLines: 3,

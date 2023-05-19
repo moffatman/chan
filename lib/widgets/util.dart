@@ -217,7 +217,7 @@ String formatDuration(Duration d) {
 
 String formatFilesize(int sizeInBytes) {
 	if (sizeInBytes > 1024*1024) {
-		return '${(sizeInBytes / (1024*1024)).round()} MB';
+		return '${(sizeInBytes / (1024*1024)).toStringAsFixed(1)} MB';
 	}
 	else {
 		return '${(sizeInBytes / 1024).round()} KB';
