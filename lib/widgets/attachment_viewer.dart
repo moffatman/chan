@@ -1199,6 +1199,10 @@ class AttachmentViewer extends StatelessWidget {
 					onLongPressEnd: (x) => controller._onLongPressEnd(),
 					child: Stack(
 						children: [
+							const Positioned.fill(
+								// Needed to enable tapping to reveal chrome via an ancestor GestureDetector
+								child: AbsorbPointer()
+							),
 							if (controller.overrideSource == null) Positioned.fill(
 								child: FittedBox(
 									child: Padding(
@@ -1216,9 +1220,6 @@ class AttachmentViewer extends StatelessWidget {
 										)
 									)
 								)
-							) else const Positioned.fill(
-								// Needed to enable tapping to reveal chrome via an ancestor GestureDetector
-								child: AbsorbPointer()
 							),
 							if (controller._showAudioOnly) Positioned.fill(
 								child: Center(
