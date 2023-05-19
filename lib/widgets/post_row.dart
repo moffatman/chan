@@ -354,79 +354,78 @@ class PostRow extends StatelessWidget {
 			style: expandedInline ? PostSpanZoneStyle.expandedInline : null,
 			builder: (ctx) => Padding(
 				padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
-				child: IgnorePointer(
-					ignoring: !allowTappingLinks,
-					child: ConditionalOnTapUp(
-						condition: (d) => ctx.read<PostSpanZoneData>().canTap(d.position),
-						onTapUp: (d) {
-							if (!ctx.read<PostSpanZoneData>().onTap(d.globalPosition)) {
-								onTap?.call();
-							}
-						},
-						child: Text.rich(
-							TextSpan(
-								children: [
-									if (attachments != null) WidgetSpan(
-										child: attachments,
-										floating: settings.imagesOnRight ? PlaceholderFloating.right : PlaceholderFloating.left,
-										alignment: PlaceholderAlignment.middle
-									),
-									if (
-										// The site uses parentIds
-										!site.explicitIds &&
-										// The post has a parentId
-										post.parentId != null &&
-										// The parentId is not obvious based on context
-										post.parentId != parentZone.stackIds.tryLast
-									) ...[
-										PostQuoteLinkSpan(
-											board: latestPost.board,
-											threadId: latestPost.threadId,
-											postId: latestPost.parentId!,
-											key: const ValueKey('parentId op quotelink')
-										).build(
-											ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-												shrinkWrap: shrinkWrap
-											)
-										),
-										const TextSpan(text: '\n'),
-									],
-									(translatedPostSnapshot?.data ?? latestPost).span.build(
-										ctx, ctx.watch<PostSpanZoneData>(), settings, theme,
-										(baseOptions ?? const PostSpanRenderOptions()).copyWith(
-											showCrossThreadLabel: showCrossThreadLabel,
+				child: ConditionalOnTapUp(
+					condition: (d) => allowTappingLinks && ctx.read<PostSpanZoneData>().canTap(d.position),
+					onTapUp: (d) {
+						if (!ctx.read<PostSpanZoneData>().onTap(d.globalPosition)) {
+							onTap?.call();
+						}
+					},
+					child: Text.rich(
+						TextSpan(
+							children: [
+								if (attachments != null) WidgetSpan(
+									child: attachments,
+									floating: settings.imagesOnRight ? PlaceholderFloating.right : PlaceholderFloating.left,
+									alignment: PlaceholderAlignment.middle
+								),
+								if (
+									// The site uses parentIds
+									!site.explicitIds &&
+									// The post has a parentId
+									post.parentId != null &&
+									// The parentId is not obvious based on context
+									post.parentId != parentZone.stackIds.tryLast
+								) ...[
+									PostQuoteLinkSpan(
+										board: latestPost.board,
+										threadId: latestPost.threadId,
+										postId: latestPost.parentId!,
+										key: const ValueKey('parentId op quotelink')
+									).build(
+										ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 											shrinkWrap: shrinkWrap,
-											addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
-											postInject: overrideReplyCount != null ? WidgetSpan(
-												alignment: PlaceholderAlignment.top,
-												child: Visibility(
-													visible: false,
-													maintainSize: true,
-													maintainAnimation: true,
-													maintainState: true,
-													child: Padding(
-														padding: const EdgeInsets.only(left: 8, right: 8),
-														child: overrideReplyCount!
-													)
-												)
-											) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null : WidgetSpan(
-												child: Text(
-													List.filled(replyIds.length.toString().length + 4, '1').join(),
-													style: const TextStyle(color: Colors.transparent)
-												),
-												floating: PlaceholderFloating.right
-											))
+											ignorePointer: !allowTappingLinks
 										)
 									),
 									const TextSpan(text: '\n'),
-									// In practice this is the height of a line of text
-									const WidgetSpan(
-										child: SizedBox.shrink()
+								],
+								(translatedPostSnapshot?.data ?? latestPost).span.build(
+									ctx, ctx.watch<PostSpanZoneData>(), settings, theme,
+									(baseOptions ?? const PostSpanRenderOptions()).copyWith(
+										showCrossThreadLabel: showCrossThreadLabel,
+										shrinkWrap: shrinkWrap,
+										addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
+										ignorePointer: !allowTappingLinks,
+										postInject: overrideReplyCount != null ? WidgetSpan(
+											alignment: PlaceholderAlignment.top,
+											child: Visibility(
+												visible: false,
+												maintainSize: true,
+												maintainAnimation: true,
+												maintainState: true,
+												child: Padding(
+													padding: const EdgeInsets.only(left: 8, right: 8),
+													child: overrideReplyCount!
+												)
+											)
+										) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null : WidgetSpan(
+											child: Text(
+												List.filled(replyIds.length.toString().length + 4, '1').join(),
+												style: const TextStyle(color: Colors.transparent)
+											),
+											floating: PlaceholderFloating.right
+										))
 									)
-								]
-							),
-							overflow: TextOverflow.fade
-						)
+								),
+								const TextSpan(text: '\n'),
+								// In practice this is the height of a line of text
+								const WidgetSpan(
+									child: SizedBox.shrink()
+								)
+							]
+						),
+						overflow: TextOverflow.fade
 					)
 				)
 			)
@@ -498,7 +497,8 @@ class PostRow extends StatelessWidget {
 																	).build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 																		showCrossThreadLabel: showCrossThreadLabel,
 																		addExpandingPosts: false,
-																		shrinkWrap: shrinkWrap
+																		shrinkWrap: shrinkWrap,
+																		ignorePointer: !allowTappingLinks
 																	))),
 																	...replyIds.map((id) => WidgetSpan(
 																		child: ExpandingPost(id: id),
