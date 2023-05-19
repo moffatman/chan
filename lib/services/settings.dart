@@ -486,6 +486,22 @@ enum AndroidGallerySavePathOrganizing {
 	boardAndThreadSubfolders
 }
 
+final allowedGoogleFonts = {
+	'Josefin Sans': GoogleFonts.josefinSans,
+	'Lato': GoogleFonts.lato,
+	'Merriweather': GoogleFonts.merriweather,
+	'Merriweather Sans': GoogleFonts.merriweatherSans,
+	'Montserrat': GoogleFonts.montserrat,
+	'Noto Sans': GoogleFonts.notoSans,
+	'Open Sans': GoogleFonts.openSans,
+	'PT Sans': GoogleFonts.ptSans,
+	'Raleway': GoogleFonts.raleway,
+	'Roboto': GoogleFonts.roboto,
+	'Roboto Slab': GoogleFonts.robotoSlab,
+	'Slabo 27px': GoogleFonts.slabo27px,
+	'Source Sans Pro': GoogleFonts.sourceSansPro
+};
+
 @HiveType(typeId: 0)
 class SavedSettings extends HiveObject {
 	@HiveField(0)
@@ -1105,7 +1121,7 @@ class SavedSettings extends HiveObject {
 				fontFamily: '.SF Pro Text'
 			);
 		}
-		return GoogleFonts.asMap()[fontFamily!]?.call() ?? TextStyle(
+		return allowedGoogleFonts[fontFamily!]?.call() ?? TextStyle(
 			fontFamily: fontFamily!
 		);
 	}

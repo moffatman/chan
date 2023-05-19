@@ -35,7 +35,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1430,7 +1429,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																),
 																CupertinoDialogAction2(
 																	child: const Text('Google Fonts'),
-																	onPressed: () => Navigator.pop(context, GoogleFonts.asMap().keys.toList())
+																	onPressed: () => Navigator.pop(context, allowedGoogleFonts.keys.toList())
 																),
 																CupertinoDialogAction2(
 																	child: const Text('Reset to default'),
@@ -1469,7 +1468,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																		),
 																		itemBuilder: (context, i) => CupertinoDialogAction2(
 																			onPressed: () => Navigator.pop(context, availableFonts[i]),
-																			child: Text(availableFonts[i])
+																			child: Text(availableFonts[i], style: allowedGoogleFonts[availableFonts[i]]?.call() ?? TextStyle(
+																				fontFamily: availableFonts[i]
+																			))
 																		)
 																	)
 																)
