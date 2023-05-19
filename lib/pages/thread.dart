@@ -509,9 +509,9 @@ class _ThreadPageState extends State<ThreadPage> {
 		final bool firstLoad = tmpPersistentState.thread == null;
 		// The thread might switch in this interval
 		_checkForeground();
-		late final Thread newThread;
+		final Thread newThread;
 		if (tmpPersistentState.useArchive) {
-			await site.getThreadFromArchive(widget.thread, interactive: _foreground);
+			newThread = await site.getThreadFromArchive(widget.thread, interactive: _foreground);
 		}
 		else {
 			try {
