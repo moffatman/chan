@@ -315,7 +315,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		super.initState();
 		_listController = RefreshableListController();
 		persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
-		persistentState.ensureThreadLoaded();
+		persistentState.ensureThreadLoaded().then((_) => _onThreadStateListenableUpdate());
 		persistentState.useArchive |= widget.initiallyUseArchive;
 		persistentState.save();
 		_maybeUpdateWatch();
@@ -374,7 +374,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			_weakNavigatorKey.currentState!.popAllExceptFirst();
 			persistentState.save(); // Save old state in case it had pending scroll update to save
 			persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
-			persistentState.ensureThreadLoaded();
+			persistentState.ensureThreadLoaded().then((_) => _onThreadStateListenableUpdate());
 			persistentState.useArchive |= widget.initiallyUseArchive;
 			final oldZone = zone;
 			Future.delayed(const Duration(milliseconds: 100), () => oldZone.dispose());

@@ -397,7 +397,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 										showSiteIcon: ImageboardRegistry.instance.count > 1,
 										allowTappingLinks: false,
 										isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
-										onTap: () => widget.onResultSelected(row.imageboard.scope(row.item.identifier)),
+										onTap: () {
+											row.imageboard.persistence.getThreadState(row.item.identifier.thread).thread ??= row.item.thread;
+											widget.onResultSelected(row.imageboard.scope(row.item.identifier));
+										},
 										baseOptions: PostSpanRenderOptions(
 											highlightString: widget.query
 										),
@@ -412,7 +415,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 								child: Builder(
 									builder: (context) => CupertinoButton(
 										padding: EdgeInsets.zero,
-										onPressed: () => widget.onResultSelected(row.imageboard.scope(row.item.identifier)),
+										onPressed: () {
+											row.imageboard.persistence.getThreadState(row.item.identifier.thread).thread ??= row.item.thread;
+											widget.onResultSelected(row.imageboard.scope(row.item.identifier));
+										},
 										child: ThreadRow(
 											thread: row.item.thread,
 											onThumbnailTap: (attachment) => showGallery(
