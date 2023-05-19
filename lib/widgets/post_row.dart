@@ -467,7 +467,7 @@ class PostRow extends StatelessWidget {
 		final Widget? attachments;
 		if (smallAttachments.isNotEmpty && settings.showImages(context, latestPost.board)) {
 			attachments = Padding(
-				padding: settings.imagesOnRight ? const EdgeInsets.only(left: 8) : const EdgeInsets.only(right: 8),
+				padding: (settings.imagesOnRight && replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32, right: 8) : const EdgeInsets.only(right: 8),
 				child: Column(
 					crossAxisAlignment: CrossAxisAlignment.start,
 					mainAxisSize: MainAxisSize.min,
@@ -487,7 +487,7 @@ class PostRow extends StatelessWidget {
 									onPressed: onThumbnailTap?.bind1(taggedAttachment),
 									child: ConstrainedBox(
 										constraints: const BoxConstraints(
-											minHeight: 51
+											//minHeight: 75
 										),
 										child: AttachmentThumbnail(
 											attachment: attachment,
@@ -502,36 +502,37 @@ class PostRow extends StatelessWidget {
 												backgroundColor: theme.backgroundColor,
 												borderColor: theme.primaryColorWithBrightness(0.2),
 												size: null
-											),
-											heroScale: MediaQuery.textScaleFactorOf(context)
+											)
 										)
 									)
 								)
 							);
-						}).expand((x) => [x, const SizedBox(height: 8)])
+						}).expand((x) => [const SizedBox(height: 8), x]).skip(1).toList()
 					]
 				)
 			);
 		}
 		else if (latestPost.attachmentDeleted) {
-			attachments = SizedBox(
-				width: 75,
-				height: 75,
-				child:
-					parentZone.isLoadingPostFromArchive(post.board, post.id) ?
-						const CircularProgressIndicator.adaptive() :
-						switch (parentZone.postFromArchiveError(post.board, post.id)) {
-							(Object error, StackTrace stackTrace) => CupertinoInkwell(
-								onPressed: () => alertError(context, error, stackTrace, actions: {
-									'Retry': () => parentZone.loadPostFromArchive(post.board, post.id)
-								}),
-								child: const Icon(CupertinoIcons.exclamationmark_triangle, size: 36)
-							),
-							null => CupertinoInkwell(
-								onPressed: () => parentZone.loadPostFromArchive(post.board, post.id),
-								child: const Icon(CupertinoIcons.xmark_square, size: 36)
-							)
-						}
+			attachments = Center(
+				child: SizedBox(
+					width: 75,
+					height: 75,
+					child:
+						parentZone.isLoadingPostFromArchive(post.board, post.id) ?
+							const CircularProgressIndicator.adaptive() :
+							switch (parentZone.postFromArchiveError(post.board, post.id)) {
+								(Object error, StackTrace stackTrace) => CupertinoInkwell(
+									onPressed: () => alertError(context, error, stackTrace, actions: {
+										'Retry': () => parentZone.loadPostFromArchive(post.board, post.id)
+									}),
+									child: const Icon(CupertinoIcons.exclamationmark_triangle, size: 36)
+								),
+								null => CupertinoInkwell(
+									onPressed: () => parentZone.loadPostFromArchive(post.board, post.id),
+									child: const Icon(CupertinoIcons.xmark_square, size: 36)
+								)
+							}
+				)
 			);
 		}
 		else {
@@ -540,78 +541,77 @@ class PostRow extends StatelessWidget {
 		final content = Builder(
 			builder: (ctx) => Padding(
 				padding: const EdgeInsets.only(top: 8, left: 8, right: 8, bottom: 16),
-				child: IgnorePointer(
-					ignoring: !allowTappingLinks,
-					child: ConditionalOnTapUp(
-						condition: (d) => ctx.read<PostSpanZoneData>().canTap(d.position),
-						onTapUp: (d) {
-							if (!ctx.read<PostSpanZoneData>().onTap(d.globalPosition)) {
-								onTap?.call();
-							}
-						},
-						child: isDeletedStub ? const SizedBox(height: 14) : Text.rich(
-							TextSpan(
-								children: [
-									if (attachments != null) WidgetSpan(
-										child: attachments,
-										floating: settings.imagesOnRight ? PlaceholderFloating.right : PlaceholderFloating.left,
-										alignment: PlaceholderAlignment.middle
-									),
-									if (
-										// The site uses parentIds
-										!site.explicitIds &&
-										// The post has a parentId
-										post.parentId != null &&
-										// The parentId is not obvious based on context
-										post.parentId != parentZone.stackIds.tryLast
-									) ...[
-										PostQuoteLinkSpan(
-											board: latestPost.board,
-											threadId: latestPost.threadId,
-											postId: latestPost.parentId!,
-											key: const ValueKey('parentId op quotelink')
-										).build(
-											ctx, latestPost, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
-												shrinkWrap: shrinkWrap
-											)
-										),
-										const TextSpan(text: '\n'),
-									],
-									(translatedPostSnapshot?.data ?? latestPost).span.build(
-										ctx, translatedPostSnapshot?.data ?? latestPost,
-										ctx.watch<PostSpanZoneData>(), settings, theme,
-										(baseOptions ?? const PostSpanRenderOptions()).copyWith(
-											showCrossThreadLabel: showCrossThreadLabel,
+				child: ConditionalOnTapUp(
+					condition: (d) => allowTappingLinks && ctx.read<PostSpanZoneData>().canTap(d.position),
+					onTapUp: (d) {
+						if (!ctx.read<PostSpanZoneData>().onTap(d.globalPosition)) {
+							onTap?.call();
+						}
+					},
+					child: isDeletedStub ? const SizedBox(height: 14) : Text.rich(
+						TextSpan(
+							children: [
+								if (attachments != null) WidgetSpan(
+									child: attachments,
+									floating: settings.imagesOnRight ? PlaceholderFloating.right : PlaceholderFloating.left,
+									alignment: PlaceholderAlignment.middle
+								),
+								if (
+									// The site uses parentIds
+									!site.explicitIds &&
+									// The post has a parentId
+									post.parentId != null &&
+									// The parentId is not obvious based on context
+									post.parentId != parentZone.stackIds.tryLast
+								) ...[
+									PostQuoteLinkSpan(
+										board: latestPost.board,
+										threadId: latestPost.threadId,
+										postId: latestPost.parentId!,
+										key: const ValueKey('parentId op quotelink')
+									).build(
+										ctx, latestPost, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 											shrinkWrap: shrinkWrap,
-											onThumbnailTap: onThumbnailTap,
-											propagateOnThumbnailTap: propagateOnThumbnailTap,
-											onThumbnailLoadError: onThumbnailLoadError,
-											revealSpoilerImages: revealSpoilerImages,
-											addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
-											hideThumbnails: hideThumbnails
-										),
-										stripTrailingNewline: true,
-										postInject: showReplyCount ? (overrideReplyCount != null ? WidgetSpan(
-											alignment: PlaceholderAlignment.top,
-											child: Visibility(
-												visible: false,
-												maintainSize: true,
-												maintainAnimation: true,
-												maintainState: true,
-												child: Padding(
-													padding: const EdgeInsets.only(left: 8, right: 8),
-													child: overrideReplyCount!
-												)
+											ignorePointer: !allowTappingLinks
+										)
+									),
+									const TextSpan(text: '\n'),
+								],
+								(translatedPostSnapshot?.data ?? latestPost).span.build(
+									ctx, translatedPostSnapshot?.data ?? latestPost,
+									ctx.watch<PostSpanZoneData>(), settings, theme,
+									(baseOptions ?? const PostSpanRenderOptions()).copyWith(
+										showCrossThreadLabel: showCrossThreadLabel,
+										shrinkWrap: shrinkWrap,
+										onThumbnailTap: onThumbnailTap,
+										propagateOnThumbnailTap: propagateOnThumbnailTap,
+										onThumbnailLoadError: onThumbnailLoadError,
+										revealSpoilerImages: revealSpoilerImages,
+										addExpandingPosts: settings.supportMouse != TristateSystemSetting.a,
+										ignorePointer: !allowTappingLinks,
+										hideThumbnails: hideThumbnails
+									),
+									stripTrailingNewline: true,
+									postInject: showReplyCount ? (overrideReplyCount != null ? WidgetSpan(
+										alignment: PlaceholderAlignment.top,
+										child: Visibility(
+											visible: false,
+											maintainSize: true,
+											maintainAnimation: true,
+											maintainState: true,
+											child: Padding(
+												padding: const EdgeInsets.only(left: 8, right: 8),
+												child: overrideReplyCount!
 											)
-										) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null : WidgetSpan(
-											child: SizedBox(width: (4 + replyIds.length.numberOfDigitsLinear) * 8),
-											floating: PlaceholderFloating.right
-										))) : null
-									)
-								]
-							),
-							overflow: TextOverflow.fade
-						)
+										)
+									) : ((settings.cloverStyleRepliesButton || replyIds.isEmpty) ? null : WidgetSpan(
+										child: SizedBox(width: (4 + replyIds.length.numberOfDigitsLinear) * 8),
+										floating: PlaceholderFloating.right
+									))) : null
+								)
+							]
+						),
+						overflow: TextOverflow.fade
 					)
 				)
 			)
@@ -778,7 +778,7 @@ class PostRow extends StatelessWidget {
 												crossAxisAlignment: CrossAxisAlignment.start,
 												mainAxisAlignment: MainAxisAlignment.start,
 												mainAxisSize: MainAxisSize.min,
-												children: mainRow
+												children: settings.imagesOnRight ? mainRow.reversed.toList() : mainRow
 											)
 										),
 										if (cloverStyleRepliesButton) SizedBox(
