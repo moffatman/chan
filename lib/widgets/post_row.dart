@@ -321,7 +321,8 @@ class PostRow extends StatelessWidget {
 																	site: site,
 																	context: context,
 																	zone: ctx.watch<PostSpanZoneData>(),
-																	showPostNumber: showPostNumber
+																	showPostNumber: showPostNumber,
+																	interactive: !allowTappingLinks
 																),
 																if (supportMouse) ...[
 																	...replyIds.map((id) => PostQuoteLinkSpan(
