@@ -370,6 +370,10 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	Future<void> _loadFullAttachment(bool background, {bool force = false}) => _lock.protect(() async {
 		if (attachment.type == AttachmentType.image && goodImageSource != null && !force) {
+			final file = await getCachedImageFile(goodImageSource.toString());
+			if (file != null && _cachedFile?.path != file.path) {
+				onCacheCompleted(file);
+			}
 			return;
 		}
 		if (attachment.type.isVideo && ((videoPlayerController != null && !force) || _ongoingConversion != null)) {
