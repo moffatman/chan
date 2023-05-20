@@ -399,6 +399,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	({DateTime time, String link})? _lastLink;
 	bool _hidTabPopupFromScroll = false;
 	double _accumulatedScrollDelta = 0;
+	bool _thisScrollHasDragDetails = false;
 
 	bool get showTabPopup => _showTabPopup;
 	set showTabPopup(bool setting) {
@@ -418,6 +419,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool _onScrollNotification(Notification notification) {
 		if (notification is ScrollStartNotification) {
 			isScrolling.value = true;
+			_thisScrollHasDragDetails = false;
 		}
 		else if (notification is ScrollEndNotification) {
 			isScrolling.value = false;
@@ -426,7 +428,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			}
 		}
 		else if (settings.tabMenuHidesWhenScrollingDown && notification is ScrollUpdateNotification) {
-			if (notification.metrics.axis == Axis.vertical && notification.dragDetails != null && notification.metrics.extentAfter > 100) {
+			_thisScrollHasDragDetails |= notification.dragDetails != null;
+			if (notification.metrics.axis == Axis.vertical && _thisScrollHasDragDetails && notification.metrics.extentAfter > 100) {
 				_accumulatedScrollDelta += notification.scrollDelta ?? 0;
 				_accumulatedScrollDelta = _accumulatedScrollDelta.clamp(-51, 51);
 				if (_accumulatedScrollDelta > 50 && showTabPopup) {
