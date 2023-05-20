@@ -65,7 +65,7 @@ class Chan4CustomCaptchaGuesses {
 
 	Chan4CustomCaptchaGuess forNumLetters(int numLetters) {
 		List<MapEntry<int, _LetterScore>> answersBest = _answersBest.asMap().entries.toList();
-		answersBest.sort((a, b) => b.value.score.compareTo(a.value.score));
+		answersBest.sort((a, b) => a.value.score.compareTo(b.value.score));
 		answersBest = answersBest.sublist(0, numLetters);
 		answersBest.sort((a, b) => a.value.x - b.value.x);
 		final maxScore = answersBest.map((x) => x.value.score).reduce(max);
