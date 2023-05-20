@@ -612,6 +612,18 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			);
 		}
 		else if (challenge != null) {
+			int minGuessConfidenceIndex = 0;
+			if (numLetters == 5) {
+				// Only emphasize worst letter on 6-captcha form
+				minGuessConfidenceIndex = -1;
+			}
+			else {
+				for (int i = 1; i < _guessConfidences.length; i++) {
+					if (_guessConfidences[i] < _guessConfidences[minGuessConfidenceIndex]) {
+						minGuessConfidenceIndex = i;
+					}
+				}
+			}
 			return Center(
 				child: ConstrainedBox(
 					constraints: const BoxConstraints(
@@ -918,7 +930,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																										fontSize: 34,
 																										color:  ColorTween(
 																											begin: CupertinoTheme.of(context).primaryColor,
-																											end: const Color.fromARGB(255, 241, 190, 19)).transform(1 - _guessConfidences[min(_guessConfidences.length - 1, i)]
+																											end: const Color.fromARGB(255, 241, 190, 19)).transform(0.4 - 0.4*_guessConfidences[min(_guessConfidences.length - 1, i)] + (i == minGuessConfidenceIndex ? 0.6 : 0)
 																										)!
 																									)
 																								)
