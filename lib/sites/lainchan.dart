@@ -191,7 +191,7 @@ class SiteLainchan extends ImageboardSite {
 				kInteractive: interactive
 			}
 		));
-		if (response.statusCode == 404 || response.redirects.tryLast?.location.pathSegments.tryLast == '404.html') {
+		if (response.statusCode == 404 || (response.redirects.tryLast?.location.pathSegments.tryLast?.startsWith('404.') ?? false)) {
 			throw ThreadNotFoundException(thread);
 		}
 		else if (response.statusCode != 200) {

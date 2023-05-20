@@ -22,8 +22,8 @@ class SiteFrenschan extends SiteSoyjak {
 	String get siteType => 'frenschan';
 
 	@override
-	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
-		final broken = await super.getThread(thread, interactive: interactive);
+	Future<Thread> getThreadImpl(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive}) async {
+		final broken = await super.getThreadImpl(thread, interactive: interactive);
 		final response = await client.getUri(Uri.https(baseUrl, '/${thread.board}/res/${thread.id}.html'), options: Options(
 			extra: {
 				kInteractive: interactive

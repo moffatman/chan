@@ -1,12 +1,14 @@
 import 'package:chan/services/util.dart';
+import 'package:chan/sites/frenschan.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/sites/lainchan_org.dart';
 
-class SiteErischan extends SiteLainchanOrg {
+class SiteErischan extends SiteFrenschan {
 	SiteErischan({
 		required super.baseUrl,
 		required super.name
-	});
+	}) : super(
+		defaultUsername: ''
+	);
 
 	@override
 	Future<CaptchaRequest> getCaptchaRequest(String board, [int? threadId]) async {
@@ -16,4 +18,7 @@ class SiteErischan extends SiteLainchanOrg {
 			})
 		);
 	}
+
+	@override
+	String get res => 'res';
 }
