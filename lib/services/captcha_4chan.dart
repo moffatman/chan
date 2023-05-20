@@ -172,32 +172,38 @@ int _floodFillBuffer({
 	return pixelsChanged;
 }
 
-Uint8List _fixCuts({
+Uint8List _dilate({
 	required Uint8List buffer,
 	required int width,
 	required int height
 }) {
-	final out1 = Uint8List.fromList(buffer);
-	// dilate
+	final out = Uint8List.fromList(buffer);
 	for (int y = 1; y < height - 1; y++) {
 		for (int x = 1; x < width - 1; x++) {
 			final pos = y * width + x;
 			if (buffer[pos + 1] == 0 || buffer[pos - 1] == 0 || buffer[pos + width] == 0 || buffer[pos - width] == 0) {
-				out1[pos] = 0;
+				out[pos] = 0;
 			}
 		}
 	}
-	final out2 = Uint8List.fromList(out1);
-	// erode
+	return out;
+}
+
+Uint8List _erode({
+	required Uint8List buffer,
+	required int width,
+	required int height
+}) {
+	final out = Uint8List.fromList(buffer);
 	for (int y = 1; y < height - 1; y++) {
 		for (int x = 1; x < width - 1; x++) {
 			final pos = y * width + x;
-			if (out1[pos + 1] == 0xFF || out1[pos - 1] == 0xFF || out1[pos + width] == 0xFF || out1[pos - width] == 0xFF) {
-				out2[pos] = 0;
+			if (buffer[pos + 1] == 0xFF || buffer[pos - 1] == 0xFF || buffer[pos + width] == 0xFF || buffer[pos - width] == 0xFF) {
+				out[pos] = 0xFF;
 			}
 		}
 	}
-	return out2;
+	return out;
 }
 
 int _estimateNumLetters({
@@ -343,11 +349,6 @@ void _guess(_GuessParam param) async {
 	Uint8List captcha = await _getRedChannelOnly(param.rgbaData);
 	final width = param.width;
 	final height = param.height;
-	captcha = _fixCuts(
-		buffer: captcha,
-		width: width,
-		height: height
-	);
 	// Threshold
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
@@ -359,6 +360,16 @@ void _guess(_GuessParam param) async {
 			}
 		}
 	}
+	// Heal "white noise" cuts
+	captcha = _erode(
+		buffer: _dilate(
+			buffer: captcha,
+			width: width,
+			height: height
+		),
+		width: width,
+		height: height
+	);
 	// Preprocess
 	Uint8List filling = Uint8List.fromList(captcha);
 	for (int i = 0; i < _floodFillIterations; i++) {
@@ -394,6 +405,16 @@ void _guess(_GuessParam param) async {
 			param.sendPort.send(_preprocessProportion * i / _floodFillIterations);
 		}
 	}
+	// Remove "black noise"
+	captcha = _dilate(
+		buffer: _erode(
+			buffer: captcha,
+			width: width,
+			height: height
+		),
+		width: width,
+		height: height
+	);
 	param.sendPort.send(_preprocessProportion);
 	// Create score array
 	Future<List<_LetterScore>> createScoreArray(_LetterImageType type) async {
