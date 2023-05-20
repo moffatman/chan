@@ -627,7 +627,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									aspectRatio: challenge!.foregroundImage!.width / challenge!.foregroundImage!.height,
 									child: GestureDetector(
 										onDoubleTap: () async {
-											await _alignImage();
+											if (challenge?.backgroundImage != null) {
+												await _alignImage();
+											}
 											await _animateGuess();
 										},
 										child: CustomPaint(
