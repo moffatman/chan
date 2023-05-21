@@ -75,4 +75,7 @@ class SiteFrenschan extends SiteSoyjak {
 
 	@override
 	int get hashCode => Object.hash(baseUrl, name, archives);
+
+	@override
+	String get res => 'res';
 }
