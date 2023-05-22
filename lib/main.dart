@@ -624,7 +624,13 @@ class _ChanHomePageState extends State<ChanHomePage> {
 							throw Exception(siteResponse.data['error']);
 						}
 						final site = makeSite(siteResponse.data['data']);
-						final response = await Dio().put('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$siteKey');
+						String platform = Platform.operatingSystem;
+						if (Platform.isIOS && isDevelopmentBuild) {
+							platform += '-dev';
+						}
+						final response = await Dio().put('$contentSettingsApiRoot/user/${Persistence.settings.userId}/site/$siteKey', queryParameters: {
+							'platform': platform
+						});
 						if (response.data['error'] != null) {
 							throw Exception(response.data['error']);
 						}
