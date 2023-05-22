@@ -108,7 +108,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		currentImageboard.refreshBoards();
 		_fetchBoards();
 		scrollController.addListener(_onScroll);
-		Future.delayed(const Duration(milliseconds: 500), _checkForKeyboard);
+		if (context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus) {
+			Future.delayed(const Duration(milliseconds: 500), _checkForKeyboard);
+		}
 	}
 
 	void _checkForKeyboard() {
@@ -288,6 +290,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 											focusNode: _focusNode,
 											onTap: () {
 												scrollController.jumpTo(scrollController.position.pixels);
+												if (!_showSelectedItem) {
+													Future.delayed(const Duration(milliseconds: 500), _checkForKeyboard);
+												}
 											},
 											onSubmitted: (String board) {
 												if (filteredBoards.isNotEmpty) {
