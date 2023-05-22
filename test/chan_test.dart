@@ -65,7 +65,7 @@ void main() {
     test('compress', () {
       const html = '<a href="https://example.com">https://example.com</a><br><span>&gt;&gt;12345678</span>';
       final compressed = compressHTML(html);
-      expect(compressed.html, '<a><b></b></a><br></br><c><d></d></c>');
+      expect(compressed.html, '<c><d></d></c><br></br><e><f></f></e>');
       expect(compressed.decompressTranslation(compressed.html), html);
     });
   });

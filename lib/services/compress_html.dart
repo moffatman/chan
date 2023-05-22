@@ -76,10 +76,14 @@ final _compressiblePatterns = [
 	RegExp(r'^[0-9>]+$') // entirely non-alphabetic
 ];
 
+const _tagBlacklist = {
+	'a', 'b', 'br', 'dd', 'dl', 'dt', 'em', 'h1', 'hr', 'i', 'li', 'ol', 'p', 'q', 'rp', 'rt', 's', 'td', 'th', 'tr', 'tt', 'u', 'ul'
+};
+
 CompressedHTML compressHTML(String html) {
 	final body = parse(html).body!;
 	final reverseCodex = <CompressedNode, String>{};
-	String currentShortform = 'a';
+	String currentShortform = 'c';
 	String getNextCharacter(int code) {
 		if (code < 0x39) {
 			// 0-8
@@ -87,14 +91,6 @@ CompressedHTML compressHTML(String html) {
 		}
 		else if (code == 0x39) {
 			// 9
-			return 'A';
-		}
-		else if (code < 0x5A) {
-			// A-Y
-			return String.fromCharCode(code + 1);
-		}
-		else if (code == 0x5A) {
-			// Z
 			return 'a';
 		}
 		else if (code < 0x7A) {
@@ -112,7 +108,9 @@ CompressedHTML compressHTML(String html) {
 	}
 	String getNextShortform() {
 		final ret = currentShortform;
-		currentShortform = incrementString(currentShortform);
+		do {
+			currentShortform = incrementString(currentShortform);
+		} while (_tagBlacklist.contains(currentShortform));
 		return ret;
 	}
 	mapChildren(Element element) {
