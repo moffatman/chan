@@ -93,8 +93,10 @@ class AttachmentThumbnail extends StatelessWidget {
 				)
 			);
 		}
+		bool resize = false;
 		String url = attachment.thumbnailUrl;
 		if (context.select<EffectiveSettings, bool>((s) => s.fullQualityThumbnails) && attachment.type == AttachmentType.image && !attachment.isRateLimited) {
+			resize = true;
 			url = attachment.url;
 		}
 		if (spoiler && !settings.alwaysShowSpoilers) {
@@ -108,6 +110,13 @@ class AttachmentThumbnail extends StatelessWidget {
 				if (attachment.useRandomUseragent) 'user-agent': makeRandomUserAgent()
 			}
 		);
+		if (resize && effectiveWidth.isFinite && effectiveHeight.isFinite) {
+			image = ExtendedResizeImage(
+				image,
+				width: effectiveWidth.ceil(),
+				height: effectiveHeight.ceil()
+			);
+		}
 		Widget child; 
 		if (settings.loadThumbnails) {
 			child = ExtendedImage(
