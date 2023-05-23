@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -25,6 +26,7 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/version.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
@@ -117,9 +119,9 @@ class ChanFailedApp extends StatelessWidget {
 								recipients: ['callum@moffatman.com'],
 								isHTML: true,
 								body: '''<p>Hi Callum,</p>
-												 <p>Chance isn't starting and is giving the following error:</p>
+												 <p>Chance v$kChanceVersion isn't starting and is giving the following error:</p>
 												 <p>$error</p>
-												 <p>$stackTrace</p>
+												 <p>${const LineSplitter().convert(stackTrace.toString()).join('</p><p>')}</p>
 												 <p>Thanks!</p>'''
 							));
 						}
