@@ -483,6 +483,7 @@ class StreamingMP4Conversion {
 		() async {
 			final joined = await joinedConversion.result;
 			final expected = MediaConversion.toMp4(inputFile, headers: headers, soundSource: soundSource).getDestination();
+			await expected.parent.create(recursive: true);
 			await joined.file.rename(expected.path);
 			_joinedCompleter.complete(expected);
 		}().catchError((e, st) {
