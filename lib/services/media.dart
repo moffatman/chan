@@ -145,7 +145,7 @@ class MediaScan {
 	}) async {
 		if (file.scheme == 'file') {
 			final size = (await File(file.path).stat()).size;
-			final cachedScan = await Persistence.mediaScanBox.get(file.path);
+			final cachedScan = await Persistence.mediaScanBox.get(base64.encode(md5.convert(utf8.encode(file.path)).bytes));
 			if (cachedScan?.sizeInBytes == size) {
 				return cachedScan!;
 			}
