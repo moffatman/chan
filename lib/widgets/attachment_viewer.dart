@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
@@ -12,6 +13,8 @@ import 'package:chan/services/soundposts.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/streaming_mp4.dart';
+import 'package:chan/services/text_recognition.dart';
+import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -34,6 +37,7 @@ import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:video_player/video_player.dart';
+import 'package:vector_math/vector_math_64.dart' show Vector3, Quaternion;
 
 final _domainLoadTimes = <String, List<Duration>>{};
 
@@ -170,6 +174,7 @@ class AttachmentViewerController extends ChangeNotifier {
 	Duration? _swapStartTime;
 	final _lock = Mutex();
 	bool _hideVideoPlayerController = false;
+	List<RecognizedTextBlock> _textBlocks = [];
 
 	// Public API
 	/// Whether loading of the full quality attachment has begun
@@ -214,6 +219,8 @@ class AttachmentViewerController extends ChangeNotifier {
 	bool get swapIncoming => _swapIncoming;
 	/// Whether a seekable version of the file is ready to swap in
 	bool get swapAvailable => _videoFileToSwapIn != null;
+	/// Blocks of text to draw on top of image
+	List<RecognizedTextBlock> get textBlocks => _textBlocks;
 
 
 	AttachmentViewerController({
@@ -715,6 +722,16 @@ class AttachmentViewerController extends ChangeNotifier {
 		);
 	}
 
+	Future<void> translate() async {
+		final rawBlocks = await recognizeText(_cachedFile!);
+		final translated = await batchTranslate(rawBlocks.map((r) => r.text).toList());
+		_textBlocks = rawBlocks.asMap().entries.map((e) => (
+			text: e.key >= translated.length ? 'Nothing for ${e.key} (${translated.length}' : translated[e.key],
+			rect: e.value.rect
+		)).toList();
+		notifyListeners();
+	}
+
 	Future<void> download() async {
 		if (_isDownloaded) return;
 		final settings = context.read<EffectiveSettings>();
@@ -993,6 +1010,24 @@ class AttachmentViewer extends StatelessWidget {
 				enableLoadState: true,
 				handleLoadingProgress: true,
 				layoutInsets: layoutInsets,
+				afterPaintImage: (canvas, rect, image, paint) {
+					final transform = Matrix4.identity();
+					transform.setFromTranslationRotationScale(Vector3(rect.left, rect.top, 0), Quaternion.identity(), Vector3(rect.width / image.width, rect.height / image.height, 0));
+					for (final block in controller.textBlocks) {
+						// Assume the text is always one line
+						final transformedRect = MatrixUtils.transformRect(transform, Rect.fromLTWH(block.rect.left, image.height - block.rect.bottom, block.rect.width, block.rect.height));
+						double fontSize = 14;
+						final builder1 = ui.ParagraphBuilder(ui.ParagraphStyle())..pushStyle(ui.TextStyle(fontSize: fontSize))..addText(block.text)..pop();
+						final paragraph1 = builder1.build();
+						paragraph1.layout(const ui.ParagraphConstraints(width: double.infinity));
+						fontSize *= min(transformedRect.width / paragraph1.maxIntrinsicWidth, transformedRect.height / paragraph1.height);
+						final builder2 = ui.ParagraphBuilder(ui.ParagraphStyle())..pushStyle(ui.TextStyle(fontSize: fontSize, color: Colors.black))..addText(block.text)..pop();
+						final paragraph2 = builder2.build();
+						paragraph2.layout(const ui.ParagraphConstraints(width: double.infinity));
+						canvas.drawRect(transformedRect, Paint()..color = Colors.white.withOpacity(1));
+						canvas.drawParagraph(paragraph2, transformedRect.topLeft + Offset(0, max(0, (paragraph2.height - transformedRect.height) / 2)));
+					}
+				},
 				rotate90DegreesClockwise: controller.rotate90DegreesClockwise,
 				loadStateChanged: (loadstate) {
 					// We can't rely on loadstate.extendedImageLoadState because of using gaplessPlayback
@@ -1136,6 +1171,21 @@ class AttachmentViewer extends StatelessWidget {
 						},
 						key: controller.contextMenuShareButtonKey,
 						child: const Text('Share')
+					),
+					if (isTextRecognitionSupported) CupertinoContextMenuAction2(
+						trailingIcon: Icons.translate,
+						onPressed: () async {
+							try {
+								await controller.translate();
+							}
+							catch (e) {
+								alertError(context, e.toStringDio());
+							}
+							if (context.mounted) {
+								Navigator.pop(context);
+							}
+						},
+						child: const Text('Translate')
 					),
 					...buildImageSearchActions(context, () async => attachment).map((a) => CupertinoContextMenuAction2(
 						isDestructiveAction: a.isDestructiveAction,

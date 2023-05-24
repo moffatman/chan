@@ -1,6 +1,7 @@
 import UIKit
 import Flutter
 import Foundation
+import Vision
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
@@ -164,6 +165,57 @@ import Foundation
         }
         else {
           result(UIPasteboard.general.image?.jpegData(compressionQuality: 0.9))
+        }
+      }
+      else {
+        result(FlutterMethodNotImplemented)
+      }
+    })
+    let textRecognitionChannel = FlutterMethodChannel(name: "com.moffatman.chan/textRecognition", binaryMessenger: controller.binaryMessenger)
+    textRecognitionChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      if (call.method == "recognizeText") {
+        if #available(iOS 13.0, *) {
+          guard let args = call.arguments as? Dictionary<String, Any>,
+                let path = args["path"] as? String,
+                let recognitionLanguages = args["languages"] as? [String],
+                let automaticallyDetectsLanguage = args["autoDetectLanguage"] as? Bool else {
+            result(FlutterError.init(code: "ARGUMENTS", message: "Invalid arguments format", details: nil))
+            return
+          }
+          guard let image = UIImage(contentsOfFile: path), let cgImage = image.cgImage else {
+            result(FlutterError.init(code: "IMAGE", message: "Could not load image from provided path", details: nil))
+            return
+          }
+          let requestHandler = VNImageRequestHandler(cgImage: cgImage)
+          let request = VNRecognizeTextRequest(completionHandler: { (req: VNRequest, err: Error?) -> Void in
+            guard let observations = req.results as? [VNRecognizedTextObservation] else {
+              result(FlutterError.init(code: "PROCESSING", message: err?.localizedDescription, details: nil))
+              return
+            }
+            let results: [Dictionary<String, Any>] = observations.compactMap { observation in
+              guard let candidate = observation.topCandidates(1).first else { return nil }
+              let stringRange = candidate.string.startIndex..<candidate.string.endIndex
+              let boxObservation = try? candidate.boundingBox(for: stringRange)
+              let boundingBox = boxObservation?.boundingBox ?? .zero
+              let normalized = VNImageRectForNormalizedRect(boundingBox, Int(image.size.width), Int(image.size.height))
+              return ["s": candidate.string, "l": normalized.origin.x, "t": image.size.height - (normalized.origin.y + normalized.size.height), "w": normalized.size.width, "h": normalized.size.height]
+            }
+            result(results)
+          })
+          request.recognitionLanguages = recognitionLanguages
+          if #available(iOS 16.0, *) {
+            request.automaticallyDetectsLanguage = automaticallyDetectsLanguage
+          }
+          do {
+            try requestHandler.perform([request])
+          }
+          catch {
+            result(FlutterError.init(code: "PROCESSING", message: error.localizedDescription, details: nil))
+          }
+        }
+        else {
+          result(FlutterError.init(code: "OS", message: "iOS version too low to support text recognition", details: nil))
         }
       }
       else {
