@@ -481,6 +481,7 @@ class AttachmentViewerController extends ChangeNotifier {
 					}
 				}
 				else {
+					_ongoingConversion?.cancelIfActive();
 					_ongoingConversion = StreamingMP4Conversion(url, headers: getHeaders(url), soundSource: soundSource);
 					final result = await _ongoingConversion!.start(force: force);
 					if (_isDisposed) return;
@@ -812,6 +813,7 @@ class AttachmentViewerController extends ChangeNotifier {
 		videoPlayerController?.pause().then((_) => videoPlayerController?.dispose());
 		_longPressFactorStream.close();
 		_videoControllers.remove(this);
+		_ongoingConversion?.cancelIfActive();
 	}
 
 	@override

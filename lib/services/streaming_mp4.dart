@@ -469,6 +469,8 @@ class StreamingMP4Conversion {
 	final Uri? soundSource;
 
 	MediaConversion? _streamingConversion;
+	MediaConversion? _joinedConversion;
+	MediaConversion? _directConversion;
 	final _joinedCompleter = Completer<File>();
 	String? _cachingServerDigest;
 
@@ -478,7 +480,7 @@ class StreamingMP4Conversion {
 	});
 
 	ValueNotifier<double?> _handleJoining(Uri hlsUri) {
-		final joinedConversion = MediaConversion.toMp4(hlsUri, copyStreams: true);
+		final joinedConversion = _joinedConversion = MediaConversion.toMp4(hlsUri, copyStreams: true);
 		joinedConversion.start();
 		() async {
 			final joined = await joinedConversion.result;
@@ -513,7 +515,7 @@ class StreamingMP4Conversion {
 		final surelyAudioOnly = ['jpg', 'jpeg', 'png'].contains(inputExtension);
 		if (Platform.isAndroid && inputExtension == 'webm') {
 			final scan = await MediaScan.scan(inputFile, headers: headers);
-			final conversion = MediaConversion.toWebm(inputFile, headers: headers, soundSource: soundSource, stripAudio: false);
+			final conversion = _directConversion = MediaConversion.toWebm(inputFile, headers: headers, soundSource: soundSource, stripAudio: false);
 			conversion.start();
 			return StreamingMP4ConvertingFile(
 				mp4File: conversion.result.then((r) => r.file),
@@ -583,6 +585,12 @@ class StreamingMP4Conversion {
 		if (_cachingServerDigest != null) {
 			await VideoServer.instance.cleanupCachedDownloadTree(_cachingServerDigest!);
 		}
+	}
+
+	void cancelIfActive() {
+		_streamingConversion?.cancel();
+		_directConversion?.cancel();
+		_joinedConversion?.cancel();
 	}
 
 	void dispose() {

@@ -457,6 +457,7 @@ class MediaConversion {
 					});
 					final results = await ffmpegCompleter.future;
 					final returnCode = await results.getReturnCode();
+					_session = null;
 					if (!(returnCode?.isValueSuccess() ?? false)) {
 						if (await convertedFile.exists()) {
 							await convertedFile.delete();
