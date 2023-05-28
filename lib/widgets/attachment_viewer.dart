@@ -376,6 +376,9 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	Future<void> _loadFullAttachment(bool background, {bool force = false}) => _lock.protect(() async {
+		if (_isDisposed) {
+			return;
+		}
 		if (attachment.type == AttachmentType.image && goodImageSource != null && !force) {
 			final file = await getCachedImageFile(goodImageSource.toString());
 			if (file != null && _cachedFile?.path != file.path) {
@@ -580,11 +583,11 @@ class AttachmentViewerController extends ChangeNotifier {
 						await _videoPlayerController?.setVolume(0);
 						if (_isDisposed) return;
 					}
-					await _videoPlayerController!.setLooping(true);
+					await _videoPlayerController?.setLooping(true);
 					if (_isDisposed) return;
 					if (isPrimary) {
-						await _videoPlayerController!.seekTo(Duration.zero);
-						await _videoPlayerController!.play();
+						await _videoPlayerController?.seekTo(Duration.zero);
+						await _videoPlayerController?.play();
 					}
 					if (_isDisposed) return;
 					_scheduleHidingOfLoadingProgress();
