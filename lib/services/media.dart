@@ -411,8 +411,7 @@ class MediaConversion {
 						}
 					});
 					final bitrateString = '${(outputBitrate / 1000).floor()}K';
-					final ffmpegCompleter = Completer<Session>();
-					_session = await pool.withResource(() async {
+					final results = await pool.withResource(() async {
 						final args = [
 							'-hwaccel', 'auto',
 							if (headers.isNotEmpty && inputFile.scheme != 'file') ...[
@@ -453,9 +452,10 @@ class MediaConversion {
 							convertedFile.path
 						];
 						print(args);
-						return FFmpegKit.executeWithArgumentsAsync(args, (c) => ffmpegCompleter.complete(c));
+						final ffmpegCompleter = Completer<Session>();
+						_session = await FFmpegKit.executeWithArgumentsAsync(args, (c) => ffmpegCompleter.complete(c));
+						return await ffmpegCompleter.future;
 					});
-					final results = await ffmpegCompleter.future;
 					final returnCode = await results.getReturnCode();
 					_session = null;
 					if (!(returnCode?.isValueSuccess() ?? false)) {
