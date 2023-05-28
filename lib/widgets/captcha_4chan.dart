@@ -790,7 +790,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 													numLetters = x;
 													final selection = _solutionController.selection;
 													final oldGuess = _lastGuess;
-													_lastGuess = _lastGuesses!.forNumLetters(numLetters);
+													_lastGuess = _lastGuesses?.forNumLetters(numLetters) ?? Chan4CustomCaptchaGuess.dummy('0' * numLetters);
 													String newGuessText = _lastGuess.guess;
 													_guessConfidences = _lastGuess.confidences.toList();
 													// We want keys to match up to same pickerStuff, not to widget-indexes
