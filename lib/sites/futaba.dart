@@ -91,8 +91,7 @@ class SiteFutaba extends ImageboardSite {
 							elements.add(PostQuoteLinkSpan(
 								board: board,
 								threadId: threadId,
-								postId: thisQuoteDestination,
-								dead: false
+								postId: thisQuoteDestination
 							));
 							elements.add(const PostLineBreakSpan());
 						}

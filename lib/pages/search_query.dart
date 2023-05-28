@@ -180,7 +180,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						if (row.post != null) {
 							return ChangeNotifierProvider<PostSpanZoneData>(
 								create: (context) => PostSpanRootZoneData(
-									site: context.read<ImageboardSite>(),
+									imageboard: context.read<Imageboard>(),
 									thread: Thread(
 										board: row.post!.threadIdentifier.board,
 										id: row.post!.threadIdentifier.id,

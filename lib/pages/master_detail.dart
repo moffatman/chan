@@ -58,7 +58,7 @@ class BuiltDetailPane {
 class MasterDetailPage<T> extends StatelessWidget {
 	final Object? id;
 	final Widget Function(BuildContext context, bool Function(BuildContext, T) isSelected, ValueChanged<T?> valueSetter) masterBuilder;
-	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
+	final BuiltDetailPane Function(T? selectedValue, ValueChanged<T?> valueSetter, bool poppedOut) detailBuilder;
 	final T? initialValue;
 	final ValueChanged<T?>? onValueChanged;
 	const MasterDetailPage({
@@ -91,7 +91,7 @@ class MultiMasterPane<T> {
 	final ObstructingPreferredSizeWidget? navigationBar;
 	final IconData? icon;
 	final Widget Function(BuildContext context, bool Function(BuildContext, T) isSelected, ValueChanged<T?> valueSetter) masterBuilder;
-	final BuiltDetailPane Function(T? selectedValue, bool poppedOut) detailBuilder;
+	final BuiltDetailPane Function(T? selectedValue, ValueChanged<T?> valueSetter, bool poppedOut) detailBuilder;
 	ValueNotifier<T?> currentValue;
 	final ValueChanged<T?>? onValueChanged;
 
@@ -124,15 +124,23 @@ class MultiMasterPane<T> {
 		}
 	}
 
-	Widget buildDetail() {
+	Widget buildDetail(VoidCallback onNewValue) {
 		return ValueListenableBuilder(
 			valueListenable: currentValue,
-			builder: (context, T? v, child) => detailBuilder(v, false).widget
+			builder: (context, T? v, child) => detailBuilder(v, (newValue) {
+				currentValue.value = newValue;
+				onValueChanged?.call(newValue);
+				onNewValue();
+			}, false).widget
 		);
 	}
 
-	PageRoute buildDetailRoute({required bool showAnimations, required bool? showAnimationsForward}) {
-		return detailBuilder(currentValue.value, true).pageRoute(showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
+	PageRoute buildDetailRoute(VoidCallback onNewValue, {required bool showAnimations, required bool? showAnimationsForward}) {
+		return detailBuilder(currentValue.value, (newValue) {
+				currentValue.value = newValue;
+				onValueChanged?.call(newValue);
+				onNewValue();
+			}, true).pageRoute(showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 	}
 
 	void dispose() {
@@ -264,6 +272,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 			if (pane.currentValue.value != null) {
 				_popMasterValueRoutes();
 				masterKey.currentState!.push(pane.buildDetailRoute(
+					() => _onNewValue(pane, showAnimationsForward: false),
 					showAnimations: context.read<EffectiveSettings>().showAnimations,
 					showAnimationsForward: showAnimationsForward
 				)).then(pane.onPushReturn);
@@ -375,7 +384,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 						animation: _rebuild,
 						builder: (context, _) => KeyedSubtree(
 							key: _detailContentKey,
-							child: panes[_tabController.index].buildDetail()
+							child: panes[_tabController.index].buildDetail(() => _onNewValue(panes[_tabController.index], showAnimationsForward: false))
 						)
 					)
 				)
@@ -385,6 +394,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 			final pane = panes[_tabController.index];
 			if (onePane && pane.currentValue.value != null) {
 				masterKey.currentState!.push(pane.buildDetailRoute(
+					() => _onNewValue(pane, showAnimationsForward: false),
 					showAnimations: context.read<EffectiveSettings>().showAnimations,
 					showAnimationsForward: null
 				)).then(pane.onPushReturn);

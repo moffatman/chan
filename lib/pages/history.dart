@@ -310,7 +310,7 @@ class HistoryPageState extends State<HistoryPage> {
 							)
 						);
 					},
-					detailBuilder: (selectedThread, poppedOut) {
+					detailBuilder: (selectedThread, setter, poppedOut) {
 						return BuiltDetailPane(
 							widget: selectedThread != null ? ImageboardScope(
 								imageboardKey: selectedThread.imageboard.key,

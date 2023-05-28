@@ -757,7 +757,7 @@ class Persistence extends ChangeNotifier {
 		return savedPosts[post.globalId];
 	}
 
-	void savePost(Post post, Thread thread) {
+	void savePost(Post post) {
 		savedPosts[post.globalId] = SavedPost(post: post, savedTime: DateTime.now());
 		settings.save();
 		// Likely will force the widget to rebuild
@@ -1188,6 +1188,11 @@ class PersistentBrowserTab extends EasyListenable {
 			incognitoPersistence = null;
 		}
 		super.didUpdate();
+	}
+
+	Future<void> mutate(FutureOr<void> Function(PersistentBrowserTab tab) mutator) async {
+		await mutator(this);
+		runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
 	}
 }
 

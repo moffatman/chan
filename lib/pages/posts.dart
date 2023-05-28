@@ -74,7 +74,7 @@ class _PostsPageState extends State<PostsPage> {
 	void _setReplies() {
 		replies.clear();
 		for (final id in widget.postsIdsToShow) {
-			final matchingPost = widget.zone.thread.posts.tryFirstWhere((p) => p.id == id);
+			final matchingPost = widget.zone.findPost(id);
 			if (matchingPost != null) {
 				if (matchingPost.isStub) {
 					replies.add(_PostsPageItem.secondaryStub(matchingPost));
@@ -106,7 +106,7 @@ class _PostsPageState extends State<PostsPage> {
 	Widget build(BuildContext context) {
 		final attachments = replies.expand<Attachment>((a) => a.post?.attachments ?? []).toList();
 		final subzone = widget.zone.hoistFakeRootZoneFor(0); // To avoid conflict with same semanticIds in tree
-		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.thread.posts.tryFirstWhere((p) => p.id == widget.postIdForBackground);
+		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.findPost(widget.postIdForBackground!);
 		final doubleTapScrollToReplies = context.select<EffectiveSettings, bool>((s) => s.doubleTapScrollToReplies);
 		return ChangeNotifierProvider.value(
 			value: subzone,
@@ -166,6 +166,7 @@ class _PostsPageState extends State<PostsPage> {
 											onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null
 																		? null : () => widget.zone.onNeedScrollToPost!(reply.post!),
 											onThumbnailTap: (attachment) {
+												final threadState = widget.zone.imageboard.persistence.getThreadStateIfExists(reply.post!.threadIdentifier);
 												showGallery(
 													context: context,
 													attachments: attachments,
@@ -174,8 +175,8 @@ class _PostsPageState extends State<PostsPage> {
 															for (final attachment in reply.post!.attachments)
 																attachment: reply.post!.replyIds.length
 													},
-													isAttachmentAlreadyDownloaded: widget.zone.threadState?.isAttachmentDownloaded,
-													onAttachmentDownload: widget.zone.threadState?.didDownloadAttachment,
+													isAttachmentAlreadyDownloaded: threadState?.isAttachmentDownloaded,
+													onAttachmentDownload: threadState?.didDownloadAttachment,
 													initialAttachment: attachment,
 													semanticParentIds: subzone.stackIds,
 													onChange: (attachment) {

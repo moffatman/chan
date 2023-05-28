@@ -3,7 +3,6 @@ import 'package:chan/pages/board.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -37,6 +36,7 @@ class ImageboardTab extends StatelessWidget {
 			masterBuilder: (context, selectedThread, threadSetter) {
 				return BoardPage(
 					key: tab.boardKey,
+					tab: tab,
 					initialBoard: tab.board,
 					isThreadSelected: selectedThread,
 					onThreadSelected: threadSetter,
@@ -53,45 +53,15 @@ class ImageboardTab extends StatelessWidget {
 							tab.didUpdate();
 						}
 					},
-					getInitialDraftText: () => tab.draftThread,
-					onDraftTextChanged: (newText) {
-						tab.draftThread = newText;
-						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
-					},
-					getInitialDraftSubject: () => tab.draftSubject,
-					onDraftSubjectChanged: (newSubject) {
-						tab.draftSubject = newSubject;
-						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
-					},
-					onWantOpenThreadInNewTab: onWantOpenThreadInNewTab,
-					getInitialThreadDraftOptions: () => tab.draftOptions,
-					onThreadDraftOptionsChanged: (newOptions) {
-						tab.draftOptions = newOptions;
-						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
-					},
-					getInitialThreadDraftFilePath: () => tab.draftFilePath,
-					onThreadDraftFilePathChanged: (newFilePath) {
-						tab.draftFilePath = newFilePath;
-						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
-					},
-					initialSearch: tab.initialSearch,
-					onSearchChanged: (newSearch) {
-						tab.initialSearch = newSearch;
-						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
-					},
 					onWantArchiveSearch: onWantArchiveSearch,
-					initialCatalogVariant: tab.catalogVariant,
-					onCatalogVariantChanged: (newVariant) {
-						tab.catalogVariant = newVariant;
-						runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
-					},
 					semanticId: id
 				);
 			},
-			detailBuilder: (selectedThread, poppedOut) {
+			detailBuilder: (selectedThread, setter, poppedOut) {
 				return BuiltDetailPane(
 					widget: selectedThread != null ? ThreadPage(
 						thread: selectedThread,
+						onWantChangeThread: setter,
 						boardSemanticId: id
 					) : Builder(
 						builder: (context) => Container(

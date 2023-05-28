@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/filtering.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
@@ -55,6 +56,7 @@ class ThreadRow extends StatelessWidget {
 
 	Widget _build(BuildContext context, PersistentThreadState? threadState) {
 		final settings = context.watch<EffectiveSettings>();
+		final imageboard = context.watch<Imageboard>();
 		final site = context.watch<ImageboardSite>();
 		final latestThread = threadState?.thread ?? thread;
 		final int latestReplyCount = max(max(thread.replyCount, latestThread.replyCount), latestThread.posts_.length - 1);
@@ -263,7 +265,7 @@ class ThreadRow extends StatelessWidget {
 			)
 		];
 		if (latestThread.title?.isNotEmpty == true) {
-			final titleSpan = PostTextSpan(settings.filterProfanity(latestThread.title!)).build(context, PostSpanRootZoneData(thread: thread, site: site), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+			final titleSpan = PostTextSpan(settings.filterProfanity(latestThread.title!)).build(context, PostSpanRootZoneData(thread: thread, imageboard: imageboard), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
 				baseTextStyle: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, color: settings.theme.titleColor) : null
 			));
 			if (site.classicCatalogStyle) {
@@ -362,7 +364,7 @@ class ThreadRow extends StatelessWidget {
 					child: ChangeNotifierProvider<PostSpanZoneData>(
 						create: (ctx) => PostSpanRootZoneData(
 							thread: latestThread,
-							site: site
+							imageboard: imageboard
 						),
 						child: IgnorePointer(
 							child: LayoutBuilder(
@@ -481,7 +483,7 @@ class ThreadRow extends StatelessWidget {
 				child: ChangeNotifierProvider<PostSpanZoneData>(
 					create: (ctx) => PostSpanRootZoneData(
 						thread: latestThread,
-						site: site
+						imageboard: imageboard
 					),
 					child: LayoutBuilder(
 						builder: (ctx, constraints) => IgnorePointer(

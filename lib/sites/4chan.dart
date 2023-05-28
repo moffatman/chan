@@ -159,8 +159,7 @@ class Site4Chan extends ImageboardSite {
 				return PostQuoteLinkSpan(
 					board: fromSearchThread!.board,
 					threadId: fromSearchThread.id,
-					postId: elem.id,
-					dead: false
+					postId: elem.id
 				);
 			}
 			else if (elem is UrlElement) {
@@ -208,8 +207,7 @@ class Site4Chan extends ImageboardSite {
 						elements.add(PostQuoteLinkSpan(
 							board: board,
 							threadId: threadId,
-							postId: int.parse(node.attributes['href']!.substring(2)),
-							dead: false
+							postId: int.parse(node.attributes['href']!.substring(2))
 						));
 					}
 					else if (node.attributes['href']!.contains('#p')) {
@@ -220,8 +218,7 @@ class Site4Chan extends ImageboardSite {
 						elements.add(PostQuoteLinkSpan(
 							board: parts[threadIndex - 1],
 							threadId: int.parse(ids[0]),
-							postId: int.parse(ids[1]),
-							dead: false
+							postId: int.parse(ids[1])
 						));
 					}
 					else {
@@ -239,10 +236,9 @@ class Site4Chan extends ImageboardSite {
 				else if (node.localName == 'span') {
 					if (node.classes.contains('deadlink')) {
 						final parts = node.innerHtml.replaceAll('&gt;', '').split('/');
-						elements.add(PostQuoteLinkSpan(
+						elements.add(PostQuoteLinkSpan.dead(
 							board: (parts.length > 2) ? parts[1] : board,
-							postId: int.tryParse(parts.last) ?? -1,
-							dead: true
+							postId: int.tryParse(parts.last) ?? -1
 						));
 					}
 					else if (node.classes.contains('quote')) {

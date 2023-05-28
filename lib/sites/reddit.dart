@@ -299,8 +299,7 @@ class SiteReddit extends ImageboardSite {
 						yield PostQuoteLinkSpan(
 							board: node.attributes['board']!,
 							threadId: fromRedditId(node.attributes['id']!),
-							postId: fromRedditId(node.attributes['id']!),
-							dead: false
+							postId: fromRedditId(node.attributes['id']!)
 						);
 					}
 					else {

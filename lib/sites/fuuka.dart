@@ -39,7 +39,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 					if (node.classes.contains('unkfunc')) {
 						final match = _crossBoardLinkMatcher.firstMatch(node.innerHtml);
 						if (match != null) {
-							elements.add(PostQuoteLinkSpan(board: match.group(1)!, postId: int.parse(match.group(2)!), dead: true));
+							elements.add(PostQuoteLinkSpan.dead(board: match.group(1)!, postId: int.parse(match.group(2)!)));
 						}
 						else {
 							elements.add(PostQuoteSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml)));
@@ -57,8 +57,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 						elements.add(PostQuoteLinkSpan(
 							board: board,
 							postId: postId,
-							threadId: linkedPostThreadIds['$board/$postId'],
-							dead: false
+							threadId: linkedPostThreadIds['$board/$postId'] ?? threadId
 						));
 					}
 					else {
@@ -67,8 +66,7 @@ class FuukaArchive extends ImageboardSiteArchive {
 							elements.add(PostQuoteLinkSpan(
 								board: board,
 								postId: int.parse(match.group(1)!),
-								threadId: threadId,
-								dead: false
+								threadId: threadId
 							));
 						}
 						else {

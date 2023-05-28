@@ -380,7 +380,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 								imageboard: row.imageboard,
 								child: ChangeNotifierProvider<PostSpanZoneData>(
 									create: (context) => PostSpanRootZoneData(
-										site: row.imageboard.site,
+										imageboard: row.imageboard,
 										thread: row.item.thread,
 										semanticRootIds: [-11]
 									),

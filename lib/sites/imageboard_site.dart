@@ -717,6 +717,7 @@ class ImageboardSnippet {
 abstract class ImageboardSiteArchive {
 	final Dio client = Dio();
 	final Map<ThreadIdentifier, Thread> _catalogCache = {};
+	final Map<String, DateTime> _lastCatalogCacheTime = {};
 	ImageboardSiteArchive() {
 		client.interceptors.add(SeparatedCookieManager(
 			wifiCookieJar: Persistence.wifiCookies,
@@ -735,13 +736,25 @@ abstract class ImageboardSiteArchive {
 	Future<Thread> getThread(ThreadIdentifier thread, {ThreadVariant? variant, required bool interactive});
 	@protected
 	Future<List<Thread>> getCatalogImpl(String board, {CatalogVariant? variant, required bool interactive});
-	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required bool interactive}) async {
-		final catalog = await getCatalogImpl(board, variant: variant, interactive: interactive);
-		_catalogCache.addAll({
-			for (final t in catalog)
-				t.identifier: t
+	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required bool interactive, DateTime? acceptCachedAfter}) async {
+		return runEphemerallyLocked('getCatalog($name,$board)', () async {
+			if (acceptCachedAfter != null && (_lastCatalogCacheTime[board]?.isAfter(acceptCachedAfter) ?? false)) {
+				return _catalogCache.values.where((t) => !t.isArchived && t.board == board).toList(); // Order is wrong but shouldn't matter
+			}
+			final catalog = await getCatalogImpl(board, variant: variant, interactive: interactive);
+			for (final oldThread in _catalogCache.values) {
+				if (oldThread.board == board) {
+					// If it's in the new catalog, it will get overwritten
+					oldThread.isArchived = true;
+				}
+			}
+			_catalogCache.addAll({
+				for (final t in catalog)
+					t.identifier: t
+			});
+			_lastCatalogCacheTime[board] = DateTime.now();
+			return catalog;
 		});
-		return catalog;
 	}
 	/// If an empty list is returned from here, the bottom of the catalog has been reached.
 	@protected
@@ -1016,8 +1029,8 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 		};
 	}
 	@override
-	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required bool interactive}) async {
-		final catalog = await super.getCatalog(board, variant: variant, interactive: interactive);
+	Future<List<Thread>> getCatalog(String board, {CatalogVariant? variant, required bool interactive, DateTime? acceptCachedAfter}) async {
+		final catalog = await super.getCatalog(board, variant: variant, interactive: interactive, acceptCachedAfter: acceptCachedAfter);
 		await Future.wait(catalog.expand((t) => t.posts_.expand((p) => p.attachments)).map(_ensureCookiesMemoizedForAttachment));
 		return catalog;
 	}

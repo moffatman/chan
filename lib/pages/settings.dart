@@ -1290,7 +1290,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 		final thread = _makeFakeThread();
 		return ChangeNotifierProvider<PostSpanZoneData>(
 			create: (context) => PostSpanRootZoneData(
-				site: context.read<ImageboardSite>(),
+				imageboard: context.read<Imageboard>(),
 				thread: thread,
 				semanticRootIds: [-9]
 			),

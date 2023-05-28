@@ -90,12 +90,17 @@ class _PersistentThreadStateSnapshot {
 	int get hashCode => Object.hash(thread, hiddenPostIdsLength, postsMarkedAsYouLength, savedTime, receiptsLength, treeHiddenIdsLength, hiddenPostIdsLength, useTree);
 }
 
+extension _DisableUpdates on PersistentThreadState {
+	bool get disableUpdates => (thread?.isDeleted ?? false) || (thread?.isArchived ?? false);
+}
+
 class ThreadPage extends StatefulWidget {
 	final ThreadIdentifier thread;
 	final int? initialPostId;
 	final bool initiallyUseArchive;
 	final int boardSemanticId;
 	final String? initialSearch;
+	final ValueChanged<ThreadIdentifier>? onWantChangeThread;
 
 	const ThreadPage({
 		required this.thread,
@@ -103,6 +108,7 @@ class ThreadPage extends StatefulWidget {
 		this.initiallyUseArchive = false,
 		required this.boardSemanticId,
 		this.initialSearch,
+		this.onWantChangeThread,
 		Key? key
 	}) : super(key: key);
 
@@ -138,6 +144,8 @@ class _ThreadPageState extends State<ThreadPage> {
 	final Map<Attachment, bool> _cached = {};
 	final List<Attachment> _cachingQueue = [];
 	final _indicatorKey = GlobalKey<_ThreadPositionIndicatorState>();
+	(ThreadIdentifier, String)? _suggestedNewGeneral;
+	ThreadIdentifier? _rejectedNewGeneralSuggestion;
 
 	void _onThreadStateListenableUpdate() {
 		final persistence = context.read<Persistence>();
@@ -179,25 +187,11 @@ class _ThreadPageState extends State<ThreadPage> {
 		lastHiddenMD5sLength = hiddenMD5sLength;
 		lastPersistentThreadStateSnapshot = currentSnapshot;
 		if (persistentState.thread != null) {
-			zone.thread = persistentState.thread!;
+			zone.addThread(persistentState.thread!);
 		}
 	}
 
 	bool get useTree => persistentState.useTree ?? context.read<Persistence>().browserState.useTree ?? context.read<ImageboardSite>().useTree;
-
-	Thread get _nullThread => Thread(
-		board: widget.thread.board,
-		id: widget.thread.id,
-		isDeleted: false,
-		isArchived: false,
-		title: '',
-		isSticky: false,
-		replyCount: -1,
-		imageCount: -1,
-		time: DateTime.fromMicrosecondsSinceEpoch(0),
-		posts_: [],
-		attachments: []
-	);
 
 	Future<void> _blockAndScrollToPostIfNeeded([Duration delayBeforeScroll = Duration.zero]) async {
 		if (persistentState.thread == null) {
@@ -320,10 +314,12 @@ class _ThreadPageState extends State<ThreadPage> {
 		persistentState.save();
 		_maybeUpdateWatch();
 		persistentState.thread?.preinit();
-		zone = PostSpanRootZoneData(
-			thread: persistentState.thread ?? _nullThread,
-			site: context.read<ImageboardSite>(),
-			threadState: persistentState,
+		zone = PostSpanRootZoneData.multi(
+			primaryThread: widget.thread,
+			threads: [
+				if (persistentState.thread != null) persistentState.thread!
+			],
+			imageboard: context.read<Imageboard>(),
 			semanticRootIds: [widget.boardSemanticId, 0],
 			onNeedScrollToPost: (post) {
 				_weakNavigatorKey.currentState!.popAllExceptFirst();
@@ -331,7 +327,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			},
 			onNeedUpdateWithStubItems: (ids) async {
 				await _updateWithStubItems(ids);
-				_listController.state?.acceptNewList(zone.thread.posts);
+				_listController.state?.acceptNewList(zone.findThread(persistentState.id)!.posts);
 			}
 		);
 		Future.delayed(const Duration(milliseconds: 50), () {
@@ -358,6 +354,10 @@ class _ThreadPageState extends State<ThreadPage> {
 			_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
 		}
 		lastSeenIdBeforeLastUpdate = persistentState.lastSeenPostId ?? pow(2, 50).toInt();
+		if (persistentState.disableUpdates) {
+			_checkForNewGeneral();
+			_loadReferencedThreads(setStateAfterwards: true);
+		}
 	}
 
 	@override
@@ -371,6 +371,8 @@ class _ThreadPageState extends State<ThreadPage> {
 			_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
 			_threadStateListenable = context.read<Persistence>().listenForPersistentThreadStateChanges(widget.thread);
 			_threadStateListenable.addListener(_onThreadStateListenableUpdate);
+			_suggestedNewGeneral = null;
+			_rejectedNewGeneralSuggestion = null;
 			_weakNavigatorKey.currentState!.popAllExceptFirst();
 			persistentState.save(); // Save old state in case it had pending scroll update to save
 			persistentState = context.read<Persistence>().getThreadState(widget.thread, updateOpenedTime: true);
@@ -378,10 +380,12 @@ class _ThreadPageState extends State<ThreadPage> {
 			persistentState.useArchive |= widget.initiallyUseArchive;
 			final oldZone = zone;
 			Future.delayed(const Duration(milliseconds: 100), () => oldZone.dispose());
-			zone = PostSpanRootZoneData(
-				thread: persistentState.thread ?? _nullThread,
-				site: context.read<ImageboardSite>(),
-				threadState: persistentState,
+			zone = PostSpanRootZoneData.multi(
+				primaryThread: widget.thread,
+				threads: [
+					if (persistentState.thread != null) persistentState.thread!
+				],
+				imageboard: context.read<Imageboard>(),
 				onNeedScrollToPost: oldZone.onNeedScrollToPost,
 				onNeedUpdateWithStubItems: oldZone.onNeedUpdateWithStubItems,
 				semanticRootIds: [widget.boardSemanticId, 0]
@@ -393,6 +397,10 @@ class _ThreadPageState extends State<ThreadPage> {
 				_listController.waitForItemBuild(0).then((_) => _cacheAttachments(automatic: true));
 			}
 			lastSeenIdBeforeLastUpdate = persistentState.lastSeenPostId ?? pow(2, 50).toInt();
+			if (persistentState.disableUpdates) {
+				_checkForNewGeneral();
+				_loadReferencedThreads(setStateAfterwards: true);
+			}
 			setState(() {});
 		}
 		else if (widget.initialPostId != old.initialPostId && widget.initialPostId != null) {
@@ -501,6 +509,86 @@ class _ThreadPageState extends State<ThreadPage> {
 		_showingWatchMenu = false;
 	}
 
+	Future<void> _checkForNewGeneral() async {
+		if (widget.onWantChangeThread == null) {
+			// Not possible to switch thread
+			return;
+		}
+		final imageboard = context.read<Imageboard>();
+		if (!(persistentState.disableUpdates ||
+			    (persistentState.thread?.replyCount ?? 1) >
+					 ((imageboard.persistence.maybeGetBoard(widget.thread.board)?.threadCommentLimit ?? 9999999) - 5))) {
+		  // No reason to check yet
+			return;
+		}
+		final pattern = RegExp(r'\/[^/ ]+\/').firstMatch('${persistentState.thread?.title} ${persistentState.thread?.posts_.tryFirst?.text}')?.group(0)?.toLowerCase();
+		if (pattern == null) {
+			// no /general/ found
+			return;
+		}
+		if (_suggestedNewGeneral?.$2 == pattern) {
+			// Already have a suggested general
+			return;
+		}
+		await WidgetsBinding.instance.endOfFrame; // Hack - let board win lock first
+		final catalog = await imageboard.site.getCatalog(widget.thread.board, interactive: _foreground, acceptCachedAfter: DateTime.now().subtract(const Duration(seconds: 30)));
+		ThreadIdentifier candidate = widget.thread;
+		for (final thread in catalog) {
+			if (thread.id > candidate.id &&
+			    '${thread.title} ${thread.posts_.tryFirst?.text}'.toLowerCase().contains(pattern)) {
+				candidate = thread.identifier;
+			}
+		}
+		if (candidate != widget.thread && candidate != _rejectedNewGeneralSuggestion) {
+			setState(() {
+				_suggestedNewGeneral = (candidate, pattern);
+			});
+		}
+	}
+
+	Future<void> _loadReferencedThreads({bool setStateAfterwards = false}) async {
+		final imageboard = context.read<Imageboard>();
+		final tmpZone = zone;
+		final newThread = persistentState.thread;
+		if (newThread == null || tmpZone.primaryThread != newThread.identifier) {
+			// The thread switched
+			return;
+		}
+		final crossThreads = <ThreadIdentifier, Set<int>>{};
+		for (final id in newThread.posts.expand((p) => p.span.referencedPostIdentifiers)) {
+			if (id.threadId == newThread.id || id.postId == id.threadId || id.postId == null) {
+				continue;
+			}
+			crossThreads.putIfAbsent(id.thread, () => {}).add(id.postId!);
+		}
+		// Only fetch threads with multiple cross-referenced posts
+		crossThreads.removeWhere((thread, postIds) => postIds.length < 2);
+		for (final id in crossThreads.keys) {
+			if (tmpZone.findThread(id.id) != null) {
+				// This thread is already fetched
+				continue;
+			}
+			final threadState = imageboard.persistence.getThreadState(id);
+			final cachedThread = await threadState.getThread();
+			if (cachedThread != null) {
+				tmpZone.addThread(cachedThread);
+				continue;
+			}
+			try {
+				final newThread = await imageboard.site.getThread(id, interactive: _foreground);
+				threadState.thread = newThread;
+				tmpZone.addThread(newThread);
+			}
+			catch (e, st) {
+				print(e);
+				print(st);
+			}
+		}
+		if (setStateAfterwards && mounted) {
+			setState(() {});
+		}
+	}
+
 	Future<Thread> _getUpdatedThread() async {
 		final tmpPersistentState = persistentState;
 		final site = context.read<ImageboardSite>();
@@ -534,8 +622,10 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (newThread != tmpPersistentState.thread) {
 			await newThread.preinit();
 			tmpPersistentState.thread = newThread;
+			await _loadReferencedThreads();
+			_checkForNewGeneral();
 			if (persistentState == tmpPersistentState) {
-				zone.thread = newThread;
+				zone.addThread(newThread);
 				if (_replyBoxKey.currentState?.hasSpamFilteredPostToCheck ?? false) {
 					newThread.posts.forEach(_replyBoxKey.currentState!.checkForSpamFilteredPost);
 				}
@@ -544,7 +634,7 @@ class _ThreadPageState extends State<ThreadPage> {
 					// Translate new posts
 					for (final post in newThread.posts) {
 						if (zone.translatedPost(post.id) == null) {
-							zone.translatePost(post.id);
+							zone.translatePost(post);
 						}
 					}
 				}
@@ -929,7 +1019,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																		key: _listKey,
 																		sortMethods: zone.postSortingMethods,
 																		id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
-																		disableUpdates: (persistentState.thread?.isDeleted ?? false) || (persistentState.thread?.isArchived ?? false),
+																		disableUpdates: persistentState.disableUpdates,
 																		autoUpdateDuration: const Duration(seconds: 60),
 																		initialList: persistentState.thread?.posts,
 																		useTree: useTree,
@@ -1177,7 +1267,19 @@ class _ThreadPageState extends State<ThreadPage> {
 																		],
 																		cachedAttachments: _cached,
 																		attachmentsCachingQueue: _cachingQueue,
-																		startCaching: () => _cacheAttachments(automatic: false)
+																		startCaching: () => _cacheAttachments(automatic: false),
+																		suggestedThread: _suggestedNewGeneral == null ? null : (
+																			label: _suggestedNewGeneral?.$2 ?? '',
+																			onAccept: () {
+																				widget.onWantChangeThread?.call(_suggestedNewGeneral!.$1);
+																			},
+																			onReject: () {
+																				setState(() {
+																					_rejectedNewGeneralSuggestion = _suggestedNewGeneral?.$1;
+																					_suggestedNewGeneral = null;
+																				});
+																			}
+																		)
 																	)
 																)
 															),
@@ -1262,6 +1364,8 @@ class _ThreadPageState extends State<ThreadPage> {
 	}
 }
 
+typedef SuggestedNewThread = ({String label, VoidCallback onAccept, VoidCallback onReject});
+
 class ThreadPositionIndicator extends StatefulWidget {
 	final PersistentThreadState persistentState;
 	final Thread? thread;
@@ -1280,6 +1384,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 	final Map<Attachment, bool> cachedAttachments;
 	final List<Attachment> attachmentsCachingQueue;
 	final VoidCallback startCaching;
+	final SuggestedNewThread? suggestedThread;
 	
 	const ThreadPositionIndicator({
 		required this.persistentState,
@@ -1298,6 +1403,7 @@ class ThreadPositionIndicator extends StatefulWidget {
 		required this.cachedAttachments,
 		required this.attachmentsCachingQueue,
 		required this.startCaching,
+		required this.suggestedThread,
 		this.developerModeButtons = const [],
 		Key? key
 	}) : super(key: key);
@@ -1644,7 +1750,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 						key: _animatedPaddingKey,
 						duration: const Duration(milliseconds: 200),
 						curve: Curves.ease,
-						padding: EdgeInsets.only(bottom: _whiteCountAbove > 0 ? 100 : 50),
+						padding: EdgeInsets.only(bottom: (widget.suggestedThread != null ? 50 : 0) + (_whiteCountAbove > 0 ? 50 : 0) + 50),
 						child: SingleChildScrollView(
 							reverse: true,
 							primary: false,
@@ -1827,157 +1933,198 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 						)
 					)
 				),
-				GestureDetector(
-					onLongPress: () {
-						scrollToBottom();
-						mediumHapticFeedback();
-					},
-					child: Column(
-						mainAxisSize: MainAxisSize.min,
-						crossAxisAlignment: widget.reversed ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-						children: [
-							if (widget.searching)
-								CupertinoButton(
-									padding: EdgeInsets.zero,
-									onPressed: widget.listController.state?.closeSearch,
-									child: Container(
-										decoration: BoxDecoration(
-											borderRadius: radiusAlone,
-											color: CupertinoTheme.of(context).primaryColor
-										),
-										margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-										padding: const EdgeInsets.all(8),
-										child: Row(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												Icon(CupertinoIcons.search, color: CupertinoTheme.of(context).scaffoldBackgroundColor, size: 19),
-												const SizedBox(width: 8),
-												Icon(CupertinoIcons.xmark, color: CupertinoTheme.of(context).scaffoldBackgroundColor, size: 19)
-											]
-										)
+				Column(
+					mainAxisSize: MainAxisSize.min,
+					crossAxisAlignment: widget.reversed ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+					children: [
+						if (widget.searching)
+							CupertinoButton(
+								padding: EdgeInsets.zero,
+								onPressed: widget.listController.state?.closeSearch,
+								child: Container(
+									decoration: BoxDecoration(
+										borderRadius: radiusAlone,
+										color: CupertinoTheme.of(context).primaryColor
+									),
+									margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+									padding: const EdgeInsets.all(8),
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											Icon(CupertinoIcons.search, color: CupertinoTheme.of(context).scaffoldBackgroundColor, size: 19),
+											const SizedBox(width: 8),
+											Icon(CupertinoIcons.xmark, color: CupertinoTheme.of(context).scaffoldBackgroundColor, size: 19)
+										]
 									)
 								)
-							else ...[
-								if (widget.useTree && _whiteCountAbove > 0) CupertinoButton(
-									padding: EdgeInsets.zero,
-									child: Builder(
-										builder: (context) {
-											List<Widget> children = [
-												if (_redCountAbove > 0) Container(
-													decoration: BoxDecoration(
-														borderRadius: radiusStart,
-														color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
-													),
-													padding: const EdgeInsets.all(8),
-													child: Text(
-														_redCountAbove.toString(),
-														textAlign: TextAlign.center
-													)
-												),
-												if (_whiteCountAbove > 0) Container(
-													decoration: BoxDecoration(
-														borderRadius: _redCountAbove <= 0 ? radiusAlone : radiusEnd,
-														color: CupertinoTheme.of(context).primaryColor
-													),
-													padding: const EdgeInsets.all(8),
-													child: Row(
-														mainAxisSize: MainAxisSize.min,
-														children: [
-															Container(
-																constraints: BoxConstraints(
-																	minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * _whiteCountAbove.toString().length)
-																),
-																child: Text(
-																	_whiteCountAbove.toString(),
-																	style: TextStyle(
-																		color: CupertinoTheme.of(context).scaffoldBackgroundColor
-																	),
-																	textAlign: TextAlign.center
-																)
-															),
-															Icon(CupertinoIcons.arrow_up, color: CupertinoTheme.of(context).scaffoldBackgroundColor, size: 19)
-														]
-													)
-												)
-											];
-											if (widget.reversed) {
-												children = children.reversed.toList();
-											}
-											return Padding(
-												padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+							)
+						else ...[
+							if (!widget.blocked && widget.suggestedThread != null) Padding(
+								padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+								child: Builder(
+									builder: (context) {
+										List<Widget> children = [
+											CupertinoButton(
+												onPressed: () async {
+													widget.suggestedThread?.onReject.call();
+												},
+												padding: EdgeInsets.zero,
+												minSize: 0,
+												child: const Icon(CupertinoIcons.xmark, size: 19)
+											),
+											const SizedBox(width: 4),
+											CupertinoButton.filled(
+												onPressed: () async {
+													widget.suggestedThread?.onAccept.call();
+												},
+												padding: const EdgeInsets.all(8),
+												minSize: 0,
 												child: Row(
 													mainAxisSize: MainAxisSize.min,
-													children: children
+													crossAxisAlignment: CrossAxisAlignment.center,
+													children: [
+														Text('New ${widget.suggestedThread?.label} thread'),
+														const SizedBox(width: 4),
+														const Icon(CupertinoIcons.arrow_right, size: 18),
+													]
 												)
-											);
+											)
+										];
+										if (widget.reversed) {
+											children = children.reversed.toList();
 										}
-									),
-									onPressed: () {
-										int targetIndex = widget.listController.items.toList().asMap().entries.tryLastWhere((entry) {
-											return entry.key < treeModeFurthestSeenIndexTop &&
-												(entry.value.item.id > widget.lastSeenIdBeforeLastUpdate || entry.value.representsKnownStubChildren.any((id) => id.childId > widget.lastSeenIdBeforeLastUpdate)) &&
-												!entry.value.filterCollapsed;
-										})?.key ?? -1;
-										if (targetIndex != -1) {
-											while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)).isHidden) {
-												// Align to parent if the target has been collapsed
-												targetIndex--;
-											}
-											widget.listController.animateToIndex(targetIndex);
+										return Row(
+											mainAxisSize: MainAxisSize.min,
+											children: children
+										);
+									}
+								)
+							),
+							if (widget.useTree && _whiteCountAbove > 0) CupertinoButton(
+								padding: EdgeInsets.zero,
+								child: Builder(
+									builder: (context) {
+										List<Widget> children = [
+											if (_redCountAbove > 0) Container(
+												decoration: BoxDecoration(
+													borderRadius: radiusStart,
+													color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
+												),
+												padding: const EdgeInsets.all(8),
+												child: Text(
+													_redCountAbove.toString(),
+													textAlign: TextAlign.center
+												)
+											),
+											if (_whiteCountAbove > 0) Container(
+												decoration: BoxDecoration(
+													borderRadius: _redCountAbove <= 0 ? radiusAlone : radiusEnd,
+													color: CupertinoTheme.of(context).primaryColor
+												),
+												padding: const EdgeInsets.all(8),
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														Container(
+															constraints: BoxConstraints(
+																minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * _whiteCountAbove.toString().length)
+															),
+															child: Text(
+																_whiteCountAbove.toString(),
+																style: TextStyle(
+																	color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																),
+																textAlign: TextAlign.center
+															)
+														),
+														Icon(CupertinoIcons.arrow_up, color: CupertinoTheme.of(context).scaffoldBackgroundColor, size: 19)
+													]
+												)
+											)
+										];
+										if (widget.reversed) {
+											children = children.reversed.toList();
 										}
+										return Padding(
+											padding: const EdgeInsets.only(top: 5, bottom: 8, left: 16, right: 16),
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: children
+											)
+										);
 									}
 								),
-								Builder(
-									builder: (context) {
-										final children = [
-											if (!widget.blocked && widget.attachmentsCachingQueue.isNotEmpty) ...[
-												CupertinoButton.filled(
-													onPressed: () async {
-														final cancel = await confirm(context, 'Cancel preloading?');
-														if (mounted && cancel) {
-															widget.attachmentsCachingQueue.clear(); // Hacky...
-														}
-													},
-													padding: const EdgeInsets.all(8),
-													minSize: 0,
-													child: Row(
-														mainAxisSize: MainAxisSize.min,
-														crossAxisAlignment: CrossAxisAlignment.center,
-														children: [
-															const Icon(CupertinoIcons.photo, size: 19	),
-															ConstrainedBox(
-																constraints: BoxConstraints(
-																	minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * cachingButtonLabel.length)
-																),
-																child: Text(cachingButtonLabel, textAlign: TextAlign.center),
+								onPressed: () {
+									int targetIndex = widget.listController.items.toList().asMap().entries.tryLastWhere((entry) {
+										return entry.key < treeModeFurthestSeenIndexTop &&
+											(entry.value.item.id > widget.lastSeenIdBeforeLastUpdate || entry.value.representsKnownStubChildren.any((id) => id.childId > widget.lastSeenIdBeforeLastUpdate)) &&
+											!entry.value.filterCollapsed;
+									})?.key ?? -1;
+									if (targetIndex != -1) {
+										while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)).isHidden) {
+											// Align to parent if the target has been collapsed
+											targetIndex--;
+										}
+										widget.listController.animateToIndex(targetIndex);
+									}
+								}
+							),
+							Builder(
+								builder: (context) {
+									final children = [
+										if (!widget.blocked && widget.attachmentsCachingQueue.isNotEmpty) ...[
+											CupertinoButton.filled(
+												onPressed: () async {
+													final cancel = await confirm(context, 'Cancel preloading?');
+													if (mounted && cancel) {
+														widget.attachmentsCachingQueue.clear(); // Hacky...
+													}
+												},
+												padding: const EdgeInsets.all(8),
+												minSize: 0,
+												child: Row(
+													mainAxisSize: MainAxisSize.min,
+													crossAxisAlignment: CrossAxisAlignment.center,
+													children: [
+														const Icon(CupertinoIcons.photo, size: 19	),
+														ConstrainedBox(
+															constraints: BoxConstraints(
+																minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * cachingButtonLabel.length)
 															),
-															CupertinoActivityIndicator(
-																color: settings.theme.backgroundColor
-															),
-														]
-													)
-												),
-												const SizedBox(width: 8)
-											],
-											if (!widget.blocked && (widget.listController.state?.updatingNow.value ?? false) && widget.listController.state?.originalList != null) ...[
-												const CupertinoActivityIndicator(),
-												const SizedBox(width: 8),
-											],
-											if (!widget.blocked && widget.persistentState.useArchive) ...[
-												Icon(CupertinoIcons.archivebox, color: settings.theme.primaryColor.withOpacity(0.5)),
-												const SizedBox(width: 8)
-											],
-											if (!widget.blocked && (widget.listController.state?.treeBuildingFailed ?? false)) ...[
-												CupertinoButton(
-													color: Colors.red,
-													padding: const EdgeInsets.all(8),
-													minSize: 0,
-													onPressed: () => alertError(context, 'Tree too complex!\nLarge reply chains mean this thread can not be shown in tree mode.'),
-													child: Icon(CupertinoIcons.exclamationmark, color: settings.theme.backgroundColor, size: 19)
-												),
-												const SizedBox(width: 8)
-											],
+															child: Text(cachingButtonLabel, textAlign: TextAlign.center),
+														),
+														CupertinoActivityIndicator(
+															color: settings.theme.backgroundColor
+														),
+													]
+												)
+											),
+											const SizedBox(width: 8)
+										],
+										if (!widget.blocked && (widget.listController.state?.updatingNow.value ?? false) && widget.listController.state?.originalList != null) ...[
+											const CupertinoActivityIndicator(),
+											const SizedBox(width: 8),
+										],
+										if (!widget.blocked && widget.persistentState.useArchive) ...[
+											Icon(CupertinoIcons.archivebox, color: settings.theme.primaryColor.withOpacity(0.5)),
+											const SizedBox(width: 8)
+										],
+										if (!widget.blocked && (widget.listController.state?.treeBuildingFailed ?? false)) ...[
 											CupertinoButton(
+												color: Colors.red,
+												padding: const EdgeInsets.all(8),
+												minSize: 0,
+												onPressed: () => alertError(context, 'Tree too complex!\nLarge reply chains mean this thread can not be shown in tree mode.'),
+												child: Icon(CupertinoIcons.exclamationmark, color: settings.theme.backgroundColor, size: 19)
+											),
+											const SizedBox(width: 8)
+										],
+										GestureDetector(
+											onLongPress: () {
+												scrollToBottom();
+												mediumHapticFeedback();
+											},
+											child: CupertinoButton(
 												padding: EdgeInsets.zero,
 												child: Builder(
 													builder: (context) {
@@ -2048,20 +2195,20 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 													}
 												}
 											)
-										];
-										return Padding(
-											padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-											child: Row(
-												mainAxisSize: MainAxisSize.min,
-												crossAxisAlignment: CrossAxisAlignment.center,
-												children: widget.reversed ? children.reversed.toList() : children
-											)
-										);
-									}
-								)
-							]
+										)
+									];
+									return Padding(
+										padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+										child: Row(
+											mainAxisSize: MainAxisSize.min,
+											crossAxisAlignment: CrossAxisAlignment.center,
+											children: widget.reversed ? children.reversed.toList() : children
+										)
+									);
+								}
+							)
 						]
-					)
+					]
 				)
 			]
 		);

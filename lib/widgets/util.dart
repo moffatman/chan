@@ -513,11 +513,17 @@ extension OffsetBrightness on Color {
 		);
 	}
 	Color shiftHue(double offset) {
+		if (offset == 0) {
+			return this;
+		}
 		HSVColor hsv = HSVColor.fromColor(this);
 		hsv = hsv.withHue((hsv.hue + offset) % 360);
 		return hsv.toColor();
 	}
 	Color shiftSaturation(double offset) {
+		if (offset == 0) {
+			return this;
+		}
 		HSVColor hsv = HSVColor.fromColor(this);
 		hsv = hsv.withSaturation((hsv.saturation * (1 + offset)).clamp(0, 1));
 		return hsv.toColor();

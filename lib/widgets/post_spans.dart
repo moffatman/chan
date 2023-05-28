@@ -114,6 +114,7 @@ class PostSpanRenderOptions {
 abstract class PostSpan {
 	const PostSpan();
 	Iterable<int> referencedPostIds(String forBoard) => const Iterable.empty();
+	Iterable<PostIdentifier> get referencedPostIdentifiers => const Iterable.empty();
 	InlineSpan build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options);
 	String buildText();
 	double estimateLines(double charactersPerLine) => buildText().length / charactersPerLine;
@@ -137,6 +138,13 @@ class PostNodeSpan extends PostSpan {
 	Iterable<int> referencedPostIds(String forBoard) sync* {
 		for (final child in children) {
 			yield* child.referencedPostIds(forBoard);
+		}
+	}
+
+	@override
+	Iterable<PostIdentifier> get referencedPostIdentifiers sync* {
+		for (final child in children) {
+			yield* child.referencedPostIdentifiers;
 		}
 	}
 
@@ -347,15 +355,18 @@ class PostQuoteSpan extends PostSpan {
 
 class PostQuoteLinkSpan extends PostSpan {
 	final String board;
-	final int? initialThreadId;
+	final int? threadId;
 	final int postId;
-	final bool dead;
 	const PostQuoteLinkSpan({
 		required this.board,
-		int? threadId,
-		required this.postId,
-		required this.dead
-	}) : initialThreadId = threadId;
+		required int this.threadId,
+		required this.postId
+	});
+
+	const PostQuoteLinkSpan.dead({
+		required this.board,
+		required this.postId
+	}) : threadId = null;
 
 	@override
 	Iterable<int> referencedPostIds(String forBoard) sync* {
@@ -363,10 +374,18 @@ class PostQuoteLinkSpan extends PostSpan {
 			yield postId;
 		}
 	}
-	(InlineSpan, TapGestureRecognizer) _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options, int threadId) {
+
+	@override
+	Iterable<PostIdentifier> get referencedPostIdentifiers sync* {
+		if (threadId != null) {
+			yield PostIdentifier(board, threadId!, postId);
+		}
+	}
+
+	(InlineSpan, TapGestureRecognizer) _buildCrossThreadLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options, int actualThreadId) {
 		String text = '>>';
-		if (zone.thread.board != board) {
-			text += zone.site.formatBoardName(zone.site.persistence.getBoard(board)).replaceFirst(RegExp(r'\/$'), '');
+		if (zone.board != board) {
+			text += zone.imageboard.site.formatBoardName(zone.imageboard.site.persistence.getBoard(board)).replaceFirst(RegExp(r'\/$'), '');
 			text += '/';
 		}
 		text += '$postId';
@@ -380,9 +399,9 @@ class PostQuoteLinkSpan extends PostSpan {
 					imageboard: context.read<Imageboard>(),
 					overridePersistence: context.read<Persistence>(),
 					child: ThreadPage(
-						thread: ThreadIdentifier(board, threadId),
+						thread: ThreadIdentifier(board, actualThreadId),
 						initialPostId: postId,
-						initiallyUseArchive: dead,
+						initiallyUseArchive: threadId == null,
 						boardSemanticId: -1
 					)
 				),
@@ -423,13 +442,20 @@ class PostQuoteLinkSpan extends PostSpan {
 	}
 	(InlineSpan, TapGestureRecognizer) _buildNormalLink(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options, int? threadId) {
 		String text = '>>$postId';
+		Color color = settings.theme.secondaryColor;
 		if (postId == threadId) {
 			text += ' (OP)';
 		}
-		if (zone.threadState?.youIds.contains(postId) ?? false) {
+		if (threadId != zone.primaryThreadId) {
+			color = settings.theme.secondaryColor.shiftHue(-20);
+			if (zone.findPost(zone.stackIds.last)?.threadId != threadId) {
+				text += ' (Old thread)';
+			}
+		}
+		if (threadId != null && (zone.imageboard.persistence.getThreadStateIfExists(ThreadIdentifier(board, threadId))?.youIds.contains(postId) ?? false)) {
 			text += ' (You)';
 		}
-		final linkedPost = zone.thread.posts.tryFirstWhere((p) => p.id == postId);
+		final linkedPost = zone.findPost(postId);
 		if (linkedPost != null && Filter.of(context).filter(linkedPost)?.type.hide == true) {
 			text += ' (Hidden)';
 		}
@@ -453,7 +479,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		return (TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
-				color: options.overrideTextColor ?? (expandedImmediatelyAbove ? settings.theme.secondaryColor.shiftSaturation(-0.5) : settings.theme.secondaryColor),
+				color: options.overrideTextColor ?? color.shiftSaturation(expandedImmediatelyAbove ? -0.5 : 0),
 				decoration: TextDecoration.underline,
 				decorationStyle: expandedSomewhereAbove ? TextDecorationStyle.dashed : null
 			),
@@ -463,25 +489,25 @@ class PostQuoteLinkSpan extends PostSpan {
 		), recognizer);
 	}
 	(InlineSpan, TapGestureRecognizer) _build(BuildContext context, PostSpanZoneData zone, EffectiveSettings settings, PostSpanRenderOptions options) {
-		int? threadId = initialThreadId;
-		if (dead && initialThreadId == null) {
+		int? actualThreadId = threadId;
+		if (threadId == null) {
 			// Dead links do not know their thread
 			final thisPostLoaded = zone.postFromArchive(postId);
 			if (thisPostLoaded != null) {
-				threadId = thisPostLoaded.threadId;
+				actualThreadId = thisPostLoaded.threadId;
 			}
 			else {
 				return _buildDeadLink(context, zone, settings, options);
 			}
 		}
 
-		if (threadId != null && (board != zone.thread.board || threadId != zone.thread.id)) {
-			return _buildCrossThreadLink(context, zone, settings, options, threadId);
+		if (actualThreadId != null && (board != zone.board || zone.findThread(actualThreadId) == null)) {
+			return _buildCrossThreadLink(context, zone, settings, options, actualThreadId);
 		}
 		else {
 			// Normal link
 			final span = _buildNormalLink(context, zone, settings, options, threadId);
-			final thisPostInThread = zone.thread.posts.tryFirstWhere((p) => p.id == postId);
+			final thisPostInThread = zone.findPost(postId);
 			if (thisPostInThread == null || zone.shouldExpandPost(postId) == true) {
 				return span;
 			}
@@ -531,7 +557,7 @@ class PostQuoteLinkSpan extends PostSpan {
 				pair.$1
 			]
 		);
-		if (options.addExpandingPosts && (initialThreadId == zone.thread.id && board == zone.thread.board)) {
+		if (options.addExpandingPosts && (threadId != null && zone.findThread(threadId!) != null && board == zone.board)) {
 			return TextSpan(
 				children: [
 					span,
@@ -1157,10 +1183,10 @@ class PostSpanZone extends StatelessWidget {
 
 abstract class PostSpanZoneData extends ChangeNotifier {
 	final Map<(int, bool, int?), PostSpanZoneData> _children = {};
-	Thread get thread;
-	ImageboardSite get site;
+	String get board;
+	int get primaryThreadId;
+	Imageboard get imageboard;
 	Iterable<int> get stackIds;
-	PersistentThreadState? get threadState;
 	ValueChanged<Post>? get onNeedScrollToPost;
 	Future<void> Function(List<ParentAndChildIdentifier>)? get onNeedUpdateWithStubItems;
 	bool disposed = false;
@@ -1298,8 +1324,11 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 	}
 
 	AsyncSnapshot<Post>? translatedPost(int postId);
-	Future<void> translatePost(int postId);
+	Future<void> translatePost(Post post);
 	void clearTranslatedPosts([int? postId]);
+
+	Thread? findThread(int threadId);
+	Post? findPost(int postId);
 }
 
 class PostSpanChildZoneData extends PostSpanZoneData {
@@ -1317,13 +1346,19 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	});
 
 	@override
-	Thread get thread => parent.thread;
+	String get board => parent.board;
 
 	@override
-	ImageboardSite get site => parent.site;
+	int get primaryThreadId => parent.primaryThreadId;
 
 	@override
-	PersistentThreadState? get threadState => parent.threadState;
+	Imageboard get imageboard => parent.imageboard;
+
+	@override
+	Thread? findThread(int threadId) => parent.findThread(threadId);
+
+	@override
+	Post? findPost(int postId) => parent.findPost(postId);
 
 	@override
 	ValueChanged<Post>? get onNeedScrollToPost => parent.onNeedScrollToPost;
@@ -1363,9 +1398,9 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 	@override
 	AsyncSnapshot<Post>? translatedPost(int postId) => parent.translatedPost(postId);
 	@override
-	Future<void> translatePost(int postId) async {
+	Future<void> translatePost(Post post) async {
 		try {
-			await parent.translatePost(postId);
+			await parent.translatePost(post);
 		}
 		finally {
 			notifyListeners();
@@ -1390,11 +1425,11 @@ class PostSpanChildZoneData extends PostSpanZoneData {
 
 class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
-	Thread thread;
+	String board;
 	@override
-	final ImageboardSite site;
+	int primaryThreadId;
 	@override
-	final PersistentThreadState? threadState;
+	final Imageboard imageboard;
 	@override
 	final ValueChanged<Post>? onNeedScrollToPost;
 	@override
@@ -1410,22 +1445,50 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	bool tree;
 	@override
 	bool get inTree => false;
+	final Map<int, Thread> _threads = {};
+	final Map<int, Post> _postLookupTable = {};
 
 	PostSpanRootZoneData({
-		required this.thread,
-		required this.site,
-		this.threadState,
+		required Thread thread,
+		required this.imageboard,
 		this.onNeedScrollToPost,
 		this.onNeedUpdateWithStubItems,
 		this.semanticRootIds = const [],
 		this.postSortingMethods = const [],
 		this.tree = false
-	}) {
-		if (threadState != null) {
-			_translatedPostSnapshots.addAll({
-				for (final p in threadState!.translatedPosts.values)
-					p.id: AsyncSnapshot.withData(ConnectionState.done, p)
-			});
+	}) : board = thread.board, primaryThreadId = thread.id {
+		addThread(thread);
+	}
+
+	PostSpanRootZoneData.multi({
+		required ThreadIdentifier primaryThread,
+		required List<Thread> threads,
+		required this.imageboard,
+		this.onNeedScrollToPost,
+		this.onNeedUpdateWithStubItems,
+		this.semanticRootIds = const [],
+		this.postSortingMethods = const [],
+		this.tree = false
+	}) : board = primaryThread.board, primaryThreadId = primaryThread.id {
+		for (final thread in threads) {
+			addThread(thread);
+		}
+	}
+
+	void addThread(Thread thread) {
+		assert(thread.board == board);
+		if (!_threads.containsKey(thread.id)) {
+			final threadState = imageboard.persistence.getThreadStateIfExists(thread.identifier);
+			if (threadState != null) {
+				_translatedPostSnapshots.addAll({
+					for (final p in threadState.translatedPosts.values)
+						p.id: AsyncSnapshot.withData(ConnectionState.done, p)
+				});
+			}
+		}
+		_threads[thread.id] = thread;
+		for (final post in thread.posts) {
+			_postLookupTable[post.id] = post;
 		}
 	}
 
@@ -1444,8 +1507,8 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 			_postFromArchiveErrors.remove(id);
 			_isLoadingPostFromArchive[id] = true;
 			notifyListeners();
-			_postsFromArchive[id] = await site.getPostFromArchive(thread.board, id, interactive: true);
-			_postsFromArchive[id]!.replyIds = thread.posts.where((p) => p.repliedToIds.contains(id)).map((p) => p.id).toList();
+			final newPost = _postsFromArchive[id] = await imageboard.site.getPostFromArchive(board, id, interactive: true);
+			_postsFromArchive[id]!.replyIds = findThread(newPost.threadId)?.posts.where((p) => p.repliedToIds.contains(id)).map((p) => p.id).toList() ?? [];
 			notifyListeners();
 		}
 		catch (e, st) {
@@ -1472,11 +1535,11 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	@override
 	AsyncSnapshot<Post>? translatedPost(int postId) => _translatedPostSnapshots[postId];
 	@override
-	Future<void> translatePost(int postId) async {
-		_translatedPostSnapshots[postId] = const AsyncSnapshot.waiting();
+	Future<void> translatePost(Post post) async {
+		_translatedPostSnapshots[post.id] = const AsyncSnapshot.waiting();
 		notifyListeners();
+		final threadState = imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
 		try {
-			final post = thread.posts.firstWhere((p) => p.id == postId);
 			final translated = await translateHtml(post.text);
 			final translatedPost = Post(
 				board: post.board,
@@ -1495,12 +1558,12 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 				passSinceYear: post.passSinceYear,
 				capcode: post.capcode
 			);
-			_translatedPostSnapshots[postId] = AsyncSnapshot.withData(ConnectionState.done, translatedPost);
-			threadState?.translatedPosts[postId] = translatedPost;
+			_translatedPostSnapshots[post.id] = AsyncSnapshot.withData(ConnectionState.done, translatedPost);
+			threadState?.translatedPosts[post.id] = translatedPost;
 			threadState?.save();
 		}
 		catch (e, st) {
-			_translatedPostSnapshots[postId] = AsyncSnapshot.withError(ConnectionState.done, e, st);
+			_translatedPostSnapshots[post.id] = AsyncSnapshot.withError(ConnectionState.done, e, st);
 			rethrow;
 		}
 		finally {
@@ -1523,6 +1586,14 @@ class PostSpanRootZoneData extends PostSpanZoneData {
 	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId) {
 		return childZoneFor(0, fakeHoistedRootId: fakeHoistedRootId);
 	}
+
+	@override
+	Thread? findThread(int threadId) => _threads[threadId];
+
+	@override
+	Post? findPost(int postId) => _postLookupTable[postId];
+
+	ThreadIdentifier get primaryThread => ThreadIdentifier(board, primaryThreadId);
 }
 
 class ExpandingPost extends StatelessWidget {
@@ -1535,11 +1606,11 @@ class ExpandingPost extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final zone = context.watch<PostSpanZoneData>();
-		final post = zone.thread.posts.tryFirstWhere((p) => p.id == id) ?? zone.postFromArchive(id);
+		final post = zone.findPost(id) ?? zone.postFromArchive(id);
 		return zone.shouldExpandPost(id) ? TransformedMediaQuery(
 			transformation: (mq) => mq.copyWith(textScaleFactor: 1),
 			child: (post == null) ? Center(
-				child: Text('Could not find /${zone.thread.board}/$id')
+				child: Text('Could not find /${zone.board}/$id')
 			) : Row(
 				children: [
 					Flexible(
@@ -1608,6 +1679,7 @@ List<InlineSpan> buildPostInfoRow({
 	bool interactive = true,
 	bool showPostNumber = true
 }) {
+	final thread = zone.findThread(post.threadId);
 	return [
 		if (post.deleted) ...[
 			TextSpan(
@@ -1618,13 +1690,13 @@ List<InlineSpan> buildPostInfoRow({
 				)
 			),
 		],
-		if (post.id == post.threadId && zone.thread.title != null) TextSpan(
-			text: '${zone.thread.title} ',
+		if (post.id == post.threadId && thread?.title != null) TextSpan(
+			text: '${thread?.title} ',
 			style: TextStyle(fontWeight: FontWeight.w600, color: settings.theme.titleColor)
 		),
 		for (final field in settings.postDisplayFieldOrder)
-			if (showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && site.explicitIds) TextSpan(
-				text: '#${zone.thread.replyCount - ((zone.thread.posts.length - 1) - (zone.thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1))} ',
+			if (thread != null && showPostNumber && field == PostDisplayField.postNumber && settings.showPostNumberOnPosts && site.explicitIds) TextSpan(
+				text: '#${thread.replyCount - ((thread.posts.length - 1) - (thread.posts.binarySearchFirstIndexWhere((p) => p.id >= post.id) + 1))} ',
 				style: TextStyle(color: settings.theme.primaryColor.withOpacity(0.5))
 			)
 			else if (field == PostDisplayField.ipNumber && settings.showIPNumberOnPosts && post.ipNumber != null) ...[
@@ -1663,7 +1735,7 @@ List<InlineSpan> buildPostInfoRow({
 				IDSpan(
 					id: post.posterId!,
 					onPressed: interactive ? () {
-						final postIdsToShow = zone.thread.posts.where((p) => p.posterId == post.posterId).map((p) => p.id).toList();
+						final postIdsToShow = zone.findThread(post.threadId)?.posts.where((p) => p.posterId == post.posterId).map((p) => p.id).toList() ?? [];
 						if (postIdsToShow.isEmpty) {
 							alertError(context, 'Could not find any posts with ID "${post.posterId}". This is likely a problem with Chance...');
 						}
@@ -1717,10 +1789,12 @@ List<InlineSpan> buildPostInfoRow({
 					)
 				),
 				TextSpan(
-					text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}${showBoardName ? '${zone.site.formatBoardName(zone.site.persistence.getBoard(post.board)).replaceFirst(RegExp(r'\/$'), '')}/' : ''}${post.id} ',
-					style: TextStyle(color: settings.theme.primaryColor.withOpacity(0.5)),
+					text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}${showBoardName ? '${zone.imageboard.site.formatBoardName(zone.imageboard.site.persistence.getBoard(post.board)).replaceFirst(RegExp(r'\/$'), '')}/' : ''}${post.id} ',
+					style: TextStyle(
+						color: (post.threadId != zone.primaryThreadId ? settings.theme.secondaryColor.shiftHue(-20) : settings.theme.primaryColor).withOpacity(0.5)
+					),
 					recognizer: interactive ? (TapGestureRecognizer()..onTap = () {
-						context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.id);
+						context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.threadId, post.id);
 					}) : null
 				)
 			],

@@ -66,7 +66,7 @@ class _LicensesPageState extends State<LicensesPage> {
 					)
 				)
 			),
-			detailBuilder: (selectedValue, poppedOut) => BuiltDetailPane(
+			detailBuilder: (selectedValue, setter, poppedOut) => BuiltDetailPane(
 				widget: selectedValue == null ? Container(
 					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
 					child: const Center(

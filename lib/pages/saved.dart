@@ -404,7 +404,7 @@ class _SavedPageState extends State<SavedPage> {
 							)
 						);
 					},
-					detailBuilder: (selectedThread, poppedOut) {
+					detailBuilder: (selectedThread, setter, poppedOut) {
 						return BuiltDetailPane(
 							widget: selectedThread != null ? ImageboardScope(
 								imageboardKey: selectedThread.imageboard.key,
@@ -532,7 +532,7 @@ class _SavedPageState extends State<SavedPage> {
 							)
 						);
 					},
-					detailBuilder: (selectedThread, poppedOut) {
+					detailBuilder: (selectedThread, setter, poppedOut) {
 						return BuiltDetailPane(
 							widget: selectedThread != null ? ImageboardScope(
 								imageboardKey: selectedThread.imageboard.key,
@@ -614,9 +614,8 @@ class _SavedPageState extends State<SavedPage> {
 												imageboardKey: item.imageboard.key,
 												child: ChangeNotifierProvider<PostSpanZoneData>(
 													create: (context) => PostSpanRootZoneData(
-														site: item.imageboard.site,
+														imageboard: item.imageboard,
 														thread: item.threadState.thread!,
-														threadState: item.threadState,
 														semanticRootIds: [-8]
 													),
 													child: Builder(
@@ -658,7 +657,7 @@ class _SavedPageState extends State<SavedPage> {
 							)
 						);
 					},
-					detailBuilder: (selected, poppedOut) => BuiltDetailPane(
+					detailBuilder: (selected, setter, poppedOut) => BuiltDetailPane(
 						widget: selected == null ? _placeholder('Select a post') : ImageboardScope(
 							imageboardKey: selected.imageboard.key,
 							child: ThreadPage(
@@ -732,7 +731,7 @@ class _SavedPageState extends State<SavedPage> {
 													imageboardKey: savedPost.imageboard.key,
 													child: ChangeNotifierProvider<PostSpanZoneData>(
 														create: (context) => PostSpanRootZoneData(
-															site: savedPost.imageboard.site,
+															imageboard: savedPost.imageboard,
 															thread: threadState!.thread!,
 															semanticRootIds: [-2]
 														),
@@ -781,7 +780,7 @@ class _SavedPageState extends State<SavedPage> {
 							)
 						);
 					},
-					detailBuilder: (selected, poppedOut) => BuiltDetailPane(
+					detailBuilder: (selected, setter, poppedOut) => BuiltDetailPane(
 						widget: selected == null ? _placeholder('Select a post') : ImageboardScope(
 							imageboardKey: selected.imageboard.key,
 							child: ThreadPage(
@@ -903,7 +902,7 @@ class _SavedPageState extends State<SavedPage> {
 							);
 						}
 					),
-					detailBuilder: (selectedValue, poppedOut) {
+					detailBuilder: (selectedValue, setter, poppedOut) {
 						Widget child;
 						if (selectedValue == null) {
 							child = _placeholder('Select an attachment');

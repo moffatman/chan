@@ -46,45 +46,25 @@ enum _ThreadSortingMethodScope {
 
 class BoardPage extends StatefulWidget {
 	final int semanticId;
+	final PersistentBrowserTab? tab;
 	final ImageboardBoard? initialBoard;
 	final bool allowChangingBoard;
 	final ValueChanged<ImageboardScoped<ImageboardBoard>>? onBoardChanged;
 	final ValueChanged<ThreadIdentifier>? onThreadSelected;
 	final bool Function(BuildContext, ThreadIdentifier)? isThreadSelected;
 	final String? initialSearch;
-	final ValueChanged<String?>? onSearchChanged;
-	final String Function()? getInitialDraftText;
-	final ValueChanged<String>? onDraftTextChanged;
-	final String Function()? getInitialDraftSubject;
-	final ValueChanged<String>? onDraftSubjectChanged;
 	final void Function(String, ThreadIdentifier, bool)? onWantOpenThreadInNewTab;
-	final String Function()? getInitialThreadDraftOptions;
-	final ValueChanged<String>? onThreadDraftOptionsChanged;
-	final String? Function()? getInitialThreadDraftFilePath;
-	final ValueChanged<String?>? onThreadDraftFilePathChanged;
 	final void Function(String, String, String)? onWantArchiveSearch;
-	final CatalogVariant? initialCatalogVariant;
-	final ValueChanged<CatalogVariant?>? onCatalogVariantChanged;
 	const BoardPage({
 		required this.initialBoard,
+		this.tab,
 		this.allowChangingBoard = true,
 		this.onBoardChanged,
 		this.onThreadSelected,
 		this.isThreadSelected,
 		this.initialSearch,
-		this.onSearchChanged,
-		this.getInitialDraftText,
-		this.onDraftTextChanged,
-		this.getInitialDraftSubject,
-		this.onDraftSubjectChanged,
 		this.onWantOpenThreadInNewTab,
-		this.getInitialThreadDraftOptions,
-		this.onThreadDraftOptionsChanged,
-		this.getInitialThreadDraftFilePath,
-		this.onThreadDraftFilePathChanged,
 		this.onWantArchiveSearch,
-		this.initialCatalogVariant,
-		this.onCatalogVariantChanged,
 		required this.semanticId,
 		Key? key
 	}) : super(key: key);
@@ -121,7 +101,7 @@ class _BoardPageState extends State<BoardPage> {
 	void initState() {
 		super.initState();
 		_listController = RefreshableListController();
-		_variant = widget.initialCatalogVariant;
+		_variant = widget.tab?.catalogVariant;
 		board = widget.initialBoard;
 		if (board == null) {
 			Future.delayed(const Duration(milliseconds: 100), _selectBoard);
@@ -153,7 +133,7 @@ class _BoardPageState extends State<BoardPage> {
 		else if (context.findAncestorStateOfType<NavigatorState>()?.canPop() == false) {
 			_lastSelectedThread = context.read<PersistentBrowserTab?>()?.thread;
 		}
-		_searching = widget.initialSearch?.isNotEmpty ?? false;
+		_searching = (widget.initialSearch ?? widget.tab?.initialSearch)?.isNotEmpty ?? false;
 	}
 
 	void _selectBoard() async {
@@ -176,7 +156,7 @@ class _BoardPageState extends State<BoardPage> {
 				_listController.scrollController?.jumpTo(0);
 			}
 			_variant = null;
-			widget.onCatalogVariantChanged?.call(_variant);
+			widget.tab?.mutate((tab) => tab.catalogVariant = _variant);
 		});
 	}
 
@@ -646,7 +626,7 @@ class _BoardPageState extends State<BoardPage> {
 								if (choice.$1 == null) {
 									if (choice.$2 == _ThreadSortingMethodScope.tab) {
 										_variant = null;
-										widget.onCatalogVariantChanged?.call(_variant);
+										widget.tab?.mutate((tab) => tab.catalogVariant = _variant);
 									}
 									else if (choice.$2 == _ThreadSortingMethodScope.board) {
 										persistence?.browserState.catalogVariants.remove(board?.name);
@@ -678,7 +658,7 @@ class _BoardPageState extends State<BoardPage> {
 										else {
 											_variant = choice.$1!;
 										}
-										widget.onCatalogVariantChanged?.call(_variant);
+										widget.tab?.mutate((tab) => tab.catalogVariant = _variant);
 										setState(() {});
 										break;
 								}
@@ -701,21 +681,21 @@ class _BoardPageState extends State<BoardPage> {
 													child: ReplyBox(
 														fullyExpanded: true,
 														board: board!.name,
-														initialText: widget.getInitialDraftText?.call() ?? '',
+														initialText: widget.tab?.draftThread ?? '',
 														onTextChanged: (text) {
-															widget.onDraftTextChanged?.call(text);
+															widget.tab?.mutate((tab) => tab.draftThread = text);
 														},
-														initialSubject: widget.getInitialDraftSubject?.call() ?? '',
+														initialSubject: widget.tab?.draftSubject ?? '',
 														onSubjectChanged: (subject) {
-															widget.onDraftSubjectChanged?.call(subject);
+															widget.tab?.mutate((tab) => tab.draftSubject = subject);
 														},
-														initialOptions: widget.getInitialThreadDraftOptions?.call() ?? '',
+														initialOptions: widget.tab?.draftOptions ?? '',
 														onOptionsChanged: (options) {
-															widget.onThreadDraftOptionsChanged?.call(options);
+															widget.tab?.mutate((tab) => tab.draftOptions = options);
 														},
-														initialFilePath: widget.getInitialThreadDraftFilePath?.call() ?? '',
+														initialFilePath: widget.tab?.draftFilePath ?? '',
 														onFilePathChanged: (filePath) {
-															widget.onThreadDraftFilePathChanged?.call(filePath);
+															widget.tab?.mutate((tab) => tab.draftFilePath = filePath);
 														},
 														onReplyPosted: (receipt) async {
 															if (imageboard.site.supportsPushNotifications) {
@@ -814,9 +794,9 @@ class _BoardPageState extends State<BoardPage> {
 												fit: StackFit.expand,
 												children: [
 													RefreshableList<Thread>(
-														initialFilter: widget.initialSearch,
+														initialFilter: widget.initialSearch ?? widget.tab?.initialSearch,
 														onFilterChanged: (newFilter) {
-															widget.onSearchChanged?.call(newFilter);
+															widget.tab?.mutate((tab) => tab.initialSearch = newFilter);
 															bool newSearching = newFilter != null;
 															if (newSearching != _searching) {
 																setState(() {
@@ -966,21 +946,21 @@ class _BoardPageState extends State<BoardPage> {
 										child: ReplyBox(
 											key: _replyBoxKey,
 											board: board!.name,
-											initialText: widget.getInitialDraftText?.call() ?? '',
+											initialText: widget.tab?.draftThread ?? '',
 											onTextChanged: (text) {
-												widget.onDraftTextChanged?.call(text);
+												widget.tab?.mutate((tab) => tab.draftThread = text);
 											},
-											initialSubject: widget.getInitialDraftSubject?.call() ?? '',
+											initialSubject: widget.tab?.draftSubject ?? '',
 											onSubjectChanged: (subject) {
-												widget.onDraftSubjectChanged?.call(subject);
+												widget.tab?.mutate((tab) => tab.draftSubject = subject);
 											},
-											initialOptions: widget.getInitialThreadDraftOptions?.call() ?? '',
+											initialOptions: widget.tab?.draftOptions ?? '',
 											onOptionsChanged: (options) {
-												widget.onThreadDraftOptionsChanged?.call(options);
+												widget.tab?.mutate((tab) => tab.draftOptions = options);
 											},
-											initialFilePath: widget.getInitialThreadDraftFilePath?.call() ?? '',
+											initialFilePath: widget.tab?.draftFilePath ?? '',
 											onFilePathChanged: (filePath) {
-												widget.onThreadDraftFilePathChanged?.call(filePath);
+												widget.tab?.mutate((tab) => tab.draftFilePath = filePath);
 											},
 											onReplyPosted: (receipt) async {
 												if (imageboard?.site.supportsPushNotifications == true) {

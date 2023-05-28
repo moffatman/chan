@@ -93,22 +93,23 @@ class PostRow extends StatelessWidget {
 		final parentZone = context.watch<PostSpanZoneData>();
 		final translatedPostSnapshot = parentZone.translatedPost(post.id);
 		final settings = context.watch<EffectiveSettings>();
-		final receipt = parentZone.threadState?.receipts.tryFirstWhere((r) => r.id == latestPost.id);
-		final isYourPost = receipt != null || (parentZone.threadState?.postsMarkedAsYou.contains(post.id) ?? false);
+		final parentZoneThreadState = parentZone.imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
+		final receipt = parentZoneThreadState?.receipts.tryFirstWhere((r) => r.id == latestPost.id);
+		final isYourPost = receipt != null || (parentZoneThreadState?.postsMarkedAsYou.contains(post.id) ?? false);
 		Border? border;
 		if (isYourPost && showYourPostBorder) {
 			border = Border(
 				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color ?? Colors.red, width: 10)
 			);
 		}
-		else if (parentZone.threadState?.replyIdsToYou(Filter.of(context))?.contains(post.id) ?? false) {
+		else if (parentZoneThreadState?.replyIdsToYou(Filter.of(context))?.contains(post.id) ?? false) {
 			border = Border(
 				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color?.towardsBlack(0.5) ?? const Color.fromARGB(255, 90, 30, 30), width: 10)
 			);
 		}
 		final replyIds = latestPost.replyIds.toList();
 		replyIds.removeWhere((id) {
-			final replyPost = parentZone.thread.posts.tryFirstWhere((p) => p.id == id);
+			final replyPost = parentZone.findPost(id);
 			if (replyPost != null) {
 				if (Filter.of(context).filter(replyPost)?.type.hide == true) {
 					return true;
@@ -116,6 +117,15 @@ class PostRow extends StatelessWidget {
 			}
 			return false;
 		});
+		if (post.threadId != parentZone.primaryThreadId) {
+			// This post is from an old thread.
+			// Add replyIds from the main thread.
+			replyIds.addAll(parentZone.findThread(parentZone.primaryThreadId)?.posts.expand((p) sync* {
+				if (p.repliedToIds.contains(post.id)) {
+					yield p.id;
+				}
+			}) ?? []);
+		}
 		final backgroundColor = isSelected ?
 			CupertinoTheme.of(context).primaryColorWithBrightness(0.4) :
 			highlight ?
@@ -151,8 +161,7 @@ class PostRow extends StatelessWidget {
 										PostQuoteLinkSpan(
 											board: latestPost.board,
 											threadId: latestPost.threadId,
-											postId: latestPost.parentId!,
-											dead: false
+											postId: latestPost.parentId!
 										).build(
 											ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
 												shrinkWrap: shrinkWrap
@@ -328,8 +337,7 @@ class PostRow extends StatelessWidget {
 																	...replyIds.map((id) => PostQuoteLinkSpan(
 																		board: latestPost.board,
 																		threadId: latestPost.threadId,
-																		postId: id,
-																		dead: false
+																		postId: id
 																	).build(ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
 																		showCrossThreadLabel: showCrossThreadLabel,
 																		addExpandingPosts: false,
@@ -448,7 +456,7 @@ class PostRow extends StatelessWidget {
 				if (site.supportsPosting && context.read<GlobalKey<ReplyBoxState>?>()?.currentState != null) ContextMenuAction(
 					child: const Text('Reply'),
 					trailingIcon: CupertinoIcons.reply,
-					onPressed: () => context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.id)
+					onPressed: () => context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.threadId, post.id)
 				),
 				ContextMenuAction(
 					child: const Text('Select text'),
@@ -457,7 +465,7 @@ class PostRow extends StatelessWidget {
 						WeakNavigator.push(context, SelectablePostPage(
 							post: latestPost,
 							zone: parentZone,
-							onQuoteText: (text) => context.read<GlobalKey<ReplyBoxState>>().currentState?.onQuoteText(text, fromId: latestPost.id)
+							onQuoteText: (text) => context.read<GlobalKey<ReplyBoxState>>().currentState?.onQuoteText(text, fromId: latestPost.id, fromThreadId: latestPost.threadId)
 						));
 					}
 				),
@@ -484,7 +492,7 @@ class PostRow extends StatelessWidget {
 					child: const Text('Save post'),
 					trailingIcon: CupertinoIcons.bookmark,
 					onPressed: () {
-						context.read<Persistence>().savePost(latestPost, parentZone.thread);
+						context.read<Persistence>().savePost(latestPost);
 					}
 				)
 				else ContextMenuAction(
@@ -494,43 +502,43 @@ class PostRow extends StatelessWidget {
 						context.read<Persistence>().unsavePost(post);
 					}
 				),
-				if (parentZone.threadState != null) ...[
+				if (parentZoneThreadState != null) ...[
 					if (isYourPost) ContextMenuAction(
 							child: const Text('Unmark as You'),
 							trailingIcon: CupertinoIcons.person_badge_minus,
 							onPressed: () {
-								parentZone.threadState!.receipts.removeWhere((r) => r.id == latestPost.id);
-								parentZone.threadState!.postsMarkedAsYou.remove(latestPost.id);
-								parentZone.threadState!.didUpdatePostsMarkedAsYou();
-								parentZone.threadState!.save();
+								parentZoneThreadState.receipts.removeWhere((r) => r.id == latestPost.id);
+								parentZoneThreadState.postsMarkedAsYou.remove(latestPost.id);
+								parentZoneThreadState.didUpdatePostsMarkedAsYou();
+								parentZoneThreadState.save();
 							}
 						)
 					else ContextMenuAction(
 							child: const Text('Mark as You'),
 							trailingIcon: CupertinoIcons.person_badge_plus,
 							onPressed: () async {
-								parentZone.threadState!.postsMarkedAsYou.add(latestPost.id);
-								parentZone.threadState!.didUpdatePostsMarkedAsYou();
+								parentZoneThreadState.postsMarkedAsYou.add(latestPost.id);
+								parentZoneThreadState.didUpdatePostsMarkedAsYou();
 								if (site.supportsPushNotifications) {
 									await promptForPushNotificationsIfNeeded(context);
 								}
 								notifications.subscribeToThread(
-									thread: parentZone.threadState!.identifier,
-									lastSeenId: parentZone.threadState!.thread?.posts.last.id ?? latestPost.id,
-									localYousOnly: notifications.getThreadWatch(parentZone.threadState!.identifier)?.localYousOnly ?? true,
-									pushYousOnly: notifications.getThreadWatch(parentZone.threadState!.identifier)?.localYousOnly ?? true,
+									thread: parentZoneThreadState.identifier,
+									lastSeenId: parentZoneThreadState.thread?.posts.last.id ?? latestPost.id,
+									localYousOnly: notifications.getThreadWatch(parentZoneThreadState.identifier)?.localYousOnly ?? true,
+									pushYousOnly: notifications.getThreadWatch(parentZoneThreadState.identifier)?.localYousOnly ?? true,
 									push: true,
-									youIds: parentZone.threadState!.freshYouIds()
+									youIds: parentZoneThreadState.freshYouIds()
 								);
-								parentZone.threadState!.save();
+								parentZoneThreadState.save();
 							}
 						),
-					if (parentZone.threadState!.hiddenPostIds.contains(latestPost.id)) ContextMenuAction(
+					if (parentZoneThreadState.hiddenPostIds.contains(latestPost.id)) ContextMenuAction(
 						child: const Text('Unhide post'),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
-							parentZone.threadState!.unHidePost(latestPost.id);
-							parentZone.threadState!.save();
+							parentZoneThreadState.unHidePost(latestPost.id);
+							parentZoneThreadState.save();
 						}
 					)
 					else ...[
@@ -538,20 +546,20 @@ class PostRow extends StatelessWidget {
 							child: const Text('Hide post'),
 							trailingIcon: CupertinoIcons.eye_slash,
 							onPressed: () {
-								parentZone.threadState!.hidePost(latestPost.id);
-								parentZone.threadState!.save();
+								parentZoneThreadState.hidePost(latestPost.id);
+								parentZoneThreadState.save();
 							}
 						),
 						ContextMenuAction(
 							child: const Text('Hide post and replies'),
 							trailingIcon: CupertinoIcons.eye_slash,
 							onPressed: () {
-								parentZone.threadState!.hidePost(latestPost.id, tree: true);
-								parentZone.threadState!.save();
+								parentZoneThreadState.hidePost(latestPost.id, tree: true);
+								parentZoneThreadState.save();
 							}
 						),
 					],
-					if (latestPost.posterId != null && parentZone.threadState!.hiddenPosterIds.contains(latestPost.posterId)) ContextMenuAction(
+					if (latestPost.posterId != null && parentZoneThreadState.hiddenPosterIds.contains(latestPost.posterId)) ContextMenuAction(
 						child: RichText(text: TextSpan(
 							children: [
 								const TextSpan(text: 'Unhide from '),
@@ -560,8 +568,8 @@ class PostRow extends StatelessWidget {
 						)),
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
-							parentZone.threadState!.unHidePosterId(latestPost.posterId!);
-							parentZone.threadState!.save();
+							parentZoneThreadState.unHidePosterId(latestPost.posterId!);
+							parentZoneThreadState.save();
 						}
 					)
 					else if (latestPost.posterId != null) ContextMenuAction(
@@ -573,8 +581,8 @@ class PostRow extends StatelessWidget {
 						)),
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () {
-							parentZone.threadState!.hidePosterId(latestPost.posterId!);
-							parentZone.threadState!.save();
+							parentZoneThreadState.hidePosterId(latestPost.posterId!);
+							parentZoneThreadState.save();
 						}
 					),
 					if (context.select<EffectiveSettings, bool>((p) => p.areMD5sHidden(latestPost.md5s))) ContextMenuAction(
@@ -583,7 +591,7 @@ class PostRow extends StatelessWidget {
 						onPressed: () {
 							context.read<EffectiveSettings>().unHideByMD5s(latestPost.md5s);
 							context.read<EffectiveSettings>().didUpdateHiddenMD5s();
-							parentZone.threadState!.save();
+							parentZoneThreadState.save();
 						}
 					)
 					else if (latestPost.attachments.isNotEmpty) ContextMenuAction(
@@ -597,7 +605,7 @@ class PostRow extends StatelessWidget {
 							}
 							settings.hideByMD5(attachment.md5);
 							settings.didUpdateHiddenMD5s();
-							parentZone.threadState!.save();
+							parentZoneThreadState.save();
 						}
 					)
 				],
@@ -627,7 +635,7 @@ class PostRow extends StatelessWidget {
 					trailingIcon: Icons.translate,
 					onPressed: () async {
 						try {
-							await parentZone.translatePost(post.id);
+							await parentZone.translatePost(post);
 						}
 						catch (e) {
 							alertError(context, e.toStringDio());

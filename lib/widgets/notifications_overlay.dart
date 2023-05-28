@@ -6,7 +6,6 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -212,7 +211,7 @@ class NotificationContent extends StatelessWidget {
 		return IgnorePointer(
 			child: ChangeNotifierProvider<PostSpanZoneData>(
 				create: (context) => PostSpanRootZoneData(
-				site: context.read<ImageboardSite>(),
+					imageboard: context.read<Imageboard>(),
 					thread: thread ?? Thread(
 						board: notification.target.board,
 						id: notification.target.threadId,
@@ -226,7 +225,6 @@ class NotificationContent extends StatelessWidget {
 						posts_: [],
 						attachments: []
 					),
-					threadState: context.read<Persistence>().getThreadStateIfExists(notification.target.thread),
 					semanticRootIds: [-10]
 				),
 				builder: (context, _) => ConstrainedBox(

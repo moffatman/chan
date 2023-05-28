@@ -80,8 +80,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 					elements.add(PostQuoteLinkSpan(
 						board: linkedBoard,
 						threadId: linkedPostThreadId,
-						postId: linkedId,
-						dead: false
+						postId: linkedId
 					));
 				}
 				else if (linkType == 'thread') {
@@ -89,8 +88,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 					elements.add(PostQuoteLinkSpan(
 						board: linkedBoard,
 						threadId: linkedId,
-						postId: linkedPostId,
-						dead: false
+						postId: linkedPostId
 					));
 				}
 			}

@@ -12,6 +12,7 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/clipboard_image.dart';
 import 'package:chan/services/embed.dart';
+import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
@@ -267,15 +268,29 @@ class ReplyBoxState extends State<ReplyBox> {
 		);
 	}
 
-	void onTapPostId(int id) {
+	void onTapPostId(int threadId, int id) {
 		if (!widget.isArchived && (context.read<ImageboardSite?>()?.supportsPosting ?? false)) {
+			if (threadId != widget.threadId) {
+				showToast(
+					context: context,
+					message: 'Cross-thread reply!',
+					icon: CupertinoIcons.exclamationmark_triangle
+				);
+			}
 			showReplyBox();
 			_insertText('>>$id');
 		}
 	}
 
-	void onQuoteText(String text, {required int fromId}) {
-		if (!widget.isArchived) {
+	void onQuoteText(String text, {required int fromId, required int fromThreadId}) {
+		if (!widget.isArchived && (context.read<ImageboardSite?>()?.supportsPosting ?? false)) {
+			if (fromThreadId != widget.threadId) {
+				showToast(
+					context: context,
+					message: 'Cross-thread reply!',
+					icon: CupertinoIcons.exclamationmark_triangle
+				);
+			}
 			showReplyBox();
 			_insertText('>>$fromId');
 			_insertText('>${text.replaceAll('\n', '\n>')}');
@@ -1387,7 +1402,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				_showOptions = !_showOptions;
 			});
 		};
-		final site = context.read<ImageboardSite>();
+		final imageboard = context.read<Imageboard>();
 		final defaultTextStyle = DefaultTextStyle.of(context).style;
 		final settings = context.watch<EffectiveSettings>();
 		return Row(
@@ -1430,7 +1445,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 													title: Text('${snippet.name} preview'),
 													content: ChangeNotifierProvider<PostSpanZoneData>(
 														create: (context) => PostSpanRootZoneData(
-															site: site,
+															imageboard: imageboard,
 															thread: Thread(posts_: [], attachments: [], replyCount: 0, imageCount: 0, id: 0, board: '', title: '', isSticky: false, time: DateTime.now()),
 															semanticRootIds: [-14]
 														),

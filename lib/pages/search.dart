@@ -115,7 +115,7 @@ class SearchPageState extends State<SearchPage> {
 							onManualResult: (result) => setValue(result)
 						);
 					},
-					detailBuilder: (post, poppedOut) => BuiltDetailPane(
+					detailBuilder: (post, setter, poppedOut) => BuiltDetailPane(
 						widget: post != null ? ImageboardScope(
 							imageboardKey: null,
 							imageboard: post.imageboard,

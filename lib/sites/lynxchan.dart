@@ -45,8 +45,7 @@ class SiteLynxchan extends ImageboardSite {
 						elements.add(PostQuoteLinkSpan(
 							board: match.group(1)!,
 							threadId: int.parse(match.group(2)!),
-							postId: int.parse(match.group(3)!),
-							dead: false
+							postId: int.parse(match.group(3)!)
 						));
 					}
 					else {
