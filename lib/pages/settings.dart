@@ -16,6 +16,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/thread_watcher.dart';
+import 'package:chan/services/user_agents.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -3400,6 +3401,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 										CupertinoDialogAction2(
 											child: const Text('Random'),
 											onPressed: () {
+												final userAgents = getAppropriateUserAgents();
 												final idx = userAgents.indexOf(controller.text) + 1;
 												controller.text = userAgents[idx % userAgents.length];
 											}

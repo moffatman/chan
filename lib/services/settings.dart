@@ -79,7 +79,6 @@ class ChanceLinkifier extends Linkifier {
   }
 }
 
-final userAgents = getAppropriateUserAgents();
 const contentSettingsApiRoot = 'https://api.chance.surf/preferences';
 final _punctuationRegex = RegExp('(\\W+|s\\W)');
 final _badWords = Set.from(ProfanityFilter().wordsToFilterOutList);
@@ -1035,7 +1034,7 @@ class SavedSettings extends HiveObject {
 		hackerNewsCatalogVariant = hackerNewsCatalogVariant ?? CatalogVariant.hackerNewsTop,
 		hideDefaultNamesInCatalog = hideDefaultNamesInCatalog ?? false,
 		launchCount = launchCount ?? 0,
-		userAgent = userAgent ?? userAgents.first,
+		userAgent = userAgent ?? getAppropriateUserAgents().first,
 		captcha4ChanCustomNumLetters = captcha4ChanCustomNumLetters ?? 6,
 		tabMenuHidesWhenScrollingDown = tabMenuHidesWhenScrollingDown ?? true,
 		doubleTapScrollToReplies = doubleTapScrollToReplies ?? true,
@@ -1084,8 +1083,8 @@ class SavedSettings extends HiveObject {
 			}
 			if (!this.appliedMigrations.contains('uar')) {
 				// uar means userAgentReset
-				if (Platform.isAndroid && !userAgents.contains(this.userAgent) && this.contentSettings.sites.containsKey('4chan')) {
-					this.userAgent = userAgents.first;
+				if (Platform.isAndroid && !getAppropriateUserAgents().contains(this.userAgent) && this.contentSettings.sites.containsKey('4chan')) {
+					this.userAgent = getAppropriateUserAgents().first;
 				}
 				this.appliedMigrations.add('uar');
 			}
@@ -1095,9 +1094,9 @@ class SavedSettings extends HiveObject {
 			if (!this.postDisplayFieldOrder.contains(PostDisplayField.postNumber)) {
 				this.postDisplayFieldOrder.insert(0, PostDisplayField.postNumber);
 			}
-			if (getInappropriateUserAgents().contains(this.userAgent) && !userAgents.contains(this.userAgent)) {
+			if (getInappropriateUserAgents().contains(this.userAgent) && !getAppropriateUserAgents().contains(this.userAgent)) {
 				// To handle user-agents breaking with OS updates
-				this.userAgent = userAgents.first;
+				this.userAgent = getAppropriateUserAgents().first;
 			}
 			if (!this.appliedMigrations.contains('uif')) {
 				// uif means unifiedImageFilter

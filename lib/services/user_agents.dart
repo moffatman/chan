@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:chan/services/apple.dart';
+
 final _androidUserAgents = [
 	'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.5195.79 Mobile Safari/537.36',
 	'Mozilla/5.0 (Linux; Android 10; SM-A217F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Mobile Safari/537.36',
@@ -38,6 +40,10 @@ bool _isIOSGreaterThan16_4() {
 		if (match != null) {
 			int major = int.tryParse(match.group(2) ?? '') ?? 15;
 			int minor = int.tryParse(match.group(4) ?? '') ?? 0;
+			if (isOnMac) {
+				// iOS 16.5 ~= macOS 13.4
+				return major > 13 || (major == 13 && minor >= 3);
+			}
 			return major > 16 || (major == 16 && minor >= 4);
 		}
 	}
