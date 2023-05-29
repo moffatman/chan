@@ -75,6 +75,7 @@ class _SettingsPageState extends State<_SettingsPage> {
 							alignment: Alignment.center,
 							child: ConstrainedBox(
 								constraints: const BoxConstraints(
+									minWidth: 500,
 									maxWidth: 500
 								),
 								child: widget.children[i]
