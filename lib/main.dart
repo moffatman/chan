@@ -359,7 +359,7 @@ void clearOverlayNotifications(Notifications notifications, Watch watch) {
 }
 
 class OpenInNewTabZone {
-	final void Function(String, ThreadIdentifier) onWantOpenThreadInNewTab;
+	final void Function(String, ThreadIdentifier, {bool incognito, bool activate}) onWantOpenThreadInNewTab;
 
 	const OpenInNewTabZone({
 		required this.onWantOpenThreadInNewTab
@@ -947,15 +947,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								final tab = ImageboardTab(
 									tab: tabObject,
 									key: tabObject.tabKey,
-									onWantOpenThreadInNewTab: (imageboardKey, thread, incognito) {
-										_addNewTab(
-											withImageboardKey: imageboardKey,
-											atPosition: Persistence.tabs.indexOf(tabObject) + 1,
-											withBoard: thread.board,
-											withThreadId: thread.id,
-											incognito: incognito
-										);
-									},
 									onWantArchiveSearch: (imageboardKey, board, query) async {
 										_tabController.index = 3;
 										_lastIndex = 3;
@@ -975,7 +966,21 @@ class _ChanHomePageState extends State<ChanHomePage> {
 										Provider.value(
 											value: _tabletWillPopZones.putIfAbsent(index, () => WillPopZone())
 										),
-										ChangeNotifierProvider.value(value: tabObject)
+										ChangeNotifierProvider.value(value: tabObject),
+										Provider.value(
+											value: OpenInNewTabZone(
+												onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) {
+													_addNewTab(
+														withImageboardKey: imageboardKey,
+														atPosition: Persistence.tabs.indexOf(tabObject) + 1,
+														withBoard: thread.board,
+														withThreadId: thread.id,
+														activate: activate,
+														incognito: incognito
+													);
+												}
+											)
+										)
 									],
 									child: ValueListenableBuilder(
 										valueListenable: activeBrowserTab,
@@ -1006,37 +1011,31 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					),
 					Provider.value(
 						value: OpenInNewTabZone(
-							onWantOpenThreadInNewTab: (imageboardKey, thread) => _addNewTab(
+							onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _addNewTab(
 								withImageboardKey: imageboardKey,
 								withBoard: thread.board,
 								withThreadId: thread.id,
-								activate: true
+								activate: activate,
+								incognito: incognito
 							)
 						)
 					)
 				],
 				child: SavedPage(
 					isActive: active,
-					masterDetailKey: _savedMasterDetailKey,
-					onWantOpenThreadInNewTab: (imageboardKey, thread) {
-						_addNewTab(
-							withImageboardKey: imageboardKey,
-							withBoard: thread.board,
-							withThreadId: thread.id,
-							activate: true
-						);
-					}
+					masterDetailKey: _savedMasterDetailKey
 				)
 			);
 		}
 		else if (index == 2) {
 			child = Provider.value(
 				value: OpenInNewTabZone(
-					onWantOpenThreadInNewTab: (imageboardKey, thread) => _addNewTab(
+					onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _addNewTab(
 						withImageboardKey: imageboardKey,
 						withBoard: thread.board,
 						withThreadId: thread.id,
-						activate: true
+						activate: activate,
+						incognito: incognito
 					)
 				),
 				child: HistoryPage(
@@ -1048,11 +1047,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		else if (index == 3) {
 			child = Provider.value(
 				value: OpenInNewTabZone(
-					onWantOpenThreadInNewTab: (imageboardKey, thread) => _addNewTab(
+					onWantOpenThreadInNewTab: (imageboardKey, thread, {bool incognito = false, bool activate = true}) => _addNewTab(
 						withImageboardKey: imageboardKey,
 						withBoard: thread.board,
 						withThreadId: thread.id,
-						activate: true
+						activate: activate,
+						incognito: incognito
 					)
 				),
 				child: SearchPage(

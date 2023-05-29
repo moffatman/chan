@@ -8,12 +8,10 @@ import 'package:provider/provider.dart';
 
 class ImageboardTab extends StatelessWidget {
 	final PersistentBrowserTab tab;
-	final void Function(String, ThreadIdentifier, bool)? onWantOpenThreadInNewTab;
 	final void Function(String, String, String)? onWantArchiveSearch;
 	final int id;
 	const ImageboardTab({
 		required this.tab,
-		this.onWantOpenThreadInNewTab,
 		this.onWantArchiveSearch,
 		this.id = -1,
 		required Key key

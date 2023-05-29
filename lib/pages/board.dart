@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:chan/main.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/board_switcher.dart';
 import 'package:chan/pages/board_watch_controls.dart';
@@ -53,7 +54,6 @@ class BoardPage extends StatefulWidget {
 	final ValueChanged<ThreadIdentifier>? onThreadSelected;
 	final bool Function(BuildContext, ThreadIdentifier)? isThreadSelected;
 	final String? initialSearch;
-	final void Function(String, ThreadIdentifier, bool)? onWantOpenThreadInNewTab;
 	final void Function(String, String, String)? onWantArchiveSearch;
 	const BoardPage({
 		required this.initialBoard,
@@ -63,7 +63,6 @@ class BoardPage extends StatefulWidget {
 		this.onThreadSelected,
 		this.isThreadSelected,
 		this.initialSearch,
-		this.onWantOpenThreadInNewTab,
 		this.onWantArchiveSearch,
 		required this.semanticId,
 		Key? key
@@ -390,6 +389,7 @@ class _BoardPageState extends State<BoardPage> {
 		final notifications = context.watch<Notifications?>();
 		final boardWatch = notifications?.getBoardWatch(board?.name ?? '');
 		final variant = _variant ?? (_defaultBoardVariant ?? _defaultGlobalVariant);
+		final openInNewTabZone = context.read<OpenInNewTabZone?>();
 		Widget itemBuilder(BuildContext context, Thread thread, {String? highlightString}) {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
 			final isThreadHidden = context.select<Persistence, bool>((p) => p.browserState.isThreadHidden(thread.board, thread.id));
@@ -397,19 +397,19 @@ class _BoardPageState extends State<BoardPage> {
 			final isSelected = widget.isThreadSelected?.call(context, thread.identifier) ?? false;
 			return ContextMenu(
 				actions: [
-					if (widget.onWantOpenThreadInNewTab != null) ...[
+					if (openInNewTabZone != null) ...[
 						ContextMenuAction(
 							child: const Text('Open in new tab'),
 							trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
 							onPressed: () {
-								widget.onWantOpenThreadInNewTab?.call(imageboard!.key, thread.identifier, false);
+								openInNewTabZone.onWantOpenThreadInNewTab(imageboard!.key, thread.identifier, activate: false);
 							}
 						),
 						ContextMenuAction(
 							child: const Text('Open in new private tab'),
 							trailingIcon: CupertinoIcons.eyeglasses,
 							onPressed: () {
-								widget.onWantOpenThreadInNewTab?.call(imageboard!.key, thread.identifier, true);
+								openInNewTabZone.onWantOpenThreadInNewTab(imageboard!.key, thread.identifier, incognito: true, activate: false);
 							}
 						),
 					],

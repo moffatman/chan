@@ -1137,6 +1137,22 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.rectangle_stack_badge_plus),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Open cross-thread links in new tabs')
+						),
+						CupertinoSwitch(
+							value: settings.openCrossThreadLinksInNewTab,
+							onChanged: (newValue) {
+								settings.openCrossThreadLinksInNewTab = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 32)
 			]
 		);

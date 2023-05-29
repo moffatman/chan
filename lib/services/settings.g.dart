@@ -263,13 +263,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       applyImageFilterToThreads: fields[134] as bool?,
       askForAuthenticationOnLaunch: fields[135] as bool?,
       enableSpellCheck: fields[136] as bool?,
+      openCrossThreadLinksInNewTab: fields[137] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(133)
+      ..writeByte(134)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -535,7 +536,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(135)
       ..write(obj.askForAuthenticationOnLaunch)
       ..writeByte(136)
-      ..write(obj.enableSpellCheck);
+      ..write(obj.enableSpellCheck)
+      ..writeByte(137)
+      ..write(obj.openCrossThreadLinksInNewTab);
   }
 
   @override

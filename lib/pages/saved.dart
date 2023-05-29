@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:chan/main.dart';
 import 'package:chan/models/attachment.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
@@ -95,12 +96,10 @@ Future<List<ImageboardScoped<ThreadWatch>>> _loadWatches() => _watchMutex.protec
 
 class SavedPage extends StatefulWidget {
 	final bool isActive;
-	final void Function(String, ThreadIdentifier)? onWantOpenThreadInNewTab;
 	final GlobalKey<MultiMasterDetailPageState>? masterDetailKey;
 
 	const SavedPage({
 		required this.isActive,
-		this.onWantOpenThreadInNewTab,
 		this.masterDetailKey,
 		Key? key
 	}) : super(key: key);
@@ -271,16 +270,17 @@ class _SavedPageState extends State<SavedPage> {
 											canTapFooter: false,
 											itemBuilder: (itemContext, watch) {
 												final isSelected = selected(itemContext, watch);
+												final openInNewTabZone = context.read<OpenInNewTabZone?>();
 												return ImageboardScope(
 													imageboardKey: watch.imageboard.key,
 													child: ContextMenu(
 														maxHeight: 125,
 														actions: [
-															if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+															if (openInNewTabZone != null) ContextMenuAction(
 																child: const Text('Open in new tab'),
 																trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
 																onPressed: () {
-																	widget.onWantOpenThreadInNewTab?.call(watch.imageboard.key, watch.item.threadIdentifier);
+																	openInNewTabZone.onWantOpenThreadInNewTab(watch.imageboard.key, watch.item.threadIdentifier);
 																}
 															),
 															ContextMenuAction(
@@ -465,16 +465,17 @@ class _SavedPageState extends State<SavedPage> {
 											updateAnimation: threadStateBoxesAnimation,
 											itemBuilder: (itemContext, state) {
 												final isSelected = selectedThread(itemContext, state.imageboard!.scope(state.identifier));
+												final openInNewTabZone = context.read<OpenInNewTabZone?>();
 												return ImageboardScope(
 													imageboardKey: state.imageboardKey,
 													child: ContextMenu(
 														maxHeight: 125,
 														actions: [
-															if (widget.onWantOpenThreadInNewTab != null) ContextMenuAction(
+															if (openInNewTabZone != null) ContextMenuAction(
 																child: const Text('Open in new tab'),
 																trailingIcon: CupertinoIcons.rectangle_stack_badge_plus,
 																onPressed: () {
-																	widget.onWantOpenThreadInNewTab?.call(state.imageboardKey, state.identifier);
+																	openInNewTabZone.onWantOpenThreadInNewTab(state.imageboardKey, state.identifier);
 																}
 															),
 															ContextMenuAction(

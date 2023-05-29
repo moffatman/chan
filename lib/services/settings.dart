@@ -769,6 +769,8 @@ class SavedSettings extends HiveObject {
 	bool askForAuthenticationOnLaunch;
 	@HiveField(136)
 	bool enableSpellCheck;
+	@HiveField(137)
+	bool openCrossThreadLinksInNewTab;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -907,6 +909,7 @@ class SavedSettings extends HiveObject {
 		bool? applyImageFilterToThreads,
 		bool? askForAuthenticationOnLaunch,
 		bool? enableSpellCheck,
+		bool? openCrossThreadLinksInNewTab,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1071,7 +1074,8 @@ class SavedSettings extends HiveObject {
 		loadThumbnails = loadThumbnails ?? AutoloadAttachmentsSetting.always,
 		applyImageFilterToThreads = applyImageFilterToThreads ?? false,
 		askForAuthenticationOnLaunch = askForAuthenticationOnLaunch ?? false,
-		enableSpellCheck = enableSpellCheck ?? true {
+		enableSpellCheck = enableSpellCheck ?? true,
+		openCrossThreadLinksInNewTab = openCrossThreadLinksInNewTab ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2084,6 +2088,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get enableSpellCheck => _settings.enableSpellCheck;
 	set enableSpellCheck(bool setting) {
 		_settings.enableSpellCheck = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get openCrossThreadLinksInNewTab => _settings.openCrossThreadLinksInNewTab;
+	set openCrossThreadLinksInNewTab (bool setting) {
+		_settings.openCrossThreadLinksInNewTab = setting;
 		_settings.save();
 		notifyListeners();
 	}

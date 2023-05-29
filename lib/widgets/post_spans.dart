@@ -1,5 +1,6 @@
 import 'dart:isolate';
 
+import 'package:chan/main.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/models/thread.dart';
@@ -393,6 +394,15 @@ class PostQuoteLinkSpan extends PostSpan {
 			text += ' (Cross-thread)';
 		}
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
+			if (settings.openCrossThreadLinksInNewTab) {
+				final newTabZone = context.read<OpenInNewTabZone?>();
+				final imageboardKey = context.read<Imageboard>().key;
+				if (newTabZone != null && ImageboardRegistry.instance.getImageboard(imageboardKey) != null) {
+					// Checking ImageboardRegistry to rule-out dev board
+					newTabZone.onWantOpenThreadInNewTab(imageboardKey, ThreadIdentifier(board, actualThreadId));
+					return;
+				}
+			}
 			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
 				builder: (ctx) => ImageboardScope(
 					imageboardKey: null,
