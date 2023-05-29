@@ -1322,7 +1322,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								smartDashesType: SmartDashesType.disabled,
 								smartQuotesType: SmartQuotesType.disabled,
 								controller: _subjectFieldController,
-								spellCheckConfiguration: (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
+								spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
 								maxLines: 1,
 								placeholder: 'Subject',
 								textCapitalization: TextCapitalization.sentences,
@@ -1339,7 +1339,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										smartDashesType: SmartDashesType.disabled,
 										smartQuotesType: SmartQuotesType.disabled,
 										controller: _textFieldController,
-										spellCheckConfiguration: (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
+										spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
 										contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
 											anchors: editableTextState.contextMenuAnchors,
 											buttonItems: [

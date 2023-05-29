@@ -767,6 +767,8 @@ class SavedSettings extends HiveObject {
 	bool applyImageFilterToThreads;
 	@HiveField(135)
 	bool askForAuthenticationOnLaunch;
+	@HiveField(136)
+	bool enableSpellCheck;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -904,6 +906,7 @@ class SavedSettings extends HiveObject {
 		AutoloadAttachmentsSetting? loadThumbnails,
 		bool? applyImageFilterToThreads,
 		bool? askForAuthenticationOnLaunch,
+		bool? enableSpellCheck,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1067,7 +1070,8 @@ class SavedSettings extends HiveObject {
 		showLastRepliesInCatalog = showLastRepliesInCatalog ?? false,
 		loadThumbnails = loadThumbnails ?? AutoloadAttachmentsSetting.always,
 		applyImageFilterToThreads = applyImageFilterToThreads ?? false,
-		askForAuthenticationOnLaunch = askForAuthenticationOnLaunch ?? false {
+		askForAuthenticationOnLaunch = askForAuthenticationOnLaunch ?? false,
+		enableSpellCheck = enableSpellCheck ?? true {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2073,6 +2077,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get askForAuthenticationOnLaunch => _settings.askForAuthenticationOnLaunch;
 	set askForAuthenticationOnLaunch(bool setting) {
 		_settings.askForAuthenticationOnLaunch = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get enableSpellCheck => _settings.enableSpellCheck;
+	set enableSpellCheck(bool setting) {
+		_settings.enableSpellCheck = setting;
 		_settings.save();
 		notifyListeners();
 	}

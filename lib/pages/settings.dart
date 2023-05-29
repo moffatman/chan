@@ -1121,6 +1121,22 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
+				const SizedBox(height: 32),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.textformat_abc_dottedunderline),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Spellcheck')
+						),
+						CupertinoSwitch(
+							value: settings.enableSpellCheck,
+							onChanged: (newValue) {
+								settings.enableSpellCheck = newValue;
+							}
+						)
+					]
+				),
 				const SizedBox(height: 32)
 			]
 		);
