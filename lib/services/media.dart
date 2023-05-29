@@ -77,6 +77,8 @@ class MediaScan {
 	});
 
 	static final _ffprobeLock = Mutex();
+	static LazyBox<MediaScan>? _mediaScanBox;
+	static final _boxLock = Mutex();
 
 	static Future<MediaScan> _scan(Uri file, {
 		Map<String, String> headers = const {}
@@ -140,18 +142,31 @@ class MediaScan {
 		});
 	}
 
+	static Future<void> _closeBox() async {
+		await _boxLock.protect(() async {
+			final box = _mediaScanBox;
+			_mediaScanBox = null;
+			await box?.close();
+		});
+	}
+
 	static Future<MediaScan> scan(Uri file, {
 		Map<String, String> headers = const {}
 	}) async {
 		if (file.scheme == 'file') {
 			final size = (await File(file.path).stat()).size;
-			final cachedScan = await Persistence.mediaScanBox.get(base64.encode(md5.convert(utf8.encode(file.path)).bytes));
-			if (cachedScan?.sizeInBytes == size) {
-				return cachedScan!;
-			}
-			final scan = await _scan(file);
-			Persistence.mediaScanBox.put(file.path, scan);
-			return scan;
+			return _boxLock.protect(() async {
+				runWhenIdle(const Duration(seconds: 1), _closeBox);
+				final mediaScanBox = _mediaScanBox ??= await Hive.openLazyBox<MediaScan>('mediaScans');
+				final cachedScan = await mediaScanBox.get(base64.encode(md5.convert(utf8.encode(file.path)).bytes));
+				if (cachedScan?.sizeInBytes == size) {
+					await mediaScanBox.close();
+					return cachedScan!;
+				}
+				final scan = await _scan(file);
+				await mediaScanBox.put(file.path, scan);
+				return scan;
+			});
 		}
 		else {
 			return _scan(file, headers: headers);

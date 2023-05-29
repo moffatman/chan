@@ -101,7 +101,6 @@ class Persistence extends ChangeNotifier {
 	static Box<PersistentThreadState> get sharedThreadStateBox => _sharedThreadStateBox;
 	static late final Box<ImageboardBoard> _sharedBoardsBox;
 	static late final LazyBox<Thread> _sharedThreadsBox;
-	static late final LazyBox<MediaScan> mediaScanBox;
 	Map<String, SavedAttachment> get savedAttachments => settings.savedAttachmentsBySite[imageboardKey]!;
 	Map<String, SavedPost> get savedPosts => settings.savedPostsBySite[imageboardKey]!;
 	static PersistentRecentSearches get recentSearches => settings.recentSearches;
@@ -130,7 +129,6 @@ class Persistence extends ChangeNotifier {
 	static String get _sharedThreadStatesBoxName => 'threadStates';
 	static String get _sharedBoardsBoxName => 'boards';
 	static String get _sharedThreadsBoxName => 'threads';
-	static String get _mediaScansBoxName => 'mediaScans';
 
 	static Future<Box<T>> _openBoxWithBackup<T>(String name, {
 		CompactionStrategy compactionStrategy = defaultCompactionStrategy,
@@ -364,7 +362,6 @@ class Persistence extends ChangeNotifier {
 		}
 		_sharedThreadsBox = await _openLazyBoxWithBackup<Thread>(_sharedThreadsBoxName, gzip: true);
 		_startBoxBackupTimer(_sharedThreadsBoxName, gzip: true);
-		mediaScanBox = await Hive.openLazyBox<MediaScan>(_mediaScansBoxName);
 	}
 
 	static Future<Map<String, int>> getFilesystemCacheSizes() async {
