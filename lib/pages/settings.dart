@@ -3560,12 +3560,12 @@ class SettingsThreadsPanel extends StatelessWidget {
 					return (days, oldThreads);
 				}).toList();
 				oldThreadRows.removeRange(oldThreadRows.lastIndexWhere((r) => r.$2.isNotEmpty) + 1, oldThreadRows.length);
-				confirmDelete(List<PersistentThreadState> toDelete) async {
+				confirmDelete(List<PersistentThreadState> toDelete, {String itemType = 'thread'}) async {
 					final confirmed = await showCupertinoDialog<bool>(
 						context: context,
 						builder: (context) => CupertinoAlertDialog2(
 							title: const Text('Confirm deletion'),
-							content: Text('${describeCount(toDelete.length, 'thread')} will be deleted'),
+							content: Text('${describeCount(toDelete.length, itemType)} will be deleted'),
 							actions: [
 								CupertinoDialogAction2(
 									child: const Text('Cancel'),
@@ -3589,6 +3589,7 @@ class SettingsThreadsPanel extends StatelessWidget {
 						}
 					}
 				}
+				final savedThreads = threadStateBox.values.where((t) => t.savedTime != null).toList();
 				return Container(
 					decoration: BoxDecoration(
 						borderRadius: const BorderRadius.all(Radius.circular(8)),
@@ -3605,11 +3606,11 @@ class SettingsThreadsPanel extends StatelessWidget {
 							TableRow(
 								children: [
 									const Text('Saved threads', textAlign: TextAlign.left),
-									Text(threadStateBox.values.where((t) => t.savedTime != null).length.toString(), textAlign: TextAlign.right),
-									const CupertinoButton(
+									Text(savedThreads.length.toString(), textAlign: TextAlign.right),
+									CupertinoButton(
 										padding: EdgeInsets.zero,
-										onPressed: null,
-										child: Text('Delete')
+										onPressed: savedThreads.isEmpty ? null : () => confirmDelete(savedThreads, itemType: 'saved thread'),
+										child: const Text('Delete')
 									)
 								]
 							),
