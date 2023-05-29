@@ -73,6 +73,7 @@ void main() async {
 			final imageHttpClient = (ExtendedNetworkImageProvider.httpClient as HttpClient);
 			imageHttpClient.connectionTimeout = const Duration(seconds: 10);
 			imageHttpClient.idleTimeout = const Duration(seconds: 10);
+			imageHttpClient.maxConnectionsPerHost = 10;
 			if (Platform.isAndroid || Platform.isIOS) {
 				await Firebase.initializeApp(
 					options: DefaultFirebaseOptions.currentPlatform
