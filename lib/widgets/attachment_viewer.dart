@@ -453,8 +453,13 @@ class AttachmentViewerController extends ChangeNotifier {
 				}
 				_videoControllers.add(this);
 				if (_videoControllers.length > _maxVideoControllers) {
-					final removed = _videoControllers.removeAt(0);
-					if (!removed._isDisposed) {
+					AttachmentViewerController removed = _videoControllers.removeAt(0);
+					if (!removed._isDisposed && removed != this) {
+						if (removed.isPrimary) {
+							// Unlucky order, should be able to fix it by cycling
+							_videoControllers.add(removed);
+							removed = _videoControllers.removeAt(0);
+						}
 						removed.goToThumbnail();
 					}
 				}
@@ -903,11 +908,11 @@ class AttachmentViewer extends StatelessWidget {
 						key: useRealKey ? controller.loadingSpinnerKey : null,
 						value: value
 					)
-				) : Icon(
+				) : (controller.cacheCompleted ? const SizedBox.shrink() : Icon(
 					CupertinoIcons.arrow_down_circle,
 					size: 60,
 					color: CupertinoTheme.of(context).primaryColor
-				)
+				))
 			)
 		)
 	);
