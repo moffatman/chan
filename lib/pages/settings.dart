@@ -37,6 +37,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -3187,6 +3188,43 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 		return _SettingsPage(
 			title: 'Data Settings',
 			children: [
+				const SizedBox(height: 16),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.lock),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Require authentication on launch')
+						),
+						CupertinoSwitch(
+							value: settings.askForAuthenticationOnLaunch,
+							onChanged: (newValue) async {
+								try {
+									final result = await LocalAuthentication().authenticate(localizedReason: 'Verify access to app', options: const AuthenticationOptions(stickyAuth: true));
+									if (result) {
+										settings.askForAuthenticationOnLaunch = newValue;
+									}
+									else if (mounted) {
+										showToast(
+											context: context,
+											icon: CupertinoIcons.lock_slash,
+											message: 'Authentication failed'
+										);
+									}
+								}
+								catch (e, st) {
+									Future.error(e, st); // Report to crashlytics
+									showToast(
+										context: context,
+										icon: CupertinoIcons.lock_slash,
+										message: 'Error authenticating'
+									);
+								}
+							}
+						)
+					]
+				),
+				const SizedBox(height: 16),
 				if (Platform.isAndroid) ...[
 					const SizedBox(height: 16),
 					Center(

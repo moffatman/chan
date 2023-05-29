@@ -765,6 +765,8 @@ class SavedSettings extends HiveObject {
 	AutoloadAttachmentsSetting loadThumbnails;
 	@HiveField(134)
 	bool applyImageFilterToThreads;
+	@HiveField(135)
+	bool askForAuthenticationOnLaunch;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -901,6 +903,7 @@ class SavedSettings extends HiveObject {
 		bool? showLastRepliesInCatalog,
 		AutoloadAttachmentsSetting? loadThumbnails,
 		bool? applyImageFilterToThreads,
+		bool? askForAuthenticationOnLaunch,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1063,7 +1066,8 @@ class SavedSettings extends HiveObject {
 		hiddenImageMD5s = hiddenImageMD5s?.toSet() ?? {},
 		showLastRepliesInCatalog = showLastRepliesInCatalog ?? false,
 		loadThumbnails = loadThumbnails ?? AutoloadAttachmentsSetting.always,
-		applyImageFilterToThreads = applyImageFilterToThreads ?? false {
+		applyImageFilterToThreads = applyImageFilterToThreads ?? false,
+		askForAuthenticationOnLaunch = askForAuthenticationOnLaunch ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2063,6 +2067,13 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.applyImageFilterToThreads = setting;
 		_settings.save();
 		imageMD5Filter = FilterCache(MD5Filter(_settings.hiddenImageMD5s.toSet(), applyImageFilterToThreads));
+		notifyListeners();
+	}
+
+	bool get askForAuthenticationOnLaunch => _settings.askForAuthenticationOnLaunch;
+	set askForAuthenticationOnLaunch(bool setting) {
+		_settings.askForAuthenticationOnLaunch = setting;
+		_settings.save();
 		notifyListeners();
 	}
 

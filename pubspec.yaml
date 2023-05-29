@@ -82,6 +82,7 @@ dependencies:
   string_similarity: ^2.0.0
   weak_map: ^2.1.0
   vector_math: ^2.1.4
+  local_auth: ^2.1.6
 
 dev_dependencies:
   hive_generator: ^2.0.0

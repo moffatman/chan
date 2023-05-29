@@ -48,6 +48,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:native_drag_n_drop/native_drag_n_drop.dart';
 import 'package:rxdart/subjects.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -374,6 +375,12 @@ class ChanHomePage extends StatefulWidget {
 
 final isScrolling = ValueNotifier(false);
 
+enum _AuthenticationStatus {
+	ok,
+	inProgress,
+	failed
+}
+
 class _ChanHomePageState extends State<ChanHomePage> {
 	int _lastIndex = 0;
 	final _keys = <int, GlobalKey>{};
@@ -403,6 +410,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	bool _hidTabPopupFromScroll = false;
 	double _accumulatedScrollDelta = 0;
 	bool _thisScrollHasDragDetails = false;
+	_AuthenticationStatus _authenticationStatus = _AuthenticationStatus.ok;
 
 	bool get showTabPopup => _showTabPopup;
 	set showTabPopup(bool setting) {
@@ -829,6 +837,24 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				_tabListController.jumpTo(((Persistence.currentTabIndex + 1) / Persistence.tabs.length) * _tabListController.position.maxScrollExtent);
 			}
 		});
+		if (settings.askForAuthenticationOnLaunch) {
+			_authenticate();
+		}
+	}
+
+	Future<void> _authenticate() async {
+		_authenticationStatus = _AuthenticationStatus.inProgress;
+		try {
+			final result = await LocalAuthentication().authenticate(localizedReason: 'Verify access to app', options: const AuthenticationOptions(stickyAuth: true));
+			_authenticationStatus = result ? _AuthenticationStatus.ok : _AuthenticationStatus.failed;
+		}
+		catch (e, st) {
+			Future.error(e, st); // Report to crashlytics
+			_authenticationStatus = _AuthenticationStatus.failed;
+		}
+		if (mounted) {
+			setState(() {});
+		}
 	}
 
 	PersistentBrowserTab _addNewTab({
@@ -1567,8 +1593,29 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	@override
 	Widget build(BuildContext context) {
 		final hideTabletLayoutLabels = MediaQuery.sizeOf(context).height < 600;
-		if (!ImageboardRegistry.instance.initialized) {
+		if (!ImageboardRegistry.instance.initialized || _authenticationStatus == _AuthenticationStatus.inProgress) {
 			return const ChanSplashPage();
+		}
+		if (_authenticationStatus == _AuthenticationStatus.failed) {
+			return Container(
+				width: double.infinity,
+				height: double.infinity,
+				alignment: Alignment.center,
+				color: context.select<EffectiveSettings, Color>((s) => s.theme.backgroundColor),
+				child: Column(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						const Icon(CupertinoIcons.lock, size: 50),
+						const SizedBox(height: 16),
+						const Text('Authentication failed', style: TextStyle(fontSize: 20)),
+						const SizedBox(height: 16),
+						CupertinoButton.filled(
+							onPressed: _authenticate,
+							child: const Text('Retry')
+						)
+					]
+				)
+			);
 		}
 		for (final board in ImageboardRegistry.instance.imageboards) {
 			if (_notificationsSubscriptions[board.key]?.notifications != board.notifications) {

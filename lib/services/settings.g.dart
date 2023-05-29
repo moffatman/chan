@@ -261,13 +261,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       showLastRepliesInCatalog: fields[132] as bool?,
       loadThumbnails: fields[133] as AutoloadAttachmentsSetting?,
       applyImageFilterToThreads: fields[134] as bool?,
+      askForAuthenticationOnLaunch: fields[135] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(131)
+      ..writeByte(132)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -529,7 +530,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(133)
       ..write(obj.loadThumbnails)
       ..writeByte(134)
-      ..write(obj.applyImageFilterToThreads);
+      ..write(obj.applyImageFilterToThreads)
+      ..writeByte(135)
+      ..write(obj.askForAuthenticationOnLaunch);
   }
 
   @override
