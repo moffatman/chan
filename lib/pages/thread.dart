@@ -699,20 +699,20 @@ class _ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<List<Post>> _updateWithStubItems(List<ParentAndChildIdentifier> ids) async {
-			final thread = persistentState.thread;
-			if (thread == null) {
-				throw Exception('Thread not loaded');
-			}
-			final site = context.read<ImageboardSite>();
-			final newChildren = await site.getStubPosts(thread.identifier, ids, interactive: true);
-			thread.mergePosts(null, newChildren, site.placeOrphanPost);
-			if (ids.length == 1 && ids.single.childId == ids.single.parentId) {
-				// Clear hasOmittedReplies in case it has only omitted shadowbanned replies
-				thread.posts_.tryFirstWhere((p) => p.id == ids.single.childId)?.hasOmittedReplies = false;
-			}
-			persistentState.save();
-			return thread.posts;
+		final thread = persistentState.thread;
+		if (thread == null) {
+			throw Exception('Thread not loaded');
 		}
+		final site = context.read<ImageboardSite>();
+		final newChildren = await site.getStubPosts(thread.identifier, ids, interactive: true);
+		thread.mergePosts(null, newChildren, site.placeOrphanPost);
+		if (ids.length == 1 && ids.single.childId == ids.single.parentId) {
+			// Clear hasOmittedReplies in case it has only omitted shadowbanned replies
+			thread.posts_.tryFirstWhere((p) => p.id == ids.single.childId)?.hasOmittedReplies = false;
+		}
+		persistentState.save();
+		return thread.posts;
+	}
 
 	@override
 	Widget build(BuildContext context) {
