@@ -13,13 +13,29 @@ import 'package:provider/provider.dart';
 PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder, {required bool showAnimations, required bool? showAnimationsForward}) => FullWidthCupertinoPageRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 PageRoute transparentPageRouteBuilder(WidgetBuilder builder, {required bool showAnimations, required bool? showAnimationsForward}) => TransparentRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 
+enum MasterDetailLocation {
+	onePaneMaster,
+	twoPaneHorizontalMaster,
+	twoPaneHorizontalDetail,
+	twoPaneVerticalMaster,
+	twoPaneVerticalDetail;
+	bool get isVeryConstrained => switch(this) {
+		twoPaneHorizontalMaster || twoPaneVerticalMaster || twoPaneVerticalDetail => true,
+		onePaneMaster || twoPaneHorizontalDetail => false
+	};
+	bool get twoPane => switch (this) {
+		onePaneMaster => false,
+		_ => true
+	};
+}
+
 class MasterDetailHint {
-	final bool twoPane;
+	final MasterDetailLocation location;
 	final GlobalKey<PrimaryScrollControllerInjectingNavigatorState> primaryInterceptorKey;
 	final dynamic currentValue;
 
 	const MasterDetailHint({
-		required this.twoPane,
+		required this.location,
 		required this.primaryInterceptorKey,
 		required this.currentValue
 	});
@@ -27,12 +43,14 @@ class MasterDetailHint {
 	@override
 	bool operator == (Object other) =>
 		other is MasterDetailHint &&
-		other.twoPane == twoPane &&
+		other.location == location &&
 		other.primaryInterceptorKey == primaryInterceptorKey &&
 		other.currentValue == currentValue;
 	
 	@override
-	int get hashCode => Object.hash(twoPane, primaryInterceptorKey, currentValue);
+	int get hashCode => Object.hash(location, primaryInterceptorKey, currentValue);
+
+	bool get twoPane => location.twoPane;
 }
 
 const dontAutoPopSettings = RouteSettings(
@@ -408,52 +426,80 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 		}
 		lastOnePane = onePane;
 		context.watch<WillPopZone?>()?.callback = _onWillPop;
-		return Provider.value(
-			value: MasterDetailHint(
-				twoPane: !onePane,
-				primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
-				currentValue: panes[_tabController.index].currentValue.value
-			),
-			child: WillPopScope(
-				onWillPop: _onWillPop,
-				child: onePane ? masterNavigator : (horizontalSplit ? Row(
-					children: [
-						Flexible(
-							flex: settings.twoPaneSplit,
-							child: PrimaryScrollController.none(
+		return WillPopScope(
+			onWillPop: _onWillPop,
+			child: onePane ? Provider.value(
+				value: MasterDetailHint(
+					location: MasterDetailLocation.onePaneMaster,
+					primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
+					currentValue: panes[_tabController.index].currentValue.value
+				),
+				child: masterNavigator
+			) : (horizontalSplit ? Row(
+				children: [
+					Flexible(
+						flex: settings.twoPaneSplit,
+						child: PrimaryScrollController.none(
+							child: Provider.value(
+								value: MasterDetailHint(
+									location: MasterDetailLocation.twoPaneHorizontalMaster,
+									primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
+									currentValue: panes[_tabController.index].currentValue.value,
+								),
 								child: masterNavigator
 							)
-						),
-						VerticalDivider(
-							width: 0,
-							color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
-						),
-						Flexible(
-							flex: twoPaneSplitDenominator - settings.twoPaneSplit,
+						)
+					),
+					VerticalDivider(
+						width: 0,
+						color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+					),
+					Flexible(
+						flex: twoPaneSplitDenominator - settings.twoPaneSplit,
+						child: Provider.value(
+							value: MasterDetailHint(
+								location: MasterDetailLocation.twoPaneHorizontalDetail,
+								primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
+								currentValue: panes[_tabController.index].currentValue.value,
+							),
 							child: detailNavigator
 						)
-					]
-				) : Column(
-					children: [
-						SizedBox(
-							height: settings.verticalTwoPaneMinimumPaneSize.abs(),
-							child: PrimaryScrollController.none(
+					)
+				]
+			) : Column(
+				children: [
+					SizedBox(
+						height: settings.verticalTwoPaneMinimumPaneSize.abs(),
+						child: PrimaryScrollController.none(
+							child: Provider.value(
+								value: MasterDetailHint(
+									location: MasterDetailLocation.twoPaneVerticalMaster,
+									primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
+									currentValue: panes[_tabController.index].currentValue.value,
+								),
 								child: masterNavigator
 							)
-						),
-						Divider(
-							height: 0,
-							color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
-						),
-						Expanded(
-							child: TransformedMediaQuery(
-								transformation: (data) => data.removePadding(removeTop: true),
+						)
+					),
+					Divider(
+						height: 0,
+						color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+					),
+					Expanded(
+						child: TransformedMediaQuery(
+							transformation: (data) => data.removePadding(removeTop: true),
+							child: Provider.value(
+								value: MasterDetailHint(
+									location: MasterDetailLocation.twoPaneVerticalDetail,
+									primaryInterceptorKey: onePane ? _masterInterceptorKey : _detailInterceptorKey,
+									currentValue: panes[_tabController.index].currentValue.value,
+								),
 								child: detailNavigator
 							)
 						)
-					]
-				))
-			)
+					)
+				]
+			))
 		);
 	}
 

@@ -453,10 +453,10 @@ class PostRow extends StatelessWidget {
 		}
 		return ContextMenu(
 			actions: [
-				if (site.supportsPosting && context.read<GlobalKey<ReplyBoxState>?>()?.currentState != null) ContextMenuAction(
+				if (site.supportsPosting && context.read<ReplyBoxZone?>() != null) ContextMenuAction(
 					child: const Text('Reply'),
 					trailingIcon: CupertinoIcons.reply,
-					onPressed: () => context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.threadId, post.id)
+					onPressed: () => context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id)
 				),
 				ContextMenuAction(
 					child: const Text('Select text'),
@@ -465,7 +465,7 @@ class PostRow extends StatelessWidget {
 						WeakNavigator.push(context, SelectablePostPage(
 							post: latestPost,
 							zone: parentZone,
-							onQuoteText: (text) => context.read<GlobalKey<ReplyBoxState>>().currentState?.onQuoteText(text, fromId: latestPost.id, fromThreadId: latestPost.threadId)
+							onQuoteText: (text) => context.read<ReplyBoxZone>().onQuoteText(text, fromId: latestPost.id, fromThreadId: latestPost.threadId)
 						));
 					}
 				),

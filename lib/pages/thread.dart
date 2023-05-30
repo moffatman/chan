@@ -37,6 +37,7 @@ import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/models/post.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -128,7 +129,6 @@ class _ThreadPageState extends State<ThreadPage> {
 	late PostSpanRootZoneData zone;
 	bool blocked = false;
 	late Listenable _threadStateListenable;
-	Timer? _saveThreadStateDuringEditingTimer;
 	bool _saveQueued = false;
 	int? lastPageNumber;
 	int lastSavedPostsLength = 0;
@@ -714,6 +714,66 @@ class _ThreadPageState extends State<ThreadPage> {
 		return thread.posts;
 	}
 
+	Future<void> _popOutReplyBox(ValueChanged<ReplyBoxState>? onInitState) async {
+		final imageboard = context.read<Imageboard>();
+		await showCupertinoModalPopup(
+			context: context,
+			builder: (ctx) => ImageboardScope(
+				imageboardKey: null,
+				imageboard: imageboard,
+				child: Padding(
+					padding: MediaQuery.viewInsetsOf(ctx),
+					child: Container(
+						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+						child: ReplyBox(
+							longLivedCounterpartKey: _replyBoxKey,
+							board: widget.thread.board,
+							threadId: widget.thread.id,
+							onInitState: onInitState,
+							isArchived: persistentState.thread?.isArchived ?? false,
+							initialText: persistentState.draftReply,
+							onTextChanged: (text) async {
+								persistentState.draftReply = text;
+								await SchedulerBinding.instance.endOfFrame;
+								_replyBoxKey.currentState?.text = text;
+								runWhenIdle(const Duration(seconds: 3), persistentState.save);
+							},
+							initialOptions: _replyBoxKey.currentState?.options ?? '',
+							onOptionsChanged: (options) async {
+								await SchedulerBinding.instance.endOfFrame;
+								_replyBoxKey.currentState?.options = options;
+							},
+							onReplyPosted: (receipt) async {
+								if (imageboard.site.supportsPushNotifications) {
+									await promptForPushNotificationsIfNeeded(context);
+								}
+								if (!mounted) return;
+								imageboard.notifications.subscribeToThread(
+									thread: widget.thread,
+									lastSeenId: receipt.id,
+									localYousOnly: imageboard.notifications.getThreadWatch(widget.thread)?.localYousOnly ?? true,
+									pushYousOnly: imageboard.notifications.getThreadWatch(widget.thread)?.pushYousOnly ?? true,
+									push: true,
+									youIds: persistentState.freshYouIds()
+								);
+								if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
+									// If already at the bottom, pre-mark the created post as seen
+									persistentState.lastSeenPostId = receipt.id;
+									persistentState.lastSeenPostIdNotifier.value = receipt.id;
+									_saveQueued = true;
+								}
+								_listController.update();
+								Future.delayed(const Duration(seconds: 8), _listController.update);
+								Navigator.of(ctx).pop();
+							},
+							fullyExpanded: true
+						)
+					)
+				)
+			)
+		);
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
@@ -760,7 +820,24 @@ class _ThreadPageState extends State<ThreadPage> {
 			child: FilterZone(
 				filter: persistentState.threadFilter,
 				child: Provider.value(
-					value: _replyBoxKey,
+					value: ReplyBoxZone(
+						onTapPostId: (int threadId, int id) {
+							if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+								_popOutReplyBox((state) => state.onTapPostId(threadId, id));
+							}
+							else {
+								_replyBoxKey.currentState?.onTapPostId(threadId, id);
+							}
+						},
+						onQuoteText: (String text, {required int fromId, required int fromThreadId}) {
+							if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+								_popOutReplyBox((state) => state.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId));
+							}
+							else {
+								_replyBoxKey.currentState?.onQuoteText(text, fromId: fromId, fromThreadId: fromThreadId);
+							}
+						}
+					),
 					child: CupertinoPageScaffold(
 						resizeToAvoidBottomInset: false,
 						navigationBar: CupertinoNavigationBar(
@@ -955,7 +1032,12 @@ class _ThreadPageState extends State<ThreadPage> {
 									if (site.supportsPosting) CupertinoButton(
 										padding: EdgeInsets.zero,
 										onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
-											_replyBoxKey.currentState?.toggleReplyBox();
+											if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+												_popOutReplyBox(null);
+											}
+											else {
+												_replyBoxKey.currentState?.toggleReplyBox();
+											}
 										},
 										child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply)
 									)
@@ -1310,8 +1392,7 @@ class _ThreadPageState extends State<ThreadPage> {
 										initialText: persistentState.draftReply,
 										onTextChanged: (text) {
 											persistentState.draftReply = text;
-											_saveThreadStateDuringEditingTimer?.cancel();
-											_saveThreadStateDuringEditingTimer = Timer(const Duration(seconds: 3), () => persistentState.save());
+											runWhenIdle(const Duration(seconds: 3), persistentState.save);
 										},
 										onReplyPosted: (receipt) async {
 											if (site.supportsPushNotifications) {

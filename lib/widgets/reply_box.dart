@@ -48,6 +48,17 @@ import 'package:string_similarity/string_similarity.dart';
 
 const _captchaContributionServer = 'https://captcha.chance.surf';
 
+class ReplyBoxZone {
+	final void Function(int threadId, int id) onTapPostId;
+
+	final void Function(String text, {required int fromId, required int fromThreadId}) onQuoteText;
+
+	const ReplyBoxZone({
+		required this.onTapPostId,
+		required this.onQuoteText
+	});
+}
+
 class ReplyBox extends StatefulWidget {
 	final String board;
 	final int? threadId;
@@ -63,6 +74,8 @@ class ReplyBox extends StatefulWidget {
 	final ValueChanged<String>? onOptionsChanged;
 	final String? initialFilePath;
 	final ValueChanged<String?>? onFilePathChanged;
+	final ValueChanged<ReplyBoxState>? onInitState;
+	final GlobalKey<ReplyBoxState>? longLivedCounterpartKey;
 
 	const ReplyBox({
 		required this.board,
@@ -79,6 +92,8 @@ class ReplyBox extends StatefulWidget {
 		this.onOptionsChanged,
 		this.initialFilePath,
 		this.onFilePathChanged,
+		this.onInitState,
+		this.longLivedCounterpartKey,
 		Key? key
 	}) : super(key: key);
 
@@ -121,6 +136,12 @@ class ReplyBoxState extends State<ReplyBox> {
 	bool get hasSpamFilteredPostToCheck => _spamFilteredPostId != null;
 	static List<String> _previouslyUsedNames = [];
 
+	String get text => _textFieldController.text;
+	set text(String newText) => _textFieldController.text = newText;
+
+	String get options => _optionsFieldController.text;
+	set options(String newOptions) => _optionsFieldController.text = newOptions;
+
 	Future<void> _checkPreviouslyUsedNames() async {
 		_previouslyUsedNames = (await Future.wait(Persistence.sharedThreadStateBox.values.map<Future<Iterable<String>>>((state) async {
 			if (state.youIds.isEmpty) {
@@ -141,8 +162,18 @@ class ReplyBoxState extends State<ReplyBox> {
 		return _captchaSolution?.expiresAt?.isAfter(DateTime.now()) ?? true;
 	}
 
+	void _setSpamFilteredPostId((String, int)? newId) {
+		final otherState = widget.longLivedCounterpartKey?.currentState;
+		if (otherState != null) {
+			otherState._spamFilteredPostId = newId;
+		}
+		else {
+			_spamFilteredPostId = newId;
+		}
+	}
+
 	void _onTextChanged() async {
-		_spamFilteredPostId = null;
+		_setSpamFilteredPostId(null);
 		widget.onTextChanged?.call(_textFieldController.text);
 		_autoPostTimer?.cancel();
 		if (mounted) setState(() {});
@@ -188,16 +219,24 @@ class ReplyBoxState extends State<ReplyBox> {
 	@override
 	void initState() {
 		super.initState();
+		final otherState = widget.longLivedCounterpartKey?.currentState;
+		if (otherState != null) {
+			_showOptions = otherState._showOptions;
+			_showAttachmentOptions = otherState._showAttachmentOptions;
+			spoiler = otherState.spoiler;
+			attachment = otherState.attachment;
+			_attachmentScan = otherState._attachmentScan;
+		}
 		_textFieldController = TextEditingController(text: widget.initialText);
 		_subjectFieldController = TextEditingController(text: widget.initialSubject);
 		_optionsFieldController = TextEditingController(text: widget.initialOptions);
-		_filenameController = TextEditingController();
+		_filenameController = TextEditingController(text: otherState?._filenameController.text ?? '');
 		_nameFieldController = TextEditingController(text: context.read<Persistence>().browserState.postingNames[widget.board]);
 		_textFocusNode = FocusNode();
 		_rootFocusNode = FocusNode();
 		_textFieldController.addListener(_onTextChanged);
 		_subjectFieldController.addListener(() {
-			_spamFilteredPostId = null;
+			_setSpamFilteredPostId(null);
 			widget.onSubjectChanged?.call(_subjectFieldController.text);
 		});
 		context.read<ImageboardSite>().getBoardFlags(widget.board).then((flags) {
@@ -212,6 +251,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_showOptions = true;
 		}
 		_tryUsingInitialFile();
+		widget.onInitState?.call(this);
 	}
 
 	@override
@@ -346,7 +386,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			_attachmentScan = null;
 			widget.onFilePathChanged?.call(null);
 			_showAttachmentOptions = false;
-			_spamFilteredPostId = null;
+			_setSpamFilteredPostId(null);
 			setState(() {});
 		}
 	}
@@ -536,7 +576,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				setState(() {
 					attachment = file;
 				});
-				_spamFilteredPostId = null;
+				_setSpamFilteredPostId(null);
 				widget.onFilePathChanged?.call(file.path);
 			}
 		}
@@ -815,7 +855,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				spamFiltered = _captchaSolution?.cloudflare ?? false;
 			}
 			if (spamFiltered) {
-				_spamFilteredPostId = (widget.board, receipt.id);
+				_setSpamFilteredPostId((widget.board, receipt.id));
 			}
 			else {
 				_textFieldController.clear();
@@ -1341,6 +1381,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										smartDashesType: SmartDashesType.disabled,
 										smartQuotesType: SmartQuotesType.disabled,
 										controller: _textFieldController,
+										autofocus: widget.fullyExpanded,
 										spellCheckConfiguration: !settings.enableSpellCheck || (isOnMac && isDevelopmentBuild) ? null : const SpellCheckConfiguration(),
 										contextMenuBuilder: (context, editableTextState) => AdaptiveTextSelectionToolbar.buttonItems(
 											anchors: editableTextState.contextMenuAnchors,
@@ -1823,5 +1864,16 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		_filenameController.dispose();
 		_textFocusNode.dispose();
 		_rootFocusNode.dispose();
+		final otherState = widget.longLivedCounterpartKey?.currentState;
+		if (otherState != null) {
+			otherState._showOptions = _showOptions;
+			otherState._showAttachmentOptions = _showAttachmentOptions;
+			otherState.spoiler = spoiler;
+			WidgetsBinding.instance.addPostFrameCallback((_) {
+				otherState._filenameController.text = _filenameController.text;
+			});
+			otherState.attachment = attachment;
+			otherState._attachmentScan = _attachmentScan;
+		}
 	}
 }

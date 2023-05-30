@@ -727,7 +727,7 @@ class _BoardPageState extends State<BoardPage> {
 							padding: EdgeInsets.zero,
 							child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.pencil_slash) : const Icon(CupertinoIcons.pencil),
 							onPressed: () {
-								if (context.read<MasterDetailHint?>()?.twoPane == true && _replyBoxKey.currentState?.show != true) {
+								if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
 									showCupertinoModalPopup(
 										context: context,
 										builder: (ctx) => ImageboardScope(

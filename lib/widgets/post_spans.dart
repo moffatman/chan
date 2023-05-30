@@ -1824,7 +1824,7 @@ List<InlineSpan> buildPostInfoRow({
 						color: (post.threadId != zone.primaryThreadId ? settings.theme.secondaryColor.shiftHue(-20) : settings.theme.primaryColor).withOpacity(0.5)
 					),
 					recognizer: interactive ? (TapGestureRecognizer()..onTap = () {
-						context.read<GlobalKey<ReplyBoxState>>().currentState?.onTapPostId(post.threadId, post.id);
+						context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id);
 					}) : null
 				)
 			],
