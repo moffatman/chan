@@ -230,6 +230,7 @@ class SiteLainchan extends ImageboardSite {
 		for (final page in response.data) {
 			for (final threadData in (page['threads'] ?? [])) {
 				final threadAsPost = _makePost(board, threadData['no'], threadData);
+				final int? currentPage = page['page'];
 				final thread = Thread(
 					board: board,
 					id: threadData['no'],
@@ -240,7 +241,7 @@ class SiteLainchan extends ImageboardSite {
 					imageCount: threadData['images'],
 					isSticky: threadData['sticky'] == 1,
 					time: DateTime.fromMillisecondsSinceEpoch(threadData['time'] * 1000),
-					currentPage: page['page']
+					currentPage: currentPage == null ? null : currentPage + 1
 				);
 				threads.add(thread);
 			}
