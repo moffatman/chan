@@ -1112,7 +1112,6 @@ Future<Attachment?> showGalleryPretagged({
 	List<CupertinoContextMenuAction2> Function(TaggedAttachment)? additionalContextMenuActionsBuilder,
 }) async {
 	final imageboard = context.read<Imageboard>();
-	final showAnimations = context.read<EffectiveSettings>().showAnimations;
 	final navigator = fullscreen ? Navigator.of(context, rootNavigator: true) : context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context);
 	final lastSelected = await navigator.push(TransparentRoute<Attachment>(
 		builder: (ctx) => ImageboardScope(
@@ -1135,8 +1134,7 @@ Future<Attachment?> showGalleryPretagged({
 				heroOtherEndIsBoxFitCover: heroOtherEndIsBoxFitCover,
 				additionalContextMenuActionsBuilder: additionalContextMenuActionsBuilder,
 			)
-		),
-		showAnimations: showAnimations
+		)
 	));
 	try {
 		await HomeIndicator.show();

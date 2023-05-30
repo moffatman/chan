@@ -198,8 +198,7 @@ class _BoardPageState extends State<BoardPage> {
 		final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
 			builder: (ctx) => BoardSwitcherPage(
 				initialImageboardKey: context.read<Imageboard?>()?.key
-			),
-			showAnimations: context.read<EffectiveSettings>().showAnimations
+			)
 		));
 		if (newBoard != null) {
 			_swapBoard(newBoard);
@@ -234,8 +233,7 @@ class _BoardPageState extends State<BoardPage> {
 						thread: identifier,
 						boardSemanticId: widget.semanticId,
 					)
-				),
-				showAnimations: context.read<EffectiveSettings>().showAnimations
+				)
 			));
 		}
 	}
@@ -633,7 +631,6 @@ class _BoardPageState extends State<BoardPage> {
 							child: boardWatch == null ? const Icon(CupertinoIcons.bell) : const Icon(CupertinoIcons.bell_fill),
 							onPressed: () {
 								Navigator.of(context).push(TransparentRoute(
-									showAnimations: settings.showAnimations,
 									builder: (context) => BoardWatchControlsPage(
 										imageboard: imageboard!,
 										board: board!

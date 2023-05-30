@@ -7,7 +7,6 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
@@ -125,8 +124,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 							}
 						)
 					)
-				),
-				showAnimations: context.read<EffectiveSettings>().showAnimations
+				)
 			));
 		}
 	);
@@ -251,7 +249,6 @@ Future<File?> pickAttachment({
 					)
 				)
 			)
-		),
-		showAnimations: context.read<EffectiveSettings>().showAnimations
+		)
 	));
 }

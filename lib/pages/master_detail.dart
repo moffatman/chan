@@ -10,8 +10,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:provider/provider.dart';
 
-PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder, {required bool showAnimations, required bool? showAnimationsForward}) => FullWidthCupertinoPageRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
-PageRoute transparentPageRouteBuilder(WidgetBuilder builder, {required bool showAnimations, required bool? showAnimationsForward}) => TransparentRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
+PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder, {bool? showAnimations, required bool? showAnimationsForward}) => FullWidthCupertinoPageRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
+PageRoute transparentPageRouteBuilder(WidgetBuilder builder, {bool? showAnimations, required bool? showAnimationsForward}) => TransparentRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 
 enum MasterDetailLocation {
 	onePaneMaster,
@@ -63,14 +63,14 @@ class WillPopZone {
 
 class BuiltDetailPane {
 	final Widget widget;
-	final PageRoute Function(WidgetBuilder builder, {required bool showAnimations, required bool? showAnimationsForward}) pageRouteBuilder;
+	final PageRoute Function(WidgetBuilder builder, {required bool? showAnimations, required bool? showAnimationsForward}) pageRouteBuilder;
 
 	BuiltDetailPane({
 		required this.widget,
 		required this.pageRouteBuilder
 	});
 
-	PageRoute pageRoute({required bool showAnimations, required bool? showAnimationsForward}) => pageRouteBuilder((context) => widget, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
+	PageRoute pageRoute({required bool? showAnimations, required bool? showAnimationsForward}) => pageRouteBuilder((context) => widget, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 }
 
 class MasterDetailPage<T> extends StatelessWidget {
@@ -153,7 +153,7 @@ class MultiMasterPane<T> {
 		);
 	}
 
-	PageRoute buildDetailRoute(VoidCallback onNewValue, {required bool showAnimations, required bool? showAnimationsForward}) {
+	PageRoute buildDetailRoute(VoidCallback onNewValue, {bool? showAnimations, required bool? showAnimationsForward}) {
 		return detailBuilder(currentValue.value, (newValue) {
 				currentValue.value = newValue;
 				onValueChanged?.call(newValue);
@@ -291,7 +291,6 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 				_popMasterValueRoutes();
 				masterKey.currentState!.push(pane.buildDetailRoute(
 					() => _onNewValue(pane, showAnimationsForward: false),
-					showAnimations: context.read<EffectiveSettings>().showAnimations,
 					showAnimationsForward: showAnimationsForward
 				)).then(pane.onPushReturn);
 			}
@@ -413,7 +412,6 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 			if (onePane && pane.currentValue.value != null) {
 				masterKey.currentState!.push(pane.buildDetailRoute(
 					() => _onNewValue(pane, showAnimationsForward: false),
-					showAnimations: context.read<EffectiveSettings>().showAnimations,
 					showAnimationsForward: null
 				)).then(pane.onPushReturn);
 			}

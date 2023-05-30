@@ -1907,9 +1907,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 															threadState: widget.persistentState
 															//onChange: (attachment) => widget.listController.animateTo((p) => p.attachment?.id == attachment.id)
 														)
-													),
-													showAnimations: context.read<EffectiveSettings>().showAnimations)
-												);
+													)
+												));
 												if (dest != null) {
 													widget.listController.animateTo((p) => p.attachments.contains(dest.attachment));
 												}

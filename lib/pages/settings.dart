@@ -117,8 +117,7 @@ class _SettingsPageButton extends StatelessWidget {
 			),
 			onPressed: () {
 				Navigator.of(context).push(FullWidthCupertinoPageRoute(
-					builder: pageBuilder,
-					showAnimations: context.read<EffectiveSettings>().showAnimations
+					builder: pageBuilder
 				));
 			}
 		);
@@ -186,8 +185,7 @@ class SettingsPage extends StatelessWidget {
 									builder: (context) => ThreadPage(
 										thread: thread.identifier,
 										boardSemanticId: -1,
-									),
-									showAnimations: context.read<EffectiveSettings>().showAnimations
+									)
 								)),
 								child: ConstrainedBox(
 									constraints: const BoxConstraints(
@@ -220,8 +218,7 @@ class SettingsPage extends StatelessWidget {
 											),
 											allowChangingBoard: false,
 											semanticId: -1
-										),
-										showAnimations: context.read<EffectiveSettings>().showAnimations
+										)
 									))
 								)
 							));
@@ -396,8 +393,7 @@ class SettingsPage extends StatelessWidget {
 						child: const Text('Licenses'),
 						onPressed: () {
 							Navigator.of(context).push(FullWidthCupertinoPageRoute(
-								builder: (context) => const LicensesPage(),
-								showAnimations: settings.showAnimations
+								builder: (context) => const LicensesPage()
 							));
 						}
 					)
@@ -455,7 +451,6 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						CupertinoButton.filled(
 							padding: const EdgeInsets.all(8),
 							onPressed: () => Navigator.of(context).push(FullWidthCupertinoPageRoute(
-								showAnimations: settings.showAnimations,
 								builder: (context) => const SettingsFilterPage()
 							)),
 							child: Text('${describeCount(filterCount, 'filter')}...')
@@ -475,7 +470,6 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 							onPressed: () async {
 								final md5sBefore = Persistence.settings.hiddenImageMD5s;
 								await Navigator.of(context).push(FullWidthCupertinoPageRoute(
-									showAnimations: settings.showAnimations,
 									builder: (context) => const SettingsImageFilterPage()
 								));
 								if (!setEquals(md5sBefore, Persistence.settings.hiddenImageMD5s)) {
@@ -1226,8 +1220,7 @@ class _SettingsFilterPageState extends State<SettingsFilterPage> {
 										child: const Text('Test filter setup'),
 										onPressed: () {
 											Navigator.of(context).push(FullWidthCupertinoPageRoute(
-												builder: (context) => const FilterTestPage(),
-												showAnimations: settings.showAnimations
+												builder: (context) => const FilterTestPage()
 											));
 										}
 									),

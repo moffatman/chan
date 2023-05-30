@@ -470,7 +470,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				showTabPopup = false;
 			});
 		}
-		final settings = context.read<EffectiveSettings>();
 		for (int i = 0; i < 200 && _settingsNavigatorKey.currentState == null; i++) {
 			await Future.delayed(const Duration(milliseconds: 50));
 		}
@@ -482,8 +481,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						thread: id.thread,
 						initialPostId: id.postId,
 						boardSemanticId: -1
-					),
-					showAnimations: settings.showAnimations
+					)
 				)
 			);
 		}

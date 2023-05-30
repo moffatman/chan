@@ -104,8 +104,7 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 								builder: (ctx) => ThreadPage(
 									thread: thread.identifier,
 									boardSemanticId: -99,
-								),
-								showAnimations: context.read<EffectiveSettings>().showAnimations
+								)
 							));
 						}
 					)

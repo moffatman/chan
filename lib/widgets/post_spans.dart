@@ -414,8 +414,7 @@ class PostQuoteLinkSpan extends PostSpan {
 						initiallyUseArchive: threadId == null,
 						boardSemanticId: -1
 					)
-				),
-				showAnimations: context.read<EffectiveSettings>().showAnimations
+				)
 			));
 		});
 		return (TextSpan(
@@ -608,8 +607,7 @@ class PostBoardLink extends PostSpan {
 							semanticId: -1,
 							allowChangingBoard: false
 						)
-					),
-					showAnimations: context.read<EffectiveSettings>().showAnimations
+					)
 				));
 			}),
 			onEnter: options.onEnter,
@@ -963,8 +961,7 @@ class PostCatalogSearchSpan extends PostSpan {
 						semanticId: -1,
 						allowChangingBoard: false
 					)
-				),
-				showAnimations: context.read<EffectiveSettings>().showAnimations
+				)
 			)),
 			onEnter: options.onEnter,
 			onExit: options.onExit

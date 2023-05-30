@@ -666,8 +666,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							request: captchaRequest,
 							onCaptchaSolved: (solution) => Navigator.of(context).pop(solution)
 						)
-					),
-					showAnimations: context.read<EffectiveSettings>().showAnimations
+					)
 				));
 				showReplyBox();
 			}
@@ -680,8 +679,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							request: captchaRequest,
 							onCaptchaSolved: (key) => Navigator.of(context).pop(key)
 						)
-					),
-					showAnimations: context.read<EffectiveSettings>().showAnimations
+					)
 				));
 				showReplyBox();
 			}
@@ -694,8 +692,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							onCaptchaSolved: (key) => Navigator.of(context).pop(key),
 							site: site
 						)
-					),
-					showAnimations: context.read<EffectiveSettings>().showAnimations
+					)
 				));
 				showReplyBox();
 			}
@@ -708,8 +705,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							onCaptchaSolved: (key) => Navigator.of(context).pop(key),
 							site: site
 						)
-					),
-					showAnimations: context.read<EffectiveSettings>().showAnimations
+					)
 				));
 				showReplyBox();
 			}
@@ -722,8 +718,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							onCaptchaSolved: (key) => Navigator.of(context).pop(key),
 							site: site
 						)
-					),
-					showAnimations: context.read<EffectiveSettings>().showAnimations
+					)
 				));
 				showReplyBox();
 			}
@@ -736,8 +731,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							onCaptchaSolved: (key) => Navigator.of(context).pop(key),
 							site: site
 						)
-					),
-					showAnimations: context.read<EffectiveSettings>().showAnimations
+					)
 				));
 				showReplyBox();
 			}
@@ -925,8 +919,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 														request: bannedCaptchaRequest,
 														onCaptchaSolved: (solution) => Navigator.of(context).pop(solution)
 													)
-												),
-												showAnimations: context.read<EffectiveSettings>().showAnimations
+												)
 											));
 											if (solution != null) {
 												final reason = await site.getBannedReason(solution);
@@ -1007,8 +1000,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						)
 					)
 				)
-			),
-			showAnimations: context.read<EffectiveSettings>().showAnimations
+			)
 		));
 		if (pickedEmote != null) {
 			_insertText(pickedEmote.code, addNewlineIfAtEnd: false);
@@ -1056,8 +1048,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						]
 					)
 				)
-			),
-			showAnimations: context.read<EffectiveSettings>().showAnimations
+			)
 		));
 		if (pickedFlag != null) {
 			if (pickedFlag.code == '0') {

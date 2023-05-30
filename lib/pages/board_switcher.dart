@@ -420,8 +420,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																								imageboardKey: null,
 																								imageboard: currentImageboard,
 																								child: const BoardSwitcherPage(currentlyPickingFavourites: true)
-																							),
-																							showAnimations: settings.showAnimations
+																							)
 																						));
 																						if (board != null && !currentImageboard.persistence.browserState.favouriteBoards.contains(board.item.name)) {
 																							currentImageboard.persistence.browserState.favouriteBoards.add(board.item.name);

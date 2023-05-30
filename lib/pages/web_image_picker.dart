@@ -357,8 +357,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																						]
 																					)
 																				)
-																			),
-																			showAnimations: settings.showAnimations
+																			)
 																		));
 																		if (selectedImage != null && mounted) {
 																			Navigator.of(context).pop(selectedImage);
@@ -385,8 +384,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																						]
 																					)
 																				)
-																			),
-																			showAnimations: settings.showAnimations
+																			)
 																		));
 																		if (selectedThumbnail != null && mounted) {
 																			Navigator.of(context).pop(selectedThumbnail);
@@ -397,8 +395,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 														]
 													)
 												)
-											),
-											showAnimations: settings.showAnimations
+											)
 										));
 										if (pickedBytes != null) {
 											String? ext = lookupMimeType('', headerBytes: pickedBytes)?.split('/').last;

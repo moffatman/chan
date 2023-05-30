@@ -92,7 +92,6 @@ class SearchPageState extends State<SearchPage> {
 					);
 				}
 			),
-			showAnimations: context.read<EffectiveSettings>().showAnimations,
 			settings: dontAutoPopSettings
 		));
 	}
@@ -288,8 +287,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 													initialImageboardKey: query.imageboardKey,
 													filterImageboards: (b) => b.site.supportsSearch,
 													allowPickingWholeSites: true
-												),
-												showAnimations: context.read<EffectiveSettings>().showAnimations
+												)
 											));
 											if (newBoard != null) {
 												setState(() {
@@ -382,8 +380,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 									onPressed: () async {
 										final idController = TextEditingController();
 										final initialBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-											builder: (ctx) => const BoardSwitcherPage(),
-											showAnimations: context.read<EffectiveSettings>().showAnimations
+											builder: (ctx) => const BoardSwitcherPage()
 										));
 										if (context.mounted && initialBoard != null) {
 											ImageboardScoped<ImageboardBoard> board = initialBoard;
@@ -400,8 +397,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 																CupertinoButton(
 																	onPressed: () async {
 																		final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-																			builder: (ctx) => const BoardSwitcherPage(),
-																			showAnimations: context.read<EffectiveSettings>().showAnimations
+																			builder: (ctx) => const BoardSwitcherPage()
 																		));
 																		if (newBoard != null) {
 																			setInnerState(() {

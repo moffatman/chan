@@ -5,7 +5,6 @@ import 'dart:typed_data';
 
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/util.dart';
@@ -14,7 +13,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/parser.dart';
 import 'package:mutex/mutex.dart';
-import 'package:provider/provider.dart';
 
 extension CloudflareWanted on RequestOptions {
 	bool get cloudflare => extra['cloudflare'] == true;
@@ -194,9 +192,7 @@ class CloudflareInterceptor extends Interceptor {
 					initialData: initialData,
 					onLoadStop: buildOnLoadStop(Navigator.of(context).pop)
 				)
-			),
-			// ignore: use_build_context_synchronously
-			showAnimations: ImageboardRegistry.instance.context!.read<EffectiveSettings?>()?.showAnimations ?? true
+			)
 		));
 		headlessWebView?.dispose();
 		if (ret == null) {

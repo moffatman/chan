@@ -225,12 +225,12 @@ String formatFilesize(int sizeInBytes) {
 }
 
 class TransparentRoute<T> extends PageRoute<T> {
-	final bool showAnimations;
+	final bool? showAnimations;
 	final bool? showAnimationsForward;
 	TransparentRoute({
 		required this.builder,
 		RouteSettings? settings,
-		required this.showAnimations,
+		this.showAnimations,
 		this.showAnimationsForward
   	}) : super(settings: settings);
 	
@@ -252,10 +252,10 @@ class TransparentRoute<T> extends PageRoute<T> {
 	bool get maintainState => true;
 
 	@override
-	Duration get transitionDuration => (showAnimationsForward ?? showAnimations) ? const Duration(milliseconds: 150) : Duration.zero;
+	Duration get transitionDuration => (showAnimationsForward ?? showAnimations ?? Persistence.settings.showAnimations) ? const Duration(milliseconds: 150) : Duration.zero;
 
 	@override
-	Duration get reverseTransitionDuration => showAnimations ? const Duration(milliseconds: 150) : Duration.zero;
+	Duration get reverseTransitionDuration => (showAnimations ?? Persistence.settings.showAnimations) ? const Duration(milliseconds: 150) : Duration.zero;
 
 	@override
   Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
@@ -412,8 +412,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 						initiallyUseArchive: imageboardTarget.$3,
 						boardSemanticId: -1
 					)
-				),
-				showAnimations: context.read<EffectiveSettings>().showAnimations
+				)
 			));
 		}
 		if (Persistence.settings.hostsToOpenExternally.any((s) => url.host.endsWith(s))) {

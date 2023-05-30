@@ -61,7 +61,6 @@ class HistoryPageState extends State<HistoryPage> {
 					);
 				}
 			),
-			showAnimations: context.read<EffectiveSettings>().showAnimations,
 			settings: dontAutoPopSettings
 		));
 	}

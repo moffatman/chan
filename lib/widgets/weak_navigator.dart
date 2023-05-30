@@ -3,7 +3,6 @@ import 'dart:ui';
 
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
@@ -40,8 +39,7 @@ class WeakNavigator extends StatefulWidget {
           imageboardKey: null,
           imageboard: imageboard,
           child: widget
-        ),
-        showAnimations: context.read<EffectiveSettings>().showAnimations
+        )
       ));
     }
   }
@@ -67,8 +65,7 @@ class WeakNavigator extends StatefulWidget {
           imageboardKey: null,
           imageboard: imageboard,
           child: widget
-        ),
-        showAnimations: context.read<EffectiveSettings>().showAnimations
+        )
       ));
     }
     return Navigator.of(context).pop;

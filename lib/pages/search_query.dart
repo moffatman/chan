@@ -317,14 +317,12 @@ openSearch({
 									initialSearch: result.threadSearch,
 									boardSemanticId: -1
 								)
-							),
-							showAnimations: context.read<EffectiveSettings>().showAnimations
+							)
 						));
 					}
 				},
 				selectedResult: null
 			)
-		),
-		showAnimations: context.read<EffectiveSettings>().showAnimations
+		)
 	));
 }
