@@ -205,7 +205,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 	late ImageboardArchiveSearchQuery query;
 	bool _searchFocused = false;
 	bool _showingPicker = false;
-	late String? _lastImageboardKey;
+	String? _lastImageboardKey;
 
 	@override
 	void initState() {
@@ -234,18 +234,19 @@ class _SearchComposePageState extends State<SearchComposePage> {
 
 	@override
 	Widget build(BuildContext context) {
-		if (!ImageboardRegistry.instance.imageboards.any((i) => i.site.supportsSearch)) {
+		final firstCompatibleImageboard = ImageboardRegistry.instance.imageboards.tryFirstWhere((i) => i.site.supportsSearch);
+		if (firstCompatibleImageboard == null) {
 			return const Center(
 				child: ErrorMessageCard('No added sites with search support')
 			);
 		}
-		final currentImageboard = Persistence.tabs[Persistence.currentTabIndex].imageboard;
-		if (currentImageboard?.key != _lastImageboardKey && (currentImageboard?.site.supportsSearch ?? false)) {
+		final currentImageboard = Persistence.tabs[Persistence.currentTabIndex].imageboard ?? firstCompatibleImageboard;
+		if (currentImageboard.key != _lastImageboardKey && currentImageboard.site.supportsSearch) {
 			if (query.imageboardKey == _lastImageboardKey) {
-				query.imageboardKey = currentImageboard?.key;
+				query.imageboardKey = currentImageboard.key;
 			}
 		}
-		_lastImageboardKey = currentImageboard?.key;
+		_lastImageboardKey = currentImageboard.key;
 		final imageboard = ImageboardRegistry.instance.getImageboard(query.imageboardKey ?? '');
 		final String? boardName;
 		if (imageboard != null && query.boards.isNotEmpty) {
