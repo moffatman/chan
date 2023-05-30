@@ -665,10 +665,16 @@ class AttachmentViewerController extends ChangeNotifier {
 	}
 
 	void _onLongPressUpdate(double factor) {
+		if (_isDisposed) {
+			return;
+		}
 		_longPressFactorStream.add(factor);
 	}
 
 	void _onCoalescedLongPressUpdate(double factor) async {
+		if (_isDisposed) {
+			return;
+		}
 		if (_currentlyWithinLongPress) {
 			final duration = (this.duration ?? videoPlayerController!.value.duration).inMilliseconds;
 			final newPosition = Duration(milliseconds: ((_millisecondsBeforeLongPress + (duration * factor)).clamp(0, duration)).round());
