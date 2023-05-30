@@ -463,6 +463,9 @@ class _ThreadPageState extends State<ThreadPage> {
 			initiallyShowChrome: initiallyShowChrome,
 			initialAttachment: initialAttachment,
 			onChange: (attachment) {
+				if (!_listController.scrollControllerPositionLooksGood) {
+					return;
+				}
 				_listController.animateTo((p) => p.attachments.any((a) {
 					return a.id == attachment.attachment.id;
 				}));

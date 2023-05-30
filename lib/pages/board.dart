@@ -151,7 +151,7 @@ class _BoardPageState extends State<BoardPage> {
 		widget.onBoardChanged?.call(newBoard);
 		setState(() {
 			board = newBoard.item;
-			if (_listController.scrollController?.hasOnePosition ?? false) {
+			if (_listController.scrollControllerPositionLooksGood) {
 				_listController.scrollController?.jumpTo(0);
 			}
 			_variant = null;

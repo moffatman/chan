@@ -2031,7 +2031,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 	void _onScrollControllerNotification() {
 		_scrollStream.add(null);
-		if ((scrollController?.hasOnePosition ?? false)) {
+		if ((scrollControllerPositionLooksGood)) {
 			final overscrollAmount = scrollController!.position.pixels - scrollController!.position.maxScrollExtent;
 			overscrollFactor.value = (overscrollAmount / _overscrollTriggerThreshold).clamp(0, 1);
 		}
@@ -2204,7 +2204,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		currentTargetIndex = null;
 	}
 	int get firstVisibleIndex {
-		if (scrollController?.hasOnePosition ?? false) {
+		if (scrollControllerPositionLooksGood) {
 			if (_items.isNotEmpty &&
 					_items.first.cachedOffset != null &&
 					_items.first.cachedOffset! > scrollController!.position.pixels) {
@@ -2220,7 +2220,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		return index < 0 ? null : _items[index].item.item;
 	}
 	T? get middleVisibleItem {
-		if (scrollController?.hasOnePosition ?? false) {
+		if (scrollControllerPositionLooksGood) {
 			int index = _items.indexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! > (scrollController!.position.pixels + (scrollController!.position.viewportDimension / 2))));
 			if (index != -1) {
 				if (index > 0) {
@@ -2233,7 +2233,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		return null;
 	}
 	int get lastVisibleIndex {
-		if (scrollController?.hasOnePosition ?? false) {
+		if (scrollControllerPositionLooksGood) {
 			if (_items.isNotEmpty &&
 					_items.first.cachedHeight != null &&
 					_items.first.cachedHeight! > (scrollController!.position.pixels + scrollController!.position.viewportDimension)) {
@@ -2248,7 +2248,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		return index < 0 ? null : _items[index].item.item;
 	}
 	bool isOnscreen(T item) {
-		if (scrollController?.hasOnePosition ?? false) {
+		if (scrollControllerPositionLooksGood) {
 			return _items.any((i) {
 				return (i.item.item == item) &&
 							 (i.cachedHeight != null) &&
@@ -2302,4 +2302,6 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			_tryCachingItem(i, _items[i]);
 		}
 	}
+
+	bool get scrollControllerPositionLooksGood => scrollController?.hasOnePosition ?? false;
 }
