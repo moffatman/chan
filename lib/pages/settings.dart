@@ -104,22 +104,18 @@ class _SettingsPageButton extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return GestureDetector(
-			behavior: HitTestBehavior.opaque,
-			child: Padding(
-				padding: const EdgeInsets.all(16),
-				child: Row(
-					children: [
-						Icon(icon, color: color),
-						const SizedBox(width: 16),
-						Expanded(
-							child: Text(title, style: TextStyle(color: color))
-						),
-						Icon(CupertinoIcons.chevron_forward, color: color)
-					]
-				)
+		return CupertinoButton(
+			child: Row(
+				children: [
+					Icon(icon, color: color),
+					const SizedBox(width: 16),
+					Expanded(
+						child: Text(title, style: TextStyle(color: color))
+					),
+					Icon(CupertinoIcons.chevron_forward, color: color)
+				]
 			),
-			onTap: () {
+			onPressed: () {
 				Navigator.of(context).push(FullWidthCupertinoPageRoute(
 					builder: pageBuilder,
 					showAnimations: context.read<EffectiveSettings>().showAnimations
