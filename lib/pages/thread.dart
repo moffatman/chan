@@ -710,6 +710,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			// Clear hasOmittedReplies in case it has only omitted shadowbanned replies
 			thread.posts_.tryFirstWhere((p) => p.id == ids.single.childId)?.hasOmittedReplies = false;
 		}
+		zone.addThread(thread);
 		persistentState.save();
 		return thread.posts;
 	}
