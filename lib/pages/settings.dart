@@ -422,83 +422,45 @@ class SettingsBehaviorPage extends StatefulWidget {
 }
 
 class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
-	bool showFilterRegex = false;
 	Imageboard _loginSystemImageboard = ImageboardRegistry.instance.imageboards.first;
 
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
+		int filterCount = 0;
+		for (final line in settings.filterConfiguration.split('\n').asMap().entries) {
+			if (line.value.isEmpty) {
+				continue;
+			}
+			try {
+				CustomFilter.fromStringConfiguration(line.value);
+				filterCount++;
+			}
+			on FilterException {
+				// don't show
+			}
+		}
 		return _SettingsPage(
 			title: 'Behavior Settings',
 			children: [
 				const SizedBox(height: 16),
 				Row(
-					crossAxisAlignment: CrossAxisAlignment.start,
+					mainAxisSize: MainAxisSize.min,
 					children: [
-						const Padding(
-							padding: EdgeInsets.only(top: 4),
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Icon(CupertinoIcons.scope),
-									SizedBox(width: 8),
-									Text('Filters'),
-								]
-							)
+						const Icon(CupertinoIcons.scope),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('Filters')
 						),
-						const SizedBox(width: 32),
-						Expanded(
-							child: Wrap(
-								alignment: WrapAlignment.end,
-								spacing: 16,
-								runSpacing: 16,
-								children: [
-									CupertinoButton.filled(
-										padding: const EdgeInsets.all(8),
-										borderRadius: BorderRadius.circular(4),
-										minSize: 0,
-										child: const Text('Test filter setup'),
-										onPressed: () {
-											Navigator.of(context).push(FullWidthCupertinoPageRoute(
-												builder: (context) => const FilterTestPage(),
-												showAnimations: settings.showAnimations
-											));
-										}
-									),
-									CupertinoSegmentedControl<bool>(
-										padding: EdgeInsets.zero,
-										groupValue: showFilterRegex,
-										children: const {
-											false: Padding(
-												padding: EdgeInsets.all(8),
-												child: Text('Wizard')
-											),
-											true: Padding(
-												padding: EdgeInsets.all(8),
-												child: Text('Regex')
-											)
-										},
-										onValueChanged: (v) => setState(() {
-											showFilterRegex = v;
-										})
-									)
-								]
-							)
+						CupertinoButton.filled(
+							padding: const EdgeInsets.all(8),
+							onPressed: () => Navigator.of(context).push(FullWidthCupertinoPageRoute(
+								showAnimations: settings.showAnimations,
+								builder: (context) => const SettingsFilterPage()
+							)),
+							child: Text('${describeCount(filterCount, 'filter')}...')
 						)
 					]
-				),
-				const SizedBox(height: 16),
-				if (settings.filterError != null) Padding(
-					padding: const EdgeInsets.only(bottom: 16),
-					child: Text(
-						settings.filterError!,
-						style: const TextStyle(
-							color: Colors.red
-						)
-					)
-				),
-				FilterEditor(
-					showRegex: showFilterRegex
 				),
 				const SizedBox(height: 16),
 				Row(
@@ -1215,6 +1177,98 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 	void dispose() {
 		super.dispose();
 		controller.dispose();
+	}
+}
+
+class SettingsFilterPage extends StatefulWidget {
+	const SettingsFilterPage({
+		Key? key
+	}) : super(key: key);
+
+	@override
+	createState() => _SettingsFilterPageState();
+}
+
+class _SettingsFilterPageState extends State<SettingsFilterPage> {
+	bool showFilterRegex = false;
+
+	@override
+	Widget build(BuildContext context) {
+		final settings = context.watch<EffectiveSettings>();
+		return _SettingsPage(
+			title: 'Filter Settings',
+			children: [
+				Row(
+					crossAxisAlignment: CrossAxisAlignment.start,
+					children: [
+						const Padding(
+							padding: EdgeInsets.only(top: 4),
+							child: Row(
+								mainAxisSize: MainAxisSize.min,
+								children: [
+									Icon(CupertinoIcons.scope),
+									SizedBox(width: 8),
+									Text('Filters')
+								]
+							)
+						),
+						const SizedBox(width: 32),
+						Expanded(
+							child: Wrap(
+								alignment: WrapAlignment.end,
+								spacing: 16,
+								runSpacing: 16,
+								children: [
+									CupertinoButton.filled(
+										padding: const EdgeInsets.all(8),
+										borderRadius: BorderRadius.circular(4),
+										minSize: 0,
+										child: const Text('Test filter setup'),
+										onPressed: () {
+											Navigator.of(context).push(FullWidthCupertinoPageRoute(
+												builder: (context) => const FilterTestPage(),
+												showAnimations: settings.showAnimations
+											));
+										}
+									),
+									CupertinoSegmentedControl<bool>(
+										padding: EdgeInsets.zero,
+										groupValue: showFilterRegex,
+										children: const {
+											false: Padding(
+												padding: EdgeInsets.all(8),
+												child: Text('Wizard')
+											),
+											true: Padding(
+												padding: EdgeInsets.all(8),
+												child: Text('Regex')
+											)
+										},
+										onValueChanged: (v) => setState(() {
+											showFilterRegex = v;
+										})
+									)
+								]
+							)
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				if (settings.filterError != null) Padding(
+					padding: const EdgeInsets.only(bottom: 16),
+					child: Text(
+						settings.filterError!,
+						style: const TextStyle(
+							color: Colors.red
+						)
+					)
+				),
+				FilterEditor(
+					showRegex: showFilterRegex
+				),
+				const SizedBox(height: 16),
+			]
+		);
 	}
 }
 
