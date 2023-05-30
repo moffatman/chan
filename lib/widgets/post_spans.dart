@@ -681,14 +681,34 @@ class PostCodeSpan extends PostSpan {
 				return spans;
 			}
 		);
-		final child = RichText(
-			text: TextSpan(
-				style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
-				children: result.data ?? [
-					TextSpan(text: text)
-				]
-			),
-			softWrap: false
+		final lineCount = RegExp(r'\n').allMatches(text).length + 1;
+		final lineCountFieldWidth = lineCount.toString().length;
+		final child = Row(
+			crossAxisAlignment: CrossAxisAlignment.start,
+			children: [
+				Container(
+					decoration: const BoxDecoration(
+						border: Border(right: BorderSide(color: Colors.grey))
+					),
+					padding: const EdgeInsets.only(right: 8),
+					margin: const EdgeInsets.only(right: 8),
+					child: RichText(
+						text: TextSpan(
+							style: GoogleFonts.ibmPlexMono(textStyle: const TextStyle(color: Colors.grey)),
+							children: Iterable.generate(lineCount, (i) => TextSpan(text: (i + 1).toString().padLeft(lineCountFieldWidth))).expand((s) => [const TextSpan(text: '\n'), s]).skip(1).toList()
+						)
+					)
+				),
+				RichText(
+					text: TextSpan(
+						style: GoogleFonts.ibmPlexMono(textStyle: options.baseTextStyle),
+						children: result.data ?? [
+							TextSpan(text: text)
+						]
+					),
+					softWrap: false
+				)
+			]
 		);
 		return WidgetSpan(
 			child: Container(
