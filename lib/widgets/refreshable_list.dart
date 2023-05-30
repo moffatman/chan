@@ -185,9 +185,11 @@ class RefreshableListItem<T extends Object> {
 	final bool pinned;
 	bool filterCollapsed;
 	final String? filterReason;
+	final int id;
 	final List<int> parentIds;
 	final Set<int> treeDescendantIds;
 	final int? _depth;
+	final _RefreshableTreeItemsCacheKey _key;
 
 	RefreshableListItem({
 		required this.item,
@@ -195,19 +197,21 @@ class RefreshableListItem<T extends Object> {
 		this.pinned = false,
 		this.filterCollapsed = false,
 		this.filterReason,
+		required this.id,
 		this.parentIds = const [],
 		Set<int>? treeDescendantIds,
 		this.representsUnknownStubChildren = false,
 		this.representsKnownStubChildren = const [],
 		int? depth
-	}) : treeDescendantIds = treeDescendantIds ?? {}, _depth = depth;
+	}) : treeDescendantIds = treeDescendantIds ?? {}, _depth = depth, _key = _RefreshableTreeItemsCacheKey(parentIds, id, representsUnknownStubChildren || representsKnownStubChildren.isNotEmpty);
 
 	@override
-	String toString() => 'RefreshableListItem<$T>(item: $item, representsKnownStubChildren: $representsKnownStubChildren, treeDescendantIds: $treeDescendantIds)';
+	String toString() => 'RefreshableListItem<$T>(item: $item, id: $id, representsKnownStubChildren: $representsKnownStubChildren, treeDescendantIds: $treeDescendantIds)';
 
 	@override
 	bool operator == (Object other) => (other is RefreshableListItem<T>) &&
 		(other.item == item) &&
+		(other.id == id) &&
 		(other.representsUnknownStubChildren == representsUnknownStubChildren) &&
 		listEquals(other.representsKnownStubChildren, representsKnownStubChildren) &&
 		(other.highlighted == highlighted) &&
@@ -228,6 +232,7 @@ class RefreshableListItem<T extends Object> {
 		int? depth,
 	}) => RefreshableListItem(
 		item: item,
+		id: id,
 		highlighted: highlighted,
 		pinned: pinned,
 		filterCollapsed: filterCollapsed,
@@ -308,6 +313,24 @@ extension Convenience on TreeItemCollapseType? {
 	}
 }
 
+class _RefreshableTreeItemsCacheKey {
+	final List<int> parentIds;
+	final int? thisId;
+	final bool representsStubChildren;
+	final String _cacheKey;
+
+	_RefreshableTreeItemsCacheKey(this.parentIds, this.thisId, this.representsStubChildren) :
+		_cacheKey = '${parentIds.join(',')},$thisId,$representsStubChildren';
+
+	@override
+	bool operator ==(Object other) =>
+		other is _RefreshableTreeItemsCacheKey &&
+		other._cacheKey == _cacheKey;
+	
+	@override
+	int get hashCode => _cacheKey.hashCode;
+}
+
 class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	final List<List<int>> manuallyCollapsedItems;
 	final List<List<int>> automaticallyCollapsedItems;
@@ -319,7 +342,7 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	final ValueChanged<int>? onAutomaticallyCollapsedTopLevelItemExpanded;
 	final void Function(RefreshableListItem<T> item, bool looseEquality)? onCollapseOrExpand;
 	final Set<List<int>> loadingOmittedItems = {};
-	final Map<(List<int>, int?, bool), TreeItemCollapseType?> _cache = {};
+	final Map<_RefreshableTreeItemsCacheKey, TreeItemCollapseType?> _cache = {};
 
 	_RefreshableTreeItems({
 		required this.manuallyCollapsedItems,
@@ -332,54 +355,54 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		required this.onManuallyCollapsedItemsChanged
 	});
 
-	TreeItemCollapseType? isItemHidden(List<int> parentIds, int? thisId, bool representsStubChildren) {
-		return _cache.putIfAbsent((parentIds, thisId, representsStubChildren), () {
+	TreeItemCollapseType? isItemHidden(_RefreshableTreeItemsCacheKey key) {
+		return _cache.putIfAbsent(key, () {
 			// Need to check all parent prefixes
-			for (int d = 0; d < parentIds.length; d++) {
-				final primaryParent = primarySubtreeParents[parentIds[d]] ?? defaultPrimarySubtreeParents[parentIds[d]];
-				final theParentId = d == 0 ? -1 : parentIds[d - 1];
+			for (int d = 0; d < key.parentIds.length; d++) {
+				final primaryParent = primarySubtreeParents[key.parentIds[d]] ?? defaultPrimarySubtreeParents[key.parentIds[d]];
+				final theParentId = d == 0 ? -1 : key.parentIds[d - 1];
 				if (primaryParent != null && primaryParent != theParentId) {
 					return TreeItemCollapseType.mutuallyChildCollapsed;
 				}
 			}
-			if (parentIds.isNotEmpty) {
-				if (automaticallyCollapsedTopLevelItems.contains(parentIds.first)) {
+			if (key.parentIds.isNotEmpty) {
+				if (automaticallyCollapsedTopLevelItems.contains(key.parentIds.first)) {
 					return TreeItemCollapseType.childCollapsed;
 				}
 			}
 			// By iterating reversed it will properly handle collapses within collapses
 			for (final collapsed in manuallyCollapsedItems.reversed.followedBy(automaticallyCollapsedItems)) {
-				if (collapsed.length > parentIds.length + 1) {
+				if (collapsed.length > key.parentIds.length + 1) {
 					continue;
 				}
 				bool keepGoing = true;
 				for (int i = 0; i < collapsed.length - 1 && keepGoing; i++) {
-					keepGoing = collapsed[i] == parentIds[i];
+					keepGoing = collapsed[i] == key.parentIds[i];
 				}
 				if (!keepGoing) {
 					continue;
 				}
-				if (collapsed.length == parentIds.length + 1) {
-					if (collapsed.last == thisId) {
+				if (collapsed.length == key.parentIds.length + 1) {
+					if (collapsed.last == key.thisId) {
 						return TreeItemCollapseType.collapsed;
 					}
 					continue;
 				}
-				if (collapsed.last == parentIds[collapsed.length - 1]) {
+				if (collapsed.last == key.parentIds[collapsed.length - 1]) {
 					return TreeItemCollapseType.childCollapsed;
 				}
 			}
-			if (parentIds.isEmpty && automaticallyCollapsedTopLevelItems.contains(thisId)) {
-				if (representsStubChildren) {
+			if (key.parentIds.isEmpty && automaticallyCollapsedTopLevelItems.contains(key.thisId)) {
+				if (key.representsStubChildren) {
 					return TreeItemCollapseType.childCollapsed;
 				}
 				else {
 					return TreeItemCollapseType.topLevelCollapsed;
 				}
 			}
-			final personalPrimarySubtreeParent = primarySubtreeParents[thisId] ?? defaultPrimarySubtreeParents[thisId];
-			if (personalPrimarySubtreeParent != null && personalPrimarySubtreeParent != (parentIds.tryLast ?? -1)) {
-				if (representsStubChildren) {
+			final personalPrimarySubtreeParent = primarySubtreeParents[key.thisId] ?? defaultPrimarySubtreeParents[key.thisId];
+			if (personalPrimarySubtreeParent != null && personalPrimarySubtreeParent != (key.parentIds.tryLast ?? -1)) {
+				if (key.representsStubChildren) {
 					return TreeItemCollapseType.mutuallyChildCollapsed;
 				}
 				else {
@@ -415,33 +438,33 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	void itemLoadingOmittedItemsEnded(List<int> parentIds, int thisId, RefreshableListItem<T> item) {
+	void itemLoadingOmittedItemsEnded(RefreshableListItem<T> item) {
 		final x = [
-			...parentIds,
-			thisId
+			...item.parentIds,
+			item.id
 		];
 		loadingOmittedItems.removeWhere((w) => listEquals(w, x));
 		notifyListeners();
 		onCollapseOrExpand?.call(item, true);
 	}
 
-	void hideItem(List<int> parentIds, int thisId, RefreshableListItem<T> item) {
+	void hideItem(RefreshableListItem<T> item) {
 		manuallyCollapsedItems.add([
-			...parentIds,
-			thisId
+			...item.parentIds,
+			item.id
 		]);
-		_cache.removeWhere((key, value) => key.$2 == thisId || key.$1.contains(thisId));
+		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
 		onManuallyCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
 		onCollapseOrExpand?.call(item, false);
 		notifyListeners();
 	}
 
-	void unhideItem(List<int> parentIds, int thisId, RefreshableListItem<T> item) {
+	void unhideItem(RefreshableListItem<T> item) {
 		final x = [
-			...parentIds,
-			thisId
+			...item.parentIds,
+			item.id
 		];
-		_cache.removeWhere((key, value) => key.$2 == thisId || key.$1.contains(thisId));
+		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
 		final manuallyCollapsedItemsLengthBefore = manuallyCollapsedItems.length;
 		manuallyCollapsedItems.removeWhere((w) => listEquals(w, x));
 		if (manuallyCollapsedItemsLengthBefore != manuallyCollapsedItems.length) {
@@ -452,16 +475,16 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		if (automaticallyCollapsedItemsLengthBefore != automaticallyCollapsedItems.length) {
 			onAutomaticallyCollapsedItemExpanded?.call(x);
 		}
-		if (automaticallyCollapsedTopLevelItems.remove(thisId)) {
-			onAutomaticallyCollapsedTopLevelItemExpanded?.call(thisId);
+		if (automaticallyCollapsedTopLevelItems.remove(item.id)) {
+			onAutomaticallyCollapsedTopLevelItemExpanded?.call(item.id);
 		}
 		onCollapseOrExpand?.call(item, false);
 		notifyListeners();
 	}
 
-	void swapSubtreeTo(int thisId, List<int> parentIds, RefreshableListItem<T> item) {
-		primarySubtreeParents[thisId] = parentIds.tryLast ?? -1;
-		_cache.removeWhere((key, value) => key.$2 == thisId || key.$1.contains(thisId));
+	void swapSubtreeTo(RefreshableListItem<T> item) {
+		primarySubtreeParents[item.id] = item.parentIds.tryLast ?? -1;
+		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
 		onManuallyCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
 		onCollapseOrExpand?.call(item, false);
 		notifyListeners();
@@ -751,10 +774,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		setState(() {});
 	}
 
-	Future<void> _loadOmittedItems(RefreshableListItem<T> value, int id) async {
-		_refreshableTreeItems.itemLoadingOmittedItemsStarted(value.parentIds, id);
+	Future<void> _loadOmittedItems(RefreshableListItem<T> value) async {
+		_refreshableTreeItems.itemLoadingOmittedItemsStarted(value.parentIds, value.id);
 		try {
-			originalList = await widget.treeAdapter!.updateWithStubItems(originalList!, value.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(id)] : value.representsKnownStubChildren);
+			originalList = await widget.treeAdapter!.updateWithStubItems(originalList!, value.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(value.id)] : value.representsKnownStubChildren);
 			sortedList = originalList!.toList();
 			_sortList();
 			setState(() { });
@@ -763,7 +786,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			alertError(context, e.toStringDio());
 		}
 		finally {
-			_refreshableTreeItems.itemLoadingOmittedItemsEnded(value.parentIds, id, value);
+			_refreshableTreeItems.itemLoadingOmittedItemsEnded(value);
 		}
 	}
 
@@ -795,16 +818,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			}
 			final lastItem = widget.controller?._items.tryLast?.item;
 			if (extend && widget.treeAdapter != null && ((lastItem?.representsStubChildren ?? false))) {
-				final id = widget.treeAdapter!.getId(lastItem!.item);
-				_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem.parentIds, id);
+				_refreshableTreeItems.itemLoadingOmittedItemsStarted(lastItem!.parentIds, lastItem.id);
 				try {
-					newList = await widget.treeAdapter!.updateWithStubItems(originalList!, lastItem.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(id)] : lastItem.representsKnownStubChildren);
+					newList = await widget.treeAdapter!.updateWithStubItems(originalList!, lastItem.representsUnknownStubChildren ? [ParentAndChildIdentifier.same(lastItem.id)] : lastItem.representsKnownStubChildren);
 				}
 				catch (e) {
 					alertError(context, e.toStringDio());
 				}
 				finally {
-					_refreshableTreeItems.itemLoadingOmittedItemsEnded(lastItem.parentIds, widget.treeAdapter!.getId(lastItem.item), lastItem);
+					_refreshableTreeItems.itemLoadingOmittedItemsEnded(lastItem);
 				}
 			}
 			else if (extend && widget.listExtender != null && (originalList?.isNotEmpty ?? false)) {
@@ -895,20 +917,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	}
 
 	bool _shouldIgnoreForHeightEstimation(RefreshableListItem<T> item) {
-		final id = widget.treeAdapter?.getId(item.item);
-		if (id == null) {
-			return false;
-		}
-		return _refreshableTreeItems.isItemHidden(item.parentIds, id, item.representsStubChildren).isHidden;
+		return _refreshableTreeItems.isItemHidden(item._key).isHidden;
 	}
 
 	Widget _itemBuilder(BuildContext context, RefreshableListItem<T> value) {
 		Widget child;
 		Widget? collapsed;
-		int? id = widget.treeAdapter?.getId(value.item);
 		bool loadingOmittedItems = false;
 		if (widget.treeAdapter != null && (useTree || value.representsStubChildren)) {
-			loadingOmittedItems = context.select<_RefreshableTreeItems, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, id));
+			loadingOmittedItems = context.select<_RefreshableTreeItems, bool>((c) => c.isItemLoadingOmittedItems(value.parentIds, value.id));
 		}
 		if (_searchFilter != null && widget.filteredItemBuilder != null) {
 			child = Builder(
@@ -950,8 +967,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				}
 			}
 			if (widget.treeAdapter != null && useTree) {
-				final isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value.parentIds, id, value.representsStubChildren));
-				if (value.parentIds.isNotEmpty) {
+				final isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value._key));
+				if (value.parentIds.isNotEmpty && !isHidden.isHidden) {
 					child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
 				}
 				if (isHidden.isHidden) {
@@ -1003,29 +1020,30 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					onTap: loadingOmittedItems ? null : () async {
 						if (!value.representsStubChildren) {
 							if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
-								context.read<_RefreshableTreeItems>().swapSubtreeTo(id!, value.parentIds, value);
+								context.read<_RefreshableTreeItems>().swapSubtreeTo(value);
 								Future.delayed(_treeAnimationDuration, () => widget.controller?._alignToItemIfPartiallyAboveFold(value));
 							}
 							else if (isHidden != null) {
-								context.read<_RefreshableTreeItems>().unhideItem(value.parentIds, id!, value);
+								context.read<_RefreshableTreeItems>().unhideItem(value);
 								if (isHidden == TreeItemCollapseType.topLevelCollapsed) {
 									final stubParent = widget.controller?.items.tryFirstWhere((otherItem) {
 										return otherItem.item == value.item &&
+												otherItem.id == value.id &&
 												otherItem.parentIds == value.parentIds &&
 												otherItem.representsStubChildren;
 									});
 									if (stubParent != null) {
-										_loadOmittedItems(stubParent, id);
+										_loadOmittedItems(stubParent);
 									}
 								}
 							}
 							else if (value.treeDescendantIds.isNotEmpty || !(widget.treeAdapter?.collapsedItemsShowBody ?? false)) {
-								context.read<_RefreshableTreeItems>().hideItem(value.parentIds, id!, value);
+								context.read<_RefreshableTreeItems>().hideItem(value);
 								widget.controller?._alignToItemIfPartiallyAboveFold(value);
 							}
 						}
 						else {
-							_loadOmittedItems(value, id!);
+							_loadOmittedItems(value);
 						}
 					},
 					child: child
@@ -1034,7 +1052,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			else if (widget.treeAdapter != null && value.representsStubChildren) {
 				child = GestureDetector(
 					behavior: HitTestBehavior.translucent,
-					onTap: loadingOmittedItems ? null : () => _loadOmittedItems(value, id!),
+					onTap: loadingOmittedItems ? null : () => _loadOmittedItems(value),
 					child: child
 				);
 			}
@@ -1301,6 +1319,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							pinned = true;
 							pinnedValues.add(RefreshableListItem(
 								item: item,
+								id: widget.treeAdapter?.getId(item) ?? 0,
 								highlighted: result.type.highlight,
 								pinned: true
 							));
@@ -1311,12 +1330,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						if (result.type.hide) {
 							filteredValues.add(RefreshableListItem(
 								item: item,
+								id: widget.treeAdapter?.getId(item) ?? 0,
 								filterReason: result.reason
 							));
 						}
 						else if (!pinned) {
 							values.add(RefreshableListItem(
 								item: item,
+								id: widget.treeAdapter?.getId(item) ?? 0,
 								highlighted: result.type.highlight,
 								filterCollapsed: result.type.collapse
 							));
@@ -1326,7 +1347,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					}
 				}
 				if (!handled) {
-					values.add(RefreshableListItem(item: item));
+					values.add(RefreshableListItem(item: item, id: widget.treeAdapter?.getId(item) ?? 0));
 				}
 			}
 			_treeBuildingFailed = false;
@@ -1361,6 +1382,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					if (adapter.getIsStub(item.item)) {
 						stubItem ??= RefreshableListItem(
 							item: item.item, // Arbitrary
+							id: item.id, // Arbitrary
 							representsKnownStubChildren: []
 						);
 						stubItem.representsKnownStubChildren.add(ParentAndChildIdentifier(
@@ -1377,6 +1399,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 						if (adapter.getHasOmittedReplies(item.item)) {
 							stubItem ??= RefreshableListItem(
 								item: item.item, // Arbitrary
+								id: item.id, // Arbitrary
 								representsKnownStubChildren: []
 							);
 							stubItem.representsKnownStubChildren.add(ParentAndChildIdentifier(
@@ -2292,11 +2315,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 
 	TreeItemCollapseType? isItemHidden(RefreshableListItem<T> item) {
-		final id = state?.widget.treeAdapter?.getId(item.item);
-		if (id == null) {
-			return null;
-		}
-		return state?._refreshableTreeItems.isItemHidden(item.parentIds, id, item.representsStubChildren);
+		return state?._refreshableTreeItems.isItemHidden(item._key);
 	}
 
 	void didFinishLayout(int startIndex, int endIndex) {
