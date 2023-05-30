@@ -507,6 +507,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final Duration minUpdateDuration;
 	final Listenable? updateAnimation;
 	final bool canTapFooter;
+	final double minCacheExtent;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -540,6 +541,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.minUpdateDuration = const Duration(milliseconds: 500),
 		this.updateAnimation,
 		this.canTapFooter = true,
+		this.minCacheExtent = 0,
 		Key? key
 	}) : super(key: key);
 
@@ -1463,7 +1465,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 									value: _refreshableTreeItems,
 									child: CustomScrollView(
 										key: _scrollViewKey,
-										cacheExtent: 250,
+										cacheExtent: max(widget.minCacheExtent, 250),
 										controller: widget.controller?.scrollController,
 										physics: const AlwaysScrollableScrollPhysics(),
 										slivers: [
