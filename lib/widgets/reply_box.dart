@@ -129,7 +129,9 @@ class ReplyBoxState extends State<ReplyBox> {
 			final thread = await state.getThread();
 			return thread?.posts_.where((p) => state.youIds.contains(p.id) && p.name.trim() != (state.imageboard?.site.defaultUsername ?? 'Anonymous')).map((p) => p.name.trim()).toList() ?? const [];
 		}))).expand((s) => s).toSet().toList()..sort();
-		setState(() {});
+		if (mounted) {
+			setState(() {});
+		}
 	}
 
 	bool get _haveValidCaptcha {
