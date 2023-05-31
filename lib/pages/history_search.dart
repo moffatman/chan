@@ -427,7 +427,6 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 												heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
 											),
 											isSelected: (context.read<MasterDetailHint?>()?.twoPane != false) && widget.selectedResult?.imageboard == row.imageboard && widget.selectedResult?.item == row.item.identifier,
-											countsUnreliable: true,
 											showBoardName: true,
 											showSiteIcon: ImageboardRegistry.instance.count > 1,
 											baseOptions: PostSpanRenderOptions(
