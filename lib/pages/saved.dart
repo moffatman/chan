@@ -267,6 +267,11 @@ class _SavedPageState extends State<SavedPage> {
 											updateAnimation: persistencesAnimation,
 											key: _watchedThreadsListKey,
 											id: 'watched',
+											minCacheExtent: settings.useCatalogGrid ? settings.catalogGridHeight : 0,
+											gridDelegate: settings.useCatalogGrid ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
+												maxCrossAxisExtent: settings.catalogGridWidth,
+												childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
+											) : null,
 											canTapFooter: false,
 											itemBuilder: (itemContext, watch) {
 												final isSelected = selected(itemContext, watch);
@@ -332,6 +337,7 @@ class _SavedPageState extends State<SavedPage> {
 																		return ThreadRow(
 																			thread: threadState!.thread!,
 																			isSelected: isSelected,
+																			contentFocus: settings.useCatalogGrid,
 																			showBoardName: true,
 																			showSiteIcon: true,
 																			dimReadThreads: watch.item.zombie,
@@ -357,7 +363,7 @@ class _SavedPageState extends State<SavedPage> {
 																						_watchedListController.animateTo((p) => p.item.threadIdentifier == threadId);
 																					},
 																					semanticParentIds: [-4],
-																					heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+																					heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
 																				);
 																			}
 																		);
@@ -463,6 +469,11 @@ class _SavedPageState extends State<SavedPage> {
 											sortMethods: [sortMethod],
 											key: _savedThreadsListKey,
 											updateAnimation: threadStateBoxesAnimation,
+											minCacheExtent: settings.useCatalogGrid ? settings.catalogGridHeight : 0,
+											gridDelegate: settings.useCatalogGrid ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
+												maxCrossAxisExtent: settings.catalogGridWidth,
+												childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
+											) : null,
 											itemBuilder: (itemContext, state) {
 												final isSelected = selectedThread(itemContext, state.imageboard!.scope(state.identifier));
 												final openInNewTabZone = context.read<OpenInNewTabZone?>();
@@ -495,6 +506,7 @@ class _SavedPageState extends State<SavedPage> {
 																builder: (context) => state.thread == null ? const SizedBox.shrink() : ThreadRow(
 																	thread: state.thread!,
 																	isSelected: isSelected,
+																	contentFocus: settings.useCatalogGrid,
 																	showBoardName: true,
 																	showSiteIcon: true,
 																	onThumbnailLoadError: (error, stackTrace) {
@@ -516,7 +528,7 @@ class _SavedPageState extends State<SavedPage> {
 																				_threadListController.animateTo((p) => p.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 																			},
 																			semanticParentIds: [-4],
-																			heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+																			heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
 																		);
 																	}
 																)

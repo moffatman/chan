@@ -141,6 +141,63 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 	bool shouldRebuild(SliverDontRebuildChildBuilderDelegate oldDelegate) => !listEquals(list, oldDelegate.list) || id != oldDelegate.id;
 }
 
+class SliverGridRegularTileLayoutWithCacheTrickery extends SliverGridRegularTileLayout {
+	const SliverGridRegularTileLayoutWithCacheTrickery({
+    required super.crossAxisCount,
+    required super.mainAxisStride,
+    required super.crossAxisStride,
+    required super.childMainAxisExtent,
+    required super.childCrossAxisExtent,
+    required super.reverseCrossAxis,
+  });
+
+  @override
+  int getMinChildIndexForScrollOffset(double scrollOffset) {
+    return mainAxisStride > precisionErrorTolerance ? (crossAxisCount * (scrollOffset / mainAxisStride)).floor() : 0;
+  }
+
+  @override
+  int getMaxChildIndexForScrollOffset(double scrollOffset) {
+    if (mainAxisStride > 0.0) {
+      final double mainAxisCount = scrollOffset / mainAxisStride;
+      return max(0, (crossAxisCount * mainAxisCount).ceil() - 1);
+    }
+    return 0;
+  }
+}
+
+class SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery extends SliverGridDelegateWithMaxCrossAxisExtent {
+	const SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery({
+    required super.maxCrossAxisExtent,
+    super.mainAxisSpacing = 0.0,
+    super.crossAxisSpacing = 0.0,
+    super.childAspectRatio = 1.0,
+    super.mainAxisExtent,
+  });
+
+	@override
+  SliverGridLayout getLayout(SliverConstraints constraints) {
+    int crossAxisCount = (constraints.crossAxisExtent / (maxCrossAxisExtent + crossAxisSpacing)).ceil();
+    // Ensure a minimum count of 1, can be zero and result in an infinite extent
+    // below when the window size is 0.
+    crossAxisCount = max(1, crossAxisCount);
+    final double usableCrossAxisExtent = max(
+      0.0,
+      constraints.crossAxisExtent - crossAxisSpacing * (crossAxisCount - 1),
+    );
+    final double childCrossAxisExtent = usableCrossAxisExtent / crossAxisCount;
+    final double childMainAxisExtent = mainAxisExtent ?? childCrossAxisExtent / childAspectRatio;
+    return SliverGridRegularTileLayoutWithCacheTrickery(
+      crossAxisCount: crossAxisCount,
+      mainAxisStride: childMainAxisExtent + mainAxisSpacing,
+      crossAxisStride: childCrossAxisExtent + crossAxisSpacing,
+      childMainAxisExtent: childMainAxisExtent,
+      childCrossAxisExtent: childCrossAxisExtent,
+      reverseCrossAxis: axisDirectionIsReversed(constraints.crossAxisDirection),
+    );
+  }
+}
+
 class _TreeTooDeepException implements Exception {
 	const _TreeTooDeepException();
 }
