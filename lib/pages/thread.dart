@@ -1210,7 +1210,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																					));
 																				},
 																				onRequestArchive: () => _replacePostFromArchive(post),
-																				highlight: useTree && post.id > lastSeenIdBeforeLastUpdate,
+																				highlight: post.id > lastSeenIdBeforeLastUpdate,
 																			);
 																		},
 																		filteredItemBuilder: (context, post, resetPage, filterText) {
