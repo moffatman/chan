@@ -69,7 +69,7 @@ class _BoardWatchControlsPage extends State<BoardWatchControlsPage> {
 									children: const [
 										(_BoardWatchingStatus.off, 'Off'),
 										(_BoardWatchingStatus.threadsOnly, 'Threads only'),
-										(_BoardWatchingStatus.threadsAndPosts, 'All posts (not reliable')
+										(_BoardWatchingStatus.threadsAndPosts, 'All posts (not reliable)')
 									].map((v) => CupertinoListTile(
 										title: Text(v.$2),
 										backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
