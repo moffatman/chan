@@ -760,6 +760,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			sortedList = originalList!.toList();
 			_sortList();
 		}
+		if (!widget.disableUpdates && !oldWidget.disableUpdates &&
+		    widget.autoUpdateDuration != oldWidget.autoUpdateDuration) {
+			if (nextUpdateTime?.isAfter(DateTime.now().add(widget.autoUpdateDuration ?? Duration.zero)) ?? true) {
+				// next update is scheduled too late or is scheduled at all if we now have auto-update off
+				resetTimer();
+			}
+		}
 	}
 
 	@override
@@ -804,12 +811,12 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 
 	void resetTimer() {
 		autoUpdateTimer?.cancel();
-		if (widget.autoUpdateDuration != null && !useTree) {
+		if (widget.autoUpdateDuration != null) {
 			autoUpdateTimer = Timer(widget.autoUpdateDuration!, update);
 			nextUpdateTime = DateTime.now().add(widget.autoUpdateDuration!);
 		}
 		else {
-			nextUpdateTime = DateTime.now().add(const Duration(days: 1000));
+			nextUpdateTime = null;
 		}
 	}
 
@@ -1989,7 +1996,7 @@ class RefreshableListFooter extends StatelessWidget {
 																				return LinearProgressIndicator(
 																					value: updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds,
 																					color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
-																					backgroundColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.2),
+																					backgroundColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.1),
 																					minHeight: 8
 																				);
 																			}
@@ -2003,6 +2010,18 @@ class RefreshableListFooter extends StatelessWidget {
 																	]
 																)
 															)
+														)
+													),
+													if (nextUpdateTime?.isAfter(DateTime.now()) ?? false) Positioned(
+														top: 50,
+														child: TimedRebuilder(
+															enabled: nextUpdateTime != null && lastUpdateTime != null,
+															interval: const Duration(seconds: 1),
+															builder: (context) {
+																return Text('Next update ${formatRelativeTime(nextUpdateTime ?? DateTime(3000))}', style: TextStyle(
+																	color: CupertinoTheme.of(context).primaryColorWithBrightness(0.5)
+																));
+															}
 														)
 													)
 												]

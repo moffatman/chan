@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
-import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
@@ -74,15 +73,14 @@ class ThreadRow extends StatelessWidget {
 			threadAsUrl = Uri.parse(firstUrl).host.replaceFirst(RegExp(r'^www\.'), '');
 		}
 		if (threadState?.lastSeenPostId != null) {
-			final filter = Filter.of(context);
 			if (threadState?.useTree ?? context.read<Persistence>().browserState.useTree ?? site.useTree) {
-				unseenReplyCount = (threadState?.unseenReplyCount(filter) ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
+				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + (max(thread.replyCount, latestThread.replyCount) - (threadState!.thread?.replyCount ?? 0));
 			}
 			else {
-				unseenReplyCount = (threadState?.unseenReplyCount(filter) ?? 0) + ((latestReplyCount + 1) - latestThread.posts_.length);
+				unseenReplyCount = (threadState?.unseenReplyCount() ?? 0) + ((latestReplyCount + 1) - latestThread.posts_.length);
 			}
-			unseenYouCount = threadState?.unseenReplyIdsToYouCount(filter) ?? 0;
-			unseenImageCount = (threadState?.unseenImageCount(filter) ?? 0) + ((latestImageCount + thread.attachments.length) - (threadState?.thread?.posts_.expand((x) => x.attachments).length ?? 0));
+			unseenYouCount = threadState?.unseenReplyIdsToYouCount() ?? 0;
+			unseenImageCount = (threadState?.unseenImageCount() ?? 0) + ((latestImageCount + thread.attachments.length) - (threadState?.thread?.posts_.expand((x) => x.attachments).length ?? 0));
 			replyCountColor = unseenReplyCount <= 0 ? grey : null;
 			imageCountColor = unseenImageCount <= 0 ? grey : null;
 			otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
@@ -616,9 +614,9 @@ class ThreadRow extends StatelessWidget {
 					return _build(context, threadState);
 				}
 				else {
-					return ValueListenableBuilder(
-						valueListenable: threadState.lastSeenPostIdNotifier,
-						builder: (context, _, __) => _build(context, context.read<Persistence>().getThreadStateIfExists(thread.identifier))
+					return ListenableBuilder(
+						listenable: threadState,
+						builder: (context, _) => _build(context, context.read<Persistence>().getThreadStateIfExists(thread.identifier))
 					);
 				}
 			}

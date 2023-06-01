@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:chan/models/thread.dart';
-import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
@@ -117,7 +116,6 @@ class ThreadWatcher extends ChangeNotifier {
 	final unseenCount = ValueNotifier<int>(0);
 	final unseenYouCount = ValueNotifier<int>(0);
 
-	Filter get _filter => FilterGroup([settings.filter, settings.imageMD5Filter]);
 	final _initialCountsDone = Completer<void>();
 	late Set<String> _lastHiddenImageMD5s;
 	
@@ -152,9 +150,9 @@ class ThreadWatcher extends ChangeNotifier {
 	Future<void> _setInitialCounts() async {
 		for (final watch in persistence.browserState.threadWatches) {
 			await persistence.getThreadStateIfExists(watch.threadIdentifier)?.ensureThreadLoaded();
-			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount(_filter) ?? 0;
+			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount() ?? 0;
 			if (!watch.localYousOnly) {
-				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
+				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount() ?? 0;
 			}
 			await Future.microtask(() => {});
 		}
@@ -182,12 +180,12 @@ class ThreadWatcher extends ChangeNotifier {
 	void onWatchUpdated(Watch watch) async {
 		await _initialCountsDone.future;
 		if (watch is ThreadWatch) {
-			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount(_filter) ?? 0;
+			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount() ?? 0;
 			if (watch.localYousOnly) {
 				cachedUnseen.remove(watch.threadIdentifier);
 			}
 			else {
-				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
+				cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount() ?? 0;
 			}
 			_updateCounts();
 		}
@@ -222,9 +220,9 @@ class ThreadWatcher extends ChangeNotifier {
 				}
 				final watch = persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == newThreadState.identifier);
 				if (watch != null) {
-					cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount(_filter) ?? 0;
+					cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount() ?? 0;
 					if (!watch.localYousOnly) {
-						cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount(_filter) ?? 0;
+						cachedUnseen[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyCount() ?? 0;
 					}
 					_updateCounts();
 					if (newThreadState.thread!.isArchived && !watch.zombie) {

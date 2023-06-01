@@ -224,7 +224,7 @@ class _ChanAppState extends State<ChanApp> {
 										child: RootCustomScale(
 											scale: ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) ? 1.3 : 1.0) / settings.interfaceScale,
 											child: FilterZone(
-												filter: FilterGroup([settings.filter, settings.imageMD5Filter]),
+												filter: settings.globalFilter,
 												child: CupertinoApp(
 													title: 'Chance',
 													debugShowCheckedModeBanner: false,
@@ -1381,7 +1381,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								)
 							);
 							final threadState = Persistence.tabs[i].thread == null ? null : Persistence.tabs[i].persistence?.getThreadStateIfExists(Persistence.tabs[i].thread!);
-							Future.microtask(() => Persistence.tabs[i].unseen.value = threadState?.unseenReplyCount(Filter.of(context, listen: false)) ?? 0);
+							Future.microtask(() => Persistence.tabs[i].unseen.value = threadState?.unseenReplyCount() ?? 0);
 							if (threadState != null) {
 								final attachment = threadState.thread?.attachments.tryFirst;
 								injectIcon = attachment != null;
@@ -1397,8 +1397,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											site: Persistence.tabs[i].imageboard?.site
 										)
 									),
-									primary: threadState.unseenReplyIdsToYouCount(Filter.of(context)) ?? 0,
-									secondary: threadState.unseenReplyCount(Filter.of(context)) ?? 0
+									primary: threadState.unseenReplyIdsToYouCount() ?? 0,
+									secondary: threadState.unseenReplyCount() ?? 0
 								);
 							}
 						}
@@ -1478,7 +1478,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											}
 											else {
 												return AnimatedBuilder(
-													animation: threadState.lastSeenPostIdNotifier,
+													animation: threadState,
 													builder: (context, _) => buildStationaryIcon()
 												);
 											}

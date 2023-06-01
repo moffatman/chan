@@ -771,6 +771,10 @@ class SavedSettings extends HiveObject {
 	bool enableSpellCheck;
 	@HiveField(137)
 	bool openCrossThreadLinksInNewTab;
+	@HiveField(138)
+	int backgroundThreadAutoUpdatePeriodSeconds;
+	@HiveField(139)
+	int currentThreadAutoUpdatePeriodSeconds;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -910,6 +914,8 @@ class SavedSettings extends HiveObject {
 		bool? askForAuthenticationOnLaunch,
 		bool? enableSpellCheck,
 		bool? openCrossThreadLinksInNewTab,
+		int? backgroundThreadAutoUpdatePeriodSeconds,
+		int? currentThreadAutoUpdatePeriodSeconds,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1075,7 +1081,9 @@ class SavedSettings extends HiveObject {
 		applyImageFilterToThreads = applyImageFilterToThreads ?? false,
 		askForAuthenticationOnLaunch = askForAuthenticationOnLaunch ?? false,
 		enableSpellCheck = enableSpellCheck ?? true,
-		openCrossThreadLinksInNewTab = openCrossThreadLinksInNewTab ?? false {
+		openCrossThreadLinksInNewTab = openCrossThreadLinksInNewTab ?? false,
+		backgroundThreadAutoUpdatePeriodSeconds = backgroundThreadAutoUpdatePeriodSeconds ?? 60,
+		currentThreadAutoUpdatePeriodSeconds = currentThreadAutoUpdatePeriodSeconds ?? 60 {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1265,6 +1273,8 @@ class EffectiveSettings extends ChangeNotifier {
 			return output;
 		}
 	}
+
+	Filter get globalFilter => FilterGroup([filter, imageMD5Filter]);
 
 	String? filterError;
 	final filterListenable = EasyListenable();
@@ -2095,6 +2105,20 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get openCrossThreadLinksInNewTab => _settings.openCrossThreadLinksInNewTab;
 	set openCrossThreadLinksInNewTab (bool setting) {
 		_settings.openCrossThreadLinksInNewTab = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	int get backgroundThreadAutoUpdatePeriodSeconds => _settings.backgroundThreadAutoUpdatePeriodSeconds;
+	set backgroundThreadAutoUpdatePeriodSeconds(int setting) {
+		_settings.backgroundThreadAutoUpdatePeriodSeconds = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	int get currentThreadAutoUpdatePeriodSeconds => _settings.currentThreadAutoUpdatePeriodSeconds;
+	set currentThreadAutoUpdatePeriodSeconds(int setting) {
+		_settings.currentThreadAutoUpdatePeriodSeconds = setting;
 		_settings.save();
 		notifyListeners();
 	}

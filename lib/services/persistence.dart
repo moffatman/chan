@@ -330,6 +330,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(AndroidGallerySavePathOrganizingAdapter());
 		Hive.registerAdapter(MediaScanAdapter());
 		Hive.registerAdapter(DurationAdapter());
+		Hive.registerAdapter(EfficientlyStoredIntSetAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
 		wifiCookies = PersistCookieJar(
@@ -850,7 +851,7 @@ class PersistentRecentSearches {
 }
 
 @HiveType(typeId: 3)
-class PersistentThreadState extends HiveObject implements Filterable {
+class PersistentThreadState extends EasyListenable with HiveObjectMixin implements Filterable {
 	@HiveField(0)
 	int? lastSeenPostId;
 	@HiveField(1)
@@ -869,8 +870,6 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	List<int> hiddenPostIds = [];
 	@HiveField(9, defaultValue: '')
 	String draftReply = '';
-	// Don't persist this
-	final lastSeenPostIdNotifier = ValueNotifier<int?>(null);
 	// Don't persist this
 	EphemeralThreadStateOwner? ephemeralOwner;
 	@HiveField(10, defaultValue: [])
@@ -897,6 +896,11 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	Map<int, int> primarySubtreeParents = {};
 	@HiveField(22, defaultValue: true)
 	bool showInHistory;
+	/// To track scroll position
+	@HiveField(23)
+	int? firstVisiblePostId;
+	@HiveField(24)
+	final EfficientlyStoredIntSet unseenPostIds;
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
@@ -908,11 +912,12 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		required this.id,
 		required this.showInHistory,
 		this.ephemeralOwner,
-	}) : lastOpenedTime = DateTime.now();
+		EfficientlyStoredIntSet? unseenPostIds
+	}) : lastOpenedTime = DateTime.now(), unseenPostIds = unseenPostIds ?? EfficientlyStoredIntSet({});
 
 	void _invalidate() {
-		_replyIdsToYou.clear();
-		_filteredPosts.clear();
+		_replyIdsToYou = null;
+		_filteredPosts = null;
 	}
 
 	Future<void> ensureThreadLoaded({bool preinit = true, bool catalog = false}) async {
@@ -929,6 +934,10 @@ class PersistentThreadState extends HiveObject implements Filterable {
 	Thread? get thread => _thread;
 	set thread(Thread? newThread) {
 		if (newThread != _thread) {
+			if (_thread != null && newThread != null) {
+				final oldMaxId = _thread?.posts_.fold(0, (m, p) => max(m, p.id)) ?? 0;
+				unseenPostIds.data.addAll(newThread.posts_.map((p) => p.id).where((id) => id > oldMaxId && !youIds.contains(id)));
+			}
 			Persistence.setCachedThread(imageboardKey, board, id, newThread);
 			_thread = newThread;
 			_youIds = null;
@@ -950,30 +959,36 @@ class PersistentThreadState extends HiveObject implements Filterable {
 		_youIds ??= freshYouIds();
 		return _youIds!;
 	}
-	final Map<Filter, List<int>?> _replyIdsToYou = {};
-	List<int>? replyIdsToYou(Filter additionalFilter) => _replyIdsToYou.putIfAbsent(additionalFilter, () {
-		return filteredPosts(additionalFilter)?.where((p) {
+	List<int>? _replyIdsToYou;
+	List<int>? replyIdsToYou() => _replyIdsToYou ??= () {
+		return filteredPosts()?.where((p) {
 			return p.repliedToIds.any((id) => youIds.contains(id));
 		}).map((p) => p.id).toList();
-	});
+	}();
 
-	int? unseenReplyIdsToYouCount(Filter additionalFilter) => replyIdsToYou(additionalFilter)?.binarySearchCountAfter((id) => id > lastSeenPostId!);
-	final Map<Filter, List<Post>?> _filteredPosts = {};
-	List<Post>? filteredPosts(Filter additionalFilter) {
-		_filteredPosts[additionalFilter] ??= () {
+	int? unseenReplyIdsToYouCount() => replyIdsToYou()?.where(unseenPostIds.data.contains).length;
+	(Filter, List<Post>)? _filteredPosts;
+	List<Post>? filteredPosts() {
+		if (_filteredPosts != null && _filteredPosts?.$1 != settings.globalFilter) {
+			_filteredPosts = null;
+		}
+		return (_filteredPosts ??= () {
 			if (lastSeenPostId == null) {
 				return null;
 			}
-			return thread?.posts.where((p) {
+			final posts = thread?.posts.where((p) {
 				return threadFilter.filter(p)?.type.hide != true
-					&& additionalFilter.filter(p)?.type.hide != true;
+					&& settings.globalFilter.filter(p)?.type.hide != true;
 			}).toList();
-		}();
-		return _filteredPosts[additionalFilter];
+			if (posts != null) {
+				return (settings.globalFilter, posts);
+			}
+			return null;
+		}())?.$2;
 	}
-	int? unseenReplyCount(Filter additionalFilter) => filteredPosts(additionalFilter)?.binarySearchCountAfter((p) => p.id > lastSeenPostId!);
-	int? unseenImageCount(Filter additionalFilter) => filteredPosts(additionalFilter)?.map((p) {
-		if (p.id <= lastSeenPostId!) {
+	int? unseenReplyCount() => filteredPosts()?.where((p) => unseenPostIds.data.contains(p.id)).length;
+	int? unseenImageCount() => filteredPosts()?.map((p) {
+		if (!unseenPostIds.data.contains(p.id)) {
 			return 0;
 		}
 		return p.attachments.length;
@@ -1304,6 +1319,96 @@ class SavedPostAdapter extends TypeAdapter<SavedPost> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is SavedPostAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class EfficientlyStoredIntSet {
+	final Set<int> data;
+	EfficientlyStoredIntSet(this.data);
+}
+
+class EfficientlyStoredIntSetAdapter extends TypeAdapter<EfficientlyStoredIntSet> {
+  @override
+  final int typeId = 40;
+
+  @override
+  EfficientlyStoredIntSet read(BinaryReader reader) {
+    final intWidth = reader.readByte();
+		if (intWidth == 0) {
+			return EfficientlyStoredIntSet({});
+		}
+		final numDiffs = reader.readWord();
+		final diffBase = reader.readInt();
+		final diffs = <int>[];
+		if (intWidth == 2) {
+			for (int i = 0; i < numDiffs; i++) {
+				diffs.add(reader.readWord());
+			}
+		}
+		else if (intWidth == 4) {
+			for (int i = 0; i < numDiffs; i++) {
+				diffs.add(reader.readUint32());
+			}
+		}
+		else if (intWidth == 8) {
+			for (int i = 0; i < numDiffs; i++) {
+				diffs.add(reader.readUint32());
+			}
+		}
+		else {
+			throw UnsupportedError('Set-int width $intWidth not allowed');
+		}
+		final out = <int>{diffBase};
+		out.addAll(diffs.map((d) => diffBase + d));
+		return EfficientlyStoredIntSet(out);
+  }
+
+  @override
+  void write(BinaryWriter writer, EfficientlyStoredIntSet obj) {
+		if (obj.data.toList().isEmpty) {
+			writer.writeByte(0);
+			return;
+		}
+		final sorted = obj.data.toList()..sort();
+		final diffs = List.generate(sorted.length - 1, (i) => sorted[i + 1] - sorted.first);
+		final int intWidth;
+		if ((diffs.tryLast ?? 0) < 0xFFFF) {
+			intWidth = 2;
+		}
+		else if ((diffs.tryLast ?? 0) < 0xFFFFFFFF) {
+			intWidth = 4;
+		}
+		else {
+			intWidth = 8;
+		}
+		writer.writeByte(intWidth);
+		writer.writeWord(diffs.length);
+		writer.writeInt(sorted.first);
+		if (intWidth == 2) {
+			for (final diff in diffs) {
+				writer.writeWord(diff);
+			}
+		}
+		else if (intWidth == 4) {
+			for (final diff in diffs) {
+				writer.writeUint32(diff);
+			}
+		}
+		else if (intWidth == 8) {
+			for (final diff in diffs) {
+				writer.writeInt(diff);
+			}
+		}
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EfficientlyStoredIntSetAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

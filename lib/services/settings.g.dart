@@ -264,13 +264,15 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       askForAuthenticationOnLaunch: fields[135] as bool?,
       enableSpellCheck: fields[136] as bool?,
       openCrossThreadLinksInNewTab: fields[137] as bool?,
+      backgroundThreadAutoUpdatePeriodSeconds: fields[138] as int?,
+      currentThreadAutoUpdatePeriodSeconds: fields[139] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(134)
+      ..writeByte(136)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -538,7 +540,11 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(136)
       ..write(obj.enableSpellCheck)
       ..writeByte(137)
-      ..write(obj.openCrossThreadLinksInNewTab);
+      ..write(obj.openCrossThreadLinksInNewTab)
+      ..writeByte(138)
+      ..write(obj.backgroundThreadAutoUpdatePeriodSeconds)
+      ..writeByte(139)
+      ..write(obj.currentThreadAutoUpdatePeriodSeconds);
   }
 
   @override

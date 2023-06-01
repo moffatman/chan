@@ -1105,7 +1105,57 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						)
 					]
 				),
-				const SizedBox(height: 32)
+				const SizedBox(height: 32),
+				const Row(
+					children: [
+						Icon(CupertinoIcons.refresh),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Current thread auto-updates every...')
+						)
+					]
+				),
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: CupertinoAdaptiveSegmentedControl<int>(
+						children: const {
+							5: (null, '5s'),
+							10: (null, '10s'),
+							15: (null, '15s'),
+							30: (null, '30s'),
+							60: (null, '60s')
+						},
+						groupValue: context.watch<EffectiveSettings>().currentThreadAutoUpdatePeriodSeconds,
+						onValueChanged: (setting) {
+							context.read<EffectiveSettings>().currentThreadAutoUpdatePeriodSeconds = setting;
+						}
+					)
+				),
+				const Row(
+					children: [
+						SizedBox(width: 32),
+						Expanded(
+							child: Text('Background threads auto-update every...')
+						)
+					]
+				),
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: CupertinoAdaptiveSegmentedControl<int>(
+						children: const {
+							15: (null, '15s'),
+							30: (null, '30s'),
+							60: (null, '60s'),
+							120: (null, '120s'),
+							180: (null, '180s')
+						},
+						groupValue: context.watch<EffectiveSettings>().backgroundThreadAutoUpdatePeriodSeconds,
+						onValueChanged: (setting) {
+							context.read<EffectiveSettings>().backgroundThreadAutoUpdatePeriodSeconds = setting;
+						}
+					)
+				),
+				const SizedBox(height: 16)
 			]
 		);
 	}
