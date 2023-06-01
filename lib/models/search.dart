@@ -10,7 +10,9 @@ enum PostTypeFilter {
 	@HiveField(1)
 	onlyOPs,
 	@HiveField(2)
-	onlyReplies
+	onlyReplies,
+	@HiveField(3)
+	onlyStickies
 }
 
 @HiveType(typeId: 7)
@@ -53,6 +55,12 @@ class ImageboardArchiveSearchQuery {
 	PostDeletionStatusFilter deletionStatusFilter;
 	@HiveField(8)
 	String? imageboardKey;
+	@HiveField(9)
+	String? name;
+	@HiveField(10)
+	String? trip;
+	@HiveField(11)
+	String? subject;
 	ImageboardArchiveSearchQuery({
 		this.query = '',
 		this.mediaFilter = MediaFilter.none,
@@ -62,7 +70,10 @@ class ImageboardArchiveSearchQuery {
 		List<String>? boards,
 		this.md5,
 		this.deletionStatusFilter = PostDeletionStatusFilter.none,
-		required this.imageboardKey
+		required this.imageboardKey,
+		this.name,
+		this.trip,
+		this.subject
 	}) : boards = boards ?? [];
 
 	ImageboardArchiveSearchQuery clone() {
@@ -75,7 +86,10 @@ class ImageboardArchiveSearchQuery {
 			boards: [...boards],
 			md5: md5,
 			deletionStatusFilter: deletionStatusFilter,
-			imageboardKey: imageboardKey
+			imageboardKey: imageboardKey,
+			name: name,
+			trip: trip,
+			subject: subject
 		);
 	}
 
@@ -89,8 +103,11 @@ class ImageboardArchiveSearchQuery {
 																	 && (listEquals(other.boards, boards))
 																	 && (other.md5 == md5)
 																	 && (other.deletionStatusFilter == deletionStatusFilter)
-																	 && (other.imageboardKey == imageboardKey);
+																	 && (other.imageboardKey == imageboardKey)
+																	 && (other.name == name)
+																	 && (other.trip == trip)
+																	 && (other.subject == subject);
 
 	@override
-	int get hashCode => Object.hash(query, mediaFilter, postTypeFilter, startDate, endDate, boards, md5, deletionStatusFilter, imageboardKey);
+	int get hashCode => Object.hash(query, mediaFilter, postTypeFilter, startDate, endDate, boards, md5, deletionStatusFilter, imageboardKey, name, trip, subject);
 }

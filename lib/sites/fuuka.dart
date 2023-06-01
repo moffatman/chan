@@ -252,6 +252,9 @@ class FuukaArchive extends ImageboardSiteArchive {
 
 	@override
 	Future<ImageboardArchiveSearchResultPage> search(ImageboardArchiveSearchQuery query, {required int page, ImageboardArchiveSearchResultPage? lastResult}) async {
+		if (query.postTypeFilter == PostTypeFilter.onlyStickies) {
+			throw UnsupportedError('"Only stickies" filtering not supported in Fuuka search');
+		}
 		final knownBoards = await getBoards(interactive: true);
 		final unknownBoards = query.boards.where((b) => !knownBoards.any((kb) => kb.name == b));
 		if (unknownBoards.isNotEmpty) {
@@ -267,7 +270,10 @@ class FuukaArchive extends ImageboardSiteArchive {
 				if (query.endDate != null) 'search_dateto': _formatDateForSearch(query.endDate!),
 				'offset': (page * 24).toString(),
 				if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) 'search_del': 'yes'
-				else if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) 'search_del': 'no'
+				else if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) 'search_del': 'no',
+				if (query.subject != null) 'search_subject': query.subject,
+				if (query.name != null) 'search_username': query.name,
+				if (query.trip != null) 'search_tripcode': query.trip
 		}), options: Options(
 			responseType: ResponseType.plain
 		));

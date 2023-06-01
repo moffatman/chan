@@ -17,6 +17,15 @@ import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart' show parseFragment;
 import 'package:html/dom.dart' as dom;
 
+extension _FoolFuukaApiName on PostTypeFilter {
+	String? get apiName => switch (this) {
+		PostTypeFilter.none => null,
+		PostTypeFilter.onlyOPs => 'op',
+		PostTypeFilter.onlyReplies => 'posts',
+		PostTypeFilter.onlyStickies => 'sticky'
+	};
+}
+
 class FoolFuukaException implements Exception {
 	String error;
 	FoolFuukaException(this.error);
@@ -439,13 +448,16 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 				'page': page.toString(),
 				if (query.boards.isNotEmpty) 'boards': query.boards.join('.'),
 				if (query.mediaFilter != MediaFilter.none) 'filter': query.mediaFilter == MediaFilter.onlyWithMedia ? 'text' : 'image',
-				if (query.postTypeFilter != PostTypeFilter.none) 'type': query.postTypeFilter == PostTypeFilter.onlyOPs ? 'op' : 'posts',
+				if (query.postTypeFilter.apiName != null) 'type': query.postTypeFilter.apiName,
 				if (query.startDate != null) 'start': '${query.startDate!.year}-${query.startDate!.month}-${query.startDate!.day}',
 				if (query.endDate != null) 'end': '${query.endDate!.year}-${query.endDate!.month}-${query.endDate!.day}',
 				if (query.md5 != null) 'image': query.md5,
 				if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) 'deleted': 'deleted'
-				else if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) 'deleted': 'not-deleted'
-			}),
+				else if (query.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) 'deleted': 'not-deleted',
+				if (query.subject != null) 'subject': query.subject,
+				if (query.name != null) 'username': query.name,
+				if (query.trip != null) 'tripcode': query.trip
+ 			}),
 			options: Options(
 				validateStatus: (x) => true,
 				headers: {

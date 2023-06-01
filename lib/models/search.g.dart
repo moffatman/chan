@@ -29,13 +29,16 @@ class ImageboardArchiveSearchQueryAdapter
           ? PostDeletionStatusFilter.none
           : fields[7] as PostDeletionStatusFilter,
       imageboardKey: fields[8] as String?,
+      name: fields[9] as String?,
+      trip: fields[10] as String?,
+      subject: fields[11] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ImageboardArchiveSearchQuery obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.query)
       ..writeByte(1)
@@ -53,7 +56,13 @@ class ImageboardArchiveSearchQueryAdapter
       ..writeByte(7)
       ..write(obj.deletionStatusFilter)
       ..writeByte(8)
-      ..write(obj.imageboardKey);
+      ..write(obj.imageboardKey)
+      ..writeByte(9)
+      ..write(obj.name)
+      ..writeByte(10)
+      ..write(obj.trip)
+      ..writeByte(11)
+      ..write(obj.subject);
   }
 
   @override
@@ -80,6 +89,8 @@ class PostTypeFilterAdapter extends TypeAdapter<PostTypeFilter> {
         return PostTypeFilter.onlyOPs;
       case 2:
         return PostTypeFilter.onlyReplies;
+      case 3:
+        return PostTypeFilter.onlyStickies;
       default:
         return PostTypeFilter.none;
     }
@@ -96,6 +107,9 @@ class PostTypeFilterAdapter extends TypeAdapter<PostTypeFilter> {
         break;
       case PostTypeFilter.onlyReplies:
         writer.writeByte(2);
+        break;
+      case PostTypeFilter.onlyStickies:
+        writer.writeByte(3);
         break;
     }
   }

@@ -205,6 +205,9 @@ class _SearchComposePageState extends State<SearchComposePage> {
 	bool _searchFocused = false;
 	bool _showingPicker = false;
 	String? _lastImageboardKey;
+	late final TextEditingController _subjectFieldController;
+	late final TextEditingController _nameFieldController;
+	late final TextEditingController _tripFieldController;
 
 	@override
 	void initState() {
@@ -225,6 +228,9 @@ class _SearchComposePageState extends State<SearchComposePage> {
 			}
 		});
 		Persistence.recentSearchesListenable.addListener(_onRecentSearchesUpdate);
+		_subjectFieldController = TextEditingController();
+		_nameFieldController = TextEditingController();
+		_tripFieldController = TextEditingController();
 	}
 
 	void _onRecentSearchesUpdate() {
@@ -499,7 +505,8 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							children: const {
 								PostTypeFilter.none: (null, 'All posts'),
 								PostTypeFilter.onlyOPs: (null, 'Threads'),
-								PostTypeFilter.onlyReplies: (null, 'Replies')
+								PostTypeFilter.onlyReplies: (null, 'Replies'),
+								PostTypeFilter.onlyStickies: (null, 'Stickies')
 							},
 							groupValue: query.postTypeFilter,
 							onValueChanged: (newValue) {
@@ -596,6 +603,43 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								)
 							]
 						),
+						Wrap(
+							alignment: WrapAlignment.center,
+							runAlignment: WrapAlignment.center,
+							children: [
+								for (final field in [
+									(
+										name: 'Subject',
+										cb: (String s) => query.subject = s,
+										controller: _subjectFieldController
+									),
+									(
+										name: 'Name',
+										cb: (String s) => query.name = s,
+										controller: _nameFieldController
+									),
+									(
+										name: 'Trip',
+										cb: (String s) => query.trip = s,
+										controller: _tripFieldController
+									)
+								]) Container(
+									width: 200,
+									padding: const EdgeInsets.all(16),
+									child: Column(
+										crossAxisAlignment: CrossAxisAlignment.start,
+										children: [
+											Text(field.name),
+											const SizedBox(height: 4),
+											CupertinoTextField(
+												controller: field.controller,
+												onChanged: field.cb
+											)
+										]
+									)
+								)
+							]
+						),
 						if (query.md5 != null) Container(
 							padding: const EdgeInsets.only(top: 16),
 							alignment: Alignment.center,
@@ -647,6 +691,9 @@ class _SearchComposePageState extends State<SearchComposePage> {
 		Persistence.recentSearchesListenable.removeListener(_onRecentSearchesUpdate);
 		_controller.dispose();
 		_focusNode.dispose();
+		_subjectFieldController.dispose();
+		_nameFieldController.dispose();
+		_tripFieldController.dispose();
 	}
 }
 
@@ -665,11 +712,15 @@ List<Widget> describeQuery(ImageboardArchiveSearchQuery q) {
 		if (q.mediaFilter == MediaFilter.onlyWithNoMedia) const _SearchQueryFilterTag('Without images'),
 		if (q.postTypeFilter == PostTypeFilter.onlyOPs) const _SearchQueryFilterTag('Threads'),
 		if (q.postTypeFilter == PostTypeFilter.onlyReplies) const _SearchQueryFilterTag('Replies'),
+		if (q.postTypeFilter == PostTypeFilter.onlyReplies) const _SearchQueryFilterTag('Stickies'),
 		if (q.startDate != null) _SearchQueryFilterTag('After ${q.startDate!.toISO8601Date}'),
 		if (q.endDate != null) _SearchQueryFilterTag('Before ${q.endDate!.toISO8601Date}'),
 		if (q.md5 != null) _SearchQueryFilterTag('MD5: ${q.md5}'),
 		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyDeleted) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.trash)),
-		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.trash_slash))
+		if (q.deletionStatusFilter == PostDeletionStatusFilter.onlyNonDeleted) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.trash_slash)),
+		if (q.subject?.isNotEmpty ?? false) _SearchQueryFilterTag('Subject: ${q.subject}'),
+		if (q.name?.isNotEmpty ?? false) _SearchQueryFilterTag('Name: ${q.name}'),
+		if (q.trip?.isNotEmpty ?? false) _SearchQueryFilterTag('Trip: ${q.trip}')
 	];
 }
 
