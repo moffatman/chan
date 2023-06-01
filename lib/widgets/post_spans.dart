@@ -1287,12 +1287,19 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 		for (final child in _children.values) {
 			child._lineTapCallbacks.removeWhere((k, v) => !v.$1.mounted);
 		}
-		return _children.putIfAbsent((postId, inTree, fakeHoistedRootId), () => PostSpanChildZoneData(
+		final key = (postId, inTree, fakeHoistedRootId);
+		final existingZone = _children[key];
+		if (existingZone != null) {
+			return existingZone;
+		}
+		final newZone = PostSpanChildZoneData(
 			parent: this,
 			postId: postId,
 			inTree: inTree,
 			fakeHoistedRootId: fakeHoistedRootId
-		));
+		);
+		_children[key] = newZone;
+		return newZone;
 	}
 
 	PostSpanZoneData hoistFakeRootZoneFor(int fakeHoistedRootId) {
