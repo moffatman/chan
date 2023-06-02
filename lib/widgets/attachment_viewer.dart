@@ -564,7 +564,8 @@ class AttachmentViewerController extends ChangeNotifier {
 					catch (e) {
 						if (!transcode &&
 						    e is PlatformException &&
-								(e.message?.contains('ExoPlaybackException') ?? false)) {
+								((e.message?.contains('ExoPlaybackException') ?? false) ||
+								 (e.message?.contains('MediaCodecVideoRenderer error') ?? false))) {
 							_videoPlayerController?.dispose();
 							_videoPlayerController = null;
 							_problematicVideos.add(url);
