@@ -454,6 +454,18 @@ extension ThreadVariantMetadata on ThreadVariant {
 	}[this]!;
 }
 
+@HiveType(typeId: 41)
+enum PostSortingMethod {
+	@HiveField(0)
+	none,
+	@HiveField(1)
+	replyCount;
+	String get displayName => switch (this) {
+		none => 'None',
+		replyCount => 'Reply Count'
+	};
+}
+
 class CaptchaRequest {
 
 }

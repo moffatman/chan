@@ -331,6 +331,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(MediaScanAdapter());
 		Hive.registerAdapter(DurationAdapter());
 		Hive.registerAdapter(EfficientlyStoredIntSetAdapter());
+		Hive.registerAdapter(PostSortingMethodAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
 		wifiCookies = PersistCookieJar(
@@ -903,6 +904,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	final EfficientlyStoredIntSet unseenPostIds;
 	@HiveField(25)
 	double? firstVisiblePostAlignment;
+	@HiveField(26, defaultValue: PostSortingMethod.none)
+	PostSortingMethod postSortingMethod;
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
@@ -914,7 +917,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		required this.id,
 		required this.showInHistory,
 		this.ephemeralOwner,
-		EfficientlyStoredIntSet? unseenPostIds
+		EfficientlyStoredIntSet? unseenPostIds,
+		this.postSortingMethod = PostSortingMethod.none
 	}) : lastOpenedTime = DateTime.now(), unseenPostIds = unseenPostIds ?? EfficientlyStoredIntSet({});
 
 	void _invalidate() {

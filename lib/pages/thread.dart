@@ -54,6 +54,7 @@ class _PersistentThreadStateSnapshot {
 	final int treeHiddenIdsLength;
 	final int hiddenPosterIdsLength;
 	final bool? useTree;
+	final PostSortingMethod postSortingMethod;
 
 	_PersistentThreadStateSnapshot.empty() :
 		thread = null,
@@ -63,7 +64,8 @@ class _PersistentThreadStateSnapshot {
 		receiptsLength = 0,
 		treeHiddenIdsLength = 0,
 		hiddenPosterIdsLength = 0,
-		useTree = null;
+		useTree = null,
+		postSortingMethod = PostSortingMethod.none;
 
 	_PersistentThreadStateSnapshot.of(PersistentThreadState s) :
 		thread = s.thread,
@@ -73,7 +75,8 @@ class _PersistentThreadStateSnapshot {
 		receiptsLength = s.receipts.length,
 		treeHiddenIdsLength = s.treeHiddenPostIds.length,
 		hiddenPosterIdsLength = s.hiddenPosterIds.length,
-		useTree = s.useTree;
+		useTree = s.useTree,
+		postSortingMethod = s.postSortingMethod;
 	
 	@override
 	bool operator == (Object o) =>
@@ -85,10 +88,11 @@ class _PersistentThreadStateSnapshot {
 		(o.receiptsLength == receiptsLength) &&
 		(o.treeHiddenIdsLength == treeHiddenIdsLength) &&
 		(o.hiddenPosterIdsLength == hiddenPosterIdsLength) &&
-		(o.useTree == useTree);
+		(o.useTree == useTree) &&
+		(o.postSortingMethod == postSortingMethod);
 	
 	@override
-	int get hashCode => Object.hash(thread, hiddenPostIdsLength, postsMarkedAsYouLength, savedTime, receiptsLength, treeHiddenIdsLength, hiddenPostIdsLength, useTree);
+	int get hashCode => Object.hash(thread, hiddenPostIdsLength, postsMarkedAsYouLength, savedTime, receiptsLength, treeHiddenIdsLength, hiddenPostIdsLength, useTree, postSortingMethod);
 }
 
 extension _DisableUpdates on PersistentThreadState {
@@ -856,7 +860,8 @@ class _ThreadPageState extends State<ThreadPage> {
 		final watch = context.select<Persistence, ThreadWatch?>((_) => notifications.getThreadWatch(widget.thread));
 		final reverseIndicatorPosition = context.select<EffectiveSettings, bool>((s) => s.showListPositionIndicatorsOnLeft);
 		zone.postSortingMethods = [
-			if ((site.isReddit || site.isHackerNews) && !useTree) (a, b) => a.id.compareTo(b.id)
+			if (persistentState.postSortingMethod == PostSortingMethod.replyCount) (a, b) => b.replyCount.compareTo(a.replyCount)
+			else if ((site.isReddit || site.isHackerNews) && !useTree) (a, b) => a.id.compareTo(b.id)
 		];
 		zone.tree = useTree;
 		final treeModeInitiallyCollapseSecondLevelReplies = context.select<Persistence, bool>((s) => s.browserState.treeModeInitiallyCollapseSecondLevelReplies);
@@ -1996,14 +2001,41 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											widget.persistentState.save();
 											setState(() {});
 										})],
-										if (widget.useTree) [('Linear', const Icon(CupertinoIcons.list_bullet, size: 19), () => setState(() {
-											widget.persistentState.useTree = false;
-											widget.persistentState.save();
-										}))]
-										else [('Tree', const Icon(CupertinoIcons.list_bullet_indent, size: 19), () => setState(() {
-											widget.persistentState.useTree = true;
-											widget.persistentState.save();
-										}))],
+										[
+											('${widget.persistentState.postSortingMethod == PostSortingMethod.none ? 'Sort' : widget.persistentState.postSortingMethod.displayName}...', const Icon(CupertinoIcons.sort_down, size: 19), () async {
+												final choice = await showCupertinoModalPopup<PostSortingMethod>(
+													context: context,
+													useRootNavigator: false,
+													builder: (context) => CupertinoActionSheet(
+														title: const Text('Sort by...'),
+														actions: PostSortingMethod.values.map((v) => CupertinoButton(
+															onPressed: () => Navigator.pop(context, v),
+															child: Text(v.displayName, style: TextStyle(
+																fontWeight: v == widget.persistentState.postSortingMethod ? FontWeight.bold : null
+															))
+														)).toList(),
+														cancelButton: CupertinoActionSheetAction2(
+															child: const Text('Cancel'),
+															onPressed: () => Navigator.pop(context)
+														)
+													)
+												);
+												if (choice == null) {
+													return;
+												}
+												widget.persistentState.postSortingMethod = choice;
+												widget.listController.state?.forceRebuildId++;
+												widget.persistentState.save();
+											}),
+											if (widget.useTree) ('Linear', const Icon(CupertinoIcons.list_bullet, size: 19), () => setState(() {
+												widget.persistentState.useTree = false;
+												widget.persistentState.save();
+											}))
+											else ('Tree', const Icon(CupertinoIcons.list_bullet_indent, size: 19), () => setState(() {
+												widget.persistentState.useTree = true;
+												widget.persistentState.save();
+											}))
+										],
 										[('Update', const Icon(CupertinoIcons.refresh, size: 19), widget.listController.update)],
 										[
 											('New posts', const Icon(CupertinoIcons.arrow_down, size: 19), _whiteCountBelow <= 0 ? null : () {

@@ -298,3 +298,42 @@ class ThreadVariantAdapter extends TypeAdapter<ThreadVariant> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class PostSortingMethodAdapter extends TypeAdapter<PostSortingMethod> {
+  @override
+  final int typeId = 41;
+
+  @override
+  PostSortingMethod read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return PostSortingMethod.none;
+      case 1:
+        return PostSortingMethod.replyCount;
+      default:
+        return PostSortingMethod.none;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, PostSortingMethod obj) {
+    switch (obj) {
+      case PostSortingMethod.none:
+        writer.writeByte(0);
+        break;
+      case PostSortingMethod.replyCount:
+        writer.writeByte(1);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PostSortingMethodAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
