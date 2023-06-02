@@ -571,7 +571,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		  // No reason to check yet
 			return;
 		}
-		final match = RegExp(r'\/([^/ ]+)\/').firstMatch('${persistentState.thread?.title} ${persistentState.thread?.posts_.tryFirst?.text}');
+		final match = RegExp(r'(?<=^| )\/([^/ ]+)\/(?=$| )').firstMatch('${persistentState.thread?.title} ${persistentState.thread?.posts_.tryFirst?.text}');
 		if (match == null) {
 			// no /general/ found
 			return;
