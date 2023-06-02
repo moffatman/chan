@@ -880,7 +880,7 @@ class _BoardPageState extends State<BoardPage> {
 														child: AnimatedBuilder(
 															animation: _listController.slowScrolls,
 															builder: (context, _) {
-																_page = (_listController.firstVisibleItem?.currentPage ?? _page);
+																_page = (_listController.firstVisibleItem?.item.currentPage ?? _page);
 																scrollToTop() => _listController.scrollController?.animateTo(0.0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
 																return SafeArea(
 																	child: Align(

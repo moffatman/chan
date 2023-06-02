@@ -2321,9 +2321,19 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 		return -1;
 	}
-	T? get firstVisibleItem {
+	({T item, double alignment})? get firstVisibleItem {
 		final index = firstVisibleIndex;
-		return index < 0 ? null : _items[index].item.item;
+		if (index < 0) {
+			return null;
+		}
+		if (!scrollControllerPositionLooksGood) {
+			// A guess at alignment
+			return (item: _items[index].item.item, alignment: 0);
+		}
+		final scrollPosition = scrollController!.position.pixels;
+		final height = _items[index].cachedOffset ?? scrollPosition;
+		final alignment = (height - scrollPosition) / (scrollController!.position.viewportDimension - (_items[index].cachedHeight ?? 0));
+		return (item: _items[index].item.item, alignment: alignment);
 	}
 	T? get middleVisibleItem {
 		if (scrollControllerPositionLooksGood) {

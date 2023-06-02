@@ -901,6 +901,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	int? firstVisiblePostId;
 	@HiveField(24)
 	final EfficientlyStoredIntSet unseenPostIds;
+	@HiveField(25)
+	double? firstVisiblePostAlignment;
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 

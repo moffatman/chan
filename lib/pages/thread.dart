@@ -197,9 +197,24 @@ class _ThreadPageState extends State<ThreadPage> {
 			// too early to try to scroll
 			return;
 		}
-		final int? scrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread] ?? persistentState.firstVisiblePostId;
-		context.read<PersistentBrowserTab?>()?.initialPostId.remove(widget.thread);
-		if (persistentState.thread != null && scrollToId != null) {
+		final (int, double)? scrollTo;
+		if (widget.initialPostId != null) {
+			scrollTo = (widget.initialPostId!, 0);
+		}
+		else if (context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread] != null) {
+			scrollTo = (context.read<PersistentBrowserTab>().initialPostId[widget.thread]!, 0);
+			context.read<PersistentBrowserTab?>()?.initialPostId.remove(widget.thread);
+		}
+		else if (persistentState.firstVisiblePostId != null) {
+			scrollTo = (persistentState.firstVisiblePostId!, persistentState.firstVisiblePostAlignment ?? 0);
+		}
+		else if (persistentState.lastSeenPostId != null) {
+			scrollTo = (persistentState.lastSeenPostId!, 1);
+		}
+		else {
+			scrollTo = null;
+		}
+		if (persistentState.thread != null && scrollTo != null) {
 			setState(() {
 				blocked = true;
 			});
@@ -215,12 +230,18 @@ class _ThreadPageState extends State<ThreadPage> {
 			try {
 				await WidgetsBinding.instance.endOfFrame;
 				await _listController.animateTo(
-					(useTree && scrollToId == persistentState.lastSeenPostId) ? (_) => false : (post) => post.id == scrollToId,
-					orElseLast: (post) => post.id <= scrollToId,
-					alignment: 0,
+					(post) => post.id == scrollTo!.$1,
+					orElseLast: (post) => post.id <= scrollTo!.$1,
+					alignment: scrollTo.$2,
 					duration: const Duration(milliseconds: 1)
 				);
 				await WidgetsBinding.instance.endOfFrame;
+				final remainingPx = (_listController.scrollController?.position.extentAfter ?? 9999) -
+					((_listController.state?.updatingNow.value ?? false) ? 64 : 0);
+				if (remainingPx < 32) {
+					// Close to the end, just round-to there
+					_listController.scrollController!.position.jumpTo(_listController.scrollController!.position.maxScrollExtent);
+				}
 			}
 			catch (e, st) {
 				print('${widget.thread} Error scrolling');
@@ -261,10 +282,11 @@ class _ThreadPageState extends State<ThreadPage> {
 			}
 			final firstItem = _listController.firstVisibleItem;
 			if (firstItem != null) {
-				if (persistentState.firstVisiblePostId != firstItem.id) {
+				if (persistentState.firstVisiblePostId != firstItem.item.id) {
 					runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 				}
-				persistentState.firstVisiblePostId = firstItem.id;
+				persistentState.firstVisiblePostId = firstItem.item.id;
+				persistentState.firstVisiblePostAlignment = firstItem.alignment;
 			}
 			final firstIndex = _indicatorKey.currentState?.furthestSeenIndexTop;
 			final lastIndex = _indicatorKey.currentState?.furthestSeenIndexBottom;
@@ -440,7 +462,7 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	Future<void> _scrollIfWarranted([Duration delayBeforeScroll = Duration.zero]) async {
 		final int? explicitScrollToId = widget.initialPostId ?? context.read<PersistentBrowserTab?>()?.initialPostId[widget.thread];
-		if (explicitScrollToId != widget.thread.id && (explicitScrollToId != null || !(useTree && (context.read<ImageboardSite>().isReddit || context.read<ImageboardSite>().isHackerNews)))) {
+		if (explicitScrollToId != widget.thread.id && (explicitScrollToId != null || !(useTree && (context.read<ImageboardSite>().isReddit || context.read<ImageboardSite>().isHackerNews) && persistentState.firstVisiblePostId == null))) {
 			await _blockAndScrollToPostIfNeeded(delayBeforeScroll);
 		}
 	}

@@ -85,13 +85,14 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
           fields[17] == null ? [] : (fields[17] as List).cast<String>()
       ..primarySubtreeParents =
           fields[21] == null ? {} : (fields[21] as Map).cast<int, int>()
-      ..firstVisiblePostId = fields[23] as int?;
+      ..firstVisiblePostId = fields[23] as int?
+      ..firstVisiblePostAlignment = fields[25] as double?;
   }
 
   @override
   void write(BinaryWriter writer, PersistentThreadState obj) {
     writer
-      ..writeByte(24)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.lastSeenPostId)
       ..writeByte(1)
@@ -136,6 +137,8 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..write(obj.firstVisiblePostId)
       ..writeByte(24)
       ..write(obj.unseenPostIds)
+      ..writeByte(25)
+      ..write(obj.firstVisiblePostAlignment)
       ..writeByte(19)
       ..write(obj.board)
       ..writeByte(20)
