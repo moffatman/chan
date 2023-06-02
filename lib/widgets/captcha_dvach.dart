@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -172,7 +173,7 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 					const SizedBox(height: 16),
 					SizedBox(
 						width: 150,
-						child: CupertinoTextField(
+						child: CupertinoTextField2(
 							focusNode: _solutionNode,
 							enableIMEPersonalizedLearning: false,
 							autocorrect: false,

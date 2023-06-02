@@ -1,13 +1,15 @@
+import 'dart:ui';
+
 import 'package:chan/services/settings.dart';
 import 'package:flutter/widgets.dart';
 
 class SavedThemeThumbnail extends StatelessWidget {
 	final SavedTheme theme;
-	final bool showTitle;
+	final bool showTitleAndTextField;
 
 	const SavedThemeThumbnail({
 		required this.theme,
-		this.showTitle = false,
+		this.showTitleAndTextField = false,
 		Key? key
 	}) : super(key: key);
 
@@ -29,10 +31,23 @@ class SavedThemeThumbnail extends StatelessWidget {
 									mainAxisSize: MainAxisSize.min,
 									crossAxisAlignment: CrossAxisAlignment.start,
 									children: [
-										if (showTitle) Text('Title', style: TextStyle(color: theme.titleColor, fontWeight: FontWeight.w600)),
+										if (showTitleAndTextField) Text('Title', style: TextStyle(color: theme.titleColor, fontWeight: FontWeight.w600)),
 										Text('>>1 (OP)', style: TextStyle(color: theme.secondaryColor, decoration: TextDecoration.underline)),
 										Text('>Quote', style: TextStyle(color: theme.quoteColor)),
-										Text('Text', style: TextStyle(color: theme.primaryColor))
+										Text('Text', style: TextStyle(color: theme.primaryColor)),
+										if (showTitleAndTextField) Container(
+											decoration: BoxDecoration(
+												color: theme.textFieldColor,
+												border: Border.all(
+													color: theme.brightness == Brightness.light ?const Color(0x33000000) : const Color(0x33FFFFFF),
+													width: 0
+												),
+												borderRadius: const BorderRadius.all(Radius.circular(5.0))
+											),
+											padding: const EdgeInsets.all(6),
+											margin: const EdgeInsets.symmetric(vertical: 2),
+											child: Text('Text field', style: TextStyle(color: theme.primaryColor))
+										)
 									]
 								)
 							)

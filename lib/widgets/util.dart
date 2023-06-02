@@ -17,6 +17,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -512,6 +513,14 @@ extension OffsetBrightness on Color {
 			opacity
 		);
 	}
+	Color towardsGrey(double factor) {
+		return Color.fromRGBO(
+			(red + ((128 - red) * factor)).round(),
+			(green + ((128 - green) * factor)).round(),
+			(blue  + ((128 - blue) * factor)).round(),
+			opacity
+		);
+	}
 	Color shiftHue(double offset) {
 		if (offset == 0) {
 			return this;
@@ -939,7 +948,7 @@ Future<void> editStringList({
 												barrierDismissible: true,
 												builder: (context) => CupertinoAlertDialog2(
 													title: Text('Edit $name'),
-													content: CupertinoTextField(
+													content: CupertinoTextField2(
 														autofocus: true,
 														autocorrect: false,
 														enableIMEPersonalizedLearning: false,
@@ -1017,7 +1026,7 @@ Future<void> editStringList({
 																barrierDismissible: true,
 																builder: (context) => CupertinoAlertDialog2(
 																	title: Text('New $name'),
-																	content: CupertinoTextField(
+																	content: CupertinoTextField2(
 																		autofocus: true,
 																		controller: controller,
 																		autocorrect: false,

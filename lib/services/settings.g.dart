@@ -75,13 +75,14 @@ class SavedThemeAdapter extends TypeAdapter<SavedTheme> {
           : fields[7] as Color,
       locked: fields[6] == null ? false : fields[6] as bool,
       copiedFrom: fields[5] as SavedTheme?,
+      textFieldColor: fields[8] as Color?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedTheme obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.backgroundColor)
       ..writeByte(1)
@@ -97,7 +98,9 @@ class SavedThemeAdapter extends TypeAdapter<SavedTheme> {
       ..writeByte(6)
       ..write(obj.locked)
       ..writeByte(7)
-      ..write(obj.titleColor);
+      ..write(obj.titleColor)
+      ..writeByte(8)
+      ..write(obj.textFieldColor);
   }
 
   @override

@@ -29,6 +29,7 @@ import 'package:chan/widgets/captcha_secucap.dart';
 import 'package:chan/widgets/captcha_securimage.dart';
 import 'package:chan/widgets/captcha_nojs.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
@@ -1098,7 +1099,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								Row(
 									children: [
 										Flexible(
-											child: CupertinoTextField(
+											child: CupertinoTextField2(
 												enabled: !settings.randomizeFilenames,
 												controller: _filenameController,
 												placeholder: (settings.randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
@@ -1264,7 +1265,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			child: Row(
 				children: [
 					Flexible(
-						child: CupertinoTextField(
+						child: CupertinoTextField2(
 							maxLines: 1,
 							placeholder: 'Name',
 							keyboardAppearance: CupertinoTheme.of(context).brightness,
@@ -1305,7 +1306,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					),
 					const SizedBox(width: 8),
 					Flexible(
-						child: CupertinoTextField(
+						child: CupertinoTextField2(
 							maxLines: 1,
 							placeholder: 'Options',
 							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
@@ -1349,7 +1350,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				child: Column(
 					children: [
 						if (widget.threadId == null) ...[
-							CupertinoTextField(
+							CupertinoTextField2(
 								enabled: !loading,
 								enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 								smartDashesType: SmartDashesType.disabled,
@@ -1366,7 +1367,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						Flexible(
 							child: Stack(
 								children: [
-									CupertinoTextField(
+									CupertinoTextField2(
 										enabled: !loading,
 										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 										smartDashesType: SmartDashesType.disabled,
@@ -1453,7 +1454,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								title: Text('${snippet.name} block'),
 								content: Padding(
 									padding: const EdgeInsets.only(top: 16),
-									child: CupertinoTextField(
+									child: CupertinoTextField2(
 										autofocus: true,
 										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 										smartDashesType: SmartDashesType.disabled,

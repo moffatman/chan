@@ -24,6 +24,7 @@ import 'package:chan/version.dart';
 import 'package:chan/widgets/cupertino_adaptive_segmented_control.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/filter_editor.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -876,7 +877,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 										content: Row(
 											children: [
 												Expanded(
-													child: CupertinoTextField(
+													child: CupertinoTextField2(
 														autofocus: true,
 														controller: controller,
 														keyboardType: TextInputType.number,
@@ -1204,7 +1205,7 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 				const SizedBox(height: 16),
 				const Text('One image MD5 per line'),
 				const SizedBox(height: 8),
-				CupertinoTextField(
+				CupertinoTextField2(
 					controller: controller,
 					enableIMEPersonalizedLearning: false,
 					onChanged: (s) {
@@ -1730,7 +1731,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																						data: CupertinoTheme.of(context).copyWith(
 																							primaryColor: themes[i].value.primaryColor,
 																							primaryContrastingColor: themes[i].value.backgroundColor,
-																							brightness: themes[i].value.primaryColor.computeLuminance() > 0.5 ? Brightness.dark : Brightness.light
+																							brightness: themes[i].value.brightness
 																						),
 																						child: Container(
 																							decoration: BoxDecoration(
@@ -1795,7 +1796,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																															barrierDismissible: true,
 																															builder: (context) => CupertinoAlertDialog2(
 																																title: const Text('Enter new name'),
-																																content: CupertinoTextField(
+																																content: CupertinoTextField2(
 																																	autofocus: true,
 																																	controller: controller,
 																																	smartDashesType: SmartDashesType.disabled,
@@ -1919,7 +1920,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									('Bar', theme.$2.barColor, (c) => theme.$2.barColor = c, theme.$2.copiedFrom?.barColor),
 									('Background', theme.$2.backgroundColor, (c) => theme.$2.backgroundColor = c, theme.$2.copiedFrom?.backgroundColor),
 									('Quote', theme.$2.quoteColor, (c) => theme.$2.quoteColor = c, theme.$2.copiedFrom?.quoteColor),
-									('Title', theme.$2.titleColor, (c) => theme.$2.titleColor = c, theme.$2.copiedFrom?.titleColor)
+									('Title', theme.$2.titleColor, (c) => theme.$2.titleColor = c, theme.$2.copiedFrom?.titleColor),
+									('Text Field', theme.$2.textFieldColor, (c) => theme.$2.textFieldColor = c, theme.$2.copiedFrom?.textFieldColor)
 								].map((color) => Column(
 									mainAxisSize: MainAxisSize.min,
 									children: [
@@ -3550,7 +3552,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 												const Text('This user-agent might be overridden for 4chan captcha requests to work with the Cloudflare check.'),
 												const SizedBox(height: 10)
 											],
-											CupertinoTextField(
+											CupertinoTextField2(
 												autofocus: true,
 												controller: controller,
 												smartDashesType: SmartDashesType.disabled,
@@ -3943,7 +3945,7 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 					Text(field.$1),
 					Padding(
 						padding: const EdgeInsets.all(16),
-						child: CupertinoTextField(
+						child: CupertinoTextField2(
 							controller: field.$2,
 							minLines: field.$3,
 							maxLines: null,
@@ -4016,7 +4018,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 						for (final field in fields.keys) ...[
 							Text(field.displayName, textAlign: TextAlign.left),
 							const SizedBox(height: 8),
-							CupertinoTextField(
+							CupertinoTextField2(
 								autofocus: field == fields.keys.first,
 								onChanged: (value) {
 									fields[field] = value;

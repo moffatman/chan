@@ -9,6 +9,7 @@ import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -756,7 +757,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												}
 											)
 										},
-										child: CupertinoTextField(
+										child: CupertinoTextField2(
 											focusNode: _solutionNode,
 											enableIMEPersonalizedLearning: false,
 											keyboardType: TextInputType.visiblePassword,

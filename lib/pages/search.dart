@@ -14,6 +14,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_adaptive_segmented_control.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/cupertino_thin_button.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -341,7 +342,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 														color: CupertinoTheme.of(context).barBackgroundColor
 													),
 												),
-												CupertinoSearchTextField(
+												CupertinoSearchTextField2(
 													placeholder: 'Search archives...',
 													focusNode: _focusNode,
 													controller: _controller,
@@ -423,7 +424,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 																	)
 																),
 																const SizedBox(height: 8),
-																CupertinoTextField(
+																CupertinoTextField2(
 																	controller: idController,
 																	enableIMEPersonalizedLearning: false,
 																	placeholder: 'Post ID',
@@ -631,7 +632,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										children: [
 											Text(field.name),
 											const SizedBox(height: 4),
-											CupertinoTextField(
+											CupertinoTextField2(
 												controller: field.controller,
 												onChanged: field.cb
 											)

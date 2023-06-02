@@ -14,6 +14,7 @@ import 'package:chan/services/user_agents.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/cupertino.dart';
@@ -205,6 +206,8 @@ class SavedTheme {
 	bool locked;
 	@HiveField(7, defaultValue: _defaultTitleColor)
 	Color titleColor;
+	@HiveField(8)
+	Color textFieldColor;
 
 	SavedTheme({
 		required this.backgroundColor,
@@ -214,8 +217,9 @@ class SavedTheme {
 		this.quoteColor = _defaultQuoteColor,
 		this.titleColor = _defaultTitleColor,
 		this.locked = false,
-		this.copiedFrom
-	});
+		this.copiedFrom,
+		Color? textFieldColor
+	}) : textFieldColor = textFieldColor ?? (primaryColor.computeLuminance() > backgroundColor.computeLuminance() ? Colors.black : Colors.white);
 
 	factory SavedTheme.decode(String data) {
 		final b = base64Url.decode(data);
@@ -226,13 +230,18 @@ class SavedTheme {
 		if (b.length >= 18) {
 			titleColor = Color.fromARGB(255, b[15], b[16], b[17]);
 		}
+		Color? textFieldColor;
+		if (b.length >= 21) {
+			textFieldColor = Color.fromARGB(255, b[18], b[19], b[20]);
+		}
 		final theme = SavedTheme(
 			backgroundColor: Color.fromARGB(255, b[0], b[1], b[2]),
 			barColor: Color.fromARGB(255, b[3], b[4], b[5]),
 			primaryColor: Color.fromARGB(255, b[6], b[7], b[8]),
 			secondaryColor: Color.fromARGB(255, b[9], b[10], b[11]),
 			quoteColor: Color.fromARGB(255, b[12], b[13], b[14]),
-			titleColor: titleColor ?? _defaultTitleColor
+			titleColor: titleColor ?? _defaultTitleColor,
+			textFieldColor: textFieldColor
 		);
 		return SavedTheme.copyFrom(theme);
 	}
@@ -256,7 +265,10 @@ class SavedTheme {
 			quoteColor.blue,
 			titleColor.red,
 			titleColor.green,
-			titleColor.blue
+			titleColor.blue,
+			textFieldColor.red,
+			textFieldColor.green,
+			textFieldColor.blue
 		]);
 	}
 
@@ -268,7 +280,8 @@ class SavedTheme {
 		quoteColor = original.quoteColor,
 		copiedFrom = original,
 		locked = false,
-		titleColor = original.titleColor;
+		titleColor = original.titleColor,
+		textFieldColor = original.textFieldColor;
 	
 	@override
 	bool operator ==(dynamic other) => (other is SavedTheme) &&
@@ -278,11 +291,12 @@ class SavedTheme {
 		secondaryColor == other.secondaryColor &&
 		quoteColor == other.quoteColor &&
 		locked == other.locked &&
-		titleColor == other.titleColor;// &&
+		titleColor == other.titleColor &&
+		textFieldColor == other.textFieldColor;// &&
 		//copiedFrom == other.copiedFrom;
 
 	@override
-	int get hashCode => Object.hash(backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, copiedFrom, locked, titleColor);
+	int get hashCode => Object.hash(backgroundColor, barColor, primaryColor, secondaryColor, quoteColor, copiedFrom, locked, titleColor, textFieldColor);
 
 	Color primaryColorWithBrightness(double factor) {
 		return Color.fromRGBO(
@@ -293,8 +307,10 @@ class SavedTheme {
 		);
 	}
 
+	Brightness get brightness => primaryColor.computeLuminance() > backgroundColor.computeLuminance() ? Brightness.dark : Brightness.light;
+
 	CupertinoThemeData get cupertinoThemeData => CupertinoThemeData(
-		brightness: primaryColor.computeLuminance() > backgroundColor.computeLuminance() ? Brightness.dark : Brightness.light,
+		brightness: brightness,
 		scaffoldBackgroundColor: backgroundColor,
 		barBackgroundColor: barColor,
 		primaryColor: primaryColor,
@@ -337,6 +353,13 @@ class SavedTheme {
 			),
 		)
 	);
+
+	Color get searchTextFieldColor {
+		if (brightness == Brightness.light) {
+			return textFieldColor.towardsGrey(0.43).withOpacity(0.4);
+		}
+		return textFieldColor.towardsGrey(0.43);
+	}
 }
 
 const _dynamicLightKey = 'Dynamic (Light)';

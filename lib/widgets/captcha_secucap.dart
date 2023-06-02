@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -134,7 +135,7 @@ class _CaptchaSecucapState extends State<CaptchaSecucap> {
 					const SizedBox(height: 16),
 					SizedBox(
 						width: 150,
-						child: CupertinoTextField(
+						child: CupertinoTextField2(
 							focusNode: _solutionNode,
 							enableIMEPersonalizedLearning: false,
 							autocorrect: false,

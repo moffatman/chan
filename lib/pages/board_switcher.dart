@@ -7,6 +7,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
@@ -279,7 +280,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 												break;
 											}
 										},
-										child: CupertinoTextField(
+										child: CupertinoTextField2(
 											autofocus: settings.boardSwitcherHasKeyboardFocus,
 											enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 											smartDashesType: SmartDashesType.disabled,

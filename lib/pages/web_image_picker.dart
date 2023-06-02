@@ -6,6 +6,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
@@ -114,7 +115,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 		return CupertinoPageScaffold(
 			navigationBar: CupertinoNavigationBar(
 				transitionBetweenRoutes: false,
-				middle: CupertinoSearchTextField(
+				middle: CupertinoSearchTextField2(
 					focusNode: urlFocusNode,
 					controller: urlController,
 					enableIMEPersonalizedLearning: context.select<EffectiveSettings, bool>((s) => s.enableIMEPersonalizedLearning),

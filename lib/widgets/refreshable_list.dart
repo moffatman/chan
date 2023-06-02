@@ -7,6 +7,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -1574,7 +1575,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														children: [
 															Expanded(
 																child: Center(
-																	child: CupertinoSearchTextField(
+																	child: CupertinoSearchTextField2(
 																		prefixIcon: const Padding(
 																			padding: EdgeInsets.only(top: 2),
 																			child: Icon(CupertinoIcons.search)

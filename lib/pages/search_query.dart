@@ -10,6 +10,7 @@ import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -97,7 +98,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 								title: const Text('Go to page'),
 								content: Padding(
 									padding: const EdgeInsets.only(top: 8),
-									child: CupertinoTextField(
+									child: CupertinoTextField2(
 										controller: controller,
 										enableIMEPersonalizedLearning: context.watch<EffectiveSettings>().enableIMEPersonalizedLearning,
 										autofocus: true,

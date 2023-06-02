@@ -3,6 +3,7 @@ import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -117,7 +118,7 @@ class _FilterEditorState extends State<FilterEditor> {
 										padding: const EdgeInsets.all(16),
 										child: SizedBox(
 											width: 300,
-											child: CupertinoTextField(
+											child: CupertinoTextField2(
 												controller: labelController,
 												smartDashesType: SmartDashesType.disabled,
 												smartQuotesType: SmartQuotesType.disabled
@@ -129,7 +130,7 @@ class _FilterEditorState extends State<FilterEditor> {
 										padding: const EdgeInsets.all(16),
 										child: SizedBox(
 											width: 300,
-											child: CupertinoTextField(
+											child: CupertinoTextField2(
 												controller: patternController,
 												autocorrect: false,
 												enableIMEPersonalizedLearning: false,
@@ -297,7 +298,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													],
 													content: Padding(
 														padding: const EdgeInsets.only(top: 16),
-														child: CupertinoTextField(
+														child: CupertinoTextField2(
 															autofocus: true,
 															keyboardType: TextInputType.number,
 															controller: controller,
@@ -339,7 +340,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													],
 													content: Padding(
 														padding: const EdgeInsets.only(top: 16),
-														child: CupertinoTextField(
+														child: CupertinoTextField2(
 															autofocus: true,
 															keyboardType: TextInputType.number,
 															controller: controller,
@@ -381,7 +382,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													],
 													content: Padding(
 														padding: const EdgeInsets.only(top: 16),
-														child: CupertinoTextField(
+														child: CupertinoTextField2(
 															autofocus: true,
 															keyboardType: TextInputType.number,
 															controller: controller,
@@ -572,7 +573,7 @@ class _FilterEditorState extends State<FilterEditor> {
 							]
 						),
 						const SizedBox(height: 16),
-						CupertinoTextField(
+						CupertinoTextField2(
 							style: GoogleFonts.ibmPlexMono(),
 							minLines: 5,
 							maxLines: 5,
