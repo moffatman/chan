@@ -60,6 +60,7 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 	bool _startValueControllerDisposed = false;
 	late AnimationController _endValueController;
 	bool _endValueControllerDisposed = false;
+	int _reqNo = 0;
 
 	void _startValueControllerDispose() {
 		if (!_startValueControllerDisposed) {
@@ -99,16 +100,17 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		);
 		_endValueController.reset();
 		if (widget.value != null) {
-			_transitionToFixed(widget.value!, 0);
+			_transitionToFixed(widget.value!.clamp(0, 1), reqNo: _reqNo);
 		}
 		else {
-			_transitionToContinuous();
+			_transitionToContinuous(reqNo: _reqNo);
 		}
 	}
 
 	double get _startValue => _startValueController.value % 1;
 	double get _endValue => _endValueController.value % 1;
-	double get _sweepAngle => _endValue - _startValue;
+	double get _displayedEndValue => (_endValueController.value == 1.0 && !_endValueController.isAnimating && widget.value?.clamp(0, 1) == 1) ? 1.0 : _endValue;
+	double get _sweepAngle => (_endValue - _startValue) % 1;
 
 	AnimationController _continuousAnimation(double from) {
 		final a = AnimationController(
@@ -138,10 +140,29 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		);
 	}
 
-	Future<void> _transitionToFixed(double value, double lastValue) async {
-		if (value < lastValue) {
-			await _transitionToContinuous();
-			if (!mounted) return;
+	Duration _timeInContinuous(double from, double to) {
+		double dest = (to >= from) ? to : to + 1;
+		return Duration(milliseconds: ((dest - from).abs() * _periodMs).round());
+	}
+
+	Future<void> _transitionToFixed(double value, {required int reqNo}) async {
+		if (value == _displayedEndValue) {
+			return;
+		}
+		if (value > (1 - _continuousSweepAngle) && ((value % 1.0) < _endValue)) {
+			// Need to clear origin
+			await _transitionToContinuous(reqNo: reqNo);
+			if (_endValue > _continuousSweepAngle) {
+				await Future.delayed(_timeInContinuous(_endValue, 0.1));
+			}
+		}
+		else if (value <= _endValue || _startValue != 0) {
+			await _transitionToContinuous(reqNo: reqNo);
+			await Future.wait([
+				if (_startValueController.value <= value) Future.delayed(_timeInContinuous(_startValue, value)),
+				if (_endValueController.value >= (value % 1)) Future.delayed(_timeInContinuous(_endValueController.value, 0))
+			]);
+			if (!mounted || _reqNo != reqNo) return;
 		}
 		// continue animate both start and end forward
 		// when startAngle reaches 0, stop that motion
@@ -149,21 +170,26 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		(AnimationController, Future<void>)? s;
 		(AnimationController, Future<void>)? e;
 		if (_startValue != 0) {
-			s = _constantVelocityAnimation(_startValue, 0, reversed: _startValue < value);
+			s = _constantVelocityAnimation(_startValue, 0);
 			_replaceStartValueController(s.$1);
+		}
+		else {
+			_startValueController.stop();
 		}
 		if (_endValue != value) {
 			e = _constantVelocityAnimation(_endValue, value);
 			_replaceEndValueController(e.$1);
 		}
+		else {
+			_endValueController.stop();
+		}
 		setState(() {});
 		await s?.$2;
-		if (!mounted) return;
+		if (!mounted || _reqNo != reqNo) return;
 		await e?.$2;
-		if (!mounted) return;
 	}
 
-	Future<void> _transitionToContinuous() async {
+	Future<void> _transitionToContinuous({required int reqNo}) async {
 		// animate startAngle forward until sweepAngle <= _CONTINUOUS_SWEEP_ANGLE
 		// animate endAngle forward until sweepAngle >= _CONTINUOUS_SWEEP_ANGLE
 		// animate both angles forward
@@ -172,14 +198,14 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 			_replaceStartValueController(x.$1);
 			setState(() {});
 			await x.$2;
-			if (!mounted) return;
+			if (!mounted || _reqNo != reqNo) return;
 		}
 		if (_continuousSweepAngle - _sweepAngle > 0.001) {
 			final x = _constantVelocityAnimation(_endValue, _startValue + _continuousSweepAngle);
 			_replaceEndValueController(x.$1);
 			setState(() {});
 			await x.$2;
-			if (!mounted) return;
+			if (!mounted || _reqNo != reqNo) return;
 		}
 		if (mounted) {
 			_replaceStartValueController(_continuousAnimation(_startValue));
@@ -192,10 +218,10 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 	void didUpdateWidget(CircularLoadingIndicator old) {
 		super.didUpdateWidget(old);
 		if (widget.value != null) {
-			_transitionToFixed(widget.value!, old.value ?? 0);
+			_transitionToFixed(widget.value!.clamp(0, 1), reqNo: ++_reqNo);
 		}
 		else if (old.value != null) {
-			_transitionToContinuous();
+			_transitionToContinuous(reqNo: ++_reqNo);
 		}
 	}
 
@@ -215,12 +241,58 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 				builder: (context, child) => CustomPaint(
 					size: const Size(50, 50),
 					painter: _CircularLoadingIndicatorPainter(
-						startValue: _startValueController.value % 1,
-						endValue: _endValueController.value,
+						startValue: _startValue,
+						endValue: _displayedEndValue,
 						color: widget.color ?? CupertinoTheme.of(context).primaryColor
 					)
 				)
 			)
 		);
+	}
+}
+
+class CircularLoadingIndicatorTester extends StatefulWidget {
+	const CircularLoadingIndicatorTester({
+		super.key
+	});
+
+	@override
+	createState() => _CircularLoadingIndicatorTesterState();
+}
+
+class _CircularLoadingIndicatorTesterState extends State<CircularLoadingIndicatorTester> {
+	late final TextEditingController controller;
+	double? value;
+
+	@override
+	void initState() {
+		super.initState();
+		controller = TextEditingController();
+	}
+
+	@override
+	Widget build(BuildContext context) {
+		return Column(
+			mainAxisSize: MainAxisSize.min,
+			children: [
+				CircularLoadingIndicator(
+					value: value
+				),
+				CupertinoTextField(
+					controller: controller,
+					onChanged: (s) {
+						setState(() {
+							value = double.tryParse(s);
+						});
+					},
+				)
+			]
+		);
+	}
+
+	@override
+	void dispose() {
+		super.dispose();
+		controller.dispose();
 	}
 }
