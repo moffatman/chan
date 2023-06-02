@@ -1035,6 +1035,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				final isHidden = context.select<_RefreshableTreeItems, TreeItemCollapseType?>((c) => c.isItemHidden(value._key));
 				if (value.parentIds.isNotEmpty && !isHidden.isHidden) {
 					child = widget.treeAdapter!.wrapTreeChild(child, value.parentIds);
+					if (collapsed != null) {
+						collapsed = widget.treeAdapter!.wrapTreeChild(collapsed, value.parentIds);
+					}
 				}
 				if (isHidden.isHidden) {
 					// Avoid possible heavy build+layout cost for hidden items

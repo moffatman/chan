@@ -1292,29 +1292,39 @@ class _ThreadPageState extends State<ThreadPage> {
 																				color: settings.theme.secondaryColor,
 																				fontWeight: FontWeight.bold
 																			);
-																			final post = PostRow(
-																				post: value,
-																				dim: peekContentHeight.isFinite,
-																				highlight: newPostIds.contains(value.id),
-																				overrideReplyCount: Row(
-																					mainAxisSize: MainAxisSize.min,
-																					children: [
-																						RotatedBox(
-																							quarterTurns: 1,
-																							child: Icon(CupertinoIcons.chevron_right_2, size: 14, color: settings.theme.secondaryColor)
-																						),
-																						if (collapsedChildIds.isNotEmpty) Text(
-																							' ${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''}',
-																							style: style
-																						),
-																						if (unseenCount > 0) Text(
-																							' ($unseenCount new)',
-																							style: style
-																						)
-																					]
+																			final post = Builder(
+																				builder: (context) => PostRow(
+																					post: value,
+																					dim: peekContentHeight.isFinite,
+																					highlight: newPostIds.contains(value.id),
+																					onThumbnailTap: (attachment) {
+																						_showGallery(initialAttachment: TaggedAttachment(
+																							attachment: attachment,
+																							semanticParentIds: context.read<PostSpanZoneData>().stackIds
+																						));
+																					},
+																					onRequestArchive: () => _replacePostFromArchive(value),
+																					overrideReplyCount: Row(
+																						mainAxisSize: MainAxisSize.min,
+																						children: [
+																							RotatedBox(
+																								quarterTurns: 1,
+																								child: Icon(CupertinoIcons.chevron_right_2, size: 14, color: settings.theme.secondaryColor)
+																							),
+																							if (collapsedChildIds.isNotEmpty) Text(
+																								' ${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''}',
+																								style: style
+																							),
+																							if (unseenCount > 0) Text(
+																								' ($unseenCount new)',
+																								style: style
+																							)
+																						]
+																					)
 																				)
 																			);
 																			return IgnorePointer(
+																				ignoring: peekContentHeight.isFinite,
 																				child: ConstrainedBox(
 																					constraints: BoxConstraints(
 																						maxHeight: peekContentHeight
