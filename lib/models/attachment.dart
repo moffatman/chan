@@ -119,7 +119,7 @@ class Attachment {
 	String toString() => 'Attachment(board: $board, id: $id, ext: $ext, filename: $filename, type: $type, url: $url, thumbnailUrl: $thumbnailUrl, md5: $md5, spoiler: $spoiler, width: $width, height: $height, threadId: $threadId)';
 
 	@override
-	bool operator==(Object other) => (other is Attachment) && (other.url == url) && (other.thumbnailUrl == thumbnailUrl);
+	bool operator==(Object other) => (other is Attachment) && (other.url == url) && (other.thumbnailUrl == thumbnailUrl) && (other.type == type);
 
 	@override
 	int get hashCode => Object.hash(url, thumbnailUrl);
