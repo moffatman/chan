@@ -346,10 +346,60 @@ class SiteReddit extends ImageboardSite {
 		icon: (data['icon_img']?.isEmpty ?? true) ? null : Uri.parse(data['icon_img'])
 	);
 
-	Thread _makeThread(dynamic data) {
+	/// Resolve image hosting sites to hotlinks
+	Future<({String url, AttachmentType type, String ext})> _resolveUrl(String url) async {
+		final uri = Uri.parse(url);
+		if (uri.host == 'imgur.com' && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
+			final hash = uri.pathSegments.single;
+			final response = await client.getUri(Uri.https('api.imgur.com', '/3/image/$hash'), options: Options(
+				headers: {
+					'Authorization': 'Client-ID 714791ea4513f83'
+				}
+			));
+			final link = response.data['data']?['link'] as String?;
+			if (link != null) {
+				return (
+					url: link,
+					type: AttachmentType.image,
+					ext: link.split('.').last
+				);
+			}
+		}
+		else if (uri.host == 'gfycat.com' && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
+			final hash = uri.pathSegments.single;
+			final response = await client.getUri(Uri.https('api.gfycat.com', '/v1/gfycats/$hash'), options: Options(
+				headers: {
+					'Authorization': '2_YQH1hg'
+				}
+			));
+			final link = response.data['gfyItem']?['mp4Url'] as String?;
+			if (link != null) {
+				return (
+					url: link,
+					type: AttachmentType.mp4,
+					ext: '.mp4'
+				);
+			}
+		}
+		else if (uri.host == 'i.reddituploads.com') {
+			return (
+				url: url,
+				type: AttachmentType.image,
+				ext: '.jpeg'
+			);
+		}
+		bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => url.endsWith(e));
+		return (
+			url: url,
+			type: isDirectLink ? AttachmentType.image : AttachmentType.url,
+			ext: isDirectLink ? url.split('.').last : ''
+		);
+	}
+
+	Future<Thread> _makeThread(dynamic data) async {
 		final id = fromRedditId(data['id']);
 		final attachments = <Attachment>[];
-		void dumpAttachments(dynamic data) {
+		Future<void> dumpAttachments(dynamic data) async {
 			if (data['media_metadata'] != null) {
 				for (final item in data['media_metadata'].values) {
 					if (item['m'] == null && item['e'] == 'RedditVideo') {
@@ -421,17 +471,15 @@ class SiteReddit extends ImageboardSite {
 					));
 				}
 				else {
-					final url = data['url'];
-					final path = Uri.tryParse(url)?.path ?? '';
-					bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => path.endsWith(e));
+					final url = await _resolveUrl(data['url']);
 					attachments.add(Attachment(
-						type: isDirectLink ? AttachmentType.image : AttachmentType.url,
+						type: url.type,
 						board: data['subreddit'],
 						threadId: id,
 						id: data['name'],
-						ext: isDirectLink ? '.png' : '',
-						filename: isDirectLink ? 'preview' : '',
-						url: url,
+						ext: url.ext,
+						filename: Uri.tryParse(url.url)?.pathSegments.last ?? '',
+						url: url.url,
 						width: data['preview']['images'][0]['source']['width'],
 						height: data['preview']['images'][0]['source']['height'],
 						md5: '',
@@ -441,17 +489,15 @@ class SiteReddit extends ImageboardSite {
 				}
 			}
 			else if (!(data['is_self'] ?? false) && data['url'] != null) {
-				final url = data['url'];
-				final path = Uri.tryParse(url)?.path ?? '';
-				bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => path.endsWith(e));
+				final url = await _resolveUrl(data['url']);
 				attachments.add(Attachment(
-					type: isDirectLink ? AttachmentType.image : AttachmentType.url,
+					type: url.type,
 					board: data['subreddit'],
 					threadId: id,
 					id: data['name'],
-					ext: '',
-					filename: '',
-					url: url,
+					ext: url.ext,
+					filename: Uri.tryParse(url.url)?.pathSegments.last ?? '',
+					url: url.url,
 					thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
 						'url': url
 					}).toString(),
@@ -465,11 +511,11 @@ class SiteReddit extends ImageboardSite {
 		String text = data['is_self'] ? unescape.convert(data['selftext']) : data['url'];
 		final Map? crosspostParent = (data['crosspost_parent_list'] as List?)?.tryFirstWhere((xp) => xp['name'] == data['crosspost_parent']);
 		if (crosspostParent != null) {
-			dumpAttachments(crosspostParent);
+			await dumpAttachments(crosspostParent);
 			text = '<crosspostparent board="${crosspostParent['subreddit']}" id="${crosspostParent['id']}"></crosspostparent>\n$text';
 		}
 		if (attachments.isEmpty) {
-			dumpAttachments(data);
+			await dumpAttachments(data);
 		}
 		final asPost = Post(
 			board: data['subreddit'],
@@ -581,7 +627,11 @@ class SiteReddit extends ImageboardSite {
 				kInteractive: interactive
 			}
 		));
-		return (response.data['data']['children'] as List<dynamic>).map((d) => _makeThread(d['data'])..currentPage = 1).toList();
+		return await Future.wait((response.data['data']['children'] as List<dynamic>).map((d) async {
+			final t = await _makeThread(d['data']);
+			t.currentPage = 1;
+			return t;
+	}));
 	}
 
 	@override
@@ -726,7 +776,11 @@ class SiteReddit extends ImageboardSite {
 			}
 		));
 		final newPage = (after.currentPage ?? 1) + 1;
-		return (response.data['data']['children'] as List<dynamic>).map((d) => _makeThread(d['data'])..currentPage = newPage).toList();
+		return await Future.wait((response.data['data']['children'] as List<dynamic>).map((d) async {
+			final t = await _makeThread(d['data']);
+			t.currentPage = newPage;
+			return t;
+		}));
 	}
 
 	@override
@@ -778,7 +832,7 @@ class SiteReddit extends ImageboardSite {
 				kInteractive: interactive
 			}
 		));
-		final ret = _makeThread(response.data[0]['data']['children'][0]['data']);
+		final ret = await _makeThread(response.data[0]['data']['children'][0]['data']);
 		addChildren(int parentId, List<dynamic> childData, Post? parent) {
 			for (final childContainer in childData) {
 				final child = childContainer['data'];
@@ -895,7 +949,9 @@ class SiteReddit extends ImageboardSite {
 		return ImageboardArchiveSearchResultPage(
 			page: page,
 			maxPage: response.data['data']['after'] == null ? page : null,
-			posts: (response.data['data']['children'] as List<dynamic>).map((c) => ImageboardArchiveSearchResult.thread(_makeThread(c['data']))).toList(),
+			posts: await Future.wait((response.data['data']['children'] as List<dynamic>).map((c) async {
+				return ImageboardArchiveSearchResult.thread(await _makeThread(c['data']));
+			})),
 			archive: this
 		);
 	}
