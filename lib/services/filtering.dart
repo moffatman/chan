@@ -38,6 +38,9 @@ class FilterResult {
 	FilterResultType type;
 	String reason;
 	FilterResult(this.type, this.reason);
+
+	@override
+	String toString() => 'FilterResult(type: $type, reason: $reason)';
 }
 
 abstract class Filterable {
