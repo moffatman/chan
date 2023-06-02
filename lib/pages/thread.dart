@@ -1743,7 +1743,6 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			else {
 				_filteredPosts = widget.persistentState.filteredPosts();
 				_filteredItems = null; // Likely not built yet
-				print('resetting le indices');
 				furthestSeenIndexTop = 9999999;
 				furthestSeenIndexBottom = 0;
 			}
