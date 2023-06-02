@@ -326,6 +326,7 @@ class RefreshableTreeAdapter<T extends Object> {
 	final bool Function(T item) getIsStub;
 	final bool initiallyCollapseSecondLevelReplies;
 	final bool collapsedItemsShowBody;
+	final bool Function(RefreshableListItem<T> item)? filter;
 
 	const RefreshableTreeAdapter({
 		required this.getId,
@@ -337,7 +338,8 @@ class RefreshableTreeAdapter<T extends Object> {
 		required this.estimateHeight,
 		required this.getIsStub,
 		required this.initiallyCollapseSecondLevelReplies,
-		required this.collapsedItemsShowBody
+		required this.collapsedItemsShowBody,
+		this.filter
 	});
 }
 
@@ -589,6 +591,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 	final Listenable? updateAnimation;
 	final bool canTapFooter;
 	final double minCacheExtent;
+	final bool shrinkWrap;
 
 	const RefreshableList({
 		required this.itemBuilder,
@@ -623,6 +626,7 @@ class RefreshableList<T extends Object> extends StatefulWidget {
 		this.updateAnimation,
 		this.canTapFooter = true,
 		this.minCacheExtent = 0,
+		this.shrinkWrap = false,
 		Key? key
 	}) : super(key: key);
 
@@ -750,7 +754,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		else if ((widget.disableUpdates || originalList == null) && !listEquals(oldWidget.initialList, widget.initialList)) {
 			originalList = widget.initialList;
-			sortedList = null;
+			sortedList = originalList?.toList();
 			if (originalList != null) {
 				_sortList();
 			}
@@ -1440,6 +1444,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				on _TreeTooDeepException {
 					_treeBuildingFailed = true;
 				}
+				final filter = widget.treeAdapter?.filter;
+				if (filter != null) {
+					values = values.where(filter).toList();
+				}
 			}
 			else if (widget.treeAdapter != null) {
 				final adapter = widget.treeAdapter!;
@@ -1556,6 +1564,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 									value: _refreshableTreeItems,
 									child: CustomScrollView(
 										key: _scrollViewKey,
+										shrinkWrap: widget.shrinkWrap,
 										cacheExtent: max(widget.minCacheExtent, 250),
 										controller: widget.controller?.scrollController,
 										physics: const AlwaysScrollableScrollPhysics(),
@@ -1569,7 +1578,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 												),
 												bottom: false
 											),
-											if ((sortedList?.isNotEmpty ?? false) && widget.filterableAdapter != null) SliverToBoxAdapter(
+											if (!widget.shrinkWrap && (sortedList?.isNotEmpty ?? false) && widget.filterableAdapter != null) SliverToBoxAdapter(
 												child: Container(
 													height: kMinInteractiveDimensionCupertino * context.select<EffectiveSettings, double>((s) => s.textScale),
 													padding: const EdgeInsets.all(4),
@@ -1714,7 +1723,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															)
 														)
 													),
-											if (filteredValues.isNotEmpty) ...[
+											if (!widget.shrinkWrap && filteredValues.isNotEmpty) ...[
 												SliverToBoxAdapter(
 													child: GestureDetector(
 														onTap: () {
