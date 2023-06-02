@@ -2018,9 +2018,11 @@ class RefreshableListFooter extends StatelessWidget {
 															enabled: nextUpdateTime != null && lastUpdateTime != null,
 															interval: const Duration(seconds: 1),
 															builder: (context) {
-																return Text('Next update ${formatRelativeTime(nextUpdateTime ?? DateTime(3000))}', style: TextStyle(
-																	color: CupertinoTheme.of(context).primaryColorWithBrightness(0.5)
-																));
+																return GreedySizeCachingBox(
+																	child: Text('Next update ${formatRelativeTime(nextUpdateTime ?? DateTime(3000))}', style: TextStyle(
+																		color: CupertinoTheme.of(context).primaryColorWithBrightness(0.5)
+																	))
+																);
 															}
 														)
 													)

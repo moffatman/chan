@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:chan/models/attachment.dart';
@@ -1360,4 +1361,71 @@ class HybridScrollPhysics extends BouncingScrollPhysics {
     }
     return null;
   }
+}
+
+class RenderGreedySizeCachingBox extends RenderProxyBox {
+	Alignment alignment;
+	double widthResetThreshold;
+	double heightResetThreshold;
+	Size _cachedSize = Size.zero;
+
+	RenderGreedySizeCachingBox({
+		required this.alignment,
+		required this.widthResetThreshold,
+		required this.heightResetThreshold
+	});
+
+  @override
+  void performLayout() {
+    if (child != null) {
+      child!.layout(constraints, parentUsesSize: true);
+      size = child!.size;
+    } else {
+      size = computeSizeForNoChild(constraints);
+    }
+		if ((_cachedSize.width - size.width).abs() > widthResetThreshold ||
+		    (_cachedSize.height - size.height).abs() > heightResetThreshold) {
+			// size is way too different
+			_cachedSize = size;
+		}
+		size = constraints.constrain(Size(math.max(_cachedSize.width, size.width), math.max(_cachedSize.height, size.height)));
+		_cachedSize = size;
+  }
+
+	@override
+  void paint(PaintingContext context, Offset offset) {
+    if (child != null) {
+			context.paintChild(child!, alignment.inscribe(child!.size, offset & size).topLeft);
+    }
+  }
+}
+
+class GreedySizeCachingBox extends SingleChildRenderObjectWidget {
+	final Alignment alignment;
+	final double widthResetThreshold;
+	final double heightResetThreshold;
+
+	const GreedySizeCachingBox({
+		required super.child,
+		this.alignment = Alignment.topLeft,
+		this.widthResetThreshold = 25,
+		this.heightResetThreshold = 25,
+		super.key
+	});
+
+	@override
+	RenderGreedySizeCachingBox createRenderObject(BuildContext context) {
+		return RenderGreedySizeCachingBox(
+			alignment: alignment,
+			widthResetThreshold: widthResetThreshold,
+			heightResetThreshold: heightResetThreshold
+		);
+	}
+	
+	@override
+	void updateRenderObject(BuildContext context, RenderGreedySizeCachingBox renderObject) {
+		renderObject.alignment = alignment;
+		renderObject.widthResetThreshold = widthResetThreshold;
+		renderObject.heightResetThreshold = heightResetThreshold;
+	}
 }
