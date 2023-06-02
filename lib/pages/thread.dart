@@ -129,7 +129,6 @@ class _ThreadPageState extends State<ThreadPage> {
 	late PostSpanRootZoneData zone;
 	bool blocked = false;
 	late Listenable _threadStateListenable;
-	bool _saveQueued = false;
 	int? lastPageNumber;
 	int lastSavedPostsLength = 0;
 	int lastHiddenMD5sLength = 0;
@@ -258,12 +257,12 @@ class _ThreadPageState extends State<ThreadPage> {
 			final newLastSeen = lastItem.id;
 			if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
 				persistentState.lastSeenPostId = newLastSeen;
-				_saveQueued = true;
+				runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 			}
 			final firstItem = _listController.firstVisibleItem;
 			if (firstItem != null) {
 				if (persistentState.firstVisiblePostId != firstItem.id) {
-					_saveQueued = true;
+					runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 				}
 				persistentState.firstVisiblePostId = firstItem.id;
 			}
@@ -388,7 +387,6 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (widget.thread != old.thread) {
 			_cached.clear();
 			_cachingQueue.clear();
-			_saveQueued = false;
 			_passedFirstLoad = false;
 			_threadStateListenable.removeListener(_onThreadStateListenableUpdate);
 			_threadStateListenable = context.read<Persistence>().listenForPersistentThreadStateChanges(widget.thread);
@@ -547,11 +545,17 @@ class _ThreadPageState extends State<ThreadPage> {
 		  // No reason to check yet
 			return;
 		}
-		final pattern = RegExp(r'\/[^/ ]+\/').firstMatch('${persistentState.thread?.title} ${persistentState.thread?.posts_.tryFirst?.text}')?.group(0)?.toLowerCase();
-		if (pattern == null) {
+		final match = RegExp(r'\/([^/ ]+)\/').firstMatch('${persistentState.thread?.title} ${persistentState.thread?.posts_.tryFirst?.text}');
+		if (match == null) {
 			// no /general/ found
 			return;
 		}
+		final innerPattern = match.group(1)!.toLowerCase();
+		if (imageboard.persistence.maybeGetBoard(innerPattern) != null) {
+			// This is just someone typing the name of a board
+			return;
+		}
+		final pattern = match.group(0)!.toLowerCase();
 		if (_suggestedNewGeneral?.$2 == pattern) {
 			// Already have a suggested general
 			return;
@@ -786,7 +790,7 @@ class _ThreadPageState extends State<ThreadPage> {
 								if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
 									// If already at the bottom, pre-mark the created post as seen
 									persistentState.lastSeenPostId = receipt.id;
-									_saveQueued = true;
+									runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 								}
 								_listController.update();
 								Future.delayed(const Duration(seconds: 8), _listController.update);
@@ -1108,243 +1112,230 @@ class _ThreadPageState extends State<ThreadPage> {
 														children: [
 															ChangeNotifierProvider<PostSpanZoneData>.value(
 																value: zone,
-																child: NotificationListener<ScrollNotification>(
-																	onNotification: (notification) {
-																		if (notification is ScrollEndNotification) {
-																			Future.delayed(const Duration(milliseconds: 300), () {
-																				if (!((_listController.scrollController?.hasClients ?? false) && (_listController.scrollController?.position.isScrollingNotifier.value ?? false)) && _saveQueued) {
-																					persistentState.save();
-																					_saveQueued = false;
-																				}
-																			});
-																		}
-																		return false;
+																child: _buildRefreshableList ? RefreshableList<Post>(
+																	filterableAdapter: (t) => t,
+																	initialFilter: widget.initialSearch,
+																	onFilterChanged: (filter) {
+																		_searching = filter != null;
+																		setState(() {});
 																	},
-																	child: _buildRefreshableList ? RefreshableList<Post>(
-																		filterableAdapter: (t) => t,
-																		initialFilter: widget.initialSearch,
-																		onFilterChanged: (filter) {
-																			_searching = filter != null;
-																			setState(() {});
+																	key: _listKey,
+																	sortMethods: zone.postSortingMethods,
+																	id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
+																	disableUpdates: persistentState.disableUpdates,
+																	autoUpdateDuration: Duration(seconds: _foreground ? settings.currentThreadAutoUpdatePeriodSeconds : settings.backgroundThreadAutoUpdatePeriodSeconds),
+																	initialList: persistentState.thread?.posts,
+																	useTree: useTree,
+																	initialCollapsedItems: persistentState.collapsedItems,
+																	onCollapsedItemsChanged: (newCollapsedItems, newPrimarySubtreeParents) {
+																		persistentState.collapsedItems = newCollapsedItems.toList();
+																		persistentState.primarySubtreeParents = newPrimarySubtreeParents;
+																		runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
+																	},
+																	treeAdapter: RefreshableTreeAdapter(
+																		getId: (p) => p.id,
+																		getParentIds: (p) => p.repliedToIds,
+																		getIsStub: (p) => p.isStub,
+																		getHasOmittedReplies: (p) => p.hasOmittedReplies,
+																		updateWithStubItems: (_, ids) => _updateWithStubItems(ids),
+																		opId: widget.thread.id,
+																		wrapTreeChild: (child, parentIds) {
+																			PostSpanZoneData childZone = zone;
+																			for (final id in parentIds) {
+																				childZone = childZone.childZoneFor(id, inTree: true);
+																			}
+																			return ChangeNotifierProvider.value(
+																				value: childZone,
+																				child: child
+																			);
 																		},
-																		key: _listKey,
-																		sortMethods: zone.postSortingMethods,
-																		id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
-																		disableUpdates: persistentState.disableUpdates,
-																		autoUpdateDuration: Duration(seconds: _foreground ? settings.currentThreadAutoUpdatePeriodSeconds : settings.backgroundThreadAutoUpdatePeriodSeconds),
-																		initialList: persistentState.thread?.posts,
-																		useTree: useTree,
-																		initialCollapsedItems: persistentState.collapsedItems,
-																		onCollapsedItemsChanged: (newCollapsedItems, newPrimarySubtreeParents) {
-																			persistentState.collapsedItems = newCollapsedItems.toList();
-																			persistentState.primarySubtreeParents = newPrimarySubtreeParents;
-																			_saveQueued = true;
+																		estimateHeight: (post, width) {
+																			final fontSize = DefaultTextStyle.of(context).style.fontSize ?? 17;
+																			return post.span.estimateLines(
+																				(width / (0.55 * fontSize * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil().toDouble()
+																			).ceil() * fontSize;
 																		},
-																		treeAdapter: RefreshableTreeAdapter(
-																			getId: (p) => p.id,
-																			getParentIds: (p) => p.repliedToIds,
-																			getIsStub: (p) => p.isStub,
-																			getHasOmittedReplies: (p) => p.hasOmittedReplies,
-																			updateWithStubItems: (_, ids) => _updateWithStubItems(ids),
-																			opId: widget.thread.id,
-																			wrapTreeChild: (child, parentIds) {
-																				PostSpanZoneData childZone = zone;
-																				for (final id in parentIds) {
-																					childZone = childZone.childZoneFor(id, inTree: true);
-																				}
-																				return ChangeNotifierProvider.value(
-																					value: childZone,
-																					child: child
-																				);
+																		initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies,
+																		collapsedItemsShowBody: treeModeCollapsedPostsShowBody
+																	),
+																	footer: Container(
+																		padding: const EdgeInsets.all(16),
+																		child: (persistentState.thread == null) ? null : Opacity(
+																			opacity: persistentState.thread?.isArchived == true ? 0.5 : 1,
+																			child: Row(
+																				children: [
+																					const Spacer(),
+																					const Icon(CupertinoIcons.reply),
+																					const SizedBox(width: 8),
+																					_limitCounter(persistentState.thread!.replyCount, context.read<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
+																					const Spacer(),
+																					const Icon(CupertinoIcons.photo),
+																					const SizedBox(width: 8),
+																					_limitCounter(persistentState.thread!.imageCount, context.read<Persistence>().getBoard(widget.thread.board).threadImageLimit),
+																					const Spacer(),
+																					if (persistentState.thread!.uniqueIPCount != null) ...[
+																						const Icon(CupertinoIcons.person),
+																						const SizedBox(width: 8),
+																						Text('${persistentState.thread!.uniqueIPCount}'),
+																						const Spacer(),
+																					],
+																					if (persistentState.thread!.currentPage != null) ...[
+																						const Icon(CupertinoIcons.doc),
+																						const SizedBox(width: 8),
+																						_limitCounter(persistentState.thread!.currentPage!, context.read<Persistence>().getBoard(widget.thread.board).pageCount),
+																						const Spacer()
+																					],
+																					if (persistentState.thread!.isArchived || persistentState.thread!.isDeleted) ...[
+																						GestureDetector(
+																							behavior: HitTestBehavior.opaque,
+																							onTap: _switchToLive,
+																							child: Row(
+																								children: [
+																									Icon(persistentState.thread!.isDeleted ? CupertinoIcons.trash : CupertinoIcons.archivebox),
+																									const SizedBox(width: 8),
+																									Text(persistentState.thread!.archiveName ?? (persistentState.thread!.isDeleted ? 'Deleted' : 'Archived'))
+																								]
+																							)
+																						),
+																						const Spacer()
+																					]
+																				]
+																			)
+																		)
+																	),
+																	remedies: {
+																		if (site.archives.isNotEmpty) ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
+																			child: const Text('Try archive'),
+																			onPressed: () {
+																				persistentState.useArchive = true;
+																				persistentState.save();
+																				updater();
+																			}
+																		)
+																	},
+																	listUpdater: () async {
+																		return (await _getUpdatedThread()).posts;
+																	},
+																	controller: _listController,
+																	itemBuilder: (context, post) {
+																		return PostRow(
+																			post: post,
+																			onThumbnailTap: (attachment) {
+																				_showGallery(initialAttachment: TaggedAttachment(
+																					attachment: attachment,
+																					semanticParentIds: context.read<PostSpanZoneData>().stackIds
+																				));
 																			},
-																			estimateHeight: (post, width) {
-																				final fontSize = DefaultTextStyle.of(context).style.fontSize ?? 17;
-																				return post.span.estimateLines(
-																					(width / (0.55 * fontSize * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil().toDouble()
-																				).ceil() * fontSize;
+																			onRequestArchive: () => _replacePostFromArchive(post),
+																			highlight: newPostIds.contains(post.id),
+																		);
+																	},
+																	filteredItemBuilder: (context, post, resetPage, filterText) {
+																		return PostRow(
+																			post: post,
+																			onThumbnailTap: (attachment) {
+																				_showGallery(initialAttachment: TaggedAttachment(
+																					attachment: attachment,
+																					semanticParentIds: context.read<PostSpanZoneData>().stackIds
+																				));
 																			},
-																			initiallyCollapseSecondLevelReplies: treeModeInitiallyCollapseSecondLevelReplies,
-																			collapsedItemsShowBody: treeModeCollapsedPostsShowBody
-																		),
-																		footer: Container(
-																			padding: const EdgeInsets.all(16),
-																			child: (persistentState.thread == null) ? null : Opacity(
-																				opacity: persistentState.thread?.isArchived == true ? 0.5 : 1,
-																				child: Row(
+																			onRequestArchive: () => _replacePostFromArchive(post),
+																			onTap: () {
+																				resetPage();
+																				Future.delayed(const Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
+																			},
+																			baseOptions: PostSpanRenderOptions(
+																				highlightString: filterText
+																			),
+																			highlight: newPostIds.contains(post.id)
+																		);
+																	},
+																	collapsedItemBuilder: ({
+																		required BuildContext context,
+																		required Post? value,
+																		required Set<int> collapsedChildIds,
+																		required bool loading,
+																		required double? peekContentHeight,
+																		required List<ParentAndChildIdentifier>? stubChildIds
+																	}) {
+																		final settings = context.watch<EffectiveSettings>();
+																		final unseenCount = collapsedChildIds.where((id) => newPostIds.contains(id)).length;
+																		if (peekContentHeight != null && value != null) {
+																			final style = TextStyle(
+																				color: settings.theme.secondaryColor,
+																				fontWeight: FontWeight.bold
+																			);
+																			final post = PostRow(
+																				post: value,
+																				dim: peekContentHeight.isFinite,
+																				highlight: newPostIds.contains(value.id),
+																				overrideReplyCount: Row(
+																					mainAxisSize: MainAxisSize.min,
 																					children: [
-																						const Spacer(),
-																						const Icon(CupertinoIcons.reply),
-																						const SizedBox(width: 8),
-																						_limitCounter(persistentState.thread!.replyCount, context.read<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
-																						const Spacer(),
-																						const Icon(CupertinoIcons.photo),
-																						const SizedBox(width: 8),
-																						_limitCounter(persistentState.thread!.imageCount, context.read<Persistence>().getBoard(widget.thread.board).threadImageLimit),
-																						const Spacer(),
-																						if (persistentState.thread!.uniqueIPCount != null) ...[
-																							const Icon(CupertinoIcons.person),
-																							const SizedBox(width: 8),
-																							Text('${persistentState.thread!.uniqueIPCount}'),
-																							const Spacer(),
-																						],
-																						if (persistentState.thread!.currentPage != null) ...[
-																							const Icon(CupertinoIcons.doc),
-																							const SizedBox(width: 8),
-																							_limitCounter(persistentState.thread!.currentPage!, context.read<Persistence>().getBoard(widget.thread.board).pageCount),
-																							const Spacer()
-																						],
-																						if (persistentState.thread!.isArchived || persistentState.thread!.isDeleted) ...[
-																							GestureDetector(
-																								behavior: HitTestBehavior.opaque,
-																								onTap: _switchToLive,
-																								child: Row(
-																									children: [
-																										Icon(persistentState.thread!.isDeleted ? CupertinoIcons.trash : CupertinoIcons.archivebox),
-																										const SizedBox(width: 8),
-																										Text(persistentState.thread!.archiveName ?? (persistentState.thread!.isDeleted ? 'Deleted' : 'Archived'))
-																									]
-																								)
-																							),
-																							const Spacer()
-																						]
+																						RotatedBox(
+																							quarterTurns: 1,
+																							child: Icon(CupertinoIcons.chevron_right_2, size: 14, color: settings.theme.secondaryColor)
+																						),
+																						if (collapsedChildIds.isNotEmpty) Text(
+																							' ${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''}',
+																							style: style
+																						),
+																						if (unseenCount > 0) Text(
+																							' ($unseenCount new)',
+																							style: style
+																						)
 																					]
 																				)
-																			)
-																		),
-																		remedies: {
-																			if (site.archives.isNotEmpty) ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
-																				child: const Text('Try archive'),
-																				onPressed: () {
-																					persistentState.useArchive = true;
-																					persistentState.save();
-																					updater();
-																				}
-																			)
-																		},
-																		listUpdater: () async {
-																			return (await _getUpdatedThread()).posts;
-																		},
-																		controller: _listController,
-																		itemBuilder: (context, post) {
-																			return PostRow(
-																				post: post,
-																				onThumbnailTap: (attachment) {
-																					_showGallery(initialAttachment: TaggedAttachment(
-																						attachment: attachment,
-																						semanticParentIds: context.read<PostSpanZoneData>().stackIds
-																					));
-																				},
-																				onRequestArchive: () => _replacePostFromArchive(post),
-																				highlight: newPostIds.contains(post.id),
 																			);
-																		},
-																		filteredItemBuilder: (context, post, resetPage, filterText) {
-																			return PostRow(
-																				post: post,
-																				onThumbnailTap: (attachment) {
-																					_showGallery(initialAttachment: TaggedAttachment(
-																						attachment: attachment,
-																						semanticParentIds: context.read<PostSpanZoneData>().stackIds
-																					));
-																				},
-																				onRequestArchive: () => _replacePostFromArchive(post),
-																				onTap: () {
-																					resetPage();
-																					Future.delayed(const Duration(milliseconds: 250), () => _listController.animateTo((val) => val.id == post.id));
-																				},
-																				baseOptions: PostSpanRenderOptions(
-																					highlightString: filterText
-																				),
-																				highlight: newPostIds.contains(post.id)
-																			);
-																		},
-																		collapsedItemBuilder: ({
-																			required BuildContext context,
-																			required Post? value,
-																			required Set<int> collapsedChildIds,
-																			required bool loading,
-																			required double? peekContentHeight,
-																			required List<ParentAndChildIdentifier>? stubChildIds
-																		}) {
-																			final settings = context.watch<EffectiveSettings>();
-																			final unseenCount = collapsedChildIds.where((id) => newPostIds.contains(id)).length;
-																			if (peekContentHeight != null && value != null) {
-																				final style = TextStyle(
-																					color: settings.theme.secondaryColor,
-																					fontWeight: FontWeight.bold
-																				);
-																				final post = PostRow(
-																					post: value,
-																					dim: peekContentHeight.isFinite,
-																					highlight: newPostIds.contains(value.id),
-																					overrideReplyCount: Row(
-																						mainAxisSize: MainAxisSize.min,
-																						children: [
-																							RotatedBox(
-																								quarterTurns: 1,
-																								child: Icon(CupertinoIcons.chevron_right_2, size: 14, color: settings.theme.secondaryColor)
-																							),
-																							if (collapsedChildIds.isNotEmpty) Text(
-																								' ${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''}',
-																								style: style
-																							),
-																							if (unseenCount > 0) Text(
-																								' ($unseenCount new)',
-																								style: style
-																							)
-																						]
-																					)
-																				);
-																				return IgnorePointer(
-																					child: ConstrainedBox(
-																						constraints: BoxConstraints(
-																							maxHeight: peekContentHeight
-																						),
-																						child: post
-																					)
-																				);
-																			}
 																			return IgnorePointer(
-																				child: Container(
-																					width: double.infinity,
-																					padding: const EdgeInsets.all(8),
-																					color: ([value?.id, ...(stubChildIds?.map((x) => x.childId) ?? <int>[])]).any((x) => newPostIds.contains(x)) ? CupertinoTheme.of(context).primaryColorWithBrightness(0.1) : null,
-																					child: Row(
-																						children: [
-																							if (value != null) Expanded(
-																								child: Text.rich(
-																									TextSpan(
-																										children: buildPostInfoRow(
-																											post: value,
-																											isYourPost: persistentState.youIds.contains(value.id),
-																											settings: settings,
-																											site: site,
-																											context: context,
-																											zone: zone
-																										)
+																				child: ConstrainedBox(
+																					constraints: BoxConstraints(
+																						maxHeight: peekContentHeight
+																					),
+																					child: post
+																				)
+																			);
+																		}
+																		return IgnorePointer(
+																			child: Container(
+																				width: double.infinity,
+																				padding: const EdgeInsets.all(8),
+																				color: ([value?.id, ...(stubChildIds?.map((x) => x.childId) ?? <int>[])]).any((x) => newPostIds.contains(x)) ? CupertinoTheme.of(context).primaryColorWithBrightness(0.1) : null,
+																				child: Row(
+																					children: [
+																						if (value != null) Expanded(
+																							child: Text.rich(
+																								TextSpan(
+																									children: buildPostInfoRow(
+																										post: value,
+																										isYourPost: persistentState.youIds.contains(value.id),
+																										settings: settings,
+																										site: site,
+																										context: context,
+																										zone: zone
 																									)
 																								)
 																							)
-																							else const Spacer(),
-																							if (loading) ...[
-																								const CupertinoActivityIndicator(),
-																								const Text(' ')
-																							],
-																							if (collapsedChildIds.isNotEmpty) Text(
-																								'${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''} '
-																							),
-																							if (unseenCount > 0) Text(
-																								'($unseenCount new) '
-																							),
-																							const Icon(CupertinoIcons.chevron_down, size: 20)
-																						]
-																					)
+																						)
+																						else const Spacer(),
+																						if (loading) ...[
+																							const CupertinoActivityIndicator(),
+																							const Text(' ')
+																						],
+																						if (collapsedChildIds.isNotEmpty) Text(
+																							'${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''} '
+																						),
+																						if (unseenCount > 0) Text(
+																							'($unseenCount new) '
+																						),
+																						const Icon(CupertinoIcons.chevron_down, size: 20)
+																					]
 																				)
-																			);
-																		},
-																		filterHint: 'Search in thread'
-																	) : const SizedBox.expand()
-																)
+																			)
+																		);
+																	},
+																	filterHint: 'Search in thread'
+																) : const SizedBox.expand()
 															),
 															SafeArea(
 																child: Align(
@@ -1439,7 +1430,7 @@ class _ThreadPageState extends State<ThreadPage> {
 											if (persistentState.lastSeenPostId == persistentState.thread?.posts.last.id) {
 												// If already at the bottom, pre-mark the created post as seen
 												persistentState.lastSeenPostId = receipt.id;
-												_saveQueued = true;
+												runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 											}
 											_listController.update();
 											Future.delayed(const Duration(seconds: 8), _listController.update);
@@ -1464,9 +1455,6 @@ class _ThreadPageState extends State<ThreadPage> {
 		_listController.dispose();
 		if (_parentTab?.threadController == _listController) {
 			_parentTab?.threadController = null;
-		}
-		if (_saveQueued) {
-			persistentState.save();
 		}
 		if (_foreground) {
 			setHandoffUrl(null);
