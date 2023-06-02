@@ -37,8 +37,39 @@
                <action android:name="android.intent.action.VIEW" />
                <category android:name="android.intent.category.DEFAULT" />
                <category android:name="android.intent.category.BROWSABLE" />
+               <!-- 2chan -->
+               <data android:scheme="https" android:host="www.2chan.net"/>
+               <!-- 4chan -->
                <data android:scheme="https" android:host="boards.4channel.org"/>
                <data android:scheme="https" android:host="boards.4chan.org"/>
+               <data android:scheme="https" android:host="archive.palanq.win"/>
+               <data android:scheme="https" android:host="desuarchive.org"/>
+               <data android:scheme="https" android:host="boards.fireden.net"/>
+               <data android:scheme="https" android:host="archived.moe"/>
+               <data android:scheme="https" android:host="arch.b4k.co"/>
+               <data android:scheme="https" android:host="thebarchive.com"/>
+               <data android:scheme="https" android:host="archiveofsins.com"/>
+               <data android:scheme="https" android:host="warosu.org"/>
+               <!-- dvach -->
+               <data android:scheme="https" android:host="2ch.hk"/>
+               <!-- endchan -->
+               <data android:scheme="https" android:host="endchan.org"/>
+               <!-- erischan -->
+               <data android:scheme="https" android:host="erischan.org"/>
+               <!-- frenschan -->
+               <data android:scheme="https" android:host="frenschan.org"/>
+               <!-- hackernews -->
+               <data android:scheme="https" android:host="news.ycombinator.com"/>
+               <!-- kind -->
+               <data android:scheme="https" android:host="kind.moe"/>
+               <!-- lainchan  -->
+               <data android:scheme="https" android:host="lainchan.org"/>
+               <!-- reddit -->
+               <data android:scheme="https" android:host="reddit.com"/>
+               <!-- soyjak -->
+               <data android:scheme="https" android:host="soyjak.party"/>
+               <!-- voidchan -->
+               <data android:scheme="https" android:host="voidchan.net"/>
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
