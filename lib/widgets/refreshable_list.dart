@@ -672,7 +672,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		_searchFocusNode = FocusNode();
 		 _footerShakeAnimation = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
 		if (widget.initialFilter != null) {
-			_searchFilter = SearchFilter(widget.initialFilter!);
+			_searchFilter = SearchFilter(widget.initialFilter!.toLowerCase());
 			_searchTapped = true;
 			_searchController.text = widget.initialFilter!;
 		}
