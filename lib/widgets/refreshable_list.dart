@@ -2013,7 +2013,9 @@ class RefreshableListFooter extends StatelessWidget {
 															)
 														)
 													),
-													if (nextUpdateTime?.isAfter(DateTime.now()) ?? false) Positioned(
+													if ((nextUpdateTime?.isAfter(DateTime.now()) ?? false) &&
+													    (lastUpdateTime?.isBefore(DateTime.now().subtract(const Duration(seconds: 1))) ?? false) &&
+															!updatingNow) Positioned(
 														top: 50,
 														child: TimedRebuilder(
 															enabled: nextUpdateTime != null && lastUpdateTime != null,
