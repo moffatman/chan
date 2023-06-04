@@ -171,7 +171,7 @@ class PostRow extends StatelessWidget {
 											threadId: latestPost.threadId,
 											postId: latestPost.parentId!
 										).build(
-											ctx, ctx.watch<PostSpanZoneData>(), settings, context.watch<SavedTheme>(), (baseOptions ?? const PostSpanRenderOptions()).copyWith(
+											ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 												shrinkWrap: shrinkWrap
 											)
 										),
