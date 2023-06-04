@@ -9,6 +9,7 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/cupertino_switch2.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/shareable_posts.dart';
 import 'package:extended_image_library/extended_image_library.dart';
@@ -97,7 +98,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 								const Expanded(
 									child: Text('Tree mode', textAlign: TextAlign.left)
 								),
-								CupertinoSwitch(
+								CupertinoSwitch2(
 									value: useTree,
 									onChanged: (x) => setDialogState(() {
 										useTree = x;
@@ -116,7 +117,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 								const Expanded(
 									child: Text('Expand image', textAlign: TextAlign.left)
 								),
-								CupertinoSwitch(
+								CupertinoSwitch2(
 									value: post.attachments.any((a) => a.type == AttachmentType.image) ? expandPrimaryImage : false,
 									onChanged: post.attachments.any((a) => a.type == AttachmentType.image) ? (x) => setDialogState(() {
 										expandPrimaryImage = x;
@@ -132,7 +133,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 								const Expanded(
 									child: Text('Reveal your posts', textAlign: TextAlign.left)
 								),
-								CupertinoSwitch(
+								CupertinoSwitch2(
 									value: revealYourPosts,
 									onChanged: (x) => setDialogState(() {
 										revealYourPosts = x;
@@ -148,7 +149,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 								const Expanded(
 									child: Text('Include footer', textAlign: TextAlign.left)
 								),
-								CupertinoSwitch(
+								CupertinoSwitch2(
 									value: includeFooter,
 									onChanged: (x) => setDialogState(() {
 										includeFooter = x;

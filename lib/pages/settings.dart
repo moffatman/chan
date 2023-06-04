@@ -25,6 +25,7 @@ import 'package:chan/version.dart';
 import 'package:chan/widgets/cupertino_adaptive_segmented_control.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/cupertino_switch2.dart';
 import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/filter_editor.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
@@ -618,7 +619,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Allow swiping to change page in gallery')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.allowSwipingInGallery,
 							onChanged: (newValue) {
 								settings.allowSwipingInGallery = newValue;
@@ -665,7 +666,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Always automatically load tapped attachment')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.alwaysAutoloadTappedAttachment,
 							onChanged: (newValue) {
 								settings.alwaysAutoloadTappedAttachment = newValue;
@@ -719,7 +720,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Always start videos with sound muted')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.alwaysStartVideosMuted,
 							onChanged: (newValue) {
 								settings.alwaysStartVideosMuted = newValue;
@@ -768,7 +769,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Hide old stickied threads')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.hideOldStickiedThreads,
 							onChanged: (newValue) {
 								settings.hideOldStickiedThreads = newValue;
@@ -784,7 +785,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Use old captcha interface')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: !settings.useNewCaptchaForm,
 							onChanged: (newValue) {
 								settings.useNewCaptchaForm = !newValue;
@@ -907,7 +908,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Close tab switcher after use')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.closeTabSwitcherAfterUse,
 							onChanged: (newValue) {
 								settings.closeTabSwitcherAfterUse = newValue;
@@ -965,7 +966,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Haptic feedback')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.useHapticFeedback,
 							onChanged: (newValue) {
 								settings.useHapticFeedback = newValue;
@@ -982,7 +983,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 							const Expanded(
 								child: Text('Incognito keyboard')
 							),
-							CupertinoSwitch(
+							CupertinoSwitch2(
 								value: !settings.enableIMEPersonalizedLearning,
 								onChanged: (newValue) {
 									settings.enableIMEPersonalizedLearning = !newValue;
@@ -999,7 +1000,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Tab bar hides when scrolling down')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.tabMenuHidesWhenScrollingDown,
 							onChanged: (newValue) {
 								settings.tabMenuHidesWhenScrollingDown = newValue;
@@ -1015,7 +1016,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Double-tap scrolls to replies in thread')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.doubleTapScrollToReplies,
 							onChanged: (newValue) {
 								settings.doubleTapScrollToReplies = newValue;
@@ -1031,7 +1032,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Tapping background closes all replies')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.overscrollModalTapPopsAll,
 							onChanged: (newValue) {
 								settings.overscrollModalTapPopsAll = newValue;
@@ -1047,7 +1048,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Always show spoilers')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.alwaysShowSpoilers,
 							onChanged: (newValue) {
 								settings.alwaysShowSpoilers = newValue;
@@ -1066,7 +1067,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 							helpText: 'When holding and dragging to peek at an image, it will start larger and will not be blurred.'
 						),
 						const Spacer(),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.unsafeImagePeeking,
 							onChanged: (newValue) {
 								settings.unsafeImagePeeking = newValue;
@@ -1082,7 +1083,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Spellcheck')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.enableSpellCheck,
 							onChanged: (newValue) {
 								settings.enableSpellCheck = newValue;
@@ -1098,7 +1099,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Open cross-thread links in new tabs')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.openCrossThreadLinksInNewTab,
 							onChanged: (newValue) {
 								settings.openCrossThreadLinksInNewTab = newValue;
@@ -1194,7 +1195,7 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 							child: Text('Apply to thread OP images')
 						),
 						const SizedBox(width: 16),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.applyImageFilterToThreads,
 							onChanged: (newValue) {
 								settings.applyImageFilterToThreads = newValue;
@@ -1516,7 +1517,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Animations')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.showAnimations,
 							onChanged: (newValue) {
 								settings.showAnimations = newValue;
@@ -1868,7 +1869,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Blur image thumbnails')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.blurThumbnails,
 							onChanged: (newValue) {
 								settings.blurThumbnails = newValue;
@@ -1884,7 +1885,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Square thumbnails')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.squareThumbnails,
 							onChanged: (newValue) {
 								settings.squareThumbnails = newValue;
@@ -1933,7 +1934,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show Post #'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showPostNumberOnPosts,
 																	onChanged: (d) => settings.showPostNumberOnPosts = d
 																)
@@ -1943,7 +1944,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show IP address #'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showIPNumberOnPosts,
 																	onChanged: (d) => settings.showIPNumberOnPosts = d
 																)
@@ -1953,7 +1954,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show name'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showNameOnPosts,
 																	onChanged: (d) => settings.showNameOnPosts = d
 																)
@@ -1963,7 +1964,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Hide default names'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.hideDefaultNamesOnPosts,
 																	onChanged: (d) => settings.hideDefaultNamesOnPosts = d
 																)
@@ -1973,7 +1974,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show trip'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showTripOnPosts,
 																	onChanged: (d) => settings.showTripOnPosts = d
 																)
@@ -1983,7 +1984,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show filename'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showFilenameOnPosts,
 																	onChanged: (d) => settings.showFilenameOnPosts = d
 																)
@@ -1993,7 +1994,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show filesize'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showFilesizeOnPosts,
 																	onChanged: (d) => settings.showFilesizeOnPosts = d
 																)
@@ -2003,7 +2004,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show file dimensions'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showFileDimensionsOnPosts,
 																	onChanged: (d) => settings.showFileDimensionsOnPosts = d
 																)
@@ -2013,7 +2014,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show pass'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showPassOnPosts,
 																	onChanged: (d) => settings.showPassOnPosts = d
 																)
@@ -2023,7 +2024,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show flag'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showFlagOnPosts,
 																	onChanged: (d) => settings.showFlagOnPosts = d
 																)
@@ -2033,7 +2034,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show country name'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showCountryNameOnPosts,
 																	onChanged: (d) => settings.showCountryNameOnPosts = d
 																)
@@ -2043,7 +2044,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show exact time'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showAbsoluteTimeOnPosts,
 																	onChanged: (d) => settings.showAbsoluteTimeOnPosts = d
 																)
@@ -2053,7 +2054,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show relative time'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showRelativeTimeOnPosts,
 																	onChanged: (d) => settings.showRelativeTimeOnPosts = d
 																)
@@ -2063,7 +2064,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show "No." before ID'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showNoBeforeIdOnPosts,
 																	onChanged: (d) => settings.showNoBeforeIdOnPosts = d
 																)
@@ -2177,7 +2178,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Show reply counts in gallery')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.showReplyCountsInGallery,
 							onChanged: (newValue) {
 								settings.showReplyCountsInGallery = newValue;
@@ -2193,7 +2194,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Show thumbnails in gallery')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.showThumbnailsInGallery,
 							onChanged: (newValue) {
 								settings.showThumbnailsInGallery = newValue;
@@ -2249,7 +2250,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Show counters in their own row'),
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.useFullWidthForCatalogCounters,
 							onChanged: (d) => settings.useFullWidthForCatalogCounters = d
 						),
@@ -2396,7 +2397,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															const Expanded(
 																child: Text('Thumbnail behind text')
 															),
-															CupertinoSwitch(
+															CupertinoSwitch2(
 																value: settings.catalogGridModeAttachmentInBackground,
 																onChanged: (v) {
 																	setDialogState(() {
@@ -2412,7 +2413,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															const Expanded(
 																child: Text('Rounded corners and margin')
 															),
-															CupertinoSwitch(
+															CupertinoSwitch2(
 																value: settings.catalogGridModeCellBorderRadiusAndMargin,
 																onChanged: (v) {
 																	setDialogState(() {
@@ -2428,7 +2429,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															const Expanded(
 																child: Text('Show more image if text is short')
 															),
-															CupertinoSwitch(
+															CupertinoSwitch2(
 																value: settings.catalogGridModeShowMoreImageIfLessText,
 																onChanged: (v) {
 																	setDialogState(() {
@@ -2502,7 +2503,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															const Expanded(
 																child: Text('Show last replies')
 															),
-															CupertinoSwitch(
+															CupertinoSwitch2(
 																value: settings.showLastRepliesInCatalog,
 																onChanged: (d) {
 																	settings.showLastRepliesInCatalog = d;
@@ -2602,7 +2603,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show image count'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showImageCountInCatalog,
 																	onChanged: (d) => settings.showImageCountInCatalog = d
 																)
@@ -2612,7 +2613,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show clock icon'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showClockIconInCatalog,
 																	onChanged: (d) => settings.showClockIconInCatalog = d
 																)
@@ -2622,7 +2623,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show name'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showNameInCatalog,
 																	onChanged: (d) => settings.showNameInCatalog = d
 																)
@@ -2632,7 +2633,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Hide default names'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.hideDefaultNamesInCatalog,
 																	onChanged: (d) => settings.hideDefaultNamesInCatalog = d
 																)
@@ -2642,7 +2643,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show exact time'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showTimeInCatalogHeader,
 																	onChanged: (d) => settings.showTimeInCatalogHeader = d
 																)
@@ -2652,7 +2653,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show relative time'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showTimeInCatalogStats,
 																	onChanged: (d) => settings.showTimeInCatalogStats = d
 																)
@@ -2662,7 +2663,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show ID'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showIdInCatalogHeader,
 																	onChanged: (d) => settings.showIdInCatalogHeader = d
 																)
@@ -2672,7 +2673,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show flag'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showFlagInCatalogHeader,
 																	onChanged: (d) => settings.showFlagInCatalogHeader = d
 																)
@@ -2682,7 +2683,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show country name'),
 																const Spacer(),
-																CupertinoSwitch(
+																CupertinoSwitch2(
 																	value: settings.showCountryNameInCatalogHeader,
 																	onChanged: (d) => settings.showCountryNameInCatalogHeader = d
 																)
@@ -2706,7 +2707,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Dim read threads in catalog')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.dimReadThreads,
 							onChanged: (newValue) {
 								settings.dimReadThreads = newValue;
@@ -2782,7 +2783,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 								)
 							)
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: !settings.verticalTwoPaneMinimumPaneSize.isNegative,
 							onChanged: (newValue) {
 								settings.verticalTwoPaneMinimumPaneSize = settings.verticalTwoPaneMinimumPaneSize.abs() * (newValue ? 1 : -1);
@@ -2900,7 +2901,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 								helpText: 'Some devices have a bug in their Android ROM, where the status bar cannot be properly hidden.\n\nIf this workaround is enabled, the status bar will not be hidden when opening the gallery.'
 							),
 							const Spacer(),
-							CupertinoSwitch(
+							CupertinoSwitch2(
 								value: settings.useStatusBarWorkaround ?? false,
 								onChanged: (newValue) {
 									settings.useStatusBarWorkaround = newValue;
@@ -2989,7 +2990,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									const Expanded(
 										child: Text('Initially hide nested replies')
 									),
-									CupertinoSwitch(
+									CupertinoSwitch2(
 										value: _threadLayoutImageboard.persistence.browserState.treeModeInitiallyCollapseSecondLevelReplies,
 										onChanged: (newValue) {
 											_threadLayoutImageboard.persistence.browserState.treeModeInitiallyCollapseSecondLevelReplies = newValue;
@@ -3012,7 +3013,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									const Expanded(
 										child: Text('Collapsed posts show body')
 									),
-									CupertinoSwitch(
+									CupertinoSwitch2(
 										value: _threadLayoutImageboard.persistence.browserState.treeModeCollapsedPostsShowBody,
 										onChanged: (newValue) {
 											_threadLayoutImageboard.persistence.browserState.treeModeCollapsedPostsShowBody = newValue;
@@ -3034,7 +3035,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Blur effects')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.blurEffects,
 							onChanged: (newValue) {
 								settings.blurEffects = newValue;
@@ -3050,7 +3051,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('12-hour time')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.exactTimeIsTwelveHour,
 							onChanged: (newValue) {
 								settings.exactTimeIsTwelveHour = newValue;
@@ -3066,7 +3067,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						Expanded(
 							child: Text('ISO 8601 dates (e.g. ${DateTime.now().toISO8601Date})')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.exactTimeIsISO8601,
 							onChanged: (newValue) {
 								settings.exactTimeIsISO8601 = newValue;
@@ -3082,7 +3083,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Show date even if today')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.exactTimeShowsDateForToday,
 							onChanged: (newValue) {
 								settings.exactTimeShowsDateForToday = newValue;
@@ -3098,7 +3099,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Overlay indicators and buttons in gallery')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.showOverlaysInGallery,
 							onChanged: (newValue) {
 								settings.showOverlaysInGallery = newValue;
@@ -3136,7 +3137,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 						const Expanded(
 							child: Text('Require authentication on launch')
 						),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.askForAuthenticationOnLaunch,
 							onChanged: (newValue) async {
 								try {
@@ -3219,7 +3220,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 							helpText: 'Send the captcha images you solve to a database to improve the automated solver. No other information about your posts will be collected.'
 						),
 						const Spacer(),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.contributeCaptchas ?? false,
 							onChanged: (setting) {
 								settings.contributeCaptchas = setting;
@@ -3238,7 +3239,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 							helpText: 'Crash stack traces and uncaught exceptions will be used to help fix bugs. No personal information will be collected.'
 						),
 						const Spacer(),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: FirebaseCrashlytics.instance.isCrashlyticsCollectionEnabled,
 							onChanged: (setting) async {
 								await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(setting);
@@ -3258,7 +3259,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 							helpText: 'Links to sites such as YouTube will show the thumbnail and title of the page instead of the link URL.'
 						),
 						const Spacer(),
-						CupertinoSwitch(
+						CupertinoSwitch2(
 							value: settings.useEmbeds,
 							onChanged: (setting) {
 								settings.useEmbeds = setting;

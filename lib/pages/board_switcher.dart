@@ -8,6 +8,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/cupertino_switch2.dart';
 import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -464,7 +465,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																							child: Text('Show keyboard when opening'),
 																						),
 																						const SizedBox(width: 8),
-																						CupertinoSwitch(
+																						CupertinoSwitch2(
 																							value: settings.boardSwitcherHasKeyboardFocus,
 																							onChanged: (v) {
 																								settings.boardSwitcherHasKeyboardFocus = v;

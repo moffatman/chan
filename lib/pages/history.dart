@@ -12,6 +12,7 @@ import 'package:chan/util.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/cupertino_switch2.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/thread_row.dart';
@@ -117,7 +118,7 @@ class HistoryPageState extends State<HistoryPage> {
 																				const Expanded(
 																					child: Text('Include threads with your posts')
 																				),
-																				CupertinoSwitch(
+																				CupertinoSwitch2(
 																					value: includeThreadsYouRepliedTo,
 																					onChanged: (v) {
 																						setDialogState(() {

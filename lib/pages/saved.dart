@@ -22,6 +22,7 @@ import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/cupertino_switch2.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -1041,7 +1042,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 										onPressed: w.update,
 										child: const Icon(CupertinoIcons.refresh)
 									),
-									CupertinoSwitch(
+									CupertinoSwitch2(
 										value: w.active,
 										onChanged: (val) {
 											if (val) {
@@ -1124,7 +1125,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 								const SizedBox(
 									height: 60
 								),
-								CupertinoSwitch(
+								CupertinoSwitch2(
 									value: settings.usePushNotifications ?? false,
 									onChanged: (val) {
 										settings.usePushNotifications = val;
