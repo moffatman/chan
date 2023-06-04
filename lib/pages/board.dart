@@ -337,8 +337,9 @@ class _BoardPageState extends State<BoardPage> {
 											)
 										),
 										Expanded(
-											child: Text(subvariant.name, style: const TextStyle(
-												fontSize: 20
+											child: Text(subvariant.name, style: TextStyle(
+												fontSize: 20,
+												fontWeight: subvariant == currentVariant ? FontWeight.bold : null
 											))
 										),
 										GestureDetector(
