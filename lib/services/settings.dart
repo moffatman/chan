@@ -14,6 +14,7 @@ import 'package:chan/services/user_agents.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -798,6 +799,8 @@ class SavedSettings extends HiveObject {
 	int backgroundThreadAutoUpdatePeriodSeconds;
 	@HiveField(139)
 	int currentThreadAutoUpdatePeriodSeconds;
+	@HiveField(140)
+	ShareablePostsStyle lastShareablePostsStyle;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -939,6 +942,7 @@ class SavedSettings extends HiveObject {
 		bool? openCrossThreadLinksInNewTab,
 		int? backgroundThreadAutoUpdatePeriodSeconds,
 		int? currentThreadAutoUpdatePeriodSeconds,
+		ShareablePostsStyle? lastShareablePostsStyle,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1106,7 +1110,8 @@ class SavedSettings extends HiveObject {
 		enableSpellCheck = enableSpellCheck ?? true,
 		openCrossThreadLinksInNewTab = openCrossThreadLinksInNewTab ?? false,
 		backgroundThreadAutoUpdatePeriodSeconds = backgroundThreadAutoUpdatePeriodSeconds ?? 60,
-		currentThreadAutoUpdatePeriodSeconds = currentThreadAutoUpdatePeriodSeconds ?? 60 {
+		currentThreadAutoUpdatePeriodSeconds = currentThreadAutoUpdatePeriodSeconds ?? 60,
+		lastShareablePostsStyle = lastShareablePostsStyle ?? const ShareablePostsStyle() {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -1334,6 +1339,7 @@ class EffectiveSettings extends ChangeNotifier {
 	
 	SavedTheme get lightTheme => _settings.themes[_settings.lightThemeKey] ?? defaultLightTheme;
 	SavedTheme get darkTheme => _settings.themes[_settings.darkThemeKey] ?? defaultDarkTheme;
+	String get themeKey => whichTheme == Brightness.dark ? darkThemeKey : lightThemeKey;
 	SavedTheme get theme => whichTheme == Brightness.dark ? darkTheme : lightTheme;
 	String addTheme(String name, SavedTheme theme) {
 		String proposedName = name;
@@ -2144,6 +2150,12 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.currentThreadAutoUpdatePeriodSeconds = setting;
 		_settings.save();
 		notifyListeners();
+	}
+
+	ShareablePostsStyle get lastShareablePostsStyle => _settings.lastShareablePostsStyle;
+	set lastShareablePostsStyle(ShareablePostsStyle setting) {
+		_settings.lastShareablePostsStyle = setting;
+		_settings.save();
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];

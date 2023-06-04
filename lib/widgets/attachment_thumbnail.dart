@@ -5,6 +5,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/thread.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
@@ -53,6 +54,7 @@ class AttachmentThumbnail extends StatelessWidget {
 	final ImageboardSite? site;
 	final bool shrinkHeight;
 	final bool shrinkWidth;
+	final bool? overrideFullQuality;
 
 	const AttachmentThumbnail({
 		required this.attachment,
@@ -69,6 +71,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		this.shrinkHeight = false,
 		this.shrinkWidth = false,
 		this.site,
+		this.overrideFullQuality,
 		Key? key
 	}) : super(key: key);
 
@@ -95,7 +98,7 @@ class AttachmentThumbnail extends StatelessWidget {
 		}
 		bool resize = false;
 		String url = attachment.thumbnailUrl;
-		if (context.select<EffectiveSettings, bool>((s) => s.fullQualityThumbnails) && attachment.type == AttachmentType.image && !attachment.isRateLimited) {
+		if ((overrideFullQuality ?? context.select<EffectiveSettings, bool>((s) => s.fullQualityThumbnails)) && attachment.type == AttachmentType.image && !attachment.isRateLimited) {
 			resize = true;
 			url = attachment.url;
 		}
@@ -152,7 +155,7 @@ class AttachmentThumbnail extends StatelessWidget {
 						return Container(
 							width: effectiveWidth,
 							height: effectiveHeight,
-							color: settings.theme.barColor,
+							color: ChanceTheme.barColorOf(context),
 							child: Center(
 								child: Icon(attachment.type == AttachmentType.url ? CupertinoIcons.compass : CupertinoIcons.exclamationmark_triangle_fill, size: max(24, 0.5 * min(effectiveWidth, effectiveHeight)))
 							)
@@ -190,7 +193,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			child = Container(
 				width: effectiveWidth,
 				height: effectiveHeight,
-				color: settings.theme.barColor,
+				color: ChanceTheme.barColorOf(context),
 				child: Center(
 					child: Icon(
 						attachment.icon ?? CupertinoIcons.photo,

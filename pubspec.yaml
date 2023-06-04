@@ -83,6 +83,7 @@ dependencies:
   weak_map: ^2.1.0
   vector_math: ^2.1.4
   local_auth: ^2.1.6
+  screenshot: ^2.1.0
 
 dev_dependencies:
   hive_generator: ^2.0.0
@@ -171,3 +172,4 @@ dependency_overrides:
       url: https://github.com/moffatman/dio.git
       path: dio
   markdown: ^7.0.1 # Needed to resolve a conflict with flutter_tex
+  screenshot: ^2.1.0 # Needed to run with current moffatman/flutter tag

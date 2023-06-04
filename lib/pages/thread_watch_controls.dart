@@ -2,6 +2,7 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:flutter/cupertino.dart';
@@ -37,7 +38,7 @@ class ThreadWatchControlsPage extends StatelessWidget {
 			child: Container(
 				width: double.infinity,
 				padding: const EdgeInsets.all(16),
-				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+				color: ChanceTheme.backgroundColorOf(context),
 				alignment: Alignment.center,
 				child: ConstrainedBox(
 					constraints: const BoxConstraints(

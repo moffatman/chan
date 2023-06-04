@@ -55,6 +55,7 @@ class ThreadRow extends StatelessWidget {
 
 	Widget _build(BuildContext context, PersistentThreadState? threadState) {
 		final settings = context.watch<EffectiveSettings>();
+		final theme = context.watch<SavedTheme>();
 		final imageboard = context.watch<Imageboard>();
 		final site = context.watch<ImageboardSite>();
 		final latestThread = threadState?.thread ?? thread;
@@ -63,7 +64,7 @@ class ThreadRow extends StatelessWidget {
 		int unseenReplyCount = 0;
 		int unseenYouCount = 0;
 		int unseenImageCount = 0;
-		final grey = CupertinoTheme.of(context).primaryColorWithBrightness(0.6);
+		final grey = theme.primaryColorWithBrightness(0.6);
 		Color? replyCountColor;
 		Color? imageCountColor;
 		Color? otherMetadataColor;
@@ -90,10 +91,10 @@ class ThreadRow extends StatelessWidget {
 		Widget makeCounters() => Container(
 			decoration: BoxDecoration(
 				borderRadius: settings.useFullWidthForCatalogCounters ? null : const BorderRadius.only(topLeft: Radius.circular(8)),
-				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+				color: theme.backgroundColor,
 				border:  settings.useFullWidthForCatalogCounters ? Border(
-					top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)),
-				) : Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+					top: BorderSide(color: theme.primaryColorWithBrightness(0.2)),
+				) : Border.all(color: theme.primaryColorWithBrightness(0.2))
 			),
 			margin: settings.useFullWidthForCatalogCounters ? EdgeInsets.zero : const EdgeInsets.only(left: 10),
 			padding: settings.useFullWidthForCatalogCounters ? const EdgeInsets.all(4) : const EdgeInsets.all(2),
@@ -139,7 +140,7 @@ class ThreadRow extends StatelessWidget {
 							if (countsUnreliable && latestThread == thread) const Text('—')
 							else Text((latestReplyCount - unseenReplyCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
 							if (unseenReplyCount > 0) Text('+$unseenReplyCount'),
-							if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color)),
+							if (unseenYouCount > 0) Text(' (+$unseenYouCount)', style: TextStyle(color: theme.secondaryColor)),
 							const SizedBox(width: 2),
 							if (settings.showImageCountInCatalog && site.showImageCount) ...[
 								const SizedBox(width: 6),
@@ -237,8 +238,8 @@ class ThreadRow extends StatelessWidget {
 			)
 		];
 		if (latestThread.title?.isNotEmpty == true) {
-			final titleSpan = PostTextSpan(settings.filterProfanity(latestThread.title!)).build(context, PostSpanRootZoneData(thread: thread, imageboard: imageboard), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
-				baseTextStyle: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, color: settings.theme.titleColor) : null
+			final titleSpan = PostTextSpan(settings.filterProfanity(latestThread.title!)).build(context, PostSpanRootZoneData(thread: thread, imageboard: imageboard), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
+				baseTextStyle: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, color: theme.titleColor) : null
 			));
 			if (site.classicCatalogStyle) {
 				if (headerRow.isNotEmpty) {
@@ -304,8 +305,8 @@ class ThreadRow extends StatelessWidget {
 														child: Container(
 															decoration: BoxDecoration(
 																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+																color: theme.backgroundColor,
+																border: Border.all(color: theme.primaryColorWithBrightness(0.2))
 															),
 															padding: const EdgeInsets.all(2),
 															child: Icon(attachment.icon, size: 16)
@@ -351,8 +352,8 @@ class ThreadRow extends StatelessWidget {
 											if (site.classicCatalogStyle) ...[
 												if (headerRow.isNotEmpty) const TextSpan(text: '\n'),
 												latestThread.posts_.first.span.build(
-													context, context.watch<PostSpanZoneData>(), settings,
-													(baseOptions ?? PostSpanRenderOptions()).copyWith(
+													context, context.watch<PostSpanZoneData>(), settings, theme,
+													(baseOptions ?? const PostSpanRenderOptions()).copyWith(
 														avoidBuggyClippers: true,
 														maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0) - (headerRow.isNotEmpty ? 1 : 0),
 														charactersPerLine: (constraints.maxWidth / (0.55 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
@@ -379,7 +380,7 @@ class ThreadRow extends StatelessWidget {
 																mainAxisSize: MainAxisSize.min,
 																crossAxisAlignment: CrossAxisAlignment.start,
 																children: [
-																	Text('>>', style: TextStyle(color: settings.theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold)),
+																	Text('>>', style: TextStyle(color: theme.primaryColorWithBrightness(0.1), fontWeight: FontWeight.bold)),
 																	const SizedBox(width: 4),
 																	Flexible(
 																		child: PostRow(
@@ -436,8 +437,8 @@ class ThreadRow extends StatelessWidget {
 												borderRadius: settings.catalogGridModeAttachmentInBackground ?
 													const BorderRadius.only(bottomLeft: Radius.circular(6)) :
 													const BorderRadius.only(topLeft: Radius.circular(6)),
-												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-												border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+												color: theme.backgroundColor,
+												border: Border.all(color: theme.primaryColorWithBrightness(0.2))
 											),
 											padding: const EdgeInsets.all(2),
 											child: Icon(attachment.icon)
@@ -467,13 +468,13 @@ class ThreadRow extends StatelessWidget {
 										),
 										if (latestThread.title?.isNotEmpty ?? false) TextSpan(
 											text: '${settings.filterProfanity(latestThread.title!)}\n',
-											style: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, color: settings.theme.titleColor) : null,
+											style: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, color: theme.titleColor) : null,
 										),
 										if (settings.useCatalogGrid && settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '')) TextSpan(
 											text: '${latestThread.flair?.name}\n',
 											style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 15)
 										),
-										if (site.classicCatalogStyle) latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+										if (site.classicCatalogStyle) latestThread.posts_.first.span.build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 											maxLines: 1 + (constraints.maxHeight / ((DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil() - (thread.title?.isNotEmpty == true ? 1 : 0),
 											charactersPerLine: (constraints.maxWidth / (0.4 * (DefaultTextStyle.of(context).style.fontSize ?? 17) * (DefaultTextStyle.of(context).style.height ?? 1.2))).lazyCeil(),
 											avoidBuggyClippers: true
@@ -497,7 +498,7 @@ class ThreadRow extends StatelessWidget {
 					Align(
 						alignment: Alignment.bottomCenter,
 						child: Container(
-							color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.75),
+							color: theme.backgroundColor.withOpacity(0.75),
 							width: double.infinity,
 							child: txt
 						)
@@ -559,8 +560,8 @@ class ThreadRow extends StatelessWidget {
 					child: Container(
 						decoration: BoxDecoration(
 							borderRadius: const BorderRadius.only(bottomRight: Radius.circular(6)),
-							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-							border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+							color: theme.backgroundColor,
+							border: Border.all(color: theme.primaryColorWithBrightness(0.2))
 						),
 						padding: const EdgeInsets.all(2),
 						child: Text(latestThread.flair!.name)
@@ -572,8 +573,8 @@ class ThreadRow extends StatelessWidget {
 						child: Container(
 							decoration: BoxDecoration(
 								borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
-								color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-								border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+								color: theme.backgroundColor,
+								border: Border.all(color: theme.primaryColorWithBrightness(0.2))
 							),
 							padding: const EdgeInsets.only(top: 2, bottom: 2, left: 6, right: 6),
 							child: Row(
@@ -592,8 +593,8 @@ class ThreadRow extends StatelessWidget {
 		);
 		return Container(
 			decoration: BoxDecoration(
-				color: isSelected ? CupertinoTheme.of(context).primaryColorWithBrightness(0.4) : CupertinoTheme.of(context).scaffoldBackgroundColor,
-				border: contentFocus ? Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)) : null,
+				color: isSelected ? theme.primaryColorWithBrightness(0.4) : theme.backgroundColor,
+				border: contentFocus ? Border.all(color: theme.primaryColorWithBrightness(0.2)) : null,
 				borderRadius: borderRadius
 			),
 			margin: (contentFocus && contentFocusBorderRadiusAndPadding) ? const EdgeInsets.all(4) : null,

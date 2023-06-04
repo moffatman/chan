@@ -11,6 +11,14 @@ extension SafeWhere<T> on Iterable<T> {
 	T? get tryFirst => isNotEmpty ? first : null;
 	T? get tryLast => isNotEmpty ? last : null;
 	T? get trySingle => length == 1 ? single : null;
+	Iterable<U> tryMap<U>(U? Function(T v) f) sync* {
+		for (final v in this) {
+			final mapped = f(v);
+			if (mapped != null) {
+				yield mapped;
+			}
+		}
+	}
 }
 
 extension SafeRemoveFirst<T> on List<T> {

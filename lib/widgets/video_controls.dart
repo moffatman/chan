@@ -1,4 +1,5 @@
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -134,7 +135,7 @@ class _VideoControlsState extends State<VideoControls> {
 
 	@override
 	Widget build(BuildContext context) {
-		final primaryColor = CupertinoTheme.of(context).primaryColor;
+		final primaryColor = ChanceTheme.primaryColorOf(context);
 		return SizedBox(
 			height: 44,
 			child: Row(

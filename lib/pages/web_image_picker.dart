@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_text_field2.dart';
@@ -332,7 +333,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 											builder: (context) => OverscrollModalPage(
 												child: Container(
 													width: double.infinity,
-													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+													color: ChanceTheme.backgroundColorOf(context),
 													padding: const EdgeInsets.all(16),
 													child: Column(
 														children: [
@@ -348,7 +349,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																			builder: (innerContext) => OverscrollModalPage(
 																				child: Container(
 																					width: double.infinity,
-																					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																					color: ChanceTheme.backgroundColorOf(context),
 																					padding: const EdgeInsets.all(16),
 																					child: Column(
 																						children: [
@@ -375,7 +376,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 																			builder: (innerContext) => OverscrollModalPage(
 																				child: Container(
 																					width: double.infinity,
-																					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																					color: ChanceTheme.backgroundColorOf(context),
 																					padding: const EdgeInsets.all(16),
 																					child: Column(
 																						children: [

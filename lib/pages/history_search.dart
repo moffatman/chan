@@ -7,6 +7,7 @@ import 'package:chan/pages/master_detail.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
@@ -162,7 +163,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 								margin: const EdgeInsets.only(left: 4, right: 4),
 								padding: const EdgeInsets.all(4),
 								decoration: BoxDecoration(
-									color: CupertinoTheme.of(context).primaryColor.withOpacity(0.3),
+									color: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
 									borderRadius: const BorderRadius.all(Radius.circular(4))
 								),
 								child: child
@@ -355,8 +356,8 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 								borderRadius: const BorderRadius.all(Radius.circular(8)),
 								child: LinearProgressIndicator(
 									value: numer / denom,
-									backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.3),
-									color: CupertinoTheme.of(context).primaryColor,
+									backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
+									color: ChanceTheme.primaryColorOf(context),
 									minHeight: 8
 								)
 							),

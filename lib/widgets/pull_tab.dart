@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -142,7 +142,7 @@ class _PullTabState extends State<PullTab> {
 												borderRadius: rtl ?
 													const BorderRadius.only(topLeft: Radius.circular(32), bottomLeft: Radius.circular(32)) :
 													const BorderRadius.only(topRight: Radius.circular(32), bottomRight: Radius.circular(32)),
-												color: CupertinoTheme.of(context).textTheme.actionTextStyle.color
+												color: ChanceTheme.secondaryColorOf(context)
 											),
 											child: Row(
 												mainAxisSize: MainAxisSize.min,

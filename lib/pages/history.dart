@@ -7,6 +7,7 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
@@ -321,7 +322,7 @@ class HistoryPageState extends State<HistoryPage> {
 							) : Builder(
 								builder: (context) => Container(
 									decoration: BoxDecoration(
-										color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+										color: ChanceTheme.backgroundColorOf(context),
 									),
 									child: const Center(
 										child: Text('Select a thread')

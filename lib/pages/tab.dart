@@ -3,6 +3,7 @@ import 'package:chan/pages/board.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -64,7 +65,7 @@ class ImageboardTab extends StatelessWidget {
 					) : Builder(
 						builder: (context) => Container(
 							decoration: BoxDecoration(
-								color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+								color: ChanceTheme.backgroundColorOf(context),
 							),
 							child: const Center(
 								child: Text('Select a thread')

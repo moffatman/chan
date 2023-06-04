@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:flutter/cupertino.dart';
@@ -101,7 +102,7 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 				return true;
 			},
 			child: Container(
-				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+				color: ChanceTheme.backgroundColorOf(context),
 				child: SafeArea(
 					top: false,
 					child: Padding(
@@ -165,8 +166,8 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 										builder: (context, progress, _) => LinearProgressIndicator(
 											minHeight: 5,
 											value: progress,
-											valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
-											backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor
+											valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
+											backgroundColor: ChanceTheme.backgroundColorOf(context)
 										)
 									) : const SizedBox(
 										height: 5,
@@ -175,7 +176,7 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 								),
 								DecoratedBox(
 									decoration: BoxDecoration(
-										color: CupertinoTheme.of(context).scaffoldBackgroundColor
+										color: ChanceTheme.backgroundColorOf(context)
 									),
 									child: Row(
 										children: [

@@ -22,6 +22,7 @@ import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/streaming_mp4.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -106,28 +107,31 @@ class ChanFailedApp extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return CupertinoApp(
-			theme: const CupertinoThemeData(
-				primaryColor: Colors.white,
-				brightness: Brightness.dark
-			),
-			home: Center(
-				child: ErrorMessageCard(
-					'Sorry, an unrecoverable error has occured:\n${error.toStringDio()}\n$stackTrace',
-					remedies: {
-						'Report via Email': () {
-							FlutterEmailSender.send(Email(
-								subject: 'Unrecoverable Chance Error',
-								recipients: ['callum@moffatman.com'],
-								isHTML: true,
-								body: '''<p>Hi Callum,</p>
-												 <p>Chance v$kChanceVersion isn't starting and is giving the following error:</p>
-												 <p>$error</p>
-												 <p>${const LineSplitter().convert(stackTrace.toString()).join('</p><p>')}</p>
-												 <p>Thanks!</p>'''
-							));
+		return Provider.value(
+			value: defaultDarkTheme,
+			child: CupertinoApp(
+				theme: const CupertinoThemeData(
+					primaryColor: Colors.white,
+					brightness: Brightness.dark
+				),
+				home: Center(
+					child: ErrorMessageCard(
+						'Sorry, an unrecoverable error has occured:\n${error.toStringDio()}\n$stackTrace',
+						remedies: {
+							'Report via Email': () {
+								FlutterEmailSender.send(Email(
+									subject: 'Unrecoverable Chance Error',
+									recipients: ['callum@moffatman.com'],
+									isHTML: true,
+									body: '''<p>Hi Callum,</p>
+													<p>Chance v$kChanceVersion isn't starting and is giving the following error:</p>
+													<p>$error</p>
+													<p>${const LineSplitter().convert(stackTrace.toString()).join('</p><p>')}</p>
+													<p>Thanks!</p>'''
+								));
+							}
 						}
-					}
+					)
 				)
 			)
 		);
@@ -202,7 +206,13 @@ class _ChanAppState extends State<ChanApp> {
 			},
 			child: MultiProvider(
 				providers: [
-					ChangeNotifierProvider.value(value: settings)
+					ChangeNotifierProvider.value(value: settings),
+					ProxyProvider<EffectiveSettings, SavedTheme>(
+						update: (context, settings, result) => settings.theme
+					),
+					ProxyProvider<EffectiveSettings, ChanceThemeKey>(
+						update: (context, settings, result) => ChanceThemeKey(settings.themeKey)
+					)
 				],
 				child: SettingsSystemListener(
 					child: MediaQuery.fromView(
@@ -251,7 +261,7 @@ class _ChanAppState extends State<ChanApp> {
 																		const ChanHomePage()
 																	]
 																) : Container(
-																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+																	color: ChanceTheme.backgroundColorOf(context),
 																	child: Center(
 																		child: ImageboardRegistry.instance.setupError != null ? ErrorMessageCard(ImageboardRegistry.instance.setupError!, remedies: {
 																			if (ImageboardRegistry.instance.setupStackTrace != null) 'More details': () {
@@ -304,7 +314,7 @@ class ChanSplashPage extends StatelessWidget {
 			width: double.infinity,
 			height: double.infinity,
 			alignment: Alignment.center,
-			color: context.select<EffectiveSettings, Color>((s) => s.theme.backgroundColor),
+			color: ChanceTheme.backgroundColorOf(context),
 			child: Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
@@ -316,7 +326,7 @@ class ChanSplashPage extends StatelessWidget {
 						),
 						child: ColorFiltered(
 							colorFilter: ColorFilter.mode(
-								context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+								ChanceTheme.barColorOf(context),
 								BlendMode.srcATop
 							),
 							child: const Image(
@@ -331,7 +341,7 @@ class ChanSplashPage extends StatelessWidget {
 							child: stage == null ? null : Text(
 								stage,
 								style: TextStyle(
-									color: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColor),
+									color: ChanceTheme.primaryColorOf(context),
 									fontSize: 18
 								)
 							)
@@ -1424,12 +1434,12 @@ class _ChanHomePageState extends State<ChanHomePage> {
 									bottom: -5,
 									child: DecoratedBox(
 										decoration: BoxDecoration(
-											color: settings.theme.primaryColor,
+											color: ChanceTheme.primaryColorOf(context),
 											borderRadius: BorderRadius.circular(8)
 										),
 										child: Padding(
 											padding: const EdgeInsets.symmetric(horizontal: 4),
-											child: Icon(CupertinoIcons.eyeglasses, size: 20, color: settings.theme.barColor)
+											child: Icon(CupertinoIcons.eyeglasses, size: 20, color: ChanceTheme.barColorOf(context))
 										)
 									)
 								)
@@ -1599,7 +1609,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				width: double.infinity,
 				height: double.infinity,
 				alignment: Alignment.center,
-				color: context.select<EffectiveSettings, Color>((s) => s.theme.backgroundColor),
+				color: ChanceTheme.backgroundColorOf(context),
 				child: Column(
 					mainAxisSize: MainAxisSize.min,
 					children: [
@@ -1663,7 +1673,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 								children: [
 									Container(
 										padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
-										color: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
+										color: ChanceTheme.barColorOf(context),
 										width: 85,
 										child: Column(
 											children: [
@@ -1754,7 +1764,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 					child: CupertinoTabScaffold(
 						controller: _tabController,
 						tabBar: ChanceCupertinoTabBar(
-							inactiveColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.4),
+							inactiveColor: ChanceTheme.primaryColorOf(context).withOpacity(0.4),
 							items: [
 								BottomNavigationBarItem(
 									icon: AnimatedBuilder(
@@ -1909,7 +1919,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 												}
 											},
 											child: Container(
-												color: CupertinoTheme.of(context).barBackgroundColor,
+												color: ChanceTheme.barColorOf(context),
 												child: Row(
 													children: [
 														Expanded(

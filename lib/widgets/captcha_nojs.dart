@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui show Image;
 
 import 'package:chan/services/cloudflare.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:dio/dio.dart';
@@ -293,7 +294,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 										child: Container(
 											decoration: BoxDecoration(
 												border: Border.all(
-													color: subimage.selected ? CupertinoTheme.of(context).primaryColor : Colors.transparent,
+													color: subimage.selected ? ChanceTheme.primaryColorOf(context) : Colors.transparent,
 													width: 4
 												)
 											),
@@ -340,7 +341,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 	Widget build(BuildContext context) {
 		return Container(
 			decoration: BoxDecoration(
-				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+				color: ChanceTheme.backgroundColorOf(context),
 			),
 			width: double.infinity,
 			padding: const EdgeInsets.all(16),

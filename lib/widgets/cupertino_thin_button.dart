@@ -1,3 +1,4 @@
+import 'package:chan/services/theme.dart';
 import 'package:flutter/cupertino.dart';
 
 class CupertinoThinButton extends StatefulWidget {
@@ -25,10 +26,10 @@ class _CupertinoThinButtonState extends State<CupertinoThinButton> {
 	Widget build(BuildContext context) {
 		Color? color;
 		if (_pressed) {
-			color = CupertinoTheme.of(context).primaryColor.withOpacity(widget.filled ? 0.8 : 0.2);
+			color = ChanceTheme.primaryColorOf(context).withOpacity(widget.filled ? 0.8 : 0.2);
 		}
 		else if (widget.filled) {
-			color = CupertinoTheme.of(context).primaryColor;
+			color = ChanceTheme.primaryColorOf(context);
 		}
 		return GestureDetector(
 			onTapDown: (_) {
@@ -49,14 +50,14 @@ class _CupertinoThinButtonState extends State<CupertinoThinButton> {
 			},
 			child: Container(
 				decoration: BoxDecoration(
-					border: Border.all(color: CupertinoTheme.of(context).primaryColor),
+					border: Border.all(color: ChanceTheme.primaryColorOf(context)),
 					borderRadius: const BorderRadius.all(Radius.circular(8)),
 					color: color
 				),
 				padding: widget.padding,
 				child: widget.filled ? DefaultTextStyle.merge(
 					style: TextStyle(
-						color: CupertinoTheme.of(context).scaffoldBackgroundColor
+						color: ChanceTheme.backgroundColorOf(context)
 					),
 					child: widget.child
 				) : widget.child

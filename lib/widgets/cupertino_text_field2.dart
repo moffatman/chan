@@ -1,6 +1,5 @@
-import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:provider/provider.dart';
 
 class CupertinoTextField2 extends StatelessWidget {
 	final bool autocorrect;
@@ -70,7 +69,7 @@ class CupertinoTextField2 extends StatelessWidget {
 			contextMenuBuilder: contextMenuBuilder,
 			controller: controller,
 			decoration: BoxDecoration(
-				color: context.select<EffectiveSettings, Color>((s) => s.theme.textFieldColor),
+				color: ChanceTheme.textFieldColorOf(context),
 				border: Border.all(
 					color: const CupertinoDynamicColor.withBrightness(
 						color: Color(0x33000000),
@@ -135,7 +134,7 @@ class CupertinoSearchTextField2 extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return CupertinoSearchTextField(
-			backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.searchTextFieldColor),
+			backgroundColor: ChanceTheme.searchTextFieldColorOf(context),
 			controller: controller,
 			enableIMEPersonalizedLearning: enableIMEPersonalizedLearning,
 			focusNode: focusNode,

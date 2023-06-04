@@ -2,6 +2,7 @@ import 'package:chan/pages/selectable_post.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/widgets/popup_attachment.dart';
@@ -45,6 +46,8 @@ class PostRow extends StatelessWidget {
 	final Widget? overrideReplyCount;
 	final bool dim;
 	final bool showPostNumber;
+	final double? largeImageWidth;
+	final bool revealYourPosts;
 
 	const PostRow({
 		required this.post,
@@ -65,6 +68,8 @@ class PostRow extends StatelessWidget {
 		this.overrideReplyCount,
 		this.dim = false,
 		this.showPostNumber = true,
+		this.largeImageWidth,
+		this.revealYourPosts = true,
 		Key? key
 	}) : super(key: key);
 
@@ -93,18 +98,21 @@ class PostRow extends StatelessWidget {
 		final parentZone = context.watch<PostSpanZoneData>();
 		final translatedPostSnapshot = parentZone.translatedPost(post.id);
 		final settings = context.watch<EffectiveSettings>();
+		final theme = context.watch<SavedTheme>();
 		final parentZoneThreadState = parentZone.imageboard.persistence.getThreadStateIfExists(post.threadIdentifier);
 		final receipt = parentZoneThreadState?.receipts.tryFirstWhere((r) => r.id == latestPost.id);
-		final isYourPost = receipt != null || (parentZoneThreadState?.postsMarkedAsYou.contains(post.id) ?? false);
+		final isYourPost = revealYourPosts && receipt != null || (parentZoneThreadState?.postsMarkedAsYou.contains(post.id) ?? false);
 		Border? border;
+		final List<Attachment> largeAttachments = largeImageWidth == null ? [] : latestPost.attachments.where((a) => a.type == AttachmentType.image).toList();
+		final List<Attachment> smallAttachments = largeImageWidth == null ? latestPost.attachments : latestPost.attachments.where((a) => a.type != AttachmentType.image).toList();
 		if (isYourPost && showYourPostBorder) {
 			border = Border(
-				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color ?? Colors.red, width: 10)
+				left: BorderSide(color: theme.secondaryColor, width: 10)
 			);
 		}
 		else if (parentZoneThreadState?.replyIdsToYou()?.contains(post.id) ?? false) {
 			border = Border(
-				left: BorderSide(color: CupertinoTheme.of(context).textTheme.actionTextStyle.color?.towardsBlack(0.5) ?? const Color.fromARGB(255, 90, 30, 30), width: 10)
+				left: BorderSide(color: theme.secondaryColor.towardsBlack(0.5), width: 10)
 			);
 		}
 		final replyIds = latestPost.replyIds.toList();
@@ -127,10 +135,10 @@ class PostRow extends StatelessWidget {
 			}) ?? []);
 		}
 		final backgroundColor = isSelected ?
-			CupertinoTheme.of(context).primaryColorWithBrightness(0.4) :
+			theme.primaryColorWithBrightness(0.4) :
 			highlight ?
-				CupertinoTheme.of(context).primaryColorWithBrightness(0.1) :
-				CupertinoTheme.of(context).scaffoldBackgroundColor;
+				theme.primaryColorWithBrightness(0.1) :
+				theme.backgroundColor;
 		openReplies() {
 			if (replyIds.isNotEmpty) {
 				WeakNavigator.push(context, PostsPage(
@@ -163,15 +171,15 @@ class PostRow extends StatelessWidget {
 											threadId: latestPost.threadId,
 											postId: latestPost.parentId!
 										).build(
-											ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+											ctx, ctx.watch<PostSpanZoneData>(), settings, context.watch<SavedTheme>(), (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 												shrinkWrap: shrinkWrap
 											)
 										),
 										const TextSpan(text: '\n'),
 									],
 									(translatedPostSnapshot?.data ?? latestPost).span.build(
-										ctx, ctx.watch<PostSpanZoneData>(), settings,
-										(baseOptions ?? PostSpanRenderOptions()).copyWith(
+										ctx, ctx.watch<PostSpanZoneData>(), settings, theme,
+										(baseOptions ?? const PostSpanRenderOptions()).copyWith(
 											showCrossThreadLabel: showCrossThreadLabel,
 											shrinkWrap: shrinkWrap,
 											postInject: overrideReplyCount != null ? WidgetSpan(
@@ -193,12 +201,13 @@ class PostRow extends StatelessWidget {
 										)
 									),
 									// In practice this is the height of a line of text
-									const WidgetSpan(
+									if (!shrinkWrap) const WidgetSpan(
 										child: SizedBox(
 											width: double.infinity,
 											height: 0
 										)
 									)
+									else const TextSpan(text: '\n')
 								]
 							),
 							overflow: TextOverflow.fade
@@ -210,7 +219,7 @@ class PostRow extends StatelessWidget {
 		innerChild(BuildContext context, double slideFactor) {
 			final mainRow = [
 				const SizedBox(width: 8),
-				if (latestPost.attachments.isNotEmpty && settings.showImages(context, latestPost.board)) Padding(
+				if (smallAttachments.isNotEmpty && settings.showImages(context, latestPost.board)) Padding(
 					padding: (settings.imagesOnRight && replyIds.isNotEmpty) ? const EdgeInsets.only(bottom: 32) : EdgeInsets.zero,
 					child: ClippingBox(
 						fade: true,
@@ -248,8 +257,8 @@ class PostRow extends StatelessWidget {
 															child: Container(
 																decoration: BoxDecoration(
 																	borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																	color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-																	border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+																	color: theme.backgroundColor,
+																	border: Border.all(color: theme.primaryColorWithBrightness(0.2))
 																),
 																padding: const EdgeInsets.all(2),
 																child: Icon(attachment.icon, size: 16)
@@ -327,6 +336,7 @@ class PostRow extends StatelessWidget {
 																	showSiteIcon: showSiteIcon,
 																	showBoardName: showBoardName,
 																	settings: settings,
+																	theme: theme,
 																	site: site,
 																	context: context,
 																	zone: ctx.watch<PostSpanZoneData>(),
@@ -338,7 +348,7 @@ class PostRow extends StatelessWidget {
 																		board: latestPost.board,
 																		threadId: latestPost.threadId,
 																		postId: id
-																	).build(ctx, ctx.watch<PostSpanZoneData>(), settings, (baseOptions ?? PostSpanRenderOptions()).copyWith(
+																	).build(ctx, ctx.watch<PostSpanZoneData>(), settings, theme, (baseOptions ?? const PostSpanRenderOptions()).copyWith(
 																		showCrossThreadLabel: showCrossThreadLabel,
 																		addExpandingPosts: false,
 																		shrinkWrap: shrinkWrap
@@ -353,7 +363,19 @@ class PostRow extends StatelessWidget {
 												)
 											)
 										),
-										const SizedBox(height: 2),
+										if (largeAttachments.isNotEmpty) ...largeAttachments.map((a) => Center(
+											child: Padding(
+												padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
+												child: AttachmentThumbnail(
+													attachment: a,
+													width: largeImageWidth,
+													height: largeImageWidth,
+													shrinkHeight: true,
+													overrideFullQuality: true
+												)
+											)
+										))
+										else const SizedBox(height: 2),
 										Flexible(
 											child: Row(
 												crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,14 +423,14 @@ class PostRow extends StatelessWidget {
 												children: [
 													Icon(
 														CupertinoIcons.reply_thick_solid,
-														color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
+														color: theme.secondaryColor,
 														size: 14
 													),
 													const SizedBox(width: 4),
 													Text(
 														replyIds.length.toString(),
 														style: TextStyle(
-															color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
+															color: theme.secondaryColor,
 															fontWeight: FontWeight.bold
 														)
 													)
@@ -426,8 +448,8 @@ class PostRow extends StatelessWidget {
 										child: Container(
 											decoration: BoxDecoration(
 												borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
-												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-												border: Border.all(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+												color: theme.backgroundColor,
+												border: Border.all(color: theme.primaryColorWithBrightness(0.2))
 											),
 											padding: const EdgeInsets.only(top: 2, bottom: 2, left: 6, right: 6),
 											child: Row(
@@ -621,6 +643,35 @@ class PostRow extends StatelessWidget {
 							type: "text",
 							sharePositionOrigin: (offset != null && size != null) ? offset & size : null
 						);
+					}
+				),
+				ContextMenuAction(
+					child: const Text('Share as image'),
+					trailingIcon: CupertinoIcons.photo,
+					onPressed: () async {
+						final style = await composeShareablePostsStyle(context: context, post: post);
+						if (style == null) {
+							return;
+						}
+						if (context.mounted) {
+							try {
+								final file = await modalLoad(context, 'Rendering...', (c) => sharePostsAsImage(context: context, primaryPostId: post.id, style: style));
+								if (context.mounted) {
+									shareOne(
+										context: context,
+										text: file.path,
+										type: 'file',
+										sharePositionOrigin: null
+									);
+								}
+							}
+							catch (e, st) {
+								Future.error(e, st); // Report to crashlytics
+								if (context.mounted) {
+									alertError(context, e.toStringDio());
+								}
+							}
+						}
 					}
 				),
 				if (translatedPostSnapshot?.hasData == true) ContextMenuAction(

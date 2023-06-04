@@ -269,13 +269,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       openCrossThreadLinksInNewTab: fields[137] as bool?,
       backgroundThreadAutoUpdatePeriodSeconds: fields[138] as int?,
       currentThreadAutoUpdatePeriodSeconds: fields[139] as int?,
+      lastShareablePostsStyle: fields[140] as ShareablePostsStyle?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(136)
+      ..writeByte(137)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -547,7 +548,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(138)
       ..write(obj.backgroundThreadAutoUpdatePeriodSeconds)
       ..writeByte(139)
-      ..write(obj.currentThreadAutoUpdatePeriodSeconds);
+      ..write(obj.currentThreadAutoUpdatePeriodSeconds)
+      ..writeByte(140)
+      ..write(obj.lastShareablePostsStyle);
   }
 
   @override

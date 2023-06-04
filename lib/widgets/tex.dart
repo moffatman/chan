@@ -1,4 +1,5 @@
 import 'package:chan/services/tex_rendering.dart';
+import 'package:chan/services/theme.dart';
 import 'package:flutter/cupertino.dart';
 
 class TexWidget extends StatelessWidget {
@@ -13,7 +14,7 @@ class TexWidget extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		return ColorFiltered(
-			colorFilter: ColorFilter.mode(color ?? CupertinoTheme.of(context).primaryColor, BlendMode.srcIn),
+			colorFilter: ColorFilter.mode(color ?? ChanceTheme.primaryColorOf(context), BlendMode.srcIn),
 			child: Image(
 				image: TeXImageProvider(
 					tex,

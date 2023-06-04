@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_text_field2.dart';
@@ -202,7 +203,7 @@ class _CaptchaDvachState extends State<CaptchaDvach> {
 	Widget build(BuildContext context) {
 		return Container(
 			decoration: BoxDecoration(
-				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+				color: ChanceTheme.backgroundColorOf(context),
 			),
 			width: double.infinity,
 			padding: const EdgeInsets.all(16),

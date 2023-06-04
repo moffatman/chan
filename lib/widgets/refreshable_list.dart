@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
@@ -130,7 +131,28 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 				return super.build(context, childIndex);
 			}
 			else {
-				return separatorBuilder!(context, childIndex);
+				Widget? child;
+				try {
+					child = separatorBuilder!(context, childIndex);
+				} catch (exception, stackTrace) {
+					final error = FlutterErrorDetails(exception: exception, stack: stackTrace);
+					FlutterError.reportError(error);
+					child = ErrorWidget.builder(error);
+				}
+				if (child == null) {
+					return null;
+				}
+				final Key? key = child.key;
+				if (addRepaintBoundaries) {
+					child = RepaintBoundary(child: child);
+				}
+				if (addSemanticIndexes) {
+					final int? semanticIndex = semanticIndexCallback(child, index);
+					if (semanticIndex != null) {
+						child = IndexedSemantics(index: semanticIndex + semanticIndexOffset, child: child);
+					}
+				}
+				return KeyedSubtree(key: key, child: child);
 			}
 		}
 		else {
@@ -548,6 +570,66 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		onManuallyCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
 		onCollapseOrExpand?.call(item, false);
 		notifyListeners();
+	}
+}
+
+class _DividerKey<T extends Object> {
+	final RefreshableListItem<T> item;
+	const _DividerKey(this.item);
+
+	@override
+	bool operator == (Object other) =>
+		other is _DividerKey &&
+		other.item == item;
+	
+	@override
+	int get hashCode => item.hashCode;
+}
+
+class _Divider<T extends Object> extends StatelessWidget {
+	final Color color;
+	final RefreshableListItem<T> itemBefore;
+	final RefreshableListItem<T>? itemAfter;
+
+	const _Divider({
+		required this.color,
+		required this.itemBefore,
+		required this.itemAfter,
+		super.key
+	});
+
+	@override
+	Widget build(BuildContext context) {
+		final int? itemBeforeDepth;
+		if (context.select<_RefreshableTreeItems, bool>((c) => !c.isItemHidden(itemBefore._key).isHidden)) {
+			itemBeforeDepth = itemBefore.depth;
+		}
+		else {
+			itemBeforeDepth = null;
+		}
+		final int? itemAfterDepth;
+		if (itemAfter != null && context.select<_RefreshableTreeItems, bool>((c) => !c.isItemHidden(itemAfter!._key).isHidden)) {
+			itemAfterDepth = itemAfter!.depth;
+		}
+		else {
+			itemAfterDepth = null;
+		}
+		const infiniteDepth = 1 << 50;
+		final depth = min(itemBeforeDepth ?? infiniteDepth, itemAfterDepth ?? infiniteDepth);
+		if (depth == infiniteDepth) {
+			print('Skipping divider for $itemBefore $itemAfter');
+			return const SizedBox(
+				width: double.infinity
+			);
+		}
+		return Padding(
+			padding: EdgeInsets.only(left: pow(depth, 0.70) * 20),
+			child: Divider(
+				thickness: 1,
+				height: 0,
+				color: color
+			)
+		);
 	}
 }
 
@@ -1132,7 +1214,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (value.highlighted) {
 			child = ClipRect(
 				child: ColorFiltered(
-					colorFilter: ColorFilter.mode(context.select<EffectiveSettings, Color>((s) => s.theme.secondaryColor).withOpacity(0.2), BlendMode.srcOver),
+					colorFilter: ColorFilter.mode(ChanceTheme.secondaryColorOf(context).withOpacity(0.2), BlendMode.srcOver),
 					child: child
 				)
 			);
@@ -1140,7 +1222,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		if (value.pinned) {
 			child = ClipRect(
 				child: ColorFiltered(
-					colorFilter: ColorFilter.mode(context.select<EffectiveSettings, Color>((s) => s.theme.secondaryColor).withOpacity(0.05), BlendMode.srcOver),
+					colorFilter: ColorFilter.mode(ChanceTheme.secondaryColorOf(context).withOpacity(0.05), BlendMode.srcOver),
 					child: child
 				)
 			);
@@ -1151,7 +1233,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				decoration: BoxDecoration(
 					border: Border(left: BorderSide(
 						width: 5,
-						color: context.select<EffectiveSettings, Color>((s) => s.theme.secondaryColor).withMinValue(0.5).withSaturation(0.5).shiftHue(value.depth * 25).withOpacity(0.7)
+						color: ChanceTheme.secondaryColorOf(context).withMinValue(0.5).withSaturation(0.5).shiftHue(value.depth * 25).withOpacity(0.7)
 					))
 				),
 				child: child
@@ -1495,6 +1577,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				curve: Curves.easeInOutCubic,
 				parent: _footerShakeAnimation
 			);
+			final theme = context.watch<SavedTheme>();
+			final dividerColor = theme.primaryColorWithBrightness(0.2);
 			return WillPopScope(
 				onWillPop: () async {
 					if (_searchTapped) {
@@ -1628,8 +1712,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 												child: Container(
 													decoration: BoxDecoration(
 														border: Border(
-															top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)),
-															bottom: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))
+															top: BorderSide(color: dividerColor),
+															bottom: BorderSide(color: dividerColor)
 														)
 													),
 													child: CupertinoButton(
@@ -1681,27 +1765,27 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															);
 														},
 														separatorBuilder: (context, childIndex) {
-															int depth = values[childIndex].depth;
-															if (childIndex < (values.length - 1)) {
-																depth = min(depth, values[childIndex + 1].depth);
-															}
-															return Padding(
-																padding: EdgeInsets.only(left: pow(depth, 0.70) * 20),
-																child: Divider(
-																	thickness: 1,
-																	height: 0,
-																	color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
-																)
+															return _Divider(
+																key: ValueKey(_DividerKey(values[childIndex])),
+																itemBefore: values[childIndex],
+																itemAfter: (childIndex < values.length - 1) ? values[childIndex + 1] : null,
+																color: dividerColor
 															);
 														},
 														list: values,
 														id: '${_searchFilter?.text}${widget.sortMethods}$forceRebuildId',
 														childCount: values.length * 2,
 														findChildIndexCallback: (key) {
-															if (key is ValueKey) {
+															if (key is ValueKey<RefreshableListItem<T>>) {
 																final idx = values.indexOf(key.value) * 2;
 																if (idx >= 0) {
 																	return idx;
+																}
+															}
+															else if (key is ValueKey<_DividerKey<T>>) {
+																final idx = values.indexOf(key.value.item) * 2;
+																if (idx >= 0) {
+																	return idx + 1;
 																}
 															}
 															return null;
@@ -1737,7 +1821,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																child: Text(
 																	(_showFilteredValues ? 'Showing ' : '') + describeCount(filteredValues.length, 'filtered item'),
 																	style: TextStyle(
-																		color: CupertinoTheme.of(context).primaryColorWithBrightness(0.4)
+																		color: theme.primaryColorWithBrightness(0.4)
 																	)
 																)
 															)
@@ -1804,9 +1888,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																				alignment: Alignment.topRight,
 																				child: Container(
 																					padding: const EdgeInsets.all(4),
-																					color: CupertinoTheme.of(context).primaryColor,
+																					color: theme.primaryColor,
 																					child: Text('Filter reason:\n${filteredValues[childIndex].filterReason}', style: TextStyle(
-																						color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																						color: theme.backgroundColor
 																					))
 																				)
 																			)
@@ -1817,7 +1901,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 															separatorBuilder: (context, childIndex) => Divider(
 																thickness: 1,
 																height: 0,
-																color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+																color: dividerColor
 															),
 															list: filteredValues,
 															id: '$forceRebuildId',
@@ -2008,8 +2092,8 @@ class RefreshableListFooter extends StatelessWidget {
 																				final now = DateTime.now();
 																				return LinearProgressIndicator(
 																					value: updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds,
-																					color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
-																					backgroundColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.1),
+																					color: ChanceTheme.primaryColorOf(context).withOpacity(0.5),
+																					backgroundColor: ChanceTheme.primaryColorWithBrightnessOf(context, 0.1),
 																					minHeight: 8
 																				);
 																			}
@@ -2017,7 +2101,7 @@ class RefreshableListFooter extends StatelessWidget {
 																		LinearProgressIndicator(
 																			value: (updatingNow) ? null : (pointerDownNow() ? smoothedValue : 0),
 																			backgroundColor: Colors.transparent,
-																			color: CupertinoTheme.of(context).primaryColor,
+																			color: ChanceTheme.primaryColorOf(context),
 																			minHeight: 8
 																		)
 																	]
@@ -2035,7 +2119,7 @@ class RefreshableListFooter extends StatelessWidget {
 															builder: (context) {
 																return GreedySizeCachingBox(
 																	child: Text('Next update ${formatRelativeTime(nextUpdateTime ?? DateTime(3000))}', style: TextStyle(
-																		color: CupertinoTheme.of(context).primaryColorWithBrightness(0.5)
+																		color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5)
 																	))
 																);
 															}

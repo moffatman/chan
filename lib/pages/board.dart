@@ -14,6 +14,7 @@ import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -675,7 +676,7 @@ class _BoardPageState extends State<BoardPage> {
 											child: Padding(
 												padding: MediaQuery.viewInsetsOf(ctx),
 												child: Container(
-													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+													color: ChanceTheme.backgroundColorOf(context),
 													child: ReplyBox(
 														fullyExpanded: true,
 														board: board!.name,
@@ -903,7 +904,7 @@ class _BoardPageState extends State<BoardPage> {
 																					},
 																					child: Container(
 																						decoration: BoxDecoration(
-																							color: CupertinoTheme.of(context).primaryColorWithBrightness(0.8),
+																							color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.8),
 																							borderRadius: const BorderRadius.all(Radius.circular(8))
 																						),
 																						padding: const EdgeInsets.all(8),
@@ -911,18 +912,18 @@ class _BoardPageState extends State<BoardPage> {
 																						child: Row(
 																							mainAxisSize: MainAxisSize.min,
 																							children: _searching ? [
-																								Icon(CupertinoIcons.search, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+																								Icon(CupertinoIcons.search, color: ChanceTheme.backgroundColorOf(context)),
 																								const SizedBox(width: 8),
-																								Icon(CupertinoIcons.xmark, color: CupertinoTheme.of(context).scaffoldBackgroundColor)
+																								Icon(CupertinoIcons.xmark, color: ChanceTheme.backgroundColorOf(context))
 																							] : [
-																								Icon(CupertinoIcons.doc, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+																								Icon(CupertinoIcons.doc, color: ChanceTheme.backgroundColorOf(context)),
 																								SizedBox(
 																									width: 25,
 																									child: Text(
 																										_page.toString(),
 																										textAlign: TextAlign.center,
 																										style: TextStyle(
-																											color: CupertinoTheme.of(context).scaffoldBackgroundColor
+																											color: ChanceTheme.backgroundColorOf(context)
 																										)
 																									)
 																								)

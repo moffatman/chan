@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:chan/services/theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
@@ -31,7 +31,7 @@ class StationaryNotifyingIcon extends StatelessWidget {
 						children: [
 							if (primary > 0) Container(
 								decoration: BoxDecoration(
-									color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
+									color: ChanceTheme.secondaryColorOf(context),
 									borderRadius: (secondary > 0) ? const BorderRadius.only(topLeft: r, bottomLeft: r) : const BorderRadius.all(r)
 								),
 								constraints: const BoxConstraints(
@@ -52,7 +52,7 @@ class StationaryNotifyingIcon extends StatelessWidget {
 							),
 							if (secondary > 0) Container(
 								decoration: BoxDecoration(
-									color: CupertinoTheme.of(context).primaryColor,
+									color: ChanceTheme.primaryColorOf(context),
 									borderRadius: (primary > 0) ? const BorderRadius.only(topRight: r, bottomRight: r) : const BorderRadius.all(r)
 								),
 								constraints: const BoxConstraints(
@@ -67,7 +67,7 @@ class StationaryNotifyingIcon extends StatelessWidget {
 									minFontSize: 0,
 									textAlign: TextAlign.center,
 									style: TextStyle(
-										color: CupertinoTheme.of(context).scaffoldBackgroundColor
+										color: ChanceTheme.backgroundColorOf(context)
 									)
 								)
 							)

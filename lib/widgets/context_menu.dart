@@ -5,6 +5,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -79,7 +80,7 @@ class _ContextMenuState extends State<ContextMenu> {
 										decoration: BoxDecoration(
 											border: Border.all(color: Colors.grey),
 											borderRadius: const BorderRadius.all(Radius.circular(4)),
-											color: CupertinoTheme.of(context).scaffoldBackgroundColor
+											color: ChanceTheme.backgroundColorOf(context)
 										),
 										margin: const EdgeInsets.only(bottom: 8, right: 8),
 										child: IntrinsicWidth(

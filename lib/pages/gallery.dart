@@ -10,6 +10,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/status_bar.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -548,7 +549,7 @@ class _GalleryPageState extends State<GalleryPage> {
 														child: Container(
 															padding: const EdgeInsets.all(2),
 															decoration: BoxDecoration(
-																color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : null,
+																color: attachment == currentAttachment ? ChanceTheme.primaryColorOf(context) : null,
 																borderRadius: const BorderRadius.all(Radius.circular(4)),
 															),
 															child: Stack(
@@ -633,7 +634,7 @@ class _GalleryPageState extends State<GalleryPage> {
 												margin: const EdgeInsets.all(2),
 												decoration: BoxDecoration(
 													borderRadius: const BorderRadius.all(Radius.circular(8)),
-													color: attachment == currentAttachment ? CupertinoTheme.of(context).primaryColor : null
+													color: attachment == currentAttachment ? ChanceTheme.primaryColorOf(context) : null
 												),
 												child: Stack(
 													children: [
@@ -701,7 +702,7 @@ class _GalleryPageState extends State<GalleryPage> {
 														padding: const EdgeInsets.all(16),
 														decoration: BoxDecoration(
 															borderRadius: BorderRadius.circular(8),
-															color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.5)
+															color: ChanceTheme.backgroundColorOf(context).withOpacity(0.5)
 														),
 														child: const Row(
 															mainAxisSize: MainAxisSize.min,
@@ -760,8 +761,8 @@ class _GalleryPageState extends State<GalleryPage> {
 				final a = ((details?.velocity ?? Velocity.zero).pixelsPerSecond.direction / pi).abs();
 				return ((details?.pointerCount ?? 0) == 0) && widget.allowPop && (a >= 0.25 && a <= 0.75) && (state?.imageGestureState?.gestureDetails?.totalScale ?? 1) <= 1;
 			},
-			child: CupertinoTheme(
-				data: settings.darkTheme.cupertinoThemeData,
+			child: ChanceTheme(
+				themeKey: settings.darkThemeKey,
 				child: CupertinoPageScaffold(
 					backgroundColor: Colors.transparent,
 					navigationBar: showChrome ? CupertinoNavigationBar(
@@ -1034,7 +1035,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													child: AnimatedBuilder(
 														animation: _currentAttachmentChanged,
 														builder: (context, _) => Text("${currentIndex + 1} / ${widget.attachments.length}", style: TextStyle(
-															color: CupertinoTheme.of(context).primaryColor
+															color: ChanceTheme.primaryColorOf(context)
 														))
 													)
 												)

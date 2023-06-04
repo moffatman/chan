@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/util.dart';
@@ -358,14 +359,14 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 											SafeArea(
 												bottom: false,
 												child: Material(
-													color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+													color: ChanceTheme.backgroundColorOf(context),
 													child: TabBar(
 														controller: _tabController,
-														indicatorColor: CupertinoTheme.of(context).primaryColor,
+														indicatorColor: ChanceTheme.primaryColorOf(context),
 														tabs: panes.map((pane) => Tab(
 															icon: Icon(
 																pane.icon,
-																color: CupertinoTheme.of(context).primaryColor
+																color: ChanceTheme.primaryColorOf(context)
 															)
 														)).toList()
 													)
@@ -450,7 +451,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 					),
 					VerticalDivider(
 						width: 0,
-						color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+						color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
 					),
 					Flexible(
 						flex: twoPaneSplitDenominator - settings.twoPaneSplit,
@@ -481,7 +482,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 					),
 					Divider(
 						height: 0,
-						color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+						color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
 					),
 					Expanded(
 						child: TransformedMediaQuery(

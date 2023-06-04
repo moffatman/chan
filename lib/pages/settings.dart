@@ -15,6 +15,7 @@ import 'package:chan/services/installed_fonts.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/user_agents.dart';
 import 'package:chan/services/util.dart';
@@ -36,7 +37,6 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
@@ -361,7 +361,7 @@ class SettingsPage extends StatelessWidget {
 				),
 				const SizedBox(height: 32),
 				Divider(
-					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+					color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
 				),
 				_SettingsPageButton(
 					icon: CupertinoIcons.eye_slash,
@@ -370,7 +370,7 @@ class SettingsPage extends StatelessWidget {
 					pageBuilder: (context) => const SettingsBehaviorPage()
 				),
 				Divider(
-					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+					color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
 				),
 				_SettingsPageButton(
 					icon: CupertinoIcons.paintbrush,
@@ -378,7 +378,7 @@ class SettingsPage extends StatelessWidget {
 					pageBuilder: (context) => const SettingsAppearancePage()
 				),
 				Divider(
-					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+					color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
 				),
 				_SettingsPageButton(
 					icon: CupertinoIcons.photo_on_rectangle,
@@ -386,7 +386,7 @@ class SettingsPage extends StatelessWidget {
 					pageBuilder: (context) => const SettingsDataPage()
 				),
 				Divider(
-					color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+					color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
 				),
 				const SizedBox(height: 16),
 				Center(
@@ -401,7 +401,7 @@ class SettingsPage extends StatelessWidget {
 				),
 				const SizedBox(height: 16),
 				Center(
-					child: Text('Chance $kChanceVersion', style: TextStyle(color: settings.theme.primaryColorWithBrightness(0.5)))
+					child: Text('Chance $kChanceVersion', style: TextStyle(color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5)))
 				),
 				const SizedBox(height: 16),
 			],
@@ -862,14 +862,14 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 									builder: (context) => CupertinoAlertDialog2(
 										title: const Text('Set maximum file upload dimension'),
 										actions: [
-											CupertinoButton(
+											CupertinoDialogAction2(
 												child: const Text('Clear'),
 												onPressed: () {
 													controller.text = '';
 													Navigator.pop(context);
 												}
 											),
-											CupertinoButton(
+											CupertinoDialogAction2(
 												child: const Text('Close'),
 												onPressed: () => Navigator.pop(context)
 											)
@@ -1434,6 +1434,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
 		final firstPanePercent = (settings.twoPaneSplit / twoPaneSplitDenominator) * 100;
+		final dividerColor = ChanceTheme.primaryColorOf(context);
 		return _SettingsPage(
 			title: 'Appearance Settings',
 			children: [
@@ -1593,7 +1594,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																		separatorBuilder: (context, i) => Divider(
 																			height: 0,
 																			thickness: 0,
-																			color: CupertinoTheme.of(context).primaryColor
+																			color: dividerColor
 																		),
 																		itemBuilder: (context, i) => CupertinoDialogAction2(
 																			onPressed: () => Navigator.pop(context, availableFonts[i]),
@@ -1698,199 +1699,11 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 												child: CupertinoButton.filled(
 													padding: const EdgeInsets.all(8),
 													onPressed: () async {
-														final selectedKey = await showCupertinoDialog<String>(
-															barrierDismissible: true,
+														final selectedKey = await selectThemeKey(
 															context: context,
-															builder: (context) => CupertinoAlertDialog2(
-																title: Padding(
-																	padding: const EdgeInsets.only(bottom: 16),
-																	child: Row(
-																		mainAxisAlignment: MainAxisAlignment.center,
-																		children: [
-																			const Icon(CupertinoIcons.paintbrush),
-																			const SizedBox(width: 8),
-																			Text('Picking ${theme.$1}')
-																		]
-																	)
-																),
-																content: StatefulBuilder(
-																	builder: (context, setDialogState) {
-																		final themes = settings.themes.entries.toList();
-																		themes.sort((a, b) => a.key.compareTo(b.key));
-																		return SizedBox(
-																			width: 200,
-																			height: 350,
-																			child: ListView.separated(
-																				itemCount: themes.length,
-																				separatorBuilder: (context, i) => const SizedBox(height: 16),
-																				itemBuilder: (context, i) => GestureDetector(
-																					onTap: () {
-																						Navigator.pop(context, themes[i].key);
-																					},
-																					child: CupertinoTheme(
-																						data: CupertinoTheme.of(context).copyWith(
-																							primaryColor: themes[i].value.primaryColor,
-																							primaryContrastingColor: themes[i].value.backgroundColor,
-																							brightness: themes[i].value.brightness
-																						),
-																						child: Container(
-																							decoration: BoxDecoration(
-																								borderRadius: const BorderRadius.all(Radius.circular(8)),
-																								color: themes[i].value.backgroundColor
-																							),
-																							child: Column(
-																								mainAxisSize: MainAxisSize.min,
-																								children: [
-																									Padding(
-																										padding: const EdgeInsets.all(16),
-																										child: Row(
-																											mainAxisSize: MainAxisSize.min,
-																											children: [
-																												if (themes[i].value.locked) Padding(
-																													padding: const EdgeInsets.only(right: 4),
-																													child: Icon(CupertinoIcons.lock, color: themes[i].value.primaryColor)
-																												),
-																												AutoSizeText(themes[i].key, style: TextStyle(
-																													fontSize: 18,
-																													color: themes[i].value.primaryColor,
-																													fontWeight: themes[i].key == theme.$3 ? FontWeight.bold : null
-																												))
-																											]
-																										)
-																									),
-																									Container(
-																										//margin: const EdgeInsets.all(4),
-																										decoration: BoxDecoration(
-																											color: themes[i].value.barColor,
-																											borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8))
-																										),
-																										child: Row(
-																											mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-																											children: [
-																												CupertinoButton(
-																													child: const Icon(CupertinoIcons.share),
-																													onPressed: () {
-																														Clipboard.setData(ClipboardData(
-																															text: Uri(
-																																scheme: 'chance',
-																																host: 'theme',
-																																queryParameters: {
-																																	'name': themes[i].key,
-																																	'data': themes[i].value.encode()
-																																}
-																															).toString()
-																														));
-																														showToast(
-																															context: context,
-																															message: 'Copied ${themes[i].key} to clipboard',
-																															icon: CupertinoIcons.doc_on_clipboard
-																														);
-																													}
-																												),
-																												CupertinoButton(
-																													onPressed: themes[i].value.locked ? null : () async {
-																														final controller = TextEditingController(text: themes[i].key);
-																														controller.selection = TextSelection(baseOffset: 0, extentOffset: themes[i].key.length);
-																														final newName = await showCupertinoDialog<String>(
-																															context: context,
-																															barrierDismissible: true,
-																															builder: (context) => CupertinoAlertDialog2(
-																																title: const Text('Enter new name'),
-																																content: CupertinoTextField2(
-																																	autofocus: true,
-																																	controller: controller,
-																																	smartDashesType: SmartDashesType.disabled,
-																																	smartQuotesType: SmartQuotesType.disabled,
-																																	onSubmitted: (s) => Navigator.pop(context, s)
-																																),
-																																actions: [
-																																	CupertinoDialogAction2(
-																																		child: const Text('Cancel'),
-																																		onPressed: () => Navigator.pop(context)
-																																	),
-																																	CupertinoDialogAction2(
-																																		isDefaultAction: true,
-																																		child: const Text('Rename'),
-																																		onPressed: () => Navigator.pop(context, controller.text)
-																																	)
-																																]
-																															)
-																														);
-																														if (newName != null) {
-																															final effectiveName = settings.addTheme(newName, themes[i].value);
-																															settings.themes.remove(themes[i].key);
-																															if (settings.lightThemeKey == themes[i].key) {
-																																settings.lightThemeKey = effectiveName;
-																															}
-																															if (settings.darkThemeKey == themes[i].key) {
-																																settings.darkThemeKey = effectiveName;
-																															}
-																															settings.handleThemesAltered();
-																															setDialogState(() {});
-																														}
-																														controller.dispose();
-																													},
-																													child: const Icon(CupertinoIcons.textformat)
-																												),
-																												CupertinoButton(
-																													child: const Icon(CupertinoIcons.doc_on_doc),
-																													onPressed: () {
-																														settings.addTheme(themes[i].key, themes[i].value);
-																														settings.handleThemesAltered();
-																														setDialogState(() {});
-																													}
-																												),
-																												CupertinoButton(
-																													onPressed: (themes[i].value.locked || themes[i].key == settings.darkThemeKey || themes[i].key == settings.lightThemeKey) ? null : () async {
-																														final consent = await showCupertinoDialog<bool>(
-																															context: context,
-																															barrierDismissible: true,
-																															builder: (context) => CupertinoAlertDialog2(
-																																title: Text('Delete ${themes[i].key}?'),
-																																actions: [
-																																	CupertinoDialogAction2(
-																																		child: const Text('Cancel'),
-																																		onPressed: () {
-																																			Navigator.of(context).pop();
-																																		}
-																																	),
-																																	CupertinoDialogAction2(
-																																		isDestructiveAction: true,
-																																		onPressed: () {
-																																			Navigator.of(context).pop(true);
-																																		},
-																																		child: const Text('Delete')
-																																	)
-																																]
-																															)
-																														);
-																														if (consent == true) {
-																															settings.themes.remove(themes[i].key);
-																															settings.handleThemesAltered();
-																															setDialogState(() {});
-																														}
-																													},
-																													child: const Icon(CupertinoIcons.delete)
-																												)
-																											]
-																										)
-																									)
-																								]
-																							)
-																						)
-																					)
-																				)
-																			)
-																		);
-																	}
-																),
-																actions: [
-																	CupertinoDialogAction2(
-																		child: const Text('Close'),
-																		onPressed: () => Navigator.pop(context)
-																	)
-																]
-															)
+															title: 'Picking ${theme.$1}',
+															currentKey: theme.$3,
+															allowEditing: true
 														);
 														if (selectedKey != null) {
 															theme.$4(selectedKey);
@@ -1953,10 +1766,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														message: Theme(
 															data: ThemeData(
 																textTheme: Theme.of(context).textTheme.apply(
-																	bodyColor: CupertinoTheme.of(context).primaryColor,
-																	displayColor: CupertinoTheme.of(context).primaryColor,
+																	bodyColor: ChanceTheme.primaryColorOf(context),
+																	displayColor: ChanceTheme.primaryColorOf(context),
 																),
-																canvasColor: CupertinoTheme.of(context).scaffoldBackgroundColor
+																canvasColor: ChanceTheme.backgroundColorOf(context)
 															),
 															child: Padding(
 																padding: MediaQuery.viewInsetsOf(context),
@@ -2266,7 +2079,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																		builder: (context, setDialogState) => CupertinoAlertDialog2(
 																			title: const Text('Reorder post details'),
 																			actions: [
-																				CupertinoButton(
+																				CupertinoDialogAction2(
 																					child: const Text('Close'),
 																					onPressed: () => Navigator.pop(context)
 																				)
@@ -2316,7 +2129,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																							child: Container(
 																								decoration: BoxDecoration(
 																									borderRadius: const BorderRadius.all(Radius.circular(4)),
-																									color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+																									color: ChanceTheme.primaryColorOf(context).withOpacity(0.1)
 																								),
 																								margin: const EdgeInsets.symmetric(vertical: 2),
 																								padding: const EdgeInsets.all(8),
@@ -2324,7 +2137,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																								child: Text(
 																									pair.value.displayName,
 																									style: disabled ? TextStyle(
-																										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.5)
+																										color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5)
 																									) : null
 																								)
 																							)
@@ -2963,7 +2776,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									children: [
 										const TextSpan(text: 'Vertical two-pane split\n'),
 										TextSpan(text: 'Minimum pane height: ${settings.verticalTwoPaneMinimumPaneSize.abs().round()} px', style: TextStyle(
-											color: settings.theme.primaryColorWithBrightness(settings.verticalTwoPaneMinimumPaneSize.isNegative ? 0.5 : 0.8)
+											color: ChanceTheme.primaryColorWithBrightnessOf(context, settings.verticalTwoPaneMinimumPaneSize.isNegative ? 0.5 : 0.8)
 										))
 									]
 								)
@@ -3032,12 +2845,12 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									topLeft: Radius.circular(6),
 									bottomLeft: Radius.circular(6),
 								),
-								color: CupertinoTheme.of(context).primaryColorWithBrightness(0.6)
+								color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.6)
 							),
 							padding: const EdgeInsets.all(3),
 							width: 13,
 							alignment: Alignment.center,
-							child: Text('1', style: TextStyle(color: settings.theme.backgroundColor, fontSize: 13))
+							child: Text('1', style: TextStyle(color: ChanceTheme.backgroundColorOf(context), fontSize: 13))
 						),
 						Container(
 							decoration: BoxDecoration(
@@ -3045,12 +2858,12 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									topRight: Radius.circular(6),
 									bottomRight: Radius.circular(6),
 								),
-								color: CupertinoTheme.of(context).primaryColor
+								color: ChanceTheme.primaryColorOf(context)
 							),
 							padding: const EdgeInsets.all(3),
 							width: 13,
 							alignment: Alignment.center,
-							child: Text('1', style: TextStyle(color: settings.theme.backgroundColor, fontSize: 13))
+							child: Text('1', style: TextStyle(color: ChanceTheme.backgroundColorOf(context), fontSize: 13))
 						),
 						const SizedBox(width: 8),
 						const Expanded(
@@ -3648,7 +3461,7 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 		return Container(
 			decoration: BoxDecoration(
 				borderRadius: const BorderRadius.all(Radius.circular(8)),
-				color: CupertinoTheme.of(context).primaryColor.withOpacity(0.2)
+				color: ChanceTheme.primaryColorOf(context).withOpacity(0.2)
 			),
 			margin: const EdgeInsets.all(16),
 			padding: const EdgeInsets.all(16),
@@ -3758,7 +3571,7 @@ class SettingsThreadsPanel extends StatelessWidget {
 				return Container(
 					decoration: BoxDecoration(
 						borderRadius: const BorderRadius.all(Radius.circular(8)),
-						color: CupertinoTheme.of(context).primaryColor.withOpacity(0.2)
+						color: ChanceTheme.primaryColorOf(context).withOpacity(0.2)
 					),
 					margin: const EdgeInsets.all(16),
 					padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),

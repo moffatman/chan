@@ -5,6 +5,7 @@ import 'package:chan/models/board.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/cupertino_text_field2.dart';
@@ -132,7 +133,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		if (_focusNode.hasFocus && isPhoneSoftwareKeyboard()) {
 			_focusNode.unfocus();
 		}
-		_backgroundColor.value = CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(1.0 - max(0, _getOverscroll() / 50).clamp(0, 1));
+		_backgroundColor.value = ChanceTheme.backgroundColorOf(context).withOpacity(1.0 - max(0, _getOverscroll() / 50).clamp(0, 1));
 	}
 
 	Future<void> _updateTypeaheadBoards(String query) async {
@@ -240,7 +241,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		_backgroundColor.value ??= CupertinoTheme.of(context).scaffoldBackgroundColor;
+		_backgroundColor.value ??= ChanceTheme.backgroundColorOf(context);
 		final List<ImageboardScoped<ImageboardBoard?>> filteredBoards = getFilteredBoards().map((x) => x.nullify).toList();
 		filteredBoards.addAll(allImageboards.where((i) {
 			return i != currentImageboard && i.site.allowsArbitraryBoards;
@@ -371,7 +372,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																	child: Container(
 																		decoration: BoxDecoration(
 																			borderRadius: const BorderRadius.all(Radius.circular(4)),
-																			color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+																			color: ChanceTheme.primaryColorOf(context).withOpacity(0.1)
 																		),
 																		padding: const EdgeInsets.only(left: 16),
 																		child: Row(
@@ -402,7 +403,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																child: BackdropFilter(
 																	filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
 																		child: Container(
-																		color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.1),
+																		color: ChanceTheme.backgroundColorOf(context).withOpacity(0.1),
 																		child: Column(
 																			mainAxisSize: MainAxisSize.min,
 																			crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -874,7 +875,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 								child: Container(
 									decoration: BoxDecoration(
 										borderRadius: BorderRadius.circular(16),
-										color: CupertinoTheme.of(context).scaffoldBackgroundColor
+										color: ChanceTheme.backgroundColorOf(context)
 									),
 									padding: const EdgeInsets.all(16),
 									child: Row(

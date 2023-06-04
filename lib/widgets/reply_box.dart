@@ -17,6 +17,7 @@ import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -962,7 +963,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			builder: (context) => OverscrollModalPage(
 				child: Container(
 					width: MediaQuery.sizeOf(context).width,
-					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+					color: ChanceTheme.backgroundColorOf(context),
 					padding: const EdgeInsets.all(16),
 					child: StatefulBuilder(
 						builder: (context, setEmotePickerState) => Column(
@@ -1013,7 +1014,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			builder: (context) => OverscrollModalPage(
 				child: Container(
 					width: MediaQuery.sizeOf(context).width,
-					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+					color: ChanceTheme.backgroundColorOf(context),
 					padding: const EdgeInsets.all(16),
 					child: Column(
 						mainAxisSize: MainAxisSize.min,
@@ -1084,8 +1085,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		);
 		return Container(
 			decoration: BoxDecoration(
-				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
-				color: CupertinoTheme.of(context).scaffoldBackgroundColor
+				border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2))),
+				color: ChanceTheme.backgroundColorOf(context)
 			),
 			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 10),
 			child: Row(
@@ -1103,14 +1104,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												enabled: !settings.randomizeFilenames,
 												controller: _filenameController,
 												placeholder: (settings.randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
-												placeholderStyle: TextStyle(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.7)),
+												placeholderStyle: TextStyle(color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.7)),
 												maxLines: 1,
 												textCapitalization: TextCapitalization.none,
 												autocorrect: false,
 												enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 												smartDashesType: SmartDashesType.disabled,
 												smartQuotesType: SmartQuotesType.disabled,
-												keyboardAppearance: CupertinoTheme.of(context).brightness
+												keyboardAppearance: ChanceTheme.brightnessOf(context)
 											)
 										),
 										const SizedBox(width: 8),
@@ -1258,8 +1259,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		final settings = context.watch<EffectiveSettings>();
 		return Container(
 			decoration: BoxDecoration(
-				border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2))),
-				color: CupertinoTheme.of(context).scaffoldBackgroundColor
+				border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2))),
+				color: ChanceTheme.backgroundColorOf(context)
 			),
 			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 10),
 			child: Row(
@@ -1268,7 +1269,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						child: CupertinoTextField2(
 							maxLines: 1,
 							placeholder: 'Name',
-							keyboardAppearance: CupertinoTheme.of(context).brightness,
+							keyboardAppearance: ChanceTheme.brightnessOf(context),
 							controller: _nameFieldController,
 							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 							smartDashesType: SmartDashesType.disabled,
@@ -1312,7 +1313,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 							smartDashesType: SmartDashesType.disabled,
 							smartQuotesType: SmartQuotesType.disabled,
-							keyboardAppearance: CupertinoTheme.of(context).brightness,
+							keyboardAppearance: ChanceTheme.brightnessOf(context),
 							controller: _optionsFieldController,
 							onChanged: (s) {
 								widget.onOptionsChanged?.call(s);
@@ -1360,7 +1361,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								maxLines: 1,
 								placeholder: 'Subject',
 								textCapitalization: TextCapitalization.sentences,
-								keyboardAppearance: CupertinoTheme.of(context).brightness
+								keyboardAppearance: ChanceTheme.brightnessOf(context)
 							),
 							const SizedBox(height: 8),
 						],
@@ -1400,7 +1401,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										minLines: 100,
 										focusNode: _textFocusNode,
 										textCapitalization: TextCapitalization.sentences,
-										keyboardAppearance: CupertinoTheme.of(context).brightness,
+										keyboardAppearance: ChanceTheme.brightnessOf(context),
 									),
 									if (board.maxCommentCharacters != null && ((_textFieldController.text.length / board.maxCommentCharacters!) > 0.5)) IgnorePointer(
 										child: Align(
@@ -1487,7 +1488,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 														builder: (context, _) => DefaultTextStyle(
 															style: defaultTextStyle,
 															child: Text.rich(
-																snippet.previewBuilder!(controller.text).build(context, context.watch<PostSpanZoneData>(), context.watch<EffectiveSettings>(), PostSpanRenderOptions())
+																snippet.previewBuilder!(controller.text).build(context, context.watch<PostSpanZoneData>(), context.watch<EffectiveSettings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions())
 															)
 														)
 													),
@@ -1577,8 +1578,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												builder: (context, value, _) => LinearProgressIndicator(
 													value: value,
 													minHeight: 20,
-													valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
-													backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.2)
+													valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
+													backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.2)
 												)
 											)
 										)
@@ -1807,7 +1808,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									},
 									child: Container(
 										decoration: BoxDecoration(
-											border: Border(top: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)))
+											border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)))
 										),
 										height: 40,
 										child: _buildButtons(context),
@@ -1815,7 +1816,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								),
 								Flexible(
 									child: Container(
-										color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+										color: ChanceTheme.backgroundColorOf(context),
 										child: Stack(
 											children: [
 												Column(
@@ -1829,8 +1830,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 														child: Container(
 														alignment: Alignment.bottomCenter,
 														child: LinearProgressIndicator(
-															valueColor: AlwaysStoppedAnimation(CupertinoTheme.of(context).primaryColor),
-															backgroundColor: CupertinoTheme.of(context).primaryColor.withOpacity(0.7)
+															valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
+															backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.7)
 														)
 													)
 												)

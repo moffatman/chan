@@ -6,6 +6,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -237,7 +238,7 @@ class NotificationContent extends StatelessWidget {
 								)),
 								if (post != null) ...[
 									const TextSpan(text: '\n'),
-									post.span.build(context, context.watch<PostSpanZoneData>(), context.watch<EffectiveSettings>(), PostSpanRenderOptions(
+									post.span.build(context, context.watch<PostSpanZoneData>(), context.watch<EffectiveSettings>(), context.watch<SavedTheme>(), const PostSpanRenderOptions(
 										shrinkWrap: true,
 										avoidBuggyClippers: true
 									))
@@ -275,7 +276,7 @@ class TopNotification extends StatelessWidget {
 			child: IgnorePointer(
 				ignoring: notification.closed,
 				child: Container(
-					color: CupertinoTheme.of(context).primaryColor,
+					color: ChanceTheme.primaryColorOf(context),
 					child: Row(
 						crossAxisAlignment: CrossAxisAlignment.center,
 						children: [
@@ -319,7 +320,7 @@ class TopNotification extends StatelessWidget {
 												animation: notification.autoCloseAnimation!,
 												builder: (context, _) => CircularProgressIndicator(
 													value: notification.autoCloseAnimation!.value,
-													color: CupertinoTheme.of(context).scaffoldBackgroundColor
+													color: ChanceTheme.backgroundColorOf(context)
 												)
 											)
 										)
@@ -386,9 +387,9 @@ class CornerNotification extends StatelessWidget {
 												minSize: 0,
 												padding: const EdgeInsets.all(8),
 												borderRadius: BorderRadius.circular(100),
-												color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
+												color: ChanceTheme.secondaryColorOf(context),
 												onPressed: onTapMute,
-												child: Icon(CupertinoIcons.bell_slash, size: 20, color: CupertinoTheme.of(context).primaryColor)
+												child: Icon(CupertinoIcons.bell_slash, size: 20, color: ChanceTheme.primaryColorOf(context))
 											),
 											const SizedBox(width: 8),
 										],
@@ -396,12 +397,12 @@ class CornerNotification extends StatelessWidget {
 											minSize: 0,
 											padding: EdgeInsets.zero,
 											borderRadius: BorderRadius.circular(100),
-											color: CupertinoTheme.of(context).textTheme.actionTextStyle.color,
+											color: ChanceTheme.secondaryColorOf(context),
 											onPressed: onTapClose,
 											child: Stack(
 												alignment: Alignment.center,
 												children: [
-													Icon(CupertinoIcons.xmark, size: 17, color: CupertinoTheme.of(context).primaryColor),
+													Icon(CupertinoIcons.xmark, size: 17, color: ChanceTheme.primaryColorOf(context)),
 													IgnorePointer(
 														child: AnimatedBuilder(
 															animation: notification.autoCloseAnimation!,
@@ -409,7 +410,7 @@ class CornerNotification extends StatelessWidget {
 																scale: 0.8,
 																child: CircularProgressIndicator(
 																	value: notification.autoCloseAnimation!.value,
-																	color: CupertinoTheme.of(context).primaryColor,
+																	color: ChanceTheme.primaryColorOf(context),
 																	strokeWidth: 4,
 																)
 															)

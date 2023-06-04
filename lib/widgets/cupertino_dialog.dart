@@ -6,12 +6,12 @@ import 'package:flutter/cupertino.dart';
 class CupertinoAlertDialog2 extends StatelessWidget {
 	final Widget? title;
 	final Widget? content;
-	final List<Widget> actions;
+	final List<CupertinoDialogAction2> actions;
 
 	const CupertinoAlertDialog2({
 		this.title,
     this.content,
-    this.actions = const <Widget>[],
+    this.actions = const <CupertinoDialogAction2>[],
 		super.key
 	});
 

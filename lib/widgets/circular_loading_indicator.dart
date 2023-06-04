@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -244,7 +245,7 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 					painter: _CircularLoadingIndicatorPainter(
 						startValue: _startValue,
 						endValue: _displayedEndValue,
-						color: widget.color ?? CupertinoTheme.of(context).primaryColor
+						color: widget.color ?? ChanceTheme.primaryColorOf(context)
 					)
 				)
 			)

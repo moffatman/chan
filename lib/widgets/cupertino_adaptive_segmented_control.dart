@@ -1,4 +1,5 @@
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -40,8 +41,8 @@ class CupertinoAdaptiveSegmentedControl<T extends Object> extends StatelessWidge
 											]
 										)
 									),
-									backgroundColor: context.select<EffectiveSettings, Color>((s) => s.theme.barColor),
-									backgroundColorActivated: context.select<EffectiveSettings, Color>((s) => s.theme.primaryColorWithBrightness(0.5)),
+									backgroundColor: ChanceTheme.barColorOf(context),
+									backgroundColorActivated: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5),
 									trailing: groupValue == child.key ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 									onTap: () => onValueChanged(child.key)
 								)).toList()

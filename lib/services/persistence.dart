@@ -20,6 +20,7 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/refreshable_list.dart';
+import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cookie_jar/cookie_jar.dart';
@@ -332,6 +333,7 @@ class Persistence extends ChangeNotifier {
 		Hive.registerAdapter(DurationAdapter());
 		Hive.registerAdapter(EfficientlyStoredIntSetAdapter());
 		Hive.registerAdapter(PostSortingMethodAdapter());
+		Hive.registerAdapter(ShareablePostsStyleAdapter());
 		temporaryDirectory = await getTemporaryDirectory();
 		documentsDirectory = await getApplicationDocumentsDirectory();
 		wifiCookies = PersistCookieJar(

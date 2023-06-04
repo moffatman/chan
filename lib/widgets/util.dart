@@ -11,6 +11,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -85,18 +86,18 @@ void showToast({
 			padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
 			decoration: BoxDecoration(
 				borderRadius: BorderRadius.circular(24),
-				color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+				color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
 			),
 			child: Row(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					Icon(icon, color: CupertinoTheme.of(context).primaryColor),
+					Icon(icon, color: ChanceTheme.primaryColorOf(context)),
 					const SizedBox(width: 12),
 					Flexible(
 						child: Text(
 							message,
 							style: TextStyle(
-								color: CupertinoTheme.of(context).primaryColor
+								color: ChanceTheme.primaryColorOf(context)
 							)
 						)
 					)
@@ -331,18 +332,18 @@ class ErrorMessageCard extends StatelessWidget {
 		return Container(
 			padding: const EdgeInsets.all(16),
 			decoration: BoxDecoration(
-				color: CupertinoTheme.of(context).primaryColor,
+				color: ChanceTheme.primaryColorOf(context),
 				borderRadius: const BorderRadius.all(Radius.circular(8))
 			),
 			child: Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					Icon(CupertinoIcons.exclamationmark_triangle_fill, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+					Icon(CupertinoIcons.exclamationmark_triangle_fill, color: ChanceTheme.backgroundColorOf(context)),
 					const SizedBox(height: 8),
 					Flexible(
 						child: Text(
 							message,
-							style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+							style: TextStyle(color: ChanceTheme.backgroundColorOf(context)),
 							textAlign: TextAlign.center,
 							overflow: TextOverflow.fade
 						)
@@ -350,10 +351,10 @@ class ErrorMessageCard extends StatelessWidget {
 					for (final remedy in remedies.entries) ...[
 						const SizedBox(height: 8),
 						CupertinoButton(
-							color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+							color: ChanceTheme.backgroundColorOf(context),
 							onPressed: remedy.value,
 							child: Text(remedy.key, style: TextStyle(
-								color: CupertinoTheme.of(context).primaryColor
+								color: ChanceTheme.primaryColorOf(context)
 							), textAlign: TextAlign.center)
 						)
 					]
@@ -472,9 +473,9 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 			else {
 				try {
 					await ChromeSafariBrowser().open(url: WebUri.uri(url), settings: ChromeSafariBrowserSettings(
-						toolbarBackgroundColor: CupertinoTheme.of(context).barBackgroundColor,
-						preferredBarTintColor: CupertinoTheme.of(context).barBackgroundColor,
-						preferredControlTintColor: CupertinoTheme.of(context).primaryColor
+						toolbarBackgroundColor: ChanceTheme.barColorOf(context),
+						preferredBarTintColor: ChanceTheme.barColorOf(context),
+						preferredControlTintColor: ChanceTheme.primaryColorOf(context)
 					));
 				}
 				on PlatformException {
@@ -687,8 +688,8 @@ InlineSpan buildFakeMarkdown(BuildContext context, String input) {
 		children: input.split('`').asMap().entries.map((t) => TextSpan(
 			text: t.value,
 			style: t.key % 2 == 0 ? null : GoogleFonts.ibmPlexMono(
-				backgroundColor: CupertinoTheme.of(context).primaryColor,
-				color: CupertinoTheme.of(context).scaffoldBackgroundColor
+				backgroundColor: ChanceTheme.primaryColorOf(context),
+				color: ChanceTheme.backgroundColorOf(context)
 			)
 		)).toList()
 	);
@@ -778,7 +779,7 @@ class BenchmarkBuilder extends StatelessWidget {
 			children: [
 				child,
 				Container(
-					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+					color: ChanceTheme.backgroundColorOf(context),
 					child: Text('${DateTime.now().difference(start).inMicroseconds / 1000} ms')
 				)
 			]
@@ -979,7 +980,7 @@ Future<void> editStringList({
 										child: Container(
 											decoration: BoxDecoration(
 												borderRadius: const BorderRadius.all(Radius.circular(4)),
-												color: CupertinoTheme.of(context).primaryColor.withOpacity(0.1)
+												color: ChanceTheme.primaryColorOf(context).withOpacity(0.1)
 											),
 											padding: const EdgeInsets.only(left: 16),
 											child: Row(
@@ -1006,7 +1007,7 @@ Future<void> editStringList({
 									child: BackdropFilter(
 										filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
 											child: Container(
-											color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.1),
+											color: ChanceTheme.backgroundColorOf(context).withOpacity(0.1),
 											child: Column(
 												mainAxisSize: MainAxisSize.min,
 												crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1237,7 +1238,7 @@ Future<DateTime?> pickDate({
 	final choice = await showCupertinoModalPopup<bool>(
 		context: context,
 		builder: (context) => Container(
-			color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+			color: ChanceTheme.backgroundColorOf(context),
 			child: SafeArea(
 				child: Column(
 					mainAxisSize: MainAxisSize.min,

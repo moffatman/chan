@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:chan/pages/master_detail.dart';
+import 'package:chan/services/theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 
@@ -59,7 +60,7 @@ class _LicensesPageState extends State<LicensesPage> {
 						behavior: HitTestBehavior.opaque,
 						onTap: () => valueSetter(packageNames[i]),
 						child: Container(
-							color: selectedValue(context, packageNames[i]) ? CupertinoTheme.of(context).primaryColor.withOpacity(0.2) : null,
+							color: selectedValue(context, packageNames[i]) ? ChanceTheme.primaryColorOf(context).withOpacity(0.2) : null,
 							padding: const EdgeInsets.all(16),
 							child: Text(packageNames[i])
 						)
@@ -68,7 +69,7 @@ class _LicensesPageState extends State<LicensesPage> {
 			),
 			detailBuilder: (selectedValue, setter, poppedOut) => BuiltDetailPane(
 				widget: selectedValue == null ? Container(
-					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+					color: ChanceTheme.backgroundColorOf(context),
 					child: const Center(
 						child: Text('Select a package')
 					) 

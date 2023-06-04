@@ -14,6 +14,7 @@ import 'package:chan/services/storage.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/streaming_mp4.dart';
 import 'package:chan/services/text_recognition.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -918,7 +919,7 @@ class AttachmentViewer extends StatelessWidget {
 				) : (controller.cacheCompleted ? const SizedBox.shrink() : Icon(
 					CupertinoIcons.arrow_down_circle,
 					size: 60,
-					color: CupertinoTheme.of(context).primaryColor
+					color: ChanceTheme.primaryColorOf(context)
 				))
 			)
 		)

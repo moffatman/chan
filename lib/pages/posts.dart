@@ -108,6 +108,7 @@ class _PostsPageState extends State<PostsPage> {
 		final subzone = widget.zone.hoistFakeRootZoneFor(0); // To avoid conflict with same semanticIds in tree
 		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.findPost(widget.postIdForBackground!);
 		final doubleTapScrollToReplies = context.select<EffectiveSettings, bool>((s) => s.doubleTapScrollToReplies);
+		final theme = context.watch<SavedTheme>();
 		return ChangeNotifierProvider.value(
 			value: subzone,
 			child: OverscrollModalPage.sliver(
@@ -125,7 +126,7 @@ class _PostsPageState extends State<PostsPage> {
 								final i = j ~/ 2;
 								final reply = replies[i];
 								return Container(
-									color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+									color: theme.backgroundColor,
 									key: ValueKey(reply.post?.id ?? 0),
 									child: AnimatedCrossFade(
 										crossFadeState: reply.stub ? CrossFadeState.showFirst : CrossFadeState.showSecond,
@@ -141,7 +142,7 @@ class _PostsPageState extends State<PostsPage> {
 												width: double.infinity,
 												height: 50,
 												padding: const EdgeInsets.all(8),
-												color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+												color: theme.backgroundColor,
 												child: Row(
 													children: [
 														const Spacer(),
@@ -192,7 +193,7 @@ class _PostsPageState extends State<PostsPage> {
 							return Divider(
 								thickness: 1,
 								height: 0,
-								color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+								color: theme.primaryColorWithBrightness(0.2)
 							);
 						}
 					)

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -123,7 +124,7 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 		)).toList();
 		final menu = Container(
 			decoration: BoxDecoration(
-				color: CupertinoTheme.of(context).barBackgroundColor,
+				color: ChanceTheme.barColorOf(context),
 				borderRadius: borderRadius
 			),
 			child: Flex(

@@ -6,6 +6,7 @@ import 'package:chan/pages/search.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_dialog.dart';
@@ -170,6 +171,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			);
 		}
 		else if (!loading && result.hasData) {
+			final dividerColor = ChanceTheme.primaryColorWithBrightnessOf(context, 0.2);
 			return MaybeCupertinoScrollbar(
 				child: ListView.separated(
 					itemCount: result.data!.posts.length + 2,
@@ -255,7 +257,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					separatorBuilder: (context, i) => Divider(
 						thickness: 1,
 						height: 0,
-						color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+						color: dividerColor
 					)
 				)
 			);

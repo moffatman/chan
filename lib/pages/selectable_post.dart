@@ -1,6 +1,7 @@
 import 'package:chan/models/post.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
@@ -32,7 +33,7 @@ class SelectablePostPage extends StatelessWidget {
 					child: Container(
 						padding: const EdgeInsets.all(16),
 						width: double.infinity,
-						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+						color: ChanceTheme.backgroundColorOf(context),
 						child: Column(
 							mainAxisSize: MainAxisSize.min,
 							children: [
@@ -45,13 +46,14 @@ class SelectablePostPage extends StatelessWidget {
 												showSiteIcon: false,
 												showBoardName: false,
 												settings: context.read<EffectiveSettings>(),
+												theme: context.read<SavedTheme>(),
 												site: context.read<ImageboardSite>(),
 												context: context,
 												zone: zone,
 												interactive: false
 											)),
 											const TextSpan(text: '\n'),
-											post.span.build(context, zone, context.watch<EffectiveSettings>(), PostSpanRenderOptions(
+											post.span.build(context, zone, context.watch<EffectiveSettings>(), context.watch<SavedTheme>(), PostSpanRenderOptions(
 												showRawSource: true,
 												recognizer: TapGestureRecognizer(),
 												overrideRecognizer: true,

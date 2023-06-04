@@ -6,6 +6,7 @@ import 'package:chan/pages/gallery.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
@@ -196,7 +197,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 			child: Stack(
 				children: [
 					Container(
-						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+						color: ChanceTheme.backgroundColorOf(context),
 						child: RefreshableList<TaggedAttachment>(
 							key: _listKey,
 							filterableAdapter: null,

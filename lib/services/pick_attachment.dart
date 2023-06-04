@@ -7,6 +7,7 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
@@ -97,7 +98,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 					child: Container(
 						width: double.infinity,
 						padding: const EdgeInsets.all(16),
-						color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+						color: ChanceTheme.backgroundColorOf(context),
 						child: GridView.builder(
 							gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
 								maxCrossAxisExtent: 100,
@@ -170,7 +171,7 @@ Future<File?> pickAttachment({
 				child: Container(
 					width: double.infinity,
 					padding: const EdgeInsets.all(16),
-					color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+					color: ChanceTheme.backgroundColorOf(context),
 					child: Stack(
 						children: [
 							GridView.builder(
@@ -208,16 +209,16 @@ Future<File?> pickAttachment({
 											},
 											child: Container(
 												decoration: BoxDecoration(
-													color: CupertinoTheme.of(context).primaryColor,
+													color: ChanceTheme.primaryColorOf(context),
 													borderRadius: BorderRadius.circular(8)
 												),
 												padding: const EdgeInsets.all(8),
 												child: Column(
 													mainAxisAlignment: MainAxisAlignment.center,
 													children: [
-														Icon(entry.icon, size: 40, color: CupertinoTheme.of(context).scaffoldBackgroundColor),
+														Icon(entry.icon, size: 40, color: ChanceTheme.backgroundColorOf(context)),
 														Flexible(
-															child: AutoSizeText(entry.name, minFontSize: 5, style: TextStyle(color: CupertinoTheme.of(context).scaffoldBackgroundColor), textAlign: TextAlign.center)
+															child: AutoSizeText(entry.name, minFontSize: 5, style: TextStyle(color: ChanceTheme.backgroundColorOf(context)), textAlign: TextAlign.center)
 														)
 													]
 												)
@@ -241,7 +242,7 @@ Future<File?> pickAttachment({
 							),
 							if (loadingPick) Positioned.fill(
 								child: Container(
-									color: CupertinoTheme.of(context).scaffoldBackgroundColor.withOpacity(0.5),
+									color: ChanceTheme.backgroundColorOf(context).withOpacity(0.5),
 									child: const CupertinoActivityIndicator()
 								)
 							)

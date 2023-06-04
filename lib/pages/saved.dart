@@ -14,6 +14,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
@@ -148,7 +149,7 @@ class _SavedPageState extends State<SavedPage> {
 	Widget _placeholder(String message) {
 		return Container(
 			decoration: BoxDecoration(
-				color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+				color: ChanceTheme.backgroundColorOf(context),
 			),
 			child: Center(
 				child: Text(message)
@@ -252,7 +253,7 @@ class _SavedPageState extends State<SavedPage> {
 									Divider(
 										thickness: 1,
 										height: 0,
-										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+										color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
 									),
 									Expanded(
 										child: RefreshableList<ImageboardScoped<ThreadWatch>>(
@@ -453,7 +454,7 @@ class _SavedPageState extends State<SavedPage> {
 									Divider(
 										thickness: 1,
 										height: 0,
-										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+										color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
 									),
 									Expanded(
 										child: RefreshableList<PersistentThreadState>(
@@ -583,7 +584,7 @@ class _SavedPageState extends State<SavedPage> {
 									Divider(
 										thickness: 1,
 										height: 0,
-										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+										color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
 									),
 									Expanded(
 										child: RefreshableList<_PostThreadCombo>(
@@ -712,7 +713,7 @@ class _SavedPageState extends State<SavedPage> {
 									Divider(
 										thickness: 1,
 										height: 0,
-										color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)
+										color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
 									),
 									Expanded(
 										child: RefreshableList<ImageboardScoped<SavedPost>>(
@@ -828,7 +829,7 @@ class _SavedPageState extends State<SavedPage> {
 															decoration: BoxDecoration(
 																color: Colors.transparent,
 																borderRadius: const BorderRadius.all(Radius.circular(4)),
-																border: Border.all(color: selected(context, list[i]) ? CupertinoTheme.of(context).primaryColor : Colors.transparent, width: 2)
+																border: Border.all(color: selected(context, list[i]) ? ChanceTheme.primaryColorOf(context) : Colors.transparent, width: 2)
 															),
 															margin: const EdgeInsets.all(4),
 															child: Hero(
@@ -1025,8 +1026,8 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 															final now = DateTime.now();
 															return LinearProgressIndicator(
 																value: w.updatingNow ? null : now.difference(w.lastUpdate!).inSeconds / w.nextUpdate!.difference(w.lastUpdate!).inSeconds,
-																color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
-																backgroundColor: CupertinoTheme.of(context).primaryColorWithBrightness(0.2),
+																color: ChanceTheme.primaryColorOf(context).withOpacity(0.5),
+																backgroundColor: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2),
 																minHeight: 8
 															);
 														}
@@ -1153,7 +1154,7 @@ class MissingThreadsControls extends StatelessWidget {
 		if (missingThreads.isEmpty) {
 			return const SizedBox.shrink();
 		}
-		final errorColor = context.select<EffectiveSettings, Color>((s) => s.theme.secondaryColor);
+		final errorColor = ChanceTheme.secondaryColorOf(context);
 		return CupertinoButton(
 			padding: const EdgeInsets.all(16),
 			onPressed: () {

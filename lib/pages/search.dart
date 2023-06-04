@@ -10,6 +10,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_adaptive_segmented_control.dart';
@@ -129,7 +130,7 @@ class SearchPageState extends State<SearchPage> {
 						) : Builder(
 							builder: (context) => Container(
 								decoration: BoxDecoration(
-									color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+									color: ChanceTheme.backgroundColorOf(context),
 								),
 								child: const Center(
 									child: Text('Select a search result')
@@ -273,7 +274,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								Container(
 									padding: const EdgeInsets.only(top: 4, bottom: 4),
 									child: CupertinoButton(
-										color: CupertinoTheme.of(context).primaryColor.withOpacity(0.3),
+										color: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
 										alignment: Alignment.centerLeft,
 										padding: const EdgeInsets.only(left: 10, right: 20),
 										child: Row(
@@ -339,7 +340,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 												Container(
 													decoration: BoxDecoration(
 														borderRadius: const BorderRadius.all(Radius.circular(9)),
-														color: CupertinoTheme.of(context).barBackgroundColor
+														color: ChanceTheme.barColorOf(context)
 													),
 												),
 												CupertinoSearchTextField2(
@@ -655,7 +656,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							onTap: () => widget.onSearchComposed(q),
 							child: Container(
 								decoration: BoxDecoration(
-									border: Border(bottom: BorderSide(color: CupertinoTheme.of(context).primaryColorWithBrightness(0.2)))
+									border: Border(bottom: BorderSide(color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)))
 								),
 								padding: const EdgeInsets.all(16),
 								child: Row(
@@ -734,7 +735,7 @@ class _SearchQueryFilterTag extends StatelessWidget {
 			margin: const EdgeInsets.only(left: 4, right: 4),
 			padding: const EdgeInsets.all(4),
 			decoration: BoxDecoration(
-				color: CupertinoTheme.of(context).primaryColor.withOpacity(0.3),
+				color: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
 				borderRadius: const BorderRadius.all(Radius.circular(4))
 			),
 			child: Text(filterDescription)
