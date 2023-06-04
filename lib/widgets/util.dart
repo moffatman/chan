@@ -81,23 +81,24 @@ void showToast({
 	if (hapticFeedback) {
 		lightHapticFeedback();
 	}
+	final theme = context.read<SavedTheme>();
 	FToast().init(context).showToast(
 		child: Container(
 			padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
 			decoration: BoxDecoration(
 				borderRadius: BorderRadius.circular(24),
-				color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
+				color: theme.primaryColorWithBrightness(0.2)
 			),
 			child: Row(
 				mainAxisSize: MainAxisSize.min,
 				children: [
-					Icon(icon, color: ChanceTheme.primaryColorOf(context)),
+					Icon(icon, color: theme.primaryColor),
 					const SizedBox(width: 12),
 					Flexible(
 						child: Text(
 							message,
 							style: TextStyle(
-								color: ChanceTheme.primaryColorOf(context)
+								color: theme.primaryColor
 							)
 						)
 					)
@@ -472,10 +473,11 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 			}
 			else {
 				try {
+					final theme = context.read<SavedTheme>();
 					await ChromeSafariBrowser().open(url: WebUri.uri(url), settings: ChromeSafariBrowserSettings(
-						toolbarBackgroundColor: ChanceTheme.barColorOf(context),
-						preferredBarTintColor: ChanceTheme.barColorOf(context),
-						preferredControlTintColor: ChanceTheme.primaryColorOf(context)
+						toolbarBackgroundColor: theme.barColor,
+						preferredBarTintColor: theme.barColor,
+						preferredControlTintColor: theme.primaryColor
 					));
 				}
 				on PlatformException {
