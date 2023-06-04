@@ -617,7 +617,6 @@ class _Divider<T extends Object> extends StatelessWidget {
 		const infiniteDepth = 1 << 50;
 		final depth = min(itemBeforeDepth ?? infiniteDepth, itemAfterDepth ?? infiniteDepth);
 		if (depth == infiniteDepth) {
-			print('Skipping divider for $itemBefore $itemAfter');
 			return const SizedBox(
 				width: double.infinity
 			);
