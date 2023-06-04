@@ -226,7 +226,7 @@ class PostRow extends StatelessWidget {
 						child: Column(
 							mainAxisSize: MainAxisSize.min,
 							children: [
-								...latestPost.attachments.map((attachment) => PopupAttachment(
+								...smallAttachments.map((attachment) => PopupAttachment(
 									attachment: attachment,
 									child: CupertinoButton(
 										padding: EdgeInsets.zero,
