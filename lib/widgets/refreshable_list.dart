@@ -2458,6 +2458,28 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		final index = lastVisibleIndex;
 		return index < 0 ? null : _items[index].item.item;
 	}
+	Iterable<RefreshableListItem<T>> get visibleItems sync* {
+		if (!scrollControllerPositionLooksGood) {
+			return;
+		}
+		final top = scrollController!.position.pixels;
+		final bottom = top + scrollController!.position.viewportDimension;
+		for (final item in _items) {
+			final height = item.cachedHeight;
+			final offset = item.cachedOffset;
+			if (height != null && offset != null) {
+				if (offset + height < top) {
+					// Above viewport
+					continue;
+				}
+				if (offset > bottom) {
+					// Below viewport
+					return;
+				}
+				yield item.item;
+			}
+		}
+	}
 	bool isOnscreen(T item) {
 		if (scrollControllerPositionLooksGood) {
 			return _items.any((i) {

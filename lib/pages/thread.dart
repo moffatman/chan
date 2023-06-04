@@ -280,7 +280,7 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	void _onSlowScroll() {
 		final lastItem = _listController.lastVisibleItem;
-		_updateCached();
+		_updateCached(onscreenOnly: true);
 		if (persistentState.thread != null && !blocked && lastItem != null) {
 			final newLastSeen = lastItem.id;
 			if (newLastSeen > (persistentState.lastSeenPostId ?? 0)) {
@@ -307,8 +307,8 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
-	Future<void> _updateCached() async {
-		final attachments = _listController.items.expand((p) => p.item.attachments).toSet();
+	Future<void> _updateCached({required bool onscreenOnly}) async {
+		final attachments = (onscreenOnly ? _listController.visibleItems : _listController.items).expand((p) => p.item.attachments).toSet();
 		await Future.wait(attachments.map((attachment) async {
 			if (_cached[attachment] == true) return;
 			_cached[attachment] = (await (await optimisticallyFindCachedFile(attachment))?.exists()) ?? false;
@@ -316,7 +316,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	}
 
 	Future<void> _cacheAttachments({required bool automatic}) async {
-		await _updateCached();
+		await _updateCached(onscreenOnly: false);
 		if (!mounted) {
 			return;
 		}
@@ -712,6 +712,7 @@ class _ThreadPageState extends State<ThreadPage> {
 					}
 				}
 			});
+			_postUpdateCallbacks.add(() => _updateCached(onscreenOnly: false));
 			if (settings.autoCacheAttachments) {
 				_postUpdateCallbacks.add(() => _cacheAttachments(automatic: true));
 			}
