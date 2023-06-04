@@ -228,6 +228,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			spoiler = otherState.spoiler;
 			attachment = otherState.attachment;
 			_attachmentScan = otherState._attachmentScan;
+			_captchaSolution = otherState._captchaSolution;
 		}
 		_textFieldController = TextEditingController(text: widget.initialText);
 		_subjectFieldController = TextEditingController(text: widget.initialSubject);
@@ -1867,6 +1868,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			});
 			otherState.attachment = attachment;
 			otherState._attachmentScan = _attachmentScan;
+			otherState._captchaSolution = _captchaSolution;
 		}
 	}
 }
