@@ -19,6 +19,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/pick_attachment.dart';
+import 'package:chan/services/rlimit.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/streaming_mp4.dart';
@@ -68,6 +69,7 @@ bool developerMode = false;
 void main() async {
 	runZonedGuarded<Future<void>>(() async {
 		try {
+			await initializeRLimit();
 			WidgetsFlutterBinding.ensureInitialized();
 			await initializeIsDevelopmentBuild();
 			await initializeIsOnMac();
