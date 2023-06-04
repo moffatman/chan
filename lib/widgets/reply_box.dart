@@ -150,6 +150,9 @@ class ReplyBoxState extends State<ReplyBox> {
 				return const [];
 			}
 			final thread = await state.getThread();
+			if (DateTime.now().difference(thread?.time ?? DateTime(2000)).inDays > 30) {
+				return const [];
+			}
 			return thread?.posts_.where((p) => state.youIds.contains(p.id) && p.name.trim() != (state.imageboard?.site.defaultUsername ?? 'Anonymous')).map((p) => p.name.trim()).toList() ?? const [];
 		}))).expand((s) => s).toSet().toList()..sort();
 		if (mounted) {
