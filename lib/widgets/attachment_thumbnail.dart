@@ -119,7 +119,8 @@ class AttachmentThumbnail extends StatelessWidget {
 				width: (effectiveWidth * MediaQuery.devicePixelRatioOf(context)).ceil()
 			);
 		}
-		Widget child; 
+		final barColor = ChanceTheme.barColorOf(context);
+		Widget child;
 		if (settings.loadThumbnails) {
 			child = ExtendedImage(
 				image: image,
@@ -155,7 +156,7 @@ class AttachmentThumbnail extends StatelessWidget {
 						return Container(
 							width: effectiveWidth,
 							height: effectiveHeight,
-							color: ChanceTheme.barColorOf(context),
+							color: barColor,
 							child: Center(
 								child: Icon(attachment.type == AttachmentType.url ? CupertinoIcons.compass : CupertinoIcons.exclamationmark_triangle_fill, size: max(24, 0.5 * min(effectiveWidth, effectiveHeight)))
 							)
@@ -193,7 +194,7 @@ class AttachmentThumbnail extends StatelessWidget {
 			child = Container(
 				width: effectiveWidth,
 				height: effectiveHeight,
-				color: ChanceTheme.barColorOf(context),
+				color: barColor,
 				child: Center(
 					child: Icon(
 						attachment.icon ?? CupertinoIcons.photo,
