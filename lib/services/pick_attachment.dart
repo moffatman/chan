@@ -7,7 +7,7 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/pages/web_image_picker.dart';
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/services/theme.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
@@ -87,6 +87,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 		})
 	);
 	final anySaved = context.read<Persistence?>()?.savedAttachments.isNotEmpty ?? false;
+	final theme = context.read<SavedTheme>();
 	final saved = AttachmentPickingSource(
 		name: 'Saved Attachments',
 		icon: CupertinoIcons.bookmark,
@@ -98,7 +99,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 					child: Container(
 						width: double.infinity,
 						padding: const EdgeInsets.all(16),
-						color: ChanceTheme.backgroundColorOf(context),
+						color: theme.backgroundColor,
 						child: GridView.builder(
 							gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
 								maxCrossAxisExtent: 100,
@@ -165,13 +166,14 @@ Future<File?> pickAttachment({
 }) async {
 	final sources = getAttachmentSources(context: context, includeClipboard: true);
 	bool loadingPick = false;
+	final theme = context.read<SavedTheme>();
 	return Navigator.of(context).push<File>(TransparentRoute(
 		builder: (context) => StatefulBuilder(
 			builder: (context, setPickerDialogState) => OverscrollModalPage(
 				child: Container(
 					width: double.infinity,
 					padding: const EdgeInsets.all(16),
-					color: ChanceTheme.backgroundColorOf(context),
+					color: theme.backgroundColor,
 					child: Stack(
 						children: [
 							GridView.builder(
@@ -209,16 +211,16 @@ Future<File?> pickAttachment({
 											},
 											child: Container(
 												decoration: BoxDecoration(
-													color: ChanceTheme.primaryColorOf(context),
+													color: theme.primaryColor,
 													borderRadius: BorderRadius.circular(8)
 												),
 												padding: const EdgeInsets.all(8),
 												child: Column(
 													mainAxisAlignment: MainAxisAlignment.center,
 													children: [
-														Icon(entry.icon, size: 40, color: ChanceTheme.backgroundColorOf(context)),
+														Icon(entry.icon, size: 40, color: theme.backgroundColor),
 														Flexible(
-															child: AutoSizeText(entry.name, minFontSize: 5, style: TextStyle(color: ChanceTheme.backgroundColorOf(context)), textAlign: TextAlign.center)
+															child: AutoSizeText(entry.name, minFontSize: 5, style: TextStyle(color: theme.backgroundColor), textAlign: TextAlign.center)
 														)
 													]
 												)
@@ -242,7 +244,7 @@ Future<File?> pickAttachment({
 							),
 							if (loadingPick) Positioned.fill(
 								child: Container(
-									color: ChanceTheme.backgroundColorOf(context).withOpacity(0.5),
+									color: theme.backgroundColor.withOpacity(0.5),
 									child: const CupertinoActivityIndicator()
 								)
 							)
