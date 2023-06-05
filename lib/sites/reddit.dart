@@ -550,7 +550,7 @@ class SiteReddit extends ImageboardSite {
 					filename: Uri.tryParse(url.url)?.pathSegments.last ?? '',
 					url: url.url,
 					thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
-						'url': url
+						'url': url.url
 					}).toString(),
 					md5: '',
 					width: null,
