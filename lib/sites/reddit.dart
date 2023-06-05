@@ -111,6 +111,8 @@ extension _ExtractGiphyGIFs on String {
 	}
 }
 
+const _loginFieldRedGifsTokenKey = '_rgt';
+
 class SiteReddit extends ImageboardSite {
 	(int, DateTime)? _earliestKnown;
 	(int, DateTime)? _latestKnown;
@@ -346,47 +348,96 @@ class SiteReddit extends ImageboardSite {
 		icon: (data['icon_img']?.isEmpty ?? true) ? null : Uri.parse(data['icon_img'])
 	);
 
+	Future<String> _getRedgifsToken() async {
+		final response = await client.getUri(Uri.https('api.redgifs.com', '/v2/auth/temporary'));
+		return response.data['token'];
+	}
+
 	/// Resolve image hosting sites to hotlinks
 	Future<({String url, AttachmentType type, String ext})> _resolveUrl(String url) async {
 		final uri = Uri.parse(url);
-		if (uri.host == 'imgur.com' && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
-			final hash = uri.pathSegments.single;
-			final response = await client.getUri(Uri.https('api.imgur.com', '/3/image/$hash'), options: Options(
-				headers: {
-					'Authorization': 'Client-ID 714791ea4513f83'
+		try {
+			if (uri.host == 'imgur.com' && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
+				final hash = uri.pathSegments.single.split('.').first;
+				final response = await client.getUri(Uri.https('api.imgur.com', '/3/image/$hash'), options: Options(
+					headers: {
+						'Authorization': 'Client-ID 714791ea4513f83'
+					}
+				));
+				final link = response.data['data']?['link'] as String?;
+				if (link != null) {
+					return (
+						url: link,
+						type: AttachmentType.image,
+						ext: link.split('.').last
+					);
 				}
-			));
-			final link = response.data['data']?['link'] as String?;
-			if (link != null) {
+			}
+			else if (uri.host == 'gfycat.com' && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
+				final hash = uri.pathSegments.single;
+				final response = await client.getUri(Uri.https('api.gfycat.com', '/v1/gfycats/$hash'), options: Options(
+					headers: {
+						'Authorization': '2_YQH1hg'
+					}
+				));
+				final link = response.data['gfyItem']?['mp4Url'] as String?;
+				if (link != null) {
+					return (
+						url: link,
+						type: AttachmentType.mp4,
+						ext: '.mp4'
+					);
+				}
+			}
+			else if (uri.host == 'i.reddituploads.com') {
 				return (
-					url: link,
+					url: url,
 					type: AttachmentType.image,
-					ext: link.split('.').last
+					ext: '.jpeg'
 				);
 			}
-		}
-		else if (uri.host == 'gfycat.com' && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
-			final hash = uri.pathSegments.single;
-			final response = await client.getUri(Uri.https('api.gfycat.com', '/v1/gfycats/$hash'), options: Options(
-				headers: {
-					'Authorization': '2_YQH1hg'
+			else if (uri.host.endsWith('redgifs.com') && uri.pathSegments.length == 2 && uri.pathSegments[0] == 'watch') {
+				final id = uri.pathSegments[1];
+				String redGifsToken = '';
+				Response? response;
+				try {
+					redGifsToken = await persistence.browserState.loginFields.putIfAbsentAsync(_loginFieldRedGifsTokenKey, _getRedgifsToken);
+					response = await client.getUri(Uri.https('api.redgifs.com', '/v2/gifs/$id'), options: Options(
+						headers: {
+							'Authorization': 'Bearer $redGifsToken'
+						}
+					));
 				}
-			));
-			final link = response.data['gfyItem']?['mp4Url'] as String?;
-			if (link != null) {
-				return (
-					url: link,
-					type: AttachmentType.mp4,
-					ext: '.mp4'
-				);
+				catch (e) {
+					if (e is DioError) {
+						if (e.response?.statusCode == 401 && redGifsToken.isNotEmpty) {
+							// Token expired?
+							redGifsToken = persistence.browserState.loginFields[_loginFieldRedGifsTokenKey] = await _getRedgifsToken();
+							response = await client.getUri(Uri.https('api.redgifs.com', '/v2/gifs/$id'), options: Options(
+								headers: {
+									'Authorization': 'Bearer $redGifsToken'
+								}
+							));
+						}
+					}
+					else {
+						rethrow;
+					}
+				}
+				if (response != null) {
+					final url = response.data['gif']?['urls']?['hd'] ?? response.data['gif']?['urls']?['sd'];
+					if (url != null) {
+						return (
+							url: url as String,
+							type: AttachmentType.mp4,
+							ext: '.mp4'
+						);
+					}
+				}
 			}
 		}
-		else if (uri.host == 'i.reddituploads.com') {
-			return (
-				url: url,
-				type: AttachmentType.image,
-				ext: '.jpeg'
-			);
+		catch (e, st) {
+			Future.error(e, st);
 		}
 		bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => url.endsWith(e));
 		return (
