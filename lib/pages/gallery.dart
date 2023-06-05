@@ -512,6 +512,7 @@ class _GalleryPageState extends State<GalleryPage> {
 	}
 
 	Widget _buildScrollSheetChild(ScrollController controller) {
+		final theme = context.read<EffectiveSettings>().darkTheme;
 		return AnimatedBuilder(
 			animation: _currentAttachmentChanged,
 			builder: (context, child) {
@@ -549,7 +550,7 @@ class _GalleryPageState extends State<GalleryPage> {
 														child: Container(
 															padding: const EdgeInsets.all(2),
 															decoration: BoxDecoration(
-																color: attachment == currentAttachment ? ChanceTheme.primaryColorOf(context) : null,
+																color: attachment == currentAttachment ? theme.primaryColor : null,
 																borderRadius: const BorderRadius.all(Radius.circular(4)),
 															),
 															child: Stack(
@@ -634,7 +635,7 @@ class _GalleryPageState extends State<GalleryPage> {
 												margin: const EdgeInsets.all(2),
 												decoration: BoxDecoration(
 													borderRadius: const BorderRadius.all(Radius.circular(8)),
-													color: attachment == currentAttachment ? ChanceTheme.primaryColorOf(context) : null
+													color: attachment == currentAttachment ? theme.primaryColor : null
 												),
 												child: Stack(
 													children: [
@@ -702,7 +703,7 @@ class _GalleryPageState extends State<GalleryPage> {
 														padding: const EdgeInsets.all(16),
 														decoration: BoxDecoration(
 															borderRadius: BorderRadius.circular(8),
-															color: ChanceTheme.backgroundColorOf(context).withOpacity(0.5)
+															color: theme.backgroundColor.withOpacity(0.5)
 														),
 														child: const Row(
 															mainAxisSize: MainAxisSize.min,
@@ -1035,7 +1036,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													child: AnimatedBuilder(
 														animation: _currentAttachmentChanged,
 														builder: (context, _) => Text("${currentIndex + 1} / ${widget.attachments.length}", style: TextStyle(
-															color: ChanceTheme.primaryColorOf(context)
+															color: settings.darkTheme.primaryColor
 														))
 													)
 												)
