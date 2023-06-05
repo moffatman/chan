@@ -240,7 +240,7 @@ class PostRow extends StatelessWidget {
 								if (attachments != null) WidgetSpan(
 									child: attachments,
 									floating: settings.imagesOnRight ? PlaceholderFloating.right : PlaceholderFloating.left,
-									alignment: PlaceholderAlignment.middle
+									alignment: latestPost.span.hasVeryTallWidgetSpan ? PlaceholderAlignment.top : PlaceholderAlignment.middle
 								),
 								if ((!parentZone.tree || (post.parentId != latestPost.threadId && (baseOptions?.highlightString?.isNotEmpty ?? false))) && !site.explicitIds && post.parentId != null) ...[
 									PostQuoteLinkSpan(
