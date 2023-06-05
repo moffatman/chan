@@ -135,6 +135,7 @@ abstract class PostSpan {
 	String buildText();
 	double estimateLines(double charactersPerLine) => buildText().length / charactersPerLine;
 	bool get containsLink => false;
+	bool get hasVeryTallWidgetSpan => false;
 }
 
 class _PostWrapperSpan extends PostSpan {
@@ -265,6 +266,16 @@ class PostNodeSpan extends PostSpan {
 
 	@override
 	bool get containsLink => children.any((c) => c.containsLink);
+
+	@override
+	bool get hasVeryTallWidgetSpan {
+		for (final child in children) {
+			if (child.hasVeryTallWidgetSpan) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
 class PostTextSpan extends PostSpan {
@@ -831,6 +842,12 @@ class PostCodeSpan extends PostSpan {
 	@override
 	String buildText() {
 		return '[code]$text[/code]';
+	}
+
+	@override
+	bool get hasVeryTallWidgetSpan {
+		final lineCount = RegExp(r'\n').allMatches(text).length + 1;
+		return lineCount > 5;
 	}
 }
 
