@@ -1595,19 +1595,27 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									shrinkWrap: true,
 									scrollDirection: Axis.horizontal,
 									children: [
-										for (final file in receivedFilePaths.reversed) CupertinoButton(
-											alignment: Alignment.center,
-											padding: EdgeInsets.zero,
-											onPressed: () => setAttachment(File(file)),
-											child: ClipRRect(
-												borderRadius: BorderRadius.circular(4),
-												child: ConstrainedBox(
-													constraints: const BoxConstraints(
-														maxWidth: 32,
-														maxHeight: 32
-													),
-													child: SavedAttachmentThumbnail(
-														file: File(file)
+										for (final file in receivedFilePaths.reversed) GestureDetector(
+											onLongPress: () async {
+												if (await confirm(context, 'Remove received file?')) {
+													receivedFilePaths.remove(file);
+													setState(() {});
+												}
+											},
+											child: CupertinoButton(
+												alignment: Alignment.center,
+												padding: EdgeInsets.zero,
+												onPressed: () => setAttachment(File(file)),
+												child: ClipRRect(
+													borderRadius: BorderRadius.circular(4),
+													child: ConstrainedBox(
+														constraints: const BoxConstraints(
+															maxWidth: 32,
+															maxHeight: 32
+														),
+														child: SavedAttachmentThumbnail(
+															file: File(file)
+														)
 													)
 												)
 											)

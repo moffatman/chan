@@ -229,10 +229,17 @@ Future<File?> pickAttachment({
 									}
 									else {
 										// Reverse order
-										final file = File(receivedFilePaths[(receivedFilePaths.length - 1) - (i - sources.length)]);
+										final path = receivedFilePaths[(receivedFilePaths.length - 1) - (i - sources.length)];
+										final file = File(path);
 										return GestureDetector(
 											onTap: () {
 												Navigator.of(context).pop(file);
+											},
+											onLongPress: () async {
+												if (await confirm(context, 'Remove received file?')) {
+													receivedFilePaths.remove(path);
+													setPickerDialogState(() {});
+												}
 											},
 											child: ClipRRect(
 												borderRadius: BorderRadius.circular(8),
