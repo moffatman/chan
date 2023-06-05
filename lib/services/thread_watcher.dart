@@ -75,6 +75,13 @@ class ThreadWatch extends Watch {
 		'youIds': youIds
 	};
 	ThreadIdentifier get threadIdentifier => ThreadIdentifier(board, threadId);
+
+	bool settingsEquals(ThreadWatch other) {
+		return other.push == push &&
+		       other.foregroundMuted == foregroundMuted &&
+					 other.localYousOnly == localYousOnly &&
+					 other.pushYousOnly == pushYousOnly;
+	}
 }
 
 @HiveType(typeId: 29)

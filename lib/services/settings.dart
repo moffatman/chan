@@ -10,6 +10,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/streaming_mp4.dart';
+import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/user_agents.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -801,6 +802,8 @@ class SavedSettings extends HiveObject {
 	int currentThreadAutoUpdatePeriodSeconds;
 	@HiveField(140)
 	ShareablePostsStyle lastShareablePostsStyle;
+	@HiveField(141)
+	ThreadWatch? defaultThreadWatch;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -943,6 +946,7 @@ class SavedSettings extends HiveObject {
 		int? backgroundThreadAutoUpdatePeriodSeconds,
 		int? currentThreadAutoUpdatePeriodSeconds,
 		ShareablePostsStyle? lastShareablePostsStyle,
+		this.defaultThreadWatch,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -2156,6 +2160,13 @@ class EffectiveSettings extends ChangeNotifier {
 	set lastShareablePostsStyle(ShareablePostsStyle setting) {
 		_settings.lastShareablePostsStyle = setting;
 		_settings.save();
+	}
+
+	ThreadWatch? get defaultThreadWatch => _settings.defaultThreadWatch;
+	set defaultThreadWatch(ThreadWatch? setting) {
+		_settings.defaultThreadWatch = setting;
+		_settings.save();
+		notifyListeners();
 	}
 
 	final List<VoidCallback> _appResumeCallbacks = [];

@@ -556,15 +556,35 @@ class _ThreadPageState extends State<ThreadPage> {
 		await _listController.blockAndUpdate();
 	}
 
-	Future<void> _showWatchMenu() async {
+	Future<void> _tapWatchButton({required bool long}) async {
 		if (_showingWatchMenu) {
 			return;
 		}
-		_showingWatchMenu = true;
-		await _weakNavigatorKey.currentState?.push(ThreadWatchControlsPage(
-			thread: widget.thread
-		));
-		_showingWatchMenu = false;
+		final notifications = context.read<Notifications>();
+		final watch = notifications.getThreadWatch(widget.thread);
+		final defaultThreadWatch = context.read<EffectiveSettings>().defaultThreadWatch;
+		if (defaultThreadWatch == null || long || !(watch?.settingsEquals(defaultThreadWatch) ?? true)) {
+			_showingWatchMenu = true;
+			await _weakNavigatorKey.currentState?.push(ThreadWatchControlsPage(
+				thread: widget.thread
+			));
+			_showingWatchMenu = false;
+			return;
+		}
+		if (watch == null) {
+			notifications.subscribeToThread(
+				thread: widget.thread,
+				lastSeenId: persistentState.lastSeenPostId ?? widget.thread.id,
+				localYousOnly: defaultThreadWatch.localYousOnly,
+				pushYousOnly: defaultThreadWatch.pushYousOnly,
+				youIds: persistentState.youIds,
+				push: defaultThreadWatch.push,
+			);
+		}
+		else {
+			notifications.unsubscribeFromThread(widget.thread);
+		}
+		setState(() {});
 	}
 
 	Future<void> _checkForNewGeneral() async {
@@ -962,10 +982,13 @@ class _ThreadPageState extends State<ThreadPage> {
 							trailing: Row(
 								mainAxisSize: MainAxisSize.min,
 								children: [
-									CupertinoButton(
-										padding: EdgeInsets.zero,
-										onPressed: _showWatchMenu,
-										child: Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill)
+									GestureDetector(
+										onLongPress: () => _tapWatchButton(long: true),
+										child: CupertinoButton(
+											padding: EdgeInsets.zero,
+											onPressed: () => _tapWatchButton(long: false),
+											child: Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill)
+										)
 									),
 									if (!persistentState.showInHistory) CupertinoButton(
 										padding: EdgeInsets.zero,

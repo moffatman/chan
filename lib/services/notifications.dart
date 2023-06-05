@@ -497,7 +497,8 @@ class Notifications {
 		required bool localYousOnly,
 		required bool pushYousOnly,
 		required bool push,
-		required List<int> youIds
+		required List<int> youIds,
+		bool foregroundMuted = false
 	}) {
 		final existingWatch = threadWatches.tryFirstWhere((w) => w.threadIdentifier == thread);
 		if (existingWatch != null) {
@@ -513,7 +514,8 @@ class Notifications {
 				localYousOnly: localYousOnly,
 				pushYousOnly: pushYousOnly,
 				youIds: youIds,
-				push: push
+				push: push,
+				foregroundMuted: foregroundMuted
 			);
 			threadWatches.add(watch);
 			if (Persistence.settings.usePushNotifications == true && watch.push) {

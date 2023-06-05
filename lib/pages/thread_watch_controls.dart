@@ -2,9 +2,11 @@ import 'package:chan/models/thread.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
+import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +27,7 @@ class ThreadWatchControlsPage extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final persistence = context.watch<Persistence>(); // rebuild when watch changes
 		final notifications = context.watch<Notifications>();
+		final settings = context.watch<EffectiveSettings>();
 		ThreadWatch? watch = notifications.getThreadWatch(thread);
 		_ThreadWatchingStatus localWatcherStatus = _ThreadWatchingStatus.off;
 		_ThreadWatchingStatus pushWatcherStatus = _ThreadWatchingStatus.off;
@@ -195,6 +198,37 @@ class ThreadWatchControlsPage extends StatelessWidget {
 											}
 										}
 									)
+								),
+								const SizedBox(height: 16),
+								Row(
+									mainAxisAlignment: MainAxisAlignment.center,
+									children: [
+										CupertinoButton(
+											onPressed: (watch != null && !(settings.defaultThreadWatch?.settingsEquals(watch) ?? false)) ? () async {
+												final ok = await confirm(context, 'After setting a default watch setting, this menu will only open when long-pressing the watch icon.');
+												if (ok != true) {
+													return;
+												}
+												settings.defaultThreadWatch = ThreadWatch(
+													board: '',
+													threadId: 0,
+													lastSeenId: 0,
+													localYousOnly: watch.localYousOnly,
+													youIds: [],
+													pushYousOnly: watch.pushYousOnly,
+													foregroundMuted: watch.foregroundMuted,
+													push: watch.push
+												);
+											} : null,
+											child: const Text('Use as default without asking')
+										),
+										CupertinoButton(
+											onPressed: settings.defaultThreadWatch == null ? null : () {
+												settings.defaultThreadWatch = null;
+											},
+											child: const Icon(CupertinoIcons.xmark)
+										)
+									]
 								)
 							]
 						]
