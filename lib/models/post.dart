@@ -406,6 +406,7 @@ class Post implements Filterable {
 			}
 		}
 	}
+	bool get hasVeryTallWidgetSpan => span.traverse(this).any((s) => s is PostCodeSpan && '\n'.allMatches(s.text).length > 4);
 	String buildText({bool forQuoteComparison = false}) {
 		final buffer = StringBuffer();
 		span.buildText(buffer, this, forQuoteComparison: forQuoteComparison);
