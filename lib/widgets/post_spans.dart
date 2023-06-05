@@ -164,6 +164,7 @@ abstract class PostSpan {
 	double estimateLines(double charactersPerLine) => buildText().length / charactersPerLine;
 	Iterable<Attachment> get inlineAttachments;
 	bool get containsLink => false;
+	bool get hasVeryTallWidgetSpan => false;
 	@override
 	String toString() {
 		return '$runtimeType(${buildText()})';
@@ -303,6 +304,9 @@ class PostNodeSpan extends PostSpan {
 
 	@override
 	bool get containsLink => children.any((c) => c.containsLink);
+
+	@override
+	bool get hasVeryTallWidgetSpan => children.any((child) => child.hasVeryTallWidgetSpan);
 
 	@override
 	String toString() => 'PostNodeSpan($children)';
@@ -1078,6 +1082,12 @@ class PostCodeSpan extends PostSpan {
 
 	@override
 	Iterable<Attachment> get inlineAttachments => [];
+
+	@override
+	bool get hasVeryTallWidgetSpan {
+		final lineCount = RegExp(r'\n').allMatches(text).length + 1;
+		return lineCount > 5;
+	}
 }
 
 class PostSpoilerSpan extends PostSpan {
