@@ -362,7 +362,7 @@ class PostRow extends StatelessWidget {
 								if (attachments != null) WidgetSpan(
 									child: attachments,
 									floating: settings.imagesOnRight ? PlaceholderFloating.right : PlaceholderFloating.left,
-									alignment: PlaceholderAlignment.middle
+									alignment: latestPost.span.hasVeryTallWidgetSpan ? PlaceholderAlignment.top : PlaceholderAlignment.middle
 								),
 								if (
 									// The site uses parentIds
