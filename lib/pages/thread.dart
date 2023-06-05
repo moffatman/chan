@@ -476,10 +476,15 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	void _showGallery({bool initiallyShowChrome = false, TaggedAttachment? initialAttachment}) {
 		final commonParentIds = [widget.boardSemanticId, 0];
-		List<TaggedAttachment> attachments = _listController.items.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
-			attachment: a,
-			semanticParentIds: commonParentIds.followedBy(item.parentIds)
-		))).toList();
+		List<TaggedAttachment> attachments = _listController.items.expand((item) {
+			if (item.representsStubChildren) {
+				return const <TaggedAttachment>[];
+			}
+			return item.item.attachments.map((a) => TaggedAttachment(
+				attachment: a,
+				semanticParentIds: commonParentIds.followedBy(item.parentIds)
+			));
+		}).toList();
 		if (!attachments.contains(initialAttachment)) {
 			final hiddenAttachments = _listController.state?.filteredValues.expand((item) => item.item.attachments.map((a) => TaggedAttachment(
 				attachment: a,
