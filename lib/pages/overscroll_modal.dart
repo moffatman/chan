@@ -176,6 +176,9 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 									}
 								}
 							},
+							onPointerCancel: (event) {
+								_pointersDown.remove(event.pointer);
+							},
 							onPointerUp: (event) => _onPointerUp(event.pointer),
 							onPointerPanZoomEnd: (event) => _onPointerUp(event.pointer),
 							child: Actions(
