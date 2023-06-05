@@ -604,7 +604,7 @@ class ThreadRow extends StatelessWidget {
 										if (site.classicCatalogStyle && attachments != null) WidgetSpan(
 											child: attachments,
 											floating: settings.imagesOnRight ? PlaceholderFloating.right : PlaceholderFloating.left,
-											alignment: PlaceholderAlignment.middle
+											alignment: latestThread.posts_.first.hasVeryTallWidgetSpan ? PlaceholderAlignment.top : PlaceholderAlignment.middle
 										),
 										if (headerRow.isNotEmpty) TextSpan(
 											children: [
