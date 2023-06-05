@@ -47,6 +47,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
@@ -2060,12 +2061,20 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 			},
     );
   }
-	
+
+	static bool _skipNextSwipe = false;
+
 	@override
 	Widget build(BuildContext context) {
 		return GestureDetector(
 			behavior: HitTestBehavior.translucent,
+			onPanStart: (details) {
+				_skipNextSwipe = (MediaQueryData.fromView(PlatformDispatcher.instance.views.first).size.height - details.globalPosition.dy) < 24;
+			},
 			onPanEnd: (details) {
+				if (_skipNextSwipe) {
+					return;
+				}
 				if ((-1 * details.velocity.pixelsPerSecond.dy) > details.velocity.pixelsPerSecond.dx.abs()) {
 					onUpSwipe();
 				}
