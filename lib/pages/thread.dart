@@ -301,8 +301,12 @@ class _ThreadPageState extends State<ThreadPage> {
 				final items = _listController.items.toList();
 				final firstIndexClamped = firstIndex.clamp(0, items.length - 1);
 				final seenIds = items.sublist(firstIndexClamped, lastIndex.clamp(firstIndexClamped, items.length - 1) + 1).map((p) => p.item.id);
+				final lengthBefore = persistentState.unseenPostIds.data.length;
 				persistentState.unseenPostIds.data.removeAll(seenIds);
-				persistentState.didUpdate();
+				if (lengthBefore != persistentState.unseenPostIds.data.length) {
+					persistentState.didUpdate();
+					runWhenIdle(const Duration(milliseconds: 250), persistentState.save);
+				}
 			}
 		}
 	}
