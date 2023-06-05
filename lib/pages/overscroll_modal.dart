@@ -16,6 +16,8 @@ class OverscrollModalPage extends StatefulWidget {
 	final Color backgroundColor;
 	final Widget? background;
 	final bool allowScroll;
+	final bool reverse;
+	final ValueChanged<AxisDirection>? onPop;
 
 	const OverscrollModalPage({
 		required this.child,
@@ -23,6 +25,8 @@ class OverscrollModalPage extends StatefulWidget {
 		this.heightEstimate = 0,
 		this.backgroundColor = Colors.black38,
 		this.allowScroll = true,
+		this.reverse = false,
+		this.onPop,
 		super.key
 	}) : sliver = null;
 
@@ -32,6 +36,8 @@ class OverscrollModalPage extends StatefulWidget {
 		this.heightEstimate = 0,
 		this.backgroundColor = Colors.black38,
 		this.allowScroll = true,
+		this.reverse = false,
+		this.onPop,
 		super.key
 	}) : child = null;
 
@@ -92,6 +98,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		final overscrollBottom = _controller.position.pixels - _controller.position.maxScrollExtent;
 		if (max(overscrollTop, overscrollBottom) > 50 - _scrollStopPosition) {
 			_popping = true;
+			widget.onPop?.call(((overscrollTop > overscrollBottom) ^ widget.reverse) ? AxisDirection.up : AxisDirection.down);
 			WeakNavigator.pop(context);
 		}
 		else if (downData.$2) {
@@ -126,7 +133,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 									animation: _controller,
 									child: widget.background,
 									builder: (context, child) {
-										final double childBoxTopDiff = ((_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.child!.parentData as SliverPhysicalParentData?)?.paintOffset.dy ?? 0;
+										final double childBoxTopDiff = (_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.resolvedPadding?.top ?? 0;
 										double topOverscroll = 0;
 										double bottomOverscroll = 0;
 										if (_finishedPopIn && _controller.positions.isNotEmpty && _controller.position.isScrollingNotifier.value) {
@@ -184,6 +191,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 										child: MaybeCupertinoScrollbar(
 											controller: _controller,
 											child: CustomScrollView(
+												reverse: widget.reverse,
 												controller: _controller,
 												key: _scrollKey,
 												physics: widget.allowScroll ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),

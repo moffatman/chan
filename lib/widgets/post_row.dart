@@ -144,7 +144,8 @@ class PostRow extends StatelessWidget {
 				WeakNavigator.push(context, PostsPage(
 						postsIdsToShow: replyIds,
 						postIdForBackground: latestPost.id,
-						zone: parentZone.childZoneFor(latestPost.id)
+						zone: parentZone.childZoneFor(latestPost.id),
+						isRepliesForPostId: latestPost.id,
 					)
 				);
 			}
@@ -716,7 +717,8 @@ class PostRow extends StatelessWidget {
 				popup: PostsPage(
 					postsIdsToShow: replyIds,
 					postIdForBackground: latestPost.id,
-					zone: parentZone.childZoneFor(latestPost.id)
+					zone: parentZone.childZoneFor(latestPost.id),
+					isRepliesForPostId: latestPost.id
 				),
 				builder: innerChild
 			) : innerChild(context, 0.0)

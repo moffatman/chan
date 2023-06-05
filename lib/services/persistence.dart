@@ -908,6 +908,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	double? firstVisiblePostAlignment;
 	@HiveField(26, defaultValue: PostSortingMethod.none)
 	PostSortingMethod postSortingMethod;
+	@HiveField(27)
+	final EfficientlyStoredIntSet postIdsToStartRepliesAtBottom;
 
 	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey);
 
@@ -920,8 +922,11 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		required this.showInHistory,
 		this.ephemeralOwner,
 		EfficientlyStoredIntSet? unseenPostIds,
-		this.postSortingMethod = PostSortingMethod.none
-	}) : lastOpenedTime = DateTime.now(), unseenPostIds = unseenPostIds ?? EfficientlyStoredIntSet({});
+		this.postSortingMethod = PostSortingMethod.none,
+		EfficientlyStoredIntSet? postIdsToStartRepliesAtBottom,
+	}) : lastOpenedTime = DateTime.now(),
+	     unseenPostIds = unseenPostIds ?? EfficientlyStoredIntSet({}),
+			 postIdsToStartRepliesAtBottom = postIdsToStartRepliesAtBottom ?? EfficientlyStoredIntSet({});
 
 	void _invalidate() {
 		_replyIdsToYou = null;

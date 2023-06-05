@@ -59,6 +59,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       postSortingMethod: fields[26] == null
           ? PostSortingMethod.none
           : fields[26] as PostSortingMethod,
+      postIdsToStartRepliesAtBottom: fields[27] as EfficientlyStoredIntSet?,
     )
       ..lastSeenPostId = fields[0] as int?
       ..lastOpenedTime = fields[1] as DateTime
@@ -95,7 +96,7 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
   @override
   void write(BinaryWriter writer, PersistentThreadState obj) {
     writer
-      ..writeByte(26)
+      ..writeByte(27)
       ..writeByte(0)
       ..write(obj.lastSeenPostId)
       ..writeByte(1)
@@ -144,6 +145,8 @@ class PersistentThreadStateAdapter extends TypeAdapter<PersistentThreadState> {
       ..write(obj.firstVisiblePostAlignment)
       ..writeByte(26)
       ..write(obj.postSortingMethod)
+      ..writeByte(27)
+      ..write(obj.postIdsToStartRepliesAtBottom)
       ..writeByte(19)
       ..write(obj.board)
       ..writeByte(20)

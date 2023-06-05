@@ -4,6 +4,7 @@ import 'package:chan/models/attachment.dart';
 import 'package:chan/models/parent_and_child.dart';
 import 'package:chan/models/post.dart';
 import 'package:chan/pages/gallery.dart';
+import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -31,12 +32,14 @@ class PostsPage extends StatefulWidget {
 	final int? postIdForBackground;
 	final List<int> postsIdsToShow;
 	final ValueChanged<Post>? onTap;
+	final int? isRepliesForPostId;
 
 	const PostsPage({
 		required this.postsIdsToShow,
 		this.postIdForBackground,
 		required this.zone,
 		this.onTap,
+		this.isRepliesForPostId,
 		Key? key
 	}) : super(key: key);
 
@@ -108,15 +111,38 @@ class _PostsPageState extends State<PostsPage> {
 		final subzone = widget.zone.hoistFakeRootZoneFor(0); // To avoid conflict with same semanticIds in tree
 		final postForBackground = widget.postIdForBackground == null ? null : widget.zone.findPost(widget.postIdForBackground!);
 		final doubleTapScrollToReplies = context.select<EffectiveSettings, bool>((s) => s.doubleTapScrollToReplies);
+		final isRepliesForPostId = widget.isRepliesForPostId;
+		bool reverse = false;
+		PersistentThreadState? isRepliesForPostThreadState;
+		if (isRepliesForPostId != null) {
+			final isRepliesForPost = widget.zone.findPost(isRepliesForPostId);
+			if (isRepliesForPost != null) {
+				isRepliesForPostThreadState = widget.zone.imageboard.persistence.getThreadStateIfExists(isRepliesForPost.threadIdentifier);
+				reverse = isRepliesForPostThreadState?.postIdsToStartRepliesAtBottom.data.contains(isRepliesForPostId) ?? false;
+			}
+		}
+		final effectiveReplies = reverse ? replies.reversed.toList() : replies;
 		final theme = context.watch<SavedTheme>();
 		return ChangeNotifierProvider.value(
 			value: subzone,
 			child: OverscrollModalPage.sliver(
+				reverse: reverse,
 				background: postForBackground == null ? null : PostRow(
 					post: postForBackground,
 					isSelected: true
 				),
 				heightEstimate: 100.0 * (widget.postsIdsToShow.length - 1),
+				onPop: (direction) {
+					if (isRepliesForPostId == null) {
+						return;
+					}
+					if (direction == AxisDirection.down) {
+						isRepliesForPostThreadState?.postIdsToStartRepliesAtBottom.data.add(isRepliesForPostId);
+					}
+					else {
+						isRepliesForPostThreadState?.postIdsToStartRepliesAtBottom.data.remove(isRepliesForPostId);
+					}
+				},
 				sliver: SliverList(
 					delegate: SliverChildBuilderDelegate(
 						addRepaintBoundaries: false,
@@ -124,7 +150,7 @@ class _PostsPageState extends State<PostsPage> {
 						(context, j) {
 							if (j % 2 == 0) {
 								final i = j ~/ 2;
-								final reply = replies[i];
+								final reply = effectiveReplies[i];
 								return Container(
 									color: theme.backgroundColor,
 									key: ValueKey(reply.post?.id ?? 0),
