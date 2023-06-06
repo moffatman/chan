@@ -409,7 +409,8 @@ class ThreadRow extends StatelessWidget {
 		];
 		final showFlairInContentFocus = !settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '');
 		List<Widget> buildContentFocused() {
-			final atts = latestThread.attachments.map((attachment) => LayoutBuilder(
+			final attachment = latestThread.attachments.tryFirst;
+			final att = attachment == null ? null : LayoutBuilder(
 				builder: (context, constraints) {
 					return PopupAttachment(
 						attachment: attachment,
@@ -428,7 +429,7 @@ class ThreadRow extends StatelessWidget {
 											semanticParentIds: semanticParentIds
 										)
 									),
-									if (attachment.icon != null) Positioned(
+									if (latestThread.attachments.length > 1 || attachment.icon != null) Positioned(
 										top: settings.catalogGridModeAttachmentInBackground ? 0 : null,
 										bottom: settings.catalogGridModeAttachmentInBackground ? null : 0,
 										right: 0,
@@ -441,7 +442,17 @@ class ThreadRow extends StatelessWidget {
 												border: Border.all(color: theme.primaryColorWithBrightness(0.2))
 											),
 											padding: const EdgeInsets.all(2),
-											child: Icon(attachment.icon)
+											child: Row(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													if (attachment.icon != null) Icon(attachment.icon, size: 19),
+													if (latestThread.attachments.length > 1 && attachment.icon != null) const SizedBox(width: 4),
+													if (latestThread.attachments.length > 1) ...[
+														Text('${latestThread.attachments.length} '),
+														const Icon(CupertinoIcons.photo_on_rectangle, size: 19)
+													]
+												]
+											)
 										)
 									)
 								]
@@ -450,7 +461,7 @@ class ThreadRow extends StatelessWidget {
 						)
 					);
 				}
-			)).toList();
+			);
 			final txt = Padding(
 				padding: const EdgeInsets.all(8),
 				child: ChangeNotifierProvider<PostSpanZoneData>(
@@ -490,10 +501,8 @@ class ThreadRow extends StatelessWidget {
 			);
 			if (settings.catalogGridModeAttachmentInBackground) {
 				return [
-					Column(
-						children: atts.map((a) => Expanded(
-							child: a
-						)).toList()
+					if (att != null) Expanded(
+						child: att
 					),
 					Align(
 						alignment: Alignment.bottomCenter,
@@ -507,7 +516,7 @@ class ThreadRow extends StatelessWidget {
 			}
 			else {
 				final gridTextMaxHeight = (settings.catalogGridHeight / 2) - 20;
-				if (atts.isEmpty) {
+				if (att == null) {
 					return [txt];
 				}
 				return [
@@ -515,7 +524,7 @@ class ThreadRow extends StatelessWidget {
 						mainAxisSize: MainAxisSize.min,
 						crossAxisAlignment: CrossAxisAlignment.stretch,
 						children: [
-							for (final att in atts) Expanded(
+							Expanded(
 								child: att
 							),
 							ConstrainedBox(
