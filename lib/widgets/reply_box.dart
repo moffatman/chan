@@ -890,6 +890,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				ThreadIdentifier(widget.board, widget.threadId!) :
 				ThreadIdentifier(widget.board, receipt.id));
 			threadState.receipts = [...threadState.receipts, receipt];
+			threadState.didUpdateYourPosts();
 			threadState.save();
 			mediumHapticFeedback();
 			widget.onReplyPosted(receipt);

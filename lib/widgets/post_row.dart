@@ -532,7 +532,7 @@ class PostRow extends StatelessWidget {
 							onPressed: () {
 								parentZoneThreadState.receipts.removeWhere((r) => r.id == latestPost.id);
 								parentZoneThreadState.postsMarkedAsYou.remove(latestPost.id);
-								parentZoneThreadState.didUpdatePostsMarkedAsYou();
+								parentZoneThreadState.didUpdateYourPosts();
 								parentZoneThreadState.save();
 							}
 						)
@@ -541,7 +541,7 @@ class PostRow extends StatelessWidget {
 							trailingIcon: CupertinoIcons.person_badge_plus,
 							onPressed: () async {
 								parentZoneThreadState.postsMarkedAsYou.add(latestPost.id);
-								parentZoneThreadState.didUpdatePostsMarkedAsYou();
+								parentZoneThreadState.didUpdateYourPosts();
 								if (site.supportsPushNotifications) {
 									await promptForPushNotificationsIfNeeded(context);
 								}

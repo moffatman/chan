@@ -959,7 +959,7 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 		}
 	}
 
-	void didUpdatePostsMarkedAsYou() {
+	void didUpdateYourPosts() {
 		_youIds = null;
 		_invalidate();
 	}
