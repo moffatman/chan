@@ -1031,7 +1031,7 @@ class AttachmentViewer extends StatelessWidget {
 					transform.setFromTranslationRotationScale(Vector3(rect.left, rect.top, 0), Quaternion.identity(), Vector3(rect.width / image.width, rect.height / image.height, 0));
 					for (final block in controller.textBlocks) {
 						// Assume the text is always one line
-						final transformedRect = MatrixUtils.transformRect(transform, Rect.fromLTWH(block.rect.left, image.height - block.rect.bottom, block.rect.width, block.rect.height));
+						final transformedRect = MatrixUtils.transformRect(transform, block.rect);
 						double fontSize = 14;
 						final builder1 = ui.ParagraphBuilder(ui.ParagraphStyle())..pushStyle(ui.TextStyle(fontSize: fontSize))..addText(block.text)..pop();
 						final paragraph1 = builder1.build();
