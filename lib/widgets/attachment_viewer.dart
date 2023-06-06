@@ -1192,7 +1192,7 @@ class AttachmentViewer extends StatelessWidget {
 						trailingIcon: Icons.translate,
 						onPressed: () async {
 							try {
-								await controller.translate();
+								await modalLoad(context, 'Translating...', (c) => controller.translate().timeout(const Duration(seconds: 10)));
 							}
 							catch (e) {
 								alertError(context, e.toStringDio());
