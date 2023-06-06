@@ -626,6 +626,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 					}
 				}
 			}
+			final theme = context.watch<SavedTheme>();
 			return Center(
 				child: ConstrainedBox(
 					constraints: const BoxConstraints(
@@ -867,7 +868,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 															final double animValue = Curves.easeInOut.transform(animation.value);
 															return ColorFiltered(
 																colorFilter: ColorFilter.mode(
-																	ChanceTheme.primaryColorOf(context).withOpacity(0.2 * animValue),
+																	theme.primaryColor.withOpacity(0.2 * animValue),
 																	BlendMode.srcOver
 																),
 																child: child
@@ -918,7 +919,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																							builder: (context, child) => CupertinoPickerDefaultSelectionOverlay(
 																								background: ColorTween(
 																									begin: CupertinoColors.tertiarySystemFill.resolveFrom(context),
-																									end: ChanceTheme.primaryColorOf(context)
+																									end: theme.primaryColor
 																								).transform((_solutionNode.hasFocus && (_solutionController.selection.baseOffset <= i) && (i < _solutionController.selection.extentOffset)) ? 0.5 : 0)!
 																							)
 																						),
@@ -931,7 +932,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 																									style: TextStyle(
 																										fontSize: 34,
 																										color:  ColorTween(
-																											begin: ChanceTheme.primaryColorOf(context),
+																											begin: theme.primaryColor,
 																											end: const Color.fromARGB(255, 241, 190, 19)).transform(0.4 - 0.4*_guessConfidences[min(_guessConfidences.length - 1, i)] + (i == minGuessConfidenceIndex ? 0.6 : 0)
 																										)!
 																									)
@@ -997,8 +998,8 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 											child: LinearProgressIndicator(
 												value: _guessingProgress,
 												minHeight: 50,
-												valueColor: AlwaysStoppedAnimation(ChanceTheme.primaryColorOf(context)),
-												backgroundColor: ChanceTheme.primaryColorOf(context).withOpacity(0.3)
+												valueColor: AlwaysStoppedAnimation(theme.primaryColor),
+												backgroundColor: theme.primaryColor.withOpacity(0.3)
 											)
 										),
 										CupertinoButton(
@@ -1013,7 +1014,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 														'Submit',
 														style: TextStyle(
 															fontSize: 20,
-															color: ChanceTheme.backgroundColorOf(context)
+															color: theme.backgroundColor
 														)
 													)
 												)
