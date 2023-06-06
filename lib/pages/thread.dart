@@ -1635,7 +1635,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	int _lastItemsLength = 0;
 	final _animatedPaddingKey = GlobalKey(debugLabel: '_ThreadPositionIndicatorState._animatedPaddingKey');
 	ValueNotifier<bool>? _lastUpdatingNow;
-	bool _useCatalogCache = true;
+	late bool _useCatalogCache;
 
 	Future<bool> _updateCounts() async {
 		final site = context.read<ImageboardSite>();
@@ -1824,6 +1824,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		if (widget.thread != null) {
 			_filteredPosts = widget.persistentState.filteredPosts();
 		}
+		_useCatalogCache = widget.thread == null;
 		_updateCounts();
 	}
 
