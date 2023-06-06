@@ -1635,6 +1635,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	int _lastItemsLength = 0;
 	final _animatedPaddingKey = GlobalKey(debugLabel: '_ThreadPositionIndicatorState._animatedPaddingKey');
 	ValueNotifier<bool>? _lastUpdatingNow;
+	bool _useCatalogCache = true;
 
 	Future<bool> _updateCounts() async {
 		final site = context.read<ImageboardSite>();
@@ -1642,6 +1643,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		if (!mounted) return false;
 		final lastVisibleIndex = widget.listController.lastVisibleIndex;
 		if (lastVisibleIndex == -1 || (!widget.useTree && _filteredPosts == null) || (widget.useTree && _filteredItems == null)) {
+			if (!_useCatalogCache) {
+				return false;
+			}
 			if (!widget.passedFirstLoad && widget.useTree) {
 				if (widget.thread == null) {
 					_greyCount = site.getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount ?? 0;
@@ -1774,6 +1778,12 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		if (widget.useTree) {
 			_filteredItems ??= widget.listController.items.toList();
 			final skip = _lastFirstVisibleIndex == firstVisibleIndex && _lastLastVisibleIndex == lastVisibleIndex && _lastItemsLength == widget.listController.itemsLength;
+			if (firstVisibleIndex == -1) {
+				_lastFirstVisibleIndex = -1;
+			}
+			if (_lastLastVisibleIndex == -1) {
+				_lastLastVisibleIndex = -1;
+			}
 			if (skip) {
 				return true;
 			}
@@ -1792,7 +1802,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 				return await _updateCounts();
 			}
 			else {
-				return true;
+				return lastVisibleItemId != null && _filteredPosts != null;
 			}
 		}
 	}
@@ -1824,17 +1834,21 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			_filteredPosts = null;
 			_lastLastVisibleItemId = null;
 		}
-		if (widget.thread != oldWidget.thread || widget.filter != oldWidget.filter) {
+		if (widget.thread != oldWidget.thread ||
+		    widget.filter != oldWidget.filter ||
+				widget.useTree != oldWidget.useTree) {
 			_waitForRebuildTimer?.cancel();
 			if (widget.thread == null) {
 				_filteredPosts = null;
 				_filteredItems = null;
+				_useCatalogCache = true;
 			}
 			else {
 				_filteredPosts = widget.persistentState.filteredPosts();
 				_filteredItems = null; // Likely not built yet
 				furthestSeenIndexTop = 9999999;
 				furthestSeenIndexBottom = 0;
+				_useCatalogCache = false;
 			}
 			if (widget.threadIdentifier != oldWidget.threadIdentifier) {
 				setState(() {
@@ -1845,7 +1859,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			}
 			_onSlowScroll().then((result) {
 				if (result) return;
-				_waitForRebuildTimer = Timer.periodic(const Duration(milliseconds: 75), (t) async {
+				_waitForRebuildTimer = Timer.periodic(const Duration(milliseconds: 20), (t) async {
 					if (!mounted || (await _onSlowScroll())) {
 						t.cancel();
 					}

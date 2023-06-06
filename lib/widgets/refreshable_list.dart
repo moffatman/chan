@@ -2178,6 +2178,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	RefreshableListState<T>? state;
 	final Map<(int, bool), List<Completer<void>>> _itemCacheCallbacks = {};
 	int? currentTargetIndex;
+	bool? _useTree;
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onSlowScroll);
 		SchedulerBinding.instance.endOfFrame.then((_) => _onScrollControllerNotification());
@@ -2239,6 +2240,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 	void attach(RefreshableListState<T> list) {
 		state = list;
+		_useTree = list.useTree;
 	}
 	void focusSearch() {
 		state?._focusSearch();
@@ -2278,6 +2280,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			 items[0] == _items[0].item &&
 			 items[1] == _items[1].item &&
 			 items.length >= _items.length &&
+			 state?.useTree == _useTree &&
 			 state?.useTree != true) {
 			if (items.length < _items.length) {
 				_items = _items.sublist(0, items.length);
@@ -2295,14 +2298,15 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 			_items[0].item = items[0];
 		}
 		else if (!listEquals(items, this.items.toList())) {
-			final oldCachedHeights = <RefreshableListItem<T>, double>{
+			final oldCachedHeights = (state?.useTree == _useTree) ? <RefreshableListItem<T>, double>{
 				for (final item in _items)
 					if (item.cachedHeight != null)
 						item.item: item.cachedHeight!
-			};
+			} : {};
 			_items = items.map((item) => _BuiltRefreshableListItem(item)..cachedHeight = oldCachedHeights[item]).toList();
 		}
 		_items.tryFirst?.cachedOffset = oldFirstOffset;
+		_useTree = state?.useTree;
 		WidgetsBinding.instance.addPostFrameCallback((_) => notifyListeners());
 	}
 	void registerItem(int index, RefreshableListItem<T> item, BuildContext context) {
@@ -2408,11 +2412,12 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		if (scrollControllerPositionLooksGood) {
 			if (_items.isNotEmpty &&
 					_items.first.cachedOffset != null &&
-					_items.first.cachedOffset! > scrollController!.position.pixels) {
+					_items.first.cachedOffset! > scrollController!.position.pixels &&
+					_items.first.cachedHeight != null) {
 				// Search field will mean that the _items.lastIndexWhere search will return -1
 				return 0;
 			}
-			return _items.lastIndexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! <= scrollController!.position.pixels));
+			return _items.lastIndexWhere((i) => (i.cachedHeight != null) && (i.cachedOffset != null) && (i.cachedOffset! <= scrollController!.position.pixels));
 		}
 		return -1;
 	}
@@ -2432,7 +2437,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 	T? get middleVisibleItem {
 		if (scrollControllerPositionLooksGood) {
-			int index = _items.indexWhere((i) => (i.cachedOffset != null) && (i.cachedOffset! > (scrollController!.position.pixels + (scrollController!.position.viewportDimension / 2))));
+			int index = _items.indexWhere((i) => (i.cachedHeight != null) && (i.cachedOffset != null) && (i.cachedOffset! > (scrollController!.position.pixels + (scrollController!.position.viewportDimension / 2))));
 			if (index != -1) {
 				if (index > 0) {
 					// It will be one too far, we want the item which covers the middle pixel row
@@ -2450,7 +2455,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 					_items.first.cachedHeight! > (scrollController!.position.pixels + scrollController!.position.viewportDimension)) {
 				return 0;
 			}
-			return _items.lastIndexWhere((i) => (i.cachedOffset != null) && i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
+			return _items.lastIndexWhere((i) => (i.cachedHeight != null) && (i.cachedOffset != null) && i.cachedOffset! < (scrollController!.position.pixels + scrollController!.position.viewportDimension));
 		}
 		return -1;
 	}
