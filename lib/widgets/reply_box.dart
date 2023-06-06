@@ -137,6 +137,8 @@ class ReplyBoxState extends State<ReplyBox> {
 	(String, int)? _spamFilteredPostId;
 	bool get hasSpamFilteredPostToCheck => _spamFilteredPostId != null;
 	static List<String> _previouslyUsedNames = [];
+	late final Timer _focusTimer;
+	(DateTime, FocusNode)? _lastNearbyFocus;
 
 	String get text => _textFieldController.text;
 	set text(String newText) => _textFieldController.text = newText;
@@ -258,6 +260,17 @@ class ReplyBoxState extends State<ReplyBox> {
 		}
 		_tryUsingInitialFile();
 		widget.onInitState?.call(this);
+		_focusTimer = Timer.periodic(const Duration(milliseconds: 200), (_) => _pollFocus());
+	}
+
+	void _pollFocus() {
+		if (!_show) {
+			return;
+		}
+		final nearbyFocus = FocusScope.of(context).focusedChild;
+		if (nearbyFocus != null) {
+			_lastNearbyFocus = (DateTime.now(), nearbyFocus);
+		}
 	}
 
 	@override
@@ -1623,10 +1636,15 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										for (final picker in getAttachmentSources(context: context, includeClipboard: false)) CupertinoButton(
 											padding: EdgeInsets.zero,
 											onPressed: () async {
+												FocusNode? focusToRestore;
+												if (_lastNearbyFocus?.$1.isAfter(DateTime.now().subtract(const Duration(milliseconds: 300))) ?? false) {
+													focusToRestore = _lastNearbyFocus?.$2;
+												}
 												final path = await picker.pick();
 												if (path != null) {
 													await setAttachment(File(path));
 												}
+												focusToRestore?.requestFocus();
 											},
 											child: Icon(picker.icon)
 										)
@@ -1881,5 +1899,6 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			otherState._attachmentScan = _attachmentScan;
 			otherState._captchaSolution = _captchaSolution;
 		}
+		_focusTimer.cancel();
 	}
 }
