@@ -580,7 +580,8 @@ class Persistence extends ChangeNotifier {
 			deprecatedBoardSortingMethods: {},
 			deprecatedBoardReverseSortings: {},
 			catalogVariants: {},
-			postingNames: {}
+			postingNames: {},
+			useCatalogGridPerBoard: {}
 		));
 		if (browserState.deprecatedTabs.isNotEmpty && ImageboardRegistry.instance.getImageboardUnsafe(imageboardKey) != null) {
 			print('Migrating tabs');
@@ -1257,6 +1258,10 @@ class PersistentBrowserState {
 	bool treeModeInitiallyCollapseSecondLevelReplies;
 	@HiveField(20, defaultValue: false)
 	bool treeModeCollapsedPostsShowBody;
+	@HiveField(21)
+	bool? useCatalogGrid;
+	@HiveField(22, defaultValue: {})
+	final Map<String, bool> useCatalogGridPerBoard;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -1275,7 +1280,9 @@ class PersistentBrowserState {
 		required this.postingNames,
 		this.useTree,
 		this.treeModeInitiallyCollapseSecondLevelReplies = false,
-		this.treeModeCollapsedPostsShowBody = false
+		this.treeModeCollapsedPostsShowBody = false,
+		this.useCatalogGrid,
+		required this.useCatalogGridPerBoard
 	}) : deprecatedHiddenImageMD5s = deprecatedHiddenImageMD5s.toSet(), notificationsId = notificationsId ?? (const Uuid()).v4();
 
 	final Map<String, Filter> _catalogFilters = {};

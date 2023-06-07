@@ -6,10 +6,12 @@ import 'package:provider/provider.dart';
 class ImageboardIcon extends StatelessWidget {
 	final String? imageboardKey;
 	final String? boardName;
+	final double size;
 
 	const ImageboardIcon({
 		this.imageboardKey,
 		this.boardName,
+		this.size = 16,
 		Key? key
 	}) : super(key: key);
 
@@ -20,7 +22,7 @@ class ImageboardIcon extends StatelessWidget {
 			imageboard = ImageboardRegistry.instance.getImageboard(imageboardKey!);
 		}
 		if (imageboard == null) {
-			return const Icon(CupertinoIcons.exclamationmark_triangle_fill);
+			return Icon(CupertinoIcons.exclamationmark_triangle_fill, size: size);
 		}
 		Uri url = imageboard.site.iconUrl;
 		bool clipOval = false;
@@ -31,16 +33,18 @@ class ImageboardIcon extends StatelessWidget {
 				clipOval = true;
 			}
 		}
+		final cacheSize = (size * MediaQuery.devicePixelRatioOf(context)).ceil();
 		final child = ExtendedImage.network(
 			url.toString(),
 			headers: imageboard.site.getHeaders(url),
 			cache: true,
 			enableLoadState: false,
 			filterQuality: FilterQuality.high,
-			width: 16,
-			height: 16,
-			cacheWidth: 32,
-			cacheHeight: 32,
+			fit: BoxFit.contain,
+			width: size,
+			height: size,
+			cacheWidth: cacheSize,
+			cacheHeight: cacheSize,
 		);
 		if (clipOval) {
 			return ClipOval(

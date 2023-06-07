@@ -5,7 +5,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/main.dart';
 import 'package:chan/models/board.dart';
 import 'package:chan/pages/board_switcher.dart';
-import 'package:chan/pages/board_watch_controls.dart';
+import 'package:chan/pages/board_settings.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/filtering.dart';
@@ -386,10 +386,9 @@ class _BoardPageState extends State<BoardPage> {
 		final site = context.watch<ImageboardSite?>();
 		final settings = context.watch<EffectiveSettings>();
 		final persistence = context.watch<Persistence?>();
-		final notifications = context.watch<Notifications?>();
-		final boardWatch = notifications?.getBoardWatch(board?.name ?? '');
 		final variant = _variant ?? (_defaultBoardVariant ?? _defaultGlobalVariant);
 		final openInNewTabZone = context.read<OpenInNewTabZone?>();
+		final useCatalogGrid = persistence?.browserState.useCatalogGridPerBoard[board?.name] ?? persistence?.browserState.useCatalogGrid ?? settings.useCatalogGrid;
 		Widget itemBuilder(BuildContext context, Thread thread, {String? highlightString}) {
 			final isSaved = context.select<Persistence, bool>((p) => p.getThreadStateIfExists(thread.identifier)?.savedTime != null);
 			final isThreadHidden = context.select<Persistence, bool>((p) => p.browserState.isThreadHidden(thread.board, thread.id));
@@ -482,8 +481,8 @@ class _BoardPageState extends State<BoardPage> {
 				maxHeight: settings.maxCatalogRowHeight,
 				child: GestureDetector(
 					child: ThreadRow(
-						contentFocus: settings.useCatalogGrid,
-						showLastReplies: !settings.useCatalogGrid && settings.showLastRepliesInCatalog,
+						contentFocus: useCatalogGrid,
+						showLastReplies: !useCatalogGrid && settings.showLastRepliesInCatalog,
 						contentFocusBorderRadiusAndPadding: settings.catalogGridModeCellBorderRadiusAndMargin,
 						thread: thread,
 						isSelected: isSelected,
@@ -508,7 +507,7 @@ class _BoardPageState extends State<BoardPage> {
 									_listController.animateTo((p) => p.attachments.any((a) => a.id == attachment.id), alignment: 0.5);
 								},
 								semanticParentIds: [widget.semanticId],
-								heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
+								heroOtherEndIsBoxFitCover: useCatalogGrid || settings.squareThumbnails
 							);
 						},
 						baseOptions: PostSpanRenderOptions(
@@ -571,10 +570,10 @@ class _BoardPageState extends State<BoardPage> {
 					children: [
 						if (board != null && (site?.supportsPushNotifications ?? false)) CupertinoButton(
 							padding: EdgeInsets.zero,
-							child: boardWatch == null ? const Icon(CupertinoIcons.bell) : const Icon(CupertinoIcons.bell_fill),
+							child: const Icon(CupertinoIcons.settings),
 							onPressed: () {
 								Navigator.of(context).push(TransparentRoute(
-									builder: (context) => BoardWatchControlsPage(
+									builder: (context) => BoardSettingsPage(
 										imageboard: imageboard!,
 										board: board!
 									)
@@ -834,8 +833,8 @@ class _BoardPageState extends State<BoardPage> {
 																(a, b) => b.imageCount.compareTo(a.imageCount)
 														],
 														reverseSort: variant.reverseAfterSorting,
-														minCacheExtent: settings.useCatalogGrid ? settings.catalogGridHeight : 0,
-														gridDelegate: settings.useCatalogGrid ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
+														minCacheExtent: useCatalogGrid ? settings.catalogGridHeight : 0,
+														gridDelegate: useCatalogGrid ? SliverGridDelegateWithMaxCrossAxisExtentWithCacheTrickery(
 															maxCrossAxisExtent: settings.catalogGridWidth,
 															childAspectRatio: settings.catalogGridWidth / settings.catalogGridHeight
 														) : null,

@@ -350,13 +350,16 @@ class PersistentBrowserStateAdapter
           fields[19] == null ? false : fields[19] as bool,
       treeModeCollapsedPostsShowBody:
           fields[20] == null ? false : fields[20] as bool,
+      useCatalogGrid: fields[21] as bool?,
+      useCatalogGridPerBoard:
+          fields[22] == null ? {} : (fields[22] as Map).cast<String, bool>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -390,7 +393,11 @@ class PersistentBrowserStateAdapter
       ..writeByte(19)
       ..write(obj.treeModeInitiallyCollapseSecondLevelReplies)
       ..writeByte(20)
-      ..write(obj.treeModeCollapsedPostsShowBody);
+      ..write(obj.treeModeCollapsedPostsShowBody)
+      ..writeByte(21)
+      ..write(obj.useCatalogGrid)
+      ..writeByte(22)
+      ..write(obj.useCatalogGridPerBoard);
   }
 
   @override

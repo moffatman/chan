@@ -481,7 +481,7 @@ class ThreadRow extends StatelessWidget {
 											text: '${settings.filterProfanity(latestThread.title!)}\n',
 											style: site.classicCatalogStyle ? TextStyle(fontWeight: FontWeight.bold, color: theme.titleColor) : null,
 										),
-										if (settings.useCatalogGrid && settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '')) TextSpan(
+										if (settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '')) TextSpan(
 											text: '${latestThread.flair?.name}\n',
 											style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 15)
 										),

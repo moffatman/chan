@@ -2213,35 +2213,93 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
-					children: const {
-						false: Padding(
-							padding: EdgeInsets.all(8),
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Icon(CupertinoIcons.rectangle_grid_1x2),
-									SizedBox(width: 8),
-									Text('Rows')
-								]
+				Row(
+					children: [
+						Expanded(
+							child: CupertinoSegmentedControl<bool>(
+								children: const {
+									false: Padding(
+										padding: EdgeInsets.all(8),
+										child: Row(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												Icon(CupertinoIcons.rectangle_grid_1x2),
+												SizedBox(width: 8),
+												Text('Rows')
+											]
+										)
+									),
+									true: Padding(
+										padding: EdgeInsets.all(8),
+										child: Row(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												Icon(CupertinoIcons.rectangle_split_3x3),
+												SizedBox(width: 8),
+												Text('Grid')
+											]
+										)
+									)
+								},
+								groupValue: settings.useCatalogGrid,
+								onValueChanged: (newValue) {
+									settings.useCatalogGrid = newValue;
+								}
 							)
 						),
-						true: Padding(
-							padding: EdgeInsets.all(8),
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Icon(CupertinoIcons.rectangle_split_3x3),
-									SizedBox(width: 8),
-									Text('Grid')
-								]
-							)
+						if (ImageboardRegistry.instance.count > 1) CupertinoButton(
+							minSize: 0,
+							padding: EdgeInsets.zero,
+							onPressed: () => showCupertinoModalPopup(
+								context: context,
+								builder: (context) => StatefulBuilder(
+									builder: (context, setDialogState) => CupertinoActionSheet(
+										title: const Text('Per-Site Catalog Layout'),
+										message: Column(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												for (final imageboard in ImageboardRegistry.instance.imageboards) ...[
+													Row(
+														mainAxisSize: MainAxisSize.min,
+														children: [
+															ImageboardIcon(
+																imageboardKey: imageboard.key
+															),
+															const SizedBox(width: 8),
+															Text(imageboard.site.name)
+														]
+													),
+													const SizedBox(height: 8),
+													CupertinoAdaptiveSegmentedControl(
+														groupValue: imageboard.persistence.browserState.useCatalogGrid.value,
+														knownWidth: MediaQuery.sizeOf(context).width,
+														children: {
+															NullSafeOptional.false_: (CupertinoIcons.rectangle_grid_1x2, 'Rows'),
+															NullSafeOptional.null_: (null, 'Default (${settings.useCatalogGrid ? 'Grid' : 'Rows'})'),
+															NullSafeOptional.true_: (CupertinoIcons.rectangle_split_3x3, 'Grid'),
+														},
+														onValueChanged: (v) {
+															imageboard.persistence.browserState.useCatalogGrid = v.value;
+															imageboard.persistence.didUpdateBrowserState();
+															setDialogState(() {});
+														},
+													),
+													const SizedBox(height: 16),
+												]
+											]
+										),
+										actions: [
+											CupertinoActionSheetAction2(
+												onPressed: () => Navigator.pop(context),
+												child: const Text('Close')
+											)
+										]
+									)
+								)
+							),
+							child: const Icon(CupertinoIcons.settings)
 						)
-					},
-					groupValue: settings.useCatalogGrid,
-					onValueChanged: (newValue) {
-						settings.useCatalogGrid = newValue;
-					}
+					]
 				),
 				const SizedBox(height: 16),
 				Row(
