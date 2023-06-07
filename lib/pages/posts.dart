@@ -9,6 +9,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
+import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -144,84 +145,82 @@ class _PostsPageState extends State<PostsPage> {
 					}
 				},
 				sliver: SliverList(
-					delegate: SliverChildBuilderDelegate(
+					delegate: SliverDontRebuildChildBuilderDelegate(
 						addRepaintBoundaries: false,
+						list: effectiveReplies,
 						childCount: max(0, (replies.length * 2) - 1),
-						(context, j) {
-							if (j % 2 == 0) {
-								final i = j ~/ 2;
-								final reply = effectiveReplies[i];
-								return Container(
-									color: theme.backgroundColor,
-									key: ValueKey(reply.post?.id ?? 0),
-									child: AnimatedCrossFade(
-										crossFadeState: reply.stub ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-										duration: const Duration(milliseconds: 350),
-										sizeCurve: Curves.ease,
-										firstCurve: Curves.ease,
-										firstChild: reply.stubIds == null ? const SizedBox(
-											height: 0,
+						(context, i) {
+							final reply = effectiveReplies[i];
+							return Container(
+								color: theme.backgroundColor,
+								key: ValueKey(reply.post?.id ?? 0),
+								child: AnimatedCrossFade(
+									crossFadeState: reply.stub ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+									duration: const Duration(milliseconds: 350),
+									sizeCurve: Curves.ease,
+									firstCurve: Curves.ease,
+									firstChild: reply.stubIds == null ? const SizedBox(
+										height: 0,
+										width: double.infinity,
+									) : GestureDetector(
+										onTap: () => _onTapStub(reply),
+										child: Container(
 											width: double.infinity,
-										) : GestureDetector(
-											onTap: () => _onTapStub(reply),
-											child: Container(
-												width: double.infinity,
-												height: 50,
-												padding: const EdgeInsets.all(8),
-												color: theme.backgroundColor,
-												child: Row(
-													children: [
-														const Spacer(),
-														if (reply.loading) ...[
-															const CupertinoActivityIndicator(),
-															const Text(' ')
-														],
-														Text(
-															'${reply.stubIds?.length} '
-														),
-														const Icon(CupertinoIcons.chevron_down, size: 20)
-													]
-												)
+											height: 50,
+											padding: const EdgeInsets.all(8),
+											color: theme.backgroundColor,
+											child: Row(
+												children: [
+													const Spacer(),
+													if (reply.loading) ...[
+														const CupertinoActivityIndicator(),
+														const Text(' ')
+													],
+													Text(
+														'${reply.stubIds?.length} '
+													),
+													const Icon(CupertinoIcons.chevron_down, size: 20)
+												]
 											)
-										),
-										secondChild: reply.post == null ? const SizedBox(
-											height: 0,
-											width: double.infinity
-										) : PostRow(
-											post: reply.post!,
-											onTap: widget.onTap == null ? null : () => widget.onTap!(reply.post!),
-											onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null
-																		? null : () => widget.zone.onNeedScrollToPost!(reply.post!),
-											onThumbnailTap: (attachment) {
-												final threadState = widget.zone.imageboard.persistence.getThreadStateIfExists(reply.post!.threadIdentifier);
-												showGallery(
-													context: context,
-													attachments: attachments,
-													replyCounts: {
-														for (final reply in replies)
-															for (final attachment in reply.post!.attachments)
-																attachment: reply.post!.replyIds.length
-													},
-													isAttachmentAlreadyDownloaded: threadState?.isAttachmentDownloaded,
-													onAttachmentDownload: threadState?.didDownloadAttachment,
-													initialAttachment: attachment,
-													semanticParentIds: subzone.stackIds,
-													onChange: (attachment) {
-														Scrollable.ensureVisible(context, alignment: 0.5, duration: const Duration(milliseconds: 200));
-													},
-													heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
-												);
-											}
 										)
+									),
+									secondChild: reply.post == null ? const SizedBox(
+										height: 0,
+										width: double.infinity
+									) : PostRow(
+										post: reply.post!,
+										onTap: widget.onTap == null ? null : () => widget.onTap!(reply.post!),
+										onDoubleTap: !doubleTapScrollToReplies || widget.zone.onNeedScrollToPost == null
+																	? null : () => widget.zone.onNeedScrollToPost!(reply.post!),
+										onThumbnailTap: (attachment) {
+											final threadState = widget.zone.imageboard.persistence.getThreadStateIfExists(reply.post!.threadIdentifier);
+											showGallery(
+												context: context,
+												attachments: attachments,
+												replyCounts: {
+													for (final reply in replies)
+														for (final attachment in reply.post!.attachments)
+															attachment: reply.post!.replyIds.length
+												},
+												isAttachmentAlreadyDownloaded: threadState?.isAttachmentDownloaded,
+												onAttachmentDownload: threadState?.didDownloadAttachment,
+												initialAttachment: attachment,
+												semanticParentIds: subzone.stackIds,
+												onChange: (attachment) {
+													Scrollable.ensureVisible(context, alignment: 0.5, duration: const Duration(milliseconds: 200));
+												},
+												heroOtherEndIsBoxFitCover: context.read<EffectiveSettings>().squareThumbnails
+											);
+										}
 									)
-								);
-							}
-							return Divider(
-								thickness: 1,
-								height: 0,
-								color: theme.primaryColorWithBrightness(0.2)
+								)
 							);
-						}
+						},
+						separatorBuilder: (context, i) => Divider(
+							thickness: 1,
+							height: 0,
+							color: theme.primaryColorWithBrightness(0.2)
+						)
 					)
 				)
 			)

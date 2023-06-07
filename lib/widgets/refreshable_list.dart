@@ -45,7 +45,7 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 	final List<T>? list;
 	final String? id;
 	final void Function(int, int)? _didFinishLayout;
-	final bool Function(T) shouldIgnoreForHeightEstimation;
+	final bool Function(T)? shouldIgnoreForHeightEstimation;
 	final NullableIndexedWidgetBuilder? separatorBuilder;
 
 	const SliverDontRebuildChildBuilderDelegate(
@@ -60,7 +60,7 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
     super.semanticIndexCallback,
     super.semanticIndexOffset,
 		void Function(int, int)? didFinishLayout,
-		required this.shouldIgnoreForHeightEstimation,
+		this.shouldIgnoreForHeightEstimation,
 		this.separatorBuilder
   }) : _didFinishLayout = didFinishLayout;
 
@@ -80,39 +80,46 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 		if (items == null) {
 			return null;
 		}
-		int remainingCount = 0;
-		if (separatorBuilder != null) {
-			if (lastIndex == (2 * items.length) - 1) {
-				return trailingScrollOffset;
-			}
-			for (int i = lastIndex ~/ 2; i < items.length; i++) {
-				if (!shouldIgnoreForHeightEstimation(items[i])) {
-					remainingCount++;
-				}
-			}
+		if ((separatorBuilder != null && lastIndex == (2 * items.length) - 1) ||
+				(separatorBuilder == null && lastIndex == items.length - 1)) {
+			return trailingScrollOffset;
+		}
+		final shouldIgnore = shouldIgnoreForHeightEstimation;
+		int totalCount;
+		int remainingCount;
+		if (shouldIgnore == null) {
+			totalCount = separatorBuilder == null ? lastIndex : lastIndex ~/ 2;
+			remainingCount = items.length - totalCount;
 		}
 		else {
-			if (lastIndex == items.length - 1) {
-				return trailingScrollOffset;
-			}
-			for (int i = lastIndex; i < items.length; i++) {
-				if (!shouldIgnoreForHeightEstimation(items[i])) {
-					remainingCount++;
+			remainingCount = 0;
+			if (separatorBuilder != null) {
+				for (int i = lastIndex ~/ 2; i < items.length; i++) {
+					if (!shouldIgnore(items[i])) {
+						remainingCount++;
+					}
 				}
 			}
-		}
-		int totalCount = 0;
-		if (separatorBuilder != null) {
-			for (int i = 0; i <= min(items.length - 1, lastIndex ~/ 2); i++) {
-				if (!shouldIgnoreForHeightEstimation(items[i])) {
-					totalCount++;
+			else {
+				for (int i = lastIndex; i < items.length; i++) {
+					if (!shouldIgnore(items[i])) {
+						remainingCount++;
+					}
 				}
 			}
-		}
-		else {
-			for (int i = 0; i <= lastIndex; i++) {
-				if (!shouldIgnoreForHeightEstimation(items[i])) {
-					totalCount++;
+			totalCount = 0;
+			if (separatorBuilder != null) {
+				for (int i = 0; i <= min(items.length - 1, lastIndex ~/ 2); i++) {
+					if (!shouldIgnore(items[i])) {
+						totalCount++;
+					}
+				}
+			}
+			else {
+				for (int i = 0; i <= lastIndex; i++) {
+					if (!shouldIgnore(items[i])) {
+						totalCount++;
+					}
 				}
 			}
 		}
