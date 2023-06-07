@@ -970,7 +970,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 											query: query
 										));
 									},
-									id: -1 * (i + 10)
+									id: -1 * (i + 20)
 								);
 								return MultiProvider(
 									providers: [

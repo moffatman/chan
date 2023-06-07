@@ -514,7 +514,7 @@ class _SavedPageState extends State<SavedPage> {
 																	onThumbnailLoadError: (error, stackTrace) {
 																		state.imageboard!.threadWatcher.fixBrokenThread(state.thread!.identifier);
 																	},
-																	semanticParentIds: const [-4],
+																	semanticParentIds: const [-12],
 																	onThumbnailTap: (initialAttachment) {
 																		final attachments = _threadListController.items.expand((_) => _.item.thread!.attachments).toList();
 																		showGallery(
@@ -529,7 +529,7 @@ class _SavedPageState extends State<SavedPage> {
 																			onChange: (attachment) {
 																				_threadListController.animateTo((p) => p.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
 																			},
-																			semanticParentIds: [-4],
+																			semanticParentIds: [-12],
 																			heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
 																		);
 																	}
@@ -553,7 +553,7 @@ class _SavedPageState extends State<SavedPage> {
 								imageboardKey: selectedThread.imageboard.key,
 								child: ThreadPage(
 									thread: selectedThread.item,
-									boardSemanticId: -4
+									boardSemanticId: -12
 								)
 							) : _placeholder('Select a thread'),
 							pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
