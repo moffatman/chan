@@ -2069,7 +2069,8 @@ class ChanceCupertinoTabBar extends CupertinoTabBar {
 		return GestureDetector(
 			behavior: HitTestBehavior.translucent,
 			onPanStart: (details) {
-				_skipNextSwipe = (MediaQueryData.fromView(PlatformDispatcher.instance.views.first).size.height - details.globalPosition.dy) < 24;
+				final mq = MediaQueryData.fromView(PlatformDispatcher.instance.views.first);
+				_skipNextSwipe = !mq.systemGestureInsets.deflateRect(Offset.zero & mq.size).contains(details.globalPosition);
 			},
 			onPanEnd: (details) {
 				if (_skipNextSwipe) {
