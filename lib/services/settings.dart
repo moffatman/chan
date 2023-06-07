@@ -1310,12 +1310,13 @@ class EffectiveSettings extends ChangeNotifier {
 
 	String? filterError;
 	final filterListenable = EasyListenable();
-	FilterCache _filter = FilterCache(const DummyFilter());
-	Filter get filter => _filter;
+	FilterCache<FilterGroup<CustomFilter>>? _filter;
+	Iterable<CustomFilter> get customFilterLines => _filter?.wrappedFilter.filters ?? const Iterable.empty();
+	Filter get filter => _filter ?? const DummyFilter();
 	void _tryToSetupFilter() {
 		try {
 			final newFilter = makeFilter(filterConfiguration);
-			if (newFilter != _filter.wrappedFilter) {
+			if (newFilter != _filter?.wrappedFilter) {
 				_filter = FilterCache(newFilter);
 			}
 			filterError = null;

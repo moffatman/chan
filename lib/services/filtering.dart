@@ -88,8 +88,8 @@ abstract class Filter {
 	}
 }
 
-class FilterCache implements Filter {
-	Filter wrappedFilter;
+class FilterCache<T extends Filter> implements Filter {
+	T wrappedFilter;
 	FilterCache(this.wrappedFilter);
 	// Need to use two seperate maps as we can't store null in [_cache]
 	final WeakMap<Filterable, bool?> _contains = WeakMap();
@@ -456,8 +456,8 @@ class SearchFilter implements Filter {
 	int get hashCode => text.hashCode;
 }
 
-class FilterGroup implements Filter {
-	final List<Filter> filters;
+class FilterGroup<T extends Filter> implements Filter {
+	final List<T> filters;
 	FilterGroup(this.filters);
 	@override
 	FilterResult? filter(Filterable item) {
@@ -502,8 +502,8 @@ class FilterException implements Exception {
 
 final _configurationLinePattern = RegExp(r'^#?([^\/]*)\/(.*)\/(i?)(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?(;([^;]+))?$');
 
-FilterGroup makeFilter(String configuration) {
-	final filters = <Filter>[];
+FilterGroup<CustomFilter> makeFilter(String configuration) {
+	final filters = <CustomFilter>[];
 	for (final line in configuration.split('\n')) {
 		if (line.isEmpty) {
 			continue;

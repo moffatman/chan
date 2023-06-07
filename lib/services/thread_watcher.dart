@@ -345,6 +345,38 @@ class ThreadWatcher extends ChangeNotifier {
 				}
 			}
 		}
+		bool savedAnyThread = false;
+		for (final line in settings.customFilterLines) {
+			if (line.disabled || !line.outputType.autoSave) {
+				continue;
+			}
+			for (final board in line.boards) {
+				final imageboardBoard = persistence.maybeGetBoard(board);
+				if (imageboardBoard == null) {
+					continue;
+				}
+				final catalog = _lastCatalogs[board] ??= await site.getCatalog(board, interactive: false);
+				for (final thread in catalog) {
+					if (line.filter(thread)?.type.autoSave != true) {
+						// Thread doesn't match
+						continue;
+					}
+					if (persistence.browserState.autosavedIds[board]?.contains(thread.id) ?? false) {
+						// Already saw this thread
+						continue;
+					}
+					final threadState = persistence.getThreadState(thread.identifier);
+					threadState.savedTime = DateTime.now();
+					threadState.thread = thread;
+					persistence.browserState.autosavedIds.putIfAbsent(thread.board, () => []).add(thread.id);
+					await threadState.save();
+					savedAnyThread = true;
+				}
+			}
+		}
+		if (savedAnyThread) {
+			await persistence.didUpdateBrowserState();
+		}
 		_updateCounts();
 	}
 
