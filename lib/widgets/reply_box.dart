@@ -1103,7 +1103,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		);
 		return Container(
 			decoration: BoxDecoration(
-				border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2))),
+				border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))),
 				color: ChanceTheme.backgroundColorOf(context)
 			),
 			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 10),
@@ -1122,7 +1122,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												enabled: !settings.randomizeFilenames,
 												controller: _filenameController,
 												placeholder: (settings.randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
-												placeholderStyle: TextStyle(color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.7)),
+												placeholderStyle: TextStyle(color: ChanceTheme.primaryColorWithBrightness70Of(context)),
 												maxLines: 1,
 												textCapitalization: TextCapitalization.none,
 												autocorrect: false,
@@ -1277,7 +1277,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		final settings = context.watch<EffectiveSettings>();
 		return Container(
 			decoration: BoxDecoration(
-				border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2))),
+				border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context))),
 				color: ChanceTheme.backgroundColorOf(context)
 			),
 			padding: const EdgeInsets.only(top: 9, left: 8, right: 8, bottom: 10),
@@ -1839,7 +1839,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									},
 									child: Container(
 										decoration: BoxDecoration(
-											border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)))
+											border: Border(top: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)))
 										),
 										height: 40,
 										child: _buildButtons(context),

@@ -119,7 +119,7 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 									].map((v) => CupertinoListTile(
 										title: Text(v.$2),
 										backgroundColor: ChanceTheme.barColorOf(context),
-										backgroundColorActivated: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5),
+										backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 										trailing: status == v.$1 ? const Icon(CupertinoIcons.check_mark, size: 18) : const SizedBox.shrink(),
 										onTap: () {
 											if (v.$1 != _BoardWatchingStatus.off) {

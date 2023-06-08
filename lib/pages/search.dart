@@ -656,7 +656,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							onTap: () => widget.onSearchComposed(q),
 							child: Container(
 								decoration: BoxDecoration(
-									border: Border(bottom: BorderSide(color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)))
+									border: Border(bottom: BorderSide(color: ChanceTheme.primaryColorWithBrightness20Of(context)))
 								),
 								padding: const EdgeInsets.all(16),
 								child: Row(

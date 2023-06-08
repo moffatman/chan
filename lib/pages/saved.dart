@@ -254,7 +254,7 @@ class _SavedPageState extends State<SavedPage> {
 									Divider(
 										thickness: 1,
 										height: 0,
-										color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
+										color: ChanceTheme.primaryColorWithBrightness20Of(context)
 									),
 									Expanded(
 										child: RefreshableList<ImageboardScoped<ThreadWatch>>(
@@ -455,7 +455,7 @@ class _SavedPageState extends State<SavedPage> {
 									Divider(
 										thickness: 1,
 										height: 0,
-										color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
+										color: ChanceTheme.primaryColorWithBrightness20Of(context)
 									),
 									Expanded(
 										child: RefreshableList<PersistentThreadState>(
@@ -585,7 +585,7 @@ class _SavedPageState extends State<SavedPage> {
 									Divider(
 										thickness: 1,
 										height: 0,
-										color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
+										color: ChanceTheme.primaryColorWithBrightness20Of(context)
 									),
 									Expanded(
 										child: RefreshableList<_PostThreadCombo>(
@@ -714,7 +714,7 @@ class _SavedPageState extends State<SavedPage> {
 									Divider(
 										thickness: 1,
 										height: 0,
-										color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
+										color: ChanceTheme.primaryColorWithBrightness20Of(context)
 									),
 									Expanded(
 										child: RefreshableList<ImageboardScoped<SavedPost>>(
@@ -1028,7 +1028,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 															return LinearProgressIndicator(
 																value: w.updatingNow ? null : now.difference(w.lastUpdate!).inSeconds / w.nextUpdate!.difference(w.lastUpdate!).inSeconds,
 																color: ChanceTheme.primaryColorOf(context).withOpacity(0.5),
-																backgroundColor: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2),
+																backgroundColor: ChanceTheme.primaryColorWithBrightness20Of(context),
 																minHeight: 8
 															);
 														}

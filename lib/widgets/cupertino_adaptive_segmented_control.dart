@@ -35,7 +35,7 @@ class CupertinoAdaptiveSegmentedControl<T extends Object> extends StatelessWidge
 								child: Text(child.value.$2, textAlign: TextAlign.left, maxLines: 3)
 							),
 							backgroundColor: ChanceTheme.barColorOf(context),
-							backgroundColorActivated: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5),
+							backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 							trailing: groupValue == child.key ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 							onTap: () => onValueChanged(child.key)
 						)).toList()

@@ -2096,7 +2096,7 @@ class RefreshableListFooter extends StatelessWidget {
 																				return LinearProgressIndicator(
 																					value: updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds,
 																					color: ChanceTheme.primaryColorOf(context).withOpacity(0.5),
-																					backgroundColor: ChanceTheme.primaryColorWithBrightnessOf(context, 0.1),
+																					backgroundColor: ChanceTheme.primaryColorWithBrightness10Of(context),
 																					minHeight: 8
 																				);
 																			}
@@ -2122,7 +2122,7 @@ class RefreshableListFooter extends StatelessWidget {
 															builder: (context) {
 																return GreedySizeCachingBox(
 																	child: Text('Next update ${formatRelativeTime(nextUpdateTime ?? DateTime(3000))}', style: TextStyle(
-																		color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5)
+																		color: ChanceTheme.primaryColorWithBrightness50Of(context)
 																	))
 																);
 															}

@@ -903,7 +903,7 @@ class _BoardPageState extends State<BoardPage> {
 																					},
 																					child: Container(
 																						decoration: BoxDecoration(
-																							color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.8),
+																							color: ChanceTheme.primaryColorWithBrightness80Of(context),
 																							borderRadius: const BorderRadius.all(Radius.circular(8))
 																						),
 																						padding: const EdgeInsets.all(8),

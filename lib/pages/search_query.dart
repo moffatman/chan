@@ -171,7 +171,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 			);
 		}
 		else if (!loading && result.hasData) {
-			final dividerColor = ChanceTheme.primaryColorWithBrightnessOf(context, 0.2);
+			final dividerColor = ChanceTheme.primaryColorWithBrightness20Of(context);
 			return MaybeCupertinoScrollbar(
 				child: ListView.separated(
 					itemCount: result.data!.posts.length + 2,

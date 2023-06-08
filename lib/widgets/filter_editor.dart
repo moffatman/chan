@@ -149,7 +149,7 @@ class _FilterEditorState extends State<FilterEditor> {
 											children: [
 												CupertinoListTile(
 													backgroundColor: ChanceTheme.barColorOf(context),
-													backgroundColorActivated: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5),
+													backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 													title: const Text('Case-sensitive'),
 													trailing: isCaseSensitive ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap: () {
@@ -181,7 +181,7 @@ class _FilterEditorState extends State<FilterEditor> {
 														'capcode': 'Capcode'
 													}[field] ?? field),
 													backgroundColor: ChanceTheme.barColorOf(context),
-													backgroundColorActivated: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5),
+													backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 													trailing: patternFields.contains(field) ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap:() {
 														if (patternFields.contains(field)) {
@@ -210,7 +210,7 @@ class _FilterEditorState extends State<FilterEditor> {
 														true: 'With images'
 													}[field]!),
 													backgroundColor: ChanceTheme.barColorOf(context),
-													backgroundColorActivated: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5),
+													backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 													trailing: hasFile == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap:() {
 														setInnerState(() {
@@ -235,7 +235,7 @@ class _FilterEditorState extends State<FilterEditor> {
 														false: 'Replies only'
 													}[field]!),
 													backgroundColor: ChanceTheme.barColorOf(context),
-													backgroundColorActivated: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5),
+													backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 													trailing: threadsOnly == field ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													onTap:() {
 														setInnerState(() {
@@ -415,7 +415,7 @@ class _FilterEditorState extends State<FilterEditor> {
 														title: const Text('Hide'),
 														trailing: hide ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 														backgroundColor: ChanceTheme.barColorOf(context),
-														backgroundColorActivated: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5),
+														backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 														onTap: () {
 															if (!hide) {
 																hide = true;
@@ -450,7 +450,7 @@ class _FilterEditorState extends State<FilterEditor> {
 													title: Text(t.$1),
 													trailing: t.$2 ? const Icon(CupertinoIcons.check_mark) : const SizedBox.shrink(),
 													backgroundColor: ChanceTheme.barColorOf(context),
-													backgroundColorActivated: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5),
+													backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 													onTap: () {
 														t.$3(!t.$2);
 														hide = !(highlight || pinToTop || autoSave || notify || collapse);
@@ -617,7 +617,7 @@ class _FilterEditorState extends State<FilterEditor> {
 												child: CupertinoListTile(
 													title: Text(filter.value.label.isNotEmpty ? filter.value.label : filter.value.pattern.pattern),
 													backgroundColor: ChanceTheme.barColorOf(context),
-													backgroundColorActivated: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5),
+													backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 													leading: FittedBox(fit: BoxFit.contain, child: Column(
 														mainAxisAlignment: MainAxisAlignment.spaceBetween,
 														children: [
@@ -699,7 +699,7 @@ class _FilterEditorState extends State<FilterEditor> {
 								title: const Text('Suggestion: Add a mass-reply filter'),
 								leading: const Icon(CupertinoIcons.lightbulb),
 								backgroundColor: ChanceTheme.barColorOf(context),
-								backgroundColorActivated: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5),
+								backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 								onTap: () async {
 									settings.filterConfiguration += '\nMass-reply//;minReplied:10';
 									regexController.text = settings.filterConfiguration;
@@ -709,7 +709,7 @@ class _FilterEditorState extends State<FilterEditor> {
 								title: const Text('New filter'),
 								leading: const Icon(CupertinoIcons.plus),
 								backgroundColor: ChanceTheme.barColorOf(context),
-								backgroundColorActivated: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5),
+								backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
 								onTap: () async {
 									final newFilter = await editFilter(null);
 									if (newFilter?.$2 != null) {

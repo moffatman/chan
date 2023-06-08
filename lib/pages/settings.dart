@@ -362,7 +362,7 @@ class SettingsPage extends StatelessWidget {
 				),
 				const SizedBox(height: 32),
 				Divider(
-					color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
+					color: ChanceTheme.primaryColorWithBrightness20Of(context)
 				),
 				_SettingsPageButton(
 					icon: CupertinoIcons.eye_slash,
@@ -371,7 +371,7 @@ class SettingsPage extends StatelessWidget {
 					pageBuilder: (context) => const SettingsBehaviorPage()
 				),
 				Divider(
-					color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
+					color: ChanceTheme.primaryColorWithBrightness20Of(context)
 				),
 				_SettingsPageButton(
 					icon: CupertinoIcons.paintbrush,
@@ -379,7 +379,7 @@ class SettingsPage extends StatelessWidget {
 					pageBuilder: (context) => const SettingsAppearancePage()
 				),
 				Divider(
-					color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
+					color: ChanceTheme.primaryColorWithBrightness20Of(context)
 				),
 				_SettingsPageButton(
 					icon: CupertinoIcons.photo_on_rectangle,
@@ -387,7 +387,7 @@ class SettingsPage extends StatelessWidget {
 					pageBuilder: (context) => const SettingsDataPage()
 				),
 				Divider(
-					color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
+					color: ChanceTheme.primaryColorWithBrightness20Of(context)
 				),
 				const SizedBox(height: 16),
 				Center(
@@ -402,7 +402,7 @@ class SettingsPage extends StatelessWidget {
 				),
 				const SizedBox(height: 16),
 				Center(
-					child: Text('Chance $kChanceVersion', style: TextStyle(color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5)))
+					child: Text('Chance $kChanceVersion', style: TextStyle(color: ChanceTheme.primaryColorWithBrightness50Of(context)))
 				),
 				const SizedBox(height: 16),
 			],
@@ -2138,7 +2138,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																								child: Text(
 																									pair.value.displayName,
 																									style: disabled ? TextStyle(
-																										color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.5)
+																										color: ChanceTheme.primaryColorWithBrightness50Of(context)
 																									) : null
 																								)
 																							)
@@ -2835,7 +2835,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									children: [
 										const TextSpan(text: 'Vertical two-pane split\n'),
 										TextSpan(text: 'Minimum pane height: ${settings.verticalTwoPaneMinimumPaneSize.abs().round()} px', style: TextStyle(
-											color: ChanceTheme.primaryColorWithBrightnessOf(context, settings.verticalTwoPaneMinimumPaneSize.isNegative ? 0.5 : 0.8)
+											color: settings.verticalTwoPaneMinimumPaneSize.isNegative ? ChanceTheme.primaryColorWithBrightness50Of(context) : ChanceTheme.primaryColorWithBrightness80Of(context)
 										))
 									]
 								)
@@ -2904,7 +2904,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									topLeft: Radius.circular(6),
 									bottomLeft: Radius.circular(6),
 								),
-								color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.6)
+								color: ChanceTheme.primaryColorWithBrightness60Of(context)
 							),
 							padding: const EdgeInsets.all(3),
 							width: 13,

@@ -451,7 +451,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 					),
 					VerticalDivider(
 						width: 0,
-						color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
+						color: ChanceTheme.primaryColorWithBrightness20Of(context)
 					),
 					Flexible(
 						flex: twoPaneSplitDenominator - settings.twoPaneSplit,
@@ -482,7 +482,7 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 					),
 					Divider(
 						height: 0,
-						color: ChanceTheme.primaryColorWithBrightnessOf(context, 0.2)
+						color: ChanceTheme.primaryColorWithBrightness20Of(context)
 					),
 					Expanded(
 						child: TransformedMediaQuery(
