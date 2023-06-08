@@ -688,7 +688,13 @@ class AttachmentViewerController extends ChangeNotifier {
 			else if (!_seeking) {
 				_seeking = true;
 				await videoPlayerController!.seekTo(newPosition);
+				if (!_currentlyWithinLongPress) {
+					return;
+				}
 				await videoPlayerController!.play();
+				if (!_currentlyWithinLongPress) {
+					return;
+				}
 				await videoPlayerController!.pause();
 				_seeking = false;
 			}
