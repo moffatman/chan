@@ -1796,7 +1796,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			return ok;
 		}
 		else {
-			final lastVisibleItemId = widget.listController.lastVisibleItem?.id;
+			final lastVisibleItemId = (lastVisibleIndex == -1) ? null : widget.listController.getItem(lastVisibleIndex).id;
 			_filteredPosts ??= widget.persistentState.filteredPosts();
 			if (lastVisibleItemId != null && lastVisibleItemId != _lastLastVisibleItemId && _filteredPosts != null) {
 				return await _updateCounts();
