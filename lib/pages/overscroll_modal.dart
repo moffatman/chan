@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
+const _kLongPressToPopAllTime = Duration(milliseconds: 500);
+
 class OverscrollModalPage extends StatefulWidget {
 	final Widget? child;
 	final Widget? sliver;
@@ -88,7 +90,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		final RenderBox scrollBox = _scrollKey.currentContext!.findRenderObject()! as RenderBox;
 		final Offset childBoxOffset = ((_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.child!.parentData as SliverPhysicalParentData?)?.paintOffset ?? Offset.zero;
 		_pointersDown[event.pointer] = (event.position, event.position.dy < scrollBox.localToGlobal(childBoxOffset).dy || event.position.dy > scrollBox.localToGlobal(scrollBox.semanticBounds.bottomCenter - childBoxOffset).dy, DateTime.now());
-		Future.delayed(const Duration(seconds: 1), () {
+		Future.delayed(_kLongPressToPopAllTime, () {
 			if (mounted &&
 			    WeakNavigator.of(context) != null &&
 			    !context.read<EffectiveSettings>().overscrollModalTapPopsAll &&
@@ -116,7 +118,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 			// Simulate onTap for the Spacers which fill the transparent space
 			// It's done here rather than using GestureDetector so it works during scroll-in
 			if (WeakNavigator.of(context) != null) {
-				if (context.read<EffectiveSettings>().overscrollModalTapPopsAll || DateTime.now().difference(downData.$3) > const Duration(seconds: 1)) {
+				if (context.read<EffectiveSettings>().overscrollModalTapPopsAll || DateTime.now().difference(downData.$3) > _kLongPressToPopAllTime) {
 					WeakNavigator.of(context)!.popAllExceptFirst(animated: true);
 				}
 				else {
@@ -185,7 +187,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 										// Moved too far, will no longer pop
 										if (WeakNavigator.of(context) != null &&
 										    !context.read<EffectiveSettings>().overscrollModalTapPopsAll &&
-												DateTime.now().difference(downData.$3) > const Duration(seconds: 1)) {
+												DateTime.now().difference(downData.$3) > _kLongPressToPopAllTime) {
 											// We played the haptic feedback to say it was held long enough
 											// Do a double-vibrate to indicate cancel
 											lightHapticFeedback();
