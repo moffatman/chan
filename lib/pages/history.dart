@@ -101,7 +101,7 @@ class HistoryPageState extends State<HistoryPage> {
 													barrierDismissible: true,
 													builder: (context) => StatefulBuilder(
 														builder: (context, setDialogState) {
-															final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime == null && (includeThreadsYouRepliedTo || i.youIds.isEmpty)).toList();
+															final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime == null && i.threadWatch == null && (includeThreadsYouRepliedTo || i.youIds.isEmpty)).toList();
 															final thisSessionStates = states.where((s) => s.lastOpenedTime.compareTo(_appLaunchTime) >= 0).toList();
 															final now = DateTime.now();
 															final lastDayStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 1);
@@ -111,7 +111,7 @@ class HistoryPageState extends State<HistoryPage> {
 																content: Column(
 																	mainAxisSize: MainAxisSize.min,
 																	children: [
-																		const Text('Saved threads will not be deleted'),
+																		const Text('Saved and watched threads will not be deleted'),
 																		const SizedBox(height: 16),
 																		Row(
 																			children: [

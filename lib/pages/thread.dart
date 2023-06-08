@@ -265,7 +265,7 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	void _maybeUpdateWatch() {
 		final notifications = context.read<Notifications>();
-		final threadWatch = notifications.getThreadWatch(widget.thread);
+		final threadWatch = persistentState.threadWatch;
 		if (threadWatch != null && persistentState.thread != null) {
 			_checkForeground();
 			notifications.updateLastKnownId(threadWatch, persistentState.thread!.posts.last.id, foreground: _foreground);
@@ -565,7 +565,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			return;
 		}
 		final notifications = context.read<Notifications>();
-		final watch = notifications.getThreadWatch(widget.thread);
+		final watch = persistentState.threadWatch;
 		final defaultThreadWatch = context.read<EffectiveSettings>().defaultThreadWatch;
 		if (defaultThreadWatch == null || long || !(watch?.settingsEquals(defaultThreadWatch) ?? true)) {
 			_showingWatchMenu = true;
@@ -701,7 +701,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			}
 		}
 		bool shouldScroll = false;
-		final watch = notifications.getThreadWatch(widget.thread);
+		final watch = tmpPersistentState.threadWatch;
 		if (watch != null && newThread.identifier == widget.thread && mounted) {
 			_checkForeground();
 			notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: _foreground);
@@ -841,8 +841,8 @@ class _ThreadPageState extends State<ThreadPage> {
 								imageboard.notifications.subscribeToThread(
 									thread: widget.thread,
 									lastSeenId: receipt.id,
-									localYousOnly: imageboard.notifications.getThreadWatch(widget.thread)?.localYousOnly ?? true,
-									pushYousOnly: imageboard.notifications.getThreadWatch(widget.thread)?.pushYousOnly ?? true,
+									localYousOnly: persistentState.threadWatch?.localYousOnly ?? true,
+									pushYousOnly: persistentState.threadWatch?.pushYousOnly ?? true,
 									push: true,
 									youIds: persistentState.freshYouIds()
 								);
@@ -891,7 +891,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			}
 		}
 		final notifications = context.watch<Notifications>();
-		final watch = context.select<Persistence, ThreadWatch?>((_) => notifications.getThreadWatch(widget.thread));
+		final watch = context.select<Persistence, ThreadWatch?>((_) => persistentState.threadWatch);
 		final reverseIndicatorPosition = context.select<EffectiveSettings, bool>((s) => s.showListPositionIndicatorsOnLeft);
 		zone.postSortingMethods = [
 			if (persistentState.postSortingMethod == PostSortingMethod.replyCount) (a, b) => b.replyCount.compareTo(a.replyCount)
@@ -1524,8 +1524,8 @@ class _ThreadPageState extends State<ThreadPage> {
 											notifications.subscribeToThread(
 												thread: widget.thread,
 												lastSeenId: receipt.id,
-												localYousOnly: notifications.getThreadWatch(widget.thread)?.localYousOnly ?? true,
-												pushYousOnly: notifications.getThreadWatch(widget.thread)?.pushYousOnly ?? true,
+												localYousOnly: persistentState.threadWatch?.localYousOnly ?? true,
+												pushYousOnly: persistentState.threadWatch?.pushYousOnly ?? true,
 												push: true,
 												youIds: persistentState.freshYouIds()
 											);

@@ -3592,7 +3592,7 @@ class SettingsThreadsPanel extends StatelessWidget {
 				final oldThreadRows = [0, 7, 14, 30, 60, 90, 180].map((days) {
 					final cutoff = DateTime.now().subtract(Duration(days: days));
 					final oldThreads = threadStateBox.values.where((state) {
-						return (state.savedTime == null) && state.lastOpenedTime.compareTo(cutoff).isNegative;
+						return (state.savedTime == null) && (state.threadWatch == null) && state.lastOpenedTime.compareTo(cutoff).isNegative;
 					}).toList();
 					return (days, oldThreads);
 				}).toList();
@@ -3627,6 +3627,7 @@ class SettingsThreadsPanel extends StatelessWidget {
 					}
 				}
 				final savedThreads = threadStateBox.values.where((t) => t.savedTime != null).toList();
+				final watchedThreads = threadStateBox.values.where((i) => i.threadWatch != null).toList();
 				return Container(
 					decoration: BoxDecoration(
 						borderRadius: const BorderRadius.all(Radius.circular(8)),
@@ -3647,6 +3648,17 @@ class SettingsThreadsPanel extends StatelessWidget {
 									CupertinoButton(
 										padding: EdgeInsets.zero,
 										onPressed: savedThreads.isEmpty ? null : () => confirmDelete(savedThreads, itemType: 'saved thread'),
+										child: const Text('Delete')
+									)
+								]
+							),
+							TableRow(
+								children: [
+									const Text('Watched threads', textAlign: TextAlign.left),
+									Text(watchedThreads.length.toString(), textAlign: TextAlign.right),
+									CupertinoButton(
+										padding: EdgeInsets.zero,
+										onPressed: watchedThreads.isEmpty ? null : () => confirmDelete(watchedThreads, itemType: 'watched thread'),
 										child: const Text('Delete')
 									)
 								]

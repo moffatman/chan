@@ -1085,6 +1085,8 @@ class PersistentThreadState extends EasyListenable with HiveObjectMixin implemen
 	}
 
 	ThreadIdentifier get identifier => ThreadIdentifier(board, id);
+	
+	ThreadWatch? get threadWatch => imageboard?.notifications.getThreadWatch(identifier);
 }
 
 @HiveType(typeId: 4)

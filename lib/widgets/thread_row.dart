@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/imageboard.dart';
-import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -86,8 +85,7 @@ class ThreadRow extends StatelessWidget {
 			imageCountColor = unseenImageCount <= 0 ? grey : null;
 			otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
 		}
-		final notifications = context.watch<Notifications>();
-		final watch = notifications.getThreadWatch(thread.identifier);
+		final watch = threadState?.threadWatch;
 		Widget makeCounters() => Container(
 			decoration: BoxDecoration(
 				borderRadius: settings.useFullWidthForCatalogCounters ? null : const BorderRadius.only(topLeft: Radius.circular(8)),
