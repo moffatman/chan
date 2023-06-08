@@ -477,15 +477,20 @@ class PostQuoteLinkSpan extends PostSpan {
 		}
 		final bool expandedImmediatelyAbove = zone.shouldExpandPost(postId) || zone.stackIds.length > 1 && zone.stackIds.elementAt(zone.stackIds.length - 2) == postId;
 		final bool expandedSomewhereAbove = expandedImmediatelyAbove || zone.stackIds.contains(postId);
-		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
+		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
 			if (!zone.stackIds.contains(postId)) {
 				if (!settings.supportMouse.value) {
-					WeakNavigator.push(context, PostsPage(
+					zone.highlightQuoteLinkId = postId;
+					await WeakNavigator.push(context, PostsPage(
 							zone: zone.childZoneFor(postId),
 							postsIdsToShow: [postId],
 							postIdForBackground: zone.stackIds.last,
 						)
 					);
+					//await Future.delayed(const Duration(seconds: 1));
+					if (zone.highlightQuoteLinkId == postId) {
+						zone.highlightQuoteLinkId = null;
+					}
 				}
 				else {
 					zone.toggleExpansionOfPost(postId);
@@ -557,7 +562,15 @@ class PostQuoteLinkSpan extends PostSpan {
 								if (!zone.stackIds.contains(postId)) {
 									zone.registerLineTapTarget('$board/$threadId/$postId', context, span.$2.onTap ?? () {});
 								}
-								return popup;
+								return TweenAnimationBuilder(
+									tween: ColorTween(begin: null, end: zone.highlightQuoteLinkId == postId ? Colors.white54 : Colors.transparent),
+									duration: zone.highlightQuoteLinkId != postId ? const Duration(milliseconds: 750) : const Duration(milliseconds: 250),
+									curve: Curves.ease,
+									builder: (context, c, child) => c == Colors.transparent ? popup : ColorFiltered(
+										colorFilter: ColorFilter.mode(c ?? Colors.transparent, BlendMode.srcATop),
+										child: popup
+									)
+								);
 							}
 						)
 					)
@@ -1372,6 +1385,15 @@ abstract class PostSpanZoneData extends ChangeNotifier {
 
 	Thread? findThread(int threadId);
 	Post? findPost(int postId);
+
+	int? _highlightQuoteLinkId;
+	int? get highlightQuoteLinkId => _highlightQuoteLinkId;
+	set highlightQuoteLinkId(int? value) {
+		_highlightQuoteLinkId = value;
+		if (!disposed) {
+			notifyListeners();
+		}
+	}
 }
 
 class PostSpanChildZoneData extends PostSpanZoneData {
