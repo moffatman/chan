@@ -852,7 +852,7 @@ class _ThreadPageState extends State<ThreadPage> {
 									runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 								}
 								_listController.update();
-								Future.delayed(const Duration(seconds: 8), _listController.update);
+								Future.delayed(const Duration(seconds: 12), _listController.update);
 								Navigator.of(ctx).pop();
 							},
 							fullyExpanded: true
@@ -1535,7 +1535,7 @@ class _ThreadPageState extends State<ThreadPage> {
 												runWhenIdle(const Duration(milliseconds: 500), persistentState.save);
 											}
 											_listController.update();
-											Future.delayed(const Duration(seconds: 8), _listController.update);
+											Future.delayed(const Duration(seconds: 12), _listController.update);
 										},
 										onVisibilityChanged: () {
 											setState(() {});
