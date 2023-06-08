@@ -124,6 +124,7 @@ class _PostsPageState extends State<PostsPage> {
 		}
 		final effectiveReplies = reverse ? replies.reversed.toList() : replies;
 		final theme = context.watch<SavedTheme>();
+		final dividerColor = theme.primaryColorWithBrightness(0.2);
 		return ChangeNotifierProvider.value(
 			value: subzone,
 			child: OverscrollModalPage.sliver(
@@ -219,8 +220,9 @@ class _PostsPageState extends State<PostsPage> {
 						separatorBuilder: (context, i) => Divider(
 							thickness: 1,
 							height: 0,
-							color: theme.primaryColorWithBrightness(0.2)
-						)
+							color: dividerColor
+						),
+						separatorSentinel: dividerColor
 					)
 				)
 			)

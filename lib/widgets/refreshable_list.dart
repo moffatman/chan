@@ -43,6 +43,7 @@ class FilterAlternative {
 
 class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegate {
 	final List<T>? list;
+	final Object? separatorSentinel;
 	final String? id;
 	final void Function(int, int)? _didFinishLayout;
 	final bool Function(T)? shouldIgnoreForHeightEstimation;
@@ -51,6 +52,7 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 	const SliverDontRebuildChildBuilderDelegate(
     super.builder, {
 		required this.list,
+		this.separatorSentinel,
 		this.id,
     super.findChildIndexCallback,
     super.childCount,
@@ -168,7 +170,7 @@ class SliverDontRebuildChildBuilderDelegate<T> extends SliverChildBuilderDelegat
 	}
 
 	@override
-	bool shouldRebuild(SliverDontRebuildChildBuilderDelegate oldDelegate) => !listEquals(list, oldDelegate.list) || id != oldDelegate.id;
+	bool shouldRebuild(SliverDontRebuildChildBuilderDelegate oldDelegate) => !listEquals(list, oldDelegate.list) || id != oldDelegate.id || separatorSentinel != oldDelegate.separatorSentinel;
 }
 
 class SliverGridRegularTileLayoutWithCacheTrickery extends SliverGridRegularTileLayout {
@@ -1775,6 +1777,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																color: dividerColor
 															);
 														},
+														separatorSentinel: dividerColor,
 														list: values,
 														id: '${_searchFilter?.text}${widget.sortMethods}$forceRebuildId',
 														childCount: values.length * 2,
@@ -1906,6 +1909,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																height: 0,
 																color: dividerColor
 															),
+															separatorSentinel: dividerColor,
 															list: filteredValues,
 															id: '$forceRebuildId',
 															childCount: filteredValues.length * 2,
