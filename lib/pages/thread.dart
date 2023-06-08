@@ -1874,6 +1874,8 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			else {
 				_filteredPosts = widget.persistentState.filteredPosts();
 			}
+			furthestSeenIndexTop = 9999999;
+			furthestSeenIndexBottom = 0;
 			_onSlowScroll();
 		}
 		_lastListControllerItemsLength = widget.listController.items.length;
