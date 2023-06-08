@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/util.dart';
 import 'package:chan/widgets/sliver_center.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
@@ -87,6 +88,15 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 		final RenderBox scrollBox = _scrollKey.currentContext!.findRenderObject()! as RenderBox;
 		final Offset childBoxOffset = ((_childKey.currentContext?.findRenderObject() as RenderSliverCenter?)?.child!.parentData as SliverPhysicalParentData?)?.paintOffset ?? Offset.zero;
 		_pointersDown[event.pointer] = (event.position, event.position.dy < scrollBox.localToGlobal(childBoxOffset).dy || event.position.dy > scrollBox.localToGlobal(scrollBox.semanticBounds.bottomCenter - childBoxOffset).dy, DateTime.now());
+		Future.delayed(const Duration(seconds: 1), () {
+			if (mounted &&
+			    WeakNavigator.of(context) != null &&
+			    !context.read<EffectiveSettings>().overscrollModalTapPopsAll &&
+					(_pointersDown[event.pointer]?.$2 ?? false)) {
+				// Held long enough without moving to pop all
+				lightHapticFeedback();
+			}
+		});
 	}
 
 	void _onPointerUp(int pointer) {
@@ -172,6 +182,15 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 								final downData = _pointersDown[event.pointer];
 								if (downData?.$2 == true) {
 									if ((event.position - downData!.$1).distance > kTouchSlop) {
+										// Moved too far, will no longer pop
+										if (WeakNavigator.of(context) != null &&
+										    !context.read<EffectiveSettings>().overscrollModalTapPopsAll &&
+												DateTime.now().difference(downData.$3) > const Duration(seconds: 1)) {
+											// We played the haptic feedback to say it was held long enough
+											// Do a double-vibrate to indicate cancel
+											lightHapticFeedback();
+											Future.delayed(const Duration(milliseconds: 75), lightHapticFeedback);
+										}
 										_pointersDown[event.pointer] = (downData.$1, false, downData.$3);
 									}
 								}

@@ -33,13 +33,13 @@ String describeCount(int count, String noun) {
 
 Future<void> lightHapticFeedback() async {
 	if (Persistence.settings.useHapticFeedback) {
-		HapticFeedback.lightImpact();
+		await HapticFeedback.lightImpact();
 	}
 }
 
 Future<void> mediumHapticFeedback() async {
 	if (Persistence.settings.useHapticFeedback) {
-		HapticFeedback.mediumImpact();
+		await HapticFeedback.mediumImpact();
 	}
 }
 
