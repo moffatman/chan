@@ -1778,7 +1778,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		}
 		if (widget.useTree) {
 			_filteredItems ??= widget.listController.items.toList();
-			final skip = _lastFirstVisibleIndex == firstVisibleIndex && _lastLastVisibleIndex == lastVisibleIndex && _lastItemsLength == widget.listController.itemsLength;
+			final skip = widget.blocked && _lastFirstVisibleIndex == firstVisibleIndex && _lastLastVisibleIndex == lastVisibleIndex && _lastItemsLength == widget.listController.itemsLength;
 			if (firstVisibleIndex == -1) {
 				_lastFirstVisibleIndex = -1;
 			}
@@ -1811,6 +1811,17 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		}
 	}
 
+	Future<void> _pollForOnSlowScroll() async {
+		_waitForRebuildTimer?.cancel();
+		if (!await _onSlowScroll()) {
+			_waitForRebuildTimer = Timer.periodic(const Duration(milliseconds: 20), (t) async {
+				if (!mounted || (await _onSlowScroll())) {
+					t.cancel();
+				}
+			});
+		}
+	}
+
 	@override
 	void initState() {
 		super.initState();
@@ -1829,7 +1840,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			_filteredPosts = widget.persistentState.filteredPosts();
 		}
 		_useCatalogCache = widget.thread == null;
-		_updateCounts();
+		_pollForOnSlowScroll();
 	}
 
 	@override
@@ -1842,7 +1853,6 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		if (widget.thread != oldWidget.thread ||
 		    widget.filter != oldWidget.filter ||
 				widget.useTree != oldWidget.useTree) {
-			_waitForRebuildTimer?.cancel();
 			if (widget.thread == null) {
 				_filteredPosts = null;
 				_filteredItems = null;
@@ -1863,14 +1873,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 					_greyCount = 0;
 				});
 			}
-			_onSlowScroll().then((result) {
-				if (result) return;
-				_waitForRebuildTimer = Timer.periodic(const Duration(milliseconds: 20), (t) async {
-					if (!mounted || (await _onSlowScroll())) {
-						t.cancel();
-					}
-				});
-			});
+			_pollForOnSlowScroll();
 		}
 		else if (widget.listController.itemsLength != _lastListControllerItemsLength || widget.useTree != oldWidget.useTree) {
 			if (widget.useTree) {
