@@ -95,13 +95,12 @@ class HistoryPageState extends State<HistoryPage> {
 										CupertinoButton(
 											padding: EdgeInsets.zero,
 											onPressed: () async {
-												bool includeThreadsYouRepliedTo = false;
 												await showCupertinoDialog(
 													context: context,
 													barrierDismissible: true,
 													builder: (context) => StatefulBuilder(
 														builder: (context, setDialogState) {
-															final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime == null && i.threadWatch == null && (includeThreadsYouRepliedTo || i.youIds.isEmpty)).toList();
+															final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime == null && i.threadWatch == null && (settings.includeThreadsYouRepliedToWhenDeletingHistory || i.youIds.isEmpty)).toList();
 															final thisSessionStates = states.where((s) => s.lastOpenedTime.compareTo(_appLaunchTime) >= 0).toList();
 															final now = DateTime.now();
 															final lastDayStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 1);
@@ -119,10 +118,10 @@ class HistoryPageState extends State<HistoryPage> {
 																					child: Text('Include threads with your posts')
 																				),
 																				CupertinoSwitch2(
-																					value: includeThreadsYouRepliedTo,
+																					value: settings.includeThreadsYouRepliedToWhenDeletingHistory,
 																					onChanged: (v) {
 																						setDialogState(() {
-																							includeThreadsYouRepliedTo = v;
+																							settings.includeThreadsYouRepliedToWhenDeletingHistory = v;
 																						});
 																					}
 																				)

@@ -806,6 +806,8 @@ class SavedSettings extends HiveObject {
 	ThreadWatch? defaultThreadWatch;
 	@HiveField(142)
 	bool highlightRepeatingDigitsInPostIds;
+	@HiveField(143)
+	bool includeThreadsYouRepliedToWhenDeletingHistory;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -950,6 +952,7 @@ class SavedSettings extends HiveObject {
 		ShareablePostsStyle? lastShareablePostsStyle,
 		this.defaultThreadWatch,
 		bool? highlightRepeatingDigitsInPostIds,
+		bool? includeThreadsYouRepliedToWhenDeletingHistory,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1119,7 +1122,8 @@ class SavedSettings extends HiveObject {
 		backgroundThreadAutoUpdatePeriodSeconds = backgroundThreadAutoUpdatePeriodSeconds ?? 60,
 		currentThreadAutoUpdatePeriodSeconds = currentThreadAutoUpdatePeriodSeconds ?? 60,
 		lastShareablePostsStyle = lastShareablePostsStyle ?? const ShareablePostsStyle(),
-		highlightRepeatingDigitsInPostIds = highlightRepeatingDigitsInPostIds ?? false {
+		highlightRepeatingDigitsInPostIds = highlightRepeatingDigitsInPostIds ?? false,
+		includeThreadsYouRepliedToWhenDeletingHistory = includeThreadsYouRepliedToWhenDeletingHistory ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2177,6 +2181,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get highlightRepeatingDigitsInPostIds => _settings.highlightRepeatingDigitsInPostIds;
 	set highlightRepeatingDigitsInPostIds(bool setting) {
 		_settings.highlightRepeatingDigitsInPostIds = setting;
+		_settings.save();
+		notifyListeners();
+	}
+	
+	bool get includeThreadsYouRepliedToWhenDeletingHistory => _settings.includeThreadsYouRepliedToWhenDeletingHistory;
+	set includeThreadsYouRepliedToWhenDeletingHistory(bool setting) {
+		_settings.includeThreadsYouRepliedToWhenDeletingHistory = setting;
 		_settings.save();
 		notifyListeners();
 	}
