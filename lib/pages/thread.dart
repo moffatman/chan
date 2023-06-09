@@ -2315,7 +2315,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 									int targetIndex = widget.listController.items.toList().asMap().entries.tryLastWhere((entry) {
 										return entry.key < furthestSeenIndexTop &&
 											(widget.newPostIds.contains(entry.value.item.id) || entry.value.representsKnownStubChildren.any((id) => widget.newPostIds.contains(id.childId))) &&
-											!entry.value.filterCollapsed;
+											!widget.listController.isItemHidden(entry.value).isDuplicate;
 									})?.key ?? -1;
 									if (targetIndex != -1) {
 										while (widget.listController.isItemHidden(widget.listController.getItem(targetIndex)).isHidden) {
