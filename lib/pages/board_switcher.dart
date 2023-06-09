@@ -661,7 +661,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 														height: 64,
 														decoration: BoxDecoration(
 															borderRadius: const BorderRadius.all(Radius.circular(4)),
-															color: Colors.red.withOpacity(0.1)
+															color: Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
 														),
 														child: Stack(
 															fit: StackFit.expand,
@@ -681,7 +681,10 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																				minFontSize: 15,
 																				maxLines: 1,
 																				textAlign: TextAlign.left,
-																				overflow: TextOverflow.ellipsis
+																				overflow: TextOverflow.ellipsis,
+																				style: TextStyle(
+																					fontWeight: isSelected ? FontWeight.bold : null
+																				)
 																			)
 																		),
 																		const SizedBox(width: 16)
@@ -815,7 +818,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 													padding: const EdgeInsets.all(4),
 													decoration: BoxDecoration(
 														borderRadius: const BorderRadius.all(Radius.circular(4)),
-														color: Colors.red.withOpacity(0.1)
+														color: Colors.red.withOpacity(isSelected ? 0.3 : 0.1)
 													),
 													child: Stack(
 														children: [
@@ -837,8 +840,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																		child: AutoSizeText(
 																			'Search ${imageboard.site.name}',
 																			textAlign: TextAlign.center,
-																			style: const TextStyle(
-																				fontSize: 24
+																			style: TextStyle(
+																				fontSize: 24,
+																				fontWeight: isSelected ? FontWeight.bold : null
 																			)
 																		)
 																	)
