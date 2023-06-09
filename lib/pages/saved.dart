@@ -483,35 +483,37 @@ class _SavedPageState extends State<SavedPage> {
 										child: GestureDetector(
 											behavior: HitTestBehavior.opaque,
 											child: Builder(
-												builder: (context) => state.thread == null ? const SizedBox.shrink() : ThreadRow(
-													thread: state.thread!,
-													isSelected: isSelected,
-													contentFocus: settings.useCatalogGrid,
-													showBoardName: true,
-													showSiteIcon: true,
-													forceShowInHistory: true,
-													onThumbnailLoadError: (error, stackTrace) {
-														state.imageboard!.threadWatcher.fixBrokenThread(state.thread!.identifier);
-													},
-													semanticParentIds: const [-12],
-													onThumbnailTap: (initialAttachment) {
-														final attachments = _threadListController.items.expand((_) => _.item.thread!.attachments).toList();
-														showGallery(
-															context: context,
-															attachments: attachments,
-															replyCounts: {
-																for (final state in _threadListController.items)
-																	for (final attachment in state.item.thread!.attachments)
-																		attachment: state.item.thread!.replyCount
-															},
-															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-															onChange: (attachment) {
-																_threadListController.animateTo((p) => p.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
-															},
-															semanticParentIds: [-12],
-															heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
-														);
-													}
+												builder: (context) => state.thread == null ? const SizedBox.shrink() : ClipRect(
+													child: ThreadRow(
+														thread: state.thread!,
+														isSelected: isSelected,
+														contentFocus: settings.useCatalogGrid,
+														showBoardName: true,
+														showSiteIcon: true,
+														forceShowInHistory: true,
+														onThumbnailLoadError: (error, stackTrace) {
+															state.imageboard!.threadWatcher.fixBrokenThread(state.thread!.identifier);
+														},
+														semanticParentIds: const [-12],
+														onThumbnailTap: (initialAttachment) {
+															final attachments = _threadListController.items.expand((_) => _.item.thread!.attachments).toList();
+															showGallery(
+																context: context,
+																attachments: attachments,
+																replyCounts: {
+																	for (final state in _threadListController.items)
+																		for (final attachment in state.item.thread!.attachments)
+																			attachment: state.item.thread!.replyCount
+																},
+																initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+																onChange: (attachment) {
+																	_threadListController.animateTo((p) => p.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
+																},
+																semanticParentIds: [-12],
+																heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
+															);
+														}
+													)
 												)
 											),
 											onTap: () => threadSetter(state.imageboard!.scope(state.identifier))
