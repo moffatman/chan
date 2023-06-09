@@ -336,39 +336,41 @@ class _SavedPageState extends State<SavedPage> {
 														return const SizedBox.shrink();
 													}
 													else {
-														return ThreadRow(
-															thread: threadState!.thread!,
-															isSelected: isSelected,
-															contentFocus: settings.useCatalogGrid,
-															showBoardName: true,
-															showSiteIcon: true,
-															showPageNumber: true,
-															dimReadThreads: watch.item.zombie,
-															onThumbnailLoadError: (error, stackTrace) {
-																watch.imageboard.threadWatcher.fixBrokenThread(watch.item.threadIdentifier);
-															},
-															semanticParentIds: const [-4],
-															onThumbnailTap: (initialAttachment) {
-																final attachments = {
-																	for (final w in _watchedListController.items)
-																		for (final attachment in w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
-																			attachment: w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.threadIdentifier)!
-																	};
-																showGallery(
-																	context: context,
-																	attachments: attachments.keys.toList(),
-																	replyCounts: {
-																		for (final item in attachments.entries) item.key: item.value.thread!.replyCount
-																	},
-																	initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
-																	onChange: (attachment) {
-																		final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
-																		_watchedListController.animateTo((p) => p.item.threadIdentifier == threadId);
-																	},
-																	semanticParentIds: [-4],
-																	heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
-																);
-															}
+														return ClipRect(
+															child: ThreadRow(
+																thread: threadState!.thread!,
+																isSelected: isSelected,
+																contentFocus: settings.useCatalogGrid,
+																showBoardName: true,
+																showSiteIcon: true,
+																showPageNumber: true,
+																dimReadThreads: watch.item.zombie,
+																onThumbnailLoadError: (error, stackTrace) {
+																	watch.imageboard.threadWatcher.fixBrokenThread(watch.item.threadIdentifier);
+																},
+																semanticParentIds: const [-4],
+																onThumbnailTap: (initialAttachment) {
+																	final attachments = {
+																		for (final w in _watchedListController.items)
+																			for (final attachment in w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.threadIdentifier)?.thread?.attachments ?? <Attachment>[])
+																				attachment: w.item.imageboard.persistence.getThreadStateIfExists(w.item.item.threadIdentifier)!
+																		};
+																	showGallery(
+																		context: context,
+																		attachments: attachments.keys.toList(),
+																		replyCounts: {
+																			for (final item in attachments.entries) item.key: item.value.thread!.replyCount
+																		},
+																		initialAttachment: attachments.keys.firstWhere((a) => a.id == initialAttachment.id),
+																		onChange: (attachment) {
+																			final threadId = attachments.entries.firstWhere((_) => _.key.id == attachment.id).value.identifier;
+																			_watchedListController.animateTo((p) => p.item.threadIdentifier == threadId);
+																		},
+																		semanticParentIds: [-4],
+																		heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
+																	);
+																}
+															)
 														);
 													}
 												}
@@ -546,34 +548,36 @@ class _SavedPageState extends State<SavedPage> {
 										child: GestureDetector(
 											behavior: HitTestBehavior.opaque,
 											child: Builder(
-												builder: (context) => state.thread == null ? const SizedBox.shrink() : ThreadRow(
-													thread: state.thread!,
-													isSelected: isSelected,
-													contentFocus: settings.useCatalogGrid,
-													showBoardName: true,
-													showSiteIcon: true,
-													onThumbnailLoadError: (error, stackTrace) {
-														state.imageboard!.threadWatcher.fixBrokenThread(state.thread!.identifier);
-													},
-													semanticParentIds: const [-12],
-													onThumbnailTap: (initialAttachment) {
-														final attachments = _threadListController.items.expand((_) => _.item.thread!.attachments).toList();
-														showGallery(
-															context: context,
-															attachments: attachments,
-															replyCounts: {
-																for (final state in _threadListController.items)
-																	for (final attachment in state.item.thread!.attachments)
-																		attachment: state.item.thread!.replyCount
-															},
-															initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
-															onChange: (attachment) {
-																_threadListController.animateTo((p) => p.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
-															},
-															semanticParentIds: [-12],
-															heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
-														);
-													}
+												builder: (context) => state.thread == null ? const SizedBox.shrink() : ClipRect(
+													child: ThreadRow(
+														thread: state.thread!,
+														isSelected: isSelected,
+														contentFocus: settings.useCatalogGrid,
+														showBoardName: true,
+														showSiteIcon: true,
+														onThumbnailLoadError: (error, stackTrace) {
+															state.imageboard!.threadWatcher.fixBrokenThread(state.thread!.identifier);
+														},
+														semanticParentIds: const [-12],
+														onThumbnailTap: (initialAttachment) {
+															final attachments = _threadListController.items.expand((_) => _.item.thread!.attachments).toList();
+															showGallery(
+																context: context,
+																attachments: attachments,
+																replyCounts: {
+																	for (final state in _threadListController.items)
+																		for (final attachment in state.item.thread!.attachments)
+																			attachment: state.item.thread!.replyCount
+																},
+																initialAttachment: attachments.firstWhere((a) => a.id == initialAttachment.id),
+																onChange: (attachment) {
+																	_threadListController.animateTo((p) => p.thread?.attachments.any((a) => a.id == attachment.id) ?? false);
+																},
+																semanticParentIds: [-12],
+																heroOtherEndIsBoxFitCover: settings.useCatalogGrid || settings.squareThumbnails
+															);
+														}
+													)
 												)
 											),
 											onTap: () => threadSetter(state.imageboard!.scope(state.identifier))
