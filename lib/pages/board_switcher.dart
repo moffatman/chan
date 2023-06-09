@@ -143,7 +143,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		if (_focusNode.hasFocus && isPhoneSoftwareKeyboard()) {
 			_focusNode.unfocus();
 		}
-		_backgroundColor.value = ChanceTheme.backgroundColorOf(context).withOpacity(1.0 - max(0, _getOverscroll() / 50).clamp(0, 1));
+		_backgroundColor.value = context.read<SavedTheme>().backgroundColor.withOpacity(1.0 - max(0, _getOverscroll() / 50).clamp(0, 1));
 	}
 
 	Future<void> _updateTypeaheadBoards(String query) async {
