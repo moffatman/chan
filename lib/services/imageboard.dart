@@ -164,6 +164,8 @@ class Imageboard extends ChangeNotifier {
 	);
 }
 
+const _devImageboardKey = 'devsite';
+
 class ImageboardRegistry extends ChangeNotifier {
 	static ImageboardRegistry? _instance;
 	static ImageboardRegistry get instance {
@@ -183,6 +185,24 @@ class ImageboardRegistry extends ChangeNotifier {
 	BuildContext? context;
 	final _mutex = Mutex();
 	static final threadWatcherController = ThreadWatcherController();
+	Imageboard? dev;
+
+	Future<void> initializeDev({
+		required EffectiveSettings settings
+	}) async {
+		final tmpDev = Imageboard(
+			key: _devImageboardKey,
+			siteData: defaultSite,
+			settings: settings,
+			threadWatcherController: ThreadWatcherController(interval: const Duration(minutes: 10))
+		);
+		await tmpDev.initialize(
+			threadWatcherWatchForStickyOnBoards: ['chance']
+		);
+		dev?.dispose();
+		dev = tmpDev;
+		notifyListeners();
+	}
 
 	Future<void> handleSites({
 		required EffectiveSettings settings,
@@ -272,6 +292,9 @@ class ImageboardRegistry extends ChangeNotifier {
 	}
 
 	Imageboard? getImageboard(String key) {
+		if (key == _devImageboardKey) {
+			return dev;
+		}
 		if (_sites[key]?.initialized == true) {
 			return _sites[key];
 		}
@@ -279,6 +302,9 @@ class ImageboardRegistry extends ChangeNotifier {
 	}
 
 	Imageboard? getImageboardUnsafe(String key) {
+		if (key == _devImageboardKey) {
+			return dev;
+		}
 		return _sites[key];
 	}
 

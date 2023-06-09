@@ -161,6 +161,9 @@ class _ChanAppState extends State<ChanApp> {
 		super.initState();
 		_lastSites = settings.contentSettings.sites;
 		ImageboardRegistry.instance.addListener(_onImageboardRegistryUpdate);
+		ImageboardRegistry.instance.initializeDev(
+			settings: settings
+		);
 		ImageboardRegistry.instance.handleSites(
 			settings: settings,
 			context: context,
@@ -402,8 +405,8 @@ class _ChanHomePageState extends State<ChanHomePage> {
 	late Listenable browseCountListenable;
 	final activeBrowserTab = ValueNotifier<int>(0);
 	final _tabListController = ScrollController();
-	StreamSubscription<PostIdentifier>? _devNotificationsSubscription;
-	Imageboard? devImageboard;
+	({Notifications notifications, StreamSubscription<PostIdentifier> subscription})? _devNotificationsSubscription;
+	Imageboard? get devImageboard => ImageboardRegistry.instance.dev;
 	final devTab = PersistentBrowserTab();
 	final _tabNavigatorKeys = <int, GlobalKey<NavigatorState>>{};
 	final _tabletWillPopZones = <int, WillPopZone>{};
@@ -508,29 +511,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				await devTab.threadController?.animateTo((p) => p.id == id.postId, orElseLast: (p) => true);
 			}
 		}
-	}
-
-	void _setupDevSite() async {
-		final settings = context.read<EffectiveSettings>();
-		final tmpDevImageboard = Imageboard(
-			key: 'devsite',
-			siteData: defaultSite,
-			settings: settings,
-			threadWatcherController: ThreadWatcherController(interval: const Duration(minutes: 10))
-		);
-		await tmpDevImageboard.initialize(
-			threadWatcherWatchForStickyOnBoards: ['chance']
-		);
-		if (!mounted) {
-			tmpDevImageboard.dispose();
-			return;
-		}
-		_devNotificationsSubscription?.cancel();
-		_devNotificationsSubscription = tmpDevImageboard.notifications.tapStream.listen(_onDevNotificationTapped);
-		setState(() {
-			devImageboard?.dispose();
-			devImageboard = tmpDevImageboard;
-		});
 	}
 
 	Future<void> _consumeLink(String? link) async {
@@ -799,7 +779,6 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		browseCountListenable = Listenable.merge([activeBrowserTab, ...Persistence.tabs.map((x) => x.unseen)]);
 		activeBrowserTab.value = Persistence.currentTabIndex;
 		Persistence.tabsListenable.addListener(_tabsListener);
-		_setupDevSite();
 		if (!_initialConsume) {
 			getInitialLink().then(_consumeLink);
 			ReceiveSharingIntent.getInitialText().then(_consumeLink);
@@ -1095,20 +1074,16 @@ class _ChanHomePageState extends State<ChanHomePage> {
 						onWillPop: () async {
 							return !(await _settingsNavigatorKey.currentState?.maybePop() ?? false);
 						},
-						child: MultiProvider(
-							providers: [
-								ChangeNotifierProvider.value(value: devImageboard!),
-								Provider.value(value: devImageboard!.site),
-								ChangeNotifierProvider.value(value: devImageboard!.persistence),
-								ChangeNotifierProvider.value(value: devImageboard!.threadWatcher),
-								Provider.value(value: devImageboard!.notifications),
-								ChangeNotifierProvider.value(value: devTab)
-							],
-							child: ClipRect(
-								child: PrimaryScrollControllerInjectingNavigator(
-									navigatorKey: _settingsNavigatorKey,
-									observers: [HeroController()],
-									buildRoot: (context) => const SettingsPage()
+						child: ImageboardScope(
+							imageboardKey: devImageboard?.key,
+							child: ChangeNotifierProvider.value(
+								value: devTab,
+								child: ClipRect(
+									child: PrimaryScrollControllerInjectingNavigator(
+										navigatorKey: _settingsNavigatorKey,
+										observers: [HeroController()],
+										buildRoot: (context) => const SettingsPage()
+									)
 								)
 							)
 						)
@@ -1636,6 +1611,11 @@ class _ChanHomePageState extends State<ChanHomePage> {
 				}));
 			}
 		}
+		final dev = devImageboard;
+		if (dev != null && _devNotificationsSubscription?.notifications != dev.notifications) {
+			_devNotificationsSubscription?.subscription.cancel();
+			_devNotificationsSubscription = (notifications: dev.notifications, subscription: dev.notifications.tapStream.listen(_onDevNotificationTapped));
+		}
 		Widget child = isInTabletLayout ? NotificationListener<ScrollNotification>(
 			onNotification: _onScrollNotification,
 			child: Actions(
@@ -1995,7 +1975,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 		_fakeLinkSubscription.cancel();
 		_sharedFilesSubscription.cancel();
 		_sharedTextSubscription.cancel();
-		_devNotificationsSubscription?.cancel();
+		_devNotificationsSubscription?.subscription.cancel();
 		for (final subscription in _notificationsSubscriptions.values) {
 			subscription.subscription.cancel();
 		}
