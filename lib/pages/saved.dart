@@ -57,7 +57,7 @@ class _PostThreadCombo {
 
 final _watchMutex = ReadWriteMutex();
 Future<List<ImageboardScoped<ThreadWatch>>> _loadWatches() => _watchMutex.protectRead(() async {
-	final watches = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.browserState.threadWatches.map(i.scope)).toList();
+	final watches = ImageboardRegistry.instance.imageboards.expand((i) => i.persistence.browserState.threadWatches.values.map(i.scope)).toList();
 	await Future.wait(watches.map((watch) async {
 		await watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier)?.ensureThreadLoaded();
 	}));

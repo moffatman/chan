@@ -735,7 +735,7 @@ class _ChanHomePageState extends State<ChanHomePage> {
 			postId: notification.postId,
 			openNewTabIfNeeded: false
 		)) {
-			final watch = imageboard.persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == notification.threadIdentifier);
+			final watch = imageboard.persistence.browserState.threadWatches[notification.threadIdentifier];
 			if (watch == null) {
 				_goToPost(
 					imageboardKey: imageboard.key,

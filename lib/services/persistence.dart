@@ -574,7 +574,7 @@ class Persistence extends ChangeNotifier {
 			autosavedIds: {},
 			deprecatedHiddenImageMD5s: [],
 			loginFields: {},
-			threadWatches: [],
+			threadWatches: {},
 			boardWatches: [],
 			notificationsMigrated: true,
 			deprecatedBoardSortingMethods: {},
@@ -640,14 +640,14 @@ class Persistence extends ChangeNotifier {
 			browserState.threadWatches.clear();
 			for (final threadState in sharedThreadStateBox.values) {
 				if (threadState.imageboardKey == imageboardKey && threadState.savedTime != null && threadState.thread?.isArchived == false) {
-					browserState.threadWatches.add(ThreadWatch(
+					browserState.threadWatches[threadState.identifier] ??= ThreadWatch(
 						board: threadState.board,
 						threadId: threadState.id,
 						youIds: threadState.youIds,
 						localYousOnly: true,
 						pushYousOnly: true,
 						lastSeenId: threadState.thread?.posts.last.id ?? threadState.id
-					));
+					);
 				}
 			}
 			browserState.notificationsMigrated = true;
@@ -659,6 +659,10 @@ class Persistence extends ChangeNotifier {
 				savedPost.deprecatedThread = null;
 			}
 		}
+		for (final threadWatch in browserState.deprecatedThreadWatches) {
+			browserState.threadWatches[threadWatch.threadIdentifier] ??= threadWatch;
+		}
+		browserState.deprecatedThreadWatches = []; // Can't use .clear(), it could be const
 		if (settings.automaticCacheClearDays < 100000) {
 			await _cleanupThreads(Duration(days: settings.automaticCacheClearDays));
 		}
@@ -1241,7 +1245,7 @@ class PersistentBrowserState {
 	@HiveField(8)
 	String notificationsId;
 	@HiveField(10, defaultValue: [])
-	List<ThreadWatch> threadWatches;
+	List<ThreadWatch> deprecatedThreadWatches;
 	@HiveField(11, defaultValue: [])
 	List<BoardWatch> boardWatches;
 	@HiveField(12, defaultValue: false)
@@ -1264,6 +1268,8 @@ class PersistentBrowserState {
 	bool? useCatalogGrid;
 	@HiveField(22, defaultValue: {})
 	final Map<String, bool> useCatalogGridPerBoard;
+	@HiveField(23, defaultValue: {})
+	Map<ThreadIdentifier, ThreadWatch> threadWatches;
 	
 	PersistentBrowserState({
 		this.deprecatedTabs = const [],
@@ -1273,6 +1279,7 @@ class PersistentBrowserState {
 		required List<String> deprecatedHiddenImageMD5s,
 		required this.loginFields,
 		String? notificationsId,
+		this.deprecatedThreadWatches = const [],
 		required this.threadWatches,
 		required this.boardWatches,
 		required this.notificationsMigrated,

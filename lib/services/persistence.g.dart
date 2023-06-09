@@ -330,8 +330,11 @@ class PersistentBrowserStateAdapter
       loginFields:
           fields[7] == null ? {} : (fields[7] as Map).cast<String, String>(),
       notificationsId: fields[8] as String?,
-      threadWatches:
+      deprecatedThreadWatches:
           fields[10] == null ? [] : (fields[10] as List).cast<ThreadWatch>(),
+      threadWatches: fields[23] == null
+          ? {}
+          : (fields[23] as Map).cast<ThreadIdentifier, ThreadWatch>(),
       boardWatches:
           fields[11] == null ? [] : (fields[11] as List).cast<BoardWatch>(),
       notificationsMigrated: fields[12] == null ? false : fields[12] as bool,
@@ -359,7 +362,7 @@ class PersistentBrowserStateAdapter
   @override
   void write(BinaryWriter writer, PersistentBrowserState obj) {
     writer
-      ..writeByte(19)
+      ..writeByte(20)
       ..writeByte(0)
       ..write(obj.deprecatedTabs)
       ..writeByte(2)
@@ -375,7 +378,7 @@ class PersistentBrowserStateAdapter
       ..writeByte(8)
       ..write(obj.notificationsId)
       ..writeByte(10)
-      ..write(obj.threadWatches)
+      ..write(obj.deprecatedThreadWatches)
       ..writeByte(11)
       ..write(obj.boardWatches)
       ..writeByte(12)
@@ -397,7 +400,9 @@ class PersistentBrowserStateAdapter
       ..writeByte(21)
       ..write(obj.useCatalogGrid)
       ..writeByte(22)
-      ..write(obj.useCatalogGridPerBoard);
+      ..write(obj.useCatalogGridPerBoard)
+      ..writeByte(23)
+      ..write(obj.threadWatches);
   }
 
   @override

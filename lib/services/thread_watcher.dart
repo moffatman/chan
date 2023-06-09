@@ -6,7 +6,6 @@ import 'package:chan/services/notifications.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:mutex/mutex.dart';
@@ -155,7 +154,7 @@ class ThreadWatcher extends ChangeNotifier {
 	}
 
 	Future<void> _setInitialCounts() async {
-		for (final watch in persistence.browserState.threadWatches) {
+		for (final watch in persistence.browserState.threadWatches.values) {
 			await persistence.getThreadStateIfExists(watch.threadIdentifier)?.ensureThreadLoaded();
 			cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount() ?? 0;
 			if (!watch.localYousOnly) {
@@ -225,7 +224,7 @@ class ThreadWatcher extends ChangeNotifier {
 					_unseenStickyThreads.remove(newThreadState.identifier);
 					_updateCounts();
 				}
-				final watch = persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == newThreadState.identifier);
+				final watch = persistence.browserState.threadWatches[newThreadState.identifier];
 				if (watch != null) {
 					cachedUnseenYous[watch.threadIdentifier] = persistence.getThreadStateIfExists(watch.threadIdentifier)?.unseenReplyIdsToYouCount() ?? 0;
 					if (!watch.localYousOnly) {
@@ -257,7 +256,7 @@ class ThreadWatcher extends ChangeNotifier {
 			newThread = await site.getThread(threadState.identifier, interactive: false);
 		}
 		on ThreadNotFoundException {
-			final watch = persistence.browserState.threadWatches.tryFirstWhere((w) => w.threadIdentifier == threadState.identifier);
+			final watch = persistence.browserState.threadWatches[threadState.identifier];
 			// Ensure that the thread has been loaded at least once to avoid deleting upon creation due to a race condition
 			if (watch != null && threadState.thread != null) {
 				print('Zombifying watch for ${threadState.identifier} since it is in 404 state');
@@ -297,7 +296,7 @@ class ThreadWatcher extends ChangeNotifier {
 			return;
 		}
 		// Could be concurrently-modified
-		for (final watch in notifications.threadWatches) {
+		for (final watch in notifications.threadWatches.values) {
 			if (watch.zombie) {
 				continue;
 			}

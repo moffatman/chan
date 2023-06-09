@@ -145,7 +145,7 @@ class Notifications {
 	final String siteType;
 	final String siteData;
 	String get id => persistence.browserState.notificationsId;
-	List<ThreadWatch> get threadWatches => persistence.browserState.threadWatches;
+	Map<ThreadIdentifier, ThreadWatch> get threadWatches => persistence.browserState.threadWatches;
 	List<BoardWatch> get boardWatches => persistence.browserState.boardWatches;
 	static final Map<String, List<Map<String, dynamic>>> _unrecognizedByUserId = {};
 	static ApnsPushConnectorOnly? _apnsConnector;
@@ -423,7 +423,7 @@ class Notifications {
 
 	String _calculateDigest() {
 		final boards = [
-			...threadWatches.where((w) => !w.zombie && w.push).map((w) => w.board),
+			...threadWatches.values.where((w) => !w.zombie && w.push).map((w) => w.board),
 			...boardWatches.map((w) => w.board)
 		];
 		boards.sort((a, b) => a.compareTo(b));
@@ -462,7 +462,7 @@ class Notifications {
 					print('Need to resync notifications $id');
 					await _client.put('$_notificationSettingsApiRoot/user/$id', data: jsonEncode({
 						'watches': [
-							...threadWatches.where((w) => !w.zombie),
+							...threadWatches.values.where((w) => !w.zombie),
 							...boardWatches
 						].map((w) => w.toMap()).toList()
 					}));
@@ -484,7 +484,7 @@ class Notifications {
 	}
 
 	ThreadWatch? getThreadWatch(ThreadIdentifier thread) {
-		return threadWatches.tryFirstWhere((w) => w.board == thread.board && w.threadId == thread.id);
+		return threadWatches[thread];
 	}
 	
 	BoardWatch? getBoardWatch(String boardName) {
@@ -500,7 +500,7 @@ class Notifications {
 		required List<int> youIds,
 		bool foregroundMuted = false
 	}) {
-		final existingWatch = threadWatches.tryFirstWhere((w) => w.threadIdentifier == thread);
+		final existingWatch = threadWatches[thread];
 		if (existingWatch != null) {
 			existingWatch.youIds = youIds;
 			existingWatch.lastSeenId = lastSeenId;
@@ -517,7 +517,7 @@ class Notifications {
 				push: push,
 				foregroundMuted: foregroundMuted
 			);
-			threadWatches.add(watch);
+			threadWatches[thread] = watch;
 			if (Persistence.settings.usePushNotifications == true && watch.push) {
 				_create(watch);
 			}
