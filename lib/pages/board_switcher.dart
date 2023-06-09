@@ -114,6 +114,15 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		if (context.read<EffectiveSettings>().boardSwitcherHasKeyboardFocus) {
 			Future.delayed(const Duration(milliseconds: 500), _checkForKeyboard);
 		}
+		ImageboardRegistry.instance.addListener(_onImageboardRegistryUpdate);
+	}
+
+	void _onImageboardRegistryUpdate() {
+		final newAllImageboards = ImageboardRegistry.instance.imageboards.where((i) => widget.filterImageboards?.call(i) ?? true).toList();
+		currentImageboardIndex = max(0, newAllImageboards.indexOf(currentImageboard));
+		allImageboards = newAllImageboards;
+		_fetchBoards();
+		setState(() {});
 	}
 
 	void _checkForKeyboard() {
@@ -935,5 +944,6 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 		scrollController.dispose();
 		_backgroundColor.dispose();
 		_focusNode.dispose();
+		ImageboardRegistry.instance.removeListener(_onImageboardRegistryUpdate);
 	}
 }
