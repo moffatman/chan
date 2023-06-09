@@ -1619,6 +1619,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	List<RefreshableListItem<Post>>? _filteredItems;
 	List<int> _youIds = [];
 	int? _lastLastVisibleItemId;
+	int _lastLastSeenPostId = 0;
 	int _redCountAbove = 0;
 	int _redCountBelow = 0;
 	int _whiteCountAbove = 0;
@@ -1753,9 +1754,9 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			}
 		}
 		else {
-			final lastSeenPostId = widget.persistentState.lastSeenPostId ?? widget.persistentState.id;
-			_redCountBelow = _youIds.binarySearchCountAfter((p) => p > lastSeenPostId);
-			_whiteCountBelow = _filteredPosts!.binarySearchCountAfter((p) => p.id > lastSeenPostId);
+			_lastLastSeenPostId = widget.persistentState.lastSeenPostId ?? widget.persistentState.id;
+			_redCountBelow = _youIds.binarySearchCountAfter((p) => p > _lastLastSeenPostId);
+			_whiteCountBelow = _filteredPosts!.binarySearchCountAfter((p) => p.id > _lastLastSeenPostId);
 			_greyCount = max(0, widget.listController.itemsLength - (widget.listController.lastVisibleIndex + 1) - _whiteCountBelow);
 		}
 		_lastLastVisibleItemId = lastVisibleItemId;
@@ -1798,7 +1799,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 		else {
 			final lastVisibleItemId = (lastVisibleIndex == -1) ? null : widget.listController.getItem(lastVisibleIndex).id;
 			_filteredPosts ??= widget.persistentState.filteredPosts();
-			if (lastVisibleItemId != null && lastVisibleItemId != _lastLastVisibleItemId && _filteredPosts != null) {
+			if (lastVisibleItemId != null &&
+					_filteredPosts != null &&
+					(lastVisibleItemId != _lastLastVisibleItemId ||
+					 _lastLastSeenPostId != (widget.persistentState.lastSeenPostId ?? widget.persistentState.id))) {
 				return await _updateCounts();
 			}
 			else {
@@ -1852,6 +1856,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 				_useCatalogCache = false;
 			}
 			if (widget.threadIdentifier != oldWidget.threadIdentifier) {
+				_lastLastSeenPostId = 0;
 				setState(() {
 					_redCountBelow = 0;
 					_whiteCountBelow = 0;
