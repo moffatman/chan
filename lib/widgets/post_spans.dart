@@ -703,6 +703,7 @@ class PostCodeSpan extends PostSpan {
 		final lineCountFieldWidth = lineCount.toString().length;
 		final child = Row(
 			crossAxisAlignment: CrossAxisAlignment.start,
+			mainAxisSize: MainAxisSize.min,
 			children: [
 				Container(
 					decoration: const BoxDecoration(
