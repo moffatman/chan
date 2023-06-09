@@ -6,8 +6,34 @@ import 'package:flutter/foundation.dart';
 import 'package:mutex/mutex.dart';
 
 extension SafeWhere<T> on Iterable<T> {
-	T? tryFirstWhere(bool Function(T v) f) => cast<T?>().firstWhere((v) => f(v as T), orElse: () => null);
-	T? tryLastWhere(bool Function(T v) f) => cast<T?>().lastWhere((v) => f(v as T), orElse: () => null);
+	T? tryFirstWhere(bool Function(T v) f) {
+		for (final v in this) {
+			if (f(v)) {
+				return v;
+			}
+		}
+		return null;
+	}
+	T? tryLastWhere(bool Function(T v) f) {
+		if (this is List) {
+			final list = this as List;
+			for (final v in list.reversed) {
+				if (f(v)) {
+					return v;
+				}
+			}
+			return null;
+		}
+		else {
+			T? result;
+			for (final v in this) {
+				if (f(v)) {
+					result = v;
+				}
+			}
+			return result;
+		}
+	}
 	T? get tryFirst => isNotEmpty ? first : null;
 	T? get tryLast => isNotEmpty ? last : null;
 	T? get trySingle => length == 1 ? single : null;
