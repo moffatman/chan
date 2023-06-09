@@ -804,6 +804,8 @@ class SavedSettings extends HiveObject {
 	ShareablePostsStyle lastShareablePostsStyle;
 	@HiveField(141)
 	ThreadWatch? defaultThreadWatch;
+	@HiveField(142)
+	bool highlightRepeatingDigitsInPostIds;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -947,6 +949,7 @@ class SavedSettings extends HiveObject {
 		int? currentThreadAutoUpdatePeriodSeconds,
 		ShareablePostsStyle? lastShareablePostsStyle,
 		this.defaultThreadWatch,
+		bool? highlightRepeatingDigitsInPostIds,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1115,7 +1118,8 @@ class SavedSettings extends HiveObject {
 		openCrossThreadLinksInNewTab = openCrossThreadLinksInNewTab ?? false,
 		backgroundThreadAutoUpdatePeriodSeconds = backgroundThreadAutoUpdatePeriodSeconds ?? 60,
 		currentThreadAutoUpdatePeriodSeconds = currentThreadAutoUpdatePeriodSeconds ?? 60,
-		lastShareablePostsStyle = lastShareablePostsStyle ?? const ShareablePostsStyle() {
+		lastShareablePostsStyle = lastShareablePostsStyle ?? const ShareablePostsStyle(),
+		highlightRepeatingDigitsInPostIds = highlightRepeatingDigitsInPostIds ?? false {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2166,6 +2170,13 @@ class EffectiveSettings extends ChangeNotifier {
 	ThreadWatch? get defaultThreadWatch => _settings.defaultThreadWatch;
 	set defaultThreadWatch(ThreadWatch? setting) {
 		_settings.defaultThreadWatch = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	bool get highlightRepeatingDigitsInPostIds => _settings.highlightRepeatingDigitsInPostIds;
+	set highlightRepeatingDigitsInPostIds(bool setting) {
+		_settings.highlightRepeatingDigitsInPostIds = setting;
 		_settings.save();
 		notifyListeners();
 	}

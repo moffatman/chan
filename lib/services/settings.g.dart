@@ -271,13 +271,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       currentThreadAutoUpdatePeriodSeconds: fields[139] as int?,
       lastShareablePostsStyle: fields[140] as ShareablePostsStyle?,
       defaultThreadWatch: fields[141] as ThreadWatch?,
+      highlightRepeatingDigitsInPostIds: fields[142] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(138)
+      ..writeByte(139)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -553,7 +554,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(140)
       ..write(obj.lastShareablePostsStyle)
       ..writeByte(141)
-      ..write(obj.defaultThreadWatch);
+      ..write(obj.defaultThreadWatch)
+      ..writeByte(142)
+      ..write(obj.highlightRepeatingDigitsInPostIds);
   }
 
   @override

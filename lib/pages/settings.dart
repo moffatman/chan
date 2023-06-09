@@ -1339,7 +1339,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 		final attachment = Attachment(
 			type: AttachmentType.image,
 			board: 'tv',
-			id: '99999',
+			id: '123455',
 			ext: '.png',
 			width: 800,
 			height: 800,
@@ -1348,14 +1348,14 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 			sizeInBytes: 150634,
 			url: 'https://picsum.photos/800/600',
 			thumbnailUrl: 'https://picsum.photos/200/150',
-			threadId: 99999
+			threadId: 123455
 		);
 		return Thread(
 			attachments: [attachment],
 			board: 'tv',
 			replyCount: 300,
 			imageCount: 30,
-			id: 99999,
+			id: 123455,
 			time: DateTime.now().subtract(const Duration(minutes: 5)),
 			title: 'Example thread',
 			isSticky: false,
@@ -1367,8 +1367,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					name: 'Anonymous',
 					trip: '!asdf',
 					time: DateTime.now().subtract(const Duration(minutes: 5)),
-					threadId: 99999,
-					id: 99999,
+					threadId: 123455,
+					id: 123455,
 					passSinceYear: 2020,
 					flag: flag,
 					attachments: [attachment],
@@ -1381,8 +1381,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					name: 'User',
 					trip: '!fdsa',
 					time: DateTime.now().subtract(const Duration(minutes: 4)),
-					threadId: 99999,
-					id: 100000,
+					threadId: 123455,
+					id: 123456,
 					passSinceYear: 2023,
 					flag: flag,
 					attachments: [],
@@ -1395,8 +1395,8 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					name: 'User',
 					trip: '!fdsa',
 					time: DateTime.now().subtract(const Duration(minutes: 3)),
-					threadId: 99999,
-					id: 100001,
+					threadId: 123455,
+					id: 123457,
 					passSinceYear: 2023,
 					flag: flag,
 					attachments: [],
@@ -2067,6 +2067,16 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																CupertinoSwitch2(
 																	value: settings.showNoBeforeIdOnPosts,
 																	onChanged: (d) => settings.showNoBeforeIdOnPosts = d
+																)
+															]
+														),
+														Row(
+															children: [
+																const Text('Highlight dubs (etc)'),
+																const Spacer(),
+																CupertinoSwitch2(
+																	value: settings.highlightRepeatingDigitsInPostIds,
+																	onChanged: (d) => settings.highlightRepeatingDigitsInPostIds = d
 																)
 															]
 														),

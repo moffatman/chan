@@ -1744,6 +1744,25 @@ List<InlineSpan> buildPostInfoRow({
 	bool showPostNumber = true
 }) {
 	final thread = zone.findThread(post.threadId);
+	int repeatingDigits = 1;
+	final digits = post.id.toString();
+	if (settings.highlightRepeatingDigitsInPostIds && site.explicitIds) {
+		for (; repeatingDigits < digits.length; repeatingDigits++) {
+			if (digits[digits.length - 1 - repeatingDigits] != digits[digits.length - 1]) {
+				break;
+			}
+		}
+	}
+	final String postIdNonRepeatingSegment;
+	final String? postIdRepeatingSegment;
+	if (repeatingDigits > 1) {
+		postIdNonRepeatingSegment = digits.substring(0, digits.length - repeatingDigits);
+		postIdRepeatingSegment = digits.substring(digits.length - repeatingDigits);
+	}
+	else {
+		postIdNonRepeatingSegment = digits;
+		postIdRepeatingSegment = null;
+	}
 	return [
 		if (post.deleted) ...[
 			TextSpan(
@@ -1853,14 +1872,24 @@ List<InlineSpan> buildPostInfoRow({
 					)
 				),
 				TextSpan(
-					text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}${showBoardName ? '${zone.imageboard.site.formatBoardName(zone.imageboard.site.persistence.getBoard(post.board)).replaceFirst(RegExp(r'\/$'), '')}/' : ''}${post.id} ',
+					text: '${settings.showNoBeforeIdOnPosts ? 'No. ' : ''}${showBoardName ? '${zone.imageboard.site.formatBoardName(zone.imageboard.site.persistence.getBoard(post.board)).replaceFirst(RegExp(r'\/$'), '')}/' : ''}$postIdNonRepeatingSegment',
 					style: TextStyle(
 						color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.primaryColor).withOpacity(0.5)
 					),
 					recognizer: interactive ? (TapGestureRecognizer()..onTap = () {
 						context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id);
 					}) : null
-				)
+				),
+				if (postIdRepeatingSegment != null) TextSpan(
+					text: postIdRepeatingSegment,
+					style: TextStyle(
+						color: (post.threadId != zone.primaryThreadId ? theme.secondaryColor.shiftHue(-20) : theme.secondaryColor)
+					),
+					recognizer: interactive ? (TapGestureRecognizer()..onTap = () {
+						context.read<ReplyBoxZone>().onTapPostId(post.threadId, post.id);
+					}) : null
+				),
+				const TextSpan(text: ' ')
 			],
 		if (site.isReddit) ...[
 			WidgetSpan(

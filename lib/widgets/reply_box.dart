@@ -396,6 +396,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		print('Spam filter similarity: $similarity');
 		if (similarity > 0.90) {
 			showToast(context: context, message: 'Post successful', icon: CupertinoIcons.smiley, hapticFeedback: false);
+			_maybeShowDubsToast(post.id);
 			_textFieldController.clear();
 			_nameFieldController.clear();
 			_optionsFieldController.clear();
@@ -766,6 +767,34 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		}
 	}
 
+	void _maybeShowDubsToast(int id) {
+		if (context.read<EffectiveSettings>().highlightRepeatingDigitsInPostIds && context.read<ImageboardSite>().explicitIds) {
+			final digits = id.toString();
+			int repeatingDigits = 1;
+			for (; repeatingDigits < digits.length; repeatingDigits++) {
+				if (digits[digits.length - 1 - repeatingDigits] != digits[digits.length - 1]) {
+					break;
+				}
+			}
+			if (repeatingDigits > 1) {
+				showToast(
+					context: context,
+					icon: CupertinoIcons.hand_point_right,
+					message: switch(repeatingDigits) {
+						< 3 => 'Dubs GET!',
+						3 => 'Trips GET!',
+						4 => 'Quads GET!',
+						5 => 'Quints GET!',
+						6 => 'Sexts GET!',
+						7 => 'Septs GET!',
+						8 => 'Octs GET!',
+						_ => 'Insane GET!!'
+					}
+				);
+			}
+		}
+	}
+
 	Future<void> _submit() async {
 		final site = context.read<ImageboardSite>();
 		setState(() {
@@ -911,6 +940,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			}
 			else if (mounted) {
 				showToast(context: context, message: 'Post successful', icon: CupertinoIcons.check_mark, hapticFeedback: false);
+				_maybeShowDubsToast(receipt.id);
 			}
 		}
 		catch (e, st) {
