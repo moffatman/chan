@@ -204,7 +204,9 @@ class _Captcha4ChanCustomPainter extends CustomPainter{
 
 	@override
 	bool shouldRepaint(_Captcha4ChanCustomPainter oldDelegate) {
-		return foregroundImage != oldDelegate.foregroundImage && backgroundImage != oldDelegate.backgroundImage && backgroundSlide != oldDelegate.backgroundSlide;
+		return foregroundImage != oldDelegate.foregroundImage ||
+		       backgroundImage != oldDelegate.backgroundImage ||
+					 backgroundSlide != oldDelegate.backgroundSlide;
 	}
 }
 
