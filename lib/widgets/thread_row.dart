@@ -499,9 +499,7 @@ class ThreadRow extends StatelessWidget {
 			);
 			if (settings.catalogGridModeAttachmentInBackground) {
 				return [
-					if (att != null) Expanded(
-						child: att
-					),
+					if (att != null) att,
 					Align(
 						alignment: Alignment.bottomCenter,
 						child: Container(
