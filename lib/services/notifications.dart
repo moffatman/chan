@@ -606,7 +606,7 @@ void subscribeToBoard({
 			_delete(watch);
 		}
 		if (watch is ThreadWatch) {
-			threadWatches.remove(watch);
+			threadWatches.remove(watch.threadIdentifier);
 		}
 		else if (watch is BoardWatch) {
 			boardWatches.remove(watch);
