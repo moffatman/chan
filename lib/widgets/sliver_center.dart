@@ -24,7 +24,8 @@ class RenderSliverCenter extends RenderSliverEdgeInsetsPadding {
 	void _resolve() {
 		final SliverConstraints constraints = this.constraints;
 		child!.layout(constraints, parentUsesSize: true);
-		final childScrollExtent = child!.geometry?.scrollExtent ?? 0;
+		// child!.geometry?.scrollExtent could possibly be Infinity
+		final childScrollExtent = min(child!.geometry?.scrollExtent ?? 0, constraints.viewportMainAxisExtent);
 		final padding = (max(constraints.viewportMainAxisExtent, childScrollExtent) - childScrollExtent) / 2;
 		if (constraints.axis == Axis.vertical) {
 			_resolvedPadding = EdgeInsets.symmetric(vertical: padding);
