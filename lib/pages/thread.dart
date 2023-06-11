@@ -18,7 +18,6 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
-import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
@@ -806,6 +805,7 @@ class _ThreadPageState extends State<ThreadPage> {
 
 	Future<void> _popOutReplyBox(ValueChanged<ReplyBoxState>? onInitState) async {
 		final imageboard = context.read<Imageboard>();
+		final theme = context.read<SavedTheme>();
 		await showCupertinoModalPopup(
 			context: context,
 			builder: (ctx) => ImageboardScope(
@@ -814,7 +814,7 @@ class _ThreadPageState extends State<ThreadPage> {
 				child: Padding(
 					padding: MediaQuery.viewInsetsOf(ctx),
 					child: Container(
-						color: ChanceTheme.backgroundColorOf(context),
+						color: theme.backgroundColor,
 						child: ReplyBox(
 							longLivedCounterpartKey: _replyBoxKey,
 							board: widget.thread.board,
