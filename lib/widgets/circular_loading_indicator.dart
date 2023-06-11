@@ -154,12 +154,15 @@ class _CircularLoadingIndicatorState extends State<CircularLoadingIndicator> wit
 		if (value > (1 - _continuousSweepAngle) && ((value % 1.0) < _endValue)) {
 			// Need to clear origin
 			await _transitionToContinuous(reqNo: reqNo);
+			if (!mounted) return;
 			if (_endValue > _continuousSweepAngle) {
 				await Future.delayed(_timeInContinuous(_endValue, 0.1));
+				if (!mounted) return;
 			}
 		}
 		else if (value <= _endValue || _startValue != 0) {
 			await _transitionToContinuous(reqNo: reqNo);
+			if (!mounted) return;
 			await Future.wait([
 				if (_startValueController.value <= value) Future.delayed(_timeInContinuous(_startValue, value)),
 				if (_endValueController.value >= (value % 1)) Future.delayed(_timeInContinuous(_endValueController.value, 0))
