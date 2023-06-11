@@ -395,7 +395,7 @@ class ReplyBoxState extends State<ReplyBox> {
 		final similarity = post.span.buildText().similarityTo(_textFieldController.text);
 		print('Spam filter similarity: $similarity');
 		if (similarity > 0.90) {
-			showToast(context: context, message: 'Post successful', icon: CupertinoIcons.smiley, hapticFeedback: false);
+			showToast(context: widget.longLivedCounterpartKey?.currentContext ?? context, message: 'Post successful', icon: CupertinoIcons.smiley, hapticFeedback: false);
 			_maybeShowDubsToast(post.id);
 			_textFieldController.clear();
 			_nameFieldController.clear();
@@ -931,7 +931,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							return;
 						}
 						alertError(
-							context,
+							widget.longLivedCounterpartKey?.currentContext ?? context,
 							'Your post was likely blocked by 4chan\'s anti-spam firewall.\nIf you don\'t see your post appear, try again later. It has been saved in the reply form.',
 							barrierDismissible: true
 						);
