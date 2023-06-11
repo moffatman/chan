@@ -99,7 +99,8 @@ class ShareablePosts extends StatelessWidget {
 						largeImageWidth: (p.id == primaryPostId && style.expandPrimaryImage) ? style.width : null,
 						highlight: p.id == primaryPostId && ((style.childDepth > 0 && p.replyIds.isNotEmpty) || (style.parentDepth > 0 && p.repliedToIds.isNotEmpty)),
 						baseOptions: options,
-						revealYourPosts: style.revealYourPosts
+						revealYourPosts: style.revealYourPosts,
+						revealSpoilerImages: true
 					),
 					collapsedItemBuilder: ({
 						required BuildContext context,
@@ -117,6 +118,7 @@ class ShareablePosts extends StatelessWidget {
 									dim: peekContentHeight.isFinite,
 									baseOptions: options,
 									revealYourPosts: style.revealYourPosts,
+									revealSpoilerImages: true,
 									overrideReplyCount: Row(
 										mainAxisSize: MainAxisSize.min,
 										children: [
@@ -263,6 +265,7 @@ class ShareablePosts extends StatelessWidget {
 								postId: parent.$2,
 								builder: (context) => PostRow(
 									post: parent.$1,
+									revealSpoilerImages: true,
 									shrinkWrap: true,
 									baseOptions: options,
 									revealYourPosts: style.revealYourPosts
@@ -275,6 +278,7 @@ class ShareablePosts extends StatelessWidget {
 								postId: parents.tryLast?.$1.id ?? -1,
 								builder: (context) => PostRow(
 									post: post,
+									revealSpoilerImages: true,
 									highlight: parents.isNotEmpty || children.isNotEmpty,
 									largeImageWidth: style.expandPrimaryImage ? style.width : null,
 									shrinkWrap: true,
@@ -289,6 +293,7 @@ class ShareablePosts extends StatelessWidget {
 								postId: primaryPostId,
 								builder: (contxt) => PostRow(
 									post: child,
+									revealSpoilerImages: true,
 									shrinkWrap: true,
 									baseOptions: options,
 									revealYourPosts: style.revealYourPosts

@@ -48,6 +48,7 @@ class PostRow extends StatelessWidget {
 	final bool showPostNumber;
 	final double? largeImageWidth;
 	final bool revealYourPosts;
+	final bool revealSpoilerImages;
 
 	const PostRow({
 		required this.post,
@@ -70,6 +71,7 @@ class PostRow extends StatelessWidget {
 		this.showPostNumber = true,
 		this.largeImageWidth,
 		this.revealYourPosts = true,
+		this.revealSpoilerImages = false,
 		Key? key
 	}) : super(key: key);
 
@@ -242,6 +244,7 @@ class PostRow extends StatelessWidget {
 												children: [
 													AttachmentThumbnail(
 														attachment: attachment,
+														revealSpoilers: revealSpoilerImages,
 														thread: latestPost.threadIdentifier,
 														onLoadError: onThumbnailLoadError,
 														hero: TaggedAttachment(
@@ -369,6 +372,7 @@ class PostRow extends StatelessWidget {
 												padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
 												child: AttachmentThumbnail(
 													attachment: a,
+													revealSpoilers: revealSpoilerImages,
 													width: largeImageWidth,
 													height: largeImageWidth,
 													shrinkHeight: true,
