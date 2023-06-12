@@ -379,7 +379,9 @@ enum TreeItemCollapseType {
 	childCollapsed,
 	mutuallyCollapsed,
 	mutuallyChildCollapsed,
-	topLevelCollapsed;
+	topLevelCollapsed,
+	newInsertCollapsed,
+	parentOfNewInsert;
 }
 
 extension Convenience on TreeItemCollapseType? {
@@ -397,6 +399,7 @@ extension Convenience on TreeItemCollapseType? {
 		switch (this) {
 			case TreeItemCollapseType.childCollapsed:
 			case TreeItemCollapseType.mutuallyChildCollapsed:
+			case TreeItemCollapseType.newInsertCollapsed:
 				return true;
 			default:
 				return false;
@@ -420,6 +423,9 @@ class _RefreshableTreeItemsCacheKey {
 	
 	@override
 	int get hashCode => _cacheKey.hashCode;
+
+	@override
+	String toString() => '_RefreshableTreeItemsCacheKey($_cacheKey)';
 }
 
 class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
@@ -434,6 +440,10 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 	final void Function(RefreshableListItem<T> item, bool looseEquality)? onCollapseOrExpand;
 	final Set<List<int>> loadingOmittedItems = {};
 	final Map<_RefreshableTreeItemsCacheKey, TreeItemCollapseType?> _cache = {};
+	/// If the bool is false, we haven't laid out this item yet.
+	/// Don't show the indicator on the parent.
+	/// That's because its child might end up being shown.
+	final Map<List<int>, bool> newlyInsertedItems = {};
 
 	_RefreshableTreeItems({
 		required this.manuallyCollapsedItems,
@@ -498,6 +508,31 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 				}
 				else {
 					return TreeItemCollapseType.mutuallyCollapsed;
+				}
+			}
+			for (final newlyInserted in newlyInsertedItems.keys) {
+				if (newlyInserted.length == key.parentIds.length + 1) {
+					// Possible this is the new insert
+					if (newlyInserted.last != key.thisId) {
+						continue;
+					}
+					bool keepGoing = true;
+					for (int i = 0; i < newlyInserted.length - 1 && keepGoing; i++) {
+						keepGoing = newlyInserted[i] == key.parentIds[i];
+					}
+					if (keepGoing) {
+						return TreeItemCollapseType.newInsertCollapsed;
+					}
+				}
+				else if (newlyInserted.length == key.parentIds.length + 2) {
+					// Possible this is the parent of new insert
+					bool keepGoing = true;
+					for (int i = 0; i < key.parentIds.length && keepGoing; i++) {
+						keepGoing = newlyInserted[i] == key.parentIds[i];
+					}
+					if (keepGoing && newlyInserted[newlyInserted.length - 2] == key.thisId && newlyInsertedItems[newlyInserted] == true) {
+						return TreeItemCollapseType.parentOfNewInsert;
+					}
 				}
 			}
 			return null;
@@ -569,6 +604,18 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		if (automaticallyCollapsedTopLevelItems.remove(item.id)) {
 			onAutomaticallyCollapsedTopLevelItemExpanded?.call(item.id);
 		}
+		// Reveal any newly inserted items in the subtree below
+		newlyInsertedItems.removeWhere((w, _) {
+			if (w.length < (x.length + 1)) {
+				return false;
+			}
+			for (int i = 0; i < x.length; i++) {
+				if (w[i] != x[i]) {
+					return false;
+				}
+			}
+			return true;
+		});
 		onCollapseOrExpand?.call(item, false);
 		notifyListeners();
 	}
@@ -578,6 +625,40 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
 		onManuallyCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
 		onCollapseOrExpand?.call(item, false);
+		notifyListeners();
+	}
+
+	void revealNewInsert(RefreshableListItem<T> item) async {
+		final x = [
+			...item.parentIds,
+			item.id
+		];
+		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id) || item.parentIds.contains(key.thisId));
+		newlyInsertedItems.removeWhere((w, _) => listEquals(w, x));
+		onCollapseOrExpand?.call(item, false);
+		await SchedulerBinding.instance.endOfFrame;
+		notifyListeners();
+	}
+
+	void revealNewInsertsBelow(RefreshableListItem<T> item) async {
+		final x = [
+			...item.parentIds,
+			item.id
+		];
+		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
+		newlyInsertedItems.removeWhere((w, _) {
+			if (w.length < (x.length + 1)) {
+				return false;
+			}
+			for (int i = 0; i < x.length; i++) {
+				if (w[i] != x[i]) {
+					return false;
+				}
+			}
+			return true;
+		});
+		onCollapseOrExpand?.call(item, false);
+		await SchedulerBinding.instance.endOfFrame;
 		notifyListeners();
 	}
 }
@@ -755,6 +836,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 	int forceRebuildId = 0;
 	Timer? _trailingUpdateAnimationTimer;
 	bool _treeBuildingFailed = false;
+	int _lastKnownTreeMaxItemId = 1 << 50;
+	bool _needToTransitionNewlyInsertedItems = false;
 
 	bool get useTree => widget.useTree && !_treeBuildingFailed;
 	bool get treeBuildingFailed => _treeBuildingFailed;
@@ -814,6 +897,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			sortedList = null;
 			errorMessage = null;
 			errorType = null;
+			_lastKnownTreeMaxItemId = 1 << 50;
 			lastUpdateTime = null;
 			_automaticallyCollapsedItems.clear();
 			_overrideExpandAutomaticallyCollapsedItems.clear();
@@ -1132,18 +1216,45 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					child = const SizedBox(width: double.infinity);
 				}
 				else if (isHidden == TreeItemCollapseType.mutuallyCollapsed ||
-				         isHidden == TreeItemCollapseType.topLevelCollapsed) {
+				         isHidden == TreeItemCollapseType.topLevelCollapsed ||
+								 isHidden == TreeItemCollapseType.parentOfNewInsert) {
+					final Set<int> collapsedChildIds;
+					if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
+						collapsedChildIds = _refreshableTreeItems.newlyInsertedItems.entries.where((e) {
+							if (e.key.length < 2) {
+								return false;
+							}
+							return e.key[e.key.length - 2] == value.id;
+						}).map((x) => x.key.last).toSet();
+					}
+					else {
+						collapsedChildIds = value.treeDescendantIds;
+					}
 					child = widget.collapsedItemBuilder?.call(
 						context: context,
 						value: value.item,
-						collapsedChildIds: value.treeDescendantIds,
+						collapsedChildIds: collapsedChildIds,
 						loading: loadingOmittedItems,
 						peekContentHeight: isHidden == TreeItemCollapseType.mutuallyCollapsed ? 90 : double.infinity,
 						stubChildIds: null
-					) ?? Container(
-						height: 30,
-						alignment: Alignment.center,
-						child: Text('${value.item} mutually-collapsed')
+					) ?? Stack(
+						alignment: Alignment.bottomRight,
+						children: [
+							child,
+							CupertinoButton(
+								padding: EdgeInsets.zero,
+								onPressed: isHidden != TreeItemCollapseType.parentOfNewInsert ? null : () {
+									_refreshableTreeItems.revealNewInsertsBelow(value);
+								},
+								child: Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										const Icon(CupertinoIcons.chevron_down, size: 20),
+										Text(collapsedChildIds.toString())
+									]
+								)
+							)
+						]
 					);
 				}
 				else {
@@ -1181,6 +1292,9 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 							if (isHidden == TreeItemCollapseType.mutuallyCollapsed) {
 								context.read<_RefreshableTreeItems>().swapSubtreeTo(value);
 								Future.delayed(_treeAnimationDuration, () => widget.controller?._alignToItemIfPartiallyAboveFold(value));
+							}
+							else if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
+								context.read<_RefreshableTreeItems>().revealNewInsertsBelow(value);
 							}
 							else if (isHidden != null) {
 								context.read<_RefreshableTreeItems>().unhideItem(value);
@@ -1275,8 +1389,11 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			return (tree: linear, automaticallyCollapsed: [], automaticallyTopLevelCollapsed: {});
 		}
 
+		int maxIdFound = 0;
+
 		for (final item in linear) {
 			final id = adapter.getId(item.item);
+			maxIdFound = max(maxIdFound, id);
 			final node = _TreeNode(item.copyWith(), id, adapter.getHasOmittedReplies(item.item));
 			treeMap[id] = node;
 			node.children.addAll(orphans[id] ?? []);
@@ -1388,6 +1505,13 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 			if (item.filterCollapsed) {
 				automaticallyCollapsed.add(ids);
 			}
+			if (node.id > _lastKnownTreeMaxItemId && parentIds.isNotEmpty) {
+				_refreshableTreeItems.newlyInsertedItems.putIfAbsent(ids, () => false);
+				_refreshableTreeItems._cache.removeWhere((k, _) => parentIds.contains(k.thisId));
+				if (parentIds.isEmpty) {
+					_refreshableTreeItems._cache.remove(_RefreshableTreeItemsCacheKey([], adapter.opId, false));
+				}
+			}
 			for (final child in node.children) {
 				if (child.id == node.id) {
 					print('Skipping recursive child of ${node.id}');
@@ -1452,6 +1576,8 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				depth: 0
 			));
 		}
+		_lastKnownTreeMaxItemId = maxIdFound;
+		_needToTransitionNewlyInsertedItems = true;
 		return (tree: out, automaticallyCollapsed: automaticallyCollapsed, automaticallyTopLevelCollapsed: automaticallyTopLevelCollapsed);
 	}
 
@@ -2187,6 +2313,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	final Map<(int, bool), List<Completer<void>>> _itemCacheCallbacks = {};
 	int? currentTargetIndex;
 	bool? _useTree;
+	final Set<int> _newInsertIndices = {};
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onSlowScroll);
 		SchedulerBinding.instance.endOfFrame.then((_) => _onScrollControllerNotification());
@@ -2315,6 +2442,11 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		}
 		_items.tryFirst?.cachedOffset = oldFirstOffset;
 		_useTree = state?.useTree;
+		for (int i = 0; i < _items.length; i++) {
+			if (isItemHidden(_items[i].item) == TreeItemCollapseType.newInsertCollapsed) {
+				_newInsertIndices.add(i);
+			}
+		}
 		WidgetsBinding.instance.addPostFrameCallback((_) => notifyListeners());
 	}
 	void registerItem(int index, RefreshableListItem<T> item, BuildContext context) {
@@ -2542,6 +2674,31 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	void didFinishLayout(int startIndex, int endIndex) {
 		for (int i = startIndex; i <= endIndex; i++) {
 			_tryCachingItem(i, _items[i]);
+		}
+		_newInsertIndices.removeWhere((i) {
+			if (i < startIndex || i >= endIndex) {
+				// i >= endIndex is used to always reveal the last item
+				state?._refreshableTreeItems.revealNewInsert(_items[i].item);
+				return true;
+			}
+			return false;
+		});
+		if (state?._needToTransitionNewlyInsertedItems ?? false) {
+			bool removedAnyCaches = false;
+			for (final key in state?._refreshableTreeItems.newlyInsertedItems.keys ?? const Iterable<List<int>>.empty()) {
+				// Laid-out
+				if (state?._refreshableTreeItems.newlyInsertedItems[key] == false) {
+					state?._refreshableTreeItems.newlyInsertedItems[key] = true;
+					state?._refreshableTreeItems._cache.removeWhere((k, value) => k.thisId == key[key.length - 2]);
+					removedAnyCaches = true;
+				}
+			}
+			if (removedAnyCaches) {
+				SchedulerBinding.instance.addPostFrameCallback((_) {
+					state?._refreshableTreeItems.notifyListeners();
+				});
+			}
+			state?._needToTransitionNewlyInsertedItems = false;
 		}
 	}
 
