@@ -139,7 +139,7 @@ class PostRow extends StatelessWidget {
 		final backgroundColor = isSelected ?
 			theme.primaryColorWithBrightness(0.4) :
 			highlight ?
-				theme.primaryColorWithBrightness(0.1) :
+				theme.primaryColorWithBrightness(settings.newPostHighlightBrightness) :
 				theme.backgroundColor;
 		openReplies() {
 			if (replyIds.isNotEmpty) {

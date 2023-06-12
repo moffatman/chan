@@ -808,6 +808,8 @@ class SavedSettings extends HiveObject {
 	bool highlightRepeatingDigitsInPostIds;
 	@HiveField(143)
 	bool includeThreadsYouRepliedToWhenDeletingHistory;
+	@HiveField(144)
+	double newPostHighlightBrightness;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -953,6 +955,7 @@ class SavedSettings extends HiveObject {
 		this.defaultThreadWatch,
 		bool? highlightRepeatingDigitsInPostIds,
 		bool? includeThreadsYouRepliedToWhenDeletingHistory,
+		double? newPostHighlightBrightness,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1123,7 +1126,8 @@ class SavedSettings extends HiveObject {
 		currentThreadAutoUpdatePeriodSeconds = currentThreadAutoUpdatePeriodSeconds ?? 60,
 		lastShareablePostsStyle = lastShareablePostsStyle ?? const ShareablePostsStyle(),
 		highlightRepeatingDigitsInPostIds = highlightRepeatingDigitsInPostIds ?? false,
-		includeThreadsYouRepliedToWhenDeletingHistory = includeThreadsYouRepliedToWhenDeletingHistory ?? false {
+		includeThreadsYouRepliedToWhenDeletingHistory = includeThreadsYouRepliedToWhenDeletingHistory ?? false,
+		newPostHighlightBrightness = newPostHighlightBrightness ?? 0.1 {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2188,6 +2192,13 @@ class EffectiveSettings extends ChangeNotifier {
 	bool get includeThreadsYouRepliedToWhenDeletingHistory => _settings.includeThreadsYouRepliedToWhenDeletingHistory;
 	set includeThreadsYouRepliedToWhenDeletingHistory(bool setting) {
 		_settings.includeThreadsYouRepliedToWhenDeletingHistory = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	double get newPostHighlightBrightness => _settings.newPostHighlightBrightness;
+	set newPostHighlightBrightness(double setting) {
+		_settings.newPostHighlightBrightness = setting;
 		_settings.save();
 		notifyListeners();
 	}

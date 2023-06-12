@@ -273,13 +273,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       defaultThreadWatch: fields[141] as ThreadWatch?,
       highlightRepeatingDigitsInPostIds: fields[142] as bool?,
       includeThreadsYouRepliedToWhenDeletingHistory: fields[143] as bool?,
+      newPostHighlightBrightness: fields[144] as double?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(140)
+      ..writeByte(141)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -559,7 +560,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(142)
       ..write(obj.highlightRepeatingDigitsInPostIds)
       ..writeByte(143)
-      ..write(obj.includeThreadsYouRepliedToWhenDeletingHistory);
+      ..write(obj.includeThreadsYouRepliedToWhenDeletingHistory)
+      ..writeByte(144)
+      ..write(obj.newPostHighlightBrightness);
   }
 
   @override

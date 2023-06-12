@@ -1436,6 +1436,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
+		final theme = context.watch<SavedTheme>();
 		final firstPanePercent = (settings.twoPaneSplit / twoPaneSplitDenominator) * 100;
 		final dividerColor = ChanceTheme.primaryColorOf(context);
 		return _SettingsPage(
@@ -1834,6 +1835,32 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						value: settings.thumbnailSize,
 						onChanged: (newValue) {
 							settings.thumbnailSize = newValue;
+						}
+					)
+				),
+				Row(
+					children: [
+						const Icon(CupertinoIcons.brightness),
+						const SizedBox(width: 8),
+						const Expanded(
+							child: Text('New post highlight brightness')
+						),
+						Container(
+							color: theme.primaryColorWithBrightness(settings.newPostHighlightBrightness),
+							padding: const EdgeInsets.all(8),
+							child: const Text('Example new post')
+						)
+					]
+				),
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: CupertinoSlider(
+						min: 0,
+						max: 0.5,
+						divisions: 50,
+						value: settings.newPostHighlightBrightness,
+						onChanged: (newValue) {
+							settings.newPostHighlightBrightness = newValue;
 						}
 					)
 				),
