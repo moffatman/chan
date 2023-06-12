@@ -900,6 +900,10 @@ class _ThreadPageState extends State<ThreadPage> {
 		zone.tree = useTree;
 		final treeModeInitiallyCollapseSecondLevelReplies = context.select<Persistence, bool>((s) => s.browserState.treeModeInitiallyCollapseSecondLevelReplies);
 		final treeModeCollapsedPostsShowBody = context.select<Persistence, bool>((s) => s.browserState.treeModeCollapsedPostsShowBody);
+		Duration? autoUpdateDuration = Duration(seconds: _foreground ? settings.currentThreadAutoUpdatePeriodSeconds : settings.backgroundThreadAutoUpdatePeriodSeconds);
+		if (autoUpdateDuration.inDays > 1) {
+			autoUpdateDuration = null;
+		}
 		return WillPopScope(
 			onWillPop: () async {
 				if (_replyBoxKey.currentState?.show ?? false) {
@@ -1214,7 +1218,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																sortMethods: zone.postSortingMethods,
 																id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
 																disableUpdates: persistentState.disableUpdates,
-																autoUpdateDuration: Duration(seconds: _foreground ? settings.currentThreadAutoUpdatePeriodSeconds : settings.backgroundThreadAutoUpdatePeriodSeconds),
+																autoUpdateDuration: autoUpdateDuration,
 																initialList: persistentState.thread?.posts,
 																useTree: useTree,
 																initialCollapsedItems: persistentState.collapsedItems,

@@ -1125,7 +1125,8 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 							10: (null, '10s'),
 							15: (null, '15s'),
 							30: (null, '30s'),
-							60: (null, '60s')
+							60: (null, '60s'),
+							1 << 50: (null, 'Off')
 						},
 						groupValue: context.watch<EffectiveSettings>().currentThreadAutoUpdatePeriodSeconds,
 						onValueChanged: (setting) {
@@ -1149,7 +1150,8 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 							30: (null, '30s'),
 							60: (null, '60s'),
 							120: (null, '120s'),
-							180: (null, '180s')
+							180: (null, '180s'),
+							1 << 50: (null, 'Off')
 						},
 						groupValue: context.watch<EffectiveSettings>().backgroundThreadAutoUpdatePeriodSeconds,
 						onValueChanged: (setting) {
