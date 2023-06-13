@@ -170,7 +170,7 @@ class _VideoControlsState extends State<VideoControls> {
 									child: Stack(
 										alignment: Alignment.bottomCenter,
 										children: [
-											if (widget.controller.swapIncoming || widget.controller.showLoadingProgress) ValueListenableBuilder(
+											if (widget.controller.swapIncoming || widget.controller.showLoadingProgress || !widget.controller.cacheCompleted) ValueListenableBuilder(
 												valueListenable: widget.controller.videoLoadingProgress,
 												builder: (context, double? value, _) => LinearProgressIndicator(
 													minHeight: 44,
@@ -185,7 +185,7 @@ class _VideoControlsState extends State<VideoControls> {
 													minHeight: 44,
 													value: positionValue.inMilliseconds / (widget.controller.duration ?? value.duration).inMilliseconds.clamp(1, double.maxFinite),
 													valueColor: AlwaysStoppedAnimation(primaryColor),
-													backgroundColor: widget.controller.swapIncoming ? Colors.transparent : primaryColor.withOpacity(0.3)
+													backgroundColor: !widget.controller.cacheCompleted ? Colors.transparent : primaryColor.withOpacity(0.3)
 												)
 											)
 										]
