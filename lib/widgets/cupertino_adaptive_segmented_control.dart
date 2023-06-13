@@ -19,7 +19,7 @@ class CupertinoAdaptiveSegmentedControl<T extends Object> extends StatelessWidge
 
 	Widget _build(BuildContext context, double width) {
 		final textScale = context.select<EffectiveSettings, double>((s) => s.textScale);
-		final expectedWidth = 16 + (children.length * 16) + ((17 * textScale) * 0.6 * (children.values.map((c) => c.$2.length).fold(0, (a, b) => a + b)));
+		final expectedWidth = 16 + (children.length * 16) + ((17 * textScale) * 0.8 * (children.values.map((c) => c.$2.length).fold(0, (a, b) => a + b)));
 		if (width < expectedWidth) {
 			return Padding(
 				padding: const EdgeInsets.symmetric(horizontal: 16),
