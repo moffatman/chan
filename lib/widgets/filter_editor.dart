@@ -15,11 +15,13 @@ class FilterEditor extends StatefulWidget {
 	final bool showRegex;
 	final String? forBoard;
 	final CustomFilter? blankFilter;
+	final bool fillHeight;
 
 	const FilterEditor({
 		required this.showRegex,
 		this.forBoard,
 		this.blankFilter,
+		this.fillHeight = false,
 		Key? key
 	}) : super(key: key);
 
@@ -503,81 +505,76 @@ class _FilterEditorState extends State<FilterEditor> {
 				)
 			);
 		}
-		return AnimatedSize(
-			duration: const Duration(milliseconds: 350),
-			curve: Curves.ease,
-			alignment: Alignment.topCenter,
-			child: AnimatedSwitcher(
-				duration: const Duration(milliseconds: 350),
-				switchInCurve: Curves.ease,
-				switchOutCurve: Curves.ease,
-				child: widget.showRegex ? Column(
-					mainAxisSize: MainAxisSize.min,
-					crossAxisAlignment: CrossAxisAlignment.stretch,
-					children: [
-						Wrap(
-							crossAxisAlignment: WrapCrossAlignment.center,
-							alignment: WrapAlignment.start,
-							spacing: 16,
-							runSpacing: 16,
-							children: [
-								CupertinoButton(
-									minSize: 0,
-									padding: EdgeInsets.zero,
-									child: const Icon(CupertinoIcons.question_circle),
-									onPressed: () {
-										showCupertinoModalPopup(
-											context: context,
-											builder: (context) => CupertinoActionSheet(
-												message: Text.rich(
-													buildFakeMarkdown(context,
-														'One regular expression per line, lines starting with # will be ignored\n'
-														'Example: `/sneed/` will hide any thread or post containing "sneed"\n'
-														'Example: `/bane/;boards:tv;thread` will hide any thread containing "sneed" in the OP on /tv/\n'
-														'Add `i` after the regex to make it case-insensitive\n'
-														'Example: `/sneed/i` will match `SNEED`\n'
-														'You can write text before the opening slash to give the filter a label: `Funposting/bane/i`'
-														'\n'
-														'Qualifiers may be added after the regex:\n'
-														'`;boards:<list>` Only apply on certain boards\n'
-														'Example: `;board:tv,mu` will only apply the filter on /tv/ and /mu/\n'
-														'`;exclude:<list>` Don\'t apply on certain boards\n'
-														'`;highlight` Highlight instead of hiding matches\n'
-														'`;top` Pin match to top of list instead of hiding\n'
-														'`;save` Send a push notification (if enabled) for matches\n'
-														'`;notify` Automatically save matching threads\n'
-														'`;collapse` Automatically collapse matching posts in tree mode\n'
-														'`;file:only` Only apply to posts with files\n'
-														'`;file:no` Only apply to posts without files\n'
-														'`;thread` Only apply to threads\n'
-														'`;reply` Only apply to replies\n'
-														'`;type:<list>` Only apply regex filter to certain fields\n'
-														'The list of possible fields is $allPatternFields\n'
-														'The default fields that are searched are $defaultPatternFields'
-													),
-													textAlign: TextAlign.left,
-													style: const TextStyle(
-														fontSize: 16,
-														height: 1.5
-													)
+		Widget child;
+		if (widget.showRegex) {
+			child = Column(
+				mainAxisSize: widget.fillHeight ? MainAxisSize.max : MainAxisSize.min,
+				crossAxisAlignment: CrossAxisAlignment.stretch,
+				children: [
+					Wrap(
+						crossAxisAlignment: WrapCrossAlignment.center,
+						alignment: WrapAlignment.start,
+						spacing: 16,
+						runSpacing: 16,
+						children: [
+							CupertinoButton(
+								minSize: 0,
+								padding: EdgeInsets.zero,
+								child: const Icon(CupertinoIcons.question_circle),
+								onPressed: () {
+									showCupertinoModalPopup(
+										context: context,
+										builder: (context) => CupertinoActionSheet(
+											message: Text.rich(
+												buildFakeMarkdown(context,
+													'One regular expression per line, lines starting with # will be ignored\n'
+													'Example: `/sneed/` will hide any thread or post containing "sneed"\n'
+													'Example: `/bane/;boards:tv;thread` will hide any thread containing "sneed" in the OP on /tv/\n'
+													'Add `i` after the regex to make it case-insensitive\n'
+													'Example: `/sneed/i` will match `SNEED`\n'
+													'You can write text before the opening slash to give the filter a label: `Funposting/bane/i`'
+													'\n'
+													'Qualifiers may be added after the regex:\n'
+													'`;boards:<list>` Only apply on certain boards\n'
+													'Example: `;board:tv,mu` will only apply the filter on /tv/ and /mu/\n'
+													'`;exclude:<list>` Don\'t apply on certain boards\n'
+													'`;highlight` Highlight instead of hiding matches\n'
+													'`;top` Pin match to top of list instead of hiding\n'
+													'`;save` Send a push notification (if enabled) for matches\n'
+													'`;notify` Automatically save matching threads\n'
+													'`;collapse` Automatically collapse matching posts in tree mode\n'
+													'`;file:only` Only apply to posts with files\n'
+													'`;file:no` Only apply to posts without files\n'
+													'`;thread` Only apply to threads\n'
+													'`;reply` Only apply to replies\n'
+													'`;type:<list>` Only apply regex filter to certain fields\n'
+													'The list of possible fields is $allPatternFields\n'
+													'The default fields that are searched are $defaultPatternFields'
+												),
+												textAlign: TextAlign.left,
+												style: const TextStyle(
+													fontSize: 16,
+													height: 1.5
 												)
 											)
-										);
-									}
-								),
-								if (dirty) CupertinoButton(
-									padding: EdgeInsets.zero,
-									minSize: 0,
-									onPressed: _save,
-									child: const Text('Save')
-								)
-							]
-						),
-						const SizedBox(height: 16),
-						CupertinoTextField2(
+										)
+									);
+								}
+							),
+							if (dirty) CupertinoButton(
+								padding: EdgeInsets.zero,
+								minSize: 0,
+								onPressed: _save,
+								child: const Text('Save')
+							)
+						]
+					),
+					const SizedBox(height: 16),
+					Expanded(
+						child: CupertinoTextField2(
 							style: GoogleFonts.ibmPlexMono(),
 							minLines: 5,
-							maxLines: 5,
+							maxLines: widget.fillHeight ? null : 5,
 							focusNode: regexFocusNode,
 							controller: regexController,
 							enableSuggestions: false,
@@ -593,136 +590,175 @@ class _FilterEditorState extends State<FilterEditor> {
 								}
 							}
 						)
-					]
-				) : ClipRRect(
-					borderRadius: BorderRadius.circular(8),
-					child: CupertinoListSection(
-						topMargin: 0,
-						margin: EdgeInsets.zero,
-						children: [
-							...filters.entries.map((filter) {
-								final icons = [
-									if (filter.value.outputType.hide) const Icon(CupertinoIcons.eye_slash),
-									if (filter.value.outputType.highlight) const Icon(CupertinoIcons.sun_max_fill),
-									if (filter.value.outputType.pinToTop) const Icon(CupertinoIcons.arrow_up_to_line),
-									if (filter.value.outputType.autoSave) const Icon(CupertinoIcons.bookmark_fill),
-									if (filter.value.outputType.notify) const Icon(CupertinoIcons.bell_fill),
-									if (filter.value.outputType.collapse) const Icon(CupertinoIcons.chevron_down_square)
-								];
-								return Row(
-									children: [
-										Expanded(
-											child: Opacity(
-												opacity: filter.value.disabled ? 0.5 : 1,
-												child: CupertinoListTile(
-													title: Text(filter.value.label.isNotEmpty ? filter.value.label : filter.value.pattern.pattern),
-													backgroundColor: ChanceTheme.barColorOf(context),
-													backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-													leading: FittedBox(fit: BoxFit.contain, child: Column(
-														mainAxisAlignment: MainAxisAlignment.spaceBetween,
-														children: [
-															for (int i = 0; i < icons.length; i += 2) Row(
-																mainAxisAlignment: MainAxisAlignment.spaceBetween,
-																children: [
-																	if (i < icons.length) icons[i],
-																	if ((i + 1) < icons.length) icons[i + 1]
-																]
-															)
-														]
-													)),
-													subtitle: Text.rich(
-														TextSpan(
+					)
+				]
+			);
+			if (widget.fillHeight) {
+				child = Padding(
+					padding: const EdgeInsets.all(16),
+					child: child
+				);
+			}
+		}
+		else {
+			child = ClipRRect(
+				borderRadius: BorderRadius.circular(8),
+				child: CupertinoListSection(
+					topMargin: 0,
+					margin: EdgeInsets.zero,
+					children: [
+						...filters.entries.map((filter) {
+							final icons = [
+								if (filter.value.outputType.hide) const Icon(CupertinoIcons.eye_slash),
+								if (filter.value.outputType.highlight) const Icon(CupertinoIcons.sun_max_fill),
+								if (filter.value.outputType.pinToTop) const Icon(CupertinoIcons.arrow_up_to_line),
+								if (filter.value.outputType.autoSave) const Icon(CupertinoIcons.bookmark_fill),
+								if (filter.value.outputType.notify) const Icon(CupertinoIcons.bell_fill),
+								if (filter.value.outputType.collapse) const Icon(CupertinoIcons.chevron_down_square)
+							];
+							return Row(
+								children: [
+									Expanded(
+										child: Opacity(
+											opacity: filter.value.disabled ? 0.5 : 1,
+											child: CupertinoListTile(
+												title: Text(filter.value.label.isNotEmpty ? filter.value.label : filter.value.pattern.pattern),
+												backgroundColor: ChanceTheme.barColorOf(context),
+												backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+												leading: FittedBox(fit: BoxFit.contain, child: Column(
+													mainAxisAlignment: MainAxisAlignment.spaceBetween,
+													children: [
+														for (int i = 0; i < icons.length; i += 2) Row(
+															mainAxisAlignment: MainAxisAlignment.spaceBetween,
 															children: [
-																if (filter.value.minRepliedTo != null) TextSpan(text: 'Replying to >=${filter.value.minRepliedTo}'),
-																if (filter.value.minReplyCount != null && filter.value.maxReplyCount != null) TextSpan(text: '${filter.value.minReplyCount}-${filter.value.maxReplyCount} replies')
-																else if (filter.value.minReplyCount != null) TextSpan(text: '>=${filter.value.minReplyCount} replies')
-																else if (filter.value.maxReplyCount != null) TextSpan(text: '<=${filter.value.maxReplyCount} replies'),
-																if (filter.value.threadsOnly == true) const TextSpan(text: 'Threads only')
-																else if (filter.value.threadsOnly == false) const TextSpan(text: 'Replies only'),
-																if (filter.value.hasFile == true) const WidgetSpan(
-																	child: Icon(CupertinoIcons.doc)
+																if (i < icons.length) icons[i],
+																if ((i + 1) < icons.length) icons[i + 1]
+															]
+														)
+													]
+												)),
+												subtitle: Text.rich(
+													TextSpan(
+														children: [
+															if (filter.value.minRepliedTo != null) TextSpan(text: 'Replying to >=${filter.value.minRepliedTo}'),
+															if (filter.value.minReplyCount != null && filter.value.maxReplyCount != null) TextSpan(text: '${filter.value.minReplyCount}-${filter.value.maxReplyCount} replies')
+															else if (filter.value.minReplyCount != null) TextSpan(text: '>=${filter.value.minReplyCount} replies')
+															else if (filter.value.maxReplyCount != null) TextSpan(text: '<=${filter.value.maxReplyCount} replies'),
+															if (filter.value.threadsOnly == true) const TextSpan(text: 'Threads only')
+															else if (filter.value.threadsOnly == false) const TextSpan(text: 'Replies only'),
+															if (filter.value.hasFile == true) const WidgetSpan(
+																child: Icon(CupertinoIcons.doc)
+															)
+															else if (filter.value.hasFile == false) const WidgetSpan(
+																child: Stack(
+																	children: [
+																		Icon(CupertinoIcons.doc),
+																		Icon(CupertinoIcons.xmark)
+																	]
 																)
-																else if (filter.value.hasFile == false) const WidgetSpan(
-																	child: Stack(
-																		children: [
-																			Icon(CupertinoIcons.doc),
-																			Icon(CupertinoIcons.xmark)
-																		]
-																	)
-																),
-																for (final board in filter.value.boards) TextSpan(text: '/$board/'),
-																for (final board in filter.value.excludeBoards) TextSpan(text: 'not /$board/'),
-																if (!setEquals(filter.value.patternFields.toSet(), defaultPatternFields.toSet()))
-																	for (final field in filter.value.patternFields) TextSpan(text: field)
-															].expand((x) => [const TextSpan(text: ', '), x]).skip(1).toList()
-														),
-														overflow: TextOverflow.ellipsis
+															),
+															for (final board in filter.value.boards) TextSpan(text: '/$board/'),
+															for (final board in filter.value.excludeBoards) TextSpan(text: 'not /$board/'),
+															if (!setEquals(filter.value.patternFields.toSet(), defaultPatternFields.toSet()))
+																for (final field in filter.value.patternFields) TextSpan(text: field)
+														].expand((x) => [const TextSpan(text: ', '), x]).skip(1).toList()
 													),
-													onTap: () async {
-														final newFilter = await editFilter(filter.value);
-														if (newFilter != null) {
-															final lines = settings.filterConfiguration.split('\n');
-															if (newFilter.$1) {
-																lines.removeAt(filter.key);
-															}
-															else {
-																lines[filter.key] = newFilter.$2!.toStringConfiguration();
-															}
-															settings.filterConfiguration = lines.join('\n');
-															regexController.text = settings.filterConfiguration;
+													overflow: TextOverflow.ellipsis
+												),
+												onTap: () async {
+													final newFilter = await editFilter(filter.value);
+													if (newFilter != null) {
+														final lines = settings.filterConfiguration.split('\n');
+														if (newFilter.$1) {
+															lines.removeAt(filter.key);
 														}
+														else {
+															lines[filter.key] = newFilter.$2!.toStringConfiguration();
+														}
+														settings.filterConfiguration = lines.join('\n');
+														regexController.text = settings.filterConfiguration;
 													}
-												)
-											)
-										),
-										DecoratedBox(
-											decoration: BoxDecoration(
-												color: ChanceTheme.barColorOf(context)
-											),
-											child: CupertinoCheckbox(
-												activeColor: ChanceTheme.primaryColorOf(context),
-												checkColor: ChanceTheme.backgroundColorOf(context),
-												value: !filter.value.disabled,
-												onChanged: (value) {
-													filter.value.disabled = !filter.value.disabled;
-													final lines = settings.filterConfiguration.split('\n');
-													lines[filter.key] = filter.value.toStringConfiguration();
-													settings.filterConfiguration = lines.join('\n');
-													regexController.text = settings.filterConfiguration;
 												}
 											)
 										)
-									]
-								);
-							}),
-							if (filters.isEmpty) CupertinoListTile(
-								title: const Text('Suggestion: Add a mass-reply filter'),
-								leading: const Icon(CupertinoIcons.lightbulb),
-								backgroundColor: ChanceTheme.barColorOf(context),
-								backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-								onTap: () async {
-									settings.filterConfiguration += '\nMass-reply//;minReplied:10';
+									),
+									DecoratedBox(
+										decoration: BoxDecoration(
+											color: ChanceTheme.barColorOf(context)
+										),
+										child: CupertinoCheckbox(
+											activeColor: ChanceTheme.primaryColorOf(context),
+											checkColor: ChanceTheme.backgroundColorOf(context),
+											value: !filter.value.disabled,
+											onChanged: (value) {
+												filter.value.disabled = !filter.value.disabled;
+												final lines = settings.filterConfiguration.split('\n');
+												lines[filter.key] = filter.value.toStringConfiguration();
+												settings.filterConfiguration = lines.join('\n');
+												regexController.text = settings.filterConfiguration;
+											}
+										)
+									)
+								]
+							);
+						}),
+						if (filters.isEmpty) CupertinoListTile(
+							title: const Text('Suggestion: Add a mass-reply filter'),
+							leading: const Icon(CupertinoIcons.lightbulb),
+							backgroundColor: ChanceTheme.barColorOf(context),
+							backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+							onTap: () async {
+								settings.filterConfiguration += '\nMass-reply//;minReplied:10';
+								regexController.text = settings.filterConfiguration;
+							}
+						),
+						CupertinoListTile(
+							title: const Text('New filter'),
+							leading: const Icon(CupertinoIcons.plus),
+							backgroundColor: ChanceTheme.barColorOf(context),
+							backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+							onTap: () async {
+								final newFilter = await editFilter(null);
+								if (newFilter?.$2 != null) {
+									settings.filterConfiguration += '\n${newFilter!.$2!.toStringConfiguration()}';
 									regexController.text = settings.filterConfiguration;
 								}
-							),
-							CupertinoListTile(
-								title: const Text('New filter'),
-								leading: const Icon(CupertinoIcons.plus),
-								backgroundColor: ChanceTheme.barColorOf(context),
-								backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-								onTap: () async {
-									final newFilter = await editFilter(null);
-									if (newFilter?.$2 != null) {
-										settings.filterConfiguration += '\n${newFilter!.$2!.toStringConfiguration()}';
-										regexController.text = settings.filterConfiguration;
-									}
-								}
-							)
-						]
-					)
+							}
+						)
+					]
 				)
-			)
+			);
+			if (widget.fillHeight) {
+				child = MaybeCupertinoScrollbar(
+					child: SingleChildScrollView(
+						padding: const EdgeInsets.all(16),
+						child: child
+					)
+				);
+			}
+		}
+		child = AnimatedSwitcher(
+			duration: const Duration(milliseconds: 350),
+			switchInCurve: Curves.ease,
+			switchOutCurve: Curves.ease,
+			layoutBuilder: (currentChild, previousChildren) => Stack(
+				alignment: Alignment.topCenter,
+				children: <Widget>[
+					...previousChildren,
+					if (currentChild != null) currentChild
+				]
+			),
+			child: child
 		);
+		if (!widget.fillHeight) {
+			child = AnimatedSize(
+				duration: const Duration(milliseconds: 350),
+				curve: Curves.ease,
+				alignment: Alignment.topCenter,
+				child: child
+			);
+		}
+		return child;
 	}
 
 	@override

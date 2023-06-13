@@ -1196,38 +1196,50 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		return _SettingsPage(
-			title: 'Image Filter Settings',
-			children: [
-				Row(
-					children: [
-						const Icon(CupertinoIcons.list_bullet_below_rectangle),
-						const SizedBox(width: 8),
-						const Expanded(
-							child: Text('Apply to thread OP images')
-						),
-						const SizedBox(width: 16),
-						CupertinoSwitch2(
-							value: settings.applyImageFilterToThreads,
-							onChanged: (newValue) {
-								settings.applyImageFilterToThreads = newValue;
-							}
-						)
-					]
-				),
-				const SizedBox(height: 16),
-				const Text('One image MD5 per line'),
-				const SizedBox(height: 8),
-				CupertinoTextField2(
-					controller: controller,
-					enableIMEPersonalizedLearning: false,
-					onChanged: (s) {
-						context.read<EffectiveSettings>().setHiddenImageMD5s(s.split('\n').where((x) => x.isNotEmpty));
-					},
-					minLines: 10,
-					maxLines: 10
+		return CupertinoPageScaffold(
+			resizeToAvoidBottomInset: false,
+			navigationBar: const CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
+				middle: Text('Image Filter Settings')
+			),
+			child: SafeArea(
+				child: Padding(
+					padding: const EdgeInsets.all(16),
+					child: Column(
+						children: [
+							Row(
+								children: [
+									const Icon(CupertinoIcons.list_bullet_below_rectangle),
+									const SizedBox(width: 8),
+									const Expanded(
+										child: Text('Apply to thread OP images')
+									),
+									const SizedBox(width: 16),
+									CupertinoSwitch2(
+										value: settings.applyImageFilterToThreads,
+										onChanged: (newValue) {
+											settings.applyImageFilterToThreads = newValue;
+										}
+									)
+								]
+							),
+							const SizedBox(height: 16),
+							const Text('One image MD5 per line'),
+							const SizedBox(height: 8),
+							Expanded(
+								child: CupertinoTextField2(
+									controller: controller,
+									enableIMEPersonalizedLearning: false,
+									onChanged: (s) {
+										context.read<EffectiveSettings>().setHiddenImageMD5s(s.split('\n').where((x) => x.isNotEmpty));
+									},
+									maxLines: null
+								)
+							)
+						]
+					)
 				)
-			]
+			)
 		);
 	}
 
@@ -1253,78 +1265,90 @@ class _SettingsFilterPageState extends State<SettingsFilterPage> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		return _SettingsPage(
-			title: 'Filter Settings',
-			children: [
-				Row(
-					crossAxisAlignment: CrossAxisAlignment.start,
+		return CupertinoPageScaffold(
+			resizeToAvoidBottomInset: false,
+			navigationBar: const CupertinoNavigationBar(
+				transitionBetweenRoutes: false,
+				middle: Text('Filter Settings')
+			),
+			child: SafeArea(
+				child: Column(
 					children: [
-						const Padding(
-							padding: EdgeInsets.only(top: 4),
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Icon(CupertinoIcons.scope),
-									SizedBox(width: 8),
-									Text('Filters')
-								]
+						const SizedBox(height: 16),
+						Row(
+							crossAxisAlignment: CrossAxisAlignment.start,
+							children: [
+								const SizedBox(width: 16),
+								const Padding(
+									padding: EdgeInsets.only(top: 4),
+									child: Row(
+										mainAxisSize: MainAxisSize.min,
+										children: [
+											Icon(CupertinoIcons.scope),
+											SizedBox(width: 8),
+											Text('Filters')
+										]
+									)
+								),
+								const SizedBox(width: 32),
+								Expanded(
+									child: Wrap(
+										alignment: WrapAlignment.end,
+										spacing: 16,
+										runSpacing: 16,
+										children: [
+											CupertinoButton.filled(
+												padding: const EdgeInsets.all(8),
+												borderRadius: BorderRadius.circular(4),
+												minSize: 0,
+												child: const Text('Test filter setup'),
+												onPressed: () {
+													Navigator.of(context).push(FullWidthCupertinoPageRoute(
+														builder: (context) => const FilterTestPage()
+													));
+												}
+											),
+											CupertinoSegmentedControl<bool>(
+												padding: EdgeInsets.zero,
+												groupValue: showFilterRegex,
+												children: const {
+													false: Padding(
+														padding: EdgeInsets.all(8),
+														child: Text('Wizard')
+													),
+													true: Padding(
+														padding: EdgeInsets.all(8),
+														child: Text('Regex')
+													)
+												},
+												onValueChanged: (v) => setState(() {
+													showFilterRegex = v;
+												})
+											)
+										]
+									)
+								),
+								const SizedBox(width: 16)
+							]
+						),
+						if (settings.filterError != null) Padding(
+							padding: const EdgeInsets.only(top: 16),
+							child: Text(
+								settings.filterError!,
+								style: const TextStyle(
+									color: Colors.red
+								)
 							)
 						),
-						const SizedBox(width: 32),
 						Expanded(
-							child: Wrap(
-								alignment: WrapAlignment.end,
-								spacing: 16,
-								runSpacing: 16,
-								children: [
-									CupertinoButton.filled(
-										padding: const EdgeInsets.all(8),
-										borderRadius: BorderRadius.circular(4),
-										minSize: 0,
-										child: const Text('Test filter setup'),
-										onPressed: () {
-											Navigator.of(context).push(FullWidthCupertinoPageRoute(
-												builder: (context) => const FilterTestPage()
-											));
-										}
-									),
-									CupertinoSegmentedControl<bool>(
-										padding: EdgeInsets.zero,
-										groupValue: showFilterRegex,
-										children: const {
-											false: Padding(
-												padding: EdgeInsets.all(8),
-												child: Text('Wizard')
-											),
-											true: Padding(
-												padding: EdgeInsets.all(8),
-												child: Text('Regex')
-											)
-										},
-										onValueChanged: (v) => setState(() {
-											showFilterRegex = v;
-										})
-									)
-								]
+							child: FilterEditor(
+								showRegex: showFilterRegex,
+								fillHeight: true
 							)
 						)
 					]
-				),
-				const SizedBox(height: 16),
-				if (settings.filterError != null) Padding(
-					padding: const EdgeInsets.only(bottom: 16),
-					child: Text(
-						settings.filterError!,
-						style: const TextStyle(
-							color: Colors.red
-						)
-					)
-				),
-				FilterEditor(
-					showRegex: showFilterRegex
-				),
-				const SizedBox(height: 16),
-			]
+				)
+			)
 		);
 	}
 }
