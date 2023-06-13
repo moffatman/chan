@@ -1057,25 +1057,35 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					]
 				),
 				const SizedBox(height: 32),
-				Row(
+				const Row(
 					children: [
-						const Icon(CupertinoIcons.exclamationmark_square),
-						const SizedBox(width: 8),
-						const Text('Unsafe image peeking'),
-						const SizedBox(width: 8),
-						const _SettingsHelpButton(
-							helpText: 'When holding and dragging to peek at an image, it will start larger and will not be blurred.'
+						Icon(CupertinoIcons.exclamationmark_square),
+						SizedBox(width: 8),
+						Flexible(
+							child: Text('Image peeking')
 						),
-						const Spacer(),
-						CupertinoSwitch2(
-							value: settings.unsafeImagePeeking,
-							onChanged: (newValue) {
-								settings.unsafeImagePeeking = newValue;
-							}
+						SizedBox(width: 8),
+						_SettingsHelpButton(
+							helpText: 'You can hold on an image thumbnail to preview it. This setting adjusts whether it is blurred and what size it starts at.'
 						)
 					]
 				),
-				const SizedBox(height: 32),
+				Padding(
+					padding: const EdgeInsets.all(16),
+					child: CupertinoAdaptiveSegmentedControl<ImagePeekingSetting>(
+						children: const {
+							ImagePeekingSetting.disabled: (null, 'Off'),
+							ImagePeekingSetting.standard: (null, 'Obscured'),
+							ImagePeekingSetting.unsafe: (null, 'Small'),
+							ImagePeekingSetting.ultraUnsafe: (null, 'Full size')
+						},
+						groupValue: context.watch<EffectiveSettings>().imagePeeking,
+						onValueChanged: (setting) {
+							context.read<EffectiveSettings>().imagePeeking = setting;
+						}
+					)
+				),
+				const SizedBox(height: 16),
 				Row(
 					children: [
 						const Icon(CupertinoIcons.textformat_abc_dottedunderline),

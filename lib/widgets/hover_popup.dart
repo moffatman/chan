@@ -11,8 +11,19 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
-const _kSafeScaleStart = 0.1;
-const _kUnsafeScaleStart = 0.4;
+extension _MinimumScale on ImagePeekingSetting {
+	double get minimumScale => switch (this) {
+		ImagePeekingSetting.unsafe => 0.4,
+		ImagePeekingSetting.ultraUnsafe => 1.0,
+		_ => 0.1
+	};
+
+	bool get unsafe => switch (this) {
+		ImagePeekingSetting.unsafe => true,
+		ImagePeekingSetting.ultraUnsafe => true,
+		_ => false
+	};
+}
 
 enum HoverPopupStyle {
 	attached,
@@ -120,11 +131,12 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	}
 
 	void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
-		final unsafe = context.read<EffectiveSettings>().unsafeImagePeeking;
-		final minimumScale = unsafe ? _kUnsafeScaleStart : _kSafeScaleStart;
+		final setting = context.read<EffectiveSettings>().imagePeeking;
+		final size = MediaQuery.sizeOf(context);
+		final shortestSide = min(size.shortestSide, 400);
 		_touchGlobalKey?.currentState?.setScale(
-			blur: unsafe ? 0 : 20 - (25 * max(details.localOffsetFromOrigin.dy / min(400, MediaQuery.sizeOf(context).shortestSide - _touchStart!.dy), (-1 * details.localOffsetFromOrigin.dy) / min(400, _touchStart!.dy)).abs().clamp(0, 1)),
-			scale: minimumScale + (1.1 * ((unsafe ? details.localOffsetFromOrigin.distance : details.localOffsetFromOrigin.dx) / min(400, MediaQuery.sizeOf(context).shortestSide)).abs()).clamp(0, 1 - minimumScale)
+			blur: setting.unsafe ? 0 : 20 - (25 * max(details.localOffsetFromOrigin.dy / min(shortestSide, size.height - _touchStart!.dy), (-1 * details.localOffsetFromOrigin.dy) / min(shortestSide, _touchStart!.dy)).abs().clamp(0, 1)),
+			scale: setting.minimumScale + (1.1 * ((setting.unsafe ? details.localOffsetFromOrigin.distance : details.localOffsetFromOrigin.dx) / shortestSide).abs()).clamp(0, 1 - setting.minimumScale)
 		);
 	}
 
@@ -230,7 +242,11 @@ class _HoverPopupState<T> extends State<HoverPopup<T>> {
 	@override
 	Widget build(BuildContext context) {
 		return Listener(
-			onPointerDown: (e) => recognizer.addPointer(e),
+			onPointerDown: (e) {
+				if (context.read<EffectiveSettings>().imagePeeking != ImagePeekingSetting.disabled) {
+					recognizer.addPointer(e);
+				}
+			},
 			child: MouseRegion(
 				onEnter: (event) {
 					_maybeStart(event);
@@ -362,16 +378,15 @@ class _ScalerBlurrer extends StatefulWidget {
 }
 
 class _ScalerBlurrerState extends State<_ScalerBlurrer> {
-	double blur = 50.0;
-	double scale = _kSafeScaleStart;
+	late double blur;
+	late double scale;
 
 	@override
 	void initState() {
 		super.initState();
-		if (context.read<EffectiveSettings>().unsafeImagePeeking) {
-			blur = 0;
-			scale = _kUnsafeScaleStart;
-		}
+		final setting = context.read<EffectiveSettings>().imagePeeking;
+		scale = setting.minimumScale;
+		blur = setting.unsafe ? 0 : 50;
 	}
 
 	void setScale({

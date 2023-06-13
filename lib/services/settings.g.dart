@@ -257,7 +257,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       fontFamily: fields[125] as String?,
       autoCacheAttachments: fields[126] as AutoloadAttachmentsSetting?,
       exactTimeIsISO8601: fields[127] as bool?,
-      unsafeImagePeeking: fields[128] as bool?,
+      deprecatedUnsafeImagePeeking: fields[128] as bool?,
       showOverlaysInGallery: fields[129] as bool?,
       verticalTwoPaneMinimumPaneSize: fields[130] as double?,
       hiddenImageMD5s: (fields[131] as List?)?.cast<String>(),
@@ -274,13 +274,14 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       highlightRepeatingDigitsInPostIds: fields[142] as bool?,
       includeThreadsYouRepliedToWhenDeletingHistory: fields[143] as bool?,
       newPostHighlightBrightness: fields[144] as double?,
+      imagePeeking: fields[145] as ImagePeekingSetting?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(141)
+      ..writeByte(142)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -530,7 +531,7 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(127)
       ..write(obj.exactTimeIsISO8601)
       ..writeByte(128)
-      ..write(obj.unsafeImagePeeking)
+      ..write(obj.deprecatedUnsafeImagePeeking)
       ..writeByte(129)
       ..write(obj.showOverlaysInGallery)
       ..writeByte(130)
@@ -562,7 +563,9 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(143)
       ..write(obj.includeThreadsYouRepliedToWhenDeletingHistory)
       ..writeByte(144)
-      ..write(obj.newPostHighlightBrightness);
+      ..write(obj.newPostHighlightBrightness)
+      ..writeByte(145)
+      ..write(obj.imagePeeking);
   }
 
   @override
@@ -968,6 +971,55 @@ class AndroidGallerySavePathOrganizingAdapter
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is AndroidGallerySavePathOrganizingAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class ImagePeekingSettingAdapter extends TypeAdapter<ImagePeekingSetting> {
+  @override
+  final int typeId = 43;
+
+  @override
+  ImagePeekingSetting read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return ImagePeekingSetting.disabled;
+      case 1:
+        return ImagePeekingSetting.standard;
+      case 2:
+        return ImagePeekingSetting.unsafe;
+      case 3:
+        return ImagePeekingSetting.ultraUnsafe;
+      default:
+        return ImagePeekingSetting.disabled;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, ImagePeekingSetting obj) {
+    switch (obj) {
+      case ImagePeekingSetting.disabled:
+        writer.writeByte(0);
+        break;
+      case ImagePeekingSetting.standard:
+        writer.writeByte(1);
+        break;
+      case ImagePeekingSetting.unsafe:
+        writer.writeByte(2);
+        break;
+      case ImagePeekingSetting.ultraUnsafe:
+        writer.writeByte(3);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ImagePeekingSettingAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

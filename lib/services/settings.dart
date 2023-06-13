@@ -526,6 +526,18 @@ final allowedGoogleFonts = {
 	'Source Sans Pro': GoogleFonts.sourceSansPro
 };
 
+@HiveType(typeId: 43)
+enum ImagePeekingSetting {
+	@HiveField(0)
+	disabled,
+	@HiveField(1)
+	standard,
+	@HiveField(2)
+	unsafe,
+	@HiveField(3)
+	ultraUnsafe;
+}
+
 @HiveType(typeId: 0)
 class SavedSettings extends HiveObject {
 	@HiveField(0)
@@ -777,7 +789,7 @@ class SavedSettings extends HiveObject {
 	@HiveField(127)
 	bool exactTimeIsISO8601;
 	@HiveField(128)
-	bool unsafeImagePeeking;
+	bool deprecatedUnsafeImagePeeking;
 	@HiveField(129)
 	bool showOverlaysInGallery;
 	@HiveField(130)
@@ -810,6 +822,8 @@ class SavedSettings extends HiveObject {
 	bool includeThreadsYouRepliedToWhenDeletingHistory;
 	@HiveField(144)
 	double newPostHighlightBrightness;
+	@HiveField(145)
+	ImagePeekingSetting imagePeeking;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -939,7 +953,7 @@ class SavedSettings extends HiveObject {
 		this.fontFamily,
 		AutoloadAttachmentsSetting? autoCacheAttachments,
 		bool? exactTimeIsISO8601,
-		bool? unsafeImagePeeking,
+		bool? deprecatedUnsafeImagePeeking,
 		bool? showOverlaysInGallery,
 		double? verticalTwoPaneMinimumPaneSize,
 		List<String>? hiddenImageMD5s,
@@ -956,6 +970,7 @@ class SavedSettings extends HiveObject {
 		bool? highlightRepeatingDigitsInPostIds,
 		bool? includeThreadsYouRepliedToWhenDeletingHistory,
 		double? newPostHighlightBrightness,
+		ImagePeekingSetting? imagePeeking,
 	}): autoloadAttachments = autoloadAttachments ?? AutoloadAttachmentsSetting.wifi,
 		theme = theme ?? TristateSystemSetting.system,
 		hideOldStickiedThreads = hideOldStickiedThreads ?? false,
@@ -1112,7 +1127,7 @@ class SavedSettings extends HiveObject {
 		recordThreadsInHistory = recordThreadsInHistory ?? true,
 		autoCacheAttachments = autoCacheAttachments ?? AutoloadAttachmentsSetting.never,
 		exactTimeIsISO8601 = exactTimeIsISO8601 ?? false,
-		unsafeImagePeeking = unsafeImagePeeking ?? false,
+		deprecatedUnsafeImagePeeking = deprecatedUnsafeImagePeeking ?? false,
 		showOverlaysInGallery = showOverlaysInGallery ?? true,
 		verticalTwoPaneMinimumPaneSize = verticalTwoPaneMinimumPaneSize ?? -400,
 		hiddenImageMD5s = hiddenImageMD5s?.toSet() ?? {},
@@ -1127,7 +1142,8 @@ class SavedSettings extends HiveObject {
 		lastShareablePostsStyle = lastShareablePostsStyle ?? const ShareablePostsStyle(),
 		highlightRepeatingDigitsInPostIds = highlightRepeatingDigitsInPostIds ?? false,
 		includeThreadsYouRepliedToWhenDeletingHistory = includeThreadsYouRepliedToWhenDeletingHistory ?? false,
-		newPostHighlightBrightness = newPostHighlightBrightness ?? 0.1 {
+		newPostHighlightBrightness = newPostHighlightBrightness ?? 0.1,
+		imagePeeking = imagePeeking ?? (deprecatedUnsafeImagePeeking == true ? ImagePeekingSetting.unsafe : ImagePeekingSetting.standard) {
 			if (!this.appliedMigrations.contains('filters')) {
 				this.filterConfiguration = this.filterConfiguration.replaceAllMapped(RegExp(r'^(\/.*\/.*)(;save)(.*)$', multiLine: true), (m) {
 					return '${m.group(1)};save;highlight${m.group(3)}';
@@ -2087,13 +2103,6 @@ class EffectiveSettings extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	bool get unsafeImagePeeking => _settings.unsafeImagePeeking;
-	set unsafeImagePeeking(bool setting) {
-		_settings.unsafeImagePeeking = setting;
-		_settings.save();
-		notifyListeners();
-	}
-
 	bool get showOverlaysInGallery => _settings.showOverlaysInGallery;
 	set showOverlaysInGallery(bool setting) {
 		_settings.showOverlaysInGallery = setting;
@@ -2199,6 +2208,13 @@ class EffectiveSettings extends ChangeNotifier {
 	double get newPostHighlightBrightness => _settings.newPostHighlightBrightness;
 	set newPostHighlightBrightness(double setting) {
 		_settings.newPostHighlightBrightness = setting;
+		_settings.save();
+		notifyListeners();
+	}
+
+	ImagePeekingSetting get imagePeeking => _settings.imagePeeking;
+	set imagePeeking(ImagePeekingSetting setting) {
+		_settings.imagePeeking = setting;
 		_settings.save();
 		notifyListeners();
 	}
