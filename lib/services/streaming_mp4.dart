@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:chan/services/media.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -91,6 +92,16 @@ class _CachingFile extends EasyListenable {
 	String toString() => '_CachingFile(file: $file, statusCode: $statusCode, currentBytes: $currentBytes, totalBytes: $totalBytes, completer: $completer, lock: $lock, headers: $headers)';
 }
 
+typedef _RawRange = ({int start, int? inclusiveEnd});
+typedef _Range = ({int start, int inclusiveEnd});
+
+extension _Normalize on _RawRange {
+	_Range normalize(int fileLength) => (
+		start: start,
+		inclusiveEnd: inclusiveEnd ?? (fileLength - 1)
+	);
+}
+
 class VideoServer {
 	final client = HttpClient();
 	static VideoServer? _server;
@@ -126,10 +137,10 @@ class VideoServer {
 		required this.port,
 	});
 
-	static ({int start, int inclusiveEnd})? _parseRange(HttpHeaders headers) {
-		final match = RegExp(r'^bytes=(\d+)-(\d+)$').firstMatch(headers[HttpHeaders.rangeHeader]?.first ?? '');
+	static _RawRange? _parseRange(HttpHeaders headers) {
+		final match = RegExp(r'^bytes=(\d+)-(\d+)?$').firstMatch(headers[HttpHeaders.rangeHeader]?.first ?? '');
 		if (match != null) {
-			return (start: int.parse(match.group(1)!), inclusiveEnd: int.parse(match.group(2)!));
+			return (start: int.parse(match.group(1)!), inclusiveEnd: int.tryParse(match.group(2) ?? ''));
 		}
 		return null;
 	}
@@ -143,7 +154,7 @@ class VideoServer {
 			await request.response.close();
 			return;
 		}
-		final range = _parseRange(request.headers);
+		final range = _parseRange(request.headers)?.normalize(fileLength);
 		if (range != null) {
 			request.response.statusCode = HttpStatus.partialContent;
 			request.response.headers.set(HttpHeaders.contentRangeHeader, 'bytes ${range.start}-${range.inclusiveEnd}/$fileLength');
@@ -156,6 +167,37 @@ class VideoServer {
 		await request.response.close();
 	}
 
+	Future<void> _serveProxy(HttpRequest request, String digest) async {
+		final uri = _decodeDigest(digest);
+		try {
+			final upstream = await client.getUrl(uri);
+			final headers = _caches[digest]?.headers ?? {};
+			for (final header in headers.entries) {
+				upstream.headers.set(header.key, header.value);
+			}
+			final range = request.headers[HttpHeaders.rangeHeader]?.tryFirst;
+			if (range != null) {
+				upstream.headers.set(HttpHeaders.rangeHeader, range);
+			}
+			final upstreamResponse = await upstream.close();
+			request.response.contentLength = upstreamResponse.contentLength;
+			if (request.response.contentLength > (1024*50)) {
+				// This is not the intent of _serveProxy, it needs to be adjusted
+				// Report it to Crashlytics
+				Future.error(Exception('Too large proxy serve (${formatFilesize(request.response.contentLength)}) of $uri'), StackTrace.current);
+			}
+			request.response.statusCode = upstreamResponse.statusCode;
+			upstreamResponse.headers.forEach((key, values) {
+				request.response.headers.set(key, values.first);
+			});
+			await request.response.addStream(upstreamResponse);
+			await request.response.close();
+		}
+		on HttpException {
+			await request.response.close();
+		}
+	}
+
 	Future<void> _serveDownloadingFile(HttpRequest request, _CachingFile file) async {
 		request.response.bufferOutput = bufferOutput;
 		request.response.headers.set(HttpHeaders.contentTypeHeader, lookupMimeType(file.file.path) ?? 'video/mp4');
@@ -166,7 +208,7 @@ class VideoServer {
 			await request.response.close();
 			return;
 		}
-		final range = _parseRange(request.headers) ?? (start: 0, inclusiveEnd: file.totalBytes - 1);
+		final range = (_parseRange(request.headers) ?? (start: 0, inclusiveEnd: null)).normalize(file.totalBytes);
 		if ((1 + range.inclusiveEnd - range.start) != file.totalBytes) {
 			request.response.statusCode = HttpStatus.partialContent;
 			request.response.headers.set(HttpHeaders.contentRangeHeader, 'bytes ${range.start}-${range.inclusiveEnd}/${file.totalBytes}');
@@ -276,7 +318,16 @@ class VideoServer {
 			final currentlyDownloading = _caches[digest];
 			if (currentlyDownloading?.completer.isCompleted == false) {
 				// File is still downloading
-				_serveDownloadingFile(request, currentlyDownloading!);
+				final range = _parseRange(request.headers);
+				if (range != null && range.start > (currentlyDownloading!.currentBytes + 102400) && range.inclusiveEnd == null) {
+					// This is likely a request for the end of the file
+					// Serve it in parallel to allow playback to start
+					_serveProxy(request, digest);
+				}
+				else {
+					// Join and wait for the main download
+					_serveDownloadingFile(request, currentlyDownloading!);
+				}
 			}
 			else if (await file.exists()) {
 				// File exists, just stream it
