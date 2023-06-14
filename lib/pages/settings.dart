@@ -3581,7 +3581,13 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 		setState(() {
 			clearing = true;
 		});
-		await Persistence.clearFilesystemCaches(null);
+		try {
+			await Persistence.clearFilesystemCaches(null);
+		}
+		catch (e, st) {
+			Future.error(e, st); // Report to Crashlytics
+			alertError(context, e.toStringDio());
+		}
 		await _readFilesystemInfo();
 		setState(() {
 			clearing = false;
