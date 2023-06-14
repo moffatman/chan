@@ -2026,21 +2026,24 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														key: PageStorageKey('filtered list for ${widget.id}'),
 														delegate: SliverDontRebuildChildBuilderDelegate(
 															(context, childIndex) {
-																return Stack(
+																return Column(
+																	mainAxisSize: MainAxisSize.min,
+																	crossAxisAlignment: CrossAxisAlignment.stretch,
 																	children: [
-																		Builder(
-																			builder: (context) => _itemBuilder(context, filteredValues[childIndex])
-																		),
 																		IgnorePointer(
-																			child: Align(
-																				alignment: Alignment.topRight,
-																				child: Container(
-																					padding: const EdgeInsets.all(4),
-																					color: theme.primaryColor,
-																					child: Text('Filter reason:\n${filteredValues[childIndex].filterReason}', style: TextStyle(
-																						color: theme.backgroundColor
-																					))
-																				)
+																			child: Container(
+																				padding: const EdgeInsets.all(4),
+																				color: theme.primaryColor,
+																				child: Text('Filter reason:\n${filteredValues[childIndex].filterReason}', style: TextStyle(
+																					color: theme.backgroundColor
+																				))
+																			)
+																		),
+																		Container(
+																			color: theme.primaryColor,
+																			padding: const EdgeInsets.all(8),
+																			child: Builder(
+																				builder: (context) => _itemBuilder(context, filteredValues[childIndex])
 																			)
 																		)
 																	]
