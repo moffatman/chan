@@ -931,6 +931,7 @@ Future<void> editStringList({
 	required String name,
 	required String title
 }) async {
+	final theme = context.read<SavedTheme>();
 	await showCupertinoDialog(
 		barrierDismissible: true,
 		context: context,
@@ -990,7 +991,7 @@ Future<void> editStringList({
 										child: Container(
 											decoration: BoxDecoration(
 												borderRadius: const BorderRadius.all(Radius.circular(4)),
-												color: ChanceTheme.primaryColorOf(context).withOpacity(0.1)
+												color: theme.primaryColor.withOpacity(0.1)
 											),
 											padding: const EdgeInsets.only(left: 16),
 											child: Row(
@@ -1017,7 +1018,7 @@ Future<void> editStringList({
 									child: BackdropFilter(
 										filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
 											child: Container(
-											color: ChanceTheme.backgroundColorOf(context).withOpacity(0.1),
+											color: theme.backgroundColor.withOpacity(0.1),
 											child: Column(
 												mainAxisSize: MainAxisSize.min,
 												crossAxisAlignment: CrossAxisAlignment.stretch,
