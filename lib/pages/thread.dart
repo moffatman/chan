@@ -37,6 +37,7 @@ import 'package:chan/widgets/shareable_posts.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:chan/models/post.dart';
 import 'package:flutter/scheduler.dart';
@@ -748,12 +749,13 @@ class _ThreadPageState extends State<ThreadPage> {
 		else if (newThread.currentPage != lastPageNumber) {
 			lastPageNumber = newThread.currentPage;
 		}
-		if (_passedFirstLoad) {
-			// unseenPostIds is filled-up during PersistentThreadState thread setter
-			// This will clear out all the posts which were "seen" since last update
-			// and get the new posts from the new thread
-			newPostIds.clear();
-			newPostIds.addAll(tmpPersistentState.unseenPostIds.data);
+		final newPostIdsBefore = newPostIds.toSet();
+		// unseenPostIds is filled-up during PersistentThreadState thread setter
+		// This will clear out all the posts which were "seen" since last update
+		// and get the new posts from the new thread
+		newPostIds.clear();
+		newPostIds.addAll(tmpPersistentState.unseenPostIds.data);
+		if (_passedFirstLoad && !setEquals(newPostIdsBefore, newPostIds)) {
 			_listController.state?.forceRebuildId++; // To force widgets to re-build and re-compute [highlight]
 		}
 		// Don't show data if the thread switched
