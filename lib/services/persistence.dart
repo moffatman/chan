@@ -399,7 +399,10 @@ class Persistence extends ChangeNotifier {
 		}
 		int deletedSize = 0;
 		int deletedCount = 0;
-		await for (final child in temporaryDirectory.list(recursive: true)) {
+		await for (final child in temporaryDirectory.list(recursive: true).handleError(
+			(e) => print('Ignoring list error $e'),
+			test: (e) => e is FileSystemException)
+		) {
 			final stat = await child.stat();
 			if (stat.type == FileSystemEntityType.file) {
 				// Probably something from file_pickers
