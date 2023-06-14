@@ -624,6 +624,22 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		primarySubtreeParents[item.id] = item.parentIds.tryLast ?? -1;
 		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id));
 		onManuallyCollapsedItemsChanged?.call(manuallyCollapsedItems, primarySubtreeParents);
+		// Reveal any newly inserted items in the subtree below
+		final x = [
+			...item.parentIds,
+			item.id
+		];
+		newlyInsertedItems.removeWhere((w, _) {
+			if (w.length < (x.length + 1)) {
+				return false;
+			}
+			for (int i = 0; i < x.length; i++) {
+				if (w[i] != x[i]) {
+					return false;
+				}
+			}
+			return true;
+		});
 		onCollapseOrExpand?.call(item, false);
 		notifyListeners();
 	}

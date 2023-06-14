@@ -1,4 +1,6 @@
+import 'package:chan/util.dart';
 import 'package:chan/widgets/refreshable_list.dart';
+import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 
 class TreeDebuggingPage extends StatefulWidget {
@@ -80,6 +82,26 @@ class _TreeDebuggingPageState extends State<TreeDebuggingPage> {
 				initiallyCollapseSecondLevelReplies: false,
 				collapsedItemsShowBody: false
 			),
+			footer: CupertinoButton(
+				child: const Icon(CupertinoIcons.pencil),
+				onPressed: () async {
+					final list = <String>[];
+					await editStringList(
+						context: context,
+						list: list,
+						name: 'id',
+						title: 'ID chain'
+					);
+					final ids = list.tryMap((v) => int.tryParse(v)).toList();
+					if (ids.isNotEmpty) {
+						items.add(_DebuggingItem(
+							id: ids.last,
+							parentIds: ids.sublist(0, list.length - 1)
+						));
+						setState(() {});
+					}
+				}
+			)
 		);
 	}
 
