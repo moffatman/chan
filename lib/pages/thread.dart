@@ -619,7 +619,8 @@ class _ThreadPageState extends State<ThreadPage> {
 		  // No reason to check yet
 			return;
 		}
-		final match = RegExp(r'(?<=^| )\/([^/ ]+)\/(?=$| )').firstMatch('${persistentState.thread?.title} ${persistentState.thread?.posts_.tryFirst?.text}');
+		final regex = RegExp(r'(?<=^| )\/([^/ ]+)\/(?=$| )');
+		final match = regex.firstMatch('${persistentState.thread?.title} ${persistentState.thread?.posts_.tryFirst?.name} ${persistentState.thread?.posts_.tryFirst?.text}');
 		if (match == null) {
 			// no /general/ found
 			return;
@@ -638,9 +639,11 @@ class _ThreadPageState extends State<ThreadPage> {
 		final catalog = await imageboard.site.getCatalog(widget.thread.board, interactive: _foreground, acceptCachedAfter: DateTime.now().subtract(const Duration(seconds: 30)));
 		ThreadIdentifier candidate = widget.thread;
 		for (final thread in catalog) {
-			if (thread.id > candidate.id &&
-			    '${thread.title} ${thread.posts_.tryFirst?.text}'.toLowerCase().contains(pattern)) {
-				candidate = thread.identifier;
+			if (thread.id > candidate.id) {
+				final threadPattern = regex.firstMatch('${thread.title} ${thread.posts_.tryFirst?.name} ${thread.posts_.tryFirst?.text}')?.group(0)?.toLowerCase();
+				if (threadPattern == pattern) {
+					candidate = thread.identifier;
+				}
 			}
 		}
 		if (candidate != widget.thread && candidate != _rejectedNewGeneralSuggestion) {
