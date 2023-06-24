@@ -78,7 +78,7 @@ class TeXRendering {
 			}
 		);
 		await webView.run();
-		await webView.webViewController.addWebMessageListener(WebMessageListener(
+		await webView.webViewController?.addWebMessageListener(WebMessageListener(
 			jsObjectName: 'TeXViewRenderedCallback',
 			allowedOriginRules: {'*'},
 			onPostMessage: (message, origin, isMainFrame, replyProxy) {
@@ -99,7 +99,7 @@ class TeXRendering {
 		final imageCompleter = Completer<Uint8List>();
 		_webView.runWithResource((combo) async {
 			_renderCallbackCompleter = Completer<String>();
-			await combo.webView.webViewController.evaluateJavascript(source: 'var jsonData = ${getRawData(TeXView(
+			await combo.webView.webViewController?.evaluateJavascript(source: 'var jsonData = ${getRawData(TeXView(
 				child: TeXViewDocument('\$\$${tex.replaceAll('<br>', '')}\$\$'),
 				style: TeXViewStyle(
 					fontStyle: TeXViewFontStyle(fontSize: (16 * textScaleFactor).round())
@@ -112,7 +112,7 @@ class TeXRendering {
 			else {
 				await Future.delayed(const Duration(milliseconds: 50));
 				final ltwh = returnData.split(',').map((s) => double.parse(s)).toList();
-				final imageData = await combo.webView.webViewController.takeScreenshot(screenshotConfiguration: ScreenshotConfiguration(
+				final imageData = await combo.webView.webViewController?.takeScreenshot(screenshotConfiguration: ScreenshotConfiguration(
 					rect: InAppWebViewRect(
 						x: ltwh[0] - 5,
 						y: ltwh[1] - 5,

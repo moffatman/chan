@@ -31,7 +31,7 @@ dependencies:
   share_plus: ^6.2.0
   share_extend: "^2.0.0"
   extended_image_library: ^3.3.0
-  flutter_inappwebview: ^6.0.0-beta.22
+  flutter_inappwebview: ^6.0.0-beta.24+1
   home_indicator: ^2.0.0
   linkify: ^4.1.0
   auto_size_text: ^3.0.0
@@ -174,3 +174,6 @@ dependency_overrides:
       path: dio
   markdown: ^7.0.1 # Needed to resolve a conflict with flutter_tex
   screenshot: ^2.1.0 # Needed to run with current moffatman/flutter tag
+  flutter_inappwebview:
+    git:
+      url: https://github.com/moffatman/flutter_inappwebview.git
