@@ -724,10 +724,10 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 		newThread.mergePosts(tmpPersistentState.thread, tmpPersistentState.thread?.posts ?? [], site.placeOrphanPost);
 		await _loadReferencedThreads();
+		_checkForNewGeneral();
 		if (newThread != tmpPersistentState.thread) {
 			await newThread.preinit();
 			tmpPersistentState.thread = newThread;
-			_checkForNewGeneral();
 			if (persistentState == tmpPersistentState) {
 				zone.addThread(newThread);
 				if (_replyBoxKey.currentState?.hasSpamFilteredPostToCheck ?? false) {
