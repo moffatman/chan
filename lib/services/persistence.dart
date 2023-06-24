@@ -452,11 +452,17 @@ class Persistence extends ChangeNotifier {
 	Future<void> _cleanupThreads(Duration olderThan) async {
 		final deadline = DateTime.now().subtract(olderThan);
 		final toPreserve = savedPosts.values.map((v) => '$imageboardKey/${v.post.board}/${v.post.threadId}').toSet();
+		toPreserve.addAll(browserState.threadWatches.keys.map((v) => '$imageboardKey/${v.board}/${v.id}'));
 		final toDelete = sharedThreadStateBox.keys.where((key) {
-			return (key as String).startsWith('$imageboardKey/')
-			  && (sharedThreadStateBox.get(key)?.youIds.isEmpty ?? false) // no replies
-				&& (sharedThreadStateBox.get(key)?.lastOpenedTime.isBefore(deadline) ?? false) // not opened recently
-				&& (!toPreserve.contains(key)); // connect to a saved post
+			if (!(key as String).startsWith('$imageboardKey/')) {
+				// Not this Persistence
+				return false;
+			}
+			final ts = sharedThreadStateBox.get(key);
+			return (ts?.youIds.isEmpty ?? false) // no replies
+				  && (ts?.lastOpenedTime.isBefore(deadline) ?? false) // not opened recently
+					&& (ts?.savedTime == null) // not saved
+				  && (!toPreserve.contains(key)); // connect to a saved post or thread watch
 		});
 		if (toDelete.isNotEmpty) {
 			print('[$imageboardKey] Deleting ${toDelete.length} thread states');
