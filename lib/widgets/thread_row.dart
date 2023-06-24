@@ -34,6 +34,7 @@ class ThreadRow extends StatelessWidget {
 	final PostSpanRenderOptions? baseOptions;
 	final bool dimReadThreads;
 	final bool showLastReplies;
+	final bool showPageNumber;
 
 	const ThreadRow({
 		required this.thread,
@@ -49,6 +50,7 @@ class ThreadRow extends StatelessWidget {
 		this.baseOptions,
 		this.dimReadThreads = false,
 		this.showLastReplies = false,
+		this.showPageNumber = false,
 		Key? key
 	}) : super(key: key);
 
@@ -118,6 +120,12 @@ class ThreadRow extends StatelessWidget {
 							if (latestThread.isDeleted) ... [
 								Icon(CupertinoIcons.trash, color: grey, size: 18),
 								const SizedBox(width: 4),
+							],
+							if (showPageNumber && latestThread.currentPage != null) ...[
+								Icon(CupertinoIcons.doc, size: 18, color: otherMetadataColor),
+								const SizedBox(width: 2),
+								Text('${latestThread.currentPage}', style: TextStyle(color: otherMetadataColor)),
+								const SizedBox(width: 6)
 							],
 							if (settings.showTimeInCatalogStats) ...[
 								if (settings.showClockIconInCatalog) ...[

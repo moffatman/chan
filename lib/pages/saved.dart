@@ -342,6 +342,7 @@ class _SavedPageState extends State<SavedPage> {
 																			contentFocus: settings.useCatalogGrid,
 																			showBoardName: true,
 																			showSiteIcon: true,
+																			showPageNumber: true,
 																			dimReadThreads: watch.item.zombie,
 																			onThumbnailLoadError: (error, stackTrace) {
 																				watch.imageboard.threadWatcher.fixBrokenThread(watch.item.threadIdentifier);
