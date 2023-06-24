@@ -336,6 +336,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 							padding: EdgeInsets.zero,
 							child: const Icon(CupertinoIcons.gear),
 							onPressed: () async {
+								final theme = context.read<SavedTheme>();
 								await showCupertinoDialog(
 									barrierDismissible: true,
 									context: context,
@@ -382,7 +383,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																	child: Container(
 																		decoration: BoxDecoration(
 																			borderRadius: const BorderRadius.all(Radius.circular(4)),
-																			color: ChanceTheme.primaryColorOf(context).withOpacity(0.1)
+																			color: theme.primaryColor.withOpacity(0.1)
 																		),
 																		padding: const EdgeInsets.only(left: 16),
 																		child: Row(
@@ -413,7 +414,7 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																child: BackdropFilter(
 																	filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
 																		child: Container(
-																		color: ChanceTheme.backgroundColorOf(context).withOpacity(0.1),
+																		color: theme.backgroundColor.withOpacity(0.1),
 																		child: Column(
 																			mainAxisSize: MainAxisSize.min,
 																			crossAxisAlignment: CrossAxisAlignment.stretch,
