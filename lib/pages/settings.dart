@@ -3412,6 +3412,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					padding: const EdgeInsets.all(16),
 					child: CupertinoAdaptiveSegmentedControl<int>(
 						children: const {
+							1: (null, '1 day'),
 							3: (null, '3 days'),
 							7: (null, '7 days'),
 							14: (null, '14 days'),
