@@ -377,7 +377,23 @@ class _ThreadPageState extends State<ThreadPage> {
 			semanticRootIds: [widget.boardSemanticId, 0],
 			onNeedScrollToPost: (post) {
 				_weakNavigatorKey.currentState!.popAllExceptFirst();
-				Future.delayed(const Duration(milliseconds: 150), () => _listController.animateTo((val) => val.id == post.id));
+				if (post.threadIdentifier == widget.thread) {
+					Future.delayed(const Duration(milliseconds: 150), () => _listController.animateTo((val) => val.id == post.id));
+				}
+				else {
+					(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
+						builder: (ctx) => ImageboardScope(
+							imageboardKey: null,
+							imageboard: context.read<Imageboard>(),
+							overridePersistence: context.read<Persistence>(),
+							child: ThreadPage(
+								thread: post.threadIdentifier,
+								initialPostId: post.id,
+								boardSemanticId: -1
+							)
+						)
+					));
+				}
 			},
 			onNeedUpdateWithStubItems: (ids) async {
 				await _updateWithStubItems(ids);
