@@ -400,6 +400,13 @@ class PostQuoteLinkSpan extends PostSpan {
 		if (options.showCrossThreadLabel) {
 			text += ' (Cross-thread)';
 		}
+		final Color color;
+		if (actualThreadId != zone.primaryThreadId && zone.findThread(actualThreadId) != null) {
+			color = theme.secondaryColor.shiftHue(-20);
+		}
+		else {
+			color = theme.secondaryColor;
+		}
 		final recognizer = options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () {
 			if (settings.openCrossThreadLinksInNewTab) {
 				final newTabZone = context.read<OpenInNewTabZone?>();
@@ -427,7 +434,7 @@ class PostQuoteLinkSpan extends PostSpan {
 		return (TextSpan(
 			text: text,
 			style: options.baseTextStyle.copyWith(
-				color: options.overrideTextColor ?? theme.secondaryColor,
+				color: options.overrideTextColor ?? color,
 				decoration: TextDecoration.underline
 			),
 			recognizer: recognizer
@@ -522,7 +529,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			}
 		}
 
-		if (actualThreadId != null && (board != zone.board || zone.findThread(actualThreadId) == null)) {
+		if (actualThreadId != null && (board != zone.board || zone.findThread(actualThreadId) == null || (actualThreadId != zone.primaryThreadId && actualThreadId == postId))) {
 			return _buildCrossThreadLink(context, zone, settings, theme, options, actualThreadId);
 		}
 		else {
