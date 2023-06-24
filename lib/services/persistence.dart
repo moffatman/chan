@@ -247,24 +247,24 @@ class Persistence extends ChangeNotifier {
 
 	static Future<void> _backupBox(String boxPath, String backupBoxPath, {bool gzip = false}) async {
 		if (await File(boxPath).exists()) {
-				if (gzip) {
-					await copyGzipped(boxPath, backupBoxPath);
-				}
-				else {
-					await File(boxPath).copy(backupBoxPath);
-				}
-			}
-			else if (await File(boxPath.toLowerCase()).exists()) {
-				if (gzip) {
-					await copyGzipped(boxPath.toLowerCase(), backupBoxPath);
-				}
-				else {
-					await File(boxPath.toLowerCase()).copy(backupBoxPath);
-				}
+			if (gzip) {
+				await copyGzipped(boxPath, backupBoxPath);
 			}
 			else {
-				print('Box not found on disk: $boxPath');
+				await File(boxPath).copy(backupBoxPath);
 			}
+		}
+		else if (await File(boxPath.toLowerCase()).exists()) {
+			if (gzip) {
+				await copyGzipped(boxPath.toLowerCase(), backupBoxPath);
+			}
+			else {
+				await File(boxPath.toLowerCase()).copy(backupBoxPath);
+			}
+		}
+		else {
+			print('Box not found on disk: $boxPath');
+		}
 	}
 
 	static void _startBoxBackupTimer(String name, {bool gzip = false}) {
