@@ -723,10 +723,10 @@ class _ThreadPageState extends State<ThreadPage> {
 			notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: _foreground);
 		}
 		newThread.mergePosts(tmpPersistentState.thread, tmpPersistentState.thread?.posts ?? [], site.placeOrphanPost);
+		await _loadReferencedThreads();
 		if (newThread != tmpPersistentState.thread) {
 			await newThread.preinit();
 			tmpPersistentState.thread = newThread;
-			await _loadReferencedThreads();
 			_checkForNewGeneral();
 			if (persistentState == tmpPersistentState) {
 				zone.addThread(newThread);
