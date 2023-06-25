@@ -81,6 +81,11 @@ class AttachmentThumbnail extends StatelessWidget {
 		final spoiler = attachment.spoiler && !revealSpoilers;
 		double effectiveWidth = width ?? settings.thumbnailSize;
 		double effectiveHeight = height ?? settings.thumbnailSize;
+		if (shrinkHeight && fit == BoxFit.contain && attachment.width != null && attachment.height != null) {
+			if (attachment.aspectRatio > 1) {
+				effectiveHeight = effectiveWidth / attachment.aspectRatio;
+			}
+		}
 		if (rotate90DegreesClockwise) {
 			final tmp = effectiveWidth;
 			effectiveWidth = effectiveHeight;
