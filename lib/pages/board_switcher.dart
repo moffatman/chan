@@ -415,9 +415,9 @@ class _BoardSwitcherPageState extends State<BoardSwitcherPage> {
 																	filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
 																		child: Container(
 																		color: theme.backgroundColor.withOpacity(0.1),
-																		child: Column(
-																			mainAxisSize: MainAxisSize.min,
-																			crossAxisAlignment: CrossAxisAlignment.stretch,
+																		height: 128,
+																		child: ListView(
+																			padding: EdgeInsets.zero,
 																			children: [
 																				CupertinoButton(
 																					child: const Row(
