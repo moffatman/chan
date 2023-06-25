@@ -1215,6 +1215,40 @@ class PostDividerSpan extends PostSpan {
 	buildText() => '\n';
 }
 
+class PostShiftJISSpan extends PostSpan {
+	final PostSpan child;
+
+	const PostShiftJISSpan(this.child);
+
+	@override
+	build(context, zone, settings, theme, options) {
+		final child1 = Text.rich(
+			TextSpan(
+				text: child.buildText(),
+				style: options.baseTextStyle.copyWith(
+					color: options.overrideTextColor,
+					fontFamily: 'Submona'
+				),
+				recognizer: options.recognizer,
+				onEnter: options.onEnter,
+				onExit: options.onExit
+			)
+		);
+		return WidgetSpan(
+			child: Padding(
+				padding: const EdgeInsets.all(8),
+				child: options.avoidBuggyClippers ? child1 : SingleChildScrollView(
+					scrollDirection: Axis.horizontal,
+					child: child1
+				)
+			)
+		);
+	}
+
+	@override
+	buildText() => '[sjis]${child.buildText()}[/sjis]';
+}
+
 class PostSpanZone extends StatelessWidget {
 	final int postId;
 	final WidgetBuilder builder;

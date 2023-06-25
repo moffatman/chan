@@ -287,6 +287,9 @@ class Site4Chan extends ImageboardSite {
 								popup: PostNodeSpan(tableRows)
 							));
 					}
+					else if (node.classes.contains('sjis')) {
+						elements.add(PostShiftJISSpan(makeSpan(board, threadId, node.innerHtml)));
+					}
 					else {
 						elements.add(PostTextSpan(node.text));
 					}

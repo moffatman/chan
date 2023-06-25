@@ -65,6 +65,10 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 		return null;
 	}
 	static PostNodeSpan makeSpan(String board, int threadId, Map<String, int> linkedPostThreadIds, String data) {
+		const kShiftJISStart = '&lt;span class=&quot;sjis&quot;&gt;';
+		if (data.contains(kShiftJISStart)) {
+			data = data.replaceAll(kShiftJISStart, '<span class="sjis">').replaceAll('[/spoiler]', '</span>');
+		}
 		final body = parseFragment(data.replaceAll('<wbr>', '').replaceAll('\n', ''));
 		final List<PostSpan> elements = [];
 		int spoilerSpanId = 0;
@@ -146,6 +150,9 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 						else {
 							elements.add(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml));
 						}
+					}
+					else if (node.classes.contains('sjis')) {
+						elements.add(PostShiftJISSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml)));
 					}
 					else {
 						elements.addAll(Site4Chan.parsePlaintext(node.text));
