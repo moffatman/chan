@@ -653,13 +653,13 @@ class _ThreadPageState extends State<ThreadPage> {
 		}
 	}
 
-	Future<void> _loadReferencedThreads({bool setStateAfterwards = false}) async {
+	Future<bool> _loadReferencedThreads({bool setStateAfterwards = false}) async {
 		final imageboard = context.read<Imageboard>();
 		final tmpZone = zone;
 		final newThread = persistentState.thread;
 		if (newThread == null || tmpZone.primaryThread != newThread.identifier) {
 			// The thread switched
-			return;
+			return false;
 		}
 		final crossThreads = <ThreadIdentifier, Set<int>>{};
 		for (final id in newThread.posts.expand((p) => p.span.referencedPostIdentifiers)) {
@@ -669,12 +669,14 @@ class _ThreadPageState extends State<ThreadPage> {
 			crossThreads.putIfAbsent(id.thread, () => {}).add(id.postId!);
 		}
 		// Only fetch threads with multiple cross-referenced posts
+		bool loadedAnything = false;
 		crossThreads.removeWhere((thread, postIds) => postIds.length < 2);
 		for (final id in crossThreads.keys) {
 			if (tmpZone.findThread(id.id) != null) {
 				// This thread is already fetched
 				continue;
 			}
+			loadedAnything = true;
 			final threadState = imageboard.persistence.getThreadState(id);
 			final cachedThread = await threadState.getThread();
 			if (cachedThread != null) {
@@ -694,6 +696,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		if (setStateAfterwards && mounted) {
 			setState(() {});
 		}
+		return loadedAnything;
 	}
 
 	Future<Thread> _getUpdatedThread() async {
@@ -726,7 +729,7 @@ class _ThreadPageState extends State<ThreadPage> {
 			notifications.updateLastKnownId(watch, newThread.posts.last.id, foreground: _foreground);
 		}
 		newThread.mergePosts(tmpPersistentState.thread, tmpPersistentState.thread?.posts ?? [], site.placeOrphanPost);
-		await _loadReferencedThreads();
+		final loadedReferencedThreads = await _loadReferencedThreads();
 		_checkForNewGeneral();
 		if (newThread != tmpPersistentState.thread) {
 			await newThread.preinit();
@@ -774,7 +777,7 @@ class _ThreadPageState extends State<ThreadPage> {
 		// and get the new posts from the new thread
 		newPostIds.clear();
 		newPostIds.addAll(tmpPersistentState.unseenPostIds.data);
-		if (_passedFirstLoad && !setEquals(newPostIdsBefore, newPostIds)) {
+		if (loadedReferencedThreads || !setEquals(newPostIdsBefore, newPostIds)) {
 			_listController.state?.forceRebuildId++; // To force widgets to re-build and re-compute [highlight]
 		}
 		// Don't show data if the thread switched
