@@ -729,7 +729,11 @@ class AttachmentViewerController extends ChangeNotifier {
 	String get downloadExt {
 		final cached = _cachedFile;
 		if (cached != null) {
-			return '.${cached.path.split('.').last}';
+			final basename = cached.path.split('/').last;
+			final parts = basename.split('.');
+			if (parts.length > 1) {
+				return '.${parts.last}';
+			}
 		}
 		return attachment.ext;
 	}
