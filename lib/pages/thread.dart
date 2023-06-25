@@ -671,7 +671,9 @@ class _ThreadPageState extends State<ThreadPage> {
 		// Only fetch threads with multiple cross-referenced posts
 		bool loadedAnything = false;
 		crossThreads.removeWhere((thread, postIds) => postIds.length < 2);
-		for (final id in crossThreads.keys) {
+		for (final pair in crossThreads.entries) {
+			final id = pair.key;
+			final postIds = pair.value;
 			if (tmpZone.findThread(id.id) != null) {
 				// This thread is already fetched
 				continue;
@@ -679,7 +681,8 @@ class _ThreadPageState extends State<ThreadPage> {
 			loadedAnything = true;
 			final threadState = imageboard.persistence.getThreadState(id);
 			final cachedThread = await threadState.getThread();
-			if (cachedThread != null) {
+			if (cachedThread != null && postIds.every((neededId) => cachedThread.posts_.any((p) => p.id == neededId))) {
+				// Thread is already cached, and it has all the posts we need
 				tmpZone.addThread(cachedThread);
 				continue;
 			}
