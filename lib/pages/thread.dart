@@ -1382,7 +1382,8 @@ class _ThreadPageState extends State<ThreadPage> {
 																	required List<ParentAndChildIdentifier>? stubChildIds
 																}) {
 																	final settings = context.watch<EffectiveSettings>();
-																	final unseenCount = collapsedChildIds.where((id) => newPostIds.contains(id)).length;
+																	final newCount = collapsedChildIds.where((id) => newPostIds.contains(id)).length;
+																	final unseenCount = collapsedChildIds.where((id) => persistentState.unseenPostIds.data.contains(id)).length;
 																	if (peekContentHeight != null && value != null) {
 																		final style = TextStyle(
 																			color: theme.secondaryColor,
@@ -1412,7 +1413,11 @@ class _ThreadPageState extends State<ThreadPage> {
 																							style: style
 																						),
 																						if (unseenCount > 0) Text(
-																							' ($unseenCount new)',
+																							' ($unseenCount unseen)',
+																							style: style
+																						)
+																						else if (newCount > 0) Text(
+																							' ($newCount new)',
 																							style: style
 																						)
 																					]
@@ -1460,7 +1465,10 @@ class _ThreadPageState extends State<ThreadPage> {
 																						'${collapsedChildIds.length}${collapsedChildIds.contains(-1) ? '+' : ''} '
 																					),
 																					if (unseenCount > 0) Text(
-																						'($unseenCount new) '
+																						'($unseenCount unseen) ',
+																					)
+																					else if (newCount > 0) Text(
+																						'($newCount new) ',
 																					),
 																					const Icon(CupertinoIcons.chevron_down, size: 20)
 																				]
