@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:chan/models/attachment.dart';
 import 'package:chan/services/imageboard.dart';
@@ -71,6 +72,8 @@ class ThreadRow extends StatelessWidget {
 		Color? otherMetadataColor;
 		String? threadAsUrl;
 		final firstUrl = latestThread.attachments.tryFirstWhere((a) => a.type == AttachmentType.url)?.url;
+		final backgroundColor = isSelected ? theme.primaryColorWithBrightness(0.2) : theme.backgroundColor;
+		final borderColor = isSelected ? theme.primaryColorWithBrightness(0.8) : theme.primaryColorWithBrightness(0.2);
 		if (firstUrl != null) {
 			threadAsUrl = Uri.parse(firstUrl).host.replaceFirst(RegExp(r'^www\.'), '');
 		}
@@ -88,6 +91,7 @@ class ThreadRow extends StatelessWidget {
 			otherMetadataColor = unseenReplyCount <= 0 && unseenImageCount <= 0 ? grey : null;
 		}
 		final watch = threadState?.threadWatch;
+		final dimThisThread = dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0);
 		Widget makeCounters() => Container(
 			decoration: BoxDecoration(
 				borderRadius: settings.useFullWidthForCatalogCounters ? null : const BorderRadius.only(topLeft: Radius.circular(8)),
@@ -311,8 +315,8 @@ class ThreadRow extends StatelessWidget {
 														child: Container(
 															decoration: BoxDecoration(
 																borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
-																color: theme.backgroundColor,
-																border: Border.all(color: theme.primaryColorWithBrightness(0.2))
+																color: backgroundColor,
+																border: Border.all(color: borderColor)
 															),
 															padding: const EdgeInsets.all(2),
 															child: Icon(attachment.icon, size: 16)
@@ -416,7 +420,7 @@ class ThreadRow extends StatelessWidget {
 		final showFlairInContentFocus = !settings.catalogGridModeAttachmentInBackground && !(latestThread.title ?? '').contains(latestThread.flair?.name ?? '');
 		List<Widget> buildContentFocused() {
 			final attachment = latestThread.attachments.tryFirst;
-			final att = attachment == null ? null : LayoutBuilder(
+			Widget? att = attachment == null ? null : LayoutBuilder(
 				builder: (context, constraints) {
 					return PopupAttachment(
 						attachment: attachment,
@@ -444,8 +448,8 @@ class ThreadRow extends StatelessWidget {
 												borderRadius: settings.catalogGridModeAttachmentInBackground ?
 													const BorderRadius.only(bottomLeft: Radius.circular(6)) :
 													const BorderRadius.only(topLeft: Radius.circular(6)),
-												color: theme.backgroundColor,
-												border: Border.all(color: theme.primaryColorWithBrightness(0.2))
+												color: backgroundColor,
+												border: Border.all(color: borderColor)
 											),
 											padding: const EdgeInsets.all(2),
 											child: Row(
@@ -506,14 +510,25 @@ class ThreadRow extends StatelessWidget {
 				)
 			);
 			if (settings.catalogGridModeAttachmentInBackground) {
+				if (dimThisThread) {
+					att = ColorFiltered(
+						colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.saturation),
+						child: att
+					);
+				}
 				return [
 					if (att != null) att,
 					Align(
 						alignment: Alignment.bottomCenter,
-						child: Container(
-							color: theme.backgroundColor.withOpacity(0.75),
-							width: double.infinity,
-							child: txt
+						child: ClipRect(
+							child: BackdropFilter(
+								filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+								child: Container(
+									color: backgroundColor.withOpacity(0.8),
+									width: double.infinity,
+									child: txt
+								)
+							)
 						)
 					)
 				];
@@ -551,7 +566,7 @@ class ThreadRow extends StatelessWidget {
 			mainAxisSize: MainAxisSize.max,
 			children: settings.imagesOnRight ? rowChildren().reversed.toList() : rowChildren()
 		);
-		if (dimReadThreads && !isSelected && threadState != null && (watch == null || unseenReplyCount == 0)) {
+		if (dimThisThread) {
 			content = Opacity(
 				opacity: 0.5,
 				child: content
@@ -573,8 +588,8 @@ class ThreadRow extends StatelessWidget {
 					child: Container(
 						decoration: BoxDecoration(
 							borderRadius: const BorderRadius.only(bottomRight: Radius.circular(6)),
-							color: theme.backgroundColor,
-							border: Border.all(color: theme.primaryColorWithBrightness(0.2))
+							color: backgroundColor,
+							border: Border.all(color: borderColor)
 						),
 						padding: const EdgeInsets.all(2),
 						child: Text(latestThread.flair!.name)
@@ -586,8 +601,8 @@ class ThreadRow extends StatelessWidget {
 						child: Container(
 							decoration: BoxDecoration(
 								borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
-								color: theme.backgroundColor,
-								border: Border.all(color: theme.primaryColorWithBrightness(0.2))
+								color: backgroundColor,
+								border: Border.all(color: borderColor)
 							),
 							padding: const EdgeInsets.only(top: 2, bottom: 2, left: 6, right: 6),
 							child: Row(
@@ -606,8 +621,8 @@ class ThreadRow extends StatelessWidget {
 		);
 		return Container(
 			decoration: BoxDecoration(
-				color: isSelected ? theme.primaryColorWithBrightness(0.4) : theme.backgroundColor,
-				border: contentFocus ? Border.all(color: theme.primaryColorWithBrightness(0.2)) : null,
+				color: backgroundColor,
+				border: contentFocus ? Border.all(color: borderColor) : null,
 				borderRadius: borderRadius
 			),
 			margin: (contentFocus && contentFocusBorderRadiusAndPadding) ? const EdgeInsets.all(4) : null,
