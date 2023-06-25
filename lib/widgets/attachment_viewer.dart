@@ -714,7 +714,7 @@ class AttachmentViewerController extends ChangeNotifier {
 
 	bool get canShare => (overrideSource ?? _cachedFile) != null;
 
-	Future<File> getFile() async {
+	File getFile() {
 		if (overrideSource != null) {
 			return File(overrideSource!.path);
 		}
@@ -726,19 +726,30 @@ class AttachmentViewerController extends ChangeNotifier {
 		}
 	}
 
+	String get downloadExt {
+		final cached = _cachedFile;
+		if (cached != null) {
+			return '.${cached.path.split('.').last}';
+		}
+		return attachment.ext;
+	}
+
+	String get downloadFilename {
+		return attachment.filename.replaceFirst(RegExp(r'\..+$'), downloadExt);
+	}
+
 	Future<File> _moveToShareCache() async {
 		final systemTempDirectory = Persistence.temporaryDirectory;
 		final shareDirectory = await (Directory('${systemTempDirectory.path}/sharecache')).create(recursive: true);
-		final newFilename = attachment.id.toString() + attachment.ext.replaceFirst('webm', Platform.isAndroid ? 'webm' : 'mp4');
-		File? originalFile = await getFile();
-		return await originalFile.copy('${shareDirectory.path}/$newFilename');
+		final newFilename = '${attachment.id}$downloadExt';
+		return await getFile().copy('${shareDirectory.path}/$newFilename');
 	}
 
 	Future<void> share(Rect? sharePosition) async {
 		await shareOne(
 			context: context,
 			text: (await _moveToShareCache()).path,
-			subject: attachment.filename,
+			subject: downloadFilename,
 			type: "file",
 			sharePositionOrigin: sharePosition
 		);
@@ -764,15 +775,15 @@ class AttachmentViewerController extends ChangeNotifier {
 				album ??= await PhotoManager.editor.darwin.createAlbum('Chance');
 				final shareCachedFile = await _moveToShareCache();
 				final asAsset = attachment.type == AttachmentType.image ? 
-					await PhotoManager.editor.saveImageWithPath(shareCachedFile.path, title: attachment.filename) :
-					await PhotoManager.editor.saveVideo(shareCachedFile, title: attachment.filename);
+					await PhotoManager.editor.saveImageWithPath(shareCachedFile.path, title: downloadFilename) :
+					await PhotoManager.editor.saveVideo(shareCachedFile, title: downloadFilename);
 				await PhotoManager.editor.copyAssetToPath(asset: asAsset!, pathEntity: album!);
 				_isDownloaded = true;
 			}
 			else if (Platform.isAndroid) {
 				settings.androidGallerySavePath ??= await pickDirectory();
 				if (settings.androidGallerySavePath != null) {
-					File source = (await getFile());
+					File source = getFile();
 					try {
 						await saveFile(
 							sourcePath: source.path,
@@ -1178,7 +1189,7 @@ class AttachmentViewer extends StatelessWidget {
 							Navigator.of(context, rootNavigator: true).pop();
 							await controller.download();
 							// ignore: use_build_context_synchronously
-							showToast(context: context, message: 'Downloaded ${controller.attachment.filename}', icon: CupertinoIcons.cloud_download);
+							showToast(context: context, message: 'Downloaded ${controller.downloadFilename}', icon: CupertinoIcons.cloud_download);
 						},
 						child: const Text('Download')
 					),

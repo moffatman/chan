@@ -807,7 +807,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													if (!download) return;
 													await currentController.download();
 													if (!mounted) return;
-													showToast(context: context, message: 'Downloaded ${currentAttachment.attachment.filename}', icon: CupertinoIcons.cloud_download);
+													showToast(context: context, message: 'Downloaded ${currentController.downloadFilename}', icon: CupertinoIcons.cloud_download);
 												} : null,
 												child: currentController.isDownloaded ? const Icon(CupertinoIcons.cloud_download_fill) : const Icon(CupertinoIcons.cloud_download)
 											),
