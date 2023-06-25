@@ -152,7 +152,7 @@ class FoolFuukaArchive extends ImageboardSiteArchive {
 						}
 					}
 					else if (node.classes.contains('sjis')) {
-						elements.add(PostShiftJISSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml)));
+						elements.add(PostShiftJISSpan(makeSpan(board, threadId, linkedPostThreadIds, node.innerHtml).buildText()));
 					}
 					else {
 						elements.addAll(Site4Chan.parsePlaintext(node.text));

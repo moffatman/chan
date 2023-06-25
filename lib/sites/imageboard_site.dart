@@ -967,7 +967,7 @@ abstract class ImageboardSite extends ImageboardSiteArchive {
 	String get siteType;
 	String get siteData;
 	String get defaultUsername;
-	List<ImageboardSnippet> getBoardSnippets(String board) => [];
+	Iterable<ImageboardSnippet> getBoardSnippets(String board) => const Iterable.empty();
 	CaptchaRequest? getBannedCaptchaRequest(bool cloudflare) => null;
 	Future<String> getBannedReason(CaptchaSolution captchaSolution) async => 'Unknown';
 	Future<List<ImageboardBoard>> getBoardsForQuery(String query) async => [];

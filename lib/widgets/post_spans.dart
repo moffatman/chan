@@ -1216,15 +1216,15 @@ class PostDividerSpan extends PostSpan {
 }
 
 class PostShiftJISSpan extends PostSpan {
-	final PostSpan child;
+	final String text;
 
-	const PostShiftJISSpan(this.child);
+	const PostShiftJISSpan(this.text);
 
 	@override
 	build(context, zone, settings, theme, options) {
 		final child1 = Text.rich(
 			TextSpan(
-				text: child.buildText(),
+				text: text,
 				style: options.baseTextStyle.copyWith(
 					color: options.overrideTextColor,
 					fontFamily: 'Submona'
@@ -1246,7 +1246,7 @@ class PostShiftJISSpan extends PostSpan {
 	}
 
 	@override
-	buildText() => '[sjis]${child.buildText()}[/sjis]';
+	buildText() => '[sjis]$text[/sjis]';
 }
 
 class PostSpanZone extends StatelessWidget {

@@ -288,7 +288,7 @@ class Site4Chan extends ImageboardSite {
 							));
 					}
 					else if (node.classes.contains('sjis')) {
-						elements.add(PostShiftJISSpan(makeSpan(board, threadId, node.innerHtml)));
+						elements.add(PostShiftJISSpan(makeSpan(board, threadId, node.innerHtml).buildText()));
 					}
 					else {
 						elements.add(PostTextSpan(node.text));
@@ -958,40 +958,42 @@ class Site4Chan extends ImageboardSite {
 	String get defaultUsername => 'Anonymous';
 	
 	@override
-	List<ImageboardSnippet> getBoardSnippets(String board) {
+	Iterable<ImageboardSnippet> getBoardSnippets(String board) sync* {
 		if (board == 'g') {
-			return const [
-				ImageboardSnippet(
-					icon: CupertinoIcons.chevron_left_slash_chevron_right,
-					name: 'Code',
-					start: '[code]',
-					end: '[/code]',
-					previewBuilder: PostCodeSpan.new
-				)
-			];
+			yield const ImageboardSnippet(
+				icon: CupertinoIcons.chevron_left_slash_chevron_right,
+				name: 'Code',
+				start: '[code]',
+				end: '[/code]',
+				previewBuilder: PostCodeSpan.new
+			);
+		}
+		else if (board == 'jp') {
+			yield const ImageboardSnippet(
+				icon: CupertinoIcons.text_justify,
+				name: 'Shift-JIS',
+				start: '[sjis]',
+				end: '[/sjis]',
+				previewBuilder: PostShiftJISSpan.new
+			);
 		}
 		else if (board == 'sci') {
-			return const [
-				ImageboardSnippet(
-					icon: CupertinoIcons.function,
-					name: 'Math',
-					start: '[math]',
-					end: '[/math]',
-					previewBuilder: PostTeXSpan.new
-				)
-			];
+			yield const ImageboardSnippet(
+				icon: CupertinoIcons.function,
+				name: 'Math',
+				start: '[math]',
+				end: '[/math]',
+				previewBuilder: PostTeXSpan.new
+			);
 		}
-		else if (persistence.getBoard(board).spoilers == true) {
-			return const [
-				ImageboardSnippet(
-					icon: CupertinoIcons.eye_slash,
-					name: 'Spoiler',
-					start: '[spoiler]',
-					end: '[/spoiler]'
-				)
-			];
+		if (persistence.getBoard(board).spoilers == true) {
+			yield const ImageboardSnippet(
+				icon: CupertinoIcons.eye_slash,
+				name: 'Spoiler',
+				start: '[spoiler]',
+				end: '[/spoiler]'
+			);
 		}
-		return [];
 	}
 
 	@override
