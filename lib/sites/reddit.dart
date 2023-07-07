@@ -529,7 +529,7 @@ class SiteReddit extends ImageboardSite {
 						threadId: id,
 						id: data['name'],
 						ext: url.ext,
-						filename: Uri.tryParse(url.url)?.pathSegments.last ?? '',
+						filename: Uri.tryParse(url.url)?.pathSegments.tryLast ?? '',
 						url: url.url,
 						width: data['preview']['images'][0]['source']['width'],
 						height: data['preview']['images'][0]['source']['height'],
@@ -547,7 +547,7 @@ class SiteReddit extends ImageboardSite {
 					threadId: id,
 					id: data['name'],
 					ext: url.ext,
-					filename: Uri.tryParse(url.url)?.pathSegments.last ?? '',
+					filename: Uri.tryParse(url.url)?.pathSegments.tryLast ?? '',
 					url: url.url,
 					thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
 						'url': url.url
