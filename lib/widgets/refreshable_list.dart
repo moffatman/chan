@@ -2332,7 +2332,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	final Map<(int, bool), List<Completer<void>>> _itemCacheCallbacks = {};
 	int? currentTargetIndex;
 	bool? _useTree;
-	final Set<int> _newInsertIndices = {};
+	final Map<int, RefreshableListItem<T>> _newInsertIndices = {};
 	RefreshableListController() {
 		_slowScrollSubscription = _scrollStream.bufferTime(const Duration(milliseconds: 100)).where((batch) => batch.isNotEmpty).listen(_onSlowScroll);
 		SchedulerBinding.instance.endOfFrame.then((_) => _onScrollControllerNotification());
@@ -2463,7 +2463,7 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 		_useTree = state?.useTree;
 		for (int i = 0; i < _items.length; i++) {
 			if (isItemHidden(_items[i].item) == TreeItemCollapseType.newInsertCollapsed) {
-				_newInsertIndices.add(i);
+				_newInsertIndices[i] = _items[i].item;
 			}
 		}
 		WidgetsBinding.instance.addPostFrameCallback((_) => notifyListeners());
@@ -2691,17 +2691,25 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 	}
 
 	void didFinishLayout(int startIndex, int endIndex) {
-		for (int i = startIndex; i <= endIndex; i++) {
-			_tryCachingItem(i, _items[i]);
-		}
-		_newInsertIndices.removeWhere((i) {
-			if (i < startIndex || i >= endIndex) {
-				// i >= endIndex is used to always reveal the last item
-				state?._refreshableTreeItems.revealNewInsert(_items[i].item);
-				return true;
+		if (state?._searchFilter == null) {
+			for (int i = startIndex; i <= endIndex; i++) {
+				_tryCachingItem(i, _items[i]);
 			}
-			return false;
-		});
+			_newInsertIndices.removeWhere((i, item) {
+				if (i < startIndex || i >= endIndex) {
+					// i >= endIndex is used to always reveal the last item
+					state?._refreshableTreeItems.revealNewInsert(item);
+					return true;
+				}
+				return false;
+			});
+		}
+		else {
+			for (final item in _newInsertIndices.values) {
+				state?._refreshableTreeItems.revealNewInsert(item);
+			}
+			_newInsertIndices.clear();
+		}
 		if (state?._needToTransitionNewlyInsertedItems ?? false) {
 			bool removedAnyCaches = false;
 			for (final key in state?._refreshableTreeItems.newlyInsertedItems.keys ?? const Iterable<List<int>>.empty()) {
