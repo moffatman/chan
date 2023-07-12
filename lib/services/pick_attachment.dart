@@ -10,11 +10,13 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/services/clipboard_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -39,7 +41,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 }) {
 	final gallery = AttachmentPickingSource(
 		name: 'Image Gallery',
-		icon: CupertinoIcons.photo,
+		icon: Adaptive.icons.photo,
 		pick: () => FilePicker.platform.pickFiles(type: FileType.image).then((x) => x?.files.single.path)
 	);
 	final videoGallery = AttachmentPickingSource(
@@ -90,7 +92,7 @@ List<AttachmentPickingSource> getAttachmentSources({
 	final theme = context.read<SavedTheme>();
 	final saved = AttachmentPickingSource(
 		name: 'Saved Attachments',
-		icon: CupertinoIcons.bookmark,
+		icon: Adaptive.icons.bookmark,
 		pick: () {
 			final savedAttachments = context.read<Persistence>().savedAttachments.values.toList();
 			savedAttachments.sort((a, b) => b.savedTime.compareTo(a.savedTime));
@@ -252,7 +254,7 @@ Future<File?> pickAttachment({
 							if (loadingPick) Positioned.fill(
 								child: Container(
 									color: theme.backgroundColor.withOpacity(0.5),
-									child: const CupertinoActivityIndicator()
+									child: const CircularProgressIndicator.adaptive()
 								)
 							)
 						]

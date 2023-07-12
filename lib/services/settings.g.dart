@@ -275,13 +275,16 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       includeThreadsYouRepliedToWhenDeletingHistory: fields[143] as bool?,
       newPostHighlightBrightness: fields[144] as double?,
       imagePeeking: fields[145] as ImagePeekingSetting?,
-    );
+    )
+      ..useMaterialStyle = fields[146] as bool?
+      ..useAndroidDrawer = fields[147] as bool?
+      ..useMaterialRoutes = fields[148] as bool?;
   }
 
   @override
   void write(BinaryWriter writer, SavedSettings obj) {
     writer
-      ..writeByte(142)
+      ..writeByte(145)
       ..writeByte(0)
       ..write(obj.autoloadAttachments)
       ..writeByte(1)
@@ -565,7 +568,13 @@ class SavedSettingsAdapter extends TypeAdapter<SavedSettings> {
       ..writeByte(144)
       ..write(obj.newPostHighlightBrightness)
       ..writeByte(145)
-      ..write(obj.imagePeeking);
+      ..write(obj.imagePeeking)
+      ..writeByte(146)
+      ..write(obj.useMaterialStyle)
+      ..writeByte(147)
+      ..write(obj.useAndroidDrawer)
+      ..writeByte(148)
+      ..write(obj.useMaterialRoutes);
   }
 
   @override

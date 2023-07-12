@@ -18,11 +18,10 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/context_menu.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_switch2.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -148,85 +147,84 @@ class _SavedPageState extends State<SavedPage> {
 	}
 
 	Widget _placeholder(String message) {
-		return Container(
-			decoration: BoxDecoration(
-				color: ChanceTheme.backgroundColorOf(context),
-			),
-			child: Center(
+		return AdaptiveScaffold(
+			body: Center(
 				child: Text(message)
 			)
 		);
 	}
 
-	ObstructingPreferredSizeWidget _watchedNavigationBar() {
+	AdaptiveBar _watchedNavigationBar() {
 		final settings = context.watch<EffectiveSettings>();
-		return CupertinoNavigationBar(
-			transitionBetweenRoutes: false,
-			middle: const Text('Watched Threads'),
-			trailing: CupertinoButton(
-				padding: EdgeInsets.zero,
-				child: const Icon(CupertinoIcons.sort_down),
-				onPressed: () {
-					showCupertinoModalPopup<DateTime>(
-						context: context,
-						builder: (context) => CupertinoActionSheet(
-							title: const Text('Sort by...'),
-							actions: {
-								ThreadSortingMethod.lastPostTime: 'Last Reply',
-								ThreadSortingMethod.lastReplyByYouTime: 'Last Reply by You',
-							}.entries.map((entry) => CupertinoActionSheetAction2(
-								child: Text(entry.value, style: TextStyle(
-									fontWeight: entry.key == settings.watchedThreadsSortingMethod ? FontWeight.bold : null
-								)),
-								onPressed: () {
-									settings.watchedThreadsSortingMethod = entry.key;
-									Navigator.of(context, rootNavigator: true).pop();
-								}
-							)).toList(),
-							cancelButton: CupertinoActionSheetAction2(
-								child: const Text('Cancel'),
-								onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+		return AdaptiveBar(
+			title: const Text('Watched Threads'),
+			actions: [
+				CupertinoButton(
+					padding: EdgeInsets.zero,
+					child: const Icon(CupertinoIcons.sort_down),
+					onPressed: () {
+						showAdaptiveModalPopup<DateTime>(
+							context: context,
+							builder: (context) => AdaptiveActionSheet(
+								title: const Text('Sort by...'),
+								actions: {
+									ThreadSortingMethod.lastPostTime: 'Last Reply',
+									ThreadSortingMethod.lastReplyByYouTime: 'Last Reply by You',
+								}.entries.map((entry) => AdaptiveActionSheetAction(
+									child: Text(entry.value, style: TextStyle(
+										fontWeight: entry.key == settings.watchedThreadsSortingMethod ? FontWeight.bold : null
+									)),
+									onPressed: () {
+										settings.watchedThreadsSortingMethod = entry.key;
+										Navigator.of(context, rootNavigator: true).pop();
+									}
+								)).toList(),
+								cancelButton: AdaptiveActionSheetAction(
+									child: const Text('Cancel'),
+									onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+								)
 							)
-						)
-					);
-				}
-			)
+						);
+					}
+				)
+			]
 		);
 	}
 
-	ObstructingPreferredSizeWidget _savedNavigationBar(String title) {
+	AdaptiveBar _savedNavigationBar(String title) {
 		final settings = context.watch<EffectiveSettings>();
-		return CupertinoNavigationBar(
-			transitionBetweenRoutes: false,
-			middle: Text(title),
-			trailing: CupertinoButton(
-				padding: EdgeInsets.zero,
-				child: const Icon(CupertinoIcons.sort_down),
-				onPressed: () {
-					showCupertinoModalPopup<DateTime>(
-						context: context,
-						builder: (context) => CupertinoActionSheet(
-							title: const Text('Sort by...'),
-							actions: {
-								ThreadSortingMethod.savedTime: 'Saved Date',
-								ThreadSortingMethod.lastPostTime: 'Posted Date',
-							}.entries.map((entry) => CupertinoActionSheetAction2(
-								child: Text(entry.value, style: TextStyle(
-									fontWeight: entry.key == settings.savedThreadsSortingMethod ? FontWeight.bold : null
-								)),
-								onPressed: () {
-									settings.savedThreadsSortingMethod = entry.key;
-									Navigator.of(context, rootNavigator: true).pop();
-								}
-							)).toList(),
-							cancelButton: CupertinoActionSheetAction2(
-								child: const Text('Cancel'),
-								onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+		return AdaptiveBar(
+			title: Text(title),
+			actions: [
+				CupertinoButton(
+					padding: EdgeInsets.zero,
+					child: const Icon(CupertinoIcons.sort_down),
+					onPressed: () {
+						showAdaptiveModalPopup<DateTime>(
+							context: context,
+							builder: (context) => AdaptiveActionSheet(
+								title: const Text('Sort by...'),
+								actions: {
+									ThreadSortingMethod.savedTime: 'Saved Date',
+									ThreadSortingMethod.lastPostTime: 'Posted Date',
+								}.entries.map((entry) => AdaptiveActionSheetAction(
+									child: Text(entry.value, style: TextStyle(
+										fontWeight: entry.key == settings.savedThreadsSortingMethod ? FontWeight.bold : null
+									)),
+									onPressed: () {
+										settings.savedThreadsSortingMethod = entry.key;
+										Navigator.of(context, rootNavigator: true).pop();
+									}
+								)).toList(),
+								cancelButton: AdaptiveActionSheetAction(
+									child: const Text('Cancel'),
+									onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+								)
 							)
-						)
-					);
-				}
-			)
+						);
+					}
+				)
+			]
 		);
 	}
 
@@ -301,7 +299,7 @@ class _SavedPageState extends State<SavedPage> {
 															),
 															if (watch.imageboard.persistence.getThreadStateIfExists(watch.item.threadIdentifier)?.savedTime != null) ContextMenuAction(
 																child: const Text('Un-save thread'),
-																trailingIcon: CupertinoIcons.bookmark_fill,
+																trailingIcon: Adaptive.icons.bookmarkFilled,
 																onPressed: () {
 																	final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
 																	threadState.savedTime = null;
@@ -311,7 +309,7 @@ class _SavedPageState extends State<SavedPage> {
 															)
 															else ContextMenuAction(
 																child: const Text('Save thread'),
-																trailingIcon: CupertinoIcons.bookmark,
+																trailingIcon: Adaptive.icons.bookmark,
 																onPressed: () {
 																	final threadState = watch.imageboard.persistence.getThreadState(watch.item.threadIdentifier);
 																	threadState.savedTime = DateTime.now();
@@ -562,9 +560,8 @@ class _SavedPageState extends State<SavedPage> {
 					}
 				),
 				MultiMasterPane<_PostThreadCombo>(
-					navigationBar: const CupertinoNavigationBar(
-						transitionBetweenRoutes: false,
-						middle: Text('Your Posts')
+					navigationBar: const AdaptiveBar(
+						title: Text('Your Posts')
 					),
 					icon: CupertinoIcons.pencil,
 					masterBuilder: (context, selected, setter) {
@@ -810,7 +807,7 @@ class _SavedPageState extends State<SavedPage> {
 				),
 				MultiMasterPane<ImageboardScoped<SavedAttachment>>(
 					title: const Text('Saved Attachments'),
-					icon: CupertinoIcons.photo,
+					icon: Adaptive.icons.photo,
 					masterBuilder: (context, selected, setter) => AnimatedBuilder(
 						key: _savedAttachmentsAnimatedBuilderKey,
 						animation: savedAttachmentsNotifiersAnimation,
@@ -875,21 +872,21 @@ class _SavedPageState extends State<SavedPage> {
 											child: CupertinoButton(
 												padding: const EdgeInsets.all(8),
 												onPressed: list.isNotEmpty ? () async {
-													final ok = await showCupertinoDialog<bool>(
+													final ok = await showAdaptiveDialog<bool>(
 														context: context,
 														barrierDismissible: true,
-														builder: (context) => CupertinoAlertDialog2(
+														builder: (context) => AdaptiveAlertDialog(
 															title: const Text('Are you sure?'),
 															content: const Text('All saved attachments will be removed.'),
 															actions: [
-																CupertinoDialogAction2(
-																	onPressed: () => Navigator.pop(context),
-																	child: const Text('Cancel')
-																),
-																CupertinoDialogAction2(
+																AdaptiveDialogAction(
 																	isDestructiveAction: true,
 																	onPressed: () => Navigator.pop(context, true),
 																	child: const Text('Delete all')
+																),
+																AdaptiveDialogAction(
+																	onPressed: () => Navigator.pop(context),
+																	child: const Text('Cancel')
 																)
 															]
 														)
@@ -1043,7 +1040,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 										onPressed: w.update,
 										child: const Icon(CupertinoIcons.refresh)
 									),
-									CupertinoSwitch2(
+									AdaptiveSwitch(
 										value: w.active,
 										onChanged: (val) {
 											if (val) {
@@ -1074,10 +1071,10 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 											final currentDistributor = await UnifiedPush.getDistributor();
 											final distributors = await UnifiedPush.getDistributors();
 											if (!mounted) return;
-											final newDistributor = await showCupertinoDialog<String>(
+											final newDistributor = await showAdaptiveDialog<String>(
 												context: context,
 												barrierDismissible: true,
-												builder: (context) => CupertinoAlertDialog2(
+												builder: (context) => AdaptiveAlertDialog(
 													title: const Text('UnifiedPush Distributor'),
 													content: Column(
 														mainAxisSize: MainAxisSize.min,
@@ -1100,12 +1097,12 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 														]
 													),
 													actions: [
-														...distributors.map((distributor) => CupertinoDialogAction2(
+														...distributors.map((distributor) => AdaptiveDialogAction(
 															isDefaultAction: distributor == currentDistributor,
 															onPressed: () => Navigator.pop(context, distributor),
 															child: Text(distributor == 'com.moffatman.chan' ? 'Firebase (requires Google services)' : distributor)
 														)),
-														CupertinoDialogAction2(
+														AdaptiveDialogAction(
 															onPressed: () => Navigator.pop(context),
 															child: const Text('Cancel')
 														)
@@ -1126,7 +1123,7 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 								const SizedBox(
 									height: 60
 								),
-								CupertinoSwitch2(
+								AdaptiveSwitch(
 									value: settings.usePushNotifications ?? false,
 									onChanged: (val) {
 										settings.usePushNotifications = val;

@@ -1,7 +1,8 @@
 import 'package:chan/services/theme.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
-class CupertinoTextField2 extends StatelessWidget {
+class AdaptiveTextField extends StatelessWidget {
 	final bool autocorrect;
 	final Iterable<String>? autofillHints;
 	final bool autofocus;
@@ -28,7 +29,7 @@ class CupertinoTextField2 extends StatelessWidget {
 	final TextAlign textAlign;
 	final TextCapitalization textCapitalization;
 
-	const CupertinoTextField2({
+	const AdaptiveTextField({
 		this.autocorrect = true,
 		this.autofillHints = const [],
 		this.autofocus = false,
@@ -46,10 +47,7 @@ class CupertinoTextField2 extends StatelessWidget {
 		this.onSubmitted,
 		this.onTap,
 		this.placeholder,
-		this.placeholderStyle = const TextStyle(
-      fontWeight: FontWeight.w400,
-      color: CupertinoColors.placeholderText,
-    ),
+		this.placeholderStyle,
 		this.smartDashesType,
 		this.smartQuotesType,
 		this.spellCheckConfiguration,
@@ -62,6 +60,53 @@ class CupertinoTextField2 extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		if (ChanceTheme.materialOf(context)) {
+			return TextField(
+				autocorrect: autocorrect,
+				autofillHints: autofillHints,
+				autofocus: autofocus,
+				contextMenuBuilder: contextMenuBuilder,
+				controller: controller,
+				decoration: InputDecoration(
+					fillColor: ChanceTheme.textFieldColorOf(context),
+					border: OutlineInputBorder(
+						borderSide: BorderSide(
+							color: ChanceTheme.primaryColorWithBrightness70Of(context),
+							width: 0
+						)
+					),
+					enabledBorder: OutlineInputBorder(
+						borderSide: BorderSide(
+							color: ChanceTheme.primaryColorWithBrightness70Of(context),
+							width: 0
+						)
+					),
+					labelText: placeholder,
+					labelStyle: TextStyle(
+						color: ChanceTheme.primaryColorWithBrightness50Of(context)
+					).merge(placeholderStyle),
+					suffixIcon: suffix,
+					isDense: true
+				),
+				enabled: enabled,
+				enableIMEPersonalizedLearning: enableIMEPersonalizedLearning,
+				enableSuggestions: enableSuggestions,
+				focusNode: focusNode,
+				keyboardAppearance: keyboardAppearance,
+				keyboardType: keyboardType,
+				maxLines: maxLines,
+				minLines: minLines,
+				onChanged: onChanged,
+				onSubmitted: onSubmitted,
+				onTap: onTap,
+				smartDashesType: smartDashesType,
+				smartQuotesType: smartQuotesType,
+				spellCheckConfiguration: spellCheckConfiguration,
+				style: style,
+				textAlign: textAlign,
+				textCapitalization: textCapitalization
+			);
+		}
 		return CupertinoTextField(
 			autocorrect: autocorrect,
 			autofillHints: autofillHints,
@@ -91,7 +136,10 @@ class CupertinoTextField2 extends StatelessWidget {
 			onSubmitted: onSubmitted,
 			onTap: onTap,
 			placeholder: placeholder,
-			placeholderStyle: placeholderStyle,
+			placeholderStyle: placeholderStyle ?? const TextStyle(
+				fontWeight: FontWeight.w400,
+				color: CupertinoColors.placeholderText,
+			),
 			smartDashesType: smartDashesType,
 			smartQuotesType: smartQuotesType,
 			spellCheckConfiguration: spellCheckConfiguration,
@@ -103,7 +151,7 @@ class CupertinoTextField2 extends StatelessWidget {
 	}
 }
 
-class CupertinoSearchTextField2 extends StatelessWidget {
+class AdaptiveSearchTextField extends StatelessWidget {
 	final TextEditingController? controller;
 	final bool enableIMEPersonalizedLearning;
 	final FocusNode? focusNode;
@@ -112,11 +160,12 @@ class CupertinoSearchTextField2 extends StatelessWidget {
 	final VoidCallback? onSuffixTap;
 	final VoidCallback? onTap;
 	final String? placeholder;
-	final Widget prefixIcon;
+	final Widget? prefixIcon;
 	final SmartDashesType? smartDashesType;
 	final SmartQuotesType? smartQuotesType;
+	final bool? suffixVisible;
 
-	const CupertinoSearchTextField2({
+	const AdaptiveSearchTextField({
 		this.controller,
 		this.enableIMEPersonalizedLearning = true,
 		this.focusNode,
@@ -128,11 +177,55 @@ class CupertinoSearchTextField2 extends StatelessWidget {
 		this.prefixIcon = const Icon(CupertinoIcons.search),
 		this.smartDashesType,
 		this.smartQuotesType,
+		this.suffixVisible,
 		super.key
 	});
 
 	@override
 	Widget build(BuildContext context) {
+		if (ChanceTheme.materialOf(context)) {
+			final border = OutlineInputBorder(
+				borderSide: BorderSide(
+					color: ChanceTheme.searchTextFieldColorOf(context),
+					width: 0
+				)
+			);
+			return TextField(
+				decoration: InputDecoration(
+					fillColor: ChanceTheme.searchTextFieldColorOf(context),
+					filled: true,
+					suffixIcon: (suffixVisible ?? (controller?.text.isNotEmpty ?? false) ? IconButton(
+						icon: const Icon(Icons.clear),
+						color: ChanceTheme.primaryColorOf(context),
+						onPressed: onSuffixTap ?? () {
+							controller?.clear();
+							focusNode?.unfocus();
+						},
+					) : null),
+					border: border,
+					enabledBorder: border,
+					focusedBorder: null,
+					labelText: placeholder,
+					prefixIcon: prefixIcon ?? const SizedBox.shrink(),
+					prefixIconConstraints: prefixIcon == null ? const BoxConstraints.tightFor(width: 12, height: 48) : null,
+					prefixIconColor: ChanceTheme.primaryColorOf(context),
+					labelStyle: TextStyle(
+						color: ChanceTheme.primaryColorOf(context)
+					),
+					floatingLabelBehavior: FloatingLabelBehavior.never,
+					contentPadding: const EdgeInsetsDirectional.only(end: 8),
+					isDense: true
+				),
+				controller: controller,
+				enableIMEPersonalizedLearning: enableIMEPersonalizedLearning,
+				focusNode: focusNode,
+				onChanged: onChanged,
+				onSubmitted: onSubmitted,
+				onTap: onTap,
+				smartDashesType: smartDashesType,
+				smartQuotesType: smartQuotesType
+			);
+		}
 		return CupertinoSearchTextField(
 			backgroundColor: ChanceTheme.searchTextFieldColorOf(context),
 			controller: controller,
@@ -140,10 +233,15 @@ class CupertinoSearchTextField2 extends StatelessWidget {
 			focusNode: focusNode,
 			onChanged: onChanged,
 			onSubmitted: onSubmitted,
+			suffixMode: switch(suffixVisible) {
+				true => OverlayVisibilityMode.always,
+				null => OverlayVisibilityMode.editing,
+				false => OverlayVisibilityMode.never
+			},
 			onSuffixTap: onSuffixTap,
 			onTap: onTap,
 			placeholder: placeholder,
-			prefixIcon: prefixIcon,
+			prefixIcon: prefixIcon ?? const SizedBox.shrink(),
 			smartDashesType: smartDashesType,
 			smartQuotesType: smartQuotesType
 		);

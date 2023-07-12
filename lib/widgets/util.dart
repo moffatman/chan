@@ -15,10 +15,8 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -48,19 +46,19 @@ Future<void> alertError(BuildContext context, String error, {
 	Map<String, VoidCallback> actions = const {},
 	bool barrierDismissible = false
 }) async {
-	await showCupertinoDialog(
+	await showAdaptiveDialog(
 		context: context,
 		barrierDismissible: barrierDismissible,
 		builder: (context) {
-			return CupertinoAlertDialog2(
+			return AdaptiveAlertDialog(
 				title: const Text('Error'),
 				content: Text(error),
 				actions: [
-					for (final action in actions.entries) CupertinoDialogAction2(
+					for (final action in actions.entries) AdaptiveDialogAction(
 						onPressed: action.value,
 						child: Text(action.key)
 					),
-					CupertinoDialogAction2(
+					AdaptiveDialogAction(
 						child: const Text('OK'),
 						onPressed: () {
 							Navigator.of(context).pop();
@@ -121,11 +119,11 @@ Future<T> modalLoad<T>(BuildContext context, String title, Future<T> Function(Mo
 	final rootNavigator = Navigator.of(context, rootNavigator: true);
 	final controller = ModalLoadController();
 	final timer = Timer(wait, () {
-		showCupertinoDialog(
+		showAdaptiveDialog(
 			context: context,
 			barrierDismissible: false,
 			builder: (context) => StatefulBuilder(
-				builder: (context, setDialogState) => CupertinoAlertDialog2(
+				builder: (context, setDialogState) => AdaptiveAlertDialog(
 					title: Text(title),
 					content: Column(
 						mainAxisSize: MainAxisSize.min,
@@ -403,7 +401,7 @@ Future<void> openBrowser(BuildContext context, Uri url, {bool fromShareOne = fal
 		final settings = context.read<EffectiveSettings>();
 		final imageboardTarget = await modalLoad(context, 'Checking url...', (_) => ImageboardRegistry.instance.decodeUrl(url.toString()), wait: const Duration(milliseconds: 50));
 		openInChance() {
-			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
+			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
 				builder: (ctx) => ImageboardScope(
 					imageboardKey: null,
 					imageboard: imageboardTarget!.$1,
@@ -816,13 +814,15 @@ class TransformedMediaQuery extends StatelessWidget {
 	}
 }
 
-class MaybeCupertinoScrollbar extends StatelessWidget {
+class MaybeScrollbar extends StatelessWidget {
 	final Widget child;
 	final ScrollController? controller;
+	final bool? thumbVisibility;
 
-	const MaybeCupertinoScrollbar({
+	const MaybeScrollbar({
 		required this.child,
 		this.controller,
+		this.thumbVisibility,
 		Key? key
 	}) : super(key: key);
 
@@ -830,9 +830,18 @@ class MaybeCupertinoScrollbar extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
 		if (settings.showScrollbars) {
+			if (ChanceTheme.materialOf(context)) {
+				return Scrollbar(
+					controller: controller,
+					scrollbarOrientation: settings.scrollbarsOnLeft ? ScrollbarOrientation.left : null,
+					thumbVisibility: thumbVisibility,
+					child: child
+				);
+			}
 			return CupertinoScrollbar(
 				controller: controller,
 				scrollbarOrientation: settings.scrollbarsOnLeft ? ScrollbarOrientation.left : null,
+				thumbVisibility: thumbVisibility,
 				child: child
 			);
 		}
@@ -932,10 +941,10 @@ Future<void> editStringList({
 	required String title
 }) async {
 	final theme = context.read<SavedTheme>();
-	await showCupertinoDialog(
+	await showAdaptiveDialog(
 		barrierDismissible: true,
 		context: context,
-		builder: (context) => CupertinoAlertDialog2(
+		builder: (context) => AdaptiveAlertDialog(
 			title: Padding(
 				padding: const EdgeInsets.only(bottom: 16),
 				child: Text(title)
@@ -955,12 +964,12 @@ Future<void> editStringList({
 										onTap: () async {
 											final controller = TextEditingController(text: list[i]);
 											controller.selection = TextSelection(baseOffset: 0, extentOffset: list[i].length);
-											final newItem = await showCupertinoDialog<String>(
+											final newItem = await showAdaptiveDialog<String>(
 												context: context,
 												barrierDismissible: true,
-												builder: (context) => CupertinoAlertDialog2(
+												builder: (context) => AdaptiveAlertDialog(
 													title: Text('Edit $name'),
-													content: CupertinoTextField2(
+													content: AdaptiveTextField(
 														autofocus: true,
 														autocorrect: false,
 														enableIMEPersonalizedLearning: false,
@@ -970,14 +979,14 @@ Future<void> editStringList({
 														onSubmitted: (s) => Navigator.pop(context, s)
 													),
 													actions: [
-														CupertinoDialogAction2(
-															child: const Text('Cancel'),
-															onPressed: () => Navigator.pop(context)
-														),
-														CupertinoDialogAction2(
+														AdaptiveDialogAction(
 															isDefaultAction: true,
 															child: const Text('Change'),
 															onPressed: () => Navigator.pop(context, controller.text)
+														),
+														AdaptiveDialogAction(
+															child: const Text('Cancel'),
+															onPressed: () => Navigator.pop(context)
 														)
 													]
 												)
@@ -1033,12 +1042,12 @@ Future<void> editStringList({
 														),
 														onPressed: () async {
 															final controller = TextEditingController();
-															final newItem = await showCupertinoDialog<String>(
+															final newItem = await showAdaptiveDialog<String>(
 																context: context,
 																barrierDismissible: true,
-																builder: (context) => CupertinoAlertDialog2(
+																builder: (context) => AdaptiveAlertDialog(
 																	title: Text('New $name'),
-																	content: CupertinoTextField2(
+																	content: AdaptiveTextField(
 																		autofocus: true,
 																		controller: controller,
 																		autocorrect: false,
@@ -1048,14 +1057,14 @@ Future<void> editStringList({
 																		onSubmitted: (s) => Navigator.pop(context, s)
 																	),
 																	actions: [
-																		CupertinoDialogAction2(
-																			child: const Text('Cancel'),
-																			onPressed: () => Navigator.pop(context)
-																		),
-																		CupertinoDialogAction2(
+																		AdaptiveDialogAction(
 																			isDefaultAction: true,
 																			child: const Text('Add'),
 																			onPressed: () => Navigator.pop(context, controller.text)
+																		),
+																		AdaptiveDialogAction(
+																			child: const Text('Cancel'),
+																			onPressed: () => Navigator.pop(context)
 																		)
 																	]
 																)
@@ -1078,7 +1087,7 @@ Future<void> editStringList({
 				)
 			),
 			actions: [
-				CupertinoDialogAction2(
+				AdaptiveDialogAction(
 					child: const Text('Close'),
 					onPressed: () => Navigator.pop(context)
 				)
@@ -1162,24 +1171,24 @@ extension HasOnePosition on ScrollController {
 }
 
 Future<bool> confirm(BuildContext context, String message) async {
-	return (await showCupertinoDialog<bool>(
+	return (await showAdaptiveDialog<bool>(
 		context: context,
 		barrierDismissible: true,
-		builder: (context) => CupertinoAlertDialog2(
+		builder: (context) => AdaptiveAlertDialog(
 			title: Text(message),
 			actions: [
-				CupertinoDialogAction2(
-					child: const Text('Cancel'),
-					onPressed: () {
-						Navigator.of(context).pop();
-					}
-				),
-				CupertinoDialogAction2(
+				AdaptiveDialogAction(
 					isDefaultAction: true,
 					onPressed: () {
 						Navigator.of(context).pop(true);
 					},
 					child: const Text('OK')
+				),
+				AdaptiveDialogAction(
+					child: const Text('Cancel'),
+					onPressed: () {
+						Navigator.of(context).pop();
+					}
 				)
 			]
 		)
@@ -1216,10 +1225,10 @@ Future<Attachment?> whichAttachment(BuildContext context, List<Attachment> attac
 	else if (attachments.length == 1) {
 		return attachments.first;
 	}
-	return await showCupertinoDialog(
+	return await showAdaptiveDialog(
 		context: context,
 		barrierDismissible: true,
-		builder: (innerContext) => CupertinoAlertDialog2(
+		builder: (innerContext) => AdaptiveAlertDialog(
 			title: const Text('Which file?'),
 			content: ImageboardScope(
 				imageboardKey: null,
@@ -1246,7 +1255,7 @@ Future<DateTime?> pickDate({
 	DateTime? initialDate
 }) async {
 	DateTime chosenDate = initialDate ?? DateTime.now();
-	final choice = await showCupertinoModalPopup<bool>(
+	final choice = await showAdaptiveModalPopup<bool>(
 		context: context,
 		builder: (context) => Container(
 			color: ChanceTheme.backgroundColorOf(context),

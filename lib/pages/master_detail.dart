@@ -3,15 +3,14 @@ import 'dart:math';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/injecting_navigator.dart';
 import 'package:chan/widgets/util.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:provider/provider.dart';
 
-PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder, {bool? showAnimations, required bool? showAnimationsForward}) => FullWidthCupertinoPageRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
+PageRoute fullWidthCupertinoPageRouteBuilder(WidgetBuilder builder, {bool? showAnimations, required bool? showAnimationsForward}) => adaptivePageRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 PageRoute transparentPageRouteBuilder(WidgetBuilder builder, {bool? showAnimations, required bool? showAnimationsForward}) => TransparentRoute(builder: builder, showAnimations: showAnimations, showAnimationsForward: showAnimationsForward);
 
 enum MasterDetailLocation {
@@ -27,6 +26,10 @@ enum MasterDetailLocation {
 	bool get twoPane => switch (this) {
 		onePaneMaster => false,
 		_ => true
+	};
+	bool get isDetail => switch (this) {
+		twoPaneHorizontalDetail || twoPaneVerticalDetail => true,
+		_ => false
 	};
 }
 
@@ -107,7 +110,7 @@ class MasterDetailPage<T> extends StatelessWidget {
 
 class MultiMasterPane<T> {
 	final Widget? title;
-	final ObstructingPreferredSizeWidget? navigationBar;
+	final AdaptiveBar? navigationBar;
 	final IconData? icon;
 	final Widget Function(BuildContext context, bool Function(BuildContext, T) isSelected, ValueChanged<T?> valueSetter) masterBuilder;
 	final BuiltDetailPane Function(T? selectedValue, ValueChanged<T?> valueSetter, bool poppedOut) detailBuilder;
@@ -348,13 +351,12 @@ class MultiMasterDetailPageState extends State<MultiMasterDetailPage> with Ticke
 								)).toList()
 							);
 							if (widget.showChrome) {
-								child = CupertinoPageScaffold(
+								child = AdaptiveScaffold(
 									resizeToAvoidBottomInset: false,
-									navigationBar: panes[_tabController.index].navigationBar ?? CupertinoNavigationBar(
-										transitionBetweenRoutes: false,
-										middle: panes[_tabController.index].title
+									bar: panes[_tabController.index].navigationBar ?? AdaptiveBar(
+										title: panes[_tabController.index].title
 									),
-									child: Column(
+									body: Column(
 										children: [
 											SafeArea(
 												bottom: false,

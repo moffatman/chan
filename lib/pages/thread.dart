@@ -18,15 +18,15 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/pages/gallery.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -381,7 +381,7 @@ class _ThreadPageState extends State<ThreadPage> {
 					Future.delayed(const Duration(milliseconds: 150), () => _listController.animateTo((val) => val.id == post.id));
 				}
 				else {
-					(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
+					(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
 						builder: (ctx) => ImageboardScope(
 							imageboardKey: null,
 							imageboard: context.read<Imageboard>(),
@@ -833,7 +833,7 @@ class _ThreadPageState extends State<ThreadPage> {
 	Future<void> _popOutReplyBox(ValueChanged<ReplyBoxState>? onInitState) async {
 		final imageboard = context.read<Imageboard>();
 		final theme = context.read<SavedTheme>();
-		await showCupertinoModalPopup(
+		await showAdaptiveModalPopup(
 			context: context,
 			builder: (ctx) => ImageboardScope(
 				imageboardKey: null,
@@ -965,20 +965,19 @@ class _ThreadPageState extends State<ThreadPage> {
 						),
 						ChangeNotifierProvider<PostSpanZoneData>.value(value: zone)
 					],
-					child: CupertinoPageScaffold(
+					child: AdaptiveScaffold(
 						resizeToAvoidBottomInset: false,
-						navigationBar: CupertinoNavigationBar(
-							transitionBetweenRoutes: false,
-							middle: GestureDetector(
+						bar: AdaptiveBar(
+							title: GestureDetector(
 								onTap: () {
-									showCupertinoDialog(
+									showAdaptiveDialog(
 										context: context,
 										barrierDismissible: true,
-										builder: (context) => CupertinoAlertDialog2(
+										builder: (context) => AdaptiveAlertDialog(
 											title: const Text('Thread title'),
 											content: Text(title),
 											actions: [
-												CupertinoDialogAction2(
+												AdaptiveDialogAction(
 													child: const Text('OK'),
 													onPressed: () => Navigator.pop(context)
 												)
@@ -1014,191 +1013,183 @@ class _ThreadPageState extends State<ThreadPage> {
 									)
 								)
 							),
-							trailing: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									GestureDetector(
-										onLongPress: () => _tapWatchButton(long: true),
-										child: CupertinoButton(
-											padding: EdgeInsets.zero,
-											onPressed: () => _tapWatchButton(long: false),
-											child: Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill)
-										)
-									),
-									if (!persistentState.showInHistory) CupertinoButton(
-										padding: EdgeInsets.zero,
-										onPressed: () {
-											lightHapticFeedback();
-											persistentState.showInHistory = true;
-											showToast(
-												context: context,
-												message: 'Thread restored to history',
-												icon: CupertinoIcons.archivebox
-											);
-											persistentState.save();
-											setState(() {});
-										},
-										child: const Icon(CupertinoIcons.eye_slash)
+							actions: [
+								GestureDetector(
+									onLongPress: () => _tapWatchButton(long: true),
+									child: AdaptiveIconButton(
+										onPressed: () => _tapWatchButton(long: false),
+										icon: Icon(watch == null ? CupertinoIcons.bell : CupertinoIcons.bell_fill)
 									)
-									else GestureDetector(
-										onLongPress: () {
+								),
+								if (!persistentState.showInHistory) AdaptiveIconButton(
+									onPressed: () {
+										lightHapticFeedback();
+										persistentState.showInHistory = true;
+										showToast(
+											context: context,
+											message: 'Thread restored to history',
+											icon: CupertinoIcons.archivebox
+										);
+										persistentState.save();
+										setState(() {});
+									},
+									icon: const Icon(CupertinoIcons.eye_slash)
+								)
+								else GestureDetector(
+									onLongPress: () {
+										lightHapticFeedback();
+										persistentState.savedTime = null;
+										persistentState.showInHistory = false;
+										showToast(
+											context: context,
+											message: 'Thread hidden from history',
+											icon: CupertinoIcons.eye_slash
+										);
+										persistentState.save();
+										setState(() {});
+									},
+									child: AdaptiveIconButton(
+										onPressed: persistentState.incognito ? null : () {
 											lightHapticFeedback();
-											persistentState.savedTime = null;
-											persistentState.showInHistory = false;
-											showToast(
-												context: context,
-												message: 'Thread hidden from history',
-												icon: CupertinoIcons.eye_slash
-											);
+											if (persistentState.savedTime != null) {
+												persistentState.savedTime = null;
+											}
+											else {
+												persistentState.savedTime = DateTime.now();
+											}
 											persistentState.save();
 											setState(() {});
 										},
-										child: CupertinoButton(
-											padding: EdgeInsets.zero,
-											onPressed: persistentState.incognito ? null : () {
-												lightHapticFeedback();
-												if (persistentState.savedTime != null) {
-													persistentState.savedTime = null;
-												}
-												else {
-													persistentState.savedTime = DateTime.now();
-												}
-												persistentState.save();
-												setState(() {});
-											},
-											child: Icon(persistentState.incognito ?
-																		CupertinoIcons.eye_slash :
-																		persistentState.savedTime == null ?
-																			CupertinoIcons.bookmark :
-																			CupertinoIcons.bookmark_fill)
+										icon: Icon(persistentState.incognito ?
+																	CupertinoIcons.eye_slash :
+																	persistentState.savedTime == null ?
+																		Adaptive.icons.bookmark :
+																		Adaptive.icons.bookmarkFilled)
+									)
+								),
+								if (site.threadVariants.isNotEmpty) AdaptiveIconButton(
+									padding: EdgeInsets.zero,
+									icon: FittedBox(
+										fit: BoxFit.contain,
+										child: SizedBox(
+											width: 40,
+											height: 40,
+											child: Stack(
+												children: [
+													Align(
+														alignment: Alignment.bottomRight,
+														child: Icon(persistentState.variant?.icon ?? persistentState.thread?.suggestedVariant?.icon ?? site.threadVariants.first.icon)
+													),
+													const Align(
+														alignment: Alignment.topLeft,
+														child: Icon(CupertinoIcons.sort_down)
+													)
+												]
+											)
 										)
 									),
-									if (site.threadVariants.isNotEmpty) CupertinoButton(
-										padding: EdgeInsets.zero,
-										child: FittedBox(
-											fit: BoxFit.contain,
-											child: SizedBox(
-												width: 40,
-												height: 40,
-												child: Stack(
-													children: [
-														Align(
-															alignment: Alignment.bottomRight,
-															child: Icon(persistentState.variant?.icon ?? persistentState.thread?.suggestedVariant?.icon ?? site.threadVariants.first.icon)
-														),
-														const Align(
-															alignment: Alignment.topLeft,
-															child: Icon(CupertinoIcons.sort_down)
-														)
-													]
-												)
-											)
-										),
-										onPressed: () async {
-											final choice = await showCupertinoModalPopup<ThreadVariant>(
-												useRootNavigator: false,
-												context: context,
-												builder: (context) => CupertinoActionSheet(
-													title: const Text('Thread Sorting'),
-													actions: site.threadVariants.map((variant) => CupertinoActionSheetAction2(
-														child: Row(
-															children: [
-																SizedBox(
-																	width: 40,
-																	child: Center(
-																		child: Icon(variant.icon),
-																	)
-																),
-																Expanded(
-																	child: Text(
-																		variant.name,
-																		textAlign: TextAlign.left,
-																		style: TextStyle(
-																			fontWeight: variant == (persistentState.variant ?? persistentState.thread?.suggestedVariant ?? site.threadVariants.first) ? FontWeight.bold : null
-																		)
+									onPressed: () async {
+										final choice = await showAdaptiveModalPopup<ThreadVariant>(
+											useRootNavigator: false,
+											context: context,
+											builder: (context) => AdaptiveActionSheet(
+												title: const Text('Thread Sorting'),
+												actions: site.threadVariants.map((variant) => AdaptiveActionSheetAction(
+													child: Row(
+														children: [
+															SizedBox(
+																width: 40,
+																child: Center(
+																	child: Icon(variant.icon),
+																)
+															),
+															Expanded(
+																child: Text(
+																	variant.name,
+																	textAlign: TextAlign.left,
+																	style: TextStyle(
+																		fontWeight: variant == (persistentState.variant ?? persistentState.thread?.suggestedVariant ?? site.threadVariants.first) ? FontWeight.bold : null
 																	)
 																)
-															]
-														),
-														onPressed: () {
-															Navigator.of(context).pop(variant);
-														}
-													)).toList(),
-													cancelButton: CupertinoActionSheetAction2(
-														child: const Text('Cancel'),
-														onPressed: () => Navigator.of(context).pop()
-													)
+															)
+														]
+													),
+													onPressed: () {
+														Navigator.of(context).pop(variant);
+													}
+												)).toList(),
+												cancelButton: AdaptiveActionSheetAction(
+													child: const Text('Cancel'),
+													onPressed: () => Navigator.of(context).pop()
 												)
-											);
-											if (choice != null && mounted) {
-												persistentState.variant = choice;
-												persistentState.save();
-												setState(() {});
-												await Future.delayed(const Duration(milliseconds: 30));
-												await _listController.blockAndUpdate();
-												setState(() {});
-											}
+											)
+										);
+										if (choice != null && mounted) {
+											persistentState.variant = choice;
+											persistentState.save();
+											setState(() {});
+											await Future.delayed(const Duration(milliseconds: 30));
+											await _listController.blockAndUpdate();
+											setState(() {});
 										}
-									),
-									Builder(
-										builder: (context) => CupertinoButton(
-											key: _shareButtonKey,
-											padding: EdgeInsets.zero,
-											child: const Icon(CupertinoIcons.share),
-											onPressed: () {
-												final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-												final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-												final openInNewTabZone = context.read<OpenInNewTabZone?>();
-												shareOne(
-													context: context,
-													text: site.getWebUrl(widget.thread.board, widget.thread.id),
-													type: "text",
-													sharePositionOrigin: (offset != null && size != null) ? offset & size : null,
-													additionalOptions: {
-														if (openInNewTabZone != null) 'Open in new tab': () => openInNewTabZone.onWantOpenThreadInNewTab(context.read<Imageboard>().key, widget.thread),
-														'Share as image': () async {
-															try {
-																final file = await modalLoad(context, 'Rendering...', (c) => sharePostsAsImage(context: context, primaryPostId: widget.thread.id, style: const ShareablePostsStyle(
-																	expandPrimaryImage: true,
-																	width: 400
-																)));
-																if (context.mounted) {
-																	shareOne(
-																		context: context,
-																		text: file.path,
-																		type: 'file',
-																		sharePositionOrigin: null
-																	);
-																}
+									}
+								),
+								Builder(
+									builder: (context) => AdaptiveIconButton(
+										key: _shareButtonKey,
+										icon: Icon(Adaptive.icons.share),
+										onPressed: () {
+											final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+											final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+											final openInNewTabZone = context.read<OpenInNewTabZone?>();
+											shareOne(
+												context: context,
+												text: site.getWebUrl(widget.thread.board, widget.thread.id),
+												type: "text",
+												sharePositionOrigin: (offset != null && size != null) ? offset & size : null,
+												additionalOptions: {
+													if (openInNewTabZone != null) 'Open in new tab': () => openInNewTabZone.onWantOpenThreadInNewTab(context.read<Imageboard>().key, widget.thread),
+													'Share as image': () async {
+														try {
+															final file = await modalLoad(context, 'Rendering...', (c) => sharePostsAsImage(context: context, primaryPostId: widget.thread.id, style: const ShareablePostsStyle(
+																expandPrimaryImage: true,
+																width: 400
+															)));
+															if (context.mounted) {
+																shareOne(
+																	context: context,
+																	text: file.path,
+																	type: 'file',
+																	sharePositionOrigin: null
+																);
 															}
-															catch (e, st) {
-																Future.error(e, st); // Report to crashlytics
-																if (context.mounted) {
-																	alertError(context, e.toStringDio());
-																}
+														}
+														catch (e, st) {
+															Future.error(e, st); // Report to crashlytics
+															if (context.mounted) {
+																alertError(context, e.toStringDio());
 															}
 														}
 													}
-												);
-											}
-										)
-									),
-									if (site.supportsPosting) CupertinoButton(
-										padding: EdgeInsets.zero,
-										onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
-											if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-												_popOutReplyBox(null);
-											}
-											else {
-												_replyBoxKey.currentState?.toggleReplyBox();
-											}
-										},
-										child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply)
+												}
+											);
+										}
 									)
-								]
-							)
+								),
+								if (site.supportsPosting) AdaptiveIconButton(
+									onPressed: (persistentState.thread?.isArchived == true && !(_replyBoxKey.currentState?.show ?? false)) ? null : () {
+										if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+											_popOutReplyBox(null);
+										}
+										else {
+											_replyBoxKey.currentState?.toggleReplyBox();
+										}
+									},
+									icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.arrowshape_turn_up_left_fill) : const Icon(CupertinoIcons.reply)
+								)
+							]
 						),
-						child: Column(
+						body: Column(
 							children: [
 								Flexible(
 									flex: 1,
@@ -1292,7 +1283,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																				const SizedBox(width: 8),
 																				_limitCounter(persistentState.thread!.replyCount, context.read<Persistence>().getBoard(widget.thread.board).threadCommentLimit),
 																				const Spacer(),
-																				const Icon(CupertinoIcons.photo),
+																				Icon(Adaptive.icons.photo),
 																				const SizedBox(width: 8),
 																				_limitCounter(persistentState.thread!.imageCount, context.read<Persistence>().getBoard(widget.thread.board).threadImageLimit),
 																				const Spacer(),
@@ -1327,7 +1318,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																	)
 																),
 																remedies: {
-																	if (site.archives.isNotEmpty) ThreadNotFoundException: (context, updater) => CupertinoButton.filled(
+																	if (site.archives.isNotEmpty) ThreadNotFoundException: (context, updater) => AdaptiveFilledButton(
 																		child: const Text('Try archive'),
 																		onPressed: () {
 																			persistentState.useArchive = true;
@@ -1458,7 +1449,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																					)
 																					else const Spacer(),
 																					if (loading) ...[
-																						const CupertinoActivityIndicator(),
+																						const CircularProgressIndicator.adaptive(),
 																						const Text(' ')
 																					],
 																					if (collapsedChildIds.isNotEmpty) Text(
@@ -1533,7 +1524,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																builder: (context) => Container(
 																	color: theme.backgroundColor,
 																	child: const Center(
-																		child: CupertinoActivityIndicator()
+																		child: CircularProgressIndicator.adaptive()
 																	)
 																)
 															)
@@ -1990,10 +1981,10 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 	@override
 	Widget build(BuildContext context) {
 		final theme = context.watch<SavedTheme>();
-		const radius = Radius.circular(8);
-		const radiusAlone = BorderRadius.all(radius);
-		final radiusStart = widget.reversed ? const BorderRadius.only(topRight: radius, bottomRight: radius) : const BorderRadius.only(topLeft: radius, bottomLeft: radius);
-		final radiusEnd = widget.reversed ? const BorderRadius.only(topLeft: radius, bottomLeft: radius) : const BorderRadius.only(topRight: radius, bottomRight: radius);
+		final radius = ChanceTheme.materialOf(context) ? const Radius.circular(4) : const Radius.circular(8);
+		final radiusAlone = BorderRadius.all(radius);
+		final radiusStart = widget.reversed ? BorderRadius.only(topRight: radius, bottomRight: radius) : BorderRadius.only(topLeft: radius, bottomLeft: radius);
+		final radiusEnd = widget.reversed ? BorderRadius.only(topLeft: radius, bottomLeft: radius) : BorderRadius.only(topRight: radius, bottomRight: radius);
 		scrollToBottom() => widget.listController.animateTo((post) => false, orElseLast: (x) => true, alignment: 1.0);
 		final youIds = widget.persistentState.youIds;
 		final uncachedCount = widget.cachedAttachments.values.where((v) => !v).length;
@@ -2084,7 +2075,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												}
 												found[initialAttachment.attachment] = initialAttachment;
 												attachments.removeWhere((a) => found[a.attachment] != a);
-												final dest = await Navigator.of(context).push<TaggedAttachment>(FullWidthCupertinoPageRoute(
+												final dest = await Navigator.of(context).push<TaggedAttachment>(adaptivePageRoute(
 													builder: (context) => ImageboardScope(
 														imageboardKey: null,
 														imageboard: imageboard,
@@ -2143,18 +2134,18 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 										})],
 										[
 											('${widget.persistentState.postSortingMethod == PostSortingMethod.none ? 'Sort' : widget.persistentState.postSortingMethod.displayName}...', const Icon(CupertinoIcons.sort_down, size: 19), () async {
-												final choice = await showCupertinoModalPopup<PostSortingMethod>(
+												final choice = await showAdaptiveModalPopup<PostSortingMethod>(
 													context: context,
 													useRootNavigator: false,
-													builder: (context) => CupertinoActionSheet(
+													builder: (context) => AdaptiveActionSheet(
 														title: const Text('Sort by...'),
-														actions: PostSortingMethod.values.map((v) => CupertinoButton(
+														actions: PostSortingMethod.values.map((v) => AdaptiveActionSheetAction(
 															onPressed: () => Navigator.pop(context, v),
 															child: Text(v.displayName, style: TextStyle(
 																fontWeight: v == widget.persistentState.postSortingMethod ? FontWeight.bold : null
 															))
 														)).toList(),
-														cancelButton: CupertinoActionSheetAction2(
+														cancelButton: AdaptiveActionSheetAction(
 															child: const Text('Cancel'),
 															onPressed: () => Navigator.pop(context)
 														)
@@ -2206,7 +2197,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											mainAxisSize: MainAxisSize.min,
 											children: buttons.expand((button) => [
 												const SizedBox(width: 8),
-												CupertinoButton.filled(
+												AdaptiveFilledButton(
 													disabledColor: theme.primaryColorWithBrightness(0.4),
 													padding: const EdgeInsets.all(8),
 													minSize: 0,
@@ -2272,7 +2263,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 												child: const Icon(CupertinoIcons.xmark, size: 19)
 											),
 											const SizedBox(width: 4),
-											CupertinoButton.filled(
+											AdaptiveFilledButton(
 												onPressed: () async {
 													widget.suggestedThread?.onAccept.call();
 												},
@@ -2372,7 +2363,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 								builder: (context) {
 									final children = [
 										if (!widget.blocked && widget.attachmentsCachingQueue.isNotEmpty) ...[
-											CupertinoButton.filled(
+											AdaptiveFilledButton(
 												onPressed: () async {
 													final cancel = await confirm(context, 'Cancel preloading?');
 													if (mounted && cancel) {
@@ -2385,7 +2376,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 													mainAxisSize: MainAxisSize.min,
 													crossAxisAlignment: CrossAxisAlignment.center,
 													children: [
-														const Icon(CupertinoIcons.photo, size: 19	),
+														Icon(Adaptive.icons.photo, size: 19),
 														ConstrainedBox(
 															constraints: BoxConstraints(
 																minWidth: 24 * MediaQuery.textScaleFactorOf(context) * max(1, 0.5 * cachingButtonLabel.length)
@@ -2401,7 +2392,11 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 											const SizedBox(width: 8)
 										],
 										if (!widget.blocked && (widget.listController.state?.updatingNow.value ?? false) && widget.listController.state?.originalList != null) ...[
-											const CupertinoActivityIndicator(),
+											const SizedBox(
+												width: 16,
+												height: 16,
+												child: CircularProgressIndicator.adaptive()
+											),
 											const SizedBox(width: 8),
 										],
 										if (!widget.blocked && widget.persistentState.useArchive) ...[

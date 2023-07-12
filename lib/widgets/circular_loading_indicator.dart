@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:chan/services/theme.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:flutter/cupertino.dart';
 
 class _CircularLoadingIndicatorPainter extends CustomPainter {
@@ -283,7 +283,7 @@ class _CircularLoadingIndicatorTesterState extends State<CircularLoadingIndicato
 				CircularLoadingIndicator(
 					value: value
 				),
-				CupertinoTextField2(
+				AdaptiveTextField(
 					controller: controller,
 					onChanged: (s) {
 						setState(() {

@@ -17,8 +17,7 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/hover_popup.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
@@ -319,7 +318,8 @@ class PostUnderlinedSpan extends PostSpan {
 	InlineSpan build(context, zone, settings, theme, options) {
 		return child.build(context, zone, settings, theme, options.copyWith(
 			baseTextStyle: options.baseTextStyle.copyWith(
-				decoration: TextDecoration.underline
+				decoration: TextDecoration.underline,
+				decorationColor: options.overrideTextColor ?? options.baseTextStyle.color
 			)
 		));
 	}
@@ -417,7 +417,7 @@ class PostQuoteLinkSpan extends PostSpan {
 					return;
 				}
 			}
-			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
+			(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
 				builder: (ctx) => ImageboardScope(
 					imageboardKey: null,
 					imageboard: context.read<Imageboard>(),
@@ -435,7 +435,8 @@ class PostQuoteLinkSpan extends PostSpan {
 			text: text,
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? color,
-				decoration: TextDecoration.underline
+				decoration: TextDecoration.underline,
+				decorationColor: options.overrideTextColor ?? color
 			),
 			recognizer: recognizer
 		), recognizer);
@@ -458,7 +459,8 @@ class PostQuoteLinkSpan extends PostSpan {
 			text: text,
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? theme.secondaryColor,
-				decoration: TextDecoration.underline
+				decoration: TextDecoration.underline,
+				decorationColor: options.overrideTextColor ?? theme.secondaryColor
 			),
 			recognizer: recognizer
 		), recognizer);
@@ -509,6 +511,7 @@ class PostQuoteLinkSpan extends PostSpan {
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? color.shiftSaturation(expandedImmediatelyAbove ? -0.5 : 0),
 				decoration: TextDecoration.underline,
+				decorationColor: options.overrideTextColor ?? color.shiftSaturation(expandedImmediatelyAbove ? -0.5 : 0),
 				decorationStyle: expandedSomewhereAbove ? TextDecorationStyle.dashed : null
 			),
 			recognizer: recognizer,
@@ -621,10 +624,11 @@ class PostBoardLink extends PostSpan {
 			text: '>>/$board/',
 			style: options.baseTextStyle.copyWith(
 				color: options.overrideTextColor ?? theme.secondaryColor,
+				decorationColor: options.overrideTextColor ?? theme.secondaryColor,
 				decoration: TextDecoration.underline
 			),
 			recognizer: options.overridingRecognizer ?? (TapGestureRecognizer()..onTap = () async {
-				(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
+				(context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
 					builder: (ctx) => ImageboardScope(
 						imageboardKey: null,
 						imageboard: context.read<Imageboard>(),
@@ -877,7 +881,7 @@ class PostLinkSpan extends PostSpan {
 						left: const SizedBox(
 							width: 75,
 							height: 75,
-							child: CupertinoActivityIndicator()
+							child: CircularProgressIndicator.adaptive()
 						),
 						center: Flexible(child: Text(url, style: const TextStyle(decoration: TextDecoration.underline), textScaleFactor: 1))
 					);
@@ -976,9 +980,10 @@ class PostCatalogSearchSpan extends PostSpan {
 			text: '>>/$board/$query',
 			style: options.baseTextStyle.copyWith(
 				decoration: TextDecoration.underline,
+				decorationColor: theme.secondaryColor,
 				color: theme.secondaryColor
 			),
-			recognizer: TapGestureRecognizer()..onTap = () => (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(FullWidthCupertinoPageRoute(
+			recognizer: TapGestureRecognizer()..onTap = () => (context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context)).push(adaptivePageRoute(
 				builder: (ctx) => ImageboardScope(
 					imageboardKey: null,
 					imageboard: context.read<Imageboard>(),
@@ -1125,7 +1130,7 @@ class PostStrikethroughSpan extends PostSpan {
 	@override
 	build(context, zone, settings, theme, options) {
 		return child.build(context, zone, settings, theme, options.copyWith(
-			baseTextStyle: options.baseTextStyle.copyWith(decoration: TextDecoration.lineThrough)
+			baseTextStyle: options.baseTextStyle.copyWith(decoration: TextDecoration.lineThrough, decorationColor: options.overrideTextColor ?? options.baseTextStyle.color)
 		));
 	}
 	@override
@@ -1147,20 +1152,20 @@ class PostPopupSpan extends PostSpan {
 		return TextSpan(
 			text: 'Show $title',
 			style: options.baseTextStyle.copyWith(
-				decoration: TextDecoration.underline
+				decoration: TextDecoration.underline,
+				decorationColor: options.overrideTextColor ?? options.baseTextStyle.color
 			),
 			recognizer: options.overridingRecognizer ?? TapGestureRecognizer()..onTap = () {
-				showCupertinoModalPopup(
+				showAdaptiveModalPopup(
 					context: context,
-					barrierDismissible: true,
-					builder: (context) => CupertinoActionSheet(
+					builder: (context) => AdaptiveActionSheet(
 						title: Text(title),
 						message: Text.rich(
 							popup.build(context, zone, settings, theme, options),
 							textAlign: TextAlign.left,
 						),
 						actions: [
-							CupertinoActionSheetAction2(
+							AdaptiveActionSheetAction(
 								child: const Text('Close'),
 								onPressed: () {
 									Navigator.of(context).pop(true);

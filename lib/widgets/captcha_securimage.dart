@@ -5,10 +5,11 @@ import 'dart:typed_data';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 class CaptchaSecurimage extends StatefulWidget {
 	final SecurimageCaptchaRequest request;
@@ -108,9 +109,9 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 				child: Column(
 					children: [
 						Text(errorMessage!),
-						CupertinoButton(
+						AdaptiveIconButton(
 							onPressed: _tryRequestChallenge,
-							child: const Icon(CupertinoIcons.refresh)
+							icon: const Icon(CupertinoIcons.refresh)
 						)
 					]
 				)
@@ -140,9 +141,9 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 						child: Row(
 							mainAxisAlignment: MainAxisAlignment.spaceBetween,
 							children: [
-								CupertinoButton(
+								AdaptiveIconButton(
 									onPressed: _tryRequestChallenge,
-									child: const Icon(CupertinoIcons.refresh)
+									icon: const Icon(CupertinoIcons.refresh)
 								),
 								Row(
 									children: [
@@ -169,7 +170,7 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 					const SizedBox(height: 16),
 					SizedBox(
 						width: 150,
-						child: CupertinoTextField2(
+						child: AdaptiveTextField(
 							focusNode: _solutionNode,
 							enableIMEPersonalizedLearning: false,
 							autocorrect: false,
@@ -188,7 +189,7 @@ class _CaptchaSecurimageState extends State<CaptchaSecurimage> {
 		}
 		else {
 			return const Center(
-				child: CupertinoActivityIndicator()
+				child: CircularProgressIndicator.adaptive()
 			);
 		}
 	}

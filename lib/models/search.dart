@@ -1,3 +1,4 @@
+import 'package:chan/services/imageboard.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
@@ -75,6 +76,8 @@ class ImageboardArchiveSearchQuery {
 		this.trip,
 		this.subject
 	}) : boards = boards ?? [];
+
+	Imageboard? get imageboard => ImageboardRegistry.instance.getImageboard(imageboardKey ?? '');
 
 	ImageboardArchiveSearchQuery clone() {
 		return ImageboardArchiveSearchQuery(

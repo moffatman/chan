@@ -10,7 +10,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -578,9 +578,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				interval: const Duration(seconds: 1),
 				builder: (context) {
 					final seconds = tryAgainAt!.difference(DateTime.now()).inSeconds;
-					return CupertinoButton(
+					return AdaptiveIconButton(
 						onPressed: seconds > 0 ? null : _tryRequestChallenge,
-						child: FittedBox(
+						icon: FittedBox(
 							fit: BoxFit.scaleDown,
 							child: Row(
 								mainAxisSize: MainAxisSize.min,
@@ -598,9 +598,9 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 				}
 			);
 		}
-		return CupertinoButton(
+		return AdaptiveIconButton(
 			onPressed: _tryRequestChallenge,
-			child: const Icon(CupertinoIcons.refresh)
+			icon: const Icon(CupertinoIcons.refresh)
 		);
 	}
 
@@ -678,7 +678,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												ignoring: _greyOutPickers,
 												child: Opacity(
 													opacity: _greyOutPickers ? 0.5 : 1.0,
-													child: CupertinoSlider(
+													child: Slider.adaptive(
 														value: backgroundSlide.toDouble(),
 														divisions: challenge!.backgroundImage!.width - challenge!.foregroundImage!.width,
 														max: (challenge!.backgroundImage!.width - challenge!.foregroundImage!.width).toDouble(),
@@ -761,7 +761,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 												}
 											)
 										},
-										child: CupertinoTextField2(
+										child: AdaptiveTextField(
 											focusNode: _solutionNode,
 											enableIMEPersonalizedLearning: false,
 											keyboardType: TextInputType.visiblePassword,
@@ -778,16 +778,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 									mainAxisAlignment: MainAxisAlignment.center,
 									children: [
 										const SizedBox(width: 40),
-										CupertinoSegmentedControl<int>(
+										AdaptiveSegmentedControl<int>(
 											children: const {
-												5: Padding(
-													padding: EdgeInsets.all(8),
-													child: Text('5 letters')
-												),
-												6: Padding(
-													padding: EdgeInsets.all(8),
-													child: Text('6 letters')
-												)
+												5: (null, '5 letters'),
+												6: (null, '6 letters')
 											},
 											groupValue: numLetters,
 											onValueChanged: (x) {
@@ -829,11 +823,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 										),
 										SizedBox(
 											width: 40,
-											child: _offerGuess ? CupertinoButton(
-												padding: EdgeInsets.zero,
+											child: _offerGuess ? AdaptiveIconButton(
 												minSize: 0,
 												onPressed: _animateGuess,
-												child: const Icon(CupertinoIcons.goforward)
+												icon: const Icon(CupertinoIcons.goforward)
 											) : null
 										)
 									]
@@ -1032,7 +1025,7 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 		}
 		else {
 			return const Center(
-				child: CupertinoActivityIndicator()
+				child: CircularProgressIndicator.adaptive()
 			);
 		}
 	}

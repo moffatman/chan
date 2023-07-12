@@ -7,8 +7,8 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/util.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
+import 'package:chan/widgets/adaptive.dart';
+import 'package:chan/widgets/default_gesture_detector.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -1301,7 +1301,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					curve: Curves.ease,
 					child: child
 				);
-				child = GestureDetector(
+				child = DefaultGestureDetector(
 					behavior: HitTestBehavior.translucent,
 					onTap: loadingOmittedItems ? null : () async {
 						if (!value.representsStubChildren) {
@@ -1789,7 +1789,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 									_updateOrExtendWithHapticFeedback();
 								}
 							},
-							child: MaybeCupertinoScrollbar(
+							child: MaybeScrollbar(
 								controller: widget.controller?.scrollController,
 								child: ChangeNotifierProvider.value(
 									value: _refreshableTreeItems,
@@ -1818,7 +1818,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 														children: [
 															Expanded(
 																child: Center(
-																	child: CupertinoSearchTextField2(
+																	child: AdaptiveSearchTextField(
 																		prefixIcon: const Padding(
 																			padding: EdgeInsets.only(top: 2),
 																			child: Icon(CupertinoIcons.search)
@@ -1990,18 +1990,18 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																		alignment: Alignment.topRight,
 																		child: Padding(
 																			padding: const EdgeInsets.only(top: 8, right: 8),
-																			child: CupertinoButton.filled(
+																			child: AdaptiveFilledButton(
 																				padding: EdgeInsets.zero,
 																				child: const Icon(CupertinoIcons.question),
 																				onPressed: () {
-																					showCupertinoDialog(
+																					showAdaptiveDialog(
 																						context: context,
 																						barrierDismissible: true,
-																						builder: (context) => CupertinoAlertDialog2(
+																						builder: (context) => AdaptiveAlertDialog(
 																							title: const Text('Filter reason'),
 																							content: Text(filteredValues[i].filterReason ?? 'Unknown'),
 																							actions: [
-																								CupertinoDialogAction2(
+																								AdaptiveDialogAction(
 																									child: const Text('OK'),
 																									onPressed: () => Navigator.pop(context)
 																								)
@@ -2160,7 +2160,7 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		else {
 			return const Center(
-				child: CupertinoActivityIndicator()
+				child: CircularProgressIndicator.adaptive()
 			);
 		}
 	}

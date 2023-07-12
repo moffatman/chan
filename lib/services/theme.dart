@@ -1,10 +1,10 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:chan/main.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -37,17 +37,27 @@ class ChanceTheme extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final theme = context.select<EffectiveSettings, SavedTheme>((s) => s.themes[themeKey] ?? s.theme);
+		final child1 = Provider.value(
+			value: theme,
+			child: Provider.value(
+				value: ChanceThemeKey(themeKey),
+				child: child
+			)
+		);
+		if (ChanceTheme.materialOf(context)) {
+			return Theme(
+				data: theme.materialThemeData,
+				child: DefaultTextStyle(
+					style: theme.materialThemeData.primaryTextTheme.bodyMedium!,
+					child: child1
+				)
+			);
+		}
 		return CupertinoTheme(
 			data: theme.cupertinoThemeData,
 			child: DefaultTextStyle(
 				style: theme.cupertinoThemeData.textTheme.textStyle,
-				child: Provider.value(
-					value: theme,
-					child: Provider.value(
-						value: ChanceThemeKey(themeKey),
-						child: child
-					)
-				)
+				child: child1
 			)
 		);
 	}
@@ -78,6 +88,9 @@ class ChanceTheme extends StatelessWidget {
 	static Color searchTextFieldColorOf(BuildContext context) => context.select<SavedTheme, Color>(_selectSearchTextFieldColor);
 	static Brightness _selectBrightness(SavedTheme theme) => theme.brightness;
 	static Brightness brightnessOf(BuildContext context) => context.select<SavedTheme, Brightness>(_selectBrightness);
+	static bool _selectMaterial(EffectiveSettings settings) => settings.materialStyle;
+	static bool materialOf(BuildContext context) => context.select<EffectiveSettings, bool>(_selectMaterial);
+	static bool materialOf_(BuildContext context) => context.read<EffectiveSettings>().materialStyle;
 
 	static String keyOf(BuildContext context, {bool listen = true}) => Provider.of<ChanceThemeKey>(context, listen: listen).key;
 }
@@ -87,10 +100,10 @@ Future<String?> selectThemeKey({
 	required String title,
 	required String currentKey,
 	required bool allowEditing
-}) => showCupertinoDialog<String>(
+}) => showAdaptiveDialog<String>(
 	barrierDismissible: true,
 	context: context,
-	builder: (context) => CupertinoAlertDialog2(
+	builder: (context) => AdaptiveAlertDialog(
 		title: Padding(
 			padding: const EdgeInsets.only(bottom: 16),
 			child: Row(
@@ -153,7 +166,7 @@ Future<String?> selectThemeKey({
 													mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 													children: [
 														CupertinoButton(
-															child: const Icon(CupertinoIcons.share),
+															child: Icon(Adaptive.icons.share),
 															onPressed: () {
 																Clipboard.setData(ClipboardData(
 																	text: Uri(
@@ -176,12 +189,12 @@ Future<String?> selectThemeKey({
 															onPressed: themes[i].value.locked ? null : () async {
 																final controller = TextEditingController(text: themes[i].key);
 																controller.selection = TextSelection(baseOffset: 0, extentOffset: themes[i].key.length);
-																final newName = await showCupertinoDialog<String>(
+																final newName = await showAdaptiveDialog<String>(
 																	context: context,
 																	barrierDismissible: true,
-																	builder: (context) => CupertinoAlertDialog2(
+																	builder: (context) => AdaptiveAlertDialog(
 																		title: const Text('Enter new name'),
-																		content: CupertinoTextField2(
+																		content: AdaptiveTextField(
 																			autofocus: true,
 																			controller: controller,
 																			smartDashesType: SmartDashesType.disabled,
@@ -189,14 +202,14 @@ Future<String?> selectThemeKey({
 																			onSubmitted: (s) => Navigator.pop(context, s)
 																		),
 																		actions: [
-																			CupertinoDialogAction2(
-																				child: const Text('Cancel'),
-																				onPressed: () => Navigator.pop(context)
-																			),
-																			CupertinoDialogAction2(
+																			AdaptiveDialogAction(
 																				isDefaultAction: true,
 																				child: const Text('Rename'),
 																				onPressed: () => Navigator.pop(context, controller.text)
+																			),
+																			AdaptiveDialogAction(
+																				child: const Text('Cancel'),
+																				onPressed: () => Navigator.pop(context)
 																			)
 																		]
 																	)
@@ -227,24 +240,24 @@ Future<String?> selectThemeKey({
 														),
 														CupertinoButton(
 															onPressed: (themes[i].value.locked || themes[i].key == settings.darkThemeKey || themes[i].key == settings.lightThemeKey) ? null : () async {
-																final consent = await showCupertinoDialog<bool>(
+																final consent = await showAdaptiveDialog<bool>(
 																	context: context,
 																	barrierDismissible: true,
-																	builder: (context) => CupertinoAlertDialog2(
+																	builder: (context) => AdaptiveAlertDialog(
 																		title: Text('Delete ${themes[i].key}?'),
 																		actions: [
-																			CupertinoDialogAction2(
-																				child: const Text('Cancel'),
-																				onPressed: () {
-																					Navigator.of(context).pop();
-																				}
-																			),
-																			CupertinoDialogAction2(
+																			AdaptiveDialogAction(
 																				isDestructiveAction: true,
 																				onPressed: () {
 																					Navigator.of(context).pop(true);
 																				},
 																				child: const Text('Delete')
+																			),
+																			AdaptiveDialogAction(
+																				child: const Text('Cancel'),
+																				onPressed: () {
+																					Navigator.of(context).pop();
+																				}
 																			)
 																		]
 																	)
@@ -270,7 +283,7 @@ Future<String?> selectThemeKey({
 			}
 		),
 		actions: [
-			CupertinoDialogAction2(
+			AdaptiveDialogAction(
 				child: const Text('Close'),
 				onPressed: () => Navigator.pop(context)
 			)

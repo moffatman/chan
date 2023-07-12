@@ -1,11 +1,12 @@
 import 'package:chan/models/board.dart';
+import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/filtering.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
-import 'package:chan/widgets/cupertino_adaptive_segmented_control.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/filter_editor.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:flutter/cupertino.dart';
@@ -82,9 +83,9 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 								child: Text('Catalog Layout')
 							),
 							const SizedBox(height: 16),
-							CupertinoAdaptiveSegmentedControl(
+							AdaptiveChoiceControl(
 								groupValue: widget.imageboard.persistence.browserState.useCatalogGridPerBoard[widget.board.name].value,
-								knownWidth: MediaQuery.sizeOf(context).width,
+								knownWidth: (context.watch<MasterDetailHint?>()?.location.isVeryConstrained ?? false) ? 0 : MediaQuery.sizeOf(context).width,
 								children: {
 									NullSafeOptional.false_: (CupertinoIcons.rectangle_grid_1x2, 'Rows'),
 									NullSafeOptional.null_: (null, 'Default (${(widget.imageboard.persistence.browserState.useCatalogGrid ?? settings.useCatalogGrid) ? 'Grid' : 'Rows'})'),
@@ -107,34 +108,29 @@ class _BoardSettingsPageState extends State<BoardSettingsPage> {
 								child: Text('Push Notifications')
 							),
 							const SizedBox(height: 16),
-							ClipRRect(
-								borderRadius: BorderRadius.circular(8),
-								child: CupertinoListSection(
-									topMargin: 0,
-									margin: EdgeInsets.zero,
-									children: const [
-										(_BoardWatchingStatus.off, 'Off'),
-										(_BoardWatchingStatus.threadsOnly, 'Threads only'),
-										(_BoardWatchingStatus.threadsAndPosts, 'All posts (not reliable)')
-									].map((v) => CupertinoListTile(
-										title: Text(v.$2),
-										backgroundColor: ChanceTheme.barColorOf(context),
-										backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
-										trailing: status == v.$1 ? const Icon(CupertinoIcons.check_mark, size: 18) : const SizedBox.shrink(),
-										onTap: () {
-											if (v.$1 != _BoardWatchingStatus.off) {
-												widget.imageboard.notifications.subscribeToBoard(
-													boardName: widget.board.name,
-													threadsOnly: v.$1 == _BoardWatchingStatus.threadsOnly
-												);
-											}
-											else {
-												widget.imageboard.notifications.unsubscribeFromBoard(widget.board.name);
-											}
-											setState(() {});
+							AdaptiveListSection(
+								children: const [
+									(_BoardWatchingStatus.off, 'Off'),
+									(_BoardWatchingStatus.threadsOnly, 'Threads only'),
+									(_BoardWatchingStatus.threadsAndPosts, 'All posts (not reliable)')
+								].map((v) => AdaptiveListTile(
+									title: Text(v.$2),
+									backgroundColor: ChanceTheme.barColorOf(context),
+									backgroundColorActivated: ChanceTheme.primaryColorWithBrightness50Of(context),
+									trailing: status == v.$1 ? const Icon(CupertinoIcons.check_mark, size: 18) : const SizedBox.shrink(),
+									onTap: () {
+										if (v.$1 != _BoardWatchingStatus.off) {
+											widget.imageboard.notifications.subscribeToBoard(
+												boardName: widget.board.name,
+												threadsOnly: v.$1 == _BoardWatchingStatus.threadsOnly
+											);
 										}
-									)).toList()
-								)
+										else {
+											widget.imageboard.notifications.unsubscribeFromBoard(widget.board.name);
+										}
+										setState(() {});
+									}
+								)).toList()
 							),
 							const SizedBox(height: 16),
 							FilterEditor(

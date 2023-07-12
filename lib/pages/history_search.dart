@@ -9,7 +9,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -124,10 +124,9 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		return CupertinoPageScaffold(
-			navigationBar: CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				middle: FittedBox(
+		return AdaptiveScaffold(
+			bar: AdaptiveBar(
+				title: FittedBox(
 					fit: BoxFit.contain,
 					child: Row(
 						mainAxisSize: MainAxisSize.min,
@@ -171,182 +170,155 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 						]
 					)
 				),
-				trailing: CupertinoButton(
-					minSize: 0,
-					padding: EdgeInsets.zero,
-					onPressed: () async {
-						bool anyChange = false;
-						await showCupertinoModalPopup(
-							context: context,
-							builder: (context) => StatefulBuilder(
-								builder: (context, setDialogState) => CupertinoActionSheet(
-									title: const Text('History filters'),
-									message: DefaultTextStyle(
-										style: DefaultTextStyle.of(context).style,
-										child: Column(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												Row(
-													mainAxisAlignment: MainAxisAlignment.center,
-													children: [
-														CupertinoButton.filled(
-															padding: const EdgeInsets.all(8),
-															onPressed: () async {
-																final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-																	builder: (ctx) => BoardSwitcherPage(
-																		initialImageboardKey: _filterBoard?.imageboard.key
-																	)
-																));
-																if (newBoard != null) {
-																	_filterBoard = newBoard;
-																	setDialogState(() {});
+				actions: [
+					AdaptiveIconButton(
+						minSize: 0,
+						onPressed: () async {
+							bool anyChange = false;
+							await showAdaptiveModalPopup(
+								context: context,
+								builder: (context) => StatefulBuilder(
+									builder: (context, setDialogState) => AdaptiveActionSheet(
+										title: const Text('History filters'),
+										message: DefaultTextStyle(
+											style: DefaultTextStyle.of(context).style,
+											child: Column(
+												mainAxisSize: MainAxisSize.min,
+												children: [
+													Row(
+														mainAxisAlignment: MainAxisAlignment.center,
+														children: [
+															AdaptiveFilledButton(
+																padding: const EdgeInsets.all(8),
+																onPressed: () async {
+																	final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+																		builder: (ctx) => BoardSwitcherPage(
+																			initialImageboardKey: _filterBoard?.imageboard.key
+																		)
+																	));
+																	if (newBoard != null) {
+																		_filterBoard = newBoard;
+																		setDialogState(() {});
+																		anyChange = true;
+																	}
+																},
+																child: Row(
+																	mainAxisSize: MainAxisSize.min,
+																	children: _filterBoard == null ? const [
+																		Text('Board: any')
+																	] : [
+																		const Text('Board: '),
+																		ImageboardIcon(
+																			imageboardKey: _filterBoard!.imageboard.key,
+																			boardName: _filterBoard!.item.name
+																		),
+																		const SizedBox(width: 8),
+																		Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item))
+																	]
+																)
+															),
+															if (_filterBoard != null) AdaptiveIconButton(
+																onPressed: () {
+																	_filterBoard = null;
 																	anyChange = true;
-																}
-															},
-															child: Row(
-																mainAxisSize: MainAxisSize.min,
-																children: _filterBoard == null ? const [
-																	Text('Board: any')
-																] : [
-																	const Text('Board: '),
-																	ImageboardIcon(
-																		imageboardKey: _filterBoard!.imageboard.key,
-																		boardName: _filterBoard!.item.name
-																	),
-																	const SizedBox(width: 8),
-																	Text(_filterBoard!.imageboard.site.formatBoardName(_filterBoard!.item))
-																]
+																	setDialogState(() {});
+																},
+																icon: const Icon(CupertinoIcons.xmark)
 															)
-														),
-														if (_filterBoard != null) CupertinoButton(
-															padding: EdgeInsets.zero,
-															onPressed: () {
-																_filterBoard = null;
-																anyChange = true;
-																setDialogState(() {});
-															},
-															child: const Icon(CupertinoIcons.xmark)
-														)
-													]
-												),
-												const SizedBox(height: 16),
-												CupertinoButton.filled(
-													padding: const EdgeInsets.all(8),
-													onPressed: () async {
-														_filterDateStart = (await pickDate(
-															context: context,
-															initialDate: _filterDateStart
-														))?.startOfDay;
-														setDialogState(() {});
-														anyChange = true;
-													},
-													child: Text(_filterDateStart == null ? 'Pick Start Date' : 'Start Date: ${_filterDateStart?.toISO8601Date}')
-												),
-												const SizedBox(height: 16),
-												CupertinoButton.filled(
-													padding: const EdgeInsets.all(8),
-													onPressed: () async {
-														_filterDateEnd = (await pickDate(
-															context: context,
-															initialDate: _filterDateEnd
-														))?.endOfDay;
-														setDialogState(() {});
-														anyChange = true;
-													},
-													child: Text(_filterDateStart == null ? 'Pick End Date' : 'End Date: ${_filterDateEnd?.toISO8601Date}')
-												),
-												const SizedBox(height: 16),
-												CupertinoSegmentedControl<NullSafeOptional>(
-													groupValue: _filterIsThread.value,
-													children: const {
-														NullSafeOptional.false_: Padding(
-															padding: EdgeInsets.all(8),
-															child: Text('Only replies', textAlign: TextAlign.center)
-														),
-														NullSafeOptional.null_: Padding(
-															padding: EdgeInsets.all(8),
-															child: Text('Any', textAlign: TextAlign.center)
-														),
-														NullSafeOptional.true_: Padding(
-															padding: EdgeInsets.all(8),
-															child: Text('Only threads', textAlign: TextAlign.center)
-														)
-													},
-													onValueChanged: (v) {
-														_filterIsThread = v.value;
-														setDialogState(() {});
-														anyChange = true;
-													}
-												),
-												const SizedBox(height: 16),
-												CupertinoSegmentedControl<NullSafeOptional>(
-													groupValue: _filterHasAttachment.value,
-													children: const {
-														NullSafeOptional.false_: Padding(
-															padding: EdgeInsets.all(8),
-															child: Text('Only without attachment(s)', textAlign: TextAlign.center)
-														),
-														NullSafeOptional.null_: Padding(
-															padding: EdgeInsets.all(8),
-															child: Text('Any', textAlign: TextAlign.center)
-														),
-														NullSafeOptional.true_: Padding(
-															padding: EdgeInsets.all(8),
-															child: Text('Only with attachment(s)', textAlign: TextAlign.center)
-														)
-													},
-													onValueChanged: (v) {
-														_filterHasAttachment = v.value;
-														setDialogState(() {});
-														anyChange = true;
-													}
-												),
-												const SizedBox(height: 16),
-												CupertinoSegmentedControl<NullSafeOptional>(
-													groupValue: _filterContainsLink.value,
-													children: const {
-														NullSafeOptional.false_: Padding(
-															padding: EdgeInsets.all(8),
-															child: Text('Only without link(s)', textAlign: TextAlign.center)
-														),
-														NullSafeOptional.null_: Padding(
-															padding: EdgeInsets.all(8),
-															child: Text('Any', textAlign: TextAlign.center)
-														),
-														NullSafeOptional.true_: Padding(
-															padding: EdgeInsets.all(8),
-															child: Text('Only with link(s)', textAlign: TextAlign.center)
-														)
-													},
-													onValueChanged: (v) {
-														_filterContainsLink = v.value;
-														setDialogState(() {});
-														anyChange = true;
-													}
-												)
-											]
-										)
-									),
-									actions: [
-										CupertinoActionSheetAction2(
-											onPressed: () => Navigator.pop(context),
-											child: const Text('Done')
-										)
-									]
+														]
+													),
+													const SizedBox(height: 16),
+													AdaptiveFilledButton(
+														padding: const EdgeInsets.all(8),
+														onPressed: () async {
+															_filterDateStart = (await pickDate(
+																context: context,
+																initialDate: _filterDateStart
+															))?.startOfDay;
+															setDialogState(() {});
+															anyChange = true;
+														},
+														child: Text(_filterDateStart == null ? 'Pick Start Date' : 'Start Date: ${_filterDateStart?.toISO8601Date}')
+													),
+													const SizedBox(height: 16),
+													AdaptiveFilledButton(
+														padding: const EdgeInsets.all(8),
+														onPressed: () async {
+															_filterDateEnd = (await pickDate(
+																context: context,
+																initialDate: _filterDateEnd
+															))?.endOfDay;
+															setDialogState(() {});
+															anyChange = true;
+														},
+														child: Text(_filterDateStart == null ? 'Pick End Date' : 'End Date: ${_filterDateEnd?.toISO8601Date}')
+													),
+													const SizedBox(height: 16),
+													AdaptiveSegmentedControl<NullSafeOptional>(
+														groupValue: _filterIsThread.value,
+														children: const {
+															NullSafeOptional.false_: (null, 'Only replies'),
+															NullSafeOptional.null_: (null, 'Any'),
+															NullSafeOptional.true_: (null, 'Only threads')
+														},
+														onValueChanged: (v) {
+															_filterIsThread = v.value;
+															setDialogState(() {});
+															anyChange = true;
+														}
+													),
+													const SizedBox(height: 16),
+													AdaptiveSegmentedControl<NullSafeOptional>(
+														groupValue: _filterHasAttachment.value,
+														children: const {
+															NullSafeOptional.false_: (null, 'Only without attachment(s)'),
+															NullSafeOptional.null_: (null, 'Any'),
+															NullSafeOptional.true_: (null, 'Only with attachment(s)')
+														},
+														onValueChanged: (v) {
+															_filterHasAttachment = v.value;
+															setDialogState(() {});
+															anyChange = true;
+														}
+													),
+													const SizedBox(height: 16),
+													AdaptiveSegmentedControl<NullSafeOptional>(
+														groupValue: _filterContainsLink.value,
+														children: const {
+															NullSafeOptional.false_: (null, 'Only without link(s)'),
+															NullSafeOptional.null_: (null, 'Any'),
+															NullSafeOptional.true_: (null, 'Only with link(s)')
+														},
+														onValueChanged: (v) {
+															_filterContainsLink = v.value;
+															setDialogState(() {});
+															anyChange = true;
+														}
+													)
+												]
+											)
+										),
+										actions: [
+											AdaptiveActionSheetAction(
+												onPressed: () => Navigator.pop(context),
+												child: const Text('Done')
+											)
+										]
+									)
 								)
-							)
-						);
-						if (anyChange) {
-							setState(() {
-								results = null;
-							});
-							_runQuery();
-						}
-					},
-					child: const Icon(CupertinoIcons.slider_horizontal_3)
-				)
+							);
+							if (anyChange) {
+								setState(() {
+									results = null;
+								});
+								_runQuery();
+							}
+						},
+						icon: const Icon(CupertinoIcons.slider_horizontal_3)
+					)
+				]
 			),
-			child: (results == null) ? Center(
+			body: (results == null) ? Center(
 				child: SizedBox(
 					width: 100,
 					child: Column(
@@ -366,7 +338,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 						]
 					)
 				)
-			) : MaybeCupertinoScrollbar(
+			) : MaybeScrollbar(
 				child: RefreshableList<ImageboardScoped<HistorySearchResult>>(
 					listUpdater: () => throw UnimplementedError(),
 					id: 'historysearch',

@@ -13,17 +13,13 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
-import 'package:chan/widgets/cupertino_adaptive_segmented_control.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
-import 'package:chan/widgets/cupertino_thin_button.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:provider/provider.dart';
 import 'board_switcher.dart';
 
@@ -74,7 +70,7 @@ class SearchPageState extends State<SearchPage> {
 	void onSearchComposed(ImageboardArchiveSearchQuery query) {
 		Persistence.recentSearches.handleSearch(query.clone());
 		Persistence.didUpdateRecentSearches();
-		_masterDetailKey.currentState!.masterKey.currentState!.push(FullWidthCupertinoPageRoute(
+		_masterDetailKey.currentState!.masterKey.currentState!.push(adaptivePageRoute(
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _valueInjector,
 				builder: (context, SelectedSearchResult? selectedResult, child) {
@@ -127,14 +123,9 @@ class SearchPageState extends State<SearchPage> {
 								initialSearch: post.threadSearch,
 								boardSemanticId: -1
 							)
-						) : Builder(
-							builder: (context) => Container(
-								decoration: BoxDecoration(
-									color: ChanceTheme.backgroundColorOf(context),
-								),
-								child: const Center(
-									child: Text('Select a search result')
-								)
+						) : const AdaptiveScaffold(
+							body: Center(
+								child: Text('Select a search result')
 							)
 						),
 						pageRouteBuilder: fullWidthCupertinoPageRouteBuilder
@@ -254,7 +245,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 			}
 		}
 		_lastImageboardKey = currentImageboard.key;
-		final imageboard = ImageboardRegistry.instance.getImageboard(query.imageboardKey ?? '');
+		final imageboard = query.imageboard;
 		final String? boardName;
 		if (imageboard != null && query.boards.isNotEmpty) {
 			boardName = imageboard.site.formatBoardName(imageboard.persistence.getBoard(query.boards.first));
@@ -262,236 +253,246 @@ class _SearchComposePageState extends State<SearchComposePage> {
 		else {
 			boardName = null;
 		}
-		return CupertinoPageScaffold(
-			resizeToAvoidBottomInset: false,
-			navigationBar: CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				middle: Stack(
-					fit: StackFit.expand,
+		final primaryColor = ChanceTheme.primaryColorOf(context);
+		Widget boardPicker({
+			required double rightPadding,
+			required bool showBoardName,
+			required double maxWidth
+		}) => Container(
+			padding: const EdgeInsets.only(top: 4, bottom: 4),
+			constraints: BoxConstraints(
+				maxWidth: maxWidth + rightPadding
+			),
+			child: CupertinoButton(
+				color: primaryColor.withOpacity(0.3),
+				alignment: Alignment.centerLeft,
+				minSize: 0,
+				padding: EdgeInsets.only(left: 10, right: rightPadding),
+				child: Row(
+					mainAxisSize: MainAxisSize.min,
 					children: [
-						Row(
-							children: [
-								Container(
-									padding: const EdgeInsets.only(top: 4, bottom: 4),
-									child: CupertinoButton(
-										color: ChanceTheme.primaryColorOf(context).withOpacity(0.3),
-										alignment: Alignment.centerLeft,
-										padding: const EdgeInsets.only(left: 10, right: 20),
-										child: Row(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												if (ImageboardRegistry.instance.count > 1 && query.imageboardKey != null) ...[
-													ImageboardIcon(imageboardKey: query.imageboardKey),
-													const SizedBox(width: 4),
-												],
-												if (query.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) Text(boardName ?? '/${query.boards.first}', style: const TextStyle(
-													color: Colors.white
-												))
-											]
-										),
-										onPressed: () async {
-											final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-												builder: (ctx) => BoardSwitcherPage(
-													initialImageboardKey: query.imageboardKey,
-													filterImageboards: (b) => b.site.supportsSearch,
-													allowPickingWholeSites: true
-												)
-											));
-											if (newBoard != null) {
-												setState(() {
-													query.imageboardKey = newBoard.imageboard.key;
-													query.boards = newBoard.item.name.isEmpty ? [] : [newBoard.item.name];
-												});
-											}
-										}
-									)
-								)
-							]
-						),
-						Row(
-							children: [
-								Visibility(
-									maintainState: true,
-									maintainSize: true,
-									maintainAnimation: true,
-									visible: false,
-									child: Container(
-										padding: const EdgeInsets.only(left: 10, right: 5),
-										child: Row(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												if (ImageboardRegistry.instance.count > 1 && query.imageboardKey != null) ...[
-													ImageboardIcon(imageboardKey: query.imageboardKey),
-													const SizedBox(width: 4),
-												],
-												if (query.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) Text(boardName ?? '/${query.boards.first}', style: const TextStyle(
-													color: Colors.white
-												))
-											]
-										)
-									)
+						const SizedBox(height: 44),
+						if (ImageboardRegistry.instance.count > 1 && query.imageboardKey != null) ...[
+							ImageboardIcon(imageboardKey: query.imageboardKey),
+							const SizedBox(width: 4),
+						],
+						if (showBoardName && query.boards.isNotEmpty && (imageboard?.site.supportsMultipleBoards ?? true)) Flexible(
+							child: Text(
+								'${boardName ?? '/${query.boards.first}'} ',
+								style: TextStyle(
+									color: primaryColor,
+									fontSize: 17
 								),
-								Expanded(
-									child: Container(
-										margin: const EdgeInsets.only(top: 4, bottom: 4),
-										child: Stack(
-											fit: StackFit.expand,
-											children: [
-												Container(
-													decoration: BoxDecoration(
-														borderRadius: const BorderRadius.all(Radius.circular(9)),
-														color: ChanceTheme.barColorOf(context)
+								maxLines: 1,
+								overflow: TextOverflow.ellipsis
+							)
+						)
+					]
+				),
+				onPressed: () async {
+					final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+						builder: (ctx) => BoardSwitcherPage(
+							initialImageboardKey: query.imageboardKey,
+							filterImageboards: (b) => b.site.supportsSearch,
+							allowPickingWholeSites: true
+						)
+					));
+					if (newBoard != null) {
+						setState(() {
+							query.imageboardKey = newBoard.imageboard.key;
+							query.boards = newBoard.item.name.isEmpty ? [] : [newBoard.item.name];
+						});
+					}
+				}
+			)
+		);
+		return AdaptiveScaffold(
+			resizeToAvoidBottomInset: false,
+			bar: AdaptiveBar(
+				title: Row(
+					children: [
+						Expanded(
+							child: LayoutBuilder(
+								builder: (context, constraints) {
+									final showBoardName = constraints.maxWidth > 250;
+									return Stack(
+										fit: StackFit.expand,
+										children: [
+											Align(
+												alignment: Alignment.centerLeft,
+												child: boardPicker(
+													rightPadding: 30,
+													showBoardName: showBoardName,
+													maxWidth: constraints.maxWidth / 3
+												)
+											),
+											Row(
+												children: [
+													Visibility(
+														maintainState: true,
+														maintainSize: true,
+														maintainAnimation: true,
+														visible: false,
+														child: boardPicker(
+															rightPadding: 5,
+															showBoardName: showBoardName,
+															maxWidth: constraints.maxWidth / 3
+														)
 													),
-												),
-												CupertinoSearchTextField2(
-													placeholder: 'Search archives...',
-													focusNode: _focusNode,
-													controller: _controller,
-													onSubmitted: (String q) {
-														_controller.clear();
-														FocusManager.instance.primaryFocus!.unfocus();
-														widget.onSearchComposed(query);
-													},
-													enableIMEPersonalizedLearning: context.select<EffectiveSettings, bool>((s) => s.enableIMEPersonalizedLearning),
-													smartQuotesType: SmartQuotesType.disabled,
-													smartDashesType: SmartDashesType.disabled,
-													onSuffixTap: () {
-														_controller.clear();
-														FocusManager.instance.primaryFocus!.unfocus();
-													},
-													onChanged: (String q) {
-														query.query = q;
-														setState(() {});
-													}
-												)
-											]
-										)
-									)
-								),
-								if (_searchFocused) CupertinoButton(
-									padding: const EdgeInsets.only(left: 8),
-									child: const Text('Cancel'),
-									onPressed: () {
-										FocusManager.instance.primaryFocus!.unfocus();
-										_controller.clear();
-										_searchFocused = false;
-										query = ImageboardArchiveSearchQuery(
-											imageboardKey: query.imageboardKey,
-											boards: query.boards
-										);
-										setState(() {});
-									}
-								),
-								CupertinoButton(
-									padding: const EdgeInsets.only(left: 8),
-									child: const Icon(CupertinoIcons.number_square),
-									onPressed: () async {
-										final idController = TextEditingController();
-										final initialBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-											builder: (ctx) => const BoardSwitcherPage()
-										));
-										if (context.mounted && initialBoard != null) {
-											ImageboardScoped<ImageboardBoard> board = initialBoard;
-											final target = await showCupertinoDialog<(Imageboard, String, int)>(
-												context: context,
-												barrierDismissible: true,
-												builder: (context) => StatefulBuilder(
-													builder: (context, setInnerState) => CupertinoAlertDialog2(
-														title: const Text('Go to post'),
-														content: Column(
-															mainAxisSize: MainAxisSize.min,
-															children: [
-																const SizedBox(height: 8),
-																CupertinoButton(
-																	onPressed: () async {
-																		final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
-																			builder: (ctx) => const BoardSwitcherPage()
-																		));
-																		if (newBoard != null) {
-																			setInnerState(() {
-																				board = newBoard;
-																			});
-																		}
-																	},
-																	child: Row(
-																		mainAxisSize: MainAxisSize.min,
-																		children: [
-																			ImageboardIcon(imageboardKey: board.imageboard.key, boardName: board.item.name),
-																			const SizedBox(width: 4),
-																			Text(board.item.name, style: const TextStyle(
-																				color: Colors.white
-																			))
-																		]
-																	)
+													Expanded(
+														child: Padding(
+															padding: const EdgeInsets.only(top: 4, bottom: 4),
+															child: DecoratedBox(
+																decoration: BoxDecoration(
+																	borderRadius: const BorderRadius.all(Radius.circular(4)),
+																	color: ChanceTheme.backgroundColorOf(context)
 																),
-																const SizedBox(height: 8),
-																CupertinoTextField2(
-																	controller: idController,
-																	enableIMEPersonalizedLearning: false,
-																	placeholder: 'Post ID',
-																	autofocus: true,
-																	keyboardType: TextInputType.number,
-																	onChanged: (_) => setInnerState(() {}),
-																	onSubmitted: (str) {
-																		Navigator.of(context).pop((board.imageboard, board.item.name, int.parse(idController.text)));
+																child: AdaptiveSearchTextField(
+																	placeholder: 'Search ${showBoardName ? 'archives' : query.boards.tryFirst ?? query.imageboard?.site.name ?? 'archives'}...',
+																	focusNode: _focusNode,
+																	controller: _controller,
+																	onSubmitted: (String q) {
+																		_controller.clear();
+																		FocusManager.instance.primaryFocus!.unfocus();
+																		widget.onSearchComposed(query);
+																	},
+																	enableIMEPersonalizedLearning: context.select<EffectiveSettings, bool>((s) => s.enableIMEPersonalizedLearning),
+																	smartQuotesType: SmartQuotesType.disabled,
+																	smartDashesType: SmartDashesType.disabled,
+																	suffixVisible: _searchFocused,
+																	prefixIcon: constraints.maxWidth < 150 ? null : const Icon(CupertinoIcons.search),
+																	onSuffixTap: () {
+																		_focusNode.unfocus();
+																		_controller.clear();
+																		_searchFocused = false;
+																		query = ImageboardArchiveSearchQuery(
+																			imageboardKey: query.imageboardKey,
+																			boards: query.boards
+																		);
+																		setState(() {});
+																	},
+																	onChanged: (String q) {
+																		query.query = q;
+																		setState(() {});
 																	}
 																)
-															]
-														),
-														actions: [
-															CupertinoDialogAction2(
-																child: const Text('Cancel'),
-																onPressed: () {
-																	Navigator.of(context).pop();
-																}
-															),
-															CupertinoDialogAction2(
-																isDefaultAction: true,
-																onPressed: int.tryParse(idController.text) != null ? () {
-																	Navigator.of(context).pop((board.imageboard, board.item.name, int.parse(idController.text)));
-																} : null,
-																child: const Text('OK')
 															)
-														]
+														)
 													)
-												)
-											);
-											idController.dispose();
-											if (mounted && target != null) {
+												]
+											)
+										]
+									);
+								}
+							)
+						),
+						AdaptiveIconButton(
+							icon: const Icon(CupertinoIcons.number_square),
+							onPressed: () async {
+								final idController = TextEditingController();
+								final initialBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+									builder: (ctx) => const BoardSwitcherPage()
+								));
+								if (context.mounted && initialBoard != null) {
+									ImageboardScoped<ImageboardBoard> board = initialBoard;
+									final target = await showAdaptiveDialog<(Imageboard, String, int)>(
+										context: context,
+										barrierDismissible: true,
+										builder: (context) => StatefulBuilder(
+											builder: (context, setInnerState) => AdaptiveAlertDialog(
+												title: const Text('Go to post'),
+												content: Column(
+													mainAxisSize: MainAxisSize.min,
+													children: [
+														const SizedBox(height: 8),
+														CupertinoButton(
+															onPressed: () async {
+																final newBoard = await Navigator.of(context).push<ImageboardScoped<ImageboardBoard>>(TransparentRoute(
+																	builder: (ctx) => const BoardSwitcherPage()
+																));
+																if (newBoard != null) {
+																	setInnerState(() {
+																		board = newBoard;
+																	});
+																}
+															},
+															child: Row(
+																mainAxisSize: MainAxisSize.min,
+																children: [
+																	ImageboardIcon(imageboardKey: board.imageboard.key, boardName: board.item.name),
+																	const SizedBox(width: 4),
+																	Text(board.item.name, style: const TextStyle(
+																		color: Colors.white
+																	))
+																]
+															)
+														),
+														const SizedBox(height: 8),
+														AdaptiveTextField(
+															controller: idController,
+															enableIMEPersonalizedLearning: false,
+															placeholder: 'Post ID',
+															autofocus: true,
+															keyboardType: TextInputType.number,
+															onChanged: (_) => setInnerState(() {}),
+															onSubmitted: (str) {
+																Navigator.of(context).pop((board.imageboard, board.item.name, int.parse(idController.text)));
+															}
+														)
+													]
+												),
+												actions: [
+													AdaptiveDialogAction(
+														isDefaultAction: true,
+														onPressed: int.tryParse(idController.text) != null ? () {
+															Navigator.of(context).pop((board.imageboard, board.item.name, int.parse(idController.text)));
+														} : null,
+														child: const Text('Go')
+													),
+													AdaptiveDialogAction(
+														child: const Text('Cancel'),
+														onPressed: () {
+															Navigator.of(context).pop();
+														}
+													)
+												]
+											)
+										)
+									);
+									idController.dispose();
+									if (mounted && target != null) {
+										try {
+											final result = await modalLoad(context, 'Finding post...', (controller) async {
 												try {
-													final result = await modalLoad(context, 'Finding post...', (controller) async {
-														try {
-															final thread = await target.$1.site.getThread(ThreadIdentifier(target.$2, target.$3), interactive: true);
-															return ImageboardArchiveSearchResult.thread(thread);
-														}
-														on ThreadNotFoundException {
-															// Not a thread
-														}
-														final post = await target.$1.site.getPostFromArchive(target.$2, target.$3, interactive: true);
-														return ImageboardArchiveSearchResult.post(post);
-													});
-													widget.onManualResult(SelectedSearchResult(
-														fromArchive: true,
-														threadSearch: null,
-														imageboard: target.$1,
-														result: result
-													));
+													final thread = await target.$1.site.getThread(ThreadIdentifier(target.$2, target.$3), interactive: true);
+													return ImageboardArchiveSearchResult.thread(thread);
 												}
-												catch (e) {
-													if (context.mounted) {
-														alertError(context, e.toStringDio());
-													}
+												on ThreadNotFoundException {
+													// Not a thread
 												}
+												final post = await target.$1.site.getPostFromArchive(target.$2, target.$3, interactive: true);
+												return ImageboardArchiveSearchResult.post(post);
+											});
+											widget.onManualResult(SelectedSearchResult(
+												fromArchive: true,
+												threadSearch: null,
+												imageboard: target.$1,
+												result: result
+											));
+										}
+										catch (e) {
+											if (context.mounted) {
+												alertError(context, e.toStringDio());
 											}
 										}
 									}
-								)
-							]
+								}
+							}
 						)
 					]
 				)
 			),
-			child: AnimatedSwitcher(
+			body: AnimatedSwitcher(
 				duration: const Duration(milliseconds: 300),
 				switchInCurve: Curves.easeIn,
 				switchOutCurve: Curves.easeOut,
@@ -503,7 +504,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 					key: const ValueKey(true),
 					children: [
 						const SizedBox(height: 16),
-						CupertinoAdaptiveSegmentedControl<PostTypeFilter>(
+						AdaptiveChoiceControl<PostTypeFilter>(
 							children: const {
 								PostTypeFilter.none: (null, 'All posts'),
 								PostTypeFilter.onlyOPs: (null, 'Threads'),
@@ -517,7 +518,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							}
 						),
 						const SizedBox(height: 16),
-						CupertinoAdaptiveSegmentedControl<_MediaFilter>(
+						AdaptiveChoiceControl<_MediaFilter>(
 							children: const {
 								_MediaFilter.none: (null, 'All posts'),
 								_MediaFilter.onlyWithMedia: (null, 'With images'),
@@ -543,7 +544,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							}
 						),
 						const SizedBox(height: 16),
-						CupertinoAdaptiveSegmentedControl<PostDeletionStatusFilter>(
+						AdaptiveChoiceControl<PostDeletionStatusFilter>(
 							children: const {
 								PostDeletionStatusFilter.none: (null, 'All posts'),
 								PostDeletionStatusFilter.onlyDeleted: (null, 'Only deleted'),
@@ -563,7 +564,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 							children: [
 								Container(
 									padding: const EdgeInsets.symmetric(horizontal: 8),
-									child: CupertinoThinButton(
+									child: AdaptiveThinButton(
 										filled: query.startDate != null,
 										child: Text(
 											(query.startDate != null) ? 'Posted after ${query.startDate!.toISO8601Date}' : 'Posted after...',
@@ -584,7 +585,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 								),
 								Container(
 									padding: const EdgeInsets.symmetric(horizontal: 8),
-									child: CupertinoThinButton(
+									child: AdaptiveThinButton(
 										filled: query.endDate != null,
 										child: Text(
 											(query.endDate != null) ? 'Posted before ${query.endDate!.toISO8601Date}' : 'Posted before...',
@@ -633,7 +634,7 @@ class _SearchComposePageState extends State<SearchComposePage> {
 										children: [
 											Text(field.name),
 											const SizedBox(height: 4),
-											CupertinoTextField2(
+											AdaptiveTextField(
 												controller: field.controller,
 												onChanged: field.cb
 											)

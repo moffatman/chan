@@ -7,17 +7,15 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
-import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
-import 'package:chan/widgets/cupertino_switch2.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -50,7 +48,7 @@ class HistoryPageState extends State<HistoryPage> {
 	}
 
 	void _onFullHistorySearch(String query) {
-		_masterDetailKey.currentState!.masterKey.currentState!.push(FullWidthCupertinoPageRoute(
+		_masterDetailKey.currentState!.masterKey.currentState!.push(adaptivePageRoute(
 			builder: (context) => ValueListenableBuilder(
 				valueListenable: _valueInjector,
 				builder: (context, ImageboardScoped<PostIdentifier>? selectedResult, child) {
@@ -84,123 +82,117 @@ class HistoryPageState extends State<HistoryPage> {
 							_valueInjector.value = v;
 						});
 						List<PersistentThreadState> states = [];
-						return CupertinoPageScaffold(
+						return AdaptiveScaffold(
 							resizeToAvoidBottomInset: false,
-							navigationBar: CupertinoNavigationBar(
-								transitionBetweenRoutes: false,
-								middle: const Text('History'),
-								trailing: Row(
-									mainAxisSize: MainAxisSize.min,
-									children: [
-										CupertinoButton(
-											padding: EdgeInsets.zero,
-											onPressed: () async {
-												await showCupertinoDialog(
-													context: context,
-													barrierDismissible: true,
-													builder: (context) => StatefulBuilder(
-														builder: (context, setDialogState) {
-															final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime == null && i.threadWatch == null && (settings.includeThreadsYouRepliedToWhenDeletingHistory || i.youIds.isEmpty)).toList();
-															final thisSessionStates = states.where((s) => s.lastOpenedTime.compareTo(_appLaunchTime) >= 0).toList();
-															final now = DateTime.now();
-															final lastDayStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 1);
-															final lastWeekStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 7);
-															return CupertinoAlertDialog2(
-																title: const Text('Clear history'),
-																content: Column(
-																	mainAxisSize: MainAxisSize.min,
-																	children: [
-																		const Text('Saved and watched threads will not be deleted'),
-																		const SizedBox(height: 16),
-																		Row(
-																			children: [
-																				const Expanded(
-																					child: Text('Include threads with your posts')
-																				),
-																				CupertinoSwitch2(
-																					value: settings.includeThreadsYouRepliedToWhenDeletingHistory,
-																					onChanged: (v) {
-																						setDialogState(() {
-																							settings.includeThreadsYouRepliedToWhenDeletingHistory = v;
-																						});
-																					}
-																				)
-																			]
-																		)
-																	]
-																),
-																actions: [
-																	CupertinoDialogAction2(
-																		onPressed: () async {
-																			Navigator.pop(context);
-																			for (final state in thisSessionStates) {
-																				await state.delete();
-																			}
-																		},
-																		isDestructiveAction: true,
-																		child: Text('This session (${thisSessionStates.length})')
-																	),
-																	CupertinoDialogAction2(
-																		onPressed: () async {
-																			Navigator.pop(context);
-																			for (final state in lastDayStates) {
-																				await state.delete();
-																			}
-																		},
-																		isDestructiveAction: true,
-																		child: Text('Today (${lastDayStates.length})')
-																	),
-																	CupertinoDialogAction2(
-																		onPressed: () async {
-																			Navigator.pop(context);
-																			for (final state in lastWeekStates) {
-																				await state.delete();
-																			}
-																		},
-																		isDestructiveAction: true,
-																		child: Text('This week (${lastWeekStates.length})')
-																	),
-																	CupertinoDialogAction2(
-																		onPressed: () async {
-																			Navigator.pop(context);
-																			for (final state in states) {
-																				await state.delete();
-																			}
-																		},
-																		isDestructiveAction: true,
-																		child: Text('All time (${states.length})')
-																	),
-																	CupertinoDialogAction2(
-																		onPressed: () => Navigator.pop(context),
-																		child: const Text('Cancel')
+							bar: AdaptiveBar(
+								title: const Text('History'),
+								actions: [
+									AdaptiveIconButton(
+										onPressed: () async {
+											await showAdaptiveDialog(
+												context: context,
+												barrierDismissible: true,
+												builder: (context) => StatefulBuilder(
+													builder: (context, setDialogState) {
+														final states = Persistence.sharedThreadStateBox.values.where((i) => i.savedTime == null && i.threadWatch == null && (settings.includeThreadsYouRepliedToWhenDeletingHistory || i.youIds.isEmpty)).toList();
+														final thisSessionStates = states.where((s) => s.lastOpenedTime.compareTo(_appLaunchTime) >= 0).toList();
+														final now = DateTime.now();
+														final lastDayStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 1);
+														final lastWeekStates = states.where((s) => now.difference(s.lastOpenedTime).inDays < 7);
+														return AdaptiveAlertDialog(
+															title: const Text('Clear history'),
+															content: Column(
+																mainAxisSize: MainAxisSize.min,
+																children: [
+																	const Text('Saved and watched threads will not be deleted'),
+																	const SizedBox(height: 16),
+																	Row(
+																		children: [
+																			const Expanded(
+																				child: Text('Include threads with your posts')
+																			),
+																			AdaptiveSwitch(
+																				value: settings.includeThreadsYouRepliedToWhenDeletingHistory,
+																				onChanged: (v) {
+																					setDialogState(() {
+																						settings.includeThreadsYouRepliedToWhenDeletingHistory = v;
+																					});
+																				}
+																			)
+																		]
 																	)
 																]
-															);
-														}
-													)
+															),
+															actions: [
+																AdaptiveDialogAction(
+																	onPressed: () async {
+																		Navigator.pop(context);
+																		for (final state in thisSessionStates) {
+																			await state.delete();
+																		}
+																	},
+																	isDestructiveAction: true,
+																	child: Text('This session (${thisSessionStates.length})')
+																),
+																AdaptiveDialogAction(
+																	onPressed: () async {
+																		Navigator.pop(context);
+																		for (final state in lastDayStates) {
+																			await state.delete();
+																		}
+																	},
+																	isDestructiveAction: true,
+																	child: Text('Today (${lastDayStates.length})')
+																),
+																AdaptiveDialogAction(
+																	onPressed: () async {
+																		Navigator.pop(context);
+																		for (final state in lastWeekStates) {
+																			await state.delete();
+																		}
+																	},
+																	isDestructiveAction: true,
+																	child: Text('This week (${lastWeekStates.length})')
+																),
+																AdaptiveDialogAction(
+																	onPressed: () async {
+																		Navigator.pop(context);
+																		for (final state in states) {
+																			await state.delete();
+																		}
+																	},
+																	isDestructiveAction: true,
+																	child: Text('All time (${states.length})')
+																),
+																AdaptiveDialogAction(
+																	onPressed: () => Navigator.pop(context),
+																	child: const Text('Cancel')
+																)
+															]
+														);
+													}
+												)
+											);
+										},
+										icon: const Icon(CupertinoIcons.delete)
+									),
+									Builder(
+										builder: (context) => AdaptiveIconButton(
+											icon: Icon(context.select<EffectiveSettings, bool>((s) => s.recordThreadsInHistory) ? CupertinoIcons.stop : CupertinoIcons.play),
+											onPressed: () {
+												context.read<EffectiveSettings>().recordThreadsInHistory = !context.read<EffectiveSettings>().recordThreadsInHistory;
+												threadSetter(context.read<MasterDetailHint>().currentValue);
+												showToast(
+													context: context,
+													message: context.read<EffectiveSettings>().recordThreadsInHistory ? 'History resumed' : 'History stopped',
+													icon: context.read<EffectiveSettings>().recordThreadsInHistory ? CupertinoIcons.play : CupertinoIcons.stop
 												);
-											},
-											child: const Icon(CupertinoIcons.delete)
-										),
-										Builder(
-											builder: (context) => CupertinoButton(
-												padding: EdgeInsets.zero,
-												child: Icon(context.select<EffectiveSettings, bool>((s) => s.recordThreadsInHistory) ? CupertinoIcons.stop : CupertinoIcons.play),
-												onPressed: () {
-													context.read<EffectiveSettings>().recordThreadsInHistory = !context.read<EffectiveSettings>().recordThreadsInHistory;
-													threadSetter(context.read<MasterDetailHint>().currentValue);
-													showToast(
-														context: context,
-														message: context.read<EffectiveSettings>().recordThreadsInHistory ? 'History resumed' : 'History stopped',
-														icon: context.read<EffectiveSettings>().recordThreadsInHistory ? CupertinoIcons.play : CupertinoIcons.stop
-													);
-												}
-											)
+											}
 										)
-									]
-								)
+									)
+								]
 							),
-							child: RefreshableList<PersistentThreadState>(
+							body: RefreshableList<PersistentThreadState>(
 								filterableAdapter: (t) => t,
 								filterAlternative: FilterAlternative(
 									name: 'full history',
@@ -319,14 +311,9 @@ class HistoryPageState extends State<HistoryPage> {
 									initialPostId: selectedThread.item.postId,
 									boardSemanticId: -3
 								)
-							) : Builder(
-								builder: (context) => Container(
-									decoration: BoxDecoration(
-										color: ChanceTheme.backgroundColorOf(context),
-									),
-									child: const Center(
-										child: Text('Select a thread')
-									)
+							) : const AdaptiveScaffold(
+								body: Center(
+									child: Text('Select a thread')
 								)
 							),
 							pageRouteBuilder: fullWidthCupertinoPageRouteBuilder

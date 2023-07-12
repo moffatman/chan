@@ -8,7 +8,7 @@ import 'package:chan/models/attachment.dart';
 import 'dart:io';
 
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/cupertino.dart';
@@ -129,12 +129,11 @@ class ArchiveDebuggingPage extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final site = context.watch<ImageboardSite>();
-		return CupertinoPageScaffold(
-			navigationBar: const CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				middle: Text('Archive debugging')
+		return AdaptiveScaffold(
+			bar: const AdaptiveBar(
+				title: Text('Archive debugging')
 			),
-			child: ListView.builder(
+			body: ListView.builder(
         itemCount: site.archives.length,
         itemBuilder: (context, i) => Container(
           padding: const EdgeInsets.all(16),
@@ -149,7 +148,7 @@ class ArchiveDebuggingPage extends StatelessWidget {
                   value: WrappedArchive(site.archives[i]),
                   child: Navigator(
                     initialRoute: '/',
-                    onGenerateRoute: (settings) => FullWidthCupertinoPageRoute(
+                    onGenerateRoute: (settings) => adaptivePageRoute(
                       builder: (context) => const BoardPage(
                         initialBoard: null,
                         semanticId: -1

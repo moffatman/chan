@@ -3,7 +3,7 @@ import 'package:chan/pages/board.dart';
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
-import 'package:chan/services/theme.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -29,7 +29,7 @@ class ImageboardTab extends StatelessWidget {
 					// ensure state created before didUpdate
 					context.read<Persistence>().getThreadState(thread);
 				}
-				Future.delayed(const Duration(seconds: 1), Persistence.didUpdateTabs);
+				Future.delayed(const Duration(seconds: 1), Persistence.saveTabs);
 				tab.didUpdate();
 			},
 			masterBuilder: (context, selectedThread, threadSetter) {
@@ -48,7 +48,7 @@ class ImageboardTab extends StatelessWidget {
 							threadSetter(null);
 						}
 						else {
-							Future.delayed(const Duration(seconds: 1), Persistence.didUpdateTabs);
+							Future.delayed(const Duration(seconds: 1), Persistence.saveTabs);
 							tab.didUpdate();
 						}
 					},
@@ -62,14 +62,9 @@ class ImageboardTab extends StatelessWidget {
 						thread: selectedThread,
 						onWantChangeThread: setter,
 						boardSemanticId: id
-					) : Builder(
-						builder: (context) => Container(
-							decoration: BoxDecoration(
-								color: ChanceTheme.backgroundColorOf(context),
-							),
-							child: const Center(
-								child: Text('Select a thread')
-							)
+					) : const AdaptiveScaffold(
+						body: Center(
+							child: Text('Select a thread')
 						)
 					),
 					pageRouteBuilder: fullWidthCupertinoPageRouteBuilder

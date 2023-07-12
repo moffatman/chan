@@ -7,6 +7,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -73,6 +74,7 @@ class ThreadRow extends StatelessWidget {
 		String? threadAsUrl;
 		final firstUrl = latestThread.attachments.tryFirstWhere((a) => a.type == AttachmentType.url)?.url;
 		final backgroundColor = isSelected ? theme.primaryColorWithBrightness(0.2) : theme.backgroundColor;
+		final opacityBasedBackgroundColor = isSelected ? theme.primaryColor.withOpacity(0.25) : null;
 		final borderColor = isSelected ? theme.primaryColorWithBrightness(0.8) : theme.primaryColorWithBrightness(0.2);
 		if (firstUrl != null) {
 			threadAsUrl = Uri.parse(firstUrl).host.replaceFirst(RegExp(r'^www\.'), '');
@@ -154,7 +156,7 @@ class ThreadRow extends StatelessWidget {
 							const SizedBox(width: 2),
 							if (settings.showImageCountInCatalog && site.showImageCount) ...[
 								const SizedBox(width: 6),
-								Icon(CupertinoIcons.photo, size: 18, color: imageCountColor),
+								Icon(Adaptive.icons.photo, size: 18, color: imageCountColor),
 								const SizedBox(width: 4),
 								if (latestImageCount > unseenImageCount) ...[
 									Text((latestImageCount - unseenImageCount).toString(), style: TextStyle(color: threadState?.lastSeenPostId == null ? null : grey)),
@@ -459,7 +461,7 @@ class ThreadRow extends StatelessWidget {
 													if (latestThread.attachments.length > 1 && attachment.icon != null) const SizedBox(width: 4),
 													if (latestThread.attachments.length > 1) ...[
 														Text('${latestThread.attachments.length} '),
-														const Icon(CupertinoIcons.photo_on_rectangle, size: 19)
+														Icon(Adaptive.icons.photos, size: 19)
 													]
 												]
 											)
@@ -610,7 +612,7 @@ class ThreadRow extends StatelessWidget {
 								children: [
 									if (watch != null) Icon(CupertinoIcons.bell_fill, color: otherMetadataColor, size: 18),
 									if (watch?.localYousOnly == false) Icon(CupertinoIcons.asterisk_circle, color: otherMetadataColor, size: 18),
-									if (threadState?.savedTime != null) Icon(CupertinoIcons.bookmark_fill, color: otherMetadataColor, size: 18),
+									if (threadState?.savedTime != null) Icon(Adaptive.icons.bookmarkFilled, color: otherMetadataColor, size: 18),
 									if (threadState?.showInHistory == false) Icon(CupertinoIcons.eye_slash, color: otherMetadataColor, size: 18)
 								]
 							)
@@ -621,7 +623,7 @@ class ThreadRow extends StatelessWidget {
 		);
 		return Container(
 			decoration: BoxDecoration(
-				color: backgroundColor,
+				color: (Material.maybeOf(context)?.color == theme.backgroundColor) ? opacityBasedBackgroundColor : backgroundColor,
 				border: contentFocus ? Border.all(color: borderColor) : null,
 				borderRadius: borderRadius
 			),

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -28,12 +28,14 @@ class _TabMenuOverlay extends StatefulWidget {
 	final AxisDirection direction;
 	final List<TabMenuAction> actions;
 	final VoidCallback onDone;
+	final bool showTitles;
 
 	const _TabMenuOverlay({
 		required this.origin,
 		required this.direction,
 		required this.actions,
-		required this.onDone
+		required this.onDone,
+		this.showTitles = true
 	});
 	
 	@override
@@ -103,17 +105,17 @@ class _TabMenuOverlayState extends State<_TabMenuOverlay> with TickerProviderSta
 				);
 				break;
 		}
-		final actions = widget.actions.map((action) => CupertinoButton(
+		final actions = widget.actions.map((action) => AdaptiveIconButton(
 			padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
 			onPressed: action.disabled ? null : () {
 				action.onPressed();
 				onDone();
 			},
-			child: Column(
+			icon: Column(
 				mainAxisSize: MainAxisSize.min,
 				children: [
 					Icon(action.icon, color: !action.disabled && action.isDestructiveAction ? Colors.red : null),
-					if (axisDirectionToAxis(widget.direction) == Axis.horizontal) ...[
+					if (axisDirectionToAxis(widget.direction) == Axis.horizontal && widget.showTitles) ...[
 						const SizedBox(height: 4),
 						Flexible(
 							child: Text(action.title, overflow: TextOverflow.visible, style: const TextStyle(fontSize: 15))
@@ -177,7 +179,8 @@ Future<void> showTabMenu({
 	required BuildContext context,
 	required Rect origin,
 	required AxisDirection direction,
-	required List<TabMenuAction> actions
+	required List<TabMenuAction> actions,
+	bool showTitles = true
 }) async {
 	final completer = Completer<void>();
 	final entry = OverlayEntry(
@@ -188,6 +191,7 @@ Future<void> showTabMenu({
 			),
 			direction: direction,
 			actions: actions,
+			showTitles: showTitles,
 			onDone: completer.complete
 		)
 	);

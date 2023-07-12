@@ -1,6 +1,6 @@
 import 'package:chan/services/apple.dart';
 import 'package:chan/services/util.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -37,11 +37,11 @@ Future<void> shareOne({
 	else {
 		final rootContext = context;
 		final uri = Uri.tryParse(text);
-		await showCupertinoModalPopup(
+		await showAdaptiveModalPopup(
 			context: rootContext,
-			builder: (context) => CupertinoActionSheet(
+			builder: (context) => AdaptiveActionSheet(
 				actions: [
-					CupertinoActionSheetAction2(
+					AdaptiveActionSheetAction(
 						child: const Text('Copy to clipboard'),
 						onPressed: () async {
 							Navigator.of(context, rootNavigator: true).pop();
@@ -55,7 +55,7 @@ Future<void> shareOne({
 							);
 						}
 					),
-					for (final option in additionalOptions.entries) CupertinoActionSheetAction2(
+					for (final option in additionalOptions.entries) AdaptiveActionSheetAction(
 						onPressed: () {
 							Navigator.of(context, rootNavigator: true).pop();
 							option.value();
@@ -63,14 +63,14 @@ Future<void> shareOne({
 						child: Text(option.key)
 					),
 					if (uri?.host.isNotEmpty == true) ...[
-						if (!isOnMac && (uri!.scheme == 'http' || uri.scheme == 'https')) CupertinoActionSheetAction2(
+						if (!isOnMac && (uri!.scheme == 'http' || uri.scheme == 'https')) AdaptiveActionSheetAction(
 							child: const Text('Open in internal browser'),
 							onPressed: () {
 								Navigator.of(context, rootNavigator: true).pop();
 								openBrowser(rootContext, Uri.parse(text), fromShareOne: true);
 							}
 						),
-						CupertinoActionSheetAction2(
+						AdaptiveActionSheetAction(
 							child: const Text('Open in external browser'),
 							onPressed: () {
 								Navigator.of(context, rootNavigator: true).pop();
@@ -78,7 +78,7 @@ Future<void> shareOne({
 							}
 						)
 					],
-					CupertinoActionSheetAction2(
+					AdaptiveActionSheetAction(
 						child: const Text('Share...'),
 						onPressed: () {
 							Navigator.of(context, rootNavigator: true).pop();
@@ -90,7 +90,7 @@ Future<void> shareOne({
 						}
 					)
 				],
-				cancelButton: CupertinoActionSheetAction2(
+				cancelButton: AdaptiveActionSheetAction(
 					child: const Text('Cancel'),
 					onPressed: () => Navigator.of(context, rootNavigator: true).pop()
 				)

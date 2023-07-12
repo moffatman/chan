@@ -6,8 +6,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
@@ -113,10 +112,9 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		return CupertinoPageScaffold(
-			navigationBar: CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				middle: CupertinoSearchTextField2(
+		return AdaptiveScaffold(
+			bar: AdaptiveBar(
+				title: AdaptiveSearchTextField(
 					focusNode: urlFocusNode,
 					controller: urlController,
 					enableIMEPersonalizedLearning: context.select<EffectiveSettings, bool>((s) => s.enableIMEPersonalizedLearning),
@@ -134,39 +132,41 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 						urlFocusNode.requestFocus();
 					},
 				),
-				trailing: Padding(
-					padding: const EdgeInsets.only(left: 8),
-					child: CupertinoButton(
-						minSize: 0,
-						padding: EdgeInsets.zero,
-						onPressed: () async {
-							final choice = await showCupertinoModalPopup<WebImageSearchMethod>(
-								context: context,
-								builder: (context) => CupertinoActionSheet(
-									title: const Text('Search'),
-									actions: WebImageSearchMethod.values.map((entry) => CupertinoActionSheetAction2(
-										child: Text(entry.name, style: TextStyle(
-											fontWeight: entry == settings.webImageSearchMethod ? FontWeight.bold : null
-										)),
-										onPressed: () {
-											Navigator.of(context, rootNavigator: true).pop(entry);
-										}
-									)).toList(),
-									cancelButton: CupertinoActionSheetAction2(
-										child: const Text('Cancel'),
-										onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+				actions: [
+					Padding(
+						padding: const EdgeInsets.only(left: 8),
+						child: CupertinoButton(
+							minSize: 0,
+							padding: EdgeInsets.zero,
+							onPressed: () async {
+								final choice = await showAdaptiveModalPopup<WebImageSearchMethod>(
+									context: context,
+									builder: (context) => AdaptiveActionSheet(
+										title: const Text('Search'),
+										actions: WebImageSearchMethod.values.map((entry) => AdaptiveActionSheetAction(
+											child: Text(entry.name, style: TextStyle(
+												fontWeight: entry == settings.webImageSearchMethod ? FontWeight.bold : null
+											)),
+											onPressed: () {
+												Navigator.of(context, rootNavigator: true).pop(entry);
+											}
+										)).toList(),
+										cancelButton: AdaptiveActionSheetAction(
+											child: const Text('Cancel'),
+											onPressed: () => Navigator.of(context, rootNavigator: true).pop()
+										)
 									)
-								)
-							);
-							if (choice != null) {
-								settings.webImageSearchMethod = choice;
-							}
-						},
-						child: const Icon(CupertinoIcons.gear)
+								);
+								if (choice != null) {
+									settings.webImageSearchMethod = choice;
+								}
+							},
+							child: const Icon(CupertinoIcons.gear)
+						)
 					)
-				)
+				]
 			),
-			child: SafeArea(
+			body: SafeArea(
 				child: Column(
 					children: <Widget>[
 						Expanded(
@@ -249,7 +249,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 									child: const Icon(CupertinoIcons.arrow_right)
 								),
 								ElevatedButton(
-									child: const Icon(CupertinoIcons.photo),
+									child: Icon(Adaptive.icons.photo),
 									onPressed: () async {
 										final List<dynamic> returnedResults = await webViewController?.evaluateJavascript(
 											source: '''[...document.querySelectorAll('img')].map(img => {
@@ -342,7 +342,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 															makeGrid(context, fullImages),
 															if (offscreen.isNotEmpty) ...[
 																const SizedBox(height: 16),
-																CupertinoButton.filled(
+																AdaptiveFilledButton(
 																	child: Text('${offscreen.length} Offscreen'),
 																	onPressed: () async {
 																		final selectedImage = await Navigator.of(context).push(TransparentRoute(
@@ -369,7 +369,7 @@ class _WebImagePickerPageState extends State<WebImagePickerPage> {
 															],
 															if (thumbnails.isNotEmpty) ...[
 																const SizedBox(height: 16),
-																CupertinoButton.filled(
+																AdaptiveFilledButton(
 																	child: Text('${thumbnails.length} Thumbnails'),
 																	onPressed: () async {
 																		final selectedThumbnail = await Navigator.of(context).push(TransparentRoute(

@@ -6,6 +6,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
@@ -60,20 +61,11 @@ class ThreadWatchControlsPage extends StatelessWidget {
 							const Text('Local Watcher'),
 							Padding(
 								padding: const EdgeInsets.all(16),
-								child: CupertinoSegmentedControl<_ThreadWatchingStatus>(
+								child: AdaptiveSegmentedControl<_ThreadWatchingStatus>(
 									children: const {
-										_ThreadWatchingStatus.off: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('Off')
-										),
-										_ThreadWatchingStatus.yousOnly: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('(You)s only')
-										),
-										_ThreadWatchingStatus.allPosts: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('All posts')
-										)
+										_ThreadWatchingStatus.off: (null, 'Off'),
+										_ThreadWatchingStatus.yousOnly: (null, '(You)s only'),
+										_ThreadWatchingStatus.allPosts: (null, 'All posts')
 									},
 									groupValue: localWatcherStatus,
 									onValueChanged: (v) {
@@ -111,20 +103,11 @@ class ThreadWatchControlsPage extends StatelessWidget {
 								const Text('Push Notifications'),
 								Padding(
 									padding: const EdgeInsets.all(16),
-									child: CupertinoSegmentedControl<_ThreadWatchingStatus>(
+									child: AdaptiveSegmentedControl<_ThreadWatchingStatus>(
 										children: const {
-											_ThreadWatchingStatus.off: Padding(
-												padding: EdgeInsets.all(8),
-												child: Text('Off')
-											),
-											_ThreadWatchingStatus.yousOnly: Padding(
-												padding: EdgeInsets.all(8),
-												child: Text('(You)s only')
-											),
-											_ThreadWatchingStatus.allPosts: Padding(
-												padding: EdgeInsets.all(8),
-												child: Text('All posts')
-											)
+											_ThreadWatchingStatus.off: (null, 'Off'),
+											_ThreadWatchingStatus.yousOnly: (null, '(You)s only'),
+											_ThreadWatchingStatus.allPosts: (null, 'All posts')
 										},
 										groupValue: pushWatcherStatus,
 										onValueChanged: (v) {
@@ -163,16 +146,10 @@ class ThreadWatchControlsPage extends StatelessWidget {
 								const Text('In-App Notifications'),
 								Padding(
 									padding: const EdgeInsets.all(16),
-									child: CupertinoSegmentedControl<bool>(
+									child: AdaptiveSegmentedControl<bool>(
 										children: const {
-											false: Padding(
-												padding: EdgeInsets.all(8),
-												child: Text('Off')
-											),
-											true: Padding(
-												padding: EdgeInsets.all(8),
-												child: Text('On')
-											)
+											false: (null, 'Off'),
+											true: (null, 'On')
 										},
 										groupValue: !(watch?.foregroundMuted ?? true) && (watch?.push ?? false),
 										onValueChanged: (v) {
@@ -203,7 +180,7 @@ class ThreadWatchControlsPage extends StatelessWidget {
 								Row(
 									mainAxisAlignment: MainAxisAlignment.center,
 									children: [
-										CupertinoButton(
+										AdaptiveButton(
 											onPressed: (watch != null && !(settings.defaultThreadWatch?.settingsEquals(watch) ?? false)) ? () async {
 												final ok = await confirm(context, 'After setting a default watch setting, this menu will only open when long-pressing the watch icon.');
 												if (ok != true) {
@@ -222,11 +199,11 @@ class ThreadWatchControlsPage extends StatelessWidget {
 											} : null,
 											child: const Text('Use as default without asking')
 										),
-										CupertinoButton(
+										AdaptiveIconButton(
 											onPressed: settings.defaultThreadWatch == null ? null : () {
 												settings.defaultThreadWatch = null;
 											},
-											child: const Icon(CupertinoIcons.xmark)
+											icon: const Icon(CupertinoIcons.xmark)
 										)
 									]
 								)

@@ -1,6 +1,7 @@
 
 
 import 'package:chan/services/filtering.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -19,12 +20,11 @@ class _FooterDebuggingPageState extends State<FooterDebuggingPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		return CupertinoPageScaffold(
-			navigationBar: const CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				middle: Text('Footer debugging')
+		return AdaptiveScaffold(
+			bar: const AdaptiveBar(
+				title: Text('Footer debugging')
 			),
-			child: RefreshableList<EmptyFilterable>(
+			body: RefreshableList<EmptyFilterable>(
 				id: 'debuggingList',
 				filterableAdapter: null,
 				controller: controller,

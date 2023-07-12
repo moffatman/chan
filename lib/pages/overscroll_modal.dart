@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:chan/services/settings.dart';
+import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/widgets/sliver_center.dart';
 import 'package:chan/widgets/util.dart';
@@ -52,6 +53,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 	late final ScrollController _controller;
 	final GlobalKey _scrollKey = GlobalKey(debugLabel: '_OverscrollModalPageState._scrollKey');
 	final GlobalKey _childKey = GlobalKey(debugLabel: '_OverscrollModalPageState._childKey');
+	final GlobalKey _childWidgetKey = GlobalKey(debugLabel: '_OverscrollModalPageState._childWidgetKey');
 	late double _scrollStopPosition;
 	final Map<int, (Offset position, bool initiallyInSpacer, DateTime globalTime)> _pointersDown = {};
 	late final ValueNotifierAnimation<double> _opacity;
@@ -133,6 +135,10 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 
 	@override
 	Widget build(BuildContext context) {
+		final child = widget.child == null ? null : KeyedSubtree(
+			key: _childWidgetKey,
+			child: widget.child!
+		);
 		return LayoutBuilder(
 			builder: (context, constraints) => Stack(
 				fit: StackFit.expand,
@@ -212,7 +218,7 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 									autofocus: true,
 									child: Padding(
 										padding: MediaQuery.viewInsetsOf(context),
-										child: MaybeCupertinoScrollbar(
+										child: MaybeScrollbar(
 											controller: _controller,
 											child: CustomScrollView(
 												reverse: widget.reverse,
@@ -226,7 +232,9 @@ class _OverscrollModalPageState extends State<OverscrollModalPage> {
 															key: _childKey,
 															child: SliverSafeArea(
 																sliver: widget.sliver ?? SliverToBoxAdapter(
-																	child: widget.child
+																	child: ChanceTheme.materialOf(context) ? Material(
+																		child: child
+																	) : child
 																)
 															)
 														)

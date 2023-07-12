@@ -4,8 +4,8 @@ import 'package:chan/pages/thread.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/thread_row.dart';
 import 'package:flutter/cupertino.dart';
@@ -44,7 +44,7 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 					actions: [
 						if (persistence.getThreadStateIfExists(thread.identifier)?.savedTime != null) ContextMenuAction(
 							child: const Text('Un-save thread'),
-							trailingIcon: CupertinoIcons.bookmark_fill,
+							trailingIcon: Adaptive.icons.bookmarkFilled,
 							onPressed: () {
 								final threadState = persistence.getThreadState(thread.identifier);
 								threadState.savedTime = null;
@@ -54,7 +54,7 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 						)
 						else ContextMenuAction(
 							child: const Text('Save thread'),
-							trailingIcon: CupertinoIcons.bookmark,
+							trailingIcon: Adaptive.icons.bookmark,
 							onPressed: () {
 								final threadState = persistence.getThreadState(thread.identifier);
 								threadState.thread = thread;
@@ -100,7 +100,7 @@ class _FrameDropDebuggingPageState extends State<FrameDropDebuggingPage> {
 							}
 						),
 						onTap: () {
-							Navigator.of(context).push(FullWidthCupertinoPageRoute(
+							Navigator.of(context).push(adaptivePageRoute(
 								builder: (ctx) => ThreadPage(
 									thread: thread.identifier,
 									boardSemanticId: -99,

@@ -5,8 +5,8 @@ import 'package:chan/services/cloudflare.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:html/dom.dart' show Document;
 import 'package:html/parser.dart' show parse;
@@ -262,9 +262,9 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 				child: Column(
 					children: [
 						Text(errorMessage!),
-						CupertinoButton(
+						AdaptiveIconButton(
 							onPressed: _tryRequestChallenge,
-							child: const Text('Retry')
+							icon: const Text('Retry')
 						)
 					]
 				)
@@ -316,14 +316,14 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 					Row(
 						mainAxisSize: MainAxisSize.min,
 						children: [
-							CupertinoButton(
+							AdaptiveIconButton(
 								onPressed: _tryRequestChallenge,
-								child: const Text('Refresh')
+								icon: const Text('Refresh')
 							),
 							const SizedBox(width: 32),
-							CupertinoButton(
+							AdaptiveIconButton(
 								onPressed: _trySubmitChallenge,
-								child: const Text('Submit')
+								icon: const Text('Submit')
 							)
 						]
 					)
@@ -332,7 +332,7 @@ class _CaptchaNoJSState extends State<CaptchaNoJS> {
 		}
 		else {
 			return const Center(
-				child: CupertinoActivityIndicator()
+				child: CircularProgressIndicator.adaptive()
 			);
 		}
 	}

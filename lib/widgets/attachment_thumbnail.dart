@@ -8,9 +8,11 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:extended_image/extended_image.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class TaggedAttachment {
@@ -149,7 +151,7 @@ class AttachmentThumbnail extends StatelessWidget {
 							width: effectiveWidth,
 							height: effectiveHeight,
 							child: const Center(
-								child: CupertinoActivityIndicator()
+								child: CircularProgressIndicator.adaptive()
 							)
 						);
 					}
@@ -202,7 +204,7 @@ class AttachmentThumbnail extends StatelessWidget {
 				color: barColor,
 				child: Center(
 					child: Icon(
-						attachment.icon ?? CupertinoIcons.photo,
+						attachment.icon ?? Adaptive.icons.photo,
 						size: max(24, 0.5 * min(effectiveWidth, effectiveHeight))
 					)
 				)

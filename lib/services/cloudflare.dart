@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -179,13 +179,12 @@ class CloudflareInterceptor extends Interceptor {
 			// User recently rejected a non-interactive cloudflare login, reject it
 			throw CloudflareHandlerRateLimitException('Too many Cloudflare challenges! Try again ${formatRelativeTime(_allowNonInteractiveWebviewWhen.timePasses)}');
 		}
-		final ret = await Navigator.of(ImageboardRegistry.instance.context!).push<_CloudflareResponse>(FullWidthCupertinoPageRoute(
-			builder: (context) => CupertinoPageScaffold(
-				navigationBar: const CupertinoNavigationBar(
-					transitionBetweenRoutes: false,
-					middle: Text('Cloudflare Login')
+		final ret = await Navigator.of(ImageboardRegistry.instance.context!).push<_CloudflareResponse>(adaptivePageRoute(
+			builder: (context) => AdaptiveScaffold(
+				bar: const AdaptiveBar(
+					title: Text('Cloudflare Login')
 				),
-				child: InAppWebView(
+				body: InAppWebView(
 					headlessWebView: headlessWebView,
 					initialSettings: initialSettings,
 					initialUrlRequest: initialUrlRequest,

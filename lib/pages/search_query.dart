@@ -9,9 +9,7 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -71,35 +69,34 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		return Row(
 			mainAxisAlignment: MainAxisAlignment.spaceAround,
 			children: [
-				CupertinoButton(
-					padding: EdgeInsets.zero,
+				AdaptiveIconButton(
 					onPressed: (loading || result.data?.page == 1) ? null : () {
 						page = 1;
 						_runQuery();
 					},
-					child: const Text('1')
+					icon: const Text('1')
 				),
-				const Spacer(),
-				CupertinoButton(
-					padding: EdgeInsets.zero,
+				const Spacer(flex: 2),
+				AdaptiveIconButton(
+					minSize: 0,
 					onPressed: (loading || result.data?.page == 1) ? null : () {
 						page = page! - 1;
 						_runQuery();
 					},
-					child: const Icon(CupertinoIcons.chevron_left)
+					icon: const Icon(CupertinoIcons.chevron_left)
 				),
-				CupertinoButton(
-					padding: EdgeInsets.zero,
+				const Spacer(),
+				AdaptiveIconButton(
 					onPressed: (loading || result.data?.maxPage == 1 || result.data?.maxPage == null) ? null : () async {
 						final controller = TextEditingController();
-						final selectedPage = await showCupertinoDialog<int>(
+						final selectedPage = await showAdaptiveDialog<int>(
 							context: context,
 							barrierDismissible: true,
-							builder: (context) => CupertinoAlertDialog2(
+							builder: (context) => AdaptiveAlertDialog(
 								title: const Text('Go to page'),
 								content: Padding(
 									padding: const EdgeInsets.only(top: 8),
-									child: CupertinoTextField2(
+									child: AdaptiveTextField(
 										controller: controller,
 										enableIMEPersonalizedLearning: context.watch<EffectiveSettings>().enableIMEPersonalizedLearning,
 										autofocus: true,
@@ -110,18 +107,18 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 									)
 								),
 								actions: [
-									CupertinoDialogAction2(
-										child: const Text('Cancel'),
-										onPressed: () {
-											Navigator.of(context).pop();
-										}
-									),
-									CupertinoDialogAction2(
+									AdaptiveDialogAction(
 										isDefaultAction: true,
 										onPressed: () {
 											Navigator.of(context).pop(int.tryParse(controller.text));
 										},
-										child: const Text('OK')
+										child: const Text('Go')
+									),
+									AdaptiveDialogAction(
+										child: const Text('Cancel'),
+										onPressed: () {
+											Navigator.of(context).pop();
+										}
 									)
 								]
 							)
@@ -132,24 +129,24 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 						}
 						controller.dispose();
 					},
-					child: Text('Page $page')
+					icon: Text('Page $page')
 				),
-				CupertinoButton(
-					padding: EdgeInsets.zero,
+				const Spacer(),
+				AdaptiveIconButton(
+					minSize: 0,
 					onPressed: (loading || result.data?.page == result.data?.maxPage) ? null : () {
 						page = page! + 1;
 						_runQuery();
 					},
-					child: const Icon(CupertinoIcons.chevron_right)
+					icon: const Icon(CupertinoIcons.chevron_right)
 				),
-				const Spacer(),
-				CupertinoButton(
-					padding: EdgeInsets.zero,
+				const Spacer(flex: 2),
+				AdaptiveIconButton(
 					onPressed: (loading || result.data?.page == result.data?.maxPage || result.data?.maxPage == null) ? null : () {
 						page = result.data?.maxPage;
 						_runQuery();
 					},
-					child: Text('${result.data?.maxPage ?? '—'}')
+					icon: Text('${result.data?.maxPage ?? '—'}')
 				),
 			]
 		);
@@ -172,7 +169,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 		}
 		else if (!loading && result.hasData) {
 			final dividerColor = ChanceTheme.primaryColorWithBrightness20Of(context);
-			return MaybeCupertinoScrollbar(
+			return MaybeScrollbar(
 				child: ListView.separated(
 					itemCount: result.data!.posts.length + 2,
 					itemBuilder: (context, i) {
@@ -270,7 +267,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 				),
 				const Expanded(
 					child: Center(
-						child: CupertinoActivityIndicator()
+						child: CircularProgressIndicator.adaptive()
 					)
 				)
 			]
@@ -279,10 +276,9 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		return CupertinoPageScaffold(
-			navigationBar: CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				middle: FittedBox(
+		return AdaptiveScaffold(
+			bar: AdaptiveBar(
+				title: FittedBox(
 					fit: BoxFit.contain,
 					child: Row(
 						mainAxisSize: MainAxisSize.min,
@@ -293,7 +289,7 @@ class _SearchQueryPageState extends State<SearchQueryPage> {
 					)
 				)
 			),
-			child: _build(context, widget.selectedResult, widget.onResultSelected)
+			body: _build(context, widget.selectedResult, widget.onResultSelected)
 		);
 	}
 }
@@ -302,14 +298,14 @@ openSearch({
 	required BuildContext context,
 	required ImageboardArchiveSearchQuery query
 }) {
-	Navigator.of(context).push(FullWidthCupertinoPageRoute(
+	Navigator.of(context).push(adaptivePageRoute(
 		builder: (context) => ImageboardScope(
 			imageboardKey: query.imageboardKey,
 			child: SearchQueryPage(
 				query: query,
 				onResultSelected: (result) {
 					if (result != null) {
-						Navigator.of(context).push(FullWidthCupertinoPageRoute(
+						Navigator.of(context).push(adaptivePageRoute(
 							builder: (context) => ImageboardScope(
 								imageboardKey: null,
 								imageboard: result.imageboard,

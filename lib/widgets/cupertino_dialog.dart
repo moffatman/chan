@@ -6,12 +6,12 @@ import 'package:flutter/cupertino.dart';
 class CupertinoAlertDialog2 extends StatelessWidget {
 	final Widget? title;
 	final Widget? content;
-	final List<CupertinoDialogAction2> actions;
+	final List<Widget> actions;
 
 	const CupertinoAlertDialog2({
 		this.title,
     this.content,
-    this.actions = const <CupertinoDialogAction2>[],
+    this.actions = const [],
 		super.key
 	});
 
@@ -32,7 +32,8 @@ class CupertinoAlertDialog2 extends StatelessWidget {
 					child: content!
 				)
 			),
-			actions: actions,
+			// Cancel button is always at end of array. But when we have 2 actions, we want it first so it displays on the left.
+			actions: actions.length == 2 ? actions.reversed.toList() : actions,
 		);
 	}
 }
@@ -57,34 +58,6 @@ class CupertinoDialogAction2 extends StatelessWidget {
 			onPressed: onPressed,
 			isDefaultAction: isDefaultAction,
 			isDestructiveAction: isDestructiveAction,
-			child: Builder(
-				builder: (context) => DefaultTextStyle(
-					style: DefaultTextStyle.of(context).style.merge(Persistence.settings.textStyle),
-					textAlign: TextAlign.center,
-					child: child
-				)
-			)
-		);
-	}
-}
-
-class CupertinoActionSheetAction2 extends StatelessWidget {
-	final Widget child;
-	final VoidCallback onPressed;
-	final bool isDefaultAction;
-
-	const CupertinoActionSheetAction2({
-		required this.onPressed,
-		required this.child,
-		this.isDefaultAction = false,
-		super.key
-	});
-
-	@override
-	Widget build(BuildContext context) {
-		return CupertinoActionSheetAction(
-			onPressed: onPressed,
-			isDefaultAction: isDefaultAction,
 			child: Builder(
 				builder: (context) => DefaultTextStyle(
 					style: DefaultTextStyle.of(context).style.merge(Persistence.settings.textStyle),

@@ -10,6 +10,7 @@ import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/widgets/cupertino_context_menu2.dart';
+import 'package:chan/widgets/default_gesture_detector.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -21,11 +22,13 @@ class ContextMenuAction {
 	final IconData trailingIcon;
 	final FutureOr<void> Function() onPressed;
 	final bool isDestructiveAction;
+	final Key? key;
 	ContextMenuAction({
 		required this.child,
 		required this.trailingIcon,
 		required this.onPressed,
-		this.isDestructiveAction = false
+		this.isDestructiveAction = false,
+		this.key
 	});
 }
 
@@ -33,11 +36,15 @@ class ContextMenu extends StatefulWidget {
 	final List<ContextMenuAction> actions;
 	final Widget child;
 	final double? maxHeight;
+	final Widget Function(BuildContext, Animation, Widget?)? previewBuilder;
+	final Color? backgroundColor;
 
 	const ContextMenu({
 		required this.actions,
 		required this.child,
 		this.maxHeight,
+		this.previewBuilder,
+		this.backgroundColor,
 		Key? key
 	}) : super(key: key);
 
@@ -47,6 +54,57 @@ class ContextMenu extends StatefulWidget {
 
 class _ContextMenuState extends State<ContextMenu> {
 	OverlayEntry? _overlayEntry;
+	Offset? lastTap;
+
+	void _onLongPress() async {
+		final l = ((lastTap?.dx ?? 0) / Persistence.settings.interfaceScale) + 5;
+		final t = ((lastTap?.dy ?? 0) / Persistence.settings.interfaceScale) + 5;
+		final s = context.findAncestorWidgetOfExactType<MediaQuery>()!.data.size / Persistence.settings.interfaceScale;
+		final action = await showMenu(
+			useRootNavigator: true,
+			items: widget.actions.map((action) => PopupMenuItem(
+				value: action,
+				key: action.key,
+				child: Row(
+					mainAxisAlignment: MainAxisAlignment.spaceBetween,
+					children: [
+						DefaultTextStyle.merge(
+							style: action.isDestructiveAction ? const TextStyle(color: Colors.red) : const TextStyle(),
+							child: action.child
+						),
+						Icon(action.trailingIcon, color: action.isDestructiveAction ? Colors.red : null)
+					]
+				)
+			)).toList(),
+			context: context,
+			constraints: const BoxConstraints(maxHeight: 500),
+			position: RelativeRect.fromLTRB(l, t, s.width - l, s.height - t)
+		);
+		action?.onPressed();
+	}
+
+	Widget _buildMaterial() {
+		assert((widget.previewBuilder == null) || (widget.backgroundColor == null), 'backgroundColor behind previewBuilder not supported');
+		return widget.previewBuilder == null ? Material(
+			color: widget.backgroundColor,
+			child: InkWell(
+				onTapDown: (d) {
+					lastTap = d.globalPosition;
+				},
+				onTap: () {
+					context.read<DefaultOnTapCallback?>()?.onTap?.call();
+				},
+				onLongPress: _onLongPress,
+				child: widget.child
+			)
+		) : GestureDetector(
+			onLongPressStart: (d) {
+				lastTap = d.globalPosition;
+				_onLongPress();
+			},
+			child: widget.child
+		);
+	}
 
 	@override
 	Widget build(BuildContext context) {
@@ -89,6 +147,7 @@ class _ContextMenuState extends State<ContextMenu> {
 												crossAxisAlignment: CrossAxisAlignment.start,
 												children: widget.actions.map((action) {
 													return CupertinoButton(
+														key: action.key,
 														padding: const EdgeInsets.all(16),
 														onPressed: () async {
 															_overlayEntry?.remove();
@@ -121,10 +180,11 @@ class _ContextMenuState extends State<ContextMenu> {
 				);
 				Overlay.of(context, rootOverlay: true).insert(_overlayEntry!);
 			},
-			child: LayoutBuilder(
+			child: ChanceTheme.materialOf(context) ? _buildMaterial() : LayoutBuilder(
 				builder: (context, originalConstraints) => CupertinoContextMenu2(
 					actions: widget.actions.map((action) => CupertinoContextMenuAction2(
 						trailingIcon: action.trailingIcon,
+						key: action.key,
 						onPressed: () async {
 							Navigator.of(context, rootNavigator: true).pop();
 							try {
@@ -167,7 +227,7 @@ class _ContextMenuState extends State<ContextMenu> {
 													if (threadWatcher != null) ChangeNotifierProvider<ThreadWatcher>.value(value: threadWatcher),
 													if (notifications != null) Provider<Notifications>.value(value: notifications)
 												],
-												child: IgnorePointer(child: child)
+												child: IgnorePointer(child: widget.previewBuilder?.call(context, animation, null) ?? child)
 											)
 										)
 									)
@@ -175,7 +235,12 @@ class _ContextMenuState extends State<ContextMenu> {
 							);
 						}
 					),
-					child: widget.child
+					child: widget.backgroundColor == null ? widget.child : DecoratedBox(
+						decoration: BoxDecoration(
+							color: widget.backgroundColor
+						),
+						child: widget.child
+					)
 				)
 			)
 		);

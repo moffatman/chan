@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:chan/services/filtering.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -21,31 +22,27 @@ class _ScrollingDebuggingPage extends State<ScrollingDebuggingPage> {
 	List<EmptyFilterable>? list;
 	@override
 	Widget build(BuildContext context) {
-		return CupertinoPageScaffold(
-			navigationBar: CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				middle: const Text('Scrolling debugging'),
-				trailing: Row(
-					mainAxisSize: MainAxisSize.min,
-					children: [
-						CupertinoButton(
-							child: const Icon(CupertinoIcons.cube_box),
-							onPressed: () {
-								setState(() {
-									showBox = true;
-								});
-							}
-						),
-						CupertinoButton(
-							child: const Icon(CupertinoIcons.arrow_down_to_line),
-							onPressed: () {
-								controller.animateTo((x) => x.id == 300, orElseLast: (x) => true);
-							}
-						)
-					]
-				)
+		return AdaptiveScaffold(
+			bar: AdaptiveBar(
+				title: const Text('Scrolling debugging'),
+				actions: [
+					CupertinoButton(
+						child: const Icon(CupertinoIcons.cube_box),
+						onPressed: () {
+							setState(() {
+								showBox = true;
+							});
+						}
+					),
+					CupertinoButton(
+						child: const Icon(CupertinoIcons.arrow_down_to_line),
+						onPressed: () {
+							controller.animateTo((x) => x.id == 300, orElseLast: (x) => true);
+						}
+					)
+				]
 			),
-			child: Column(
+			body: Column(
 				children: [
 					Expanded(
 						child: RefreshableList<EmptyFilterable>(

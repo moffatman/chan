@@ -11,7 +11,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
-import 'package:chan/widgets/cupertino_context_menu2.dart';
+import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -262,7 +262,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 												useHeroDestinationWidget: true,
 												heroOtherEndIsBoxFitCover: true,
 												additionalContextMenuActionsBuilder: (attachment) => [
-													CupertinoContextMenuAction2(
+													ContextMenuAction(
 														trailingIcon: CupertinoIcons.return_icon,
 														onPressed: () {
 															Navigator.of(context, rootNavigator: true).pop();
@@ -309,7 +309,7 @@ class _AttachmentsPageState extends State<AttachmentsPage> {
 														fit: BoxFit.cover,
 														maxWidth: PlatformDispatcher.instance.views.first.physicalSize.width, // no zoom
 														additionalContextMenuActions: [
-															CupertinoContextMenuAction2(
+															ContextMenuAction(
 																trailingIcon: CupertinoIcons.return_icon,
 																onPressed: () {
 																	Navigator.of(context, rootNavigator: true).pop();

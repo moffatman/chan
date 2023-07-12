@@ -2,8 +2,10 @@ import 'dart:math';
 
 import 'package:chan/pages/master_detail.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 class LicensesPage extends StatefulWidget {
 	const LicensesPage({
@@ -37,24 +39,23 @@ class _LicensesPageState extends State<LicensesPage> {
 	Widget build(BuildContext rootContext) {
 		if (!_loaded) {
 			return const Center(
-				child: CupertinoActivityIndicator()
+				child: CircularProgressIndicator.adaptive()
 			);
 		}
 		final packageNames = _packages.keys.toList();
 		return MasterDetailPage<String>(
 			id: 'licenses',
-			masterBuilder: (context, selectedValue, valueSetter) => CupertinoPageScaffold(
-				navigationBar: CupertinoNavigationBar(
+			masterBuilder: (context, selectedValue, valueSetter) => AdaptiveScaffold(
+				bar: AdaptiveBar(
 					leading: CupertinoButton(
 						padding: EdgeInsets.zero,
 						minSize: 0,
 						child: const Icon(CupertinoIcons.chevron_back, size: 30),
 						onPressed: () => Navigator.pop(rootContext)
 					),
-					transitionBetweenRoutes: false,
-					middle: const Text('Licenses')
+					title: const Text('Licenses')
 				),
-				child: ListView.builder(
+				body: ListView.builder(
 					itemCount: packageNames.length,
 					itemBuilder: (context, i) => GestureDetector(
 						behavior: HitTestBehavior.opaque,
@@ -68,17 +69,15 @@ class _LicensesPageState extends State<LicensesPage> {
 				)
 			),
 			detailBuilder: (selectedValue, setter, poppedOut) => BuiltDetailPane(
-				widget: selectedValue == null ? Container(
-					color: ChanceTheme.backgroundColorOf(context),
-					child: const Center(
+				widget: selectedValue == null ? const AdaptiveScaffold(
+					body: Center(
 						child: Text('Select a package')
 					) 
-				): CupertinoPageScaffold(
-					navigationBar: CupertinoNavigationBar(
-						transitionBetweenRoutes: false,
-						middle: Text(selectedValue)
+				): AdaptiveScaffold(
+					bar: AdaptiveBar(
+						title: Text(selectedValue)
 					),
-					child: Padding(
+					body: Padding(
 						padding: const EdgeInsets.symmetric(horizontal: 32),
 						child: ListView(
 							children: [

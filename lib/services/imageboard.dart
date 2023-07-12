@@ -277,7 +277,8 @@ class ImageboardRegistry extends ChangeNotifier {
 				}
 				await Future.wait(Persistence.tabs.map((tab) => tab.initialize()));
 				if (initialTabsLength != Persistence.tabs.length) {
-					Persistence.didUpdateTabs();
+					Persistence.saveTabs();
+				Persistence.globalTabMutator.value = Persistence.currentTabIndex;
 				}
 			}
 			catch (e, st) {

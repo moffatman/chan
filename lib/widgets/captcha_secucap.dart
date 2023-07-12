@@ -4,9 +4,10 @@ import 'dart:typed_data';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 class CaptchaSecucap extends StatefulWidget {
 	final SecucapCaptchaRequest request;
@@ -90,9 +91,9 @@ class _CaptchaSecucapState extends State<CaptchaSecucap> {
 				child: Column(
 					children: [
 						Text(errorMessage!),
-						CupertinoButton(
+						AdaptiveIconButton(
 							onPressed: _tryRequestChallenge,
-							child: const Icon(CupertinoIcons.refresh)
+							icon: const Icon(CupertinoIcons.refresh)
 						)
 					]
 				)
@@ -126,9 +127,9 @@ class _CaptchaSecucapState extends State<CaptchaSecucap> {
 						child: Row(
 							mainAxisAlignment: MainAxisAlignment.center,
 							children: [
-								CupertinoButton(
+								AdaptiveIconButton(
 									onPressed: _tryRequestChallenge,
-									child: const Icon(CupertinoIcons.refresh)
+									icon: const Icon(CupertinoIcons.refresh)
 								)
 							]
 						)
@@ -136,7 +137,7 @@ class _CaptchaSecucapState extends State<CaptchaSecucap> {
 					const SizedBox(height: 16),
 					SizedBox(
 						width: 150,
-						child: CupertinoTextField2(
+						child: AdaptiveTextField(
 							focusNode: _solutionNode,
 							enableIMEPersonalizedLearning: false,
 							autocorrect: false,
@@ -154,7 +155,7 @@ class _CaptchaSecucapState extends State<CaptchaSecucap> {
 		}
 		else {
 			return const Center(
-				child: CupertinoActivityIndicator()
+				child: CircularProgressIndicator.adaptive()
 			);
 		}
 	}

@@ -1,12 +1,13 @@
 import 'package:chan/services/theme.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
-class CupertinoSwitch2 extends StatelessWidget {
+class AdaptiveSwitch extends StatelessWidget {
 	final bool value;
 	final ValueChanged<bool>? onChanged;
 
-	const CupertinoSwitch2({
+	const AdaptiveSwitch({
 		required this.value,
 		required this.onChanged,
 		super.key
@@ -14,6 +15,12 @@ class CupertinoSwitch2 extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+		if (ChanceTheme.materialOf(context)) {
+			return Switch(
+				value: value,
+				onChanged: onChanged
+			);
+		}
 		return CupertinoSwitch(
 			value: value,
 			onChanged: onChanged,

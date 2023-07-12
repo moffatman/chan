@@ -14,9 +14,9 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
-import 'package:chan/widgets/cupertino_context_menu2.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
+import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/saved_attachment_thumbnail.dart';
 import 'package:chan/widgets/util.dart';
@@ -108,7 +108,7 @@ class GalleryPage extends StatefulWidget {
 	final bool updateOverlays;
 	final bool useHeroDestinationWidget;
 	final bool heroOtherEndIsBoxFitCover;
-	final List<CupertinoContextMenuAction2> Function(TaggedAttachment)? additionalContextMenuActionsBuilder;
+	final List<ContextMenuAction> Function(TaggedAttachment)? additionalContextMenuActionsBuilder;
 
 	const GalleryPage({
 		required this.attachments,
@@ -405,25 +405,25 @@ class _GalleryPageState extends State<GalleryPage> {
 
 	void _downloadAll() async {
 		final toDownload = widget.attachments.where((a) => !_getController(a).isDownloaded).toList();
-		final shouldDownload = await showCupertinoDialog<bool>(
+		final shouldDownload = await showAdaptiveDialog<bool>(
 			context: context,
 			barrierDismissible: true,
-			builder: (context) => CupertinoAlertDialog2(
+			builder: (context) => AdaptiveAlertDialog(
 				title: const Text('Download all?'),
 				content: Text("${describeCount(toDownload.length, 'attachment')} will be saved to your library"),
 				actions: [
-					CupertinoDialogAction2(
-						child: const Text('No'),
-						onPressed: () {
-							Navigator.of(context).pop(false);
-						}
-					),
-					CupertinoDialogAction2(
+					AdaptiveDialogAction(
 						isDefaultAction: true,
-						child: const Text('Yes'),
+						child: const Text('Download'),
 						onPressed: () {
 							Navigator.of(context).pop(true);
 						},
+					),
+					AdaptiveDialogAction(
+						child: const Text('Cancel'),
+						onPressed: () {
+							Navigator.of(context).pop(false);
+						}
 					)
 				]
 			)
@@ -431,10 +431,10 @@ class _GalleryPageState extends State<GalleryPage> {
 		if (shouldDownload == true && mounted) {
 			final loadingStream = ValueNotifier<int>(0);
 			bool cancel = false;
-			showCupertinoDialog(
+			showAdaptiveDialog(
 				context: context,
 				barrierDismissible: false,
-				builder: (context) => CupertinoAlertDialog2(
+				builder: (context) => AdaptiveAlertDialog(
 					title: const Text('Bulk Download'),
 					content: ValueListenableBuilder<int>(
 						valueListenable: loadingStream,
@@ -450,7 +450,7 @@ class _GalleryPageState extends State<GalleryPage> {
 						)
 					),
 					actions: [
-						CupertinoDialogAction2(
+						AdaptiveDialogAction(
 							isDestructiveAction: true,
 							child: const Text('Cancel'),
 							onPressed: () {
@@ -534,8 +534,7 @@ class _GalleryPageState extends State<GalleryPage> {
 										scrollDirection: Axis.horizontal,
 										itemBuilder: (context, index) {
 											final attachment = widget.attachments[index];
-											return CupertinoButton(
-												padding: EdgeInsets.zero,
+											return AdaptiveIconButton(
 												minSize: 0,
 												onPressed: () {
 													if (_scrollSheetController.size > 0.5) {
@@ -543,7 +542,7 @@ class _GalleryPageState extends State<GalleryPage> {
 													}
 													_animateToPage(index);
 												},
-												child: SizedBox(
+												icon: SizedBox(
 													width: _thumbnailSize + 8,
 													height: _thumbnailSize + 8,
 													child: Center(
@@ -606,7 +605,7 @@ class _GalleryPageState extends State<GalleryPage> {
 										if (index == widget.attachments.length) {
 											return Padding(
 												padding: const EdgeInsets.all(6),
-												child: CupertinoButton.filled(
+												child: AdaptiveFilledButton(
 													padding: const EdgeInsets.all(8),
 													onPressed: _downloadAll,
 													child: const FittedBox(
@@ -623,14 +622,13 @@ class _GalleryPageState extends State<GalleryPage> {
 											);
 										}
 										final attachment = widget.attachments[index];
-										return CupertinoButton(
-											padding: EdgeInsets.zero,
+										return AdaptiveIconButton(
 											minSize: 0,
 											onPressed: () {
 												_scrollSheetController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.ease);
 												Future.delayed(const Duration(milliseconds: 100), () => _animateToPage(index));
 											},
-											child: Container(
+											icon: Container(
 												padding: const EdgeInsets.all(4),
 												margin: const EdgeInsets.all(2),
 												decoration: BoxDecoration(
@@ -764,11 +762,10 @@ class _GalleryPageState extends State<GalleryPage> {
 			},
 			child: ChanceTheme(
 				themeKey: settings.darkThemeKey,
-				child: CupertinoPageScaffold(
+				child: AdaptiveScaffold(
 					backgroundColor: Colors.transparent,
-					navigationBar: showChrome ? CupertinoNavigationBar(
-						transitionBetweenRoutes: false,
-						middle: AnimatedBuilder(
+					bar: showChrome ? AdaptiveBar(
+						title: AnimatedBuilder(
 							animation: _currentAttachmentChanged,
 							builder: (context, _) => Padding(
 								padding: const EdgeInsets.only(bottom: 4),
@@ -781,71 +778,69 @@ class _GalleryPageState extends State<GalleryPage> {
 							)
 						),
 						backgroundColor: Colors.black38,
-						trailing: AnimatedBuilder(
-							animation: _currentAttachmentChanged,
-							builder: (context, _) => AnimatedBuilder(
-								animation: currentController,
-								builder: (context, _) {
-									return Row(
-										mainAxisSize: MainAxisSize.min,
-										children: [
-											if (!settings.showThumbnailsInGallery) CupertinoButton(
-												padding: EdgeInsets.zero,
-												onPressed: () {
-													_scrollSheetController.animateTo(
-														_scrollSheetController.size > 0.5 ? 0 : _maxScrollSheetSize,
-														duration: const Duration(milliseconds: 250),
-														curve: Curves.ease
-													);
-												},
-												child: const Icon(CupertinoIcons.rectangle_grid_2x2)
-											),
-											CupertinoButton(
-												padding: EdgeInsets.zero,
-												onPressed: currentController.canShare ? () async {
-													final download = !currentController.isDownloaded || (await confirm(context, 'Redownload?'));
-													if (!download) return;
-													await currentController.download();
-													if (!mounted) return;
-													showToast(context: context, message: 'Downloaded ${currentController.downloadFilename}', icon: CupertinoIcons.cloud_download);
-												} : null,
-												child: currentController.isDownloaded ? const Icon(CupertinoIcons.cloud_download_fill) : const Icon(CupertinoIcons.cloud_download)
-											),
-											AnimatedBuilder(
-												animation: context.watch<Persistence>().savedAttachmentsListenable,
-												builder: (context, child) {
-													final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment.attachment) != null;
-													return CupertinoButton(
-														padding: EdgeInsets.zero,
-														onPressed: currentController.canShare ? () async {
-															if (currentlySaved) {
-																context.read<Persistence>().deleteSavedAttachment(currentAttachment.attachment);
-															}
-															else {
-																context.read<Persistence>().saveAttachment(currentAttachment.attachment, await currentController.getFile());
-															}
-														} : null,
-														child: Icon(currentlySaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark)
-													);
-												}
-											),
-											CupertinoButton(
-												key: _shareButtonKey,
-												padding: EdgeInsets.zero,
-												onPressed: currentController.canShare ? () {
-													final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
-													final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
-													currentController.share((offset != null && size != null) ? offset & size : null);
-												} : null,
-												child: const Icon(CupertinoIcons.share)
-											)
-										]
-									);
-								}
+						actions: [
+							AnimatedBuilder(
+								animation: _currentAttachmentChanged,
+								builder: (context, _) => AnimatedBuilder(
+									animation: currentController,
+									builder: (context, _) {
+										return Row(
+											mainAxisSize: MainAxisSize.min,
+											children: [
+												if (!settings.showThumbnailsInGallery) AdaptiveIconButton(
+													onPressed: () {
+														_scrollSheetController.animateTo(
+															_scrollSheetController.size > 0.5 ? 0 : _maxScrollSheetSize,
+															duration: const Duration(milliseconds: 250),
+															curve: Curves.ease
+														);
+													},
+													icon: const Icon(CupertinoIcons.rectangle_grid_2x2)
+												),
+												AdaptiveIconButton(
+													onPressed: currentController.canShare ? () async {
+														final download = !currentController.isDownloaded || (await confirm(context, 'Redownload?'));
+														if (!download) return;
+														await currentController.download();
+														if (!mounted) return;
+														showToast(context: context, message: 'Downloaded ${currentController.downloadFilename}', icon: CupertinoIcons.cloud_download);
+													} : null,
+													icon: currentController.isDownloaded ? const Icon(CupertinoIcons.cloud_download_fill) : const Icon(CupertinoIcons.cloud_download)
+												),
+												AnimatedBuilder(
+													animation: context.watch<Persistence>().savedAttachmentsListenable,
+													builder: (context, child) {
+														final currentlySaved = context.watch<Persistence>().getSavedAttachment(currentAttachment.attachment) != null;
+														return AdaptiveIconButton(
+															onPressed: currentController.canShare ? () async {
+																if (currentlySaved) {
+																	context.read<Persistence>().deleteSavedAttachment(currentAttachment.attachment);
+																}
+																else {
+																	context.read<Persistence>().saveAttachment(currentAttachment.attachment, await currentController.getFile());
+																}
+															} : null,
+															icon: Icon(currentlySaved ? Adaptive.icons.bookmarkFilled : Adaptive.icons.bookmark)
+														);
+													}
+												),
+												AdaptiveIconButton(
+													key: _shareButtonKey,
+													onPressed: currentController.canShare ? () {
+														final offset = (_shareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
+														final size = _shareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
+														currentController.share((offset != null && size != null) ? offset & size : null);
+													} : null,
+													icon: Icon(Adaptive.icons.share)
+												)
+											]
+										);
+									}
+								)
 							)
-						)
+						]
 					) : null,
-					child: Shortcuts(
+					body: Shortcuts(
 						shortcuts: {
 							LogicalKeySet(LogicalKeyboardKey.arrowLeft): const GalleryLeftIntent(),
 							LogicalKeySet(LogicalKeyboardKey.arrowRight): const GalleryRightIntent(),
@@ -971,9 +966,9 @@ class _GalleryPageState extends State<GalleryPage> {
 																	child: (currentController.hasAudio && !showChrome && settings.showOverlaysInGallery) ? Align(
 																		key: ValueKey<bool>(muted),
 																		alignment: Alignment.bottomLeft,
-																		child: CupertinoButton(
-																			padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-																			child: muted ? const Icon(CupertinoIcons.volume_off) : const Icon(CupertinoIcons.volume_up),
+																		child: AdaptiveIconButton(
+																			padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+																			icon: muted ? const Icon(CupertinoIcons.volume_off) : const Icon(CupertinoIcons.volume_up),
 																			onPressed: () {
 																				if (muted) {
 																					currentController.videoPlayerController?.setVolume(1);
@@ -995,9 +990,9 @@ class _GalleryPageState extends State<GalleryPage> {
 																animation: _rotationsChanged,
 																builder: (context, _) => AnimatedSwitcher(
 																	duration: const Duration(milliseconds: 300),
-																	child: (_rotationAppropriate(currentAttachment.attachment) && !_hideRotateButton && (showChrome || settings.showOverlaysInGallery)) ? CupertinoButton(
-																		padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-																		child: Transform(
+																	child: (_rotationAppropriate(currentAttachment.attachment) && !_hideRotateButton && (showChrome || settings.showOverlaysInGallery)) ? AdaptiveIconButton(
+																		padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+																		icon: Transform(
 																			alignment: Alignment.center,
 																			transform: !currentController.rotate90DegreesClockwise ? Matrix4.rotationY(math.pi) : Matrix4.identity(),
 																			child: const Icon(CupertinoIcons.rotate_left)
@@ -1111,7 +1106,7 @@ Future<Attachment?> showGalleryPretagged({
 	bool allowScroll = true,
 	bool useHeroDestinationWidget = false,
 	required bool heroOtherEndIsBoxFitCover,
-	List<CupertinoContextMenuAction2> Function(TaggedAttachment)? additionalContextMenuActionsBuilder,
+	List<ContextMenuAction> Function(TaggedAttachment)? additionalContextMenuActionsBuilder,
 }) async {
 	final imageboard = context.read<Imageboard>();
 	final navigator = fullscreen ? Navigator.of(context, rootNavigator: true) : context.read<GlobalKey<NavigatorState>?>()?.currentState ?? Navigator.of(context);
@@ -1165,7 +1160,7 @@ Future<Attachment?> showGallery({
 	bool fullscreen = true,
 	bool allowScroll = true,
 	required bool heroOtherEndIsBoxFitCover,
-	List<CupertinoContextMenuAction2> Function(TaggedAttachment)? additionalContextMenuActionsBuilder,
+	List<ContextMenuAction> Function(TaggedAttachment)? additionalContextMenuActionsBuilder,
 }) => showGalleryPretagged(
 	context: context,
 	attachments: attachments.map((attachment) => TaggedAttachment(

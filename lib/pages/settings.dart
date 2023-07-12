@@ -22,11 +22,7 @@ import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
 import 'package:chan/version.dart';
-import 'package:chan/widgets/cupertino_adaptive_segmented_control.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
-import 'package:chan/widgets/cupertino_switch2.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/filter_editor.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/post_row.dart';
@@ -62,14 +58,13 @@ class _SettingsPageState extends State<_SettingsPage> {
 
 	@override
 	Widget build(BuildContext context) {
-		return CupertinoPageScaffold(
+		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
-			navigationBar: CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				middle: Text(widget.title)
+			bar: AdaptiveBar(
+				title: Text(widget.title)
 			),
-			child: SafeArea(
-				child: MaybeCupertinoScrollbar(
+			body: SafeArea(
+				child: MaybeScrollbar(
 					child: ListView.builder(
 						key: scrollKey,
 						padding: const EdgeInsets.all(16),
@@ -106,7 +101,7 @@ class _SettingsPageButton extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return CupertinoButton(
+		return AdaptiveButton(
 			child: Row(
 				children: [
 					Icon(icon, color: color),
@@ -118,7 +113,7 @@ class _SettingsPageButton extends StatelessWidget {
 				]
 			),
 			onPressed: () {
-				Navigator.of(context).push(FullWidthCupertinoPageRoute(
+				Navigator.of(context).push(adaptivePageRoute(
 					builder: pageBuilder
 				));
 			}
@@ -140,15 +135,15 @@ class SettingsPage extends StatelessWidget {
 			children: [
 				GestureDetector(
 					onDoubleTap: () {
-						showCupertinoDialog(
+						showAdaptiveDialog(
 							context: context,
 							barrierDismissible: true,
-							builder: (context) => CupertinoAlertDialog2(
+							builder: (context) => AdaptiveAlertDialog(
 								content: SettingsLoginPanel(
 									loginSystem: site.loginSystem!
 								),
 								actions: [
-									CupertinoDialogAction2(
+									AdaptiveDialogAction(
 										onPressed: () => Navigator.pop(context),
 										child: const Text('Close')
 									)
@@ -170,7 +165,7 @@ class SettingsPage extends StatelessWidget {
 								return const SizedBox(
 									height: 200,
 									child: Center(
-										child: CupertinoActivityIndicator()
+										child: CircularProgressIndicator.adaptive()
 									)
 								);
 							}
@@ -183,7 +178,7 @@ class SettingsPage extends StatelessWidget {
 								);
 							}
 							final children = (snapshot.data ?? []).where((t) => t.isSticky).map<Widget>((thread) => GestureDetector(
-								onTap: () => Navigator.push(context, FullWidthCupertinoPageRoute(
+								onTap: () => Navigator.push(context, adaptivePageRoute(
 									builder: (context) => ThreadPage(
 										thread: thread.identifier,
 										boardSemanticId: -1,
@@ -206,9 +201,9 @@ class SettingsPage extends StatelessWidget {
 							}
 							children.add(const SizedBox(height: 16));
 							children.add(Center(
-								child: CupertinoButton.filled(
+								child: AdaptiveFilledButton(
 									child: const Text('See more discussion'),
-									onPressed: () => Navigator.push(context, FullWidthCupertinoPageRoute(
+									onPressed: () => Navigator.push(context, adaptivePageRoute(
 										builder: (context) => BoardPage(
 											initialBoard: ImageboardBoard(
 												name: 'chance',
@@ -263,7 +258,7 @@ class SettingsPage extends StatelessWidget {
 					fit: BoxFit.scaleDown,
 					child: Row(
 						children: [
-							CupertinoButton.filled(
+							AdaptiveFilledButton(
 								padding: const EdgeInsets.all(8),
 								child: const Row(
 									mainAxisSize: MainAxisSize.min,
@@ -284,7 +279,7 @@ class SettingsPage extends StatelessWidget {
 							),
 							if (settings.contentSettings.sites.length > 1) ...[
 								const SizedBox(width: 16),
-								CupertinoButton.filled(
+								AdaptiveFilledButton(
 									padding: const EdgeInsets.all(8),
 									child: const Row(
 										mainAxisSize: MainAxisSize.min,
@@ -299,20 +294,20 @@ class SettingsPage extends StatelessWidget {
 												for (final i in ImageboardRegistry.instance.imageboardsIncludingUninitialized)
 													i.key: i.initialized ? i.site.name : i.key
 											};
-											final toDelete = await showCupertinoDialog<String>(
+											final toDelete = await showAdaptiveDialog<String>(
 												context: context,
 												barrierDismissible: true,
-												builder: (context) => CupertinoAlertDialog2(
+												builder: (context) => AdaptiveAlertDialog(
 													title: const Text('Which site?'),
 													actions: [
-														for (final i in imageboards.entries) CupertinoDialogAction2(
+														for (final i in imageboards.entries) AdaptiveDialogAction(
 															isDestructiveAction: true,
 															onPressed: () {
 																Navigator.of(context).pop(i.key);
 															},
 															child: Text(i.value)
 														),
-														CupertinoDialogAction2(
+														AdaptiveDialogAction(
 															isDefaultAction: true,
 															child: const Text('Cancel'),
 															onPressed: () {
@@ -340,7 +335,7 @@ class SettingsPage extends StatelessWidget {
 								)
 							],
 							const SizedBox(width: 16),
-							CupertinoButton.filled(
+							AdaptiveFilledButton(
 								padding: const EdgeInsets.all(8),
 								child: const Row(
 									mainAxisSize: MainAxisSize.min,
@@ -382,7 +377,7 @@ class SettingsPage extends StatelessWidget {
 					color: ChanceTheme.primaryColorWithBrightness20Of(context)
 				),
 				_SettingsPageButton(
-					icon: CupertinoIcons.photo_on_rectangle,
+					icon: Adaptive.icons.photos,
 					title: 'Data Settings',
 					pageBuilder: (context) => const SettingsDataPage()
 				),
@@ -391,10 +386,10 @@ class SettingsPage extends StatelessWidget {
 				),
 				const SizedBox(height: 16),
 				Center(
-					child: CupertinoButton(
+					child: AdaptiveButton(
 						child: const Text('Licenses'),
 						onPressed: () {
-							Navigator.of(context).push(FullWidthCupertinoPageRoute(
+							Navigator.of(context).push(adaptivePageRoute(
 								builder: (context) => const LicensesPage()
 							));
 						}
@@ -450,9 +445,9 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Filters')
 						),
-						CupertinoButton.filled(
+						AdaptiveFilledButton(
 							padding: const EdgeInsets.all(8),
-							onPressed: () => Navigator.of(context).push(FullWidthCupertinoPageRoute(
+							onPressed: () => Navigator.of(context).push(adaptivePageRoute(
 								builder: (context) => const SettingsFilterPage()
 							)),
 							child: Text('${describeCount(filterCount, 'filter')}...')
@@ -467,11 +462,11 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Image filter')
 						),
-						CupertinoButton.filled(
+						AdaptiveFilledButton(
 							padding: const EdgeInsets.all(8),
 							onPressed: () async {
 								final md5sBefore = Persistence.settings.hiddenImageMD5s;
-								await Navigator.of(context).push(FullWidthCupertinoPageRoute(
+								await Navigator.of(context).push(adaptivePageRoute(
 									builder: (context) => const SettingsImageFilterPage()
 								));
 								if (!setEquals(md5sBefore, Persistence.settings.hiddenImageMD5s)) {
@@ -491,18 +486,18 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 							child: Text(_loginSystemImageboard.site.loginSystem?.name ?? 'No login system')
 						),
 						if (_loginSystemImageboard.site.loginSystem != null) ...[
-							CupertinoButton.filled(
+							AdaptiveFilledButton(
 								padding: const EdgeInsets.all(8),
 								onPressed: () {
-									showCupertinoDialog(
+									showAdaptiveDialog(
 										context: context,
 										barrierDismissible: true,
-										builder: (context) => CupertinoAlertDialog2(
+										builder: (context) => AdaptiveAlertDialog(
 											content: SettingsLoginPanel(
 												loginSystem: _loginSystemImageboard.site.loginSystem!
 											),
 											actions: [
-												CupertinoDialogAction2(
+												AdaptiveDialogAction(
 													onPressed: () => Navigator.pop(context),
 													child: const Text('Close')
 												)
@@ -514,7 +509,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 							),
 							const SizedBox(width: 8)
 						],
-						CupertinoButton.filled(
+						AdaptiveFilledButton(
 							padding: const EdgeInsets.all(8),
 							onPressed: () async {
 								final newImageboard = await _pickImageboard(context, _loginSystemImageboard);
@@ -548,20 +543,11 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					]
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
+				AdaptiveSegmentedControl<AutoloadAttachmentsSetting>(
 					children: const {
-						AutoloadAttachmentsSetting.never: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Never')
-						),
-						AutoloadAttachmentsSetting.wifi: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('When on Wi\u200d-\u200dFi', textAlign: TextAlign.center)
-						),
-						AutoloadAttachmentsSetting.always: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Always')
-						)
+						AutoloadAttachmentsSetting.never: (null, 'Never'),
+						AutoloadAttachmentsSetting.wifi: (null, 'When on Wi\u200d-\u200dFi'),
+						AutoloadAttachmentsSetting.always: (null, 'Always')
 					},
 					groupValue: settings.loadThumbnailsSetting,
 					onValueChanged: (newValue) {
@@ -587,20 +573,11 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 									]
 								),
 								const SizedBox(height: 16),
-								CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
+								AdaptiveSegmentedControl<AutoloadAttachmentsSetting>(
 									children: const {
-										AutoloadAttachmentsSetting.never: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('Never')
-										),
-										AutoloadAttachmentsSetting.wifi: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('When on Wi\u200d-\u200dFi', textAlign: TextAlign.center)
-										),
-										AutoloadAttachmentsSetting.always: Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('Always')
-										)
+										AutoloadAttachmentsSetting.never: (null, 'Never'),
+										AutoloadAttachmentsSetting.wifi: (null, 'When on Wi\u200d-\u200dFi'),
+										AutoloadAttachmentsSetting.always: (null, 'Always')
 									},
 									groupValue: settings.fullQualityThumbnailsSetting,
 									onValueChanged: (newValue) {
@@ -619,7 +596,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Allow swiping to change page in gallery')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.allowSwipingInGallery,
 							onChanged: (newValue) {
 								settings.allowSwipingInGallery = newValue;
@@ -638,20 +615,11 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					]
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
+				AdaptiveSegmentedControl<AutoloadAttachmentsSetting>(
 					children: const {
-						AutoloadAttachmentsSetting.never: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Never')
-						),
-						AutoloadAttachmentsSetting.wifi: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('When on Wi\u200d-\u200dFi', textAlign: TextAlign.center)
-						),
-						AutoloadAttachmentsSetting.always: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Always')
-						)
+						AutoloadAttachmentsSetting.never: (null, 'Never'),
+						AutoloadAttachmentsSetting.wifi: (null, 'When on Wi\u200d-\u200dFi'),
+						AutoloadAttachmentsSetting.always: (null, 'Always')
 					},
 					groupValue: settings.autoloadAttachmentsSetting,
 					onValueChanged: (newValue) {
@@ -666,7 +634,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Always automatically load tapped attachment')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.alwaysAutoloadTappedAttachment,
 							onChanged: (newValue) {
 								settings.alwaysAutoloadTappedAttachment = newValue;
@@ -685,20 +653,11 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					]
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<AutoloadAttachmentsSetting>(
+				AdaptiveSegmentedControl<AutoloadAttachmentsSetting>(
 					children: const {
-						AutoloadAttachmentsSetting.never: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Never')
-						),
-						AutoloadAttachmentsSetting.wifi: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('When on Wi\u200d-\u200dFi', textAlign: TextAlign.center)
-						),
-						AutoloadAttachmentsSetting.always: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Always')
-						)
+						AutoloadAttachmentsSetting.never: (null, 'Never'),
+						AutoloadAttachmentsSetting.wifi: (null, 'When on Wi\u200d-\u200dFi'),
+						AutoloadAttachmentsSetting.always: (null, 'Always')
 					},
 					groupValue: settings.autoCacheAttachmentsSetting,
 					onValueChanged: (newValue) async {
@@ -720,7 +679,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Always start videos with sound muted')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.alwaysStartVideosMuted,
 							onChanged: (newValue) {
 								settings.alwaysStartVideosMuted = newValue;
@@ -740,20 +699,11 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						]
 					),
 					const SizedBox(height: 16),
-					CupertinoSegmentedControl<WebmTranscodingSetting>(
+					AdaptiveSegmentedControl<WebmTranscodingSetting>(
 						children: const {
-							WebmTranscodingSetting.never: Padding(
-								padding: EdgeInsets.all(8),
-								child: Text('Never')
-							),
-							WebmTranscodingSetting.vp9: Padding(
-								padding: EdgeInsets.all(8),
-								child: Text('VP9 only', textAlign: TextAlign.center)
-							),
-							WebmTranscodingSetting.always: Padding(
-								padding: EdgeInsets.all(8),
-								child: Text('Always')
-							)
+							WebmTranscodingSetting.never: (null, 'Never'),
+							WebmTranscodingSetting.vp9: (null, 'VP9 only'),
+							WebmTranscodingSetting.always: (null, 'Always')
 						},
 						groupValue: settings.webmTranscoding,
 						onValueChanged: (newValue) {
@@ -769,7 +719,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Hide old stickied threads')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.hideOldStickiedThreads,
 							onChanged: (newValue) {
 								settings.hideOldStickiedThreads = newValue;
@@ -785,7 +735,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Use old captcha interface')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: !settings.useNewCaptchaForm,
 							onChanged: (newValue) {
 								settings.useNewCaptchaForm = !newValue;
@@ -802,20 +752,11 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 					]
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<NullSafeOptional>(
+				AdaptiveSegmentedControl<NullSafeOptional>(
 					children: const {
-						NullSafeOptional.false_: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Externally')
-						),
-						NullSafeOptional.null_: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Ask')
-						),
-						NullSafeOptional.true_: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Internally')
-						)
+						NullSafeOptional.false_: (null, 'Externally'),
+						NullSafeOptional.null_: (null, 'Ask'),
+						NullSafeOptional.true_: (null, 'Internally')
 					},
 					groupValue: settings.useInternalBrowser.value,
 					onValueChanged: (newValue) {
@@ -830,7 +771,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Always open links externally')
 						),
-						CupertinoButton.filled(
+						AdaptiveFilledButton(
 							padding: const EdgeInsets.all(16),
 							onPressed: () async {
 								await editStringList(
@@ -853,24 +794,24 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Limit uploaded file dimensions')
 						),
-						CupertinoButton.filled(
+						AdaptiveFilledButton(
 							padding: const EdgeInsets.all(16),
 							onPressed: () async {
 								final controller = TextEditingController(text: settings.maximumImageUploadDimension?.toString());
-								await showCupertinoDialog(
+								await showAdaptiveDialog(
 									context: context,
 									barrierDismissible: true,
-									builder: (context) => CupertinoAlertDialog2(
+									builder: (context) => AdaptiveAlertDialog(
 										title: const Text('Set maximum file upload dimension'),
 										actions: [
-											CupertinoDialogAction2(
+											AdaptiveDialogAction(
 												child: const Text('Clear'),
 												onPressed: () {
 													controller.text = '';
 													Navigator.pop(context);
 												}
 											),
-											CupertinoDialogAction2(
+											AdaptiveDialogAction(
 												child: const Text('Close'),
 												onPressed: () => Navigator.pop(context)
 											)
@@ -878,7 +819,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 										content: Row(
 											children: [
 												Expanded(
-													child: CupertinoTextField2(
+													child: AdaptiveTextField(
 														autofocus: true,
 														controller: controller,
 														keyboardType: TextInputType.number,
@@ -908,7 +849,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Close tab switcher after use')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.closeTabSwitcherAfterUse,
 							onChanged: (newValue) {
 								settings.closeTabSwitcherAfterUse = newValue;
@@ -926,19 +867,19 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						Expanded(
 							child: Align(
 								alignment: Alignment.centerRight,
-								child: CupertinoButton.filled(
+								child: AdaptiveFilledButton(
 									padding: const EdgeInsets.all(16),
 									onPressed: () async {
 										bool tapped = false;
-										final newAction = await showCupertinoDialog<SettingsQuickAction>(
+										final newAction = await showAdaptiveDialog<SettingsQuickAction>(
 											context: context,
 											barrierDismissible: true,
-											builder: (context) => CupertinoAlertDialog2(
+											builder: (context) => AdaptiveAlertDialog(
 												title: const Text('Pick Settings icon long-press action'),
 												actions: [
 													...SettingsQuickAction.values,
 													null
-												].map((action) => CupertinoDialogAction2(
+												].map((action) => AdaptiveDialogAction(
 													isDefaultAction: action == settings.settingsQuickAction,
 													onPressed: () {
 														tapped = true;
@@ -966,7 +907,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Haptic feedback')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.useHapticFeedback,
 							onChanged: (newValue) {
 								settings.useHapticFeedback = newValue;
@@ -983,7 +924,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 							const Expanded(
 								child: Text('Incognito keyboard')
 							),
-							CupertinoSwitch2(
+							AdaptiveSwitch(
 								value: !settings.enableIMEPersonalizedLearning,
 								onChanged: (newValue) {
 									settings.enableIMEPersonalizedLearning = !newValue;
@@ -1000,7 +941,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Tab bar hides when scrolling down')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.tabMenuHidesWhenScrollingDown,
 							onChanged: (newValue) {
 								settings.tabMenuHidesWhenScrollingDown = newValue;
@@ -1016,7 +957,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Double-tap scrolls to replies in thread')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.doubleTapScrollToReplies,
 							onChanged: (newValue) {
 								settings.doubleTapScrollToReplies = newValue;
@@ -1032,7 +973,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Tapping background closes all replies')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.overscrollModalTapPopsAll,
 							onChanged: (newValue) {
 								settings.overscrollModalTapPopsAll = newValue;
@@ -1048,7 +989,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Always show spoilers')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.alwaysShowSpoilers,
 							onChanged: (newValue) {
 								settings.alwaysShowSpoilers = newValue;
@@ -1072,7 +1013,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 				),
 				Padding(
 					padding: const EdgeInsets.all(16),
-					child: CupertinoAdaptiveSegmentedControl<ImagePeekingSetting>(
+					child: AdaptiveChoiceControl<ImagePeekingSetting>(
 						children: const {
 							ImagePeekingSetting.disabled: (null, 'Off'),
 							ImagePeekingSetting.standard: (null, 'Obscured'),
@@ -1093,7 +1034,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Spellcheck')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.enableSpellCheck,
 							onChanged: (newValue) {
 								settings.enableSpellCheck = newValue;
@@ -1109,7 +1050,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 						const Expanded(
 							child: Text('Open cross-thread links in new tabs')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.openCrossThreadLinksInNewTab,
 							onChanged: (newValue) {
 								settings.openCrossThreadLinksInNewTab = newValue;
@@ -1129,7 +1070,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 				),
 				Padding(
 					padding: const EdgeInsets.all(16),
-					child: CupertinoAdaptiveSegmentedControl<int>(
+					child: AdaptiveChoiceControl<int>(
 						children: const {
 							5: (null, '5s'),
 							10: (null, '10s'),
@@ -1154,7 +1095,7 @@ class _SettingsBehaviorPageState extends State<SettingsBehaviorPage> {
 				),
 				Padding(
 					padding: const EdgeInsets.all(16),
-					child: CupertinoAdaptiveSegmentedControl<int>(
+					child: AdaptiveChoiceControl<int>(
 						children: const {
 							15: (null, '15s'),
 							30: (null, '30s'),
@@ -1196,13 +1137,12 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		return CupertinoPageScaffold(
+		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
-			navigationBar: const CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				middle: Text('Image Filter Settings')
+			bar: const AdaptiveBar(
+				title: Text('Image Filter Settings')
 			),
-			child: SafeArea(
+			body: SafeArea(
 				child: Padding(
 					padding: const EdgeInsets.all(16),
 					child: Column(
@@ -1215,7 +1155,7 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 										child: Text('Apply to thread OP images')
 									),
 									const SizedBox(width: 16),
-									CupertinoSwitch2(
+									AdaptiveSwitch(
 										value: settings.applyImageFilterToThreads,
 										onChanged: (newValue) {
 											settings.applyImageFilterToThreads = newValue;
@@ -1227,7 +1167,7 @@ class _SettingsImageFilterPageState extends State<SettingsImageFilterPage> {
 							const Text('One image MD5 per line'),
 							const SizedBox(height: 8),
 							Expanded(
-								child: CupertinoTextField2(
+								child: AdaptiveTextField(
 									controller: controller,
 									enableIMEPersonalizedLearning: false,
 									onChanged: (s) {
@@ -1265,13 +1205,12 @@ class _SettingsFilterPageState extends State<SettingsFilterPage> {
 	@override
 	Widget build(BuildContext context) {
 		final settings = context.watch<EffectiveSettings>();
-		return CupertinoPageScaffold(
+		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
-			navigationBar: const CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				middle: Text('Filter Settings')
+			bar: const AdaptiveBar(
+				title: Text('Filter Settings')
 			),
-			child: SafeArea(
+			body: SafeArea(
 				child: Column(
 					children: [
 						const SizedBox(height: 16),
@@ -1297,29 +1236,23 @@ class _SettingsFilterPageState extends State<SettingsFilterPage> {
 										spacing: 16,
 										runSpacing: 16,
 										children: [
-											CupertinoButton.filled(
+											AdaptiveFilledButton(
 												padding: const EdgeInsets.all(8),
 												borderRadius: BorderRadius.circular(4),
 												minSize: 0,
 												child: const Text('Test filter setup'),
 												onPressed: () {
-													Navigator.of(context).push(FullWidthCupertinoPageRoute(
+													Navigator.of(context).push(adaptivePageRoute(
 														builder: (context) => const FilterTestPage()
 													));
 												}
 											),
-											CupertinoSegmentedControl<bool>(
+											AdaptiveSegmentedControl<bool>(
 												padding: EdgeInsets.zero,
 												groupValue: showFilterRegex,
 												children: const {
-													false: Padding(
-														padding: EdgeInsets.all(8),
-														child: Text('Wizard')
-													),
-													true: Padding(
-														padding: EdgeInsets.all(8),
-														child: Text('Regex')
-													)
+													false: (null, 'Wizard'),
+													true: (null, 'Regex')
 												},
 												onValueChanged: (v) => setState(() {
 													showFilterRegex = v;
@@ -1473,6 +1406,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 		final theme = context.watch<SavedTheme>();
 		final firstPanePercent = (settings.twoPaneSplit / twoPaneSplitDenominator) * 100;
 		final dividerColor = ChanceTheme.primaryColorOf(context);
+		final threadAndPostRowDecoration = ChanceTheme.materialOf(context) ? BoxDecoration(
+			border: Border.all(color: dividerColor.withOpacity(0.5))
+		) : null;
 		return _SettingsPage(
 			title: 'Appearance Settings',
 			children: [
@@ -1483,59 +1419,55 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const SizedBox(width: 8),
 						const Text('Interface scale'),
 						const Spacer(),
-						CupertinoButton(
-							padding: EdgeInsets.zero,
+						AdaptiveIconButton(
 							onPressed: settings.interfaceScale <= 0.5 ? null : () {
 								settings.interfaceScale -= 0.05;
 							},
-							child: const Icon(CupertinoIcons.minus)
+							icon: const Icon(CupertinoIcons.minus)
 						),
 						Text('${(settings.interfaceScale * 100).round()}%'),
-						CupertinoButton(
-							padding: EdgeInsets.zero,
+						AdaptiveIconButton(
 							onPressed: settings.interfaceScale >= 2.0 ? null : () {
 								settings.interfaceScale += 0.05;
 							},
-							child: const Icon(CupertinoIcons.plus)
+							icon: const Icon(CupertinoIcons.plus)
 						)
 					]
 				),
-				const SizedBox(height: 16),
+				const SizedBox(height: 32),
 				Row(
 					children: [
 						const Icon(CupertinoIcons.textformat_size),
 						const SizedBox(width: 8),
 						const Text('Font scale'),
 						const Spacer(),
-						CupertinoButton(
-							padding: EdgeInsets.zero,
+						AdaptiveIconButton(
 							onPressed: settings.textScale <= 0.5 ? null : () {
 								settings.textScale -= 0.05;
 							},
-							child: const Icon(CupertinoIcons.minus)
+							icon: const Icon(CupertinoIcons.minus)
 						),
 						Text('${(settings.textScale * 100).round()}%'),
-						CupertinoButton(
-							padding: EdgeInsets.zero,
+						AdaptiveIconButton(
 							onPressed: settings.textScale >= 2.0 ? null : () {
 								settings.textScale += 0.05;
 							},
-							child: const Icon(CupertinoIcons.plus)
+							icon: const Icon(CupertinoIcons.plus)
 						)
 					]
 				),
-				const SizedBox(height: 16),
+				const SizedBox(height: 32),
 				const Row(
 					children: [
 						Icon(CupertinoIcons.macwindow),
 						SizedBox(width: 8),
 						Expanded(
-							child: Text('Interface Style')
+							child: Text('Interaction Mode')
 						)
 					]
 				),
 				const SizedBox(height: 16),
-				CupertinoAdaptiveSegmentedControl<TristateSystemSetting>(
+				AdaptiveChoiceControl<TristateSystemSetting>(
 					children: const {
 						TristateSystemSetting.a: (CupertinoIcons.hand_draw, 'Touch'),
 						TristateSystemSetting.system: (null, 'Automatic'),
@@ -1547,6 +1479,73 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					}
 				),
 				const SizedBox(height: 32),
+				const Row(
+					children: [
+						Icon(CupertinoIcons.macwindow),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Interface Style')
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				AdaptiveChoiceControl<bool>(
+					children: const {
+						false: (Icons.apple, 'iOS'),
+						true: (Icons.android, 'Android')
+					},
+					groupValue: settings.materialStyle,
+					onValueChanged: (newValue) {
+						settings.materialStyle = newValue;
+					}
+				),
+				const SizedBox(height: 32),
+				const Row(
+					children: [
+						Icon(CupertinoIcons.macwindow),
+						SizedBox(width: 8),
+						Expanded(
+							child: Text('Navigation Style')
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				AdaptiveChoiceControl<bool>(
+					children: const {
+						false: (CupertinoIcons.squares_below_rectangle, 'Bottom bar'),
+						true: (CupertinoIcons.sidebar_left, 'Side drawer')
+					},
+					groupValue: settings.androidDrawer,
+					onValueChanged: (newValue) {
+						settings.androidDrawer = newValue;
+					}
+				),
+				const SizedBox(height: 32),
+				const Row(
+					children: [
+						Icon(CupertinoIcons.doc),
+						SizedBox(width: 8),
+						Flexible(
+							child: Text('Page Style')
+						),
+						SizedBox(width: 8),
+						_SettingsHelpButton(
+							helpText: 'The animations and gestural behaviour when new interface pages open on top of others'
+						)
+					]
+				),
+				const SizedBox(height: 16),
+				AdaptiveChoiceControl<bool>(
+					children: const {
+						false: (Icons.apple, 'iOS'),
+						true: (Icons.android, 'Android')
+					},
+					groupValue: settings.materialRoutes,
+					onValueChanged: (newValue) {
+						settings.materialRoutes = newValue;
+					}
+				),
+				const SizedBox(height: 32),
 				Row(
 					children: [
 						const Icon(CupertinoIcons.wand_rays),
@@ -1554,7 +1553,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Animations')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.showAnimations,
 							onChanged: (newValue) {
 								settings.showAnimations = newValue;
@@ -1575,16 +1574,16 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									Flexible(
 										child: Padding(
 											padding: const EdgeInsets.only(left: 16),
-											child: CupertinoButton.filled(
+											child: AdaptiveFilledButton(
 												padding: const EdgeInsets.all(8),
 												onPressed: () async {
-													final availableFonts = await showCupertinoDialog<List<String>>(
+													final availableFonts = await showAdaptiveDialog<List<String>>(
 														barrierDismissible: true,
 														context: context,
-														builder: (context) => CupertinoAlertDialog2(
+														builder: (context) => AdaptiveAlertDialog(
 															title: const Text('Choose a font list', textAlign: TextAlign.center),
 															actions: [
-																CupertinoDialogAction2(
+																AdaptiveDialogAction(
 																	child: const Text('Device Fonts'),
 																	onPressed: () async {
 																		try {
@@ -1595,15 +1594,15 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																		}
 																	}
 																),
-																CupertinoDialogAction2(
+																AdaptiveDialogAction(
 																	child: const Text('Google Fonts'),
 																	onPressed: () => Navigator.pop(context, allowedGoogleFonts.keys.toList())
 																),
-																CupertinoDialogAction2(
+																AdaptiveDialogAction(
 																	child: const Text('Reset to default'),
 																	onPressed: () => Navigator.pop(context, <String>[])
 																),
-																CupertinoDialogAction2(
+																AdaptiveDialogAction(
 																	child: const Text('Cancel'),
 																	onPressed: () => Navigator.pop(context)
 																)
@@ -1618,10 +1617,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														settings.handleThemesAltered();
 														return;
 													}
-													final selectedFont = await showCupertinoDialog<String>(
+													final selectedFont = await showAdaptiveDialog<String>(
 														barrierDismissible: true,
 														context: context,
-														builder: (context) => CupertinoAlertDialog2(
+														builder: (context) => AdaptiveAlertDialog(
 															title: const Text('Choose a font', textAlign: TextAlign.center),
 															content: SizedBox(
 																width: 200,
@@ -1634,7 +1633,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																			thickness: 0,
 																			color: dividerColor
 																		),
-																		itemBuilder: (context, i) => CupertinoDialogAction2(
+																		itemBuilder: (context, i) => AdaptiveDialogAction(
 																			onPressed: () => Navigator.pop(context, availableFonts[i]),
 																			child: Text(availableFonts[i], style: allowedGoogleFonts[availableFonts[i]]?.call() ?? TextStyle(
 																				fontFamily: availableFonts[i]
@@ -1644,7 +1643,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																)
 															),
 															actions: [
-																CupertinoDialogAction2(
+																AdaptiveDialogAction(
 																	child: const Text('Close'),
 																	onPressed: () => Navigator.pop(context)
 																)
@@ -1676,34 +1675,11 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<TristateSystemSetting>(
+				AdaptiveSegmentedControl<TristateSystemSetting>(
 					children: const {
-						TristateSystemSetting.a: Padding(
-							padding: EdgeInsets.all(8),
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Icon(CupertinoIcons.sun_max),
-									SizedBox(width: 8),
-									Text('Light')
-								]
-							)
-						),
-						TristateSystemSetting.system: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Follow System', textAlign: TextAlign.center)
-						),
-						TristateSystemSetting.b: Padding(
-							padding: EdgeInsets.all(8),
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Icon(CupertinoIcons.moon),
-									SizedBox(width: 8),
-									Text('Dark')
-								]
-							)
-						)
+						TristateSystemSetting.a: (CupertinoIcons.sun_max, 'Light'),
+						TristateSystemSetting.system: (null, 'Follow System'),
+						TristateSystemSetting.b: (CupertinoIcons.moon, 'Dark')
 					},
 					groupValue: settings.themeSetting,
 					onValueChanged: (newValue) {
@@ -1734,7 +1710,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 										Flexible(
 											child: Padding(
 												padding: const EdgeInsets.all(16),
-												child: CupertinoButton.filled(
+												child: AdaptiveFilledButton(
 													padding: const EdgeInsets.all(8),
 													onPressed: () async {
 														final selectedKey = await selectThemeKey(
@@ -1796,50 +1772,59 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 													alertError(context, 'This theme is locked. Make a copy of it if you want to change its colours.');
 													return;
 												}
-												await showCupertinoModalPopup(
-													barrierDismissible: true,
+												Color c = color.$2;
+												await showAdaptiveModalPopup(
 													context: context,
-													builder: (context) => CupertinoActionSheet(
-														title: Text('Select ${color.$1} Color'),
-														message: Theme(
-															data: ThemeData(
-																textTheme: Theme.of(context).textTheme.apply(
-																	bodyColor: ChanceTheme.primaryColorOf(context),
-																	displayColor: ChanceTheme.primaryColorOf(context),
-																),
-																canvasColor: ChanceTheme.backgroundColorOf(context)
-															),
-															child: Padding(
-																padding: MediaQuery.viewInsetsOf(context),
-																child: Column(
-																	mainAxisSize: MainAxisSize.min,
-																	children: [
-																		Material(
-																			color: Colors.transparent,
-																			child: ColorPicker(
-																				pickerColor: color.$2,
-																				onColorChanged: color.$3,
-																				enableAlpha: false,
-																				portraitOnly: true,
-																				displayThumbColor: true,
-																				hexInputBar: true
-																			)
+													builder: (context) => StatefulBuilder(
+														builder: (context, setActionSheetState) {
+															return AdaptiveActionSheet(
+																title: Text('Select ${color.$1} Color'),
+																message: Theme(
+																	data: ThemeData(
+																		textTheme: Theme.of(context).textTheme.apply(
+																			bodyColor: ChanceTheme.primaryColorOf(context),
+																			displayColor: ChanceTheme.primaryColorOf(context),
 																		),
-																		CupertinoButton(
-																			padding: const EdgeInsets.all(8),
-																			color: color.$4,
-																			onPressed: color.$2 == color.$4 ? null : () {
-																				color.$3(color.$4!);
-																				settings.handleThemesAltered();
-																			},
-																			child: Text('Reset to original color', style: TextStyle(color: (color.$4?.computeLuminance() ?? 0) > 0.5 ? Colors.black : Colors.white))
+																		canvasColor: ChanceTheme.backgroundColorOf(context)
+																	),
+																	child: Padding(
+																		padding: MediaQuery.viewInsetsOf(context),
+																		child: Column(
+																			mainAxisSize: MainAxisSize.min,
+																			children: [
+																				Material(
+																					color: Colors.transparent,
+																					child: ColorPicker(
+																						pickerColor: c,
+																						onColorChanged: (newColor) {
+																							c = newColor;
+																							setActionSheetState(() {});
+																						},
+																						enableAlpha: false,
+																						portraitOnly: true,
+																						displayThumbColor: true,
+																						hexInputBar: true
+																					)
+																				),
+																				AdaptiveFilledButton(
+																					padding: const EdgeInsets.all(8),
+																					color: color.$4,
+																					onPressed: (c == color.$4 || color.$4 == null) ? null : () {
+																						c = color.$4!;
+																						settings.handleThemesAltered();
+																						setActionSheetState(() {});
+																					},
+																					child: Text('Reset to original color', style: TextStyle(color: (color.$4?.computeLuminance() ?? 0) > 0.5 ? Colors.black : Colors.white))
+																				)
+																			]
 																		)
-																	]
+																	)
 																)
-															)
-														)
+															);
+														}
 													)
 												);
+												color.$3(c);
 												settings.handleThemesAltered();
 											}
 										),
@@ -1862,7 +1847,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				Padding(
 					padding: const EdgeInsets.all(16),
-					child: CupertinoSlider(
+					child: Slider.adaptive(
 						min: 50,
 						max: 200,
 						divisions: 30,
@@ -1888,7 +1873,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				Padding(
 					padding: const EdgeInsets.all(16),
-					child: CupertinoSlider(
+					child: Slider.adaptive(
 						min: 0,
 						max: 0.5,
 						divisions: 50,
@@ -1908,16 +1893,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
+				AdaptiveSegmentedControl<bool>(
 					children: const {
-						false: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Left')
-						),
-						true: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Right')
-						)
+						false: (null, 'Left'),
+						true: (null, 'Right')
 					},
 					groupValue: settings.imagesOnRight,
 					onValueChanged: (newValue) {
@@ -1932,7 +1911,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Blur image thumbnails')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.blurThumbnails,
 							onChanged: (newValue) {
 								settings.blurThumbnails = newValue;
@@ -1948,7 +1927,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Square thumbnails')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.squareThumbnails,
 							onChanged: (newValue) {
 								settings.squareThumbnails = newValue;
@@ -1958,7 +1937,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				const SizedBox(height: 32),
 				Center(
-					child: CupertinoButton.filled(
+					child: AdaptiveFilledButton(
 						padding: const EdgeInsets.all(16),
 						child: const Row(
 							mainAxisSize: MainAxisSize.min,
@@ -1969,16 +1948,16 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 							]
 						),
 						onPressed: () async {
-							await showCupertinoModalPopup(
+							await showAdaptiveModalPopup(
 								context: context,
 								useRootNavigator: false,
 								builder: (context) => StatefulBuilder(
 									builder: (context, setDialogState) {
 										final settings = context.watch<EffectiveSettings>();
-										return CupertinoActionSheet(
+										return AdaptiveActionSheet(
 											title: const Text('Edit post details'),
 											actions: [
-												CupertinoButton(
+												AdaptiveActionSheetAction(
 													child: const Text('Close'),
 													onPressed: () => Navigator.pop(context)
 												)
@@ -1987,8 +1966,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 												style: DefaultTextStyle.of(context).style,
 												child: Column(
 													children: [
-														SizedBox(
+														Container(
 															height: 175,
+															decoration: threadAndPostRowDecoration,
 															child: IgnorePointer(
 																child: _buildFakePostRow()
 															)
@@ -1997,7 +1977,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show Post #'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showPostNumberOnPosts,
 																	onChanged: (d) => settings.showPostNumberOnPosts = d
 																)
@@ -2007,7 +1987,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show IP address #'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showIPNumberOnPosts,
 																	onChanged: (d) => settings.showIPNumberOnPosts = d
 																)
@@ -2017,7 +1997,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show name'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showNameOnPosts,
 																	onChanged: (d) => settings.showNameOnPosts = d
 																)
@@ -2027,7 +2007,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Hide default names'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.hideDefaultNamesOnPosts,
 																	onChanged: (d) => settings.hideDefaultNamesOnPosts = d
 																)
@@ -2037,7 +2017,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show trip'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showTripOnPosts,
 																	onChanged: (d) => settings.showTripOnPosts = d
 																)
@@ -2047,7 +2027,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show filename'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showFilenameOnPosts,
 																	onChanged: (d) => settings.showFilenameOnPosts = d
 																)
@@ -2057,7 +2037,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show filesize'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showFilesizeOnPosts,
 																	onChanged: (d) => settings.showFilesizeOnPosts = d
 																)
@@ -2067,7 +2047,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show file dimensions'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showFileDimensionsOnPosts,
 																	onChanged: (d) => settings.showFileDimensionsOnPosts = d
 																)
@@ -2077,7 +2057,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show pass'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showPassOnPosts,
 																	onChanged: (d) => settings.showPassOnPosts = d
 																)
@@ -2087,7 +2067,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show flag'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showFlagOnPosts,
 																	onChanged: (d) => settings.showFlagOnPosts = d
 																)
@@ -2097,7 +2077,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show country name'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showCountryNameOnPosts,
 																	onChanged: (d) => settings.showCountryNameOnPosts = d
 																)
@@ -2107,7 +2087,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show exact time'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showAbsoluteTimeOnPosts,
 																	onChanged: (d) => settings.showAbsoluteTimeOnPosts = d
 																)
@@ -2117,7 +2097,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show relative time'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showRelativeTimeOnPosts,
 																	onChanged: (d) => settings.showRelativeTimeOnPosts = d
 																)
@@ -2127,7 +2107,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show "No." before ID'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showNoBeforeIdOnPosts,
 																	onChanged: (d) => settings.showNoBeforeIdOnPosts = d
 																)
@@ -2137,23 +2117,23 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Highlight dubs (etc)'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.highlightRepeatingDigitsInPostIds,
 																	onChanged: (d) => settings.highlightRepeatingDigitsInPostIds = d
 																)
 															]
 														),
-														CupertinoButton.filled(
+														AdaptiveFilledButton(
 															child: const Text('Adjust order'),
 															onPressed: () async {
-																await showCupertinoDialog(
+																await showAdaptiveDialog(
 																	barrierDismissible: true,
 																	context: context,
 																	builder: (context) => StatefulBuilder(
-																		builder: (context, setDialogState) => CupertinoAlertDialog2(
+																		builder: (context, setDialogState) => AdaptiveAlertDialog(
 																			title: const Text('Reorder post details'),
 																			actions: [
-																				CupertinoDialogAction2(
+																				AdaptiveDialogAction(
 																					child: const Text('Close'),
 																					onPressed: () => Navigator.pop(context)
 																				)
@@ -2251,7 +2231,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Show reply counts in gallery')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.showReplyCountsInGallery,
 							onChanged: (newValue) {
 								settings.showReplyCountsInGallery = newValue;
@@ -2267,7 +2247,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Show thumbnails in gallery')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.showThumbnailsInGallery,
 							onChanged: (newValue) {
 								settings.showThumbnailsInGallery = newValue;
@@ -2289,30 +2269,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				Row(
 					children: [
 						Expanded(
-							child: CupertinoSegmentedControl<bool>(
+							child: AdaptiveSegmentedControl<bool>(
 								children: const {
-									false: Padding(
-										padding: EdgeInsets.all(8),
-										child: Row(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												Icon(CupertinoIcons.rectangle_grid_1x2),
-												SizedBox(width: 8),
-												Text('Rows')
-											]
-										)
-									),
-									true: Padding(
-										padding: EdgeInsets.all(8),
-										child: Row(
-											mainAxisSize: MainAxisSize.min,
-											children: [
-												Icon(CupertinoIcons.rectangle_split_3x3),
-												SizedBox(width: 8),
-												Text('Grid')
-											]
-										)
-									)
+									false: (CupertinoIcons.rectangle_grid_1x2, 'Rows'),
+									true: (CupertinoIcons.rectangle_split_3x3, 'Grid')
 								},
 								groupValue: settings.useCatalogGrid,
 								onValueChanged: (newValue) {
@@ -2320,13 +2280,12 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 								}
 							)
 						),
-						if (ImageboardRegistry.instance.count > 1) CupertinoButton(
+						if (ImageboardRegistry.instance.count > 1) AdaptiveIconButton(
 							minSize: 0,
-							padding: EdgeInsets.zero,
-							onPressed: () => showCupertinoModalPopup(
+							onPressed: () => showAdaptiveModalPopup(
 								context: context,
 								builder: (context) => StatefulBuilder(
-									builder: (context, setDialogState) => CupertinoActionSheet(
+									builder: (context, setDialogState) => AdaptiveActionSheet(
 										title: const Text('Per-Site Catalog Layout'),
 										message: Column(
 											mainAxisSize: MainAxisSize.min,
@@ -2343,7 +2302,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														]
 													),
 													const SizedBox(height: 8),
-													CupertinoAdaptiveSegmentedControl(
+													AdaptiveChoiceControl(
 														groupValue: imageboard.persistence.browserState.useCatalogGrid.value,
 														knownWidth: MediaQuery.sizeOf(context).width,
 														children: {
@@ -2362,7 +2321,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 											]
 										),
 										actions: [
-											CupertinoActionSheetAction2(
+											AdaptiveActionSheetAction(
 												onPressed: () => Navigator.pop(context),
 												child: const Text('Close')
 											)
@@ -2370,7 +2329,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									)
 								)
 							),
-							child: const Icon(CupertinoIcons.settings)
+							icon: const Icon(CupertinoIcons.settings)
 						)
 					]
 				),
@@ -2381,7 +2340,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Show counters in their own row'),
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.useFullWidthForCatalogCounters,
 							onChanged: (d) => settings.useFullWidthForCatalogCounters = d
 						),
@@ -2390,7 +2349,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				const SizedBox(height: 16),
 				Center(
-					child: settings.useCatalogGrid ? CupertinoButton.filled(
+					child: settings.useCatalogGrid ? AdaptiveFilledButton(
 						padding: const EdgeInsets.all(16),
 						child: const Row(
 							mainAxisSize: MainAxisSize.min,
@@ -2402,14 +2361,14 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						),
 						onPressed: () async {
 							Size size = Size(settings.catalogGridWidth, settings.catalogGridHeight);
-							await showCupertinoModalPopup(
+							await showAdaptiveModalPopup(
 								context: context,
 								useRootNavigator: false,
 								builder: (context) => StatefulBuilder(
-									builder: (context, setDialogState) => CupertinoActionSheet(
+									builder: (context, setDialogState) => AdaptiveActionSheet(
 										title: const Text('Edit catalog grid item layout'),
 										actions: [
-											CupertinoButton(
+											AdaptiveActionSheetAction(
 												child: const Text('Close'),
 												onPressed: () => Navigator.pop(context)
 											)
@@ -2423,7 +2382,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 													Row(
 														mainAxisAlignment: MainAxisAlignment.end,
 														children: [
-															CupertinoSlider(
+															Slider.adaptive(
 																value: size.width,
 																min: 100,
 																max: 600,
@@ -2433,23 +2392,21 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																	});
 																}
 															),
-															CupertinoButton(
-																padding: EdgeInsets.zero,
+															AdaptiveIconButton(
 																onPressed: size.width <= 100 ? null : () {
 																	setDialogState(() {
 																		size = Size(size.width - 1, size.height);
 																	});
 																},
-																child: const Icon(CupertinoIcons.minus)
+																icon: const Icon(CupertinoIcons.minus)
 															),
-															CupertinoButton(
-																padding: EdgeInsets.zero,
+															AdaptiveIconButton(
 																onPressed: size.width >= 600 ? null : () {
 																	setDialogState(() {
 																		size = Size(size.width + 1, size.height);
 																	});
 																},
-																child: const Icon(CupertinoIcons.plus)
+																icon: const Icon(CupertinoIcons.plus)
 															)
 														]
 													),
@@ -2458,7 +2415,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 													Row(
 														mainAxisAlignment: MainAxisAlignment.end,
 														children: [
-															CupertinoSlider(
+															Slider.adaptive(
 																value: size.height,
 																min: 100,
 																max: 600,
@@ -2468,23 +2425,21 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																	});
 																}
 															),
-															CupertinoButton(
-																padding: EdgeInsets.zero,
+															AdaptiveIconButton(
 																onPressed: size.height <= 100 ? null : () {
 																	setDialogState(() {
 																		size = Size(size.width, size.height - 1);
 																	});
 																},
-																child: const Icon(CupertinoIcons.minus)
+																icon: const Icon(CupertinoIcons.minus)
 															),
-															CupertinoButton(
-																padding: EdgeInsets.zero,
+															AdaptiveIconButton(
 																onPressed: size.height >= 600 ? null : () {
 																	setDialogState(() {
 																		size = Size(size.width, size.height + 1);
 																	});
 																},
-																child: const Icon(CupertinoIcons.plus)
+																icon: const Icon(CupertinoIcons.plus)
 															)
 														]
 													),
@@ -2493,7 +2448,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 													Row(
 														mainAxisAlignment: MainAxisAlignment.end,
 														children: [
-															CupertinoButton(
+															AdaptiveButton(
 																padding: const EdgeInsets.only(left: 8, right: 8),
 																onPressed: settings.catalogGridModeTextLinesLimit == null ? null : () {
 																	setDialogState(() {
@@ -2502,23 +2457,21 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																},
 																child: const Text('Reset')
 															),
-															CupertinoButton(
-																padding: EdgeInsets.zero,
+															AdaptiveIconButton(
 																onPressed: (settings.catalogGridModeTextLinesLimit ?? 2) <= 1 ? null : () {
 																	setDialogState(() {
 																		settings.catalogGridModeTextLinesLimit = (settings.catalogGridModeTextLinesLimit ?? (settings.catalogGridHeight / (2 * 14 * MediaQuery.textScaleFactorOf(context))).round()) - 1;
 																	});
 																},
-																child: const Icon(CupertinoIcons.minus)
+																icon: const Icon(CupertinoIcons.minus)
 															),
-															CupertinoButton(
-																padding: EdgeInsets.zero,
+															AdaptiveIconButton(
 																onPressed: () {
 																	setDialogState(() {
 																		settings.catalogGridModeTextLinesLimit = (settings.catalogGridModeTextLinesLimit ?? 0) + 1;
 																	});
 																},
-																child: const Icon(CupertinoIcons.plus)
+																icon: const Icon(CupertinoIcons.plus)
 															)
 														]
 													),
@@ -2528,7 +2481,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															const Expanded(
 																child: Text('Thumbnail behind text')
 															),
-															CupertinoSwitch2(
+															AdaptiveSwitch(
 																value: settings.catalogGridModeAttachmentInBackground,
 																onChanged: (v) {
 																	setDialogState(() {
@@ -2544,7 +2497,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															const Expanded(
 																child: Text('Rounded corners and margin')
 															),
-															CupertinoSwitch2(
+															AdaptiveSwitch(
 																value: settings.catalogGridModeCellBorderRadiusAndMargin,
 																onChanged: (v) {
 																	setDialogState(() {
@@ -2560,7 +2513,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															const Expanded(
 																child: Text('Show more image if text is short')
 															),
-															CupertinoSwitch2(
+															AdaptiveSwitch(
 																value: settings.catalogGridModeShowMoreImageIfLessText,
 																onChanged: (v) {
 																	setDialogState(() {
@@ -2571,8 +2524,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 														]
 													),
 													const SizedBox(height: 8),
-													SizedBox.fromSize(
-														size: size,
+													Container(
+														width: size.width,
+														height: size.height,
+														decoration: threadAndPostRowDecoration,
 														child: ThreadRow(
 															contentFocus: true,
 															contentFocusBorderRadiusAndPadding: settings.catalogGridModeCellBorderRadiusAndMargin,
@@ -2589,7 +2544,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 							settings.catalogGridHeight = size.height;
 							settings.catalogGridWidth = size.width;
 						}
-					) : CupertinoButton.filled(
+					) : AdaptiveFilledButton(
 						padding: const EdgeInsets.all(16),
 						child: const Row(
 							mainAxisSize: MainAxisSize.min,
@@ -2600,14 +2555,14 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 							]
 						),
 						onPressed: () async {
-							await showCupertinoModalPopup(
+							await showAdaptiveModalPopup(
 								context: context,
 								useRootNavigator: false,
 								builder: (context) => StatefulBuilder(
-									builder: (context, setDialogState) => CupertinoActionSheet(
+									builder: (context, setDialogState) => AdaptiveActionSheet(
 										title: const Text('Edit catalog grid item layout'),
 										actions: [
-											CupertinoButton(
+											AdaptiveActionSheetAction(
 												child: const Text('Close'),
 												onPressed: () => Navigator.pop(context)
 											)
@@ -2617,8 +2572,9 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 											child: Column(
 												crossAxisAlignment: CrossAxisAlignment.start,
 												children: [
-													SizedBox(
+													Container(
 														height: settings.maxCatalogRowHeight,
+														decoration: threadAndPostRowDecoration,
 														child: ClipRect(
 															child: ThreadRow(
 																contentFocus: false,
@@ -2634,7 +2590,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															const Expanded(
 																child: Text('Show last replies')
 															),
-															CupertinoSwitch2(
+															AdaptiveSwitch(
 																value: settings.showLastRepliesInCatalog,
 																onChanged: (d) {
 																	settings.showLastRepliesInCatalog = d;
@@ -2648,7 +2604,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 													Row(
 														mainAxisAlignment: MainAxisAlignment.end,
 														children: [
-															CupertinoSlider(
+															Slider.adaptive(
 																value: settings.maxCatalogRowHeight,
 																min: 100,
 																max: 600,
@@ -2658,23 +2614,21 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 																	});
 																}
 															),
-															CupertinoButton(
-																padding: EdgeInsets.zero,
+															AdaptiveIconButton(
 																onPressed: settings.maxCatalogRowHeight <= 100 ? null : () {
 																	setDialogState(() {
 																		settings.maxCatalogRowHeight--;
 																	});
 																},
-																child: const Icon(CupertinoIcons.minus)
+																icon: const Icon(CupertinoIcons.minus)
 															),
-															CupertinoButton(
-																padding: EdgeInsets.zero,
+															AdaptiveIconButton(
 																onPressed: settings.maxCatalogRowHeight >= 600 ? null : () {
 																	setDialogState(() {
 																		settings.maxCatalogRowHeight++;
 																	});
 																},
-																child: const Icon(CupertinoIcons.plus)
+																icon: const Icon(CupertinoIcons.plus)
 															)
 														]
 													)
@@ -2689,7 +2643,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				const SizedBox(height: 16),
 				Center(
-					child: CupertinoButton.filled(
+					child: AdaptiveFilledButton(
 						padding: const EdgeInsets.all(16),
 						child: const Row(
 							mainAxisSize: MainAxisSize.min,
@@ -2700,16 +2654,16 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 							]
 						),
 						onPressed: () async {
-							await showCupertinoModalPopup(
+							await showAdaptiveModalPopup(
 								context: context,
 								useRootNavigator: false,
 								builder: (context) => StatefulBuilder(
 									builder: (context, setDialogState) {
 										final settings = context.watch<EffectiveSettings>();
-										return CupertinoActionSheet(
+										return AdaptiveActionSheet(
 											title: const Text('Edit catalog item details'),
 											actions: [
-												CupertinoButton(
+												AdaptiveActionSheetAction(
 													child: const Text('Close'),
 													onPressed: () => Navigator.pop(context)
 												)
@@ -2718,15 +2672,18 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 												style: DefaultTextStyle.of(context).style,
 												child: Column(
 													children: [
-														SizedBox(
+														Container(
 															height: 100,
+															decoration: threadAndPostRowDecoration,
 															child: _buildFakeThreadRow(contentFocus: false)
 														),
 														const SizedBox(height: 16),
 														Align(
 															alignment: Alignment.topLeft,
-															child: SizedBox.fromSize(
-																size: Size(settings.catalogGridWidth, settings.catalogGridHeight),
+															child: Container(
+																width: settings.catalogGridWidth,
+																height: settings.catalogGridHeight,
+																decoration: threadAndPostRowDecoration,
 																child: _buildFakeThreadRow()
 															)
 														),
@@ -2734,7 +2691,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show image count'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showImageCountInCatalog,
 																	onChanged: (d) => settings.showImageCountInCatalog = d
 																)
@@ -2744,7 +2701,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show clock icon'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showClockIconInCatalog,
 																	onChanged: (d) => settings.showClockIconInCatalog = d
 																)
@@ -2754,7 +2711,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show name'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showNameInCatalog,
 																	onChanged: (d) => settings.showNameInCatalog = d
 																)
@@ -2764,7 +2721,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Hide default names'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.hideDefaultNamesInCatalog,
 																	onChanged: (d) => settings.hideDefaultNamesInCatalog = d
 																)
@@ -2774,7 +2731,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show exact time'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showTimeInCatalogHeader,
 																	onChanged: (d) => settings.showTimeInCatalogHeader = d
 																)
@@ -2784,7 +2741,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show relative time'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showTimeInCatalogStats,
 																	onChanged: (d) => settings.showTimeInCatalogStats = d
 																)
@@ -2794,7 +2751,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show ID'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showIdInCatalogHeader,
 																	onChanged: (d) => settings.showIdInCatalogHeader = d
 																)
@@ -2804,7 +2761,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show flag'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showFlagInCatalogHeader,
 																	onChanged: (d) => settings.showFlagInCatalogHeader = d
 																)
@@ -2814,7 +2771,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 															children: [
 																const Text('Show country name'),
 																const Spacer(),
-																CupertinoSwitch2(
+																AdaptiveSwitch(
 																	value: settings.showCountryNameInCatalogHeader,
 																	onChanged: (d) => settings.showCountryNameInCatalogHeader = d
 																)
@@ -2838,7 +2795,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Dim read threads in catalog')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.dimReadThreads,
 							onChanged: (newValue) {
 								settings.dimReadThreads = newValue;
@@ -2862,7 +2819,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				Padding(
 					padding: const EdgeInsets.all(16),
-					child: CupertinoSlider(
+					child: Slider.adaptive(
 						min: 50,
 						max: 3000,
 						divisions: 59,
@@ -2884,7 +2841,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				Padding(
 					padding: const EdgeInsets.all(16),
-					child: CupertinoSlider(
+					child: Slider.adaptive(
 						min: 1,
 						max: (twoPaneSplitDenominator - 1).toDouble(),
 						divisions: twoPaneSplitDenominator - 1,
@@ -2914,7 +2871,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 								)
 							)
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: !settings.verticalTwoPaneMinimumPaneSize.isNegative,
 							onChanged: (newValue) {
 								settings.verticalTwoPaneMinimumPaneSize = settings.verticalTwoPaneMinimumPaneSize.abs() * (newValue ? 1 : -1);
@@ -2924,7 +2881,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 				),
 				Padding(
 					padding: const EdgeInsets.all(16),
-					child: CupertinoSlider(
+					child: Slider.adaptive(
 						min: 100,
 						max: 1000,
 						divisions: 36,
@@ -2945,20 +2902,11 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<(bool, bool?)>(
+				AdaptiveSegmentedControl<(bool, bool?)>(
 					children: const {
-						(true, true): Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Left')
-						),
-						(false, null): Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Off')
-						),
-						(true, false): Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Right')
-						)
+						(true, true): (null, 'Left'),
+						(false, null): (null, 'Off'),
+						(true, false): (null, 'Right')
 					},
 					groupValue: (settings.showScrollbars, settings.showScrollbars ? settings.scrollbarsOnLeft : null),
 					onValueChanged: (newValue) {
@@ -3004,16 +2952,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
+				AdaptiveSegmentedControl<bool>(
 					children: const {
-						true: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Left')
-						),
-						false: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Right')
-						)
+						true: (null, 'Left'),
+						false: (null, 'Right')
 					},
 					groupValue: settings.showListPositionIndicatorsOnLeft,
 					onValueChanged: (newValue) {
@@ -3032,7 +2974,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 								helpText: 'Some devices have a bug in their Android ROM, where the status bar cannot be properly hidden.\n\nIf this workaround is enabled, the status bar will not be hidden when opening the gallery.'
 							),
 							const Spacer(),
-							CupertinoSwitch2(
+							AdaptiveSwitch(
 								value: settings.useStatusBarWorkaround ?? false,
 								onChanged: (newValue) {
 									settings.useStatusBarWorkaround = newValue;
@@ -3049,7 +2991,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Default thread layout')
 						),
-						CupertinoButton.filled(
+						AdaptiveFilledButton(
 							padding: const EdgeInsets.all(8),
 							onPressed: () async {
 								final newImageboard = await _pickImageboard(context, _threadLayoutImageboard);
@@ -3073,30 +3015,10 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 					]
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
+				AdaptiveSegmentedControl<bool>(
 					children: const {
-						false: Padding(
-							padding: EdgeInsets.all(8),
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Icon(CupertinoIcons.list_bullet),
-									SizedBox(width: 8),
-									Text('Linear')
-								]
-							)
-						),
-						true: Padding(
-							padding: EdgeInsets.all(8),
-							child: Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Icon(CupertinoIcons.list_bullet_indent),
-									SizedBox(width: 8),
-									Text('Tree')
-								]
-							)
-						)
+						false: (CupertinoIcons.list_bullet, 'Linear'),
+						true: (CupertinoIcons.list_bullet_indent, 'Tree')
 					},
 					groupValue: _threadLayoutImageboard.persistence.browserState.useTree ?? _threadLayoutImageboard.site.useTree,
 					onValueChanged: (newValue) {
@@ -3121,7 +3043,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									const Expanded(
 										child: Text('Initially hide nested replies')
 									),
-									CupertinoSwitch2(
+									AdaptiveSwitch(
 										value: _threadLayoutImageboard.persistence.browserState.treeModeInitiallyCollapseSecondLevelReplies,
 										onChanged: (newValue) {
 											_threadLayoutImageboard.persistence.browserState.treeModeInitiallyCollapseSecondLevelReplies = newValue;
@@ -3144,7 +3066,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 									const Expanded(
 										child: Text('Collapsed posts show body')
 									),
-									CupertinoSwitch2(
+									AdaptiveSwitch(
 										value: _threadLayoutImageboard.persistence.browserState.treeModeCollapsedPostsShowBody,
 										onChanged: (newValue) {
 											_threadLayoutImageboard.persistence.browserState.treeModeCollapsedPostsShowBody = newValue;
@@ -3166,7 +3088,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Blur effects')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.blurEffects,
 							onChanged: (newValue) {
 								settings.blurEffects = newValue;
@@ -3182,7 +3104,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('12-hour time')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.exactTimeIsTwelveHour,
 							onChanged: (newValue) {
 								settings.exactTimeIsTwelveHour = newValue;
@@ -3198,7 +3120,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						Expanded(
 							child: Text('ISO 8601 dates (e.g. ${DateTime.now().toISO8601Date})')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.exactTimeIsISO8601,
 							onChanged: (newValue) {
 								settings.exactTimeIsISO8601 = newValue;
@@ -3214,7 +3136,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Show date even if today')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.exactTimeShowsDateForToday,
 							onChanged: (newValue) {
 								settings.exactTimeShowsDateForToday = newValue;
@@ -3230,7 +3152,7 @@ class _SettingsAppearancePageState extends State<SettingsAppearancePage> {
 						const Expanded(
 							child: Text('Overlay indicators and buttons in gallery')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.showOverlaysInGallery,
 							onChanged: (newValue) {
 								settings.showOverlaysInGallery = newValue;
@@ -3268,7 +3190,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 						const Expanded(
 							child: Text('Require authentication on launch')
 						),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.askForAuthenticationOnLaunch,
 							onChanged: (newValue) async {
 								try {
@@ -3300,7 +3222,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 				if (Platform.isAndroid) ...[
 					const SizedBox(height: 16),
 					Center(
-						child: CupertinoButton.filled(
+						child: AdaptiveFilledButton(
 							padding: const EdgeInsets.all(16),
 							child: Row(
 								mainAxisSize: MainAxisSize.min,
@@ -3327,7 +3249,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					),
 					Padding(
 						padding: const EdgeInsets.all(16),
-						child: CupertinoAdaptiveSegmentedControl<AndroidGallerySavePathOrganizing>(
+						child: AdaptiveChoiceControl<AndroidGallerySavePathOrganizing>(
 							children: const {
 								AndroidGallerySavePathOrganizing.noSubfolders: (null, 'No subfolders'),
 								AndroidGallerySavePathOrganizing.boardSubfolders: (null, 'Per-board subfolders'),
@@ -3351,7 +3273,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 							helpText: 'Send the captcha images you solve to a database to improve the automated solver. No other information about your posts will be collected.'
 						),
 						const Spacer(),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.contributeCaptchas ?? false,
 							onChanged: (setting) {
 								settings.contributeCaptchas = setting;
@@ -3370,7 +3292,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 							helpText: 'Crash stack traces and uncaught exceptions will be used to help fix bugs. No personal information will be collected.'
 						),
 						const Spacer(),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: FirebaseCrashlytics.instance.isCrashlyticsCollectionEnabled,
 							onChanged: (setting) async {
 								await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(setting);
@@ -3390,7 +3312,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 							helpText: 'Links to sites such as YouTube will show the thumbnail and title of the page instead of the link URL.'
 						),
 						const Spacer(),
-						CupertinoSwitch2(
+						AdaptiveSwitch(
 							value: settings.useEmbeds,
 							onChanged: (setting) {
 								settings.useEmbeds = setting;
@@ -3410,7 +3332,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 				),
 				Padding(
 					padding: const EdgeInsets.all(16),
-					child: CupertinoAdaptiveSegmentedControl<int>(
+					child: AdaptiveChoiceControl<int>(
 						children: const {
 							1: (null, '1 day'),
 							3: (null, '3 days'),
@@ -3427,11 +3349,11 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 					)
 				),
 				const SizedBox(height: 16),
-				const Row(
+				Row(
 					children: [
-						Icon(CupertinoIcons.photo_on_rectangle),
-						SizedBox(width: 8),
-						Expanded(
+						Icon(Adaptive.icons.photos),
+						const SizedBox(width: 8),
+						const Expanded(
 							child: Text('Cached media')
 						)
 					]
@@ -3450,7 +3372,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 				const SettingsThreadsPanel(),
 				const SizedBox(height: 16),
 				Center(
-					child: CupertinoButton.filled(
+					child: AdaptiveFilledButton(
 						child: const Row(
 							mainAxisSize: MainAxisSize.min,
 							children: [
@@ -3466,7 +3388,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 				),
 				const SizedBox(height: 16),
 				Center(
-					child: CupertinoButton.filled(
+					child: AdaptiveFilledButton(
 						child: const Row(
 							mainAxisSize: MainAxisSize.min,
 							children: [
@@ -3482,13 +3404,13 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 				),
 				const SizedBox(height: 16),
 				Center(
-					child: CupertinoButton.filled(
+					child: AdaptiveFilledButton(
 						onPressed: () async {
 							final controller = TextEditingController(text: settings.userAgent);
-							final newUserAgent = await showCupertinoDialog<String>(
+							final newUserAgent = await showAdaptiveDialog<String>(
 								context: context,
 								barrierDismissible: true,
-								builder: (context) => CupertinoAlertDialog2(
+								builder: (context) => AdaptiveAlertDialog(
 									title: const Text('Edit User-Agent'),
 									content: Column(
 										mainAxisSize: MainAxisSize.min,
@@ -3498,7 +3420,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 												const Text('This user-agent might be overridden for 4chan captcha requests to work with the Cloudflare check.'),
 												const SizedBox(height: 10)
 											],
-											CupertinoTextField2(
+											AdaptiveTextField(
 												autofocus: true,
 												controller: controller,
 												smartDashesType: SmartDashesType.disabled,
@@ -3510,7 +3432,7 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 										]
 									),
 									actions: [
-										CupertinoDialogAction2(
+										AdaptiveDialogAction(
 											child: const Text('Random'),
 											onPressed: () {
 												final userAgents = getAppropriateUserAgents();
@@ -3518,12 +3440,12 @@ class _SettingsDataPageState extends State<SettingsDataPage> {
 												controller.text = userAgents[idx % userAgents.length];
 											}
 										),
-										CupertinoDialogAction2(
+										AdaptiveDialogAction(
 											isDefaultAction: true,
 											child: const Text('Save'),
 											onPressed: () => Navigator.pop(context, controller.text.isEmpty ? null : controller.text)
 										),
-										CupertinoDialogAction2(
+										AdaptiveDialogAction(
 											child: const Text('Cancel'),
 											onPressed: () => Navigator.pop(context)
 										)
@@ -3641,12 +3563,12 @@ class _SettingsCachePanelState extends State<SettingsCachePanel> {
 					Row(
 						mainAxisAlignment: MainAxisAlignment.spaceBetween,
 						children: [
-							CupertinoButton.filled(
+							AdaptiveFilledButton(
 								padding: const EdgeInsets.all(16),
 								onPressed: _readFilesystemInfo,
 								child: const Text('Recalculate')
 							),
-							CupertinoButton.filled(
+							AdaptiveFilledButton(
 								padding: const EdgeInsets.all(16),
 								onPressed: (folderSizes?.isEmpty ?? true) ? null : (clearing ? null : _clearCaches),
 								child: Text(clearing ? 'Deleting...' : 'Delete all')
@@ -3678,24 +3600,24 @@ class SettingsThreadsPanel extends StatelessWidget {
 				}).toList();
 				oldThreadRows.removeRange(oldThreadRows.lastIndexWhere((r) => r.$2.isNotEmpty) + 1, oldThreadRows.length);
 				confirmDelete(List<PersistentThreadState> toDelete, {String itemType = 'thread'}) async {
-					final confirmed = await showCupertinoDialog<bool>(
+					final confirmed = await showAdaptiveDialog<bool>(
 						context: context,
-						builder: (context) => CupertinoAlertDialog2(
+						builder: (context) => AdaptiveAlertDialog(
 							title: const Text('Confirm deletion'),
 							content: Text('${describeCount(toDelete.length, itemType)} will be deleted'),
 							actions: [
-								CupertinoDialogAction2(
-									child: const Text('Cancel'),
-									onPressed: () {
-										Navigator.of(context).pop();
-									}
-								),
-								CupertinoDialogAction2(
+								AdaptiveDialogAction(
 									isDestructiveAction: true,
 									onPressed: () {
 										Navigator.of(context).pop(true);
 									},
-									child: const Text('Confirm')
+									child: const Text('Delete')
+								),
+								AdaptiveDialogAction(
+									child: const Text('Cancel'),
+									onPressed: () {
+										Navigator.of(context).pop();
+									}
 								)
 							]
 						)
@@ -3725,10 +3647,9 @@ class SettingsThreadsPanel extends StatelessWidget {
 								children: [
 									const Text('Saved threads', textAlign: TextAlign.left),
 									Text(savedThreads.length.toString(), textAlign: TextAlign.right),
-									CupertinoButton(
-										padding: EdgeInsets.zero,
+									AdaptiveIconButton(
 										onPressed: savedThreads.isEmpty ? null : () => confirmDelete(savedThreads, itemType: 'saved thread'),
-										child: const Text('Delete')
+										icon: const Text('Delete')
 									)
 								]
 							),
@@ -3736,10 +3657,9 @@ class SettingsThreadsPanel extends StatelessWidget {
 								children: [
 									const Text('Watched threads', textAlign: TextAlign.left),
 									Text(watchedThreads.length.toString(), textAlign: TextAlign.right),
-									CupertinoButton(
-										padding: EdgeInsets.zero,
+									AdaptiveIconButton(
 										onPressed: watchedThreads.isEmpty ? null : () => confirmDelete(watchedThreads, itemType: 'watched thread'),
-										child: const Text('Delete')
+										icon: const Text('Delete')
 									)
 								]
 							),
@@ -3748,10 +3668,9 @@ class SettingsThreadsPanel extends StatelessWidget {
 									children: [
 										Text('Over ${entry.$1} days old', textAlign: TextAlign.left),
 										Text(entry.$2.length.toString(), textAlign: TextAlign.right),
-										CupertinoButton(
-											padding: EdgeInsets.zero,
+										AdaptiveIconButton(
 											onPressed: entry.$2.isEmpty ? null : () => confirmDelete(entry.$2),
-											child: const Text('Delete')
+											icon: const Text('Delete')
 										)
 									]
 								);
@@ -3883,10 +3802,10 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 				const SizedBox(height: 16),
 				Text('Filter outcome:  ${_filterResultType(result?.type)}\nReason: ${result?.reason ?? 'No match'}'),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<bool>(
+				AdaptiveSegmentedControl<bool>(
 					children: const {
-						false: Text('Post'),
-						true: Text('Thread')
+						false: (null, 'Post'),
+						true: (null, 'Thread')
 					},
 					groupValue: isThread,
 					onValueChanged: (setting) {
@@ -3909,7 +3828,7 @@ class _FilterTestPageState extends State<FilterTestPage> implements Filterable {
 					Text(field.$1),
 					Padding(
 						padding: const EdgeInsets.all(16),
-						child: CupertinoTextField2(
+						child: AdaptiveTextField(
 							controller: field.$2,
 							minLines: field.$3,
 							maxLines: null,
@@ -3972,9 +3891,9 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 		final fields = {
 			for (final field in widget.loginSystem.getLoginFields()) field: ''
 		};
-		final cont = await showCupertinoDialog<bool>(
+		final cont = await showAdaptiveDialog<bool>(
 			context: context,
-			builder: (context) => CupertinoAlertDialog2(
+			builder: (context) => AdaptiveAlertDialog(
 				title: Text('${widget.loginSystem.name} Login'),
 				content: ListBody(
 					children: [
@@ -3982,7 +3901,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 						for (final field in fields.keys) ...[
 							Text(field.displayName, textAlign: TextAlign.left),
 							const SizedBox(height: 8),
-							CupertinoTextField2(
+							AdaptiveTextField(
 								autofocus: field == fields.keys.first,
 								onChanged: (value) {
 									fields[field] = value;
@@ -3997,13 +3916,13 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 					]
 				),
 				actions: [
-					CupertinoDialogAction2(
-						child: const Text('Cancel'),
-						onPressed: () => Navigator.pop(context)
-					),
-					CupertinoDialogAction2(
+					AdaptiveDialogAction(
 						child: const Text('Login'),
 						onPressed: () => Navigator.pop(context, true)
+					),
+					AdaptiveDialogAction(
+						child: const Text('Cancel'),
+						onPressed: () => Navigator.pop(context)
 					)
 				]
 			)
@@ -4032,7 +3951,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 			mainAxisSize: MainAxisSize.min,
 			children: [
 				if (loading) const Center(
-					child: CupertinoActivityIndicator()
+					child: CircularProgressIndicator.adaptive()
 				)
 				else if (savedFields != null) ...[
 					const Text('Credentials saved\n'),
@@ -4040,7 +3959,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 						spacing: 16,
 						runSpacing: 16,
 						children: [
-							CupertinoButton.filled(
+							AdaptiveFilledButton(
 								child: const Text('Remove'),
 								onPressed: () async {
 									setState(() {
@@ -4060,7 +3979,7 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 					)
 				]
 				else ...[
-					CupertinoButton.filled(
+					AdaptiveFilledButton(
 						child: const Text('Login'),
 						onPressed: () async {
 							try {
@@ -4081,20 +4000,11 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 					)
 				),
 				const SizedBox(height: 16),
-				CupertinoSegmentedControl<NullSafeOptional>(
+				AdaptiveSegmentedControl<NullSafeOptional>(
 					children: const {
-						NullSafeOptional.false_: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('No')
-						),
-						NullSafeOptional.null_: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Ask')
-						),
-						NullSafeOptional.true_: Padding(
-							padding: EdgeInsets.all(8),
-							child: Text('Yes')
-						)
+						NullSafeOptional.false_: (null, 'No'),
+						NullSafeOptional.null_: (null, 'Ask'),
+						NullSafeOptional.true_: (null, 'Yes')
 					},
 					groupValue: context.watch<EffectiveSettings>().autoLoginOnMobileNetwork.value,
 					onValueChanged: (setting) {
@@ -4107,26 +4017,25 @@ class _SettingsLoginPanelState extends State<SettingsLoginPanel> {
 }
 
 Future<Imageboard?> _pickImageboard(BuildContext context, Imageboard current) {
-	return showCupertinoModalPopup<Imageboard?>(
+	return showAdaptiveModalPopup<Imageboard?>(
 		context: context,
-		builder: (context) => CupertinoActionSheet(
+		builder: (context) => AdaptiveActionSheet(
 			title: const Text('Select site'),
-			actions: ImageboardRegistry.instance.imageboards.map((imageboard) => CupertinoActionSheetAction2(
+			actions: ImageboardRegistry.instance.imageboards.map((imageboard) => AdaptiveActionSheetAction(
+				isSelected: imageboard == current,
 				child: Row(
 					mainAxisSize: MainAxisSize.min,
 					children: [
 						ImageboardIcon(imageboardKey: imageboard.key),
 						const SizedBox(width: 8),
-						Text(imageboard.site.name, style: TextStyle(
-							fontWeight: (imageboard == current) ? FontWeight.bold : null
-						))
+						Text(imageboard.site.name)
 					]
 				),
 				onPressed: () {
 					Navigator.of(context, rootNavigator: true).pop(imageboard);
 				}
 			)).toList(),
-			cancelButton: CupertinoActionSheetAction2(
+			cancelButton: AdaptiveActionSheetAction(
 				child: const Text('Cancel'),
 				onPressed: () => Navigator.of(context, rootNavigator: true).pop()
 			)
@@ -4143,18 +4052,16 @@ class _SettingsHelpButton extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return CupertinoButton(
-			minSize: 0,
-			padding: EdgeInsets.zero,
-			child: const Icon(CupertinoIcons.question_circle),
+		return AdaptiveIconButton(
+			icon: const Icon(CupertinoIcons.question_circle),
 			onPressed: () {
-				showCupertinoDialog<bool>(
+				showAdaptiveDialog<bool>(
 					context: context,
 					barrierDismissible: true,
-					builder: (context) => CupertinoAlertDialog2(
+					builder: (context) => AdaptiveAlertDialog(
 						content: Text(helpText),
 						actions: [
-							CupertinoDialogAction2(
+							AdaptiveDialogAction(
 								child: const Text('OK'),
 								onPressed: () {
 									Navigator.of(context).pop();

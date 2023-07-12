@@ -8,6 +8,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:flutter/cupertino.dart';
@@ -281,7 +282,7 @@ class TopNotification extends StatelessWidget {
 						crossAxisAlignment: CrossAxisAlignment.center,
 						children: [
 							Expanded(
-								child: CupertinoButton.filled(
+								child: AdaptiveFilledButton(
 									borderRadius: BorderRadius.zero,
 									alignment: Alignment.topLeft,
 									onPressed: onTap,
@@ -299,14 +300,14 @@ class TopNotification extends StatelessWidget {
 									)
 								)
 							),
-							if (notification is ThreadWatchNotification && !notification.isMuted) CupertinoButton.filled(
+							if (notification is ThreadWatchNotification && !notification.isMuted) AdaptiveFilledButton(
 								padding: const EdgeInsets.all(16),
 								borderRadius: BorderRadius.zero,
 								alignment: Alignment.topCenter,
 								onPressed: onTapMute,
 								child: const Icon(CupertinoIcons.bell_slash)
 							),
-							CupertinoButton.filled(
+							AdaptiveFilledButton(
 								padding: const EdgeInsets.all(16),
 								borderRadius: BorderRadius.zero,
 								alignment: Alignment.topCenter,
@@ -360,7 +361,7 @@ class CornerNotification extends StatelessWidget {
 					children: [
 						Padding(
 							padding: const EdgeInsets.all(8),
-							child: CupertinoButton.filled(
+							child: AdaptiveFilledButton(
 								padding: const EdgeInsets.all(8),
 								onPressed: onTap,
 								child: ImageboardScope(

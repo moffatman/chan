@@ -5,10 +5,11 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 class CaptchaLynxchan extends StatefulWidget {
 	final LynxchanCaptchaRequest request;
@@ -136,9 +137,9 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 				child: Column(
 					children: [
 						Text(errorMessage!),
-						CupertinoButton(
+						AdaptiveIconButton(
 							onPressed: _tryRequestChallenge,
-							child: const Icon(CupertinoIcons.refresh)
+							icon: const Icon(CupertinoIcons.refresh)
 						)
 					]
 				)
@@ -168,9 +169,9 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 						child: Row(
 							mainAxisAlignment: MainAxisAlignment.spaceBetween,
 							children: [
-								CupertinoButton(
+								AdaptiveIconButton(
 									onPressed: _tryRequestChallenge,
-									child: const Icon(CupertinoIcons.refresh)
+									icon: const Icon(CupertinoIcons.refresh)
 								),
 								Row(
 									children: [
@@ -197,7 +198,7 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 					const SizedBox(height: 16),
 					SizedBox(
 						width: 150,
-						child: CupertinoTextField2(
+						child: AdaptiveTextField(
 							focusNode: _solutionNode,
 							enableIMEPersonalizedLearning: false,
 							autocorrect: false,
@@ -210,7 +211,7 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 		}
 		else {
 			return const Center(
-				child: CupertinoActivityIndicator()
+				child: CircularProgressIndicator.adaptive()
 			);
 		}
 	}

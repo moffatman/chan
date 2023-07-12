@@ -4,6 +4,7 @@ import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/services/share.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_gesture_recognizer.dart';
 import 'package:flutter/cupertino.dart';
@@ -180,15 +181,18 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 									),
 									child: Row(
 										children: [
-											CupertinoButton(
+											AdaptiveIconButton(
+												padding: const EdgeInsets.all(16.0),
 												onPressed: _canGoBack ? _controller?.goBack : null,
-												child: const Icon(CupertinoIcons.arrow_left)
+												icon: const Icon(CupertinoIcons.arrow_left)
 											),
-											CupertinoButton(
+											AdaptiveIconButton(
+												padding: const EdgeInsets.all(16.0),
 												onPressed: _canGoForward ? _controller?.goForward : null,
-												child: const Icon(CupertinoIcons.arrow_right)
+												icon: const Icon(CupertinoIcons.arrow_right)
 											),
-											CupertinoButton(
+											AdaptiveIconButton(
+												padding: const EdgeInsets.all(16.0),
 												onPressed: () {
 													_showProgressTimer?.cancel();
 													_showProgressTimer = null;
@@ -196,7 +200,7 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 													setState(() {});
 													_controller?.reload();
 												},
-												child: const Icon(CupertinoIcons.refresh)
+												icon: const Icon(CupertinoIcons.refresh)
 											),
 											Expanded(
 												child: Row(
@@ -212,7 +216,8 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 													]
 												)
 											),
-											CupertinoButton(
+											AdaptiveIconButton(
+												padding: const EdgeInsets.all(16.0),
 												onPressed: () {
 													final url = _url ?? widget.initialUrlRequest?.url;
 													if (url == null) {
@@ -227,9 +232,10 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 														));
 													}
 												},
-												child: const Icon(CupertinoIcons.archivebox)
+												icon: const Icon(CupertinoIcons.archivebox)
 											),
-											CupertinoButton(
+											AdaptiveIconButton(
+												padding: const EdgeInsets.all(16.0),
 												onPressed: () {
 													final url = _url ?? widget.initialUrlRequest?.url;
 													if (url == null) {
@@ -239,10 +245,11 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 														openBrowser(context, url);
 													}
 												},
-												child: const Icon(CupertinoIcons.compass)
+												icon: const Icon(CupertinoIcons.compass)
 											),
 											Builder(
-												builder: (context) => CupertinoButton(
+												builder: (context) => AdaptiveIconButton(
+													padding: const EdgeInsets.all(16.0),
 													onPressed: () {
 														final url = _url ?? widget.initialUrlRequest?.url;
 														if (url == null) {
@@ -257,7 +264,7 @@ class _CooperativeInAppBrowserState extends State<CooperativeInAppBrowser> {
 															);
 														}
 													},
-													child: const Icon(CupertinoIcons.share)
+													icon: Icon(Adaptive.icons.share)
 												)
 											)
 										]

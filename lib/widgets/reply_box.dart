@@ -21,6 +21,7 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/captcha_4chan.dart';
@@ -29,8 +30,6 @@ import 'package:chan/widgets/captcha_lynxchan.dart';
 import 'package:chan/widgets/captcha_secucap.dart';
 import 'package:chan/widgets/captcha_securimage.dart';
 import 'package:chan/widgets/captcha_nojs.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_text_field2.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/timed_rebuilder.dart';
 import 'package:chan/widgets/util.dart';
@@ -449,7 +448,7 @@ class ReplyBoxState extends State<ReplyBox> {
 			}
 		}
 		if (!mounted) return null;
-		showToast(context: context, message: 'Converting: ${solutions.join(', ')}', icon: CupertinoIcons.photo);
+		showToast(context: context, message: 'Converting: ${solutions.join(', ')}', icon: Adaptive.icons.photo);
 		transcode.start();
 		setState(() {
 			_attachmentProgress = ('Converting', transcode.progress);
@@ -618,31 +617,31 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		if (savedFields != null) {
 			bool shouldAutoLogin = settings.connectivity != ConnectivityResult.mobile;
 			if (!shouldAutoLogin) {
-				settings.autoLoginOnMobileNetwork ??= await showCupertinoDialog<bool>(
+				settings.autoLoginOnMobileNetwork ??= await showAdaptiveDialog<bool>(
 					context: context,
-					builder: (context) => CupertinoAlertDialog2(
+					builder: (context) => AdaptiveAlertDialog(
 						title: Text('Use ${site.loginSystem?.name} on mobile networks?'),
 						actions: [
-							CupertinoDialogAction2(
+							AdaptiveDialogAction(
 								child: const Text('Never'),
 								onPressed: () {
 									Navigator.of(context).pop(false);
 								}
 							),
-							CupertinoDialogAction2(
+							AdaptiveDialogAction(
 								child: const Text('Not now'),
 								onPressed: () {
 									Navigator.of(context).pop();
 								}
 							),
-							CupertinoDialogAction2(
+							AdaptiveDialogAction(
 								child: const Text('Just once'),
 								onPressed: () {
 									shouldAutoLogin = true;
 									Navigator.of(context).pop();
 								}
 							),
-							CupertinoDialogAction2(
+							AdaptiveDialogAction(
 								child: const Text('Always'),
 								onPressed: () {
 									Navigator.of(context).pop(true);
@@ -848,22 +847,22 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			if (_captchaSolution is Chan4CustomCaptchaSolution) {
 				final solution = (_captchaSolution as Chan4CustomCaptchaSolution);
 				// ignore: use_build_context_synchronously
-				settings.contributeCaptchas ??= await showCupertinoDialog<bool>(
+				settings.contributeCaptchas ??= await showAdaptiveDialog<bool>(
 					context: context,
-					builder: (context) => CupertinoAlertDialog2(
+					builder: (context) => AdaptiveAlertDialog(
 						title: const Text('Contribute captcha solutions?'),
 						content: const Text('The captcha images you solve will be collected to improve the automated solver'),
 						actions: [
-							CupertinoDialogAction2(
+							AdaptiveDialogAction(
+								child: const Text('Contribute'),
+								onPressed: () {
+									Navigator.of(context).pop(true);
+								}
+							),
+							AdaptiveDialogAction(
 								child: const Text('No'),
 								onPressed: () {
 									Navigator.of(context).pop(false);
-								}
-							),
-							CupertinoDialogAction2(
-								child: const Text('Yes'),
-								onPressed: () {
-									Navigator.of(context).pop(true);
 								}
 							)
 						]
@@ -951,14 +950,14 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			});
 			final bannedCaptchaRequest = site.getBannedCaptchaRequest(_captchaSolution?.cloudflare ?? false);
 			if (e is BannedException && bannedCaptchaRequest != null) {
-				await showCupertinoDialog(
+				await showAdaptiveDialog(
 					context: context,
 					builder: (context) {
-						return CupertinoAlertDialog2(
+						return AdaptiveAlertDialog(
 							title: const Text('Error'),
 							content: Text(e.toString()),
 							actions: [
-								CupertinoDialogAction2(
+								AdaptiveDialogAction(
 									child: const Text('See reason'),
 									onPressed: () async {
 										if (bannedCaptchaRequest is RecaptchaRequest) {
@@ -982,7 +981,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										}
 									}
 								),
-								CupertinoDialogAction2(
+								AdaptiveDialogAction(
 									child: const Text('OK'),
 									onPressed: () {
 										Navigator.of(context).pop();
@@ -1074,11 +1073,11 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								itemCount: _flags.length,
 								itemBuilder: (context, i) {
 									final flag = _flags[i];
-									return CupertinoButton(
+									return AdaptiveIconButton(
 										onPressed: () {
 											Navigator.of(context).pop(flag);
 										},
-										child: Row(
+										icon: Row(
 											children: [
 												if (flag.code == '0') const SizedBox(width: 16)
 												else ExtendedImage.network(
@@ -1148,18 +1147,20 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								Row(
 									children: [
 										Flexible(
-											child: CupertinoTextField2(
-												enabled: !settings.randomizeFilenames,
-												controller: _filenameController,
-												placeholder: (settings.randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
-												placeholderStyle: TextStyle(color: ChanceTheme.primaryColorWithBrightness70Of(context)),
-												maxLines: 1,
-												textCapitalization: TextCapitalization.none,
-												autocorrect: false,
-												enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
-												smartDashesType: SmartDashesType.disabled,
-												smartQuotesType: SmartQuotesType.disabled,
-												keyboardAppearance: ChanceTheme.brightnessOf(context)
+											child: SizedBox(
+												height: 35,
+												child: AdaptiveTextField(
+													enabled: !settings.randomizeFilenames,
+													controller: _filenameController,
+													placeholder: (settings.randomizeFilenames || attachment == null) ? '' : attachment!.uri.pathSegments.last.replaceAll(RegExp('.$attachmentExt\$'), ''),
+													maxLines: 1,
+													textCapitalization: TextCapitalization.none,
+													autocorrect: false,
+													enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
+													smartDashesType: SmartDashesType.disabled,
+													smartQuotesType: SmartQuotesType.disabled,
+													keyboardAppearance: ChanceTheme.brightnessOf(context)
+												)
 											)
 										),
 										const SizedBox(width: 8),
@@ -1170,9 +1171,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									fit: BoxFit.contain,
 									child: Row(
 										children: [
-											CupertinoButton(
+											AdaptiveIconButton(
 												padding: EdgeInsets.zero,
-												child: Row(
+												minSize: 0,
+												icon: Row(
 													mainAxisSize: MainAxisSize.min,
 													children: [
 														Icon(settings.randomizeFilenames ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
@@ -1188,9 +1190,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											const SizedBox(width: 8),
 											if (board.spoilers == true) Padding(
 												padding: const EdgeInsets.only(right: 8),
-												child: CupertinoButton(
+												child: AdaptiveIconButton(
 													padding: EdgeInsets.zero,
-													child: Row(
+													icon: Row(
 														mainAxisSize: MainAxisSize.min,
 														children: [
 															Icon(spoiler ? CupertinoIcons.checkmark_square : CupertinoIcons.square),
@@ -1221,10 +1223,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										mainAxisAlignment: MainAxisAlignment.spaceBetween,
 										crossAxisAlignment: CrossAxisAlignment.end,
 										children: [
-											CupertinoButton(
+											AdaptiveIconButton(
 												padding: EdgeInsets.zero,
 												minSize: 30,
-												child: const Icon(CupertinoIcons.xmark),
+												icon: const Icon(CupertinoIcons.xmark),
 												onPressed: () {
 													widget.onFilePathChanged?.call(null);
 													setState(() {
@@ -1314,7 +1316,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 			child: Row(
 				children: [
 					Flexible(
-						child: CupertinoTextField2(
+						child: AdaptiveTextField(
 							maxLines: 1,
 							placeholder: 'Name',
 							keyboardAppearance: ChanceTheme.brightnessOf(context),
@@ -1322,20 +1324,20 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 							smartDashesType: SmartDashesType.disabled,
 							smartQuotesType: SmartQuotesType.disabled,
-							suffix: CupertinoButton(
+							suffix: AdaptiveIconButton(
 								padding: const EdgeInsets.only(right: 8),
 								minSize: 0,
 								onPressed: _previouslyUsedNames.isEmpty ? null : () async {
-									final choice = await showCupertinoModalPopup<String>(
+									final choice = await showAdaptiveModalPopup<String>(
 										context: context,
-										builder: (context) => CupertinoActionSheet(
+										builder: (context) => AdaptiveActionSheet(
 											title: const Text('Previously-used names'),
-											actions: _previouslyUsedNames.map((name) => CupertinoActionSheetAction2(
+											actions: _previouslyUsedNames.map((name) => AdaptiveActionSheetAction(
 												onPressed: () => Navigator.pop(context, name),
 												isDefaultAction: _nameFieldController.text == name,
 												child: Text(name)
 											)).toList(),
-											cancelButton: CupertinoActionSheetAction2(
+											cancelButton: AdaptiveActionSheetAction(
 												child: const Text('Cancel'),
 												onPressed: () => Navigator.of(context).pop()
 											)
@@ -1345,7 +1347,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										_nameFieldController.text = choice;
 									}
 								},
-								child: const Icon(CupertinoIcons.list_bullet, size: 20)
+								icon: const Icon(CupertinoIcons.list_bullet, size: 20)
 							),
 							onChanged: (s) {
 								context.read<Persistence>().browserState.postingNames[widget.board] = s;
@@ -1355,7 +1357,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					),
 					const SizedBox(width: 8),
 					Flexible(
-						child: CupertinoTextField2(
+						child: AdaptiveTextField(
 							maxLines: 1,
 							placeholder: 'Options',
 							enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
@@ -1399,7 +1401,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 				child: Column(
 					children: [
 						if (widget.threadId == null) ...[
-							CupertinoTextField2(
+							AdaptiveTextField(
 								enabled: !loading,
 								enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 								smartDashesType: SmartDashesType.disabled,
@@ -1416,7 +1418,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						Flexible(
 							child: Stack(
 								children: [
-									CupertinoTextField2(
+									AdaptiveTextField(
 										enabled: !loading,
 										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 										smartDashesType: SmartDashesType.disabled,
@@ -1492,18 +1494,17 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 		return Row(
 			mainAxisAlignment: MainAxisAlignment.end,
 			children: [
-				for (final snippet in context.read<ImageboardSite>().getBoardSnippets(widget.board)) CupertinoButton(
-					padding: EdgeInsets.zero,
+				for (final snippet in context.read<ImageboardSite>().getBoardSnippets(widget.board)) AdaptiveIconButton(
 					onPressed: () async {
 						final controller = TextEditingController();
-						final content = await showCupertinoDialog<String>(
+						final content = await showAdaptiveDialog<String>(
 							context: context,
 							barrierDismissible: true,
-							builder: (context) => CupertinoAlertDialog2(
+							builder: (context) => AdaptiveAlertDialog(
 								title: Text('${snippet.name} block'),
 								content: Padding(
 									padding: const EdgeInsets.only(top: 16),
-									child: CupertinoTextField2(
+									child: AdaptiveTextField(
 										autofocus: true,
 										enableIMEPersonalizedLearning: settings.enableIMEPersonalizedLearning,
 										smartDashesType: SmartDashesType.disabled,
@@ -1515,17 +1516,18 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 									)
 								),
 								actions: [
-									CupertinoDialogAction2(
-										child: const Text('Cancel'),
-										onPressed: () => Navigator.pop(context)
+									AdaptiveDialogAction(
+										isDefaultAction: true,
+										onPressed: () => Navigator.pop(context, controller.text),
+										child: const Text('Insert')
 									),
-									if (snippet.previewBuilder != null) CupertinoDialogAction2(
+									if (snippet.previewBuilder != null) AdaptiveDialogAction(
 										child: const Text('Preview'),
 										onPressed: () {
-											showCupertinoDialog<bool>(
+											showAdaptiveDialog<bool>(
 												context: context,
 												barrierDismissible: true,
-												builder: (context) => CupertinoAlertDialog2(
+												builder: (context) => AdaptiveAlertDialog(
 													title: Text('${snippet.name} preview'),
 													content: ChangeNotifierProvider<PostSpanZoneData>(
 														create: (context) => PostSpanRootZoneData(
@@ -1541,7 +1543,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 														)
 													),
 													actions: [
-														CupertinoDialogAction2(
+														AdaptiveDialogAction(
 															isDefaultAction: true,
 															child: const Text('Close'),
 															onPressed: () => Navigator.pop(context)
@@ -1551,10 +1553,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 											);
 										}
 									),
-									CupertinoDialogAction2(
-										isDefaultAction: true,
-										onPressed: () => Navigator.pop(context, controller.text),
-										child: const Text('Insert')
+									AdaptiveDialogAction(
+										child: const Text('Cancel'),
+										onPressed: () => Navigator.pop(context)
 									)
 								]
 							)
@@ -1564,13 +1565,12 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						}
 						controller.dispose();
 					},
-					child: Icon(snippet.icon)
+					icon: Icon(snippet.icon)
 				),
 				if (_flags.isNotEmpty) Center(
-					child: CupertinoButton(
-						padding: EdgeInsets.zero,
+					child: AdaptiveIconButton(
 						onPressed: _pickFlag,
-						child: IgnorePointer(
+						icon: IgnorePointer(
 							child: flag != null ? ExtendedImage.network(
 								flag!.image.toString(),
 								cache: true,
@@ -1579,10 +1579,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					)
 				),
 				if (context.read<ImageboardSite>().getEmotes().isNotEmpty) Center(
-					child: CupertinoButton(
-						padding: EdgeInsets.zero,
+					child: AdaptiveIconButton(
 						onPressed: _pickEmote,
-						child: const Icon(CupertinoIcons.smiley)
+						icon: const Icon(CupertinoIcons.smiley)
 					)
 				),
 				Expanded(
@@ -1592,10 +1591,10 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							alignment: Alignment.centerLeft,
 							duration: const Duration(milliseconds: 250),
 							curve: Curves.ease,
-							child: attachment != null ? CupertinoButton(
+							child: attachment != null ? AdaptiveIconButton(
 								padding: const EdgeInsets.only(left: 8, right: 8),
 								onPressed: expandAttachmentOptions,
-								child: Row(
+								icon: Row(
 									mainAxisSize: MainAxisSize.min,
 									children: [
 										showAttachmentOptions ? const Icon(CupertinoIcons.chevron_down) : const Icon(CupertinoIcons.chevron_up),
@@ -1646,11 +1645,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 													setState(() {});
 												}
 											},
-											child: CupertinoButton(
-												alignment: Alignment.center,
-												padding: EdgeInsets.zero,
+											child: AdaptiveIconButton(
 												onPressed: () => setAttachment(File(file)),
-												child: ClipRRect(
+												icon: ClipRRect(
 													borderRadius: BorderRadius.circular(4),
 													child: ConstrainedBox(
 														constraints: const BoxConstraints(
@@ -1664,8 +1661,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												)
 											)
 										),
-										for (final picker in getAttachmentSources(context: context, includeClipboard: false)) CupertinoButton(
-											padding: EdgeInsets.zero,
+										for (final picker in getAttachmentSources(context: context, includeClipboard: false)) AdaptiveIconButton(
 											onPressed: () async {
 												FocusNode? focusToRestore;
 												if (_lastNearbyFocus?.$1.isAfter(DateTime.now().subtract(const Duration(milliseconds: 300))) ?? false) {
@@ -1677,7 +1673,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 												}
 												focusToRestore?.requestFocus();
 											},
-											child: Icon(picker.icon)
+											icon: Icon(picker.icon)
 										)
 									]
 								)
@@ -1685,10 +1681,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 						)
 					)
 				),
-				CupertinoButton(
-					padding: EdgeInsets.zero,
+				AdaptiveIconButton(
 					onPressed: expandOptions,
-					child: const Icon(CupertinoIcons.gear)
+					icon: const Icon(CupertinoIcons.gear)
 				),
 				TimedRebuilder(
 					interval: const Duration(seconds: 1),
@@ -1702,9 +1697,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 							final diff = timeout.difference(now);
 							if (!diff.isNegative) {
 								return GestureDetector(
-									child: CupertinoButton(
-										padding: EdgeInsets.zero,
-										child: Column(
+									child: AdaptiveIconButton(
+										icon: Column(
 											mainAxisSize: MainAxisSize.min,
 											crossAxisAlignment: CrossAxisAlignment.center,
 											children: [
@@ -1735,11 +1729,9 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 								);
 							}
 						}
-						return CupertinoButton(
-							padding: EdgeInsets.zero,
-							alignment: Alignment.center,
+						return AdaptiveIconButton(
 							onPressed: loading ? null : _submit,
-							child: const Icon(CupertinoIcons.paperplane)
+							icon: const Icon(CupertinoIcons.paperplane)
 						);
 					}
 				)
@@ -1767,7 +1759,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					Expander(
 						expanded: showOptions && show,
 						bottomSafe: true,
-						height: 55,
+						height: settings.materialStyle ? 65 : 55,
 						child: Focus(
 							descendantsAreFocusable: showOptions && show,
 							child: _buildOptions(context)
@@ -1790,7 +1782,7 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										)
 									)
 								),
-								Flexible(child: CupertinoButton.filled(
+								Flexible(child: AdaptiveFilledButton(
 									padding: const EdgeInsets.all(4),
 									child: const Text('Use suggested image', textAlign: TextAlign.center),
 									onPressed: () async {
@@ -1812,8 +1804,8 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 										}
 									}
 								)),
-								CupertinoButton(
-									child: const Icon(CupertinoIcons.xmark),
+								AdaptiveIconButton(
+									icon: const Icon(CupertinoIcons.xmark),
 									onPressed: () {
 										setState(() {
 											_proposedAttachmentUrl = null;

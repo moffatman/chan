@@ -28,6 +28,7 @@ import 'package:chan/sites/lynxchan.dart';
 import 'package:chan/sites/reddit.dart';
 import 'package:chan/sites/soyjak.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
@@ -267,7 +268,7 @@ extension CatalogVariantMetadata on CatalogVariant {
 				return false;
 		}
 	}
-	IconData? get icon => const {
+	IconData? get icon => {
 		CatalogVariant.lastPostTime: CupertinoIcons.staroflife,
 		CatalogVariant.lastPostTimeReversed: CupertinoIcons.staroflife,
 		CatalogVariant.replyCount: CupertinoIcons.reply_all,
@@ -278,8 +279,8 @@ extension CatalogVariantMetadata on CatalogVariant {
 		CatalogVariant.postsPerMinuteReversed: CupertinoIcons.speedometer,
 		CatalogVariant.lastReplyTime: CupertinoIcons.staroflife,
 		CatalogVariant.lastReplyTimeReversed: CupertinoIcons.staroflife,
-		CatalogVariant.imageCount: CupertinoIcons.photo,
-		CatalogVariant.imageCountReversed: CupertinoIcons.photo,
+		CatalogVariant.imageCount: Adaptive.icons.photo,
+		CatalogVariant.imageCountReversed: Adaptive.icons.photo,
 		CatalogVariant.redditHot: CupertinoIcons.flame,
 		CatalogVariant.redditNew: CupertinoIcons.clock,
 		CatalogVariant.redditRising: CupertinoIcons.graph_square,

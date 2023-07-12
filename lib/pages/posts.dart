@@ -174,7 +174,7 @@ class _PostsPageState extends State<PostsPage> {
 												children: [
 													const Spacer(),
 													if (reply.loading) ...[
-														const CupertinoActivityIndicator(),
+														const CircularProgressIndicator.adaptive(),
 														const Text(' ')
 													],
 													Text(

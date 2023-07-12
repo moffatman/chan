@@ -9,6 +9,7 @@ import 'package:chan/widgets/post_row.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/refreshable_list.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 part 'shareable_posts.g.dart';
@@ -170,7 +171,7 @@ class ShareablePosts extends StatelessWidget {
 										)
 										else const Spacer(),
 										if (loading) ...[
-											const CupertinoActivityIndicator(),
+											const CircularProgressIndicator.adaptive(),
 											const Text(' ')
 										],
 										if (collapsedChildIds.isNotEmpty) Text(

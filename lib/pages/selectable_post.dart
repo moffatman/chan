@@ -3,6 +3,7 @@ import 'package:chan/pages/overscroll_modal.dart';
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/sites/imageboard_site.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/weak_navigator.dart';
@@ -93,7 +94,7 @@ class SelectablePostPage extends StatelessWidget {
 								const SizedBox(height: 16),
 								Align(
 									alignment: Alignment.centerRight,
-									child: CupertinoButton.filled(
+									child: AdaptiveFilledButton(
 										onPressed: !zone.imageboard.site.supportsPosting || (zone.findThread(post.threadId)?.isArchived ?? false) ? null : () {
 											onQuoteText(post.span.buildText());
 											WeakNavigator.pop(context);

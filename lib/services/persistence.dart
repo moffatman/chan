@@ -124,7 +124,7 @@ class Persistence extends ChangeNotifier {
 		}
 		return wifiCookies;
 	}
-	static final tabsListenable = EasyListenable();
+	static final globalTabMutator = ValueNotifier(0);
 	static final recentSearchesListenable = EasyListenable();
 	static String get _settingsBoxName => 'settings';
 	static String get _sharedThreadStatesBoxName => 'threadStates';
@@ -604,7 +604,6 @@ class Persistence extends ChangeNotifier {
 			}
 			browserState.deprecatedTabs.clear();
 			didUpdateBrowserState();
-			Persistence.didUpdateTabs();
 		}
 		if (await Hive.boxExists('boards_$imageboardKey')) {
 			print('Migrating from site-specific boards box');
@@ -814,11 +813,9 @@ class Persistence extends ChangeNotifier {
 		}
 	}
 
-	static Future<void> didUpdateTabs() async {
-		settings.save();
-		tabsListenable.didUpdate();
+	static Future<void> saveTabs() async {
+		await settings.save();
 	}
-
 	Future<void> didUpdateBrowserState() async {
 		settings.save();
 		notifyListeners();
@@ -1234,8 +1231,11 @@ class PersistentBrowserTab extends EasyListenable {
 
 	Future<void> mutate(FutureOr<void> Function(PersistentBrowserTab tab) mutator) async {
 		await mutator(this);
-		runWhenIdle(const Duration(seconds: 3), Persistence.didUpdateTabs);
+		runWhenIdle(const Duration(seconds: 3), Persistence.saveTabs);
 	}
+
+	@override
+	String toString() => 'PersistentBrowserTab($imageboardKey, $board, $thread)';
 }
 
 @HiveType(typeId: 22)

@@ -1,7 +1,7 @@
 import 'package:chan/services/imageboard.dart';
 import 'package:chan/services/persistence.dart';
 import 'package:chan/widgets/util.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ImageboardScope extends StatelessWidget {
@@ -40,7 +40,7 @@ class ImageboardScope extends StatelessWidget {
 					return Center(
 						child: Transform(
 							transform: Matrix4.translationValues(loaderOffset.dx, loaderOffset.dy, 0),
-							child: const CupertinoActivityIndicator()
+							child: const CircularProgressIndicator.adaptive()
 						)
 					);
 				}

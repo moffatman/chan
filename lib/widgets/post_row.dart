@@ -5,6 +5,7 @@ import 'package:chan/services/persistence.dart';
 import 'package:chan/services/posts_image.dart';
 import 'package:chan/services/reverse_image_search.dart';
 import 'package:chan/services/share.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/popup_attachment.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/pages/posts.dart';
@@ -137,10 +138,10 @@ class PostRow extends StatelessWidget {
 			}) ?? []);
 		}
 		final backgroundColor = isSelected ?
-			theme.primaryColorWithBrightness(0.4) :
+			theme.primaryColor.withOpacity(0.25) :
 			highlight ?
-				theme.primaryColorWithBrightness(settings.newPostHighlightBrightness) :
-				theme.backgroundColor;
+				theme.primaryColor.withOpacity(settings.newPostHighlightBrightness) :
+				Colors.transparent;
 		openReplies() {
 			if (replyIds.isNotEmpty) {
 				WeakNavigator.push(context, PostsPage(
@@ -465,8 +466,8 @@ class PostRow extends StatelessWidget {
 														onTap: () => alertError(context, translatedPostSnapshot?.error?.toStringDio() ?? 'Unknown'),
 														child: const Icon(CupertinoIcons.exclamationmark_triangle)
 													)
-													else if (translatedPostSnapshot?.hasData == false) const CupertinoActivityIndicator(),
-													if (savedPost != null) const Icon(CupertinoIcons.bookmark_fill, size: 18)
+													else if (translatedPostSnapshot?.hasData == false) const CircularProgressIndicator.adaptive(),
+													if (savedPost != null) Icon(Adaptive.icons.bookmarkFilled, size: 18)
 												]
 											)
 										)
@@ -479,6 +480,7 @@ class PostRow extends StatelessWidget {
 			);
 		}
 		return ContextMenu(
+			backgroundColor: theme.backgroundColor,
 			actions: [
 				if (site.supportsPosting && context.read<ReplyBoxZone?>() != null) ContextMenuAction(
 					child: const Text('Reply'),
@@ -498,7 +500,7 @@ class PostRow extends StatelessWidget {
 				),
 				ContextMenuAction(
 					child: const Text('Share text'),
-					trailingIcon: CupertinoIcons.share,
+					trailingIcon: Adaptive.icons.share,
 					onPressed: () {
 						final offset = (rootContext.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 						final size = rootContext.findRenderObject()?.semanticBounds.size;
@@ -517,14 +519,14 @@ class PostRow extends StatelessWidget {
 				),
 				if (savedPost == null) ContextMenuAction(
 					child: const Text('Save post'),
-					trailingIcon: CupertinoIcons.bookmark,
+					trailingIcon: Adaptive.icons.bookmark,
 					onPressed: () {
 						context.read<Persistence>().savePost(latestPost);
 					}
 				)
 				else ContextMenuAction(
 					child: const Text('Unsave post'),
-					trailingIcon: CupertinoIcons.bookmark_fill,
+					trailingIcon: Adaptive.icons.bookmarkFilled,
 					onPressed: () {
 						context.read<Persistence>().unsavePost(post);
 					}
@@ -638,7 +640,7 @@ class PostRow extends StatelessWidget {
 				],
 				ContextMenuAction(
 					child: const Text('Share link'),
-					trailingIcon: CupertinoIcons.share,
+					trailingIcon: Adaptive.icons.share,
 					onPressed: () {
 						final offset = (rootContext.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 						final size = rootContext.findRenderObject()?.semanticBounds.size;
@@ -652,7 +654,7 @@ class PostRow extends StatelessWidget {
 				),
 				ContextMenuAction(
 					child: const Text('Share as image'),
-					trailingIcon: CupertinoIcons.photo,
+					trailingIcon: Adaptive.icons.photo,
 					onPressed: () async {
 						final style = await composeShareablePostsStyle(context: context, post: post);
 						if (style == null) {

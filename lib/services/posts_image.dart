@@ -8,12 +8,12 @@ import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
 import 'package:chan/services/thread_watcher.dart';
 import 'package:chan/sites/imageboard_site.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
-import 'package:chan/widgets/cupertino_switch2.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/post_spans.dart';
 import 'package:chan/widgets/shareable_posts.dart';
 import 'package:extended_image_library/extended_image_library.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
 
@@ -46,11 +46,11 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 	if (!useTree && childDepth > 1) {
 		childDepth = 1;
 	}
-	final ok = await showCupertinoDialog<bool>(
+	final ok = await showAdaptiveDialog<bool>(
 		context: context,
 		barrierDismissible: true,
 		builder: (context) => StatefulBuilder(
-			builder: (context, setDialogState) => CupertinoAlertDialog2(
+			builder: (context, setDialogState) => AdaptiveAlertDialog(
 				title: const Text('Export Settings'),
 				content: Column(
 					mainAxisSize: MainAxisSize.min,
@@ -98,7 +98,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 								const Expanded(
 									child: Text('Tree mode', textAlign: TextAlign.left)
 								),
-								CupertinoSwitch2(
+								AdaptiveSwitch(
 									value: useTree,
 									onChanged: (x) => setDialogState(() {
 										useTree = x;
@@ -117,7 +117,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 								const Expanded(
 									child: Text('Expand image', textAlign: TextAlign.left)
 								),
-								CupertinoSwitch2(
+								AdaptiveSwitch(
 									value: post.attachments.any((a) => a.type == AttachmentType.image) ? expandPrimaryImage : false,
 									onChanged: post.attachments.any((a) => a.type == AttachmentType.image) ? (x) => setDialogState(() {
 										expandPrimaryImage = x;
@@ -133,7 +133,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 								const Expanded(
 									child: Text('Reveal your posts', textAlign: TextAlign.left)
 								),
-								CupertinoSwitch2(
+								AdaptiveSwitch(
 									value: revealYourPosts,
 									onChanged: (x) => setDialogState(() {
 										revealYourPosts = x;
@@ -149,7 +149,7 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 								const Expanded(
 									child: Text('Include footer', textAlign: TextAlign.left)
 								),
-								CupertinoSwitch2(
+								AdaptiveSwitch(
 									value: includeFooter,
 									onChanged: (x) => setDialogState(() {
 										includeFooter = x;
@@ -164,20 +164,11 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 							opacity: post.repliedToIds.isEmpty ? 0.5 : 1,
 							child: IgnorePointer(
 								ignoring: post.repliedToIds.isEmpty,
-								child: CupertinoSegmentedControl(
+								child: AdaptiveSegmentedControl(
 									children: {
-										0: const Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('None')
-										),
-										1: const Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('Just one', textAlign: TextAlign.center)
-										),
-										2: Padding(
-											padding: const EdgeInsets.all(8),
-											child: Text('All (${findAncestors(zone, post).length})')
-										)
+										0: (null, 'None'),
+										1: (null, 'Just one'),
+										2: (null, 'All (${findAncestors(zone, post).length})')
 									},
 									groupValue: parentDepth,
 									onValueChanged: (x) => setDialogState(() {
@@ -193,29 +184,14 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 							opacity: post.replyIds.isEmpty ? 0.5 : 1,
 							child: IgnorePointer(
 								ignoring: post.replyIds.isEmpty,
-								child: CupertinoSegmentedControl(
+								child: AdaptiveSegmentedControl(
 									children: useTree ? {
-										0: const Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('None')
-										),
-										1: Padding(
-											padding: const EdgeInsets.all(8),
-											child: Text('Direct only (${post.replyIds.length})', textAlign: TextAlign.center)
-										),
-										2: Padding(
-											padding: const EdgeInsets.all(8),
-											child: Text('Full tree (${_countDescendants(zone, post)})', textAlign: TextAlign.center)
-										)
+										0: (null, 'None'),
+										1: (null, 'Direct only (${post.replyIds.length})'),
+										2: (null, 'Full tree (${_countDescendants(zone, post)})')
 									} : {
-										0: const Padding(
-											padding: EdgeInsets.all(8),
-											child: Text('No')
-										),
-										1: Padding(
-											padding: const EdgeInsets.all(8),
-											child: Text('Yes (${post.replyIds.length})')
-										)
+										0: (null, 'No'),
+										1: (null, 'Yes (${post.replyIds.length})')
 									},
 									groupValue: childDepth,
 									onValueChanged: (x) => setDialogState(() {
@@ -232,35 +208,33 @@ Future<ShareablePostsStyle?> composeShareablePostsStyle({
 								Expanded(
 									child: Text('${width.round()} px')
 								),
-								CupertinoButton(
-									padding: EdgeInsets.zero,
+								AdaptiveIconButton(
 									onPressed: width <= 300 ? null : () {
 										width -= 50;
 										setDialogState(() {});
 									},
-									child: const Icon(CupertinoIcons.minus)
+									icon: const Icon(CupertinoIcons.minus)
 								),
-								CupertinoButton(
-									padding: EdgeInsets.zero,
+								AdaptiveIconButton(
 									onPressed: width >= 1500 ? null : () {
 										width += 50;
 										setDialogState(() {});
 									},
-									child: const Icon(CupertinoIcons.plus)
+									icon: const Icon(CupertinoIcons.plus)
 								)
 							]
 						)
 					]
 				),
 				actions: [
-					CupertinoDialogAction2(
-						onPressed: () => Navigator.pop(context, false),
-						child: const Text('Cancel')
-					),
-					CupertinoDialogAction2(
+					AdaptiveDialogAction(
 						isDefaultAction: true,
 						onPressed: () => Navigator.pop(context, true),
 						child: const Text('Export'),
+					),
+					AdaptiveDialogAction(
+						onPressed: () => Navigator.pop(context, false),
+						child: const Text('Cancel')
 					)
 				]
 			)

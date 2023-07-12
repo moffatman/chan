@@ -18,8 +18,8 @@ import 'package:chan/services/theme.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/context_menu.dart';
-import 'package:chan/widgets/cupertino_dialog.dart';
 import 'package:chan/widgets/imageboard_icon.dart';
 import 'package:chan/widgets/imageboard_scope.dart';
 import 'package:chan/widgets/post_spans.dart';
@@ -34,7 +34,6 @@ import 'package:chan/models/thread.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:chan/widgets/cupertino_page_route.dart';
 
 import 'package:chan/pages/gallery.dart';
 
@@ -166,7 +165,7 @@ class _BoardPageState extends State<BoardPage> {
 			widget.onThreadSelected!(identifier);
 		}
 		else {
-			Navigator.of(context).push(FullWidthCupertinoPageRoute(
+			Navigator.of(context).push(adaptivePageRoute(
 				builder: (ctx) => ImageboardScope(
 					imageboardKey: null,
 					imageboard: context.read<Imageboard>(),
@@ -185,48 +184,30 @@ class _BoardPageState extends State<BoardPage> {
 		required CatalogVariant variant,
 		required List<CatalogVariant> others,
 		required CatalogVariant currentVariant
-	}) => showCupertinoModalPopup<(CatalogVariant?, _ThreadSortingMethodScope)>(
+	}) => showAdaptiveModalPopup<(CatalogVariant?, _ThreadSortingMethodScope)>(
 		context: context,
 		useRootNavigator: false,
-		builder: (context) => CupertinoActionSheet(
+		builder: (context) => AdaptiveActionSheet(
 			title: Text(variant.name),
 			actions: [
-				if (context.read<ImageboardSite>().supportsMultipleBoards) CupertinoActionSheetAction2(
-					child: Row(
-						children: [
-							const SizedBox(width: 40),
-							Expanded(
-								child: Text('Set as default for /${board?.name}/', style: TextStyle(
-									fontWeight: _defaultBoardVariant == variant ? FontWeight.bold : null,
-									color: _defaultBoardVariant == variant ? CupertinoDynamicColor.resolve(CupertinoColors.placeholderText, context) : null
-								), textAlign: TextAlign.left)
-							),
-							if (_defaultBoardVariant == variant) GestureDetector(
-								child: const SizedBox(
-									width: 40,
-									child: Icon(CupertinoIcons.xmark)
-								),
-								onTap: () => Navigator.pop(context, const (null, _ThreadSortingMethodScope.board))
-							)
-						]
-					),
+				if (context.read<ImageboardSite>().supportsMultipleBoards) AdaptiveActionSheetAction(
+					isSelected: _defaultBoardVariant == variant,
+					trailing: _defaultBoardVariant == variant ? AdaptiveIconButton(
+						icon: const SizedBox(
+							width: 40,
+							child: Icon(CupertinoIcons.xmark)
+						),
+						onPressed: () => Navigator.pop(context, const (null, _ThreadSortingMethodScope.board))
+					) : null,
+					child: Text('Set as default for /${board?.name}/', textAlign: TextAlign.left),
 					onPressed: () {
 						if (_defaultBoardVariant == variant) return;
 						Navigator.pop(context, (variant, _ThreadSortingMethodScope.board));
 					}
 				),
-				CupertinoActionSheetAction2(
-					child: Row(
-						children: [
-							const SizedBox(width: 40),
-							Expanded(
-								child: Text('Set as global default', style: TextStyle(
-									fontWeight: _defaultGlobalVariant == variant ? FontWeight.bold : null,
-									color: _defaultGlobalVariant == variant ? CupertinoDynamicColor.resolve(CupertinoColors.placeholderText, context) : null
-								), textAlign: TextAlign.left)
-							)
-						]
-					),
+				AdaptiveActionSheetAction(
+					isSelected: _defaultGlobalVariant == variant,
+					child: const Text('Set as global default', textAlign: TextAlign.left),
 					onPressed: () {
 						if (_defaultGlobalVariant == variant) return;
 						Navigator.pop(context, (variant, _ThreadSortingMethodScope.global));
@@ -241,73 +222,68 @@ class _BoardPageState extends State<BoardPage> {
 					currentVariant: currentVariant
 				))
 			],
-			cancelButton: CupertinoActionSheetAction2(
+			cancelButton: AdaptiveActionSheetAction(
 				child: const Text('Cancel'),
 				onPressed: () => Navigator.pop(context)
 			)
 		)
 	);
 
-	Widget _buildVariantDetails({
+	AdaptiveActionSheetAction _buildVariantDetails({
 		required BuildContext context,
 		required CatalogVariantGroup v,
 		required CatalogVariant currentVariant,
-	}) => GestureDetector(
-		child: Container(
-			constraints: const BoxConstraints(
-				minHeight: 56
-			),
-			padding: const EdgeInsets.symmetric(
-				vertical: 16,
-				horizontal: 10
-			),
-			child: Row(
-				children: [
-					SizedBox(
+	}) => AdaptiveActionSheetAction(
+		isSelected: v.variants.contains(currentVariant),
+		trailing: Row(
+			mainAxisSize: MainAxisSize.min,
+			children: [
+				if (v.variants.first == _variant) AdaptiveIconButton(
+					icon: const SizedBox(
 						width: 40,
-						child: Center(
-							child: Icon(
-								v.variants.tryFirst?.icon ?? ((v.variants.tryFirst?.reverseAfterSorting ?? false) ? CupertinoIcons.sort_up : CupertinoIcons.sort_down),
-								color: ((v.variants.length == 1 || v.hasPrimary) && v.variants.first == currentVariant) ? CupertinoDynamicColor.resolve(CupertinoColors.placeholderText, context) : null
-							)
-						)
+						child: Icon(CupertinoIcons.xmark)
 					),
-					Expanded(
-						child: Text(v.name, style: TextStyle(
-							fontSize: 20,
-							fontWeight: v.variants.contains(currentVariant) ? FontWeight.bold : null,
-							color: ((v.variants.length == 1 || v.hasPrimary) && v.variants.first == currentVariant) ? CupertinoDynamicColor.resolve(CupertinoColors.placeholderText, context) : null
-						))
+					onPressed: () => Navigator.pop(context, const (null, _ThreadSortingMethodScope.tab))
+				),
+				if ((v.hasPrimary || v.variants.length == 1) && !v.variants.first.temporary) AdaptiveIconButton(
+					icon: const SizedBox(
+						width: 40,
+						child: Icon(CupertinoIcons.ellipsis)
 					),
-					if (v.variants.first == _variant) GestureDetector(
-						child: const SizedBox(
-							width: 40,
-							child: Icon(CupertinoIcons.xmark)
-						),
-						onTap: () => Navigator.pop(context, const (null, _ThreadSortingMethodScope.tab))
-					),
-					if ((v.hasPrimary || v.variants.length == 1) && !v.variants.first.temporary) GestureDetector(
-						child: const SizedBox(
-							width: 40,
-							child: Icon(CupertinoIcons.ellipsis)
-						),
-						onTap: () async {
-							final innerChoice = await _variantDetailsMenu(
-								context: context,
-								variant: v.variants.first,
-								others: v.variants.skip(1).toList(),
-								currentVariant: currentVariant
-							);
-							if (innerChoice != null && mounted) {
-								Navigator.pop(context, innerChoice);
-							}
+					onPressed: () async {
+						final innerChoice = await _variantDetailsMenu(
+							context: context,
+							variant: v.variants.first,
+							others: v.variants.skip(1).toList(),
+							currentVariant: currentVariant
+						);
+						if (innerChoice != null && mounted) {
+							Navigator.pop(context, innerChoice);
 						}
-					)
-					else if (v.variants.length > 1) const Icon(CupertinoIcons.chevron_right)
-				]
-			)
+					}
+				)
+				else if (v.variants.length > 1) const SizedBox(
+					width: 40,
+					child: Icon(CupertinoIcons.chevron_right)
+				)
+			]
 		),
-		onTap: () async {
+		child: Row(
+			children: [
+				SizedBox(
+					width: 40,
+					child: Center(
+						child: Icon(
+							v.variants.tryFirst?.icon ?? ((v.variants.tryFirst?.reverseAfterSorting ?? false) ? CupertinoIcons.sort_up : CupertinoIcons.sort_down)
+						)
+					)
+				),
+				Expanded(
+					child: Text(v.name, textAlign: TextAlign.left)
+				)
+			]
+		),
+		onPressed: () async {
 			if (((v.variants.length == 1 || v.hasPrimary) && v.variants.first == currentVariant)) {
 				return;
 			}
@@ -315,52 +291,46 @@ class _BoardPageState extends State<BoardPage> {
 				Navigator.pop(context, (v.variants.first, _ThreadSortingMethodScope.tab));
 			}
 			else {
-				final choice = await showCupertinoModalPopup<(CatalogVariant?, _ThreadSortingMethodScope)>(
+				final choice = await showAdaptiveModalPopup<(CatalogVariant?, _ThreadSortingMethodScope)>(
 					context: context,
 					useRootNavigator: false,
-					builder: (context) => CupertinoActionSheet(
+					builder: (context) => AdaptiveActionSheet(
 						title: Text(v.name),
-						actions: v.variants.map((subvariant) => GestureDetector(
-							child: Container(
-								constraints: const BoxConstraints(
-									minHeight: 56
-								),
-								padding: const EdgeInsets.symmetric(
-									vertical: 16,
-									horizontal: 10
-								),
-								child: Row(
-									children: [
-										SizedBox(
-											width: 40,
-											child: Center(
-												child: Icon(subvariant.icon ?? (subvariant.reverseAfterSorting ? CupertinoIcons.sort_up : CupertinoIcons.sort_down)),
-											)
-										),
-										Expanded(
-											child: Text(subvariant.name, style: TextStyle(
-												fontSize: 20,
-												fontWeight: subvariant == currentVariant ? FontWeight.bold : null
-											))
-										),
-										GestureDetector(
-											child: const Icon(CupertinoIcons.ellipsis),
-											onTap: () async {
-												final innerChoice = await _variantDetailsMenu(
-													context: context,
-													variant: subvariant,
-													others: [],
-													currentVariant: currentVariant
-												);
-												if (innerChoice != null && mounted) {
-													Navigator.pop(context, innerChoice);
-												}
-											}
+						actions: v.variants.map((subvariant) => AdaptiveActionSheetAction(
+							child: Row(
+								children: [
+									SizedBox(
+										width: 40,
+										child: Center(
+											child: Icon(subvariant.icon ?? (subvariant.reverseAfterSorting ? CupertinoIcons.sort_up : CupertinoIcons.sort_down)),
 										)
-									]
-								)
+									),
+									Expanded(
+										child: Text(subvariant.name, style: TextStyle(
+											fontSize: 20,
+											fontWeight: subvariant == currentVariant ? FontWeight.bold : null
+										))
+									),
+									AdaptiveIconButton(
+										icon: const SizedBox(
+											width: 40,
+											child: Icon(CupertinoIcons.ellipsis)
+										),
+										onPressed: () async {
+											final innerChoice = await _variantDetailsMenu(
+												context: context,
+												variant: subvariant,
+												others: [],
+												currentVariant: currentVariant
+											);
+											if (innerChoice != null && mounted) {
+												Navigator.pop(context, innerChoice);
+											}
+										}
+									)
+								]
 							),
-							onTap: () async {
+							onPressed: () async {
 								Navigator.pop(context, (subvariant, _ThreadSortingMethodScope.tab));
 							}
 						)).toList()
@@ -414,7 +384,7 @@ class _BoardPageState extends State<BoardPage> {
 					],
 					if (isSaved) ContextMenuAction(
 						child: const Text('Un-save thread'),
-						trailingIcon: CupertinoIcons.bookmark_fill,
+						trailingIcon: Adaptive.icons.bookmarkFilled,
 						onPressed: () {
 							final threadState = context.read<Persistence>().getThreadState(thread.identifier);
 							threadState.savedTime = null;
@@ -424,7 +394,7 @@ class _BoardPageState extends State<BoardPage> {
 					)
 					else ContextMenuAction(
 						child: const Text('Save thread'),
-						trailingIcon: CupertinoIcons.bookmark,
+						trailingIcon: Adaptive.icons.bookmark,
 						onPressed: () {
 							final threadState = context.read<Persistence>().getThreadState(thread.identifier);
 							threadState.thread = thread;
@@ -522,21 +492,20 @@ class _BoardPageState extends State<BoardPage> {
 		if (imageboard != null) {
 			navigationBarBoardName = board != null ? imageboard.site.formatBoardName(board!) : 'Select Board';
 		}
-		return CupertinoPageScaffold(
+		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
-			navigationBar: CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				leading: settings.supportMouse.value && !Navigator.of(context).canPop() ? CupertinoButton(
-					padding: EdgeInsets.zero,
-					child: const Icon(CupertinoIcons.refresh),
+			bar: AdaptiveBar(
+				leading: settings.supportMouse.value && !Navigator.of(context).canPop() ? AdaptiveIconButton(
+					icon: const Icon(CupertinoIcons.refresh),
 					onPressed: () {
 						_listController.blockAndUpdate();
 					}
 				) : null,
-				middle: GestureDetector(
-					onTap: widget.allowChangingBoard ? _selectBoard : null,
-					child: Wrap(
+				title: AdaptiveIconButton(
+					onPressed: widget.allowChangingBoard ? _selectBoard : null,
+					icon: Wrap(
 						alignment: WrapAlignment.center,
+						crossAxisAlignment: WrapCrossAlignment.center,
 						children: [
 							Row(
 								mainAxisSize: MainAxisSize.min,
@@ -565,169 +534,163 @@ class _BoardPageState extends State<BoardPage> {
 						]
 					)
 				),
-				trailing: Row(
-					mainAxisSize: MainAxisSize.min,
-					children: [
-						if (board != null && (site?.supportsPushNotifications ?? false)) CupertinoButton(
-							padding: EdgeInsets.zero,
-							child: const Icon(CupertinoIcons.settings),
-							onPressed: () {
-								Navigator.of(context).push(TransparentRoute(
-									builder: (context) => BoardSettingsPage(
-										imageboard: imageboard!,
-										board: board!
-									)
-								));
-							}
-						),
-						CupertinoButton(
-							padding: EdgeInsets.zero,
-							child: (variant.icon != null && !variant.temporary) ? FittedBox(
-								fit: BoxFit.contain,
-								child: SizedBox(
-									width: 40,
-									height: 40,
-									child: Stack(
-										children: [
-											Align(
-												alignment: Alignment.bottomRight,
-												child: Icon(variant.icon)
-											),
-											Align(
-												alignment: Alignment.topLeft,
-												child: Icon(variant.reverseAfterSorting ? CupertinoIcons.sort_up : CupertinoIcons.sort_down)
-											)
-										]
+				actions: [
+					if (board != null && (site?.supportsPushNotifications ?? false)) AdaptiveIconButton(
+						icon: const Icon(CupertinoIcons.settings),
+						onPressed: () {
+							Navigator.of(context).push(TransparentRoute(
+								builder: (context) => BoardSettingsPage(
+									imageboard: imageboard!,
+									board: board!
+								)
+							));
+						}
+					),
+					AdaptiveIconButton(
+						icon: (variant.icon != null && !variant.temporary) ? FittedBox(
+							fit: BoxFit.contain,
+							child: SizedBox(
+								width: 40,
+								height: 40,
+								child: Stack(
+									children: [
+										Align(
+											alignment: Alignment.bottomRight,
+											child: Icon(variant.icon)
+										),
+										Align(
+											alignment: Alignment.topLeft,
+											child: Icon(variant.reverseAfterSorting ? CupertinoIcons.sort_up : CupertinoIcons.sort_down)
+										)
+									]
+								)
+							)
+						) : (variant.icon != null && variant.temporary) ? Icon(variant.icon) : Icon(variant.reverseAfterSorting ? CupertinoIcons.sort_up : CupertinoIcons.sort_down),
+						onPressed: () async {
+							final choice = await showAdaptiveModalPopup<(CatalogVariant?, _ThreadSortingMethodScope)>(
+								context: context,
+								useRootNavigator: false,
+								builder: (context) => AdaptiveActionSheet(
+									title: const Text('Sort by...'),
+									actions:(site?.catalogVariantGroups ?? []).map((v) => _buildVariantDetails(
+										context: context,
+										v: v,
+										currentVariant: variant
+									)).toList(),
+									cancelButton: AdaptiveActionSheetAction(
+										child: const Text('Cancel'),
+										onPressed: () => Navigator.pop(context)
 									)
 								)
-							) : (variant.icon != null && variant.temporary) ? Icon(variant.icon) : Icon(variant.reverseAfterSorting ? CupertinoIcons.sort_up : CupertinoIcons.sort_down),
-							onPressed: () async {
-								final choice = await showCupertinoModalPopup<(CatalogVariant?, _ThreadSortingMethodScope)>(
-									context: context,
-									useRootNavigator: false,
-									builder: (context) => CupertinoActionSheet(
-										title: const Text('Sort by...'),
-										actions:(site?.catalogVariantGroups ?? []).map((v) => _buildVariantDetails(
-											context: context,
-											v: v,
-											currentVariant: variant
-										)).toList(),
-										cancelButton: CupertinoActionSheetAction2(
-											child: const Text('Cancel'),
-											onPressed: () => Navigator.pop(context)
-										)
-									)
-								);
-								if (choice == null) {
-									return;
-								}
-								if (choice.$1 == null) {
-									if (choice.$2 == _ThreadSortingMethodScope.tab) {
-										_variant = null;
-										widget.tab?.mutate((tab) => tab.catalogVariant = _variant);
-									}
-									else if (choice.$2 == _ThreadSortingMethodScope.board) {
-										persistence?.browserState.catalogVariants.remove(board?.name);
-									}
-									setState(() {});
-									return;
-								}
-								switch (choice.$2) {
-									case _ThreadSortingMethodScope.global:
-										if (site?.isReddit ?? false) {
-											settings.redditCatalogVariant = choice.$1!;
-										}
-										else if (site?.isHackerNews ?? false) {
-											settings.hackerNewsCatalogVariant = choice.$1!;
-										}
-										else {
-											settings.catalogVariant = choice.$1!;
-										}
-										break;
-									case _ThreadSortingMethodScope.board:
-										persistence?.browserState.catalogVariants[board!.name] = choice.$1!;
-										persistence?.didUpdateBrowserState();
-										break;
-									case _ThreadSortingMethodScope.tab:
-										final otherwiseDefault = _defaultBoardVariant ?? _defaultGlobalVariant;
-										if (otherwiseDefault == choice.$1!) {
-											_variant = null;
-										}
-										else {
-											_variant = choice.$1!;
-										}
-										widget.tab?.mutate((tab) => tab.catalogVariant = _variant);
-										setState(() {});
-										break;
-								}
+							);
+							if (choice == null) {
+								return;
 							}
-						),
-						if (imageboard?.site.supportsPosting ?? false) CupertinoButton(
-							padding: EdgeInsets.zero,
-							child: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.pencil_slash) : const Icon(CupertinoIcons.pencil),
-							onPressed: () {
-								if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
-									showCupertinoModalPopup(
-										context: context,
-										builder: (ctx) => ImageboardScope(
-											imageboardKey: null,
-											imageboard: imageboard!,
-											child: Padding(
-												padding: MediaQuery.viewInsetsOf(ctx),
-												child: Container(
-													color: ChanceTheme.backgroundColorOf(context),
-													child: ReplyBox(
-														fullyExpanded: true,
-														board: board!.name,
-														initialText: widget.tab?.draftThread ?? '',
-														onTextChanged: (text) {
-															widget.tab?.mutate((tab) => tab.draftThread = text);
-														},
-														initialSubject: widget.tab?.draftSubject ?? '',
-														onSubjectChanged: (subject) {
-															widget.tab?.mutate((tab) => tab.draftSubject = subject);
-														},
-														initialOptions: widget.tab?.draftOptions ?? '',
-														onOptionsChanged: (options) {
-															widget.tab?.mutate((tab) => tab.draftOptions = options);
-														},
-														initialFilePath: widget.tab?.draftFilePath ?? '',
-														onFilePathChanged: (filePath) {
-															widget.tab?.mutate((tab) => tab.draftFilePath = filePath);
-														},
-														onReplyPosted: (receipt) async {
-															if (imageboard.site.supportsPushNotifications) {
-																await promptForPushNotificationsIfNeeded(ctx);
-															}
-															if (!mounted) return;
-															imageboard.notifications.subscribeToThread(
-																thread: ThreadIdentifier(board!.name, receipt.id),
-																lastSeenId: receipt.id,
-																localYousOnly: false,
-																pushYousOnly: false,
-																push: true,
-																youIds: [receipt.id]
-															);
-															_listController.update();
-															_onThreadSelected(ThreadIdentifier(board!.name, receipt.id));
-															Navigator.of(ctx).pop();
+							if (choice.$1 == null) {
+								if (choice.$2 == _ThreadSortingMethodScope.tab) {
+									_variant = null;
+									widget.tab?.mutate((tab) => tab.catalogVariant = _variant);
+								}
+								else if (choice.$2 == _ThreadSortingMethodScope.board) {
+									persistence?.browserState.catalogVariants.remove(board?.name);
+								}
+								setState(() {});
+								return;
+							}
+							switch (choice.$2) {
+								case _ThreadSortingMethodScope.global:
+									if (site?.isReddit ?? false) {
+										settings.redditCatalogVariant = choice.$1!;
+									}
+									else if (site?.isHackerNews ?? false) {
+										settings.hackerNewsCatalogVariant = choice.$1!;
+									}
+									else {
+										settings.catalogVariant = choice.$1!;
+									}
+									break;
+								case _ThreadSortingMethodScope.board:
+									persistence?.browserState.catalogVariants[board!.name] = choice.$1!;
+									persistence?.didUpdateBrowserState();
+									break;
+								case _ThreadSortingMethodScope.tab:
+									final otherwiseDefault = _defaultBoardVariant ?? _defaultGlobalVariant;
+									if (otherwiseDefault == choice.$1!) {
+										_variant = null;
+									}
+									else {
+										_variant = choice.$1!;
+									}
+									widget.tab?.mutate((tab) => tab.catalogVariant = _variant);
+									setState(() {});
+									break;
+							}
+						}
+					),
+					if (imageboard?.site.supportsPosting ?? false) AdaptiveIconButton(
+						icon: (_replyBoxKey.currentState?.show ?? false) ? const Icon(CupertinoIcons.pencil_slash) : const Icon(CupertinoIcons.pencil),
+						onPressed: () {
+							if ((context.read<MasterDetailHint?>()?.location.isVeryConstrained ?? false) && _replyBoxKey.currentState?.show != true) {
+								showAdaptiveModalPopup(
+									context: context,
+									builder: (ctx) => ImageboardScope(
+										imageboardKey: null,
+										imageboard: imageboard!,
+										child: Padding(
+											padding: MediaQuery.viewInsetsOf(ctx),
+											child: Container(
+												color: ChanceTheme.backgroundColorOf(context),
+												child: ReplyBox(
+													fullyExpanded: true,
+													board: board!.name,
+													initialText: widget.tab?.draftThread ?? '',
+													onTextChanged: (text) {
+														widget.tab?.mutate((tab) => tab.draftThread = text);
+													},
+													initialSubject: widget.tab?.draftSubject ?? '',
+													onSubjectChanged: (subject) {
+														widget.tab?.mutate((tab) => tab.draftSubject = subject);
+													},
+													initialOptions: widget.tab?.draftOptions ?? '',
+													onOptionsChanged: (options) {
+														widget.tab?.mutate((tab) => tab.draftOptions = options);
+													},
+													initialFilePath: widget.tab?.draftFilePath ?? '',
+													onFilePathChanged: (filePath) {
+														widget.tab?.mutate((tab) => tab.draftFilePath = filePath);
+													},
+													onReplyPosted: (receipt) async {
+														if (imageboard.site.supportsPushNotifications) {
+															await promptForPushNotificationsIfNeeded(ctx);
 														}
-													)
+														if (!mounted) return;
+														imageboard.notifications.subscribeToThread(
+															thread: ThreadIdentifier(board!.name, receipt.id),
+															lastSeenId: receipt.id,
+															localYousOnly: false,
+															pushYousOnly: false,
+															push: true,
+															youIds: [receipt.id]
+														);
+														_listController.update();
+														_onThreadSelected(ThreadIdentifier(board!.name, receipt.id));
+														Navigator.of(ctx).pop();
+													}
 												)
 											)
 										)
-									);
-								}
-								else {
-									_replyBoxKey.currentState?.toggleReplyBox();
-									setState(() {});
-								}
+									)
+								);
 							}
-						)
-					]
-				)
+							else {
+								_replyBoxKey.currentState?.toggleReplyBox();
+								setState(() {});
+							}
+						}
+					)
+				]
 			),
-			child: board == null ? const Center(
+			body: board == null ? const Center(
 				child: Text('No Board Selected')
 			) : PullTab(
 				key: _boardsPullTabKey,
@@ -886,51 +849,42 @@ class _BoardPageState extends State<BoardPage> {
 																return SafeArea(
 																	child: Align(
 																		alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
-																		child: Row(
-																			mainAxisSize: MainAxisSize.min,
-																			children: [
-																				CupertinoButton(
-																					padding: EdgeInsets.zero,
-																					onPressed: () async {
-																						lightHapticFeedback();
-																						if (_searching) {
-																							_listController.state?.closeSearch();
-																						}
-																						else {
-																							await scrollToTop();
-																							_page = _listController.items.first.item.currentPage ?? 1;
-																						}
-																					},
-																					child: Container(
-																						decoration: BoxDecoration(
-																							color: ChanceTheme.primaryColorWithBrightness80Of(context),
-																							borderRadius: const BorderRadius.all(Radius.circular(8))
-																						),
-																						padding: const EdgeInsets.all(8),
-																						margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-																						child: Row(
-																							mainAxisSize: MainAxisSize.min,
-																							children: _searching ? [
-																								Icon(CupertinoIcons.search, color: ChanceTheme.backgroundColorOf(context)),
-																								const SizedBox(width: 8),
-																								Icon(CupertinoIcons.xmark, color: ChanceTheme.backgroundColorOf(context))
-																							] : [
-																								Icon(CupertinoIcons.doc, color: ChanceTheme.backgroundColorOf(context)),
-																								SizedBox(
-																									width: 25,
-																									child: Text(
-																										_page.toString(),
-																										textAlign: TextAlign.center,
-																										style: TextStyle(
-																											color: ChanceTheme.backgroundColorOf(context)
-																										)
-																									)
+																		child: Padding(
+																			padding: const EdgeInsets.all(16),
+																			child: AdaptiveFilledButton(
+																				onPressed: () async {
+																					lightHapticFeedback();
+																					if (_searching) {
+																						_listController.state?.closeSearch();
+																					}
+																					else {
+																						await scrollToTop();
+																						_page = _listController.items.first.item.currentPage ?? 1;
+																					}
+																				},
+																				color: ChanceTheme.primaryColorWithBrightness80Of(context),
+																				padding: const EdgeInsets.all(8),
+																				child: Row(
+																					mainAxisSize: MainAxisSize.min,
+																					children: _searching ? [
+																						Icon(CupertinoIcons.search, color: ChanceTheme.backgroundColorOf(context)),
+																						const SizedBox(width: 8),
+																						Icon(CupertinoIcons.xmark, color: ChanceTheme.backgroundColorOf(context))
+																					] : [
+																						Icon(CupertinoIcons.doc, color: ChanceTheme.backgroundColorOf(context)),
+																						SizedBox(
+																							width: 25,
+																							child: Text(
+																								_page.toString(),
+																								textAlign: TextAlign.center,
+																								style: TextStyle(
+																									color: ChanceTheme.backgroundColorOf(context)
 																								)
-																							]
+																							)
 																						)
-																					)
+																					]
 																				)
-																			]
+																			)
 																		)
 																	)
 																);

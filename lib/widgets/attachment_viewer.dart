@@ -19,10 +19,11 @@ import 'package:chan/services/translation.dart';
 import 'package:chan/services/util.dart';
 import 'package:chan/sites/imageboard_site.dart';
 import 'package:chan/util.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_thumbnail.dart';
 import 'package:chan/widgets/circular_loading_indicator.dart';
+import 'package:chan/widgets/context_menu.dart';
 import 'package:chan/widgets/cooperative_browser.dart';
-import 'package:chan/widgets/cupertino_context_menu2.dart';
 import 'package:chan/widgets/double_tap_drag_detector.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:chan/widgets/video_controls.dart';
@@ -32,7 +33,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart' hide ContextMenu;
 import 'package:mutex/mutex.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
@@ -887,7 +888,7 @@ class AttachmentViewer extends StatelessWidget {
 	final bool heroOtherEndIsBoxFitCover;
 	final bool videoThumbnailMicroPadding;
 	final bool onlyRenderVideoWhenPrimary;
-	final List<CupertinoContextMenuAction2> additionalContextMenuActions;
+	final List<ContextMenuAction> additionalContextMenuActions;
 	final double? maxWidth;
 	final BoxFit fit;
 
@@ -1185,9 +1186,9 @@ class AttachmentViewer extends StatelessWidget {
 				}
 				controller._gestureDetailsOnDoubleTapDragStart = null;
 			},
-			child: !allowContextMenu ? buildChild(true) : CupertinoContextMenu2(
+			child: !allowContextMenu ? buildChild(true) : ContextMenu(
 				actions: [
-					CupertinoContextMenuAction2(
+					ContextMenuAction(
 						trailingIcon: CupertinoIcons.cloud_download,
 						onPressed: () async {
 							Navigator.of(context, rootNavigator: true).pop();
@@ -1197,8 +1198,8 @@ class AttachmentViewer extends StatelessWidget {
 						},
 						child: const Text('Download')
 					),
-					CupertinoContextMenuAction2(
-						trailingIcon: CupertinoIcons.share,
+					ContextMenuAction(
+						trailingIcon: Adaptive.icons.share,
 						onPressed: () async {
 							final offset = (controller.contextMenuShareButtonKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero);
 							final size = controller.contextMenuShareButtonKey.currentContext?.findRenderObject()?.semanticBounds.size;
@@ -1209,7 +1210,7 @@ class AttachmentViewer extends StatelessWidget {
 						key: controller.contextMenuShareButtonKey,
 						child: const Text('Share')
 					),
-					if (isTextRecognitionSupported) CupertinoContextMenuAction2(
+					if (isTextRecognitionSupported) ContextMenuAction(
 						trailingIcon: Icons.translate,
 						onPressed: () async {
 							try {
@@ -1224,13 +1225,13 @@ class AttachmentViewer extends StatelessWidget {
 						},
 						child: const Text('Translate')
 					),
-					...buildImageSearchActions(context, () async => attachment).map((a) => CupertinoContextMenuAction2(
+					...buildImageSearchActions(context, () async => attachment).map((a) => ContextMenuAction(
 						isDestructiveAction: a.isDestructiveAction,
 						onPressed: a.onPressed,
 						trailingIcon: a.trailingIcon,
 						child: a.child,
 					)),
-					if (context.select<EffectiveSettings, bool>((p) => p.areMD5sHidden([attachment.md5]))) CupertinoContextMenuAction2(
+					if (context.select<EffectiveSettings, bool>((p) => p.areMD5sHidden([attachment.md5]))) ContextMenuAction(
 						trailingIcon: CupertinoIcons.eye_slash_fill,
 						onPressed: () {
 							context.read<EffectiveSettings>().unHideByMD5s([attachment.md5]);
@@ -1239,7 +1240,7 @@ class AttachmentViewer extends StatelessWidget {
 						},
 						child: const Text('Unhide by image')
 					)
-					else CupertinoContextMenuAction2(
+					else ContextMenuAction(
 						trailingIcon: CupertinoIcons.eye_slash,
 						onPressed: () async {
 							context.read<EffectiveSettings>().hideByMD5(attachment.md5);
@@ -1251,11 +1252,9 @@ class AttachmentViewer extends StatelessWidget {
 					...additionalContextMenuActions
 				],
 				child: buildChild(true),
-				previewBuilder: (context, animation, child) => IgnorePointer(
-					child: AspectRatio(
-						aspectRatio: (attachment.width != null && attachment.height != null) ? (attachment.width! / attachment.height!) : 1,
-						child: buildChild(false)
-					)
+				previewBuilder: (context, animation, child) => AspectRatio(
+					aspectRatio: (attachment.width != null && attachment.height != null) ? (attachment.width! / attachment.height!) : 1,
+					child: buildChild(false)
 				)
 			)
 		);

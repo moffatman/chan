@@ -1,3 +1,4 @@
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/cupertino_page_route.dart';
 import 'package:flutter/widgets.dart';
 class InjectingNavigator extends Navigator {
@@ -48,8 +49,10 @@ class _InjectingNavigatorState extends NavigatorState {
 
 	@override
 	void pop<T extends Object?>([T? result]) {
-		_routeStack.removeLast();
-		topRoute.value = _routeStack.isEmpty ? null : _routeStack.last;
+		if (_routeStack.isNotEmpty) {
+			_routeStack.removeLast();
+			topRoute.value = _routeStack.isEmpty ? null : _routeStack.last;
+		}
 		super.pop(result);
 	}
 
@@ -104,7 +107,7 @@ class PrimaryScrollControllerInjectingNavigatorState extends State<PrimaryScroll
 		observers: widget.observers,
 		key: widget.navigatorKey,
 		onGenerateRoute: (settings) {
-			return FullWidthCupertinoPageRoute(
+			return adaptivePageRoute(
 				settings: settings,
 				builder: (context) => _injectController(context, null, widget.buildRoot)
 			);

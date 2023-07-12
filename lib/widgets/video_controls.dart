@@ -1,5 +1,6 @@
 import 'package:chan/services/settings.dart';
 import 'package:chan/services/theme.dart';
+import 'package:chan/widgets/adaptive.dart';
 import 'package:chan/widgets/attachment_viewer.dart';
 import 'package:chan/widgets/util.dart';
 import 'package:flutter/cupertino.dart';
@@ -203,9 +204,8 @@ class _VideoControlsState extends State<VideoControls> {
 					),
 					if (widget.controller.hasAudio && widget.showMuteButton) AnimatedBuilder(
 						animation: context.read<EffectiveSettings>().muteAudio,
-						builder: (context, _) => CupertinoButton(
-							padding: EdgeInsets.zero,
-							child: Icon(value.volume > 0 ? CupertinoIcons.volume_up : CupertinoIcons.volume_off),
+						builder: (context, _) => AdaptiveIconButton(
+							icon: Icon(value.volume > 0 ? CupertinoIcons.volume_up : CupertinoIcons.volume_off),
 							onPressed: () async {
 								final settings = context.read<EffectiveSettings>();
 								if (value.volume > 0) {
@@ -219,9 +219,8 @@ class _VideoControlsState extends State<VideoControls> {
 							}
 						)
 					),
-					CupertinoButton(
-						padding: EdgeInsets.zero,
-						child: Icon((_currentlyWithinLongPress ? _playingBeforeLongPress : value.isPlaying) ? CupertinoIcons.pause_fill : CupertinoIcons.play_arrow_solid),
+					AdaptiveIconButton(
+						icon: Icon((_currentlyWithinLongPress ? _playingBeforeLongPress : value.isPlaying) ? CupertinoIcons.pause_fill : CupertinoIcons.play_arrow_solid),
 						onPressed: () async {
 							if (value.isPlaying) {
 								await videoPlayerController?.pause();

@@ -187,6 +187,8 @@ class ColorAdapter extends TypeAdapter<Color> {
   }
 }
 
+final platformIsMaterial = !(Platform.isMacOS || Platform.isIOS);
+
 const _defaultQuoteColor = Color.fromRGBO(120, 153, 34, 1);
 const _defaultTitleColor = Color.fromRGBO(87, 153, 57, 1);
 
@@ -355,6 +357,105 @@ class SavedTheme {
 			),
 		)
 	);
+
+	ThemeData get materialThemeData {
+		final colorScheme = ColorScheme.fromSwatch(
+			brightness: brightness,
+			primarySwatch: MaterialColor(primaryColor.value, Map.fromIterable(
+				[0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+				key: (strength) => (strength * 1000).round(),
+				value: (strength) {
+					final ds = 0.5 - strength;
+					return Color.fromRGBO(
+						primaryColor.red + ((ds < 0) ? primaryColor.red : (255 - primaryColor.red) * ds).round(),
+						primaryColor.green + ((ds < 0) ? primaryColor.green : (255 - primaryColor.green) * ds).round(),
+						primaryColor.blue + ((ds < 0) ? primaryColor.blue : (255 - primaryColor.blue) * ds).round(),
+						1
+					);
+				}
+			)),
+			accentColor: secondaryColor,
+			cardColor: barColor,
+			backgroundColor: backgroundColor
+		).copyWith(
+			onBackground: primaryColor
+		);
+		final textTheme = (brightness == Brightness.dark ? Typography.whiteMountainView : Typography.blackMountainView).apply(
+			bodyColor: primaryColor,
+			displayColor: primaryColor,
+			decorationColor: primaryColor,
+			fontFamily: Persistence.settings.textStyle.fontFamily ?? (platformIsMaterial ? 'Roboto' : '.SF Pro Text')
+		);
+		return ThemeData.from(
+			colorScheme: colorScheme,
+			useMaterial3: true,
+			textTheme: textTheme.copyWith(
+				bodyMedium: textTheme.bodyMedium?.copyWith(fontSize: 17)
+			)
+		).copyWith(
+			platform: platformIsMaterial ? null : TargetPlatform.android,
+			pageTransitionsTheme: const PageTransitionsTheme(builders: {}),
+			iconTheme: IconThemeData(
+				color: primaryColor
+			),
+			buttonTheme: ButtonThemeData(
+				shape: RoundedRectangleBorder(
+					borderRadius: BorderRadius.circular(4)
+				)
+			),
+			outlinedButtonTheme: OutlinedButtonThemeData(
+				style: ButtonStyle(
+					side: MaterialStateProperty.all(BorderSide(color: primaryColor))
+				)
+			),
+			listTileTheme: ListTileThemeData(
+				iconColor: primaryColor,
+				selectedTileColor: primaryColorWithBrightness(0.3)
+			),
+			segmentedButtonTheme: SegmentedButtonThemeData(
+				style: ButtonStyle(
+					backgroundColor: MaterialStateProperty.resolveWith((s) {
+						if (s.contains(MaterialState.selected)) {
+							return primaryColor;
+						}
+						return null;
+					}),
+					foregroundColor: MaterialStateProperty.resolveWith((s) {
+						if (s.contains(MaterialState.selected)) {
+							return backgroundColor;
+						}
+						return null;
+					}),
+					shape: MaterialStateProperty.all(RoundedRectangleBorder(
+						borderRadius: BorderRadius.circular(4),
+						side: BorderSide(
+							color: primaryColor
+						)
+					)),
+					side: MaterialStateProperty.resolveWith((s) {
+						if (s.contains(MaterialState.disabled)) {
+							return null;
+						}
+						return BorderSide(color: primaryColor);
+					})
+				)
+			),
+			iconButtonTheme: IconButtonThemeData(
+				style: ButtonStyle(
+					iconColor: MaterialStateProperty.all(primaryColor)
+				)
+			),
+			switchTheme: SwitchThemeData(
+				thumbColor: MaterialStateProperty.resolveWith((states) {
+					if (states.contains(MaterialState.hovered) || states.contains(MaterialState.pressed)) {
+						return primaryColorWithBrightness(0.1);
+					}
+					return null;
+				})
+			),
+			cupertinoOverrideTheme: cupertinoThemeData
+		);
+	}
 
 	Color get searchTextFieldColor {
 		if (brightness == Brightness.light) {
@@ -824,6 +925,16 @@ class SavedSettings extends HiveObject {
 	double newPostHighlightBrightness;
 	@HiveField(145)
 	ImagePeekingSetting imagePeeking;
+	// These next few fields are done this way to allow the default to be changed later.
+	@HiveField(146)
+	bool? useMaterialStyle;
+	bool get materialStyle => useMaterialStyle ?? platformIsMaterial;
+	@HiveField(147)
+	bool? useAndroidDrawer;
+	bool get androidDrawer => useAndroidDrawer ?? false;
+	@HiveField(148)
+	bool? useMaterialRoutes;
+	bool get materialRoutes => useMaterialRoutes ?? false;
 
 	SavedSettings({
 		AutoloadAttachmentsSetting? autoloadAttachments,
@@ -2218,6 +2329,27 @@ class EffectiveSettings extends ChangeNotifier {
 		_settings.save();
 		notifyListeners();
 	}
+
+	set materialStyle(bool setting) {
+		_settings.useMaterialStyle = setting;
+		_settings.save();
+		notifyListeners();
+	}
+	bool get materialStyle => _settings.materialStyle;
+
+	set androidDrawer(bool setting) {
+		_settings.useAndroidDrawer = setting;
+		_settings.save();
+		notifyListeners();
+	}
+	bool get androidDrawer => _settings.androidDrawer;
+
+	set materialRoutes(bool setting) {
+		_settings.useMaterialRoutes = setting;
+		_settings.save();
+		notifyListeners();
+	}
+	bool get materialRoutes => _settings.materialRoutes;
 
 	final List<VoidCallback> _appResumeCallbacks = [];
 	void addAppResumeCallback(VoidCallback task) {

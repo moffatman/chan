@@ -1,3 +1,4 @@
+import 'package:chan/widgets/adaptive.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -8,12 +9,11 @@ class SocketDebuggingPage extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return CupertinoPageScaffold(
-			navigationBar: const CupertinoNavigationBar(
-				transitionBetweenRoutes: false,
-				middle: Text('Socket Stress Test')
+		return AdaptiveScaffold(
+			bar: const AdaptiveBar(
+				title: Text('Socket Stress Test')
 			),
-			child: GridView.builder(
+			body: GridView.builder(
 				gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
 					maxCrossAxisExtent: 100
 				),
