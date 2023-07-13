@@ -66,6 +66,7 @@
                <data android:scheme="https" android:host="lainchan.org"/>
                <!-- reddit -->
                <data android:scheme="https" android:host="reddit.com"/>
+               <data android:scheme="https" android:host="*.reddit.com"/>
                <!-- soyjak -->
                <data android:scheme="https" android:host="soyjak.party"/>
                <!-- voidchan -->
