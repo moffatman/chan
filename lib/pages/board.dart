@@ -193,6 +193,7 @@ class _BoardPageState extends State<BoardPage> {
 				if (context.read<ImageboardSite>().supportsMultipleBoards) AdaptiveActionSheetAction(
 					isSelected: _defaultBoardVariant == variant,
 					trailing: _defaultBoardVariant == variant ? AdaptiveIconButton(
+						minSize: 0,
 						icon: const SizedBox(
 							width: 40,
 							child: Icon(CupertinoIcons.xmark)
@@ -239,6 +240,7 @@ class _BoardPageState extends State<BoardPage> {
 			mainAxisSize: MainAxisSize.min,
 			children: [
 				if (v.variants.first == _variant) AdaptiveIconButton(
+					minSize: 0,
 					icon: const SizedBox(
 						width: 40,
 						child: Icon(CupertinoIcons.xmark)
@@ -246,6 +248,7 @@ class _BoardPageState extends State<BoardPage> {
 					onPressed: () => Navigator.pop(context, const (null, _ThreadSortingMethodScope.tab))
 				),
 				if ((v.hasPrimary || v.variants.length == 1) && !v.variants.first.temporary) AdaptiveIconButton(
+					minSize: 0,
 					icon: const SizedBox(
 						width: 40,
 						child: Icon(CupertinoIcons.ellipsis)
@@ -312,6 +315,7 @@ class _BoardPageState extends State<BoardPage> {
 										))
 									),
 									AdaptiveIconButton(
+										minSize: 0,
 										icon: const SizedBox(
 											width: 40,
 											child: Icon(CupertinoIcons.ellipsis)
