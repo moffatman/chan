@@ -226,14 +226,6 @@ class _ThreadPageState extends State<ThreadPage> {
 				blocked = true;
 			});
 			await Future.delayed(delayBeforeScroll);
-			final updatingNowListenable = _listController.state?.updatingNow;
-			if (useTree &&
-			    (updatingNowListenable?.value ?? false) &&
-					(persistentState.thread?.posts_.last.time ?? DateTime(3000))
-					  .isBefore(DateTime.now().subtract(const Duration(minutes: 10)))) {
-				// Need to wait for first update, the tree might reorder
-				await updatingNowListenable?.waitUntil((updating) => !updating);
-			}
 			try {
 				await WidgetsBinding.instance.endOfFrame;
 				await _listController.animateTo(
