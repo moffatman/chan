@@ -273,7 +273,9 @@ class Persistence extends ChangeNotifier {
 		final backupBoxName = '$_backupBoxPrefix$name';
 		final backupBoxPath = '${documentsDirectory.path}/$backupBoxName.hive${gzip ? '.gz' : ''}';
 		Timer.periodic(_backupUpdateDuration, (_) async {
-			await _backupBox(boxPath, backupBoxPath);
+			if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+				await _backupBox(boxPath, backupBoxPath);
+			}
 		});
 	}
 
