@@ -360,12 +360,15 @@ class _ThreadPageState extends State<ThreadPage> {
 		persistentState.save();
 		_maybeUpdateWatch();
 		persistentState.thread?.preinit();
+		final imageboard = context.read<Imageboard>();
+		final threadFromCatalogCache = imageboard.site.getThreadFromCatalogCache(widget.thread);
 		zone = PostSpanRootZoneData.multi(
 			primaryThread: widget.thread,
 			threads: [
 				if (persistentState.thread != null) persistentState.thread!
+				else if (threadFromCatalogCache != null) threadFromCatalogCache
 			],
-			imageboard: context.read<Imageboard>(),
+			imageboard: imageboard,
 			semanticRootIds: [widget.boardSemanticId, 0],
 			onNeedScrollToPost: (post) {
 				_weakNavigatorKey.currentState!.popAllExceptFirst();
@@ -441,12 +444,15 @@ class _ThreadPageState extends State<ThreadPage> {
 			persistentState.useArchive |= widget.initiallyUseArchive;
 			final oldZone = zone;
 			Future.delayed(const Duration(milliseconds: 100), () => oldZone.dispose());
+			final imageboard = context.read<Imageboard>();
+			final threadFromCatalogCache = imageboard.site.getThreadFromCatalogCache(widget.thread);
 			zone = PostSpanRootZoneData.multi(
 				primaryThread: widget.thread,
 				threads: [
 					if (persistentState.thread != null) persistentState.thread!
+					else if (threadFromCatalogCache != null) threadFromCatalogCache
 				],
-				imageboard: context.read<Imageboard>(),
+				imageboard: imageboard,
 				onNeedScrollToPost: oldZone.onNeedScrollToPost,
 				onNeedUpdateWithStubItems: oldZone.onNeedUpdateWithStubItems,
 				semanticRootIds: [widget.boardSemanticId, 0]
@@ -1229,7 +1235,7 @@ class _ThreadPageState extends State<ThreadPage> {
 																id: '/${widget.thread.board}/${widget.thread.id}${persistentState.variant?.dataId ?? ''}',
 																disableUpdates: persistentState.disableUpdates,
 																autoUpdateDuration: autoUpdateDuration,
-																initialList: persistentState.thread?.posts,
+																initialList: persistentState.thread?.posts ?? site.getThreadFromCatalogCache(widget.thread)?.posts_.sublist(0, 1),
 																useTree: useTree,
 																initialCollapsedItems: persistentState.collapsedItems,
 																initialPrimarySubtreeParents: persistentState.primarySubtreeParents,
@@ -1671,6 +1677,7 @@ class _ThreadPositionIndicatorState extends State<ThreadPositionIndicator> with 
 			}
 			if (!widget.passedFirstLoad && widget.useTree) {
 				if (widget.thread == null) {
+					_whiteCountBelow = 0;
 					_greyCount = site.getThreadFromCatalogCache(widget.threadIdentifier)?.replyCount ?? 0;
 					setState(() {});
 				}
