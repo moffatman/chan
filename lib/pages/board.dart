@@ -239,7 +239,7 @@ class _BoardPageState extends State<BoardPage> {
 		trailing: Row(
 			mainAxisSize: MainAxisSize.min,
 			children: [
-				if (v.variants.first == _variant) AdaptiveIconButton(
+				if (v.variants.contains(_variant)) AdaptiveIconButton(
 					minSize: 0,
 					icon: const SizedBox(
 						width: 40,
