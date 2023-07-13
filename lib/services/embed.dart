@@ -32,7 +32,7 @@ Future<bool> embedPossible({
 	if (url.startsWith('chance://site/') || url.startsWith('chance://theme')) {
 		return true;
 	}
-	if (url.contains('twitter.com/') || url.contains('imgur.com/')) {
+	if (url.contains('twitter.com/') || url.contains('imgur.com/') || url.contains('imgur.io/')) {
 		return false;
 	}
 	if (url.contains('youtube.com/shorts')) {
