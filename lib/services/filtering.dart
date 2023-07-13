@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/widgets.dart' hide WeakMap;
 import 'package:provider/provider.dart';
 import 'package:weak_map/weak_map.dart';
 

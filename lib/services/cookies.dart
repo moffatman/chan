@@ -102,6 +102,8 @@ class _MyCookie implements Cookie {
   bool httpOnly = false;
 	@override
   bool secure = false;
+  @override
+  SameSite? sameSite;
 
   _MyCookie(String name, String value)
       : _name = _validateName(name),
@@ -203,6 +205,13 @@ class _MyCookie implements Cookie {
           httpOnly = true;
         } else if (name == "secure") {
           secure = true;
+        } else if (name == "samesite") {
+          sameSite = switch (value) {
+            "lax" => SameSite.lax,
+            "none" => SameSite.none,
+            "strict" => SameSite.strict,
+            _ => throw const HttpException('SameSite value should be one of Lax, Strict or None.')
+          };
         }
         if (!done()) index++; // Skip the ; character
       }
@@ -249,6 +258,7 @@ class _MyCookie implements Cookie {
     }
     if (secure) sb.write("; Secure");
     if (httpOnly) sb.write("; HttpOnly");
+    if (sameSite != null) sb.write("; $sameSite");
     return sb.toString();
   }
 
