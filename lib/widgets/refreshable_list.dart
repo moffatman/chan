@@ -471,6 +471,22 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 					return TreeItemCollapseType.childCollapsed;
 				}
 			}
+			for (final newlyInserted in newlyInsertedItems.keys) {
+				if (newlyInserted.length != key.parentIds.length + 1) {
+					continue;
+				}
+				// Possible this is the new insert
+				if (newlyInserted.last != key.thisId) {
+					continue;
+				}
+				bool keepGoing = true;
+				for (int i = 0; i < newlyInserted.length - 1 && keepGoing; i++) {
+					keepGoing = newlyInserted[i] == key.parentIds[i];
+				}
+				if (keepGoing) {
+					return TreeItemCollapseType.newInsertCollapsed;
+				}
+			}
 			// By iterating reversed it will properly handle collapses within collapses
 			for (final collapsed in manuallyCollapsedItems.reversed.followedBy(automaticallyCollapsedItems)) {
 				if (collapsed.length > key.parentIds.length + 1) {
@@ -511,28 +527,16 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 				}
 			}
 			for (final newlyInserted in newlyInsertedItems.keys) {
-				if (newlyInserted.length == key.parentIds.length + 1) {
-					// Possible this is the new insert
-					if (newlyInserted.last != key.thisId) {
-						continue;
-					}
-					bool keepGoing = true;
-					for (int i = 0; i < newlyInserted.length - 1 && keepGoing; i++) {
-						keepGoing = newlyInserted[i] == key.parentIds[i];
-					}
-					if (keepGoing) {
-						return TreeItemCollapseType.newInsertCollapsed;
-					}
+				if (newlyInserted.length != key.parentIds.length + 2) {
+					continue;
 				}
-				else if (newlyInserted.length == key.parentIds.length + 2) {
-					// Possible this is the parent of new insert
-					bool keepGoing = true;
-					for (int i = 0; i < key.parentIds.length && keepGoing; i++) {
-						keepGoing = newlyInserted[i] == key.parentIds[i];
-					}
-					if (keepGoing && newlyInserted[newlyInserted.length - 2] == key.thisId && newlyInsertedItems[newlyInserted] == true) {
-						return TreeItemCollapseType.parentOfNewInsert;
-					}
+				// Possible this is the parent of new insert
+				bool keepGoing = true;
+				for (int i = 0; i < key.parentIds.length && keepGoing; i++) {
+					keepGoing = newlyInserted[i] == key.parentIds[i];
+				}
+				if (keepGoing && newlyInserted[newlyInserted.length - 2] == key.thisId && newlyInsertedItems[newlyInserted] == true) {
+					return TreeItemCollapseType.parentOfNewInsert;
 				}
 			}
 			return null;
