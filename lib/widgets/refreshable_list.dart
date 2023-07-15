@@ -648,16 +648,18 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 		notifyListeners();
 	}
 
-	void revealNewInsert(RefreshableListItem<T> item) async {
+	void revealNewInsert(RefreshableListItem<T> item, {bool quiet = false}) async {
 		final x = [
 			...item.parentIds,
 			item.id
 		];
 		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id) || item.parentIds.contains(key.thisId));
 		newlyInsertedItems.removeWhere((w, _) => listEquals(w, x));
-		onCollapseOrExpand?.call(item, false);
-		await SchedulerBinding.instance.endOfFrame;
-		notifyListeners();
+		if (!quiet) {
+			onCollapseOrExpand?.call(item, false);
+			await SchedulerBinding.instance.endOfFrame;
+			notifyListeners();
+		}
 	}
 
 	void revealNewInsertsBelow(RefreshableListItem<T> item) async {
@@ -1598,6 +1600,18 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 		}
 		_lastKnownTreeMaxItemId = maxIdFound;
 		_needToTransitionNewlyInsertedItems = true;
+		// Reveal all new inserts at the bottom of the list
+		// Showing them won't cause any offset jumps since they are below the existing scroll position.
+		for (final item in out.reversed) {
+			if (item.parentIds.isEmpty) {
+				// Parentless items are never set to "newly-inserted" state
+				continue;
+			}
+			if (_refreshableTreeItems.isItemHidden(item._key) != TreeItemCollapseType.newInsertCollapsed) {
+				break;
+			}
+			_refreshableTreeItems.revealNewInsert(item, quiet: true);
+		}
 		return (tree: out, automaticallyCollapsed: automaticallyCollapsed, automaticallyTopLevelCollapsed: automaticallyTopLevelCollapsed);
 	}
 
