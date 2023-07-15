@@ -1243,10 +1243,15 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 					final Set<int> collapsedChildIds;
 					if (isHidden == TreeItemCollapseType.parentOfNewInsert) {
 						collapsedChildIds = _refreshableTreeItems.newlyInsertedItems.entries.where((e) {
-							if (e.key.length < 2) {
+							if (e.key.length < (value.parentIds.length + 2)) {
 								return false;
 							}
-							return e.key[e.key.length - 2] == value.id;
+							for (int i = 0; i < value.parentIds.length; i++) {
+								if (e.key[i] != value.parentIds[i]) {
+									return false;
+								}
+							}
+							return e.key[value.parentIds.length] == value.id;
 						}).map((x) => x.key.last).toSet();
 					}
 					else {
