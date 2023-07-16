@@ -426,6 +426,18 @@ class _RefreshableTreeItemsCacheKey {
 
 	@override
 	String toString() => '_RefreshableTreeItemsCacheKey($_cacheKey)';
+
+	bool isDescendantOf(_RefreshableTreeItemsCacheKey ancestor) {
+		if (parentIds.length < (ancestor.parentIds.length + 1)) {
+			return false;
+		}
+		for (int i = 0; i < ancestor.parentIds.length; i++) {
+			if (parentIds[i] != ancestor.parentIds[i]) {
+				return false;
+			}
+		}
+		return parentIds[ancestor.parentIds.length] == thisId;
+	}
 }
 
 class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
@@ -653,7 +665,9 @@ class _RefreshableTreeItems<T extends Object> extends ChangeNotifier {
 			...item.parentIds,
 			item.id
 		];
-		_cache.removeWhere((key, value) => key.thisId == item.id || key.parentIds.contains(item.id) || item.parentIds.contains(key.thisId));
+		_cache.removeWhere((key, value) {
+			return key == item._key || key.isDescendantOf(item._key);
+		});
 		newlyInsertedItems.removeWhere((w, _) => listEquals(w, x));
 		if (!quiet) {
 			onCollapseOrExpand?.call(item, false);
