@@ -1612,6 +1612,10 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 				// Parentless items are never set to "newly-inserted" state
 				continue;
 			}
+			if (item.representsStubChildren) {
+				// Wait to hit the real item and not its stub footer
+				continue;
+			}
 			if (_refreshableTreeItems.isItemHidden(item._key) != TreeItemCollapseType.newInsertCollapsed) {
 				break;
 			}
