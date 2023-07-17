@@ -543,7 +543,7 @@ class ThreadRow extends StatelessWidget {
 			}
 			return [
 				const SizedBox(width: 8),
-				if (!site.classicCatalogStyle && attachments != null) Padding(
+				if (!settings.imagesOnRight && !site.classicCatalogStyle && attachments != null) Padding(
 					padding: const EdgeInsets.only(top: 8),
 					child: attachments,
 				),
@@ -632,7 +632,11 @@ class ThreadRow extends StatelessWidget {
 							)
 						)
 					)
-				)
+				),
+				if (settings.imagesOnRight && !site.classicCatalogStyle && attachments != null) Padding(
+					padding: const EdgeInsets.only(top: 8, right: 8),
+					child: attachments,
+				),
 			];
 		}
 		Widget buildContentFocused() {
