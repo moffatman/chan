@@ -501,35 +501,38 @@ class _BoardPageState extends State<BoardPage> {
 			bar: AdaptiveBar(
 				title: AdaptiveIconButton(
 					onPressed: widget.allowChangingBoard ? _selectBoard : null,
-					icon: Wrap(
-						alignment: WrapAlignment.center,
-						crossAxisAlignment: WrapCrossAlignment.center,
-						children: [
-							Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									if (context.read<PersistentBrowserTab?>()?.incognito ?? false) ...[
-										const Icon(CupertinoIcons.eyeglasses),
-										const Text(' ')
-									],
-									if (imageboard != null) ...[
-										if (ImageboardRegistry.instance.count > 1) ...[
-											ImageboardIcon(
-												boardName: board?.name
-											),
+					icon: DefaultTextStyle(
+						style: DefaultTextStyle.of(context).style.copyWith(fontWeight: FontWeight.w600),
+						child: Wrap(
+							alignment: WrapAlignment.center,
+							crossAxisAlignment: WrapCrossAlignment.center,
+							children: [
+								Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										if (context.read<PersistentBrowserTab?>()?.incognito ?? false) ...[
+											const Icon(CupertinoIcons.eyeglasses),
 											const Text(' ')
+										],
+										if (imageboard != null) ...[
+											if (ImageboardRegistry.instance.count > 1) ...[
+												ImageboardIcon(
+													boardName: board?.name
+												),
+												const Text(' ')
+											]
 										]
 									]
-								]
-							),
-							Row(
-								mainAxisSize: MainAxisSize.min,
-								children: [
-									Flexible(child: AutoSizeText(navigationBarBoardName, minFontSize: 9, maxLines: 1)),
-									if (widget.allowChangingBoard) const Icon(Icons.arrow_drop_down)
-								]
-							)
-						]
+								),
+								Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										Flexible(child: AutoSizeText(navigationBarBoardName, minFontSize: 9, maxLines: 1)),
+										if (widget.allowChangingBoard) const Icon(Icons.arrow_drop_down)
+									]
+								)
+							]
+						)
 					)
 				),
 				actions: [
