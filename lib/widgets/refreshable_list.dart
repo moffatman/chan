@@ -2074,14 +2074,14 @@ class RefreshableListState<T extends Object> extends State<RefreshableList<T>> w
 																		IgnorePointer(
 																			child: Container(
 																				padding: const EdgeInsets.all(4),
-																				color: theme.primaryColor,
+																				color: theme.primaryColorWithBrightness(0.5),
 																				child: Text('Filter reason:\n${filteredValues[childIndex].filterReason}', style: TextStyle(
 																					color: theme.backgroundColor
 																				))
 																			)
 																		),
 																		Container(
-																			color: theme.primaryColor,
+																			color: theme.primaryColorWithBrightness(0.5),
 																			padding: const EdgeInsets.all(8),
 																			child: Builder(
 																				builder: (context) => _itemBuilder(context, filteredValues[childIndex])
