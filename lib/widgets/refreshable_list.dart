@@ -2513,7 +2513,10 @@ class RefreshableListController<T extends Object> extends ChangeNotifier {
 				_newInsertIndices[i] = _items[i].item;
 			}
 		}
-		WidgetsBinding.instance.addPostFrameCallback((_) => notifyListeners());
+		WidgetsBinding.instance.addPostFrameCallback((_) {
+			slowScrolls.didUpdate();
+			notifyListeners();
+		});
 	}
 	void registerItem(int index, RefreshableListItem<T> item, BuildContext context) {
 		if (index < _items.length) {
