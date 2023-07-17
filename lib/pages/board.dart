@@ -855,38 +855,43 @@ class _BoardPageState extends State<BoardPage> {
 																		alignment: settings.showListPositionIndicatorsOnLeft ? Alignment.bottomLeft : Alignment.bottomRight,
 																		child: Padding(
 																			padding: const EdgeInsets.all(16),
-																			child: AdaptiveFilledButton(
-																				onPressed: () async {
-																					lightHapticFeedback();
-																					if (_searching) {
-																						_listController.state?.closeSearch();
-																					}
-																					else {
-																						await scrollToTop();
-																						_page = _listController.items.first.item.currentPage ?? 1;
-																					}
+																			child: GestureDetector(
+																				onLongPress: () {
+																					_listController.animateTo((item) => false, orElseLast: (item) => true, alignment: 1.0);
 																				},
-																				color: ChanceTheme.primaryColorWithBrightness80Of(context),
-																				padding: const EdgeInsets.all(8),
-																				child: Row(
-																					mainAxisSize: MainAxisSize.min,
-																					children: _searching ? [
-																						Icon(CupertinoIcons.search, color: ChanceTheme.backgroundColorOf(context)),
-																						const SizedBox(width: 8),
-																						Icon(CupertinoIcons.xmark, color: ChanceTheme.backgroundColorOf(context))
-																					] : [
-																						Icon(CupertinoIcons.doc, color: ChanceTheme.backgroundColorOf(context)),
-																						SizedBox(
-																							width: 25,
-																							child: Text(
-																								_page.toString(),
-																								textAlign: TextAlign.center,
-																								style: TextStyle(
-																									color: ChanceTheme.backgroundColorOf(context)
+																				child: AdaptiveFilledButton(
+																					onPressed: () async {
+																						lightHapticFeedback();
+																						if (_searching) {
+																							_listController.state?.closeSearch();
+																						}
+																						else {
+																							await scrollToTop();
+																							_page = _listController.items.first.item.currentPage ?? 1;
+																						}
+																					},
+																					color: ChanceTheme.primaryColorWithBrightness80Of(context),
+																					padding: const EdgeInsets.all(8),
+																					child: Row(
+																						mainAxisSize: MainAxisSize.min,
+																						children: _searching ? [
+																							Icon(CupertinoIcons.search, color: ChanceTheme.backgroundColorOf(context)),
+																							const SizedBox(width: 8),
+																							Icon(CupertinoIcons.xmark, color: ChanceTheme.backgroundColorOf(context))
+																						] : [
+																							Icon(CupertinoIcons.doc, color: ChanceTheme.backgroundColorOf(context)),
+																							SizedBox(
+																								width: 25,
+																								child: Text(
+																									_page.toString(),
+																									textAlign: TextAlign.center,
+																									style: TextStyle(
+																										color: ChanceTheme.backgroundColorOf(context)
+																									)
 																								)
 																							)
-																						)
-																					]
+																						]
+																					)
 																				)
 																			)
 																		)
