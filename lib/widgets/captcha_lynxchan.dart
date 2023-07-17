@@ -182,8 +182,10 @@ class _CaptchaLynxchanState extends State<CaptchaLynxchan> {
 											child: TimedRebuilder(
 												enabled: true,
 												interval: const Duration(seconds: 1),
-												builder: (context) {
-													final seconds = challenge!.expiresAt.difference(DateTime.now()).inSeconds;
+												function: () {
+													return challenge!.expiresAt.difference(DateTime.now()).inSeconds;
+												},
+												builder: (context, seconds) {
 													return Text(
 														seconds > 0 ? '$seconds' : 'Expired'
 													);

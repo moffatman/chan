@@ -1021,10 +1021,13 @@ class _ThreadWatcherControls extends State<ThreadWatcherControls> {
 													child: TimedRebuilder(
 														enabled: widget.isActive,
 														interval: const Duration(seconds: 1),
-														builder: (context) {
+														function: () {
 															final now = DateTime.now();
+															return w.updatingNow ? null : now.difference(w.lastUpdate!).inSeconds / w.nextUpdate!.difference(w.lastUpdate!).inSeconds;
+														},
+														builder: (context, value) {
 															return LinearProgressIndicator(
-																value: w.updatingNow ? null : now.difference(w.lastUpdate!).inSeconds / w.nextUpdate!.difference(w.lastUpdate!).inSeconds,
+																value: value,
 																color: ChanceTheme.primaryColorOf(context).withOpacity(0.5),
 																backgroundColor: ChanceTheme.primaryColorWithBrightness20Of(context),
 																minHeight: 8

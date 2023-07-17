@@ -2,29 +2,39 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-class TimedRebuilder extends StatefulWidget {
+class TimedRebuilder<T> extends StatefulWidget {
 	final Duration interval;
-	final WidgetBuilder builder;
+	final Widget Function(BuildContext, T) builder;
 	final bool enabled;
+	final T Function() function;
+
 	const TimedRebuilder({
 		required this.interval,
 		required this.builder,
-		required this.enabled,
+		required this.function,
+		this.enabled = true,
 		Key? key
 	}) : super(key: key);
+
 	@override
-	createState() => _TimedRebuilderState();
+	createState() => _TimedRebuilderState<T>();
 }
 
-class _TimedRebuilderState extends State<TimedRebuilder> {
+class _TimedRebuilderState<T> extends State<TimedRebuilder<T>> {
 	late final Timer timer;
+	late final ValueNotifier<T> notifier;
+
 	@override
 	void initState() {
 		super.initState();
-		timer = Timer.periodic(widget.interval, (_) => {
-			if (mounted && widget.enabled) setState(() {})
+		notifier = ValueNotifier(widget.function());
+		timer = Timer.periodic(widget.interval, (_) {
+			if (mounted && widget.enabled) {
+				notifier.value = widget.function();
+			}
 		});
 	}
+
 	@override
 	void dispose() {
 		super.dispose();
@@ -33,6 +43,9 @@ class _TimedRebuilderState extends State<TimedRebuilder> {
 
 	@override
 	Widget build(BuildContext context) {
-		return widget.builder(context);
+		return ValueListenableBuilder(
+			valueListenable: notifier,
+			builder: (context, v, _) => widget.builder(context, v)
+		);
 	}
 }

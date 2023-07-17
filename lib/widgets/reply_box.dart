@@ -1685,49 +1685,49 @@ Future<void> _handleImagePaste({bool manual = true}) async {
 					onPressed: expandOptions,
 					icon: const Icon(CupertinoIcons.gear)
 				),
-				TimedRebuilder(
+				TimedRebuilder<(bool, DateTime?, Duration?)>(
 					interval: const Duration(seconds: 1),
 					enabled: show,
-					builder: (context) {
+					function: () {
 						final timeout = context.read<ImageboardSite>().getActionAllowedTime(widget.board, widget.threadId == null ? 
 							ImageboardAction.postThread :
 							(attachment != null) ? ImageboardAction.postReplyWithImage : ImageboardAction.postReply);
-						if (timeout != null) {
-							final now = DateTime.now();
-							final diff = timeout.difference(now);
-							if (!diff.isNegative) {
-								return GestureDetector(
-									child: AdaptiveIconButton(
-										icon: Column(
-											mainAxisSize: MainAxisSize.min,
-											crossAxisAlignment: CrossAxisAlignment.center,
-											children: [
-												if (_autoPostTimer?.isActive ?? false) const Text('Auto', style: TextStyle(fontSize: 12)),
-												Text((diff.inMilliseconds / 1000).round().toString())
-											]
-										),
-										onPressed: () async {
-											if (!(_autoPostTimer?.isActive ?? false)) {
-												if (!_haveValidCaptcha) {
-													await _solveCaptcha();
-												}
-												if (_haveValidCaptcha) {
-													_autoPostTimer = Timer(timeout.difference(DateTime.now()), _submit);
-													_rootFocusNode.unfocus();
-												}
-											}
-											else {
-												_autoPostTimer!.cancel();
-											}
-											setState(() {});
-										}
+						return (loading, timeout, timeout?.difference(DateTime.now()));
+					},
+					builder: (context, data) {
+						final (loading, timeout, diff) = data;
+						if (timeout != null && diff != null && !(diff.isNegative)) {
+							return GestureDetector(
+								child: AdaptiveIconButton(
+									icon: Column(
+										mainAxisSize: MainAxisSize.min,
+										crossAxisAlignment: CrossAxisAlignment.center,
+										children: [
+											if (_autoPostTimer?.isActive ?? false) const Text('Auto', style: TextStyle(fontSize: 12)),
+											Text((diff.inMilliseconds / 1000).round().toString())
+										]
 									),
-									onLongPress: () {
-										_autoPostTimer?.cancel();
-										_submit();
+									onPressed: () async {
+										if (!(_autoPostTimer?.isActive ?? false)) {
+											if (!_haveValidCaptcha) {
+												await _solveCaptcha();
+											}
+											if (_haveValidCaptcha) {
+												_autoPostTimer = Timer(timeout.difference(DateTime.now()), _submit);
+												_rootFocusNode.unfocus();
+											}
+										}
+										else {
+											_autoPostTimer!.cancel();
+										}
+										setState(() {});
 									}
-								);
-							}
+								),
+								onLongPress: () {
+									_autoPostTimer?.cancel();
+									_submit();
+								}
+							);
 						}
 						return AdaptiveIconButton(
 							onPressed: loading ? null : _submit,

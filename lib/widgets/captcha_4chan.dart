@@ -576,8 +576,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 			return TimedRebuilder(
 				enabled: true,
 				interval: const Duration(seconds: 1),
-				builder: (context) {
-					final seconds = tryAgainAt!.difference(DateTime.now()).inSeconds;
+				function: () {
+					return tryAgainAt!.difference(DateTime.now()).inSeconds;
+				},
+				builder: (context, seconds) {
 					return AdaptiveIconButton(
 						onPressed: seconds > 0 ? null : _tryRequestChallenge,
 						icon: FittedBox(
@@ -717,8 +719,10 @@ class _Captcha4ChanCustomState extends State<Captcha4ChanCustom> {
 														child: TimedRebuilder(
 															enabled: true,
 															interval: const Duration(seconds: 1),
-															builder: (context) {
-																final seconds = challenge!.expiresAt.difference(DateTime.now()).inSeconds;
+															function: () {
+																return challenge!.expiresAt.difference(DateTime.now()).inSeconds;
+															},
+															builder: (context, seconds) {
 																return Text(
 																	seconds > 0 ? '$seconds' : 'Expired'
 																);

@@ -2278,13 +2278,16 @@ class RefreshableListFooter extends StatelessWidget {
 																borderRadius: const BorderRadius.all(Radius.circular(8)),
 																child: Stack(
 																	children: [
-																		if (nextUpdateTime != null && lastUpdateTime != null) TimedRebuilder(
+																		if (nextUpdateTime != null && lastUpdateTime != null) TimedRebuilder<double>(
 																			enabled: true,
 																			interval: const Duration(seconds: 1),
-																			builder: (context) {
+																			function: () {
 																				final now = DateTime.now();
+																				return updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds;
+																			},
+																			builder: (context, value) {
 																				return LinearProgressIndicator(
-																					value: updatingNow ? 0 : now.difference(lastUpdateTime!).inSeconds / nextUpdateTime!.difference(lastUpdateTime!).inSeconds,
+																					value: value,
 																					color: ChanceTheme.primaryColorOf(context).withOpacity(0.5),
 																					backgroundColor: ChanceTheme.primaryColorWithBrightness10Of(context),
 																					minHeight: 8
@@ -2309,9 +2312,12 @@ class RefreshableListFooter extends StatelessWidget {
 														child: TimedRebuilder(
 															enabled: nextUpdateTime != null && lastUpdateTime != null,
 															interval: const Duration(seconds: 1),
-															builder: (context) {
+															function: () {
+																return formatRelativeTime(nextUpdateTime ?? DateTime(3000));
+															},
+															builder: (context, relativeTime) {
 																return GreedySizeCachingBox(
-																	child: Text('Next update ${formatRelativeTime(nextUpdateTime ?? DateTime(3000))}', style: TextStyle(
+																	child: Text('Next update $relativeTime', style: TextStyle(
 																		color: ChanceTheme.primaryColorWithBrightness50Of(context)
 																	))
 																);
