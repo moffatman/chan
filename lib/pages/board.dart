@@ -499,12 +499,6 @@ class _BoardPageState extends State<BoardPage> {
 		return AdaptiveScaffold(
 			resizeToAvoidBottomInset: false,
 			bar: AdaptiveBar(
-				leading: settings.supportMouse.value && !Navigator.of(context).canPop() ? AdaptiveIconButton(
-					icon: const Icon(CupertinoIcons.refresh),
-					onPressed: () {
-						_listController.blockAndUpdate();
-					}
-				) : null,
 				title: AdaptiveIconButton(
 					onPressed: widget.allowChangingBoard ? _selectBoard : null,
 					icon: Wrap(
@@ -548,6 +542,17 @@ class _BoardPageState extends State<BoardPage> {
 									board: board!
 								)
 							));
+						}
+					),
+					if (
+						// Is root board on desktop
+						(settings.supportMouse.value && !Navigator.of(context).canPop()) ||
+						// Space is generally available
+						!(context.watch<MasterDetailHint?>()?.location.isVeryConstrained ?? false)
+					) AdaptiveIconButton(
+						icon: const Icon(CupertinoIcons.refresh),
+						onPressed: () {
+							_listController.blockAndUpdate();
 						}
 					),
 					AdaptiveIconButton(
