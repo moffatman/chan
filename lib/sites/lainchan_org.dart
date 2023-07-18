@@ -23,7 +23,7 @@ class SiteLainchanOrg extends SiteLainchan {
 			}
 		));
 		final document = parse(response.data);
-		return document.querySelectorAll('.boardlist a').where((e) => e.attributes['title'] != null).map((e) => ImageboardBoard(
+		return document.querySelectorAll('.boardlist a').where((e) => e.attributes['title'] != null && (e.attributes['href'] ?? '').contains('/')).map((e) => ImageboardBoard(
 			name: e.attributes['href']!.split('/')[1],
 			title: e.attributes['title']!,
 			maxWebmSizeBytes: 25000000,
