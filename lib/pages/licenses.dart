@@ -57,13 +57,15 @@ class _LicensesPageState extends State<LicensesPage> {
 				),
 				body: ListView.builder(
 					itemCount: packageNames.length,
-					itemBuilder: (context, i) => GestureDetector(
-						behavior: HitTestBehavior.opaque,
-						onTap: () => valueSetter(packageNames[i]),
-						child: Container(
-							color: selectedValue(context, packageNames[i]) ? ChanceTheme.primaryColorOf(context).withOpacity(0.2) : null,
-							padding: const EdgeInsets.all(16),
-							child: Text(packageNames[i])
+					itemBuilder: (context, i) => Builder(
+						builder: (context) => GestureDetector(
+							behavior: HitTestBehavior.opaque,
+							onTap: () => valueSetter(packageNames[i]),
+							child: Container(
+								color: selectedValue(context, packageNames[i]) ? ChanceTheme.primaryColorOf(context).withOpacity(0.2) : null,
+								padding: const EdgeInsets.all(16),
+								child: Text(packageNames[i])
+							)
 						)
 					)
 				)
