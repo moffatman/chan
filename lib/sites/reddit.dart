@@ -354,7 +354,7 @@ class SiteReddit extends ImageboardSite {
 	}
 
 	/// Resolve image hosting sites to hotlinks
-	Future<({String url, AttachmentType type, String ext})> _resolveUrl(String url) async {
+	Future<List<({String url, String? thumbnailUrl, AttachmentType type, String ext})>> _resolveUrl(String url) async {
 		final uri = Uri.parse(url);
 		try {
 			if ((uri.host == 'imgur.com' || uri.host == 'imgur.io') && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
@@ -366,35 +366,72 @@ class SiteReddit extends ImageboardSite {
 				));
 				final link = response.data['data']?['link'] as String?;
 				if (link != null) {
-					return (
+					return [(
 						url: link,
+						thumbnailUrl: link.replaceFirstMapped(RegExp(r'\.([^.]+)$'), (m) {
+							return 'b.${m.group(1)}';
+						}),
 						type: AttachmentType.image,
 						ext: link.split('.').last
-					);
+					)];
+				}
+			}
+			if ((uri.host == 'imgur.com' || uri.host == 'imgur.io') && (uri.pathSegments.length == 2) && (uri.pathSegments.first == 'a')) {
+				final hash = uri.pathSegments[1];
+				final response = await client.getUri(Uri.https('api.imgur.com', '/3/album/$hash/images'), options: Options(
+					headers: {
+						'Authorization': 'Client-ID 714791ea4513f83'
+					}
+				));
+				final imageData = response.data['data'] as List<dynamic>?;
+				if (imageData != null && imageData.isNotEmpty) {
+					return imageData.expand((image) {
+						final link = image['link'] as String;
+						return [(
+							url: link,
+							thumbnailUrl: link.replaceFirstMapped(RegExp(r'\.([^.]+)$'), (m) {
+								return 'b.${m.group(1)}';
+							}),
+							type: AttachmentType.image,
+							ext: link.split('.').last
+						)];
+					}).toList();
 				}
 			}
 			else if (uri.host == 'gfycat.com' && (uri.pathSegments.trySingle?.length ?? 0) > 2) {
-				final hash = uri.pathSegments.single;
+				final hash = uri.pathSegments.single.split('-').first;
 				final response = await client.getUri(Uri.https('api.gfycat.com', '/v1/gfycats/$hash'), options: Options(
 					headers: {
 						'Authorization': '2_YQH1hg'
-					}
+					},
+					validateStatus: (status) => (status != null) && ((status >= 200 && status < 300) || (status == 404))
 				));
-				final link = response.data['gfyItem']?['mp4Url'] as String?;
-				if (link != null) {
-					return (
-						url: link,
-						type: AttachmentType.mp4,
-						ext: '.mp4'
-					);
+				if (response.statusCode == 404) {
+					// Sometimes gfycat redirects to redgifs
+					final redirectResponse = await client.head(url);
+					if (!redirectResponse.realUri.host.contains('gfycat')) {
+						return _resolveUrl(redirectResponse.realUri.toString());
+					}
+				}
+				else {
+					final link = response.data['gfyItem']?['mp4Url'] as String?;
+					if (link != null) {
+						return [(
+							url: link,
+							thumbnailUrl: response.data['gfyItem']?['miniPosterUrl'] as String?,
+							type: AttachmentType.mp4,
+							ext: '.mp4'
+						)];
+					}
 				}
 			}
 			else if (uri.host == 'i.reddituploads.com') {
-				return (
+				return [(
 					url: url,
+					thumbnailUrl: null,
 					type: AttachmentType.image,
 					ext: '.jpeg'
-				);
+				)];
 			}
 			else if (uri.host.endsWith('redgifs.com') && uri.pathSegments.length == 2 && uri.pathSegments[0] == 'watch') {
 				final id = uri.pathSegments[1];
@@ -427,11 +464,12 @@ class SiteReddit extends ImageboardSite {
 				if (response != null) {
 					final url = response.data['gif']?['urls']?['hd'] ?? response.data['gif']?['urls']?['sd'];
 					if (url != null) {
-						return (
+						return [(
 							url: url as String,
+							thumbnailUrl: response.data['gif']?['urls']?['thumbnail'] as String?,
 							type: AttachmentType.mp4,
 							ext: '.mp4'
-						);
+						)];
 					}
 				}
 			}
@@ -440,11 +478,12 @@ class SiteReddit extends ImageboardSite {
 			Future.error(e, st);
 		}
 		bool isDirectLink = ['.png', '.jpg', '.jpeg', '.gif'].any((e) => url.endsWith(e));
-		return (
+		return [(
 			url: url,
+			thumbnailUrl: null,
 			type: isDirectLink ? AttachmentType.image : AttachmentType.url,
 			ext: isDirectLink ? url.split('.').last : ''
-		);
+		)];
 	}
 
 	Future<Thread> _makeThread(dynamic data) async {
@@ -522,41 +561,41 @@ class SiteReddit extends ImageboardSite {
 					));
 				}
 				else {
-					final url = await _resolveUrl(data['url']);
-					attachments.add(Attachment(
+					final urls = await _resolveUrl(data['url']);
+					attachments.addAll(urls.map((url) => Attachment(
 						type: url.type,
 						board: data['subreddit'],
 						threadId: id,
-						id: data['name'],
+						id: url.url,
 						ext: url.ext,
 						filename: Uri.tryParse(url.url)?.pathSegments.tryLast ?? '',
 						url: url.url,
-						width: data['preview']['images'][0]['source']['width'],
-						height: data['preview']['images'][0]['source']['height'],
+						width: urls.length > 1 ? null : data['preview']['images'][0]['source']['width'],
+						height:  urls.length > 1 ? null : data['preview']['images'][0]['source']['height'],
 						md5: '',
 						sizeInBytes: null,
-						thumbnailUrl: data['preview']['images'][0]['resolutions'].isNotEmpty ? unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']) : imageUrl
-					));
+						thumbnailUrl: url.thumbnailUrl ?? (data['preview']['images'][0]['resolutions'].isNotEmpty ? unescape.convert(data['preview']['images'][0]['resolutions'][0]['url']) : imageUrl)
+					)));
 				}
 			}
 			else if (!(data['is_self'] ?? false) && data['url'] != null) {
-				final url = await _resolveUrl(data['url']);
-				attachments.add(Attachment(
+				final urls = await _resolveUrl(data['url']);
+				attachments.addAll(urls.map((url) => Attachment(
 					type: url.type,
 					board: data['subreddit'],
 					threadId: id,
-					id: data['name'],
+					id: url.url,
 					ext: url.ext,
 					filename: Uri.tryParse(url.url)?.pathSegments.tryLast ?? '',
 					url: url.url,
-					thumbnailUrl: Uri.https('thumbs.chance.surf', '/', {
+					thumbnailUrl: url.thumbnailUrl ?? Uri.https('thumbs.chance.surf', '/', {
 						'url': url.url
 					}).toString(),
 					md5: '',
 					width: null,
 					height: null,
 					sizeInBytes: null
-				));
+				)));
 			}
 		}
 		String text = data['is_self'] ? unescape.convert(data['selftext']) : data['url'];
